@@ -1,0 +1,1 @@
+puts 'in C:\temp\load\A\temp\load\x.rb'

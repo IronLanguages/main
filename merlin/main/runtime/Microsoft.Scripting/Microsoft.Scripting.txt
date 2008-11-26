@@ -1,0 +1,217 @@
+#####################################################################################
+#
+#  Copyright (c) Microsoft Corporation. All rights reserved.
+#
+# This source code is subject to terms and conditions of the Microsoft Public License. A 
+# copy of the license can be found in the License.html file at the root of this distribution. If 
+# you cannot locate the  Microsoft Public License, please send an email to 
+# ironpy@microsoft.com. By using this source code in any fashion, you are agreeing to be bound 
+# by the terms of the Microsoft Public License.
+#
+# You must not remove this notice, or any other, from this software.
+#
+#
+#####################################################################################
+
+# NOTE: do not use \", use ' instead
+# NOTE: Use # or ; for comments
+
+# These are generated with generate_exception_factory.py
+
+InvalidOperation_ContainsGenericParameters=Cannot access member {1} declared on type {0} because the type contains generic parameters.
+MissingType=Type '{0}' is missing or cannot be loaded.
+StaticAccessFromInstanceError=static property "{0}" of "{1}" can only be read through a type, not an instance
+StaticAssignmentFromInstanceError=static property "{0}" of "{1}" can only be assigned to through a type, not an instance
+
+# ContractUtils strings
+
+MethodPreconditionViolated=Method precondition violated
+InvalidArgumentValue=Invalid argument value
+NonEmptyStringRequired=Non-empty string required
+NonEmptyCollectionRequired=Non-empty collection required
+
+MustBeExceptionInstance=must by an Exception instance
+TypeOfTestMustBeBool=Type of test must be bool
+TypeOfExpressionMustBeBool=Type of the expression must be bool
+EmptyStringIsInvalidPath=Empty string is not a valid path.
+InvalidDelegate=Invalid delegate type (Invoke method not found).
+ExpectedStaticProperty=expected only static property
+PropertyDoesNotExist=Property doesn't exist on the provided type
+FieldDoesNotExist=Field doesn't exist on provided type
+TypeDoesNotHaveConstructorForTheSignature=Type doesn't have constructor with a given signature
+TypeDoesNotHaveMethodForName=Type doesn't have a method with a given name.
+TypeDoesNotHaveMethodForNameSignature=Type doesn't have a method with a given name and signature.
+CountCannotBeNegative=Count must be non-negative.
+ArrayTypeMustBeArray=arrayType must be an array type
+
+## ExceptionType=ArgumentException
+MustHaveCodeOrTarget=Either code or target must be specified.
+
+# end ContractUtils strings
+
+## ExceptionType=InvalidOperationException
+TypeParameterIsNotDelegate=Type parameter is {0}. Expected a delegate.
+
+## ExceptionType=InvalidOperationException
+InvalidCast=Cannot cast from type '{0}' to type '{1}
+
+#DLR exceptions
+
+## ExceptionType=InvalidOperationException
+UnknownMemberType=unknown member type: '{0}'. 
+
+## ExceptionType=InvalidOperationException
+FirstArgumentMustBeCallSite=RuleBuilder can only be used with delegates whose first argument is CallSite.
+
+## ExceptionType=InvalidOperationException
+NoInstanceForCall=no instance for call.
+
+## ExceptionType=InvalidOperationException
+MissingTest=Missing Test.
+
+## ExceptionType=InvalidOperationException
+MissingTarget=Missing Target.
+
+## ExceptionType=TypeLoadException
+NonGenericWithGenericGroup=The operation requires a non-generic type for {0}, but this represents generic types only
+
+## ExceptionType=ArgumentException
+InvalidOperation=Invalid operation: '{0}'
+
+## ExceptionType=InvalidOperationException
+FinallyAlreadyDefined=Finally already defined.
+
+## ExceptionType=InvalidOperationException
+CannotHaveFaultAndFinally=Can not have fault and finally.
+
+## ExceptionType=InvalidOperationException
+FaultAlreadyDefined=Fault already defined.
+
+## ExceptionType=ArgumentException
+CantCreateDefaultTypeFor=Cannot create default value for type {0}.
+
+## ExceptionType=ArgumentException
+UnhandledConvert=Unhandled convert: {0}
+
+## ExceptionType=InvalidOperationException
+NoCallableMethods={0}.{1} has no publiclly visible method.
+
+## ExceptionType=ArgumentException
+GlobalsMustBeUnique=Global/top-level local variable names must be unique.
+
+## ExceptionType=ArgumentException
+GenNonSerializableBinder=Generating code from non-serializable CallSiteBinder.
+
+## ExceptionType=ArgumentException
+InvalidPath=pecified path is invalid.
+
+## ExceptionType=ArgumentTypeException
+DictionaryNotHashable=Dictionaries are not hashable.
+
+## ExceptionType=InvalidOperationException
+LanguageRegistered=language already registered.
+
+## ExceptionType=NotImplementedException
+MethodOrOperatorNotImplemented=The method or operation is not implemented.
+
+## ExceptionType=InvalidOperationException
+NoException=No exception.
+
+## ExceptionType=ArgumentException
+ExtensionMustBePublic=Extension type {0} must be public.
+
+## ExceptionType=InvalidOperationException
+AlreadyInitialized=Already initialized.
+
+## ExceptionType=InvalidImplementationException
+MustReturnScopeExtension=CreateScopeExtension must return a scope extension.
+
+## ExceptionType=ArgumentException
+InvalidParamNumForService=Invalid number of parameters for the service.
+
+## ExceptionType=ArgumentException
+InvalidArgumentType=Invalid type of argument {0}; expecting {1}.
+
+## ExceptionType=ArgumentException
+CannotChangeNonCachingValue=Cannot change non-caching value.
+
+## ExceptionType=Microsoft.Scripting.Runtime.UnboundLocalException
+ReferencedBeforeAssignment=Local variable '{0}' referenced before assignment.
+
+## ExceptionType=MissingMemberException
+FieldReadonly=Field {0} is read-only
+
+## ExceptionType=MissingMemberException
+PropertyReadonly=Property {0} is read-only
+
+## ExceptionType=ArgumentException
+UnexpectedEvent=Expected event from {0}.{1}, got event from {2}.{3}.
+
+## ExceptionType=ArgumentTypeException
+ExpectedBoundEvent=expected bound event, got {0}.
+
+## ExceptionType=ArgumentTypeException
+UnexpectedType=Expected type {0}, got {1}.
+
+## ExceptionType=MemberAccessException
+MemberWriteOnly=can only write to member {0}.
+
+## ExceptionType=InvalidOperationException
+NoCodeToCompile=No code to compile.
+
+## ExceptionType=ArgumentException
+InvalidStreamType=Invalid stream type: {0}.
+
+## ExceptionType=InvalidOperationException
+QueueEmpty=Queue empty.
+
+## ExceptionType=InvalidOperationException
+EnumerationNotStarted=Enumeration has not started. Call MoveNext.
+
+## ExceptionType=InvalidOperationException
+EnumerationFinished=Enumeration already finished.
+
+## ExceptionType=InvalidOperationException
+CantAddCasing=can't add another casing for identifier {0}
+
+## ExceptionType=InvalidOperationException
+CantAddIdentifier=can't add new identifier {0}
+
+InvalidCtorImplementation=Type '{0}' doesn't provide a suitable public constructor or its implementation is faulty: {1}
+
+## ExceptionType=ArgumentException
+InvalidOutputDir=Invalid output directory.
+
+## ExceptionType=ArgumentException
+InvalidAsmNameOrExtension=Invalid assembly name or file extension.
+
+## ExceptionType=ArgumentException
+CanotEmitConstant=Cannot emit constant {0} ({1})
+
+## ExceptionType=ArgumentException
+NoImplicitCast=No implicit cast from {0} to {1}
+
+## ExceptionType=ArgumentException
+NoExplicitCast=No explicit cast from {0} to {1}
+
+## ExceptionType=MissingMemberException
+NameNotDefined=name '{0}' not defined
+
+## ExceptionType=ArgumentException
+NoDefaultValue=No default value for a given type.
+
+## ExceptionType=ArgumentException
+UnknownLanguageProviderType=Specified language provider type is not registered.
+
+## ExceptionType=InvalidOperationException
+CantReadProperty=can't read from property
+
+## ExceptionType=InvalidOperationException
+CantWriteProperty=can't write to property
+
+## ExceptionType=ArgumentException
+IllegalNew_GenericParams=Cannot create instance of {0} because it contains generic parameters
+
+## ExceptionType=System.Security.VerificationException
+VerificationException=Non-verifiable assembly generated: {0}:\nAssembly preserved as {1}\nError text:\n{2}\n
+

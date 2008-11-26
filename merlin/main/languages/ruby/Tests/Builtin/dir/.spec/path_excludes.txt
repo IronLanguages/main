@@ -1,0 +1,2 @@
+Dir#path returns the path that was supplied to .new or .open
+Dir#path raises an IOError when called on a closed Dir instance
