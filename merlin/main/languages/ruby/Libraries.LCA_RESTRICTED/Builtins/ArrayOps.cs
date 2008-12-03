@@ -13,8 +13,6 @@
  *
  * ***************************************************************************/
 
-// I'm adding a bogus comment!
-
 using System;
 using System.Collections;
 using System.Collections.Generic;
