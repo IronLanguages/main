@@ -15,7 +15,7 @@
 
 using System;
 using System.Linq.Expressions;
-using System.Dynamic.Binders;
+using System.Dynamic;
 using System.Collections.Generic;
 
 using Microsoft.Scripting.Utils;
@@ -36,13 +36,16 @@ namespace IronRuby.Runtime.Calls {
 
         // Used for private visibility check. By default method call sites have explicit self, so private methods are not visible.
         HasImplicitSelf = 16,
+
+        // Tries to call the method, if not successful returns a RubyOps.MethodNotFound singleton.
+        IsTryCall = 32
     }
         
     /// <summary>
     /// RubyScope/RubyContext, (self), (argument){ArgumentCount}, (splatted-argument)?, (block)?
     /// </summary>
     public struct RubyCallSignature : IEquatable<RubyCallSignature> {
-        private const int FlagsCount = 5;
+        private const int FlagsCount = 6;
         private const int MaxArgumentCount = (int)(UInt32.MaxValue >> FlagsCount);
         private const RubyCallFlags FlagsMask = (RubyCallFlags)(1 << FlagsCount) - 1;
 
@@ -53,6 +56,8 @@ namespace IronRuby.Runtime.Calls {
         public bool HasBlock { get { return ((RubyCallFlags)_countAndFlags & RubyCallFlags.HasBlock) != 0; } }
         public bool HasSplattedArgument { get { return ((RubyCallFlags)_countAndFlags & RubyCallFlags.HasSplattedArgument) != 0; } }
         public bool HasRhsArgument { get { return ((RubyCallFlags)_countAndFlags & RubyCallFlags.HasRhsArgument) != 0; } }
+        public bool IsTryCall { get { return ((RubyCallFlags)_countAndFlags & RubyCallFlags.IsTryCall) != 0; } }
+
         public int ArgumentCount { get { return (int)_countAndFlags >> FlagsCount; } }
         internal RubyCallFlags Flags { get { return (RubyCallFlags)_countAndFlags & FlagsMask; } }
         
@@ -74,10 +79,11 @@ namespace IronRuby.Runtime.Calls {
             _countAndFlags = ((uint)argumentCount << FlagsCount) | (uint)flags;
         }
 
-        public RubyCallSignature(bool hasScope, bool hasImplicitSelf, int argumentCount, bool hasSplattedArgument, bool hasBlock, bool hasRhsArgument) {
+        public RubyCallSignature(bool isTryCall, bool hasScope, bool hasImplicitSelf, int argumentCount, bool hasSplattedArgument, bool hasBlock, bool hasRhsArgument) {
             Debug.Assert(argumentCount >= 0 && argumentCount < MaxArgumentCount);
 
             var flags = RubyCallFlags.None;
+            if (isTryCall) flags |= RubyCallFlags.IsTryCall;
             if (hasImplicitSelf) flags |= RubyCallFlags.HasImplicitSelf;
             if (hasScope) flags |= RubyCallFlags.HasScope;
             if (hasSplattedArgument) flags |= RubyCallFlags.HasSplattedArgument;

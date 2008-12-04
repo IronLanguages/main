@@ -20,6 +20,7 @@ using IronRuby.Builtins;
 using IronRuby.Runtime;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
+using Microsoft.Scripting.Generation;
 
 namespace IronRuby.StandardLibrary.Digest {
 
@@ -117,11 +118,14 @@ namespace IronRuby.StandardLibrary.Digest {
         public class Class {
 
             [RubyMethod("digest", RubyMethodAttributes.PublicSingleton)]
-            public static MutableString Digest(RubyClass/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ str) {
+            public static MutableString Digest(SiteLocalStorage<CallSite<Func<CallSite, RubyContext, object, MutableString, MutableString>>>/*!*/ storage,
+                RubyClass/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ str) {
+
                 // TODO: new?
                 object obj = RubySites.Allocate(self);
                 // TODO: check obj
-                return DigestSite.Target(DigestSite, self.Context, obj, str);
+                var site = storage.GetCallSite("digest", 1);
+                return site.Target(site, self.Context, obj, str);
             }
 
             [RubyMethod("digest", RubyMethodAttributes.PublicSingleton)]
@@ -130,8 +134,11 @@ namespace IronRuby.StandardLibrary.Digest {
             }
 
             [RubyMethod("hexdigest", RubyMethodAttributes.PublicSingleton)]
-            public static MutableString/*!*/ HexDigest(RubyClass/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ str) {
-                MutableString result = DigestSite.Target(DigestSite, self.Context, self, str);
+            public static MutableString/*!*/ HexDigest(SiteLocalStorage<CallSite<Func<CallSite, RubyContext, object, MutableString, MutableString>>>/*!*/ storage, 
+                RubyClass/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ str) {
+
+                var site = storage.GetCallSite("digest", 1);
+                MutableString result = site.Target(site, self.Context, self, str);
                 // TODO: check result != null
                 return HexEncode(result);
             }
@@ -152,74 +159,83 @@ namespace IronRuby.StandardLibrary.Digest {
             }
 
             #endregion
-
-            #region DynamicSites
-
-            private static CallSite<Func<CallSite, RubyContext, object, MutableString, MutableString>> DigestSite = CallSite<Func<CallSite, RubyContext, object, MutableString, MutableString>>.Create(
-                RubySites.InstanceCallAction("digest", 1)
-            );
-
-            #endregion
         }
 
         [RubyModule("Instance")]
         public class Instance {
 
             [RubyMethod("digest")]
-            public static MutableString Digest(RubyContext/*!*/ context, object self) {
+            public static MutableString Digest(SiteLocalStorage<CallSite<Func<CallSite, RubyContext, object, object>>>/*!*/ finishStorage,
+                RubyContext/*!*/ context, object self) {
                 object clone;
                 if (!RubyUtils.TryDuplicateObject(context, self, true, out clone)) {
                     throw RubyExceptions.CreateArgumentError("unable to copy object");
                 }
-                return Finish.Target(Finish, context, clone);
+
+                var finish = finishStorage.GetCallSite("finish", 0);
+                // TODO: cast?
+                return (MutableString)finish.Target(finish, context, clone);
             }
 
             [RubyMethod("digest")]
-            public static MutableString Digest(RubyContext/*!*/ context, object self, [DefaultProtocol, NotNull]MutableString/*!*/ str) {
-                Update.Target(Update, context, self, str);
-                MutableString value = Finish.Target(Finish, context, self);
-                Reset.Target(Reset, context, self);
+            public static MutableString Digest(
+                SiteLocalStorage<CallSite<Func<CallSite, RubyContext, object, MutableString, object>>>/*!*/ updateStorage,
+                SiteLocalStorage<CallSite<Func<CallSite, RubyContext, object, object>>>/*!*/ finishStorage,
+                SiteLocalStorage<CallSite<Func<CallSite, RubyContext, object, object>>>/*!*/ resetStorage,
+                RubyContext/*!*/ context, object self, [DefaultProtocol, NotNull]MutableString/*!*/ str) {
 
-                return value;
+                var update = updateStorage.GetCallSite("update", 1);
+                update.Target(update, context, self, str);
+
+                var finish = finishStorage.GetCallSite("finish", 0);
+                object value = finish.Target(finish, context, self);
+
+                var reset = resetStorage.GetCallSite("reset", 0);
+                reset.Target(reset, context, self);
+
+                // TODO: cast?
+                return (MutableString)value;
             }
 
             [RubyMethod("digest!")]
-            public static MutableString DigestNew(RubyContext/*!*/ context, object self) {
-                MutableString value = Finish.Target(Finish, context, self);
-                Reset.Target(Reset, context, self);
-                return value;
+            public static MutableString DigestNew(
+                SiteLocalStorage<CallSite<Func<CallSite, RubyContext, object, object>>>/*!*/ finishStorage,
+                SiteLocalStorage<CallSite<Func<CallSite, RubyContext, object, object>>>/*!*/ resetStorage,
+                RubyContext/*!*/ context, object self) {
+
+                var finish = finishStorage.GetCallSite("finish", 0);
+                object value = finish.Target(finish, context, self);
+
+                var reset = resetStorage.GetCallSite("reset", 0);
+                reset.Target(reset, context, self);
+
+                // TODO: cast?
+                return (MutableString)value;
             }
 
             [RubyMethod("hexdigest")]
-            public static MutableString HexDigest(RubyContext/*!*/ context, object self) {
-                return Class.HexEncode(Digest(context, self));
+            public static MutableString HexDigest(
+                SiteLocalStorage<CallSite<Func<CallSite, RubyContext, object, object>>>/*!*/ finishStorage,
+                RubyContext/*!*/ context, object self) {
+                return Class.HexEncode(Digest(finishStorage, context, self));
             }
 
             [RubyMethod("hexdigest")]
-            public static MutableString HexDigest(RubyContext/*!*/ context, object self, [DefaultProtocol, NotNull]MutableString/*!*/ str) {
-                return Class.HexEncode(Digest(context, self, str));
+            public static MutableString HexDigest(
+                SiteLocalStorage<CallSite<Func<CallSite, RubyContext, object, MutableString, object>>>/*!*/ updateStorage,
+                SiteLocalStorage<CallSite<Func<CallSite, RubyContext, object, object>>>/*!*/ finishStorage,
+                SiteLocalStorage<CallSite<Func<CallSite, RubyContext, object, object>>>/*!*/ resetStorage,
+                RubyContext/*!*/ context, object self, [DefaultProtocol, NotNull]MutableString/*!*/ str) {
+                return Class.HexEncode(Digest(updateStorage, finishStorage, resetStorage, context, self, str));
             }
 
             [RubyMethod("hexdigest!")]
-            public static MutableString HexDigestNew(RubyContext/*!*/ context, object self) {
-                return Class.HexEncode(DigestNew(context, self));
+            public static MutableString HexDigestNew(
+                SiteLocalStorage<CallSite<Func<CallSite, RubyContext, object, object>>>/*!*/ finishStorage,
+                SiteLocalStorage<CallSite<Func<CallSite, RubyContext, object, object>>>/*!*/ resetStorage,
+                RubyContext/*!*/ context, object self) {
+                return Class.HexEncode(DigestNew(finishStorage, resetStorage, context, self));
             }
-
-            #region DynamicSites
-
-            private static CallSite<Func<CallSite, RubyContext, object, object>> Reset = CallSite<Func<CallSite, RubyContext, object, object>>.Create(
-                RubySites.InstanceCallAction("reset")
-            );
-
-            private static CallSite<Func<CallSite, RubyContext, object, MutableString, object>> Update = CallSite<Func<CallSite, RubyContext, object, MutableString, object>>.Create(
-                RubySites.InstanceCallAction("update", 1)
-            );
-
-            private static CallSite<Func<CallSite, RubyContext, object, MutableString>> Finish = CallSite<Func<CallSite, RubyContext, object, MutableString>>.Create(
-                RubySites.InstanceCallAction("finish")
-            );
-
-            #endregion
         }
     }
 }

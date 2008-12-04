@@ -1230,8 +1230,15 @@ namespace System.Linq.Expressions {
 
         private static bool IsSimpleShift(Type left, Type right) {
             return TypeUtils.IsInteger(left)
-                && TypeUtils.GetNonNullableType(right) == typeof(int)
-                && (left.IsNullableType() == right.IsNullableType());
+                && TypeUtils.GetNonNullableType(right) == typeof(int);
+        }
+
+        private static Type GetResultTypeOfShift(Type left, Type right) {
+            if (!left.IsNullableType() && right.IsNullableType()) {
+                //lift the result type to Nullable<T>
+                return typeof(Nullable<>).MakeGenericType(left);
+            }
+            return left;
         }
 
         //CONFORMING
@@ -1244,7 +1251,8 @@ namespace System.Linq.Expressions {
             RequiresCanRead(right, "right");
             if (method == null) {
                 if (IsSimpleShift(left.Type, right.Type)) {
-                    return new SimpleBinaryExpression(ExpressionType.LeftShift, left, right, left.Type);
+                    Type resultType = GetResultTypeOfShift(left.Type, right.Type);
+                    return new SimpleBinaryExpression(ExpressionType.LeftShift, left, right, resultType);
                 }
                 return GetUserDefinedBinaryOperatorOrThrow(ExpressionType.LeftShift, "op_LeftShift", left, right, true);
             }
@@ -1262,7 +1270,8 @@ namespace System.Linq.Expressions {
             RequiresCanRead(right, "right");
             if (method == null) {
                 if (IsSimpleShift(left.Type, right.Type)) {
-                    return new SimpleBinaryExpression(ExpressionType.LeftShiftAssign, left, right, left.Type);
+                    Type resultType = GetResultTypeOfShift(left.Type, right.Type);
+                    return new SimpleBinaryExpression(ExpressionType.LeftShiftAssign, left, right, resultType);
                 }
                 return GetUserDefinedAssignOperatorOrThrow(ExpressionType.LeftShiftAssign, "op_LeftShift", left, right, true);
             }
@@ -1279,7 +1288,8 @@ namespace System.Linq.Expressions {
             RequiresCanRead(right, "right");
             if (method == null) {
                 if (IsSimpleShift(left.Type, right.Type)) {
-                    return new SimpleBinaryExpression(ExpressionType.RightShift, left, right, left.Type);
+                    Type resultType = GetResultTypeOfShift(left.Type, right.Type);
+                    return new SimpleBinaryExpression(ExpressionType.RightShift, left, right, resultType);
                 }
                 return GetUserDefinedBinaryOperatorOrThrow(ExpressionType.RightShift, "op_RightShift", left, right, true);
             }
@@ -1297,7 +1307,8 @@ namespace System.Linq.Expressions {
             RequiresCanRead(right, "right");
             if (method == null) {
                 if (IsSimpleShift(left.Type, right.Type)) {
-                    return new SimpleBinaryExpression(ExpressionType.RightShiftAssign, left, right, left.Type);
+                    Type resultType = GetResultTypeOfShift(left.Type, right.Type);
+                    return new SimpleBinaryExpression(ExpressionType.RightShiftAssign, left, right, resultType);
                 }
                 return GetUserDefinedAssignOperatorOrThrow(ExpressionType.RightShiftAssign, "op_RightShift", left, right, true);
             }

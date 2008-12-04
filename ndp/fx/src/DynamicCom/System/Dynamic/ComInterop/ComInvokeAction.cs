@@ -17,7 +17,7 @@
 
 using System.Collections.Generic;
 using System.Linq.Expressions;
-using System.Dynamic.Binders;
+using System.Dynamic;
 
 namespace System.Dynamic.ComInterop {
     class ComInvokeAction : InvokeBinder {

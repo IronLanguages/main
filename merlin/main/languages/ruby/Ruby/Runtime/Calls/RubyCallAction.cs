@@ -17,7 +17,7 @@ using System;
 using System.Diagnostics;
 using System.Linq.Expressions;
 using System.Reflection;
-using System.Dynamic.Binders;
+using System.Dynamic;
 
 using Microsoft.Scripting;
 using Microsoft.Scripting.Utils;
@@ -110,6 +110,10 @@ namespace IronRuby.Runtime.Calls {
             RubyMemberInfo method = args.RubyContext.ResolveMethod(args.Target, methodName, true).InvalidateSitesOnOverride();
             if (method != null && RubyModule.IsMethodVisible(method, args.Signature.HasImplicitSelf)) {
                 method.BuildCall(metaBuilder, args, methodName);
+            } else if (args.Signature.IsTryCall) {
+                // TODO: this shouldn't throw. We need to fix caching of non-existing methods.
+                throw new MissingMethodException();
+                // metaBuilder.Result = Ast.Constant(Fields.RubyOps_MethodNotFound);
             } else {
                 // insert the method name argument into the args
                 object symbol = SymbolTable.StringToId(methodName);

@@ -21,7 +21,6 @@ using System.IO;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Dynamic;
-using System.Dynamic.Binders;
 using System.Dynamic.Utils;
 
 namespace System.Linq.Expressions {
@@ -770,7 +769,7 @@ namespace System.Linq.Expressions {
         }
 
         protected internal override Expression VisitLabel(LabelExpression node) {
-            DumpLabel(node.Label);
+            DumpLabel(node.Target);
             Out(":", Flow.NewLine);
             Visit(node.DefaultValue);
             return node;

@@ -106,11 +106,13 @@ namespace IronRuby.Compiler.Ast {
                             conditionNegativeStmt
                         ),
 
-                        transformedBody 
+                        transformedBody,
+                        Ast.Empty()
 
                     ).Catch(blockUnwinder, 
                         // redo = u.IsRedo
-                        Ast.Assign(redoVariable, Ast.Field(blockUnwinder, BlockUnwinder.IsRedoField))
+                        Ast.Assign(redoVariable, Ast.Field(blockUnwinder, BlockUnwinder.IsRedoField)),
+                        Ast.Empty()
 
                     ).Filter(evalUnwinder, Ast.Equal(Ast.Field(evalUnwinder, EvalUnwinder.ReasonField), AstFactory.BlockReturnReasonBreak),
                         // result = unwinder.ReturnValue

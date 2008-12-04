@@ -45,7 +45,7 @@ namespace Microsoft.Scripting.Ast {
         }
 
         public TryStatementBuilder Catch(ParameterExpression holder, params Expression[] body) {
-            return Catch(holder, Utils.BlockVoid(body));
+            return Catch(holder, Utils.Block(body));
         }
 
         public TryStatementBuilder Catch(ParameterExpression holder, Expression body) {
@@ -61,7 +61,7 @@ namespace Microsoft.Scripting.Ast {
         }
 
         public TryStatementBuilder Filter(Type type, Expression condition, params Expression[] body) {
-            return Filter(type, condition, Utils.BlockVoid(body));
+            return Filter(type, condition, Utils.Block(body));
         }
 
         public TryStatementBuilder Filter(Type type, Expression condition, Expression body) {
@@ -74,7 +74,7 @@ namespace Microsoft.Scripting.Ast {
         }
 
         public TryStatementBuilder Filter(ParameterExpression holder, Expression condition, params Expression[] body) {
-            return Filter(holder, condition, Utils.BlockVoid(body));
+            return Filter(holder, condition, Utils.Block(body));
         }
 
         public TryStatementBuilder Filter(ParameterExpression holder, Expression condition, Expression body) {
@@ -142,7 +142,7 @@ namespace Microsoft.Scripting.Ast {
     public partial class Utils {
         public static TryStatementBuilder Try(params Expression[] body) {
             ContractUtils.RequiresNotNull(body, "body");
-            return new TryStatementBuilder(Utils.BlockVoid(body));
+            return new TryStatementBuilder(Utils.Block(body));
         }
 
         public static TryStatementBuilder Try(Expression body) {

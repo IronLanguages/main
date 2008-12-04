@@ -22,7 +22,7 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Dynamic.Utils;
 
-namespace System.Dynamic.Binders {
+namespace System.Dynamic {
 
     /// <summary>
     /// This holds a set of rules for a particular DynamicSite.  Any given

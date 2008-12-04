@@ -34,8 +34,9 @@ using Microsoft.Scripting.Runtime;
 
 namespace IronRuby.Compiler {
     internal static class Fields {
-        private static FieldInfo _RubyOps_DefaultArgumentField;
+        private static FieldInfo _RubyOps_DefaultArgumentField, _RubyOps_MethodNotFound;
         public static FieldInfo RubyOps_DefaultArgumentField { get { return _RubyOps_DefaultArgumentField ?? (_RubyOps_DefaultArgumentField = typeof(RubyOps).GetField("DefaultArgument")); } }
+        public static FieldInfo RubyOps_MethodNotFound { get { return _RubyOps_MethodNotFound ?? (_RubyOps_MethodNotFound = typeof(RubyOps).GetField("MethodNotFound")); } }
     }
     
     internal static partial class Methods {

@@ -20,7 +20,7 @@ using IronRuby.Runtime;
 using IronRuby.Runtime.Calls;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
-using System.Dynamic.Binders;
+using System.Dynamic;
 using System.Diagnostics;
 using System.Reflection;
 using IronRuby.Compiler.Generation;

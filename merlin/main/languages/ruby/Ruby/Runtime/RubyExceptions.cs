@@ -120,23 +120,15 @@ namespace IronRuby.Runtime {
         }
 
         public static Exception/*!*/ MakeCoercionError(RubyContext/*!*/ context, object self, object other) {
-            return MakeCoercionError(context, self, other, null);
-        }
-
-        public static Exception/*!*/ MakeCoercionError(RubyContext/*!*/ context, object self, object other, Exception x) {
             string selfClass = context.GetClassOf(self).Name;
             string otherClass = context.GetClassOf(other).Name;
-            return RubyExceptions.CreateTypeError(String.Format("{0} can't be coerced into {1}", selfClass, otherClass), x);
+            return RubyExceptions.CreateTypeError(String.Format("{0} can't be coerced into {1}", selfClass, otherClass));
         }
 
         public static Exception/*!*/ MakeComparisonError(RubyContext/*!*/ context, object self, object other) {
-            return MakeComparisonError(context, self, other, null);
-        }
-
-        public static Exception/*!*/ MakeComparisonError(RubyContext/*!*/ context, object self, object other, Exception x) {
             string selfClass = context.GetClassOf(self).Name;
             string otherClass = context.GetClassOf(other).Name;
-            return RubyExceptions.CreateArgumentError("comparison of " + selfClass+ " with " + otherClass + " failed", x);
+            return RubyExceptions.CreateArgumentError(String.Format("comparison of {0} with {1} failed", selfClass, otherClass));
         }
 
         public static Exception/*!*/ CreateSecurityError(string/*!*/ message) {

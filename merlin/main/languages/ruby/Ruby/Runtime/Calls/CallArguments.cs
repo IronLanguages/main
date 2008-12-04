@@ -15,7 +15,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Dynamic.Binders;
+using System.Dynamic;
 using System.Linq.Expressions;
 using Microsoft.Scripting.Utils;
 using IronRuby.Builtins;

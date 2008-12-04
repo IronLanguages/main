@@ -15,7 +15,7 @@
 
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Dynamic.Binders;
+using System.Dynamic;
 using System.Dynamic.Utils;
 using System.Linq.Expressions;
 using System.Linq.Expressions.Compiler;
@@ -398,8 +398,8 @@ namespace System.Runtime.CompilerServices {
 
             var checkOriginalRule = IfThen(
                 Expression.Equal(
-                    Expression.Convert(startingTarget, typeof(object)), 
-                    Expression.Convert(ruleTarget, typeof(object))
+                    Helpers.Convert(startingTarget, typeof(object)), 
+                    Helpers.Convert(ruleTarget, typeof(object))
                 ),
                 Expression.Assign(originalRule, rule)
             );

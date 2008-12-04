@@ -18,7 +18,7 @@ using System.Linq.Expressions.Compiler;
 using System.Reflection;
 using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
-using System.Dynamic.Binders;
+using System.Dynamic;
 using System.Dynamic.Utils;
 using System.Linq.Expressions;
 

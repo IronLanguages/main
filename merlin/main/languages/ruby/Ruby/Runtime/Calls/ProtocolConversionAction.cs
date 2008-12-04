@@ -16,7 +16,7 @@
 using System;
 using System.Diagnostics;
 using System.Linq.Expressions;
-using System.Dynamic.Binders;
+using System.Dynamic;
 using Microsoft.Scripting;
 using Microsoft.Scripting.Actions;
 using Microsoft.Scripting.Runtime;
@@ -167,7 +167,7 @@ namespace IronRuby.Runtime.Calls {
 
                 AstUtils.Convert(
                     (ConversionResultValidator == null) ? args.TargetExpression :
-                        Ast.Convert(
+                        AstUtils.Convert(
                             Ast.Throw(Methods.CreateTypeConversionError.OpCall(targetClassNameConstant, Ast.Constant(TargetTypeName))),
                             typeof(object)
                         ), 

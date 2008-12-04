@@ -16,7 +16,7 @@
 #if !SILVERLIGHT // ComObject
 
 using System.Linq.Expressions;
-using System.Dynamic.Binders;
+using System.Dynamic;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace Microsoft.Scripting.ComInterop {

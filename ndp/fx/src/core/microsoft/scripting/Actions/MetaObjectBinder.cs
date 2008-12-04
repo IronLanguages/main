@@ -20,7 +20,7 @@ using System.Linq.Expressions.Compiler;
 using System.Runtime.CompilerServices;
 using System.Dynamic.Utils;
 
-namespace System.Dynamic.Binders {
+namespace System.Dynamic {
     public abstract class MetaObjectBinder : CallSiteBinder {
 
         #region Standard Binder Kinds

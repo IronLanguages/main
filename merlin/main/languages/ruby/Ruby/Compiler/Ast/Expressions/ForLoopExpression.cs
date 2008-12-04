@@ -14,7 +14,7 @@
  * ***************************************************************************/
 
 using System.Collections.Generic;
-using System.Dynamic.Binders;
+using System.Dynamic;
 using Microsoft.Scripting;
 using Microsoft.Scripting.Utils;
 using IronRuby.Runtime.Calls;

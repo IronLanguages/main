@@ -20,7 +20,7 @@ using System.Diagnostics;
 using System.Linq.Expressions;
 using System.Runtime.Remoting;
 using System.Runtime.Serialization;
-using System.Dynamic.Binders;
+using System.Dynamic;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
@@ -265,7 +265,7 @@ namespace Microsoft.Scripting.Hosting {
                                 result
                             ),
                             result,
-                            Expression.Convert(fallback.Expression, typeof(object))
+                            AstUtils.Convert(fallback.Expression, typeof(object))
                         )
                     ),
                     Restrictions.GetTypeRestriction(Expression, typeof(ScriptScope)).Merge(fallback.Restrictions)
@@ -279,7 +279,7 @@ namespace Microsoft.Scripting.Hosting {
                         AstUtils.Convert(Expression, typeof(ScriptScope)),
                         typeof(ScriptScope).GetMethod("SetVariable", new[] { typeof(string), typeof(object) }),
                         Expression.Constant(action.Name),
-                        Expression.Convert(value.Expression, typeof(object))
+                        AstUtils.Convert(value.Expression, typeof(object))
                     ),
                     Restrictions.Merge(value.Restrictions).Merge(Restrictions.GetTypeRestriction(Expression, typeof(ScriptScope)))
                 );
@@ -319,8 +319,8 @@ namespace Microsoft.Scripting.Hosting {
                                 Expression.Constant(action.Name),
                                 result
                             ),
-                            Expression.Convert(fallbackInvoke.Expression, typeof(object)),
-                            Expression.Convert(fallback.Expression, typeof(object))
+                            AstUtils.Convert(fallbackInvoke.Expression, typeof(object)),
+                            AstUtils.Convert(fallback.Expression, typeof(object))
                         )
                     ),
                     Restrictions.Combine(args).Merge(Restrictions.GetTypeRestriction(Expression, typeof(ScriptScope))).Merge(fallback.Restrictions)

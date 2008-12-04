@@ -20,6 +20,7 @@ using IronRuby.Runtime;
 using IronRuby.Runtime.Calls;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
+using Microsoft.Scripting.Generation;
 
 namespace IronRuby.Builtins {
 
@@ -124,32 +125,32 @@ namespace IronRuby.Builtins {
 
         #region Singleton Methods
 
-        private static readonly CallSite<Func<CallSite, RubyContext, Proc, Proc, object>>/*!*/ _InitializeSite =
-            CallSite<Func<CallSite, RubyContext, Proc, Proc, object>>.Create(
-            RubySites.InstanceCallAction("initialize", new RubyCallSignature(0, RubyCallFlags.HasImplicitSelf | RubyCallFlags.HasBlock))
-        );
-
         [RubyMethod("new", RubyMethodAttributes.PublicSingleton)]
-        public static Proc/*!*/ CreateNew(RubyScope/*!*/ scope, RubyClass/*!*/ self) {
+        public static Proc/*!*/ CreateNew(SiteLocalStorage<CallSite<Func<CallSite, RubyContext, Proc, Proc, object>>>/*!*/ storage, 
+            RubyScope/*!*/ scope, RubyClass/*!*/ self) {
+
             RubyMethodScope methodScope = scope.GetInnerMostMethodScope();
             if (methodScope == null || methodScope.BlockParameter == null) {
                 throw RubyExceptions.CreateArgumentError("tried to create Proc object without a block");
             }
 
-            return CreateNew(self, methodScope.BlockParameter);
+            return CreateNew(storage, self, methodScope.BlockParameter);
         }
 
         [RubyMethod("new", RubyMethodAttributes.PublicSingleton)]
-        public static Proc/*!*/ CreateNew(BlockParam/*!*/ block, RubyClass/*!*/ self) {
+        public static Proc/*!*/ CreateNew(SiteLocalStorage<CallSite<Func<CallSite, RubyContext, Proc, Proc, object>>>/*!*/ storage, 
+            BlockParam/*!*/ block, RubyClass/*!*/ self) {
+
             if (block == null) {
                 throw RubyExceptions.CreateArgumentError("tried to create Proc object without a block");
             }
 
-            return CreateNew(self, block.Proc);
+            return CreateNew(storage, self, block.Proc);
         }
 
-        public static Proc/*!*/ CreateNew(RubyClass/*!*/ self, Proc/*!*/ proc) {
-            Assert.NotNull(self, proc);
+        public static Proc/*!*/ CreateNew(SiteLocalStorage<CallSite<Func<CallSite, RubyContext, Proc, Proc, object>>>/*!*/ storage,
+            RubyClass/*!*/ self, Proc/*!*/ proc) {
+            Assert.NotNull(storage, self, proc);
 
             // an instance of Proc class, the identity is preserved:
             if (self.GetUnderlyingSystemType() == typeof(Proc)) {
@@ -159,6 +160,8 @@ namespace IronRuby.Builtins {
             // an instance of a Proc subclass:
             var result = new Proc.Subclass(self, proc);
 
+            var initialize = storage.GetCallSite("initialize", new RubyCallSignature(0, RubyCallFlags.HasImplicitSelf | RubyCallFlags.HasBlock));
+
             // a call to the initializer with a block:
             object initResult = null;
             do {
@@ -166,7 +169,7 @@ namespace IronRuby.Builtins {
                 var argProc = proc.Create(proc);
 
                 try {
-                    initResult = _InitializeSite.Target(_InitializeSite, self.Context, proc, argProc);
+                    initResult = initialize.Target(initialize, self.Context, proc, argProc);
                 } catch (EvalUnwinder u) {
                     initResult = u.ReturnValue;
                 }

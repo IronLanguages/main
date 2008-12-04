@@ -17,7 +17,7 @@
 
 using System;
 using System.Linq.Expressions;
-using System.Dynamic.Binders;
+using System.Dynamic;
 
 namespace Microsoft.Scripting.ComInterop {
 

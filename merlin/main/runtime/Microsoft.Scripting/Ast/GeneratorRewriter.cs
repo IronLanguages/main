@@ -69,7 +69,7 @@ namespace Microsoft.Scripting.Ast {
         internal GeneratorRewriter(GeneratorExpression generator) {
             _generator = generator;
             _state = Expression.Parameter(typeof(int).MakeByRefType(), "state");
-            _current = Expression.Parameter(_generator.Label.Type.MakeByRefType(), "current");
+            _current = Expression.Parameter(_generator.Target.Type.MakeByRefType(), "current");
             _returnLabels.Push(Expression.Label());
             _gotoRouter = Expression.Variable(typeof(int), "$gotoRouter");
         }
@@ -87,7 +87,7 @@ namespace Microsoft.Scripting.Ast {
             }
             cases[count] = Expression.SwitchCase(Finished, Expression.Goto(_returnLabels.Peek()));
 
-            Type generatorNextOfT = typeof(GeneratorNext<>).MakeGenericType(_generator.Label.Type);
+            Type generatorNextOfT = typeof(GeneratorNext<>).MakeGenericType(_generator.Target.Type);
 
             // Create the lambda for the GeneratorNext<T>, hoisting variables
             // into a scope outside the lambda
@@ -133,7 +133,7 @@ namespace Microsoft.Scripting.Ast {
             return Expression.Call(
                 typeof(ScriptingRuntimeHelpers),
                 "MakeGenerator",
-                new[] { _generator.Label.Type },
+                new[] { _generator.Target.Type },
                 (debugCookiesArray != null)
                     ? new[] { body, debugCookiesArray }
                     : new[] { body }
@@ -429,7 +429,7 @@ namespace Microsoft.Scripting.Ast {
         }
 
         private Expression VisitYield(YieldExpression node) {
-            if (node.Target != _generator.Label) {
+            if (node.Target != _generator.Target) {
                 throw new InvalidOperationException("yield and generator must have the same LabelTarget object");
             }
 

@@ -139,7 +139,7 @@ namespace System.Linq.Expressions.Compiler {
                     throw Error.UnexpectedCoalesceOperator();
             }
 
-            if (leftIsNullable) {
+            if (leftIsNullable || rightIsNullable) {
                 EmitLiftedBinaryOp(op, leftType, rightType, resultType, liftedToNull);
             } else {
                 EmitUnliftedBinaryOp(op, leftType, rightType);
@@ -151,6 +151,7 @@ namespace System.Linq.Expressions.Compiler {
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity")]
         private void EmitUnliftedBinaryOp(ExpressionType op, Type leftType, Type rightType) {
             Debug.Assert(!TypeUtils.IsNullableType(leftType));
+            Debug.Assert(!TypeUtils.IsNullableType(rightType));
 
             if (op == ExpressionType.Equal || op == ExpressionType.NotEqual) {
                 EmitUnliftedEquality(op, leftType);
@@ -269,9 +270,8 @@ namespace System.Linq.Expressions.Compiler {
                     _ilg.Emit(OpCodes.Xor);
                     break;
                 case ExpressionType.LeftShift: {
-                        Type shiftType = TypeUtils.GetNonNullableType(rightType);
-                        if (shiftType != typeof(int)) {
-                            _ilg.EmitConvertToType(shiftType, typeof(int), true);
+                        if (rightType != typeof(int)) {
+                            _ilg.EmitConvertToType(rightType, typeof(int), true);
                         }
                         _ilg.Emit(OpCodes.Shl);
                     }
@@ -347,7 +347,7 @@ namespace System.Linq.Expressions.Compiler {
         //CONFORMING
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity")]
         private void EmitLiftedBinaryOp(ExpressionType op, Type leftType, Type rightType, Type resultType, bool liftedToNull) {
-            Debug.Assert(TypeUtils.IsNullableType(leftType));
+            Debug.Assert(TypeUtils.IsNullableType(leftType) || TypeUtils.IsNullableType(rightType));
             switch (op) {
                 case ExpressionType.And:
                     if (leftType == typeof(bool?)) {
@@ -506,7 +506,7 @@ namespace System.Linq.Expressions.Compiler {
             bool leftIsNullable = TypeUtils.IsNullableType(leftType);
             bool rightIsNullable = TypeUtils.IsNullableType(rightType);
 
-            Debug.Assert(leftIsNullable);
+            Debug.Assert(leftIsNullable || rightIsNullable);
 
             Label labIfNull = _ilg.DefineLabel();
             Label labEnd = _ilg.DefineLabel();
@@ -519,22 +519,25 @@ namespace System.Linq.Expressions.Compiler {
             _ilg.Emit(OpCodes.Stloc, locLeft);
 
             // test for null
-            if (rightIsNullable) {
-                _ilg.Emit(OpCodes.Ldloca, locLeft);
-                _ilg.EmitHasValue(leftType);
-                _ilg.Emit(OpCodes.Ldloca, locRight);
-                _ilg.EmitHasValue(rightType);
-                _ilg.Emit(OpCodes.And);
-                _ilg.Emit(OpCodes.Brfalse_S, labIfNull);
-            } else {
+            // use short circuiting
+            if (leftIsNullable) {
                 _ilg.Emit(OpCodes.Ldloca, locLeft);
                 _ilg.EmitHasValue(leftType);
                 _ilg.Emit(OpCodes.Brfalse_S, labIfNull);
             }
-
+            if (rightIsNullable) {
+                _ilg.Emit(OpCodes.Ldloca, locRight);
+                _ilg.EmitHasValue(rightType);
+                _ilg.Emit(OpCodes.Brfalse_S, labIfNull);
+            }
+            
             // do op on values
-            _ilg.Emit(OpCodes.Ldloca, locLeft);
-            _ilg.EmitGetValueOrDefault(leftType);
+            if (leftIsNullable) {
+                _ilg.Emit(OpCodes.Ldloca, locLeft);
+                _ilg.EmitGetValueOrDefault(leftType);
+            } else {
+                _ilg.Emit(OpCodes.Ldloc, locLeft);
+            }
 
             if (rightIsNullable) {
                 _ilg.Emit(OpCodes.Ldloca, locRight);

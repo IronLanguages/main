@@ -912,10 +912,10 @@ namespace System.Linq.Expressions.Compiler {
                 return;
             }
 
-            // void -> non-void: default(T)
+            // void -> non-void: error
             if (typeFrom == typeof(void)) {
-                EmitDefault(typeTo);
-                return;
+                //void type should never be converted to non-void type
+                throw new NotSupportedException("Void type cannot be converted to non-void type");
             }
 
             // non-void -> void: pop

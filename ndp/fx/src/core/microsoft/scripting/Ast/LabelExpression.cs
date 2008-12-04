@@ -24,23 +24,23 @@ namespace System.Linq.Expressions {
     /// </summary>
     public sealed class LabelExpression : Expression {
         private readonly Expression _defaultValue;
-        private readonly LabelTarget _label;
+        private readonly LabelTarget _target;
 
         internal LabelExpression(LabelTarget label, Expression defaultValue) {
-            _label = label;
+            _target = label;
             _defaultValue = defaultValue;
         }
 
         protected override Type GetExpressionType() {
-            return _label.Type;
+            return _target.Type;
         }
 
         protected override ExpressionType GetNodeKind() {
             return ExpressionType.Label;
         }
 
-        new public LabelTarget Label {
-            get { return _label; }
+        public LabelTarget Target {
+            get { return _target; }
         }
 
         /// <summary>

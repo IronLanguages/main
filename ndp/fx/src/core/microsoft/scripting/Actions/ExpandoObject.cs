@@ -18,10 +18,10 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Linq.Expressions;
 using System.Runtime.CompilerServices;
-using System.Dynamic.Binders;
+using System.Dynamic;
 using System.Dynamic.Utils;
 
-namespace System.Dynamic.Binders {
+namespace System.Dynamic {
     /// <summary>
     /// Simple type which implements IDynamicObject to support getting/setting/deleting members
     /// at runtime.
@@ -191,7 +191,7 @@ namespace System.Dynamic.Binders {
                 Expression target;
                 if (index == -1) {
                     // the key does not exist, report a MissingMemberException
-                    target = Expression.Convert(
+                    target = Helpers.Convert(
                         Expression.Throw(
                             Expression.New(
                                 typeof(MissingMemberException).GetConstructor(new Type[] { typeof(string) }),
@@ -239,7 +239,7 @@ namespace System.Dynamic.Binders {
                         new MetaObject[] { this, value },
                         klass,
                         originalClass,
-                        Expression.Convert(
+                        Helpers.Convert(
                             Expression.Call(
                                 typeof(RuntimeOps).GetMethod(methodName),
                                 GetLimitedSelf(),
@@ -273,7 +273,7 @@ namespace System.Dynamic.Binders {
                         new MetaObject[] { this }, 
                         klass, 
                         originalClass,
-                        Expression.Convert(
+                        Helpers.Convert(
                             Expression.Call(
                                 typeof(RuntimeOps).GetMethod(methodName),
                                 GetLimitedSelf(),

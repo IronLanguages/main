@@ -315,7 +315,8 @@ namespace IronRuby.Runtime.Calls {
                     AstUtils.Try(
                         expression
                     ).Filter(methodUnwinder, Methods.IsProcConverterTarget.OpCall(bfcVariable, methodUnwinder),
-                        Ast.Assign(resultVariable, Ast.Field(methodUnwinder, MethodUnwinder.ReturnValueField))
+                        Ast.Assign(resultVariable, Ast.Field(methodUnwinder, MethodUnwinder.ReturnValueField)),
+                        Expression.Default(expression.Type)
                     ).Finally(
                         Methods.LeaveProcConverter.OpCall(bfcVariable)
                     ),

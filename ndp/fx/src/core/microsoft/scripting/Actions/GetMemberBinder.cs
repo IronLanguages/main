@@ -16,7 +16,7 @@
 using Microsoft.Contracts;
 using System.Dynamic.Utils;
 
-namespace System.Dynamic.Binders {
+namespace System.Dynamic {
     public abstract class GetMemberBinder : MetaObjectBinder {
         private readonly string _name;
         private readonly bool _ignoreCase;

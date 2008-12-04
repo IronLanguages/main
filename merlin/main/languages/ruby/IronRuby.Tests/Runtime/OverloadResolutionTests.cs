@@ -19,7 +19,7 @@ using System.Text;
 using IronRuby.Runtime;
 using Microsoft.Scripting.Runtime;
 using IronRuby.Runtime.Calls;
-using System.Dynamic.Binders;
+using System.Dynamic;
 
 using MSA = System.Linq.Expressions;
 using Ast = System.Linq.Expressions.Expression;

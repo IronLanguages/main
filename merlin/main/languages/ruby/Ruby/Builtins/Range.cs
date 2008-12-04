@@ -18,6 +18,12 @@ using System.Runtime.Serialization;
 using Microsoft.Scripting.Runtime;
 using IronRuby.Runtime;
 using System.Security.Permissions;
+using Microsoft.Scripting.Generation;
+using System.Runtime.CompilerServices;
+using IronRuby.Runtime.Calls;
+
+using BinaryOpSite = System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite,
+    IronRuby.Runtime.RubyContext, object, object, object>>;
 
 namespace IronRuby.Builtins {
 
@@ -66,24 +72,38 @@ namespace IronRuby.Builtins {
             _excludeEnd = excludeEnd;
             _initialized = true;
         }
+
+        public Range(MutableString/*!*/ begin, MutableString/*!*/ end, bool excludeEnd) {
+            _begin = begin;
+            _end = end;
+            _excludeEnd = excludeEnd;
+            _initialized = true;
+        }
         
         // Convience function for constructing from C#, calls initialize
-        public Range(RubyContext/*!*/ context, object begin, object end, bool excludeEnd) {
-            Initialize(context, begin, end, excludeEnd);
+        public Range(SiteLocalStorage<BinaryOpSite>/*!*/ comparisonStorage, 
+            RubyContext/*!*/ context, object begin, object end, bool excludeEnd) {
+            Initialize(comparisonStorage, context, begin, end, excludeEnd);
         }
 
-        public void Initialize(RubyContext/*!*/ context, object begin, object end, bool excludeEnd) {
+        public void Initialize(SiteLocalStorage<BinaryOpSite>/*!*/ comparisonStorage,
+            RubyContext/*!*/ context, object begin, object end, bool excludeEnd) {
+
             if (_initialized) {
                 throw RubyExceptions.CreateNameError("`initialize' called twice");
             }
 
             // Range tests whether the items can be compared, and uses that to determine if the range is valid
             // Only a non-existent <=> method or a result of nil seems to trigger the exception.
-            object compareResult = null;
+            object compareResult;
+
+            var site = comparisonStorage.GetCallSite("<=>", 1);
             try {
-                compareResult = RubySites.Compare(context, begin, end);
+                compareResult = site.Target(site, context, begin, end);
             } catch (Exception) {
+                compareResult = null;
             }
+
             if (compareResult == null) {
                 throw RubyExceptions.CreateArgumentError("bad value for range");
             }

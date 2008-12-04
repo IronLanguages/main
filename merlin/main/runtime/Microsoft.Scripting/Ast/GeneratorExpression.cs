@@ -29,13 +29,13 @@ namespace Microsoft.Scripting.Ast {
     /// expression
     /// </summary>
     public sealed class GeneratorExpression : Expression {
-        private readonly LabelTarget _label;
+        private readonly LabelTarget _target;
         private readonly Expression _body;
         private Expression _reduced;
         private readonly Type _type;
 
         internal GeneratorExpression(Type type, LabelTarget label, Expression body) {
-            _label = label;
+            _target = label;
             _body = body;
             _type = type;
         }
@@ -56,8 +56,8 @@ namespace Microsoft.Scripting.Ast {
         /// The label used by YieldBreak and YieldReturn expressions to yield
         /// from this generator
         /// </summary>
-        public new LabelTarget Label {
-            get { return _label; }
+        public LabelTarget Target {
+            get { return _target; }
         }
 
         /// <summary>
@@ -80,7 +80,7 @@ namespace Microsoft.Scripting.Ast {
             if (b == _body) {
                 return this;
             }
-            return Utils.Generator(_label, b, Type);
+            return Utils.Generator(_target, b, Type);
         }
 
         internal bool IsEnumerable {

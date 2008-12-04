@@ -18,6 +18,8 @@ using System.IO;
 using System.Runtime.CompilerServices;
 using IronRuby.Builtins;
 using Microsoft.Scripting.Runtime;
+using Microsoft.Scripting.Generation;
+using Microsoft.Scripting.Utils;
 
 namespace IronRuby.Runtime {
 
@@ -46,24 +48,15 @@ namespace IronRuby.Runtime {
 
         private const int _bufferSize = 0x1000;
 
-        public IOWrapper(RubyContext/*!*/ context, object/*!*/ obj, FileAccess access) {
+        public IOWrapper(RubyContext/*!*/ context, object/*!*/ io, bool canRead, bool canWrite, bool canSeek) {
+            Assert.NotNull(context, io);
+
             _context = context;
-            _obj = obj;
+            _obj = io;
 
-            if (access == FileAccess.Read || access == FileAccess.ReadWrite) {
-                _canRead = RubySites.RespondTo(context, obj, "read");
-            } else {
-                _canRead = false;
-            }
-
-            if (access == FileAccess.Write || access == FileAccess.ReadWrite) {
-                _canWrite = RubySites.RespondTo(context, obj, "write");
-            } else {
-                _canWrite = false;
-            }
-
-            _canSeek = (RubySites.RespondTo(context, obj, "seek") && RubySites.RespondTo(context, obj, "tell"));
-
+            _canRead = canRead;
+            _canWrite = canWrite;
+            _canSeek = canSeek;
             _buffer = new byte[_bufferSize];
             _writePos = 0;
             _readPos = 0;

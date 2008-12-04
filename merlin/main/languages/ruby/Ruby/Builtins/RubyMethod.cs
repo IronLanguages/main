@@ -22,7 +22,7 @@ using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 using IronRuby.Runtime.Calls;
 using Ast = System.Linq.Expressions.Expression;
-using System.Dynamic.Binders;
+using System.Dynamic;
 
 namespace IronRuby.Builtins {
     

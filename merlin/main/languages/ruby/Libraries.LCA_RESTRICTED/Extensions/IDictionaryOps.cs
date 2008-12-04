@@ -13,6 +13,9 @@
  *
  * ***************************************************************************/
 
+using BinaryOpSite = System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite,
+    IronRuby.Runtime.RubyContext, object, object, object>>;
+
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -21,6 +24,7 @@ using System.Runtime.InteropServices;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Actions;
 using IronRuby.Runtime;
+using Microsoft.Scripting.Generation;
 
 namespace IronRuby.Builtins {
 
@@ -490,8 +494,12 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("sort")]
-        public static object Sort(RubyContext/*!*/ context, BlockParam block, IDictionary<object, object>/*!*/ self) {
-            return ArrayOps.SortInPlace(context, block, ToArray(self));
+        public static object Sort(
+            SiteLocalStorage<BinaryOpSite>/*!*/ comparisonStorage,
+            SiteLocalStorage<BinaryOpSite>/*!*/ lessThanStorage,
+            SiteLocalStorage<BinaryOpSite>/*!*/ greaterThanStorage,            
+            RubyContext/*!*/ context, BlockParam block, IDictionary<object, object>/*!*/ self) {
+            return ArrayOps.SortInPlace(comparisonStorage, lessThanStorage, greaterThanStorage, context, block, ToArray(self));
         }
 
         [RubyMethod("to_a")]

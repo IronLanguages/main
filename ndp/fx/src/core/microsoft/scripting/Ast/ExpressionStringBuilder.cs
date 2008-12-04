@@ -17,7 +17,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
 using System.Dynamic;
-using System.Dynamic.Binders;
 using System.Dynamic.Utils;
 using System.CodeDom.Compiler;
 using System.Text;
@@ -757,7 +756,7 @@ namespace System.Linq.Expressions {
 
         protected internal override Expression VisitLabel(LabelExpression node) {
             Visit(node.DefaultValue);
-            DumpLabel(node.Label);
+            DumpLabel(node.Target);
             Out(":");
             return node;
         }

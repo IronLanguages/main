@@ -13,10 +13,14 @@
  *
  * ***************************************************************************/
 
+using BinaryOpSite = System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite,
+    IronRuby.Runtime.RubyContext, object, object, object>>;
+
 using System;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Math;
 using IronRuby.Runtime;
+using Microsoft.Scripting.Generation;
 
 namespace IronRuby.Builtins {
     [RubyClass("Float", Extends = typeof(double), Inherits = typeof(Numeric)), Includes(typeof(Precision))]
@@ -131,6 +135,7 @@ namespace IronRuby.Builtins {
         #region Arithmetic Operators
 
         #region *
+
         /// <summary>
         /// Returns a new float which is the product of <code>self</code> * and <code>other</code>, where <code>other</code> is Fixnum.
         /// </summary>
@@ -139,6 +144,7 @@ namespace IronRuby.Builtins {
         public static double Multiply(double self, int other) {
             return self * (double)other;
         }
+
         /// <summary>
         /// Returns a new float which is the product of <code>self</code> * and <code>other</code>, where <code>other</code> is Bignum.
         /// </summary>
@@ -147,6 +153,7 @@ namespace IronRuby.Builtins {
         public static double Multiply(double self, [NotNull]BigInteger/*!*/ other) {
             return self * (double)other;
         }
+
         /// <summary>
         /// Returns a new float which is the product of <code>self</code> * and <code>other</code>, where <code>other</code> is Float.
         /// </summary>
@@ -155,14 +162,17 @@ namespace IronRuby.Builtins {
         public static double Multiply(double self, double other) {
             return self * other;
         }
+
         /// <summary>
         /// Returns a new float which is the product of <code>self</code> * and <code>other</code>, , where <code>other</code> is not Fixnum, Bignum or Float.
         /// </summary>
         /// <returns></returns>
         [RubyMethod("*")]
-        public static object Multiply(RubyContext/*!*/ context, double self, object other) {
-            return Protocols.CoerceAndCall(context, self, other, LibrarySites.Multiply);
+        public static object Multiply(SiteLocalStorage<BinaryOpSite>/*!*/ coercionStorage, SiteLocalStorage<BinaryOpSite>/*!*/ binaryOpSite, 
+            RubyContext/*!*/ context, double self, object other) {
+            return Protocols.CoerceAndApply(coercionStorage, binaryOpSite, "*", context, self, other);
         }
+
         #endregion
 
         #region +
@@ -199,13 +209,15 @@ namespace IronRuby.Builtins {
         /// </summary>
         /// <returns></returns>
         [RubyMethod("+")]
-        public static object Add(RubyContext/*!*/ context, double self, object other) {
-            return Protocols.CoerceAndCall(context, self, other, LibrarySites.Add);
+        public static object Add(SiteLocalStorage<BinaryOpSite>/*!*/ coercionStorage, SiteLocalStorage<BinaryOpSite>/*!*/ binaryOpSite, 
+            RubyContext/*!*/ context, double self, object other) {
+            return Protocols.CoerceAndApply(coercionStorage, binaryOpSite, "+", context, self, other);
         }
 
         #endregion
 
         #region -
+
         /// <summary>
         /// Returns a new float which is the difference between <code>self</code> * and <code>other</code>, where <code>other</code> is Fixnum.
         /// </summary>
@@ -214,6 +226,7 @@ namespace IronRuby.Builtins {
         public static double Subtract(double self, int other) {
             return self - (double)other;
         }
+
         /// <summary>
         /// Returns a new float which is the difference between <code>self</code> * and <code>other</code>, where <code>other</code> is Bignum.
         /// </summary>
@@ -222,6 +235,7 @@ namespace IronRuby.Builtins {
         public static double Subtract(double self, [NotNull]BigInteger/*!*/ other) {
             return self - (double)other;
         }
+
         /// <summary>
         /// Returns a new float which is the difference between <code>self</code> * and <code>other</code>, where <code>other</code> is Float.
         /// </summary>
@@ -230,17 +244,21 @@ namespace IronRuby.Builtins {
         public static double Subtract(double self, double other) {
             return self - other;
         }
+
         /// <summary>
         /// Returns a new float which is the difference between <code>self</code> * and <code>other</code>, , where <code>other</code> is not Fixnum, Bignum or Float.
         /// </summary>
         /// <returns></returns>
         [RubyMethod("-")]
-        public static object Subtract(RubyContext/*!*/ context, double self, object other) {
-            return Protocols.CoerceAndCall(context, self, other, LibrarySites.Subtract);
+        public static object Subtract(SiteLocalStorage<BinaryOpSite>/*!*/ coercionStorage, SiteLocalStorage<BinaryOpSite>/*!*/ binaryOpSite, 
+            RubyContext/*!*/ context, double self, object other) {
+            return Protocols.CoerceAndApply(coercionStorage, binaryOpSite, "-", context, self, other);
         }
+
         #endregion
 
         #region /
+
         /// <summary>
         /// Returns a new float which is the result of dividing <code>self</code> * by <code>other</code>, where <code>other</code> is Fixnum.
         /// </summary>
@@ -249,6 +267,7 @@ namespace IronRuby.Builtins {
         public static double Divide(double self, int other) {
             return self / (double)other;
         }
+
         /// <summary>
         /// Returns a new float which is the result of dividing <code>self</code> * by <code>other</code>, where <code>other</code> is Bignum.
         /// </summary>
@@ -257,6 +276,7 @@ namespace IronRuby.Builtins {
         public static double Divide(double self, [NotNull]BigInteger/*!*/ other) {
             return self / (double)other;
         }
+
         /// <summary>
         /// Returns a new float which is the result of dividing <code>self</code> * by <code>other</code>, where <code>other</code> is Float.
         /// </summary>
@@ -265,17 +285,21 @@ namespace IronRuby.Builtins {
         public static double Divide(double self, double other) {
             return self / other;
         }
+
         /// <summary>
         /// Returns a new float which is the result of dividing <code>self</code> * by <code>other</code>, where <code>other</code> is not Fixnum, Bignum or Float.
         /// </summary>
         /// <returns></returns>
         [RubyMethod("/")]
-        public static object Divide(RubyContext/*!*/ context, double self, object other) {
-            return Protocols.CoerceAndCall(context, self, other, LibrarySites.Divide);
+        public static object Divide(SiteLocalStorage<BinaryOpSite>/*!*/ coercionStorage, SiteLocalStorage<BinaryOpSite>/*!*/ binaryOpSite, 
+            RubyContext/*!*/ context, double self, object other) {
+            return Protocols.CoerceAndApply(coercionStorage, binaryOpSite, "/", context, self, other);
         }
+
         #endregion
 
         #region %, modulo
+
         /// <summary>
         /// Return the modulo after division of <code>self</code> by <code>other</code>, where <code>other</code> is Fixnum.
         /// </summary>
@@ -284,6 +308,7 @@ namespace IronRuby.Builtins {
         public static double Modulo(double self, int other) {
             return (double)InternalDivMod(self, (double)other)[1];
         }
+
         /// <summary>
         /// Return the modulo after division of <code>self</code> by <code>other</code>, where <code>other</code> is Bignum.
         /// </summary>
@@ -292,6 +317,7 @@ namespace IronRuby.Builtins {
         public static double Modulo(double self, [NotNull]BigInteger/*!*/ other) {
             return (double)InternalDivMod(self, (double)other)[1];
         }
+
         /// <summary>
         /// Return the modulo after division of <code>self</code> by <code>other</code>, where <code>other</code> is Float.
         /// </summary>
@@ -300,25 +326,31 @@ namespace IronRuby.Builtins {
         public static double Modulo(double self, double other) {
             return (double)InternalDivMod(self, other)[1];
         }
+
         /// <summary>
         /// Return the modulo after division of <code>self</code> by <code>other</code>, where <code>other</code> is not Fixnum, Bignum or Float.
         /// </summary>
         /// <returns></returns>
         [RubyMethod("%")]
-        public static object ModuloOp(RubyContext/*!*/ context, double self, object other) {
-            return Protocols.CoerceAndCall(context, self, other, LibrarySites.ModuloOp);
+        public static object ModuloOp(SiteLocalStorage<BinaryOpSite>/*!*/ coercionStorage, SiteLocalStorage<BinaryOpSite>/*!*/ binaryOpSite, 
+            RubyContext/*!*/ context, double self, object other) {
+            return Protocols.CoerceAndApply(coercionStorage, binaryOpSite, "%", context, self, other);
         }
+
         /// <summary>
         /// Return the modulo after division of <code>self</code> by <code>other</code>, where <code>other</code> is not Fixnum, Bignum or Float.
         /// </summary>
         /// <returns></returns>
         [RubyMethod("modulo")]
-        public static object Modulo(RubyContext/*!*/ context, double self, object other) {
-            return Protocols.CoerceAndCall(context, self, other, LibrarySites.Modulo);
+        public static object Modulo(SiteLocalStorage<BinaryOpSite>/*!*/ coercionStorage, SiteLocalStorage<BinaryOpSite>/*!*/ binaryOpSite, 
+            RubyContext/*!*/ context, double self, object other) {
+            return Protocols.CoerceAndApply(coercionStorage, binaryOpSite, "modulo", context, self, other);
         }
+
         #endregion
 
         #region **
+
         /// <summary>
         /// Raises <code>self</code> the <code>other</code> power, where other is Fixnum.
         /// </summary>
@@ -326,6 +358,7 @@ namespace IronRuby.Builtins {
         public static double Power(double self, int other) {
             return System.Math.Pow(self, (double)other);
         }
+
         /// <summary>
         /// Raises <code>self</code> the <code>other</code> power, where other is Bignum.
         /// </summary>
@@ -333,6 +366,7 @@ namespace IronRuby.Builtins {
         public static double Power(double self, [NotNull]BigInteger/*!*/ other) {
             return System.Math.Pow(self, (double)other);
         }
+
         /// <summary>
         /// Raises <code>self</code> the <code>other</code> power, where other is Float.
         /// </summary>
@@ -340,16 +374,20 @@ namespace IronRuby.Builtins {
         public static double Power(double self, double other) {
             return System.Math.Pow(self, other);
         }
+
         /// <summary>
         /// Raises <code>self</code> the <code>other</code> power, where other is not Fixnum, Bignum or Float.
         /// </summary>
         [RubyMethod("**")]
-        public static object Power(RubyContext/*!*/ context, double self, object other) {
-            return Protocols.CoerceAndCall(context, self, other, LibrarySites.Power);
+        public static object Power(SiteLocalStorage<BinaryOpSite>/*!*/ coercionStorage, SiteLocalStorage<BinaryOpSite>/*!*/ binaryOpSite, 
+            RubyContext/*!*/ context, double self, object other) {
+            return Protocols.CoerceAndApply(coercionStorage, binaryOpSite, "**", context, self, other);
         }
+
         #endregion
 
         #region divmod
+
         /// <summary>
         /// Returns an array containing the quotient and modulus obtained by dividing <i>self</i> by <i>other</i>, where other is Fixnum.
         /// </summary>
@@ -366,6 +404,7 @@ namespace IronRuby.Builtins {
         public static RubyArray DivMod(double self, int other) {
             return DivMod(self, (double)other);
         }
+
         /// <summary>
         /// Returns an array containing the quotient and modulus obtained by dividing <i>self</i> by <i>other</i>, where other is Bignum.
         /// </summary>
@@ -382,6 +421,7 @@ namespace IronRuby.Builtins {
         public static RubyArray DivMod(double self, [NotNull]BigInteger/*!*/ other) {
             return DivMod(self, (double)other);
         }
+
         /// <summary>
         /// Returns an array containing the quotient and modulus obtained by dividing <i>self</i> by <i>other</i>, where other is Float
         /// </summary>
@@ -404,6 +444,7 @@ namespace IronRuby.Builtins {
             }
             return result;
         }
+
         /// <summary>
         /// Returns an array containing the quotient and modulus obtained by dividing <i>self</i> by <i>other</i>, where other is not Fixnum, Bignum or Float.
         /// </summary>
@@ -417,9 +458,11 @@ namespace IronRuby.Builtins {
         /// The quotient is rounded toward -infinity
         /// </remarks>
         [RubyMethod("divmod")]
-        public static RubyArray DivMod(RubyContext/*!*/ context, double self, object other) {
-            return (RubyArray)Protocols.CoerceAndCall(context, self, other, LibrarySites.DivMod);
+        public static object DivMod(SiteLocalStorage<BinaryOpSite>/*!*/ coercionStorage, SiteLocalStorage<BinaryOpSite>/*!*/ binaryOpSite, 
+            RubyContext/*!*/ context, double self, object other) {
+            return Protocols.CoerceAndApply(coercionStorage, binaryOpSite, "divmod", context, self, other);
         }
+
         #endregion
 
         #region abs
@@ -672,12 +715,15 @@ namespace IronRuby.Builtins {
         /// This is the basis for the tests in <code>Comparable</code>.
         /// </remarks>
         [RubyMethod("<=>")]
-        public static object Compare(RubyContext/*!*/ context, double self, object other) {
-            return Protocols.CoerceAndCallCompare(context, self, other);
+        public static object Compare(SiteLocalStorage<BinaryOpSite>/*!*/ coercionStorage, SiteLocalStorage<BinaryOpSite>/*!*/ comparisonStorage,
+            RubyContext/*!*/ context, double self, object other) {
+            return Protocols.CoerceAndCompare(coercionStorage, comparisonStorage, context, self, other);
         }
+
         #endregion
 
         #region <
+
         /// <summary>
         /// Returns true if self is less than other, where other is Float.
         /// </summary>
@@ -688,6 +734,7 @@ namespace IronRuby.Builtins {
             }
             return self < other;
         }
+
         /// <summary>
         /// Returns true if self is less than other, where other is Fixnum.
         /// </summary>
@@ -695,6 +742,7 @@ namespace IronRuby.Builtins {
         public static bool LessThan(double self, int other) {
             return LessThan(self, (double)other);
         }
+
         /// <summary>
         /// Returns true if self is less than other, where other is Bignum.
         /// </summary>
@@ -702,16 +750,20 @@ namespace IronRuby.Builtins {
         public static bool LessThan(double self, [NotNull]BigInteger/*!*/ other) {
             return LessThan(self, (double)other);
         }
+
         /// <summary>
         /// Returns true if self is less than other, where other is not Float, Fixnum or Bignum.
         /// </summary>
         [RubyMethod("<")]
-        public static bool LessThan(RubyContext/*!*/ context, double self, object other) {
-            return Protocols.CoerceAndCallRelationOperator(context, self, other, LibrarySites.LessThan);
+        public static bool LessThan(SiteLocalStorage<BinaryOpSite>/*!*/ coercionStorage, SiteLocalStorage<BinaryOpSite>/*!*/ comparisonStorage, 
+            RubyContext/*!*/ context, double self, object other) {
+            return Protocols.CoerceAndRelate(coercionStorage, comparisonStorage, "<", context, self, other);
         }
+
         #endregion
 
         #region <=
+
         /// <summary>
         /// Returns true if self is less than or equal to other, where other is Float.
         /// </summary>
@@ -722,6 +774,7 @@ namespace IronRuby.Builtins {
             }
             return self <= other;
         }
+
         /// <summary>
         /// Returns true if self is less than or equal to other, where other is Fixnum.
         /// </summary>
@@ -729,6 +782,7 @@ namespace IronRuby.Builtins {
         public static bool LessThanOrEqual(double self, int other) {
             return LessThanOrEqual(self, (double)other);
         }
+
         /// <summary>
         /// Returns true if self is less than or equal to other, where other is Bignum.
         /// </summary>
@@ -736,16 +790,20 @@ namespace IronRuby.Builtins {
         public static bool LessThanOrEqual(double self, [NotNull]BigInteger/*!*/ other) {
             return LessThanOrEqual(self, (double)other);
         }
+
         /// <summary>
         /// Returns true if self is less than or equal to other, where other is not Float, Fixnum or Bignum.
         /// </summary>
         [RubyMethod("<=")]
-        public static bool LessThanOrEqual(RubyContext/*!*/ context, double self, object other) {
-            return Protocols.CoerceAndCallRelationOperator(context, self, other, LibrarySites.LessThanOrEqual);
+        public static bool LessThanOrEqual(SiteLocalStorage<BinaryOpSite>/*!*/ coercionStorage, SiteLocalStorage<BinaryOpSite>/*!*/ comparisonStorage, 
+            RubyContext/*!*/ context, double self, object other) {
+            return Protocols.CoerceAndRelate(coercionStorage, comparisonStorage, "<=", context, self, other);
         }
+
         #endregion
 
         #region >
+
         /// <summary>
         /// Returns true if self is greater than other, where other is Float.
         /// </summary>
@@ -756,6 +814,7 @@ namespace IronRuby.Builtins {
             }
             return self > other;
         }
+
         /// <summary>
         /// Returns true if self is greater than other, where other is Fixnum.
         /// </summary>
@@ -763,6 +822,7 @@ namespace IronRuby.Builtins {
         public static bool GreaterThan(double self, int other) {
             return GreaterThan(self, (double)other);
         }
+
         /// <summary>
         /// Returns true if self is greater than other, where other is Bignum.
         /// </summary>
@@ -770,16 +830,20 @@ namespace IronRuby.Builtins {
         public static bool GreaterThan(double self, [NotNull]BigInteger/*!*/ other) {
             return GreaterThan(self, (double)other);
         }
+
         /// <summary>
         /// Returns true if self is greater than other, where other is not Float, Fixnum or Bignum.
         /// </summary>
         [RubyMethod(">")]
-        public static bool GreaterThan(RubyContext/*!*/ context, double self, object other) {
-            return Protocols.CoerceAndCallRelationOperator(context, self, other, LibrarySites.GreaterThan);
+        public static bool GreaterThan(SiteLocalStorage<BinaryOpSite>/*!*/ coercionStorage, SiteLocalStorage<BinaryOpSite>/*!*/ comparisonStorage, 
+            RubyContext/*!*/ context, double self, object other) {
+            return Protocols.CoerceAndRelate(coercionStorage, comparisonStorage, ">", context, self, other);
         }
+
         #endregion
 
         #region >=
+
         /// <summary>
         /// Returns true if self is greater than or equal to other, where other is Float.
         /// </summary>
@@ -790,6 +854,7 @@ namespace IronRuby.Builtins {
             }
             return self >= other;
         }
+
         /// <summary>
         /// Returns true if self is greater than or equal to other, where other is Fixnum.
         /// </summary>
@@ -797,6 +862,7 @@ namespace IronRuby.Builtins {
         public static bool GreaterThanOrEqual(double self, int other) {
             return GreaterThanOrEqual(self, (double)other);
         }
+
         /// <summary>
         /// Returns true if self is greater than or equal to other, where other is Bignum.
         /// </summary>
@@ -804,16 +870,20 @@ namespace IronRuby.Builtins {
         public static bool GreaterThanOrEqual(double self, [NotNull]BigInteger/*!*/ other) {
             return GreaterThanOrEqual(self, (double)other);
         }
+
         /// <summary>
         /// Returns true if self is greater than or equal to other, where other is not Float, Fixnum or Bignum.
         /// </summary>
         [RubyMethod(">=")]
-        public static bool GreaterThanOrEqual(RubyContext/*!*/ context, double self, object other) {
-            return Protocols.CoerceAndCallRelationOperator(context, self, other, LibrarySites.GreaterThanOrEqual);
+        public static bool GreaterThanOrEqual(SiteLocalStorage<BinaryOpSite>/*!*/ coercionStorage, SiteLocalStorage<BinaryOpSite>/*!*/ comparisonStorage, 
+            RubyContext/*!*/ context, double self, object other) {
+            return Protocols.CoerceAndRelate(coercionStorage, comparisonStorage, ">=", context, self, other);
         }
+
         #endregion
 
         #region finite?
+
         /// <summary>
         /// Returns <code>true</code> if <code>self</code> is a valid IEEE floating point number
         /// (it is not infinite, and <code>nan?</code> is <code>false</code>).
@@ -822,9 +892,11 @@ namespace IronRuby.Builtins {
         public static bool IsFinite(double self) {
             return !double.IsInfinity(self);
         }
+
         #endregion
 
         #region infinite?
+
         /// <summary>
         /// Returns <code>nil</code>, -1, or +1 depending on whether <code>self</code> is finite, -infinity, or +infinity.
         /// </summary>
@@ -841,9 +913,11 @@ namespace IronRuby.Builtins {
                 return null;
             }
         }
+
         #endregion
 
         #region nan?
+
         /// <summary>
         /// Returns <code>true</code> if <i>self</i> is an invalid IEEE floating point number.
         /// </summary>
@@ -857,9 +931,11 @@ namespace IronRuby.Builtins {
         public static bool IsNan(double self) {
             return double.IsNaN(self);
         }
+
         #endregion
 
         #region zero?
+
         /// <summary>
         /// Returns <code>true</code> if <code>self</code> is 0.0.
         /// </summary>
@@ -882,9 +958,11 @@ namespace IronRuby.Builtins {
         }
 
         #endregion
+
         #endregion
 
         #region Helpers
+
         private static RubyArray InternalDivMod(double self, double other) {
             double div = System.Math.Floor(self / other);
             double mod = self - (div * other);
@@ -922,9 +1000,11 @@ namespace IronRuby.Builtins {
         public static Exception CreateFloatDomainError(string message) {
             return new FloatDomainError("NaN");
         }
+
         public static Exception CreateFloatDomainError(string message, Exception inner) {
             return new FloatDomainError("NaN", inner);
         }
+
         #endregion
     }
 }

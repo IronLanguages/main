@@ -234,10 +234,9 @@ namespace System.Dynamic.ComInterop {
         #endregion
 
         // Type.InvokeMember tries to marshal objects as VT_DISPATCH, and falls back to VT_UNKNOWN if IDispatch
-        // cannot be supported. For now, we will just support VT_DISPATCH. We might want to move to VT_UNKNOWN
-        // as doing a QueryInterface for IID_IDispatch could be expensive, and it should be upto the callee
-        // to do the QueryInterface if needed
-        const VarEnum VT_DISPATCH_OR_UNKNOWN = VarEnum.VT_DISPATCH;
+        // VT_RECORD here just indicates that we have user defined type.
+        // We will call GetNativeVariantForObject and it will give us appropriate marshalling type.
+        const VarEnum VT_DEFAULT = VarEnum.VT_RECORD;
 
         private VarEnum GetComType(ref Type argumentType) {
             if (argumentType == typeof(Missing)) {
@@ -278,8 +277,9 @@ namespace System.Dynamic.ComInterop {
                 return GetComType(ref argumentType);
             }
 
-            if (argumentType.IsCOMObject) {
-                return VT_DISPATCH_OR_UNKNOWN;
+            //generic types cannot be exposed to COM so they do not implement COM interfaces.
+            if (argumentType.IsGenericType) {
+                return VarEnum.VT_UNKNOWN;
             }
 
             VarEnum primitiveVarEnum;
@@ -287,18 +287,8 @@ namespace System.Dynamic.ComInterop {
                 return primitiveVarEnum;
             }
 
-            if (argumentType.IsValueType) {
-                return VarEnum.VT_RECORD;
-            }
-
             // We could not find a way to marshal the type as a specific COM type
-            // So we just indicate that it is an unknown value type (VT_RECORD) 
-            // or unknown reference type (VT_DISPATCH_OR_UNKNOWN)
-            // Note that callers may still find a less generic marshalling method if
-            // the type implements IConvertible and if it is applicable
-
-            //default marshal type
-            return VT_DISPATCH_OR_UNKNOWN;
+            return VT_DEFAULT;
         }
 
         /// <summary>
@@ -332,8 +322,6 @@ namespace System.Dynamic.ComInterop {
                 return new VariantBuilder(elementVarEnum | VarEnum.VT_BYREF, argBuilder);
             }
 
-            Debug.Assert(!(argumentType.IsGenericType && argumentType.GetGenericTypeDefinition() == typeof(StrongBox<>)), "should not have StrongBox here");
-
             VarEnum varEnum = GetComType(ref argumentType);
             argBuilder = GetByValArgBuilder(argumentType, ref varEnum);
 
@@ -346,7 +334,7 @@ namespace System.Dynamic.ComInterop {
         // attempts to find marshalling type failed 
         private static ArgBuilder GetByValArgBuilder(Type elementType, ref VarEnum elementVarEnum) {
             // if VT indicates that marshalling type is unknown
-            if (elementVarEnum == VarEnum.VT_RECORD || elementVarEnum == VT_DISPATCH_OR_UNKNOWN) {
+            if (elementVarEnum == VT_DEFAULT) {
                 //trying to find a conversion.
                 VarEnum convertibleTo;
                 if (TryGetPrimitiveComTypeViaConversion(elementType, out convertibleTo)) {

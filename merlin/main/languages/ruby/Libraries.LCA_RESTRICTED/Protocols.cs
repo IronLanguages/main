@@ -13,16 +13,24 @@
  *
  * ***************************************************************************/
 
+using BinaryOpSite = System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite,
+    IronRuby.Runtime.RubyContext, object, object, object>>;
+
+using RespondToSite = System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite,
+    IronRuby.Runtime.RubyContext, object, Microsoft.Scripting.SymbolId, object>>;
+
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
-using IronRuby.Builtins;
 using Microsoft.Scripting;
 using Microsoft.Scripting.Math;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Actions;
+using Microsoft.Scripting.Generation;
+using IronRuby.Builtins;
+using IronRuby.Runtime.Calls;
 
 namespace IronRuby.Runtime {
     /// <summary>
@@ -502,53 +510,46 @@ namespace IronRuby.Runtime {
 
         #region Compare (<=>), ConvertCompareResult
 
-        private static CallSite<Func<CallSite, RubyContext, object, object, object>> _CompareSharedSite =
-            CallSite<Func<CallSite, RubyContext, object, object, object>>.Create(
-                RubySites.InstanceCallAction("<=>", 1));
+        /// <summary>
+        /// Try to compare the lhs and rhs. Throws and exception if comparison returns null. Returns -1/0/+1 otherwise.
+        /// </summary>
+        public static int Compare(
+            SiteLocalStorage<BinaryOpSite>/*!*/ comparisonStorage,
+            SiteLocalStorage<BinaryOpSite>/*!*/ lessThanStorage,
+            SiteLocalStorage<BinaryOpSite>/*!*/ greaterThanStorage,
+            RubyContext/*!*/ context, object lhs, object rhs) {
 
-        private static CallSite<Func<CallSite, RubyContext, object, int, object>> _GreaterSharedSite =
-            CallSite<Func<CallSite, RubyContext, object, int, object>>.Create(
-                RubySites.InstanceCallAction(">", 1));
+            var compare = comparisonStorage.GetCallSite("<=>", 1);
 
-        private static CallSite<Func<CallSite, RubyContext, object, int, object>> _LessSharedSite =
-            CallSite<Func<CallSite, RubyContext, object, int, object>>.Create(
-                RubySites.InstanceCallAction("<", 1));
-
-
-        // Standard Ruby way of calling "<=>"
-        // Call it, and then see if the result is > 0 by calling ">"
-        // If not, see if the result is < 0 by calling "<" 
-        // Returns -1, 0, 1 with the usual interpretation
-        public static int Compare(RubyContext/*!*/ context, object lhs, object rhs) {
-            object result = _CompareSharedSite.Target(_CompareSharedSite, context, lhs, rhs);
-            if (result == null) {
+            var result = compare.Target(compare, context, lhs, rhs);
+            if (result != null) {
+                return Protocols.ConvertCompareResult(lessThanStorage, greaterThanStorage, context, result);
+            } else {
                 throw RubyExceptions.MakeComparisonError(context, lhs, rhs);
             }
-            return ConvertCompareResult(context, result);
         }
+    
+        public static int ConvertCompareResult(
+            SiteLocalStorage<BinaryOpSite>/*!*/ lessThanStorage, 
+            SiteLocalStorage<BinaryOpSite>/*!*/ greaterThanStorage,
+            RubyContext/*!*/ context, object/*!*/ result) {
 
-        /// <summary>
-        /// Try to compare the lhs and rhs.  If they can't be compared return nil
-        /// </summary>
-        public static int? TryCompare(RubyContext/*!*/ context, object lhs, object rhs) {
-            object result = _CompareSharedSite.Target(_CompareSharedSite, context, lhs, rhs);
-            if (result == null) {
-                return null;
-            }
-            return ConvertCompareResult(context, result);
-        }
-
-        public static int ConvertCompareResult(RubyContext/*!*/ context, object result) {
-            // Should throw if a call to <=> returns null
             Debug.Assert(result != null);
 
-            if (RubyOps.IsTrue(_GreaterSharedSite.Target(_GreaterSharedSite, context, result, 0))) {
+            var greaterThanSite = greaterThanStorage.GetCallSite(">", 1);
+            if (RubyOps.IsTrue(greaterThanSite.Target(greaterThanSite, context, result, 0))) {
                 return 1;
-            } else if (RubyOps.IsTrue(_LessSharedSite.Target(_LessSharedSite, context, result, 0))) {
+            }
+
+            var lessThanSite = lessThanStorage.GetCallSite("<", 1);
+            if (RubyOps.IsTrue(lessThanSite.Target(lessThanSite, context, result, 0))) {
                 return -1;
             }
+
             return 0;
         }
+
+        #endregion
 
         /// <summary>
         /// Protocol for determining truth in Ruby (not null and not false)
@@ -564,73 +565,97 @@ namespace IronRuby.Runtime {
             return IsTrue(RubySites.Equal(context, lhs, rhs));
         }
 
-        public delegate object DynamicInvocation(RubyContext/*!*/ context, object self, object other);
-
-        /// <summary>
-        /// Coerce the values of self and other (using other as the object) then call the passed in method.
-        /// </summary>
-        public static object CoerceAndCall(RubyContext/*!*/ context, object self, object other, DynamicInvocation invoke) {
-            RubyArray coercedValues;
-            try {
-                // Swap self and other around to do the coercion.
-                coercedValues = RubySites.Coerce(context, other, self);
-            } catch (MemberAccessException x) {
-                throw RubyExceptions.MakeCoercionError(context, self, other, x);
-            } catch (ArgumentException x) {
-                throw RubyExceptions.MakeCoercionError(context, self, other, x);
-            }
-            // But then swap them back when invoking the operation
-            return invoke(context, coercedValues[0], coercedValues[1]);
+        public static bool RespondTo(SiteLocalStorage<RespondToSite>/*!*/ respondToStorage, 
+            RubyContext/*!*/ context, object target, string/*!*/ methodName) {
+            var site = respondToStorage.GetCallSite("respond_to?", 1);
+            return IsTrue(site.Target(site, context, target, SymbolTable.StringToId(methodName)));
         }
 
+        #region Coercion
+
         /// <summary>
-        /// Try to coerce the values of self and other (using other as the object) then dynamically invoke "&lt;=&gt;".
+        /// Try to coerce the values of self and other (using other as the target object) then dynamically invoke "&lt;=&gt;".
         /// </summary>
         /// <returns>
-        /// 1 if self is greater than other
-        /// 0 if self is equal to other
-        /// -1 if self is less than other
-        /// null otherwise (like if self and other cannot be coerced)
+        /// Result of &lt;=&gt; on coerced values or <c>null</c> if "coerce" method is not defined, throws a subclass of SystemException, 
+        /// or returns something other than a pair of objects.
         /// </returns>
-        /// <remarks>
-        /// This method is used when comparing Numerics.
-        /// If we can't coerce then they are not the same, so return null.
-        /// But if the &lt;=&gt; doesn't exist on the first item in the array returned from coerce then throw missing method error.
-        /// </remarks>
-        public static object CoerceAndCallCompare(RubyContext/*!*/ context, object self, object other) {
-            RubyArray coercedValues;
-            try {
-                // Swap self and other around to do the coercion.
-                coercedValues = RubySites.Coerce(context, other, self);
-            } catch (Exception) {
-                // The coercion failed so return null.
-                return null;
-            }
-            // This call is outside the try block as we do want problems with this call being raised up.
-            return LibrarySites.Compare(context, coercedValues[0], coercedValues[1]);
+        public static object CoerceAndCompare(
+            SiteLocalStorage<BinaryOpSite>/*!*/ coercionStorage,
+            SiteLocalStorage<BinaryOpSite>/*!*/ comparisonStorage, 
+            RubyContext/*!*/ context, object self, object other) {
+
+            object result;
+            return TryCoerceAndApply(coercionStorage, comparisonStorage, "<=>", context, self, other, out result) ? result : null;
         }
 
         /// <summary>
-        /// Compare the values of self and other (coerce using other as the object then call the passed in comparison operator).
+        /// Applies given operator on coerced values and converts its result to Ruby truth (using Protocols.IsTrue).
         /// </summary>
-        /// <remarks>
-        /// This method is used for &lt;, &lt;=, &gt; and &gt;= operators.  If we can't coerce then throw a specific comparison exception.
-        /// </remarks>
-        /// <exception cref="ArgumentException">If self and other cannot be coerced to the same type.</exception>
-        public static bool CoerceAndCallRelationOperator(RubyContext/*!*/ context, object self, object other, DynamicInvocation invoke) {
-            try {
-                // Swap self and other around to do the coercion.
-                RubyArray coercedValues = RubySites.Coerce(context, other, self);
-                return RubyOps.IsTrue(invoke(context, coercedValues[0], coercedValues[1]));
-            } catch (MemberAccessException x) {
-                throw RubyExceptions.MakeComparisonError(context, self, other, x);
-            } catch (ArgumentException x) {
-                throw RubyExceptions.MakeComparisonError(context, self, other, x);
-            } catch (NullReferenceException x) {
-                throw RubyExceptions.MakeComparisonError(context, self, other, x);
+        /// <exception cref="ArgumentError">
+        /// "coerce" method is not defined, throws a subclass of SystemException, or returns something other than a pair of objects.
+        /// </exception>
+        public static bool CoerceAndRelate(
+            SiteLocalStorage<BinaryOpSite>/*!*/ coercionStorage,
+            SiteLocalStorage<BinaryOpSite>/*!*/ comparisonStorage, string/*!*/ relationalOp, 
+            RubyContext/*!*/ context, object self, object other) {
+
+            object result;
+            if (TryCoerceAndApply(coercionStorage, comparisonStorage, relationalOp, context, self, other, out result)) {
+                return RubyOps.IsTrue(result);
             }
+            
+            throw RubyExceptions.MakeComparisonError(context, self, other);
         }
 
+        /// <summary>
+        /// Applies given operator on coerced values and returns the result.
+        /// </summary>
+        /// <exception cref="TypeError">
+        /// "coerce" method is not defined, throws a subclass of SystemException, or returns something other than a pair of objects.
+        /// </exception>
+        public static object CoerceAndApply(
+            SiteLocalStorage<BinaryOpSite>/*!*/ coercionStorage,
+            SiteLocalStorage<BinaryOpSite>/*!*/ binaryOpStorage, string/*!*/ binaryOp,
+            RubyContext/*!*/ context, object self, object other) {
+
+            object result;
+            if (TryCoerceAndApply(coercionStorage, binaryOpStorage, binaryOp, context, self, other, out result)) {
+                return result;
+            }
+
+            throw RubyExceptions.MakeCoercionError(context, other, self);
+        }
+
+        private static bool TryCoerceAndApply(
+            SiteLocalStorage<BinaryOpSite>/*!*/ coercionStorage,
+            SiteLocalStorage<BinaryOpSite>/*!*/ binaryOpStorage, string/*!*/ binaryOp,
+            RubyContext/*!*/ context, object self, object other, out object result) {
+
+            // doesn't call method_missing:
+            var coerce = coercionStorage.GetCallSite("coerce", new RubyCallSignature(1, RubyCallFlags.IsTryCall | RubyCallFlags.HasImplicitSelf));
+
+            IList coercedValues;
+
+            try {
+                // Swap self and other around to do the coercion.
+                coercedValues = coerce.Target(coerce, context, other, self) as IList;
+            } catch (SystemException) { 
+                // catches StandardError (like rescue)
+                result = null;
+                return false;
+            }
+
+            if (coercedValues != null && coercedValues.Count == 2) {
+                var compare = binaryOpStorage.GetCallSite(binaryOp, 1);
+                result = compare.Target(compare, context, coercedValues[0], coercedValues[1]);
+                return true;
+            }
+
+            result = null;
+            return false;
+        }
+    
         #endregion
 
         #region Range

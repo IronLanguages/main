@@ -17,7 +17,7 @@ using System.Dynamic.Utils;
 using System.Linq.Expressions;
 using Microsoft.Contracts;
 
-namespace System.Dynamic.Binders {
+namespace System.Dynamic {
     /// <summary>
     /// A Binder that is responsible for runtime binding of operation:
     /// a.b (op)= c

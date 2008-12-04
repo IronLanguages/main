@@ -57,7 +57,7 @@ namespace Microsoft.Scripting.Ast {
                 new Expression[] {
                     Utils.CodeContext(), 
                     AstUtils.Constant(_name),
-                    Expression.Convert(_value, typeof(object))
+                    AstUtils.Convert(_value, typeof(object))
                 }
             );
         }

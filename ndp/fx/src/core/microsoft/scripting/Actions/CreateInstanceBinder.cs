@@ -19,7 +19,7 @@ using System.Linq.Expressions;
 using System.Dynamic.Utils;
 using Microsoft.Contracts;
 
-namespace System.Dynamic.Binders {
+namespace System.Dynamic {
     public abstract class CreateInstanceBinder : MetaObjectBinder {
         private readonly ReadOnlyCollection<ArgumentInfo> _arguments;
 

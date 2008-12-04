@@ -16,7 +16,7 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
-using System.Dynamic.Binders;
+using System.Dynamic;
 using System.Linq.Expressions;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 

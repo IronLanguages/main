@@ -18,6 +18,8 @@ using Microsoft.Scripting;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 using IronRuby.Runtime;
+using Microsoft.Scripting.Generation;
+using System.Runtime.CompilerServices;
 
 namespace IronRuby.Builtins {
 
@@ -33,24 +35,34 @@ namespace IronRuby.Builtins {
         /// So, if <code>klass.induced_from</code> doesn't return an instance of klass, it will be necessary to reimplement prec.
         /// </remarks>
         [RubyMethod("prec")]
-        public static object Prec(object self, [NotNull]RubyClass/*!*/ klass) {
-            return LibrarySites.InvokeInducedFrom(klass.Context, klass, self);
+        public static object Prec(SiteLocalStorage<CallSite<Func<CallSite, RubyContext, RubyClass, object, object>>>/*!*/ inducedFromStorage,
+            object self, [NotNull]RubyClass/*!*/ klass) {
+
+            var inducedFrom = inducedFromStorage.GetCallSite("induced_from", 1);
+            return inducedFrom.Target(inducedFrom, klass.Context, klass, self);
         }
 
         /// <summary>
         /// Returns an Integer converted from self. It is equivalent to <code>prec(Integer)</code>.
         /// </summary>
         [RubyMethod("prec_i")]
-        public static object PrecInteger(RubyContext/*!*/ context, object self) {
-            return LibrarySites.InvokePrec(context, context.GetClass(typeof(Integer)), self);
+        public static object PrecInteger(
+            SiteLocalStorage<CallSite<Func<CallSite, RubyContext, object, RubyClass, object>>>/*!*/ precStorage,
+            RubyContext/*!*/ context, object self) {
+
+            var prec = precStorage.GetCallSite("prec", 1);
+            return prec.Target(prec, context, self, context.GetClass(typeof(Integer)));
         }
 
         /// <summary>
         /// Returns a Float converted from self. It is equivalent to <code>prec(Float)</code>.
         /// </summary>
         [RubyMethod("prec_f")]
-        public static object PrecFloat(RubyContext/*!*/ context, object self) {
-            return LibrarySites.InvokePrec(context, context.GetClass(typeof(double)), self);
+        public static object PrecFloat(SiteLocalStorage<CallSite<Func<CallSite, RubyContext, object, RubyClass, object>>>/*!*/ precStorage, 
+            RubyContext/*!*/ context, object self) {
+
+            var prec = precStorage.GetCallSite("prec", 1);
+            return prec.Target(prec, context, self, context.GetClass(typeof(double)));
         }
 
         #endregion
@@ -69,8 +81,6 @@ namespace IronRuby.Builtins {
             includedIn.SingletonClass.DefineLibraryMethod("induced_from", (int)RubyMethodAttributes.PublicSingleton, new Func<RubyModule, object, object>(InducedFrom));
             return self;
         }
-
-        private static readonly SymbolId inducedFromSymbol = SymbolTable.StringToId("induced_from");
 
         private static object InducedFrom(RubyModule/*!*/ rubyClass, object other) {
             throw RubyExceptions.CreateTypeError(String.Format("undefined conversion from {0} into {1}",

@@ -200,11 +200,12 @@ namespace IronRuby.Compiler.Ast {
                             Ast.Assign(oldExceptionVariable, Methods.GetCurrentException.OpCall(gen.CurrentScopeVariable)),
 
                         AstUtils.Try(
-                            transformedBody
+                            Ast.Block(transformedBody, Ast.Empty())
                         ).Filter(exceptionVariable, Methods.CanRescue.OpCall(gen.CurrentRfcVariable, exceptionVariable),
                             Ast.Assign(exceptionThrownVariable, Ast.Constant(true)),
                             Methods.SetCurrentExceptionAndStackTrace.OpCall(gen.CurrentScopeVariable, exceptionVariable),
-                            transformedRescue
+                            transformedRescue,
+                            Ast.Empty()
                         ).FinallyIf((_rescueClauses != null), 
                             // restore previous exception if the current one has been handled:
                             AstUtils.Unless(exceptionRethrowVariable,

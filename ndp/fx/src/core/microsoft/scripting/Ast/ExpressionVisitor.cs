@@ -248,9 +248,9 @@ namespace System.Linq.Expressions {
         }
 
         protected internal virtual Expression VisitLabel(LabelExpression node) {
-            LabelTarget l = VisitLabelTarget(node.Label);
+            LabelTarget l = VisitLabelTarget(node.Target);
             Expression d = Visit(node.DefaultValue);
-            if (l == node.Label && d == node.DefaultValue) {
+            if (l == node.Target && d == node.DefaultValue) {
                 return node;
             }
             return Expression.Label(l, d);

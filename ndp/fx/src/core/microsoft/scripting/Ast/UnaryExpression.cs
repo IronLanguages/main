@@ -518,6 +518,10 @@ namespace System.Linq.Expressions {
             return Throw(null);
         }
 
+        public static UnaryExpression Rethrow(Type type) {
+            return Throw(null, type);
+        }
+
         public static UnaryExpression Throw(Expression value) {
             return Throw(value, typeof(void));
         }

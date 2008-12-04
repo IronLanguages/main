@@ -13,6 +13,9 @@
  *
  * ***************************************************************************/
 
+using RespondToSite = System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite,
+    IronRuby.Runtime.RubyContext, object, Microsoft.Scripting.SymbolId, object>>;
+
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -24,6 +27,7 @@ using Microsoft.Scripting.Math;
 using Microsoft.Scripting.Runtime;
 using IronRuby.Runtime.Calls;
 using System.Diagnostics;
+using Microsoft.Scripting.Generation;
 
 namespace IronRuby.Builtins {
 
@@ -609,13 +613,15 @@ namespace IronRuby.Builtins {
             return c;
         }
 
+        private static readonly MutableString NewLine = MutableString.CreateMutable("\n").Freeze();
+
         public static MutableString/*!*/ ToPrintedString(RubyContext/*!*/ context, object obj) {
             IDictionary<object, object> hash;
             List<object> list;
             MutableString str;
 
             if ((list = obj as List<object>) != null) {
-                return IListOps.Join(context, list, Environment.NewLine);
+                return IListOps.Join(context, list, NewLine);
             } else if ((hash = obj as IDictionary<object, object>) != null) {
                 return IDictionaryOps.ToString(context, hash);
             } else if (obj == null) {
@@ -662,10 +668,10 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("printf")]
-        public static void PrintFormatted(RubyContext/*!*/ context, RubyIO/*!*/ self,
-            [DefaultProtocol, NotNull]MutableString/*!*/ format, [NotNull]params object[]/*!*/ args) {
+        public static void PrintFormatted(SiteLocalStorage<CallSite<Func<CallSite, RubyContext, object, object, object>>>/*!*/ writeSiteStorage,
+            RubyContext/*!*/ context, RubyIO/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ format, [NotNull]params object[]/*!*/ args) {
 
-            KernelOps.PrintFormatted(context, null, self, format, args);
+            KernelOps.PrintFormatted(writeSiteStorage, context, null, self, format, args);
         }
 
         #endregion
@@ -956,5 +962,27 @@ namespace IronRuby.Builtins {
         //syswrite
 
         #endregion
+
+        internal static IOWrapper/*!*/ CreateIOWrapper(SiteLocalStorage<RespondToSite>/*!*/ respondToStorage, 
+            RubyContext/*!*/ context, object io, FileAccess access) {
+
+            bool canRead, canWrite, canSeek;
+
+            if (access == FileAccess.Read || access == FileAccess.ReadWrite) {
+                canRead = Protocols.RespondTo(respondToStorage, context, io, "read");
+            } else {
+                canRead = false;
+            }
+
+            if (access == FileAccess.Write || access == FileAccess.ReadWrite) {
+                canWrite = Protocols.RespondTo(respondToStorage, context, io, "write");
+            } else {
+                canWrite = false;
+            }
+
+            canSeek = Protocols.RespondTo(respondToStorage, context, io, "seek") && Protocols.RespondTo(respondToStorage, context, io, "tell");
+
+            return new IOWrapper(context, io, canRead, canWrite, canSeek);
+        }
     }
 }

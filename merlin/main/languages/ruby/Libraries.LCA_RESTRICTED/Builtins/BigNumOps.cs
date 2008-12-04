@@ -13,10 +13,14 @@
  *
  * ***************************************************************************/
 
+using BinaryOpSite = System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite,
+    IronRuby.Runtime.RubyContext, object, object, object>>;
+
 using System;
-using Microsoft.Scripting.Runtime;
-using Microsoft.Scripting.Math;
 using IronRuby.Runtime;
+using Microsoft.Scripting.Generation;
+using Microsoft.Scripting.Math;
+using Microsoft.Scripting.Runtime;
 
 namespace IronRuby.Builtins {
 
@@ -83,8 +87,9 @@ namespace IronRuby.Builtins {
         /// <returns>self + other</returns>
         /// <remarks>Coerces self and other using other.coerce(self) then dynamically invokes +</remarks>
         [RubyMethod("+")]
-        public static object Add(RubyContext/*!*/ context, BigInteger/*!*/ self, object other) {
-            return Protocols.CoerceAndCall(context, self, other, LibrarySites.Add);
+        public static object Add(SiteLocalStorage<BinaryOpSite>/*!*/ coercionStorage, SiteLocalStorage<BinaryOpSite>/*!*/ binaryOpSite,
+            RubyContext/*!*/ context, BigInteger/*!*/ self, object other) {
+            return Protocols.CoerceAndApply(coercionStorage, binaryOpSite, "+", context, self, other);
         }
 
         #endregion
@@ -100,6 +105,7 @@ namespace IronRuby.Builtins {
         public static object Subtract(BigInteger/*!*/ self, [NotNull]BigInteger/*!*/ other) {
             return Protocols.Normalize(self - other);
         }
+
         /// <summary>
         /// Subtracts other from self, where other is Float
         /// </summary>
@@ -108,14 +114,16 @@ namespace IronRuby.Builtins {
         public static object Subtract(BigInteger/*!*/ self, double other) {
             return self.ToFloat64() - other;
         }
+
         /// <summary>
         /// Subtracts other from self, where other is not a Float, Fixnum or Bignum
         /// </summary>
         /// <returns>self - other</returns>
         /// <remarks>Coerces self and other using other.coerce(self) then dynamically invokes -</remarks>
         [RubyMethod("-")]
-        public static object Subtract(RubyContext/*!*/ context, BigInteger/*!*/ self, object other) {
-            return Protocols.CoerceAndCall(context, self, other, LibrarySites.Subtract);
+        public static object Subtract(SiteLocalStorage<BinaryOpSite>/*!*/ coercionStorage, SiteLocalStorage<BinaryOpSite>/*!*/ binaryOpSite, 
+            RubyContext/*!*/ context, BigInteger/*!*/ self, object other) {
+            return Protocols.CoerceAndApply(coercionStorage, binaryOpSite, "-", context, self, other);
         }
 
         #endregion
@@ -131,6 +139,7 @@ namespace IronRuby.Builtins {
         public static object Multiply(BigInteger/*!*/ self, [NotNull]BigInteger/*!*/ other) {
             return Protocols.Normalize(self * other);
         }
+
         /// <summary>
         /// Multiplies self by other, where other is Float
         /// </summary>
@@ -139,19 +148,22 @@ namespace IronRuby.Builtins {
         public static object Multiply(BigInteger/*!*/ self, double other) {
             return self.ToFloat64() * other;
         }
+
         /// <summary>
         /// Multiplies self by other, where other is not a Float, Fixnum or Bignum
         /// </summary>
         /// <returns>self * other</returns>
         /// <remarks>Coerces self and other using other.coerce(self) then dynamically invokes *</remarks>
         [RubyMethod("*")]
-        public static object Multiply(RubyContext/*!*/ context, BigInteger/*!*/ self, object other) {
-            return Protocols.CoerceAndCall(context, self, other, LibrarySites.Multiply);
+        public static object Multiply(SiteLocalStorage<BinaryOpSite>/*!*/ coercionStorage, SiteLocalStorage<BinaryOpSite>/*!*/ binaryOpSite,
+            RubyContext/*!*/ context, BigInteger/*!*/ self, object other) {
+            return Protocols.CoerceAndApply(coercionStorage, binaryOpSite, "*", context, self, other);
         }
 
         #endregion
 
         #region /, div
+
         /// <summary>
         /// Divides self by other, where other is Bignum or Fixnum
         /// </summary>
@@ -161,6 +173,7 @@ namespace IronRuby.Builtins {
         public static object Divide(BigInteger/*!*/ self, [NotNull]BigInteger/*!*/ other) {
             return DivMod(self, other)[0];
         }
+
         /// <summary>
         /// Divides self by other, where other is Float
         /// </summary>
@@ -169,27 +182,33 @@ namespace IronRuby.Builtins {
         public static object Divide(BigInteger/*!*/ self, double other) {
             return self.ToFloat64() / other;
         }
+
         /// <summary>
         /// Divides self by other, where other is not a Float, Fixnum or Bignum
         /// </summary>
         /// <returns>self / other</returns>
         /// <remarks>Coerces self and other using other.coerce(self) then dynamically invokes /</remarks>
         [RubyMethod("/")]
-        public static object Divide(RubyContext/*!*/ context, BigInteger/*!*/ self, object other) {
-            return Protocols.CoerceAndCall(context, self, other, LibrarySites.Divide);
+        public static object Divide(SiteLocalStorage<BinaryOpSite>/*!*/ coercionStorage, SiteLocalStorage<BinaryOpSite>/*!*/ binaryOpSite, 
+            RubyContext/*!*/ context, BigInteger/*!*/ self, object other) {
+            return Protocols.CoerceAndApply(coercionStorage, binaryOpSite, "/", context, self, other);
         }
+
         /// <summary>
         /// Divides self by other, where other is not a Float, Fixnum or Bignum
         /// </summary>
         /// <returns>self.div(other)</returns>
         /// <remarks>Coerces self and other using other.coerce(self) then dynamically invokes div</remarks>
         [RubyMethod("div")]
-        public static object Div(RubyContext/*!*/ context, BigInteger/*!*/ self, object other) {
-            return Protocols.CoerceAndCall(context, self, other, LibrarySites.Div);
+        public static object Div(SiteLocalStorage<BinaryOpSite>/*!*/ coercionStorage, SiteLocalStorage<BinaryOpSite>/*!*/ binaryOpSite, 
+            RubyContext/*!*/ context, BigInteger/*!*/ self, object other) {
+            return Protocols.CoerceAndApply(coercionStorage, binaryOpSite, "div", context, self, other);
         }
+
         #endregion
 
         #region quo
+
         /// <summary>
         /// Returns the floating point result of dividing self by other, where other is Bignum or Fixnum. 
         /// </summary>
@@ -199,6 +218,7 @@ namespace IronRuby.Builtins {
         public static object Quotient(BigInteger/*!*/ self, [NotNull]BigInteger/*!*/ other) {
             return Quotient(self, other.ToFloat64());
         }
+
         /// <summary>
         /// Returns the floating point result of dividing self by other, where other is Float. 
         /// </summary>
@@ -208,15 +228,18 @@ namespace IronRuby.Builtins {
         public static object Quotient(BigInteger/*!*/ self, double other) {
             return self.ToFloat64() / other;
         }
+
         /// <summary>
         /// Returns the floating point result of dividing self by other, where other is not Bignum, Fixnum or Float. 
         /// </summary>
         /// <returns>self divided by other as Float</returns>
         /// <remarks>Coerces self and other using other.coerce(self) then dynamically invokes quo</remarks>
         [RubyMethod("quo")]
-        public static object Quotient(RubyContext/*!*/ context, BigInteger/*!*/ self, object other) {
-            return Protocols.CoerceAndCall(context, self, other, LibrarySites.Quo);
+        public static object Quotient(SiteLocalStorage<BinaryOpSite>/*!*/ coercionStorage, SiteLocalStorage<BinaryOpSite>/*!*/ binaryOpSite, 
+            RubyContext/*!*/ context, BigInteger/*!*/ self, object other) {
+            return Protocols.CoerceAndApply(coercionStorage, binaryOpSite, "quo", context, self, other);
         }
+
         #endregion
 
         #region **
@@ -266,8 +289,9 @@ namespace IronRuby.Builtins {
         /// <returns>self ** exponent</returns>
         /// <remarks>Coerces self and other using other.coerce(self) then dynamically invokes **</remarks>
         [RubyMethod("**")]
-        public static object Power(RubyContext/*!*/ context, BigInteger/*!*/ self, object exponent) {
-            return Protocols.CoerceAndCall(context, self, exponent, LibrarySites.Power);
+        public static object Power(SiteLocalStorage<BinaryOpSite>/*!*/ coercionStorage, SiteLocalStorage<BinaryOpSite>/*!*/ binaryOpSite, 
+            RubyContext/*!*/ context, BigInteger/*!*/ self, object exponent) {
+            return Protocols.CoerceAndApply(coercionStorage, binaryOpSite, "**", context, self, exponent);
         }
 
         #endregion
@@ -291,8 +315,9 @@ namespace IronRuby.Builtins {
         /// <returns>self % other, as Fixnum or Bignum</returns>
         /// <remarks>Coerces self and other using other.coerce(self) then dynamically invokes %</remarks>
         [RubyMethod("%")]
-        public static object ModuloOp(RubyContext/*!*/ context, BigInteger/*!*/ self, object other) {
-            return Protocols.CoerceAndCall(context, self, other, LibrarySites.ModuloOp);
+        public static object ModuloOp(SiteLocalStorage<BinaryOpSite>/*!*/ coercionStorage, SiteLocalStorage<BinaryOpSite>/*!*/ binaryOpSite, 
+            RubyContext/*!*/ context, BigInteger/*!*/ self, object other) {
+            return Protocols.CoerceAndApply(coercionStorage, binaryOpSite, "%", context, self, other);
         }
 
         /// <summary>
@@ -301,13 +326,15 @@ namespace IronRuby.Builtins {
         /// <returns>self modulo other, as Fixnum or Bignum</returns>
         /// <remarks>Coerces self and other using other.coerce(self) then dynamically invokes modulo</remarks>
         [RubyMethod("modulo")]
-        public static object Modulo(RubyContext/*!*/ context, BigInteger/*!*/ self, object other) {
-            return Protocols.CoerceAndCall(context, self, other, LibrarySites.Modulo);
+        public static object Modulo(SiteLocalStorage<BinaryOpSite>/*!*/ coercionStorage, SiteLocalStorage<BinaryOpSite>/*!*/ binaryOpSite, 
+            RubyContext/*!*/ context, BigInteger/*!*/ self, object other) {
+            return Protocols.CoerceAndApply(coercionStorage, binaryOpSite, "modulo", context, self, other);
         }
 
         #endregion
 
         #region divmod
+
         /// <summary>
         /// Returns an array containing the quotient and modulus obtained by dividing self by other, where other is Fixnum or Bignum.
         /// If <code>q, r = x.divmod(y)</code>, then 
@@ -326,21 +353,25 @@ namespace IronRuby.Builtins {
             }
             return RubyOps.MakeArray2(Protocols.Normalize(div), Protocols.Normalize(mod));
         }
+
         /// <summary>
         /// Returns an array containing the quotient and modulus obtained by dividing self by other, where other is not Fixnum or Bignum.
         /// If <code>q, r = x.divmod(y)</code>, then 
         ///     <code>q = floor(float(x)/float(y))</code>
         ///     <code>x = q*y + r</code>
         /// </summary>
-        /// <returns>[self div other, self modulo other] as RubyArray</returns>
+        /// <returns>Should return [self div other, self modulo other], but the divmod implementation is free to return an arbitrary object.</returns>
         /// <remarks>Coerces self and other using other.coerce(self) then dynamically invokes divmod</remarks>
         [RubyMethod("divmod")]
-        public static RubyArray DivMod(RubyContext/*!*/ context, BigInteger/*!*/ self, object other) {
-            return (RubyArray)Protocols.CoerceAndCall(context, self, other, LibrarySites.DivMod);
+        public static object DivMod(SiteLocalStorage<BinaryOpSite>/*!*/ coercionStorage, SiteLocalStorage<BinaryOpSite>/*!*/ binaryOpSite, 
+            RubyContext/*!*/ context, BigInteger/*!*/ self, object other) {
+            return Protocols.CoerceAndApply(coercionStorage, binaryOpSite, "divmod", context, self, other);
         }
+
         #endregion
 
         #region remainder
+
         /// <summary>
         /// Returns the remainder after dividing self by other, where other is Fixnum or Bignum.
         /// </summary>
@@ -354,6 +385,7 @@ namespace IronRuby.Builtins {
             BigInteger.DivRem(self, other, out remainder);
             return Protocols.Normalize(remainder);
         }
+
         /// <summary>
         /// Returns the remainder after dividing self by other, where other is not Fixnum or Bignum.
         /// </summary>
@@ -363,9 +395,11 @@ namespace IronRuby.Builtins {
         /// <returns>Float, Fixnum or Bignum</returns>
         /// <remarks>Coerces self and other using other.coerce(self) then dynamically invokes remainder</remarks>
         [RubyMethod("remainder")]
-        public static object Remainder(RubyContext/*!*/ context, BigInteger/*!*/ self, object other) {
-            return Protocols.CoerceAndCall(context, self, other, LibrarySites.Remainder);
+        public static object Remainder(SiteLocalStorage<BinaryOpSite>/*!*/ coercionStorage, SiteLocalStorage<BinaryOpSite>/*!*/ binaryOpSite, 
+            RubyContext/*!*/ context, BigInteger/*!*/ self, object other) {
+            return Protocols.CoerceAndApply(coercionStorage, binaryOpSite, "remainder", context, self, other);
         }
+
         #endregion
 
         #endregion
@@ -410,8 +444,9 @@ namespace IronRuby.Builtins {
         /// Dynamically invokes &lt;=&gt;.
         /// </remarks>
         [RubyMethod("<=>")]
-        public static object Compare(RubyContext/*!*/ context, BigInteger/*!*/ self, object other) {
-            return Protocols.CoerceAndCallCompare(context, self, other);
+        public static object Compare(SiteLocalStorage<BinaryOpSite>/*!*/ coercionStorage, SiteLocalStorage<BinaryOpSite>/*!*/ comparisonStorage,
+            RubyContext/*!*/ context, BigInteger/*!*/ self, object other) {
+            return Protocols.CoerceAndCompare(coercionStorage, comparisonStorage, context, self, other);
         }
 
         #endregion
@@ -685,7 +720,7 @@ namespace IronRuby.Builtins {
         /// <returns>indexth bit in the (assumed) binary representation of self, where self[0] is the least significant bit.</returns>
         /// <remarks>Since representation is supposed to be 2s complement, we return always 1 if self is negative and index is greater than most signifcant bit in BigInteger</remarks>
         [RubyMethod("[]")]
-        public static int Bit(BigInteger/*!*/ self, int index) {
+        public static int Bit(BigInteger/*!*/ self, [DefaultProtocol]int index) {
             // If we are outside the range then return 0 ...
             if (index < 0) return 0;
 
@@ -714,21 +749,6 @@ namespace IronRuby.Builtins {
             // BigIntegers as indexes are always going to be outside the range.
             if (index.IsNegative() || self.IsPositive()) return 0;
             return 1;
-        }
-
-        /// <summary>
-        /// Returns the Bit value at the reference index, where index is not Fixnum or Bignum
-        /// </summary>
-        /// <returns>indexth bit in the (assumed) binary representation of self, where self[0] is the least significant bit.</returns>
-        /// <remarks>index is dynamically converted to an Integer by index.to_int then [] is invoked dynamically. E.g. self[index.to_int]</remarks>
-        [RubyMethod("[]")]
-        public static int Bit(RubyContext/*!*/ context, BigInteger/*!*/ self, object index) {
-            try {
-                object intIndex = Protocols.ConvertToInteger(context, index);
-                return LibrarySites.BitRef(context, self, intIndex);
-            } catch (FloatDomainError x) {
-                throw RubyExceptions.CreateRangeError("float " + x.Message + " out of range of Integer");
-            }
         }
 
         #endregion

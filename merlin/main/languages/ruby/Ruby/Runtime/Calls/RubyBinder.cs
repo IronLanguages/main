@@ -20,7 +20,6 @@ using System.Linq.Expressions;
 using System.Reflection;
 using System.Dynamic;
 using System.Collections.Generic;
-using System.Dynamic.Binders;
 
 using Microsoft.Scripting;
 using Microsoft.Scripting.Actions;
@@ -35,6 +34,7 @@ using AstFactory = IronRuby.Compiler.Ast.AstFactory;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 using IronRuby.Compiler;
 using IronRuby.Builtins;
+using System.Runtime.CompilerServices;
 
 namespace IronRuby.Runtime.Calls {
     public sealed class RubyBinder : DefaultBinder {
@@ -46,6 +46,14 @@ namespace IronRuby.Runtime.Calls {
             List<ParameterWrapper>/*!*/ parameters, ref int index) {
             
             var i = 0;
+
+            while (i < parameterInfos.Length
+                && parameterInfos[i].ParameterType.IsGenericType
+                && parameterInfos[i].ParameterType.GetGenericTypeDefinition() == typeof(SiteLocalStorage<>)) {
+
+                arguments.Add(new SiteLocalStorageBuilder(parameterInfos[i]));
+                i++;
+            }
 
             if (i < parameterInfos.Length) {
                 var parameterInfo = parameterInfos[i];
@@ -91,6 +99,8 @@ namespace IronRuby.Runtime.Calls {
                 if (parameterInfo.ParameterType == typeof(RubyScope)) {
                     continue;
                 } else if (parameterInfo.ParameterType == typeof(RubyContext)) {
+                    continue;
+                } else if (parameterInfo.ParameterType.IsSubclassOf(typeof(CallSite))) {
                     continue;
                 } else if (parameterInfo.ParameterType == typeof(BlockParam)) {
                     acceptsBlock = true;

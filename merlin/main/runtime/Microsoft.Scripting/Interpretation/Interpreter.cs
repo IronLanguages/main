@@ -21,7 +21,6 @@ using System.Linq.Expressions;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Dynamic;
-using System.Dynamic.Binders;
 using Microsoft.Scripting.Actions;
 using Microsoft.Scripting.Ast;
 using Microsoft.Scripting.Generation;
@@ -1159,13 +1158,19 @@ namespace Microsoft.Scripting.Interpretation {
             return ControlFlow.Goto(node.Target, value);
         }
 
-        private static object InterpretEmptyExpression(InterpreterState state, Expression expr) {
+        private static object InterpretDefaultExpression(InterpreterState state, Expression expr) {
             if (state.CurrentYield != null) {
                 return ControlFlow.NextForYield;
             }
 
-            DefaultExpression node = (DefaultExpression)expr;
-            return ControlFlow.NextStatement;
+            Type type = expr.Type;
+            if (type == typeof(void)) {
+                return ControlFlow.NextStatement;
+            } else if (type.IsValueType) {
+                return Activator.CreateInstance(type);
+            } else {
+                return null;
+            }
         }
 
         /// <summary>
@@ -1178,7 +1183,7 @@ namespace Microsoft.Scripting.Interpretation {
             if (node.DefaultValue != null) {
                 res = Interpret(state, node.DefaultValue);
                 var cf = res as ControlFlow;
-                if (cf != null && cf.Kind == ControlFlowKind.Goto && cf.Label == node.Label) {
+                if (cf != null && cf.Kind == ControlFlowKind.Goto && cf.Label == node.Target) {
                     res = cf.Value;
                 }
             }
@@ -1251,7 +1256,7 @@ namespace Microsoft.Scripting.Interpretation {
                                     // Is the goto within the block?
                                     for (int target = 0; target < count; target++) {
                                         LabelExpression le = expressions[target] as LabelExpression;
-                                        if (le != null && le.Label == cf.Label) {
+                                        if (le != null && le.Target == cf.Label) {
                                             // Reset to execute the code from after the label
                                             // We are going to the label and since label is at the end of the
                                             // expression, set to target and we'll advance below.
@@ -1476,7 +1481,7 @@ namespace Microsoft.Scripting.Interpretation {
 
         private static object InterpretGeneratorExpression(InterpreterState state, GeneratorExpression generator) {
             // Fast path for object
-            if (generator.Label.Type == typeof(object)) {
+            if (generator.Target.Type == typeof(object)) {
                 return InterpretGenerator<object>(state, generator);
             }
 
@@ -1484,7 +1489,7 @@ namespace Microsoft.Scripting.Interpretation {
             return ReflectedCaller.Create(
                 typeof(Interpreter).GetMethod(
                     "InterpretGenerator", BindingFlags.NonPublic | BindingFlags.Static
-                ).MakeGenericMethod(generator.Label.Type)
+                ).MakeGenericMethod(generator.Target.Type)
             ).Invoke(state, generator);
         }
 

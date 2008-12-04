@@ -14,6 +14,7 @@
  * ***************************************************************************/
 
 using Microsoft.Scripting;
+using Microsoft.Scripting.Ast;
 using Microsoft.Scripting.Utils;
 using MSA = System.Linq.Expressions;
 
@@ -37,7 +38,7 @@ namespace IronRuby.Compiler.Ast {
         }
 
         internal override MSA.Expression/*!*/ TransformRead(AstGenerator/*!*/ gen) {
-            return Ast.Convert(Transform(gen), typeof(object));
+            return Utils.Convert(Transform(gen), typeof(object));
         }
 
         internal override MSA.Expression TransformResult(AstGenerator/*!*/ gen, ResultOperation resultOperation) {

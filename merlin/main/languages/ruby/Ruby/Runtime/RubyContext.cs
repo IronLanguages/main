@@ -20,7 +20,6 @@ using System.IO;
 using System.Linq.Expressions;
 using System.Runtime.CompilerServices;
 using System.Dynamic;
-using System.Dynamic.Binders;
 using System.Security;
 using System.Text;
 using System.Threading;
@@ -2036,6 +2035,28 @@ namespace IronRuby.Runtime {
             }
 
             return new RubyCreateInstanceBinder(this, arguments);
+        }
+
+        #endregion
+
+        #region Special Call Sites
+
+        private readonly Dictionary<KeyValuePair<string, RubyCallSignature>, CallSite> _sendSites =
+            new Dictionary<KeyValuePair<string, RubyCallSignature>, CallSite>();
+
+        public CallSite<TSiteFunc>/*!*/ GetOrCreateSendSite<TSiteFunc>(string/*!*/ methodName, RubyCallSignature callSignature)
+            where TSiteFunc : class {
+
+            lock (_sendSites) {
+                CallSite site;
+                if (_sendSites.TryGetValue(new KeyValuePair<string, RubyCallSignature>(methodName, callSignature), out site)) {
+                    return (CallSite<TSiteFunc>)site;
+                }
+
+                var newSite = CallSite<TSiteFunc>.Create(RubyCallAction.Make(methodName, callSignature));
+                _sendSites.Add(new KeyValuePair<string, RubyCallSignature>(methodName, callSignature), newSite);
+                return newSite;
+            }
         }
 
         #endregion

@@ -15,7 +15,7 @@
 
 using System.Linq.Expressions;
 
-namespace System.Dynamic.Binders {
+namespace System.Dynamic {
     public interface IDynamicObject {
         MetaObject GetMetaObject(Expression parameter);
     }

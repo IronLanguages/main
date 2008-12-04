@@ -15,7 +15,7 @@
 
 using System.Dynamic.Utils;
 
-namespace System.Dynamic.Binders {
+namespace System.Dynamic {
     public abstract class DeleteMemberBinder : MetaObjectBinder {
         private readonly string _name;
         private readonly bool _ignoreCase;

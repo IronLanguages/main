@@ -16,7 +16,7 @@
 #if !SILVERLIGHT
 
 using System.Collections.Generic;
-using System.Dynamic.Binders;
+using System.Dynamic;
 using System.Linq.Expressions;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 

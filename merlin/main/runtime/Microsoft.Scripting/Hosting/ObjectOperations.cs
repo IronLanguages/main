@@ -21,7 +21,7 @@ using System.Security.Permissions;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 using System.Linq.Expressions;
-using System.Dynamic.Binders;
+using System.Dynamic;
 
 namespace Microsoft.Scripting.Hosting {
 

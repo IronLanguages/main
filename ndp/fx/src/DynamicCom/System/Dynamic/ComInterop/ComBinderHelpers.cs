@@ -16,7 +16,7 @@
 #if !SILVERLIGHT
 
 using System.Diagnostics;
-using System.Dynamic.Binders;
+using System.Dynamic;
 using System.Dynamic.Utils;
 using System.Linq.Expressions;
 using System.Linq.Expressions.Compiler;
@@ -33,6 +33,7 @@ namespace System.Dynamic.ComInterop {
 
             if (type == typeof(String) ||
                 type == typeof(DBNull) ||
+                type == typeof(Null) ||
                 type == typeof(System.Reflection.Missing) ||
                 type == typeof(CurrencyWrapper)) {
 
@@ -42,14 +43,21 @@ namespace System.Dynamic.ComInterop {
             }
         }
 
+        internal static bool IsByRef(MetaObject mo) {
+            ParameterExpression pe = mo.Expression as ParameterExpression;
+            return pe != null && pe.IsByRef;
+        }
+
         internal static bool IsStrongBoxArg(MetaObject o) {
-            if (o.IsByRef) return false;
+            if (IsByRef(o)) {
+                return false;
+            }
 
             Type t = o.LimitType;
             return t.IsGenericType && t.GetGenericTypeDefinition() == typeof(StrongBox<>);
         }
 
-        internal static MetaObject RewriteStrongBoxAsRef(CallSiteBinder action, MetaObject target, MetaObject[] args) {
+        internal static MetaObject RewriteStrongBoxAsRef(CallSiteBinder action, MetaObject target, MetaObject[] args, bool hasRhs) {
             Debug.Assert(action != null && target != null && args != null);
 
             var restrictions = target.Restrictions.Merge(Restrictions.Combine(args));
@@ -64,7 +72,16 @@ namespace System.Dynamic.ComInterop {
             argExpressions[0] = target.Expression;
             signatureTypes[1] = target.Expression.Type;
 
-            for (int i = 0; i < args.Length; i++) {
+            int argsToProcess = args.Length;
+
+            if (hasRhs) {
+                MetaObject rhsArgument = args[args.Length - 1];
+                argExpressions[args.Length] = rhsArgument.Expression;
+                signatureTypes[args.Length + 1] = rhsArgument.Expression.Type;
+                argsToProcess--;
+            }
+
+            for (int i = 0; i < argsToProcess; i++) {
                 MetaObject currArgument = args[i];
                 if (IsStrongBoxArg(currArgument)) {
                     restrictions = restrictions.Merge(Restrictions.GetTypeRestriction(currArgument.Expression, currArgument.LimitType));
@@ -85,7 +102,7 @@ namespace System.Dynamic.ComInterop {
                     signatureTypes[i + 2] = currArgument.Expression.Type;
                 }
             }
-
+            
             // Last signatureType is the return value
             signatureTypes[signatureTypes.Length - 1] = typeof(object);
 

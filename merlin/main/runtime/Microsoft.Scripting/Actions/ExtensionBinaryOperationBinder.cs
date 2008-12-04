@@ -14,7 +14,7 @@
  * ***************************************************************************/
 
 using System.Linq.Expressions;
-using System.Dynamic.Binders;
+using System.Dynamic;
 using Microsoft.Scripting.Utils;
 
 namespace Microsoft.Scripting.Actions {

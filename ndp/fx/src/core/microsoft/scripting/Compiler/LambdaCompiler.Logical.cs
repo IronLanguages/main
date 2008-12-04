@@ -191,11 +191,15 @@ namespace System.Linq.Expressions.Compiler {
             _ilg.Emit(OpCodes.Pop);
             EmitExpression(b.Right);
             if (b.Right.Type != b.Type) {
+                if (b.Right.Type.IsValueType) {
+                    _ilg.Emit(OpCodes.Box, b.Right.Type);
+                }
                 _ilg.Emit(OpCodes.Castclass, b.Type);
             }
             _ilg.Emit(OpCodes.Br_S, labEnd);
             _ilg.MarkLabel(labCast);
             if (b.Left.Type != b.Type) {
+                Debug.Assert(!b.Left.Type.IsValueType);
                 _ilg.Emit(OpCodes.Castclass, b.Type);
             }
             _ilg.MarkLabel(labEnd);

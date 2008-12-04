@@ -17,7 +17,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Dynamic.Binders;
+using System.Dynamic;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -35,12 +35,19 @@ using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 using System.IO;
 using System.Runtime.InteropServices;
+using Microsoft.Scripting.Generation;
+
+using BinaryOpSite = System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite,
+    IronRuby.Runtime.RubyContext, object, object, object>>;
 
 namespace IronRuby.Runtime {
     public static partial class RubyOps {
 
         [Emitted]
         public static readonly object/*!*/ DefaultArgument = new object();
+        
+        [Emitted]
+        public static readonly object/*!*/ MethodNotFound = new object();
 
         #region Scopes
 
@@ -786,7 +793,7 @@ namespace IronRuby.Runtime {
         
         [Emitted]
         public static Hash/*!*/ MakeHash(RubyScope/*!*/ scope, object[]/*!*/ items) {
-            return RubyUtils.MakeHash(scope.RubyContext, items);
+            return RubyUtils.SetHashElements(scope.RubyContext, new Hash(scope.RubyContext.EqualityComparer, items.Length / 2), items);
         }
 
         #endregion
@@ -1316,13 +1323,23 @@ namespace IronRuby.Runtime {
         }
 
         [Emitted]
-        public static Range/*!*/ CreateInclusiveRange(RubyScope/*!*/ scope, object begin, object end) {
-            return new Range(scope.RubyContext, begin, end, false);
+        public static Range/*!*/ CreateInclusiveRange(object begin, object end, RubyScope/*!*/ scope, SiteLocalStorage<BinaryOpSite>/*!*/ comparisonStorage) {
+            return new Range(comparisonStorage, scope.RubyContext, begin, end, false);
         }
 
         [Emitted]
-        public static Range/*!*/ CreateExclusiveRange(RubyScope/*!*/ scope, object begin, object end) {
-            return new Range(scope.RubyContext, begin, end, true);
+        public static Range/*!*/ CreateExclusiveRange(object begin, object end, RubyScope/*!*/ scope, SiteLocalStorage<BinaryOpSite>/*!*/ comparisonStorage) {
+            return new Range(comparisonStorage, scope.RubyContext, begin, end, true);
+        }
+
+        [Emitted]
+        public static Range/*!*/ CreateInclusiveIntegerRange(int begin, int end) {
+            return new Range(begin, end, false);
+        }
+
+        [Emitted]
+        public static Range/*!*/ CreateExclusiveIntegerRange(int begin, int end) {
+            return new Range(begin, end, true);
         }
 
         // allocator for struct instances:

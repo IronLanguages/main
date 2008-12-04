@@ -13,6 +13,9 @@
  *
  * ***************************************************************************/
 
+using RespondToSite = System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite,
+    IronRuby.Runtime.RubyContext, object, Microsoft.Scripting.SymbolId, object>>;
+
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -24,39 +27,50 @@ using Microsoft.Scripting;
 using Microsoft.Scripting.Math;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
+using Microsoft.Scripting.Generation;
 
 namespace IronRuby.Builtins {
 
     [RubyModule("Marshal")]
     public class RubyMarshal {
 
-        #region Sites
+        public struct WriterSites {
+            private CallSite<Func<CallSite, RubyContext, object, object>> _marshalDump;
+            private CallSite<Func<CallSite, RubyContext, object, int, object>> _dump;
 
-        private const string _MarshalDumpSymbol = "marshal_dump";
-        private const string _DumpSymbol = "_dump";
+            public CallSite<Func<CallSite, RubyContext, object, object>>/*!*/ MarshalDump {
+                get { return RubyUtils.GetCallSite(ref _marshalDump, "marshal_dump", 0); }
+            }
 
-        private static readonly CallSite<Func<CallSite, RubyContext, object, object>> _MarshalDumpSite =
-            CallSite<Func<CallSite, RubyContext, object, object>>.Create(RubySites.InstanceCallAction("marshal_dump"));
+            public CallSite<Func<CallSite, RubyContext, object, int, object>>/*!*/ Dump {
+                get { return RubyUtils.GetCallSite(ref _dump, "_dump", 1); }
+            }
+        }
 
-        private static readonly CallSite<Func<CallSite, RubyContext, object, int, object>> _DumpSite =
-            CallSite<Func<CallSite, RubyContext, object, int, object>>.Create(RubySites.InstanceCallAction("_dump", 1));
+        public struct ReaderSites {
+            private CallSite<Func<CallSite, RubyContext, object, object, object>> _marshalLoad;
+            private CallSite<Func<CallSite, RubyContext, object, MutableString, object>> _load;
+            public CallSite<Func<CallSite, RubyContext, Proc, object, object>> _procCall;
 
-        private static readonly CallSite<Func<CallSite, RubyContext, object, object, object>> _MarshalLoadSite =
-            CallSite<Func<CallSite, RubyContext, object, object, object>>.Create(RubySites.InstanceCallAction("marshal_load", 1));
+            public CallSite<Func<CallSite, RubyContext, object, object, object>>/*!*/ MarshalLoad {
+                get { return RubyUtils.GetCallSite(ref _marshalLoad, "marshal_load", 1); }
+            }
 
-        private static readonly CallSite<Func<CallSite, RubyContext, object, MutableString, object>> _LoadSite =
-            CallSite<Func<CallSite, RubyContext, object, MutableString, object>>.Create(RubySites.InstanceCallAction("_load", 1));
+            public CallSite<Func<CallSite, RubyContext, object, MutableString, object>>/*!*/ Load {
+                get { return RubyUtils.GetCallSite(ref _load, "_load", 1); }
+            }
 
-        private static readonly CallSite<Func<CallSite, RubyContext, Proc, object, object>> _ReaderProcSite =
-            CallSite<Func<CallSite, RubyContext, Proc, object, object>>.Create(RubySites.InstanceCallAction("call", 1));
+            public CallSite<Func<CallSite, RubyContext, Proc, object, object>>/*!*/ ProcCall {
+                get { return RubyUtils.GetCallSite(ref _procCall, "call", 1); }
+            }
+        }
 
-        #endregion
-
+            
         #region Constants
 
-        private static readonly MutableString _positiveInfinityString = MutableString.Create("inf");
-        private static readonly MutableString _negativeInfinityString = MutableString.Create("-inf");
-        private static readonly MutableString _nanString = MutableString.Create("nan");
+        private static readonly MutableString _positiveInfinityString = MutableString.Create("inf").Freeze();
+        private static readonly MutableString _negativeInfinityString = MutableString.Create("-inf").Freeze();
+        private static readonly MutableString _nanString = MutableString.Create("nan").Freeze();
 
         #endregion
 
@@ -65,6 +79,7 @@ namespace IronRuby.Builtins {
         internal class MarshalWriter {
             private readonly BinaryWriter/*!*/ _writer;
             private readonly RubyContext/*!*/ _context;
+            private readonly SiteLocalStorage<WriterSites>/*!*/ _sites;
             private int _recursionLimit;
             private readonly Dictionary<string/*!*/, int>/*!*/ _symbols;
             private readonly Dictionary<object, int>/*!*/ _objects;
@@ -72,9 +87,10 @@ namespace IronRuby.Builtins {
             private readonly StreamingContext/*!*/ _streamingContext;
 #endif
 
-            internal MarshalWriter(BinaryWriter/*!*/ writer, RubyContext/*!*/ context, int? limit) {
-                Assert.NotNull(writer, context);
+            internal MarshalWriter(SiteLocalStorage<WriterSites>/*!*/ sites, BinaryWriter/*!*/ writer, RubyContext/*!*/ context, int? limit) {
+                Assert.NotNull(sites, writer, context);
 
+                _sites = sites;
                 _writer = writer;
                 _context = context;
                 _recursionLimit = (limit.HasValue ? limit.Value : -1);
@@ -303,7 +319,7 @@ namespace IronRuby.Builtins {
                 RubyClass theClass = _context.GetClassOf(obj);
                 TestForAnonymous(theClass);
                 WriteSymbol(theClass.Name);
-                MutableString dumpResult = _DumpSite.Target(_DumpSite, _context, obj, _recursionLimit) as MutableString;
+                MutableString dumpResult = _sites.Data.Dump.Target(_sites.Data.Dump, _context, obj, _recursionLimit) as MutableString;
                 if (dumpResult == null) {
                     throw RubyExceptions.CreateTypeError("_dump() must return string");
                 }
@@ -315,7 +331,7 @@ namespace IronRuby.Builtins {
                 RubyClass theClass = _context.GetClassOf(obj);
                 TestForAnonymous(theClass);
                 WriteSymbol(theClass.Name);
-                WriteAnObject(_MarshalDumpSite.Target(_MarshalDumpSite, _context, obj));
+                WriteAnObject(_sites.Data.MarshalDump.Target(_sites.Data.MarshalDump, _context, obj));
             }
 
             private void WriteClass(RubyClass/*!*/ obj) {
@@ -380,8 +396,8 @@ namespace IronRuby.Builtins {
 
                         // TODO: replace with a table-driven implementation
                         // TODO: visibility?
-                        bool implementsDump = (_context.ResolveMethod(obj, _DumpSymbol, true) != null);
-                        bool implementsMarshalDump = (_context.ResolveMethod(obj, _MarshalDumpSymbol, true) != null);
+                        bool implementsDump = (_context.ResolveMethod(obj, "_dump", true) != null);
+                        bool implementsMarshalDump = (_context.ResolveMethod(obj, "marshal_dump", true) != null);
 
                         bool writeInstanceData = false;
                         string[] instanceNames = null;
@@ -471,13 +487,15 @@ namespace IronRuby.Builtins {
 
         internal class MarshalReader {
             private readonly BinaryReader/*!*/ _reader;
+            private readonly SiteLocalStorage<ReaderSites>/*!*/ _sites;
             private readonly RubyContext/*!*/ _context;
             private readonly Scope/*!*/ _globalScope;
             private readonly Proc _proc;
             private readonly Dictionary<int, string>/*!*/ _symbols;
             private readonly Dictionary<int, object>/*!*/ _objects;
 
-            internal MarshalReader(BinaryReader/*!*/ reader, RubyContext/*!*/ context, Scope/*!*/ globalScope, Proc proc) {
+            internal MarshalReader(SiteLocalStorage<ReaderSites>/*!*/ sites, BinaryReader/*!*/ reader, RubyContext/*!*/ context, Scope/*!*/ globalScope, Proc proc) {
+                _sites = sites;
                 _reader = reader;
                 _context = context;
                 _globalScope = globalScope;
@@ -654,12 +672,12 @@ namespace IronRuby.Builtins {
 
             private object/*!*/ ReadUsingLoad() {
                 RubyClass theClass = ReadType();
-                return _LoadSite.Target(_LoadSite, _context, theClass, ReadString());
+                return _sites.Data.Load.Target(_sites.Data.Load, _context, theClass, ReadString());
             }
 
             private object/*!*/ ReadUsingMarshalLoad() {
                 object obj = UnmarshalNewObject();
-                _MarshalLoadSite.Target(_MarshalLoadSite, _context, obj, ReadAnObject(false));
+                _sites.Data.MarshalLoad.Target(_sites.Data.MarshalLoad, _context, obj, ReadAnObject(false));
                 return obj;
             }
 
@@ -878,7 +896,7 @@ namespace IronRuby.Builtins {
                         break;
                 }
                 if (runProc) {
-                    _ReaderProcSite.Target(_ReaderProcSite, _context, _proc, obj);
+                    _sites.Data.ProcCall.Target(_sites.Data.ProcCall, _context, _proc, obj);
                 }
                 return obj;
             }
@@ -899,74 +917,77 @@ namespace IronRuby.Builtins {
 
         // TODO: Use DefaultValue attribute when it works with the binder
         [RubyMethod("dump", RubyMethodAttributes.PublicSingleton)]
-        public static MutableString Dump(RubyModule/*!*/ self, object obj) {
-            return Dump(self, obj, -1);
+        public static MutableString Dump(SiteLocalStorage<WriterSites>/*!*/ sites, RubyModule/*!*/ self, object obj) {
+            return Dump(sites, self, obj, -1);
         }
 
         // TODO: Use DefaultValue attribute when it works with the binder
         [RubyMethod("dump", RubyMethodAttributes.PublicSingleton)]
-        public static MutableString Dump(RubyModule/*!*/ self, object obj, int limit) {
+        public static MutableString Dump(SiteLocalStorage<WriterSites>/*!*/ sites, RubyModule/*!*/ self, object obj, int limit) {
             MemoryStream buffer = new MemoryStream();
             BinaryWriter writer = new BinaryWriter(buffer);
-            MarshalWriter dumper = new MarshalWriter(writer, self.Context, limit);
+            MarshalWriter dumper = new MarshalWriter(sites, writer, self.Context, limit);
             dumper.Dump(obj);
             return MutableString.CreateBinary(buffer.ToArray());
         }
 
         // TODO: Use DefaultValue attribute when it works with the binder
         [RubyMethod("dump", RubyMethodAttributes.PublicSingleton)]
-        public static object Dump(RubyModule/*!*/ self, object obj, [NotNull]RubyIO/*!*/ io, [Optional]int? limit) {
+        public static object Dump(SiteLocalStorage<WriterSites>/*!*/ sites, RubyModule/*!*/ self, object obj, [NotNull]RubyIO/*!*/ io, [Optional]int? limit) {
             BinaryWriter writer = io.GetBinaryWriter();
-            MarshalWriter dumper = new MarshalWriter(writer, self.Context, limit);
+            MarshalWriter dumper = new MarshalWriter(sites, writer, self.Context, limit);
             dumper.Dump(obj);
             return io;
         }
 
         // TODO: Use DefaultValue attribute when it works with the binder
         [RubyMethod("dump", RubyMethodAttributes.PublicSingleton)]
-        public static object Dump(RubyModule/*!*/ self, object obj, object io, [Optional]int? limit) {
+        public static object Dump(SiteLocalStorage<WriterSites>/*!*/ sites, SiteLocalStorage<RespondToSite>/*!*/ respondToStorage, 
+            RubyModule/*!*/ self, object obj, object io, [Optional]int? limit) {
             Stream stream = null;
             if (io != null) {
-                stream = new IOWrapper(self.Context, io, FileAccess.Write);
+                stream = RubyIOOps.CreateIOWrapper(respondToStorage, self.Context, io, FileAccess.Write);
             }
             if (stream == null || !stream.CanWrite) {
                 throw RubyExceptions.CreateTypeError("instance of IO needed");
             }
 
             BinaryWriter writer = new BinaryWriter(stream);
-            MarshalWriter dumper = new MarshalWriter(writer, self.Context, limit);
+            MarshalWriter dumper = new MarshalWriter(sites, writer, self.Context, limit);
             dumper.Dump(obj);
             return io;
         }
 
         [RubyMethod("load", RubyMethodAttributes.PublicSingleton)]
         [RubyMethod("restore", RubyMethodAttributes.PublicSingleton)]
-        public static object Load(RubyScope/*!*/ scope, RubyModule/*!*/ self, [NotNull]MutableString/*!*/ source, [Optional]Proc proc) {
+        public static object Load(SiteLocalStorage<ReaderSites>/*!*/ sites, RubyScope/*!*/ scope, RubyModule/*!*/ self, [NotNull]MutableString/*!*/ source, [Optional]Proc proc) {
             BinaryReader reader = new BinaryReader(new MemoryStream(source.ConvertToBytes()));
-            MarshalReader loader = new MarshalReader(reader, scope.RubyContext, scope.GlobalScope, proc);
+            MarshalReader loader = new MarshalReader(sites, reader, scope.RubyContext, scope.GlobalScope, proc);
             return loader.Load();
         }
 
         [RubyMethod("load", RubyMethodAttributes.PublicSingleton)]
         [RubyMethod("restore", RubyMethodAttributes.PublicSingleton)]
-        public static object Load(RubyScope/*!*/ scope, RubyModule/*!*/ self, [NotNull]RubyIO/*!*/ source, [Optional]Proc proc) {
+        public static object Load(SiteLocalStorage<ReaderSites>/*!*/ sites, RubyScope/*!*/ scope, RubyModule/*!*/ self, [NotNull]RubyIO/*!*/ source, [Optional]Proc proc) {
             BinaryReader reader = source.GetBinaryReader();
-            MarshalReader loader = new MarshalReader(reader, scope.RubyContext, scope.GlobalScope, proc);
+            MarshalReader loader = new MarshalReader(sites, reader, scope.RubyContext, scope.GlobalScope, proc);
             return loader.Load();
         }
 
         [RubyMethod("load", RubyMethodAttributes.PublicSingleton)]
         [RubyMethod("restore", RubyMethodAttributes.PublicSingleton)]
-        public static object Load(RubyScope/*!*/ scope, RubyModule/*!*/ self, object source, [Optional]Proc proc) {
+        public static object Load(SiteLocalStorage<ReaderSites>/*!*/ sites, SiteLocalStorage<RespondToSite>/*!*/ respondToStorage, 
+            RubyScope/*!*/ scope, RubyModule/*!*/ self, object source, [Optional]Proc proc) {
+
             Stream stream = null;
             if (source != null) {
-                stream = new IOWrapper(self.Context, source, FileAccess.Read);
+                stream = RubyIOOps.CreateIOWrapper(respondToStorage, self.Context, source, FileAccess.Read);
             }
             if (stream == null || !stream.CanRead) {
                 throw RubyExceptions.CreateTypeError("instance of IO needed");
             }
             BinaryReader reader = new BinaryReader(stream);
-            MarshalReader loader = new MarshalReader(reader, scope.RubyContext, scope.GlobalScope, proc);
+            MarshalReader loader = new MarshalReader(sites, reader, scope.RubyContext, scope.GlobalScope, proc);
             return loader.Load();
         }
 

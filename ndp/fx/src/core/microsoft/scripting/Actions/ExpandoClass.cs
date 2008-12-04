@@ -20,7 +20,7 @@ using System.Linq.Expressions;
 using System.Dynamic.Utils;
 using System.Text;
 
-namespace System.Dynamic.Binders {
+namespace System.Dynamic {
     /// <summary>
     /// Represents a dynamically assigned class.  Expando objects which share the same 
     /// members will share the same class.  Classes are dynamically assigned as the
@@ -91,7 +91,7 @@ namespace System.Dynamic.Binders {
         }
 
         private static StringComparison GetStringComparison(bool ignoreCase) {
-            return ignoreCase ? StringComparison.InvariantCultureIgnoreCase : StringComparison.InvariantCulture;
+            return ignoreCase ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
         }
 
         /// <summary>

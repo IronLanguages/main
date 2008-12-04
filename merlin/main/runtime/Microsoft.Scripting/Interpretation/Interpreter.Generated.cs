@@ -80,7 +80,7 @@ namespace Microsoft.Scripting.Interpretation {
                  case ExpressionType.DebugInfo: return InterpretDebugInfoExpression(state, expr);
                  case ExpressionType.Decrement: return InterpretUnaryExpression(state, expr);
                  case ExpressionType.Dynamic: return InterpretDynamicExpression(state, expr);
-                 case ExpressionType.Default: return InterpretEmptyExpression(state, expr);
+                 case ExpressionType.Default: return InterpretDefaultExpression(state, expr);
                  case ExpressionType.Extension: return InterpretExtensionExpression(state, expr);
                  case ExpressionType.Goto: return InterpretGotoExpression(state, expr);
                  case ExpressionType.Increment: return InterpretUnaryExpression(state, expr);

@@ -16,7 +16,7 @@
 using System.Runtime.CompilerServices;
 using System.Threading;
 
-namespace System.Dynamic.Binders {
+namespace System.Dynamic {
     internal static partial class UpdateDelegates {
 
         /// <summary>

@@ -13,53 +13,114 @@
  *
  * ***************************************************************************/
 
-using Microsoft.Scripting.Runtime;
+using BinaryOpSite = System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite,
+    IronRuby.Runtime.RubyContext, object, object, object>>;
+
+using System;
 using IronRuby.Runtime;
+using IronRuby.Runtime.Calls;
+using Microsoft.Scripting.Generation;
+using Microsoft.Scripting.Runtime;
 
 namespace IronRuby.Builtins {
 
     [RubyModule("Comparable")]
     public static class Comparable {
         [RubyMethod("<")]
-        public static bool Less(RubyContext/*!*/ context, object self, object other) {
-            return Protocols.Compare(context, self, other) < 0;
+        public static bool Less(
+            SiteLocalStorage<BinaryOpSite>/*!*/ compareStorage,
+            SiteLocalStorage<BinaryOpSite>/*!*/ lessThanStorage,
+            SiteLocalStorage<BinaryOpSite>/*!*/ greaterThanStorage,
+            RubyContext/*!*/ context, object self, object other) {
+
+            return Compare(compareStorage, lessThanStorage, greaterThanStorage, context, self, other).GetValueOrDefault(0) < 0;
         }
 
         [RubyMethod("<=")]
-        public static bool LessOrEqual(RubyContext/*!*/ context, object self, object other) {
-            return Protocols.Compare(context, self, other) <= 0;
+        public static bool LessOrEqual(
+            SiteLocalStorage<BinaryOpSite>/*!*/ compareStorage,
+            SiteLocalStorage<BinaryOpSite>/*!*/ lessThanStorage,
+            SiteLocalStorage<BinaryOpSite>/*!*/ greaterThanStorage,            
+            RubyContext/*!*/ context, object self, object other) {
+
+            return Compare(compareStorage, lessThanStorage, greaterThanStorage, context, self, other).GetValueOrDefault(1) <= 0;
         }
 
         [RubyMethod(">=")]
-        public static bool GreaterOrEqual(RubyContext/*!*/ context, object self, object other) {
-            return Protocols.Compare(context, self, other) >= 0;
+        public static bool GreaterOrEqual(
+            SiteLocalStorage<BinaryOpSite>/*!*/ compareStorage,
+            SiteLocalStorage<BinaryOpSite>/*!*/ lessThanStorage,
+            SiteLocalStorage<BinaryOpSite>/*!*/ greaterThanStorage,
+            RubyContext/*!*/ context, object self, object other) {
+
+            return Compare(compareStorage, lessThanStorage, greaterThanStorage, context, self, other).GetValueOrDefault(-1) >= 0;
         }
 
         [RubyMethod(">")]
-        public static bool Greater(RubyContext/*!*/ context, object self, object other) {
-            return Protocols.Compare(context, self, other) > 0;
+        public static bool Greater(
+            SiteLocalStorage<BinaryOpSite>/*!*/ compareStorage,
+            SiteLocalStorage<BinaryOpSite>/*!*/ lessThanStorage,
+            SiteLocalStorage<BinaryOpSite>/*!*/ greaterThanStorage,
+            RubyContext/*!*/ context, object self, object other) {
+
+            return Compare(compareStorage, lessThanStorage, greaterThanStorage, context, self, other).GetValueOrDefault(0) > 0;
         }
 
-        [RubyMethod("==")]
-        public static object Equal(RubyContext/*!*/ context, object self, object other) {
-            // Short circuit long winded comparison if the objects are actually the same.
-            if (self == other) {
-                return true;
-            }
+        /// <summary>
+        /// Try to compare the lhs and rhs. Throws and exception if comparison returns null. Returns null on failure, -1/0/+1 otherwise.
+        /// </summary>
+        private static int? Compare(
+            SiteLocalStorage<BinaryOpSite>/*!*/ compareStorage,
+            SiteLocalStorage<BinaryOpSite>/*!*/ lessThanStorage,
+            SiteLocalStorage<BinaryOpSite>/*!*/ greaterThanStorage,
+            RubyContext/*!*/ context, object lhs, object rhs) {
 
-            // TODO: handle exceptions thrown from Compare()
-            // Compare may return null
-            object result = RubySites.Compare(context, self, other);
-            if (result is int) {
-                return (int)result == 0;
+            // calls method_missing, doesn't catch any exception:
+            var compare = compareStorage.GetCallSite("<=>", 1);
+            object compareResult = compare.Target(compare, context, lhs, rhs);
+            
+            if (compareResult != null) {
+                return Protocols.ConvertCompareResult(lessThanStorage, greaterThanStorage, context, compareResult);
             } else {
-                return null;
+                throw RubyExceptions.MakeComparisonError(context, lhs, rhs);
             }
         }
 
         [RubyMethod("between?")]
-        public static bool Between(RubyContext/*!*/ context, object self, object min, object max) {
-            return (!Less(context, self, min) && !Greater(context, self, max));
+        public static bool Between(
+            SiteLocalStorage<BinaryOpSite>/*!*/ compareStorage,
+            SiteLocalStorage<BinaryOpSite>/*!*/ lessThanStorage,
+            SiteLocalStorage<BinaryOpSite>/*!*/ greaterThanStorage,
+            RubyContext/*!*/ context, object self, object min, object max) {
+
+            return !Less(compareStorage, lessThanStorage, greaterThanStorage, context, self, min)
+                && !Greater(compareStorage, lessThanStorage, greaterThanStorage, context, self, max);
+        }
+
+        [RubyMethod("==")]
+        public static object Equal(SiteLocalStorage<BinaryOpSite>/*!*/ compareStorage,
+            RubyContext/*!*/ context, object self, object other) {
+
+            if (self == other) {
+                return ScriptingRuntimeHelpers.True;
+            }
+
+            // calls method_missing:
+            var compare = compareStorage.GetCallSite("<=>", 1);
+
+            object compareResult;
+            try {
+                compareResult = compare.Target(compare, context, self, other);
+            } catch (SystemException) {
+                // catches StandardError (like rescue)
+                return null;
+            }
+
+            if (compareResult == null || !(compareResult is int)) {
+                return null;
+            }
+
+            return ScriptingRuntimeHelpers.BooleanToObject((int)compareResult == 0);
         }
     }
 }

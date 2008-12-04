@@ -19,7 +19,7 @@ using System.Linq.Expressions;
 using System.Reflection;
 using System.Dynamic.Utils;
 
-namespace System.Dynamic.Binders {
+namespace System.Dynamic {
     /// <summary>
     /// Provides a simple class that can be inherited from to create an object with dynamic behavior
     /// at runtime.  Subclasses can override the various binder methods (GetMember, SetMember, Call, etc...)
@@ -417,7 +417,7 @@ namespace System.Dynamic.Binders {
                                 callArgs
                             ),
                             result,
-                            Expression.Convert(fallbackResult.Expression, typeof(object))
+                            Helpers.Convert(fallbackResult.Expression, typeof(object))
                         )
                     ),
                     GetRestrictions().Merge(fallbackResult.Restrictions)
@@ -469,7 +469,7 @@ namespace System.Dynamic.Binders {
                                 callArgs
                             ),
                             result,
-                            Expression.Convert(fallbackResult.Expression, typeof(object))
+                            Helpers.Convert(fallbackResult.Expression, typeof(object))
                         )
                     ),
                     GetRestrictions().Merge(fallbackResult.Restrictions)
@@ -511,7 +511,7 @@ namespace System.Dynamic.Binders {
                             args.AddFirst(Constant(binder))
                         ),
                         Expression.Constant(null),
-                        Expression.Convert(fallbackResult.Expression, typeof(object))
+                        Helpers.Convert(fallbackResult.Expression, typeof(object))
                     ),
                     GetRestrictions().Merge(fallbackResult.Restrictions)
                 );

@@ -67,7 +67,7 @@ namespace System.Dynamic.ComInterop {
 
             throw Error.MethodShouldNotBeCalled();
         }
-        
+
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2201:DoNotRaiseReservedExceptionTypes")]
         internal Exception GetException() {
             Debug.Assert(pfnDeferredFillIn == IntPtr.Zero); // TODO
@@ -97,7 +97,7 @@ namespace System.Dynamic.ComInterop {
             exception.Source = ConvertAndFreeBstr(ref bstrSource);
 
             string helpLink = ConvertAndFreeBstr(ref bstrHelpFile);
-            if (dwHelpContext != 0) {
+            if (helpLink != null && dwHelpContext != 0) {
                 helpLink += "#" + dwHelpContext;
             }
             exception.HelpLink = helpLink;

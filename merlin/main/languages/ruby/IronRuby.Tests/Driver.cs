@@ -266,8 +266,7 @@ namespace IronRuby.Tests {
                     
                 Console.WriteLine("Generating binaries to {0}", _dumpDir);
 
-                Environment.SetEnvironmentVariable("DLR_SaveAssemblies", "true");
-                Environment.SetEnvironmentVariable("DLR_AssembliesDir", _dumpDir);
+                Snippets.SetSaveAssemblies(true, _dumpDir);
             }
         }
         

@@ -13,13 +13,19 @@
  *
  * ***************************************************************************/
 
+using Enumerator = IronRuby.StandardLibrary.Enumerator.Enumerable.Enumerator;
+using BinaryOpSite = System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite,
+    IronRuby.Runtime.RubyContext, object, object, object>>;
+
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using IronRuby.Runtime;
+using Microsoft.Scripting.Generation;
 using Microsoft.Scripting.Runtime;
-using Enumerator = IronRuby.StandardLibrary.Enumerator.Enumerable.Enumerator;
 
 namespace IronRuby.Builtins {
 
@@ -96,7 +102,8 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("detect")]
         [RubyMethod("find")]
-        public static object Find(RubyContext/*!*/ context, BlockParam predicate, object self, [Optional]object ifNone) {
+        public static object Find(SiteLocalStorage<CallSite<Func<CallSite, RubyContext, object, object>>>/*!*/ callStorage,
+            RubyContext/*!*/ context, BlockParam predicate, object self, [Optional]object ifNone) {
             object result = Missing.Value;
 
             Each(context, self, Proc.Create(context, delegate(BlockParam/*!*/ selfBlock, object item) {
@@ -122,7 +129,9 @@ namespace IronRuby.Builtins {
                 if (ifNone == Missing.Value || ifNone == null) {
                     return null;
                 }
-                result = RubySites.Call(context, ifNone);
+
+                var site = callStorage.GetCallSite("call", 0);
+                result = site.Target(site, context, ifNone);
             }
             return result;
         }
@@ -283,15 +292,29 @@ namespace IronRuby.Builtins {
         #region max, min
 
         [RubyMethod("max")]
-        public static object GetMaximum(RubyContext/*!*/ context, BlockParam comparer, object self) {
-            return GetExtreme(context, comparer, self, -1/*look for max*/);
-        }
-        [RubyMethod("min")]
-        public static object GetMinimum(RubyContext/*!*/ context, BlockParam comparer, object self) {
-            return GetExtreme(context, comparer, self, 1/*look for min*/);
+        public static object GetMaximum(
+            SiteLocalStorage<BinaryOpSite>/*!*/ compareStorage,
+            SiteLocalStorage<BinaryOpSite>/*!*/ lessThanStorage,
+            SiteLocalStorage<BinaryOpSite>/*!*/ greaterThanStorage,
+            RubyContext/*!*/ context, BlockParam comparer, object self) {
+            return GetExtreme(compareStorage, lessThanStorage, greaterThanStorage, context, comparer, self, -1/*look for max*/);
         }
 
-        private static object GetExtreme(RubyContext/*!*/ context, BlockParam comparer, object self, int comparisonValue) {
+        [RubyMethod("min")]
+        public static object GetMinimum(
+            SiteLocalStorage<BinaryOpSite>/*!*/ compareStorage,
+            SiteLocalStorage<BinaryOpSite>/*!*/ lessThanStorage,
+            SiteLocalStorage<BinaryOpSite>/*!*/ greaterThanStorage,
+            RubyContext/*!*/ context, BlockParam comparer, object self) {
+            return GetExtreme(compareStorage, lessThanStorage, greaterThanStorage, context, comparer, self, 1/*look for min*/);
+        }
+
+        private static object GetExtreme(
+            SiteLocalStorage<BinaryOpSite>/*!*/ compareStorage,
+            SiteLocalStorage<BinaryOpSite>/*!*/ lessThanStorage,
+            SiteLocalStorage<BinaryOpSite>/*!*/ greaterThanStorage,
+            
+            RubyContext/*!*/ context, BlockParam comparer, object self, int comparisonValue) {
             bool firstItem = true;
             object result = null;
 
@@ -314,9 +337,9 @@ namespace IronRuby.Builtins {
                         throw RubyExceptions.MakeComparisonError(context, result, item);
                     }
 
-                    compareResult = Protocols.ConvertCompareResult(context, blockResult);
+                    compareResult = Protocols.ConvertCompareResult(lessThanStorage, greaterThanStorage, context, blockResult);
                 } else {
-                    compareResult = Protocols.Compare(context, result, item);
+                    compareResult = Protocols.Compare(compareStorage, lessThanStorage, greaterThanStorage, context, result, item);
                 }
 
                 // Check if we have found the new minimum or maximum (-1 to select max, 1 to select min)
@@ -367,12 +390,22 @@ namespace IronRuby.Builtins {
         #region sort, sort_by
 
         [RubyMethod("sort")]
-        public static object Sort(RubyContext/*!*/ context, BlockParam keySelector, object self) {
-            return ArrayOps.SortInPlace(context, keySelector, ToArray(context, self));
+        public static object Sort(
+            SiteLocalStorage<BinaryOpSite>/*!*/ comparisonStorage,
+            SiteLocalStorage<BinaryOpSite>/*!*/ lessThanStorage,
+            SiteLocalStorage<BinaryOpSite>/*!*/ greaterThanStorage,
+            
+            RubyContext/*!*/ context, BlockParam keySelector, object self) {
+            return ArrayOps.SortInPlace(comparisonStorage, lessThanStorage, greaterThanStorage, context, keySelector, ToArray(context, self));
         }
 
         [RubyMethod("sort_by")]
-        public static RubyArray/*!*/ SortBy(RubyContext/*!*/ context, BlockParam keySelector, object self) {
+        public static RubyArray/*!*/ SortBy(
+            SiteLocalStorage<BinaryOpSite>/*!*/ comparisonStorage,
+            SiteLocalStorage<BinaryOpSite>/*!*/ lessThanStorage,
+            SiteLocalStorage<BinaryOpSite>/*!*/ greaterThanStorage,
+            RubyContext/*!*/ context, BlockParam keySelector, object self) {
+
             // collect key, value pairs
             List<KeyValuePair<object, object>> keyValuePairs = new List<KeyValuePair<object, object>>();
 
@@ -393,7 +426,7 @@ namespace IronRuby.Builtins {
 
             // sort by keys
             keyValuePairs.Sort(delegate(KeyValuePair<object, object> x, KeyValuePair<object, object> y) {
-                return Protocols.Compare(context, x.Key, y.Key);
+                return Protocols.Compare(comparisonStorage, lessThanStorage, greaterThanStorage, context, x.Key, y.Key);
             });
 
             // return values

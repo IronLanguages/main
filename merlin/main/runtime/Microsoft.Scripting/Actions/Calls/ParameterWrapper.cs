@@ -18,7 +18,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
 using System.Dynamic;
-using System.Dynamic.Binders;
 using Microsoft.Scripting.Actions;
 using Microsoft.Scripting.Utils;
 using Microsoft.Scripting.Generation;

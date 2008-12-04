@@ -13,19 +13,23 @@
  *
  * ***************************************************************************/
 
+using BinaryOpSite = System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite,
+    IronRuby.Runtime.RubyContext, object, object, object>>;
+
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Dynamic;
 using System.IO;
 using System.Text;
-using Microsoft.Scripting.Utils;
-using Microsoft.Scripting.Runtime;
-using Microsoft.Scripting.Actions;
-using System.Dynamic.Binders;
-using IronRuby.Runtime;
 using IronRuby.Compiler;
+using IronRuby.Runtime;
 using IronRuby.Runtime.Calls;
+using Microsoft.Scripting.Actions;
+using Microsoft.Scripting.Generation;
+using Microsoft.Scripting.Runtime;
+using Microsoft.Scripting.Utils;
 
 namespace IronRuby.Builtins {
     
@@ -457,14 +461,23 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("sort")]
-        public static RubyArray/*!*/ Sort(RubyContext/*!*/ context, BlockParam block, RubyArray/*!*/ self) {
+        public static RubyArray/*!*/ Sort(
+            SiteLocalStorage<BinaryOpSite>/*!*/ comparisonStorage,
+            SiteLocalStorage<BinaryOpSite>/*!*/ lessThanStorage,
+            SiteLocalStorage<BinaryOpSite>/*!*/ greaterThanStorage,
+            RubyContext/*!*/ context, BlockParam block, RubyArray/*!*/ self) {
+
             RubyArray result = self.CreateInstance();
             IListOps.Replace(context, result, self);
-            return SortInPlace(context, block, result);
+            return SortInPlace(comparisonStorage, lessThanStorage, greaterThanStorage, context, block, result);
         }
 
         [RubyMethod("sort!")]
-        public static RubyArray/*!*/ SortInPlace(RubyContext/*!*/ context, BlockParam block, RubyArray/*!*/ self) {
+        public static RubyArray/*!*/ SortInPlace(
+            SiteLocalStorage<BinaryOpSite>/*!*/ comparisonStorage,
+            SiteLocalStorage<BinaryOpSite>/*!*/ lessThanStorage,
+            SiteLocalStorage<BinaryOpSite>/*!*/ greaterThanStorage,            
+            RubyContext/*!*/ context, BlockParam block, RubyArray/*!*/ self) {
             RubyUtils.RequiresNotFrozen(context, self);
 
             // TODO: this does more comparisons (and in a different order) than
@@ -473,7 +486,7 @@ namespace IronRuby.Builtins {
             // that behaves like Ruby's sort.
             if (block == null) {
                 self.Sort(delegate(object x, object y) {
-                    return Protocols.Compare(context, x, y);
+                    return Protocols.Compare(comparisonStorage, lessThanStorage, greaterThanStorage, context, x, y);
                 });
             } else {
                 try {
@@ -488,7 +501,7 @@ namespace IronRuby.Builtins {
                             throw RubyExceptions.MakeComparisonError(context, x, y);
                         }
 
-                        return Protocols.ConvertCompareResult(context, result);
+                        return Protocols.ConvertCompareResult(lessThanStorage, greaterThanStorage, context, result);
                     });
                 } catch (BreakException) {
                 }

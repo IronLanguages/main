@@ -15,11 +15,15 @@
 
 using Microsoft.Scripting;
 using Microsoft.Scripting.Utils;
+using Microsoft.Scripting.Generation;
+using System.Runtime.CompilerServices;
+using System;
+using IronRuby.Runtime;
 
 namespace IronRuby.Compiler.Ast {
     using MSA = System.Linq.Expressions;
     using Ast = System.Linq.Expressions.Expression;
-
+    
     public partial class RangeExpression : Expression {
         private readonly Expression/*!*/ _begin;
         private readonly Expression/*!*/ _end;
@@ -55,12 +59,34 @@ namespace IronRuby.Compiler.Ast {
             : this(begin, end, isExclusive, false, location) {
         }
 
+        private bool IsIntegerRange(out int intBegin, out int intEnd) {
+            Literal literalBegin, literalEnd;
+            if ((literalBegin = _begin as Literal) != null && (literalBegin.Value is int) &&
+                (literalEnd = _end as Literal) != null && (literalEnd.Value is int)) {
+                intBegin = (int)literalBegin.Value;
+                intEnd = (int)literalEnd.Value;
+                return true;
+            } else {
+                intBegin = intEnd = 0;
+                return false;
+            }
+        }
+
         internal override MSA.Expression/*!*/ TransformRead(AstGenerator/*!*/ gen) {
+            int intBegin, intEnd;
             if (_isCondition) {
                 return TransformReadCondition(gen);
+            } else if (IsIntegerRange(out intBegin, out intEnd)) {
+                return (_isExclusive ? Methods.CreateExclusiveIntegerRange : Methods.CreateInclusiveIntegerRange).OpCall(
+                    Ast.Constant(intBegin), Ast.Constant(intEnd)
+                );
             } else {
-                return (_isExclusive ? Methods.CreateExclusiveRange : Methods.CreateInclusiveRange).
-                    OpCall(gen.CurrentScopeVariable, AstFactory.Box(_begin.TransformRead(gen)), AstFactory.Box(_end.TransformRead(gen)));
+                return (_isExclusive ? Methods.CreateExclusiveRange : Methods.CreateInclusiveRange).OpCall(
+                    AstFactory.Box(_begin.TransformRead(gen)), 
+                    AstFactory.Box(_end.TransformRead(gen)), 
+                    gen.CurrentScopeVariable, 
+                    Ast.Constant(new SiteLocalStorage<CallSite<Func<CallSite, RubyContext, object, object, object>>>())
+                );
             }
         }
 
@@ -105,15 +131,8 @@ namespace IronRuby.Compiler.Ast {
         }
 
         internal override Expression/*!*/ ToCondition() {
-            Literal literal;
-
-            _isCondition = !(
-                (literal = _begin as Literal) != null &&
-                (literal.Value is int) &&
-                (literal = _end as Literal) != null &&
-                (literal.Value is int)
-            );
-                
+            int intBegin, intEnd;
+            _isCondition = !IsIntegerRange(out intBegin, out intEnd);
             return this;
         }
     }

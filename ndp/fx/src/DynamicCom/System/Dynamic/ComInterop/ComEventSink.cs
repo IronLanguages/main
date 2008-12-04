@@ -21,7 +21,7 @@ using System.Globalization;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Runtime.InteropServices;
-using System.Dynamic.Binders;
+using System.Dynamic;
 using System.Dynamic.Utils;
 using ComTypes = System.Runtime.InteropServices.ComTypes;
 

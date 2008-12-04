@@ -23,6 +23,7 @@ using IronRuby.Runtime.Calls;
 using Microsoft.Scripting.Actions;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
+using Microsoft.Scripting.Generation;
 
 namespace IronRuby.Builtins {
 
@@ -105,29 +106,25 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("include", RubyMethodAttributes.PrivateInstance)]
-        public static RubyModule/*!*/ Include(RubyModule/*!*/ self, [NotNull]params RubyModule[]/*!*/ modules) {
-            Assert.NotNull(self, modules);
+        public static RubyModule/*!*/ Include(
+            SiteLocalStorage<CallSite<Func<CallSite, RubyContext, RubyModule, RubyModule, object>>>/*!*/ appendFeaturesStorage,
+            SiteLocalStorage<CallSite<Func<CallSite, RubyContext, RubyModule, RubyModule, object>>>/*!*/ includedStorage,
+            RubyModule/*!*/ self, [NotNull]params RubyModule[]/*!*/ modules) {
+
             RubyUtils.RequireNonClasses(modules);
 
+            var appendFeatures = appendFeaturesStorage.GetCallSite("append_features", 1);
+            var included = includedStorage.GetCallSite("included", 1);
+            
             // Kernel#append_features inserts the module at the beginning of ancestors list;
             // ancestors after include: [modules[0], modules[1], ..., modules[N-1], self, ...]
             for (int i = modules.Length - 1; i >= 0; i--) {
-                _ModuleAppendFeaturesSite.Target(_ModuleAppendFeaturesSite, self.Context, modules[i], self);
-                _ModuleIncludedSite.Target(_ModuleIncludedSite, self.Context, modules[i], self);
+                appendFeatures.Target(appendFeatures, self.Context, modules[i], self);
+                included.Target(included, self.Context, modules[i], self);
             }
 
             return self;
         }
-
-        private static readonly CallSite<Func<CallSite, RubyContext, RubyModule, RubyModule, object>> _ModuleAppendFeaturesSite =
-            CallSite<Func<CallSite, RubyContext, RubyModule, RubyModule, object>>.Create(
-            RubyCallAction.Make("append_features", RubyCallSignature.WithImplicitSelf(1))
-        );
-
-        private static readonly CallSite<Func<CallSite, RubyContext, RubyModule, RubyModule, object>> _ModuleIncludedSite =
-            CallSite<Func<CallSite, RubyContext, RubyModule, RubyModule, object>>.Create(
-            RubyCallAction.Make("included", RubyCallSignature.WithImplicitSelf(1))
-        );
 
         [RubyMethod("included", RubyMethodAttributes.PrivateInstance)]
         public static void Included(RubyModule/*!*/ self, RubyModule/*!*/ owner) {

@@ -18,7 +18,7 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Dynamic.Utils;
 
-namespace System.Dynamic.Binders {
+namespace System.Dynamic {
     /// <summary>
     /// This uses linear search to find a rule.  Clearly that doesn't scale super well.
     /// We will address this in the future.

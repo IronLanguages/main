@@ -13,18 +13,44 @@
 #
 # ****************************************************************************
 
+require 'rubygems'
+require 'pathname2'
 require 'rexml/document'
 require 'fileutils'
 require 'tempfile'
 
 ENV['HOME'] ||= ENV['USERPROFILE']
 SVN_ROOT = Pathname.new 'c:/svn/trunk'
+EXCLUDED_EXTENSIONS   = %w[.old .suo .vspscc .vssscc .user .log .pdb .cache .swp]
 DEFAULT_ROBOCOPY_OPTIONS = "/XF *#{EXCLUDED_EXTENSIONS.join(' *')} /NP /COPY:DAT /A-:R "
+
+
+class Pathname
+  def filtered_subdirs(extras = [])
+    return [] unless exist?
+    filtered_subdirs = subdirs.find_all { |dir| (dir.to_a & (EXCLUDED_DIRECTORIES + extras)) == [] }
+    result = filtered_subdirs.map { |dir| self + dir }
+    result.unshift self
+  end
+
+  def subdirs
+    glob("**/*", File::FNM_DOTMATCH).find_all { |path| (self + path).directory? }
+  end
+
+  def files
+    raise "Cannot call files on a filename path: #{self}" if !directory?
+    entries.find_all { |e| !(self + e).directory? }.sort
+  end
+
+  def filtered_files
+    raise "Cannot call filtered_files on a filename path: #{self}" if !directory?
+    files.find_all { |f| !EXCLUDED_EXTENSIONS.include?((self + f).extname) }.map { |f| f.downcase }
+  end
+end
 
 class String
   def change_tag!(name, value = '')
-    pattern = Regexp.new "\<#{name}\>(.*?)\<\/#{name}\>", Regexp::MULTILINE
-    self.gsub! pattern, "\<#{name}\>#{value}\<\/#{name}\>"
+    change_tag_value!(name, "(.*?)", value)
   end
 
   def change_tag_value!(name, old_value, new_value)
@@ -516,10 +542,12 @@ class ProjectContext
     # Project transformation methods
 
     def replace_output_path(contents, old, new)
+      old,new = new, old unless IronRuby.is_merlin?
       contents.gsub! Regexp.new(Regexp.escape("<OutputPath>#{old}</OutputPath>"), Regexp::IGNORECASE), "<OutputPath>#{new}</OutputPath>"
     end
 
     def replace_doc_path(contents, old, new)
+      old,new = new, old unless IronRuby.is_merlin?
       contents.gsub! Regexp.new(Regexp.escape("<DocumentationFile>#{old}</DocumentationFile>"), Regexp::IGNORECASE), "<DocumentationFile>#{new}</DocumentationFile>"
     end
 
@@ -528,14 +556,17 @@ class ProjectContext
     end
 
     def replace_import_project(contents, old, new)
+      old,new = new, old unless IronRuby.is_merlin?
       contents.gsub! Regexp.new(Regexp.escape("<Import Project=\"#{old}\" />"), Regexp::IGNORECASE), "<Import Project=\"#{new}\" />"
     end
 
     def replace_post_build_event(contents, old, new)
+      old,new = new, old unless IronRuby.is_merlin?
       contents.gsub! Regexp.new(Regexp.escape("<PostBuildEvent>#{old}</PostBuildEvent>"), Regexp::IGNORECASE), "<PostBuildEvent>#{new}</PostBuildEvent>"
     end
 
     def replace_app_config_path(contents, old, new)
+      old,new = new, old unless IronRuby.is_merlin?
       contents.gsub! Regexp.new(Regexp.escape(%Q{<None Include="#{old}" />}), Regexp::IGNORECASE), %Q{<None Include="#{new}" />}
     end
 
@@ -561,14 +592,6 @@ class ProjectContext
         contents.change_configuration! 'Silverlight Debug|AnyCPU', 'TRACE;DEBUG;SILVERLIGHT'
         contents.change_configuration! 'Silverlight Release|AnyCPU', 'TRACE;SILVERLIGHT'
 
-        if block_given?
-          yield contents
-        else
-          replace_output_path contents, '..\..\..\Bin\Debug\\', '..\..\build\debug\\'
-          replace_output_path contents, '..\..\..\Bin\Release\\', '..\..\build\release\\'
-          replace_output_path contents, '..\..\..\Bin\Silverlight Debug\\', '..\..\build\silverlight debug\\'
-          replace_output_path contents, '..\..\..\Bin\Silverlight Release\\', '..\..\build\silverlight release\\'
-        end
       else
         contents.change_tag! 'SccProjectName', 'SAK'
         contents.change_tag! 'SccLocalPath', 'SAK'
@@ -583,15 +606,17 @@ class ProjectContext
         contents.change_configuration! 'Silverlight Debug|AnyCPU', 'TRACE;DEBUG;SILVERLIGHT'
         contents.change_configuration! 'Silverlight Release|AnyCPU', 'TRACE;SILVERLIGHT'
 
-        if block_given?
-          yield contents
-        else
-          replace_output_path contents, '..\..\build\debug\\', '..\..\..\Bin\Debug\\'
-          replace_output_path contents, '..\..\build\release\\', '..\..\..\Bin\Release\\'
-          replace_output_path contents, '..\..\build\silverlight debug', '..\..\..\Bin\Silverlight Debug\\'
-          replace_output_path contents, '..\..\build\silverlight release', '..\..\..\Bin\Silverlight Release\\'
+        unless block_given?
           replace_key_path    contents, '..\..\RubyTestKey.snk', '..\..\..\MSSharedLibKey.snk'
         end
+      end
+      if block_given?
+        yield contents
+      else
+        replace_output_path contents, '..\..\..\Bin\Debug\\', '..\..\build\debug\\'
+        replace_output_path contents, '..\..\..\Bin\Release\\', '..\..\build\release\\'
+        replace_output_path contents, '..\..\..\Bin\Silverlight Debug\\', '..\..\build\silverlight debug\\'
+        replace_output_path contents, '..\..\..\Bin\Silverlight Release\\', '..\..\build\silverlight release\\'
       end
       path.open('w+') { |f| f.write contents }
     end
@@ -786,8 +811,8 @@ class MSpecRunner
     return unless File.exist? "#{UserEnvironment.tags}\\critical_tags.txt"
     File.open("#{UserEnvironment.tags}\\critical_tags.txt", 'r') do |f|
       f.readlines.each do |line|
-        file,_,tag,desc = line.chomp.split(":")
-        fulltag = tag << ":" << desc
+        file,_,tag,*desc = line.chomp.split(":")
+        fulltag = tag << ":" << desc.join(":")
         filepath = "#{UserEnvironment.tags}/1.8/#{file}"
         filedir = File.dirname(filepath)
         FileUtils.mkdir_p(filedir) unless File.exist?(filedir)

@@ -18,7 +18,7 @@ using System.Diagnostics;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Collections.Generic;
-using System.Dynamic.Binders;
+using System.Dynamic;
 
 using Microsoft.Scripting.Actions;
 using Microsoft.Scripting.Utils;

@@ -58,14 +58,14 @@ namespace System.Linq.Expressions.Compiler {
 
         private void EmitLabelExpression(Expression expr) {
             var node = (LabelExpression)expr;
-            Debug.Assert(node.Label != null);
+            Debug.Assert(node.Target != null);
 
             // If we're an immediate child of a block, our label will already
             // be defined. If not, we need to define our own block so this
             // label isn't exposed except to its own child expression.
             LabelInfo label;
-            if (!_labelBlock.TryGetLabelInfo(node.Label, out label)) {
-                label = DefineLabel(node.Label);
+            if (!_labelBlock.TryGetLabelInfo(node.Target, out label)) {
+                label = DefineLabel(node.Target);
             }
 
             if (node.DefaultValue != null) {
@@ -102,7 +102,7 @@ namespace System.Linq.Expressions.Compiler {
                     // LabelExpression is a bit special, if it's directly in a block
                     // it becomes associate with the block's scope
                     if (_labelBlock.Kind != LabelBlockKind.Block ||
-                        !_labelBlock.ContainsTarget(((LabelExpression)node).Label)) {
+                        !_labelBlock.ContainsTarget(((LabelExpression)node).Target)) {
                         PushLabelBlock(LabelBlockKind.Block);
                         return true;
                     }
@@ -139,7 +139,7 @@ namespace System.Linq.Expressions.Compiler {
                         return;
                     case ExpressionType.Label:
                         // Found it!
-                        var label = ((LabelExpression)lambdaBody).Label;
+                        var label = ((LabelExpression)lambdaBody).Target;
                         _labelInfo.Add(label, new LabelInfo(_ilg, label, true));
                         return;
                     case ExpressionType.DebugInfo:

@@ -17,7 +17,7 @@ using System.Collections.Generic;
 using System.Linq.Expressions;
 using System.Dynamic.Utils;
 
-namespace System.Dynamic.Binders {
+namespace System.Dynamic {
     public sealed class Restrictions {
         private class Restriction {
             internal enum RestrictionKind {

@@ -18,7 +18,7 @@ using System.Dynamic.Utils;
 using System.Linq.Expressions;
 using System.Reflection;
 
-namespace System.Dynamic.Binders {
+namespace System.Dynamic {
     public class MetaObject {
         private readonly Expression _expression;
         private readonly Restrictions _restrictions;
@@ -97,13 +97,6 @@ namespace System.Dynamic.Binders {
         public bool IsDynamicObject {
             get {
                 return _value is IDynamicObject;
-            }
-        }
-
-        public bool IsByRef {
-            get {
-                ParameterExpression pe = _expression as ParameterExpression;
-                return pe != null && pe.IsByRef;
             }
         }
 

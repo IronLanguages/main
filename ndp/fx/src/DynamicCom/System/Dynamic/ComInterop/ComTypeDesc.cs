@@ -19,6 +19,7 @@ using System.Collections.Generic;
 using System.Linq.Expressions;
 using System.Runtime.InteropServices.ComTypes;
 using ComTypes = System.Runtime.InteropServices.ComTypes;
+using System.Threading;
 
 namespace System.Dynamic.ComInterop {
 
@@ -98,13 +99,19 @@ namespace System.Dynamic.ComInterop {
 
         internal ComMethodDesc GetItem {
             get { return _getItem; }
-            set { _getItem = value; }
         }
+        internal void EnsureGetItem(ComMethodDesc candidate){
+            Interlocked.CompareExchange(ref _getItem, candidate, null);
+        }
+
 
         internal ComMethodDesc SetItem {
             get { return _setItem; }
-            set { _setItem = value; }
         }
+        internal void EnsureSetItem(ComMethodDesc candidate) {
+            Interlocked.CompareExchange(ref _setItem, candidate, null);
+        }
+
     }
 }
 

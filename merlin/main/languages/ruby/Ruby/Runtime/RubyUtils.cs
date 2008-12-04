@@ -32,6 +32,10 @@ using IronRuby.Runtime.Calls;
 using System.Dynamic;
 using Microsoft.Scripting.Math;
 using System.Runtime.CompilerServices;
+using Microsoft.Scripting.Generation;
+
+using RespondToSite = System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, 
+    IronRuby.Runtime.RubyContext, object, Microsoft.Scripting.SymbolId, object>>;
 
 namespace IronRuby.Runtime {
 
@@ -547,10 +551,10 @@ namespace IronRuby.Runtime {
             return obj[key] = value;
         }
 
-        public static Hash/*!*/ MakeHash(RubyContext/*!*/ context, object[]/*!*/ items) {
+        public static Hash/*!*/ SetHashElements(RubyContext/*!*/ context, Hash/*!*/ hash, object[]/*!*/ items) {
+            Assert.NotNull(context, hash, items);
             Debug.Assert(items != null && items.Length % 2 == 0);
 
-            Hash hash = new Hash(context.EqualityComparer, items.Length / 2);
             for (int i = 0; i < items.Length; i += 2) {
                 Debug.Assert(i + 1 < items.Length);
                 SetHashElement(context, hash, items[i], items[i + 1]);
@@ -749,6 +753,54 @@ namespace IronRuby.Runtime {
                 throw new NotSupportedException(message);
             }
             return result;
+        }
+
+        #endregion
+
+        #region Call Site Storage Extensions
+
+        public static CallSite<TCallSiteFunc>/*!*/ GetCallSite<TCallSiteFunc>(this SiteLocalStorage<CallSite<TCallSiteFunc>>/*!*/ storage, 
+            string/*!*/ methodName, int argumentCount) where TCallSiteFunc : class {
+
+            if (storage.Data == null) {
+                Interlocked.CompareExchange(ref storage.Data,
+                    CallSite<TCallSiteFunc>.Create(RubyCallAction.Make(methodName, RubyCallSignature.WithImplicitSelf(argumentCount))), null);
+            }
+            return storage.Data;
+        }
+
+        public static CallSite<TCallSiteFunc>/*!*/ GetCallSite<TCallSiteFunc>(this SiteLocalStorage<CallSite<TCallSiteFunc>>/*!*/ storage,
+            string/*!*/ methodName, RubyCallSignature signature) where TCallSiteFunc : class {
+
+            if (storage.Data == null) {
+                Interlocked.CompareExchange(ref storage.Data,
+                    CallSite<TCallSiteFunc>.Create(RubyCallAction.Make(methodName, signature)), null);
+            }
+            return storage.Data;
+        }
+
+        public static CallSite<TCallSiteFunc>/*!*/ GetCallSite<TCallSiteFunc>(ref CallSite<TCallSiteFunc>/*!*/ site,
+            string/*!*/ methodName, int argumentCount) where TCallSiteFunc : class {
+
+            if (site == null) {
+                Interlocked.CompareExchange(ref site,
+                    CallSite<TCallSiteFunc>.Create(RubyCallAction.Make(methodName, RubyCallSignature.WithImplicitSelf(argumentCount))), null);
+            }
+            return site;
+        }
+
+        public static CallSite<TCallSiteFunc>/*!*/ GetCallSite<TCallSiteFunc>(ref CallSite<TCallSiteFunc>/*!*/ site,
+            string/*!*/ methodName, RubyCallSignature signature) where TCallSiteFunc : class {
+
+            if (site == null) {
+                Interlocked.CompareExchange(ref site,
+                    CallSite<TCallSiteFunc>.Create(RubyCallAction.Make(methodName, signature)), null);
+            }
+            return site;
+        }
+
+        public static bool MethodNotFound(object siteResult) {
+            return siteResult == RubyOps.MethodNotFound;
         }
 
         #endregion

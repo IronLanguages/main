@@ -69,6 +69,13 @@ namespace IronRuby.Builtins {
         }
 
         /// <summary>
+        /// Creates a blank instance of a RubyArray or its subclass given the Ruby class object.
+        /// </summary>
+        public static Hash/*!*/ CreateInstance(RubyClass/*!*/ rubyClass) {
+            return (rubyClass.GetUnderlyingSystemType() == typeof(Hash)) ? new Hash(rubyClass.Context) : new Hash.Subclass(rubyClass);
+        }
+
+        /// <summary>
         /// Creates an empty instance.
         /// Doesn't copy instance data.
         /// Preserves the class of the Array.

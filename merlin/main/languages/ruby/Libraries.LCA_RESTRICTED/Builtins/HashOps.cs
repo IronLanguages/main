@@ -20,6 +20,10 @@ using System.Runtime.CompilerServices;
 using IronRuby.Runtime;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
+using System.Diagnostics;
+using Microsoft.Scripting.Generation;
+using System.Threading;
+using IronRuby.Runtime.Calls;
 
 namespace IronRuby.Builtins {
 
@@ -32,13 +36,15 @@ namespace IronRuby.Builtins {
     [RubyClass("Hash", Extends = typeof(Hash), Inherits = typeof(object)), Includes(typeof(IDictionary<object, object>), Copy = true)]
     public static class HashOps {
 
+        #region Construction
+
         [RubyConstructor]
-        public static Hash/*!*/ Hash(RubyClass/*!*/ self) {
+        public static Hash/*!*/ CreateHash(RubyClass/*!*/ self) {
             return new Hash(self.Context.EqualityComparer);
         }
 
         [RubyConstructor]
-        public static Hash/*!*/ Hash(BlockParam block, RubyClass/*!*/ self, object defaultValue) {
+        public static Hash/*!*/ CreateHash(BlockParam block, RubyClass/*!*/ self, object defaultValue) {
             if (block != null) {
                 throw RubyExceptions.CreateArgumentError("wrong number of arguments");
             }
@@ -46,8 +52,29 @@ namespace IronRuby.Builtins {
         }
 
         [RubyConstructor]
-        public static Hash/*!*/ Hash([NotNull]BlockParam/*!*/ defaultProc, RubyClass/*!*/ self) {
+        public static Hash/*!*/ CreateHash([NotNull]BlockParam/*!*/ defaultProc, RubyClass/*!*/ self) {
             return new Hash(self.Context.EqualityComparer, defaultProc.Proc, null);
+        }
+
+        [RubyMethod("[]", RubyMethodAttributes.PublicSingleton)]
+        public static Hash/*!*/ CreateSubclass(RubyClass/*!*/ self) {
+            return Hash.CreateInstance(self);
+        }
+        
+        [RubyMethod("[]", RubyMethodAttributes.PublicSingleton)]
+        public static Hash/*!*/ CreateSubclass(RubyClass/*!*/ self, [NotNull]IDictionary<object, object>/*!*/ hash) {
+            // creates a new hash and copies entries of the given hash into it (no other objects associated with the has are copied):
+            return IDictionaryOps.ReplaceData(Hash.CreateInstance(self), hash);
+        }
+
+        [RubyMethod("[]", RubyMethodAttributes.PublicSingleton)]
+        public static Hash/*!*/ CreateSubclass(RubyClass/*!*/ self, [NotNull]params object[]/*!*/ items) {
+            Debug.Assert(items.Length > 0);
+            if (items.Length % 2 != 0) {
+                throw RubyExceptions.CreateArgumentError("odd number of arguments for Hash");
+            }
+
+            return RubyUtils.SetHashElements(self.Context, Hash.CreateInstance(self), items);
         }
 
         // Reinitialization. Not called when a factory/non-default ctor is called.
@@ -89,46 +116,17 @@ namespace IronRuby.Builtins {
             return self;
         }
 
-        #region Singleton Methods
-
-        private static readonly CallSite<Func<CallSite, RubyContext, RubyClass, Hash>>/*!*/
-            _CreateHashSite = CallSite<Func<CallSite, RubyContext, RubyClass, Hash>>.Create(RubySites.InstanceCallAction("new"));
-
-        [RubyMethod("[]", RubyMethodAttributes.PublicSingleton)]
-        public static Hash/*!*/ CreateHash(RubyClass/*!*/ self, [NotNull]params object[] items) {
-            // arg0: hash or first elem
-            // argk: (k-1)th elem
-            int itemCount = items.Length;
-
-            IDictionary<object, object> hash = null;
-            if (itemCount == 0 || itemCount == 1 && (hash = items[0] as IDictionary<object, object>) != null) {
-                Hash newHash = _CreateHashSite.Target(_CreateHashSite, self.Context, self);
-                return hash != null ? IDictionaryOps.ReplaceData(newHash, hash) : newHash;
-            }
-
-            if (itemCount % 2 != 0) {
-                throw new ArgumentException("odd number of arguments for Hash");
-            }
-
-            return RubyUtils.MakeHash(self.Context, items);
-        }
-
         #endregion
-
-
+        
         #region Instance Methods
         
-        private static readonly CallSite<Func<CallSite, RubyContext, Proc, Hash, object, object>>/*!*/ _DefaultProcSite =
-            CallSite<Func<CallSite, RubyContext, Proc, Hash, object, object>>.Create(RubySites.InstanceCallAction("call", 2));
-
-        private static readonly CallSite<Func<CallSite, RubyContext, Hash, object, object>>/*!*/ _DefaultSite =
-            CallSite<Func<CallSite, RubyContext, Hash, object, object>>.Create(RubySites.InstanceCallAction("default", 1));
-
         [RubyMethod("[]")]
-        public static object GetElement(RubyContext/*!*/ context, Hash/*!*/ self, object key) {
+        public static object GetElement(SiteLocalStorage<CallSite<Func<CallSite, RubyContext, Hash, object, object>>>/*!*/ storage,            
+            RubyContext/*!*/ context, Hash/*!*/ self, object key) {
             object result;
             if (!self.TryGetValue(BaseSymbolDictionary.NullToObj(key), out result)) {
-                return _DefaultSite.Target(_DefaultSite, context, self, key);
+                var site = storage.GetCallSite("default", 1);
+                return site.Target(site, context, self, key);
             }
             return result;
         }
@@ -139,9 +137,11 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("default")]
-        public static object GetDefaultValue(RubyContext/*!*/ context, Hash/*!*/ self, object key) {
+        public static object GetDefaultValue(SiteLocalStorage<CallSite<Func<CallSite, RubyContext, Proc, Hash, object, object>>>/*!*/ storage,
+            RubyContext/*!*/ context, Hash/*!*/ self, object key) {
             if (self.DefaultProc != null) {
-                return _DefaultProcSite.Target(_DefaultProcSite, context, self.DefaultProc, self, key);
+                var site = storage.GetCallSite("call", 2);
+                return site.Target(site, context, self.DefaultProc, self, key);
             }
             return self.DefaultValue;
         }
@@ -197,11 +197,14 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("shift")]
-        public static object Shift(RubyContext/*!*/ context, Hash/*!*/ self) {
+        public static object Shift(SiteLocalStorage<CallSite<Func<CallSite, RubyContext, Hash, object, object>>>/*!*/ storage, 
+            RubyContext/*!*/ context, Hash/*!*/ self) {
+
             RubyUtils.RequiresNotFrozen(context, self);
 
             if (self.Count == 0) {
-                return _DefaultSite.Target(_DefaultSite, context, self, null);
+                var site = storage.GetCallSite("default", 1);
+                return site.Target(site, context, self, null);
             }
 
             IEnumerator<KeyValuePair<object, object>> e = self.GetEnumerator();

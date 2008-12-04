@@ -224,7 +224,7 @@ namespace Microsoft.Scripting.Ast {
 
             var all = Expression.Variable(typeof(Exception), "$exception");
             if (@finally != null) {
-                handlers = new[] { Expression.Catch(all.Type, Expression.Empty()) };
+                handlers = new[] { Expression.Catch(all.Type, Expression.Default(node.Type)) };
                 @finally = Expression.Block(
                     @finally,
                     Expression.Condition(
@@ -311,7 +311,7 @@ namespace Microsoft.Scripting.Ast {
             foreach (var e in node.Expressions) {
                 var label = e as LabelExpression;
                 if (label != null) {
-                    VisitLabelTarget(label.Label);
+                    VisitLabelTarget(label.Target);
                 }
             }
             return base.VisitBlock(node);

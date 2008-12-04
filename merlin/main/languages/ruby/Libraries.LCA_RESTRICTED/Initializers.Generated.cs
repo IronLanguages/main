@@ -79,7 +79,7 @@ namespace IronRuby.Builtins {
                 new System.Action<IronRuby.Builtins.RubyClass, System.Object[]>(IronRuby.Builtins.RubyStructOps.AllocatorUndefined),
             });
             ExtendModule(typeof(System.Collections.Generic.IDictionary<System.Object, System.Object>), new System.Action<IronRuby.Builtins.RubyModule>(LoadSystem__Collections__Generic__IDictionary_Instance), null, new IronRuby.Builtins.RubyModule[] {def21, });
-            ExtendModule(typeof(System.Collections.IEnumerable), new System.Action<IronRuby.Builtins.RubyModule>(LoadSystem__Collections__IEnumerable_Instance), null, new IronRuby.Builtins.RubyModule[] {def21, });
+            IronRuby.Builtins.RubyModule def35 = ExtendModule(typeof(System.Collections.IEnumerable), new System.Action<IronRuby.Builtins.RubyModule>(LoadSystem__Collections__IEnumerable_Instance), null, new IronRuby.Builtins.RubyModule[] {def21, });
             ExtendModule(typeof(System.Collections.IList), new System.Action<IronRuby.Builtins.RubyModule>(LoadSystem__Collections__IList_Instance), null, new IronRuby.Builtins.RubyModule[] {def21, });
             ExtendModule(typeof(System.IComparable), new System.Action<IronRuby.Builtins.RubyModule>(LoadSystem__IComparable_Instance), null, new IronRuby.Builtins.RubyModule[] {def30, });
             DefineGlobalClass("Array", typeof(IronRuby.Builtins.RubyArray), Context.ObjectClass, new System.Action<IronRuby.Builtins.RubyModule>(LoadArray_Instance), new System.Action<IronRuby.Builtins.RubyModule>(LoadArray_Class), new IronRuby.Builtins.RubyModule[] {def21, }, new System.Delegate[] {
@@ -88,7 +88,7 @@ namespace IronRuby.Builtins {
                 new System.Func<IronRuby.Builtins.RubyClass, System.Int32, System.Object, IronRuby.Builtins.RubyArray>(IronRuby.Builtins.ArrayOps.CreateArray),
             });
             DefineGlobalClass("Binding", typeof(IronRuby.Builtins.Binding), Context.ObjectClass, null, null, IronRuby.Builtins.RubyModule.EmptyArray, null);
-            DefineGlobalClass("ClrString", typeof(System.String), Context.ObjectClass, new System.Action<IronRuby.Builtins.RubyModule>(LoadClrString_Instance), null, IronRuby.Builtins.RubyModule.EmptyArray, null);
+            DefineGlobalClass("ClrString", typeof(System.String), Context.ObjectClass, new System.Action<IronRuby.Builtins.RubyModule>(LoadClrString_Instance), null, new IronRuby.Builtins.RubyModule[] {def35, }, null);
             DefineGlobalClass("Dir", typeof(IronRuby.Builtins.RubyDir), Context.ObjectClass, new System.Action<IronRuby.Builtins.RubyModule>(LoadDir_Instance), new System.Action<IronRuby.Builtins.RubyModule>(LoadDir_Class), new IronRuby.Builtins.RubyModule[] {def21, }, null);
             #if !SILVERLIGHT
             DefineGlobalClass("Encoding", typeof(IronRuby.Builtins.RubyEncoding), Context.ObjectClass, new System.Action<IronRuby.Builtins.RubyModule>(LoadEncoding_Instance), new System.Action<IronRuby.Builtins.RubyModule>(LoadEncoding_Class), IronRuby.Builtins.RubyModule.EmptyArray, new System.Delegate[] {
@@ -105,9 +105,9 @@ namespace IronRuby.Builtins {
             #endif
             DefineGlobalClass("FileTest", typeof(IronRuby.Builtins.FileTestOps), Context.ObjectClass, null, new System.Action<IronRuby.Builtins.RubyModule>(LoadFileTest_Class), IronRuby.Builtins.RubyModule.EmptyArray, null);
             DefineGlobalClass("Hash", typeof(IronRuby.Builtins.Hash), Context.ObjectClass, new System.Action<IronRuby.Builtins.RubyModule>(LoadHash_Instance), new System.Action<IronRuby.Builtins.RubyModule>(LoadHash_Class), new IronRuby.Builtins.RubyModule[] {def21, }, new System.Delegate[] {
-                new System.Func<IronRuby.Builtins.RubyClass, IronRuby.Builtins.Hash>(IronRuby.Builtins.HashOps.Hash),
-                new System.Func<IronRuby.Runtime.BlockParam, IronRuby.Builtins.RubyClass, System.Object, IronRuby.Builtins.Hash>(IronRuby.Builtins.HashOps.Hash),
-                new System.Func<IronRuby.Runtime.BlockParam, IronRuby.Builtins.RubyClass, IronRuby.Builtins.Hash>(IronRuby.Builtins.HashOps.Hash),
+                new System.Func<IronRuby.Builtins.RubyClass, IronRuby.Builtins.Hash>(IronRuby.Builtins.HashOps.CreateHash),
+                new System.Func<IronRuby.Runtime.BlockParam, IronRuby.Builtins.RubyClass, System.Object, IronRuby.Builtins.Hash>(IronRuby.Builtins.HashOps.CreateHash),
+                new System.Func<IronRuby.Runtime.BlockParam, IronRuby.Builtins.RubyClass, IronRuby.Builtins.Hash>(IronRuby.Builtins.HashOps.CreateHash),
             });
             IronRuby.Builtins.RubyClass def32 = DefineGlobalClass("IO", typeof(IronRuby.Builtins.RubyIO), Context.ObjectClass, new System.Action<IronRuby.Builtins.RubyModule>(LoadIO_Instance), new System.Action<IronRuby.Builtins.RubyModule>(LoadIO_Class), new IronRuby.Builtins.RubyModule[] {def17, }, new System.Delegate[] {
                 new System.Func<IronRuby.Builtins.RubyClass, IronRuby.Builtins.RubyIO>(IronRuby.Builtins.RubyIOOps.CreateIO),
@@ -125,7 +125,7 @@ namespace IronRuby.Builtins {
             IronRuby.Builtins.RubyClass def19 = DefineClass("Process::Status", typeof(IronRuby.Builtins.RubyProcess.Status), Context.ObjectClass, new System.Action<IronRuby.Builtins.RubyModule>(LoadProcess__Status_Instance), null, IronRuby.Builtins.RubyModule.EmptyArray, null);
             #endif
             DefineGlobalClass("Range", typeof(IronRuby.Builtins.Range), Context.ObjectClass, new System.Action<IronRuby.Builtins.RubyModule>(LoadRange_Instance), null, new IronRuby.Builtins.RubyModule[] {def21, }, new System.Delegate[] {
-                new System.Func<IronRuby.Builtins.RubyClass, System.Object, System.Object, System.Boolean, IronRuby.Builtins.Range>(IronRuby.Builtins.RangeOps.CreateRange),
+                new System.Func<Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, IronRuby.Builtins.RubyClass, System.Object, System.Object, System.Boolean, IronRuby.Builtins.Range>(IronRuby.Builtins.RangeOps.CreateRange),
             });
             DefineGlobalClass("Regexp", typeof(IronRuby.Builtins.RubyRegex), Context.ObjectClass, new System.Action<IronRuby.Builtins.RubyModule>(LoadRegexp_Instance), new System.Action<IronRuby.Builtins.RubyModule>(LoadRegexp_Class), new IronRuby.Builtins.RubyModule[] {def21, }, new System.Delegate[] {
                 new System.Func<IronRuby.Builtins.RubyClass, IronRuby.Builtins.RubyRegex, IronRuby.Builtins.RubyRegex>(IronRuby.Builtins.RegexpOps.Create),
@@ -339,11 +339,11 @@ namespace IronRuby.Builtins {
             });
             
             module.DefineLibraryMethod("sort", 0x51, new System.Delegate[] {
-                new System.Func<IronRuby.Runtime.RubyContext, IronRuby.Runtime.BlockParam, IronRuby.Builtins.RubyArray, IronRuby.Builtins.RubyArray>(IronRuby.Builtins.ArrayOps.Sort),
+                new System.Func<Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, IronRuby.Runtime.RubyContext, IronRuby.Runtime.BlockParam, IronRuby.Builtins.RubyArray, IronRuby.Builtins.RubyArray>(IronRuby.Builtins.ArrayOps.Sort),
             });
             
             module.DefineLibraryMethod("sort!", 0x51, new System.Delegate[] {
-                new System.Func<IronRuby.Runtime.RubyContext, IronRuby.Runtime.BlockParam, IronRuby.Builtins.RubyArray, IronRuby.Builtins.RubyArray>(IronRuby.Builtins.ArrayOps.SortInPlace),
+                new System.Func<Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, IronRuby.Runtime.RubyContext, IronRuby.Runtime.BlockParam, IronRuby.Builtins.RubyArray, IronRuby.Builtins.RubyArray>(IronRuby.Builtins.ArrayOps.SortInPlace),
             });
             
             module.DefineLibraryMethod("to_a", 0x51, new System.Delegate[] {
@@ -368,12 +368,12 @@ namespace IronRuby.Builtins {
             module.DefineLibraryMethod("-", 0x51, new System.Delegate[] {
                 new System.Func<Microsoft.Scripting.Math.BigInteger, Microsoft.Scripting.Math.BigInteger, System.Object>(IronRuby.Builtins.BignumOps.Subtract),
                 new System.Func<Microsoft.Scripting.Math.BigInteger, System.Double, System.Object>(IronRuby.Builtins.BignumOps.Subtract),
-                new System.Func<IronRuby.Runtime.RubyContext, Microsoft.Scripting.Math.BigInteger, System.Object, System.Object>(IronRuby.Builtins.BignumOps.Subtract),
+                new System.Func<Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, IronRuby.Runtime.RubyContext, Microsoft.Scripting.Math.BigInteger, System.Object, System.Object>(IronRuby.Builtins.BignumOps.Subtract),
             });
             
             module.DefineLibraryMethod("%", 0x51, new System.Delegate[] {
                 new System.Func<Microsoft.Scripting.Math.BigInteger, Microsoft.Scripting.Math.BigInteger, System.Object>(IronRuby.Builtins.BignumOps.Modulo),
-                new System.Func<IronRuby.Runtime.RubyContext, Microsoft.Scripting.Math.BigInteger, System.Object, System.Object>(IronRuby.Builtins.BignumOps.ModuloOp),
+                new System.Func<Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, IronRuby.Runtime.RubyContext, Microsoft.Scripting.Math.BigInteger, System.Object, System.Object>(IronRuby.Builtins.BignumOps.ModuloOp),
             });
             
             module.DefineLibraryMethod("&", 0x51, new System.Delegate[] {
@@ -385,20 +385,20 @@ namespace IronRuby.Builtins {
             module.DefineLibraryMethod("*", 0x51, new System.Delegate[] {
                 new System.Func<Microsoft.Scripting.Math.BigInteger, Microsoft.Scripting.Math.BigInteger, System.Object>(IronRuby.Builtins.BignumOps.Multiply),
                 new System.Func<Microsoft.Scripting.Math.BigInteger, System.Double, System.Object>(IronRuby.Builtins.BignumOps.Multiply),
-                new System.Func<IronRuby.Runtime.RubyContext, Microsoft.Scripting.Math.BigInteger, System.Object, System.Object>(IronRuby.Builtins.BignumOps.Multiply),
+                new System.Func<Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, IronRuby.Runtime.RubyContext, Microsoft.Scripting.Math.BigInteger, System.Object, System.Object>(IronRuby.Builtins.BignumOps.Multiply),
             });
             
             module.DefineLibraryMethod("**", 0x51, new System.Delegate[] {
                 new System.Func<IronRuby.Runtime.RubyContext, Microsoft.Scripting.Math.BigInteger, Microsoft.Scripting.Math.BigInteger, System.Object>(IronRuby.Builtins.BignumOps.Power),
                 new System.Func<Microsoft.Scripting.Math.BigInteger, System.Int32, System.Object>(IronRuby.Builtins.BignumOps.Power),
                 new System.Func<Microsoft.Scripting.Math.BigInteger, System.Double, System.Object>(IronRuby.Builtins.BignumOps.Power),
-                new System.Func<IronRuby.Runtime.RubyContext, Microsoft.Scripting.Math.BigInteger, System.Object, System.Object>(IronRuby.Builtins.BignumOps.Power),
+                new System.Func<Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, IronRuby.Runtime.RubyContext, Microsoft.Scripting.Math.BigInteger, System.Object, System.Object>(IronRuby.Builtins.BignumOps.Power),
             });
             
             module.DefineLibraryMethod("/", 0x51, new System.Delegate[] {
                 new System.Func<Microsoft.Scripting.Math.BigInteger, Microsoft.Scripting.Math.BigInteger, System.Object>(IronRuby.Builtins.BignumOps.Divide),
                 new System.Func<Microsoft.Scripting.Math.BigInteger, System.Double, System.Object>(IronRuby.Builtins.BignumOps.Divide),
-                new System.Func<IronRuby.Runtime.RubyContext, Microsoft.Scripting.Math.BigInteger, System.Object, System.Object>(IronRuby.Builtins.BignumOps.Divide),
+                new System.Func<Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, IronRuby.Runtime.RubyContext, Microsoft.Scripting.Math.BigInteger, System.Object, System.Object>(IronRuby.Builtins.BignumOps.Divide),
             });
             
             module.DefineLibraryMethod("-@", 0x51, new System.Delegate[] {
@@ -408,7 +408,6 @@ namespace IronRuby.Builtins {
             module.DefineLibraryMethod("[]", 0x51, new System.Delegate[] {
                 new System.Func<Microsoft.Scripting.Math.BigInteger, System.Int32, System.Int32>(IronRuby.Builtins.BignumOps.Bit),
                 new System.Func<Microsoft.Scripting.Math.BigInteger, Microsoft.Scripting.Math.BigInteger, System.Int32>(IronRuby.Builtins.BignumOps.Bit),
-                new System.Func<IronRuby.Runtime.RubyContext, Microsoft.Scripting.Math.BigInteger, System.Object, System.Int32>(IronRuby.Builtins.BignumOps.Bit),
             });
             
             module.DefineLibraryMethod("^", 0x51, new System.Delegate[] {
@@ -430,7 +429,7 @@ namespace IronRuby.Builtins {
             module.DefineLibraryMethod("+", 0x51, new System.Delegate[] {
                 new System.Func<Microsoft.Scripting.Math.BigInteger, Microsoft.Scripting.Math.BigInteger, System.Object>(IronRuby.Builtins.BignumOps.Add),
                 new System.Func<Microsoft.Scripting.Math.BigInteger, System.Double, System.Object>(IronRuby.Builtins.BignumOps.Add),
-                new System.Func<IronRuby.Runtime.RubyContext, Microsoft.Scripting.Math.BigInteger, System.Object, System.Object>(IronRuby.Builtins.BignumOps.Add),
+                new System.Func<Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, IronRuby.Runtime.RubyContext, Microsoft.Scripting.Math.BigInteger, System.Object, System.Object>(IronRuby.Builtins.BignumOps.Add),
             });
             
             module.DefineLibraryMethod("<<", 0x51, new System.Delegate[] {
@@ -442,7 +441,7 @@ namespace IronRuby.Builtins {
             module.DefineLibraryMethod("<=>", 0x51, new System.Delegate[] {
                 new System.Func<Microsoft.Scripting.Math.BigInteger, Microsoft.Scripting.Math.BigInteger, System.Int32>(IronRuby.Builtins.BignumOps.Compare),
                 new System.Func<IronRuby.Runtime.RubyContext, Microsoft.Scripting.Math.BigInteger, System.Double, System.Object>(IronRuby.Builtins.BignumOps.Compare),
-                new System.Func<IronRuby.Runtime.RubyContext, Microsoft.Scripting.Math.BigInteger, System.Object, System.Object>(IronRuby.Builtins.BignumOps.Compare),
+                new System.Func<Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, IronRuby.Runtime.RubyContext, Microsoft.Scripting.Math.BigInteger, System.Object, System.Object>(IronRuby.Builtins.BignumOps.Compare),
             });
             
             module.DefineLibraryMethod("==", 0x51, new System.Delegate[] {
@@ -469,12 +468,12 @@ namespace IronRuby.Builtins {
             module.DefineLibraryMethod("div", 0x51, new System.Delegate[] {
                 new System.Func<Microsoft.Scripting.Math.BigInteger, Microsoft.Scripting.Math.BigInteger, System.Object>(IronRuby.Builtins.BignumOps.Divide),
                 new System.Func<Microsoft.Scripting.Math.BigInteger, System.Double, System.Object>(IronRuby.Builtins.BignumOps.Divide),
-                new System.Func<IronRuby.Runtime.RubyContext, Microsoft.Scripting.Math.BigInteger, System.Object, System.Object>(IronRuby.Builtins.BignumOps.Div),
+                new System.Func<Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, IronRuby.Runtime.RubyContext, Microsoft.Scripting.Math.BigInteger, System.Object, System.Object>(IronRuby.Builtins.BignumOps.Div),
             });
             
             module.DefineLibraryMethod("divmod", 0x51, new System.Delegate[] {
                 new System.Func<Microsoft.Scripting.Math.BigInteger, Microsoft.Scripting.Math.BigInteger, IronRuby.Builtins.RubyArray>(IronRuby.Builtins.BignumOps.DivMod),
-                new System.Func<IronRuby.Runtime.RubyContext, Microsoft.Scripting.Math.BigInteger, System.Object, IronRuby.Builtins.RubyArray>(IronRuby.Builtins.BignumOps.DivMod),
+                new System.Func<Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, IronRuby.Runtime.RubyContext, Microsoft.Scripting.Math.BigInteger, System.Object, System.Object>(IronRuby.Builtins.BignumOps.DivMod),
             });
             
             module.DefineLibraryMethod("eql?", 0x51, new System.Delegate[] {
@@ -489,18 +488,18 @@ namespace IronRuby.Builtins {
             
             module.DefineLibraryMethod("modulo", 0x51, new System.Delegate[] {
                 new System.Func<Microsoft.Scripting.Math.BigInteger, Microsoft.Scripting.Math.BigInteger, System.Object>(IronRuby.Builtins.BignumOps.Modulo),
-                new System.Func<IronRuby.Runtime.RubyContext, Microsoft.Scripting.Math.BigInteger, System.Object, System.Object>(IronRuby.Builtins.BignumOps.Modulo),
+                new System.Func<Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, IronRuby.Runtime.RubyContext, Microsoft.Scripting.Math.BigInteger, System.Object, System.Object>(IronRuby.Builtins.BignumOps.Modulo),
             });
             
             module.DefineLibraryMethod("quo", 0x51, new System.Delegate[] {
                 new System.Func<Microsoft.Scripting.Math.BigInteger, Microsoft.Scripting.Math.BigInteger, System.Object>(IronRuby.Builtins.BignumOps.Quotient),
                 new System.Func<Microsoft.Scripting.Math.BigInteger, System.Double, System.Object>(IronRuby.Builtins.BignumOps.Quotient),
-                new System.Func<IronRuby.Runtime.RubyContext, Microsoft.Scripting.Math.BigInteger, System.Object, System.Object>(IronRuby.Builtins.BignumOps.Quotient),
+                new System.Func<Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, IronRuby.Runtime.RubyContext, Microsoft.Scripting.Math.BigInteger, System.Object, System.Object>(IronRuby.Builtins.BignumOps.Quotient),
             });
             
             module.DefineLibraryMethod("remainder", 0x51, new System.Delegate[] {
                 new System.Func<Microsoft.Scripting.Math.BigInteger, Microsoft.Scripting.Math.BigInteger, System.Object>(IronRuby.Builtins.BignumOps.Remainder),
-                new System.Func<IronRuby.Runtime.RubyContext, Microsoft.Scripting.Math.BigInteger, System.Object, System.Object>(IronRuby.Builtins.BignumOps.Remainder),
+                new System.Func<Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, IronRuby.Runtime.RubyContext, Microsoft.Scripting.Math.BigInteger, System.Object, System.Object>(IronRuby.Builtins.BignumOps.Remainder),
             });
             
             module.DefineLibraryMethod("size", 0x51, new System.Delegate[] {
@@ -579,27 +578,27 @@ namespace IronRuby.Builtins {
         private void LoadComparable_Instance(IronRuby.Builtins.RubyModule/*!*/ module) {
             
             module.DefineLibraryMethod("<", 0x51, new System.Delegate[] {
-                new System.Func<IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Boolean>(IronRuby.Builtins.Comparable.Less),
+                new System.Func<Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Boolean>(IronRuby.Builtins.Comparable.Less),
             });
             
             module.DefineLibraryMethod("<=", 0x51, new System.Delegate[] {
-                new System.Func<IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Boolean>(IronRuby.Builtins.Comparable.LessOrEqual),
+                new System.Func<Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Boolean>(IronRuby.Builtins.Comparable.LessOrEqual),
             });
             
             module.DefineLibraryMethod("==", 0x51, new System.Delegate[] {
-                new System.Func<IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>(IronRuby.Builtins.Comparable.Equal),
+                new System.Func<Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>(IronRuby.Builtins.Comparable.Equal),
             });
             
             module.DefineLibraryMethod(">", 0x51, new System.Delegate[] {
-                new System.Func<IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Boolean>(IronRuby.Builtins.Comparable.Greater),
+                new System.Func<Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Boolean>(IronRuby.Builtins.Comparable.Greater),
             });
             
             module.DefineLibraryMethod(">=", 0x51, new System.Delegate[] {
-                new System.Func<IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Boolean>(IronRuby.Builtins.Comparable.GreaterOrEqual),
+                new System.Func<Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Boolean>(IronRuby.Builtins.Comparable.GreaterOrEqual),
             });
             
             module.DefineLibraryMethod("between?", 0x51, new System.Delegate[] {
-                new System.Func<IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object, System.Boolean>(IronRuby.Builtins.Comparable.Between),
+                new System.Func<Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object, System.Boolean>(IronRuby.Builtins.Comparable.Between),
             });
             
         }
@@ -777,7 +776,7 @@ namespace IronRuby.Builtins {
             });
             
             module.DefineLibraryMethod("detect", 0x51, new System.Delegate[] {
-                new System.Func<IronRuby.Runtime.RubyContext, IronRuby.Runtime.BlockParam, System.Object, System.Object, System.Object>(IronRuby.Builtins.Enumerable.Find),
+                new System.Func<Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object>>>, IronRuby.Runtime.RubyContext, IronRuby.Runtime.BlockParam, System.Object, System.Object, System.Object>(IronRuby.Builtins.Enumerable.Find),
             });
             
             module.DefineLibraryMethod("each_with_index", 0x51, new System.Delegate[] {
@@ -789,7 +788,7 @@ namespace IronRuby.Builtins {
             });
             
             module.DefineLibraryMethod("find", 0x51, new System.Delegate[] {
-                new System.Func<IronRuby.Runtime.RubyContext, IronRuby.Runtime.BlockParam, System.Object, System.Object, System.Object>(IronRuby.Builtins.Enumerable.Find),
+                new System.Func<Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object>>>, IronRuby.Runtime.RubyContext, IronRuby.Runtime.BlockParam, System.Object, System.Object, System.Object>(IronRuby.Builtins.Enumerable.Find),
             });
             
             module.DefineLibraryMethod("find_all", 0x51, new System.Delegate[] {
@@ -813,7 +812,7 @@ namespace IronRuby.Builtins {
             });
             
             module.DefineLibraryMethod("max", 0x51, new System.Delegate[] {
-                new System.Func<IronRuby.Runtime.RubyContext, IronRuby.Runtime.BlockParam, System.Object, System.Object>(IronRuby.Builtins.Enumerable.GetMaximum),
+                new System.Func<Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, IronRuby.Runtime.RubyContext, IronRuby.Runtime.BlockParam, System.Object, System.Object>(IronRuby.Builtins.Enumerable.GetMaximum),
             });
             
             module.DefineLibraryMethod("member?", 0x51, new System.Delegate[] {
@@ -821,7 +820,7 @@ namespace IronRuby.Builtins {
             });
             
             module.DefineLibraryMethod("min", 0x51, new System.Delegate[] {
-                new System.Func<IronRuby.Runtime.RubyContext, IronRuby.Runtime.BlockParam, System.Object, System.Object>(IronRuby.Builtins.Enumerable.GetMinimum),
+                new System.Func<Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, IronRuby.Runtime.RubyContext, IronRuby.Runtime.BlockParam, System.Object, System.Object>(IronRuby.Builtins.Enumerable.GetMinimum),
             });
             
             module.DefineLibraryMethod("partition", 0x51, new System.Delegate[] {
@@ -837,11 +836,11 @@ namespace IronRuby.Builtins {
             });
             
             module.DefineLibraryMethod("sort", 0x51, new System.Delegate[] {
-                new System.Func<IronRuby.Runtime.RubyContext, IronRuby.Runtime.BlockParam, System.Object, System.Object>(IronRuby.Builtins.Enumerable.Sort),
+                new System.Func<Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, IronRuby.Runtime.RubyContext, IronRuby.Runtime.BlockParam, System.Object, System.Object>(IronRuby.Builtins.Enumerable.Sort),
             });
             
             module.DefineLibraryMethod("sort_by", 0x51, new System.Delegate[] {
-                new System.Func<IronRuby.Runtime.RubyContext, IronRuby.Runtime.BlockParam, System.Object, IronRuby.Builtins.RubyArray>(IronRuby.Builtins.Enumerable.SortBy),
+                new System.Func<Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, IronRuby.Runtime.RubyContext, IronRuby.Runtime.BlockParam, System.Object, IronRuby.Builtins.RubyArray>(IronRuby.Builtins.Enumerable.SortBy),
             });
             
             module.DefineLibraryMethod("to_a", 0x51, new System.Delegate[] {
@@ -1497,12 +1496,12 @@ namespace IronRuby.Builtins {
             module.DefineLibraryMethod("-", 0x51, new System.Delegate[] {
                 new System.Func<System.Int32, System.Int32, System.Object>(IronRuby.Builtins.FixnumOps.Subtract),
                 new System.Func<System.Int32, System.Double, System.Double>(IronRuby.Builtins.FixnumOps.Subtract),
-                new System.Func<IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>(IronRuby.Builtins.FixnumOps.Subtract),
+                new System.Func<Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>(IronRuby.Builtins.FixnumOps.Subtract),
             });
             
             module.DefineLibraryMethod("%", 0x51, new System.Delegate[] {
                 new System.Func<System.Int32, System.Int32, System.Object>(IronRuby.Builtins.FixnumOps.ModuloOp),
-                new System.Func<IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>(IronRuby.Builtins.FixnumOps.ModuloOp),
+                new System.Func<Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>(IronRuby.Builtins.FixnumOps.ModuloOp),
             });
             
             module.DefineLibraryMethod("&", 0x51, new System.Delegate[] {
@@ -1515,18 +1514,18 @@ namespace IronRuby.Builtins {
                 new System.Func<System.Int32, System.Int32, System.Object>(IronRuby.Builtins.FixnumOps.Multiply),
                 new System.Func<System.Int32, Microsoft.Scripting.Math.BigInteger, System.Object>(IronRuby.Builtins.FixnumOps.Multiply),
                 new System.Func<System.Int32, System.Double, System.Double>(IronRuby.Builtins.FixnumOps.Multiply),
-                new System.Func<IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>(IronRuby.Builtins.FixnumOps.Multiply),
+                new System.Func<Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>(IronRuby.Builtins.FixnumOps.Multiply),
             });
             
             module.DefineLibraryMethod("**", 0x51, new System.Delegate[] {
                 new System.Func<System.Int32, System.Int32, System.Object>(IronRuby.Builtins.FixnumOps.Power),
                 new System.Func<System.Int32, System.Double, System.Double>(IronRuby.Builtins.FixnumOps.Power),
-                new System.Func<IronRuby.Runtime.RubyContext, System.Int32, System.Object, System.Object>(IronRuby.Builtins.FixnumOps.Power),
+                new System.Func<Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, IronRuby.Runtime.RubyContext, System.Int32, System.Object, System.Object>(IronRuby.Builtins.FixnumOps.Power),
             });
             
             module.DefineLibraryMethod("/", 0x51, new System.Delegate[] {
                 new System.Func<System.Int32, System.Int32, System.Object>(IronRuby.Builtins.FixnumOps.DivideOp),
-                new System.Func<IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>(IronRuby.Builtins.FixnumOps.DivideOp),
+                new System.Func<Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>(IronRuby.Builtins.FixnumOps.DivideOp),
             });
             
             module.DefineLibraryMethod("-@", 0x51, new System.Delegate[] {
@@ -1536,7 +1535,6 @@ namespace IronRuby.Builtins {
             module.DefineLibraryMethod("[]", 0x51, new System.Delegate[] {
                 new System.Func<System.Int32, System.Int32, System.Int32>(IronRuby.Builtins.FixnumOps.Bit),
                 new System.Func<System.Int32, Microsoft.Scripting.Math.BigInteger, System.Int32>(IronRuby.Builtins.FixnumOps.Bit),
-                new System.Func<IronRuby.Runtime.RubyContext, System.Int32, System.Object, System.Int32>(IronRuby.Builtins.FixnumOps.Bit),
             });
             
             module.DefineLibraryMethod("^", 0x51, new System.Delegate[] {
@@ -1558,13 +1556,12 @@ namespace IronRuby.Builtins {
             module.DefineLibraryMethod("+", 0x51, new System.Delegate[] {
                 new System.Func<System.Int32, System.Int32, System.Object>(IronRuby.Builtins.FixnumOps.Add),
                 new System.Func<System.Int32, System.Double, System.Double>(IronRuby.Builtins.FixnumOps.Add),
-                new System.Func<IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>(IronRuby.Builtins.FixnumOps.Add),
+                new System.Func<Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>(IronRuby.Builtins.FixnumOps.Add),
             });
             
             module.DefineLibraryMethod("<", 0x51, new System.Delegate[] {
                 new System.Func<System.Int32, System.Int32, System.Boolean>(IronRuby.Builtins.FixnumOps.LessThan),
-                new System.Func<IronRuby.Runtime.RubyContext, System.Int32, System.Object, System.Boolean>(IronRuby.Builtins.FixnumOps.LessThan),
-                new System.Func<IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Boolean>(IronRuby.Builtins.FixnumOps.LessThan),
+                new System.Func<Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Boolean>(IronRuby.Builtins.FixnumOps.LessThan),
             });
             
             module.DefineLibraryMethod("<<", 0x51, new System.Delegate[] {
@@ -1574,12 +1571,12 @@ namespace IronRuby.Builtins {
             
             module.DefineLibraryMethod("<=", 0x51, new System.Delegate[] {
                 new System.Func<System.Int32, System.Int32, System.Boolean>(IronRuby.Builtins.FixnumOps.LessThanOrEqual),
-                new System.Func<IronRuby.Runtime.RubyContext, System.Int32, System.Object, System.Boolean>(IronRuby.Builtins.FixnumOps.LessThanOrEqual),
+                new System.Func<Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, IronRuby.Runtime.RubyContext, System.Int32, System.Object, System.Boolean>(IronRuby.Builtins.FixnumOps.LessThanOrEqual),
             });
             
             module.DefineLibraryMethod("<=>", 0x51, new System.Delegate[] {
                 new System.Func<System.Int32, System.Int32, System.Int32>(IronRuby.Builtins.FixnumOps.Compare),
-                new System.Func<IronRuby.Runtime.RubyContext, System.Int32, System.Object, System.Object>(IronRuby.Builtins.FixnumOps.Compare),
+                new System.Func<Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, IronRuby.Runtime.RubyContext, System.Int32, System.Object, System.Object>(IronRuby.Builtins.FixnumOps.Compare),
             });
             
             module.DefineLibraryMethod("==", 0x51, new System.Delegate[] {
@@ -1589,12 +1586,12 @@ namespace IronRuby.Builtins {
             
             module.DefineLibraryMethod(">", 0x51, new System.Delegate[] {
                 new System.Func<System.Int32, System.Int32, System.Boolean>(IronRuby.Builtins.FixnumOps.GreaterThan),
-                new System.Func<IronRuby.Runtime.RubyContext, System.Int32, System.Object, System.Boolean>(IronRuby.Builtins.FixnumOps.GreaterThan),
+                new System.Func<Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, IronRuby.Runtime.RubyContext, System.Int32, System.Object, System.Boolean>(IronRuby.Builtins.FixnumOps.GreaterThan),
             });
             
             module.DefineLibraryMethod(">=", 0x51, new System.Delegate[] {
                 new System.Func<System.Int32, System.Int32, System.Boolean>(IronRuby.Builtins.FixnumOps.GreaterThanOrEqual),
-                new System.Func<IronRuby.Runtime.RubyContext, System.Int32, System.Object, System.Boolean>(IronRuby.Builtins.FixnumOps.GreaterThanOrEqual),
+                new System.Func<Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, IronRuby.Runtime.RubyContext, System.Int32, System.Object, System.Boolean>(IronRuby.Builtins.FixnumOps.GreaterThanOrEqual),
             });
             
             module.DefineLibraryMethod(">>", 0x51, new System.Delegate[] {
@@ -1608,12 +1605,12 @@ namespace IronRuby.Builtins {
             
             module.DefineLibraryMethod("div", 0x51, new System.Delegate[] {
                 new System.Func<System.Int32, System.Int32, System.Object>(IronRuby.Builtins.FixnumOps.DivideOp),
-                new System.Func<IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>(IronRuby.Builtins.FixnumOps.Div),
+                new System.Func<Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>(IronRuby.Builtins.FixnumOps.Div),
             });
             
             module.DefineLibraryMethod("divmod", 0x51, new System.Delegate[] {
                 new System.Func<System.Int32, System.Int32, IronRuby.Builtins.RubyArray>(IronRuby.Builtins.FixnumOps.DivMod),
-                new System.Func<IronRuby.Runtime.RubyContext, System.Int32, System.Object, IronRuby.Builtins.RubyArray>(IronRuby.Builtins.FixnumOps.DivMod),
+                new System.Func<Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, IronRuby.Runtime.RubyContext, System.Int32, System.Object, System.Object>(IronRuby.Builtins.FixnumOps.DivMod),
             });
             
             module.DefineLibraryMethod("id2name", 0x51, new System.Delegate[] {
@@ -1622,12 +1619,12 @@ namespace IronRuby.Builtins {
             
             module.DefineLibraryMethod("modulo", 0x51, new System.Delegate[] {
                 new System.Func<System.Int32, System.Int32, System.Object>(IronRuby.Builtins.FixnumOps.ModuloOp),
-                new System.Func<IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>(IronRuby.Builtins.FixnumOps.Modulo),
+                new System.Func<Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>(IronRuby.Builtins.FixnumOps.Modulo),
             });
             
             module.DefineLibraryMethod("quo", 0x51, new System.Delegate[] {
                 new System.Func<System.Int32, Microsoft.Scripting.Math.BigInteger, System.Double>(IronRuby.Builtins.FixnumOps.Quotient),
-                new System.Func<IronRuby.Runtime.RubyContext, System.Int32, System.Object, System.Object>(IronRuby.Builtins.FixnumOps.Quotient),
+                new System.Func<Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, IronRuby.Runtime.RubyContext, System.Int32, System.Object, System.Object>(IronRuby.Builtins.FixnumOps.Quotient),
             });
             
             module.DefineLibraryMethod("size", 0x51, new System.Delegate[] {
@@ -1679,63 +1676,63 @@ namespace IronRuby.Builtins {
                 new System.Func<System.Double, System.Int32, System.Double>(IronRuby.Builtins.FloatOps.Subtract),
                 new System.Func<System.Double, Microsoft.Scripting.Math.BigInteger, System.Double>(IronRuby.Builtins.FloatOps.Subtract),
                 new System.Func<System.Double, System.Double, System.Double>(IronRuby.Builtins.FloatOps.Subtract),
-                new System.Func<IronRuby.Runtime.RubyContext, System.Double, System.Object, System.Object>(IronRuby.Builtins.FloatOps.Subtract),
+                new System.Func<Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, IronRuby.Runtime.RubyContext, System.Double, System.Object, System.Object>(IronRuby.Builtins.FloatOps.Subtract),
             });
             
             module.DefineLibraryMethod("%", 0x51, new System.Delegate[] {
                 new System.Func<System.Double, System.Int32, System.Double>(IronRuby.Builtins.FloatOps.Modulo),
                 new System.Func<System.Double, Microsoft.Scripting.Math.BigInteger, System.Double>(IronRuby.Builtins.FloatOps.Modulo),
                 new System.Func<System.Double, System.Double, System.Double>(IronRuby.Builtins.FloatOps.Modulo),
-                new System.Func<IronRuby.Runtime.RubyContext, System.Double, System.Object, System.Object>(IronRuby.Builtins.FloatOps.ModuloOp),
+                new System.Func<Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, IronRuby.Runtime.RubyContext, System.Double, System.Object, System.Object>(IronRuby.Builtins.FloatOps.ModuloOp),
             });
             
             module.DefineLibraryMethod("*", 0x51, new System.Delegate[] {
                 new System.Func<System.Double, System.Int32, System.Double>(IronRuby.Builtins.FloatOps.Multiply),
                 new System.Func<System.Double, Microsoft.Scripting.Math.BigInteger, System.Double>(IronRuby.Builtins.FloatOps.Multiply),
                 new System.Func<System.Double, System.Double, System.Double>(IronRuby.Builtins.FloatOps.Multiply),
-                new System.Func<IronRuby.Runtime.RubyContext, System.Double, System.Object, System.Object>(IronRuby.Builtins.FloatOps.Multiply),
+                new System.Func<Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, IronRuby.Runtime.RubyContext, System.Double, System.Object, System.Object>(IronRuby.Builtins.FloatOps.Multiply),
             });
             
             module.DefineLibraryMethod("**", 0x51, new System.Delegate[] {
                 new System.Func<System.Double, System.Int32, System.Double>(IronRuby.Builtins.FloatOps.Power),
                 new System.Func<System.Double, Microsoft.Scripting.Math.BigInteger, System.Double>(IronRuby.Builtins.FloatOps.Power),
                 new System.Func<System.Double, System.Double, System.Double>(IronRuby.Builtins.FloatOps.Power),
-                new System.Func<IronRuby.Runtime.RubyContext, System.Double, System.Object, System.Object>(IronRuby.Builtins.FloatOps.Power),
+                new System.Func<Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, IronRuby.Runtime.RubyContext, System.Double, System.Object, System.Object>(IronRuby.Builtins.FloatOps.Power),
             });
             
             module.DefineLibraryMethod("/", 0x51, new System.Delegate[] {
                 new System.Func<System.Double, System.Int32, System.Double>(IronRuby.Builtins.FloatOps.Divide),
                 new System.Func<System.Double, Microsoft.Scripting.Math.BigInteger, System.Double>(IronRuby.Builtins.FloatOps.Divide),
                 new System.Func<System.Double, System.Double, System.Double>(IronRuby.Builtins.FloatOps.Divide),
-                new System.Func<IronRuby.Runtime.RubyContext, System.Double, System.Object, System.Object>(IronRuby.Builtins.FloatOps.Divide),
+                new System.Func<Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, IronRuby.Runtime.RubyContext, System.Double, System.Object, System.Object>(IronRuby.Builtins.FloatOps.Divide),
             });
             
             module.DefineLibraryMethod("+", 0x51, new System.Delegate[] {
                 new System.Func<System.Double, System.Int32, System.Double>(IronRuby.Builtins.FloatOps.Add),
                 new System.Func<System.Double, Microsoft.Scripting.Math.BigInteger, System.Double>(IronRuby.Builtins.FloatOps.Add),
                 new System.Func<System.Double, System.Double, System.Double>(IronRuby.Builtins.FloatOps.Add),
-                new System.Func<IronRuby.Runtime.RubyContext, System.Double, System.Object, System.Object>(IronRuby.Builtins.FloatOps.Add),
+                new System.Func<Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, IronRuby.Runtime.RubyContext, System.Double, System.Object, System.Object>(IronRuby.Builtins.FloatOps.Add),
             });
             
             module.DefineLibraryMethod("<", 0x51, new System.Delegate[] {
                 new System.Func<System.Double, System.Double, System.Boolean>(IronRuby.Builtins.FloatOps.LessThan),
                 new System.Func<System.Double, System.Int32, System.Boolean>(IronRuby.Builtins.FloatOps.LessThan),
                 new System.Func<System.Double, Microsoft.Scripting.Math.BigInteger, System.Boolean>(IronRuby.Builtins.FloatOps.LessThan),
-                new System.Func<IronRuby.Runtime.RubyContext, System.Double, System.Object, System.Boolean>(IronRuby.Builtins.FloatOps.LessThan),
+                new System.Func<Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, IronRuby.Runtime.RubyContext, System.Double, System.Object, System.Boolean>(IronRuby.Builtins.FloatOps.LessThan),
             });
             
             module.DefineLibraryMethod("<=", 0x51, new System.Delegate[] {
                 new System.Func<System.Double, System.Double, System.Boolean>(IronRuby.Builtins.FloatOps.LessThanOrEqual),
                 new System.Func<System.Double, System.Int32, System.Boolean>(IronRuby.Builtins.FloatOps.LessThanOrEqual),
                 new System.Func<System.Double, Microsoft.Scripting.Math.BigInteger, System.Boolean>(IronRuby.Builtins.FloatOps.LessThanOrEqual),
-                new System.Func<IronRuby.Runtime.RubyContext, System.Double, System.Object, System.Boolean>(IronRuby.Builtins.FloatOps.LessThanOrEqual),
+                new System.Func<Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, IronRuby.Runtime.RubyContext, System.Double, System.Object, System.Boolean>(IronRuby.Builtins.FloatOps.LessThanOrEqual),
             });
             
             module.DefineLibraryMethod("<=>", 0x51, new System.Delegate[] {
                 new System.Func<System.Double, System.Double, System.Object>(IronRuby.Builtins.FloatOps.Compare),
                 new System.Func<System.Double, System.Int32, System.Object>(IronRuby.Builtins.FloatOps.Compare),
                 new System.Func<System.Double, Microsoft.Scripting.Math.BigInteger, System.Object>(IronRuby.Builtins.FloatOps.Compare),
-                new System.Func<IronRuby.Runtime.RubyContext, System.Double, System.Object, System.Object>(IronRuby.Builtins.FloatOps.Compare),
+                new System.Func<Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, IronRuby.Runtime.RubyContext, System.Double, System.Object, System.Object>(IronRuby.Builtins.FloatOps.Compare),
             });
             
             module.DefineLibraryMethod("==", 0x51, new System.Delegate[] {
@@ -1747,14 +1744,14 @@ namespace IronRuby.Builtins {
                 new System.Func<System.Double, System.Double, System.Boolean>(IronRuby.Builtins.FloatOps.GreaterThan),
                 new System.Func<System.Double, System.Int32, System.Boolean>(IronRuby.Builtins.FloatOps.GreaterThan),
                 new System.Func<System.Double, Microsoft.Scripting.Math.BigInteger, System.Boolean>(IronRuby.Builtins.FloatOps.GreaterThan),
-                new System.Func<IronRuby.Runtime.RubyContext, System.Double, System.Object, System.Boolean>(IronRuby.Builtins.FloatOps.GreaterThan),
+                new System.Func<Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, IronRuby.Runtime.RubyContext, System.Double, System.Object, System.Boolean>(IronRuby.Builtins.FloatOps.GreaterThan),
             });
             
             module.DefineLibraryMethod(">=", 0x51, new System.Delegate[] {
                 new System.Func<System.Double, System.Double, System.Boolean>(IronRuby.Builtins.FloatOps.GreaterThanOrEqual),
                 new System.Func<System.Double, System.Int32, System.Boolean>(IronRuby.Builtins.FloatOps.GreaterThanOrEqual),
                 new System.Func<System.Double, Microsoft.Scripting.Math.BigInteger, System.Boolean>(IronRuby.Builtins.FloatOps.GreaterThanOrEqual),
-                new System.Func<IronRuby.Runtime.RubyContext, System.Double, System.Object, System.Boolean>(IronRuby.Builtins.FloatOps.GreaterThanOrEqual),
+                new System.Func<Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, IronRuby.Runtime.RubyContext, System.Double, System.Object, System.Boolean>(IronRuby.Builtins.FloatOps.GreaterThanOrEqual),
             });
             
             module.DefineLibraryMethod("abs", 0x51, new System.Delegate[] {
@@ -1773,7 +1770,7 @@ namespace IronRuby.Builtins {
                 new System.Func<System.Double, System.Int32, IronRuby.Builtins.RubyArray>(IronRuby.Builtins.FloatOps.DivMod),
                 new System.Func<System.Double, Microsoft.Scripting.Math.BigInteger, IronRuby.Builtins.RubyArray>(IronRuby.Builtins.FloatOps.DivMod),
                 new System.Func<System.Double, System.Double, IronRuby.Builtins.RubyArray>(IronRuby.Builtins.FloatOps.DivMod),
-                new System.Func<IronRuby.Runtime.RubyContext, System.Double, System.Object, IronRuby.Builtins.RubyArray>(IronRuby.Builtins.FloatOps.DivMod),
+                new System.Func<Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, IronRuby.Runtime.RubyContext, System.Double, System.Object, System.Object>(IronRuby.Builtins.FloatOps.DivMod),
             });
             
             module.DefineLibraryMethod("finite?", 0x51, new System.Delegate[] {
@@ -1796,7 +1793,7 @@ namespace IronRuby.Builtins {
                 new System.Func<System.Double, System.Int32, System.Double>(IronRuby.Builtins.FloatOps.Modulo),
                 new System.Func<System.Double, Microsoft.Scripting.Math.BigInteger, System.Double>(IronRuby.Builtins.FloatOps.Modulo),
                 new System.Func<System.Double, System.Double, System.Double>(IronRuby.Builtins.FloatOps.Modulo),
-                new System.Func<IronRuby.Runtime.RubyContext, System.Double, System.Object, System.Object>(IronRuby.Builtins.FloatOps.Modulo),
+                new System.Func<Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, IronRuby.Runtime.RubyContext, System.Double, System.Object, System.Object>(IronRuby.Builtins.FloatOps.Modulo),
             });
             
             module.DefineLibraryMethod("nan?", 0x51, new System.Delegate[] {
@@ -1870,12 +1867,12 @@ namespace IronRuby.Builtins {
             
             LoadSystem__Collections__Generic__IDictionary_Instance(module);
             module.DefineLibraryMethod("[]", 0x51, new System.Delegate[] {
-                new System.Func<IronRuby.Runtime.RubyContext, IronRuby.Builtins.Hash, System.Object, System.Object>(IronRuby.Builtins.HashOps.GetElement),
+                new System.Func<Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, IronRuby.Builtins.Hash, System.Object, System.Object>>>, IronRuby.Runtime.RubyContext, IronRuby.Builtins.Hash, System.Object, System.Object>(IronRuby.Builtins.HashOps.GetElement),
             });
             
             module.DefineLibraryMethod("default", 0x51, new System.Delegate[] {
                 new System.Func<IronRuby.Runtime.RubyContext, IronRuby.Builtins.Hash, System.Object>(IronRuby.Builtins.HashOps.GetDefaultValue),
-                new System.Func<IronRuby.Runtime.RubyContext, IronRuby.Builtins.Hash, System.Object, System.Object>(IronRuby.Builtins.HashOps.GetDefaultValue),
+                new System.Func<Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, IronRuby.Builtins.Proc, IronRuby.Builtins.Hash, System.Object, System.Object>>>, IronRuby.Runtime.RubyContext, IronRuby.Builtins.Hash, System.Object, System.Object>(IronRuby.Builtins.HashOps.GetDefaultValue),
             });
             
             module.DefineLibraryMethod("default_proc", 0x51, new System.Delegate[] {
@@ -1905,14 +1902,16 @@ namespace IronRuby.Builtins {
             });
             
             module.DefineLibraryMethod("shift", 0x51, new System.Delegate[] {
-                new System.Func<IronRuby.Runtime.RubyContext, IronRuby.Builtins.Hash, System.Object>(IronRuby.Builtins.HashOps.Shift),
+                new System.Func<Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, IronRuby.Builtins.Hash, System.Object, System.Object>>>, IronRuby.Runtime.RubyContext, IronRuby.Builtins.Hash, System.Object>(IronRuby.Builtins.HashOps.Shift),
             });
             
         }
         
         private void LoadHash_Class(IronRuby.Builtins.RubyModule/*!*/ module) {
             module.DefineLibraryMethod("[]", 0x61, new System.Delegate[] {
-                new System.Func<IronRuby.Builtins.RubyClass, System.Object[], IronRuby.Builtins.Hash>(IronRuby.Builtins.HashOps.CreateHash),
+                new System.Func<IronRuby.Builtins.RubyClass, IronRuby.Builtins.Hash>(IronRuby.Builtins.HashOps.CreateSubclass),
+                new System.Func<IronRuby.Builtins.RubyClass, System.Collections.Generic.IDictionary<System.Object, System.Object>, IronRuby.Builtins.Hash>(IronRuby.Builtins.HashOps.CreateSubclass),
+                new System.Func<IronRuby.Builtins.RubyClass, System.Object[], IronRuby.Builtins.Hash>(IronRuby.Builtins.HashOps.CreateSubclass),
             });
             
         }
@@ -1929,7 +1928,7 @@ namespace IronRuby.Builtins {
             
             module.DefineLibraryMethod("downto", 0x51, new System.Delegate[] {
                 new System.Func<IronRuby.Runtime.BlockParam, System.Int32, System.Int32, System.Object>(IronRuby.Builtins.Integer.DownTo),
-                new System.Func<IronRuby.Runtime.RubyContext, IronRuby.Runtime.BlockParam, System.Object, System.Object, System.Object>(IronRuby.Builtins.Integer.DownTo),
+                new System.Func<Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, IronRuby.Runtime.RubyContext, IronRuby.Runtime.BlockParam, System.Object, System.Object, System.Object>(IronRuby.Builtins.Integer.DownTo),
             });
             
             module.DefineLibraryMethod("floor", 0x51, new System.Delegate[] {
@@ -1942,7 +1941,7 @@ namespace IronRuby.Builtins {
             
             module.DefineLibraryMethod("next", 0x51, new System.Delegate[] {
                 new System.Func<System.Int32, System.Object>(IronRuby.Builtins.Integer.Next),
-                new System.Func<IronRuby.Runtime.RubyContext, System.Object, System.Object>(IronRuby.Builtins.Integer.Next),
+                new System.Func<Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, IronRuby.Runtime.RubyContext, System.Object, System.Object>(IronRuby.Builtins.Integer.Next),
             });
             
             module.DefineLibraryMethod("round", 0x51, new System.Delegate[] {
@@ -1951,12 +1950,12 @@ namespace IronRuby.Builtins {
             
             module.DefineLibraryMethod("succ", 0x51, new System.Delegate[] {
                 new System.Func<System.Int32, System.Object>(IronRuby.Builtins.Integer.Next),
-                new System.Func<IronRuby.Runtime.RubyContext, System.Object, System.Object>(IronRuby.Builtins.Integer.Next),
+                new System.Func<Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, IronRuby.Runtime.RubyContext, System.Object, System.Object>(IronRuby.Builtins.Integer.Next),
             });
             
             module.DefineLibraryMethod("times", 0x51, new System.Delegate[] {
                 new System.Func<IronRuby.Runtime.BlockParam, System.Int32, System.Object>(IronRuby.Builtins.Integer.Times),
-                new System.Func<IronRuby.Runtime.RubyContext, IronRuby.Runtime.BlockParam, System.Object, System.Object>(IronRuby.Builtins.Integer.Times),
+                new System.Func<Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, IronRuby.Runtime.RubyContext, IronRuby.Runtime.BlockParam, System.Object, System.Object>(IronRuby.Builtins.Integer.Times),
             });
             
             module.DefineLibraryMethod("to_i", 0x51, new System.Delegate[] {
@@ -1973,7 +1972,7 @@ namespace IronRuby.Builtins {
             
             module.DefineLibraryMethod("upto", 0x51, new System.Delegate[] {
                 new System.Func<IronRuby.Runtime.BlockParam, System.Int32, System.Int32, System.Object>(IronRuby.Builtins.Integer.UpTo),
-                new System.Func<IronRuby.Runtime.RubyContext, IronRuby.Runtime.BlockParam, System.Object, System.Object, System.Object>(IronRuby.Builtins.Integer.UpTo),
+                new System.Func<Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, IronRuby.Runtime.RubyContext, IronRuby.Runtime.BlockParam, System.Object, System.Object, System.Object>(IronRuby.Builtins.Integer.UpTo),
             });
             
         }
@@ -2104,7 +2103,7 @@ namespace IronRuby.Builtins {
             });
             
             module.DefineLibraryMethod("printf", 0x51, new System.Delegate[] {
-                new System.Action<IronRuby.Runtime.RubyContext, IronRuby.Builtins.RubyIO, IronRuby.Builtins.MutableString, System.Object[]>(IronRuby.Builtins.RubyIOOps.PrintFormatted),
+                new System.Action<Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, IronRuby.Runtime.RubyContext, IronRuby.Builtins.RubyIO, IronRuby.Builtins.MutableString, System.Object[]>(IronRuby.Builtins.RubyIOOps.PrintFormatted),
             });
             
             module.DefineLibraryMethod("putc", 0x51, new System.Delegate[] {
@@ -2343,13 +2342,13 @@ namespace IronRuby.Builtins {
             });
             
             module.DefineLibraryMethod("extend", 0x51, new System.Delegate[] {
-                new System.Func<IronRuby.Runtime.RubyContext, System.Object, IronRuby.Builtins.RubyModule, IronRuby.Builtins.RubyModule[], System.Object>(IronRuby.Builtins.KernelOps.Extend),
+                new System.Func<Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, IronRuby.Builtins.RubyModule, System.Object, System.Object>>>, Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, IronRuby.Builtins.RubyModule, System.Object, System.Object>>>, IronRuby.Runtime.RubyContext, System.Object, IronRuby.Builtins.RubyModule, IronRuby.Builtins.RubyModule[], System.Object>(IronRuby.Builtins.KernelOps.Extend),
             });
             
             module.DefineLibraryMethod("fail", 0x52, new System.Delegate[] {
                 new System.Action<IronRuby.Runtime.RubyContext, System.Object>(IronRuby.Builtins.KernelOps.RaiseException),
                 new System.Action<System.Object, IronRuby.Builtins.MutableString>(IronRuby.Builtins.KernelOps.RaiseException),
-                new System.Action<IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object, IronRuby.Builtins.RubyArray>(IronRuby.Builtins.KernelOps.RaiseException),
+                new System.Action<Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, Microsoft.Scripting.SymbolId, System.Object>>>, Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object>>>, Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object, IronRuby.Builtins.RubyArray>(IronRuby.Builtins.KernelOps.RaiseException),
             });
             
             module.DefineLibraryMethod("Float", 0x52, new System.Delegate[] {
@@ -2370,12 +2369,12 @@ namespace IronRuby.Builtins {
             });
             
             module.DefineLibraryMethod("getc", 0x52, new System.Delegate[] {
-                new System.Func<IronRuby.Runtime.RubyContext, System.Object, System.Object>(IronRuby.Builtins.KernelOps.ReadInputCharacter),
+                new System.Func<Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object>>>, IronRuby.Runtime.RubyContext, System.Object, System.Object>(IronRuby.Builtins.KernelOps.ReadInputCharacter),
             });
             
             module.DefineLibraryMethod("gets", 0x52, new System.Delegate[] {
-                new System.Func<IronRuby.Runtime.RubyContext, System.Object, System.Object>(IronRuby.Builtins.KernelOps.ReadInputLine),
-                new System.Func<IronRuby.Runtime.RubyContext, System.Object, IronRuby.Builtins.MutableString, System.Object>(IronRuby.Builtins.KernelOps.ReadInputLine),
+                new System.Func<Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, IronRuby.Builtins.MutableString, System.Object>>>, IronRuby.Runtime.RubyContext, System.Object, System.Object>(IronRuby.Builtins.KernelOps.ReadInputLine),
+                new System.Func<Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, IronRuby.Builtins.MutableString, System.Object>>>, IronRuby.Runtime.RubyContext, System.Object, IronRuby.Builtins.MutableString, System.Object>(IronRuby.Builtins.KernelOps.ReadInputLine),
             });
             
             module.DefineLibraryMethod("global_variables", 0x52, new System.Delegate[] {
@@ -2503,8 +2502,8 @@ namespace IronRuby.Builtins {
             });
             
             module.DefineLibraryMethod("printf", 0x52, new System.Delegate[] {
-                new System.Action<IronRuby.Runtime.RubyContext, System.Object, IronRuby.Builtins.MutableString, System.Object[]>(IronRuby.Builtins.KernelOps.PrintFormatted),
-                new System.Action<IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object, System.Object[]>(IronRuby.Builtins.KernelOps.PrintFormatted),
+                new System.Action<Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, IronRuby.Runtime.RubyContext, System.Object, IronRuby.Builtins.MutableString, System.Object[]>(IronRuby.Builtins.KernelOps.PrintFormatted),
+                new System.Action<Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object, System.Object[]>(IronRuby.Builtins.KernelOps.PrintFormatted),
             });
             
             module.DefineLibraryMethod("private_methods", 0x51, new System.Delegate[] {
@@ -2538,7 +2537,7 @@ namespace IronRuby.Builtins {
             module.DefineLibraryMethod("raise", 0x52, new System.Delegate[] {
                 new System.Action<IronRuby.Runtime.RubyContext, System.Object>(IronRuby.Builtins.KernelOps.RaiseException),
                 new System.Action<System.Object, IronRuby.Builtins.MutableString>(IronRuby.Builtins.KernelOps.RaiseException),
-                new System.Action<IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object, IronRuby.Builtins.RubyArray>(IronRuby.Builtins.KernelOps.RaiseException),
+                new System.Action<Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, Microsoft.Scripting.SymbolId, System.Object>>>, Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object>>>, Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object, IronRuby.Builtins.RubyArray>(IronRuby.Builtins.KernelOps.RaiseException),
             });
             
             module.DefineLibraryMethod("rand", 0x52, new System.Delegate[] {
@@ -2658,7 +2657,7 @@ namespace IronRuby.Builtins {
             });
             
             module.DefineLibraryMethod("warn", 0x52, new System.Delegate[] {
-                new System.Action<IronRuby.Runtime.RubyContext, System.Object, System.Object>(IronRuby.Builtins.KernelOps.ReportWarning),
+                new System.Action<Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, IronRuby.Runtime.RubyContext, System.Object, System.Object>(IronRuby.Builtins.KernelOps.ReportWarning),
             });
             
         }
@@ -2721,7 +2720,7 @@ namespace IronRuby.Builtins {
             module.DefineLibraryMethod("fail", 0x61, new System.Delegate[] {
                 new System.Action<IronRuby.Runtime.RubyContext, System.Object>(IronRuby.Builtins.KernelOps.RaiseException),
                 new System.Action<System.Object, IronRuby.Builtins.MutableString>(IronRuby.Builtins.KernelOps.RaiseException),
-                new System.Action<IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object, IronRuby.Builtins.RubyArray>(IronRuby.Builtins.KernelOps.RaiseException),
+                new System.Action<Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, Microsoft.Scripting.SymbolId, System.Object>>>, Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object>>>, Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object, IronRuby.Builtins.RubyArray>(IronRuby.Builtins.KernelOps.RaiseException),
             });
             
             module.DefineLibraryMethod("Float", 0x61, new System.Delegate[] {
@@ -2733,12 +2732,12 @@ namespace IronRuby.Builtins {
             });
             
             module.DefineLibraryMethod("getc", 0x61, new System.Delegate[] {
-                new System.Func<IronRuby.Runtime.RubyContext, System.Object, System.Object>(IronRuby.Builtins.KernelOps.ReadInputCharacter),
+                new System.Func<Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object>>>, IronRuby.Runtime.RubyContext, System.Object, System.Object>(IronRuby.Builtins.KernelOps.ReadInputCharacter),
             });
             
             module.DefineLibraryMethod("gets", 0x61, new System.Delegate[] {
-                new System.Func<IronRuby.Runtime.RubyContext, System.Object, System.Object>(IronRuby.Builtins.KernelOps.ReadInputLine),
-                new System.Func<IronRuby.Runtime.RubyContext, System.Object, IronRuby.Builtins.MutableString, System.Object>(IronRuby.Builtins.KernelOps.ReadInputLine),
+                new System.Func<Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, IronRuby.Builtins.MutableString, System.Object>>>, IronRuby.Runtime.RubyContext, System.Object, System.Object>(IronRuby.Builtins.KernelOps.ReadInputLine),
+                new System.Func<Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, IronRuby.Builtins.MutableString, System.Object>>>, IronRuby.Runtime.RubyContext, System.Object, IronRuby.Builtins.MutableString, System.Object>(IronRuby.Builtins.KernelOps.ReadInputLine),
             });
             
             module.DefineLibraryMethod("global_variables", 0x61, new System.Delegate[] {
@@ -2797,8 +2796,8 @@ namespace IronRuby.Builtins {
             });
             
             module.DefineLibraryMethod("printf", 0x61, new System.Delegate[] {
-                new System.Action<IronRuby.Runtime.RubyContext, System.Object, IronRuby.Builtins.MutableString, System.Object[]>(IronRuby.Builtins.KernelOps.PrintFormatted),
-                new System.Action<IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object, System.Object[]>(IronRuby.Builtins.KernelOps.PrintFormatted),
+                new System.Action<Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, IronRuby.Runtime.RubyContext, System.Object, IronRuby.Builtins.MutableString, System.Object[]>(IronRuby.Builtins.KernelOps.PrintFormatted),
+                new System.Action<Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object, System.Object[]>(IronRuby.Builtins.KernelOps.PrintFormatted),
             });
             
             module.DefineLibraryMethod("proc", 0x61, new System.Delegate[] {
@@ -2820,7 +2819,7 @@ namespace IronRuby.Builtins {
             module.DefineLibraryMethod("raise", 0x61, new System.Delegate[] {
                 new System.Action<IronRuby.Runtime.RubyContext, System.Object>(IronRuby.Builtins.KernelOps.RaiseException),
                 new System.Action<System.Object, IronRuby.Builtins.MutableString>(IronRuby.Builtins.KernelOps.RaiseException),
-                new System.Action<IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object, IronRuby.Builtins.RubyArray>(IronRuby.Builtins.KernelOps.RaiseException),
+                new System.Action<Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, Microsoft.Scripting.SymbolId, System.Object>>>, Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object>>>, Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object, IronRuby.Builtins.RubyArray>(IronRuby.Builtins.KernelOps.RaiseException),
             });
             
             module.DefineLibraryMethod("rand", 0x61, new System.Delegate[] {
@@ -2878,7 +2877,7 @@ namespace IronRuby.Builtins {
             
             #endif
             module.DefineLibraryMethod("warn", 0x61, new System.Delegate[] {
-                new System.Action<IronRuby.Runtime.RubyContext, System.Object, System.Object>(IronRuby.Builtins.KernelOps.ReportWarning),
+                new System.Action<Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, IronRuby.Runtime.RubyContext, System.Object, System.Object>(IronRuby.Builtins.KernelOps.ReportWarning),
             });
             
         }
@@ -2891,22 +2890,22 @@ namespace IronRuby.Builtins {
         
         private void LoadMarshal_Class(IronRuby.Builtins.RubyModule/*!*/ module) {
             module.DefineLibraryMethod("dump", 0x61, new System.Delegate[] {
-                new System.Func<IronRuby.Builtins.RubyModule, System.Object, IronRuby.Builtins.MutableString>(IronRuby.Builtins.RubyMarshal.Dump),
-                new System.Func<IronRuby.Builtins.RubyModule, System.Object, System.Int32, IronRuby.Builtins.MutableString>(IronRuby.Builtins.RubyMarshal.Dump),
-                new System.Func<IronRuby.Builtins.RubyModule, System.Object, IronRuby.Builtins.RubyIO, System.Nullable<System.Int32>, System.Object>(IronRuby.Builtins.RubyMarshal.Dump),
-                new System.Func<IronRuby.Builtins.RubyModule, System.Object, System.Object, System.Nullable<System.Int32>, System.Object>(IronRuby.Builtins.RubyMarshal.Dump),
+                new System.Func<Microsoft.Scripting.Generation.SiteLocalStorage<IronRuby.Builtins.RubyMarshal.WriterSites>, IronRuby.Builtins.RubyModule, System.Object, IronRuby.Builtins.MutableString>(IronRuby.Builtins.RubyMarshal.Dump),
+                new System.Func<Microsoft.Scripting.Generation.SiteLocalStorage<IronRuby.Builtins.RubyMarshal.WriterSites>, IronRuby.Builtins.RubyModule, System.Object, System.Int32, IronRuby.Builtins.MutableString>(IronRuby.Builtins.RubyMarshal.Dump),
+                new System.Func<Microsoft.Scripting.Generation.SiteLocalStorage<IronRuby.Builtins.RubyMarshal.WriterSites>, IronRuby.Builtins.RubyModule, System.Object, IronRuby.Builtins.RubyIO, System.Nullable<System.Int32>, System.Object>(IronRuby.Builtins.RubyMarshal.Dump),
+                new System.Func<Microsoft.Scripting.Generation.SiteLocalStorage<IronRuby.Builtins.RubyMarshal.WriterSites>, Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, Microsoft.Scripting.SymbolId, System.Object>>>, IronRuby.Builtins.RubyModule, System.Object, System.Object, System.Nullable<System.Int32>, System.Object>(IronRuby.Builtins.RubyMarshal.Dump),
             });
             
             module.DefineLibraryMethod("load", 0x61, new System.Delegate[] {
-                new System.Func<IronRuby.Runtime.RubyScope, IronRuby.Builtins.RubyModule, IronRuby.Builtins.MutableString, IronRuby.Builtins.Proc, System.Object>(IronRuby.Builtins.RubyMarshal.Load),
-                new System.Func<IronRuby.Runtime.RubyScope, IronRuby.Builtins.RubyModule, IronRuby.Builtins.RubyIO, IronRuby.Builtins.Proc, System.Object>(IronRuby.Builtins.RubyMarshal.Load),
-                new System.Func<IronRuby.Runtime.RubyScope, IronRuby.Builtins.RubyModule, System.Object, IronRuby.Builtins.Proc, System.Object>(IronRuby.Builtins.RubyMarshal.Load),
+                new System.Func<Microsoft.Scripting.Generation.SiteLocalStorage<IronRuby.Builtins.RubyMarshal.ReaderSites>, IronRuby.Runtime.RubyScope, IronRuby.Builtins.RubyModule, IronRuby.Builtins.MutableString, IronRuby.Builtins.Proc, System.Object>(IronRuby.Builtins.RubyMarshal.Load),
+                new System.Func<Microsoft.Scripting.Generation.SiteLocalStorage<IronRuby.Builtins.RubyMarshal.ReaderSites>, IronRuby.Runtime.RubyScope, IronRuby.Builtins.RubyModule, IronRuby.Builtins.RubyIO, IronRuby.Builtins.Proc, System.Object>(IronRuby.Builtins.RubyMarshal.Load),
+                new System.Func<Microsoft.Scripting.Generation.SiteLocalStorage<IronRuby.Builtins.RubyMarshal.ReaderSites>, Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, Microsoft.Scripting.SymbolId, System.Object>>>, IronRuby.Runtime.RubyScope, IronRuby.Builtins.RubyModule, System.Object, IronRuby.Builtins.Proc, System.Object>(IronRuby.Builtins.RubyMarshal.Load),
             });
             
             module.DefineLibraryMethod("restore", 0x61, new System.Delegate[] {
-                new System.Func<IronRuby.Runtime.RubyScope, IronRuby.Builtins.RubyModule, IronRuby.Builtins.MutableString, IronRuby.Builtins.Proc, System.Object>(IronRuby.Builtins.RubyMarshal.Load),
-                new System.Func<IronRuby.Runtime.RubyScope, IronRuby.Builtins.RubyModule, IronRuby.Builtins.RubyIO, IronRuby.Builtins.Proc, System.Object>(IronRuby.Builtins.RubyMarshal.Load),
-                new System.Func<IronRuby.Runtime.RubyScope, IronRuby.Builtins.RubyModule, System.Object, IronRuby.Builtins.Proc, System.Object>(IronRuby.Builtins.RubyMarshal.Load),
+                new System.Func<Microsoft.Scripting.Generation.SiteLocalStorage<IronRuby.Builtins.RubyMarshal.ReaderSites>, IronRuby.Runtime.RubyScope, IronRuby.Builtins.RubyModule, IronRuby.Builtins.MutableString, IronRuby.Builtins.Proc, System.Object>(IronRuby.Builtins.RubyMarshal.Load),
+                new System.Func<Microsoft.Scripting.Generation.SiteLocalStorage<IronRuby.Builtins.RubyMarshal.ReaderSites>, IronRuby.Runtime.RubyScope, IronRuby.Builtins.RubyModule, IronRuby.Builtins.RubyIO, IronRuby.Builtins.Proc, System.Object>(IronRuby.Builtins.RubyMarshal.Load),
+                new System.Func<Microsoft.Scripting.Generation.SiteLocalStorage<IronRuby.Builtins.RubyMarshal.ReaderSites>, Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, Microsoft.Scripting.SymbolId, System.Object>>>, IronRuby.Runtime.RubyScope, IronRuby.Builtins.RubyModule, System.Object, IronRuby.Builtins.Proc, System.Object>(IronRuby.Builtins.RubyMarshal.Load),
             });
             
         }
@@ -3381,7 +3380,7 @@ namespace IronRuby.Builtins {
             });
             
             module.DefineLibraryMethod("include", 0x52, new System.Delegate[] {
-                new System.Func<IronRuby.Builtins.RubyModule, IronRuby.Builtins.RubyModule[], IronRuby.Builtins.RubyModule>(IronRuby.Builtins.ModuleOps.Include),
+                new System.Func<Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, IronRuby.Builtins.RubyModule, IronRuby.Builtins.RubyModule, System.Object>>>, Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, IronRuby.Builtins.RubyModule, IronRuby.Builtins.RubyModule, System.Object>>>, IronRuby.Builtins.RubyModule, IronRuby.Builtins.RubyModule[], IronRuby.Builtins.RubyModule>(IronRuby.Builtins.ModuleOps.Include),
             });
             
             module.DefineLibraryMethod("include?", 0x51, new System.Delegate[] {
@@ -3580,7 +3579,7 @@ namespace IronRuby.Builtins {
         private void LoadNumeric_Instance(IronRuby.Builtins.RubyModule/*!*/ module) {
             
             module.DefineLibraryMethod("-@", 0x51, new System.Delegate[] {
-                new System.Func<IronRuby.Runtime.RubyContext, System.Object, System.Object>(IronRuby.Builtins.Numeric.UnaryMinus),
+                new System.Func<Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, IronRuby.Runtime.RubyContext, System.Object, System.Object>(IronRuby.Builtins.Numeric.UnaryMinus),
             });
             
             module.DefineLibraryMethod("+@", 0x51, new System.Delegate[] {
@@ -3592,7 +3591,7 @@ namespace IronRuby.Builtins {
             });
             
             module.DefineLibraryMethod("abs", 0x51, new System.Delegate[] {
-                new System.Func<IronRuby.Runtime.RubyContext, System.Object, System.Object>(IronRuby.Builtins.Numeric.Abs),
+                new System.Func<Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object>>>, IronRuby.Runtime.RubyContext, System.Object, System.Object>(IronRuby.Builtins.Numeric.Abs),
             });
             
             module.DefineLibraryMethod("ceil", 0x51, new System.Delegate[] {
@@ -3604,11 +3603,11 @@ namespace IronRuby.Builtins {
             });
             
             module.DefineLibraryMethod("div", 0x51, new System.Delegate[] {
-                new System.Func<IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>(IronRuby.Builtins.Numeric.Div),
+                new System.Func<Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>(IronRuby.Builtins.Numeric.Div),
             });
             
             module.DefineLibraryMethod("divmod", 0x51, new System.Delegate[] {
-                new System.Func<IronRuby.Runtime.RubyContext, System.Object, System.Object, IronRuby.Builtins.RubyArray>(IronRuby.Builtins.Numeric.DivMod),
+                new System.Func<Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, IronRuby.Runtime.RubyContext, System.Object, System.Object, IronRuby.Builtins.RubyArray>(IronRuby.Builtins.Numeric.DivMod),
             });
             
             module.DefineLibraryMethod("eql?", 0x51, new System.Delegate[] {
@@ -3624,19 +3623,19 @@ namespace IronRuby.Builtins {
             });
             
             module.DefineLibraryMethod("modulo", 0x51, new System.Delegate[] {
-                new System.Func<IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>(IronRuby.Builtins.Numeric.Modulo),
+                new System.Func<Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>(IronRuby.Builtins.Numeric.Modulo),
             });
             
             module.DefineLibraryMethod("nonzero?", 0x51, new System.Delegate[] {
-                new System.Func<IronRuby.Runtime.RubyContext, System.Object, System.Object>(IronRuby.Builtins.Numeric.IsNonZero),
+                new System.Func<Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object>>>, IronRuby.Runtime.RubyContext, System.Object, System.Object>(IronRuby.Builtins.Numeric.IsNonZero),
             });
             
             module.DefineLibraryMethod("quo", 0x51, new System.Delegate[] {
-                new System.Func<IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>(IronRuby.Builtins.Numeric.Quo),
+                new System.Func<Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>(IronRuby.Builtins.Numeric.Quo),
             });
             
             module.DefineLibraryMethod("remainder", 0x51, new System.Delegate[] {
-                new System.Func<IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>(IronRuby.Builtins.Numeric.Remainder),
+                new System.Func<Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>(IronRuby.Builtins.Numeric.Remainder),
             });
             
             module.DefineLibraryMethod("round", 0x51, new System.Delegate[] {
@@ -3647,8 +3646,7 @@ namespace IronRuby.Builtins {
                 new System.Func<IronRuby.Runtime.RubyContext, IronRuby.Runtime.BlockParam, System.Int32, System.Int32, System.Object>(IronRuby.Builtins.Numeric.Step),
                 new System.Func<IronRuby.Runtime.RubyContext, IronRuby.Runtime.BlockParam, System.Int32, System.Int32, System.Int32, System.Object>(IronRuby.Builtins.Numeric.Step),
                 new System.Func<IronRuby.Runtime.RubyContext, IronRuby.Runtime.BlockParam, System.Double, System.Double, System.Double, System.Object>(IronRuby.Builtins.Numeric.Step),
-                new System.Func<IronRuby.Runtime.RubyContext, IronRuby.Runtime.BlockParam, System.Object, System.Object, System.Object>(IronRuby.Builtins.Numeric.Step),
-                new System.Func<IronRuby.Runtime.RubyContext, IronRuby.Runtime.BlockParam, System.Object, System.Object, System.Object, System.Object>(IronRuby.Builtins.Numeric.Step),
+                new System.Func<Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, IronRuby.Runtime.RubyContext, IronRuby.Runtime.BlockParam, System.Object, System.Object, System.Object, System.Object>(IronRuby.Builtins.Numeric.Step),
             });
             
             module.DefineLibraryMethod("to_int", 0x51, new System.Delegate[] {
@@ -3701,15 +3699,15 @@ namespace IronRuby.Builtins {
         private void LoadPrecision_Instance(IronRuby.Builtins.RubyModule/*!*/ module) {
             
             module.DefineLibraryMethod("prec", 0x51, new System.Delegate[] {
-                new System.Func<System.Object, IronRuby.Builtins.RubyClass, System.Object>(IronRuby.Builtins.Precision.Prec),
+                new System.Func<Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, IronRuby.Builtins.RubyClass, System.Object, System.Object>>>, System.Object, IronRuby.Builtins.RubyClass, System.Object>(IronRuby.Builtins.Precision.Prec),
             });
             
             module.DefineLibraryMethod("prec_f", 0x51, new System.Delegate[] {
-                new System.Func<IronRuby.Runtime.RubyContext, System.Object, System.Object>(IronRuby.Builtins.Precision.PrecFloat),
+                new System.Func<Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, IronRuby.Builtins.RubyClass, System.Object>>>, IronRuby.Runtime.RubyContext, System.Object, System.Object>(IronRuby.Builtins.Precision.PrecFloat),
             });
             
             module.DefineLibraryMethod("prec_i", 0x51, new System.Delegate[] {
-                new System.Func<IronRuby.Runtime.RubyContext, System.Object, System.Object>(IronRuby.Builtins.Precision.PrecInteger),
+                new System.Func<Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, IronRuby.Builtins.RubyClass, System.Object>>>, IronRuby.Runtime.RubyContext, System.Object, System.Object>(IronRuby.Builtins.Precision.PrecInteger),
             });
             
         }
@@ -3770,8 +3768,8 @@ namespace IronRuby.Builtins {
         
         private void LoadProc_Class(IronRuby.Builtins.RubyModule/*!*/ module) {
             module.DefineLibraryMethod("new", 0x61, new System.Delegate[] {
-                new System.Func<IronRuby.Runtime.RubyScope, IronRuby.Builtins.RubyClass, IronRuby.Builtins.Proc>(IronRuby.Builtins.ProcOps.CreateNew),
-                new System.Func<IronRuby.Runtime.BlockParam, IronRuby.Builtins.RubyClass, IronRuby.Builtins.Proc>(IronRuby.Builtins.ProcOps.CreateNew),
+                new System.Func<Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, IronRuby.Builtins.Proc, IronRuby.Builtins.Proc, System.Object>>>, IronRuby.Runtime.RubyScope, IronRuby.Builtins.RubyClass, IronRuby.Builtins.Proc>(IronRuby.Builtins.ProcOps.CreateNew),
+                new System.Func<Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, IronRuby.Builtins.Proc, IronRuby.Builtins.Proc, System.Object>>>, IronRuby.Runtime.BlockParam, IronRuby.Builtins.RubyClass, IronRuby.Builtins.Proc>(IronRuby.Builtins.ProcOps.CreateNew),
             });
             
         }
@@ -3861,7 +3859,7 @@ namespace IronRuby.Builtins {
             });
             
             module.DefineLibraryMethod("===", 0x51, new System.Delegate[] {
-                new System.Func<IronRuby.Runtime.RubyContext, IronRuby.Builtins.Range, System.Object, System.Boolean>(IronRuby.Builtins.RangeOps.CaseEquals),
+                new System.Func<Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, IronRuby.Runtime.RubyContext, IronRuby.Builtins.Range, System.Object, System.Boolean>(IronRuby.Builtins.RangeOps.CaseEquals),
             });
             
             module.DefineLibraryMethod("begin", 0x51, new System.Delegate[] {
@@ -3869,7 +3867,7 @@ namespace IronRuby.Builtins {
             });
             
             module.DefineLibraryMethod("each", 0x51, new System.Delegate[] {
-                new System.Func<IronRuby.Runtime.RubyContext, IronRuby.Runtime.BlockParam, IronRuby.Builtins.Range, System.Object>(IronRuby.Builtins.RangeOps.Each),
+                new System.Func<Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, Microsoft.Scripting.SymbolId, System.Object>>>, Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object>>>, IronRuby.Runtime.RubyContext, IronRuby.Runtime.BlockParam, IronRuby.Builtins.Range, System.Object>(IronRuby.Builtins.RangeOps.Each),
             });
             
             module.DefineLibraryMethod("end", 0x51, new System.Delegate[] {
@@ -3878,7 +3876,7 @@ namespace IronRuby.Builtins {
             
             module.DefineLibraryMethod("eql?", 0x51, new System.Delegate[] {
                 new System.Func<IronRuby.Builtins.Range, System.Object, System.Boolean>(IronRuby.Builtins.RangeOps.Equals),
-                new System.Func<IronRuby.Runtime.RubyContext, IronRuby.Builtins.Range, IronRuby.Builtins.Range, System.Boolean>(IronRuby.Builtins.RangeOps.Eql),
+                new System.Func<Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, IronRuby.Runtime.RubyContext, IronRuby.Builtins.Range, IronRuby.Builtins.Range, System.Boolean>(IronRuby.Builtins.RangeOps.Eql),
             });
             
             module.DefineLibraryMethod("exclude_end?", 0x51, new System.Delegate[] {
@@ -3894,11 +3892,11 @@ namespace IronRuby.Builtins {
             });
             
             module.DefineLibraryMethod("include?", 0x51, new System.Delegate[] {
-                new System.Func<IronRuby.Runtime.RubyContext, IronRuby.Builtins.Range, System.Object, System.Boolean>(IronRuby.Builtins.RangeOps.CaseEquals),
+                new System.Func<Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, IronRuby.Runtime.RubyContext, IronRuby.Builtins.Range, System.Object, System.Boolean>(IronRuby.Builtins.RangeOps.CaseEquals),
             });
             
             module.DefineLibraryMethod("initialize", 0x52, new System.Delegate[] {
-                new System.Func<IronRuby.Runtime.RubyContext, IronRuby.Builtins.Range, System.Object, System.Object, System.Boolean, IronRuby.Builtins.Range>(IronRuby.Builtins.RangeOps.Reinitialize),
+                new System.Func<Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, IronRuby.Runtime.RubyContext, IronRuby.Builtins.Range, System.Object, System.Object, System.Boolean, IronRuby.Builtins.Range>(IronRuby.Builtins.RangeOps.Reinitialize),
             });
             
             module.DefineLibraryMethod("inspect", 0x51, new System.Delegate[] {
@@ -3910,12 +3908,11 @@ namespace IronRuby.Builtins {
             });
             
             module.DefineLibraryMethod("member?", 0x51, new System.Delegate[] {
-                new System.Func<IronRuby.Runtime.RubyContext, IronRuby.Builtins.Range, System.Object, System.Boolean>(IronRuby.Builtins.RangeOps.CaseEquals),
+                new System.Func<Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, IronRuby.Runtime.RubyContext, IronRuby.Builtins.Range, System.Object, System.Boolean>(IronRuby.Builtins.RangeOps.CaseEquals),
             });
             
             module.DefineLibraryMethod("step", 0x51, new System.Delegate[] {
-                new System.Func<IronRuby.Runtime.RubyContext, IronRuby.Runtime.BlockParam, IronRuby.Builtins.Range, System.Object>(IronRuby.Builtins.RangeOps.Step),
-                new System.Func<IronRuby.Runtime.RubyContext, IronRuby.Runtime.BlockParam, IronRuby.Builtins.Range, System.Object, System.Object>(IronRuby.Builtins.RangeOps.Step),
+                new System.Func<Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, Microsoft.Scripting.SymbolId, System.Object>>>, Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object>>>, IronRuby.Runtime.RubyContext, IronRuby.Runtime.BlockParam, IronRuby.Builtins.Range, System.Object, System.Object>(IronRuby.Builtins.RangeOps.Step),
             });
             
             module.DefineLibraryMethod("to_s", 0x51, new System.Delegate[] {
@@ -4076,23 +4073,23 @@ namespace IronRuby.Builtins {
             
             module.DefineLibraryMethod("<=>", 0x51, new System.Delegate[] {
                 new System.Func<IronRuby.Builtins.MutableString, IronRuby.Builtins.MutableString, System.Int32>(IronRuby.Builtins.MutableStringOps.Compare),
-                new System.Func<IronRuby.Runtime.RubyContext, IronRuby.Builtins.MutableString, System.Object, System.Object>(IronRuby.Builtins.MutableStringOps.Compare),
+                new System.Func<Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, Microsoft.Scripting.SymbolId, System.Object>>>, IronRuby.Runtime.RubyContext, IronRuby.Builtins.MutableString, System.Object, System.Object>(IronRuby.Builtins.MutableStringOps.Compare),
             });
             
             module.DefineLibraryMethod("=~", 0x51, new System.Delegate[] {
                 new System.Func<IronRuby.Runtime.RubyScope, IronRuby.Builtins.MutableString, IronRuby.Builtins.RubyRegex, System.Object>(IronRuby.Builtins.MutableStringOps.Match),
                 new System.Func<IronRuby.Builtins.MutableString, IronRuby.Builtins.MutableString, System.Object>(IronRuby.Builtins.MutableStringOps.Match),
-                new System.Func<IronRuby.Runtime.RubyScope, IronRuby.Builtins.MutableString, System.Object, System.Object>(IronRuby.Builtins.MutableStringOps.Match),
+                new System.Func<Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, IronRuby.Builtins.MutableString, System.Object>>>, IronRuby.Runtime.RubyScope, IronRuby.Builtins.MutableString, System.Object, System.Object>(IronRuby.Builtins.MutableStringOps.Match),
             });
             
             module.DefineLibraryMethod("==", 0x51, new System.Delegate[] {
                 new System.Func<IronRuby.Builtins.MutableString, IronRuby.Builtins.MutableString, System.Boolean>(IronRuby.Builtins.MutableStringOps.StringEquals),
-                new System.Func<IronRuby.Runtime.RubyContext, IronRuby.Builtins.MutableString, System.Object, System.Boolean>(IronRuby.Builtins.MutableStringOps.Equals),
+                new System.Func<Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, Microsoft.Scripting.SymbolId, System.Object>>>, Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, IronRuby.Runtime.RubyContext, IronRuby.Builtins.MutableString, System.Object, System.Boolean>(IronRuby.Builtins.MutableStringOps.Equals),
             });
             
             module.DefineLibraryMethod("===", 0x51, new System.Delegate[] {
                 new System.Func<IronRuby.Builtins.MutableString, IronRuby.Builtins.MutableString, System.Boolean>(IronRuby.Builtins.MutableStringOps.StringEquals),
-                new System.Func<IronRuby.Runtime.RubyContext, IronRuby.Builtins.MutableString, System.Object, System.Boolean>(IronRuby.Builtins.MutableStringOps.Equals),
+                new System.Func<Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, Microsoft.Scripting.SymbolId, System.Object>>>, Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, IronRuby.Runtime.RubyContext, IronRuby.Builtins.MutableString, System.Object, System.Boolean>(IronRuby.Builtins.MutableStringOps.Equals),
             });
             
             module.DefineLibraryMethod("capitalize", 0x51, new System.Delegate[] {
@@ -4245,8 +4242,8 @@ namespace IronRuby.Builtins {
             });
             
             module.DefineLibraryMethod("match", 0x51, new System.Delegate[] {
-                new System.Func<IronRuby.Runtime.RubyScope, IronRuby.Builtins.MutableString, IronRuby.Builtins.RubyRegex, System.Object>(IronRuby.Builtins.MutableStringOps.MatchRegexp),
-                new System.Func<IronRuby.Runtime.RubyScope, IronRuby.Builtins.MutableString, IronRuby.Builtins.MutableString, System.Object>(IronRuby.Builtins.MutableStringOps.MatchObject),
+                new System.Func<Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyScope, IronRuby.Builtins.RubyRegex, IronRuby.Builtins.MutableString, System.Object>>>, IronRuby.Runtime.RubyScope, IronRuby.Builtins.MutableString, IronRuby.Builtins.RubyRegex, System.Object>(IronRuby.Builtins.MutableStringOps.MatchRegexp),
+                new System.Func<Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyScope, IronRuby.Builtins.RubyRegex, IronRuby.Builtins.MutableString, System.Object>>>, IronRuby.Runtime.RubyScope, IronRuby.Builtins.MutableString, IronRuby.Builtins.MutableString, System.Object>(IronRuby.Builtins.MutableStringOps.MatchObject),
             });
             
             module.DefineLibraryMethod("next", 0x51, new System.Delegate[] {
@@ -4428,7 +4425,7 @@ namespace IronRuby.Builtins {
             });
             
             module.DefineLibraryMethod("upto", 0x51, new System.Delegate[] {
-                new System.Func<IronRuby.Runtime.RubyContext, IronRuby.Runtime.BlockParam, IronRuby.Builtins.MutableString, IronRuby.Builtins.MutableString, System.Object>(IronRuby.Builtins.MutableStringOps.UpTo),
+                new System.Func<Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, Microsoft.Scripting.SymbolId, System.Object>>>, Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object>>>, IronRuby.Runtime.RubyContext, IronRuby.Runtime.BlockParam, IronRuby.Builtins.MutableString, IronRuby.Builtins.MutableString, System.Object>(IronRuby.Builtins.MutableStringOps.UpTo),
             });
             
         }
@@ -4710,7 +4707,7 @@ namespace IronRuby.Builtins {
             });
             
             module.DefineLibraryMethod("sort", 0x51, new System.Delegate[] {
-                new System.Func<IronRuby.Runtime.RubyContext, IronRuby.Runtime.BlockParam, System.Collections.Generic.IDictionary<System.Object, System.Object>, System.Object>(IronRuby.Builtins.IDictionaryOps.Sort),
+                new System.Func<Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, IronRuby.Runtime.RubyContext, IronRuby.Runtime.BlockParam, System.Collections.Generic.IDictionary<System.Object, System.Object>, System.Object>(IronRuby.Builtins.IDictionaryOps.Sort),
             });
             
             module.DefineLibraryMethod("store", 0x51, new System.Delegate[] {
@@ -4759,7 +4756,6 @@ namespace IronRuby.Builtins {
             
             module.DefineLibraryMethod("-", 0x51, new System.Delegate[] {
                 new System.Func<IronRuby.Runtime.RubyContext, System.Collections.IList, System.Collections.IList, IronRuby.Builtins.RubyArray>(IronRuby.Builtins.IListOps.Difference),
-                new System.Func<IronRuby.Runtime.RubyContext, System.Collections.IList, System.Object, IronRuby.Builtins.RubyArray>(IronRuby.Builtins.IListOps.Difference),
             });
             
             module.DefineLibraryMethod("&", 0x51, new System.Delegate[] {
@@ -4768,24 +4764,19 @@ namespace IronRuby.Builtins {
             
             module.DefineLibraryMethod("*", 0x51, new System.Delegate[] {
                 new System.Func<System.Collections.IList, System.Int32, IronRuby.Builtins.RubyArray>(IronRuby.Builtins.IListOps.Repetition),
-                new System.Func<IronRuby.Runtime.RubyContext, System.Collections.IList, System.String, IronRuby.Builtins.MutableString>(IronRuby.Builtins.IListOps.Repetition),
                 new System.Func<IronRuby.Runtime.RubyContext, System.Collections.IList, IronRuby.Builtins.MutableString, IronRuby.Builtins.MutableString>(IronRuby.Builtins.IListOps.Repetition),
                 new System.Func<IronRuby.Runtime.RubyContext, System.Collections.IList, System.Object, System.Object>(IronRuby.Builtins.IListOps.Repetition),
             });
             
             module.DefineLibraryMethod("[]", 0x51, new System.Delegate[] {
                 new System.Func<System.Collections.IList, System.Int32, System.Object>(IronRuby.Builtins.IListOps.GetElement),
-                new System.Func<IronRuby.Runtime.RubyContext, System.Collections.IList, System.Int32, System.Int32, System.Collections.IList>(IronRuby.Builtins.IListOps.GetElements),
-                new System.Func<IronRuby.Runtime.RubyContext, System.Collections.IList, IronRuby.Builtins.Range, System.Collections.IList>(IronRuby.Builtins.IListOps.GetElement),
+                new System.Func<Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, IronRuby.Builtins.RubyClass, System.Object>>>, IronRuby.Runtime.RubyContext, System.Collections.IList, System.Int32, System.Int32, System.Collections.IList>(IronRuby.Builtins.IListOps.GetElements),
+                new System.Func<Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, IronRuby.Builtins.RubyClass, System.Object>>>, IronRuby.Runtime.RubyContext, System.Collections.IList, IronRuby.Builtins.Range, System.Collections.IList>(IronRuby.Builtins.IListOps.GetElement),
             });
             
             module.DefineLibraryMethod("[]=", 0x51, new System.Delegate[] {
                 new System.Func<IronRuby.Runtime.RubyContext, System.Collections.IList, System.Int32, System.Object, System.Object>(IronRuby.Builtins.IListOps.SetElement),
-                new System.Func<IronRuby.Runtime.RubyContext, System.Collections.IList, System.Object, System.Object, System.Object>(IronRuby.Builtins.IListOps.SetElement),
                 new System.Func<IronRuby.Runtime.RubyContext, System.Collections.IList, System.Int32, System.Int32, System.Object, System.Object>(IronRuby.Builtins.IListOps.SetElement),
-                new System.Func<IronRuby.Runtime.RubyContext, System.Collections.IList, System.Int32, System.Object, System.Object, System.Object>(IronRuby.Builtins.IListOps.SetElement),
-                new System.Func<IronRuby.Runtime.RubyContext, System.Collections.IList, System.Object, System.Int32, System.Object, System.Object>(IronRuby.Builtins.IListOps.SetElement),
-                new System.Func<IronRuby.Runtime.RubyContext, System.Collections.IList, System.Object, System.Object, System.Object, System.Object>(IronRuby.Builtins.IListOps.SetElement),
                 new System.Func<IronRuby.Runtime.RubyContext, System.Collections.IList, IronRuby.Builtins.Range, System.Object, System.Object>(IronRuby.Builtins.IListOps.SetElement),
             });
             
@@ -4795,7 +4786,6 @@ namespace IronRuby.Builtins {
             
             module.DefineLibraryMethod("+", 0x51, new System.Delegate[] {
                 new System.Func<System.Collections.IList, System.Collections.IList, IronRuby.Builtins.RubyArray>(IronRuby.Builtins.IListOps.Concatenate),
-                new System.Func<IronRuby.Runtime.RubyContext, System.Collections.IList, System.Object, System.Collections.IList>(IronRuby.Builtins.IListOps.Concatenate),
             });
             
             module.DefineLibraryMethod("<<", 0x51, new System.Delegate[] {
@@ -4803,8 +4793,7 @@ namespace IronRuby.Builtins {
             });
             
             module.DefineLibraryMethod("<=>", 0x51, new System.Delegate[] {
-                new System.Func<IronRuby.Runtime.RubyContext, System.Collections.IList, System.Collections.IList, System.Int32>(IronRuby.Builtins.IListOps.Compare),
-                new System.Func<IronRuby.Runtime.RubyContext, System.Collections.IList, System.Object, System.Int32>(IronRuby.Builtins.IListOps.Compare),
+                new System.Func<Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, IronRuby.Runtime.RubyContext, System.Collections.IList, System.Collections.IList, System.Object>(IronRuby.Builtins.IListOps.Compare),
             });
             
             module.DefineLibraryMethod("==", 0x51, new System.Delegate[] {
@@ -4818,7 +4807,6 @@ namespace IronRuby.Builtins {
             
             module.DefineLibraryMethod("at", 0x51, new System.Delegate[] {
                 new System.Func<System.Collections.IList, System.Int32, System.Object>(IronRuby.Builtins.IListOps.At),
-                new System.Func<IronRuby.Runtime.RubyContext, System.Collections.IList, System.Object, System.Object>(IronRuby.Builtins.IListOps.At),
             });
             
             module.DefineLibraryMethod("clear", 0x51, new System.Delegate[] {
@@ -4830,7 +4818,7 @@ namespace IronRuby.Builtins {
             });
             
             module.DefineLibraryMethod("compact", 0x51, new System.Delegate[] {
-                new System.Func<IronRuby.Runtime.RubyContext, System.Collections.IList, System.Collections.IList>(IronRuby.Builtins.IListOps.Compact),
+                new System.Func<Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, IronRuby.Builtins.RubyClass, System.Object>>>, IronRuby.Runtime.RubyContext, System.Collections.IList, System.Collections.IList>(IronRuby.Builtins.IListOps.Compact),
             });
             
             module.DefineLibraryMethod("compact!", 0x51, new System.Delegate[] {
@@ -4839,7 +4827,6 @@ namespace IronRuby.Builtins {
             
             module.DefineLibraryMethod("concat", 0x51, new System.Delegate[] {
                 new System.Func<IronRuby.Runtime.RubyContext, System.Collections.IList, System.Collections.IList, System.Collections.IList>(IronRuby.Builtins.IListOps.Concat),
-                new System.Func<IronRuby.Runtime.RubyContext, System.Collections.IList, System.Object, System.Collections.IList>(IronRuby.Builtins.IListOps.Concat),
             });
             
             module.DefineLibraryMethod("delete", 0x51, new System.Delegate[] {
@@ -4889,16 +4876,15 @@ namespace IronRuby.Builtins {
             
             module.DefineLibraryMethod("first", 0x51, new System.Delegate[] {
                 new System.Func<System.Collections.IList, System.Object>(IronRuby.Builtins.IListOps.First),
-                new System.Func<IronRuby.Runtime.RubyContext, System.Collections.IList, System.Int32, System.Collections.IList>(IronRuby.Builtins.IListOps.First),
-                new System.Func<IronRuby.Runtime.RubyContext, System.Collections.IList, System.Object, System.Object>(IronRuby.Builtins.IListOps.First),
+                new System.Func<Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, IronRuby.Builtins.RubyClass, System.Object>>>, IronRuby.Runtime.RubyContext, System.Collections.IList, System.Int32, System.Collections.IList>(IronRuby.Builtins.IListOps.First),
             });
             
             module.DefineLibraryMethod("flatten", 0x51, new System.Delegate[] {
-                new System.Func<IronRuby.Runtime.RubyContext, System.Collections.IList, System.Collections.IList>(IronRuby.Builtins.IListOps.Flatten),
+                new System.Func<Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Collections.IList, System.Object>>>, IronRuby.Runtime.RubyContext, System.Collections.IList, System.Collections.IList>(IronRuby.Builtins.IListOps.Flatten),
             });
             
             module.DefineLibraryMethod("flatten!", 0x51, new System.Delegate[] {
-                new System.Func<IronRuby.Runtime.RubyContext, System.Collections.IList, System.Collections.IList>(IronRuby.Builtins.IListOps.FlattenInPlace),
+                new System.Func<Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Collections.IList, System.Object>>>, IronRuby.Runtime.RubyContext, System.Collections.IList, System.Collections.IList>(IronRuby.Builtins.IListOps.FlattenInPlace),
             });
             
             module.DefineLibraryMethod("hash", 0x51, new System.Delegate[] {
@@ -4914,11 +4900,11 @@ namespace IronRuby.Builtins {
             });
             
             module.DefineLibraryMethod("indexes", 0x51, new System.Delegate[] {
-                new System.Func<IronRuby.Runtime.RubyContext, System.Collections.IList, System.Object[], System.Object>(IronRuby.Builtins.IListOps.Indexes),
+                new System.Func<Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, IronRuby.Builtins.RubyClass, System.Object>>>, IronRuby.Runtime.RubyContext, System.Collections.IList, System.Object[], System.Object>(IronRuby.Builtins.IListOps.Indexes),
             });
             
             module.DefineLibraryMethod("indices", 0x51, new System.Delegate[] {
-                new System.Func<IronRuby.Runtime.RubyContext, System.Collections.IList, System.Object[], System.Object>(IronRuby.Builtins.IListOps.Indexes),
+                new System.Func<Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, IronRuby.Builtins.RubyClass, System.Object>>>, IronRuby.Runtime.RubyContext, System.Collections.IList, System.Object[], System.Object>(IronRuby.Builtins.IListOps.Indexes),
             });
             
             module.DefineLibraryMethod("initialize_copy", 0x52, new System.Delegate[] {
@@ -4934,15 +4920,13 @@ namespace IronRuby.Builtins {
             });
             
             module.DefineLibraryMethod("join", 0x51, new System.Delegate[] {
-                new System.Func<IronRuby.Runtime.RubyContext, System.Collections.IList, System.String, IronRuby.Builtins.MutableString>(IronRuby.Builtins.IListOps.Join),
-                new System.Func<IronRuby.Runtime.RubyContext, System.Collections.IList, IronRuby.Builtins.MutableString, IronRuby.Builtins.MutableString>(IronRuby.Builtins.IListOps.Join),
                 new System.Func<IronRuby.Runtime.RubyContext, System.Collections.IList, IronRuby.Builtins.MutableString>(IronRuby.Builtins.IListOps.Join),
+                new System.Func<IronRuby.Runtime.RubyContext, System.Collections.IList, IronRuby.Builtins.MutableString, IronRuby.Builtins.MutableString>(IronRuby.Builtins.IListOps.Join),
             });
             
             module.DefineLibraryMethod("last", 0x51, new System.Delegate[] {
                 new System.Func<System.Collections.IList, System.Object>(IronRuby.Builtins.IListOps.Last),
-                new System.Func<IronRuby.Runtime.RubyContext, System.Collections.IList, System.Int32, System.Collections.IList>(IronRuby.Builtins.IListOps.Last),
-                new System.Func<IronRuby.Runtime.RubyContext, System.Collections.IList, System.Object, System.Object>(IronRuby.Builtins.IListOps.Last),
+                new System.Func<Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, IronRuby.Builtins.RubyClass, System.Object>>>, IronRuby.Runtime.RubyContext, System.Collections.IList, System.Int32, System.Collections.IList>(IronRuby.Builtins.IListOps.Last),
             });
             
             module.DefineLibraryMethod("length", 0x51, new System.Delegate[] {
@@ -4999,22 +4983,22 @@ namespace IronRuby.Builtins {
             
             module.DefineLibraryMethod("slice", 0x51, new System.Delegate[] {
                 new System.Func<System.Collections.IList, System.Int32, System.Object>(IronRuby.Builtins.IListOps.GetElement),
-                new System.Func<IronRuby.Runtime.RubyContext, System.Collections.IList, System.Int32, System.Int32, System.Collections.IList>(IronRuby.Builtins.IListOps.GetElements),
-                new System.Func<IronRuby.Runtime.RubyContext, System.Collections.IList, IronRuby.Builtins.Range, System.Collections.IList>(IronRuby.Builtins.IListOps.GetElement),
+                new System.Func<Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, IronRuby.Builtins.RubyClass, System.Object>>>, IronRuby.Runtime.RubyContext, System.Collections.IList, System.Int32, System.Int32, System.Collections.IList>(IronRuby.Builtins.IListOps.GetElements),
+                new System.Func<Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, IronRuby.Builtins.RubyClass, System.Object>>>, IronRuby.Runtime.RubyContext, System.Collections.IList, IronRuby.Builtins.Range, System.Collections.IList>(IronRuby.Builtins.IListOps.GetElement),
             });
             
             module.DefineLibraryMethod("slice!", 0x51, new System.Delegate[] {
                 new System.Func<IronRuby.Runtime.RubyContext, System.Collections.IList, System.Int32, System.Object>(IronRuby.Builtins.IListOps.SliceInPlace),
-                new System.Func<IronRuby.Runtime.RubyContext, System.Collections.IList, IronRuby.Builtins.Range, System.Object>(IronRuby.Builtins.IListOps.SliceInPlace),
-                new System.Func<IronRuby.Runtime.RubyContext, System.Collections.IList, System.Int32, System.Int32, System.Collections.IList>(IronRuby.Builtins.IListOps.SliceInPlace),
+                new System.Func<Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, IronRuby.Builtins.RubyClass, System.Object>>>, IronRuby.Runtime.RubyContext, System.Collections.IList, IronRuby.Builtins.Range, System.Object>(IronRuby.Builtins.IListOps.SliceInPlace),
+                new System.Func<Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, IronRuby.Builtins.RubyClass, System.Object>>>, IronRuby.Runtime.RubyContext, System.Collections.IList, System.Int32, System.Int32, System.Collections.IList>(IronRuby.Builtins.IListOps.SliceInPlace),
             });
             
             module.DefineLibraryMethod("sort", 0x51, new System.Delegate[] {
-                new System.Func<IronRuby.Runtime.RubyContext, IronRuby.Runtime.BlockParam, System.Collections.IList, System.Collections.IList>(IronRuby.Builtins.IListOps.Sort),
+                new System.Func<Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, IronRuby.Builtins.RubyClass, System.Object>>>, Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, IronRuby.Runtime.RubyContext, IronRuby.Runtime.BlockParam, System.Collections.IList, System.Collections.IList>(IronRuby.Builtins.IListOps.Sort),
             });
             
             module.DefineLibraryMethod("sort!", 0x51, new System.Delegate[] {
-                new System.Func<IronRuby.Runtime.RubyContext, IronRuby.Runtime.BlockParam, System.Collections.IList, System.Collections.IList>(IronRuby.Builtins.IListOps.SortInPlace),
+                new System.Func<Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, IronRuby.Runtime.RubyContext, IronRuby.Runtime.BlockParam, System.Collections.IList, System.Collections.IList>(IronRuby.Builtins.IListOps.SortInPlace),
             });
             
             module.DefineLibraryMethod("to_a", 0x51, new System.Delegate[] {
@@ -5034,7 +5018,7 @@ namespace IronRuby.Builtins {
             });
             
             module.DefineLibraryMethod("uniq", 0x51, new System.Delegate[] {
-                new System.Func<IronRuby.Runtime.RubyContext, System.Collections.IList, System.Collections.IList>(IronRuby.Builtins.IListOps.Unique),
+                new System.Func<Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, IronRuby.Builtins.RubyClass, System.Object>>>, IronRuby.Runtime.RubyContext, System.Collections.IList, System.Collections.IList>(IronRuby.Builtins.IListOps.Unique),
             });
             
             module.DefineLibraryMethod("uniq!", 0x51, new System.Delegate[] {
@@ -5046,7 +5030,7 @@ namespace IronRuby.Builtins {
             });
             
             module.DefineLibraryMethod("values_at", 0x51, new System.Delegate[] {
-                new System.Func<IronRuby.Runtime.RubyContext, System.Collections.IList, System.Object[], IronRuby.Builtins.RubyArray>(IronRuby.Builtins.IListOps.ValuesAt),
+                new System.Func<Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, IronRuby.Builtins.RubyClass, System.Object>>>, IronRuby.Runtime.RubyContext, System.Collections.IList, System.Object[], IronRuby.Builtins.RubyArray>(IronRuby.Builtins.IListOps.ValuesAt),
             });
             
         }
@@ -6456,12 +6440,12 @@ namespace IronRuby.StandardLibrary.Digest {
         
         private void LoadDigest__Class_Class(IronRuby.Builtins.RubyModule/*!*/ module) {
             module.DefineLibraryMethod("digest", 0x21, new System.Delegate[] {
-                new System.Func<IronRuby.Builtins.RubyClass, IronRuby.Builtins.MutableString, IronRuby.Builtins.MutableString>(IronRuby.StandardLibrary.Digest.Digest.Class.Digest),
+                new System.Func<Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, IronRuby.Builtins.MutableString, IronRuby.Builtins.MutableString>>>, IronRuby.Builtins.RubyClass, IronRuby.Builtins.MutableString, IronRuby.Builtins.MutableString>(IronRuby.StandardLibrary.Digest.Digest.Class.Digest),
                 new System.Func<IronRuby.Builtins.RubyClass, IronRuby.Builtins.MutableString>(IronRuby.StandardLibrary.Digest.Digest.Class.Digest),
             });
             
             module.DefineLibraryMethod("hexdigest", 0x21, new System.Delegate[] {
-                new System.Func<IronRuby.Builtins.RubyClass, IronRuby.Builtins.MutableString, IronRuby.Builtins.MutableString>(IronRuby.StandardLibrary.Digest.Digest.Class.HexDigest),
+                new System.Func<Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, IronRuby.Builtins.MutableString, IronRuby.Builtins.MutableString>>>, IronRuby.Builtins.RubyClass, IronRuby.Builtins.MutableString, IronRuby.Builtins.MutableString>(IronRuby.StandardLibrary.Digest.Digest.Class.HexDigest),
                 new System.Func<IronRuby.Builtins.RubyClass, IronRuby.Builtins.MutableString>(IronRuby.StandardLibrary.Digest.Digest.Class.HexDigest),
             });
             
@@ -6470,21 +6454,21 @@ namespace IronRuby.StandardLibrary.Digest {
         private void LoadDigest__Instance_Instance(IronRuby.Builtins.RubyModule/*!*/ module) {
             
             module.DefineLibraryMethod("digest", 0x11, new System.Delegate[] {
-                new System.Func<IronRuby.Runtime.RubyContext, System.Object, IronRuby.Builtins.MutableString>(IronRuby.StandardLibrary.Digest.Digest.Instance.Digest),
-                new System.Func<IronRuby.Runtime.RubyContext, System.Object, IronRuby.Builtins.MutableString, IronRuby.Builtins.MutableString>(IronRuby.StandardLibrary.Digest.Digest.Instance.Digest),
+                new System.Func<Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object>>>, IronRuby.Runtime.RubyContext, System.Object, IronRuby.Builtins.MutableString>(IronRuby.StandardLibrary.Digest.Digest.Instance.Digest),
+                new System.Func<Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, IronRuby.Builtins.MutableString, System.Object>>>, Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object>>>, Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object>>>, IronRuby.Runtime.RubyContext, System.Object, IronRuby.Builtins.MutableString, IronRuby.Builtins.MutableString>(IronRuby.StandardLibrary.Digest.Digest.Instance.Digest),
             });
             
             module.DefineLibraryMethod("digest!", 0x11, new System.Delegate[] {
-                new System.Func<IronRuby.Runtime.RubyContext, System.Object, IronRuby.Builtins.MutableString>(IronRuby.StandardLibrary.Digest.Digest.Instance.DigestNew),
+                new System.Func<Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object>>>, Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object>>>, IronRuby.Runtime.RubyContext, System.Object, IronRuby.Builtins.MutableString>(IronRuby.StandardLibrary.Digest.Digest.Instance.DigestNew),
             });
             
             module.DefineLibraryMethod("hexdigest", 0x11, new System.Delegate[] {
-                new System.Func<IronRuby.Runtime.RubyContext, System.Object, IronRuby.Builtins.MutableString>(IronRuby.StandardLibrary.Digest.Digest.Instance.HexDigest),
-                new System.Func<IronRuby.Runtime.RubyContext, System.Object, IronRuby.Builtins.MutableString, IronRuby.Builtins.MutableString>(IronRuby.StandardLibrary.Digest.Digest.Instance.HexDigest),
+                new System.Func<Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object>>>, IronRuby.Runtime.RubyContext, System.Object, IronRuby.Builtins.MutableString>(IronRuby.StandardLibrary.Digest.Digest.Instance.HexDigest),
+                new System.Func<Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, IronRuby.Builtins.MutableString, System.Object>>>, Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object>>>, Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object>>>, IronRuby.Runtime.RubyContext, System.Object, IronRuby.Builtins.MutableString, IronRuby.Builtins.MutableString>(IronRuby.StandardLibrary.Digest.Digest.Instance.HexDigest),
             });
             
             module.DefineLibraryMethod("hexdigest!", 0x11, new System.Delegate[] {
-                new System.Func<IronRuby.Runtime.RubyContext, System.Object, IronRuby.Builtins.MutableString>(IronRuby.StandardLibrary.Digest.Digest.Instance.HexDigestNew),
+                new System.Func<Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object>>>, Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object>>>, IronRuby.Runtime.RubyContext, System.Object, IronRuby.Builtins.MutableString>(IronRuby.StandardLibrary.Digest.Digest.Instance.HexDigestNew),
             });
             
         }
@@ -6506,7 +6490,7 @@ namespace IronRuby.StandardLibrary.Zlib {
             IronRuby.Builtins.RubyClass def7 = DefineClass("Zlib::ZStream", typeof(IronRuby.StandardLibrary.Zlib.Zlib.ZStream), classRef1, new System.Action<IronRuby.Builtins.RubyModule>(LoadZlib__ZStream_Instance), null, IronRuby.Builtins.RubyModule.EmptyArray, null);
             IronRuby.Builtins.RubyClass def5 = DefineClass("Zlib::GzipReader", typeof(IronRuby.StandardLibrary.Zlib.Zlib.GZipReader), def3, new System.Action<IronRuby.Builtins.RubyModule>(LoadZlib__GzipReader_Instance), new System.Action<IronRuby.Builtins.RubyModule>(LoadZlib__GzipReader_Class), IronRuby.Builtins.RubyModule.EmptyArray, new System.Delegate[] {
                 new System.Func<IronRuby.Builtins.RubyClass, IronRuby.Builtins.RubyIO, IronRuby.StandardLibrary.Zlib.Zlib.GZipReader>(IronRuby.StandardLibrary.Zlib.Zlib.GZipReader.Create),
-                new System.Func<IronRuby.Builtins.RubyClass, System.Object, IronRuby.StandardLibrary.Zlib.Zlib.GZipReader>(IronRuby.StandardLibrary.Zlib.Zlib.GZipReader.Create),
+                new System.Func<Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, Microsoft.Scripting.SymbolId, System.Object>>>, IronRuby.Builtins.RubyClass, System.Object, IronRuby.StandardLibrary.Zlib.Zlib.GZipReader>(IronRuby.StandardLibrary.Zlib.Zlib.GZipReader.Create),
             });
             IronRuby.Builtins.RubyClass def6 = DefineClass("Zlib::Inflate", typeof(IronRuby.StandardLibrary.Zlib.Zlib.Inflate), def7, new System.Action<IronRuby.Builtins.RubyModule>(LoadZlib__Inflate_Instance), new System.Action<IronRuby.Builtins.RubyModule>(LoadZlib__Inflate_Class), IronRuby.Builtins.RubyModule.EmptyArray, new System.Delegate[] {
                 new System.Func<IronRuby.Builtins.RubyClass, IronRuby.StandardLibrary.Zlib.Zlib.Inflate>(IronRuby.StandardLibrary.Zlib.Zlib.Inflate.Create),
@@ -6584,7 +6568,7 @@ namespace IronRuby.StandardLibrary.Zlib {
         
         private void LoadZlib__Inflate_Class(IronRuby.Builtins.RubyModule/*!*/ module) {
             module.DefineLibraryMethod("inflate", 0x21, new System.Delegate[] {
-                new System.Func<IronRuby.Builtins.RubyClass, IronRuby.Builtins.MutableString, IronRuby.Builtins.MutableString>(IronRuby.StandardLibrary.Zlib.Zlib.Inflate.InflateStream),
+                new System.Func<Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, IronRuby.Builtins.MutableString, IronRuby.Builtins.MutableString>>>, IronRuby.Builtins.RubyClass, IronRuby.Builtins.MutableString, IronRuby.Builtins.MutableString>(IronRuby.StandardLibrary.Zlib.Zlib.Inflate.InflateStream),
             });
             
         }
@@ -7011,21 +6995,21 @@ namespace IronRuby.StandardLibrary.BigDecimal {
                 new System.Func<IronRuby.Runtime.RubyContext, IronRuby.StandardLibrary.BigDecimal.BigDecimal, IronRuby.StandardLibrary.BigDecimal.BigDecimal, IronRuby.StandardLibrary.BigDecimal.BigDecimal>(IronRuby.StandardLibrary.BigDecimal.BigDecimalOps.Subtract),
                 new System.Func<IronRuby.Runtime.RubyContext, IronRuby.StandardLibrary.BigDecimal.BigDecimal, System.Int32, IronRuby.StandardLibrary.BigDecimal.BigDecimal>(IronRuby.StandardLibrary.BigDecimal.BigDecimalOps.Subtract),
                 new System.Func<IronRuby.Runtime.RubyContext, IronRuby.StandardLibrary.BigDecimal.BigDecimal, Microsoft.Scripting.Math.BigInteger, IronRuby.StandardLibrary.BigDecimal.BigDecimal>(IronRuby.StandardLibrary.BigDecimal.BigDecimalOps.Subtract),
-                new System.Func<IronRuby.Runtime.RubyContext, IronRuby.StandardLibrary.BigDecimal.BigDecimal, System.Object, System.Object>(IronRuby.StandardLibrary.BigDecimal.BigDecimalOps.Subtract),
+                new System.Func<Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, IronRuby.Runtime.RubyContext, IronRuby.StandardLibrary.BigDecimal.BigDecimal, System.Object, System.Object>(IronRuby.StandardLibrary.BigDecimal.BigDecimalOps.Subtract),
             });
             
             module.DefineLibraryMethod("%", 0x11, new System.Delegate[] {
                 new System.Func<IronRuby.Runtime.RubyContext, IronRuby.StandardLibrary.BigDecimal.BigDecimal, IronRuby.StandardLibrary.BigDecimal.BigDecimal, IronRuby.StandardLibrary.BigDecimal.BigDecimal>(IronRuby.StandardLibrary.BigDecimal.BigDecimalOps.Modulo),
                 new System.Func<IronRuby.Runtime.RubyContext, IronRuby.StandardLibrary.BigDecimal.BigDecimal, System.Int32, IronRuby.StandardLibrary.BigDecimal.BigDecimal>(IronRuby.StandardLibrary.BigDecimal.BigDecimalOps.Modulo),
                 new System.Func<IronRuby.Runtime.RubyContext, IronRuby.StandardLibrary.BigDecimal.BigDecimal, Microsoft.Scripting.Math.BigInteger, IronRuby.StandardLibrary.BigDecimal.BigDecimal>(IronRuby.StandardLibrary.BigDecimal.BigDecimalOps.Modulo),
-                new System.Func<IronRuby.Runtime.RubyContext, IronRuby.StandardLibrary.BigDecimal.BigDecimal, System.Object, System.Object>(IronRuby.StandardLibrary.BigDecimal.BigDecimalOps.ModuloOp),
+                new System.Func<Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, IronRuby.Runtime.RubyContext, IronRuby.StandardLibrary.BigDecimal.BigDecimal, System.Object, System.Object>(IronRuby.StandardLibrary.BigDecimal.BigDecimalOps.ModuloOp),
             });
             
             module.DefineLibraryMethod("*", 0x11, new System.Delegate[] {
                 new System.Func<IronRuby.Runtime.RubyContext, IronRuby.StandardLibrary.BigDecimal.BigDecimal, IronRuby.StandardLibrary.BigDecimal.BigDecimal, IronRuby.StandardLibrary.BigDecimal.BigDecimal>(IronRuby.StandardLibrary.BigDecimal.BigDecimalOps.Multiply),
                 new System.Func<IronRuby.Runtime.RubyContext, IronRuby.StandardLibrary.BigDecimal.BigDecimal, System.Int32, IronRuby.StandardLibrary.BigDecimal.BigDecimal>(IronRuby.StandardLibrary.BigDecimal.BigDecimalOps.Multiply),
                 new System.Func<IronRuby.Runtime.RubyContext, IronRuby.StandardLibrary.BigDecimal.BigDecimal, Microsoft.Scripting.Math.BigInteger, IronRuby.StandardLibrary.BigDecimal.BigDecimal>(IronRuby.StandardLibrary.BigDecimal.BigDecimalOps.Multiply),
-                new System.Func<IronRuby.Runtime.RubyContext, IronRuby.StandardLibrary.BigDecimal.BigDecimal, System.Object, System.Object>(IronRuby.StandardLibrary.BigDecimal.BigDecimalOps.Multiply),
+                new System.Func<Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, IronRuby.Runtime.RubyContext, IronRuby.StandardLibrary.BigDecimal.BigDecimal, System.Object, System.Object>(IronRuby.StandardLibrary.BigDecimal.BigDecimalOps.Multiply),
             });
             
             module.DefineLibraryMethod("**", 0x11, new System.Delegate[] {
@@ -7048,7 +7032,7 @@ namespace IronRuby.StandardLibrary.BigDecimal {
                 new System.Func<IronRuby.Runtime.RubyContext, IronRuby.StandardLibrary.BigDecimal.BigDecimal, IronRuby.StandardLibrary.BigDecimal.BigDecimal, IronRuby.StandardLibrary.BigDecimal.BigDecimal>(IronRuby.StandardLibrary.BigDecimal.BigDecimalOps.Add),
                 new System.Func<IronRuby.Runtime.RubyContext, IronRuby.StandardLibrary.BigDecimal.BigDecimal, System.Int32, IronRuby.StandardLibrary.BigDecimal.BigDecimal>(IronRuby.StandardLibrary.BigDecimal.BigDecimalOps.Add),
                 new System.Func<IronRuby.Runtime.RubyContext, IronRuby.StandardLibrary.BigDecimal.BigDecimal, Microsoft.Scripting.Math.BigInteger, IronRuby.StandardLibrary.BigDecimal.BigDecimal>(IronRuby.StandardLibrary.BigDecimal.BigDecimalOps.Add),
-                new System.Func<IronRuby.Runtime.RubyContext, IronRuby.StandardLibrary.BigDecimal.BigDecimal, System.Object, System.Object>(IronRuby.StandardLibrary.BigDecimal.BigDecimalOps.Add),
+                new System.Func<Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, IronRuby.Runtime.RubyContext, IronRuby.StandardLibrary.BigDecimal.BigDecimal, System.Object, System.Object>(IronRuby.StandardLibrary.BigDecimal.BigDecimalOps.Add),
             });
             
             module.DefineLibraryMethod("+@", 0x11, new System.Delegate[] {
@@ -7060,7 +7044,7 @@ namespace IronRuby.StandardLibrary.BigDecimal {
                 new System.Func<IronRuby.Runtime.RubyContext, IronRuby.StandardLibrary.BigDecimal.BigDecimal, Microsoft.Scripting.Math.BigInteger, System.Object>(IronRuby.StandardLibrary.BigDecimal.BigDecimalOps.LessThan),
                 new System.Func<IronRuby.Runtime.RubyContext, IronRuby.StandardLibrary.BigDecimal.BigDecimal, System.Int32, System.Object>(IronRuby.StandardLibrary.BigDecimal.BigDecimalOps.LessThan),
                 new System.Func<IronRuby.Runtime.RubyContext, IronRuby.StandardLibrary.BigDecimal.BigDecimal, System.Double, System.Object>(IronRuby.StandardLibrary.BigDecimal.BigDecimalOps.LessThan),
-                new System.Func<IronRuby.Runtime.RubyContext, IronRuby.StandardLibrary.BigDecimal.BigDecimal, System.Object, System.Object>(IronRuby.StandardLibrary.BigDecimal.BigDecimalOps.LessThan),
+                new System.Func<Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, IronRuby.Runtime.RubyContext, IronRuby.StandardLibrary.BigDecimal.BigDecimal, System.Object, System.Object>(IronRuby.StandardLibrary.BigDecimal.BigDecimalOps.LessThan),
             });
             
             module.DefineLibraryMethod("<=", 0x11, new System.Delegate[] {
@@ -7068,7 +7052,7 @@ namespace IronRuby.StandardLibrary.BigDecimal {
                 new System.Func<IronRuby.Runtime.RubyContext, IronRuby.StandardLibrary.BigDecimal.BigDecimal, Microsoft.Scripting.Math.BigInteger, System.Object>(IronRuby.StandardLibrary.BigDecimal.BigDecimalOps.LessThanOrEqual),
                 new System.Func<IronRuby.Runtime.RubyContext, IronRuby.StandardLibrary.BigDecimal.BigDecimal, System.Int32, System.Object>(IronRuby.StandardLibrary.BigDecimal.BigDecimalOps.LessThanOrEqual),
                 new System.Func<IronRuby.Runtime.RubyContext, IronRuby.StandardLibrary.BigDecimal.BigDecimal, System.Double, System.Object>(IronRuby.StandardLibrary.BigDecimal.BigDecimalOps.LessThanOrEqual),
-                new System.Func<IronRuby.Runtime.RubyContext, IronRuby.StandardLibrary.BigDecimal.BigDecimal, System.Object, System.Object>(IronRuby.StandardLibrary.BigDecimal.BigDecimalOps.LessThanOrEqual),
+                new System.Func<Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, IronRuby.Runtime.RubyContext, IronRuby.StandardLibrary.BigDecimal.BigDecimal, System.Object, System.Object>(IronRuby.StandardLibrary.BigDecimal.BigDecimalOps.LessThanOrEqual),
             });
             
             module.DefineLibraryMethod("<=>", 0x11, new System.Delegate[] {
@@ -7076,7 +7060,7 @@ namespace IronRuby.StandardLibrary.BigDecimal {
                 new System.Func<IronRuby.Runtime.RubyContext, IronRuby.StandardLibrary.BigDecimal.BigDecimal, Microsoft.Scripting.Math.BigInteger, System.Object>(IronRuby.StandardLibrary.BigDecimal.BigDecimalOps.Compare),
                 new System.Func<IronRuby.Runtime.RubyContext, IronRuby.StandardLibrary.BigDecimal.BigDecimal, System.Int32, System.Object>(IronRuby.StandardLibrary.BigDecimal.BigDecimalOps.Compare),
                 new System.Func<IronRuby.Runtime.RubyContext, IronRuby.StandardLibrary.BigDecimal.BigDecimal, System.Double, System.Object>(IronRuby.StandardLibrary.BigDecimal.BigDecimalOps.Compare),
-                new System.Func<IronRuby.Runtime.RubyContext, IronRuby.StandardLibrary.BigDecimal.BigDecimal, System.Object, System.Object>(IronRuby.StandardLibrary.BigDecimal.BigDecimalOps.Compare),
+                new System.Func<Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, IronRuby.Runtime.RubyContext, IronRuby.StandardLibrary.BigDecimal.BigDecimal, System.Object, System.Object>(IronRuby.StandardLibrary.BigDecimal.BigDecimalOps.Compare),
             });
             
             module.DefineLibraryMethod("==", 0x11, new System.Delegate[] {
@@ -7096,11 +7080,11 @@ namespace IronRuby.StandardLibrary.BigDecimal {
             });
             
             module.DefineLibraryMethod(">", 0x11, new System.Delegate[] {
+                new System.Func<IronRuby.StandardLibrary.BigDecimal.BigDecimal, IronRuby.StandardLibrary.BigDecimal.BigDecimal, System.Object>(IronRuby.StandardLibrary.BigDecimal.BigDecimalOps.GreaterThan),
                 new System.Func<IronRuby.Runtime.RubyContext, IronRuby.StandardLibrary.BigDecimal.BigDecimal, Microsoft.Scripting.Math.BigInteger, System.Object>(IronRuby.StandardLibrary.BigDecimal.BigDecimalOps.GreaterThan),
                 new System.Func<IronRuby.Runtime.RubyContext, IronRuby.StandardLibrary.BigDecimal.BigDecimal, System.Int32, System.Object>(IronRuby.StandardLibrary.BigDecimal.BigDecimalOps.GreaterThan),
                 new System.Func<IronRuby.Runtime.RubyContext, IronRuby.StandardLibrary.BigDecimal.BigDecimal, System.Double, System.Object>(IronRuby.StandardLibrary.BigDecimal.BigDecimalOps.GreaterThan),
-                new System.Func<IronRuby.Runtime.RubyContext, IronRuby.StandardLibrary.BigDecimal.BigDecimal, System.Object, System.Object>(IronRuby.StandardLibrary.BigDecimal.BigDecimalOps.GreaterThan),
-                new System.Func<IronRuby.StandardLibrary.BigDecimal.BigDecimal, IronRuby.StandardLibrary.BigDecimal.BigDecimal, System.Object>(IronRuby.StandardLibrary.BigDecimal.BigDecimalOps.GreaterThan),
+                new System.Func<Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, IronRuby.Runtime.RubyContext, IronRuby.StandardLibrary.BigDecimal.BigDecimal, System.Object, System.Object>(IronRuby.StandardLibrary.BigDecimal.BigDecimalOps.GreaterThan),
             });
             
             module.DefineLibraryMethod(">=", 0x11, new System.Delegate[] {
@@ -7108,7 +7092,7 @@ namespace IronRuby.StandardLibrary.BigDecimal {
                 new System.Func<IronRuby.Runtime.RubyContext, IronRuby.StandardLibrary.BigDecimal.BigDecimal, Microsoft.Scripting.Math.BigInteger, System.Object>(IronRuby.StandardLibrary.BigDecimal.BigDecimalOps.GreaterThanOrEqual),
                 new System.Func<IronRuby.Runtime.RubyContext, IronRuby.StandardLibrary.BigDecimal.BigDecimal, System.Int32, System.Object>(IronRuby.StandardLibrary.BigDecimal.BigDecimalOps.GreaterThanOrEqual),
                 new System.Func<IronRuby.Runtime.RubyContext, IronRuby.StandardLibrary.BigDecimal.BigDecimal, System.Double, System.Object>(IronRuby.StandardLibrary.BigDecimal.BigDecimalOps.GreaterThanOrEqual),
-                new System.Func<IronRuby.Runtime.RubyContext, IronRuby.StandardLibrary.BigDecimal.BigDecimal, System.Object, System.Object>(IronRuby.StandardLibrary.BigDecimal.BigDecimalOps.GreaterThanOrEqual),
+                new System.Func<Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, IronRuby.Runtime.RubyContext, IronRuby.StandardLibrary.BigDecimal.BigDecimal, System.Object, System.Object>(IronRuby.StandardLibrary.BigDecimal.BigDecimalOps.GreaterThanOrEqual),
             });
             
             module.DefineLibraryMethod("abs", 0x11, new System.Delegate[] {
@@ -7119,12 +7103,12 @@ namespace IronRuby.StandardLibrary.BigDecimal {
                 new System.Func<IronRuby.Runtime.RubyContext, IronRuby.StandardLibrary.BigDecimal.BigDecimal, IronRuby.StandardLibrary.BigDecimal.BigDecimal, IronRuby.StandardLibrary.BigDecimal.BigDecimal>(IronRuby.StandardLibrary.BigDecimal.BigDecimalOps.Add),
                 new System.Func<IronRuby.Runtime.RubyContext, IronRuby.StandardLibrary.BigDecimal.BigDecimal, System.Int32, IronRuby.StandardLibrary.BigDecimal.BigDecimal>(IronRuby.StandardLibrary.BigDecimal.BigDecimalOps.Add),
                 new System.Func<IronRuby.Runtime.RubyContext, IronRuby.StandardLibrary.BigDecimal.BigDecimal, Microsoft.Scripting.Math.BigInteger, IronRuby.StandardLibrary.BigDecimal.BigDecimal>(IronRuby.StandardLibrary.BigDecimal.BigDecimalOps.Add),
-                new System.Func<IronRuby.Runtime.RubyContext, IronRuby.StandardLibrary.BigDecimal.BigDecimal, System.Object, System.Object>(IronRuby.StandardLibrary.BigDecimal.BigDecimalOps.Add),
+                new System.Func<Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, IronRuby.Runtime.RubyContext, IronRuby.StandardLibrary.BigDecimal.BigDecimal, System.Object, System.Object>(IronRuby.StandardLibrary.BigDecimal.BigDecimalOps.Add),
                 new System.Func<IronRuby.Runtime.RubyContext, IronRuby.StandardLibrary.BigDecimal.BigDecimal, IronRuby.StandardLibrary.BigDecimal.BigDecimal, System.Int32, IronRuby.StandardLibrary.BigDecimal.BigDecimal>(IronRuby.StandardLibrary.BigDecimal.BigDecimalOps.Add),
                 new System.Func<IronRuby.Runtime.RubyContext, IronRuby.StandardLibrary.BigDecimal.BigDecimal, System.Int32, System.Int32, IronRuby.StandardLibrary.BigDecimal.BigDecimal>(IronRuby.StandardLibrary.BigDecimal.BigDecimalOps.Add),
                 new System.Func<IronRuby.Runtime.RubyContext, IronRuby.StandardLibrary.BigDecimal.BigDecimal, Microsoft.Scripting.Math.BigInteger, System.Int32, IronRuby.StandardLibrary.BigDecimal.BigDecimal>(IronRuby.StandardLibrary.BigDecimal.BigDecimalOps.Add),
                 new System.Func<IronRuby.Runtime.RubyContext, IronRuby.StandardLibrary.BigDecimal.BigDecimal, System.Double, System.Int32, IronRuby.StandardLibrary.BigDecimal.BigDecimal>(IronRuby.StandardLibrary.BigDecimal.BigDecimalOps.Add),
-                new System.Func<IronRuby.Runtime.RubyContext, IronRuby.StandardLibrary.BigDecimal.BigDecimal, System.Object, System.Int32, System.Object>(IronRuby.StandardLibrary.BigDecimal.BigDecimalOps.Add),
+                new System.Func<Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, IronRuby.Runtime.RubyContext, IronRuby.StandardLibrary.BigDecimal.BigDecimal, System.Object, System.Int32, System.Object>(IronRuby.StandardLibrary.BigDecimal.BigDecimalOps.Add),
             });
             
             module.DefineLibraryMethod("ceil", 0x11, new System.Delegate[] {
@@ -7147,7 +7131,7 @@ namespace IronRuby.StandardLibrary.BigDecimal {
                 new System.Func<IronRuby.Runtime.RubyContext, IronRuby.StandardLibrary.BigDecimal.BigDecimal, IronRuby.StandardLibrary.BigDecimal.BigDecimal, IronRuby.Builtins.RubyArray>(IronRuby.StandardLibrary.BigDecimal.BigDecimalOps.DivMod),
                 new System.Func<IronRuby.Runtime.RubyContext, IronRuby.StandardLibrary.BigDecimal.BigDecimal, System.Int32, IronRuby.Builtins.RubyArray>(IronRuby.StandardLibrary.BigDecimal.BigDecimalOps.DivMod),
                 new System.Func<IronRuby.Runtime.RubyContext, IronRuby.StandardLibrary.BigDecimal.BigDecimal, Microsoft.Scripting.Math.BigInteger, IronRuby.Builtins.RubyArray>(IronRuby.StandardLibrary.BigDecimal.BigDecimalOps.DivMod),
-                new System.Func<IronRuby.Runtime.RubyContext, IronRuby.StandardLibrary.BigDecimal.BigDecimal, System.Object, System.Object>(IronRuby.StandardLibrary.BigDecimal.BigDecimalOps.DivMod),
+                new System.Func<Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, IronRuby.Runtime.RubyContext, IronRuby.StandardLibrary.BigDecimal.BigDecimal, System.Object, System.Object>(IronRuby.StandardLibrary.BigDecimal.BigDecimalOps.DivMod),
             });
             
             module.DefineLibraryMethod("eql?", 0x11, new System.Delegate[] {
@@ -7194,20 +7178,16 @@ namespace IronRuby.StandardLibrary.BigDecimal {
                 new System.Func<IronRuby.Runtime.RubyContext, IronRuby.StandardLibrary.BigDecimal.BigDecimal, IronRuby.StandardLibrary.BigDecimal.BigDecimal, IronRuby.StandardLibrary.BigDecimal.BigDecimal>(IronRuby.StandardLibrary.BigDecimal.BigDecimalOps.Modulo),
                 new System.Func<IronRuby.Runtime.RubyContext, IronRuby.StandardLibrary.BigDecimal.BigDecimal, System.Int32, IronRuby.StandardLibrary.BigDecimal.BigDecimal>(IronRuby.StandardLibrary.BigDecimal.BigDecimalOps.Modulo),
                 new System.Func<IronRuby.Runtime.RubyContext, IronRuby.StandardLibrary.BigDecimal.BigDecimal, Microsoft.Scripting.Math.BigInteger, IronRuby.StandardLibrary.BigDecimal.BigDecimal>(IronRuby.StandardLibrary.BigDecimal.BigDecimalOps.Modulo),
-                new System.Func<IronRuby.Runtime.RubyContext, IronRuby.StandardLibrary.BigDecimal.BigDecimal, System.Double, System.Object>(IronRuby.StandardLibrary.BigDecimal.BigDecimalOps.Modulo),
-                new System.Func<IronRuby.Runtime.RubyContext, IronRuby.StandardLibrary.BigDecimal.BigDecimal, System.Object, System.Object>(IronRuby.StandardLibrary.BigDecimal.BigDecimalOps.Modulo),
+                new System.Func<Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, IronRuby.Runtime.RubyContext, IronRuby.StandardLibrary.BigDecimal.BigDecimal, System.Double, System.Object>(IronRuby.StandardLibrary.BigDecimal.BigDecimalOps.Modulo),
+                new System.Func<Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, IronRuby.Runtime.RubyContext, IronRuby.StandardLibrary.BigDecimal.BigDecimal, System.Object, System.Object>(IronRuby.StandardLibrary.BigDecimal.BigDecimalOps.Modulo),
             });
             
             module.DefineLibraryMethod("mult", 0x11, new System.Delegate[] {
-                new System.Func<IronRuby.Runtime.RubyContext, IronRuby.StandardLibrary.BigDecimal.BigDecimal, IronRuby.StandardLibrary.BigDecimal.BigDecimal, IronRuby.StandardLibrary.BigDecimal.BigDecimal>(IronRuby.StandardLibrary.BigDecimal.BigDecimalOps.Multiply),
-                new System.Func<IronRuby.Runtime.RubyContext, IronRuby.StandardLibrary.BigDecimal.BigDecimal, System.Int32, IronRuby.StandardLibrary.BigDecimal.BigDecimal>(IronRuby.StandardLibrary.BigDecimal.BigDecimalOps.Multiply),
-                new System.Func<IronRuby.Runtime.RubyContext, IronRuby.StandardLibrary.BigDecimal.BigDecimal, Microsoft.Scripting.Math.BigInteger, IronRuby.StandardLibrary.BigDecimal.BigDecimal>(IronRuby.StandardLibrary.BigDecimal.BigDecimalOps.Multiply),
-                new System.Func<IronRuby.Runtime.RubyContext, IronRuby.StandardLibrary.BigDecimal.BigDecimal, System.Object, System.Object>(IronRuby.StandardLibrary.BigDecimal.BigDecimalOps.Multiply),
                 new System.Func<IronRuby.Runtime.RubyContext, IronRuby.StandardLibrary.BigDecimal.BigDecimal, IronRuby.StandardLibrary.BigDecimal.BigDecimal, System.Int32, IronRuby.StandardLibrary.BigDecimal.BigDecimal>(IronRuby.StandardLibrary.BigDecimal.BigDecimalOps.Multiply),
                 new System.Func<IronRuby.Runtime.RubyContext, IronRuby.StandardLibrary.BigDecimal.BigDecimal, System.Int32, System.Int32, IronRuby.StandardLibrary.BigDecimal.BigDecimal>(IronRuby.StandardLibrary.BigDecimal.BigDecimalOps.Multiply),
                 new System.Func<IronRuby.Runtime.RubyContext, IronRuby.StandardLibrary.BigDecimal.BigDecimal, Microsoft.Scripting.Math.BigInteger, System.Int32, IronRuby.StandardLibrary.BigDecimal.BigDecimal>(IronRuby.StandardLibrary.BigDecimal.BigDecimalOps.Multiply),
                 new System.Func<IronRuby.Runtime.RubyContext, IronRuby.StandardLibrary.BigDecimal.BigDecimal, System.Double, System.Int32, IronRuby.StandardLibrary.BigDecimal.BigDecimal>(IronRuby.StandardLibrary.BigDecimal.BigDecimalOps.Multiply),
-                new System.Func<IronRuby.Runtime.RubyContext, IronRuby.StandardLibrary.BigDecimal.BigDecimal, System.Object, System.Int32, System.Object>(IronRuby.StandardLibrary.BigDecimal.BigDecimalOps.Multiply),
+                new System.Func<Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, IronRuby.Runtime.RubyContext, IronRuby.StandardLibrary.BigDecimal.BigDecimal, System.Object, System.Int32, System.Object>(IronRuby.StandardLibrary.BigDecimal.BigDecimalOps.Multiply),
             });
             
             module.DefineLibraryMethod("nan?", 0x11, new System.Delegate[] {
@@ -7232,7 +7212,7 @@ namespace IronRuby.StandardLibrary.BigDecimal {
             
             module.DefineLibraryMethod("remainder", 0x11, new System.Delegate[] {
                 new System.Func<IronRuby.Runtime.RubyContext, IronRuby.StandardLibrary.BigDecimal.BigDecimal, IronRuby.StandardLibrary.BigDecimal.BigDecimal, IronRuby.StandardLibrary.BigDecimal.BigDecimal>(IronRuby.StandardLibrary.BigDecimal.BigDecimalOps.Remainder),
-                new System.Func<IronRuby.Runtime.RubyContext, IronRuby.StandardLibrary.BigDecimal.BigDecimal, System.Object, System.Object>(IronRuby.StandardLibrary.BigDecimal.BigDecimalOps.Remainder),
+                new System.Func<Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, IronRuby.Runtime.RubyContext, IronRuby.StandardLibrary.BigDecimal.BigDecimal, System.Object, System.Object>(IronRuby.StandardLibrary.BigDecimal.BigDecimalOps.Remainder),
             });
             
             module.DefineLibraryMethod("round", 0x11, new System.Delegate[] {
@@ -7257,12 +7237,12 @@ namespace IronRuby.StandardLibrary.BigDecimal {
                 new System.Func<IronRuby.Runtime.RubyContext, IronRuby.StandardLibrary.BigDecimal.BigDecimal, IronRuby.StandardLibrary.BigDecimal.BigDecimal, IronRuby.StandardLibrary.BigDecimal.BigDecimal>(IronRuby.StandardLibrary.BigDecimal.BigDecimalOps.Subtract),
                 new System.Func<IronRuby.Runtime.RubyContext, IronRuby.StandardLibrary.BigDecimal.BigDecimal, System.Int32, IronRuby.StandardLibrary.BigDecimal.BigDecimal>(IronRuby.StandardLibrary.BigDecimal.BigDecimalOps.Subtract),
                 new System.Func<IronRuby.Runtime.RubyContext, IronRuby.StandardLibrary.BigDecimal.BigDecimal, Microsoft.Scripting.Math.BigInteger, IronRuby.StandardLibrary.BigDecimal.BigDecimal>(IronRuby.StandardLibrary.BigDecimal.BigDecimalOps.Subtract),
-                new System.Func<IronRuby.Runtime.RubyContext, IronRuby.StandardLibrary.BigDecimal.BigDecimal, System.Object, System.Object>(IronRuby.StandardLibrary.BigDecimal.BigDecimalOps.Subtract),
+                new System.Func<Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, IronRuby.Runtime.RubyContext, IronRuby.StandardLibrary.BigDecimal.BigDecimal, System.Object, System.Object>(IronRuby.StandardLibrary.BigDecimal.BigDecimalOps.Subtract),
                 new System.Func<IronRuby.Runtime.RubyContext, IronRuby.StandardLibrary.BigDecimal.BigDecimal, IronRuby.StandardLibrary.BigDecimal.BigDecimal, System.Int32, IronRuby.StandardLibrary.BigDecimal.BigDecimal>(IronRuby.StandardLibrary.BigDecimal.BigDecimalOps.Subtract),
                 new System.Func<IronRuby.Runtime.RubyContext, IronRuby.StandardLibrary.BigDecimal.BigDecimal, System.Int32, System.Int32, IronRuby.StandardLibrary.BigDecimal.BigDecimal>(IronRuby.StandardLibrary.BigDecimal.BigDecimalOps.Subtract),
                 new System.Func<IronRuby.Runtime.RubyContext, IronRuby.StandardLibrary.BigDecimal.BigDecimal, Microsoft.Scripting.Math.BigInteger, System.Int32, IronRuby.StandardLibrary.BigDecimal.BigDecimal>(IronRuby.StandardLibrary.BigDecimal.BigDecimalOps.Subtract),
                 new System.Func<IronRuby.Runtime.RubyContext, IronRuby.StandardLibrary.BigDecimal.BigDecimal, System.Double, System.Int32, IronRuby.StandardLibrary.BigDecimal.BigDecimal>(IronRuby.StandardLibrary.BigDecimal.BigDecimalOps.Subtract),
-                new System.Func<IronRuby.Runtime.RubyContext, IronRuby.StandardLibrary.BigDecimal.BigDecimal, System.Object, System.Int32, System.Object>(IronRuby.StandardLibrary.BigDecimal.BigDecimalOps.Subtract),
+                new System.Func<Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, IronRuby.Runtime.RubyContext, IronRuby.StandardLibrary.BigDecimal.BigDecimal, System.Object, System.Int32, System.Object>(IronRuby.StandardLibrary.BigDecimal.BigDecimalOps.Subtract),
             });
             
             module.DefineLibraryMethod("to_f", 0x11, new System.Delegate[] {

@@ -19,7 +19,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq.Expressions;
 using System.Runtime.InteropServices;
-using System.Dynamic.Binders;
+using System.Dynamic;
 using System.Globalization;
 using ComTypes = System.Runtime.InteropServices.ComTypes;
 

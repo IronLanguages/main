@@ -237,21 +237,8 @@ namespace Microsoft.Scripting.Hosting.Shell {
             }
 
             if (_saveAssemblies) {
-                //Set SaveAssemblies on for inner ring by calling System.Linq.Expressions.Compiler.Snippets.SetSaveAssemblies via Reflection.
-                Assembly core = typeof(System.Linq.Expressions.Expression).Assembly;
-                Type snippets = core.GetType("System.Linq.Expressions.Compiler.Snippets");
-                //The type may not exist.
-                if (snippets != null) {
-                    MethodInfo configSaveAssemblies = snippets.GetMethod("SetSaveAssemblies", BindingFlags.NonPublic | BindingFlags.Static);
-                    //The method may not exist.
-                    if (configSaveAssemblies != null) {
-                        string[] coreAssemblyLocations = (string[])configSaveAssemblies.Invoke(null, new[] { _assembliesDir });
-                    }
-                }
-                //Sets SaveAssemblies on for outer ring.
-                Snippets.SetSaveAssemblies(_assembliesDir);
+                Snippets.SetSaveAssemblies(true, _assembliesDir);
             }
-
         }
 
         internal static void SetDlrOption(string option) {

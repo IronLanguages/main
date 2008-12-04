@@ -32,7 +32,7 @@ namespace System.Dynamic.ComInterop {
         internal override Expression Marshal(Expression parameter) {
             // parameter.ErrorCode
             return Expression.Property(
-                Helpers.Convert(base.MarshalToRef(parameter), typeof(ErrorWrapper)),
+                Helpers.Convert(base.Marshal(parameter), typeof(ErrorWrapper)),
                 "ErrorCode"
             );
         }

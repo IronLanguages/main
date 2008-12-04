@@ -273,7 +273,7 @@ namespace IronRuby.StandardLibrary.Yaml {
             });
             
             module.DefineLibraryMethod("to_yaml_properties", 0x11, new System.Delegate[] {
-                new System.Func<IronRuby.Runtime.RubyContext, System.Object, IronRuby.Builtins.RubyArray>(IronRuby.StandardLibrary.Yaml.YamlObjectOps.ToYamlProperties),
+                new System.Func<Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, Microsoft.Scripting.Generation.SiteLocalStorage<System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>>>, IronRuby.Runtime.RubyContext, System.Object, IronRuby.Builtins.RubyArray>(IronRuby.StandardLibrary.Yaml.YamlObjectOps.ToYamlProperties),
             });
             
             module.DefineLibraryMethod("to_yaml_style", 0x11, new System.Delegate[] {

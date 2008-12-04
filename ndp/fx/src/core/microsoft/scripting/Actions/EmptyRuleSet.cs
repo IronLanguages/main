@@ -15,7 +15,7 @@
 
 using System.Runtime.CompilerServices;
 
-namespace System.Dynamic.Binders {
+namespace System.Dynamic {
     internal sealed class EmptyRuleSet<T> : RuleSet<T> where T : class {
         internal static readonly RuleSet<T> FixedInstance = new EmptyRuleSet<T>();
 

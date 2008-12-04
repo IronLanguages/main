@@ -13,10 +13,19 @@
  *
  * ***************************************************************************/
 
+using BinaryOpSite = System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite,
+    IronRuby.Runtime.RubyContext, object, object, object>>;
+
+using UnaryOpSite = System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite,
+    IronRuby.Runtime.RubyContext, object, object>>;
+
 using System;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Actions;
+using Microsoft.Scripting.Generation;
 using IronRuby.Runtime;
+using System.Runtime.InteropServices;
+using System.Reflection;
 
 namespace IronRuby.Builtins {
 
@@ -46,8 +55,10 @@ namespace IronRuby.Builtins {
         /// </code>
         /// </remarks>
         [RubyMethod("-@")]
-        public static object UnaryMinus(RubyContext/*!*/ context, object self) {
-            return Protocols.CoerceAndCall(context, 0, self, LibrarySites.Minus);
+        public static object UnaryMinus(SiteLocalStorage<BinaryOpSite>/*!*/ coercionStorage, SiteLocalStorage<BinaryOpSite>/*!*/ binaryOpSite, 
+            RubyContext/*!*/ context, object self) {
+
+            return Protocols.CoerceAndApply(coercionStorage, binaryOpSite, "-", context, 0, self);
         }
 
         #endregion
@@ -75,9 +86,15 @@ namespace IronRuby.Builtins {
         /// Otherwise just returns self
         /// </remarks>
         [RubyMethod("abs")]
-        public static object Abs(RubyContext/*!*/ context, object self) {
-            if (RubyOps.IsTrue(LibrarySites.LessThan(context, self, 0))) {
-                return LibrarySites.UnaryMinus(context, self);
+        public static object Abs(
+            SiteLocalStorage<BinaryOpSite>/*!*/ lessThanStorage,
+            SiteLocalStorage<UnaryOpSite>/*!*/ minusStorage, 
+            RubyContext/*!*/ context, object self) {
+
+            var lessThan = lessThanStorage.GetCallSite("<", 1);
+            if (RubyOps.IsTrue(lessThan.Target(lessThan, context, self, 0))) {
+                var minus = minusStorage.GetCallSite("-@", 0);
+                return minus.Target(minus, context, self);
             }
             return self;
         }
@@ -128,8 +145,12 @@ namespace IronRuby.Builtins {
         /// Numeric does not define the / operator; this is left to subclasses.
         /// </remarks>
         [RubyMethod("div")]
-        public static object Div(RubyContext/*!*/ context, object self, object other) {
-            return Floor(context, LibrarySites.Divide(context, self, other));
+        public static object Div(
+            SiteLocalStorage<BinaryOpSite>/*!*/ divideStorage,
+            RubyContext/*!*/ context, object self, object other) {
+
+            var divide = divideStorage.GetCallSite("/", 1);
+            return Floor(context, divide.Target(divide, context, self, other));
         }
         #endregion
 
@@ -146,9 +167,16 @@ namespace IronRuby.Builtins {
         /// The modulus is found by dynamically invoking modulo method on self passing other.
         /// </remarks>
         [RubyMethod("divmod")]
-        public static RubyArray DivMod(RubyContext/*!*/ context, object self, object other) {
-            object div = Div(context, self, other);
-            object mod = LibrarySites.Modulo(context, self, other);
+        public static RubyArray DivMod(
+            SiteLocalStorage<BinaryOpSite>/*!*/ divideStorage,
+            SiteLocalStorage<BinaryOpSite>/*!*/ moduloStorage,
+            RubyContext/*!*/ context, object self, object other) {
+
+            object div = Div(divideStorage, context, self, other);
+
+            var modulo = moduloStorage.GetCallSite("modulo", 1);
+            object mod = modulo.Target(modulo, context, self, other);
+
             return RubyOps.MakeArray2(div, mod);
         }
         #endregion
@@ -196,6 +224,7 @@ namespace IronRuby.Builtins {
         #endregion
 
         #region modulo
+
         /// <summary>
         /// Equivalent to self.divmod(other)[1]
         /// </summary>
@@ -203,12 +232,18 @@ namespace IronRuby.Builtins {
         /// This is achieved by dynamically invoking % operator on self and other.
         /// </remarks>
         [RubyMethod("modulo")]
-        public static object Modulo(RubyContext/*!*/ context, object self, object other) {
-            return LibrarySites.ModuloOp(context, self, other);
+        public static object Modulo(
+            SiteLocalStorage<BinaryOpSite>/*!*/ moduloStorage,
+            RubyContext/*!*/ context, object self, object other) {
+
+            var modulo = moduloStorage.GetCallSite("%", 1);
+            return modulo.Target(modulo, context, self, other);
         }
+
         #endregion
 
         #region nonzero?
+
         /// <summary>
         /// Returns num if num is not zero, nil otherwise.
         /// </summary>
@@ -223,13 +258,11 @@ namespace IronRuby.Builtins {
         /// returning nil if it is or self otherwise.
         /// </remarks>
         [RubyMethod("nonzero?")]
-        public static object IsNonZero(RubyContext/*!*/ context, object self) {
-            if (LibrarySites.IsZero(context, self)) {
-                return null;
-            } else {
-                return self;
-            }
+        public static object IsNonZero(SiteLocalStorage<UnaryOpSite>/*!*/ isZeroStorage, RubyContext/*!*/ context, object self) {
+            var isZero = isZeroStorage.GetCallSite("zero?", 0);
+            return Protocols.IsTrue(isZero.Target(isZero, context, self)) ? null : self;
         }
+
         #endregion
 
         #region quo
@@ -237,12 +270,16 @@ namespace IronRuby.Builtins {
         /// Equivalent to invoking Numeric#/; overridden in subclasses
         /// </summary>
         [RubyMethod("quo")]
-        public static object Quo(RubyContext/*!*/ context, object self, object other) {
-            return LibrarySites.Divide(context, self, other);
+        public static object Quo(SiteLocalStorage<BinaryOpSite>/*!*/ divideStorage,
+            RubyContext/*!*/ context, object self, object other) {
+
+            var site = divideStorage.GetCallSite("/", 1);
+            return site.Target(site, context, self, other);
         }
         #endregion
 
         #region remainder
+
         /// <summary>
         /// If self and other have different signs, returns (self.modulo(other)-other;
         /// otherwise, returns self.modulo(other).
@@ -252,19 +289,32 @@ namespace IronRuby.Builtins {
         /// then invoking &lt; operator on the self and other against 0.
         /// </remarks>
         [RubyMethod("remainder")]
-        public static object Remainder(RubyContext/*!*/ context, object self, object other) {
-            object modulo = LibrarySites.Modulo(context, self, other);
-            if (!Protocols.IsEqual(context, modulo, 0)) {
+        public static object Remainder(
+            SiteLocalStorage<BinaryOpSite>/*!*/ greaterThanStorage,
+            SiteLocalStorage<BinaryOpSite>/*!*/ lessThanStorage,
+            SiteLocalStorage<BinaryOpSite>/*!*/ minusStorage,
+            SiteLocalStorage<BinaryOpSite>/*!*/ moduloStorage,
+            RubyContext/*!*/ context, object self, object other) {
+
+            var modulo = moduloStorage.GetCallSite("%", 1);
+            object remainder = modulo.Target(modulo, context, self, other);
+
+            if (!Protocols.IsEqual(context, remainder, 0)) {
+                var greaterThan = greaterThanStorage.GetCallSite(">", 1);
+                var lessThan = lessThanStorage.GetCallSite("<", 1);
+
                 // modulo is not zero
-                if (RubyOps.IsTrue(LibrarySites.LessThan(context, self, 0)) && RubyOps.IsTrue(LibrarySites.GreaterThan(context, other, 0)) ||
-                    RubyOps.IsTrue(LibrarySites.GreaterThan(context, self, 0)) && RubyOps.IsTrue(LibrarySites.LessThan(context, other, 0))) {
+                if (RubyOps.IsTrue(lessThan.Target(lessThan, context, self, 0)) && RubyOps.IsTrue(greaterThan.Target(greaterThan, context, other, 0)) ||
+                    RubyOps.IsTrue(greaterThan.Target(greaterThan, context, self, 0)) && RubyOps.IsTrue(lessThan.Target(lessThan, context, other, 0))) {
                     // (self is negative and other is positive) OR (self is positive and other is negative)
-                    return LibrarySites.Minus(context, modulo, other);
+                    var minus = minusStorage.GetCallSite("-", 1);
+                    return minus.Target(minus, context, remainder, other);
                 }
             }
             // Either modulo is zero or self and other are not of the same sign
-            return modulo;
+            return remainder;
         }
+
         #endregion
 
         #region round
@@ -351,16 +401,16 @@ namespace IronRuby.Builtins {
         /// The loop finishes when the value to be passed to the block is greater than limit (if step is positive) or less than limit (if step is negative).
         /// </summary>
         [RubyMethod("step")]
-        public static object Step(RubyContext/*!*/ context, BlockParam block, object self, object limit) {
-            return Step(context, block, self, limit, 1);
-        }
+        public static object Step(
+            SiteLocalStorage<BinaryOpSite>/*!*/ greaterThanStorage,
+            SiteLocalStorage<BinaryOpSite>/*!*/ lessThanStorage,
+            SiteLocalStorage<BinaryOpSite>/*!*/ addStorage, 
+            RubyContext/*!*/ context, BlockParam block, object self, object limit, [Optional]object step) {
 
-        /// <summary>
-        /// Invokes block with the sequence of numbers starting at self, incremented by step on each call.
-        /// The loop finishes when the value to be passed to the block is greater than limit (if step is positive) or less than limit (if step is negative).
-        /// </summary>
-        [RubyMethod("step")]
-        public static object Step(RubyContext/*!*/ context, BlockParam block, object self, object limit, object step) {
+            if (step == Missing.Value) {
+                step = ScriptingRuntimeHelpers.Int32ToObject(1);
+            }
+
             if (self is double || limit is double || step is double) {
                 // At least one of the arguments is double so convert all to double and run the Float version of Step
                 double floatSelf = Protocols.ConvertToFloat(context, self);
@@ -382,24 +432,25 @@ namespace IronRuby.Builtins {
                 //   end
                 // return self
                 #endregion
+
                 bool isStepZero = Protocols.IsEqual(context, step, 0);
                 if (isStepZero) {
                     throw RubyExceptions.CreateArgumentError("step can't be 0");
                 }
-                bool isStepPositive = RubyOps.IsTrue(LibrarySites.GreaterThan(context, step, 0));
-                Protocols.DynamicInvocation compare;
-                if (isStepPositive) {
-                    compare = LibrarySites.GreaterThan;
-                } else {
-                    compare = LibrarySites.LessThan;
-                }
+
+                var greaterThan = greaterThanStorage.GetCallSite(">", 1);
+                bool isStepPositive = RubyOps.IsTrue(greaterThan.Target(greaterThan, context, step, 0));
+                var compare = isStepPositive ? greaterThan : lessThanStorage.GetCallSite("<", 1);
+
                 object current = self;
-                while (!RubyOps.IsTrue(compare.Invoke(context, current, limit))) {
+                while (!RubyOps.IsTrue(compare.Target(compare, context, current, limit))) {
                     object result;
                     if (YieldStep(block, current, out result)) {
                         return result;
                     }
-                    current = LibrarySites.Add(context, current, step);
+
+                    var add = addStorage.GetCallSite("+", 1);
+                    current = add.Target(add, context, current, step);
                 }
                 return self;
             }

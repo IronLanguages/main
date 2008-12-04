@@ -15,7 +15,7 @@
 
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Dynamic.Binders;
+using System.Dynamic;
 using System.Linq.Expressions;
 using System.Diagnostics;
 using Microsoft.Scripting.Actions;
@@ -50,7 +50,7 @@ namespace IronRuby.Compiler.Ast {
         }
 
         private RubyCallSignature MakeCallSignature(bool hasImplicitSelf) {
-            return new RubyCallSignature(true, hasImplicitSelf, _args.Count, SplattedArgument != null, Block != null, RhsArgument != null);
+            return new RubyCallSignature(false, true, hasImplicitSelf, _args.Count, SplattedArgument != null, Block != null, RhsArgument != null);
         }
 
         public MSA.DynamicExpression/*!*/ MakeCallAction(string/*!*/ name, bool hasImplicitSelf) {

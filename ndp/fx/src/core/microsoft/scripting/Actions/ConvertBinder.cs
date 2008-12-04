@@ -16,7 +16,7 @@
 using System.Dynamic.Utils;
 using Microsoft.Contracts;
 
-namespace System.Dynamic.Binders {
+namespace System.Dynamic {
     public abstract class ConvertBinder : MetaObjectBinder {
         private readonly Type _type;
         private readonly bool _explicit;

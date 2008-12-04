@@ -17,7 +17,7 @@ using System.Dynamic.Utils;
 using Microsoft.Contracts;
 using System.Linq.Expressions;
 
-namespace System.Dynamic.Binders {
+namespace System.Dynamic {
     public abstract class BinaryOperationBinder : MetaObjectBinder {
         private ExpressionType _operation;
 

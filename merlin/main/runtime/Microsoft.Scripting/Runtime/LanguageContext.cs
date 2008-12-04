@@ -19,7 +19,7 @@ using System.IO;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using System.Dynamic.Binders;
+using System.Dynamic;
 using System.Text;
 using Microsoft.Scripting.Actions;
 using Microsoft.Scripting.Interpretation;

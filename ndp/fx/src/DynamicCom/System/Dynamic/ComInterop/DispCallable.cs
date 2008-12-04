@@ -16,34 +16,45 @@
 #if !SILVERLIGHT // ComObject
 
 using System.Linq.Expressions;
-using System.Dynamic.Binders;
+using System.Dynamic;
 using Microsoft.Contracts;
 using System.Globalization;
 
 namespace System.Dynamic.ComInterop {
+
     /// <summary>
-    /// This represents a bound dispmethod on a IDispatch object.
+    /// This represents a bound dispmember on a IDispatch object.
     /// </summary>
     internal sealed class DispCallable : IDynamicObject {
 
-        private readonly IDispatch _dispatch;
-        private readonly ComMethodDesc _methodDesc;
+        private readonly IDispatchComObject _dispatch;
+        private readonly string _memberName;
+        private readonly int _dispId;
 
-        internal DispCallable(IDispatch dispatch, ComMethodDesc methodDesc) {
+        internal DispCallable(IDispatchComObject dispatch, string memberName, int dispId) {
             _dispatch = dispatch;
-            _methodDesc = methodDesc;
+            _memberName = memberName;
+            _dispId = dispId;
         }
 
         public override string ToString() {
-            return String.Format(CultureInfo.CurrentCulture, "<bound dispmethod {0}>", _methodDesc.Name);
+            return String.Format(CultureInfo.CurrentCulture, "<bound dispmethod {0}>", _memberName);
         }
 
-        public IDispatch DispatchObject {
+        public IDispatchComObject DispatchComObject {
             get { return _dispatch; }
         }
 
-        public ComMethodDesc ComMethodDesc {
-            get { return _methodDesc; }
+        public IDispatch DispatchObject {
+            get { return _dispatch.DispatchObject; }
+        }
+
+        public string MemberName {
+            get { return _memberName; }
+        }
+
+        public int DispId {
+            get { return _dispId; }
         }
 
         public MetaObject GetMetaObject(Expression parameter) {
@@ -52,11 +63,11 @@ namespace System.Dynamic.ComInterop {
 
         public override bool Equals(object obj) {
             var other = obj as DispCallable;
-            return other != null && other._dispatch == _dispatch && other._methodDesc == _methodDesc;
+            return other != null && other._dispatch == _dispatch && other._dispId == _dispId;
         }
 
         public override int GetHashCode() {
-            return _dispatch.GetHashCode() ^ _methodDesc.GetHashCode();
+            return _dispatch.GetHashCode() ^ _dispId;
         }
     }
 }

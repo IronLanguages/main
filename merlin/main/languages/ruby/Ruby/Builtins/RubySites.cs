@@ -59,10 +59,6 @@ namespace IronRuby.Builtins {
         private static readonly CallSite<Func<CallSite, RubyContext, object, SymbolId, object>> RespondToSharedSite =
             CallSite<Func<CallSite, RubyContext, object, SymbolId, object>>.Create(InstanceCallAction("respond_to?", 1));
 
-        public static bool RespondTo(RubyContext/*!*/ context, object obj, SymbolId name) {
-            return RubyOps.IsTrue(RespondToSharedSite.Target(RespondToSharedSite, context, obj, name));
-        }
-
         public static bool RespondTo(RubyContext/*!*/ context, object obj, string name) {
             return RubyOps.IsTrue(RespondToSharedSite.Target(RespondToSharedSite, context, obj, SymbolTable.StringToId(name)));
         }
@@ -151,29 +147,6 @@ namespace IronRuby.Builtins {
             return _EachSharedSite.Target(_EachSharedSite, context, self, block);
         }
 
-        private static readonly CallSite<Func<CallSite, RubyContext, object, object>> _SuccSharedSite = CallSite<Func<CallSite, RubyContext, object, object>>.Create(InstanceCallAction("succ"));
-
-        public static object Successor(RubyContext/*!*/ context, object self) {
-            return _SuccSharedSite.Target(_SuccSharedSite, context, self);
-        }
-
-        private static readonly CallSite<Func<CallSite, RubyContext, object, object>> _CallSharedSite = CallSite<Func<CallSite, RubyContext, object, object>>.Create(InstanceCallAction("call"));
-
-        public static object Call(RubyContext/*!*/ context, object self) {
-            return _CallSharedSite.Target(_CallSharedSite, context, self);
-        }
-
-        private static readonly CallSite<Func<CallSite, RubyContext, object, object, object>> _CompareSharedSite = CallSite<Func<CallSite, RubyContext, object, object, object>>.Create(
-            InstanceCallAction("<=>", 1));
-
-        /// <summary>
-        /// Calls &lt;=&gt;, returning the actual result. You should probably use Protocols.Compare, unless you
-        /// have some reason for wanting to call &lt;=&gt;directly (e.g. Range.Initialize does this).
-        /// </summary>
-        public static object Compare(RubyContext/*!*/ context, object lhs, object rhs) {
-            return _CompareSharedSite.Target(_CompareSharedSite, context, lhs, rhs);
-        }
-
         #region Helpers
 
         public static RubyCallAction InstanceCallAction(string/*!*/ name) {
@@ -188,26 +161,6 @@ namespace IronRuby.Builtins {
             return RubyCallAction.Make(name, callSignature);
         }
 
-        #endregion
-
-        /// <summary>
-        /// Dynamically invoke the coerce method on the object specified by self.
-        /// </summary>
-        /// <param name="context">The current context</param>
-        /// <param name="self">The object on which to invoke the method</param>
-        /// <param name="other">The object that we are coercing</param>
-        /// <returns>A two element array containing [other, self] coerced by self</returns>
-        /// <exception cref="InvalidOperationException">Raises TypeError if coerce does not return a two element array - [x,y].</exception>
-        public static RubyArray Coerce(RubyContext/*!*/ context, object self, object other) {
-            RubyArray array;
-            array = _CoerceSite.Target(_CoerceSite, context, self, other);
-            if (array == null || array.Count != 2) {
-                throw RubyExceptions.CreateTypeError("coerce must return [x, y]");
-            }
-            return array;
-        }
-
-        private static readonly CallSite<Func<CallSite, RubyContext, object, object, RubyArray>> _CoerceSite = CallSite<Func<CallSite, RubyContext, object, object, RubyArray>>.Create(
-            InstanceCallAction("coerce", 1));
+        #endregion        
     }
 }

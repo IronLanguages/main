@@ -13,6 +13,15 @@
  *
  * ***************************************************************************/
 
+using BinaryOpSite = System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite,
+    IronRuby.Runtime.RubyContext, object, object, object>>;
+
+using UnaryOpSite = System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite,
+    IronRuby.Runtime.RubyContext, object, object>>;
+
+using RespondToSite = System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite,
+    IronRuby.Runtime.RubyContext, object, Microsoft.Scripting.SymbolId, object>>;
+
 using System;
 using System.Collections;
 using System.Diagnostics;
@@ -28,6 +37,7 @@ using Microsoft.Scripting.Math;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 using IronRuby.Runtime.Calls;
+using Microsoft.Scripting.Generation;
 
 namespace IronRuby.Builtins {
 
@@ -392,13 +402,17 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("<=>")]
-        public static object Compare(RubyContext/*!*/ context, MutableString/*!*/ self, object other) {
+        public static object Compare(
+            SiteLocalStorage<BinaryOpSite>/*!*/ comparisonStorage,
+            SiteLocalStorage<RespondToSite>/*!*/ respondToStorage, 
+            RubyContext/*!*/ context, MutableString/*!*/ self, object other) {
 
             // We test to see if other responds to to_str AND <=>
             // Ruby never attempts to convert other to a string via to_str and call Compare ... which is strange -- feels like a BUG in Ruby
 
-            if (RubySites.RespondTo(context, other, "to_str") && RubySites.RespondTo(context, other, "<=>")) {
-                object result = Integer.TryUnaryMinus(RubySites.Compare(context, other, self));
+            if (Protocols.RespondTo(respondToStorage, context, other, "to_str") && Protocols.RespondTo(respondToStorage, context, other, "<=>")) {
+                var site = comparisonStorage.GetCallSite("<=>", 1);
+                object result = Integer.TryUnaryMinus(site.Target(site, context, other, self));
                 if (result == null) {
                     throw RubyExceptions.CreateTypeError(String.Format("{0} can't be coerced into Fixnum",
                         RubyUtils.GetClassName(context, result)));
@@ -418,9 +432,14 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("==")]
         [RubyMethod("===")]
-        public static bool Equals(RubyContext/*!*/ context, MutableString/*!*/ self, object other) {
-            Assert.NotNull(context, self);
-            return RubySites.RespondTo(context, other, "to_str") ? RubySites.Equal(context, other, self) : false;
+        public static bool Equals(
+            SiteLocalStorage<RespondToSite>/*!*/ respondToStorage,
+            SiteLocalStorage<BinaryOpSite>/*!*/ equalsStorage,
+            RubyContext/*!*/ context, MutableString/*!*/ self, object other) {
+
+            BinaryOpSite equals;
+            return Protocols.RespondTo(respondToStorage, context, other, "to_str") 
+                && Protocols.IsTrue((equals = equalsStorage.GetCallSite("==", 1)).Target(equals, context, other, self));
         }
 
         #endregion
@@ -1813,9 +1832,6 @@ namespace IronRuby.Builtins {
 
         #region match
 
-        private static readonly CallSite<Func<CallSite, RubyContext, object, MutableString, object>>/*!*/ MatchDispatchSharedSite =
-            CallSite<Func<CallSite, RubyContext, object, MutableString, object>>.Create(RubySites.InstanceCallAction("=~", 1));
-
         [RubyMethod("=~")]
         public static object Match(RubyScope/*!*/ scope, MutableString/*!*/ self, [NotNull]RubyRegex/*!*/ regex) {
             return RegexpOps.MatchIndex(scope, regex, self);
@@ -1827,22 +1843,25 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("=~")]
-        public static object Match(RubyScope/*!*/ scope, MutableString/*!*/ self, object obj) {
-            return MatchDispatchSharedSite.Target(MatchDispatchSharedSite, scope.RubyContext, obj, self);
+        public static object Match(SiteLocalStorage<CallSite<Func<CallSite, RubyContext, object, MutableString, object>>>/*!*/ storage,
+            RubyScope/*!*/ scope, MutableString/*!*/ self, object obj) {
+            var site = storage.GetCallSite("=~", 1);
+            return site.Target(site, scope.RubyContext, obj, self);
         }
 
         [RubyMethod("match")]
-        public static object MatchRegexp(RubyScope/*!*/ scope, MutableString/*!*/ self, [NotNull]RubyRegex/*!*/ regex) {
-            return _MatchSite.Target(_MatchSite, scope, regex, self);
+        public static object MatchRegexp(SiteLocalStorage<CallSite<Func<CallSite, RubyScope, RubyRegex, MutableString, object>>>/*!*/ storage, 
+            RubyScope/*!*/ scope, MutableString/*!*/ self, [NotNull]RubyRegex/*!*/ regex) {
+            var site = storage.GetCallSite("match", new RubyCallSignature(1, RubyCallFlags.HasImplicitSelf | RubyCallFlags.HasScope));
+            return site.Target(site, scope, regex, self);
         }
 
         [RubyMethod("match")]
-        public static object MatchObject(RubyScope/*!*/ scope, MutableString/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ pattern) {
-            return _MatchSite.Target(_MatchSite, scope, new RubyRegex(pattern, RubyRegexOptions.NONE), self);
+        public static object MatchObject(SiteLocalStorage<CallSite<Func<CallSite, RubyScope, RubyRegex, MutableString, object>>>/*!*/ storage, 
+            RubyScope/*!*/ scope, MutableString/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ pattern) {
+            var site = storage.GetCallSite("match", new RubyCallSignature(1, RubyCallFlags.HasImplicitSelf | RubyCallFlags.HasScope));
+            return site.Target(site, scope, new RubyRegex(pattern, RubyRegexOptions.NONE), self);
         }
-
-        private static CallSite<Func<CallSite, RubyScope, RubyRegex, MutableString, object>> _MatchSite = CallSite<Func<CallSite, RubyScope, RubyRegex, MutableString, object>>.Create(
-            RubyCallAction.Make("match", RubyCallSignature.WithScope(1)));
        
         #endregion
 
@@ -2433,8 +2452,19 @@ namespace IronRuby.Builtins {
         #region upto
 
         [RubyMethod("upto")]
-        public static object UpTo(RubyContext/*!*/ context, BlockParam block, MutableString/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ endString) {
-            RangeOps.Each(context, block, new Range(context, self, endString, false));
+        public static object UpTo(
+            SiteLocalStorage<RespondToSite>/*!*/ respondToStorage,
+            SiteLocalStorage<BinaryOpSite>/*!*/ comparisonStorage,
+            SiteLocalStorage<BinaryOpSite>/*!*/ lessThanStorage,
+            SiteLocalStorage<BinaryOpSite>/*!*/ greaterThanStorage,
+            SiteLocalStorage<BinaryOpSite>/*!*/ equalsStorage,
+            SiteLocalStorage<UnaryOpSite>/*!*/ succStorage,
+            RubyContext/*!*/ context, BlockParam block, MutableString/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ endString) {
+
+            RangeOps.Each(respondToStorage, comparisonStorage, lessThanStorage, greaterThanStorage, equalsStorage, succStorage, context, 
+                block, new Range(self, endString, false)
+            );
+
             return self;
         }
 

@@ -308,9 +308,19 @@ namespace IronRuby.Builtins {
         }
 
         private void AppendInt(char format) {
-            object val = Protocols.ConvertToInteger(_context, _opts.Value);
+            int fixnum;
+            BigInteger bignum; 
+            Protocols.ConvertToInteger(_context, _opts.Value, out fixnum, out bignum);
 
-            bool isPositive = Comparable.GreaterOrEqual(_context, val, 0);
+            object val;
+            bool isPositive;
+            if ((object)bignum != null) {
+                isPositive = bignum.IsPositive();
+                val = bignum;
+            } else {
+                isPositive = fixnum > 0;
+                val = fixnum;
+            }
 
             if (_opts.LeftAdj) {
                 AppendLeftAdj(val, isPositive, 'D');

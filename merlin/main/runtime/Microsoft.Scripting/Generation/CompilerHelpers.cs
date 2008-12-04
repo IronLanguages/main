@@ -452,6 +452,10 @@ namespace Microsoft.Scripting.Generation {
         }
 
         public static MethodBase[] GetConstructors(Type t, bool privateBinding) {
+            return GetConstructors(t, privateBinding, false);
+        }
+
+        public static MethodBase[] GetConstructors(Type t, bool privateBinding, bool includeProtected) {
             if (t.IsArray) {
                 // The JIT verifier doesn't like new int[](3) even though it appears as a ctor.
                 // We could do better and return newarr in the future.
@@ -459,17 +463,43 @@ namespace Microsoft.Scripting.Generation {
             }
 
             BindingFlags bf = BindingFlags.Instance | BindingFlags.Public;
-            if (privateBinding) {
+            if (privateBinding || includeProtected) {
                 bf |= BindingFlags.NonPublic;
             }
-
             ConstructorInfo[] ci = t.GetConstructors(bf);
+
+            // leave in protected ctors, even if we're not in private binding mode.
+            if (!privateBinding && includeProtected) {
+                ci = FilterConstructorsToPublicAndProtected(ci);
+            }
 
             if (t.IsValueType) {
                 // structs don't define a parameterless ctor, add a generic method for that.
                 return ArrayUtils.Insert<MethodBase>(GetStructDefaultCtor(t), ci);
             }
 
+            return ci;
+        }
+
+        public static ConstructorInfo[] FilterConstructorsToPublicAndProtected(ConstructorInfo[] ci) {
+            List<ConstructorInfo> finalInfos = null;
+            for (int i = 0; i < ci.Length; i++) {
+                ConstructorInfo info = ci[i];
+                if (!info.IsPublic && !info.IsFamily && !info.IsFamilyOrAssembly) {
+                    if (finalInfos == null) {
+                        finalInfos = new List<ConstructorInfo>();
+                        for (int j = 0; j < i; j++) {
+                            finalInfos.Add(ci[j]);
+                        }
+                    }
+                } else if (finalInfos != null) {
+                    finalInfos.Add(ci[i]);
+                }
+            }
+
+            if (finalInfos != null) {
+                ci = finalInfos.ToArray();
+            }
             return ci;
         }
 

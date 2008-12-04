@@ -137,6 +137,21 @@ namespace IronRuby.Builtins {
             return this;
         }
 
+        public RubyArray/*!*/ AddRange(IList/*!*/ items) {
+            Capacity += items.Count;
+            for (int i = 0; i < items.Count; i++) {
+                Add(items[i]);
+            }
+            return this;
+        }
+
+        public RubyArray/*!*/ AddRange(IEnumerable/*!*/ items) {
+            foreach (var item in items) {
+                Add(item);
+            }
+            return this;
+        }
+
         #region DebugView
 
         internal string/*!*/ GetDebugView() {

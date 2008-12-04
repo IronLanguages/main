@@ -29,6 +29,7 @@ using IronRuby.Runtime;
 using IronRuby.Runtime.Calls;
 using Microsoft.Scripting.Runtime;
 using System.Runtime.InteropServices;
+using Microsoft.Scripting.Generation;
 
 internal class LibraryDef {
 
@@ -564,6 +565,7 @@ internal class LibraryDef {
                 bool hasContext = false;
                 bool hasBlock = false;
                 bool hasSelf = false;
+                int storageCount = 0;
                 for (int i = 0; i < parameterInfos.Length; i++) {
                     if (parameterInfos[i].ParameterType.IsByRef) {
                         LogMethodError("has ref/out parameter", methodDef, overload);
@@ -575,13 +577,18 @@ internal class LibraryDef {
                         LogMethodError("CodeContext is obsolete use RubyContext instead.", methodDef, overload);
                     }
 
-                    if (type == typeof(RubyContext) || type == typeof(RubyScope)) {
+                    if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(SiteLocalStorage<>)) {
+                        if (hasSelf || hasContext || hasBlock) {
+                            LogMethodError("SiteLocalStorage must precede all other parameters", methodDef, overload);
+                        }
+                        storageCount++;
+                    } else if (type == typeof(RubyContext) || type == typeof(RubyScope)) {
                         if (hasContext) {
                             LogMethodError("has multiple context parameters", methodDef, overload);
                         }
 
-                        if (i != 0) {
-                            LogMethodError("Context parameter must be the first parameter", methodDef, overload);
+                        if (i - storageCount != 0) {
+                            LogMethodError("Context parameter must be the first parameter following optional SiteLocalStorage", methodDef, overload);
                         }
 
                         hasContext = true;
@@ -592,12 +599,12 @@ internal class LibraryDef {
 
                         // TODO: sites
 
-                        if (hasContext && i != 1) {
+                        if (hasContext && i - storageCount != 1) {
                             LogMethodError("Block parameter must be the first parameter after context parameter", methodDef, overload);
                         }
 
-                        if (!hasContext && i != 0) {
-                            LogMethodError("Block parameter must be the first parameter", methodDef, overload);
+                        if (!hasContext && i - storageCount != 0) {
+                            LogMethodError("Block parameter must be the first parameter following optional SiteLocalStorage", methodDef, overload);
                         }
 
                         // TODO: we should detect a call to the BlockParam.Yield:

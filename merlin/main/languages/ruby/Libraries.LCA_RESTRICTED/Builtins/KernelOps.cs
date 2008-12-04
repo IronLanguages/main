@@ -27,6 +27,10 @@ using Microsoft.Scripting;
 using Microsoft.Scripting.Math;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
+using Microsoft.Scripting.Generation;
+
+using RespondToSite = System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite,
+    IronRuby.Runtime.RubyContext, object, Microsoft.Scripting.SymbolId, object>>;
 
 namespace IronRuby.Builtins {
 
@@ -544,26 +548,23 @@ namespace IronRuby.Builtins {
         // this overload is called only if the first parameter is string:
         [RubyMethod("printf", RubyMethodAttributes.PrivateInstance)]
         [RubyMethod("printf", RubyMethodAttributes.PublicSingleton)]
-        public static void PrintFormatted(RubyContext/*!*/ context, object self,
-            [NotNull]MutableString/*!*/ format, [NotNull]params object[]/*!*/ args) {
+        public static void PrintFormatted(SiteLocalStorage<CallSite<Func<CallSite, RubyContext, object, object, object>>>/*!*/ storage, 
+            RubyContext/*!*/ context, object self, [NotNull]MutableString/*!*/ format, [NotNull]params object[]/*!*/ args) {
 
-            PrintFormatted(context, self, context.StandardOutput, format, args);
+            PrintFormatted(storage, context, self, context.StandardOutput, format, args);
         }
-
-        private static CallSite<Func<CallSite, RubyContext, object, object, object>> _WriteSite = CallSite<Func<CallSite, RubyContext, object, object, object>>.
-           Create(RubyCallAction.Make("write", 1));
 
         [RubyMethod("printf", RubyMethodAttributes.PrivateInstance)]
         [RubyMethod("printf", RubyMethodAttributes.PublicSingleton)]
-        public static void PrintFormatted(RubyContext/*!*/ context, object self,
-            object io, [NotNull]object/*!*/ format, [NotNull]params object[]/*!*/ args) {
+        public static void PrintFormatted(SiteLocalStorage<CallSite<Func<CallSite, RubyContext, object, object, object>>>/*!*/ storage,
+            RubyContext/*!*/ context, object self, object io, [NotNull]object/*!*/ format, [NotNull]params object[]/*!*/ args) {
 
             Debug.Assert(!(io is MutableString));
             
             // TODO: BindAsObject attribute on format?
             // format cannot be strongly typed to MutableString due to ambiguity between signatures (MS, object) vs (object, MS)
-
-            _WriteSite.Target(_WriteSite, context, io, Sprintf(context, self, Protocols.CastToString(context, format), args));
+            var site = storage.GetCallSite("write", 1);
+            site.Target(site, context, io, Sprintf(context, self, Protocols.CastToString(context, format), args));
         }
 
         [RubyMethod("putc", RubyMethodAttributes.PrivateInstance)]
@@ -610,38 +611,41 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("warn", RubyMethodAttributes.PrivateInstance)]
         [RubyMethod("warn", RubyMethodAttributes.PublicSingleton)]
-        public static void ReportWarning(RubyContext/*!*/ context, object self, object message) {
+        public static void ReportWarning(SiteLocalStorage<CallSite<Func<CallSite, RubyContext, object, object, object>>>/*!*/ storage,
+            RubyContext/*!*/ context, object self, object message) {
+
             if (context.Verbose != null) {
                 // MRI: unlike Kernel#puts this outputs \n even if the message ends with \n:
-                _WriteSite.Target(_WriteSite, context, context.StandardErrorOutput, RubyIOOps.ToPrintedString(context, message));
+                var site = storage.GetCallSite("write", 1);
+                site.Target(site, context, context.StandardErrorOutput, RubyIOOps.ToPrintedString(context, message));
                 RubyIOOps.PutsEmptyLine(context, context.StandardErrorOutput);
             }
         }
 
-        private static CallSite<Func<CallSite, RubyContext, object, object>> _GetcSite = CallSite<Func<CallSite, RubyContext, object, object>>.
-           Create(RubyCallAction.Make("getc", 0));
-
         // TODO: not supported in Ruby 1.9
         [RubyMethod("getc", RubyMethodAttributes.PrivateInstance)]
         [RubyMethod("getc", RubyMethodAttributes.PublicSingleton)]
-        public static object ReadInputCharacter(RubyContext/*!*/ context, object self) {
+        public static object ReadInputCharacter(SiteLocalStorage<CallSite<Func<CallSite, RubyContext, object, object>>>/*!*/ storage,
+            RubyContext/*!*/ context, object self) {
+
             context.ReportWarning("getc is obsolete; use STDIN.getc instead");
-            return _GetcSite.Target(_GetsSite, context, context.StandardInput);
-        }
-
-        private static CallSite<Func<CallSite, RubyContext, object, MutableString, object>> _GetsSite = CallSite<Func<CallSite, RubyContext, object, MutableString, object>>.
-            Create(RubyCallAction.Make("gets", 1));
-
-        [RubyMethod("gets", RubyMethodAttributes.PrivateInstance)]
-        [RubyMethod("gets", RubyMethodAttributes.PublicSingleton)]
-        public static object ReadInputLine(RubyContext/*!*/ context, object self) {
-            return ReadInputLine(context, self, context.InputSeparator);
+            var site = storage.GetCallSite("getc", 0);
+            return site.Target(site, context, context.StandardInput);
         }
 
         [RubyMethod("gets", RubyMethodAttributes.PrivateInstance)]
         [RubyMethod("gets", RubyMethodAttributes.PublicSingleton)]
-        public static object ReadInputLine(RubyContext/*!*/ context, object self, [NotNull]MutableString/*!*/ separator) {
-            return _GetsSite.Target(_GetsSite, context, context.StandardInput, separator);
+        public static object ReadInputLine(SiteLocalStorage<CallSite<Func<CallSite, RubyContext, object, MutableString, object>>>/*!*/ storage, 
+            RubyContext/*!*/ context, object self) {
+            return ReadInputLine(storage, context, self, context.InputSeparator);
+        }
+
+        [RubyMethod("gets", RubyMethodAttributes.PrivateInstance)]
+        [RubyMethod("gets", RubyMethodAttributes.PublicSingleton)]
+        public static object ReadInputLine(SiteLocalStorage<CallSite<Func<CallSite, RubyContext, object, MutableString, object>>>/*!*/ storage,
+            RubyContext/*!*/ context, object self, [NotNull]MutableString/*!*/ separator) {
+            var site = storage.GetCallSite("gets", 1);
+            return site.Target(site, context, context.StandardInput, separator);
         }
 
         #endregion
@@ -672,26 +676,25 @@ namespace IronRuby.Builtins {
             throw RubyExceptionData.InitializeException(new RuntimeError(message.ToString()), message);
         }
 
-        private static readonly CallSite<Func<CallSite, RubyContext, object, object>> _ExceptionSharedSite = CallSite<Func<CallSite, RubyContext, object, object>>.Create(
-            RubySites.InstanceCallAction("exception"));
-
-        private static readonly CallSite<Func<CallSite, RubyContext, object, object, object>> _ExceptionWithMessageSharedSite = CallSite<Func<CallSite, RubyContext, object, object, object>>.Create(
-            RubySites.InstanceCallAction("exception", 1));
-
         [RubyMethod("raise", RubyMethodAttributes.PrivateInstance)]
         [RubyMethod("raise", RubyMethodAttributes.PublicSingleton)]
         [RubyMethod("fail", RubyMethodAttributes.PrivateInstance)]
         [RubyMethod("fail", RubyMethodAttributes.PublicSingleton)]
         [RubyStackTraceHidden]
-        public static void RaiseException(RubyContext/*!*/ context, object self,
-            object/*!*/ obj, [Optional]object arg, [Optional]RubyArray backtrace) {
+        public static void RaiseException(
+            SiteLocalStorage<RespondToSite>/*!*/ respondToStorage,
+            SiteLocalStorage<CallSite<Func<CallSite, RubyContext, object, object>>>/*!*/ storage0,
+            SiteLocalStorage<CallSite<Func<CallSite, RubyContext, object, object, object>>>/*!*/ storage1, 
+            RubyContext/*!*/ context, object self, object/*!*/ obj, [Optional]object arg, [Optional]RubyArray backtrace) {
 
-            if (RubySites.RespondTo(context, obj, "exception")) {
+            if (Protocols.RespondTo(respondToStorage, context, obj, "exception")) {
                 Exception e;
                 if (arg != Missing.Value) {
-                    e = _ExceptionWithMessageSharedSite.Target(_ExceptionWithMessageSharedSite, context, obj, arg) as Exception;
+                    var site = storage1.GetCallSite("exception", 1);
+                    e = site.Target(site, context, obj, arg) as Exception;
                 } else {
-                    e = _ExceptionSharedSite.Target(_ExceptionSharedSite, context, obj) as Exception;
+                    var site = storage0.GetCallSite("exception", 0);
+                    e = site.Target(site, context, obj) as Exception;
                 }
 
                 if (e != null) {
@@ -1005,33 +1008,30 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("extend")]
-        public static object Extend(RubyContext/*!*/ context, object self, [NotNull]RubyModule/*!*/ module, 
+        public static object Extend(
+            SiteLocalStorage<CallSite<Func<CallSite, RubyContext, RubyModule, object, object>>>/*!*/ extendObjectStorage,
+            SiteLocalStorage<CallSite<Func<CallSite, RubyContext, RubyModule, object, object>>>/*!*/ extendedStorage,
+            RubyContext/*!*/ context, object self, [NotNull]RubyModule/*!*/ module, 
             [NotNull]params RubyModule/*!*/[]/*!*/ modules) {
+
             Assert.NotNull(self, modules);
             RubyUtils.RequireNonClasses(modules);
 
+            var extendObject = extendObjectStorage.GetCallSite("extend_object", 1);
+            var extended = extendedStorage.GetCallSite("extended", 1);
+            
             // Kernel#extend_object inserts the module at the beginning of the object's singleton ancestors list;
             // ancestors after extend: [modules[0], modules[1], ..., modules[N-1], self-singleton, ...]
             for (int i = modules.Length - 1; i >= 0; i--) {
-                _ModuleExtentObjectSite.Target(_ModuleExtentObjectSite, context, modules[i], self);
-                _ModuleExtendedSite.Target(_ModuleExtendedSite, context, modules[i], self);
+                extendObject.Target(extendObject, context, modules[i], self);
+                extended.Target(extended, context, modules[i], self);
             }
 
-            _ModuleExtentObjectSite.Target(_ModuleExtentObjectSite, context, module, self);
-            _ModuleExtendedSite.Target(_ModuleExtendedSite, context, module, self);
+            extendObject.Target(extendObject, context, module, self);
+            extended.Target(extended, context, module, self);
 
             return self;
         }
-
-        private static readonly CallSite<Func<CallSite, RubyContext, RubyModule, object, object>> _ModuleExtentObjectSite =
-            CallSite<Func<CallSite, RubyContext, RubyModule, object, object>>.Create(
-            RubyCallAction.Make("extend_object", RubyCallSignature.WithImplicitSelf(1))
-        );
-
-        private static readonly CallSite<Func<CallSite, RubyContext, RubyModule, object, object>> _ModuleExtendedSite =
-            CallSite<Func<CallSite, RubyContext, RubyModule, object, object>>.Create(
-            RubyCallAction.Make("extended", RubyCallSignature.WithImplicitSelf(1))
-        );
 
 
         #region frozen?, freeze, tainted?, taint, untaint
@@ -1188,24 +1188,6 @@ namespace IronRuby.Builtins {
 
         #region __send__, send
 
-        private static readonly Dictionary<KeyValuePair<string, RubyCallSignature>, CallSite> _sites =
-            new Dictionary<KeyValuePair<string, RubyCallSignature>, CallSite>();
-
-        public static CallSite<TSite>/*!*/ GetOrCreateSendSite<TSite>(string/*!*/ methodName, RubyCallSignature callSignature)
-            where TSite : class {
-
-            lock (_sites) {
-                CallSite site;
-                if (_sites.TryGetValue(new KeyValuePair<string, RubyCallSignature>(methodName, callSignature), out site)) {
-                    return (CallSite<TSite>)site;
-                }
-
-                var newSite = CallSite<TSite>.Create(RubyCallAction.Make(methodName, callSignature));
-                _sites.Add(new KeyValuePair<string, RubyCallSignature>(methodName, callSignature), newSite);
-                return newSite;
-            }
-        }
-
         [RubyMethod("send"), RubyMethod("__send__")]
         public static object SendMessage(RubyScope/*!*/ scope, object self) {
             throw RubyExceptions.CreateArgumentError("no method name given");
@@ -1214,7 +1196,7 @@ namespace IronRuby.Builtins {
         // ARGS: 0
         [RubyMethod("send"), RubyMethod("__send__")]
         public static object SendMessage(RubyScope/*!*/ scope, object self, [DefaultProtocol]string/*!*/ methodName) {
-            var site = GetOrCreateSendSite<Func<CallSite, RubyScope, object, object>>(
+            var site = scope.RubyContext.GetOrCreateSendSite<Func<CallSite, RubyScope, object, object>>(
                 methodName, new RubyCallSignature(0, RubyCallFlags.HasScope | RubyCallFlags.HasImplicitSelf)
             );
             return site.Target(site, scope, self);
@@ -1223,7 +1205,7 @@ namespace IronRuby.Builtins {
         // ARGS: 0&
         [RubyMethod("send"), RubyMethod("__send__")]
         public static object SendMessage(RubyScope/*!*/ scope, BlockParam block, object self, [DefaultProtocol]string/*!*/ methodName) {
-            var site = GetOrCreateSendSite<Func<CallSite, RubyScope, object, Proc, object>>(
+            var site = scope.RubyContext.GetOrCreateSendSite<Func<CallSite, RubyScope, object, Proc, object>>(
                 methodName, new RubyCallSignature(0, RubyCallFlags.HasScope | RubyCallFlags.HasImplicitSelf | RubyCallFlags.HasBlock)
             );
             return site.Target(site, scope, self, block != null ? block.Proc : null);
@@ -1234,7 +1216,7 @@ namespace IronRuby.Builtins {
         public static object SendMessage(RubyScope/*!*/ scope, object self, [DefaultProtocol]string/*!*/ methodName,
             object arg1) {
 
-            var site = GetOrCreateSendSite<Func<CallSite, RubyScope, object, object, object>>(
+            var site = scope.RubyContext.GetOrCreateSendSite<Func<CallSite, RubyScope, object, object, object>>(
                 methodName, new RubyCallSignature(1, RubyCallFlags.HasScope | RubyCallFlags.HasImplicitSelf)
             );
 
@@ -1246,7 +1228,7 @@ namespace IronRuby.Builtins {
         public static object SendMessage(RubyScope/*!*/ scope, BlockParam block, object self, [DefaultProtocol]string/*!*/ methodName,
             object arg1) {
 
-            var site = GetOrCreateSendSite<Func<CallSite, RubyScope, object, Proc, object, object>>(
+            var site = scope.RubyContext.GetOrCreateSendSite<Func<CallSite, RubyScope, object, Proc, object, object>>(
                 methodName, new RubyCallSignature(1, RubyCallFlags.HasScope | RubyCallFlags.HasImplicitSelf | RubyCallFlags.HasBlock)
             );
             return site.Target(site, scope, self, block != null ? block.Proc : null, arg1);
@@ -1257,7 +1239,7 @@ namespace IronRuby.Builtins {
         public static object SendMessage(RubyScope/*!*/ scope, object self, [DefaultProtocol]string/*!*/ methodName,
             object arg1, object arg2) {
 
-            var site = GetOrCreateSendSite<Func<CallSite, RubyScope, object, object, object, object>>(
+            var site = scope.RubyContext.GetOrCreateSendSite<Func<CallSite, RubyScope, object, object, object, object>>(
                 methodName, new RubyCallSignature(2, RubyCallFlags.HasScope | RubyCallFlags.HasImplicitSelf)
             );
 
@@ -1269,7 +1251,7 @@ namespace IronRuby.Builtins {
         public static object SendMessage(RubyScope/*!*/ scope, BlockParam block, object self, [DefaultProtocol]string/*!*/ methodName,
             object arg1, object arg2) {
 
-            var site = GetOrCreateSendSite<Func<CallSite, RubyScope, object, Proc, object, object, object>>(
+            var site = scope.RubyContext.GetOrCreateSendSite<Func<CallSite, RubyScope, object, Proc, object, object, object>>(
                 methodName, new RubyCallSignature(2, RubyCallFlags.HasScope | RubyCallFlags.HasImplicitSelf | RubyCallFlags.HasBlock)
             );
             return site.Target(site, scope, self, block != null ? block.Proc : null, arg1, arg2);
@@ -1280,7 +1262,7 @@ namespace IronRuby.Builtins {
         public static object SendMessage(RubyScope/*!*/ scope, object self, [DefaultProtocol]string/*!*/ methodName,
             object arg1, object arg2, object arg3) {
 
-            var site = GetOrCreateSendSite<Func<CallSite, RubyScope, object, object, object, object, object>>(
+            var site = scope.RubyContext.GetOrCreateSendSite<Func<CallSite, RubyScope, object, object, object, object, object>>(
                 methodName, new RubyCallSignature(3, RubyCallFlags.HasScope | RubyCallFlags.HasImplicitSelf)
             );
 
@@ -1292,7 +1274,7 @@ namespace IronRuby.Builtins {
         public static object SendMessage(RubyScope/*!*/ scope, BlockParam block, object self, [DefaultProtocol]string/*!*/ methodName,
             object arg1, object arg2, object arg3) {
 
-            var site = GetOrCreateSendSite<Func<CallSite, RubyScope, object, Proc, object, object, object, object>>(
+            var site = scope.RubyContext.GetOrCreateSendSite<Func<CallSite, RubyScope, object, Proc, object, object, object, object>>(
                 methodName, new RubyCallSignature(3, RubyCallFlags.HasScope | RubyCallFlags.HasImplicitSelf | RubyCallFlags.HasBlock)
             );
             return site.Target(site, scope, self, block != null ? block.Proc : null, arg1, arg2, arg3);
@@ -1303,7 +1285,7 @@ namespace IronRuby.Builtins {
         public static object SendMessage(RubyScope/*!*/ scope, object self, [DefaultProtocol]string/*!*/ methodName,
             [NotNull]params object[] args) {
 
-            var site = GetOrCreateSendSite<Func<CallSite, RubyScope, object, RubyArray, object>>(
+            var site = scope.RubyContext.GetOrCreateSendSite<Func<CallSite, RubyScope, object, RubyArray, object>>(
                 methodName, new RubyCallSignature(1, RubyCallFlags.HasScope | RubyCallFlags.HasImplicitSelf | RubyCallFlags.HasSplattedArgument)
             );
 
@@ -1315,7 +1297,7 @@ namespace IronRuby.Builtins {
         public static object SendMessage(RubyScope/*!*/ scope, BlockParam block, object self, [DefaultProtocol]string/*!*/ methodName,
             [NotNull]params object[] args) {
 
-            var site = GetOrCreateSendSite<Func<CallSite, RubyScope, object, Proc, RubyArray, object>>(
+            var site = scope.RubyContext.GetOrCreateSendSite<Func<CallSite, RubyScope, object, Proc, RubyArray, object>>(
                 methodName, new RubyCallSignature(1, RubyCallFlags.HasScope | RubyCallFlags.HasImplicitSelf | RubyCallFlags.HasSplattedArgument | 
                     RubyCallFlags.HasBlock)
             );

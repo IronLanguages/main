@@ -97,12 +97,23 @@ namespace Microsoft.Scripting.Generation {
             return Path.Combine(dir, filename);
         }
 
-        internal static void SetSaveAssemblies(string directory) {
-            Shared.ConfigureSaveAssemblies(directory);
+        public static void SetSaveAssemblies(bool enable, string directory) {
+            //Set SaveAssemblies on for inner ring by calling System.Linq.Expressions.Compiler.Snippets.SetSaveAssemblies via Reflection.
+            Assembly core = typeof(System.Linq.Expressions.Expression).Assembly;
+            Type snippets = core.GetType("System.Linq.Expressions.Compiler.Snippets");
+            //The type may not exist.
+            if (snippets != null) {
+                MethodInfo configSaveAssemblies = snippets.GetMethod("SetSaveAssemblies", BindingFlags.NonPublic | BindingFlags.Static);
+                //The method may not exist.
+                if (configSaveAssemblies != null) {
+                    string[] coreAssemblyLocations = (string[])configSaveAssemblies.Invoke(null, new object[] { enable, directory });
+                }
+            }
+            Shared.ConfigureSaveAssemblies(enable, directory);
         }
 
-        private void ConfigureSaveAssemblies(string directory) {
-            _saveSnippets = true;
+        private void ConfigureSaveAssemblies(bool enable, string directory) {
+            _saveSnippets = enable;
             _snippetsDirectory = directory;
         }
 

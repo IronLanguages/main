@@ -13,6 +13,9 @@
  *
  * ***************************************************************************/
 
+using RespondToSite = System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite,
+    IronRuby.Runtime.RubyContext, object, Microsoft.Scripting.SymbolId, object>>;
+
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -20,6 +23,7 @@ using System.Runtime.CompilerServices;
 using IronRuby.Builtins;
 using IronRuby.Runtime;
 using Microsoft.Scripting.Runtime;
+using Microsoft.Scripting.Generation;
 
 namespace IronRuby.StandardLibrary.Zlib {
 
@@ -506,18 +510,12 @@ namespace IronRuby.StandardLibrary.Zlib {
                 return -9;
             }
 
-            #region Dynamic Site
-
-            private static CallSite<Func<CallSite, RubyContext, object, MutableString, MutableString>> InflateSite = CallSite<Func<CallSite, RubyContext, object, MutableString, MutableString>>.Create(
-                 RubySites.InstanceCallAction("inflate", 1)
-             );
-
-            #endregion
-
             [RubyMethod("inflate", RubyMethodAttributes.PublicSingleton)]
-            public static MutableString InflateStream(RubyClass/*!*/ self, MutableString zstring) {
+            public static MutableString InflateStream(SiteLocalStorage<CallSite<Func<CallSite, RubyContext, object, MutableString, MutableString>>>/*!*/ storage,
+                RubyClass/*!*/ self, MutableString zstring) {
                 object obj = RubySites.Allocate(self);
-                return InflateSite.Target(InflateSite, self.Context, obj, zstring);
+                var site = storage.GetCallSite("inflate", 1);
+                return site.Target(site, self.Context, obj, zstring);
             }
 
             internal class HuffmanTree {
@@ -619,10 +617,10 @@ namespace IronRuby.StandardLibrary.Zlib {
             }
 
             [RubyConstructor]
-            public static GZipReader/*!*/ Create(RubyClass/*!*/ self, object io) {
+            public static GZipReader/*!*/ Create(SiteLocalStorage<RespondToSite>/*!*/ respondToStorage, RubyClass/*!*/ self, object io) {
                 Stream stream = null;
                 if (io != null) {
-                    stream = new IOWrapper(self.Context, io, FileAccess.Read);
+                    stream = RubyIOOps.CreateIOWrapper(respondToStorage, self.Context, io, FileAccess.Read);
                 }
                 if (stream == null || !stream.CanRead) {
                     throw RubyExceptions.CreateTypeError("instance of IO needed");

@@ -16,19 +16,17 @@
 #if !SILVERLIGHT // ComObject
 
 using System.Collections.Generic;
-using System.Dynamic.Binders;
+using System.Dynamic;
 using System.Dynamic.Utils;
 using System.Linq.Expressions;
 
 namespace System.Dynamic.ComInterop {
 
     internal sealed class IDispatchMetaObject : ComFallbackMetaObject {
-        private readonly ComTypeDesc _wrapperType;
         private readonly IDispatchComObject _self;
 
-        internal IDispatchMetaObject(Expression expression, ComTypeDesc wrapperType, IDispatchComObject self)
+        internal IDispatchMetaObject(Expression expression, IDispatchComObject self)
             : base(expression, Restrictions.Empty, self) {
-            _wrapperType = wrapperType;
             _self = self;
         }
 
@@ -36,27 +34,31 @@ namespace System.Dynamic.ComInterop {
             ContractUtils.RequiresNotNull(binder, "binder");
 
             if (args.Any(arg => ComBinderHelpers.IsStrongBoxArg(arg))) {
-                return ComBinderHelpers.RewriteStrongBoxAsRef(binder, this, args);
+                return ComBinderHelpers.RewriteStrongBoxAsRef(binder, this, args, false);
             }
 
-            ComMethodDesc methodDesc;
+            ComMethodDesc method;
+            if (_self.TryGetMemberMethod(binder.Name, out method) ||
+                _self.TryGetMemberMethodExplicit(binder.Name, out method)) {
 
-            if (_wrapperType.Funcs.TryGetValue(binder.Name, out methodDesc) ||
-                  _self.TryGetMemberMethodExplicit(binder.Name, out methodDesc)) {
-                return new ComInvokeBinder(
-                    binder.Arguments,
-                    args,
-                    IDispatchRestriction(),
-                    Expression.Constant(methodDesc),
-                    Expression.Property(
-                        Expression.Convert(Expression, typeof(IDispatchComObject)),
-                        typeof(IDispatchComObject).GetProperty("DispatchObject")
-                    ),
-                    methodDesc
-                ).Invoke();
+                return BindComInvoke(args, method, binder.Arguments);
             }
 
             return base.BindInvokeMember(binder, args);
+        }
+
+        private MetaObject BindComInvoke(MetaObject[] args, ComMethodDesc method, IList<ArgumentInfo> arguments) {
+            return new ComInvokeBinder(
+                arguments,
+                args,
+                IDispatchRestriction(),
+                Expression.Constant(method),
+                Expression.Property(
+                    Helpers.Convert(Expression, typeof(IDispatchComObject)),
+                    typeof(IDispatchComObject).GetProperty("DispatchObject")
+                ),
+                method
+            ).Invoke();
         }
 
         public override MetaObject BindGetMember(GetMemberBinder binder) {
@@ -85,33 +87,19 @@ namespace System.Dynamic.ComInterop {
         }
 
         private MetaObject BindGetMember(ComMethodDesc method) {
-            Restrictions restrictions = IDispatchRestriction();
-            Expression dispatch =
-                Expression.Property(
-                    Helpers.Convert(Expression, typeof(IDispatchComObject)),
-                    typeof(IDispatchComObject).GetProperty("DispatchObject")
-                );
-
             if (method.IsDataMember) {
                 if (method.Parameters.Length == 0) {
-                    return new ComInvokeBinder(
-                        new ArgumentInfo[0],
-                        MetaObject.EmptyMetaObjects,
-                        restrictions,
-                        Expression.Constant(method),
-                        dispatch,
-                        method
-                    ).Invoke();
+                    return BindComInvoke(MetaObject.EmptyMetaObjects, method,new ArgumentInfo[0]);
                 }
             }
 
             return new MetaObject(
                 Expression.Call(
                     typeof(ComRuntimeHelpers).GetMethod("CreateDispCallable"),
-                    dispatch,
+                    Helpers.Convert(Expression, typeof(IDispatchComObject)),
                     Expression.Constant(method)
                 ),
-                restrictions
+                IDispatchRestriction()
             );
         }
 
@@ -131,45 +119,35 @@ namespace System.Dynamic.ComInterop {
             );
         }
 
-        public override MetaObject BindGetIndex(GetIndexBinder binder, MetaObject[] indexes) {
+        public override MetaObject BindGetIndex(GetIndexBinder binder, MetaObject[] indexes) {           
             ContractUtils.RequiresNotNull(binder, "binder");
-            return IndexOperation(binder.FallbackGetIndex(UnwrapSelf(), indexes), indexes, "TryGetGetItem");
+            if (indexes.Any(arg => ComBinderHelpers.IsStrongBoxArg(arg))) {
+                return ComBinderHelpers.RewriteStrongBoxAsRef(binder, this, indexes, false);
+            }
+
+            ComMethodDesc getItem;
+            if (_self.TryGetGetItem(out getItem)){
+                return BindComInvoke(indexes, getItem, binder.Arguments);
+            }
+
+            return base.BindGetIndex(binder, indexes);
         }
 
         public override MetaObject BindSetIndex(SetIndexBinder binder, MetaObject[] indexes, MetaObject value) {
             ContractUtils.RequiresNotNull(binder, "binder");
-            return IndexOperation(binder.FallbackSetIndex(UnwrapSelf(), indexes, value), indexes.AddLast(value), "TryGetSetItem");
-        }
 
-        private MetaObject IndexOperation(MetaObject fallback, MetaObject[] args, string method) {
-            ParameterExpression callable = Expression.Variable(typeof(DispCallable), "callable");
-
-            Expression[] callArgs = new Expression[args.Length + 1];
-            for (int i = 0; i < args.Length; i++) {
-                callArgs[i + 1] = args[i].Expression;
+            if (indexes.Any(arg => ComBinderHelpers.IsStrongBoxArg(arg))) {
+                return ComBinderHelpers.RewriteStrongBoxAsRef(binder, this, indexes.AddLast(value), true);
             }
-            callArgs[0] = callable;
 
-            Expression result = Expression.Block(
-                new ParameterExpression[] { callable },
-                Expression.Condition(
-                    Expression.Call(
-                        Expression.Convert(Expression, typeof(IDispatchComObject)),
-                        typeof(IDispatchComObject).GetMethod(method),
-                        callable
-                    ),
-                    Expression.Dynamic(new ComInvokeAction(), typeof(object), callArgs),
-                    Helpers.Convert(fallback.Expression, typeof(object))
-                )
-            );
+            ComMethodDesc setItem;
+            if (_self.TryGetSetItem(out setItem)) {
+                return BindComInvoke(indexes.AddLast(value), setItem, binder.Arguments);
+            }
 
-            return new MetaObject(
-                result,
-                Restrictions.Combine(args).Merge(IDispatchRestriction()).Merge(fallback.Restrictions)
-            );
+            return base.BindSetIndex(binder, indexes, value);
         }
-
-
+        
         public override MetaObject BindSetMember(SetMemberBinder binder, MetaObject value) {
             ContractUtils.RequiresNotNull(binder, "binder");
 
@@ -222,17 +200,20 @@ namespace System.Dynamic.ComInterop {
         }
 
         private Restrictions IDispatchRestriction() {
-            Expression @this = Expression;
+            return IDispatchRestriction(Expression, _self.ComTypeDesc);
+        }
+
+        internal static Restrictions IDispatchRestriction(Expression expr, ComTypeDesc typeDesc) {
             return Restrictions.GetTypeRestriction(
-                @this, typeof(IDispatchComObject)
+                expr, typeof(IDispatchComObject)
             ).Merge(
                 Restrictions.GetExpressionRestriction(
                     Expression.Equal(
                         Expression.Property(
-                            Expression.Convert(@this, typeof(IDispatchComObject)),
+                            Helpers.Convert(expr, typeof(IDispatchComObject)),
                             typeof(IDispatchComObject).GetProperty("ComTypeDesc")
                         ),
-                        Expression.Constant(_wrapperType)
+                        Expression.Constant(typeDesc)
                     )
                 )
             );

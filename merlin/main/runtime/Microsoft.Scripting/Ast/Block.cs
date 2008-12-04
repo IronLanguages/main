@@ -54,5 +54,12 @@ namespace Microsoft.Scripting.Ast {
             }
             return Expression.Block(expressions);
         }
+
+        internal static BlockExpression Block(Expression[] expressions) {
+            if (expressions.Length == 0) {
+                expressions = expressions.AddLast(Expression.Empty());
+            }
+            return Expression.Block(expressions);
+        }
     }
 }

@@ -33,7 +33,7 @@ namespace System.Linq.Expressions.Compiler {
 
                 var label = e as LabelExpression;
                 if (label != null) {
-                    DefineLabel(label.Label);
+                    DefineLabel(label.Target);
                 }
             }
 
@@ -67,7 +67,7 @@ namespace System.Linq.Expressions.Compiler {
             }
         }
 
-        private void EmitEmptyExpression(Expression expr) {
+        private void EmitDefaultExpression(Expression expr) {
             var node = (DefaultExpression)expr;
             if (node.Type != typeof(void)) {
                 // emit default(T)
@@ -256,8 +256,15 @@ namespace System.Linq.Expressions.Compiler {
             // 2. Emit the try statement body
             //******************************************************************
 
-            EmitExpressionAsVoid(node.Body);
+            EmitExpression(node.Body);
 
+            Type tryType = expr.Type;
+            LocalBuilder value = null;
+            if (tryType != typeof(void)) {
+                //store the value of the try body
+                value = _ilg.GetLocal(tryType);
+                _ilg.Emit(OpCodes.Stloc, value);
+            }
             //******************************************************************
             // 3. Emit the catch blocks
             //******************************************************************
@@ -271,7 +278,11 @@ namespace System.Linq.Expressions.Compiler {
                 //
                 // Emit the catch block body
                 //
-                EmitExpressionAsVoid(cb.Body);
+                EmitExpression(cb.Body);
+                if (tryType != typeof(void)) {
+                    //store the value of the catch block body
+                    _ilg.Emit(OpCodes.Stloc, value);
+                }
 
                 PopLabelBlock(LabelBlockKind.Catch);
             }
@@ -308,6 +319,10 @@ namespace System.Linq.Expressions.Compiler {
                 _ilg.EndExceptionBlock();
             }
 
+            if (tryType != typeof(void)) {
+                _ilg.Emit(OpCodes.Ldloc, value);
+                _ilg.FreeLocal(value);
+            }
             PopLabelBlock(LabelBlockKind.Try);
         }
 

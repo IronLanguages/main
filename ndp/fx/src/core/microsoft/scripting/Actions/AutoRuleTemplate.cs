@@ -21,7 +21,7 @@ using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
 using System.Dynamic.Utils;
 
-namespace System.Dynamic.Binders {
+namespace System.Dynamic {
     /// <summary>
     /// Handles auto-templating of rules.  There are three important actions this performs:
     ///     1. Detects if templating is possible between two rules
@@ -161,10 +161,12 @@ namespace System.Dynamic.Binders {
                     Type elementType = TypeUtils.GetConstantType(node.Type);
 
                     Func<object, int, object> ctor;
-                    if (!_templateCtors.TryGetValue(elementType, out ctor)) {
-                        MethodInfo genMethod = typeof(TemplatedValue<>).MakeGenericType(new Type[] { elementType }).GetMethod("Make", BindingFlags.NonPublic | BindingFlags.Static);
-                        _templateCtors[elementType] = ctor = (Func<object, int, object>)genMethod.CreateDelegate(typeof(Func<object, int, object>)); ;
-                    } 
+                    lock (_templateCtors) {
+                        if (!_templateCtors.TryGetValue(elementType, out ctor)) {
+                            MethodInfo genMethod = typeof(TemplatedValue<>).MakeGenericType(new Type[] { elementType }).GetMethod("Make", BindingFlags.NonPublic | BindingFlags.Static);
+                            _templateCtors[elementType] = ctor = (Func<object, int, object>)genMethod.CreateDelegate(typeof(Func<object, int, object>)); ;
+                        }
+                    }
                     
                     object constVal = ctor(value, index);                    
 

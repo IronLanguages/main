@@ -1,4 +1,4 @@
-﻿/* ****************************************************************************
+/* ****************************************************************************
  *
  * Copyright (c) Microsoft Corporation. 
  *
@@ -648,12 +648,18 @@ namespace System.Dynamic.ComInterop {
         public String AsBstr {
             get {
                 Debug.Assert(VariantType == VarEnum.VT_BSTR);
-                return (string)Marshal.GetObjectForNativeVariant(UnsafeMethods.ConvertVariantByrefToPtr(ref this));
+                if (_typeUnion._unionTypes._bstr != IntPtr.Zero) {
+                    return Marshal.PtrToStringBSTR(_typeUnion._unionTypes._bstr);
+                } else {
+                    return null;
+                }
             }
             set {
                 Debug.Assert(IsEmpty); // The setter can only be called once as VariantClear might be needed otherwise
                 VariantType = VarEnum.VT_BSTR;
-                Marshal.GetNativeVariantForObject(value, UnsafeMethods.ConvertVariantByrefToPtr(ref this));
+                if (value != null) {
+                   Marshal.GetNativeVariantForObject(value, UnsafeMethods.ConvertVariantByrefToPtr(ref this));
+                }
             }
         }
 
@@ -668,12 +674,18 @@ namespace System.Dynamic.ComInterop {
         public Object AsUnknown {
             get {
                 Debug.Assert(VariantType == VarEnum.VT_UNKNOWN);
-                return Marshal.GetObjectForIUnknown(_typeUnion._unionTypes._unknown);
+                if (_typeUnion._unionTypes._dispatch != IntPtr.Zero) {
+                    return Marshal.GetObjectForIUnknown(_typeUnion._unionTypes._unknown);
+                } else {
+                    return null;
+                }
             }
             set {
                 Debug.Assert(IsEmpty); // The setter can only be called once as VariantClear might be needed otherwise
                 VariantType = VarEnum.VT_UNKNOWN;
-                _typeUnion._unionTypes._unknown = Marshal.GetIUnknownForObject(value);
+                if (value != null) {
+                   _typeUnion._unionTypes._unknown = Marshal.GetIUnknownForObject(value);
+                }
             }
         }
 
@@ -688,12 +700,18 @@ namespace System.Dynamic.ComInterop {
         public Object AsDispatch {
             get {
                 Debug.Assert(VariantType == VarEnum.VT_DISPATCH);
-                return Marshal.GetObjectForIUnknown(_typeUnion._unionTypes._dispatch);
+                if (_typeUnion._unionTypes._dispatch != IntPtr.Zero) {
+                    return Marshal.GetObjectForIUnknown(_typeUnion._unionTypes._dispatch);
+                } else {
+                    return null;
+                }
             }
             set {
                 Debug.Assert(IsEmpty); // The setter can only be called once as VariantClear might be needed otherwise
                 VariantType = VarEnum.VT_DISPATCH;
-                _typeUnion._unionTypes._dispatch = Marshal.GetIDispatchForObject(value);
+                if (value != null) {
+                   _typeUnion._unionTypes._unknown = Marshal.GetIDispatchForObject(value);
+                }
             }
         }
 
@@ -708,6 +726,7 @@ namespace System.Dynamic.ComInterop {
 
         #endregion
 
+
         // VT_VARIANT
 
         public Object AsVariant {
@@ -716,7 +735,9 @@ namespace System.Dynamic.ComInterop {
             }
             set {
                 Debug.Assert(IsEmpty); // The setter can only be called once as VariantClear might be needed otherwise
-                Marshal.GetNativeVariantForObject(value, UnsafeMethods.ConvertVariantByrefToPtr(ref this));
+                if (value != null) {
+                    Marshal.GetNativeVariantForObject(value, UnsafeMethods.ConvertVariantByrefToPtr(ref this));
+                }
             }
         }
 
@@ -731,7 +752,7 @@ namespace System.Dynamic.ComInterop {
             Debug.Assert(IsEmpty); // The setter can only be called once as VariantClear might be needed otherwise
             Debug.Assert((value.VariantType & VarEnum.VT_BYREF) == 0, "double indirection");
 
-            switch (value.VariantType){
+            switch (value.VariantType) {
                 case VarEnum.VT_EMPTY:
                 case VarEnum.VT_NULL:
                     // these cannot combine with VT_BYREF. Should try passing as a variant reference
@@ -787,8 +808,8 @@ namespace System.Dynamic.ComInterop {
                 #endregion
 
                 case VarEnum.VT_VARIANT:
-                case VarEnum.VT_RECORD: 
-                case VarEnum.VT_ARRAY: 
+                case VarEnum.VT_RECORD:
+                case VarEnum.VT_ARRAY:
                     return typeof(Variant).GetProperty("AsVariant");
 
                 default:
@@ -830,10 +851,10 @@ namespace System.Dynamic.ComInterop {
 
                 #endregion
 
-                case VarEnum.VT_VARIANT: 
+                case VarEnum.VT_VARIANT:
                     return typeof(Variant).GetMethod("SetAsByrefVariant");
                 case VarEnum.VT_RECORD:
-                case VarEnum.VT_ARRAY: 
+                case VarEnum.VT_ARRAY:
                     return typeof(Variant).GetMethod("SetAsByrefVariantIndirect");
 
                 default:

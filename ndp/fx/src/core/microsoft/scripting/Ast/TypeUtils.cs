@@ -195,6 +195,12 @@ namespace System.Dynamic.Utils {
 
             Type nnSourceType = GetNonNullableType(source);
             Type nnDestType = GetNonNullableType(dest);
+
+            //void can only be converted to void
+            if (source == typeof(void) && dest != typeof(void)) {
+                return false;
+            }
+
             // Down conversion
             if (nnSourceType.IsAssignableFrom(nnDestType)) {
                 return true;
