@@ -1,0 +1,10 @@
+merlin/main/*.snk
+merlin/main/*.sln
+merlin/main/Rowan.vs*
+merlin/main/Spec*
+merlin/main/*.proj
+merlin/main/*.htm
+merlin/main/makefile
+merlin/main/sources
+merlin/main/*.targets
+merlin/external/languages/ruby/ruby-1.8.6
