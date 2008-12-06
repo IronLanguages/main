@@ -1,4 +1,4 @@
-﻿/* ****************************************************************************
+/* ****************************************************************************
  *
  * Copyright (c) Microsoft Corporation. 
  *
@@ -219,6 +219,9 @@ namespace System.Linq.Expressions.Compiler {
                     break;
                 case ExpressionType.Unbox:
                     EmitUnboxUnaryExpression(node);
+                    break;
+                case ExpressionType.OnesComplement:
+                    EmitUnaryExpression(node);
                     break;
 
                 // *** END GENERATED CODE ***

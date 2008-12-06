@@ -60,21 +60,21 @@ namespace System.Linq.Expressions {
         }
 
         internal virtual Expression GetExpression(int index) {
-            throw new NotImplementedException();
+            throw Assert.Unreachable;
         }
 
         internal virtual int ExpressionCount {
             get {
-                throw new NotImplementedException();
+                throw Assert.Unreachable;
             }
         }
 
         internal virtual ReadOnlyCollection<Expression> GetOrMakeExpressions() {
-            throw new NotImplementedException(GetType().FullName);
+            throw Assert.Unreachable;
         }
 
         internal virtual ParameterExpression GetVariable(int index) {
-            throw new NotImplementedException();
+            throw Assert.Unreachable;
         }
 
         internal virtual int VariableCount {
@@ -98,7 +98,7 @@ namespace System.Linq.Expressions {
         /// subclass of BlockExpression which is being used. 
         /// </summary>
         internal virtual BlockExpression Rewrite(IList<ParameterExpression> variables, Expression[] args) {
-            throw new NotImplementedException();
+            throw Assert.Unreachable;
         }
 
         /// <summary>
@@ -447,11 +447,11 @@ namespace System.Linq.Expressions {
         }
 
         public void Insert(int index, Expression item) {
-            throw new NotImplementedException();
+            throw Assert.Unreachable;
         }
 
         public void RemoveAt(int index) {
-            throw new NotImplementedException();
+            throw Assert.Unreachable;
         }
 
         public Expression this[int index] {
@@ -463,7 +463,7 @@ namespace System.Linq.Expressions {
                 return _block.GetExpression(index);
             }
             set {
-                throw new NotImplementedException();
+                throw Assert.Unreachable;
             }
         }
 
@@ -472,11 +472,11 @@ namespace System.Linq.Expressions {
         #region ICollection<Expression> Members
 
         public void Add(Expression item) {
-            throw new NotImplementedException();
+            throw Assert.Unreachable;
         }
 
         public void Clear() {
-            throw new NotImplementedException();
+            throw Assert.Unreachable;
         }
 
         public bool Contains(Expression item) {
@@ -499,7 +499,7 @@ namespace System.Linq.Expressions {
         }
 
         public bool Remove(Expression item) {
-            throw new NotImplementedException();
+            throw Assert.Unreachable;
         }
 
         #endregion

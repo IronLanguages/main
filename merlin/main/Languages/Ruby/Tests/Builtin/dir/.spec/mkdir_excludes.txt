@@ -1,0 +1,2 @@
+Dir.mkdir creates the named directory with the given permissions
+Dir.mkdir raises without adequate permissions in the parent dir

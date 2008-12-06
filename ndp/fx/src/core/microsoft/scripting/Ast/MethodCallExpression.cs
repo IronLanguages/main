@@ -67,7 +67,7 @@ namespace System.Linq.Expressions {
         }
 
         internal virtual ReadOnlyCollection<Expression> GetOrMakeArguments() {
-            throw new NotImplementedException(GetType().FullName);
+            throw Assert.Unreachable;
         }
 
         internal override Expression Accept(ExpressionVisitor visitor) {
@@ -83,17 +83,17 @@ namespace System.Linq.Expressions {
         /// subclass of MethodCallExpression which is being used. 
         /// </summary>
         internal virtual MethodCallExpression Rewrite(Expression instance, IList<Expression> args) {
-            throw new NotImplementedException();
+            throw Assert.Unreachable;
         }
 
         #region IArgumentProvider Members
 
         Expression IArgumentProvider.GetArgument(int index) {
-            throw new NotImplementedException();
+            throw Assert.Unreachable;
         }
 
         int IArgumentProvider.ArgumentCount {
-            get { throw new NotImplementedException(); }
+            get { throw Assert.Unreachable; }
         }
 
         #endregion

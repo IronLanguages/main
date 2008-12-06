@@ -81,8 +81,7 @@ namespace System.Linq.Expressions {
             [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1065:DoNotRaiseExceptionsInUnexpectedLocations")] // TODO: fix
             public ICollection<TKey> Keys {
                 get {
-                    // TODO:
-                    throw new NotImplementedException();
+                    throw Assert.Unreachable;
                 }
             }
     
@@ -97,8 +96,7 @@ namespace System.Linq.Expressions {
             [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1065:DoNotRaiseExceptionsInUnexpectedLocations")] // TODO: fix
             public ICollection<TValue> Values {
                 get {
-                    // TODO:
-                    throw new NotImplementedException();
+                    throw Assert.Unreachable;
                 }
             }
     
@@ -134,14 +132,14 @@ namespace System.Linq.Expressions {
                     // WeakReferences can become zero only during the GC.
     
                     bool garbage_collected;
-    #if SILVERLIGHT // GC.CollectionCount
+#if SILVERLIGHT // GC.CollectionCount
                     garbage_collected = !cleanupGC.IsAlive;
                     if (garbage_collected) cleanupGC = new WeakReference(new object());
-    #else
+#else
                     int currentGC = GC.CollectionCount(0);
                     garbage_collected = currentGC != cleanupGC;
                     if (garbage_collected) cleanupGC = currentGC;
-    #endif
+#endif
                     if (garbage_collected) {
                         Cleanup();
                         cleanupVersion = version;
@@ -181,68 +179,59 @@ namespace System.Linq.Expressions {
             }
             #endregion
     
-            #region ICollection<KeyValuePair<TKey,TValue>> Members
+        #region ICollection<KeyValuePair<TKey,TValue>> Members
     
             public void Add(KeyValuePair<TKey, TValue> item) {
-                // TODO:
-                throw new NotImplementedException();
+                throw Assert.Unreachable;
             }
     
             public void Clear() {
-                // TODO:
-                throw new NotImplementedException();
+                throw Assert.Unreachable;
             }
     
             public bool Contains(KeyValuePair<TKey, TValue> item) {
-                // TODO:
-                throw new NotImplementedException();
+                throw Assert.Unreachable;
             }
     
             public void CopyTo(KeyValuePair<TKey, TValue>[] array, int arrayIndex) {
-                // TODO:
-                throw new NotImplementedException();
+                throw Assert.Unreachable;
             }
     
             [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1065:DoNotRaiseExceptionsInUnexpectedLocations")] // TODO: fix
             public int Count {
                 get {
-                    // TODO:
-                    throw new NotImplementedException();
+                    throw Assert.Unreachable;
                 }
             }
     
             [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1065:DoNotRaiseExceptionsInUnexpectedLocations")] // TODO: fix
             public bool IsReadOnly {
                 get {
-                    // TODO:
-                    throw new NotImplementedException();
+                    throw Assert.Unreachable;
                 }
             }
     
             public bool Remove(KeyValuePair<TKey, TValue> item) {
-                // TODO:
-                throw new NotImplementedException();
+                throw Assert.Unreachable;
             }
     
-            #endregion
+        #endregion
     
-            #region IEnumerable<KeyValuePair<TKey,TValue>> Members
+        #region IEnumerable<KeyValuePair<TKey,TValue>> Members
     
             public IEnumerator<KeyValuePair<TKey, TValue>> GetEnumerator() {
-                // TODO:
-                throw new NotImplementedException();
+                throw Assert.Unreachable;
             }
     
-            #endregion
+        #endregion
     
-            #region IEnumerable Members
+        #region IEnumerable Members
     
             System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() {
-                // TODO:
-                throw new NotImplementedException();
+                throw Assert.Unreachable;
             }
     
-            #endregion
+        #endregion
             
             // WeakComparer treats WeakObject as transparent envelope
             sealed class WeakComparer<T> : IEqualityComparer<T> {

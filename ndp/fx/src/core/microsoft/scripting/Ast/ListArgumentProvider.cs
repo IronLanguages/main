@@ -17,6 +17,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Linq.Expressions;
+using System.Dynamic.Utils;
 
 namespace System.Linq.Expressions {
     /// <summary>
@@ -55,11 +56,11 @@ namespace System.Linq.Expressions {
         }
 
         public void Insert(int index, Expression item) {
-            throw new NotImplementedException();
+            throw Assert.Unreachable;
         }
 
         public void RemoveAt(int index) {
-            throw new NotImplementedException();
+            throw Assert.Unreachable;
         }
 
         public Expression this[int index] {
@@ -71,7 +72,7 @@ namespace System.Linq.Expressions {
                 return _provider.GetArgument(index);
             }
             set {
-                throw new NotImplementedException();
+                throw Assert.Unreachable;
             }
         }
 
@@ -80,11 +81,11 @@ namespace System.Linq.Expressions {
         #region ICollection<Expression> Members
 
         public void Add(Expression item) {
-            throw new NotImplementedException();
+            throw Assert.Unreachable;
         }
 
         public void Clear() {
-            throw new NotImplementedException();
+            throw Assert.Unreachable;
         }
 
         public bool Contains(Expression item) {
@@ -107,7 +108,7 @@ namespace System.Linq.Expressions {
         }
 
         public bool Remove(Expression item) {
-            throw new NotImplementedException();
+            throw Assert.Unreachable;
         }
 
         #endregion

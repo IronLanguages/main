@@ -231,6 +231,7 @@ namespace System.Linq.Expressions {
             return MakeUnary(unaryType, operand, type, null);
         }
         //CONFORMING
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity")]
         public static UnaryExpression MakeUnary(ExpressionType unaryType, Expression operand, Type type, MethodInfo method) {
             switch (unaryType) {
                 case ExpressionType.Negate:
@@ -239,6 +240,8 @@ namespace System.Linq.Expressions {
                     return NegateChecked(operand, method);
                 case ExpressionType.Not:
                     return Not(operand, method);
+                case ExpressionType.OnesComplement:
+                    return OnesComplement(operand, method);
                 case ExpressionType.ArrayLength:
                     return ArrayLength(operand);
                 case ExpressionType.Convert:
@@ -428,6 +431,22 @@ namespace System.Linq.Expressions {
         }
 
         //CONFORMING
+        public static UnaryExpression OnesComplement(Expression expression) {
+            return OnesComplement(expression, null);
+        }
+        //CONFORMING
+        public static UnaryExpression OnesComplement(Expression expression, MethodInfo method) {
+            RequiresCanRead(expression, "expression");
+            if (method == null) {
+                if (TypeUtils.IsInteger(expression.Type)) {
+                    return new UnaryExpression(ExpressionType.OnesComplement, expression, expression.Type, null);
+                }
+                return GetUserDefinedUnaryOperatorOrThrow(ExpressionType.OnesComplement, "op_OnesComplement", expression);
+            }
+            return GetMethodBasedUnaryOperator(ExpressionType.OnesComplement, expression, method);
+        }
+
+        //CONFORMING
         public static UnaryExpression TypeAs(Expression expression, Type type) {
             RequiresCanRead(expression, "expression");
             ContractUtils.RequiresNotNull(type, "type");
@@ -458,13 +477,45 @@ namespace System.Linq.Expressions {
             if (method == null) {
                 ContractUtils.RequiresNotNull(type, "type");
                 if (TypeUtils.HasIdentityPrimitiveOrNullableConversion(expression.Type, type) ||
-                    TypeUtils.HasReferenceConversion(expression.Type, type)) {
+                    HasReferenceConversion(expression.Type, type)) {
                     return new UnaryExpression(ExpressionType.Convert, expression, type, null);
                 }
                 return GetUserDefinedCoercionOrThrow(ExpressionType.Convert, expression, type);
             }
             return GetMethodBasedCoercionOperator(ExpressionType.Convert, expression, type, method);
         }
+
+        //CONFORMING
+        private static bool HasReferenceConversion(Type source, Type dest) {
+            Debug.Assert(source != null && dest != null);
+
+            Type nnSourceType = TypeUtils.GetNonNullableType(source);
+            Type nnDestType = TypeUtils.GetNonNullableType(dest);
+
+            //void can only be converted to void
+            if (source == typeof(void) && dest != typeof(void)) {
+                return false;
+            }
+
+            // Down conversion
+            if (nnSourceType.IsAssignableFrom(nnDestType)) {
+                return true;
+            }
+            // Up conversion
+            if (nnDestType.IsAssignableFrom(nnSourceType)) {
+                return true;
+            }
+            // Interface conversion
+            if (source.IsInterface || dest.IsInterface) {
+                return true;
+            }
+            // Object conversion
+            if (source == typeof(object) || dest == typeof(object)) {
+                return true;
+            }
+            return false;
+        }
+
 
         //CONFORMING
         public static UnaryExpression ConvertChecked(Expression expression, Type type) {
@@ -478,7 +529,7 @@ namespace System.Linq.Expressions {
                 if (TypeUtils.HasIdentityPrimitiveOrNullableConversion(expression.Type, type)) {
                     return new UnaryExpression(ExpressionType.ConvertChecked, expression, type, null);
                 }
-                if (TypeUtils.HasReferenceConversion(expression.Type, type)) {
+                if (HasReferenceConversion(expression.Type, type)) {
                     return new UnaryExpression(ExpressionType.Convert, expression, type, null);
                 }
                 return GetUserDefinedCoercionOrThrow(ExpressionType.ConvertChecked, expression, type);

@@ -1,4 +1,4 @@
-﻿/* ****************************************************************************
+/* ****************************************************************************
  *
  * Copyright (c) Microsoft Corporation. 
  *
@@ -212,6 +212,9 @@ namespace System.Linq.Expressions.Compiler {
                     result = RewriteTryExpression(node, stack);
                     break;
                 case ExpressionType.Unbox:
+                    result = RewriteUnaryExpression(node, stack);
+                    break;
+                case ExpressionType.OnesComplement:
                     result = RewriteUnaryExpression(node, stack);
                     break;
                 case ExpressionType.AddAssign:

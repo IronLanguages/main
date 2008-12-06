@@ -1,4 +1,4 @@
-﻿/* ****************************************************************************
+/* ****************************************************************************
  *
  * Copyright (c) Microsoft Corporation. 
  *
@@ -104,6 +104,7 @@ namespace System.Linq.Expressions {
         PostIncrementAssign,
         PostDecrementAssign,
         TypeEqual,
+        OnesComplement,
 
         // *** END GENERATED CODE ***
 

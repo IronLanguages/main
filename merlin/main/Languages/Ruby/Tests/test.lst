@@ -1,0 +1,126 @@
+# ****************************************************************************
+#
+# Copyright (c) Microsoft Corporation. 
+#
+# This source code is subject to terms and conditions of the Microsoft Public License. A 
+# copy of the license can be found in the License.html file at the root of this distribution. If 
+# you cannot locate the  Microsoft Public License, please send an email to 
+# ironruby@microsoft.com. By using this source code in any fashion, you are agreeing to be bound 
+# by the terms of the Microsoft Public License.
+#
+# You must not remove this notice, or any other, from this software.
+#
+#
+# ****************************************************************************
+
+#
+# format spec: test, drivers, tags
+#     - drivers:    <empty> | all | none | cruby | ironm1 | coreclr
+# all character !!lowercased!! (ctrl+u)
+#
+
+# dirs: builtin,interop,runtime
+
+#                                                           #####               ###
+
+# begin
+builtin\array\test_array.rb                                 all
+builtin\class\test_class.rb                                 all
+builtin\enumerable\test_enumerable.rb                       all
+builtin\hash\test_hash.rb                                   all
+builtin\module\test_module.rb                               all
+builtin\object\test_objects.rb                              all
+builtin\range\test_range.rb                                 all
+builtin\string\test_string.rb                               all
+builtin\stringscanner\test_strscan.rb                       cruby-
+builtin\test_dir.rb                                         coreclr-
+# end 
+
+# begin
+interop\test_basic.rb                                       ironm3
+# end
+
+# begin
+runtime\block\test_block_given.rb                           all
+runtime\block\test_break.rb                                 all
+runtime\block\test_closure.rb                               all
+runtime\block\test_create_invoke.rb                         all
+runtime\block\test_next.rb                                  all
+runtime\block\test_redo.rb                                  all
+runtime\block\test_retry.rb                                 all
+runtime\block\test_return.rb                                all
+runtime\block\test_yield.rb                                 all
+
+runtime\class\test_access_ctrl.rb                           cruby
+runtime\class\test_change_self.rb                           all
+runtime\class\test_class_variables.rb                       all
+runtime\class\test_class_variables2.rb                      all
+runtime\class\test_const.rb                                 all
+runtime\class\test_const_vars_basic.rb                      all
+runtime\class\test_const_vars_in_singleton.rb               all
+runtime\class\test_declare.rb                               all
+runtime\class\test_find_const_in_methods.rb                 all
+runtime\class\test_find_method.rb                           all
+runtime\class\test_include.rb                               all
+runtime\class\test_instance_variables.rb                    all
+runtime\class\test_methods.rb                               all
+runtime\class\test_nested_const_vars.rb                     cruby
+runtime\class\test_new.rb                                   all
+runtime\class\test_self.rb                                  all
+runtime\class\test_singleton_basic.rb                       all
+runtime\class\test_top_level.rb                             all
+runtime\class\test_variables.rb                             all
+runtime\class\test_virtual_attr.rb                          all
+
+runtime\exception\test_else.rb                              all
+runtime\exception\test_ensure.rb                            all
+runtime\exception\test_final_value.rb                       all
+runtime\exception\test_lifetime.rb                          all
+runtime\exception\test_match.rb                             all
+runtime\exception\test_nested.rb                            all
+runtime\exception\test_raise_nothing.rb                     all
+runtime\exception\test_raise_string.rb                      all
+runtime\exception\test_raise_thing.rb                       all
+runtime\exception\test_regression.rb                        all
+runtime\exception\test_rescue_many.rb                       all
+runtime\exception\test_rescue_modifier.rb                   all
+runtime\exception\test_rescue_nothing.rb                    all
+runtime\exception\test_rescue_sequence.rb                   all
+runtime\exception\test_rescue_unusual.rb                    all
+runtime\exception\test_retry.rb                             all
+runtime\exception\test_return.rb                            cruby-
+runtime\exception\test_scope.rb                             all
+
+runtime\expression\test_assignment.rb                       all
+runtime\expression\test_boolean_expr.rb                     all
+runtime\expression\test_break_in_loop.rb                    all
+runtime\expression\test_case.rb                             all
+runtime\expression\test_for_loop.rb                         all
+runtime\expression\test_if.rb                               all
+runtime\expression\test_nested_assignment.rb                all
+runtime\expression\test_next_in_loop.rb                     all
+runtime\expression\test_parallel_assignment.rb              all
+runtime\expression\test_range_as_bool.rb                    all
+runtime\expression\test_redo_in_loop.rb                     all
+runtime\expression\test_retry_in_loop.rb                    all
+runtime\expression\test_while_until.rb                      all
+
+runtime\method\test_coverage.rb                             all
+runtime\method\test_defaultvalue.rb                         all
+runtime\method\test_mixed_arg.rb                            all
+runtime\method\test_normal_arg.rb                           all
+runtime\method\test_pass_args.rb                            all
+runtime\method\test_recursive.rb                            all
+runtime\method\test_return_value.rb                         all
+runtime\method\test_var_arg.rb                              all
+runtime\method\test_super.rb                                all
+
+runtime\module\test_local_in_module.rb                      all
+runtime\module\test_module_action.rb                        all
+runtime\module\test_module_path.rb                          all
+runtime\module\test_require_bad_module.rb                   none
+runtime\module\test_require_cascade.rb                      none
+runtime\module\test_require_itself.rb                       all
+runtime\module\test_require_three_modules.rb                all
+
+# end

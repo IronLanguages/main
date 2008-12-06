@@ -18,6 +18,7 @@
 namespace IronRuby.StandardLibrary.Yaml {
     public sealed class YamlLibraryInitializer : IronRuby.Builtins.LibraryInitializer {
         protected override void LoadModules() {
+            IronRuby.Builtins.RubyClass classRef0 = GetClass(typeof(IronRuby.Builtins.RubyObject));
             
             
             ExtendModule(typeof(IronRuby.Builtins.FalseClass), new System.Action<IronRuby.Builtins.RubyModule>(LoadIronRuby__Builtins__FalseClass_Instance), null, IronRuby.Builtins.RubyModule.EmptyArray);
@@ -40,8 +41,8 @@ namespace IronRuby.StandardLibrary.Yaml {
             ExtendModule(typeof(System.Exception), new System.Action<IronRuby.Builtins.RubyModule>(LoadSystem__Exception_Instance), null, IronRuby.Builtins.RubyModule.EmptyArray);
             ExtendClass(typeof(System.Object), new System.Action<IronRuby.Builtins.RubyModule>(LoadSystem__Object_Instance), null, IronRuby.Builtins.RubyModule.EmptyArray, null);
             IronRuby.Builtins.RubyModule def1 = DefineGlobalModule("YAML", typeof(IronRuby.StandardLibrary.Yaml.RubyYaml), null, new System.Action<IronRuby.Builtins.RubyModule>(LoadYAML_Class), IronRuby.Builtins.RubyModule.EmptyArray);
-            IronRuby.Builtins.RubyClass def2 = DefineClass("YAML::Stream", typeof(IronRuby.StandardLibrary.Yaml.YamlStream), Context.ObjectClass, new System.Action<IronRuby.Builtins.RubyModule>(LoadYAML__Stream_Instance), null, IronRuby.Builtins.RubyModule.EmptyArray, new System.Delegate[] {
-                new System.Func<IronRuby.Builtins.RubyClass, IronRuby.Builtins.Hash, IronRuby.StandardLibrary.Yaml.YamlStream>(IronRuby.StandardLibrary.Yaml.RubyYaml.YamlStreamOps.CreateStream),
+            IronRuby.Builtins.RubyClass def2 = DefineClass("YAML::Stream", typeof(IronRuby.StandardLibrary.Yaml.RubyYaml.YamlStream), true, classRef0, new System.Action<IronRuby.Builtins.RubyModule>(LoadYAML__Stream_Instance), null, IronRuby.Builtins.RubyModule.EmptyArray, new System.Delegate[] {
+                new System.Func<IronRuby.Builtins.RubyClass, IronRuby.Builtins.Hash, IronRuby.StandardLibrary.Yaml.RubyYaml.YamlStream>(IronRuby.StandardLibrary.Yaml.RubyYaml.YamlStream.CreateStream),
             });
             def1.SetConstant("Stream", def2);
         }
@@ -361,39 +362,39 @@ namespace IronRuby.StandardLibrary.Yaml {
         private void LoadYAML__Stream_Instance(IronRuby.Builtins.RubyModule/*!*/ module) {
             
             module.DefineLibraryMethod("[]", 0x11, new System.Delegate[] {
-                new System.Func<IronRuby.Runtime.RubyContext, IronRuby.StandardLibrary.Yaml.YamlStream, System.Object, System.Object>(IronRuby.StandardLibrary.Yaml.RubyYaml.YamlStreamOps.GetDocument),
+                new System.Func<IronRuby.Runtime.RubyContext, IronRuby.StandardLibrary.Yaml.RubyYaml.YamlStream, System.Int32, System.Object>(IronRuby.StandardLibrary.Yaml.RubyYaml.YamlStream.GetDocument),
             });
             
             module.DefineLibraryMethod("add", 0x11, new System.Delegate[] {
-                new System.Func<IronRuby.Runtime.RubyContext, IronRuby.StandardLibrary.Yaml.YamlStream, System.Object, IronRuby.Builtins.RubyArray>(IronRuby.StandardLibrary.Yaml.RubyYaml.YamlStreamOps.Add),
+                new System.Func<IronRuby.Runtime.RubyContext, IronRuby.StandardLibrary.Yaml.RubyYaml.YamlStream, System.Object, IronRuby.Builtins.RubyArray>(IronRuby.StandardLibrary.Yaml.RubyYaml.YamlStream.Add),
             });
             
             module.DefineLibraryMethod("documents", 0x11, new System.Delegate[] {
-                new System.Func<IronRuby.Runtime.RubyContext, IronRuby.StandardLibrary.Yaml.YamlStream, System.Object>(IronRuby.StandardLibrary.Yaml.RubyYaml.YamlStreamOps.GetDocuments),
+                new System.Func<IronRuby.StandardLibrary.Yaml.RubyYaml.YamlStream, IronRuby.Builtins.RubyArray>(IronRuby.StandardLibrary.Yaml.RubyYaml.YamlStream.GetDocuments),
             });
             
             module.DefineLibraryMethod("documents=", 0x11, new System.Delegate[] {
-                new System.Func<IronRuby.Runtime.RubyContext, IronRuby.StandardLibrary.Yaml.YamlStream, IronRuby.Builtins.RubyArray, System.Object>(IronRuby.StandardLibrary.Yaml.RubyYaml.YamlStreamOps.SetDocuments),
+                new System.Func<IronRuby.StandardLibrary.Yaml.RubyYaml.YamlStream, IronRuby.Builtins.RubyArray, IronRuby.Builtins.RubyArray>(IronRuby.StandardLibrary.Yaml.RubyYaml.YamlStream.SetDocuments),
             });
             
             module.DefineLibraryMethod("edit", 0x11, new System.Delegate[] {
-                new System.Func<IronRuby.Runtime.RubyContext, IronRuby.StandardLibrary.Yaml.YamlStream, System.Object, System.Object, System.Object>(IronRuby.StandardLibrary.Yaml.RubyYaml.YamlStreamOps.EditDocument),
+                new System.Func<IronRuby.Runtime.RubyContext, IronRuby.StandardLibrary.Yaml.RubyYaml.YamlStream, System.Int32, System.Object, System.Object>(IronRuby.StandardLibrary.Yaml.RubyYaml.YamlStream.EditDocument),
             });
             
             module.DefineLibraryMethod("emit", 0x11, new System.Delegate[] {
-                new System.Func<IronRuby.Runtime.RubyContext, IronRuby.StandardLibrary.Yaml.YamlStream, IronRuby.Builtins.RubyIO, System.Object>(IronRuby.StandardLibrary.Yaml.RubyYaml.YamlStreamOps.Emit),
+                new System.Func<IronRuby.Runtime.RubyContext, IronRuby.StandardLibrary.Yaml.RubyYaml.YamlStream, IronRuby.Builtins.RubyIO, System.Object>(IronRuby.StandardLibrary.Yaml.RubyYaml.YamlStream.Emit),
             });
             
             module.DefineLibraryMethod("inspect", 0x11, new System.Delegate[] {
-                new System.Func<IronRuby.Runtime.RubyContext, IronRuby.StandardLibrary.Yaml.YamlStream, IronRuby.Builtins.MutableString>(IronRuby.StandardLibrary.Yaml.RubyYaml.YamlStreamOps.Inspect),
+                new System.Func<IronRuby.Runtime.RubyContext, IronRuby.StandardLibrary.Yaml.RubyYaml.YamlStream, IronRuby.Builtins.MutableString>(IronRuby.StandardLibrary.Yaml.RubyYaml.YamlStream.Inspect),
             });
             
             module.DefineLibraryMethod("options", 0x11, new System.Delegate[] {
-                new System.Func<IronRuby.Runtime.RubyContext, IronRuby.StandardLibrary.Yaml.YamlStream, System.Object>(IronRuby.StandardLibrary.Yaml.RubyYaml.YamlStreamOps.GetOptions),
+                new System.Func<IronRuby.StandardLibrary.Yaml.RubyYaml.YamlStream, IronRuby.Builtins.Hash>(IronRuby.StandardLibrary.Yaml.RubyYaml.YamlStream.GetOptions),
             });
             
             module.DefineLibraryMethod("options=", 0x11, new System.Delegate[] {
-                new System.Func<IronRuby.Runtime.RubyContext, IronRuby.StandardLibrary.Yaml.YamlStream, IronRuby.Builtins.Hash, System.Object>(IronRuby.StandardLibrary.Yaml.RubyYaml.YamlStreamOps.SetOptions),
+                new System.Func<IronRuby.StandardLibrary.Yaml.RubyYaml.YamlStream, IronRuby.Builtins.Hash, IronRuby.Builtins.Hash>(IronRuby.StandardLibrary.Yaml.RubyYaml.YamlStream.SetOptions),
             });
             
         }

@@ -4,6 +4,7 @@
 using System;
 using System.Text;
 using System.Collections.Generic;
+using System.Diagnostics;
 
 
 namespace gpcc
@@ -11,14 +12,14 @@ namespace gpcc
 	public class Production
 	{
 		public int num;
-		public NonTerminal lhs;
-		public List<Symbol> rhs = new List<Symbol>();
+		public readonly NonTerminal/*!*/ lhs;
+        public readonly List<Symbol>/*!*/ rhs = new List<Symbol>();
 		public SemanticAction semanticAction;
 		public Precedence prec = null;
 
-
-		public Production(NonTerminal lhs)
+		public Production(NonTerminal/*!*/ lhs)
 		{
+            Debug.Assert(lhs != null);
 			this.lhs = lhs;
 			lhs.productions.Add(this);
 		}

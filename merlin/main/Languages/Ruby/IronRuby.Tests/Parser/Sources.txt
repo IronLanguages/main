@@ -1,0 +1,2 @@
+﻿%MERLIN_ROOT%\Languages\Ruby
+%MERLIN_ROOT%\..\External\Languages\Ruby

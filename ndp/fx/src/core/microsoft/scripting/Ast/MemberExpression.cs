@@ -57,7 +57,7 @@ namespace System.Linq.Expressions {
         }
 
         internal virtual MemberInfo GetMember() {
-            throw new NotImplementedException();
+            throw Assert.Unreachable;
         }
 
         internal override Expression Accept(ExpressionVisitor visitor) {
@@ -132,7 +132,7 @@ namespace System.Linq.Expressions {
                 fi = expression.Type.GetField(fieldName, BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.IgnoreCase | BindingFlags.FlattenHierarchy);
             }
             if (fi == null) {
-                throw Error.FieldNotDefinedForType(fieldName, expression.Type);
+                throw Error.InstanceFieldNotDefinedForType(fieldName, expression.Type);
             }
             return Expression.Field(expression, fi);
         }
@@ -166,7 +166,7 @@ namespace System.Linq.Expressions {
                 pi = expression.Type.GetProperty(propertyName, BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.IgnoreCase | BindingFlags.FlattenHierarchy);
             }
             if (pi == null) {
-                throw Error.PropertyNotDefinedForType(propertyName, expression.Type);
+                throw Error.InstancePropertyNotDefinedForType(propertyName, expression.Type);
             }
             return Property(expression, pi);
         }

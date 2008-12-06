@@ -601,6 +601,7 @@ namespace System.Linq.Expressions {
                 case ExpressionType.Convert:
                 case ExpressionType.PreIncrementAssign:
                 case ExpressionType.PreDecrementAssign:
+                case ExpressionType.OnesComplement:
                     return 13;
 
                 case ExpressionType.PostIncrementAssign:
@@ -680,6 +681,7 @@ namespace System.Linq.Expressions {
             return node;
         }
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity")]
         protected internal override Expression VisitUnary(UnaryExpression node) {
             switch (node.NodeType) {
                 case ExpressionType.Convert:
@@ -692,6 +694,9 @@ namespace System.Linq.Expressions {
                     break;
                 case ExpressionType.Not:
                     Out(node.Type == typeof(bool) ? "!" : "~");
+                    break;
+                case ExpressionType.OnesComplement:
+                    Out("~");
                     break;
                 case ExpressionType.Negate:
                     Out("-");

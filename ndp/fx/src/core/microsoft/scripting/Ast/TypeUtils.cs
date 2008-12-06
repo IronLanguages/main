@@ -190,45 +190,6 @@ namespace System.Dynamic.Utils {
         }
 
         //CONFORMING
-        internal static bool HasReferenceConversion(Type source, Type dest) {
-            Debug.Assert(source != null && dest != null);
-
-            Type nnSourceType = GetNonNullableType(source);
-            Type nnDestType = GetNonNullableType(dest);
-
-            //void can only be converted to void
-            if (source == typeof(void) && dest != typeof(void)) {
-                return false;
-            }
-
-            // Down conversion
-            if (nnSourceType.IsAssignableFrom(nnDestType)) {
-                return true;
-            }
-            // Up conversion
-            if (nnDestType.IsAssignableFrom(nnSourceType)) {
-                return true;
-            }
-            // Interface conversion
-            if (source.IsInterface || dest.IsInterface) {
-                return true;
-            }
-            // Object conversion
-            if (source == typeof(object) || dest == typeof(object)) {
-                return true;
-            }
-            //
-            //REVIEW: this conversion rule makes None type special.
-            // 
-            // None conversion. 
-            // None always has a value of "null" so it should be convertible to any reference type
-            if (source == typeof(Null) && (dest.IsClass || dest.IsInterface)) {
-                return true;
-            }
-            return false;
-        }
-
-        //CONFORMING
         internal static bool HasIdentityPrimitiveOrNullableConversion(Type source, Type dest) {
             Debug.Assert(source != null && dest != null);
 

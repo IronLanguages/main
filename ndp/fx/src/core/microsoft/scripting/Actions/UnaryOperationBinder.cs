@@ -68,6 +68,7 @@ namespace System.Dynamic {
                 case ExpressionType.Not:
                 case ExpressionType.Decrement:
                 case ExpressionType.Increment:
+                case ExpressionType.OnesComplement:
 
                 // *** END GENERATED CODE ***
 

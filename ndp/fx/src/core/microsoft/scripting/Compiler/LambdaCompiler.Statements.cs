@@ -229,7 +229,17 @@ namespace System.Linq.Expressions.Compiler {
             }
             throw Error.RethrowRequiresCatch();
         }
+
         #region TryStatement
+
+        private void CheckTry() {
+            // Try inside a filter is not verifiable
+            for (LabelBlockInfo j = _labelBlock; j != null; j = j.Parent) {
+                if (j.Kind == LabelBlockKind.Filter) {
+                    throw Error.TryNotAllowedInFilter();
+                }
+            }
+        }
 
         private void EmitSaveExceptionOrPop(CatchBlock cb) {
             if (cb.Variable != null) {
@@ -244,6 +254,8 @@ namespace System.Linq.Expressions.Compiler {
 
         private void EmitTryExpression(Expression expr) {
             var node = (TryExpression)expr;
+
+            CheckTry();
 
             //******************************************************************
             // 1. ENTERING TRY
@@ -296,22 +308,12 @@ namespace System.Linq.Expressions.Compiler {
 
                 if (node.Finally != null) {
                     _ilg.BeginFinallyBlock();
-                } else if (IsDynamicMethod) {
-                    // dynamic methods don't support fault blocks so we
-                    // generate a catch/rethrow.
-                    _ilg.BeginCatchBlock(typeof(Exception));
                 } else {
                     _ilg.BeginFaultBlock();
                 }
 
                 // Emit the body
                 EmitExpressionAsVoid(node.Finally ?? node.Fault);
-
-                // rethrow the exception if we have a catch in a dynamic method.
-                if (node.Fault != null && IsDynamicMethod) {
-                    // rethrow when we generated a catch
-                    _ilg.Emit(OpCodes.Rethrow);
-                }
 
                 _ilg.EndExceptionBlock();
                 PopLabelBlock(LabelBlockKind.Finally);
@@ -332,56 +334,41 @@ namespace System.Linq.Expressions.Compiler {
         /// variable is provided.
         /// </summary>
         private void EmitCatchStart(CatchBlock cb) {
-            if (cb.Filter != null && !IsDynamicMethod) {
-                // emit filter block as filter.  Filter blocks are 
-                // untyped so we need to do the type check ourselves.  
-                _ilg.BeginExceptFilterBlock();
-
-                Label endFilter = _ilg.DefineLabel();
-                Label rightType = _ilg.DefineLabel();
-
-                // skip if it's not our exception type, but save
-                // the exception if it is so it's available to the
-                // filter
-                _ilg.Emit(OpCodes.Isinst, cb.Test);
-                _ilg.Emit(OpCodes.Dup);
-                _ilg.Emit(OpCodes.Brtrue, rightType);
-                _ilg.Emit(OpCodes.Pop);
-                _ilg.Emit(OpCodes.Ldc_I4_0);
-                _ilg.Emit(OpCodes.Br, endFilter);
-
-                // it's our type, save it and emit the filter.
-                _ilg.MarkLabel(rightType);
-                EmitSaveExceptionOrPop(cb);
-                PushLabelBlock(LabelBlockKind.Filter);
-                EmitExpression(cb.Filter);
-                PopLabelBlock(LabelBlockKind.Filter);
-
-                // begin the catch, clear the exception, we've 
-                // already saved it
-                _ilg.MarkLabel(endFilter);
-                _ilg.BeginCatchBlock(null);
-                _ilg.Emit(OpCodes.Pop);
-            } else {
+            if (cb.Filter == null) {
                 _ilg.BeginCatchBlock(cb.Test);
-
                 EmitSaveExceptionOrPop(cb);
-
-                if (cb.Filter != null) {
-                    Label catchBlock = _ilg.DefineLabel();
-
-                    // filters aren't supported in dynamic methods so instead
-                    // emit the filter as if check, if (!expr) rethrow
-                    PushLabelBlock(LabelBlockKind.Filter);
-                    EmitExpressionAndBranch(true, cb.Filter, catchBlock);
-                    PopLabelBlock(LabelBlockKind.Filter);
-
-                    _ilg.Emit(OpCodes.Rethrow);
-                    _ilg.MarkLabel(catchBlock);
-
-                    // catch body continues
-                }
+                return;
             }
+
+            // emit filter block. Filter blocks are untyped so we need to do
+            // the type check ourselves.  
+            _ilg.BeginExceptFilterBlock();
+
+            Label endFilter = _ilg.DefineLabel();
+            Label rightType = _ilg.DefineLabel();
+
+            // skip if it's not our exception type, but save
+            // the exception if it is so it's available to the
+            // filter
+            _ilg.Emit(OpCodes.Isinst, cb.Test);
+            _ilg.Emit(OpCodes.Dup);
+            _ilg.Emit(OpCodes.Brtrue, rightType);
+            _ilg.Emit(OpCodes.Pop);
+            _ilg.Emit(OpCodes.Ldc_I4_0);
+            _ilg.Emit(OpCodes.Br, endFilter);
+
+            // it's our type, save it and emit the filter.
+            _ilg.MarkLabel(rightType);
+            EmitSaveExceptionOrPop(cb);
+            PushLabelBlock(LabelBlockKind.Filter);
+            EmitExpression(cb.Filter);
+            PopLabelBlock(LabelBlockKind.Filter);
+
+            // begin the catch, clear the exception, we've 
+            // already saved it
+            _ilg.MarkLabel(endFilter);
+            _ilg.BeginCatchBlock(null);
+            _ilg.Emit(OpCodes.Pop);
         }
 
         #endregion

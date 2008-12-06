@@ -26,7 +26,7 @@ using Microsoft.Scripting.Runtime;
 namespace IronRuby.StandardLibrary.Yaml {
 
     [RubyModule("YAML")]    
-    public static class RubyYaml {
+    public static partial class RubyYaml {
         private static readonly CallSite<Func<CallSite, RubyContext, RubyModule, object, object>> _New = CallSite<Func<CallSite, RubyContext, RubyModule, object, object>>.Create(LibrarySites.InstanceCallAction("new", 1));
         private static readonly CallSite<Func<CallSite, RubyContext, object, object, object>> _Add = CallSite<Func<CallSite, RubyContext, object, object, object>>.Create(LibrarySites.InstanceCallAction("add", 1));
         private static readonly CallSite<Func<CallSite, RubyContext, object, object>> _Emit = CallSite<Func<CallSite, RubyContext, object, object>>.Create(LibrarySites.InstanceCallAction("emit"));
@@ -315,69 +315,6 @@ namespace IronRuby.StandardLibrary.Yaml {
 
             throw RubyExceptions.CreateTypeError("instance of IO needed");
         }
-
-        /// <summary>
-        /// YAML documents collection. Allows to collect and emit YAML documents.
-        /// </summary>
-        [RubyClass("Stream", Extends = typeof(YamlStream))]
-        public static class YamlStreamOps {
-
-            [RubyConstructor]
-            public static YamlStream CreateStream(RubyClass/*!*/ self, [Optional]Hash options) {
-                return new YamlStream(options ?? new Hash(self.Context.EqualityComparer));
-            }
-
-            [RubyMethod("add")]
-            public static RubyArray Add(RubyContext/*!*/ context, YamlStream/*!*/ self, object document) {
-                return IListOps.Append(context, self.Documents, document) as RubyArray;
-            }
-
-            [RubyMethod("[]")]
-            public static object GetDocument(RubyContext/*!*/ context, YamlStream/*!*/ self, object index) {
-                return IListOps.GetElement(self.Documents, Protocols.CastToFixnum(context, index));
-            }
-
-            [RubyMethod("edit")]
-            public static object EditDocument(RubyContext/*!*/ context, YamlStream/*!*/ self, object index, object document) {
-                return IListOps.SetElement(context, self.Documents, Protocols.CastToFixnum(context, index), document);
-            }
-
-            [RubyMethod("documents")]
-            public static object GetDocuments(RubyContext/*!*/ context, YamlStream/*!*/ self) {
-                return self.Documents;
-            }
-
-            [RubyMethod("documents=")]
-            public static object SetDocuments(RubyContext/*!*/ context, YamlStream/*!*/ self, RubyArray value) {
-                return self.Documents = value;
-            }
-            
-            [RubyMethod("options")]
-            public static object GetOptions(RubyContext/*!*/ context, YamlStream/*!*/ self) {
-                return self.Options;
-            }
-
-            [RubyMethod("options=")]
-            public static object SetOptions(RubyContext/*!*/ context, YamlStream/*!*/ self, Hash value) {
-                return self.Options = value;
-            }
-
-            [RubyMethod("emit")]
-            public static object Emit(RubyContext/*!*/ context, YamlStream/*!*/ self, [Optional]RubyIO io) {
-                return RubyYaml.DumpAll(context, self.Documents, io);
-            }
-
-            [RubyMethod("inspect")]
-            public static MutableString Inspect(RubyContext/*!*/ context, YamlStream/*!*/ self) {
-                MutableString result = MutableString.CreateMutable("#<YAML::Stream:");
-                RubyUtils.AppendFormatHexObjectId(result, RubyUtils.GetObjectId(context, self))
-                .Append(" @documents=")
-                .Append(RubySites.Inspect(context, self.Documents))
-                .Append(", options=")
-                .Append(RubySites.Inspect(context, self.Options))
-                .Append('>');
-                return result;
-            }
-        }        
+   
     }
 }

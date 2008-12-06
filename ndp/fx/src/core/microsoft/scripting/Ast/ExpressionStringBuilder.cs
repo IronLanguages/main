@@ -687,6 +687,9 @@ namespace System.Linq.Expressions {
                 case ExpressionType.PreDecrementAssign:
                     Out("--");
                     break;
+                case ExpressionType.OnesComplement:
+                    Out("~(");
+                    break;
                 default:
                     Out(node.NodeType.ToString());
                     Out("(");

@@ -488,6 +488,22 @@ namespace System.Linq.Expressions {
         }
 
         /// <summary>
+        /// A string like  "The return type of overload method for operator '{0}' does not match the parameter type of conversion method '{1}'."
+        /// </summary>
+        internal static string OverloadOperatorTypeDoesNotMatchConversionType(object p0, object p1) {
+            return FormatString("The return type of overload method for operator '{0}' does not match the parameter type of conversion method '{1}'.", p0, p1);
+        }
+
+        /// <summary>
+        /// A string like  "Conversion is not supported for arithmetic types without operator overloading."
+        /// </summary>
+        internal static string ConversionIsNotSupportedForArithmeticTypes {
+            get {
+                return "Conversion is not supported for arithmetic types without operator overloading.";
+            }
+        }
+
+        /// <summary>
         /// A string like  "Argument must be array"
         /// </summary>
         internal static string ArgumentMustBeArray {
@@ -676,6 +692,13 @@ namespace System.Linq.Expressions {
         }
 
         /// <summary>
+        /// A string like  "Instance field '{0}' is not defined for type '{1}'"
+        /// </summary>
+        internal static string InstanceFieldNotDefinedForType(object p0, object p1) {
+            return FormatString("Instance field '{0}' is not defined for type '{1}'", p0, p1);
+        }
+
+        /// <summary>
         /// A string like  "Field '{0}.{1}' is not defined for type '{2}'"
         /// </summary>
         internal static string FieldInfoNotDefinedForType(object p0, object p1, object p2) {
@@ -827,6 +850,20 @@ namespace System.Linq.Expressions {
         /// </summary>
         internal static string PropertyNotDefinedForType(object p0, object p1) {
             return FormatString("Property '{0}' is not defined for type '{1}'", p0, p1);
+        }
+
+        /// <summary>
+        /// A string like  "Instance property '{0}' is not defined for type '{1}'"
+        /// </summary>
+        internal static string InstancePropertyNotDefinedForType(object p0, object p1) {
+            return FormatString("Instance property '{0}' is not defined for type '{1}'", p0, p1);
+        }
+
+        /// <summary>
+        /// A string like  "Property '{0}.{1}' is not defined for type '{2}'"
+        /// </summary>
+        internal static string PropertyInfoNotDefinedForType(object p0, object p1, object p2) {
+            return FormatString("Property '{0}.{1}' is not defined for type '{2}'", p0, p1, p2);
         }
 
         /// <summary>
@@ -1281,6 +1318,15 @@ namespace System.Linq.Expressions {
         }
 
         /// <summary>
+        /// A string like  "Try expression is not allowed inside a filter body."
+        /// </summary>
+        internal static string TryNotAllowedInFilter {
+            get {
+                return "Try expression is not allowed inside a filter body.";
+            }
+        }
+
+        /// <summary>
         /// A string like  "When called from '{0}', rewriting a node of type '{1}' should return a non-null value of the same type. Alternatively, override '{2}' and change it to not visit children of this type."
         /// </summary>
         internal static string MustRewriteToSameType(object p0, object p1, object p2) {
@@ -1361,6 +1407,20 @@ namespace System.Linq.Expressions {
         /// </summary>
         internal static Exception OperandTypesDoNotMatchParameters(object p0, object p1) {
             return new InvalidOperationException(Strings.OperandTypesDoNotMatchParameters(p0, p1));
+        }
+
+        /// <summary>
+        /// InvalidOperationException with message like "The return type of overload method for operator '{0}' does not match the parameter type of conversion method '{1}'."
+        /// </summary>
+        internal static Exception OverloadOperatorTypeDoesNotMatchConversionType(object p0, object p1) {
+            return new InvalidOperationException(Strings.OverloadOperatorTypeDoesNotMatchConversionType(p0, p1));
+        }
+
+        /// <summary>
+        /// InvalidOperationException with message like "Conversion is not supported for arithmetic types without operator overloading."
+        /// </summary>
+        internal static Exception ConversionIsNotSupportedForArithmeticTypes() {
+            return new InvalidOperationException(Strings.ConversionIsNotSupportedForArithmeticTypes);
         }
 
         /// <summary>
@@ -1532,6 +1592,13 @@ namespace System.Linq.Expressions {
         }
 
         /// <summary>
+        /// ArgumentException with message like "Instance field '{0}' is not defined for type '{1}'"
+        /// </summary>
+        internal static Exception InstanceFieldNotDefinedForType(object p0, object p1) {
+            return new ArgumentException(Strings.InstanceFieldNotDefinedForType(p0, p1));
+        }
+
+        /// <summary>
         /// ArgumentException with message like "Field '{0}.{1}' is not defined for type '{2}'"
         /// </summary>
         internal static Exception FieldInfoNotDefinedForType(object p0, object p1, object p2) {
@@ -1669,6 +1736,20 @@ namespace System.Linq.Expressions {
         /// </summary>
         internal static Exception PropertyNotDefinedForType(object p0, object p1) {
             return new ArgumentException(Strings.PropertyNotDefinedForType(p0, p1));
+        }
+
+        /// <summary>
+        /// ArgumentException with message like "Instance property '{0}' is not defined for type '{1}'"
+        /// </summary>
+        internal static Exception InstancePropertyNotDefinedForType(object p0, object p1) {
+            return new ArgumentException(Strings.InstancePropertyNotDefinedForType(p0, p1));
+        }
+
+        /// <summary>
+        /// ArgumentException with message like "Property '{0}.{1}' is not defined for type '{2}'"
+        /// </summary>
+        internal static Exception PropertyInfoNotDefinedForType(object p0, object p1, object p2) {
+            return new ArgumentException(Strings.PropertyInfoNotDefinedForType(p0, p1, p2));
         }
 
         /// <summary>
@@ -2068,6 +2149,13 @@ namespace System.Linq.Expressions {
         /// </summary>
         internal static Exception RethrowRequiresCatch() {
             return new InvalidOperationException(Strings.RethrowRequiresCatch);
+        }
+
+        /// <summary>
+        /// InvalidOperationException with message like "Try expression is not allowed inside a filter body."
+        /// </summary>
+        internal static Exception TryNotAllowedInFilter() {
+            return new InvalidOperationException(Strings.TryNotAllowedInFilter);
         }
 
         /// <summary>

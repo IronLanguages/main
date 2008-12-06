@@ -146,8 +146,7 @@ namespace gpcc
         {
             GenerateValueType();
             if (GPCG.FORGPLEX) GenerateScannerBaseClass();
-            Console.WriteLine("{2}{3} class {0}: ShiftReduceParser<{1}, {4}>", 
-                name, grammar.ValueTypeName, grammar.Visibility, grammar.PartialMark, grammar.LocationTypeName);
+            Console.WriteLine("{0}{1} class {2}", grammar.Visibility, grammar.PartialMark, name);
             Console.WriteLine("{");
         }
 
@@ -160,7 +159,7 @@ namespace gpcc
 
         private void GenerateInitializeMethod(List<State> states, List<Production> productions)
         {
-            Console.WriteLine("  protected sealed override void Initialize(ParserTables tables)");
+            Console.WriteLine("  private void InitializeGeneratedTables(ParserTables tables)");
             Console.WriteLine("  {");
 
             Console.WriteLine("    tables.ErrorToken = (int){0}.Error;", grammar.TokenName);
@@ -173,22 +172,13 @@ namespace gpcc
             
             Console.WriteLine("    });");
             Console.WriteLine();
-            Console.Write("    tables.RuleLhsNonTerminals = new byte[] {");
-
-            // productions are numbered sequentially starting from 1:
-            for (int i = 0; i < productions.Count; i++) {
-                Debug.Assert(i == productions[i].num - 1);
-                Console.Write(-productions[i].lhs.num);
-                Console.Write(", ");
-            }
-
-            Console.WriteLine("};");
-
-            Console.Write("    tables.RuleRhsLengths = new byte[] {");
+            
+            Console.Write("    tables.Rules = new int[] {");
 
             for (int i = 0; i < productions.Count; i++) {
                 Debug.Assert(i == productions[i].num - 1);
-                Console.Write(productions[i].rhs.Count);
+                Console.Write(((-productions[i].lhs.num) << 16) | productions[i].rhs.Count);
+                
                 Console.Write(", ");
             }
 
@@ -201,7 +191,7 @@ namespace gpcc
         private void GenerateInitializeMetadata(List<Production> productions, Dictionary<string, NonTerminal> nonTerminals) {
             // TODO: parameterize #if symbol
             Console.WriteLine("#if DEBUG");
-            Console.WriteLine("  protected override void InitializeMetadata(ParserTables tables) {");
+            Console.WriteLine("  private void InitializeMetadata(ParserTables tables) {");
 
             // non-terminal names:
             Console.WriteLine("    tables.NonTerminalNames = new string[] {\"\", ");
@@ -311,7 +301,7 @@ namespace gpcc
             int mask = groupSize - 1;
             int groupCount = (productions.Count >> GroupSizeLog) + ((productions.Count & mask) != 0 ? 1 : 0);
 
-            Console.WriteLine("  protected override void DoAction(int action)");
+            Console.WriteLine("  private void DoAction(int action)");
             Console.WriteLine("  {");
 
             List<int> nonEmptyProductionCounts = new List<int>();
@@ -321,7 +311,9 @@ namespace gpcc
                 for (int i = 0; i < groupSize; i++) {
                     int index = (g << GroupSizeLog) + i;
                     if (index >= productions.Count) break;
-                    if (productions[index].semanticAction != null) {
+
+                    // empty rhs with no semantic action must be present in switch (the default action should not be taken);
+                    if (productions[index].semanticAction != null || productions[index].rhs.Count == 0) {
                         nonEmptyCount++;
                     }
                 }
@@ -339,6 +331,7 @@ namespace gpcc
                 }
 
                 Console.WriteLine("    {");
+                Console.WriteLine("      default: DoDefaultAction(); return;", GroupSizeLog);
 
                 for (int g = 0; g < groupCount; g++) {
                     if (nonEmptyProductionCounts[g] > 0) {
@@ -371,14 +364,16 @@ namespace gpcc
                         Production production = productions[index];
                         Debug.Assert(index == production.num - 1);
 
-                        if (production.semanticAction != null) {
+                        if (production.semanticAction != null || productions[index].rhs.Count == 0) {
                             if (groupSize > 1) {
                                 Console.WriteLine("      case {0}:", i);
                             }
 
                             Console.WriteLine("      // " + production.ToString());
 
-                            production.semanticAction.GenerateCode(this);
+                            if (production.semanticAction != null) {
+                                production.semanticAction.GenerateCode(this);
+                            }
 
                             if (groupSize > 1) {
                                 Console.WriteLine("        return;");
@@ -387,7 +382,7 @@ namespace gpcc
                     }
 
                     if (groupSize > 1) {
-                        Console.WriteLine("      default: return;");
+                        Console.WriteLine("      default: DoDefaultAction(); return;");
                         Console.WriteLine("    }");
                     }
 

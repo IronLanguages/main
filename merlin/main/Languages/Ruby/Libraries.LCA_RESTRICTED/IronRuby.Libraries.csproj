@@ -1,0 +1,199 @@
+﻿<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="3.5">
+  <Import Condition=" '$(BuildingTraversal)' == 'true' " Project="..\..\..\silverlight.settings.targets" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProductVersion>9.0.30703</ProductVersion>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{77323B06-15A2-4CF4-8A7A-86EAA2B66498}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>IronRuby.Libraries</RootNamespace>
+    <AssemblyName>IronRuby.Libraries</AssemblyName>
+    <SccProjectName>SAK</SccProjectName>
+    <SccLocalPath>SAK</SccLocalPath>
+    <SccAuxPath>SAK</SccAuxPath>
+    <SccProvider>SAK</SccProvider>
+    <OldToolsVersion>2.0</OldToolsVersion>
+    <WarningsNotAsErrors>618,1685</WarningsNotAsErrors>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>..\..\..\Bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE;SIGNED</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <DelaySign>true</DelaySign>
+    <AssemblyOriginatorKeyFile>..\..\..\MSSharedLibKey.snk</AssemblyOriginatorKeyFile>
+    <SignAssembly>true</SignAssembly>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>..\..\..\Bin\Release\</OutputPath>
+    <DefineConstants>TRACE;SIGNED</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <DelaySign>true</DelaySign>
+    <AssemblyOriginatorKeyFile>..\..\..\MSSharedLibKey.snk</AssemblyOriginatorKeyFile>
+    <SignAssembly>true</SignAssembly>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Silverlight Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <OutputPath>..\..\..\Bin\Silverlight Debug\</OutputPath>
+    <DefineConstants>TRACE;DEBUG;SILVERLIGHT</DefineConstants>
+    <DebugType>full</DebugType>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <ErrorReport>prompt</ErrorReport>
+    <NoStdLib>true</NoStdLib>
+    <SignAssembly>true</SignAssembly>
+    <AssemblyOriginatorKeyFile>..\..\..\SilverlightKey.snk</AssemblyOriginatorKeyFile>
+    <DelaySign>true</DelaySign>
+    <SilverlightBuild>true</SilverlightBuild>
+    <SilverlightSdkPath>..\..\..\Utilities\Silverlight\x86ret\</SilverlightSdkPath>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Silverlight Release|AnyCPU' ">
+    <OutputPath>..\..\..\Bin\Silverlight Release</OutputPath>
+    <DefineConstants>TRACE;SILVERLIGHT</DefineConstants>
+    <NoStdLib>true</NoStdLib>
+    <DebugType>pdbonly</DebugType>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <ErrorReport>prompt</ErrorReport>
+    <SignAssembly>true</SignAssembly>
+    <AssemblyOriginatorKeyFile>..\..\..\SilverlightKey.snk</AssemblyOriginatorKeyFile>
+    <DelaySign>true</DelaySign>
+    <SilverlightBuild>true</SilverlightBuild>
+    <SilverlightSdkPath>..\..\..\Utilities\Silverlight\x86ret\</SilverlightSdkPath>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="..\..\..\Hosts\Silverlight\SilverlightVersion.cs" Condition=" '$(SilverlightBuild)' == 'true' ">
+      <Link>Properties\SilverlightVersion.cs</Link>
+    </Compile>
+    <Compile Include="BigDecimal\BigDecimal.cs" />
+    <Compile Include="BigDecimal\BigDecimalKernelOps.cs" />
+    <Compile Include="BigDecimal\BigDecimalOps.cs" />
+    <Compile Include="BigDecimal\Fraction.cs" />
+    <Compile Include="Builtins\ArgFilesSingletonOps.cs" />
+    <Compile Include="Builtins\ArrayOps.cs" />
+    <Compile Include="Builtins\BigNumOps.cs" />
+    <Compile Include="Builtins\BindingOps.cs" />
+    <Compile Include="Builtins\BuiltinsInitializer.cs" />
+    <Compile Include="Builtins\ClassOps.cs" />
+    <Compile Include="Builtins\Comparable.cs" />
+    <Compile Include="Builtins\Dir.cs" />
+    <Compile Include="Builtins\Enumerable.cs" />
+    <Compile Include="Builtins\EnvironmentSingletonOps.cs" />
+    <Compile Include="Builtins\Errno.cs" />
+    <Compile Include="Builtins\ExceptionOps.cs" />
+    <Compile Include="Builtins\Exceptions.cs" />
+    <Compile Include="Builtins\FalseClass.cs" />
+    <Compile Include="Builtins\FileOps.cs" />
+    <Compile Include="Builtins\FileTestOps.cs" />
+    <Compile Include="Builtins\FixnumOps.cs" />
+    <Compile Include="Builtins\FloatOps.cs" />
+    <Compile Include="Builtins\RubyGC.cs" />
+    <Compile Include="Builtins\HashOps.cs" />
+    <Compile Include="Builtins\Integer.cs" />
+    <Compile Include="Builtins\IoOps.cs" />
+    <Compile Include="Builtins\KernelOps.cs" />
+    <Compile Include="Builtins\Marshal.cs" />
+    <Compile Include="Builtins\MatchDataOps.cs" />
+    <Compile Include="Builtins\ObjectSpace.cs" />
+    <Compile Include="Builtins\RubyEncodingOps.cs" />
+    <Compile Include="Builtins\RubyMath.cs" />
+    <Compile Include="Builtins\MethodOps.cs" />
+    <Compile Include="Builtins\ModuleOps.cs" />
+    <Compile Include="Builtins\MutableStringOps.cs" />
+    <Compile Include="Builtins\NilClassOps.cs" />
+    <Compile Include="Builtins\Numeric.cs" />
+    <Compile Include="Builtins\LibrarySites.cs" />
+    <Compile Include="Builtins\ObjectOps.cs" />
+    <Compile Include="Builtins\Precision.cs" />
+    <Compile Include="Builtins\RubyProcess.cs" />
+    <Compile Include="Builtins\ProcOps.cs" />
+    <Compile Include="Builtins\RangeOps.cs" />
+    <Compile Include="Builtins\RubyRegexOps.cs" />
+    <Compile Include="Builtins\Signal.cs" />
+    <Compile Include="Builtins\SingletonOps.cs" />
+    <Compile Include="Builtins\StringFormatter.cs" />
+    <Compile Include="Builtins\StringOps.cs" />
+    <Compile Include="Builtins\StructOps.cs" />
+    <Compile Include="Builtins\SymbolOps.cs" />
+    <Compile Include="Builtins\ThreadGroup.cs" />
+    <Compile Include="Builtins\ThreadOps.cs" />
+    <Compile Include="Builtins\TimeOps.cs" />
+    <Compile Include="Builtins\TrueClass.cs" />
+    <Compile Include="Builtins\UnboundMethod.cs" />
+    <Compile Include="Clr\ClrOps.cs" />
+    <Compile Include="Digest\Digest.cs" />
+    <Compile Include="Enumerator\Enumerator.cs" />
+    <Compile Include="Extensions\IComparableOps.cs" />
+    <Compile Include="Extensions\IDictionaryOps.cs" />
+    <Compile Include="Extensions\IEnumerableOps.cs" />
+    <Compile Include="Extensions\IListOps.cs" />
+    <Compile Include="Extensions\TypeGroupOps.cs" />
+    <Compile Include="Extensions\TypeOps.cs" />
+    <Compile Include="Extensions\TypeTrackerOps.cs" />
+    <Compile Include="FileControl\Fcntl.cs" />
+    <Compile Include="Iconv\Iconv.cs" />
+    <Compile Include="Initializers.Generated.cs" />
+    <Compile Include="OpenSSL\OpenSSL.cs" />
+    <Compile Include="ParseTree\IronRubyParseTreeOps.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Protocols.cs" />
+    <Compile Include="Socket\BasicSocket.cs" />
+    <Compile Include="Socket\IPSocket.cs" />
+    <Compile Include="Socket\Socket.cs" />
+    <Compile Include="Socket\SocketError.cs" />
+    <Compile Include="Socket\SocketStream.cs" />
+    <Compile Include="Socket\TCPServer.cs" />
+    <Compile Include="Socket\TCPSocket.cs" />
+    <Compile Include="Socket\UDPSocket.cs" />
+    <Compile Include="StringIO\StringIO.cs" />
+    <Compile Include="StringScanner\StringScanner.cs" />
+    <Compile Include="Thread\RubyConditionVariable.cs" />
+    <Compile Include="Thread\RubyMutex.cs" />
+    <Compile Include="Thread\RubyQueue.cs" />
+    <Compile Include="Thread\SizedQueue.cs" />
+    <Compile Include="Zlib\zlib.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="System" Condition=" '$(SilverlightBuild)' != 'true' " />
+    <Reference Include="mscorlib, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e" Condition=" '$(SilverlightBuild)' == 'true' ">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>$(SilverlightSdkPath)\mscorlib.dll</HintPath>
+    </Reference>
+    <Reference Include="System, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e" Condition=" '$(SilverlightBuild)' == 'true' ">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>$(SilverlightSdkPath)\System.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Net, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e" Condition=" '$(SilverlightBuild)' == 'true' ">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>$(SilverlightSdkPath)\System.Net.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Data" Condition=" $(SilverlightBuild) != 'true' " />
+    <Reference Include="System.Xml" Condition=" $(SilverlightBuild) != 'true' " />
+    <ProjectReference Include="..\..\..\..\..\ndp\fx\src\Core\Microsoft\Scripting\Microsoft.Scripting.Core.csproj">
+      <Project>{2AE75F5A-CD1F-4925-9647-AF4D1C282FB4}</Project>
+      <Name>Microsoft.Scripting.Core</Name>
+      <Private>False</Private>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\Runtime\Microsoft.Scripting\Microsoft.Scripting.csproj">
+      <Project>{EB66B766-6354-4208-A3D4-AACBDCB5C3B3}</Project>
+      <Name>Microsoft.Scripting</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Ruby\Ruby.csproj">
+      <Project>{7F6984B4-EE6D-4E6F-ABB1-E210D7DC4FDD}</Project>
+      <Name>Ruby</Name>
+      <Private>False</Private>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" Condition=" $(SilverlightTreeBuild) != 'true' " />
+  <Import Project="..\..\..\silverlight.build.targets" Condition=" '$(SilverlightTreeBuild)' == 'true' " />
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+</Project>
