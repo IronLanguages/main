@@ -78,9 +78,7 @@ namespace Microsoft.Scripting.Runtime {
         /// Called from generated code, helper to do a global name lookup
         /// </summary>
         public static object LookupGlobalName(CodeContext context, SymbolId name) {
-            // TODO: could we get rid of new context creation:
-            CodeContext moduleScopedContext = new CodeContext(context.GlobalScope, context.LanguageContext);
-            return context.LanguageContext.LookupName(moduleScopedContext, name);
+            return context.LanguageContext.LookupName(context.GlobalScope, name);
         }
 
         /// <summary>
@@ -88,8 +86,7 @@ namespace Microsoft.Scripting.Runtime {
         /// </summary>
         public static object SetGlobalName(CodeContext context, SymbolId name, object value) {
             // TODO: could we get rid of new context creation:
-            CodeContext moduleScopedContext = new CodeContext(context.GlobalScope, context.LanguageContext);
-            context.LanguageContext.SetName(moduleScopedContext, name, value);
+            context.LanguageContext.SetName(context.GlobalScope, name, value);
             return value;
         }
 
@@ -97,14 +94,14 @@ namespace Microsoft.Scripting.Runtime {
         /// Called from generated code, helper to do name lookup
         /// </summary>
         public static object LookupName(CodeContext context, SymbolId name) {
-            return context.LanguageContext.LookupName(context, name);
+            return context.LanguageContext.LookupName(context.Scope, name);
         }
 
         /// <summary>
         /// Called from generated code, helper to do name assignment
         /// </summary>
         public static object SetName(CodeContext context, SymbolId name, object value) {
-            context.LanguageContext.SetName(context, name, value);
+            context.LanguageContext.SetName(context.Scope, name, value);
             return value;
         }
 

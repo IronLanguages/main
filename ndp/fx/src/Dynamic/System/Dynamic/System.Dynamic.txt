@@ -37,9 +37,6 @@ SetComObjectDataFailed=Marshal.SetComObjectData failed.
 ## ExceptionType=InvalidOperationException
 MethodShouldNotBeCalled=This method exists only to keep the compiler happy.
 
-## ExceptionType=InvalidProgramException
-DefaultValueCannotBeRead=Default value of COM parameter cannot be read properly.
-
 ## ExceptionType=InvalidOperationException
 UnexpectedVarEnum=Unexpected VarEnum {0}.
 

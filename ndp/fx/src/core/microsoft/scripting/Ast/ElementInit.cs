@@ -22,8 +22,6 @@ using System.Dynamic.Utils;
 
 namespace System.Linq.Expressions {
     //CONFORMING
-    // TODO: If annotations is added here, make sure MemberInitExpression.Reduce
-    // methods and ExpressionVisitor.Visit methods preserve it
     public sealed class ElementInit : IArgumentProvider {
         private MethodInfo _addMethod;
         private ReadOnlyCollection<Expression> _arguments;

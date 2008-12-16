@@ -27,7 +27,7 @@ using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 
 namespace IronRuby.StandardLibrary.ParseTree {
-    [RubyModule("IronRuby")]
+    [RubyModule("IronRuby", Extends = typeof(Ruby))]
     public static class IronRubyOps {
 
         [RubyModule("ParseTree")]

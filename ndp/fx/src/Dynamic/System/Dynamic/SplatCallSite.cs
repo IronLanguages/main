@@ -24,12 +24,9 @@ using System.Linq.Expressions;
 
 namespace System.Dynamic {
 
-    // TODO: this entire class should go away.
-    // Instead we should be using a dynamic convert action to get a delegate
     internal sealed partial class SplatCallSite {
         internal delegate object SplatCaller(object[] args);
 
-        // TODO: Should free these eventually
         private readonly SynchronizedDictionary<int, SplatCaller> _callers = new SynchronizedDictionary<int, SplatCaller>();
         private readonly CallSiteBinder _binder;
 

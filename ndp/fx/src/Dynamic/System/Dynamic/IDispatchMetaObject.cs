@@ -26,11 +26,11 @@ namespace System.Dynamic {
         private readonly IDispatchComObject _self;
 
         internal IDispatchMetaObject(Expression expression, IDispatchComObject self)
-            : base(expression, Restrictions.Empty, self) {
+            : base(expression, BindingRestrictions.Empty, self) {
             _self = self;
         }
 
-        public override MetaObject BindInvokeMember(InvokeMemberBinder binder, MetaObject[] args) {
+        public override DynamicMetaObject BindInvokeMember(InvokeMemberBinder binder, DynamicMetaObject[] args) {
             ContractUtils.RequiresNotNull(binder, "binder");
 
             if (args.Any(arg => ComBinderHelpers.IsStrongBoxArg(arg))) {
@@ -47,7 +47,7 @@ namespace System.Dynamic {
             return base.BindInvokeMember(binder, args);
         }
 
-        public override MetaObject BindInvoke(InvokeBinder binder, MetaObject[] args) {
+        public override DynamicMetaObject BindInvoke(InvokeBinder binder, DynamicMetaObject[] args) {
             ContractUtils.RequiresNotNull(binder, "binder");
 
             if (args.Any(arg => ComBinderHelpers.IsStrongBoxArg(arg))) {
@@ -62,7 +62,7 @@ namespace System.Dynamic {
             return base.BindInvoke(binder, args);
         }
 
-        private MetaObject BindComInvoke(MetaObject[] args, ComMethodDesc method, IList<ArgumentInfo> arguments) {
+        private DynamicMetaObject BindComInvoke(DynamicMetaObject[] args, ComMethodDesc method, IList<ArgumentInfo> arguments) {
             return new ComInvokeBinder(
                 arguments,
                 args,
@@ -76,7 +76,7 @@ namespace System.Dynamic {
             ).Invoke();
         }
 
-        public override MetaObject BindGetMember(GetMemberBinder binder) {
+        public override DynamicMetaObject BindGetMember(GetMemberBinder binder) {
             ContractUtils.RequiresNotNull(binder, "binder");
 
             ComMethodDesc method;
@@ -101,14 +101,14 @@ namespace System.Dynamic {
             return base.BindGetMember(binder);
         }
 
-        private MetaObject BindGetMember(ComMethodDesc method) {
+        private DynamicMetaObject BindGetMember(ComMethodDesc method) {
             if (method.IsDataMember) {
                 if (method.Parameters.Length == 0) {
-                    return BindComInvoke(MetaObject.EmptyMetaObjects, method,new ArgumentInfo[0]);
+                    return BindComInvoke(DynamicMetaObject.EmptyMetaObjects, method,new ArgumentInfo[0]);
                 }
             }
 
-            return new MetaObject(
+            return new DynamicMetaObject(
                 Expression.Call(
                     typeof(ComRuntimeHelpers).GetMethod("CreateDispCallable"),
                     Helpers.Convert(Expression, typeof(IDispatchComObject)),
@@ -118,7 +118,7 @@ namespace System.Dynamic {
             );
         }
 
-        private MetaObject BindEvent(ComEventDesc @event) {
+        private DynamicMetaObject BindEvent(ComEventDesc @event) {
             // BoundDispEvent CreateComEvent(object rcw, Guid sourceIid, int dispid)
             Expression result =
                 Expression.Call(
@@ -128,13 +128,13 @@ namespace System.Dynamic {
                     Expression.Constant(@event.dispid)
                 );
 
-            return new MetaObject(
+            return new DynamicMetaObject(
                 result,
                 IDispatchRestriction()
             );
         }
 
-        public override MetaObject BindGetIndex(GetIndexBinder binder, MetaObject[] indexes) {           
+        public override DynamicMetaObject BindGetIndex(GetIndexBinder binder, DynamicMetaObject[] indexes) {           
             ContractUtils.RequiresNotNull(binder, "binder");
             if (indexes.Any(arg => ComBinderHelpers.IsStrongBoxArg(arg))) {
                 return ComBinderHelpers.RewriteStrongBoxAsRef(binder, this, indexes, false);
@@ -148,7 +148,7 @@ namespace System.Dynamic {
             return base.BindGetIndex(binder, indexes);
         }
 
-        public override MetaObject BindSetIndex(SetIndexBinder binder, MetaObject[] indexes, MetaObject value) {
+        public override DynamicMetaObject BindSetIndex(SetIndexBinder binder, DynamicMetaObject[] indexes, DynamicMetaObject value) {
             ContractUtils.RequiresNotNull(binder, "binder");
 
             if (indexes.Any(arg => ComBinderHelpers.IsStrongBoxArg(arg))) {
@@ -163,7 +163,7 @@ namespace System.Dynamic {
             return base.BindSetIndex(binder, indexes, value);
         }
         
-        public override MetaObject BindSetMember(SetMemberBinder binder, MetaObject value) {
+        public override DynamicMetaObject BindSetMember(SetMemberBinder binder, DynamicMetaObject value) {
             ContractUtils.RequiresNotNull(binder, "binder");
 
             return
@@ -177,11 +177,11 @@ namespace System.Dynamic {
                 base.BindSetMember(binder, value);
         }
 
-        private MetaObject TryPropertyPut(SetMemberBinder binder, MetaObject value) {
+        private DynamicMetaObject TryPropertyPut(SetMemberBinder binder, DynamicMetaObject value) {
             ComMethodDesc method;
             if (_self.TryGetPropertySetter(binder.Name, out method, value.LimitType) ||
                 _self.TryGetPropertySetterExplicit(binder.Name, out method, value.LimitType)) {
-                Restrictions restrictions = IDispatchRestriction();
+                BindingRestrictions restrictions = IDispatchRestriction();
                 Expression dispatch =
                     Expression.Property(
                         Helpers.Convert(Expression, typeof(IDispatchComObject)),
@@ -201,28 +201,28 @@ namespace System.Dynamic {
             return null;
         }
 
-        private MetaObject TryEventHandlerNoop(SetMemberBinder binder, MetaObject value) {
+        private DynamicMetaObject TryEventHandlerNoop(SetMemberBinder binder, DynamicMetaObject value) {
             ComEventDesc @event;
             if (_self.TryGetMemberEvent(binder.Name, out @event) && value.LimitType == typeof(BoundDispEvent)) {
                 // Drop the event property set.
-                return new MetaObject(
+                return new DynamicMetaObject(
                     Expression.Constant(null),
-                    value.Restrictions.Merge(IDispatchRestriction()).Merge(Restrictions.GetTypeRestriction(value.Expression, typeof(BoundDispEvent)))
+                    value.Restrictions.Merge(IDispatchRestriction()).Merge(BindingRestrictions.GetTypeRestriction(value.Expression, typeof(BoundDispEvent)))
                 );
             }
 
             return null;
         }
 
-        private Restrictions IDispatchRestriction() {
+        private BindingRestrictions IDispatchRestriction() {
             return IDispatchRestriction(Expression, _self.ComTypeDesc);
         }
 
-        internal static Restrictions IDispatchRestriction(Expression expr, ComTypeDesc typeDesc) {
-            return Restrictions.GetTypeRestriction(
+        internal static BindingRestrictions IDispatchRestriction(Expression expr, ComTypeDesc typeDesc) {
+            return BindingRestrictions.GetTypeRestriction(
                 expr, typeof(IDispatchComObject)
             ).Merge(
-                Restrictions.GetExpressionRestriction(
+                BindingRestrictions.GetExpressionRestriction(
                     Expression.Equal(
                         Expression.Property(
                             Helpers.Convert(expr, typeof(IDispatchComObject)),

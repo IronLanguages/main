@@ -241,28 +241,26 @@ namespace IronRuby.Builtins {
             return null;
         }
 
-        private static List<KeyValuePair<string, string>> ExtractHash(RubyContext/*!*/ context, Hash/*!*/ values) {
-            var result = new List<KeyValuePair<string, string>>(values.Count);
-            foreach (var pair in values) {
-                result.Add(new KeyValuePair<string,string>(
-                    Protocols.CastToString(context, pair.Key).ToString(),
-                    Protocols.CastToString(context, pair.Value).ToString()
-                ));
-            }
-            return result;
-        }
-
-        private static void Update(RubyContext/*!*/ context, List<KeyValuePair<string, string>>/*!*/ values) {
+        private static void Update(ConversionStorage<MutableString>/*!*/ stringCast, RubyContext/*!*/ context, Hash/*!*/ values) {
             PlatformAdaptationLayer pal = context.DomainManager.Platform;
             foreach (var pair in values) {
-                pal.SetEnvironmentVariable(pair.Key, pair.Value);
+                var name = Protocols.CastToString(stringCast, context, pair.Key).ToString();
+                var value = Protocols.CastToString(stringCast, context, pair.Value).ToString();
+                
+                pal.SetEnvironmentVariable(name, value);
             }
         }
 
         [RubyMethod("replace")]
-        public static object/*!*/ Replace(RubyContext/*!*/ context, object/*!*/ self, [NotNull]Hash/*!*/ values) {
+        public static object/*!*/ Replace(ConversionStorage<MutableString>/*!*/ stringCast, RubyContext/*!*/ context, object/*!*/ self, [NotNull]Hash/*!*/ values) {
             Clear(context, self);
-            Update(context, ExtractHash(context, values));
+            Update(stringCast, context, values);
+            return self;
+        }
+
+        [RubyMethod("update")]
+        public static object/*!*/ Update(ConversionStorage<MutableString>/*!*/ stringCast, RubyContext/*!*/ context, object/*!*/ self, [NotNull]Hash/*!*/ values) {
+            Update(stringCast, context, values);
             return self;
         }
 
@@ -298,13 +296,6 @@ namespace IronRuby.Builtins {
         public static MutableString/*!*/ ToString(object/*!*/ self) {
             return MutableString.Create("ENV");
         }
-
-        [RubyMethod("update")]
-        public static object/*!*/ Update(RubyContext/*!*/ context, object/*!*/ self, [NotNull]Hash/*!*/ values) {
-            Update(context, ExtractHash(context, values));
-            return self;
-        }
-
 
         [RubyMethod("values")]
         public static RubyArray/*!*/ Values(RubyContext/*!*/ context, object/*!*/ self) {

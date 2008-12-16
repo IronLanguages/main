@@ -79,7 +79,7 @@ namespace Microsoft.Scripting.ComInterop {
 
         #region IDynamicObject Members
 
-        public MetaObject GetMetaObject(Expression parameter) {
+        public DynamicMetaObject GetMetaObject(Expression parameter) {
             return new ComClassMetaObject(parameter, this);
         }
 

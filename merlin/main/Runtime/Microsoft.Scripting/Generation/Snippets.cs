@@ -98,12 +98,12 @@ namespace Microsoft.Scripting.Generation {
         }
 
         public static void SetSaveAssemblies(bool enable, string directory) {
-            //Set SaveAssemblies on for inner ring by calling System.Linq.Expressions.Compiler.Snippets.SetSaveAssemblies via Reflection.
+            //Set SaveAssemblies on for inner ring by calling SetSaveAssemblies via Reflection.
             Assembly core = typeof(System.Linq.Expressions.Expression).Assembly;
-            Type snippets = core.GetType("System.Linq.Expressions.Compiler.Snippets");
+            Type assemblyGen = core.GetType("System.Linq.Expressions.Compiler.AssemblyGen");
             //The type may not exist.
-            if (snippets != null) {
-                MethodInfo configSaveAssemblies = snippets.GetMethod("SetSaveAssemblies", BindingFlags.NonPublic | BindingFlags.Static);
+            if (assemblyGen != null) {
+                MethodInfo configSaveAssemblies = assemblyGen.GetMethod("SetSaveAssemblies", BindingFlags.NonPublic | BindingFlags.Static);
                 //The method may not exist.
                 if (configSaveAssemblies != null) {
                     string[] coreAssemblyLocations = (string[])configSaveAssemblies.Invoke(null, new object[] { enable, directory });
@@ -121,7 +121,7 @@ namespace Microsoft.Scripting.Generation {
             if (!Shared.SaveSnippets) {
                 return;
             }
-            // Invoke the core Snippets.SaveAssemblies via reflection to get the locations of assemlies
+            // Invoke the core AssemblyGen.SaveAssembliesToDisk via reflection to get the locations of assemlies
             // to be verified. Verify them using PEVerify.exe.
             // Do this before verifying outer ring assemblies because they will depend on
             // the core ones.
@@ -132,11 +132,11 @@ namespace Microsoft.Scripting.Generation {
             // 3) Verify inner ring assemblies.
             // 4) Verify outer ring assemblies.
             Assembly core = typeof(System.Linq.Expressions.Expression).Assembly;
-            Type snippets = core.GetType("System.Linq.Expressions.Compiler.Snippets");
+            Type assemblyGen = core.GetType("System.Linq.Expressions.Compiler.AssemblyGen");
             //The type may not exist.
             string[] coreAssemblyLocations = null;
-            if (snippets != null) {
-                MethodInfo saveAssemblies = snippets.GetMethod("SaveAssemblies", BindingFlags.NonPublic | BindingFlags.Static);
+            if (assemblyGen != null) {
+                MethodInfo saveAssemblies = assemblyGen.GetMethod("SaveAssembliesToDisk", BindingFlags.NonPublic | BindingFlags.Static);
                 //The method may not exist.
                 if (saveAssemblies != null) {
                     coreAssemblyLocations = (string[])saveAssemblies.Invoke(null, null);

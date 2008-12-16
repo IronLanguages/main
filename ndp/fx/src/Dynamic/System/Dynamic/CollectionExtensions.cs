@@ -60,10 +60,4 @@ namespace System.Dynamic {
             return res;
         }
     }
-
-    // TODO: Should we use this everywhere for empty arrays?
-    // my thought is, probably more hassle than its worth
-    internal static class EmptyArray<T> {
-        internal static T[] Instance = new T[0];
-    }
 }

@@ -30,7 +30,6 @@ namespace System.Runtime.CompilerServices {
         internal static readonly LabelTarget ReturnLabel;
 
         // cctor will be lazily executed when a given T is first referenced
-        // TODO: are lazily initialized properties faster? (would need locks for thread safety)
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1810:InitializeReferenceTypeStaticFieldsInline")]
         static CallSiteRule() {
             Type target = typeof(T);

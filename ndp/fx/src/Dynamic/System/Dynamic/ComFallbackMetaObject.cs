@@ -29,32 +29,32 @@ namespace System.Dynamic {
     //
     // Also: we don't need to implement these for any operations other than those
     // supported by ComBinder
-    internal class ComFallbackMetaObject : MetaObject {
-        internal ComFallbackMetaObject(Expression expression, Restrictions restrictions, object arg)
+    internal class ComFallbackMetaObject : DynamicMetaObject {
+        internal ComFallbackMetaObject(Expression expression, BindingRestrictions restrictions, object arg)
             : base(expression, restrictions, arg) {
         }
 
-        public override MetaObject BindGetIndex(GetIndexBinder binder, MetaObject[] indexes) {
+        public override DynamicMetaObject BindGetIndex(GetIndexBinder binder, DynamicMetaObject[] indexes) {
             ContractUtils.RequiresNotNull(binder, "binder");
             return binder.FallbackGetIndex(UnwrapSelf(), indexes);
         }
 
-        public override MetaObject BindSetIndex(SetIndexBinder binder, MetaObject[] indexes, MetaObject value) {
+        public override DynamicMetaObject BindSetIndex(SetIndexBinder binder, DynamicMetaObject[] indexes, DynamicMetaObject value) {
             ContractUtils.RequiresNotNull(binder, "binder");
             return binder.FallbackSetIndex(UnwrapSelf(), indexes, value);
         }
 
-        public override MetaObject BindGetMember(GetMemberBinder binder) {
+        public override DynamicMetaObject BindGetMember(GetMemberBinder binder) {
             ContractUtils.RequiresNotNull(binder, "binder");
             return binder.FallbackGetMember(UnwrapSelf());
         }
 
-        public override MetaObject BindInvokeMember(InvokeMemberBinder binder, MetaObject[] args) {
+        public override DynamicMetaObject BindInvokeMember(InvokeMemberBinder binder, DynamicMetaObject[] args) {
             ContractUtils.RequiresNotNull(binder, "binder");
             return binder.FallbackInvokeMember(UnwrapSelf(), args);
         }
 
-        public override MetaObject BindSetMember(SetMemberBinder binder, MetaObject value) {
+        public override DynamicMetaObject BindSetMember(SetMemberBinder binder, DynamicMetaObject value) {
             ContractUtils.RequiresNotNull(binder, "binder");
             return binder.FallbackSetMember(UnwrapSelf(), value);
         }
@@ -62,7 +62,7 @@ namespace System.Dynamic {
         protected virtual ComUnwrappedMetaObject UnwrapSelf() {
             return new ComUnwrappedMetaObject(
                 ComObject.RcwFromComObject(Expression),
-                Restrictions.Merge(Restrictions.GetTypeRestriction(Expression, LimitType)),
+                Restrictions.Merge(BindingRestrictions.GetTypeRestriction(Expression, LimitType)),
                 ((ComObject)Value).RuntimeCallableWrapper
             );
         }
@@ -70,8 +70,8 @@ namespace System.Dynamic {
 
     // This type exists as a signal type, so ComBinder knows not to try to bind
     // again when we're trying to fall back
-    internal sealed class ComUnwrappedMetaObject : MetaObject {
-        internal ComUnwrappedMetaObject(Expression expression, Restrictions restrictions, object value)
+    internal sealed class ComUnwrappedMetaObject : DynamicMetaObject {
+        internal ComUnwrappedMetaObject(Expression expression, BindingRestrictions restrictions, object value)
             : base(expression, restrictions, value) {
         }
     }

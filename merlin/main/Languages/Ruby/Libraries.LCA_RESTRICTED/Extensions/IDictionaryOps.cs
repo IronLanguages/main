@@ -13,9 +13,6 @@
  *
  * ***************************************************************************/
 
-using BinaryOpSite = System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite,
-    IronRuby.Runtime.RubyContext, object, object, object>>;
-
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -25,6 +22,7 @@ using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Actions;
 using IronRuby.Runtime;
 using Microsoft.Scripting.Generation;
+using System.Runtime.CompilerServices;
 
 namespace IronRuby.Builtins {
 
@@ -67,23 +65,12 @@ namespace IronRuby.Builtins {
             return pairs;
         }
 
-        // Calls to_hash on the object, if it's not already a dictionary
-        // (only certain Hash functions use this in Ruby)
-        internal static IDictionary<object, object> ConvertToHash(RubyContext/*!*/ context, object hash) {
-            try {
-                IDictionary<object, object> dict = hash as IDictionary<object, object>;
-                return dict != null ? dict : RubySites.ToHash(context, hash);
-            } catch (MissingMethodException e) {
-                throw new InvalidOperationException(String.Format("can't convert {0} into Hash", RubyUtils.GetClassName(context, hash)), e);
-            }
-        }
-
         #endregion
 
         #region Instance Methods
 
         [RubyMethod("==")]
-        public static bool Equals(RubyContext/*!*/ context, IDictionary<object, object>/*!*/ self, object otherHash) {
+        public static bool Equals(BinaryOpStorage/*!*/ equals, RubyContext/*!*/ context, IDictionary<object, object>/*!*/ self, object otherHash) {
             IDictionary<object, object> other = otherHash as IDictionary<object, object>;
             if (other == null || self.Count != other.Count) {
                 return false;
@@ -92,7 +79,7 @@ namespace IronRuby.Builtins {
             // Each key value pair must be the same
             foreach (KeyValuePair<object, object> pair in self) {
                 object value;
-                if (!other.TryGetValue(pair.Key, out value) || !Protocols.IsEqual(context, pair.Value, value)) {
+                if (!other.TryGetValue(pair.Key, out value) || !Protocols.IsEqual(equals, context, pair.Value, value)) {
                     return false;
                 }
             }
@@ -124,9 +111,13 @@ namespace IronRuby.Builtins {
 
         // We don't define "dup" here because "dup" shouldn't show up on builtin types like Hash
         // (Kernel#dup just works for these types)
-        private static IDictionary<object, object>/*!*/ Duplicate(RubyContext/*!*/ context, IDictionary<object, object>/*!*/ self) {
+        private static IDictionary<object, object>/*!*/ Duplicate(
+            CallSiteStorage<Func<CallSite, RubyContext, object, object, object>>/*!*/ initializeCopyStorage,
+            CallSiteStorage<Func<CallSite, RubyContext, RubyClass, object>>/*!*/ allocateStorage,
+            RubyContext/*!*/ context, IDictionary<object, object>/*!*/ self) {
+
             // Call Kernel#dup, then copy items
-            var copy = (IDictionary<object, object>)KernelOps.Duplicate(context, self);
+            var copy = (IDictionary<object, object>)KernelOps.Duplicate(initializeCopyStorage, allocateStorage, context, self);
             return ReplaceData(copy, self);
         }
 
@@ -305,9 +296,9 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("has_value?")]
         [RubyMethod("value?")]
-        public static bool HasValue(RubyContext/*!*/ context, IDictionary<object, object>/*!*/ self, object value) {
+        public static bool HasValue(BinaryOpStorage/*!*/ equals, RubyContext/*!*/ context, IDictionary<object, object>/*!*/ self, object value) {
             foreach (KeyValuePair<object, object> pair in self) {
-                if (Protocols.IsEqual(context, pair.Value, value)) {
+                if (Protocols.IsEqual(equals, context, pair.Value, value)) {
                     return true;
                 }
             }
@@ -315,9 +306,9 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("index")]
-        public static object Index(RubyContext/*!*/ context, IDictionary<object, object>/*!*/ self, object value) {
+        public static object Index(BinaryOpStorage/*!*/ equals, RubyContext/*!*/ context, IDictionary<object, object>/*!*/ self, object value) {
             foreach (KeyValuePair<object, object> pair in self) {
-                if (Protocols.IsEqual(context, pair.Value, value)) {
+                if (Protocols.IsEqual(equals, context, pair.Value, value)) {
                     return BaseSymbolDictionary.ObjToNull(pair.Key);
                 }
             }
@@ -378,24 +369,30 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("merge")]
-        public static object Merge(RubyContext/*!*/ context, BlockParam block, IDictionary<object, object>/*!*/ self, object otherHash) {
-            return Update(context, block, Duplicate(context, self), otherHash);
+        public static object Merge(
+            CallSiteStorage<Func<CallSite, RubyContext, object, object, object>>/*!*/ initializeCopyStorage,
+            CallSiteStorage<Func<CallSite, RubyContext, RubyClass, object>>/*!*/ allocateStorage,
+            RubyContext/*!*/ context, BlockParam block, IDictionary<object, object>/*!*/ self, 
+            [DefaultProtocol, NotNull]IDictionary<object, object>/*!*/ hash) {
+
+            return Update(context, block, Duplicate(initializeCopyStorage, allocateStorage, context, self), hash);
         }
 
         [RubyMethod("merge!")]
         [RubyMethod("update")]
-        public static object Update(RubyContext/*!*/ context, BlockParam block, IDictionary<object, object>/*!*/ self, object otherHash) {
-            IDictionary<object, object> hash = ConvertToHash(context, otherHash);
-            if (hash != null && hash.Count > 0) {
+        public static object Update(RubyContext/*!*/ context, BlockParam block, IDictionary<object, object>/*!*/ self, 
+            [DefaultProtocol, NotNull]IDictionary<object, object>/*!*/ hash) {
+
+            if (hash.Count > 0) {
                 RubyUtils.RequiresNotFrozen(context, self);
             }
 
             if (block == null) {
-                foreach (KeyValuePair<object, object> pair in CopyKeyValuePairs(hash)) {
+                foreach (var pair in CopyKeyValuePairs(hash)) {
                     self[BaseSymbolDictionary.NullToObj(pair.Key)] = pair.Value;
                 }
             } else {
-                foreach (KeyValuePair<object, object> pair in CopyKeyValuePairs(hash)) {
+                foreach (var pair in CopyKeyValuePairs(hash)) {
                     object key = pair.Key, newValue = pair.Value, oldValue;
                     if (self.TryGetValue(key, out oldValue)) {
                         if (block.Yield(BaseSymbolDictionary.ObjToNull(key), oldValue, pair.Value, out newValue)) {
@@ -417,8 +414,12 @@ namespace IronRuby.Builtins {
         // This works like delete_if, not reject!
         // (because it needs to return the new collection)
         [RubyMethod("reject")]
-        public static object Reject(RubyContext/*!*/ context, BlockParam block, IDictionary<object, object>/*!*/ self) {
-            return DeleteIf(context, block, Duplicate(context, self));
+        public static object Reject(
+            CallSiteStorage<Func<CallSite, RubyContext, object, object, object>>/*!*/ initializeCopyStorage,
+            CallSiteStorage<Func<CallSite, RubyContext, RubyClass, object>>/*!*/ allocateStorage,
+            RubyContext/*!*/ context, BlockParam block, IDictionary<object, object>/*!*/ self) {
+
+            return DeleteIf(context, block, Duplicate(initializeCopyStorage, allocateStorage, context, self));
         }
 
         // This works like delete_if, but returns nil if no elements were removed
@@ -450,12 +451,9 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("replace")]
-        public static IDictionary<object, object> Replace(RubyContext/*!*/ context, IDictionary<object, object>/*!*/ self, [NotNull]object other) {
-            // Do nothing if identities are the same
-            if (Object.ReferenceEquals(self, other)) return self;
-
+        public static Hash/*!*/ Replace(RubyContext/*!*/ context, Hash/*!*/ self, [DefaultProtocol, NotNull]IDictionary<object, object>/*!*/ other) {
             RubyUtils.RequiresNotFrozen(context, self);
-            return ReplaceData(self, ConvertToHash(context, other));
+            return IDictionaryOps.ReplaceData(self, other);
         }
 
         [RubyMethod("select")]
@@ -495,9 +493,9 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("sort")]
         public static object Sort(
-            SiteLocalStorage<BinaryOpSite>/*!*/ comparisonStorage,
-            SiteLocalStorage<BinaryOpSite>/*!*/ lessThanStorage,
-            SiteLocalStorage<BinaryOpSite>/*!*/ greaterThanStorage,            
+            BinaryOpStorage/*!*/ comparisonStorage,
+            BinaryOpStorage/*!*/ lessThanStorage,
+            BinaryOpStorage/*!*/ greaterThanStorage,            
             RubyContext/*!*/ context, BlockParam block, IDictionary<object, object>/*!*/ self) {
             return ArrayOps.SortInPlace(comparisonStorage, lessThanStorage, greaterThanStorage, context, block, ToArray(self));
         }
@@ -517,12 +515,12 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("to_s")]
-        public static MutableString ToString(RubyContext/*!*/ context, IDictionary<object, object>/*!*/ self) {
+        public static MutableString ToString(UnaryOpStorage/*!*/ tosStorage, RubyContext/*!*/ context, IDictionary<object, object>/*!*/ self) {
             using (IDisposable handle = RubyUtils.InfiniteToSTracker.TrackObject(self)) {
                 if (handle == null) {
                     return MutableString.Create("{...}");
                 } else {
-                    return IListOps.Join(context, ToArray(self));
+                    return IListOps.Join(tosStorage, context, ToArray(self));
                 }
             }
         }

@@ -20,6 +20,7 @@ using System.Net.Sockets;
 using Microsoft.Scripting.Runtime;
 using IronRuby.Builtins;
 using IronRuby.Runtime;
+using System.Runtime.InteropServices;
 
 namespace IronRuby.StandardLibrary.Sockets {
     [RubyClass("IPSocket", BuildConfig = "!SILVERLIGHT")]
@@ -35,6 +36,7 @@ namespace IronRuby.StandardLibrary.Sockets {
         }
 
         #region Public Instance Methods
+
         [RubyMethod("addr")]
         public static RubyArray/*!*/ GetLocalAddress(RubyContext/*!*/ context, IPSocket/*!*/ self) {
             return GetAddressArray(context, self.Socket.LocalEndPoint);
@@ -46,12 +48,10 @@ namespace IronRuby.StandardLibrary.Sockets {
         }
 
         [RubyMethod("recvfrom")]
-        public static RubyArray/*!*/ ReceiveFrom(RubyContext/*!*/ context, IPSocket/*!*/ self, int length) {
-            return ReceiveFrom(context, self, length, null);
-        }
-        [RubyMethod("recvfrom")]
-        public static RubyArray/*!*/ ReceiveFrom(RubyContext/*!*/ context, IPSocket/*!*/ self, int length, object/*Numeric*/ flags) {
-            SocketFlags sFlags = ConvertToSocketFlag(context, flags);
+        public static RubyArray/*!*/ ReceiveFrom(ConversionStorage<int>/*!*/ conversionStorage, RubyContext/*!*/ context, IPSocket/*!*/ self, 
+            int length, [DefaultParameterValue(null)]object/*Numeric*/ flags) {
+
+            SocketFlags sFlags = ConvertToSocketFlag(conversionStorage, context, flags);
             byte[] buffer = new byte[length];
             EndPoint fromEP = new IPEndPoint(IPAddress.Any, 0);
             int received = self.Socket.ReceiveFrom(buffer, sFlags, ref fromEP);

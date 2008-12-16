@@ -78,11 +78,11 @@ namespace System.Linq.Expressions.Compiler {
                 EmitExpression(node.Right);
                 Type rightType = node.Right.Type;
                 if (TypeUtils.IsNullableType(rightType)) {
-                    LocalBuilder loc = _ilg.GetLocal(rightType);
+                    LocalBuilder loc = GetLocal(rightType);
                     _ilg.Emit(OpCodes.Stloc, loc);
                     _ilg.Emit(OpCodes.Ldloca, loc);
                     _ilg.EmitGetValue(rightType);
-                    _ilg.FreeLocal(loc);
+                    FreeLocal(loc);
                 }
                 Type indexType = TypeUtils.GetNonNullableType(rightType);
                 if (indexType != typeof(int)) {
@@ -149,10 +149,10 @@ namespace System.Linq.Expressions.Compiler {
             }
 
             EmitMemberGet(member, objectType);
-            LocalBuilder temp = _ilg.GetLocal(GetMemberType(member));
+            LocalBuilder temp = GetLocal(GetMemberType(member));
             _ilg.Emit(OpCodes.Stloc, temp);
             _ilg.Emit(OpCodes.Ldloca, temp);
-            _ilg.FreeLocal(temp);
+            FreeLocal(temp);
         }
 
         //CONFORMING
@@ -203,10 +203,10 @@ namespace System.Linq.Expressions.Compiler {
             Debug.Assert(TypeUtils.AreReferenceAssignable(type, node.Type));
 
             EmitExpression(node, false);
-            LocalBuilder tmp = _ilg.GetLocal(type);
+            LocalBuilder tmp = GetLocal(type);
             _ilg.Emit(OpCodes.Stloc, tmp);
             _ilg.Emit(OpCodes.Ldloca, tmp);
-            _ilg.FreeLocal(tmp);
+            FreeLocal(tmp);
         }
 
 
@@ -249,7 +249,7 @@ namespace System.Linq.Expressions.Compiler {
                 EmitInstance(node.Expression, instanceType = node.Expression.Type);
                 // store in local
                 _ilg.Emit(OpCodes.Dup);
-                _ilg.Emit(OpCodes.Stloc, instanceLocal = _ilg.GetLocal(instanceType));
+                _ilg.Emit(OpCodes.Stloc, instanceLocal = GetLocal(instanceType));
             }
 
             PropertyInfo pi = (PropertyInfo)node.Member;
@@ -258,7 +258,7 @@ namespace System.Linq.Expressions.Compiler {
             EmitCall(instanceType, pi.GetGetMethod(true));
 
             // emit the address of the value
-            var valueLocal = _ilg.GetLocal(node.Type);
+            var valueLocal = GetLocal(node.Type);
             _ilg.Emit(OpCodes.Stloc, valueLocal);
             _ilg.Emit(OpCodes.Ldloca, valueLocal);
 
@@ -267,10 +267,10 @@ namespace System.Linq.Expressions.Compiler {
             return delegate() {
                 if (instanceLocal != null) {
                     _ilg.Emit(OpCodes.Ldloc, instanceLocal);
-                    _ilg.FreeLocal(instanceLocal);
+                    FreeLocal(instanceLocal);
                 }
                 _ilg.Emit(OpCodes.Ldloc, valueLocal);
-                _ilg.FreeLocal(valueLocal);
+                FreeLocal(valueLocal);
                 EmitCall(instanceType, pi.GetSetMethod(true));
             };
         }
@@ -287,7 +287,7 @@ namespace System.Linq.Expressions.Compiler {
                 EmitInstance(node.Object, instanceType = node.Object.Type);
                 
                 _ilg.Emit(OpCodes.Dup);
-                _ilg.Emit(OpCodes.Stloc, instanceLocal = _ilg.GetLocal(instanceType));
+                _ilg.Emit(OpCodes.Stloc, instanceLocal = GetLocal(instanceType));
             }
 
             // Emit indexes. We don't allow byref args, so no need to worry
@@ -296,7 +296,7 @@ namespace System.Linq.Expressions.Compiler {
             foreach (var arg in node.Arguments) {
                 EmitExpression(arg);
 
-                var argLocal = _ilg.GetLocal(arg.Type);
+                var argLocal = GetLocal(arg.Type);
                 _ilg.Emit(OpCodes.Dup);
                 _ilg.Emit(OpCodes.Stloc, argLocal);
                 args.Add(argLocal);
@@ -306,7 +306,7 @@ namespace System.Linq.Expressions.Compiler {
             EmitGetIndexCall(node, instanceType);
 
             // emit the address of the value
-            var valueLocal = _ilg.GetLocal(node.Type);
+            var valueLocal = GetLocal(node.Type);
             _ilg.Emit(OpCodes.Stloc, valueLocal);
             _ilg.Emit(OpCodes.Ldloca, valueLocal);
 
@@ -315,14 +315,14 @@ namespace System.Linq.Expressions.Compiler {
             return delegate() {
                 if (instanceLocal != null) {
                     _ilg.Emit(OpCodes.Ldloc, instanceLocal);
-                    _ilg.FreeLocal(instanceLocal);
+                    FreeLocal(instanceLocal);
                 }
                 foreach (var arg in args) {
                     _ilg.Emit(OpCodes.Ldloc, arg);
-                    _ilg.FreeLocal(arg);
+                    FreeLocal(arg);
                 }
                 _ilg.Emit(OpCodes.Ldloc, valueLocal);
-                _ilg.FreeLocal(valueLocal);
+                FreeLocal(valueLocal);
 
                 EmitSetIndexCall(node, instanceType);
             };

@@ -105,6 +105,8 @@ namespace System.Linq.Expressions {
         PostDecrementAssign,
         TypeEqual,
         OnesComplement,
+        IsTrue,
+        IsFalse,
 
         // *** END GENERATED CODE ***
 

@@ -40,12 +40,12 @@ namespace IronRuby.Runtime {
 #if !SILVERLIGHT
     [DebuggerTypeProxy(typeof(RubyScope.DebugView))]
 #endif
-    public abstract class RubyScope : CodeContext {
+    public abstract class RubyScope {
         internal static readonly LocalsDictionary _EmptyLocals = new LocalsDictionary(new IStrongBox[0], new SymbolId[0]);
 
         private readonly IAttributesCollection/*!*/ _frame;
-
-        private RubyTopLevelScope/*!*/ _top;
+        private readonly RubyTopLevelScope/*!*/ _top;
+        private readonly RubyScope _parent;
 
         private object _selfObject;
         private RuntimeFlowControl/*!*/ _runtimeFlowControl; // TODO: merge?
@@ -78,7 +78,7 @@ namespace IronRuby.Runtime {
             get { return _runtimeFlowControl; }
         }
 
-        public sealed override Scope GlobalScope {
+        public Scope GlobalScope {
             get { return _top.RubyGlobalScope.Scope; }
         }
 
@@ -87,24 +87,30 @@ namespace IronRuby.Runtime {
         }
 
         public RubyContext/*!*/ RubyContext {
-            get { return (RubyContext)LanguageContext; }
+            get { return _top.RubyContext; }
         }
 
         public IAttributesCollection/*!*/ Frame {
             get { return _frame; }
         }
 
+        public RubyScope Parent {
+            get { return _parent; }
+        }
+
         // top scope:
-        protected RubyScope(LanguageContext/*!*/ language, IAttributesCollection/*!*/ frame)
-            : base(null, language, null) {
+        protected RubyScope(IAttributesCollection/*!*/ frame) {
+            Assert.NotNull(frame);
             _frame = frame;
             _top = (RubyTopLevelScope)this;
+            _parent = null;
         }
 
         // other scopes:
-        protected RubyScope(RubyScope/*!*/ parent, IAttributesCollection/*!*/ frame)
-            : base(null, parent.Top.LanguageContext, parent) {
+        protected RubyScope(RubyScope/*!*/ parent, IAttributesCollection/*!*/ frame) {
+            Assert.NotNull(parent, frame);
             _frame = frame;
+            _parent = parent;
             _top = parent.Top;
         }
         
@@ -341,7 +347,7 @@ namespace IronRuby.Runtime {
             public DebugView(RubyScope/*!*/ scope) {
                 Assert.NotNull(scope);
                 _scope = scope;
-                _selfClassName = _scope.RubyContext.GetImmediateClassOf(_scope._selfObject).GetDisplayName(true).ConvertToString();               
+                _selfClassName = _scope.RubyContext.GetImmediateClassOf(_scope._selfObject).GetDisplayName(_scope.RubyContext, true).ConvertToString();               
             }
 
             [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
@@ -353,7 +359,7 @@ namespace IronRuby.Runtime {
                         foreach (KeyValuePair<SymbolId, object> variable in scope._frame.SymbolAttributes) {
                             string name = SymbolTable.IdToString(variable.Key);
                             if (!name.StartsWith("#")) {
-                                string className = _scope.RubyContext.GetImmediateClassOf(variable.Value).GetDisplayName(true).ConvertToString();
+                                string className = _scope.RubyContext.GetImmediateClassOf(variable.Value).GetDisplayName(_scope.RubyContext, true).ConvertToString();
                                 if (scope != _scope) {
                                     name += " (outer)";
                                 }
@@ -424,8 +430,8 @@ namespace IronRuby.Runtime {
         private object _lastInputLine; // TODO: per method scope and top level scope, not block scope
 
         // top scope:
-        protected RubyClosureScope(LanguageContext/*!*/ language, IAttributesCollection/*!*/ frame)
-            : base(language, frame) {
+        protected RubyClosureScope(IAttributesCollection/*!*/ frame)
+            : base(frame) {
         }
 
         // other scopes:
@@ -563,6 +569,7 @@ var closureScope = scope as RubyClosureScope;
         public override bool InheritsLocalVariables { get { return false; } }
 
         private readonly GlobalScopeExtension/*!*/ _globalScope;
+        private readonly RubyContext/*!*/ _context;
         private RubyModule _definitionsModule; 
 
         public GlobalScopeExtension/*!*/ RubyGlobalScope {
@@ -572,6 +579,10 @@ var closureScope = scope as RubyClosureScope;
                 }
                 return _globalScope; 
             }
+        }
+
+        internal new RubyContext/*!*/ RubyContext {
+            get { return _context; }
         }
 
         public override RubyModule Module {
@@ -587,14 +598,16 @@ var closureScope = scope as RubyClosureScope;
         }
 
         // empty scope:
-        internal RubyTopLevelScope(LanguageContext/*!*/ context)
-            : base(context, _EmptyLocals) {
+        internal RubyTopLevelScope(RubyContext/*!*/ context)
+            : base(_EmptyLocals) {
+            _context = context;
         }
 
         internal RubyTopLevelScope(GlobalScopeExtension/*!*/ globalScope, RubyModule definitionsModule, IAttributesCollection/*!*/ frame) 
-            : base(globalScope.Context, frame) {
+            : base(frame) {
             Assert.NotNull(globalScope);
             _globalScope = globalScope;
+            _context = globalScope.Context;
             _definitionsModule = definitionsModule;
         }
         

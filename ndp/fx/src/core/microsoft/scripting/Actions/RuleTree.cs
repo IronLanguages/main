@@ -71,7 +71,7 @@ namespace System.Dynamic {
             lock (_ruleTable) {
                 RuleTable curTable = _ruleTable;
                 foreach (object arg in args) {
-                    Type objType = TypeUtils.GetTypeForBinding(arg);
+                    Type objType = arg == null ? DynamicNull.Type : arg.GetType();
                     if (curTable.NextTable == null) {
                         curTable.NextTable = new Dictionary<Type, RuleTable>(1);
                     }

@@ -36,7 +36,7 @@ namespace IronRuby.Runtime.Calls {
             get { return this; }
         }
 
-        public override MetaObject/*!*/ FallbackGetMember(MetaObject/*!*/ self, MetaObject/*!*/ onBindingError) {
+        public override DynamicMetaObject/*!*/ FallbackGetMember(DynamicMetaObject/*!*/ self, DynamicMetaObject/*!*/ onBindingError) {
             var result = TryBind(_context, this, self);
             if (result != null) {
                 return result; 
@@ -46,7 +46,7 @@ namespace IronRuby.Runtime.Calls {
             return ((DefaultBinder)_context.Binder).GetMember(Name, self, Ast.Constant(null, typeof(CodeContext)), true);
         }
 
-        public static MetaObject TryBind(RubyContext/*!*/ context, GetMemberBinder/*!*/ binder, MetaObject/*!*/ target) {
+        public static DynamicMetaObject TryBind(RubyContext/*!*/ context, GetMemberBinder/*!*/ binder, DynamicMetaObject/*!*/ target) {
             Assert.NotNull(context, target);
             var metaBuilder = new MetaObjectBuilder();
             var contextExpression = Ast.Constant(context);
@@ -78,10 +78,10 @@ namespace IronRuby.Runtime.Calls {
                 object symbol = SymbolTable.StringToId(binder.Name);
                 RubyCallAction.BindToMethodMissing(metaBuilder, binder.Name,
                     new CallArguments(
-                        new MetaObject(contextExpression, Restrictions.Empty, context),
+                        new DynamicMetaObject(contextExpression, BindingRestrictions.Empty, context),
                         new[] { 
                             target,
-                            new MetaObject(Ast.Constant(symbol), Restrictions.Empty, symbol) 
+                            new DynamicMetaObject(Ast.Constant(symbol), BindingRestrictions.Empty, symbol) 
                         },
                         RubyCallSignature.Simple(1)
                     ), 
@@ -90,7 +90,7 @@ namespace IronRuby.Runtime.Calls {
             }
 
             // TODO: we should return null if we fail, we need to throw exception for now:
-            return metaBuilder.CreateMetaObject(binder, MetaObject.EmptyMetaObjects);
+            return metaBuilder.CreateMetaObject(binder, DynamicMetaObject.EmptyMetaObjects);
         }
     }
 }

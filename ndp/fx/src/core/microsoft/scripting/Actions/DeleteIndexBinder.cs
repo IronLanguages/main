@@ -20,7 +20,7 @@ using System.Dynamic.Utils;
 using Microsoft.Contracts;
 
 namespace System.Dynamic {
-    public abstract class DeleteIndexBinder : MetaObjectBinder {
+    public abstract class DeleteIndexBinder : DynamicMetaObjectBinder {
         private readonly ReadOnlyCollection<ArgumentInfo> _arguments;
 
         protected DeleteIndexBinder(params ArgumentInfo[] arguments)
@@ -46,17 +46,17 @@ namespace System.Dynamic {
             return DeleteIndexBinderHash ^ _arguments.ListHashCode();
         }
 
-        public sealed override MetaObject Bind(MetaObject target, MetaObject[] args) {
+        public sealed override DynamicMetaObject Bind(DynamicMetaObject target, DynamicMetaObject[] args) {
             ContractUtils.RequiresNotNull(target, "target");
             ContractUtils.RequiresNotNullItems(args, "args");
 
             return target.BindDeleteIndex(this, args);
         }
 
-        public MetaObject FallbackDeleteIndex(MetaObject target, MetaObject[] indexes) {
+        public DynamicMetaObject FallbackDeleteIndex(DynamicMetaObject target, DynamicMetaObject[] indexes) {
             return FallbackDeleteIndex(target, indexes, null);
         }
 
-        public abstract MetaObject FallbackDeleteIndex(MetaObject target, MetaObject[] indexes, MetaObject errorSuggestion);
+        public abstract DynamicMetaObject FallbackDeleteIndex(DynamicMetaObject target, DynamicMetaObject[] indexes, DynamicMetaObject errorSuggestion);
     }
 }

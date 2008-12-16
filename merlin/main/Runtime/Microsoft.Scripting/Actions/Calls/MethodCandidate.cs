@@ -84,7 +84,7 @@ namespace Microsoft.Scripting.Actions.Calls {
             return res;
         }
 
-        internal bool IsApplicable(MetaObject[] objects, NarrowingLevel narrowingLevel, List<ConversionResult> conversionResults) {
+        internal bool IsApplicable(DynamicMetaObject[] objects, NarrowingLevel narrowingLevel, List<ConversionResult> conversionResults) {
             // attempt to convert each parameter
             bool res = true;
             for (int i = 0; i < objects.Length; i++) {
@@ -122,7 +122,7 @@ namespace Microsoft.Scripting.Actions.Calls {
             return Candidate.Equivalent;
         }
 
-        internal static Candidate GetPreferredCandidate(MethodCandidate one, MethodCandidate two, CallTypes callType, MetaObject[] actualTypes) {
+        internal static Candidate GetPreferredCandidate(MethodCandidate one, MethodCandidate two, CallTypes callType, DynamicMetaObject[] actualTypes) {
             Candidate cmpParams = ParameterWrapper.GetPreferredParameters(one.Parameters, two.Parameters, actualTypes);
             if (cmpParams.Chosen()) {
                 return cmpParams;

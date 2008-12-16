@@ -580,10 +580,6 @@ namespace System.Dynamic.Utils {
             }
         }
 
-        internal static Type GetNonNoneType(Type type) {
-            return (type == typeof(Null)) ? typeof(object) : type;
-        }
-
         // When emitting constants, we generally emit as the real type, even if
         // it is non-visible. However, for some types (e.g. reflection types)
         // we convert to the visible type, because the non-visible type isn't
@@ -633,15 +629,6 @@ namespace System.Dynamic.Utils {
                 type = type.BaseType;
             } while (type != null);
             return null;
-        }
-
-        /// <summary>
-        /// Returns the System.Type for any object, including null.  The type of null
-        /// is represented by None.Type and all other objects just return the 
-        /// result of Object.GetType
-        /// </summary>
-        internal static Type GetTypeForBinding(object obj) {
-            return obj == null ? Null.Type : obj.GetType();
         }
     }
 }

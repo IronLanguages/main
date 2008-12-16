@@ -41,7 +41,7 @@ namespace Microsoft.Scripting.Actions {
         /// <param name="value">
         /// The value being assigned to the target member.
         /// </param>
-        public MetaObject SetMember(string name, MetaObject target, MetaObject value) {
+        public DynamicMetaObject SetMember(string name, DynamicMetaObject target, DynamicMetaObject value) {
             return SetMember(name, target, value, Ast.Constant(null, typeof(CodeContext)));
         }
 
@@ -64,7 +64,7 @@ namespace Microsoft.Scripting.Actions {
         /// accessing the member (e.g. for an extension property which takes CodeContext).  By default this
         /// a null CodeContext object is passed.
         /// </param>
-        public MetaObject SetMember(string name, MetaObject target, MetaObject value, Expression codeContext) {
+        public DynamicMetaObject SetMember(string name, DynamicMetaObject target, DynamicMetaObject value, Expression codeContext) {
             ContractUtils.RequiresNotNull(name, "name");
             ContractUtils.RequiresNotNull(target, "target");
             ContractUtils.RequiresNotNull(value, "value");
@@ -77,7 +77,7 @@ namespace Microsoft.Scripting.Actions {
             );
         }
 
-        private MetaObject MakeSetMemberTarget(SetOrDeleteMemberInfo memInfo, MetaObject target, MetaObject value) {
+        private DynamicMetaObject MakeSetMemberTarget(SetOrDeleteMemberInfo memInfo, DynamicMetaObject target, DynamicMetaObject value) {
             Type type = target.LimitType.IsCOMObject ? target.Expression.Type : target.LimitType;
             Expression self = target.Expression;
             
@@ -90,7 +90,7 @@ namespace Microsoft.Scripting.Actions {
                 self = null;
 
                 memInfo.Body.Restrictions = memInfo.Body.Restrictions.Merge(
-                    Restrictions.GetInstanceRestriction(target.Expression, target.Value)
+                    BindingRestrictions.GetInstanceRestriction(target.Expression, target.Value)
                 );
             }
 
@@ -99,7 +99,7 @@ namespace Microsoft.Scripting.Actions {
             return memInfo.Body.GetMetaObject(target, value);
         }
 
-        private void MakeSetMemberRule(SetOrDeleteMemberInfo memInfo, Type type, Expression self, MetaObject target) {
+        private void MakeSetMemberRule(SetOrDeleteMemberInfo memInfo, Type type, Expression self, DynamicMetaObject target) {
             if (MakeOperatorSetMemberBody(memInfo, self, target, type, "SetMember")) {
                 return;
             }
@@ -164,7 +164,7 @@ namespace Microsoft.Scripting.Actions {
             }
         }
 
-        private void MakeGenericBody(SetOrDeleteMemberInfo memInfo, Expression instance, MetaObject target, Type type, MemberTracker tracker) {
+        private void MakeGenericBody(SetOrDeleteMemberInfo memInfo, Expression instance, DynamicMetaObject target, Type type, MemberTracker tracker) {
             if (instance != null) {
                 tracker = tracker.BindToInstance(instance);
             }
@@ -180,7 +180,7 @@ namespace Microsoft.Scripting.Actions {
             }
         }
 
-        private void MakePropertyRule(SetOrDeleteMemberInfo memInfo, Expression instance, MetaObject target, Type targetType, MemberGroup properties) {
+        private void MakePropertyRule(SetOrDeleteMemberInfo memInfo, Expression instance, DynamicMetaObject target, Type targetType, MemberGroup properties) {
             PropertyTracker info = (PropertyTracker)properties[0];
 
             MethodInfo setter = info.GetSetMethod(true);
@@ -261,7 +261,7 @@ namespace Microsoft.Scripting.Actions {
             }
         }
 
-        private void MakeFieldRule(SetOrDeleteMemberInfo memInfo, Expression instance, MetaObject target, Type targetType, MemberGroup fields) {
+        private void MakeFieldRule(SetOrDeleteMemberInfo memInfo, Expression instance, DynamicMetaObject target, Type targetType, MemberGroup fields) {
             FieldTracker field = (FieldTracker)fields[0];
 
             // TODO: Tmp variable for target
@@ -333,7 +333,7 @@ namespace Microsoft.Scripting.Actions {
             }
         }
 
-        private Expression MakeReturnValue(Expression expression, MetaObject target) {
+        private Expression MakeReturnValue(Expression expression, DynamicMetaObject target) {
             return Ast.Block(
                 expression,
                 target.Expression
@@ -341,7 +341,7 @@ namespace Microsoft.Scripting.Actions {
         }
 
         /// <summary> if a member-injector is defined-on or registered-for this type call it </summary>
-        private bool MakeOperatorSetMemberBody(SetOrDeleteMemberInfo memInfo, Expression self, MetaObject target, Type type, string name) {
+        private bool MakeOperatorSetMemberBody(SetOrDeleteMemberInfo memInfo, Expression self, DynamicMetaObject target, Type type, string name) {
             if (self != null) {
                 MethodInfo setMem = GetMethod(type, name);
                 if (setMem != null && setMem.IsSpecialName) {

@@ -157,7 +157,7 @@ namespace Microsoft.Scripting.Actions {
         /// Produces a rule for comparing a value to null - supports comparing object references and nullable types.
         /// </summary>
         private bool TryMakeNullComparisonRule() {
-            if (_types[0] == typeof(Null)) {
+            if (_types[0] == typeof(DynamicNull)) {
                 if (!_types[1].IsValueType) {
                     _rule.Target = _rule.MakeReturn(Binder, Ast.Equal(_rule.Parameters[1], Ast.Constant(null)));
                 } else if (_types[1].GetGenericTypeDefinition() == typeof(Nullable<>)) {
@@ -166,7 +166,7 @@ namespace Microsoft.Scripting.Actions {
                     return false;
                 }
                 return true;
-            } else if (_types[1] == typeof(Null)) {
+            } else if (_types[1] == typeof(DynamicNull)) {
                 if (!_types[0].IsValueType) {
                     _rule.Target = _rule.MakeReturn(Binder, Ast.Equal(_rule.Parameters[0], Ast.Constant(null)));
                 } else if (_types[0].GetGenericTypeDefinition() == typeof(Nullable<>)) {
@@ -614,7 +614,7 @@ namespace Microsoft.Scripting.Actions {
 
                     // don't call object methods for None type, but if someone added
                     // methods to null we'd call those.
-                    if (method.DeclaringType != typeof(object) || t != typeof(Null)) {
+                    if (method.DeclaringType != typeof(object) || t != typeof(DynamicNull)) {
                         methods.Add(method);
                     }
                 }

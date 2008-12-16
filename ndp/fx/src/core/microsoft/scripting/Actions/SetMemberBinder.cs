@@ -16,7 +16,7 @@
 using System.Dynamic.Utils;
 
 namespace System.Dynamic {
-    public abstract class SetMemberBinder : MetaObjectBinder {
+    public abstract class SetMemberBinder : DynamicMetaObjectBinder {
         private readonly string _name;
         private readonly bool _ignoreCase;
 
@@ -39,7 +39,7 @@ namespace System.Dynamic {
             }
         }
 
-        public sealed override MetaObject Bind(MetaObject target, MetaObject[] args) {
+        public sealed override DynamicMetaObject Bind(DynamicMetaObject target, DynamicMetaObject[] args) {
             ContractUtils.RequiresNotNull(target, "target");
             ContractUtils.RequiresNotNullItems(args, "args");
             ContractUtils.Requires(args.Length == 1);
@@ -47,11 +47,11 @@ namespace System.Dynamic {
             return target.BindSetMember(this, args[0]);
         }
 
-        public MetaObject FallbackSetMember(MetaObject target, MetaObject value) {
+        public DynamicMetaObject FallbackSetMember(DynamicMetaObject target, DynamicMetaObject value) {
             return FallbackSetMember(target, value, null);
         }
 
-        public abstract MetaObject FallbackSetMember(MetaObject target, MetaObject value, MetaObject errorSuggestion);
+        public abstract DynamicMetaObject FallbackSetMember(DynamicMetaObject target, DynamicMetaObject value, DynamicMetaObject errorSuggestion);
 
         public override int GetHashCode() {
             return SetMemberBinderHash ^ _name.GetHashCode() ^ (_ignoreCase ? 0x8000000 : 0);

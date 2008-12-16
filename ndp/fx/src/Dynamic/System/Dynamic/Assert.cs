@@ -19,8 +19,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 
 namespace System.Dynamic {
-
-    // TODO: do we really need this class?
     internal static class Assert {
 
         internal static Exception Unreachable {

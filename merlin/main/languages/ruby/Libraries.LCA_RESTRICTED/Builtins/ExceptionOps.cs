@@ -154,12 +154,13 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("to_s")]
         [RubyMethod("to_str")]
-        public static MutableString/*!*/ GetMessage(RubyContext/*!*/ context, Exception/*!*/ self) {
-            return Protocols.AsString(context, GetMessage(self));
+        public static MutableString/*!*/ GetMessage(ConversionStorage<MutableString>/*!*/ tosStorage, RubyContext/*!*/ context, Exception/*!*/ self) {
+            return Protocols.ConvertToString(tosStorage, context, GetMessage(self));
         }
 
         [RubyMethod("inspect", RubyMethodAttributes.PublicInstance)]
-        public static MutableString/*!*/ Inspect(RubyContext/*!*/ context, Exception/*!*/ self) {
+        public static MutableString/*!*/ Inspect(UnaryOpStorage/*!*/ inspectStorage, ConversionStorage<MutableString>/*!*/ tosStorage,
+            RubyContext/*!*/ context, Exception/*!*/ self) {
 
             object message = RubyExceptionData.GetInstance(self).Message;
             string className = RubyUtils.GetClassName(context, self);
@@ -169,7 +170,7 @@ namespace IronRuby.Builtins {
             result.Append(className);
             result.Append(": ");
             if (message != null) {
-                result.Append(KernelOps.Inspect(context, message));
+                result.Append(KernelOps.Inspect(inspectStorage, tosStorage, context, message));
             } else {
                 result.Append(className);
             }

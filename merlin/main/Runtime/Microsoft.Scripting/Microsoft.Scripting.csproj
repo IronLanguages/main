@@ -331,7 +331,6 @@
     <Compile Include="Runtime\Cast.cs" />
     <Compile Include="Runtime\CodeDomCodeGen.cs" />
     <Compile Include="Runtime\DefaultLanguageContext.cs" />
-    <Compile Include="Runtime\DelegateCallBinder.cs" />
     <Compile Include="Runtime\DelegateInfo.cs" />
     <Compile Include="Runtime\DelegateSignatureInfo.cs" />
     <Compile Include="Runtime\DynamicOperations.cs" />

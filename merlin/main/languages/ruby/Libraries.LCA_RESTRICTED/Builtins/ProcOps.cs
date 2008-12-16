@@ -126,7 +126,7 @@ namespace IronRuby.Builtins {
         #region Singleton Methods
 
         [RubyMethod("new", RubyMethodAttributes.PublicSingleton)]
-        public static Proc/*!*/ CreateNew(SiteLocalStorage<CallSite<Func<CallSite, RubyContext, Proc, Proc, object>>>/*!*/ storage, 
+        public static Proc/*!*/ CreateNew(CallSiteStorage<Func<CallSite, RubyContext, Proc, Proc, object>>/*!*/ storage, 
             RubyScope/*!*/ scope, RubyClass/*!*/ self) {
 
             RubyMethodScope methodScope = scope.GetInnerMostMethodScope();
@@ -138,7 +138,7 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("new", RubyMethodAttributes.PublicSingleton)]
-        public static Proc/*!*/ CreateNew(SiteLocalStorage<CallSite<Func<CallSite, RubyContext, Proc, Proc, object>>>/*!*/ storage, 
+        public static Proc/*!*/ CreateNew(CallSiteStorage<Func<CallSite, RubyContext, Proc, Proc, object>>/*!*/ storage, 
             BlockParam/*!*/ block, RubyClass/*!*/ self) {
 
             if (block == null) {
@@ -148,7 +148,7 @@ namespace IronRuby.Builtins {
             return CreateNew(storage, self, block.Proc);
         }
 
-        public static Proc/*!*/ CreateNew(SiteLocalStorage<CallSite<Func<CallSite, RubyContext, Proc, Proc, object>>>/*!*/ storage,
+        public static Proc/*!*/ CreateNew(CallSiteStorage<Func<CallSite, RubyContext, Proc, Proc, object>>/*!*/ storage,
             RubyClass/*!*/ self, Proc/*!*/ proc) {
             Assert.NotNull(storage, self, proc);
 

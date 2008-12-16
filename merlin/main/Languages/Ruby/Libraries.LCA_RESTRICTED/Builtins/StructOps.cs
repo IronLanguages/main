@@ -24,8 +24,9 @@ using Microsoft.Scripting.Utils;
 using Microsoft.Scripting.Actions;
 using IronRuby.Runtime;
 using IronRuby.Runtime.Calls;
-using Ast = System.Linq.Expressions.Expression;
 using System.Runtime.InteropServices;
+using Ast = System.Linq.Expressions.Expression;
+using EachSite = System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, object, IronRuby.Builtins.Proc, object>;
 
 namespace IronRuby.Builtins {
 
@@ -136,8 +137,8 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("[]")]
-        public static object GetValue(RubyStruct/*!*/ self, object index) {
-            return self[NormalizeIndex(self.ItemCount, Protocols.CastToFixnum(self.Class.Context, index))];
+        public static object GetValue(ConversionStorage<int>/*!*/ conversionStorage, RubyStruct/*!*/ self, object index) {
+            return self[NormalizeIndex(self.ItemCount, Protocols.CastToFixnum(conversionStorage, self.Class.Context, index))];
         }
 
         [RubyMethod("[]=")]
@@ -156,8 +157,8 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("[]=")]
-        public static object SetValue(RubyStruct/*!*/ self, object index, object value) {
-            return self[NormalizeIndex(self.ItemCount, Protocols.CastToFixnum(self.Class.Context, index))] = value;
+        public static object SetValue(ConversionStorage<int>/*!*/ conversionStorage, RubyStruct/*!*/ self, object index, object value) {
+            return self[NormalizeIndex(self.ItemCount, Protocols.CastToFixnum(conversionStorage, self.Class.Context, index))] = value;
         }
 
         [RubyMethod("each")]
@@ -210,16 +211,19 @@ namespace IronRuby.Builtins {
 
         // same pattern as RubyStruct.Equals, but we need to call == instead of eql?
         [RubyMethod("==")]
-        public static bool Equals(RubyStruct/*!*/ self, object obj) {
+        public static bool Equals(BinaryOpStorage/*!*/ equals, RubyStruct/*!*/ self, object obj) {
             var other = obj as RubyStruct;
             if (!self.StructReferenceEquals(other)) {
                 return false;
             }
-
             Debug.Assert(self.ItemCount == other.ItemCount);
-            for (int i = 0; i < self.Values.Length; i++) {
-                if (!RubySites.Equal(self.Class.Context, self.Values[i], other.Values[i])) {
-                    return false;
+
+            if (self.Values.Length > 0) {
+                var site = equals.GetCallSite("==");
+                for (int i = 0; i < self.Values.Length; i++) {
+                    if (RubyOps.IsFalse(site.Target(site, self.Class.Context, self.Values[i], other.Values[i]))) {
+                        return false;
+                    }
                 }
             }
 
@@ -259,24 +263,24 @@ namespace IronRuby.Builtins {
         // For some unknown reason Struct defines the method even though it is mixed in from Enumerable
         // Until we discover the difference, delegate to Enumerable#select
         [RubyMethod("select")]
-        public static RubyArray/*!*/ Select(BlockParam predicate, RubyStruct/*!*/ self) {
-            return Enumerable.Select(self.Class.Context, predicate, self);
+        public static RubyArray/*!*/ Select(CallSiteStorage<EachSite>/*!*/ each, BlockParam predicate, RubyStruct/*!*/ self) {
+            return Enumerable.Select(each, self.Class.Context, predicate, self);
         }
 
         // equivalent to Array#values_at over the data array
         [RubyMethod("values_at")]
-        public static RubyArray/*!*/ ValuesAt(RubyStruct/*!*/ self, [NotNull]params object[] values) {
+        public static RubyArray/*!*/ ValuesAt(ConversionStorage<int>/*!*/ fixnumCast, RubyStruct/*!*/ self, [NotNull]params object[] values) {
             RubyArray result = new RubyArray();
+            RubyContext context = self.Class.Context;
             object[] data = self.Values;
 
             for (int i = 0; i < values.Length; ++i) {
                 Range range = values[i] as Range;
                 if (range != null) {
-                    bool excludeEnd;
-                    int begin, end;
-                    Protocols.ConvertToIntegerRange(self.Class.Context, range, out begin, out end, out excludeEnd);
+                    int begin = Protocols.CastToFixnum(fixnumCast, context, range.Begin);
+                    int end = Protocols.CastToFixnum(fixnumCast, context, range.End);
 
-                    if (excludeEnd) {
+                    if (range.ExcludeEnd) {
                         end -= 1;
                     }
 
@@ -291,7 +295,7 @@ namespace IronRuby.Builtins {
                         }
                     }
                 } else {
-                    int index = NormalizeIndex(data.Length, Protocols.CastToFixnum(self.Class.Context, values[i]));
+                    int index = NormalizeIndex(data.Length, Protocols.CastToFixnum(fixnumCast, context, values[i]));
                     result.Add(data[index]);
                 }
             }

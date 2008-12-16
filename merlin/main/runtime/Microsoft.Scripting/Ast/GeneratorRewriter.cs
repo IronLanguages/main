@@ -737,7 +737,7 @@ namespace Microsoft.Scripting.Ast {
         protected override Expression VisitMemberInit(MemberInitExpression node) {
             // See if anything changed
             int yields = _yields.Count;
-            Expression e = base.Visit(node);
+            Expression e = base.VisitMemberInit(node);
             if (yields == _yields.Count) {
                 return e;
             }
@@ -748,7 +748,7 @@ namespace Microsoft.Scripting.Ast {
         protected override Expression VisitListInit(ListInitExpression node) {
             // See if anything changed
             int yields = _yields.Count;
-            Expression e = base.Visit(node);
+            Expression e = base.VisitListInit(node);
             if (yields == _yields.Count) {
                 return e;
             }

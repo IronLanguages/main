@@ -18,7 +18,7 @@ using Microsoft.Contracts;
 using System.Linq.Expressions;
 
 namespace System.Dynamic {
-    public abstract class BinaryOperationBinder : MetaObjectBinder {
+    public abstract class BinaryOperationBinder : DynamicMetaObjectBinder {
         private ExpressionType _operation;
 
         protected BinaryOperationBinder(ExpressionType operation) {
@@ -32,13 +32,13 @@ namespace System.Dynamic {
             }
         }
 
-        public MetaObject FallbackBinaryOperation(MetaObject target, MetaObject arg) {
+        public DynamicMetaObject FallbackBinaryOperation(DynamicMetaObject target, DynamicMetaObject arg) {
             return FallbackBinaryOperation(target, arg, null);
         }
 
-        public abstract MetaObject FallbackBinaryOperation(MetaObject target, MetaObject arg, MetaObject errorSuggestion);
+        public abstract DynamicMetaObject FallbackBinaryOperation(DynamicMetaObject target, DynamicMetaObject arg, DynamicMetaObject errorSuggestion);
 
-        public sealed override MetaObject Bind(MetaObject target, MetaObject[] args) {
+        public sealed override DynamicMetaObject Bind(DynamicMetaObject target, DynamicMetaObject[] args) {
             ContractUtils.RequiresNotNull(target, "target");
             ContractUtils.RequiresNotNullItems(args, "args");
             ContractUtils.Requires(args.Length == 1);

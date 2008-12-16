@@ -89,7 +89,7 @@ namespace System.Linq.Expressions.Compiler {
                 _boundConstants.EmitConstant(this, dynamicMethod, typeof(DynamicMethod));
                 _ilg.EmitType(delegateType);
                 EmitClosureCreation(inner);
-                _ilg.EmitCall(typeof(DynamicMethod).GetMethod("CreateDelegate", new Type[] { typeof(Type), typeof(object) }));
+                _ilg.Emit(OpCodes.Callvirt, typeof(DynamicMethod).GetMethod("CreateDelegate", new Type[] { typeof(Type), typeof(object) }));
                 _ilg.Emit(OpCodes.Castclass, delegateType);
             } else {
                 // new DelegateType(closure)
@@ -118,7 +118,9 @@ namespace System.Linq.Expressions.Compiler {
             if (_dynamicMethod) {
                 impl = CreateDynamicCompiler(_tree, lambda, implName, returnType, paramTypes, paramNames, _emitDebugSymbols, _method is DynamicMethod);
             } else {
-                impl = CreateStaticCompiler(_tree, lambda, _typeBuilder, implName, TypeUtils.PublicStatic, returnType, paramTypes, paramNames, _dynamicMethod, _emitDebugSymbols);
+                //The lambda must be a nested one, we generate a private method for it.
+                MethodBuilder mb = _typeBuilder.DefineMethod(implName, MethodAttributes.Private | MethodAttributes.Static, returnType, paramTypes.ToArray());
+                impl = CreateStaticCompiler(_tree, lambda, mb, returnType, paramTypes, paramNames, _dynamicMethod, _emitDebugSymbols);
             }
 
             // 3. emit the lambda

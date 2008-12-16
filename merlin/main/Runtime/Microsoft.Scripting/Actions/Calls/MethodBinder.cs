@@ -201,7 +201,7 @@ namespace Microsoft.Scripting.Actions.Calls {
         /// also be called reflectively at runtime, create an Expression for embedding in
         /// a RuleBuilder, or be used for performing an abstract call.
         /// </summary>
-        public BindingTarget MakeBindingTarget(CallTypes callType, MetaObject[] metaObjects) {
+        public BindingTarget MakeBindingTarget(CallTypes callType, DynamicMetaObject[] metaObjects) {
             ContractUtils.RequiresNotNull(metaObjects, "types");
             ContractUtils.RequiresNotNullItems(metaObjects, "types");
 
@@ -721,7 +721,7 @@ namespace Microsoft.Scripting.Actions.Calls {
                 return new BindingTarget(_binder.Name, callType == CallTypes.None ? types.Length : types.Length - 1, failures.ToArray());
             }
 
-            internal BindingTarget MakeBindingTarget(CallTypes callType, MetaObject[] metaObjects, SymbolId[] names, NarrowingLevel minLevel, NarrowingLevel maxLevel) {
+            internal BindingTarget MakeBindingTarget(CallTypes callType, DynamicMetaObject[] metaObjects, SymbolId[] names, NarrowingLevel minLevel, NarrowingLevel maxLevel) {
                 List<ConversionResult> lastFail = new List<ConversionResult>();
                 List<CallFailure> failures = null;
 
@@ -737,7 +737,7 @@ namespace Microsoft.Scripting.Actions.Calls {
                         // to have argument names (which we created because the MethodBinder gets 
                         // created w/ keyword arguments).
                         if (!target.HasParamsDictionary()) {
-                            MetaObject[] normalizedObjects;
+                            DynamicMetaObject[] normalizedObjects;
                             CallFailure callFailure;
 
                             if (!target.TryGetNormalizedArguments(metaObjects, names, out normalizedObjects, out callFailure)) {
@@ -793,7 +793,7 @@ namespace Microsoft.Scripting.Actions.Calls {
                 return false;
             }
 
-            private static bool TryGetApplicableTarget(CallTypes callType, List<MethodCandidate> applicableTargets, MetaObject[] actualTypes, out List<MethodCandidate> result) {
+            private static bool TryGetApplicableTarget(CallTypes callType, List<MethodCandidate> applicableTargets, DynamicMetaObject[] actualTypes, out List<MethodCandidate> result) {
                 result = null;
                 if (applicableTargets.Count == 1) {
                     result = applicableTargets;
@@ -826,12 +826,12 @@ namespace Microsoft.Scripting.Actions.Calls {
                 return tests;
             }
 
-            private MetaObject[] GetRestrictedMetaObjects(MethodCandidate target, MetaObject[] objects, IList<MethodCandidate> candidates) {
+            private DynamicMetaObject[] GetRestrictedMetaObjects(MethodCandidate target, DynamicMetaObject[] objects, IList<MethodCandidate> candidates) {
                 IList<ParameterWrapper> parameters = target.Parameters;
 
                 Debug.Assert(parameters.Count == objects.Length);
 
-                MetaObject[] resObjects = new MetaObject[objects.Length];
+                DynamicMetaObject[] resObjects = new DynamicMetaObject[objects.Length];
                 for (int i = 0; i < objects.Length; i++) {
                     if (_targets.Count > 0 && AreArgumentTypesOverloaded(i, objects.Length, candidates)) {
                         resObjects[i] = objects[i].Restrict(objects[i].LimitType);
@@ -912,7 +912,7 @@ namespace Microsoft.Scripting.Actions.Calls {
                 return null;
             }
 
-            private static bool IsBest(MethodCandidate candidate, List<MethodCandidate> applicableTargets, CallTypes callType, MetaObject[] actualTypes) {
+            private static bool IsBest(MethodCandidate candidate, List<MethodCandidate> applicableTargets, CallTypes callType, DynamicMetaObject[] actualTypes) {
                 foreach (MethodCandidate target in applicableTargets) {
                     if (candidate == target) {
                         continue;
@@ -925,7 +925,7 @@ namespace Microsoft.Scripting.Actions.Calls {
                 return true;
             }
 
-            private static MethodCandidate FindBest(CallTypes callType, List<MethodCandidate> applicableTargets, MetaObject[] actualTypes) {
+            private static MethodCandidate FindBest(CallTypes callType, List<MethodCandidate> applicableTargets, DynamicMetaObject[] actualTypes) {
                 foreach (MethodCandidate candidate in applicableTargets) {
                     if (IsBest(candidate, applicableTargets, callType, actualTypes)) return candidate;
                 }
@@ -949,7 +949,7 @@ namespace Microsoft.Scripting.Actions.Calls {
                 return new BindingTarget(_binder.Name, callType == CallTypes.None ? types.Length : types.Length - 1, resTarget.Target, resTarget.NarrowingLevel, GetTypesForTest(types, _targets));
             }
 
-            private BindingTarget MakeSuccessfulBindingTarget(CallTypes callType, MetaObject[] objects, List<MethodCandidate> result) {
+            private BindingTarget MakeSuccessfulBindingTarget(CallTypes callType, DynamicMetaObject[] objects, List<MethodCandidate> result) {
                 MethodCandidate resTarget = result[0];
                 return new BindingTarget(_binder.Name, callType == CallTypes.None ? objects.Length : objects.Length - 1, resTarget.Target, resTarget.NarrowingLevel, GetRestrictedMetaObjects(resTarget, objects, _targets));
             }

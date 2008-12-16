@@ -65,7 +65,7 @@ namespace Microsoft.Scripting.ComInterop {
             _memberValues = memberValues;
         }
 
-        MetaObject IDynamicObject.GetMetaObject(Expression parameter) {
+        DynamicMetaObject IDynamicObject.GetMetaObject(Expression parameter) {
             return new TypeEnumMetaObject(this, parameter);
         }
 

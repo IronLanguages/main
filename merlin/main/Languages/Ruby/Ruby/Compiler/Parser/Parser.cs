@@ -126,7 +126,9 @@ namespace IronRuby.Compiler {
         }
 
         public Parser(ErrorSink/*!*/ errorSink) {
-            _tokenizer = new Tokenizer(false, errorSink, this);
+            _tokenizer = new Tokenizer(false, this) { 
+                ErrorSink = errorSink 
+            };
             InitializeTables();
         }
 
@@ -161,7 +163,7 @@ namespace IronRuby.Compiler {
 
                         if (_tokenizer.UnterminatedToken) {
                             props = ScriptCodeParseResult.IncompleteToken;
-                        } else if (_tokenizer.IsEndOfFile) {
+                        } else if (_tokenizer.EndOfFileReached) {
                             props = ScriptCodeParseResult.IncompleteStatement;
                         } else {
                             props = ScriptCodeParseResult.Invalid;

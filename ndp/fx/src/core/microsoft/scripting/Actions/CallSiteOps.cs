@@ -108,10 +108,7 @@ namespace System.Runtime.CompilerServices {
 
         [Obsolete("do not use this method", true)]
         public static CallSiteRule<T>[] GetRules<T>(CallSite<T> site) where T : class {
-            if (site.Rules == null) {
-                return EmptyArray<CallSiteRule<T>>.Instance;
-            }
-            return site.Rules.GetRules();
+            return (site.Rules == null) ? null : site.Rules.GetRules();
         }
     }
 }

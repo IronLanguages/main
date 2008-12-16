@@ -21,19 +21,19 @@ using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace Microsoft.Scripting.ComInterop {
 
-    internal class ComClassMetaObject : MetaObject {
+    internal class ComClassMetaObject : DynamicMetaObject {
         internal ComClassMetaObject(Expression expression, ComTypeClassDesc cls)
-            : base(expression, Restrictions.Empty, cls) {
+            : base(expression, BindingRestrictions.Empty, cls) {
         }
 
-        public override MetaObject BindCreateInstance(CreateInstanceBinder binder, MetaObject[] args) {
-            return new MetaObject(
+        public override DynamicMetaObject BindCreateInstance(CreateInstanceBinder binder, DynamicMetaObject[] args) {
+            return new DynamicMetaObject(
                 Expression.Call(
                     AstUtils.Convert(Expression, typeof(ComTypeClassDesc)),
                     typeof(ComTypeClassDesc).GetMethod("CreateInstance")
                 ),
-                Restrictions.Combine(args).Merge(
-                    Restrictions.GetTypeRestriction(Expression, typeof(ComTypeClassDesc))
+                BindingRestrictions.Combine(args).Merge(
+                    BindingRestrictions.GetTypeRestriction(Expression, typeof(ComTypeClassDesc))
                 )
             );
         }

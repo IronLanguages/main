@@ -18,11 +18,11 @@ using System.Dynamic.Utils;
 using Microsoft.Contracts;
 
 namespace System.Dynamic {
-    public abstract class UnaryOperationBinder : MetaObjectBinder {
+    public abstract class UnaryOperationBinder : DynamicMetaObjectBinder {
         private ExpressionType _operation;
 
         protected UnaryOperationBinder(ExpressionType operation) {
-            ContractUtils.ReferenceEquals(OperationIsValid(operation), "operation");
+            ContractUtils.Requires(OperationIsValid(operation), "operation");
             _operation = operation;
         }
 
@@ -32,13 +32,13 @@ namespace System.Dynamic {
             }
         }
 
-        internal MetaObject FallbackUnaryOperation(MetaObject target) {
+        internal DynamicMetaObject FallbackUnaryOperation(DynamicMetaObject target) {
             return FallbackUnaryOperation(target, null);
         }
 
-        public abstract MetaObject FallbackUnaryOperation(MetaObject target, MetaObject errorSuggestion);
+        public abstract DynamicMetaObject FallbackUnaryOperation(DynamicMetaObject target, DynamicMetaObject errorSuggestion);
 
-        public sealed override MetaObject Bind(MetaObject target, MetaObject[] args) {
+        public sealed override DynamicMetaObject Bind(DynamicMetaObject target, DynamicMetaObject[] args) {
             ContractUtils.RequiresNotNull(target, "target");
             ContractUtils.Requires(args == null || args.Length == 0, "args");
 
@@ -68,7 +68,13 @@ namespace System.Dynamic {
                 case ExpressionType.Not:
                 case ExpressionType.Decrement:
                 case ExpressionType.Increment:
+                case ExpressionType.PreIncrementAssign:
+                case ExpressionType.PreDecrementAssign:
+                case ExpressionType.PostIncrementAssign:
+                case ExpressionType.PostDecrementAssign:
                 case ExpressionType.OnesComplement:
+                case ExpressionType.IsTrue:
+                case ExpressionType.IsFalse:
 
                 // *** END GENERATED CODE ***
 

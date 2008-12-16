@@ -67,11 +67,11 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("bind")]
         public static RubyMethod/*!*/ Bind(UnboundMethod/*!*/ self, object target) {
-            RubyContext ec = self._targetConstraint.Context;
+            RubyContext context = self._targetConstraint.Context;
 
-            if (!ec.GetClassOf(target).HasAncestor(self._targetConstraint)) {
+            if (!context.GetClassOf(target).HasAncestor(self._targetConstraint)) {
                 throw RubyExceptions.CreateTypeError(
-                    String.Format("bind argument must be an instance of {0}", self._targetConstraint.Name)
+                    String.Format("bind argument must be an instance of {0}", self._targetConstraint.GetName(context))
                 );
             }
             
@@ -84,11 +84,11 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("to_s")]
-        public static MutableString/*!*/ ToS(UnboundMethod/*!*/ self) {
-            return ToS(self.Name, self._info.DeclaringModule, self._targetConstraint, "UnboundMethod");
+        public static MutableString/*!*/ ToS(RubyContext/*!*/ context, UnboundMethod/*!*/ self) {
+            return ToS(context, self.Name, self._info.DeclaringModule, self._targetConstraint, "UnboundMethod");
         }
 
-        internal static MutableString/*!*/ ToS(string/*!*/ methodName, RubyModule/*!*/ declaringModule, RubyModule/*!*/ targetModule, 
+        internal static MutableString/*!*/ ToS(RubyContext/*!*/ context, string/*!*/ methodName, RubyModule/*!*/ declaringModule, RubyModule/*!*/ targetModule, 
             string/*!*/ classDisplayName) {
 
             MutableString result = MutableString.CreateMutable();
@@ -97,11 +97,11 @@ namespace IronRuby.Builtins {
             result.Append(": ");
 
             if (ReferenceEquals(targetModule, declaringModule)) {
-                result.Append(declaringModule.Name);
+                result.Append(declaringModule.GetName(context));
             } else {
-                result.Append(targetModule.Name);
+                result.Append(targetModule.GetName(context));
                 result.Append('(');
-                result.Append(declaringModule.Name);
+                result.Append(declaringModule.GetName(context));
                 result.Append(')');
             }
 

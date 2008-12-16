@@ -20,7 +20,7 @@ using System.Dynamic.Utils;
 using Microsoft.Contracts;
 
 namespace System.Dynamic {
-    public abstract class SetIndexBinder : MetaObjectBinder {
+    public abstract class SetIndexBinder : DynamicMetaObjectBinder {
         private readonly ReadOnlyCollection<ArgumentInfo> _arguments;
 
         protected SetIndexBinder(params ArgumentInfo[] arguments)
@@ -46,13 +46,13 @@ namespace System.Dynamic {
             return SetMemberBinderHash ^ _arguments.ListHashCode();
         }
 
-        public sealed override MetaObject Bind(MetaObject target, MetaObject[] args) {
+        public sealed override DynamicMetaObject Bind(DynamicMetaObject target, DynamicMetaObject[] args) {
             ContractUtils.RequiresNotNull(target, "target");
             ContractUtils.RequiresNotNull(args, "args");
             ContractUtils.Requires(args.Length >= 2, "args");
 
-            MetaObject value = args[args.Length - 1];
-            MetaObject[] indexes = args.RemoveLast();
+            DynamicMetaObject value = args[args.Length - 1];
+            DynamicMetaObject[] indexes = args.RemoveLast();
 
             ContractUtils.RequiresNotNull(value, "args");
             ContractUtils.RequiresNotNullItems(indexes, "args");
@@ -60,10 +60,10 @@ namespace System.Dynamic {
             return target.BindSetIndex(this, indexes, value);
         }
 
-        public MetaObject FallbackSetIndex(MetaObject target, MetaObject[] indexes, MetaObject value) {
+        public DynamicMetaObject FallbackSetIndex(DynamicMetaObject target, DynamicMetaObject[] indexes, DynamicMetaObject value) {
             return FallbackSetIndex(target, indexes, value, null);
         }
 
-        public abstract MetaObject FallbackSetIndex(MetaObject target, MetaObject[] indexes, MetaObject value, MetaObject errorSuggestion);
+        public abstract DynamicMetaObject FallbackSetIndex(DynamicMetaObject target, DynamicMetaObject[] indexes, DynamicMetaObject value, DynamicMetaObject errorSuggestion);
     }
 }

@@ -83,12 +83,18 @@ namespace IronRuby.Builtins {
 
         private StringBuilder _buf;
 
+        private readonly ConversionStorage<int>/*!*/ _fixnumCast;
+        private readonly ConversionStorage<MutableString>/*!*/ _tosConversion;
 
         #region Constructors
 
-        internal StringFormatter(RubyContext/*!*/ context, string/*!*/ format, IList/*!*/ data) {
+        internal StringFormatter(ConversionStorage<int>/*!*/ fixnumCast, ConversionStorage<MutableString>/*!*/ tosConversion, 
+            RubyContext/*!*/ context, string/*!*/ format, IList/*!*/ data) {
             Assert.NotNull(context, format, data);
+            // TODO: Assert.NotNull(fixnumCast,tosConversion)
 
+            _fixnumCast = fixnumCast;
+            _tosConversion = tosConversion;
             _format = format;
             _data = data;
             _context = context;
@@ -204,7 +210,7 @@ namespace IronRuby.Builtins {
                 int? argindex = TryReadArgumentIndex();
                 _curCh = _format[_index++];
 
-                res = Protocols.CastToFixnum(_context, GetData(argindex));
+                res = Protocols.CastToFixnum(_fixnumCast, _context, GetData(argindex));
             } else {
                 if (Char.IsDigit(_curCh)) {
                     res = 0;
@@ -291,7 +297,7 @@ namespace IronRuby.Builtins {
         }
 
         private void AppendChar() {
-            int fixChar = Protocols.CastToFixnum(_context, _opts.Value);
+            int fixChar = Protocols.CastToFixnum(_fixnumCast, _context, _opts.Value);
             fixChar = fixChar > 0 ? fixChar % 256 : ((-fixChar / 256) + 1) * 256 + fixChar;
             char val = (char)fixChar;
             if (_opts.FieldWidth > 1) {
@@ -760,7 +766,12 @@ namespace IronRuby.Builtins {
         /// for BigInteger below that should be kept in sync.
         /// </summary>
         private void AppendBase(char format, int radix) {
-            object value = Protocols.ConvertToInteger(_context, _opts.Value);
+            BigInteger bignum;
+            int fixnum;
+            Protocols.ConvertToInteger(_context, _opts.Value, out fixnum, out bignum);
+
+            // TODO: split paths for bignum and fixnum
+            object value = ((object)bignum) ?? fixnum;
 
             bool isNegative = IsNegative(value);
             if (isNegative) {
@@ -882,7 +893,7 @@ namespace IronRuby.Builtins {
         }
 
         private void AppendString() {
-            MutableString/*!*/ str = Protocols.ConvertToString(_context, _opts.Value);
+            MutableString/*!*/ str = Protocols.ConvertToString(_tosConversion, _context, _opts.Value);
             if (KernelOps.Tainted(_context, str)) {
                 _tainted = true;
             }

@@ -23,15 +23,15 @@ using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace Microsoft.Scripting.ComInterop {
 
-    internal sealed class TypeLibInfoMetaObject : MetaObject {
+    internal sealed class TypeLibInfoMetaObject : DynamicMetaObject {
         private readonly ComTypeLibInfo _info;
 
         internal TypeLibInfoMetaObject(Expression expression, ComTypeLibInfo info)
-            : base(expression, Restrictions.Empty, info) {
+            : base(expression, BindingRestrictions.Empty, info) {
             _info = info;
         }
 
-        public override MetaObject BindGetMember(GetMemberBinder binder) {
+        public override DynamicMetaObject BindGetMember(GetMemberBinder binder) {
             ContractUtils.RequiresNotNull(binder, "binder");
             string name = binder.Name;
 
@@ -45,7 +45,7 @@ namespace Microsoft.Scripting.ComInterop {
                 return binder.FallbackGetMember(this);
             }
 
-            return new MetaObject(
+            return new DynamicMetaObject(
                 Expression.Property(
                     AstUtils.Convert(Expression, typeof(ComTypeLibInfo)),
                     typeof(ComTypeLibInfo).GetProperty(name)
@@ -58,17 +58,17 @@ namespace Microsoft.Scripting.ComInterop {
             return _info.GetMemberNames();
         }
 
-        private Restrictions ComTypeLibInfoRestrictions(params MetaObject[] args) {
-            return Restrictions.Combine(args).Merge(Restrictions.GetTypeRestriction(Expression, typeof(ComTypeLibInfo)));
+        private BindingRestrictions ComTypeLibInfoRestrictions(params DynamicMetaObject[] args) {
+            return BindingRestrictions.Combine(args).Merge(BindingRestrictions.GetTypeRestriction(Expression, typeof(ComTypeLibInfo)));
         }
 
-        private MetaObject RestrictThisToType() {
-            return new MetaObject(
+        private DynamicMetaObject RestrictThisToType() {
+            return new DynamicMetaObject(
                 AstUtils.Convert(
                     Expression,
                     typeof(ComTypeLibInfo)
                 ),
-                Restrictions.GetTypeRestriction(Expression, typeof(ComTypeLibInfo))
+                BindingRestrictions.GetTypeRestriction(Expression, typeof(ComTypeLibInfo))
             );
         }
     }

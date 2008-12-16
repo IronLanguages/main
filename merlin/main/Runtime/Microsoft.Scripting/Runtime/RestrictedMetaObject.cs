@@ -21,17 +21,17 @@ using System.Linq.Expressions;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace Microsoft.Scripting.Runtime {
-    public class RestrictedMetaObject : MetaObject, IRestrictedMetaObject {
-        public RestrictedMetaObject(Expression expression, Restrictions restriction, object value)  : base(expression, restriction, value) {
+    public class RestrictedMetaObject : DynamicMetaObject, IRestrictedMetaObject {
+        public RestrictedMetaObject(Expression expression, BindingRestrictions restriction, object value)  : base(expression, restriction, value) {
         }
 
-        public RestrictedMetaObject(Expression expression, Restrictions restriction)
+        public RestrictedMetaObject(Expression expression, BindingRestrictions restriction)
             : base(expression, restriction) {
         }
 
         #region IRestrictedMetaObject Members
 
-        public MetaObject Restrict(Type type) {
+        public DynamicMetaObject Restrict(Type type) {
             if (type == LimitType) {
                 return this;
             }
@@ -39,14 +39,14 @@ namespace Microsoft.Scripting.Runtime {
             if (HasValue) {
                 return new RestrictedMetaObject(
                     AstUtils.Convert(Expression, type),
-                    Restrictions.GetTypeRestriction(Expression, type),
+                    BindingRestrictions.GetTypeRestriction(Expression, type),
                     Value
                 );
             }
 
             return new RestrictedMetaObject(
                 AstUtils.Convert(Expression, type),
-                Restrictions.GetTypeRestriction(Expression, type)
+                BindingRestrictions.GetTypeRestriction(Expression, type)
             );
         }
 

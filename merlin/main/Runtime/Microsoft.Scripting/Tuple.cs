@@ -132,7 +132,7 @@ namespace Microsoft.Scripting {
                     continue;
                 }
 
-                if (t == typeof(Null)) continue;
+                if (t == typeof(DynamicNull)) continue;
 
                 count++;
             }
@@ -224,7 +224,7 @@ namespace Microsoft.Scripting {
             for (int i = 0; i < types.Length; i++) {
                 if (typeof(Tuple).IsAssignableFrom(types[i])) {
                     GetTupleValues((Tuple)tuple.GetValue(i), args);
-                } else if (types[i] != typeof(Null)) {
+                } else if (types[i] != typeof(DynamicNull)) {
                     args.Add(tuple.GetValue(i));
                 }
             }
@@ -277,7 +277,7 @@ namespace Microsoft.Scripting {
                     typeArr[index++] = types[i];
                 }
                 while (index < typeArr.Length) {
-                    typeArr[index++] = typeof(Null);
+                    typeArr[index++] = typeof(DynamicNull);
                 }
                 return type.MakeGenericType(typeArr);
             }
@@ -298,7 +298,7 @@ namespace Microsoft.Scripting {
                 nestedTypes[i] = MakeTupleType(types, newStart, newEnd);
             }
             for (int i = size; i < nestedTypes.Length; i++) {
-                nestedTypes[i] = typeof(Null);
+                nestedTypes[i] = typeof(DynamicNull);
             }
 
             return type.MakeGenericType(nestedTypes);

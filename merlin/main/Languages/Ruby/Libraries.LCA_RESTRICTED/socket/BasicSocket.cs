@@ -27,6 +27,7 @@ using Microsoft.Scripting.Utils;
 using IronRuby.Builtins;
 using IronRuby.Runtime;
 using IronRuby.StandardLibrary.FileControl;
+using Microsoft.Scripting.Math;
 
 namespace IronRuby.StandardLibrary.Sockets {
     [RubyClass("BasicSocket", BuildConfig = "!SILVERLIGHT")]
@@ -141,21 +142,7 @@ namespace IronRuby.StandardLibrary.Sockets {
         }
 
         [RubyMethod("shutdown")]
-        public static int Shutdown(RubyContext/*!*/ context, RubyBasicSocket/*!*/ self) {
-            return Shutdown(context, self, 2);
-        }
-
-        [RubyMethod("shutdown")]
-        public static int Shutdown(RubyContext/*!*/ context, RubyBasicSocket/*!*/ self, object/*Numeric*/ how) {
-            int iHow = 2;
-            if (how != null) {
-                iHow = Protocols.CastToFixnum(context, how);
-            }
-            return Shutdown(context, self, iHow);
-        }
-
-        [RubyMethod("shutdown")]
-        public static int Shutdown(RubyContext/*!*/ context, RubyBasicSocket/*!*/ self, int how) {
+        public static int Shutdown(RubyContext/*!*/ context, RubyBasicSocket/*!*/ self, [DefaultProtocol, DefaultParameterValue(2)]int how) {
             CheckSecurity(context, self, "can't shutdown socket");
             if (how < 0 || 2 < how) {
                 throw RubyExceptions.CreateArgumentError("`how' should be either 0, 1, 2");
@@ -171,11 +158,11 @@ namespace IronRuby.StandardLibrary.Sockets {
         /// <param name="optname">optname is an integer, usually one of the SO_ constants, such as Socket::SO_REUSEADDR.</param>
         /// <param name="value">value is the value of the option, it is passed to the underlying setsockopt() as a pointer to a certain number of bytes. How this is done depends on the type.</param>
         [RubyMethod("setsockopt")]
-        public static void SetSocketOption(RubyContext/*!*/ context, RubyBasicSocket/*!*/ self, object/*Numeric*/ level, object/*Numeric*/ optname, int value) {
+        public static void SetSocketOption(ConversionStorage<int>/*!*/ conversionStorage, RubyContext/*!*/ context, 
+            RubyBasicSocket/*!*/ self, [DefaultProtocol]int level, [DefaultProtocol]int optname, int value) {
+
             Protocols.CheckSafeLevel(context, 2, "setsockopt");
-            int iLevel = Protocols.CastToFixnum(context, level);
-            int iOptname = Protocols.CastToFixnum(context, optname);
-            self.Socket.SetSocketOption((SocketOptionLevel)iLevel, (SocketOptionName)iOptname, value);
+            self.Socket.SetSocketOption((SocketOptionLevel)level, (SocketOptionName)optname, value);
         }
 
         /// <summary>
@@ -185,11 +172,11 @@ namespace IronRuby.StandardLibrary.Sockets {
         /// <param name="optname">optname is an integer, usually one of the SO_ constants, such as Socket::SO_REUSEADDR.</param>
         /// <param name="value">value is the value of the option, it is passed to the underlying setsockopt() as a pointer to a certain number of bytes. How this is done depends on the type.</param>
         [RubyMethod("setsockopt")]
-        public static void SetSocketOption(RubyContext/*!*/ context, RubyBasicSocket/*!*/ self, object/*Numeric*/ level, object/*Numeric*/ optname, bool value) {
+        public static void SetSocketOption(ConversionStorage<int>/*!*/ conversionStorage, RubyContext/*!*/ context, 
+            RubyBasicSocket/*!*/ self, [DefaultProtocol]int level, [DefaultProtocol]int optname, bool value) {
+
             Protocols.CheckSafeLevel(context, 2, "setsockopt");
-            int iLevel = Protocols.CastToFixnum(context, level);
-            int iOptname = Protocols.CastToFixnum(context, optname);
-            self.Socket.SetSocketOption((SocketOptionLevel)iLevel, (SocketOptionName)iOptname, value);
+            self.Socket.SetSocketOption((SocketOptionLevel)level, (SocketOptionName)optname, value);
         }
 
         /// <summary>
@@ -217,12 +204,11 @@ namespace IronRuby.StandardLibrary.Sockets {
         ///   sock.setsockopt(Socket::IPPROTO_IP, Socket::IP_ADD_MEMBERSHIP, optval)
         /// </example>
         [RubyMethod("setsockopt")]
-        public static void SetSocketOption(RubyContext/*!*/ context, RubyBasicSocket/*!*/ self, object/*Numeric*/ level, object/*Numeric*/ optname, object value) {
+        public static void SetSocketOption(RubyContext/*!*/ context, RubyBasicSocket/*!*/ self, 
+            [DefaultProtocol]int level, [DefaultProtocol]int optname, [DefaultProtocol, NotNull]MutableString/*!*/ value) {
+
             Protocols.CheckSafeLevel(context, 2, "setsockopt");
-            MutableString strValue = Protocols.CastToString(context, value);
-            int iLevel = Protocols.CastToFixnum(context, Protocols.ConvertToInteger(context, level));
-            int iOptname = Protocols.CastToFixnum(context, Protocols.ConvertToInteger(context, optname));
-            self.Socket.SetSocketOption((SocketOptionLevel)iLevel, (SocketOptionName)iOptname, strValue.ConvertToBytes());
+            self.Socket.SetSocketOption((SocketOptionLevel)level, (SocketOptionName)optname, value.ConvertToBytes());
         }
 
         /// <summary>
@@ -249,11 +235,10 @@ namespace IronRuby.StandardLibrary.Sockets {
         ///   onoff, linger = optval.unpack "ii"
         /// </example>
         [RubyMethod("getsockopt")]
-        public static MutableString GetSocketOption(RubyContext/*!*/ context, RubyBasicSocket/*!*/ self, object/*Numeric*/ level, object/*Numeric*/ optname) {
+        public static MutableString GetSocketOption(ConversionStorage<int>/*!*/ conversionStorage, RubyContext/*!*/ context, 
+            RubyBasicSocket/*!*/ self, [DefaultProtocol]int level, [DefaultProtocol]int optname) {
             Protocols.CheckSafeLevel(context, 2, "getsockopt");
-            int iLevel = Protocols.CastToFixnum(context, Protocols.ConvertToInteger(context, level));
-            int iOptname = Protocols.CastToFixnum(context, Protocols.ConvertToInteger(context, optname));
-            byte[] value = self.Socket.GetSocketOption((SocketOptionLevel)iLevel, (SocketOptionName)iOptname, 4);
+            byte[] value = self.Socket.GetSocketOption((SocketOptionLevel)level, (SocketOptionName)optname, 4);
             return MutableString.CreateBinary(value);
         }
 
@@ -278,34 +263,33 @@ namespace IronRuby.StandardLibrary.Sockets {
         }
 
         [RubyMethod("send")]
-        public static int Send(RubyContext/*!*/ context, RubyBasicSocket/*!*/ self, object message, object flags) {
+        public static int Send(ConversionStorage<int>/*!*/ fixnumCast, 
+            RubyContext/*!*/ context, RubyBasicSocket/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ message, object flags) {
             Protocols.CheckSafeLevel(context, 4, "send");
-            SocketFlags socketFlags = ConvertToSocketFlag(context, flags);
-            MutableString strMessage = Protocols.CastToString(context, message);
-            return self.Socket.Send(strMessage.ConvertToBytes(), socketFlags);
+            SocketFlags socketFlags = ConvertToSocketFlag(fixnumCast, context, flags);
+            return self.Socket.Send(message.ConvertToBytes(), socketFlags);
         }
 
         [RubyMethod("send")]
-        public static int Send(RubyContext/*!*/ context, RubyBasicSocket/*!*/ self, object message, object flags, object to) {
+        public static int Send(ConversionStorage<int>/*!*/ fixnumCast, RubyContext/*!*/ context, RubyBasicSocket/*!*/ self,
+            [DefaultProtocol, NotNull]MutableString/*!*/ message, object flags, [DefaultProtocol, NotNull]MutableString/*!*/ to) {
             Protocols.CheckSafeLevel(context, 4, "send");
             // Convert the parameters
-            SocketFlags socketFlags = ConvertToSocketFlag(context, flags);
-            MutableString strMessage = Protocols.CastToString(context, message);
-            MutableString strToAddress = Protocols.CastToString(context, to);
+            SocketFlags socketFlags = ConvertToSocketFlag(fixnumCast, context, flags);
             // Unpack the socket address information from the to parameter
             SocketAddress address = new SocketAddress(AddressFamily.InterNetwork);
-            for (int i = 0; i < strToAddress.GetByteCount(); i++) {
-                address[i] = strToAddress.GetByte(i);
+            for (int i = 0; i < to.GetByteCount(); i++) {
+                address[i] = to.GetByte(i);
             }
             EndPoint toEndPoint = self.Socket.LocalEndPoint.Create(address);
-            return self.Socket.SendTo(strMessage.ConvertToBytes(), socketFlags, toEndPoint);
+            return self.Socket.SendTo(message.ConvertToBytes(), socketFlags, toEndPoint);
         }
 
         [RubyMethod("recv")]
-        public static MutableString Receive(RubyContext/*!*/ context, RubyBasicSocket/*!*/ self, 
+        public static MutableString Receive(ConversionStorage<int>/*!*/ fixnumCast, RubyContext/*!*/ context, RubyBasicSocket/*!*/ self, 
             [DefaultProtocol]int length, [DefaultParameterValue(null)]object flags) {
 
-            SocketFlags sFlags = ConvertToSocketFlag(context, flags);
+            SocketFlags sFlags = ConvertToSocketFlag(fixnumCast, context, flags);
 
             byte[] buffer = new byte[length];
             int received = self.Socket.Receive(buffer, 0, length, sFlags);
@@ -332,13 +316,13 @@ namespace IronRuby.StandardLibrary.Sockets {
         ///      p s.recv_nonblock(10) #=> "aaa"
         /// </example>
         [RubyMethod("recv_nonblock")]
-        public static MutableString/*!*/ ReceiveNonBlocking(RubyContext/*!*/ context, RubyBasicSocket/*!*/ self,
+        public static MutableString/*!*/ ReceiveNonBlocking(ConversionStorage<int>/*!*/ fixnumCast, RubyContext/*!*/ context, RubyBasicSocket/*!*/ self,
             [DefaultProtocol]int length, [DefaultParameterValue(null)]object flags) {
 
             bool blocking = self.Socket.Blocking;
             try {
                 self.Socket.Blocking = false;
-                return Receive(context, self, length, flags);
+                return Receive(fixnumCast, context, self, length, flags);
             } finally {
                 // Reset the blocking
                 self.Socket.Blocking = blocking;
@@ -407,14 +391,16 @@ namespace IronRuby.StandardLibrary.Sockets {
             }
         }
 
-        internal static SocketFlags ConvertToSocketFlag(RubyContext/*!*/ context, object flags) {
+        internal static SocketFlags ConvertToSocketFlag(ConversionStorage<int>/*!*/ conversionStorage, RubyContext/*!*/ context, object flags) {
             if (flags == null) {
                 return SocketFlags.None;
             }
-            return (SocketFlags)Protocols.CastToFixnum(context, flags);
+            return (SocketFlags)Protocols.CastToFixnum(conversionStorage, context, flags);
         }
 
-        internal static AddressFamily ConvertToAddressFamily(RubyContext/*!*/ context, object family) {
+        internal static AddressFamily ConvertToAddressFamily(ConversionStorage<MutableString>/*!*/ stringCast, ConversionStorage<int>/*!*/ fixnumCast, 
+            RubyContext/*!*/ context, object family) {
+
             // Default is AF_INET
             if (family == null) {
                 return AddressFamily.InterNetwork;
@@ -424,14 +410,14 @@ namespace IronRuby.StandardLibrary.Sockets {
                 return (AddressFamily)(int)family;
             }
             // Convert to a string (using to_str) and then look up the value
-            MutableString strFamily = Protocols.CastToString(context, family);
+            MutableString strFamily = Protocols.CastToString(stringCast, context, family);
             foreach (AddressFamilyName name in FamilyNames) {
                 if (name.Name.Equals(strFamily)) {
                     return name.Family;
                 }
             }
             // Convert to a Fixnum (using to_i) and hope it is a valid AddressFamily constant
-            return (AddressFamily)Protocols.CastToFixnum(context, strFamily);
+            return (AddressFamily)Protocols.CastToFixnum(fixnumCast, context, strFamily);
         }
 
         internal static MutableString ToAddressFamilyString(AddressFamily family) {
@@ -459,7 +445,7 @@ namespace IronRuby.StandardLibrary.Sockets {
                 return strHostname;
             }
             int iHostname;
-            if (Protocols.IntegerAsFixnum(hostname, out iHostname)) {
+            if (IntegerAsFixnum(hostname, out iHostname)) {
                 // Ruby uses Little Endian whereas .NET uses Big Endian IP values
                 byte[] bytes = new byte[4];
                 for (int i = 3; i >= 0; --i) {
@@ -471,22 +457,47 @@ namespace IronRuby.StandardLibrary.Sockets {
             return Protocols.CastToString(context, hostname);
         }
 
-        internal static int ConvertToPortNum(RubyContext/*!*/ context, object port) {
+        /// <summary>
+        /// Converts an Integer to a Fixnum.
+        /// Don't call any conversion methods--just handles Fixnum & Bignum
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns>true if value is an Integer, false otherwise</returns>
+        /// <exception cref="ArgumentOutOfRangeException">Throws a RangeError if value is a
+        /// BigInteger but can't be converted to a Fixnum</exception>
+        internal static bool IntegerAsFixnum(object value, out int result) {
+            if (value is int) {
+                result = (int)value;
+                return true;
+            }
+
+            var bignum = value as BigInteger;
+            if ((object)bignum != null) {
+                if (!bignum.AsInt32(out result)) {
+                    throw RubyExceptions.CreateRangeError("bignum too big to convert into `long'");
+                }
+                return true;
+            }
+
+            result = 0;
+            return false;
+        }
+
+        internal static int ConvertToPortNum(ConversionStorage<MutableString>/*!*/ stringCast, ConversionStorage<int>/*!*/ fixnumCast, 
+            RubyContext/*!*/ context, object port) {
             // conversion protocol: if it's a Fixnum, return it
             // otherwise, convert to string & then convert the result to a Fixnum
             if (port is int) {
                 return (int)port;
             }
 
-            MutableString serviceName = Protocols.CastToString(context, port);
+            MutableString serviceName = Protocols.CastToString(stringCast, context, port);
             ServiceName service = SearchForService(serviceName);
             if (service != null) {
                 return service.Port;
             }
 
-            int result;
-            Protocols.IntegerAsFixnum(Protocols.ConvertToInteger(context, serviceName), out result);
-            return result;
+            return Protocols.CastToFixnum(fixnumCast, context, serviceName);
         }
 
         internal static ServiceName SearchForService(int port) {

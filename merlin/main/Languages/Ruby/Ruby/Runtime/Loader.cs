@@ -492,7 +492,7 @@ namespace IronRuby.Runtime {
                     throw RubyExceptions.CreateTypeConversionError("nil", "String");
                 }
 
-                result[i] = _toStrSite.Target(_toStrSite, _context.EmptyScope, loadPaths[i]).ConvertToString();
+                result[i] = _toStrSite.Target(_toStrSite, _context, loadPaths[i]).ConvertToString();
             }
 
             return result;
@@ -571,7 +571,8 @@ namespace IronRuby.Runtime {
 
         #region Global Variables
 
-        private readonly CallSite<Func<CallSite, RubyScope, object, MutableString>> _toStrSite = CallSite<Func<CallSite, RubyScope, object, MutableString>>.Create(ConvertToStrAction.Instance);
+        private readonly CallSite<Func<CallSite, RubyContext, object, MutableString>> _toStrSite = 
+            CallSite<Func<CallSite, RubyContext, object, MutableString>>.Create(ConvertToStrAction.Instance);
 
         internal object[]/*!*/ GetLoadPaths() {
             lock (_loadedFiles) {
@@ -647,7 +648,7 @@ namespace IronRuby.Runtime {
                 }
 
                 // case sensitive comparison:
-                if (path.Equals(_toStrSite.Target(_toStrSite, _context.EmptyScope, file))) {
+                if (path.Equals(_toStrSite.Target(_toStrSite, _context, file))) {
                     return true;
                 }
             }

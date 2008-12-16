@@ -86,7 +86,7 @@ namespace System.Linq.Expressions.Compiler {
 
         //CONFORMING
         private void EmitNullableCoalesce(BinaryExpression b) {
-            LocalBuilder loc = _ilg.GetLocal(b.Left.Type);
+            LocalBuilder loc = GetLocal(b.Left.Type);
             Label labIfNull = _ilg.DefineLabel();
             Label labEnd = _ilg.DefineLabel();
             EmitExpression(b.Left);
@@ -126,7 +126,7 @@ namespace System.Linq.Expressions.Compiler {
                 }
 
                 // emit call to invoke
-                _ilg.EmitCall(b.Conversion.Type.GetMethod("Invoke"));
+                _ilg.Emit(OpCodes.Callvirt, b.Conversion.Type.GetMethod("Invoke"));
 
             } else if (b.Type != nnLeftType) {
                 _ilg.Emit(OpCodes.Ldloca, loc);
@@ -136,7 +136,7 @@ namespace System.Linq.Expressions.Compiler {
                 _ilg.Emit(OpCodes.Ldloca, loc);
                 _ilg.EmitGetValueOrDefault(b.Left.Type);
             }
-            _ilg.FreeLocal(loc);
+            FreeLocal(loc);
 
             _ilg.Emit(OpCodes.Br, labEnd);
             _ilg.MarkLabel(labIfNull);
@@ -149,7 +149,7 @@ namespace System.Linq.Expressions.Compiler {
 
         //CONFORMING
         private void EmitLambdaReferenceCoalesce(BinaryExpression b) {
-            LocalBuilder loc = _ilg.GetLocal(b.Left.Type);
+            LocalBuilder loc = GetLocal(b.Left.Type);
             Label labEnd = _ilg.DefineLabel();
             Label labNotNull = _ilg.DefineLabel();
             EmitExpression(b.Left);
@@ -171,10 +171,10 @@ namespace System.Linq.Expressions.Compiler {
 
             // emit argument
             _ilg.Emit(OpCodes.Ldloc, loc);
-            _ilg.FreeLocal(loc);
+            FreeLocal(loc);
 
             // emit call to invoke
-            _ilg.EmitCall(b.Conversion.Type.GetMethod("Invoke"));
+            _ilg.Emit(OpCodes.Callvirt, b.Conversion.Type.GetMethod("Invoke"));
 
             _ilg.MarkLabel(labEnd);
         }
@@ -224,10 +224,10 @@ namespace System.Linq.Expressions.Compiler {
             Label labReturnRight = _ilg.DefineLabel();
             Label labExit = _ilg.DefineLabel();
 
-            LocalBuilder locLeft = _ilg.GetLocal(type);
-            LocalBuilder locRight = _ilg.GetLocal(type);
-            LocalBuilder locNNLeft = _ilg.GetLocal(nnType);
-            LocalBuilder locNNRight = _ilg.GetLocal(nnType);
+            LocalBuilder locLeft = GetLocal(type);
+            LocalBuilder locRight = GetLocal(type);
+            LocalBuilder locNNLeft = GetLocal(nnType);
+            LocalBuilder locNNRight = GetLocal(nnType);
 
             // load left
             EmitExpression(b.Left);
@@ -280,10 +280,10 @@ namespace System.Linq.Expressions.Compiler {
             //return left
             _ilg.Emit(OpCodes.Ldloc, locLeft);
 
-            _ilg.FreeLocal(locLeft);
-            _ilg.FreeLocal(locRight);
-            _ilg.FreeLocal(locNNLeft);
-            _ilg.FreeLocal(locNNRight);
+            FreeLocal(locLeft);
+            FreeLocal(locRight);
+            FreeLocal(locNNLeft);
+            FreeLocal(locNNRight);
         }
 
         private void EmitLiftedAndAlso(BinaryExpression b) {
@@ -293,8 +293,8 @@ namespace System.Linq.Expressions.Compiler {
             Label labReturnNull = _ilg.DefineLabel();
             Label labReturnValue = _ilg.DefineLabel();
             Label labExit = _ilg.DefineLabel();
-            LocalBuilder locLeft = _ilg.GetLocal(type);
-            LocalBuilder locRight = _ilg.GetLocal(type);
+            LocalBuilder locLeft = GetLocal(type);
+            LocalBuilder locRight = GetLocal(type);
             EmitExpression(b.Left);
             _ilg.Emit(OpCodes.Stloc, locLeft);
             _ilg.Emit(OpCodes.Ldloca, locLeft);
@@ -339,8 +339,8 @@ namespace System.Linq.Expressions.Compiler {
             _ilg.Emit(OpCodes.Initobj, type);
             _ilg.MarkLabel(labExit);
             _ilg.Emit(OpCodes.Ldloc, locLeft);
-            _ilg.FreeLocal(locLeft);
-            _ilg.FreeLocal(locRight);
+            FreeLocal(locLeft);
+            FreeLocal(locRight);
         }
 
         private void EmitMethodAndAlso(BinaryExpression b) {
@@ -401,10 +401,10 @@ namespace System.Linq.Expressions.Compiler {
             Label labReturnRight = _ilg.DefineLabel();
             Label labExit = _ilg.DefineLabel();
 
-            LocalBuilder locLeft = _ilg.GetLocal(type);
-            LocalBuilder locRight = _ilg.GetLocal(type);
-            LocalBuilder locNNLeft = _ilg.GetLocal(nnType);
-            LocalBuilder locNNRight = _ilg.GetLocal(nnType);
+            LocalBuilder locLeft = GetLocal(type);
+            LocalBuilder locRight = GetLocal(type);
+            LocalBuilder locNNLeft = GetLocal(nnType);
+            LocalBuilder locNNRight = GetLocal(nnType);
 
             // Load left
             EmitExpression(b.Left);
@@ -454,10 +454,10 @@ namespace System.Linq.Expressions.Compiler {
             //return left
             _ilg.Emit(OpCodes.Ldloc, locLeft);
 
-            _ilg.FreeLocal(locNNLeft);
-            _ilg.FreeLocal(locNNRight);
-            _ilg.FreeLocal(locLeft);
-            _ilg.FreeLocal(locRight);
+            FreeLocal(locNNLeft);
+            FreeLocal(locNNRight);
+            FreeLocal(locLeft);
+            FreeLocal(locRight);
         }
 
         private void EmitLiftedOrElse(BinaryExpression b) {
@@ -467,8 +467,8 @@ namespace System.Linq.Expressions.Compiler {
             Label labReturnNull = _ilg.DefineLabel();
             Label labReturnValue = _ilg.DefineLabel();
             Label labExit = _ilg.DefineLabel();
-            LocalBuilder locLeft = _ilg.GetLocal(type);
-            LocalBuilder locRight = _ilg.GetLocal(type);
+            LocalBuilder locLeft = GetLocal(type);
+            LocalBuilder locRight = GetLocal(type);
             EmitExpression(b.Left);
             _ilg.Emit(OpCodes.Stloc, locLeft);
             _ilg.Emit(OpCodes.Ldloca, locLeft);
@@ -513,8 +513,8 @@ namespace System.Linq.Expressions.Compiler {
             _ilg.Emit(OpCodes.Initobj, type);
             _ilg.MarkLabel(labExit);
             _ilg.Emit(OpCodes.Ldloc, locLeft);
-            _ilg.FreeLocal(locLeft);
-            _ilg.FreeLocal(locRight);
+            FreeLocal(locLeft);
+            FreeLocal(locRight);
         }
 
         private void EmitUnliftedOrElse(BinaryExpression b) {

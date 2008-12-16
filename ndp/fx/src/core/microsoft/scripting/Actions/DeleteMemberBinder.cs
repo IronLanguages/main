@@ -16,7 +16,7 @@
 using System.Dynamic.Utils;
 
 namespace System.Dynamic {
-    public abstract class DeleteMemberBinder : MetaObjectBinder {
+    public abstract class DeleteMemberBinder : DynamicMetaObjectBinder {
         private readonly string _name;
         private readonly bool _ignoreCase;
 
@@ -39,13 +39,13 @@ namespace System.Dynamic {
             }
         }
 
-        public MetaObject FallbackDeleteMember(MetaObject target) {
+        public DynamicMetaObject FallbackDeleteMember(DynamicMetaObject target) {
             return FallbackDeleteMember(target, null);
         }
 
-        public abstract MetaObject FallbackDeleteMember(MetaObject target, MetaObject errorSuggestion);
+        public abstract DynamicMetaObject FallbackDeleteMember(DynamicMetaObject target, DynamicMetaObject errorSuggestion);
 
-        public sealed override MetaObject Bind(MetaObject target, MetaObject[] args) {
+        public sealed override DynamicMetaObject Bind(DynamicMetaObject target, DynamicMetaObject[] args) {
             ContractUtils.RequiresNotNull(target, "target");
             ContractUtils.Requires(args.Length == 0);
 

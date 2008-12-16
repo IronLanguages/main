@@ -29,6 +29,7 @@ using IronRuby.Runtime.Calls;
 using MSA = System.Linq.Expressions;
 using Ast = System.Linq.Expressions.Expression;
 using AstFactory = IronRuby.Compiler.Ast.AstFactory;
+using System.Collections.ObjectModel;
 
 namespace IronRuby.Builtins {
 
@@ -112,6 +113,8 @@ namespace IronRuby.Builtins {
             get { return ReferenceEquals(_singletonClass, this); }
         }
 
+        // TODO: We hold on RubyModule in rules. That keeps the module alive until the rule dies. 
+        // We can allocate version in a separate object and let rule point to that object.
         [Emitted]
         public int Version {
             get { return _version; }
@@ -124,6 +127,10 @@ namespace IronRuby.Builtins {
         public string Name {
             get { return _name; }
             internal set { _name = value; }
+        }
+
+        public string GetName(RubyContext/*!*/ context) {
+            return context == _context ? _name : _name + "@" + _context.RuntimeId;
         }
 
         public virtual bool IsSingletonClass {
@@ -149,10 +156,6 @@ namespace IronRuby.Builtins {
 
         internal virtual GlobalScopeExtension GlobalScope {
             get { return null; }
-        }
-
-        public RubyModule[]/*!*/ Mixins {
-            get { return _mixins; }
         }
 
         // default allocator:
@@ -666,39 +669,44 @@ namespace IronRuby.Builtins {
             });
         }
 
-        public void AddMethodAlias(string/*!*/ name, RubyMemberInfo/*!*/ method) {
+        public void AddMethodAlias(RubyContext/*!*/ callerContext, string/*!*/ name, RubyMemberInfo/*!*/ method) {
             // Alias preserves visibility and declaring module even though the alias is declared in a different module (e.g. subclass) =>
             // we can share method info (in fact, sharing is sound with Method#== semantics - it returns true on aliased methods).
-            AddMethod(name, method);
+            AddMethod(callerContext, name, method);
         }
 
         // adds method alias via define_method:
-        public void AddDefinedMethod(string/*!*/ name, RubyMemberInfo/*!*/ method) {
+        public void AddDefinedMethod(RubyContext/*!*/ callerContext, string/*!*/ name, RubyMemberInfo/*!*/ method) {
             // copy method, Method#== returns false on defined methods:
-            AddMethod(name, method.Copy(method.Flags, this));
+            AddMethod(callerContext, name, method.Copy(method.Flags, this));
         }
 
         // adds instance and singleton methods of a module function:
-        public void AddModuleFunction(string/*!*/ name, RubyMemberInfo/*!*/ method) {
-            AddMethod(name, method.Copy(RubyMemberFlags.Private, this));
-            SingletonClass.AddMethod(name, method.Copy(RubyMemberFlags.Public, SingletonClass));
+        public void AddModuleFunction(RubyContext/*!*/ callerContext, string/*!*/ name, RubyMemberInfo/*!*/ method) {
+            AddMethod(callerContext, name, method.Copy(RubyMemberFlags.Private, this));
+            SingletonClass.AddMethod(callerContext, name, method.Copy(RubyMemberFlags.Public, SingletonClass));
         }
 
-        public void SetMethodVisibility(string/*!*/ name, RubyMemberInfo/*!*/ method, RubyMethodVisibility visibility) {
+        public void SetMethodVisibility(RubyContext/*!*/ callerContext, string/*!*/ name, RubyMemberInfo/*!*/ method, RubyMethodVisibility visibility) {
             if (method.Visibility != visibility) {
-                AddMethod(name, method.Copy((RubyMemberFlags)visibility, this));
+                AddMethod(callerContext, name, method.Copy((RubyMemberFlags)visibility, this));
             }
         }
 
-        public void AddMethod(string/*!*/ name, RubyMemberInfo/*!*/ method) {
+        public void AddMethod(RubyContext/*!*/ callerContext, string/*!*/ name, RubyMemberInfo/*!*/ method) {
             Assert.NotNull(name, method);
 
-            SetMethodNoEvent(name, method);
+            SetMethodNoEvent(callerContext, name, method);
             _context.MethodAdded(this, name);
         }
 
-        internal void SetMethodNoEvent(string/*!*/ name, RubyMemberInfo/*!*/ method) {
+        internal void SetMethodNoEvent(RubyContext/*!*/ callerContext, string/*!*/ name, RubyMemberInfo/*!*/ method) {
             Assert.NotNull(name, method);
+
+            if (callerContext != _context) {
+                throw RubyExceptions.CreateTypeError(String.Format("Cannot define a method on a {0} `{1}' defined in a foreign runtime #{2}",
+                    IsClass ? "class" : "module", _name, _context.RuntimeId));
+            }
 
             // Update only if the current method overrides/redefines another one in the inheritance hierarchy.
             // Method lookup failures are not cached in dynamic sites. 
@@ -777,9 +785,9 @@ namespace IronRuby.Builtins {
         public void SetLibraryMethod(string/*!*/ name, RubyMemberInfo/*!*/ method, bool noEvent) {
             // trigger event only for non-builtins:
             if (noEvent) {
-                SetMethodNoEvent(name, method);
+                SetMethodNoEvent(_context, name, method);
             } else {
-                AddMethod(name, method);
+                AddMethod(_context, name, method);
             }
         }
 
@@ -1036,9 +1044,13 @@ namespace IronRuby.Builtins {
             });
         }
 
+        public ReadOnlyCollection<RubyModule>/*!*/ GetMixins() {
+            return new ReadOnlyCollection<RubyModule>(_mixins);
+        }
+
         internal void SetMixins(IList<RubyModule>/*!*/ modules) {
             Debug.Assert(_mixins.Length == 0);
-            Debug.Assert(modules != null && CollectionUtils.TrueForAll(modules, delegate(RubyModule m) { return m != null && !m.IsClass; }));
+            Debug.Assert(modules != null && CollectionUtils.TrueForAll(modules, (m) => m != null && !m.IsClass && m.Context == _context));
 
             // do not initialize modules:
             _mixins = MakeNewMixins(EmptyArray, modules);
@@ -1047,7 +1059,7 @@ namespace IronRuby.Builtins {
         }
 
         public void IncludeModules(params RubyModule[]/*!*/ modules) {
-            Debug.Assert(CollectionUtils.TrueForAll(modules, delegate(RubyModule m) { return m != null && !m.IsClass; }));
+            RubyUtils.RequireMixins(this, modules);
 
             RubyModule[] tmp = MakeNewMixins(_mixins, modules);
 
@@ -1190,20 +1202,9 @@ namespace IronRuby.Builtins {
 
         #endregion
 
-        internal void AddFullVersionTest(MetaObjectBuilder/*!*/ metaBuilder, MSA.Expression/*!*/ contextExpression) {
-            Assert.NotNull(metaBuilder);
-            EnsureInitialized(); // Initialization changes the version number, so ensure that the module is initialized
-
-            // check for runtime:
-            metaBuilder.AddRestriction(Ast.Equal(contextExpression, Ast.Constant(_context)));
-
-            // check for version:
-            metaBuilder.AddCondition(Ast.Equal(Ast.Property(Ast.Constant(this), VersionProperty), Ast.Constant(_version)));
-        }
-
         #region Utils
 
-        public MutableString/*!*/ GetDisplayName(bool showEmptyName) {
+        public MutableString/*!*/ GetDisplayName(RubyContext/*!*/ context, bool showEmptyName) {
             if (IsSingletonClass) {
                 RubyClass c = (RubyClass)this;
                 object singletonOf;
@@ -1221,14 +1222,14 @@ namespace IronRuby.Builtins {
                     if (module == null) {
                         nestings++;
                         result.Append("#<");
-                        result.Append(c.SuperClass.Name);
+                        result.Append(c.SuperClass.GetName(context));
                         result.Append(':');
                         RubyUtils.AppendFormatHexObjectId(result, RubyUtils.GetObjectId(_context, singletonOf));
                         break;
                     }
 
                     if (!module.IsSingletonClass) {
-                        result.Append(module.Name);
+                        result.Append(module.GetName(context));
                         break;
                     }
 
@@ -1241,14 +1242,14 @@ namespace IronRuby.Builtins {
                 } else {
                     MutableString result = MutableString.CreateMutable();
                     result.Append("#<");
-                    result.Append(_context.GetClassOf(this).Name);
+                    result.Append(_context.GetClassOf(this).GetName(context));
                     result.Append(':');
                     RubyUtils.AppendFormatHexObjectId(result, RubyUtils.GetObjectId(_context, this));
                     result.Append('>');
                     return result;
                 }
             } else {
-                return MutableString.Create(_name);
+                return MutableString.CreateMutable(GetName(context));
             }
         }
 

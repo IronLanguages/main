@@ -22,9 +22,6 @@ using Microsoft.Scripting.Generation;
 using System.Runtime.CompilerServices;
 using IronRuby.Runtime.Calls;
 
-using BinaryOpSite = System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite,
-    IronRuby.Runtime.RubyContext, object, object, object>>;
-
 namespace IronRuby.Builtins {
 
     public partial class Range : IDuplicable
@@ -81,12 +78,12 @@ namespace IronRuby.Builtins {
         }
         
         // Convience function for constructing from C#, calls initialize
-        public Range(SiteLocalStorage<BinaryOpSite>/*!*/ comparisonStorage, 
+        public Range(BinaryOpStorage/*!*/ comparisonStorage, 
             RubyContext/*!*/ context, object begin, object end, bool excludeEnd) {
             Initialize(comparisonStorage, context, begin, end, excludeEnd);
         }
 
-        public void Initialize(SiteLocalStorage<BinaryOpSite>/*!*/ comparisonStorage,
+        public void Initialize(BinaryOpStorage/*!*/ comparisonStorage,
             RubyContext/*!*/ context, object begin, object end, bool excludeEnd) {
 
             if (_initialized) {
@@ -97,7 +94,7 @@ namespace IronRuby.Builtins {
             // Only a non-existent <=> method or a result of nil seems to trigger the exception.
             object compareResult;
 
-            var site = comparisonStorage.GetCallSite("<=>", 1);
+            var site = comparisonStorage.GetCallSite("<=>");
             try {
                 compareResult = site.Target(site, context, begin, end);
             } catch (Exception) {

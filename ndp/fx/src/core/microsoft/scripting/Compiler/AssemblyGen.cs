@@ -13,25 +13,31 @@
  *
  * ***************************************************************************/
 
+using System.Collections.Generic;
 using System.Diagnostics;
-using System.Globalization;
+using System.Dynamic.Utils;
 using System.IO;
-using System.Linq.Expressions;
 using System.Reflection;
 using System.Reflection.Emit;
 using System.Resources;
-using System.Dynamic.Utils;
 using System.Security;
 using System.Text;
 using System.Threading;
 
 namespace System.Linq.Expressions.Compiler {
     internal sealed class AssemblyGen {
+        private static AssemblyGen _assembly;
+        private static AssemblyGen _debugAssembly;
+#if MICROSOFT_SCRIPTING_CORE
+        private static string _saveAssembliesPath;
+        private static bool _saveAssemblies;
+#endif
+
         private readonly AssemblyBuilder _myAssembly;
         private readonly ModuleBuilder _myModule;
         private readonly bool _isDebuggable;
 
-#if !SILVERLIGHT
+#if MICROSOFT_SCRIPTING_CORE && !SILVERLIGHT
         private readonly string _outFileName;       // can be null iff !SaveAndReloadAssemblies
         private readonly string _outDir;            // null means the current directory
 #endif
@@ -47,61 +53,75 @@ namespace System.Linq.Expressions.Compiler {
             }
         }
 
-        internal AssemblyGen(AssemblyName name, string outDir, string outFileExtension, bool isDebuggable, bool isUnsafe) {
-            ContractUtils.RequiresNotNull(name, "name");
+
+        // Testing option. Only ever set in MICROSOFT_SCRIPTING_CORE build
+        // configurations, see SetSaveAssemblies
+        internal static bool SaveAssemblies {
+            get {
+#if MICROSOFT_SCRIPTING_CORE
+                return _saveAssemblies;
+#else
+                return false;
+#endif
+            }
+        }
+
+        internal static AssemblyGen DebugAssembly {
+            get {
+                if (_debugAssembly == null) {
+                    Interlocked.CompareExchange(ref _debugAssembly, new AssemblyGen(true), null);
+                }
+                return _debugAssembly;
+            }
+        }
+
+        internal static AssemblyGen Assembly {
+            get {
+                if (_assembly == null) {
+                    Interlocked.CompareExchange(ref _assembly, new AssemblyGen(false), null);
+                }
+                return _assembly;
+            }
+        }
+
+        private AssemblyGen(bool isDebuggable) {
+            var name = new AssemblyName("Snippets" + (isDebuggable ? ".debug" : ""));
 
 #if SILVERLIGHT  // AssemblyBuilderAccess.RunAndSave, Environment.CurrentDirectory
             _myAssembly = AppDomain.CurrentDomain.DefineDynamicAssembly(name, AssemblyBuilderAccess.Run);
             _myModule = _myAssembly.DefineDynamicModule(name.Name, isDebuggable);
 #else
-            if (outFileExtension == null) {
-                outFileExtension = ".dll";
-            }
 
-            if (outDir != null) {
+            // mark the assembly transparent so that it works in partial trust:
+            var attributes = new[] { 
+                new CustomAttributeBuilder(typeof(SecurityTransparentAttribute).GetConstructor(Type.EmptyTypes), new object[0])
+            };
+
+#if MICROSOFT_SCRIPTING_CORE
+            if (_saveAssemblies) {
+                string outDir = _saveAssembliesPath ?? Directory.GetCurrentDirectory();
                 try {
                     outDir = Path.GetFullPath(outDir);
                 } catch (Exception) {
                     throw Error.InvalidOutputDir();
                 }
                 try {
-                    Path.Combine(outDir, name.Name + outFileExtension);
+                    Path.Combine(outDir, name.Name + ".dll");
                 } catch (ArgumentException) {
                     throw Error.InvalidAsmNameOrExtension();
                 }
 
-                _outFileName = name.Name + outFileExtension;
+                _outFileName = name.Name + ".dll";
                 _outDir = outDir;
-            }
-
-            // mark the assembly transparent so that it works in partial trust:
-            CustomAttributeBuilder[] attributes;
-
-            if (isUnsafe) {
-                attributes = new CustomAttributeBuilder[0];
-            } else {
-                attributes = new CustomAttributeBuilder[] { 
-                    new CustomAttributeBuilder(typeof(SecurityTransparentAttribute).GetConstructor(Type.EmptyTypes), new object[0])
-                };
-            }
-
-            if (outDir != null) {
                 _myAssembly = AppDomain.CurrentDomain.DefineDynamicAssembly(name, AssemblyBuilderAccess.RunAndSave, outDir,
                     null, null, null, null, false, attributes);
 
                 _myModule = _myAssembly.DefineDynamicModule(name.Name, _outFileName, isDebuggable);
-            } else {                
+            } else
+#endif
+            {
                 _myAssembly = AppDomain.CurrentDomain.DefineDynamicAssembly(name, AssemblyBuilderAccess.Run, attributes);
                 _myModule = _myAssembly.DefineDynamicModule(name.Name, isDebuggable);                
-            }
-
-            if (isUnsafe) {
-                _myModule.SetCustomAttribute(
-                    new CustomAttributeBuilder(
-                        typeof(UnverifiableCodeAttribute).GetConstructor(Type.EmptyTypes), 
-                        new object[0]
-                    )
-                );
             }
 
             _myAssembly.DefineVersionInfoResource();
@@ -152,20 +172,6 @@ namespace System.Linq.Expressions.Compiler {
         }
 #endif
 
-        #region Save the assembly
-
-        //Return the location of the saved assembly file.
-        //The file location is used by PE verification in Microsoft.Scripting.
-        internal string SaveAssembly() {
-#if !SILVERLIGHT // AssemblyBuilder.Save
-            _myAssembly.Save(_outFileName, PortableExecutableKinds.ILOnly, ImageFileMachine.I386);
-            return Path.Combine(_outDir, _outFileName);
-#else
-            return null;
-#endif
-        }
-        #endregion
-
         internal TypeBuilder DefinePublicType(string name, Type parent, bool preserveName) {
             return DefineType(name, parent, TypeAttributes.Public, preserveName);
         }
@@ -204,6 +210,66 @@ namespace System.Linq.Expressions.Compiler {
         internal ModuleBuilder ModuleBuilder {
             get { return _myModule; }
         }
+
+        internal static AssemblyGen GetAssembly(bool emitDebugSymbols) {
+            return emitDebugSymbols ? DebugAssembly : Assembly;
+        }
+
+        internal static TypeBuilder DefineDelegateType(string name) {
+            return Assembly.DefineType(
+                name,
+                typeof(MulticastDelegate),
+                TypeAttributes.Class | TypeAttributes.Public | TypeAttributes.Sealed | TypeAttributes.AnsiClass | TypeAttributes.AutoClass,
+                false
+            );
+        }
+
+#if MICROSOFT_SCRIPTING_CORE
+        //Return the location of the saved assembly file.
+        //The file location is used by PE verification in Microsoft.Scripting.
+        internal string SaveAssembly() {
+#if !SILVERLIGHT // AssemblyBuilder.Save
+            _myAssembly.Save(_outFileName, PortableExecutableKinds.ILOnly, ImageFileMachine.I386);
+            return Path.Combine(_outDir, _outFileName);
+#else
+            return null;
+#endif
+        }
+
+        // NOTE: this method is called through reflection from Microsoft.Scripting
+        internal static void SetSaveAssemblies(bool enable, string directory) {
+            _saveAssemblies = enable;
+            _saveAssembliesPath = directory;
+        }
+
+        // NOTE: this method is called through reflection from Microsoft.Scripting
+        internal static string[] SaveAssembliesToDisk() {
+            if (!_saveAssemblies) {
+                return new string[0];
+            }
+
+            var assemlyLocations = new List<string>();
+
+            // first save all assemblies to disk:
+            if (_assembly != null) {
+                string assemblyLocation = _assembly.SaveAssembly();
+                if (assemblyLocation != null) {
+                    assemlyLocations.Add(assemblyLocation);
+                }
+                _assembly = null;
+            }
+
+            if (_debugAssembly != null) {
+                string debugAssemblyLocation = _debugAssembly.SaveAssembly();
+                if (debugAssemblyLocation != null) {
+                    assemlyLocations.Add(debugAssemblyLocation);
+                }
+                _debugAssembly = null;
+            }
+
+            return assemlyLocations.ToArray();
+        }
+#endif
     }
 
     internal static class SymbolGuids {

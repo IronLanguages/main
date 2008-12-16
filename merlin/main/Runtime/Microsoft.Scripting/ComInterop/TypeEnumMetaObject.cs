@@ -23,17 +23,17 @@ using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace Microsoft.Scripting.ComInterop {
 
-    internal class TypeEnumMetaObject : MetaObject {
+    internal class TypeEnumMetaObject : DynamicMetaObject {
         private readonly ComTypeEnumDesc _desc;
 
         internal TypeEnumMetaObject(ComTypeEnumDesc desc, Expression expression)
-            : base(expression, Restrictions.Empty, desc) {
+            : base(expression, BindingRestrictions.Empty, desc) {
             _desc = desc;
         }
 
-        public override MetaObject BindGetMember(GetMemberBinder binder) {
+        public override DynamicMetaObject BindGetMember(GetMemberBinder binder) {
             if (_desc.HasMember(binder.Name)) {
-                return new MetaObject(
+                return new DynamicMetaObject(
                     // return (.bound $arg0).GetValue("<name>")
                     Expression.Constant(((ComTypeEnumDesc)Value).GetValue(binder.Name)),
                     EnumRestrictions()
@@ -47,12 +47,12 @@ namespace Microsoft.Scripting.ComInterop {
             return _desc.GetMemberNames();
         }
 
-        private Restrictions EnumRestrictions() {
-            return Restrictions.GetTypeRestriction(
+        private BindingRestrictions EnumRestrictions() {
+            return BindingRestrictions.GetTypeRestriction(
                 Expression, typeof(ComTypeEnumDesc)
             ).Merge(
                 // ((ComTypeEnumDesc)<arg>).TypeLib.Guid == <guid>
-                Restrictions.GetExpressionRestriction(
+                BindingRestrictions.GetExpressionRestriction(
                     Expression.Equal(
                         Expression.Property(
                             Expression.Property(
@@ -63,7 +63,7 @@ namespace Microsoft.Scripting.ComInterop {
                     )
                 )
             ).Merge(
-                Restrictions.GetExpressionRestriction(
+                BindingRestrictions.GetExpressionRestriction(
                     Expression.Equal(
                         Expression.Property(
                             AstUtils.Convert(Expression, typeof(ComTypeEnumDesc)),

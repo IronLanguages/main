@@ -34,7 +34,7 @@ using IronRuby.Compiler.Generation;
    
 namespace IronRuby.Runtime.Calls {
 
-    public class RubyCallAction : MetaObjectBinder, IEquatable<RubyCallAction>, IExpressionSerializable {
+    public class RubyCallAction : DynamicMetaObjectBinder, IEquatable<RubyCallAction>, IExpressionSerializable {
         private readonly RubyCallSignature _signature;
         private readonly string/*!*/ _methodName;
 
@@ -97,7 +97,7 @@ namespace IronRuby.Runtime.Calls {
 
         #endregion
 
-        public override MetaObject/*!*/ Bind(MetaObject/*!*/ context, MetaObject/*!*/[]/*!*/ args) {
+        public override DynamicMetaObject/*!*/ Bind(DynamicMetaObject/*!*/ context, DynamicMetaObject/*!*/[]/*!*/ args) {
             var mo = new MetaObjectBuilder();
             Bind(mo, _methodName, new CallArguments(context, args, _signature));
             return mo.CreateMetaObject(this, context, args);
@@ -117,7 +117,7 @@ namespace IronRuby.Runtime.Calls {
             } else {
                 // insert the method name argument into the args
                 object symbol = SymbolTable.StringToId(methodName);
-                args.InsertSimple(0, new MetaObject(Ast.Constant(symbol), Restrictions.Empty, symbol));
+                args.InsertSimple(0, new DynamicMetaObject(Ast.Constant(symbol), BindingRestrictions.Empty, symbol));
 
                 BindToMethodMissing(metaBuilder, methodName, args, method != null);
             }

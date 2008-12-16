@@ -55,8 +55,26 @@ namespace System.Linq.Expressions.Compiler {
         }
 
         private void EnterScope(BlockExpression node) {
-            if (node.Variables.Count > 0 && (_scope.MergedScopes == null || !_scope.MergedScopes.Contains(node))) {
-                _scope = _tree.Scopes[node].Enter(this, _scope);
+            if (node.Variables.Count > 0 &&
+                (_scope.MergedScopes == null || !_scope.MergedScopes.Contains(node))) {
+
+                CompilerScope scope;
+                if (!_tree.Scopes.TryGetValue(node, out scope)) {
+                    //
+                    // Very often, we want to compile nodes as reductions
+                    // rather than as IL, but usually they need to allocate
+                    // some IL locals. To support this, we allow emitting a
+                    // BlockExpression that was not bound by VariableBinder.
+                    // This works as long as the variables are only used
+                    // locally -- i.e. not closed over.
+                    //
+                    // User-created blocks will never hit this case; only our
+                    // internally reduced nodes will.
+                    //
+                    scope = new CompilerScope(node) { NeedsClosure = _scope.NeedsClosure };
+                }
+
+                _scope = scope.Enter(this, _scope);
                 Debug.Assert(_scope.Node == node);
             }
         }
@@ -143,7 +161,7 @@ namespace System.Linq.Expressions.Compiler {
 
         // Emits the switch as if stmts
         private void EmitConditionalBranches(SwitchExpression node, Label[] labels) {
-            LocalBuilder testValueSlot = _ilg.GetLocal(typeof(int));
+            LocalBuilder testValueSlot = GetLocal(typeof(int));
             _ilg.Emit(OpCodes.Stloc, testValueSlot);
 
             // For all the "cases" create their conditional branches
@@ -157,7 +175,7 @@ namespace System.Linq.Expressions.Compiler {
                 }
             }
 
-            _ilg.FreeLocal(testValueSlot);
+            FreeLocal(testValueSlot);
         }
 
         // Tries to emit switch as a jmp table
@@ -274,7 +292,7 @@ namespace System.Linq.Expressions.Compiler {
             LocalBuilder value = null;
             if (tryType != typeof(void)) {
                 //store the value of the try body
-                value = _ilg.GetLocal(tryType);
+                value = GetLocal(tryType);
                 _ilg.Emit(OpCodes.Stloc, value);
             }
             //******************************************************************
@@ -323,7 +341,7 @@ namespace System.Linq.Expressions.Compiler {
 
             if (tryType != typeof(void)) {
                 _ilg.Emit(OpCodes.Ldloc, value);
-                _ilg.FreeLocal(value);
+                FreeLocal(value);
             }
             PopLabelBlock(LabelBlockKind.Try);
         }

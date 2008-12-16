@@ -109,11 +109,11 @@ namespace System.Linq.Expressions.Compiler {
             }
 
             internal override void EmitStore() {
-                LocalBuilder value = Compiler.IL.GetLocal(Variable.Type);
+                LocalBuilder value = Compiler.GetLocal(Variable.Type);
                 Compiler.IL.Emit(OpCodes.Stloc, value);
                 EmitLoadBox();
                 Compiler.IL.Emit(OpCodes.Ldloc, value);
-                Compiler.IL.FreeLocal(value);
+                Compiler.FreeLocal(value);
                 Compiler.IL.Emit(OpCodes.Stfld, _boxValueField);
             }
 
@@ -159,11 +159,11 @@ namespace System.Linq.Expressions.Compiler {
             }
 
             internal override void EmitStore() {
-                LocalBuilder value = Compiler.IL.GetLocal(Variable.Type);
+                LocalBuilder value = Compiler.GetLocal(Variable.Type);
                 Compiler.IL.Emit(OpCodes.Stloc, value);
                 Compiler.IL.Emit(OpCodes.Ldloc, _boxLocal);
                 Compiler.IL.Emit(OpCodes.Ldloc, value);
-                Compiler.IL.FreeLocal(value);
+                Compiler.FreeLocal(value);
                 Compiler.IL.Emit(OpCodes.Stfld, _boxValueField);
             }
 

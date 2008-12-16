@@ -107,7 +107,7 @@ namespace Microsoft.Scripting.Actions {
 
             Type toType = toParameter.Type;
 
-            if (fromType == Null.Type) {
+            if (fromType == DynamicNull.Type) {
                 if (toParameter.ProhibitNull) {
                     return false;
                 }
@@ -552,7 +552,7 @@ namespace Microsoft.Scripting.Actions {
             if (parameterInfo.ParameterType == typeof(CodeContext) && arguments.Count == 0) {
                 arguments.Add(new ContextArgBuilder(parameterInfo));
                 return true;
-            } else if (parameterInfo.ParameterType.IsGenericType && parameterInfo.ParameterType.GetGenericTypeDefinition() == typeof(SiteLocalStorage<>)) {
+            } else if (parameterInfo.ParameterType.IsSubclassOf(typeof(SiteLocalStorage))) {
                 arguments.Add(new SiteLocalStorageBuilder(parameterInfo));
                 return true;
             }

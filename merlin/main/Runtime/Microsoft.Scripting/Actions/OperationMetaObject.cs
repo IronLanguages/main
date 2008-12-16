@@ -19,17 +19,17 @@ using System.Linq.Expressions;
 using Microsoft.Scripting.Utils;
 
 namespace Microsoft.Scripting.Actions {
-    public class OperationMetaObject : MetaObject {
-        public OperationMetaObject(Expression expression, Restrictions restrictions)
+    public class OperationMetaObject : DynamicMetaObject {
+        public OperationMetaObject(Expression expression, BindingRestrictions restrictions)
             : base(expression, restrictions) {
         }
 
-        public OperationMetaObject(Expression expression, Restrictions restrictions, object value)
+        public OperationMetaObject(Expression expression, BindingRestrictions restrictions, object value)
             : base(expression, restrictions, value) {
         }
 
         [Obsolete("Use ExtensionBinaryOperationBinder or ExtensionUnaryOperationBinder")]
-        public virtual MetaObject BindOperation(OperationBinder binder, params MetaObject[] args) {
+        public virtual DynamicMetaObject BindOperation(OperationBinder binder, params DynamicMetaObject[] args) {
             ContractUtils.RequiresNotNull(binder, "binder");
             return binder.FallbackOperation(this, args);
         }

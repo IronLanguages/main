@@ -33,8 +33,9 @@ namespace IronRuby.StandardLibrary.Sockets {
         }
 
         [RubyConstructor]
-        public static TCPSocket/*!*/ CreateTCPSocket(RubyClass/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ remoteHost, object remotePort) {
-            int port = ConvertToPortNum(self.Context, remotePort);
+        public static TCPSocket/*!*/ CreateTCPSocket(ConversionStorage<MutableString>/*!*/ stringCast, ConversionStorage<int>/*!*/ fixnumCast, 
+            RubyClass/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ remoteHost, object remotePort) {
+            int port = ConvertToPortNum(stringCast, fixnumCast, self.Context, remotePort);
 
             Socket socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
             socket.Connect(remoteHost.ConvertToString(), port);

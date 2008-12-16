@@ -16,12 +16,6 @@
 using BinaryOpSite = System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite,
     IronRuby.Runtime.RubyContext, object, object, object>>;
 
-using UnaryOpSite = System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite,
-    IronRuby.Runtime.RubyContext, object, object>>;
-
-using RespondToSite = System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite,
-    IronRuby.Runtime.RubyContext, object, Microsoft.Scripting.SymbolId, object>>;
-
 using System;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
@@ -68,14 +62,14 @@ namespace IronRuby.Builtins {
         /// RubyOps.CreateExclusiveRange which bypass this constructor/initializer run about and initialize the object directly.
         /// </remarks>
         [RubyConstructor]
-        public static Range/*!*/ CreateRange(SiteLocalStorage<BinaryOpSite>/*!*/ comparisonStorage, 
+        public static Range/*!*/ CreateRange(BinaryOpStorage/*!*/ comparisonStorage, 
             RubyClass/*!*/ self, object begin, object end, [Optional]bool excludeEnd) {
             return new Range(comparisonStorage, self.Context, begin, end, excludeEnd);
         }
 
         // Reinitialization. Not called when a factory/non-default ctor is called.
         [RubyMethod("initialize", RubyMethodAttributes.PrivateInstance)]
-        public static Range/*!*/ Reinitialize(SiteLocalStorage<BinaryOpSite>/*!*/ comparisonStorage, 
+        public static Range/*!*/ Reinitialize(BinaryOpStorage/*!*/ comparisonStorage, 
             RubyContext/*!*/ context, Range/*!*/ self, object begin, object end, [Optional]bool excludeEnd) {
             self.Initialize(comparisonStorage, context, begin, end, excludeEnd);
             return self;
@@ -129,16 +123,18 @@ namespace IronRuby.Builtins {
         #endregion
 
         #region to_s
+
         /// <summary>
         /// Convert this range object to a printable form (using to_s to convert the start and end objects).
         /// </summary>
         [RubyMethod("to_s")]
-        public static MutableString/*!*/ ToS(RubyContext/*!*/ context, Range/*!*/ self) {
-            MutableString str = RubySites.ToS(context, self.Begin);
+        public static MutableString/*!*/ ToS(UnaryOpStorage/*!*/ tosStorage, RubyContext/*!*/ context, Range/*!*/ self) {
+            MutableString str = RubyUtils.ObjectToMutableString(tosStorage, context, self.Begin);
             str.Append(self.ExcludeEnd ? "..." : "..");
-            str.Append(RubySites.ToS(context, self.End));
+            str.Append(RubyUtils.ObjectToMutableString(tosStorage, context, self.End));
             return str;
         }
+
         #endregion
 
         #region ==, eql?
@@ -162,13 +158,13 @@ namespace IronRuby.Builtins {
         /// (0..2).eql?(0.0..2.0)       #=> true
         /// </example>
         [RubyMethod("==")]
-        public static bool Equals(RubyContext/*!*/ context, Range/*!*/ self, [NotNull]Range/*!*/ other) {
+        public static bool Equals(BinaryOpStorage/*!*/ equals, RubyContext/*!*/ context, Range/*!*/ self, [NotNull]Range/*!*/ other) {
             if (self == other) {
                 return true;
             }
-            return (Protocols.IsEqual(context, self.Begin, other.Begin)
-                && Protocols.IsEqual(context, self.End, other.End)
-                && self.ExcludeEnd == other.ExcludeEnd);
+            return Protocols.IsEqual(equals, context, self.Begin, other.Begin)
+                && Protocols.IsEqual(equals, context, self.End, other.End)
+                && self.ExcludeEnd == other.ExcludeEnd;
         }
 
         /// <summary>
@@ -182,14 +178,14 @@ namespace IronRuby.Builtins {
         /// (0..2).eql?(0.0..2.0)         #=> false
         /// </example>
         [RubyMethod("eql?")]
-        public static bool Eql(SiteLocalStorage<BinaryOpSite>/*!*/ equalsStorage, 
+        public static bool Eql(BinaryOpStorage/*!*/ equalsStorage, 
             RubyContext/*!*/ context, Range/*!*/ self, [NotNull]Range/*!*/ other) {
 
             if (self == other) {
                 return true;
             }
 
-            var site = equalsStorage.GetCallSite("eql?", 1);
+            var site = equalsStorage.GetCallSite("eql?");
             return Protocols.IsTrue(site.Target(site, context, self.Begin, other.Begin))
                 && Protocols.IsTrue(site.Target(site, context, self.End, other.End))
                 && self.ExcludeEnd == other.ExcludeEnd;
@@ -213,12 +209,12 @@ namespace IronRuby.Builtins {
         /// </example>
         [RubyMethod("==="), RubyMethod("member?"), RubyMethod("include?")]
         public static bool CaseEquals(
-            SiteLocalStorage<BinaryOpSite>/*!*/ comparisonStorage,
-            SiteLocalStorage<BinaryOpSite>/*!*/ lessThanStorage,
-            SiteLocalStorage<BinaryOpSite>/*!*/ greaterThanStorage,
+            BinaryOpStorage/*!*/ comparisonStorage,
+            BinaryOpStorage/*!*/ lessThanStorage,
+            BinaryOpStorage/*!*/ greaterThanStorage,
             RubyContext/*!*/ context, [NotNull]Range/*!*/ self, object value) {
 
-            var compare = comparisonStorage.GetCallSite("<=>", 1);
+            var compare = comparisonStorage.GetCallSite("<=>");
 
             object result = compare.Target(compare, context, self.Begin, value);
             if (result == null || Protocols.ConvertCompareResult(lessThanStorage, greaterThanStorage, context, result) > 0) {
@@ -259,12 +255,13 @@ namespace IronRuby.Builtins {
         /// </summary>
         [RubyMethod("each")]
         public static object Each(
-            SiteLocalStorage<RespondToSite>/*!*/ respondToStorage,
-            SiteLocalStorage<BinaryOpSite>/*!*/ comparisonStorage,
-            SiteLocalStorage<BinaryOpSite>/*!*/ lessThanStorage,
-            SiteLocalStorage<BinaryOpSite>/*!*/ greaterThanStorage,
-            SiteLocalStorage<BinaryOpSite>/*!*/ equalsStorage,
-            SiteLocalStorage<UnaryOpSite>/*!*/ succStorage,
+            ConversionStorage<MutableString>/*!*/ stringCast, 
+            RespondToStorage/*!*/ respondToStorage,
+            BinaryOpStorage/*!*/ comparisonStorage,
+            BinaryOpStorage/*!*/ lessThanStorage,
+            BinaryOpStorage/*!*/ greaterThanStorage,
+            BinaryOpStorage/*!*/ equalsStorage,
+            UnaryOpStorage/*!*/ succStorage,
             RubyContext/*!*/ context, BlockParam block, Range/*!*/ self) {
 
             // We check that self.begin responds to "succ" even though some of the implementations don't use it.
@@ -273,7 +270,7 @@ namespace IronRuby.Builtins {
             if (self.Begin is int && self.End is int) {
                 return StepFixnum(context, block, self, (int)self.Begin, (int)self.End, 1);
             } else if (self.Begin is MutableString) {
-                return StepString(comparisonStorage, lessThanStorage, greaterThanStorage, succStorage, context, 
+                return StepString(stringCast, comparisonStorage, lessThanStorage, greaterThanStorage, succStorage, context, 
                     block, self, (MutableString)self.Begin, (MutableString)self.End, 1
                 );
             } else {
@@ -294,14 +291,16 @@ namespace IronRuby.Builtins {
         /// </summary>
         [RubyMethod("step")]
         public static object Step(
-            SiteLocalStorage<RespondToSite>/*!*/ respondToStorage,
-            SiteLocalStorage<BinaryOpSite>/*!*/ comparisonStorage,
-            SiteLocalStorage<BinaryOpSite>/*!*/ lessThanStorage,
-            SiteLocalStorage<BinaryOpSite>/*!*/ lessThanEqualsStorage,
-            SiteLocalStorage<BinaryOpSite>/*!*/ greaterThanStorage,
-            SiteLocalStorage<BinaryOpSite>/*!*/ equalsStorage,
-            SiteLocalStorage<BinaryOpSite>/*!*/ addStorage,
-            SiteLocalStorage<UnaryOpSite>/*!*/ succStorage,
+            ConversionStorage<MutableString>/*!*/ stringCast, 
+            ConversionStorage<int>/*!*/ fixnumCast, 
+            RespondToStorage/*!*/ respondToStorage,
+            BinaryOpStorage/*!*/ comparisonStorage,
+            BinaryOpStorage/*!*/ lessThanStorage,
+            BinaryOpStorage/*!*/ lessThanEqualsStorage,
+            BinaryOpStorage/*!*/ greaterThanStorage,
+            BinaryOpStorage/*!*/ equalsStorage,
+            BinaryOpStorage/*!*/ addStorage,
+            UnaryOpStorage/*!*/ succStorage,
             RubyContext/*!*/ context, BlockParam block, Range/*!*/ self, [Optional]object step) {
 
             if (step == Missing.Value) {
@@ -312,12 +311,12 @@ namespace IronRuby.Builtins {
             // This prevents cases such as (1.0..2.0).step(0x800000000000000) {|x| x } from working but that is what MRI does.
             if (self.Begin is int && self.End is int) {
                 // self.begin is Fixnum; directly call item = item + 1 instead of succ
-                int intStep = Protocols.CastToFixnum(context, step);
+                int intStep = Protocols.CastToFixnum(fixnumCast, context, step);
                 return StepFixnum(context, block, self, (int)self.Begin, (int)self.End, intStep);
             } else if (self.Begin is MutableString ) {
                 // self.begin is String; use item.succ and item <=> self.end but make sure you check the length of the strings
-                int intStep = Protocols.CastToFixnum(context, step);
-                return StepString(comparisonStorage, lessThanStorage, greaterThanStorage, succStorage, context,
+                int intStep = Protocols.CastToFixnum(fixnumCast, context, step);
+                return StepString(stringCast, comparisonStorage, lessThanStorage, greaterThanStorage, succStorage, context,
                     block, self, (MutableString)self.Begin, (MutableString)self.End, intStep
                 );
             } else if (context.IsInstanceOf(self.Begin, context.GetClass(typeof(Numeric)))) {
@@ -328,7 +327,7 @@ namespace IronRuby.Builtins {
             } else {
                 // self.begin is not Numeric or String; just invoke item.succ and item <=> self.end
                 CheckBegin(respondToStorage, context, self.Begin);
-                int intStep = Protocols.CastToFixnum(context, step);
+                int intStep = Protocols.CastToFixnum(fixnumCast, context, step);
                 return StepObject(comparisonStorage, lessThanStorage, greaterThanStorage, equalsStorage, succStorage, context,
                     block, self, self.Begin, self.End, intStep
                 );
@@ -379,10 +378,11 @@ namespace IronRuby.Builtins {
         /// It uses a hybrid string comparison to prevent infinite loops and calls String#succ to get each item in the range.
         /// </remarks>
         private static object StepString(
-            SiteLocalStorage<BinaryOpSite>/*!*/ comparisonStorage,
-            SiteLocalStorage<BinaryOpSite>/*!*/ lessThanStorage,
-            SiteLocalStorage<BinaryOpSite>/*!*/ greaterThanStorage,
-            SiteLocalStorage<UnaryOpSite>/*!*/ succStorage, 
+            ConversionStorage<MutableString>/*!*/ stringCast, 
+            BinaryOpStorage/*!*/ comparisonStorage,
+            BinaryOpStorage/*!*/ lessThanStorage,
+            BinaryOpStorage/*!*/ greaterThanStorage,
+            UnaryOpStorage/*!*/ succStorage, 
             RubyContext/*!*/ context, BlockParam block, Range/*!*/ self, MutableString begin, MutableString end, int step) {
 
             CheckStep(step);
@@ -390,7 +390,7 @@ namespace IronRuby.Builtins {
             MutableString item = begin;
             int comp;
 
-            var succSite = succStorage.GetCallSite("succ", 0);
+            var succSite = succStorage.GetCallSite("succ");
             while ((comp = Protocols.Compare(comparisonStorage, lessThanStorage, greaterThanStorage, context, item, end)) < 0) {
                 if (block == null) {
                     throw RubyExceptions.NoBlockGiven();
@@ -401,7 +401,7 @@ namespace IronRuby.Builtins {
                 }
 
                 for (int i = 0; i < step; i++) {
-                    item = Protocols.CastToString(context, succSite.Target(succSite, context, item));
+                    item = Protocols.CastToString(stringCast, context, succSite.Target(succSite, context, item));
                 }
 
                 if (item.Length > end.Length) {
@@ -425,20 +425,20 @@ namespace IronRuby.Builtins {
         /// Step through a Range of Numerics.
         /// </summary>
         private static object StepNumeric(
-            SiteLocalStorage<BinaryOpSite>/*!*/ lessThanStorage,
-            SiteLocalStorage<BinaryOpSite>/*!*/ lessThanEqualsStorage,
-            SiteLocalStorage<BinaryOpSite>/*!*/ equalsStorage,
-            SiteLocalStorage<BinaryOpSite>/*!*/ addStorage,
+            BinaryOpStorage/*!*/ lessThanStorage,
+            BinaryOpStorage/*!*/ lessThanEqualsStorage,
+            BinaryOpStorage/*!*/ equalsStorage,
+            BinaryOpStorage/*!*/ addStorage,
             RubyContext/*!*/ context, BlockParam block, Range/*!*/ self, object begin, object end, object step) {
 
-            var lessThan = lessThanStorage.GetCallSite("<", 1);
-            var equals = equalsStorage.GetCallSite("==", 1);
+            var lessThan = lessThanStorage.GetCallSite("<");
+            var equals = equalsStorage.GetCallSite("==");
             CheckStep(lessThan, equals, context, step);
 
             object item = begin;
             object result;
 
-            var site = self.ExcludeEnd ? lessThan : lessThanEqualsStorage.GetCallSite("<=", 1);
+            var site = self.ExcludeEnd ? lessThan : lessThanEqualsStorage.GetCallSite("<=");
             while (RubyOps.IsTrue(site.Target(site, context, item, end))) {
                 if (block == null) {
                     throw RubyExceptions.NoBlockGiven();
@@ -448,7 +448,7 @@ namespace IronRuby.Builtins {
                     return result;
                 }
 
-                var add = addStorage.GetCallSite("+", 1);
+                var add = addStorage.GetCallSite("+");
                 item = add.Target(add, context, item, step);
             }
 
@@ -459,19 +459,19 @@ namespace IronRuby.Builtins {
         /// Step through a Range of objects that are not Numeric or String.
         /// </summary>
         private static object StepObject(
-            SiteLocalStorage<BinaryOpSite>/*!*/ comparisonStorage,
-            SiteLocalStorage<BinaryOpSite>/*!*/ lessThanStorage,
-            SiteLocalStorage<BinaryOpSite>/*!*/ greaterThanStorage,
-            SiteLocalStorage<BinaryOpSite>/*!*/ equalsStorage,
-            SiteLocalStorage<UnaryOpSite>/*!*/ succStorage,
+            BinaryOpStorage/*!*/ comparisonStorage,
+            BinaryOpStorage/*!*/ lessThanStorage,
+            BinaryOpStorage/*!*/ greaterThanStorage,
+            BinaryOpStorage/*!*/ equalsStorage,
+            UnaryOpStorage/*!*/ succStorage,
             RubyContext/*!*/ context, BlockParam block, Range/*!*/ self, object begin, object end, int step) {
 
-            CheckStep(lessThanStorage.GetCallSite("<", 1), equalsStorage.GetCallSite("==", 1), context, step);
+            CheckStep(lessThanStorage.GetCallSite("<"), equalsStorage.GetCallSite("=="), context, step);
 
             object item = begin, result;
             int comp;
 
-            var succSite = succStorage.GetCallSite("succ", 0);
+            var succSite = succStorage.GetCallSite("succ");
             while ((comp = Protocols.Compare(comparisonStorage, lessThanStorage, greaterThanStorage, context, item, end)) < 0) {
                 if (block == null) {
                     throw RubyExceptions.NoBlockGiven();
@@ -530,7 +530,7 @@ namespace IronRuby.Builtins {
         /// <summary>
         /// Check that the object responds to "succ".
         /// </summary>
-        private static void CheckBegin(SiteLocalStorage<RespondToSite>/*!*/ respondToStorage,
+        private static void CheckBegin(RespondToStorage/*!*/ respondToStorage,
             RubyContext/*!*/ context, object begin) {
             if (!Protocols.RespondTo(respondToStorage, context, begin, "succ")) {
                 throw RubyExceptions.CreateTypeError(String.Format("can't iterate from {0}", RubyUtils.GetClassName(context, begin)));

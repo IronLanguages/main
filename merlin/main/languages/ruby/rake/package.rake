@@ -152,7 +152,7 @@ def push
         contents.change_configuration! 'Silverlight Release|AnyCPU', 'TRACE;SILVERLIGHT'
       end
     end
-    transform_project(:dlr_com, 'system.dynamic.cominterop.csproj') do |contents|
+    transform_project(:dlr_com, 'microsoft.dynamic.csproj') do |contents|
       replace_output_path contents, '..\..\..\..\Merlin\Main\Bin\Debug\\', '..\..\build\debug\\'
       replace_output_path contents, '..\..\..\..\Merlin\Main\Bin\Release\\', '..\..\build\release\\'
       replace_output_path contents, '..\..\..\..\Merlin\Main\Bin\Silverlight Debug\\', '..\..\build\silverlight debug\\'

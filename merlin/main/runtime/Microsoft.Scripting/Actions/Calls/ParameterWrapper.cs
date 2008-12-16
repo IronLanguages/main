@@ -127,7 +127,7 @@ namespace Microsoft.Scripting.Actions.Calls {
             return result;
         }
 
-        public static Candidate GetPreferredParameters(IList<ParameterWrapper> parameters1, IList<ParameterWrapper> parameters2, MetaObject[] actualTypes) {
+        public static Candidate GetPreferredParameters(IList<ParameterWrapper> parameters1, IList<ParameterWrapper> parameters2, DynamicMetaObject[] actualTypes) {
             Debug.Assert(parameters1.Count == parameters2.Count);
             Debug.Assert(parameters1.Count == actualTypes.Length);
 
@@ -215,7 +215,7 @@ namespace Microsoft.Scripting.Actions.Calls {
             return GetPreferredParameter(candidateOne, candidateTwo);
         }
 
-        private static Candidate GetPreferredParameter(ParameterWrapper candidateOne, ParameterWrapper candidateTwo, MetaObject actualType) {
+        private static Candidate GetPreferredParameter(ParameterWrapper candidateOne, ParameterWrapper candidateTwo, DynamicMetaObject actualType) {
             Assert.NotNull(candidateOne, candidateTwo, actualType);
 
             if (candidateOne._binder.ParametersEquivalent(candidateOne, candidateTwo)) {

@@ -153,7 +153,7 @@ namespace IronRuby.Compiler.Ast {
             return Ast.Dynamic(
                 TryConvertToArrayAction.Instance,
                 typeof(object),
-                gen.CurrentScopeVariable,
+                Methods.GetContextFromScope.OpCall(gen.CurrentScopeVariable),
                 _splatType.TransformRead(gen)
             );
         }

@@ -134,7 +134,7 @@ namespace System.Linq.Expressions {
             Type operandType = operand.Type;
 
             // Oddly, we allow void operands
-            // TODO: this is the LinqV1 behavior of TypeIs, seems bad
+            // This is LinqV1 behavior of TypeIs
             if (operandType == typeof(void)) {
                 return AnalyzeTypeIsResult.KnownFalse;
             }

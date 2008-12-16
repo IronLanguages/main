@@ -24,7 +24,7 @@ namespace System.Dynamic {
     /// A Binder that is responsible for runtime binding of operation:
     /// a[b] (op)= c
     /// </summary>
-    public abstract class BinaryOperationOnIndexBinder : MetaObjectBinder {
+    public abstract class BinaryOperationOnIndexBinder : DynamicMetaObjectBinder {
         private ExpressionType _operation;
         private readonly ReadOnlyCollection<ArgumentInfo> _arguments;
 
@@ -86,13 +86,13 @@ namespace System.Dynamic {
         /// <param name="target">Target of the operation.</param>
         /// <param name="args">List of indexes and right-hand value</param>
         /// <returns>MetaObject representing the binding.</returns>
-        public sealed override MetaObject Bind(MetaObject target, MetaObject[] args) {
+        public sealed override DynamicMetaObject Bind(DynamicMetaObject target, DynamicMetaObject[] args) {
             ContractUtils.RequiresNotNull(target, "target");
             ContractUtils.RequiresNotNull(args, "args");
             ContractUtils.Requires(args.Length >= 2, "args");
 
-            MetaObject value = args[args.Length - 1];
-            MetaObject[] indexes = args.RemoveLast();
+            DynamicMetaObject value = args[args.Length - 1];
+            DynamicMetaObject[] indexes = args.RemoveLast();
 
             ContractUtils.RequiresNotNull(value, "args");
             ContractUtils.RequiresNotNullItems(indexes, "args");
@@ -111,7 +111,7 @@ namespace System.Dynamic {
         /// <param name="target">Target of the operation.</param>
         /// <param name="arg">Right-hand operator value</param>
         /// <returns>MetaObject representing the binding result.</returns>
-        public MetaObject FallbackBinaryOperation(MetaObject target, MetaObject arg) {
+        public DynamicMetaObject FallbackBinaryOperation(DynamicMetaObject target, DynamicMetaObject arg) {
             return FallbackBinaryOperation(target, arg, null);
         }
 
@@ -127,7 +127,7 @@ namespace System.Dynamic {
         /// <param name="arg">Right-hand operator value</param>
         /// <param name="errorSuggestion">The representaiton of the binding error that the target meta object recommends the language to use if the language cannot bind. This allows the target meta object to participate in the error handling process.</param>
         /// <returns>MetaObject representing the binding result.</returns>
-        public abstract MetaObject FallbackBinaryOperation(MetaObject target, MetaObject arg, MetaObject errorSuggestion);
+        public abstract DynamicMetaObject FallbackBinaryOperation(DynamicMetaObject target, DynamicMetaObject arg, DynamicMetaObject errorSuggestion);
 
         /// <summary>
         /// Implements a binding logic for the operation. This is called by the target when
@@ -137,7 +137,7 @@ namespace System.Dynamic {
         /// <param name="indexes">List of indexes</param>
         /// <param name="value">Right-hand value</param>
         /// <returns>MetaObject representing the binding.</returns>
-        public MetaObject FallbackBinaryOperationOnIndex(MetaObject target, MetaObject[] indexes, MetaObject value) {
+        public DynamicMetaObject FallbackBinaryOperationOnIndex(DynamicMetaObject target, DynamicMetaObject[] indexes, DynamicMetaObject value) {
             return FallbackBinaryOperationOnIndex(target, indexes, value, null);
         }
 
@@ -150,6 +150,6 @@ namespace System.Dynamic {
         /// <param name="value">Right-hand value</param>
         /// <param name="errorSuggestion">The representaiton of the binding error that the target meta object recommends the language to use if the language cannot bind. This allows the target meta object to participate in the error handling process.</param>
         /// <returns>MetaObject representing the binding.</returns>
-        public abstract MetaObject FallbackBinaryOperationOnIndex(MetaObject target, MetaObject[] indexes, MetaObject value, MetaObject errorSuggestion);
+        public abstract DynamicMetaObject FallbackBinaryOperationOnIndex(DynamicMetaObject target, DynamicMetaObject[] indexes, DynamicMetaObject value, DynamicMetaObject errorSuggestion);
     }
 }

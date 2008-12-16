@@ -52,8 +52,10 @@ namespace IronRuby.Tests {
         public AssertTokenizer/*!*/ Load(object/*!*/ source) { // source: byte[] or string
             Tests.Assert(_log.Errors.Count == 0, "Previous test case reported unexpected error/warning(s)");
 
-            _tokenizer = new Tokenizer(false, _log, DummyVariableResolver.AllMethodNames);
-            _tokenizer.Compatibility = _context.RubyOptions.Compatibility;
+            _tokenizer = new Tokenizer(false, DummyVariableResolver.AllMethodNames) {
+                ErrorSink = _log,
+                Compatibility = _context.RubyOptions.Compatibility
+            };
 
             SourceUnit sourceUnit;
             byte[] binarySource = source as byte[];

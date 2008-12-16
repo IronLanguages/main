@@ -37,8 +37,8 @@ namespace System.Dynamic {
             return base.Equals(obj as ComInvokeAction);
         }
 
-        public override MetaObject FallbackInvoke(MetaObject target, MetaObject[] args, MetaObject errorSuggestion) {
-            return errorSuggestion ?? MetaObject.CreateThrow(target, args, typeof(NotSupportedException), "Cannot perform call");
+        public override DynamicMetaObject FallbackInvoke(DynamicMetaObject target, DynamicMetaObject[] args, DynamicMetaObject errorSuggestion) {
+            return errorSuggestion ?? DynamicMetaObject.CreateThrow(target, args, typeof(NotSupportedException), "Cannot perform call");
         }
     }
 }

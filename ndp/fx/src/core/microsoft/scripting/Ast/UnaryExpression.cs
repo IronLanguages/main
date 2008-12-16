@@ -555,8 +555,6 @@ namespace System.Linq.Expressions {
             return new UnaryExpression(ExpressionType.Quote, expression, expression.GetType(), null);
         }
 
-        // TODO: should we just always wrap it in a convert?
-        // Do we need this factory at all?
         public static Expression Void(Expression expression) {
             RequiresCanRead(expression, "expression");
             if (expression.Type == typeof(void)) {

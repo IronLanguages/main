@@ -48,7 +48,7 @@ namespace IronRuby.Builtins {
             object value;
             if (self.TryResolveClassVariable(variableName, out value) == null) {
                 RubyUtils.CheckClassVariableName(variableName);
-                throw RubyExceptions.CreateNameError(String.Format("uninitialized class variable `{0}' in `{1}'", variableName, self.Name));
+                throw RubyExceptions.CreateNameError(String.Format("uninitialized class variable {0} in {1}", variableName, self.Name));
             }
             return value;
         }
@@ -65,7 +65,7 @@ namespace IronRuby.Builtins {
             object value;
             if (!self.TryGetClassVariable(variableName, out value)) {
                 RubyUtils.CheckClassVariableName(variableName);
-                throw RubyExceptions.CreateNameError(String.Format("class variable `{0}' not defined for `{1}'", variableName, self.Name));
+                throw RubyExceptions.CreateNameError(String.Format("class variable {0} not defined for {1}", variableName, self.Name));
             }
             self.RemoveClassVariable(variableName);
             return value;
@@ -107,11 +107,11 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("include", RubyMethodAttributes.PrivateInstance)]
         public static RubyModule/*!*/ Include(
-            SiteLocalStorage<CallSite<Func<CallSite, RubyContext, RubyModule, RubyModule, object>>>/*!*/ appendFeaturesStorage,
-            SiteLocalStorage<CallSite<Func<CallSite, RubyContext, RubyModule, RubyModule, object>>>/*!*/ includedStorage,
+            CallSiteStorage<Func<CallSite, RubyContext, RubyModule, RubyModule, object>>/*!*/ appendFeaturesStorage,
+            CallSiteStorage<Func<CallSite, RubyContext, RubyModule, RubyModule, object>>/*!*/ includedStorage,
             RubyModule/*!*/ self, [NotNull]params RubyModule[]/*!*/ modules) {
 
-            RubyUtils.RequireNonClasses(modules);
+            RubyUtils.RequireMixins(self, modules);
 
             var appendFeatures = appendFeaturesStorage.GetCallSite("append_features", 1);
             var included = includedStorage.GetCallSite("included", 1);
@@ -221,9 +221,9 @@ namespace IronRuby.Builtins {
                     }
 
                     if ((attributes & RubyMethodAttributes.ModuleFunction) == RubyMethodAttributes.ModuleFunction) {
-                        module.AddModuleFunction(methodName, method);
+                        module.AddModuleFunction(scope.RubyContext, methodName, method);
                     } else {
-                        module.SetMethodVisibility(methodName, method, (RubyMethodVisibility)(attributes & RubyMethodAttributes.VisibilityMask));
+                        module.SetMethodVisibility(scope.RubyContext, methodName, method, (RubyMethodVisibility)(attributes & RubyMethodAttributes.VisibilityMask));
                     }
                 }
             }
@@ -234,33 +234,33 @@ namespace IronRuby.Builtins {
         #region define_method
 
         [RubyMethod("define_method", RubyMethodAttributes.PrivateInstance)]
-        public static RubyMethod/*!*/ DefineMethod(RubyModule/*!*/ self, 
+        public static RubyMethod/*!*/ DefineMethod(RubyContext/*!*/ context, RubyModule/*!*/ self, 
             [DefaultProtocol]string/*!*/ methodName, [NotNull]RubyMethod/*!*/ method) {
 
             // MRI 1.8 does the check when the method is called, 1.9 checks it upfront as we do:
             var targetClass = method.GetTargetClass();
             if (!self.HasAncestor(targetClass)) {
                 throw RubyExceptions.CreateTypeError(
-                    String.Format("bind argument must be a subclass of {0}", targetClass.Name)
+                    String.Format("bind argument must be a subclass of {0}", targetClass.GetName(context))
                 );
             }
 
-            self.AddDefinedMethod(methodName, method.Info);
+            self.AddDefinedMethod(context, methodName, method.Info);
             return method;
         }
 
         [RubyMethod("define_method", RubyMethodAttributes.PrivateInstance)]
-        public static UnboundMethod/*!*/ DefineMethod(RubyModule/*!*/ self, 
+        public static UnboundMethod/*!*/ DefineMethod(RubyContext/*!*/ context, RubyModule/*!*/ self, 
             [DefaultProtocol]string/*!*/ methodName, [NotNull]UnboundMethod/*!*/ method) {
 
             // MRI 1.8 does the check when the method is called, 1.9 checks it upfront as we do:
             if (!self.HasAncestor(method.TargetConstraint)) {
                 throw RubyExceptions.CreateTypeError(
-                    String.Format("bind argument must be a subclass of {0}", method.TargetConstraint.Name)
+                    String.Format("bind argument must be a subclass of {0}", method.TargetConstraint.GetName(context))
                 );
             }
 
-            self.AddDefinedMethod(methodName, method.Info);
+            self.AddDefinedMethod(context, methodName, method.Info);
             return method;
         }
 
@@ -280,7 +280,7 @@ namespace IronRuby.Builtins {
             // MFI 1.9: uses public visibility as we do, unless the name is special.
             var visibility = RubyUtils.GetSpecialMethodVisibility(scope.Visibility, methodName);
 
-            self.AddMethod(methodName, Proc.ToLambdaMethodInfo(method.ToLambda(), methodName, visibility, self));
+            self.AddMethod(scope.RubyContext, methodName, Proc.ToLambdaMethodInfo(method.ToLambda(), methodName, visibility, self));
             return method;
         }
 
@@ -368,7 +368,7 @@ namespace IronRuby.Builtins {
         #region alias_method, remove_method, undef_method
 
         [RubyMethod("alias_method", RubyMethodAttributes.PrivateInstance)]
-        public static RubyModule/*!*/ AliasMethod(RubyModule/*!*/ self,
+        public static RubyModule/*!*/ AliasMethod(RubyContext/*!*/ context, RubyModule/*!*/ self,
             [DefaultProtocol]string/*!*/ newName, [DefaultProtocol]string/*!*/ oldName) {
 
             RubyMemberInfo method = self.ResolveMethodFallbackToObject(oldName, true);
@@ -376,7 +376,7 @@ namespace IronRuby.Builtins {
                 throw RubyExceptions.CreateUndefinedMethodError(self, oldName);
             }
 
-            self.AddMethodAlias(newName, method);
+            self.AddMethodAlias(context, newName, method);
             return self;
         }
 
@@ -504,7 +504,9 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("include?")]
         public static bool IncludesModule(RubyModule/*!*/ self, [NotNull]RubyModule/*!*/ other) {
-            RubyUtils.RequireNonClasses(other);
+            if (other.IsClass) {
+                throw RubyExceptions.CreateTypeError("wrong argument type Class (expected Module)");
+            }
 
             return other != self && self.HasAncestor(other);
         }
@@ -703,7 +705,7 @@ namespace IronRuby.Builtins {
             return new UnboundMethod(self, methodName, method);
         }
 
-        private static void SetClassMethodsVisibility(RubyModule/*!*/ module, string[]/*!*/ methodNames, RubyMethodVisibility visibility) {
+        private static void SetClassMethodsVisibility(RubyContext/*!*/ context, RubyModule/*!*/ module, string[]/*!*/ methodNames, RubyMethodVisibility visibility) {
             var methods = new RubyMemberInfo[methodNames.Length];
             for (int i = 0; i < methods.Length; i++) {
                 RubyMemberInfo method = module.SingletonClass.ResolveMethod(methodNames[i], true);
@@ -714,19 +716,19 @@ namespace IronRuby.Builtins {
             }
 
             for (int i = 0; i < methods.Length; i++) {
-                module.SingletonClass.SetMethodVisibility(methodNames[i], methods[i], visibility);
+                module.SingletonClass.SetMethodVisibility(context, methodNames[i], methods[i], visibility);
             }
         }
 
         [RubyMethodAttribute("private_class_method")]
-        public static RubyModule/*!*/ MakeClassMethodsPrivate(RubyModule/*!*/ self, [NotNull]params object[]/*!*/ methodNames) {
-            SetClassMethodsVisibility(self, Protocols.CastToSymbols(self.Context, methodNames), RubyMethodVisibility.Private);
+        public static RubyModule/*!*/ MakeClassMethodsPrivate(RubyContext/*!*/ context, RubyModule/*!*/ self, [NotNull]params object[]/*!*/ methodNames) {
+            SetClassMethodsVisibility(context, self, Protocols.CastToSymbols(context, methodNames), RubyMethodVisibility.Private);
             return self;
         }
 
         [RubyMethodAttribute("public_class_method")]
-        public static RubyModule/*!*/ MakeClassMethodsPublic(RubyModule/*!*/ self, [NotNull]params object[]/*!*/ methodNames) {
-            SetClassMethodsVisibility(self, Protocols.CastToSymbols(self.Context, methodNames), RubyMethodVisibility.Public);
+        public static RubyModule/*!*/ MakeClassMethodsPublic(RubyContext/*!*/ context, RubyModule/*!*/ self, [NotNull]params object[]/*!*/ methodNames) {
+            SetClassMethodsVisibility(context, self, Protocols.CastToSymbols(context, methodNames), RubyMethodVisibility.Public);
             return self;
         }
 
@@ -757,13 +759,13 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("to_s")]
-        public static MutableString/*!*/ ToS(RubyModule/*!*/ self) {
-            return self.GetDisplayName(false);
+        public static MutableString/*!*/ ToS(RubyContext/*!*/ context, RubyModule/*!*/ self) {
+            return self.GetDisplayName(context, false);
         }
 
         [RubyMethod("name")]
-        public static MutableString/*!*/ GetName(RubyModule/*!*/ self) {
-            return self.GetDisplayName(true);
+        public static MutableString/*!*/ GetName(RubyContext/*!*/ context, RubyModule/*!*/ self) {
+            return self.GetDisplayName(context, true);
         }
 
         [RubyMethod("of")]

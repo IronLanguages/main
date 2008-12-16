@@ -13,9 +13,6 @@
  *
  * ***************************************************************************/
 
-using BinaryOpSite = System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite,
-    IronRuby.Runtime.RubyContext, object, object, object>>;
-
 using System;
 using IronRuby.Runtime;
 using Microsoft.Scripting.Math;
@@ -55,8 +52,9 @@ namespace IronRuby.Builtins {
         /// Convert obj to an Integer, where obj is Float
         /// </summary>
         [RubyMethod("induced_from", RubyMethodAttributes.PublicSingleton)]
-        public static object InducedFrom(RubyClass/*!*/ self, double obj) {
-            return RubySites.ToI(self.Context, obj);
+        public static object InducedFrom(UnaryOpStorage/*!*/ toiStorage, RubyClass/*!*/ self, double obj) {
+            var site = toiStorage.GetCallSite("to_i");
+            return site.Target(site, self.Context, obj);
         }
 
         /// <summary>
@@ -91,12 +89,11 @@ namespace IronRuby.Builtins {
         #region chr
 
         [RubyMethod("chr")]
-        public static MutableString/*!*/ ToChr(RubyContext/*!*/ context, object self) {
-            int intSelf = Protocols.CastToFixnum(context, self);
-            if (intSelf < 0 || intSelf > 255) {
-                throw RubyExceptions.CreateRangeError(String.Format("{0} out of char range", intSelf));
+        public static MutableString/*!*/ ToChr(RubyContext/*!*/ context, [DefaultProtocol]int self) {
+            if (self < 0 || self > 255) {
+                throw RubyExceptions.CreateRangeError(String.Format("{0} out of char range", self));
             }
-            return MutableString.CreateBinary(new byte[] { (byte)intSelf });
+            return MutableString.CreateBinary(new byte[] { (byte)self });
         }
 
         #endregion
@@ -144,13 +141,13 @@ namespace IronRuby.Builtins {
         /// </remarks>
         [RubyMethod("downto")]
         public static object DownTo(
-            SiteLocalStorage<BinaryOpSite>/*!*/ lessThanStorage,
-            SiteLocalStorage<BinaryOpSite>/*!*/ subtractStorage,
+            BinaryOpStorage/*!*/ lessThanStorage,
+            BinaryOpStorage/*!*/ subtractStorage,
             RubyContext/*!*/ context, BlockParam block, object/*!*/ self, object other) {
             object i = self;
             object compare = null;
 
-            var lessThan = lessThanStorage.GetCallSite("<", 1);
+            var lessThan = lessThanStorage.GetCallSite("<");
             while (RubyOps.IsFalse(compare)) {
                 // Rather than test i >= other we test !(i < other)
                 compare = lessThan.Target(lessThan, context, i, other);
@@ -171,7 +168,7 @@ namespace IronRuby.Builtins {
                         return result;
                     }
 
-                    var subtract = subtractStorage.GetCallSite("-", 1);
+                    var subtract = subtractStorage.GetCallSite("-");
                     i = subtract.Target(subtract, context, i, 1);
                 }
             }
@@ -216,8 +213,8 @@ namespace IronRuby.Builtins {
         /// <remarks>Dynamically invokes "+" operator to get next value.</remarks>
         [RubyMethod("succ")]
         [RubyMethod("next")]
-        public static object Next(SiteLocalStorage<BinaryOpSite>/*!*/ addStorage, RubyContext/*!*/ context, object/*!*/ self) {
-            var site = addStorage.GetCallSite("+", 1);
+        public static object Next(BinaryOpStorage/*!*/ addStorage, RubyContext/*!*/ context, object/*!*/ self) {
+            var site = addStorage.GetCallSite("+");
             return site.Target(site, context, self, 1);
         }
 
@@ -264,12 +261,12 @@ namespace IronRuby.Builtins {
         /// </remarks>
         [RubyMethodAttribute("times")]
         public static object Times(
-            SiteLocalStorage<BinaryOpSite>/*!*/ lessThanStorage,
-            SiteLocalStorage<BinaryOpSite>/*!*/ addStorage,
+            BinaryOpStorage/*!*/ lessThanStorage,
+            BinaryOpStorage/*!*/ addStorage,
             RubyContext/*!*/ context, BlockParam block, object/*!*/ self) {
 
             object i = 0;
-            var lessThan = lessThanStorage.GetCallSite("<", 1);
+            var lessThan = lessThanStorage.GetCallSite("<");
             while (RubyOps.IsTrue(lessThan.Target(lessThan, context, i, self))) {
                 if (block == null) {
                     throw RubyExceptions.NoBlockGiven();
@@ -280,7 +277,7 @@ namespace IronRuby.Builtins {
                     return result;
                 }
 
-                var add = addStorage.GetCallSite("+", 1);
+                var add = addStorage.GetCallSite("+");
                 i = add.Target(add, context, i, 1);
             }
             return self;
@@ -330,13 +327,13 @@ namespace IronRuby.Builtins {
         /// </remarks>
         [RubyMethod("upto")]
         public static object UpTo(
-            SiteLocalStorage<BinaryOpSite>/*!*/ greaterThanStorage,
-            SiteLocalStorage<BinaryOpSite>/*!*/ addStorage, 
+            BinaryOpStorage/*!*/ greaterThanStorage,
+            BinaryOpStorage/*!*/ addStorage, 
             RubyContext/*!*/ context, BlockParam block, object/*!*/ self, object other) {
 
             object i = self;
             object compare = null;
-            var greaterThan = greaterThanStorage.GetCallSite(">", 1);
+            var greaterThan = greaterThanStorage.GetCallSite(">");
             while (RubyOps.IsFalse(compare)) {
                 // Rather than test i <= other we test !(i > other)
                 compare = greaterThan.Target(greaterThan, context, i, other);
@@ -357,7 +354,7 @@ namespace IronRuby.Builtins {
                         return result;
                     }
 
-                    var add = addStorage.GetCallSite("+", 1);
+                    var add = addStorage.GetCallSite("+");
                     i = add.Target(add, context, i, 1);
                 }
             }

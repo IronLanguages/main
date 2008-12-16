@@ -38,7 +38,7 @@ namespace IronRuby.Runtime.Calls {
             get { return this; }
         }
 
-        public override MetaObject/*!*/ FallbackCreateInstance(MetaObject/*!*/ target, MetaObject/*!*/[]/*!*/ args, MetaObject errorSuggestion) {
+        public override DynamicMetaObject/*!*/ FallbackCreateInstance(DynamicMetaObject/*!*/ target, DynamicMetaObject/*!*/[]/*!*/ args, DynamicMetaObject errorSuggestion) {
             var result = TryBind(_context, this, target, args);
             if (result != null) {
                 return result;
@@ -49,14 +49,14 @@ namespace IronRuby.Runtime.Calls {
             //return ((DefaultBinder)_context.Binder).Create(.GetMember(Name, self, Ast.Null(typeof(CodeContext)), true);
         }
 
-        public static MetaObject TryBind(RubyContext/*!*/ context, CreateInstanceBinder/*!*/ binder, MetaObject/*!*/ target, MetaObject/*!*/[]/*!*/ args) {
+        public static DynamicMetaObject TryBind(RubyContext/*!*/ context, CreateInstanceBinder/*!*/ binder, DynamicMetaObject/*!*/ target, DynamicMetaObject/*!*/[]/*!*/ args) {
             Assert.NotNull(context, binder, target, args);
             
             var metaBuilder = new MetaObjectBuilder();
 
             RubyCallAction.Bind(metaBuilder, "new", 
                 new CallArguments(
-                    new MetaObject(Ast.Constant(context), Restrictions.Empty, context),
+                    new DynamicMetaObject(Ast.Constant(context), BindingRestrictions.Empty, context),
                     target, 
                     args, 
                     RubyCallSignature.Simple(args.Length)
@@ -64,7 +64,7 @@ namespace IronRuby.Runtime.Calls {
             );
 
             // TODO: we should return null if we fail, we need to throw exception due to version update optimization:
-            return metaBuilder.CreateMetaObject(binder, MetaObject.EmptyMetaObjects);
+            return metaBuilder.CreateMetaObject(binder, DynamicMetaObject.EmptyMetaObjects);
         }
     }
 }

@@ -27,25 +27,25 @@ using IronRuby.Compiler;
 namespace IronRuby.Builtins {
 
     public partial class Proc : IDynamicObject {
-        public MetaObject/*!*/ GetMetaObject(Expression/*!*/ parameter) {
-            return new Meta(parameter, Restrictions.Empty, this);
+        public DynamicMetaObject/*!*/ GetMetaObject(Expression/*!*/ parameter) {
+            return new Meta(parameter, BindingRestrictions.Empty, this);
         }
 
-        internal sealed class Meta : MetaObject {
-            public Meta(Expression/*!*/ expression, Restrictions/*!*/ restrictions, Proc/*!*/ value)
+        internal sealed class Meta : DynamicMetaObject {
+            public Meta(Expression/*!*/ expression, BindingRestrictions/*!*/ restrictions, Proc/*!*/ value)
                 : base(expression, restrictions, value) {
                 ContractUtils.RequiresNotNull(value, "value");
             }
 
-            public override MetaObject/*!*/ BindInvoke(InvokeBinder/*!*/ action, MetaObject/*!*/[]/*!*/ args) {
+            public override DynamicMetaObject/*!*/ BindInvoke(InvokeBinder/*!*/ action, DynamicMetaObject/*!*/[]/*!*/ args) {
                 RubyCallSignature callSignature;
                 if (RubyCallSignature.TryCreate(action.Arguments, out callSignature)) {
                     return action.FallbackInvoke(this, args);
                 }
 
-                var context = new MetaObject(
+                var context = new DynamicMetaObject(
                     Methods.GetContextFromProc.OpCall(AstUtils.Convert(Expression, typeof(Proc))),
-                    Restrictions.Empty,
+                    BindingRestrictions.Empty,
                     RubyOps.GetContextFromProc((Proc)Value)
                 );
 

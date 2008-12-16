@@ -221,7 +221,7 @@ namespace Microsoft.Scripting.Utils {
         }
 
         private static bool NullVsNullable(Type left, Type right) {
-            return IsNullableType(left) && right == typeof(Null);
+            return IsNullableType(left) && right == typeof(DynamicNull);
         }
 
         // keep in sync with System.Core version
@@ -310,7 +310,7 @@ namespace Microsoft.Scripting.Utils {
         }
 
         internal static Type GetNonNoneType(Type type) {
-            return (type == typeof(Null)) ? typeof(object) : type;
+            return (type == typeof(DynamicNull)) ? typeof(object) : type;
         }
 
         internal static bool IsFloatingPoint(Type type) {

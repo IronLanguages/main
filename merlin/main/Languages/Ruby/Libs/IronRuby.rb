@@ -13,4 +13,4 @@
 #
 # ****************************************************************************
 
-load_assembly 'IronRuby.Libraries', 'IronRuby.StandardLibrary.Clr'
+load_assembly 'IronRuby.Libraries', 'IronRuby.StandardLibrary.IronRubyModule'

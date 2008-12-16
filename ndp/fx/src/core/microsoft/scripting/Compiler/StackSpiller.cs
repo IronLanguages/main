@@ -382,7 +382,6 @@ namespace System.Linq.Expressions.Compiler {
         }
 
         // MethodCallExpression
-        // TODO: ref parameters!!!
         private Result RewriteMethodCallExpression(Expression expr, Stack stack) {
             MethodCallExpression node = (MethodCallExpression)expr;
 
@@ -545,7 +544,7 @@ namespace System.Linq.Expressions.Compiler {
                     expr = Expression.Block(comma);
                     break;
                 default:
-                    throw Assert.Unreachable;
+                    throw ContractUtils.Unreachable;
             }
 
             return new Result(action, expr);
@@ -593,7 +592,7 @@ namespace System.Linq.Expressions.Compiler {
                     expr = Expression.Block(comma);
                     break;
                 default:
-                    throw Assert.Unreachable;
+                    throw ContractUtils.Unreachable;
             }
             return new Result(action, expr);
         }

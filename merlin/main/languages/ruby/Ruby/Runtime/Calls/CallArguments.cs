@@ -36,13 +36,13 @@ namespace IronRuby.Runtime.Calls {
     /// when we want to shift the arguments around during the method binding process.
     /// </summary>
     public sealed class CallArguments {
-        private readonly MetaObject/*!*/ _context;
+        private readonly DynamicMetaObject/*!*/ _context;
 
         // _args[0] might be target, if so _target is null:
-        private MetaObject _target;
+        private DynamicMetaObject _target;
 
         // Arguments must be readonly if _copyOnWrite is true. 
-        private MetaObject[]/*!*/ _args;
+        private DynamicMetaObject[]/*!*/ _args;
         private bool _copyArgsOnWrite;
         
         private Expression _scopeExpression;
@@ -115,11 +115,11 @@ namespace IronRuby.Runtime.Calls {
         }
 
         // RubyScope or RubyContext
-        public MetaObject/*!*/ MetaContext {
+        public DynamicMetaObject/*!*/ MetaContext {
             get { return _context; }
         }
 
-        public MetaObject/*!*/ MetaTarget {
+        public DynamicMetaObject/*!*/ MetaTarget {
             get { return _target ?? _args[0]; }            
         }
 
@@ -206,7 +206,7 @@ namespace IronRuby.Runtime.Calls {
             return _args.Length - 1;
         }
 
-        internal CallArguments(MetaObject/*!*/ context, MetaObject/*!*/ target, MetaObject/*!*/[]/*!*/ args, RubyCallSignature signature) {
+        internal CallArguments(DynamicMetaObject/*!*/ context, DynamicMetaObject/*!*/ target, DynamicMetaObject/*!*/[]/*!*/ args, RubyCallSignature signature) {
             Assert.NotNull(target, context);
             Assert.NotNullItems(args);
 
@@ -220,7 +220,7 @@ namespace IronRuby.Runtime.Calls {
             _signature = signature;
         }
 
-        internal CallArguments(MetaObject/*!*/ context, MetaObject/*!*/[]/*!*/ args, RubyCallSignature signature) {
+        internal CallArguments(DynamicMetaObject/*!*/ context, DynamicMetaObject/*!*/[]/*!*/ args, RubyCallSignature signature) {
             Assert.NotNull(context);
             Assert.NotNullItems(args);
             Assert.NotEmpty(args);
@@ -235,18 +235,18 @@ namespace IronRuby.Runtime.Calls {
             _signature = signature;
         }
 
-        public void InsertSimple(int index, MetaObject/*!*/ arg) {
+        public void InsertSimple(int index, DynamicMetaObject/*!*/ arg) {
             index = GetSimpleArgumentsIndex(index);
 
             _args = ArrayUtils.InsertAt(_args, index, arg);
             _signature = new RubyCallSignature(_signature.ArgumentCount + 1, _signature.Flags);
         }
 
-        public void SetSimpleArgument(int index, MetaObject/*!*/ arg) {
+        public void SetSimpleArgument(int index, DynamicMetaObject/*!*/ arg) {
             SetArgument(GetSimpleArgumentsIndex(index), arg);
         }
 
-        private void SetArgument(int index, MetaObject/*!*/ arg) {
+        private void SetArgument(int index, DynamicMetaObject/*!*/ arg) {
             if (_copyArgsOnWrite) {
                 _args = ArrayUtils.Copy(_args);
                 _copyArgsOnWrite = false;
@@ -258,7 +258,7 @@ namespace IronRuby.Runtime.Calls {
         public void SetTarget(Expression/*!*/ expression, object value) {
             Assert.NotNull(expression);
 
-            var metaTarget = new MetaObject(expression, Restrictions.Empty, value);
+            var metaTarget = new DynamicMetaObject(expression, BindingRestrictions.Empty, value);
 
             if (_target == null) {
                 if (_copyArgsOnWrite) {

@@ -23,22 +23,22 @@ using IronRuby.Runtime.Calls;
 namespace IronRuby.Builtins {
 
     public partial class RubyClass {
-        public override MetaObject/*!*/ GetMetaObject(Expression/*!*/ parameter) {
-            return new Meta(parameter, Restrictions.Empty, this);
+        public override DynamicMetaObject/*!*/ GetMetaObject(Expression/*!*/ parameter) {
+            return new Meta(parameter, BindingRestrictions.Empty, this);
         }
 
         internal new sealed class Meta : RubyModule.Meta {
-            public Meta(Expression/*!*/ expression, Restrictions/*!*/ restrictions, RubyClass/*!*/ value)
+            public Meta(Expression/*!*/ expression, BindingRestrictions/*!*/ restrictions, RubyClass/*!*/ value)
                 : base(expression, restrictions, value) {
                 ContractUtils.RequiresNotNull(value, "value");
             }
 
-            public override MetaObject/*!*/ BindInvokeMember(InvokeMemberBinder/*!*/ binder, params MetaObject/*!*/[]/*!*/ args) {
+            public override DynamicMetaObject/*!*/ BindInvokeMember(InvokeMemberBinder/*!*/ binder, params DynamicMetaObject/*!*/[]/*!*/ args) {
                 var self = (RubyClass)Value;
                 return RubyInvokeMemberBinder.TryBind(self.Context, binder, this, args) ?? binder.FallbackInvokeMember(this, args);
             }
 
-            public override MetaObject/*!*/ BindGetMember(GetMemberBinder/*!*/ binder) {
+            public override DynamicMetaObject/*!*/ BindGetMember(GetMemberBinder/*!*/ binder) {
                 var self = (RubyClass)Value;
                 return RubyGetMemberBinder.TryBind(self.Context, binder, this) ?? binder.FallbackGetMember(this);
             }

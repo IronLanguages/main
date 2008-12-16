@@ -71,7 +71,7 @@ namespace IronRuby.Runtime.Calls {
                 var action = ProtocolConversionAction.TryGetConversionAction(toType);
                 if (action != null) {
                     // TODO: once we work with MetaObjects, we could inline these dynamic sites:
-                    return Ast.Dynamic(action, toType, ScopeExpression, expr);
+                    return Ast.Dynamic(action, toType, ContextExpression, expr);
                 }
 
                 throw new InvalidOperationException(String.Format("No default protocol conversion for type {0}.", toType));

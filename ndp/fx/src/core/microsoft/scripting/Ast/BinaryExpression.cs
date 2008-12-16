@@ -557,7 +557,6 @@ namespace System.Linq.Expressions {
                 throw Error.UserDefinedOperatorMustNotBeVoid(method);
         }
 
-        //TODO: consider moving to utils. It is used in many places.
         //CONFORMING
         private static void ValidateMethodInfo(MethodInfo method) {
             if (method.IsGenericMethodDefinition)

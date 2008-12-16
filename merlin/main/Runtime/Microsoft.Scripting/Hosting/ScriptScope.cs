@@ -240,21 +240,21 @@ namespace Microsoft.Scripting.Hosting {
 
         #region IDynamicObject implementation
 
-        MetaObject IDynamicObject.GetMetaObject(Expression parameter) {
+        DynamicMetaObject IDynamicObject.GetMetaObject(Expression parameter) {
             return new Meta(parameter, this);
         }
 
-        private sealed class Meta : MetaObject {
+        private sealed class Meta : DynamicMetaObject {
             internal Meta(Expression parameter, ScriptScope scope)
-                : base(parameter, Restrictions.Empty, scope) {
+                : base(parameter, BindingRestrictions.Empty, scope) {
             }
 
             // TODO: support for IgnoreCase in underlying ScriptScope APIs
-            public override MetaObject BindGetMember(GetMemberBinder action) {
+            public override DynamicMetaObject BindGetMember(GetMemberBinder action) {
                 var result = Expression.Variable(typeof(object), "result");
                 var fallback = action.FallbackGetMember(this);
 
-                return new MetaObject(
+                return new DynamicMetaObject(
                     Expression.Block(
                         new ParameterExpression[] { result },
                         Expression.Condition(
@@ -268,27 +268,27 @@ namespace Microsoft.Scripting.Hosting {
                             AstUtils.Convert(fallback.Expression, typeof(object))
                         )
                     ),
-                    Restrictions.GetTypeRestriction(Expression, typeof(ScriptScope)).Merge(fallback.Restrictions)
+                    BindingRestrictions.GetTypeRestriction(Expression, typeof(ScriptScope)).Merge(fallback.Restrictions)
                 );
             }
 
             // TODO: support for IgnoreCase in underlying ScriptScope APIs
-            public override MetaObject BindSetMember(SetMemberBinder action, MetaObject value) {
-                return new MetaObject(
+            public override DynamicMetaObject BindSetMember(SetMemberBinder action, DynamicMetaObject value) {
+                return new DynamicMetaObject(
                     Expression.Call(
                         AstUtils.Convert(Expression, typeof(ScriptScope)),
                         typeof(ScriptScope).GetMethod("SetVariable", new[] { typeof(string), typeof(object) }),
                         Expression.Constant(action.Name),
                         AstUtils.Convert(value.Expression, typeof(object))
                     ),
-                    Restrictions.Merge(value.Restrictions).Merge(Restrictions.GetTypeRestriction(Expression, typeof(ScriptScope)))
+                    Restrictions.Merge(value.Restrictions).Merge(BindingRestrictions.GetTypeRestriction(Expression, typeof(ScriptScope)))
                 );
             }
 
             // TODO: support for IgnoreCase in underlying ScriptScope APIs
-            public override MetaObject BindDeleteMember(DeleteMemberBinder action) {
+            public override DynamicMetaObject BindDeleteMember(DeleteMemberBinder action) {
                 var fallback = action.FallbackDeleteMember(this);
-                return new MetaObject(
+                return new DynamicMetaObject(
                     Expression.Condition(
                         Expression.Call(
                             AstUtils.Convert(Expression, typeof(ScriptScope)),
@@ -298,18 +298,18 @@ namespace Microsoft.Scripting.Hosting {
                         Expression.Empty(),
                         Expression.Convert(fallback.Expression, typeof(void))
                     ),
-                    Restrictions.Merge(Restrictions.GetTypeRestriction(Expression, typeof(ScriptScope))).Merge(fallback.Restrictions)
+                    Restrictions.Merge(BindingRestrictions.GetTypeRestriction(Expression, typeof(ScriptScope))).Merge(fallback.Restrictions)
                 );
             }
 
             // TODO: support for IgnoreCase in underlying ScriptScope APIs
-            public override MetaObject BindInvokeMember(InvokeMemberBinder action, MetaObject[] args) {
+            public override DynamicMetaObject BindInvokeMember(InvokeMemberBinder action, DynamicMetaObject[] args) {
                 var fallback = action.FallbackInvokeMember(this, args);
                 var result = Expression.Variable(typeof(object), "result");
 
-                var fallbackInvoke = action.FallbackInvoke(new MetaObject(result, Restrictions.Empty), args, null);
+                var fallbackInvoke = action.FallbackInvoke(new DynamicMetaObject(result, BindingRestrictions.Empty), args, null);
 
-                return new MetaObject(
+                return new DynamicMetaObject(
                     Expression.Block(
                         new ParameterExpression[] { result },
                         Expression.Condition(
@@ -323,7 +323,7 @@ namespace Microsoft.Scripting.Hosting {
                             AstUtils.Convert(fallback.Expression, typeof(object))
                         )
                     ),
-                    Restrictions.Combine(args).Merge(Restrictions.GetTypeRestriction(Expression, typeof(ScriptScope))).Merge(fallback.Restrictions)
+                    BindingRestrictions.Combine(args).Merge(BindingRestrictions.GetTypeRestriction(Expression, typeof(ScriptScope))).Merge(fallback.Restrictions)
                 );
             }
         }

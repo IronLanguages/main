@@ -184,8 +184,7 @@ bar
         /// <summary>
         /// Embedded string does call "to_s" w/o calling "respond_to?" first.
         /// </summary>
-        public void Strings9() {
-            // TODO:
+        public void ToSConversion1() {
             AssertOutput(delegate() {
                 CompilerTest(@"
 class X
@@ -202,6 +201,29 @@ end
 ");
             }, @"
 TO_S
+");
+        }
+
+        public void ToSConversion2() {
+            AssertOutput(delegate() {
+                CompilerTest(@"
+class NilClass
+  def to_s; 'NULL1'; end
+  puts ""#{nil}""
+
+  def to_s; 'NULL2'; end
+  puts ""#{nil}""
+end
+
+class SubString < String
+  def to_s; 'XXX'; end
+  puts ""#{new 'SUB'}""
+end
+");
+            }, @"
+NULL1
+NULL2
+SUB
 ");
         }
 

@@ -66,7 +66,7 @@ namespace Microsoft.Scripting.Runtime {
                     return value;
                 }
 
-                if (_context.LanguageContext.TryLookupGlobal(_context, _name, out value)) {
+                if (_context.LanguageContext.TryLookupGlobal(_context.Scope, _name, out value)) {
                     return value;
                 }
             }
@@ -87,7 +87,7 @@ namespace Microsoft.Scripting.Runtime {
 
                 if (_global.IsCaching && _global.HasValue) return GetStringDisplay(_global.Value);
                 object value;
-                if (_context.LanguageContext.TryLookupGlobal(_context, _name, out value))
+                if (_context.LanguageContext.TryLookupGlobal(_context.Scope, _name, out value))
                     return GetStringDisplay(value);
 
                 return GetStringDisplay(Uninitialized.Instance);

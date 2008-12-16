@@ -18,6 +18,7 @@ using System.Text;
 using System.Diagnostics;
 using System.Collections.ObjectModel;
 using System.Collections.Generic;
+using System.Globalization;
 
 namespace System.Linq.Expressions {
     //CONFORMING
@@ -173,20 +174,17 @@ namespace System.Linq.Expressions {
 
         //Variables must not be ByRef.
         internal static void RequireVariableNotByRef(ParameterExpression v, string varName) {
-            Assert.NotNull(varName);
-            if (v != null) {
-                ContractUtils.Requires(!v.IsByRef, varName, Strings.VariableMustNotBeByRef);
+            Debug.Assert(varName != null);
+            if (v != null && v.IsByRef) {
+                throw new ArgumentException(Strings.VariableMustNotBeByRef, varName);
             }
         }
 
         internal static void RequireVariablesNotByRef(ReadOnlyCollection<ParameterExpression> vs, string collectionName) {
-            Assert.NotNull(vs);
-            Assert.NotNull(collectionName);
-            for (int i = 0; i < vs.Count; i++) {
-                if (vs[i] != null && vs[i].IsByRef) {
-                    // TODO: Just throw, don't call ContractUtils
-                    ContractUtils.Requires(!vs[i].IsByRef, string.Format(System.Globalization.CultureInfo.CurrentCulture, "{0}[{1}]", collectionName, i), Strings.VariableMustNotBeByRef);
-                }
+            Debug.Assert(vs != null);
+            Debug.Assert(collectionName != null);
+            foreach (ParameterExpression v in vs) {
+                RequireVariableNotByRef(v, collectionName);
             }
         }
     }

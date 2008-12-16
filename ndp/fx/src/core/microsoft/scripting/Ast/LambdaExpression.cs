@@ -46,7 +46,7 @@ namespace System.Linq.Expressions {
             ReadOnlyCollection<ParameterExpression> parameters
         ) {
 
-            Assert.NotNull(delegateType);
+            Debug.Assert(delegateType != null);
 
             _name = name;
             _body = body;
@@ -86,15 +86,15 @@ namespace System.Linq.Expressions {
             return LambdaCompiler.CompileLambda(this, emitDebugSymbols);
         }
 
-        // TODO: add an overload that returns a DynamicMethod?
-        // TODO: this method doesn't expose the full power of TypeBuilder.DefineMethod
-        public MethodBuilder CompileToMethod(TypeBuilder type, MethodAttributes attributes, bool emitDebugSymbols) {
-            ContractUtils.RequiresNotNull(type, "type");
+        public void CompileToMethod(MethodBuilder method, bool emitDebugSymbols) {
+            ContractUtils.RequiresNotNull(method, "method");
+            var type = method.DeclaringType as TypeBuilder;
+            ContractUtils.Requires(type != null, "method", Strings.MethodBuilderDoesNotHaveTypeBuilder);
             if (emitDebugSymbols) {
-                var module = type.Module as ModuleBuilder;
-                ContractUtils.Requires(module != null, "method", Strings.InvalidTypeBuilder);
+                var module = method.Module as ModuleBuilder;
+                ContractUtils.Requires(module != null, "method", Strings.MethodBuilderDoesNotHaveModuleBuilder);
             }
-            return LambdaCompiler.CompileLambda(this, type, attributes, emitDebugSymbols);
+            LambdaCompiler.CompileLambda(this, method, emitDebugSymbols);
         }
 
         internal abstract LambdaExpression Accept(StackSpiller spiller);

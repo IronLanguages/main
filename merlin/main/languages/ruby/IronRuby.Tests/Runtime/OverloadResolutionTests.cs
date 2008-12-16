@@ -37,17 +37,17 @@ namespace IronRuby.Tests {
             var scope = new RubyTopLevelScope(gse, null, new SymbolDictionary());
             var proc = new Proc(ProcKind.Proc, null, scope, new BlockDispatcher0((x, y) => null, BlockSignatureAttributes.None));
 
-            var scopeArg = new MetaObject(Ast.Constant(proc.LocalScope), Restrictions.Empty, proc.LocalScope);
-            var contextArg = new MetaObject(Ast.Constant(Context), Restrictions.Empty, Context);
-            var instanceInt = new MetaObject(Ast.Constant(1), Restrictions.Empty, 1);
+            var scopeArg = new DynamicMetaObject(Ast.Constant(proc.LocalScope), BindingRestrictions.Empty, proc.LocalScope);
+            var contextArg = new DynamicMetaObject(Ast.Constant(Context), BindingRestrictions.Empty, Context);
+            var instanceInt = new DynamicMetaObject(Ast.Constant(1), BindingRestrictions.Empty, 1);
             var str = "foo";
-            var instanceStr = new MetaObject(Ast.Constant(str), Restrictions.Empty, str);
-            var procArg = new MetaObject(Ast.Constant(proc), Restrictions.Empty, proc);
-            var nullArg = new MetaObject(Ast.Constant(Ast.Constant(null)), Restrictions.Empty, null);
+            var instanceStr = new DynamicMetaObject(Ast.Constant(str), BindingRestrictions.Empty, str);
+            var procArg = new DynamicMetaObject(Ast.Constant(proc), BindingRestrictions.Empty, proc);
+            var nullArg = new DynamicMetaObject(Ast.Constant(Ast.Constant(null)), BindingRestrictions.Empty, null);
 
             var arguments = new[] {
                 // 1.times
-                new CallArguments(scopeArg, instanceInt, new MetaObject[0], RubyCallSignature.WithScope(0)),
+                new CallArguments(scopeArg, instanceInt, new DynamicMetaObject[0], RubyCallSignature.WithScope(0)),
                 // 1.times &nil             
                 new CallArguments(scopeArg, instanceInt, new[] {  nullArg }, RubyCallSignature.WithScopeAndBlock(0)),
                 // 1.times &p                            

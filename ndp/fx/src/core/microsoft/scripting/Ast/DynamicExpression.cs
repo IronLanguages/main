@@ -75,7 +75,7 @@ namespace System.Linq.Expressions {
         }
 
         internal virtual ReadOnlyCollection<Expression> GetOrMakeArguments() {
-            throw Assert.Unreachable;
+            throw ContractUtils.Unreachable;
         }
 
         internal override Expression Accept(ExpressionVisitor visitor) {
@@ -90,17 +90,17 @@ namespace System.Linq.Expressions {
         /// subclass of DynamicExpression which is being used. 
         /// </summary>
         internal virtual DynamicExpression Rewrite(Expression[] args) {
-            throw Assert.Unreachable;
+            throw ContractUtils.Unreachable;
         }
 
         #region IArgumentProvider Members
 
         Expression IArgumentProvider.GetArgument(int index) {
-            throw Assert.Unreachable;
+            throw ContractUtils.Unreachable;
         }
 
         int IArgumentProvider.ArgumentCount {
-            get { throw Assert.Unreachable; }
+            get { throw ContractUtils.Unreachable; }
         }
 
         #endregion

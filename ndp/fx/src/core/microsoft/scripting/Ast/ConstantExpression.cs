@@ -26,7 +26,8 @@ namespace System.Linq.Expressions {
         internal static readonly ConstantExpression EmptyStringLiteral = ConstantExpression.Make(String.Empty, typeof(string));
         internal static readonly ConstantExpression[] IntCache = new ConstantExpression[100];
 
-        // TODO: Constant<T> subclass that stores the unboxed value?
+        // Possible optimization: we could have a Constant<T> subclass that
+        // stores the unboxed value.
         private readonly object _value;
 
         internal ConstantExpression(object value) {

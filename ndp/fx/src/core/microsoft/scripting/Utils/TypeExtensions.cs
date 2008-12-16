@@ -72,18 +72,6 @@ namespace System.Dynamic.Utils {
             return pis;
         }
 
-        /// <summary>
-        /// A helper routine to check if a type can be treated as sealed - i.e. there
-        /// can never be a subtype of this given type.  This corresponds to a type
-        /// that is either declared "Sealed" or is a ValueType and thus unable to be
-        /// extended.
-        /// 
-        /// TODO: this should not be needed. Type.IsSealed does the right thing.
-        /// </summary>
-        internal static bool IsSealedOrValueType(this Type type) {
-            return type.IsSealed || type.IsValueType;
-        }
-
         internal static bool IsParamArray(this ParameterInfo parameter) {
             return parameter.IsDefined(typeof(ParamArrayAttribute), false);
         }

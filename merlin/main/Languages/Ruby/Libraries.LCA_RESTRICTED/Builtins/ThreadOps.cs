@@ -23,6 +23,7 @@ using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 using System.Threading;
 using IronRuby.Runtime;
+using System.Text;
 
 namespace IronRuby.Builtins {
     [RubyClass("Thread", Extends = typeof(Thread), Inherits = typeof(object))]
@@ -148,9 +149,8 @@ namespace IronRuby.Builtins {
             if (key == null) {
                 return RubyExceptions.CreateTypeError("nil is not a symbol");
             } else {
-                MutableString repr = Protocols.ConvertToString(context, key);
-                string message = String.Format("{0} is not a symbol", repr.ToString());
-                return RubyExceptions.CreateArgumentError(message);
+                // MRI calls RubyUtils.InspectObject, but this should be good enought as an error message:
+                return RubyExceptions.CreateArgumentError(String.Format("{0} is not a symbol", context.GetClassOf(key).Name));
             }
         }
 
@@ -425,12 +425,18 @@ namespace IronRuby.Builtins {
                 } catch (Exception e) {
                     info.Exception = e;
 
-                    Utils.Log(
-                        e.Message + "\r\n\r\n" + 
-                        e.StackTrace + "\r\n\r\n" + 
-                        IListOps.Join(context, RubyExceptionData.GetInstance(e).Backtrace).ToString(), 
-                        "THREAD"
-                    );
+                    StringBuilder trace = new StringBuilder();
+                    trace.Append(e.Message);
+                    trace.AppendLine();
+                    trace.AppendLine();
+                    trace.Append(e.StackTrace);
+                    trace.AppendLine();
+                    trace.AppendLine();
+                    foreach (var frame in RubyExceptionData.GetInstance(e).Backtrace) {
+                        trace.Append(frame.ToString());
+                    }
+
+                    Utils.Log(trace.ToString(), "THREAD");
 
                     if (_globalAbortOnException || info.AbortOnException) {
                         throw;

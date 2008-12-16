@@ -53,7 +53,7 @@ namespace Microsoft.Scripting.ComInterop {
 
         #region IDynamicObject Members
 
-        MetaObject IDynamicObject.GetMetaObject(Expression parameter) {
+        DynamicMetaObject IDynamicObject.GetMetaObject(Expression parameter) {
             return new TypeLibMetaObject(parameter, this);
         }
 

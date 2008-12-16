@@ -1,4 +1,4 @@
-/* ****************************************************************************
+﻿/* ****************************************************************************
  *
  * Copyright (c) Microsoft Corporation. 
  *
@@ -220,7 +220,16 @@ namespace System.Linq.Expressions.Compiler {
                 case ExpressionType.Unbox:
                     EmitUnboxUnaryExpression(node);
                     break;
+                case ExpressionType.TypeEqual:
+                    EmitTypeBinaryExpression(node);
+                    break;
                 case ExpressionType.OnesComplement:
+                    EmitUnaryExpression(node);
+                    break;
+                case ExpressionType.IsTrue:
+                    EmitUnaryExpression(node);
+                    break;
+                case ExpressionType.IsFalse:
                     EmitUnaryExpression(node);
                     break;
 
@@ -229,7 +238,7 @@ namespace System.Linq.Expressions.Compiler {
                 #endregion
 
                 default:
-                    throw Assert.Unreachable;
+                    throw ContractUtils.Unreachable;
             }
 
             if (emitStart) {

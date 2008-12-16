@@ -33,11 +33,6 @@ namespace System.Dynamic {
         /// <summary>
         /// Provides the Expression which provides the value to be passed to the argument.
         /// This method is called when result is intended to be used ByRef.
-        /// 
-        /// TODO: merge with Unwrap. They're distict because some of the variant
-        /// magic is happening in helpers in Variant.cs, rather than in Unwrap.
-        /// So UnwrapByRef has to duplicate this logic. The logic should just
-        /// move into Unwrap
         /// </summary>
         internal virtual Expression MarshalToRef(Expression parameter) {
             return Marshal(parameter);

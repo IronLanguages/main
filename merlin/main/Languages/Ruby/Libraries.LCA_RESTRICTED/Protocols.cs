@@ -13,12 +13,6 @@
  *
  * ***************************************************************************/
 
-using BinaryOpSite = System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite,
-    IronRuby.Runtime.RubyContext, object, object, object>>;
-
-using RespondToSite = System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite,
-    IronRuby.Runtime.RubyContext, object, Microsoft.Scripting.SymbolId, object>>;
-
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -31,6 +25,7 @@ using Microsoft.Scripting.Actions;
 using Microsoft.Scripting.Generation;
 using IronRuby.Builtins;
 using IronRuby.Runtime.Calls;
+using IronRuby.Compiler;
 
 namespace IronRuby.Runtime {
     /// <summary>
@@ -48,7 +43,6 @@ namespace IronRuby.Runtime {
             _ToF = CallSite<Func<CallSite, RubyContext, object, object>>.Create(RubySites.InstanceCallAction("to_f")),
             _ToI = CallSite<Func<CallSite, RubyContext, object, object>>.Create(RubySites.InstanceCallAction("to_i")),
             _ToInt = CallSite<Func<CallSite, RubyContext, object, object>>.Create(RubySites.InstanceCallAction("to_int")),
-            _ToS = CallSite<Func<CallSite, RubyContext, object, object>>.Create(RubySites.InstanceCallAction("to_s")),
             _ToStr = CallSite<Func<CallSite, RubyContext, object, object>>.Create(RubySites.InstanceCallAction("to_str")),
             _ToA = CallSite<Func<CallSite, RubyContext, object, object>>.Create(RubySites.InstanceCallAction("to_a")),
             _ToAry = CallSite<Func<CallSite, RubyContext, object, object>>.Create(RubySites.InstanceCallAction("to_ary"));
@@ -93,14 +87,17 @@ namespace IronRuby.Runtime {
 
         #endregion
 
-        #region CastToString, AsString, TryConvertToString
+        #region CastToString, AsString, TryConvertToString, ObjectToString
 
         /// <summary>
-        /// Standard way to convert to a Ruby String, using to_str
-        /// 
-        /// Checks if it's already a string, and if so returns it.
-        /// Then calls to_str if it exists, otherwise throw a TypeError
+        /// Converts an object to string using to_str protocol (<see cref="ConvertToStrAction"/>).
         /// </summary>
+        public static MutableString/*!*/ CastToString(ConversionStorage<MutableString>/*!*/ stringCast, RubyContext/*!*/ context, object obj) {
+            var site = stringCast.GetSite(ConvertToStrAction.Instance);
+            return site.Target(site, context, obj);
+        }
+
+        // TODO: remove
         public static MutableString/*!*/ CastToString(RubyContext/*!*/ context, object obj) {
             MutableString str = AsString(context, obj);
             if (str != null) {
@@ -109,6 +106,7 @@ namespace IronRuby.Runtime {
             throw RubyExceptions.CannotConvertTypeToTargetType(context, obj, "String");
         }
 
+        // TODO: remove
         public static MutableString[]/*!*/ CastToStrings(RubyContext/*!*/ context, object[]/*!*/ objs) {
             var result = new MutableString[objs.Length];
             for (int i = 0; i < objs.Length; i++) {
@@ -117,6 +115,7 @@ namespace IronRuby.Runtime {
             return result;
         }
 
+        // TODO: remove
         /// <summary>
         /// Standard way to convert to a Ruby String, using to_str
         /// 
@@ -141,25 +140,11 @@ namespace IronRuby.Runtime {
         }
 
         /// <summary>
-        /// Convert to string using to_s
-        /// 
-        /// The behavior is different from the typical conversion protocol:
-        ///   * it assumes that to to_s is defined, and just calls it
-        ///   * if to_s returns a non-string value, we fall back to Kernel.ToString 
+        /// Convert to string using to_s protocol (<see cref="ConvertToSAction"/>).
         /// </summary>
-        public static MutableString/*!*/ ConvertToString(RubyContext/*!*/ context, object obj) {
-            MutableString str = obj as MutableString;
-            if (str != null) {
-                return str;
-            }
-
-            str = _ToS.Target(_ToS, context, obj) as MutableString;
-            if (str != null) {
-                return str;
-            }
-
-            // fallback to Kernel#to_s if to_s returned a non-string
-            return KernelOps.ToS(context, obj);
+        public static MutableString/*!*/ ConvertToString(ConversionStorage<MutableString>/*!*/ tosStorage, RubyContext/*!*/ context, object obj) {
+            var site = tosStorage.GetSite(ConvertToSAction.Instance);
+            return site.Target(site, context, obj);
         }
 
         #endregion
@@ -194,17 +179,21 @@ namespace IronRuby.Runtime {
 
             throw RubyExceptions.CannotConvertTypeToTargetType(context, value, "Float");
         }
-        public static double ConvertStringToFloat(RubyContext context, MutableString value) {
-            try {
-                return double.Parse(value.ConvertToString(), System.Globalization.CultureInfo.InvariantCulture.NumberFormat);
-            } catch (FormatException x) {
-                MutableString valueString = RubySites.Inspect(context, value);
-                throw RubyExceptions.CreateArgumentError("invalid value for Float(): " + valueString.ConvertToString(), x);
+
+        public static double ConvertStringToFloat(RubyContext/*!*/ context, MutableString/*!*/ value) {
+            double result;
+            bool complete;
+            if (Tokenizer.TryParseDouble(value.ConvertToString(), out result, out complete) && complete) {
+                return result;
             }
+
+            MutableString valueString = RubySites.Inspect(context, value);
+            throw RubyExceptions.CreateArgumentError(String.Format("invalid value for Float(): {0}", valueString.ConvertToString()));
         }
+
         #endregion
 
-        #region TryConvertToInteger, ConvertToInteger, AsInteger, CastToInteger, CastToFixnum, IsInteger, IntegerAsFixnum
+        #region ConvertToInteger, CastToInteger, CastToFixnum
 
         private static bool AsPrimitiveInteger(object obj, out int intValue, out BigInteger bigValue) {
             // TODO: All CLR primitive numeric types?
@@ -225,13 +214,6 @@ namespace IronRuby.Runtime {
             intValue = 0;
             bigValue = null;
             return false;
-        }
-
-        public static object/*!*/ ConvertToInteger(RubyContext/*!*/ context, object obj) {
-            int fixnum;
-            BigInteger bignum;
-            ConvertToInteger(context, obj, out fixnum, out bignum);
-            return (object)bignum ?? ScriptingRuntimeHelpers.Int32ToObject(fixnum);
         }
 
         /// <summary>
@@ -268,82 +250,30 @@ namespace IronRuby.Runtime {
 
         /// <summary>
         /// Try to cast the object to an Integer using to_int
-        /// Returns null if the object doesn't implement to_int
+        /// Throws if the cast fails
         /// Can return either Bignum or Fixnum
         /// </summary>
-        public static bool AsInteger(RubyContext/*!*/ context, object obj, out int fixnum, out BigInteger bignum) {
+        public static void CastToInteger(RubyContext/*!*/ context, object obj, out int fixnum, out BigInteger bignum) {
             // Don't call to_int on types derived from Integer
             if (AsPrimitiveInteger(obj, out fixnum, out bignum)) {
-                return true;
+                return;
             }
 
             if (RubySites.RespondTo(context, obj, "to_int")) {
                 object result = _ToInt.Target(_ToInt, context, obj);
                 if (AsPrimitiveInteger(result, out fixnum, out bignum)) {
-                    return true;
+                    return;
                 }
 
                 throw RubyExceptions.InvalidValueForType(context, result, "Integer");
             }
 
-            return false;
-        }
-
-        /// <summary>
-        /// Converts an Integer to a Fixnum.
-        /// Don't call any conversion methods--just handles Fixnum & Bignum
-        /// </summary>
-        /// <param name="value"></param>
-        /// <returns>true if value is an Integer, false otherwise</returns>
-        /// <exception cref="ArgumentOutOfRangeException">Throws a RangeError if value is a
-        /// BigInteger but can't be converted to a Fixnum</exception>
-        public static bool IntegerAsFixnum(object value, out int result) {
-            if (value is int) {
-                result = (int)value;
-                return true;
-            }
-
-            var bignum = value as BigInteger;
-            if ((object)bignum != null) {
-                if (!bignum.AsInt32(out result)) {
-                    throw RubyExceptions.CreateRangeError("bignum too big to convert into `long'");
-                }
-                return true;
-            }
-
-            result = 0;
-            return false;
-        }
-
-        /// <summary>
-        /// Try to cast the object to an Integer using to_int
-        /// Throws if the cast fails
-        /// Can return either Bignum or Fixnum
-        /// </summary>
-        public static void CastToInteger(RubyContext/*!*/ context, object obj, out int fixnum, out BigInteger bignum) {
-            if (AsInteger(context, obj, out fixnum, out bignum)) {
-                return;
-            }
-
             throw RubyExceptions.CannotConvertTypeToTargetType(context, obj, "Integer");
         }
 
-        /// <summary>
-        /// Like CastToInteger, but converts the result to a Fixnum
-        /// </summary>
-        public static int CastToFixnum(RubyContext/*!*/ context, object obj) {
-            if (obj == null) {
-                throw RubyExceptions.CreateTypeError("no implicit conversion from nil to integer");
-            }
-
-            int fixnum;
-            BigInteger bignum;
-            CastToInteger(context, obj, out fixnum, out bignum);
-            if ((object)bignum != null && !bignum.AsInt32(out fixnum)) {
-                throw RubyExceptions.CreateRangeError("bignum too big to convert into `long'");
-            }
-
-            return fixnum;
+        public static int CastToFixnum(ConversionStorage<int>/*!*/ conversionStorage, RubyContext/*!*/ context, object obj) {
+            var site = conversionStorage.GetSite(ConvertToFixnumAction.Instance);
+            return site.Target(site, context, obj);
         }
 
         /// <summary>
@@ -514,12 +444,12 @@ namespace IronRuby.Runtime {
         /// Try to compare the lhs and rhs. Throws and exception if comparison returns null. Returns -1/0/+1 otherwise.
         /// </summary>
         public static int Compare(
-            SiteLocalStorage<BinaryOpSite>/*!*/ comparisonStorage,
-            SiteLocalStorage<BinaryOpSite>/*!*/ lessThanStorage,
-            SiteLocalStorage<BinaryOpSite>/*!*/ greaterThanStorage,
+            BinaryOpStorage/*!*/ comparisonStorage,
+            BinaryOpStorage/*!*/ lessThanStorage,
+            BinaryOpStorage/*!*/ greaterThanStorage,
             RubyContext/*!*/ context, object lhs, object rhs) {
 
-            var compare = comparisonStorage.GetCallSite("<=>", 1);
+            var compare = comparisonStorage.GetCallSite("<=>");
 
             var result = compare.Target(compare, context, lhs, rhs);
             if (result != null) {
@@ -530,18 +460,18 @@ namespace IronRuby.Runtime {
         }
     
         public static int ConvertCompareResult(
-            SiteLocalStorage<BinaryOpSite>/*!*/ lessThanStorage, 
-            SiteLocalStorage<BinaryOpSite>/*!*/ greaterThanStorage,
+            BinaryOpStorage/*!*/ lessThanStorage, 
+            BinaryOpStorage/*!*/ greaterThanStorage,
             RubyContext/*!*/ context, object/*!*/ result) {
 
             Debug.Assert(result != null);
 
-            var greaterThanSite = greaterThanStorage.GetCallSite(">", 1);
+            var greaterThanSite = greaterThanStorage.GetCallSite(">");
             if (RubyOps.IsTrue(greaterThanSite.Target(greaterThanSite, context, result, 0))) {
                 return 1;
             }
 
-            var lessThanSite = lessThanStorage.GetCallSite("<", 1);
+            var lessThanSite = lessThanStorage.GetCallSite("<");
             if (RubyOps.IsTrue(lessThanSite.Target(lessThanSite, context, result, 0))) {
                 return -1;
             }
@@ -561,13 +491,13 @@ namespace IronRuby.Runtime {
         /// <summary>
         /// Protocol for determining value equality in Ruby (uses IsTrue protocol on result of == call)
         /// </summary>
-        public static bool IsEqual(RubyContext/*!*/ context, object lhs, object rhs) {
-            return IsTrue(RubySites.Equal(context, lhs, rhs));
+        public static bool IsEqual(BinaryOpStorage/*!*/ equals, RubyContext/*!*/ context, object lhs, object rhs) {
+            var site = equals.GetCallSite("==");
+            return IsTrue(site.Target(site, context, lhs, rhs));
         }
 
-        public static bool RespondTo(SiteLocalStorage<RespondToSite>/*!*/ respondToStorage, 
-            RubyContext/*!*/ context, object target, string/*!*/ methodName) {
-            var site = respondToStorage.GetCallSite("respond_to?", 1);
+        public static bool RespondTo(RespondToStorage/*!*/ respondToStorage, RubyContext/*!*/ context, object target, string/*!*/ methodName) {
+            var site = respondToStorage.GetCallSite();
             return IsTrue(site.Target(site, context, target, SymbolTable.StringToId(methodName)));
         }
 
@@ -581,8 +511,8 @@ namespace IronRuby.Runtime {
         /// or returns something other than a pair of objects.
         /// </returns>
         public static object CoerceAndCompare(
-            SiteLocalStorage<BinaryOpSite>/*!*/ coercionStorage,
-            SiteLocalStorage<BinaryOpSite>/*!*/ comparisonStorage, 
+            BinaryOpStorage/*!*/ coercionStorage,
+            BinaryOpStorage/*!*/ comparisonStorage, 
             RubyContext/*!*/ context, object self, object other) {
 
             object result;
@@ -596,8 +526,8 @@ namespace IronRuby.Runtime {
         /// "coerce" method is not defined, throws a subclass of SystemException, or returns something other than a pair of objects.
         /// </exception>
         public static bool CoerceAndRelate(
-            SiteLocalStorage<BinaryOpSite>/*!*/ coercionStorage,
-            SiteLocalStorage<BinaryOpSite>/*!*/ comparisonStorage, string/*!*/ relationalOp, 
+            BinaryOpStorage/*!*/ coercionStorage,
+            BinaryOpStorage/*!*/ comparisonStorage, string/*!*/ relationalOp, 
             RubyContext/*!*/ context, object self, object other) {
 
             object result;
@@ -615,8 +545,8 @@ namespace IronRuby.Runtime {
         /// "coerce" method is not defined, throws a subclass of SystemException, or returns something other than a pair of objects.
         /// </exception>
         public static object CoerceAndApply(
-            SiteLocalStorage<BinaryOpSite>/*!*/ coercionStorage,
-            SiteLocalStorage<BinaryOpSite>/*!*/ binaryOpStorage, string/*!*/ binaryOp,
+            BinaryOpStorage/*!*/ coercionStorage,
+            BinaryOpStorage/*!*/ binaryOpStorage, string/*!*/ binaryOp,
             RubyContext/*!*/ context, object self, object other) {
 
             object result;
@@ -628,8 +558,8 @@ namespace IronRuby.Runtime {
         }
 
         private static bool TryCoerceAndApply(
-            SiteLocalStorage<BinaryOpSite>/*!*/ coercionStorage,
-            SiteLocalStorage<BinaryOpSite>/*!*/ binaryOpStorage, string/*!*/ binaryOp,
+            BinaryOpStorage/*!*/ coercionStorage,
+            BinaryOpStorage/*!*/ binaryOpStorage, string/*!*/ binaryOp,
             RubyContext/*!*/ context, object self, object other, out object result) {
 
             // doesn't call method_missing:
@@ -647,7 +577,7 @@ namespace IronRuby.Runtime {
             }
 
             if (coercedValues != null && coercedValues.Count == 2) {
-                var compare = binaryOpStorage.GetCallSite(binaryOp, 1);
+                var compare = binaryOpStorage.GetCallSite(binaryOp);
                 result = compare.Target(compare, context, coercedValues[0], coercedValues[1]);
                 return true;
             }
@@ -656,16 +586,6 @@ namespace IronRuby.Runtime {
             return false;
         }
     
-        #endregion
-
-        #region Range
-
-        public static void ConvertToIntegerRange(RubyContext/*!*/ context, Range/*!*/ range, out int begin, out int end, out bool excludeEnd) {
-            begin = Protocols.CastToFixnum(context, RubySites.RangeBegin(context, range));
-            end = Protocols.CastToFixnum(context, RubySites.RangeEnd(context, range));
-            excludeEnd = RubySites.RangeExcludeEnd(context, range);
-        }
-
         #endregion
 
         #region CLR Types

@@ -78,7 +78,7 @@ namespace Microsoft.Scripting.Ast {
         /// Called from generated code, helper to remove a name
         /// </summary>
         public static object RemoveName(CodeContext context, SymbolId name) {
-            return context.LanguageContext.RemoveName(context, name);
+            return context.LanguageContext.RemoveName(context.Scope, name);
         }
     }
 }

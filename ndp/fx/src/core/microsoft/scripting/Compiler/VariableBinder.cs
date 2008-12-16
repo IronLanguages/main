@@ -89,10 +89,6 @@ namespace System.Linq.Expressions.Compiler {
         // If the immediate child is another scope, merge it into this one
         // This is an optimization to save environment allocations and
         // array accesses.
-        //
-        // TODO: is this an important optimization? Seems useful to merge
-        // lambdas scopes with immediately nested blocks, but it's rare that
-        // blocks would have only one element
         private ReadOnlyCollection<Expression> MergeScopes(Expression node) {
             ReadOnlyCollection<Expression> body;
             var lambda = node as LambdaExpression;
@@ -103,7 +99,7 @@ namespace System.Linq.Expressions.Compiler {
             }
 
             var currentScope = _scopes.Peek();
-            while (IsMergeable(body, node)) {
+            while (IsMergeable(body)) {
                 var block = (BlockExpression)body[0];
 
                 if (block.Variables.Count > 0) {
@@ -123,12 +119,8 @@ namespace System.Linq.Expressions.Compiler {
 
         //A block body is mergeable if the body only contains one single block node containing variables,
         //and the child block has the same type as the parent block.
-        private static bool IsMergeable(ReadOnlyCollection<Expression> body, Expression parent) {
-            return body.Count == 1 &&
-                   body[0].NodeType == ExpressionType.Block &&
-                   //TODO: the following check is only needed because we allow void blocks. 
-                   //It can be removed when that feature goes away.
-                   body[0].Type == parent.Type;
+        private static bool IsMergeable(ReadOnlyCollection<Expression> body) {
+            return body.Count == 1 && body[0].NodeType == ExpressionType.Block;
         }
 
 
@@ -186,7 +178,7 @@ namespace System.Linq.Expressions.Compiler {
                         return scope;
                     }
                 }
-                throw Assert.Unreachable;
+                throw ContractUtils.Unreachable;
             }
         }
 

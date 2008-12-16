@@ -25,6 +25,6 @@ namespace Microsoft.Scripting.Runtime {
     /// the type info (e.g. the type is not sealed).
     /// </summary>
     public interface IRestrictedMetaObject {
-        MetaObject Restrict(Type type);
+        DynamicMetaObject Restrict(Type type);
     }
 }

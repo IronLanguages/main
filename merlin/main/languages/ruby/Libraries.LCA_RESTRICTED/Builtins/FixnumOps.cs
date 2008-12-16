@@ -13,9 +13,6 @@
  *
  * ***************************************************************************/
 
-using BinaryOpSite = System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite,
-    IronRuby.Runtime.RubyContext, object, object, object>>;
-
 using System;
 using Microsoft.Scripting;
 using Microsoft.Scripting.Runtime;
@@ -50,7 +47,7 @@ namespace IronRuby.Builtins {
         /// </summary>
         /// <remarks>Just returns the Fixnum</remarks>
         [RubyMethod("induced_from", RubyMethodAttributes.PublicSingleton)]
-        public static int InducedFrom(RubyClass/*!*/ self, int obj) {
+        public static int InducedFrom(RubyClass/*!*/ self, [DefaultProtocol]int obj) {
             return obj;
         }
 
@@ -64,17 +61,7 @@ namespace IronRuby.Builtins {
             if (obj <= Int32.MaxValue && obj >= Int32.MinValue) {
                 return (int)obj;
             }
-            throw RubyExceptions.CreateRangeError("Float " + obj.ToString() + " out of range of integer");
-        }
-
-        /// <summary>
-        /// Convert obj to a Fixnum
-        /// </summary>
-        /// <remarks>Dynamically invokes to_int on obj, unless obj is null.</remarks>
-        /// <exception cref="InvalidOperationException">If obj is Nil</exception>
-        [RubyMethod("induced_from", RubyMethodAttributes.PublicSingleton)]
-        public static int InducedFrom(RubyClass/*!*/ self, object obj) {
-            return Protocols.CastToFixnum(self.Context, Protocols.ConvertToInteger(self.Context, obj));
+            throw RubyExceptions.CreateRangeError(String.Format("Float {0} out of range of integer", obj));
         }
 
         #endregion
@@ -315,7 +302,7 @@ namespace IronRuby.Builtins {
         /// First coerces self on other then calls % on the coerced self value.
         /// </remarks>
         [RubyMethod("%")]
-        public static object ModuloOp(SiteLocalStorage<BinaryOpSite>/*!*/ coercionStorage, SiteLocalStorage<BinaryOpSite>/*!*/ binaryOpSite, 
+        public static object ModuloOp(BinaryOpStorage/*!*/ coercionStorage, BinaryOpStorage/*!*/ binaryOpSite, 
             RubyContext/*!*/ context, object self, object other) {
             return Protocols.CoerceAndApply(coercionStorage, binaryOpSite, "%", context, self, other);
         }
@@ -327,7 +314,7 @@ namespace IronRuby.Builtins {
         /// First coerces self on other then calls modulo on the coerced self value.
         /// </remarks>
         [RubyMethod("modulo")]
-        public static object Modulo(SiteLocalStorage<BinaryOpSite>/*!*/ coercionStorage, SiteLocalStorage<BinaryOpSite>/*!*/ binaryOpSite, 
+        public static object Modulo(BinaryOpStorage/*!*/ coercionStorage, BinaryOpStorage/*!*/ binaryOpSite, 
             RubyContext/*!*/ context, object self, object other) {
             return Protocols.CoerceAndApply(coercionStorage, binaryOpSite, "modulo", context, self, other);
         }
@@ -385,7 +372,7 @@ namespace IronRuby.Builtins {
         /// Self is first coerced by other and then the * operator is invoked on the coerced self.
         /// </remarks>
         [RubyMethod("*")]
-        public static object Multiply(SiteLocalStorage<BinaryOpSite>/*!*/ coercionStorage, SiteLocalStorage<BinaryOpSite>/*!*/ binaryOpSite, 
+        public static object Multiply(BinaryOpStorage/*!*/ coercionStorage, BinaryOpStorage/*!*/ binaryOpSite, 
             RubyContext/*!*/ context, object self, object other) {
             return Protocols.CoerceAndApply(coercionStorage, binaryOpSite, "*", context, self, other);
         }
@@ -427,7 +414,7 @@ namespace IronRuby.Builtins {
         /// Self is first coerced by other and then the ** operator is invoked on the coerced self.
         /// </remarks>
         [RubyMethod("**")]
-        public static object Power(SiteLocalStorage<BinaryOpSite>/*!*/ coercionStorage, SiteLocalStorage<BinaryOpSite>/*!*/ binaryOpSite, 
+        public static object Power(BinaryOpStorage/*!*/ coercionStorage, BinaryOpStorage/*!*/ binaryOpSite, 
             RubyContext/*!*/ context, int self, object other) {
             return Protocols.CoerceAndApply(coercionStorage, binaryOpSite, "**", context, self, other);
         }
@@ -471,7 +458,7 @@ namespace IronRuby.Builtins {
         /// Self is first coerced by other and then the + operator is invoked on the coerced self.
         /// </remarks>
         [RubyMethod("+")]
-        public static object Add(SiteLocalStorage<BinaryOpSite>/*!*/ coercionStorage, SiteLocalStorage<BinaryOpSite>/*!*/ binaryOpSite, 
+        public static object Add(BinaryOpStorage/*!*/ coercionStorage, BinaryOpStorage/*!*/ binaryOpSite, 
             RubyContext/*!*/ context, object self, object other) {
             return Protocols.CoerceAndApply(coercionStorage, binaryOpSite, "+", context, self, other);
         }
@@ -515,7 +502,7 @@ namespace IronRuby.Builtins {
         /// Self is first coerced by other and then the - operator is invoked on the coerced self.
         /// </remarks>
         [RubyMethod("-")]
-        public static object Subtract(SiteLocalStorage<BinaryOpSite>/*!*/ coercionStorage, SiteLocalStorage<BinaryOpSite>/*!*/ binaryOpSite, 
+        public static object Subtract(BinaryOpStorage/*!*/ coercionStorage, BinaryOpStorage/*!*/ binaryOpSite, 
             RubyContext/*!*/ context, object self, object other) {
             return Protocols.CoerceAndApply(coercionStorage, binaryOpSite, "-", context, self, other);
         }
@@ -558,7 +545,7 @@ namespace IronRuby.Builtins {
         /// Self is first coerced by other and then the / operator is invoked on the coerced self.
         /// </remarks>
         [RubyMethod("/")]
-        public static object DivideOp(SiteLocalStorage<BinaryOpSite>/*!*/ coercionStorage, SiteLocalStorage<BinaryOpSite>/*!*/ binaryOpSite, 
+        public static object DivideOp(BinaryOpStorage/*!*/ coercionStorage, BinaryOpStorage/*!*/ binaryOpSite, 
             RubyContext/*!*/ context, object self, object other) {
             return Protocols.CoerceAndApply(coercionStorage, binaryOpSite, "/", context, self, other);
         }
@@ -573,7 +560,7 @@ namespace IronRuby.Builtins {
         /// Self is first coerced by other and then the div method is invoked on the coerced self.
         /// </remarks>
         [RubyMethod("div")]
-        public static object Div(SiteLocalStorage<BinaryOpSite>/*!*/ coercionStorage, SiteLocalStorage<BinaryOpSite>/*!*/ binaryOpSite,
+        public static object Div(BinaryOpStorage/*!*/ coercionStorage, BinaryOpStorage/*!*/ binaryOpSite,
             RubyContext/*!*/ context, object self, object other) {
             return Protocols.CoerceAndApply(coercionStorage, binaryOpSite, "div", context, self, other);
         }
@@ -669,7 +656,7 @@ namespace IronRuby.Builtins {
         /// Self is first coerced by other and then the divmod method is invoked on the coerced self.
         /// </remarks>
         [RubyMethod("divmod")]
-        public static object DivMod(SiteLocalStorage<BinaryOpSite>/*!*/ coercionStorage, SiteLocalStorage<BinaryOpSite>/*!*/ binaryOpSite, 
+        public static object DivMod(BinaryOpStorage/*!*/ coercionStorage, BinaryOpStorage/*!*/ binaryOpSite, 
             RubyContext/*!*/ context, int self, object other) {
             return Protocols.CoerceAndApply(coercionStorage, binaryOpSite, "divmod", context, self, other);
         }
@@ -694,7 +681,7 @@ namespace IronRuby.Builtins {
         /// Self is first coerced by other and then the quo method is invoked on the coerced self.
         /// </remarks>
         [RubyMethod("quo")]
-        public static object Quotient(SiteLocalStorage<BinaryOpSite>/*!*/ coercionStorage, SiteLocalStorage<BinaryOpSite>/*!*/ binaryOpSite, 
+        public static object Quotient(BinaryOpStorage/*!*/ coercionStorage, BinaryOpStorage/*!*/ binaryOpSite, 
             RubyContext/*!*/ context, int self, object other) {
             return Protocols.CoerceAndApply(coercionStorage, binaryOpSite, "quo", context, self, other);
         }
@@ -735,7 +722,7 @@ namespace IronRuby.Builtins {
         /// Self is first coerced by other and then the &lt; operator is invoked on the coerced self.
         /// </remarks>
         [RubyMethod("<")]
-        public static bool LessThan(SiteLocalStorage<BinaryOpSite>/*!*/ coercionStorage, SiteLocalStorage<BinaryOpSite>/*!*/ comparisonStorage, 
+        public static bool LessThan(BinaryOpStorage/*!*/ coercionStorage, BinaryOpStorage/*!*/ comparisonStorage, 
             RubyContext/*!*/ context, object self, object other) {
             return Protocols.CoerceAndRelate(coercionStorage, comparisonStorage, "<", context, self, other);
         }
@@ -761,7 +748,7 @@ namespace IronRuby.Builtins {
         /// Self is first coerced by other and then the &lt;= operator is invoked on the coerced self.
         /// </remarks>
         [RubyMethod("<=")]
-        public static bool LessThanOrEqual(SiteLocalStorage<BinaryOpSite>/*!*/ coercionStorage, SiteLocalStorage<BinaryOpSite>/*!*/ comparisonStorage, 
+        public static bool LessThanOrEqual(BinaryOpStorage/*!*/ coercionStorage, BinaryOpStorage/*!*/ comparisonStorage, 
             RubyContext/*!*/ context, int self, object other) {
             return Protocols.CoerceAndRelate(coercionStorage, comparisonStorage, "<=", context, self, other);
         }
@@ -797,7 +784,7 @@ namespace IronRuby.Builtins {
         /// Self is first coerced by other and then the &lt;=&gt; operator is invoked on the coerced self.
         /// </remarks>
         [RubyMethod("<=>")]
-        public static object Compare(SiteLocalStorage<BinaryOpSite>/*!*/ coercionStorage, SiteLocalStorage<BinaryOpSite>/*!*/ comparisonStorage,
+        public static object Compare(BinaryOpStorage/*!*/ coercionStorage, BinaryOpStorage/*!*/ comparisonStorage,
             RubyContext/*!*/ context, int self, object other) {
             return Protocols.CoerceAndCompare(coercionStorage, comparisonStorage, context, self, other);
         }
@@ -805,6 +792,7 @@ namespace IronRuby.Builtins {
         #endregion
 
         #region ==
+
         /// <summary>
         /// Test whether self is numerically equivalent to other.  (Does not require type equivalence).
         /// </summary>
@@ -816,6 +804,7 @@ namespace IronRuby.Builtins {
         public static bool Equal(int self, int other) {
             return self == other;
         }
+
         /// <summary>
         /// Test whether self is numerically equivalent to other.  (Does not require type equivalence).
         /// </summary>
@@ -825,12 +814,13 @@ namespace IronRuby.Builtins {
         /// i.e. call other == self
         /// </remarks>
         [RubyMethod("==")]
-        public static bool Equal(RubyContext/*!*/ context, int self, object other) {
+        public static bool Equal(BinaryOpStorage/*!*/ equals, RubyContext/*!*/ context, int self, object other) {
             // If self == other doesn't work then try other == self
-            return Protocols.IsEqual(context, other, self);
+            return Protocols.IsEqual(equals, context, other, self);
         }
-        #endregion
 
+        #endregion
+        
         #region >
 
         /// <summary>
@@ -850,7 +840,7 @@ namespace IronRuby.Builtins {
         /// Self is first coerced by other and then the &gt; operator is invoked on the coerced self.
         /// </remarks>
         [RubyMethod(">")]
-        public static bool GreaterThan(SiteLocalStorage<BinaryOpSite>/*!*/ coercionStorage, SiteLocalStorage<BinaryOpSite>/*!*/ comparisonStorage, 
+        public static bool GreaterThan(BinaryOpStorage/*!*/ coercionStorage, BinaryOpStorage/*!*/ comparisonStorage, 
             RubyContext/*!*/ context, int self, object other) {
             return Protocols.CoerceAndRelate(coercionStorage, comparisonStorage, ">", context, self, other);
         }
@@ -876,7 +866,7 @@ namespace IronRuby.Builtins {
         /// Self is first coerced by other and then the &gt;= operator is invoked on the coerced self.
         /// </remarks>
         [RubyMethod(">=")]
-        public static bool GreaterThanOrEqual(SiteLocalStorage<BinaryOpSite>/*!*/ coercionStorage, SiteLocalStorage<BinaryOpSite>/*!*/ comparisonStorage, 
+        public static bool GreaterThanOrEqual(BinaryOpStorage/*!*/ coercionStorage, BinaryOpStorage/*!*/ comparisonStorage, 
             RubyContext/*!*/ context, int self, object other) {
             return Protocols.CoerceAndRelate(coercionStorage, comparisonStorage, ">=", context, self, other);
         }

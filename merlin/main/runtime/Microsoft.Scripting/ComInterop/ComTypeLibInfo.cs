@@ -53,7 +53,7 @@ namespace Microsoft.Scripting.ComInterop {
             return new string[] { this.Name, "Guid", "Name", "VersionMajor", "VersionMinor" };
         }
 
-        MetaObject IDynamicObject.GetMetaObject(Expression parameter) {
+        DynamicMetaObject IDynamicObject.GetMetaObject(Expression parameter) {
             return new TypeLibInfoMetaObject(parameter, this);
         }
     }

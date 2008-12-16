@@ -161,7 +161,7 @@ namespace IronRuby.Compiler.Ast {
                         Ast.Dynamic(
                             ConvertToSAction.Instance,
                             typeof(MutableString),
-                            gen.CurrentScopeVariable, part.TransformRead(gen)
+                            Methods.GetContextFromScope.OpCall(gen.CurrentScopeVariable), part.TransformRead(gen)
                         )
                     );
                     opName.Append(RubyOps.SuffixMutable);

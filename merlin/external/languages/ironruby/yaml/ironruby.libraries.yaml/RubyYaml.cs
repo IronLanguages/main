@@ -252,14 +252,9 @@ namespace IronRuby.StandardLibrary.Yaml {
         }
 
         [RubyMethod("tagurize", RubyMethodAttributes.PublicSingleton)]
-        public static object Tagurize(RubyContext context, RubyModule self, object arg) {
-            if (arg == null) {
-                return null;
-            }
-            if (RubySites.RespondTo(context, arg, "to_str")) {
-                return MutableString.Create("tag:yaml.org,2002:").Append(Protocols.ConvertToString(context, arg));
-            }
-            return arg;
+        public static object Tagurize(RubyContext/*!*/ context, RubyModule/*!*/ self, object arg) {
+            var str = Protocols.AsString(context, arg);
+            return (str != null) ? MutableString.Create("tag:yaml.org,2002:").Append(str) : arg;
         }
 
         [RubyMethod("add_domain_type", RubyMethodAttributes.PublicSingleton)]

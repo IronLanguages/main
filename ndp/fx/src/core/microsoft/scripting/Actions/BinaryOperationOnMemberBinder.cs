@@ -22,7 +22,7 @@ namespace System.Dynamic {
     /// A Binder that is responsible for runtime binding of operation:
     /// a.b (op)= c
     /// </summary>
-    public abstract class BinaryOperationOnMemberBinder : MetaObjectBinder {
+    public abstract class BinaryOperationOnMemberBinder : DynamicMetaObjectBinder {
         private readonly ExpressionType _operation;
         private readonly string _name;
         private readonly bool _ignoreCase;
@@ -79,7 +79,7 @@ namespace System.Dynamic {
         /// <param name="target">Target of the operation.</param>
         /// <param name="arg">Right-hand operator value</param>
         /// <returns>MetaObject representing the binding result.</returns>
-        public MetaObject FallbackBinaryOperation(MetaObject target, MetaObject arg) {
+        public DynamicMetaObject FallbackBinaryOperation(DynamicMetaObject target, DynamicMetaObject arg) {
             return FallbackBinaryOperation(target, arg, null);
         }
 
@@ -95,7 +95,7 @@ namespace System.Dynamic {
         /// <param name="arg">Right-hand operator value</param>
         /// <param name="errorSuggestion">The representaiton of the binding error that the target meta object recommends the language to use if the language cannot bind. This allows the target meta object to participate in the error handling process.</param>
         /// <returns>MetaObject representing the binding result.</returns>
-        public abstract MetaObject FallbackBinaryOperation(MetaObject target, MetaObject arg, MetaObject errorSuggestion);
+        public abstract DynamicMetaObject FallbackBinaryOperation(DynamicMetaObject target, DynamicMetaObject arg, DynamicMetaObject errorSuggestion);
 
         /// <summary>
         /// Implements a binding logic for the operation. This is called by the target when
@@ -104,7 +104,7 @@ namespace System.Dynamic {
         /// <param name="target">Target of the operation.</param>
         /// <param name="value">The right-hand value</param>
         /// <returns>MetaObject representing the binding.</returns>
-        public MetaObject FallbackBinaryOperationOnMember(MetaObject target, MetaObject value) {
+        public DynamicMetaObject FallbackBinaryOperationOnMember(DynamicMetaObject target, DynamicMetaObject value) {
             return FallbackBinaryOperationOnMember(target, value, null);
         }
 
@@ -116,9 +116,9 @@ namespace System.Dynamic {
         /// <param name="value">The right-hand value</param>
         /// <param name="errorSuggestion">The representaiton of the binding error that the target meta object recommends the language to use if the language cannot bind. This allows the target meta object to participate in the error handling process.</param>
         /// <returns>MetaObject representing the binding.</returns>
-        public abstract MetaObject FallbackBinaryOperationOnMember(MetaObject target, MetaObject value, MetaObject errorSuggestion);
+        public abstract DynamicMetaObject FallbackBinaryOperationOnMember(DynamicMetaObject target, DynamicMetaObject value, DynamicMetaObject errorSuggestion);
 
-        public sealed override MetaObject Bind(MetaObject target, params MetaObject[] args) {
+        public sealed override DynamicMetaObject Bind(DynamicMetaObject target, params DynamicMetaObject[] args) {
             ContractUtils.RequiresNotNull(target, "target");
             ContractUtils.Requires(args != null && args.Length == 1, "args");
 

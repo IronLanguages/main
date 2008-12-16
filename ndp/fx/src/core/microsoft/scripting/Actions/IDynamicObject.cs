@@ -17,6 +17,6 @@ using System.Linq.Expressions;
 
 namespace System.Dynamic {
     public interface IDynamicObject {
-        MetaObject GetMetaObject(Expression parameter);
+        DynamicMetaObject GetMetaObject(Expression parameter);
     }
 }

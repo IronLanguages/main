@@ -13,9 +13,6 @@
  *
  * ***************************************************************************/
 
-using BinaryOpSite = System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite,
-    IronRuby.Runtime.RubyContext, object, object, object>>;
-
 using System;
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -381,7 +378,7 @@ namespace IronRuby.StandardLibrary.BigDecimal {
 
         [RubyMethod("+")]
         [RubyMethod("add")]
-        public static object Add(SiteLocalStorage<BinaryOpSite>/*!*/ coercionStorage, SiteLocalStorage<BinaryOpSite>/*!*/ opStorage, 
+        public static object Add(BinaryOpStorage/*!*/ coercionStorage, BinaryOpStorage/*!*/ opStorage, 
             RubyContext/*!*/ context, BigDecimal/*!*/ self, object other) {
             return Protocols.CoerceAndApply(coercionStorage, opStorage, "+", context, self, other);
         }
@@ -410,7 +407,7 @@ namespace IronRuby.StandardLibrary.BigDecimal {
         }
 
         [RubyMethod("add")]
-        public static object Add(SiteLocalStorage<BinaryOpSite>/*!*/ coercionStorage, SiteLocalStorage<BinaryOpSite>/*!*/ opStorage, 
+        public static object Add(BinaryOpStorage/*!*/ coercionStorage, BinaryOpStorage/*!*/ opStorage, 
             RubyContext/*!*/ context, BigDecimal/*!*/ self, object other, [DefaultProtocol]int n) {
             return Protocols.CoerceAndApply(coercionStorage, opStorage, "+", context, self, other);
         }
@@ -441,7 +438,7 @@ namespace IronRuby.StandardLibrary.BigDecimal {
 
         [RubyMethod("-")]
         [RubyMethod("sub")]
-        public static object Subtract(SiteLocalStorage<BinaryOpSite>/*!*/ coercionStorage, SiteLocalStorage<BinaryOpSite>/*!*/ binaryOpSite,
+        public static object Subtract(BinaryOpStorage/*!*/ coercionStorage, BinaryOpStorage/*!*/ binaryOpSite,
             RubyContext/*!*/ context, BigDecimal/*!*/ self, object other) {
             return Protocols.CoerceAndApply(coercionStorage, binaryOpSite, "-", context, self, other);
         }
@@ -470,7 +467,7 @@ namespace IronRuby.StandardLibrary.BigDecimal {
         }
 
         [RubyMethod("sub")]
-        public static object Subtract(SiteLocalStorage<BinaryOpSite>/*!*/ coercionStorage, SiteLocalStorage<BinaryOpSite>/*!*/ binaryOpSite, 
+        public static object Subtract(BinaryOpStorage/*!*/ coercionStorage, BinaryOpStorage/*!*/ binaryOpSite, 
             RubyContext/*!*/ context, BigDecimal/*!*/ self, object other, [DefaultProtocol]int n) {
             return Protocols.CoerceAndApply(coercionStorage, binaryOpSite, "sub", context, self, other);
         }
@@ -497,7 +494,7 @@ namespace IronRuby.StandardLibrary.BigDecimal {
         }
 
         [RubyMethod("*")]
-        public static object Multiply(SiteLocalStorage<BinaryOpSite>/*!*/ coercionStorage, SiteLocalStorage<BinaryOpSite>/*!*/ binaryOpSite, 
+        public static object Multiply(BinaryOpStorage/*!*/ coercionStorage, BinaryOpStorage/*!*/ binaryOpSite, 
             RubyContext/*!*/ context, BigDecimal/*!*/ self, object other) {
             return Protocols.CoerceAndApply(coercionStorage, binaryOpSite, "*", context, self, other);
         }
@@ -526,7 +523,7 @@ namespace IronRuby.StandardLibrary.BigDecimal {
         }
 
         [RubyMethod("mult")]
-        public static object Multiply(SiteLocalStorage<BinaryOpSite>/*!*/ coercionStorage, SiteLocalStorage<BinaryOpSite>/*!*/ binaryOpSite, 
+        public static object Multiply(BinaryOpStorage/*!*/ coercionStorage, BinaryOpStorage/*!*/ binaryOpSite, 
             RubyContext/*!*/ context, BigDecimal/*!*/ self, object other, [DefaultProtocol]int n) {
             // TODO: converts result to BigDecimal
             return Protocols.CoerceAndApply(coercionStorage, binaryOpSite, "mult", context, self, other);
@@ -586,19 +583,19 @@ namespace IronRuby.StandardLibrary.BigDecimal {
         }
 
         [RubyMethod("modulo")]
-        public static object Modulo(SiteLocalStorage<BinaryOpSite>/*!*/ moduloStorage, RubyContext/*!*/ context, BigDecimal/*!*/ self, double other) {
-            var modulo = moduloStorage.GetCallSite("modulo", 1);
+        public static object Modulo(BinaryOpStorage/*!*/ moduloStorage, RubyContext/*!*/ context, BigDecimal/*!*/ self, double other) {
+            var modulo = moduloStorage.GetCallSite("modulo");
             return modulo.Target(modulo, context, BigDecimal.ToFloat(GetConfig(context), self), other);
         }
 
         [RubyMethod("%")]
-        public static object ModuloOp(SiteLocalStorage<BinaryOpSite>/*!*/ coercionStorage, SiteLocalStorage<BinaryOpSite>/*!*/ binaryOpSite, 
+        public static object ModuloOp(BinaryOpStorage/*!*/ coercionStorage, BinaryOpStorage/*!*/ binaryOpSite, 
             RubyContext/*!*/ context, BigDecimal/*!*/ self, object other) {
             return Protocols.CoerceAndApply(coercionStorage, binaryOpSite, "%", context, self, other);
         }
 
         [RubyMethod("modulo")]
-        public static object Modulo(SiteLocalStorage<BinaryOpSite>/*!*/ coercionStorage, SiteLocalStorage<BinaryOpSite>/*!*/ binaryOpSite, 
+        public static object Modulo(BinaryOpStorage/*!*/ coercionStorage, BinaryOpStorage/*!*/ binaryOpSite, 
             RubyContext/*!*/ context, BigDecimal/*!*/ self, object other) {
             return Protocols.CoerceAndApply(coercionStorage, binaryOpSite, "modulo", context, self, other);
         }
@@ -646,7 +643,7 @@ namespace IronRuby.StandardLibrary.BigDecimal {
         }
 
         [RubyMethod("divmod")]
-        public static object DivMod(SiteLocalStorage<BinaryOpSite>/*!*/ coercionStorage, SiteLocalStorage<BinaryOpSite>/*!*/ binaryOpSite, 
+        public static object DivMod(BinaryOpStorage/*!*/ coercionStorage, BinaryOpStorage/*!*/ binaryOpSite, 
             RubyContext/*!*/ context, BigDecimal/*!*/ self, object other) {
             return Protocols.CoerceAndApply(coercionStorage, binaryOpSite, "divmod", context, self, other);
         }
@@ -666,7 +663,7 @@ namespace IronRuby.StandardLibrary.BigDecimal {
         }
 
         [RubyMethod("remainder")]
-        public static object Remainder(SiteLocalStorage<BinaryOpSite>/*!*/ coercionStorage, SiteLocalStorage<BinaryOpSite>/*!*/ binaryOpSite, 
+        public static object Remainder(BinaryOpStorage/*!*/ coercionStorage, BinaryOpStorage/*!*/ binaryOpSite, 
             RubyContext/*!*/ context, BigDecimal/*!*/ self, object other) {
             return Protocols.CoerceAndApply(coercionStorage, binaryOpSite, "remainder", context, self, other);
         }
@@ -710,7 +707,7 @@ namespace IronRuby.StandardLibrary.BigDecimal {
         }
 
         [RubyMethod("<=>")]
-        public static object Compare(SiteLocalStorage<BinaryOpSite>/*!*/ coercionStorage, SiteLocalStorage<BinaryOpSite>/*!*/ comparisonStorage, 
+        public static object Compare(BinaryOpStorage/*!*/ coercionStorage, BinaryOpStorage/*!*/ comparisonStorage, 
             RubyContext/*!*/ context, BigDecimal/*!*/ self, object other) {
             return Protocols.CoerceAndCompare(coercionStorage, comparisonStorage, context, self, other);
         }
@@ -745,7 +742,7 @@ namespace IronRuby.StandardLibrary.BigDecimal {
         }
 
         [RubyMethod(">")]
-        public static object GreaterThan(SiteLocalStorage<BinaryOpSite>/*!*/ coercionStorage, SiteLocalStorage<BinaryOpSite>/*!*/ comparisonStorage, 
+        public static object GreaterThan(BinaryOpStorage/*!*/ coercionStorage, BinaryOpStorage/*!*/ comparisonStorage, 
             RubyContext/*!*/ context, BigDecimal/*!*/ self, object other) {
             return Protocols.CoerceAndRelate(coercionStorage, comparisonStorage, ">", context, self, other);
         }
@@ -779,7 +776,7 @@ namespace IronRuby.StandardLibrary.BigDecimal {
         }
 
         [RubyMethod(">=")]
-        public static object GreaterThanOrEqual(SiteLocalStorage<BinaryOpSite>/*!*/ coercionStorage, SiteLocalStorage<BinaryOpSite>/*!*/ comparisonStorage, 
+        public static object GreaterThanOrEqual(BinaryOpStorage/*!*/ coercionStorage, BinaryOpStorage/*!*/ comparisonStorage, 
             RubyContext/*!*/ context, BigDecimal/*!*/ self, object other) {
             return Protocols.CoerceAndRelate(coercionStorage, comparisonStorage, ">=", context, self, other);
         }
@@ -813,7 +810,7 @@ namespace IronRuby.StandardLibrary.BigDecimal {
         }
 
         [RubyMethod("<")]
-        public static object LessThan(SiteLocalStorage<BinaryOpSite>/*!*/ coercionStorage, SiteLocalStorage<BinaryOpSite>/*!*/ comparisonStorage, 
+        public static object LessThan(BinaryOpStorage/*!*/ coercionStorage, BinaryOpStorage/*!*/ comparisonStorage, 
             RubyContext/*!*/ context, BigDecimal/*!*/ self, object other) {
             return Protocols.CoerceAndRelate(coercionStorage, comparisonStorage, "<", context, self, other);
         }
@@ -847,7 +844,7 @@ namespace IronRuby.StandardLibrary.BigDecimal {
         }
 
         [RubyMethod("<=")]
-        public static object LessThanOrEqual(SiteLocalStorage<BinaryOpSite>/*!*/ coercionStorage, SiteLocalStorage<BinaryOpSite>/*!*/ comparisonStorage, 
+        public static object LessThanOrEqual(BinaryOpStorage/*!*/ coercionStorage, BinaryOpStorage/*!*/ comparisonStorage, 
             RubyContext/*!*/ context, BigDecimal/*!*/ self, object other) {
             return Protocols.CoerceAndRelate(coercionStorage, comparisonStorage, "<=", context, self, other);
         }
@@ -891,12 +888,12 @@ namespace IronRuby.StandardLibrary.BigDecimal {
         [RubyMethod("eql?")] // HACK - this is actually semantically wrong but is what the BigDecimal library does.
         [RubyMethod("==")]
         [RubyMethod("===")]
-        public static object Equal(RubyContext/*!*/ context, BigDecimal/*!*/ self, object other) {
+        public static object Equal(BinaryOpStorage/*!*/ equals, RubyContext/*!*/ context, BigDecimal/*!*/ self, object other) {
             // This is a hack since normal numeric values do not return nil for nil (they return false)
             if (other == null) {
                 return null;
             }
-            return Protocols.IsEqual(context, other, self);
+            return Protocols.IsEqual(equals, context, other, self);
         }
 
         #endregion

@@ -1,4 +1,4 @@
-﻿/* ****************************************************************************
+/* ****************************************************************************
  *
  * Copyright (c) Microsoft Corporation. 
  *
@@ -365,11 +365,20 @@ namespace System.Linq.Expressions {
         }
 
         /// <summary>
-        /// A string like  "TypeBuilder does not have a valid ModuleBuilder"
+        /// A string like  "MethodBuilder does not have a valid ModuleBuilder"
         /// </summary>
-        internal static string InvalidTypeBuilder {
+        internal static string MethodBuilderDoesNotHaveModuleBuilder {
             get {
-                return "TypeBuilder does not have a valid ModuleBuilder";
+                return "MethodBuilder does not have a valid ModuleBuilder";
+            }
+        }
+
+        /// <summary>
+        /// A string like  "MethodBuilder does not have a valid TypeBuilder"
+        /// </summary>
+        internal static string MethodBuilderDoesNotHaveTypeBuilder {
+            get {
+                return "MethodBuilder does not have a valid TypeBuilder";
             }
         }
 
@@ -443,6 +452,13 @@ namespace System.Linq.Expressions {
             get {
                 return "Body of catch must have the same type as body of try.";
             }
+        }
+
+        /// <summary>
+        /// A string like  "Extension node must override method {0}."
+        /// </summary>
+        internal static string ExtensionNodeMustOverrideMethod(object p0) {
+            return FormatString("Extension node must override method {0}.", p0);
         }
 
         /// <summary>
@@ -1365,6 +1381,13 @@ namespace System.Linq.Expressions {
         /// </summary>
         internal static Exception BodyOfCatchMustHaveSameTypeAsBodyOfTry() {
             return new ArgumentException(Strings.BodyOfCatchMustHaveSameTypeAsBodyOfTry);
+        }
+
+        /// <summary>
+        /// InvalidOperationException with message like "Extension node must override method {0}."
+        /// </summary>
+        internal static Exception ExtensionNodeMustOverrideMethod(object p0) {
+            return new InvalidOperationException(Strings.ExtensionNodeMustOverrideMethod(p0));
         }
 
         /// <summary>

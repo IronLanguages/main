@@ -107,15 +107,15 @@ namespace System.Dynamic {
         }
 
         internal virtual IEnumerable<string> MemberNames {
-            get { return EmptyArray<string>.Instance; }
+            get { return new string[0]; }
         }
 
         internal virtual IEnumerable<KeyValuePair<string, object>> DataMembers {
-            get { return EmptyArray<KeyValuePair<string, object>>.Instance; }
+            get { return new KeyValuePair<string, object>[0]; }
         }
 
-        MetaObject IDynamicObject.GetMetaObject(Expression parameter) {
-            return new ComFallbackMetaObject(parameter, Restrictions.Empty, this);
+        DynamicMetaObject IDynamicObject.GetMetaObject(Expression parameter) {
+            return new ComFallbackMetaObject(parameter, BindingRestrictions.Empty, this);
         }
 
         private static readonly Type ComObjectType = typeof(object).Assembly.GetType("System.__ComObject");

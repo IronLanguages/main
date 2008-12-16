@@ -13,9 +13,6 @@
  *
  * ***************************************************************************/
 
-using RespondToSite = System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite,
-    IronRuby.Runtime.RubyContext, object, Microsoft.Scripting.SymbolId, object>>;
-
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -188,7 +185,7 @@ namespace IronRuby.Builtins {
                 } else if (Double.IsNaN(value)) {
                     WriteStringValue(_nanString);
                 } else {
-                    StringFormatter sf = new StringFormatter(_context, "%.15g", new object[] { value });
+                    StringFormatter sf = new StringFormatter(null, null, _context, "%.15g", new object[] { value });
                     sf.TrailingZeroAfterWholeFloat = false;
                     WriteStringValue(sf.Format());
                 }
@@ -275,7 +272,7 @@ namespace IronRuby.Builtins {
             private void TestForAnonymous(RubyModule/*!*/ theModule) {
                 if (theModule.Name == null) {
                     string objectType = (theModule is RubyClass) ? "class" : "module";
-                    string displayName = theModule.GetDisplayName(false).ConvertToString();
+                    string displayName = theModule.GetDisplayName(_context, false).ConvertToString();
                     string message = String.Format("can't dump anonymous {0} {1}", objectType, displayName);
                     throw RubyExceptions.CreateTypeError(message);
                 }
@@ -415,7 +412,7 @@ namespace IronRuby.Builtins {
                             // "_dump" doesn't write "extend" info but "marshal_dump" does
                             RubyClass theClass = _context.GetImmediateClassOf(obj);
                             if (theClass.IsSingletonClass) {
-                                foreach (var mixin in theClass.Mixins) {
+                                foreach (var mixin in theClass.GetMixins()) {
                                     _writer.Write((byte)'e');
                                     WriteSymbol(mixin.Name);
                                 }
@@ -942,7 +939,7 @@ namespace IronRuby.Builtins {
 
         // TODO: Use DefaultValue attribute when it works with the binder
         [RubyMethod("dump", RubyMethodAttributes.PublicSingleton)]
-        public static object Dump(SiteLocalStorage<WriterSites>/*!*/ sites, SiteLocalStorage<RespondToSite>/*!*/ respondToStorage, 
+        public static object Dump(SiteLocalStorage<WriterSites>/*!*/ sites, RespondToStorage/*!*/ respondToStorage, 
             RubyModule/*!*/ self, object obj, object io, [Optional]int? limit) {
             Stream stream = null;
             if (io != null) {
@@ -976,7 +973,7 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("load", RubyMethodAttributes.PublicSingleton)]
         [RubyMethod("restore", RubyMethodAttributes.PublicSingleton)]
-        public static object Load(SiteLocalStorage<ReaderSites>/*!*/ sites, SiteLocalStorage<RespondToSite>/*!*/ respondToStorage, 
+        public static object Load(SiteLocalStorage<ReaderSites>/*!*/ sites, RespondToStorage/*!*/ respondToStorage, 
             RubyScope/*!*/ scope, RubyModule/*!*/ self, object source, [Optional]Proc proc) {
 
             Stream stream = null;

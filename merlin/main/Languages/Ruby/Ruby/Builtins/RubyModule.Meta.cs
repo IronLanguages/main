@@ -21,12 +21,12 @@ using IronRuby.Runtime.Calls;
 namespace IronRuby.Builtins {
 
     public partial class RubyModule : IDynamicObject {
-        public virtual MetaObject/*!*/ GetMetaObject(Expression/*!*/ parameter) {
-            return new Meta(parameter, Restrictions.Empty, this);
+        public virtual DynamicMetaObject/*!*/ GetMetaObject(Expression/*!*/ parameter) {
+            return new Meta(parameter, BindingRestrictions.Empty, this);
         }
 
-        internal class Meta : MetaObject {
-            public Meta(Expression/*!*/ expression, Restrictions/*!*/ restrictions, RubyModule/*!*/ value)
+        internal class Meta : DynamicMetaObject {
+            public Meta(Expression/*!*/ expression, BindingRestrictions/*!*/ restrictions, RubyModule/*!*/ value)
                 : base(expression, restrictions, value) {
                 ContractUtils.RequiresNotNull(value, "value");
             }

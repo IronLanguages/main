@@ -29,21 +29,21 @@ namespace IronRuby.Builtins {
     using IronRuby.Compiler;
     
     public partial class RubyMethod : IDynamicObject {
-        public MetaObject/*!*/ GetMetaObject(Expression/*!*/ parameter) {
-            return new Meta(parameter, Restrictions.Empty, this);
+        public DynamicMetaObject/*!*/ GetMetaObject(Expression/*!*/ parameter) {
+            return new Meta(parameter, BindingRestrictions.Empty, this);
         }
 
-        internal sealed class Meta : MetaObject {
+        internal sealed class Meta : DynamicMetaObject {
             public RubyMethod/*!*/ Method {
                 get { return (RubyMethod)Value; }
             }
 
-            public Meta(Expression/*!*/ expression, Restrictions/*!*/ restrictions, RubyMethod/*!*/ value)
+            public Meta(Expression/*!*/ expression, BindingRestrictions/*!*/ restrictions, RubyMethod/*!*/ value)
                 : base(expression, restrictions, value) {
                 ContractUtils.RequiresNotNull(value, "value");
             }
 
-            public override MetaObject/*!*/ BindInvoke(InvokeBinder/*!*/ action, MetaObject/*!*/[]/*!*/ args) {
+            public override DynamicMetaObject/*!*/ BindInvoke(InvokeBinder/*!*/ action, DynamicMetaObject/*!*/[]/*!*/ args) {
                 RubyCallSignature callSignature;
                 if (RubyCallSignature.TryCreate(action.Arguments, out callSignature)) {
                     return action.FallbackInvoke(this, args);
@@ -51,9 +51,9 @@ namespace IronRuby.Builtins {
 
                 var self = (RubyMethod)Value;
 
-                var context = new MetaObject(
+                var context = new DynamicMetaObject(
                     Methods.GetContextFromMethod.OpCall(AstUtils.Convert(Expression, typeof(RubyMethod))),
-                    Restrictions.Empty,
+                    BindingRestrictions.Empty,
                     RubyOps.GetContextFromMethod(self)
                 );
 
@@ -62,7 +62,7 @@ namespace IronRuby.Builtins {
                 return metaBuilder.CreateMetaObject(action, args);
             }
 
-            public override MetaObject/*!*/ BindConvert(ConvertBinder/*!*/ action) {
+            public override DynamicMetaObject/*!*/ BindConvert(ConvertBinder/*!*/ action) {
                 var result = RubyBinder.TryBindCovertToDelegate(action, this);
                 if (result != null) {
                     return result;

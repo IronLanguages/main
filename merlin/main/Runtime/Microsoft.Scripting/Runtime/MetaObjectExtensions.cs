@@ -22,7 +22,7 @@ using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace Microsoft.Scripting.Runtime {
     public static class MetaObjectExtensions {
-        public static bool NeedsDeferral(this MetaObject self) {
+        public static bool NeedsDeferral(this DynamicMetaObject self) {
             if (self.HasValue) {
                 return false;
             }
@@ -34,7 +34,7 @@ namespace Microsoft.Scripting.Runtime {
             return true;
         }
 
-        public static MetaObject Restrict(this MetaObject self, Type type) {
+        public static DynamicMetaObject Restrict(this DynamicMetaObject self, Type type) {
             ContractUtils.RequiresNotNull(self, "self");
             ContractUtils.RequiresNotNull(type, "type");
 
@@ -55,31 +55,31 @@ namespace Microsoft.Scripting.Runtime {
                 }
             }
 
-            if (type == typeof(Null)) {
-                return new MetaObject(
+            if (type == typeof(DynamicNull)) {
+                return new DynamicMetaObject(
                     Expression.Constant(null),
-                    self.Restrictions.Merge(Restrictions.GetInstanceRestriction(self.Expression, null)),
+                    self.Restrictions.Merge(BindingRestrictions.GetInstanceRestriction(self.Expression, null)),
                     self.Value
                 );
             }
 
             if (self.HasValue) {
-                return new MetaObject(
+                return new DynamicMetaObject(
                     AstUtils.Convert(
                         self.Expression,
                         CompilerHelpers.GetVisibleType(type)
                     ),
-                    self.Restrictions.Merge(Restrictions.GetTypeRestriction(self.Expression, type)),
+                    self.Restrictions.Merge(BindingRestrictions.GetTypeRestriction(self.Expression, type)),
                     self.Value
                 );
             }
 
-            return new MetaObject(
+            return new DynamicMetaObject(
                 AstUtils.Convert(
                     self.Expression,
                     CompilerHelpers.GetVisibleType(type)
                 ),
-                self.Restrictions.Merge(Restrictions.GetTypeRestriction(self.Expression, type))
+                self.Restrictions.Merge(BindingRestrictions.GetTypeRestriction(self.Expression, type))
             );
         }
     }

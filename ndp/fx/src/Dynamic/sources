@@ -7,6 +7,3 @@ TARGETTYPE=NOTARGET
 CLR_TARGETTYPE=DLL
 MSBuildProjectFile=System.Dynamic.csproj
 SOURCES=
-
-# Ensure that System.AddIn.Contract.dll is completely built first.
-SYNCHRONIZE_DRAIN=1

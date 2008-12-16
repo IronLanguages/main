@@ -315,7 +315,7 @@ namespace System.Linq.Expressions {
                 case '{': close = "}"; break;
                 case '[': close = "]"; break;
                 case '<': close = ">"; break;
-                default: throw Assert.Unreachable;
+                default: throw ContractUtils.Unreachable;
             }
             if (multiline) {
                 Out(Flow.NewLine, close, Flow.Break);
@@ -388,7 +388,6 @@ namespace System.Linq.Expressions {
                     case ExpressionType.ExclusiveOrAssign: op = "^="; break;
                     case ExpressionType.Power: op = "**"; break;
                     case ExpressionType.PowerAssign: op = "**="; break;
-                    //TODO: need to handle conversion lambda
                     case ExpressionType.Coalesce: op = "??"; break;
 
                     default:
@@ -439,7 +438,6 @@ namespace System.Linq.Expressions {
             return node;
         }
 
-        // TODO: calculate tree depth?
         private static bool IsSimpleExpression(Expression node) {
             var binary = node as BinaryExpression;
             if (binary != null) {

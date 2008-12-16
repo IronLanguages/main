@@ -20,6 +20,7 @@ using Microsoft.Scripting;
 using Microsoft.Scripting.Runtime;
 using IronRuby.Runtime;
 using IronRuby.Runtime.Calls;
+using System.Diagnostics;
 
 namespace IronRuby.Builtins {
 
@@ -65,7 +66,7 @@ namespace IronRuby.Builtins {
         #region Public Singleton Methods
 
         [RubyMethod("atime", RubyMethodAttributes.PublicSingleton)]
-        public static DateTime AccessTime(RubyClass/*!*/ self, object path) {
+        public static DateTime AccessTime(RubyClass/*!*/ self, [DefaultProtocol]MutableString/*!*/ path) {
             return RubyStatOps.AccessTime(RubyStatOps.Create(self.Context, path));
         }
 
@@ -135,17 +136,17 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("blockdev?", RubyMethodAttributes.PublicSingleton)]
-        public static bool IsBlockDevice(RubyClass/*!*/ self, object/*!*/ path) {
+        public static bool IsBlockDevice(RubyClass/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ path) {
             return RubyStatOps.IsBlockDevice(RubyStatOps.Create(self.Context, path));
         }
 
         [RubyMethod("chardev?", RubyMethodAttributes.PublicSingleton)]
-        public static bool IsCharDevice(RubyClass/*!*/ self, object path) {
+        public static bool IsCharDevice(RubyClass/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ path) {
             return RubyStatOps.IsCharDevice(RubyStatOps.Create(self.Context, path));
         }
 
         [RubyMethod("chmod", RubyMethodAttributes.PublicSingleton)]
-        public static int Chmod(RubyClass/*!*/ self, int permission, MutableString path) {
+        public static int Chmod(RubyClass/*!*/ self, int permission, [DefaultProtocol, NotNull]MutableString/*!*/ path) {
             // TODO: implement this correctly for windows
             return 0;
         }
@@ -153,7 +154,7 @@ namespace IronRuby.Builtins {
         //chown
 
         [RubyMethod("ctime", RubyMethodAttributes.PublicSingleton)]
-        public static DateTime CreateTime(RubyClass/*!*/ self, object path) {
+        public static DateTime CreateTime(RubyClass/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ path) {
             return RubyStatOps.CreateTime(RubyStatOps.Create(self.Context, path));
         }
 
@@ -236,7 +237,7 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("executable?", RubyMethodAttributes.PublicSingleton)]
         [RubyMethod("executable_real?", RubyMethodAttributes.PublicSingleton)]
-        public static bool IsExecutable(RubyClass/*!*/ self, object path) {
+        public static bool IsExecutable(RubyClass/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ path) {
             return RubyStatOps.IsExecutable(RubyStatOps.Create(self.Context, path));
         }
 
@@ -268,25 +269,26 @@ namespace IronRuby.Builtins {
         #endregion
 
         [RubyMethod("ftype", RubyMethodAttributes.PublicSingleton)]
-        public static MutableString FileType(RubyClass/*!*/ self, object path) {
+        public static MutableString FileType(RubyClass/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ path) {
             return RubyStatOps.FileType(RubyStatOps.Create(self.Context, path));
         }
 
         [RubyMethod("grpowned?", RubyMethodAttributes.PublicSingleton)]
-        public static bool IsGroupOwned(RubyClass/*!*/ self, object path) {
+        public static bool IsGroupOwned(RubyClass/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ path) {
             return RubyStatOps.IsGroupOwned(RubyStatOps.Create(self.Context, path));
         }
 
         //identical?
 
         [RubyMethod("join", RubyMethodAttributes.PublicSingleton)]
-        public static MutableString Join(RubyClass/*!*/ self, [NotNull]params object[] strings) {
+        public static MutableString Join(ConversionStorage<MutableString>/*!*/ stringCast, RubyClass/*!*/ self, [NotNull]params object[] strings) {
             MutableString result = MutableString.CreateMutable();
 
-            for (int i = 0; i < strings.Length; ++i) {
-                result.Append(Protocols.ConvertToString(self.Context, strings[i]));
-                if (i < strings.Length - 1)
+            for (int i = 0; i < strings.Length; i++) {
+                result.Append(Protocols.CastToString(stringCast, self.Context, strings[i]));
+                if (i < strings.Length - 1) {
                     result.Append(SEPARATOR);
+                }
             }
 
             return result;
@@ -386,12 +388,12 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("lstat", RubyMethodAttributes.PublicSingleton)]
         [RubyMethod("stat", RubyMethodAttributes.PublicSingleton)]
-        public static FileSystemInfo Stat(RubyClass/*!*/ self, object path) {
+        public static FileSystemInfo/*!*/ Stat(RubyClass/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ path) {
             return RubyStatOps.Create(self.Context, path);
         }
 
         [RubyMethod("mtime", RubyMethodAttributes.PublicSingleton)]
-        public static DateTime ModifiedTime(RubyClass/*!*/ self, object path) {
+        public static DateTime ModifiedTime(RubyClass/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ path) {
             return RubyStatOps.ModifiedTime(RubyStatOps.Create(self.Context, path));
         }
 
@@ -444,18 +446,18 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("owned?", RubyMethodAttributes.PublicSingleton)]
-        public static bool IsUserOwned(RubyClass/*!*/ self, object path) {
+        public static bool IsUserOwned(RubyClass/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ path) {
             return RubyStatOps.IsUserOwned(RubyStatOps.Create(self.Context, path));
         }
 
         [RubyMethod("pipe?", RubyMethodAttributes.PublicSingleton)]
-        public static bool IsPipe(RubyClass/*!*/ self, object path) {
+        public static bool IsPipe(RubyClass/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ path) {
             return RubyStatOps.IsPipe(RubyStatOps.Create(self.Context, path));
         }
 
         [RubyMethod("readable?", RubyMethodAttributes.PublicSingleton)]
         [RubyMethod("readable_real?", RubyMethodAttributes.PublicSingleton)]
-        public static bool IsReadable(RubyClass/*!*/ self, object path) {
+        public static bool IsReadable(RubyClass/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ path) {
             return RubyStatOps.IsReadable(RubyStatOps.Create(self.Context, path));
         }
 
@@ -479,27 +481,27 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("setgid?", RubyMethodAttributes.PublicSingleton)]
-        public static bool IsSetGid(RubyClass/*!*/ self, object path) {
+        public static bool IsSetGid(RubyClass/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ path) {
             return RubyStatOps.IsSetGid(RubyStatOps.Create(self.Context, path));
         }
 
         [RubyMethod("setuid?", RubyMethodAttributes.PublicSingleton)]
-        public static bool IsSetUid(RubyClass/*!*/ self, object path) {
+        public static bool IsSetUid(RubyClass/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ path) {
             return RubyStatOps.IsSetUid(RubyStatOps.Create(self.Context, path));
         }
 
         [RubyMethod("size", RubyMethodAttributes.PublicSingleton)]
-        public static int Size(RubyClass/*!*/ self, object path) {
+        public static int Size(RubyClass/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ path) {
             return RubyStatOps.Size(RubyStatOps.Create(self.Context, path));
         }
 
         [RubyMethod("size?", RubyMethodAttributes.PublicSingleton)]
-        public static object NullableSize(RubyClass/*!*/ self, object path) {
+        public static object NullableSize(RubyClass/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ path) {
             return RubyStatOps.NullableSize(RubyStatOps.Create(self.Context, path));
         }
 
         [RubyMethod("socket?", RubyMethodAttributes.PublicSingleton)]
-        public static bool IsSocket(RubyClass/*!*/ self, object path) {
+        public static bool IsSocket(RubyClass/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ path) {
             return RubyStatOps.IsSocket(RubyStatOps.Create(self.Context, path));
         }
 
@@ -512,7 +514,7 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("sticky?", RubyMethodAttributes.PublicSingleton)]
-        public static bool IsSticky(RubyClass/*!*/ self, object path) {
+        public static bool IsSticky(RubyClass/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ path) {
             return RubyStatOps.IsSticky(RubyStatOps.Create(self.Context, path));
         }
 
@@ -521,12 +523,12 @@ namespace IronRuby.Builtins {
         
 #if !SILVERLIGHT
         [RubyMethod("symlink", RubyMethodAttributes.PublicSingleton, BuildConfig = "!SILVERLIGHT")]
-        public static object SymLink(RubyClass/*!*/ self, object path) {
+        public static object SymLink(RubyClass/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ path) {
             throw new NotImplementedError("symlnk() function is unimplemented on this machine");
         }
 
         [RubyMethod("symlink?", RubyMethodAttributes.PublicSingleton, BuildConfig = "!SILVERLIGHT")]
-        public static bool IsSymLink(RubyClass/*!*/ self, object path) {
+        public static bool IsSymLink(RubyClass/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ path) {
             return RubyStatOps.IsSymLink(RubyStatOps.Create(self.Context, path));
         }
 
@@ -718,8 +720,8 @@ namespace IronRuby.Builtins {
         [RubyClass("Stat", Extends = typeof(FileSystemInfo), Inherits = typeof(object), BuildConfig = "!SILVERLIGHT"), Includes(typeof(Comparable))]
         public class RubyStatOps {
 
-            internal static FileSystemInfo/*!*/ Create(RubyContext/*!*/ context, object path) {
-                return Create(context, Protocols.CastToString(context, path).ConvertToString());
+            internal static FileSystemInfo/*!*/ Create(RubyContext/*!*/ context, MutableString/*!*/ path) {
+                return Create(context, path.ConvertToString());
             }
 
             internal static FileSystemInfo/*!*/ Create(RubyContext/*!*/ context, string/*!*/ path) {
@@ -748,27 +750,19 @@ namespace IronRuby.Builtins {
 
 
             [RubyConstructor]
-            public static FileSystemInfo/*!*/ Create(RubyClass/*!*/ self, [NotNull]MutableString/*!*/ path) {
-                return Create(self.Context, path.ConvertToString());
-            }
-
-            [RubyConstructor]
-            public static FileSystemInfo/*!*/ Create(RubyClass/*!*/ self, object path) {
+            public static FileSystemInfo/*!*/ Create(RubyClass/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ path) {
                 return Create(self.Context, path);
             }
 
             [RubyMethod("<=>")]
-            public static int Compare(FileSystemInfo/*!*/ self, FileSystemInfo/*!*/ other) {
+            public static int Compare(FileSystemInfo/*!*/ self, [NotNull]FileSystemInfo/*!*/ other) {
                 return TimeOps.CompareTo(self.LastWriteTime, other.LastWriteTime);
             }
 
             [RubyMethod("<=>")]
             public static object Compare(FileSystemInfo/*!*/ self, object other) {
-                FileSystemInfo otherStat = (other as FileSystemInfo);
-                if (otherStat == null) {
-                    return null;
-                }
-                return Compare(self, otherStat);
+                Debug.Assert(other as FileSystemInfo == null);
+                return null;
             }
 
             [RubyMethod("atime")]

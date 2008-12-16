@@ -30,10 +30,10 @@ namespace System.Dynamic {
         private readonly Expression _dispatch;      // IDispatch
 
         private readonly IList<ArgumentInfo> _arguments;
-        private readonly MetaObject[] _args;
+        private readonly DynamicMetaObject[] _args;
         private readonly Expression _instance;
 
-        private Restrictions _restrictions;
+        private BindingRestrictions _restrictions;
 
         private VarEnumSelector _varEnumSelector;
         private string[] _keywordArgNames;
@@ -49,7 +49,7 @@ namespace System.Dynamic {
         private ParameterExpression _dispIdsOfKeywordArgsPinned;
         private ParameterExpression _propertyPutDispId;
 
-        internal ComInvokeBinder(IList<ArgumentInfo> arguments, MetaObject[] args, Restrictions restrictions, Expression method, Expression dispatch, ComMethodDesc methodDesc) {
+        internal ComInvokeBinder(IList<ArgumentInfo> arguments, DynamicMetaObject[] args, BindingRestrictions restrictions, Expression method, Expression dispatch, ComMethodDesc methodDesc) {
             ContractUtils.RequiresNotNull(arguments, "arguments");
             ContractUtils.RequiresNotNull(args, "args");
             ContractUtils.RequiresNotNull(method, "method");
@@ -117,11 +117,11 @@ namespace System.Dynamic {
             return var = Expression.Variable(type, name);
         }
 
-        private static Type MarshalType(MetaObject mo) {
+        private static Type MarshalType(DynamicMetaObject mo) {
             Type marshalType = mo.LimitType;
             if (ComBinderHelpers.IsByRef(mo)) {
                 // Null just means that null was supplied.
-                if (marshalType == typeof(Null)) {
+                if (marshalType == typeof(DynamicNull)) {
                     marshalType = mo.Expression.Type;
                 }
                 marshalType = marshalType.MakeByRefType();
@@ -129,7 +129,7 @@ namespace System.Dynamic {
             return marshalType;
         }
 
-        internal MetaObject Invoke() {
+        internal DynamicMetaObject Invoke() {
             _keywordArgNames = GetArgumentNames();
             // will not include implicit instance argument (if any)
             Type[] explicitArgTypes = _args.Map(a => a.LimitType);
@@ -142,12 +142,12 @@ namespace System.Dynamic {
 
             // We already tested the instance, so no need to test it again
             for (int i = 0; i < explicitArgTypes.Length; i++) {
-                _restrictions = _restrictions.Merge(Restrictions.GetTypeRestriction(explicitArgExprs[i], explicitArgTypes[i]));
+                _restrictions = _restrictions.Merge(BindingRestrictions.GetTypeRestriction(explicitArgExprs[i], explicitArgTypes[i]));
             }
 
-            return new MetaObject(
+            return new DynamicMetaObject(
                 CreateScope(MakeIDispatchInvokeTarget()),
-                Restrictions.Combine(_args).Merge(_restrictions)
+                BindingRestrictions.Combine(_args).Merge(_restrictions)
             );
         }
 
@@ -489,7 +489,7 @@ namespace System.Dynamic {
         /// </summary>
         private Expression[] MakeArgumentExpressions() {
             if (_instance == null) {
-                return MetaObject.GetExpressions(_args);
+                return DynamicMetaObject.GetExpressions(_args);
             }
 
             Expression[] res = new Expression[_args.Length + 1];

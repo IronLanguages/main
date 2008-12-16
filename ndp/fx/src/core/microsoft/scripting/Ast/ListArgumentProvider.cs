@@ -56,11 +56,11 @@ namespace System.Linq.Expressions {
         }
 
         public void Insert(int index, Expression item) {
-            throw Assert.Unreachable;
+            throw ContractUtils.Unreachable;
         }
 
         public void RemoveAt(int index) {
-            throw Assert.Unreachable;
+            throw ContractUtils.Unreachable;
         }
 
         public Expression this[int index] {
@@ -72,7 +72,7 @@ namespace System.Linq.Expressions {
                 return _provider.GetArgument(index);
             }
             set {
-                throw Assert.Unreachable;
+                throw ContractUtils.Unreachable;
             }
         }
 
@@ -81,11 +81,11 @@ namespace System.Linq.Expressions {
         #region ICollection<Expression> Members
 
         public void Add(Expression item) {
-            throw Assert.Unreachable;
+            throw ContractUtils.Unreachable;
         }
 
         public void Clear() {
-            throw Assert.Unreachable;
+            throw ContractUtils.Unreachable;
         }
 
         public bool Contains(Expression item) {
@@ -108,7 +108,7 @@ namespace System.Linq.Expressions {
         }
 
         public bool Remove(Expression item) {
-            throw Assert.Unreachable;
+            throw ContractUtils.Unreachable;
         }
 
         #endregion

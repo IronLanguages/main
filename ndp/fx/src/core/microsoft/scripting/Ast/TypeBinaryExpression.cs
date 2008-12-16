@@ -46,22 +46,9 @@ namespace System.Linq.Expressions {
             get { return _typeOperand; }
         }
 
-        public override bool CanReduce {
-            get {
-                return _nodeKind == ExpressionType.TypeEqual;
-            }
-        }
-
-        public override Expression Reduce() {
-            if (CanReduce) {
-                return ReduceTypeEqual();
-            }
-            return this;
-        }
-
         #region Reduce TypeEqual
 
-        private Expression ReduceTypeEqual() {
+        internal Expression ReduceTypeEqual() {
             Type cType = Expression.Type;
             
             // For value types (including Void, but not nullables), we can

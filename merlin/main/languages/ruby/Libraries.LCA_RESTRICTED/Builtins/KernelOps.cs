@@ -29,9 +29,6 @@ using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 using Microsoft.Scripting.Generation;
 
-using RespondToSite = System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite,
-    IronRuby.Runtime.RubyContext, object, Microsoft.Scripting.SymbolId, object>>;
-
 namespace IronRuby.Builtins {
 
     [RubyModule("Kernel", Extends = typeof(Kernel))]
@@ -103,13 +100,16 @@ namespace IronRuby.Builtins {
         public static object/*!*/ ToInteger(RubyContext/*!*/ context, object self, object obj) {
             // TODO: MRI converts strings with base prefix ("0x1", "0d1", "0o1") and octals "000" as well
             // should the protocol do that or is is a specificity of this method?
-            return Protocols.ConvertToInteger(context, obj);
+            int fixnum;
+            BigInteger bignum;
+            Protocols.ConvertToInteger(context, obj, out fixnum, out bignum);
+            return (object)bignum ?? ScriptingRuntimeHelpers.Int32ToObject(fixnum);
         }
 
         [RubyMethod("String", RubyMethodAttributes.PrivateInstance)]
         [RubyMethod("String", RubyMethodAttributes.PublicSingleton)]
-        public static object/*!*/ ToString(RubyContext/*!*/ context, object self, object obj) {
-            return Protocols.ConvertToString(context, obj);
+        public static object/*!*/ ToString(ConversionStorage<MutableString>/*!*/ tosStorage, RubyContext/*!*/ context, object self, object obj) {
+            return Protocols.ConvertToString(tosStorage, context, obj);
         }
 
         #region `, exec, system
@@ -515,13 +515,13 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("p", RubyMethodAttributes.PrivateInstance)]
         [RubyMethod("p", RubyMethodAttributes.PublicSingleton)]
-        public static void PrintInspect(RubyContext/*!*/ context, object self, [NotNull]params object[]/*!*/ args) {
+        public static void PrintInspect(UnaryOpStorage/*!*/ tosStorage, RubyContext/*!*/ context, object self, [NotNull]params object[]/*!*/ args) {
             for (int i = 0; i < args.Length; i++) {
                 args[i] = RubySites.Inspect(context, args[i]);
             }
             
             // no dynamic dispatch to "puts":
-            RubyIOOps.Puts(context, context.StandardOutput, args);
+            RubyIOOps.Puts(tosStorage, context, context.StandardOutput, args);
         }
 
         [RubyMethod("print", RubyMethodAttributes.PrivateInstance)]
@@ -540,31 +540,33 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("print", RubyMethodAttributes.PrivateInstance)]
         [RubyMethod("print", RubyMethodAttributes.PublicSingleton)]
-        public static void Print(RubyContext/*!*/ context, object self, [NotNull]params object[]/*!*/ args) {
+        public static void Print(UnaryOpStorage/*!*/ tosStorage, RubyContext/*!*/ context, object self, [NotNull]params object[]/*!*/ args) {
             // no dynamic dispatch to "print":
-            RubyIOOps.Print(context, context.StandardOutput, args);
+            RubyIOOps.Print(tosStorage, context, context.StandardOutput, args);
         }
 
         // this overload is called only if the first parameter is string:
         [RubyMethod("printf", RubyMethodAttributes.PrivateInstance)]
         [RubyMethod("printf", RubyMethodAttributes.PublicSingleton)]
-        public static void PrintFormatted(SiteLocalStorage<CallSite<Func<CallSite, RubyContext, object, object, object>>>/*!*/ storage, 
+        public static void PrintFormatted(ConversionStorage<int>/*!*/ fixnumCast, ConversionStorage<MutableString>/*!*/ tosConversion, 
+            BinaryOpStorage/*!*/ writeStorage, 
             RubyContext/*!*/ context, object self, [NotNull]MutableString/*!*/ format, [NotNull]params object[]/*!*/ args) {
 
-            PrintFormatted(storage, context, self, context.StandardOutput, format, args);
+            PrintFormatted(fixnumCast, tosConversion, writeStorage, context, self, context.StandardOutput, format, args);
         }
 
         [RubyMethod("printf", RubyMethodAttributes.PrivateInstance)]
         [RubyMethod("printf", RubyMethodAttributes.PublicSingleton)]
-        public static void PrintFormatted(SiteLocalStorage<CallSite<Func<CallSite, RubyContext, object, object, object>>>/*!*/ storage,
+        public static void PrintFormatted(ConversionStorage<int>/*!*/ fixnumCast, ConversionStorage<MutableString>/*!*/ tosConversion, 
+            BinaryOpStorage/*!*/ writeStorage,
             RubyContext/*!*/ context, object self, object io, [NotNull]object/*!*/ format, [NotNull]params object[]/*!*/ args) {
 
             Debug.Assert(!(io is MutableString));
             
             // TODO: BindAsObject attribute on format?
             // format cannot be strongly typed to MutableString due to ambiguity between signatures (MS, object) vs (object, MS)
-            var site = storage.GetCallSite("write", 1);
-            site.Target(site, context, io, Sprintf(context, self, Protocols.CastToString(context, format), args));
+            var site = writeStorage.GetCallSite("write");
+            site.Target(site, context, io, Sprintf(fixnumCast, tosConversion, context, self, Protocols.CastToString(context, format), args));
         }
 
         [RubyMethod("putc", RubyMethodAttributes.PrivateInstance)]
@@ -590,9 +592,9 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("puts", RubyMethodAttributes.PrivateInstance)]
         [RubyMethod("puts", RubyMethodAttributes.PublicSingleton)]
-        public static void PutString(RubyContext/*!*/ context, object self, object arg) {
+        public static void PutString(UnaryOpStorage/*!*/ tosStorage, RubyContext/*!*/ context, object self, object arg) {
             // call directly, no dynamic dispatch to "self":
-            RubyIOOps.Puts(context, context.StandardOutput, arg);
+            RubyIOOps.Puts(tosStorage, context, context.StandardOutput, arg);
         }
 
         [RubyMethod("puts", RubyMethodAttributes.PrivateInstance)]
@@ -604,20 +606,20 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("puts", RubyMethodAttributes.PrivateInstance)]
         [RubyMethod("puts", RubyMethodAttributes.PublicSingleton)]
-        public static void PutString(RubyContext/*!*/ context, object self, [NotNull]params object[]/*!*/ args) {
+        public static void PutString(UnaryOpStorage/*!*/ tosStorage, RubyContext/*!*/ context, object self, [NotNull]params object[]/*!*/ args) {
             // call directly, no dynamic dispatch to "self":
-            RubyIOOps.Puts(context, context.StandardOutput, args);
+            RubyIOOps.Puts(tosStorage, context, context.StandardOutput, args);
         }
 
         [RubyMethod("warn", RubyMethodAttributes.PrivateInstance)]
         [RubyMethod("warn", RubyMethodAttributes.PublicSingleton)]
-        public static void ReportWarning(SiteLocalStorage<CallSite<Func<CallSite, RubyContext, object, object, object>>>/*!*/ storage,
+        public static void ReportWarning(UnaryOpStorage/*!*/ tosStorage, BinaryOpStorage/*!*/ writeStorage,
             RubyContext/*!*/ context, object self, object message) {
 
             if (context.Verbose != null) {
                 // MRI: unlike Kernel#puts this outputs \n even if the message ends with \n:
-                var site = storage.GetCallSite("write", 1);
-                site.Target(site, context, context.StandardErrorOutput, RubyIOOps.ToPrintedString(context, message));
+                var site = writeStorage.GetCallSite("write", 1);
+                site.Target(site, context, context.StandardErrorOutput, RubyIOOps.ToPrintedString(tosStorage, context, message));
                 RubyIOOps.PutsEmptyLine(context, context.StandardErrorOutput);
             }
         }
@@ -625,24 +627,23 @@ namespace IronRuby.Builtins {
         // TODO: not supported in Ruby 1.9
         [RubyMethod("getc", RubyMethodAttributes.PrivateInstance)]
         [RubyMethod("getc", RubyMethodAttributes.PublicSingleton)]
-        public static object ReadInputCharacter(SiteLocalStorage<CallSite<Func<CallSite, RubyContext, object, object>>>/*!*/ storage,
-            RubyContext/*!*/ context, object self) {
+        public static object ReadInputCharacter(UnaryOpStorage/*!*/ getcStorage, RubyContext/*!*/ context, object self) {
 
             context.ReportWarning("getc is obsolete; use STDIN.getc instead");
-            var site = storage.GetCallSite("getc", 0);
+            var site = getcStorage.GetCallSite("getc", 0);
             return site.Target(site, context, context.StandardInput);
         }
 
         [RubyMethod("gets", RubyMethodAttributes.PrivateInstance)]
         [RubyMethod("gets", RubyMethodAttributes.PublicSingleton)]
-        public static object ReadInputLine(SiteLocalStorage<CallSite<Func<CallSite, RubyContext, object, MutableString, object>>>/*!*/ storage, 
+        public static object ReadInputLine(CallSiteStorage<Func<CallSite, RubyContext, object, MutableString, object>>/*!*/ storage, 
             RubyContext/*!*/ context, object self) {
             return ReadInputLine(storage, context, self, context.InputSeparator);
         }
 
         [RubyMethod("gets", RubyMethodAttributes.PrivateInstance)]
         [RubyMethod("gets", RubyMethodAttributes.PublicSingleton)]
-        public static object ReadInputLine(SiteLocalStorage<CallSite<Func<CallSite, RubyContext, object, MutableString, object>>>/*!*/ storage,
+        public static object ReadInputLine(CallSiteStorage<Func<CallSite, RubyContext, object, MutableString, object>>/*!*/ storage,
             RubyContext/*!*/ context, object self, [NotNull]MutableString/*!*/ separator) {
             var site = storage.GetCallSite("gets", 1);
             return site.Target(site, context, context.StandardInput, separator);
@@ -681,19 +682,16 @@ namespace IronRuby.Builtins {
         [RubyMethod("fail", RubyMethodAttributes.PrivateInstance)]
         [RubyMethod("fail", RubyMethodAttributes.PublicSingleton)]
         [RubyStackTraceHidden]
-        public static void RaiseException(
-            SiteLocalStorage<RespondToSite>/*!*/ respondToStorage,
-            SiteLocalStorage<CallSite<Func<CallSite, RubyContext, object, object>>>/*!*/ storage0,
-            SiteLocalStorage<CallSite<Func<CallSite, RubyContext, object, object, object>>>/*!*/ storage1, 
+        public static void RaiseException(RespondToStorage/*!*/ respondToStorage, UnaryOpStorage/*!*/ storage0, BinaryOpStorage/*!*/ storage1, 
             RubyContext/*!*/ context, object self, object/*!*/ obj, [Optional]object arg, [Optional]RubyArray backtrace) {
 
             if (Protocols.RespondTo(respondToStorage, context, obj, "exception")) {
                 Exception e;
                 if (arg != Missing.Value) {
-                    var site = storage1.GetCallSite("exception", 1);
+                    var site = storage1.GetCallSite("exception");
                     e = site.Target(site, context, obj, arg) as Exception;
                 } else {
-                    var site = storage0.GetCallSite("exception", 0);
+                    var site = storage0.GetCallSite("exception");
                     e = site.Target(site, context, obj) as Exception;
                 }
 
@@ -746,11 +744,12 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("rand", RubyMethodAttributes.PrivateInstance)]
         [RubyMethod("rand", RubyMethodAttributes.PublicSingleton)]
-        public static object Rand(RubyContext/*!*/ context, object self, object limit) {
+        public static object Rand(ConversionStorage<int>/*!*/ conversionStorage, RubyContext/*!*/ context, object self, object limit) {
             if (limit == null) {
                 return Rand(context, self);
             }
-            return Rand(context, self, Protocols.CastToFixnum(context, limit));
+            // TODO: to_int can return bignum here
+            return Rand(context, self, Protocols.CastToFixnum(conversionStorage, context, limit));
         }
 
         //readline
@@ -820,10 +819,10 @@ namespace IronRuby.Builtins {
         [RubyMethod("format", RubyMethodAttributes.PublicSingleton)]
         [RubyMethod("sprintf", RubyMethodAttributes.PrivateInstance)]
         [RubyMethod("sprintf", RubyMethodAttributes.PublicSingleton)]
-        public static MutableString/*!*/ Sprintf(RubyContext/*!*/ context, object self, 
-            [DefaultProtocol, NotNull]MutableString/*!*/ format, [NotNull]params object[] args) {
+        public static MutableString/*!*/ Sprintf(ConversionStorage<int>/*!*/ fixnumCast, ConversionStorage<MutableString>/*!*/ tosConversion,
+            RubyContext/*!*/ context, object self, [DefaultProtocol, NotNull]MutableString/*!*/ format, [NotNull]params object[] args) {
 
-            return new StringFormatter(context, format.ConvertToString(), args).Format();
+            return new StringFormatter(fixnumCast, tosConversion, context, format.ConvertToString(), args).Format();
         }
 
         //srand
@@ -926,8 +925,8 @@ namespace IronRuby.Builtins {
 
         // calls == by default
         [RubyMethod("===")]
-        public static bool HashEquals(RubyContext/*!*/ context, object self, object other) {
-            return Protocols.IsEqual(context, self, other);
+        public static bool HashEquals(BinaryOpStorage/*!*/ equals, RubyContext/*!*/ context, object self, object other) {
+            return Protocols.IsEqual(equals, context, self, other);
         }
 
         [RubyMethod("hash")]
@@ -983,18 +982,26 @@ namespace IronRuby.Builtins {
         #region clone, dup
 
         [RubyMethod("clone")]
-        public static object/*!*/ Clone(RubyContext/*!*/ context, object self) {
+        public static object/*!*/ Clone(
+            CallSiteStorage<Func<CallSite, RubyContext, object, object, object>>/*!*/ initializeCopyStorage,
+            CallSiteStorage<Func<CallSite, RubyContext, RubyClass, object>>/*!*/ allocateStorage,
+            RubyContext/*!*/ context, object self) {
+
             object result;
-            if (!RubyUtils.TryDuplicateObject(context, self, true, out result)) {
+            if (!RubyUtils.TryDuplicateObject(initializeCopyStorage, allocateStorage, context, self, true, out result)) {
                 throw RubyExceptions.CreateTypeError(String.Format("can't clone {0}", RubyUtils.GetClassName(context, self)));
             }
             return context.TaintObjectBy(result, self);
         }
 
         [RubyMethod("dup")]
-        public static object/*!*/ Duplicate(RubyContext/*!*/ context, object self) {
+        public static object/*!*/ Duplicate(
+            CallSiteStorage<Func<CallSite, RubyContext, object, object, object>>/*!*/ initializeCopyStorage,
+            CallSiteStorage<Func<CallSite, RubyContext, RubyClass, object>>/*!*/ allocateStorage,
+            RubyContext/*!*/ context, object self) {
+
             object result;
-            if (!RubyUtils.TryDuplicateObject(context, self, false, out result)) {
+            if (!RubyUtils.TryDuplicateObject(initializeCopyStorage, allocateStorage, context, self, false, out result)) {
                 throw RubyExceptions.CreateTypeError(String.Format("can't dup {0}", RubyUtils.GetClassName(context, self)));
             }
             return context.TaintObjectBy(result, self);
@@ -1009,13 +1016,13 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("extend")]
         public static object Extend(
-            SiteLocalStorage<CallSite<Func<CallSite, RubyContext, RubyModule, object, object>>>/*!*/ extendObjectStorage,
-            SiteLocalStorage<CallSite<Func<CallSite, RubyContext, RubyModule, object, object>>>/*!*/ extendedStorage,
+            CallSiteStorage<Func<CallSite, RubyContext, RubyModule, object, object>>/*!*/ extendObjectStorage,
+            CallSiteStorage<Func<CallSite, RubyContext, RubyModule, object, object>>/*!*/ extendedStorage,
             RubyContext/*!*/ context, object self, [NotNull]RubyModule/*!*/ module, 
             [NotNull]params RubyModule/*!*/[]/*!*/ modules) {
 
             Assert.NotNull(self, modules);
-            RubyUtils.RequireNonClasses(modules);
+            RubyUtils.RequireMixins(module.SingletonClass, modules);
 
             var extendObject = extendObjectStorage.GetCallSite("extend_object", 1);
             var extended = extendedStorage.GetCallSite("extended", 1);
@@ -1366,11 +1373,14 @@ namespace IronRuby.Builtins {
         /// Time.new.inspect                 #=> "Wed Apr 09 08:54:39 CDT 2003"
         /// </example>
         [RubyMethod("inspect")]
-        public static MutableString/*!*/ Inspect(RubyContext/*!*/ context, object self) {
-            if (context.GetClassOf(self) == context.ObjectClass) {
-                return RubyUtils.ObjectToMutableString(context, self);
+        public static MutableString/*!*/ Inspect(UnaryOpStorage/*!*/ inspectStorage, ConversionStorage<MutableString>/*!*/ tosStorage, 
+            RubyContext/*!*/ context, object self) {
+
+            if (context.HasInstanceVariables(self)) {
+                return RubyUtils.InspectObject(inspectStorage, tosStorage, context, self);
             } else {
-                return RubySites.ToS(context, self);
+                var site = tosStorage.GetSite(ConvertToSAction.Instance);
+                return site.Target(site, context, self);
             }
         }
 
@@ -1384,7 +1394,7 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("to_s")]
         public static MutableString/*!*/ ToS(RubyContext/*!*/ context, object self) {
-            return RubyUtils.ObjectToMutableString(context, self).TaintBy(self, context);
+            return RubyUtils.ObjectToMutableString(context, self);
         }
 
         #endregion

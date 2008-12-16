@@ -20,8 +20,15 @@ using System.Linq.Expressions;
 
 namespace System.Dynamic.Utils {
 
-    // TODO: Update with the newest version of the managed contracts stuff
+    // Will be replaced with CLRv4 managed contracts
     internal static class ContractUtils {
+
+        internal static Exception Unreachable {
+            get {
+                Debug.Assert(false, "Unreachable");
+                return new InvalidOperationException("Code supposed to be unreachable");
+            }
+        }
 
         internal static void Requires(bool precondition) {
             if (!precondition) {
@@ -30,7 +37,7 @@ namespace System.Dynamic.Utils {
         }
 
         internal static void Requires(bool precondition, string paramName) {
-            Assert.NotEmpty(paramName);
+            Debug.Assert(!string.IsNullOrEmpty(paramName));
 
             if (!precondition) {
                 throw new ArgumentException(Strings.InvalidArgumentValue, paramName);
@@ -38,7 +45,7 @@ namespace System.Dynamic.Utils {
         }
 
         internal static void Requires(bool precondition, string paramName, string message) {
-            Assert.NotEmpty(paramName);
+            Debug.Assert(!string.IsNullOrEmpty(paramName));
 
             if (!precondition) {
                 throw new ArgumentException(message, paramName);
@@ -46,7 +53,7 @@ namespace System.Dynamic.Utils {
         }
 
         internal static void RequiresNotNull(object value, string paramName) {
-            Assert.NotEmpty(paramName);
+            Debug.Assert(!string.IsNullOrEmpty(paramName));
 
             if (value == null) {
                 throw new ArgumentNullException(paramName);
@@ -73,8 +80,8 @@ namespace System.Dynamic.Utils {
         /// <exception cref="ArgumentNullException">Array is <c>null</c>.</exception>
         /// <exception cref="ArgumentOutOfRangeException">Index is outside the array.</exception>
         internal static void RequiresArrayIndex<T>(IList<T> array, int index, string indexName) {
-            Assert.NotEmpty(indexName);
-            Assert.NotNull(array);
+            Debug.Assert(!string.IsNullOrEmpty(indexName));
+            Debug.Assert(array != null);
 
             if (index < 0 || index >= array.Count) throw new ArgumentOutOfRangeException(indexName);
         }
@@ -85,8 +92,8 @@ namespace System.Dynamic.Utils {
         /// <exception cref="ArgumentNullException">Array is <c>null</c>.</exception>
         /// <exception cref="ArgumentOutOfRangeException">Index is outside the array.</exception>
         internal static void RequiresArrayInsertIndex<T>(IList<T> array, int index, string indexName) {
-            Assert.NotEmpty(indexName);
-            Assert.NotNull(array);
+            Debug.Assert(!string.IsNullOrEmpty(indexName));
+            Debug.Assert(array != null);
 
             if (index < 0 || index > array.Count) throw new ArgumentOutOfRangeException(indexName);
         }
@@ -97,9 +104,9 @@ namespace System.Dynamic.Utils {
         /// <exception cref="ArgumentNullException">Array is <c>null</c>.</exception>
         /// <exception cref="ArgumentOutOfRangeException">Offset or count are out of range.</exception>
         internal static void RequiresArrayRange<T>(IList<T> array, int offset, int count, string offsetName, string countName) {
-            Assert.NotEmpty(offsetName);
-            Assert.NotEmpty(countName);
-            Assert.NotNull(array);
+            Debug.Assert(!string.IsNullOrEmpty(offsetName));
+            Debug.Assert(!string.IsNullOrEmpty(countName));
+            Debug.Assert(array != null);
 
             if (count < 0) throw new ArgumentOutOfRangeException(countName);
             if (offset < 0 || array.Count - offset < count) throw new ArgumentOutOfRangeException(offsetName);
@@ -111,9 +118,9 @@ namespace System.Dynamic.Utils {
         /// <exception cref="ArgumentNullException">Array is <c>null</c>.</exception>
         /// <exception cref="ArgumentOutOfRangeException">Offset or count are out of range.</exception>
         internal static void RequiresListRange(IList array, int offset, int count, string offsetName, string countName) {
-            Assert.NotEmpty(offsetName);
-            Assert.NotEmpty(countName);
-            Assert.NotNull(array);
+            Debug.Assert(!string.IsNullOrEmpty(offsetName));
+            Debug.Assert(!string.IsNullOrEmpty(countName));
+            Debug.Assert(array != null);
 
             if (count < 0) throw new ArgumentOutOfRangeException(countName);
             if (offset < 0 || array.Count - offset < count) throw new ArgumentOutOfRangeException(offsetName);
@@ -125,9 +132,9 @@ namespace System.Dynamic.Utils {
         /// <exception cref="ArgumentNullException">String is <c>null</c>.</exception>
         /// <exception cref="ArgumentOutOfRangeException">Offset or count are out of range.</exception>
         internal static void RequiresArrayRange(string str, int offset, int count, string offsetName, string countName) {
-            Assert.NotEmpty(offsetName);
-            Assert.NotEmpty(countName);
-            Assert.NotNull(str);
+            Debug.Assert(!string.IsNullOrEmpty(offsetName));
+            Debug.Assert(!string.IsNullOrEmpty(countName));
+            Debug.Assert(str != null);
 
             if (count < 0) throw new ArgumentOutOfRangeException(countName);
             if (offset < 0 || str.Length - offset < count) throw new ArgumentOutOfRangeException(offsetName);
@@ -137,7 +144,7 @@ namespace System.Dynamic.Utils {
         /// Requires the array and all its items to be non-null.
         /// </summary>
         internal static void RequiresNotNullItems<T>(IList<T> array, string arrayName) {
-            Assert.NotNull(arrayName);
+            Debug.Assert(arrayName != null);
             RequiresNotNull(array, arrayName);
 
             for (int i = 0; i < array.Count; i++) {

@@ -93,36 +93,12 @@ namespace System.Dynamic {
 
         private static Type CreateCustomType(int size) {
             var attrs = TypeAttributes.NotPublic | TypeAttributes.SequentialLayout;
-            TypeBuilder type = DynamicModule.DefineType("VariantArray" + size, attrs, typeof(ValueType));
+            TypeBuilder type = UnsafeMethods.DynamicModule.DefineType("VariantArray" + size, attrs, typeof(ValueType));
             var T = type.DefineGenericParameters(new string[] { "T" })[0];
             for (int i = 0; i < size; i++) {
                 type.DefineField("Element" + i, T, FieldAttributes.Public);
             }
             return type.CreateType();
-        }
-
-        private static readonly object _lock = new object();
-        private static ModuleBuilder _dynamicModule;
-        private static ModuleBuilder DynamicModule {
-            get {
-                if (_dynamicModule != null) {
-                    return _dynamicModule;
-                }
-                lock (_lock) {
-                    if (_dynamicModule == null) {
-                        // mark the assembly transparent so that it works in partial trust:
-                        var attributes = new[] { 
-                            new CustomAttributeBuilder(typeof(SecurityTransparentAttribute).GetConstructor(Type.EmptyTypes), new object[0])
-                        };
-
-                        string name = typeof(VariantArray).Namespace + ".DynamicAssembly";
-                        var assembly = AppDomain.CurrentDomain.DefineDynamicAssembly(new AssemblyName(name), AssemblyBuilderAccess.Run, attributes);
-                        assembly.DefineVersionInfoResource();
-                        _dynamicModule = assembly.DefineDynamicModule(name);
-                    }
-                    return _dynamicModule;
-                }
-            }
         }
     }
 }

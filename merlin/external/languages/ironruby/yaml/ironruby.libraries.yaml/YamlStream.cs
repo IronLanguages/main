@@ -48,7 +48,7 @@ namespace IronRuby.StandardLibrary.Yaml {
             }
 
             [SecurityPermission(SecurityAction.LinkDemand, Flags = SecurityPermissionFlag.SerializationFormatter)]
-            public void GetObjectData(SerializationInfo/*!*/ info, StreamingContext context) {
+            public override void GetObjectData(SerializationInfo/*!*/ info, StreamingContext context) {
                 base.GetObjectData(info, context);
                 // TODO: serialize
             }

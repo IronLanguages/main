@@ -69,9 +69,7 @@ namespace System.Dynamic {
 
             Expression argument = _argBuilder.Marshal(parameter);
 
-            //TODO: we need to make this cleaner.
-            // it is not nice that we need a special case for IConvertible.
-            // we are forced to special case it now since it does not have 
+            // we are forced to special case ConvertibleArgBuilder since it does not have 
             // a corresponding _targetComType.
             if (_argBuilder is ConvertibleArgBuilder) {
                 return Expression.Call(

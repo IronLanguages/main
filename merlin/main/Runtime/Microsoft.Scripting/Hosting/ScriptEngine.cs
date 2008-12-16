@@ -40,7 +40,6 @@ namespace Microsoft.Scripting.Hosting {
         private readonly ScriptRuntime _runtime;
         private LanguageSetup _config;
         private ObjectOperations _operations;
-        private Scope _dummyScope;
 
         internal ScriptEngine(ScriptRuntime runtime, LanguageContext context) {
             Debug.Assert(runtime != null);
@@ -451,7 +450,7 @@ namespace Microsoft.Scripting.Hosting {
             ContractUtils.RequiresNotNull(scope, "scope");
             ContractUtils.RequiresNotNull(name, "name");
 
-            return _language.LookupName(GetCodeContext(scope), SymbolTable.StringToId(name));
+            return _language.LookupName(scope.Scope, SymbolTable.StringToId(name));
         }
 
         /// <summary>
@@ -469,7 +468,7 @@ namespace Microsoft.Scripting.Hosting {
             ContractUtils.RequiresNotNull(scope, "scope");
             ContractUtils.RequiresNotNull(name, "name");
 
-            return _language.RemoveName(GetCodeContext(scope), SymbolTable.StringToId(name));
+            return _language.RemoveName(scope.Scope, SymbolTable.StringToId(name));
         }
 
         /// <summary>
@@ -485,7 +484,7 @@ namespace Microsoft.Scripting.Hosting {
             ContractUtils.RequiresNotNull(scope, "scope");
             ContractUtils.RequiresNotNull(name, "name");
 
-            _language.SetName(GetCodeContext(scope), SymbolTable.StringToId(name), value);
+            _language.SetName(scope.Scope, SymbolTable.StringToId(name), value);
         }
 
         /// <summary>
@@ -504,7 +503,7 @@ namespace Microsoft.Scripting.Hosting {
             ContractUtils.RequiresNotNull(scope, "scope");
             ContractUtils.RequiresNotNull(name, "name");
 
-            return _language.TryLookupName(GetCodeContext(scope), SymbolTable.StringToId(name), out value);
+            return _language.TryLookupName(scope.Scope, SymbolTable.StringToId(name), out value);
         }
 
         /// <summary>
@@ -735,28 +734,6 @@ namespace Microsoft.Scripting.Hosting {
         public ICollection<string> GetSearchPaths() {
             return _language.GetSearchPaths();
         }
-
-        #region Private implementation details
-
-        // Gets a LanguageContext for the specified module that captures the current state 
-        // of the module which will be used for compilation and execution of the next piece of code against the module.
-        private CodeContext GetCodeContext(ScriptScope scriptScope) {
-            Scope scope;
-
-            if (scriptScope != null) {
-                scope = scriptScope.Scope;
-            } else {
-                // TODO: we need a scope to CodeContext; could we allow CodeContext w/o scope?
-                if (_dummyScope == null) {
-                    Interlocked.CompareExchange(ref _dummyScope, new Scope(), null);
-                }
-                scope = _dummyScope;
-            }
-
-            return new CodeContext(scope, _language);
-        }
-
-        #endregion
 
         #region Internal API Surface
 

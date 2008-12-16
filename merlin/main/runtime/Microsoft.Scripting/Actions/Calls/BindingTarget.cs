@@ -37,7 +37,7 @@ namespace Microsoft.Scripting.Actions.Calls {
         private readonly string _name;                                                    // the name of the method being bound to
         private readonly MethodTarget _target;                                            // the MethodTarget if the binding was successful 
         private readonly Type[] _argTests;                                                // Deprecated: if successful tests needed to disambiguate between overloads, MetaObject binding is preferred
-        private readonly MetaObject[] _restrictedArgs;                                    // the arguments after they've been restricted to their known types
+        private readonly DynamicMetaObject[] _restrictedArgs;                                    // the arguments after they've been restricted to their known types
         private readonly NarrowingLevel _level;                                           // the NarrowingLevel at which the target succeeds on conversion
         private readonly CallFailure[] _callFailures;                                     // if failed on conversion the various conversion failures for all overloads
         private readonly MethodTarget[] _ambiguousMatches;                                // list of methods which are ambiguous to bind to.
@@ -58,7 +58,7 @@ namespace Microsoft.Scripting.Actions.Calls {
         /// <summary>
         /// Creates a new BindingTarget when the method binding has succeeded
         /// </summary>
-        internal BindingTarget(string name, int actualArgumentCount, MethodTarget target, NarrowingLevel level, MetaObject[] restrictedArgs) {
+        internal BindingTarget(string name, int actualArgumentCount, MethodTarget target, NarrowingLevel level, DynamicMetaObject[] restrictedArgs) {
             _name = name;
             _target = target;
             _restrictedArgs = restrictedArgs;
@@ -263,7 +263,7 @@ namespace Microsoft.Scripting.Actions.Calls {
         /// The members of the array correspond to each of the arguments.  All members of the array
         /// have a value.
         /// </summary>
-        public IList<MetaObject> RestrictedArguments {
+        public IList<DynamicMetaObject> RestrictedArguments {
             get {
                 return _restrictedArgs;
             }

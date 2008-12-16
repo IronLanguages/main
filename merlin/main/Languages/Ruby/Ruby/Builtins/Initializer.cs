@@ -56,9 +56,9 @@ namespace IronRuby.Builtins {
             return _context.DefineLibraryClass(null, type, instanceTrait, classTrait, null, mixins, factories, false, _builtin);
         }
 
-        protected RubyModule/*!*/ DefineGlobalModule(string/*!*/ name, Type/*!*/ type, Action<RubyModule> instanceTrait,
+        protected RubyModule/*!*/ DefineGlobalModule(string/*!*/ name, Type/*!*/ type, bool isSelfContained, Action<RubyModule> instanceTrait,
             Action<RubyModule> classTrait, RubyModule[]/*!*/ mixins) {
-            RubyModule module = _context.DefineLibraryModule(name, type, instanceTrait, classTrait, mixins);
+            RubyModule module = _context.DefineLibraryModule(name, type, instanceTrait, classTrait, mixins, isSelfContained);
             _context.ObjectClass.SetConstant(module.Name, module);
             return module;
         }
@@ -72,14 +72,14 @@ namespace IronRuby.Builtins {
         // - Interface modules:
         //    "type" parameter specifies the CLR interface being extended.
         // 
-        protected RubyModule/*!*/ DefineModule(string/*!*/ name, Type/*!*/ type, Action<RubyModule> instanceTrait,
+        protected RubyModule/*!*/ DefineModule(string/*!*/ name, Type/*!*/ type, bool isSelfContained, Action<RubyModule> instanceTrait,
             Action<RubyModule> classTrait, RubyModule[]/*!*/ mixins) {
-            return _context.DefineLibraryModule(name, type, instanceTrait, classTrait, mixins);
+            return _context.DefineLibraryModule(name, type, instanceTrait, classTrait, mixins, isSelfContained);
         }
 
         protected RubyModule/*!*/ ExtendModule(Type/*!*/ type, Action<RubyModule> instanceTrait, Action<RubyModule> classTrait,
             RubyModule[]/*!*/ mixins) {
-            return _context.DefineLibraryModule(null, type, instanceTrait, classTrait, mixins);
+            return _context.DefineLibraryModule(null, type, instanceTrait, classTrait, mixins, false);
         }
 
         protected object/*!*/ DefineSingleton(Action<RubyModule> instanceTrait, Action<RubyModule> classTrait, RubyModule[]/*!*/ mixins) {

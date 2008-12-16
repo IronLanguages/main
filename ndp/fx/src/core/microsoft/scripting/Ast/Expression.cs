@@ -78,10 +78,10 @@ namespace System.Linq.Expressions {
                 return dict.ContainsKey(key);
             }
     
-            [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1065:DoNotRaiseExceptionsInUnexpectedLocations")] // TODO: fix
+            [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1065:DoNotRaiseExceptionsInUnexpectedLocations")]
             public ICollection<TKey> Keys {
                 get {
-                    throw Assert.Unreachable;
+                    throw ContractUtils.Unreachable;
                 }
             }
     
@@ -93,10 +93,10 @@ namespace System.Linq.Expressions {
                 return dict.TryGetValue(key, out value);
             }
     
-            [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1065:DoNotRaiseExceptionsInUnexpectedLocations")] // TODO: fix
+            [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1065:DoNotRaiseExceptionsInUnexpectedLocations")]
             public ICollection<TValue> Values {
                 get {
-                    throw Assert.Unreachable;
+                    throw ContractUtils.Unreachable;
                 }
             }
     
@@ -182,37 +182,37 @@ namespace System.Linq.Expressions {
         #region ICollection<KeyValuePair<TKey,TValue>> Members
     
             public void Add(KeyValuePair<TKey, TValue> item) {
-                throw Assert.Unreachable;
+                throw ContractUtils.Unreachable;
             }
     
             public void Clear() {
-                throw Assert.Unreachable;
+                throw ContractUtils.Unreachable;
             }
     
             public bool Contains(KeyValuePair<TKey, TValue> item) {
-                throw Assert.Unreachable;
+                throw ContractUtils.Unreachable;
             }
     
             public void CopyTo(KeyValuePair<TKey, TValue>[] array, int arrayIndex) {
-                throw Assert.Unreachable;
+                throw ContractUtils.Unreachable;
             }
     
-            [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1065:DoNotRaiseExceptionsInUnexpectedLocations")] // TODO: fix
+            [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1065:DoNotRaiseExceptionsInUnexpectedLocations")]
             public int Count {
                 get {
-                    throw Assert.Unreachable;
+                    throw ContractUtils.Unreachable;
                 }
             }
     
-            [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1065:DoNotRaiseExceptionsInUnexpectedLocations")] // TODO: fix
+            [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1065:DoNotRaiseExceptionsInUnexpectedLocations")]
             public bool IsReadOnly {
                 get {
-                    throw Assert.Unreachable;
+                    throw ContractUtils.Unreachable;
                 }
             }
     
             public bool Remove(KeyValuePair<TKey, TValue> item) {
-                throw Assert.Unreachable;
+                throw ContractUtils.Unreachable;
             }
     
         #endregion
@@ -220,7 +220,7 @@ namespace System.Linq.Expressions {
         #region IEnumerable<KeyValuePair<TKey,TValue>> Members
     
             public IEnumerator<KeyValuePair<TKey, TValue>> GetEnumerator() {
-                throw Assert.Unreachable;
+                throw ContractUtils.Unreachable;
             }
     
         #endregion
@@ -228,7 +228,7 @@ namespace System.Linq.Expressions {
         #region IEnumerable Members
     
             System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() {
-                throw Assert.Unreachable;
+                throw ContractUtils.Unreachable;
             }
     
         #endregion
@@ -328,6 +328,10 @@ namespace System.Linq.Expressions {
             get { return false; }
         }
 
+        /// <summary>
+        /// Returns the node type of this Expression. Extension nodes should return
+        /// ExpressionType.Extension when overriding this method.
+        /// </summary>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate")]
         protected virtual ExpressionType GetNodeKind() {
 #if !MICROSOFT_SCRIPTING_CORE
@@ -337,8 +341,8 @@ namespace System.Linq.Expressions {
             }
 #endif
 
-            // the base type failed to overload GetNodeKind
-            throw new InvalidOperationException();
+            // the extension expression failed to override GetNodeKind
+            throw Error.ExtensionNodeMustOverrideMethod("Expression.GetNodeKind()");
         }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate")]
@@ -350,8 +354,8 @@ namespace System.Linq.Expressions {
             }
 #endif
 
-            // the base type failed to overload GetExpressionType
-            throw new InvalidOperationException();
+            // the extension expression failed to override GetExpressionType
+            throw Error.ExtensionNodeMustOverrideMethod("Expression.GetExpressionType()");
         }
 
         /// <summary>

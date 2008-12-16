@@ -35,8 +35,9 @@ namespace IronRuby.StandardLibrary.Sockets {
         }
 
         [RubyConstructor]
-        public static UDPSocket/*!*/ CreateUDPSocket(RubyClass/*!*/ self, object family) {
-            AddressFamily addressFamily = ConvertToAddressFamily(self.Context, family);
+        public static UDPSocket/*!*/ CreateUDPSocket(ConversionStorage<MutableString>/*!*/ stringCast, ConversionStorage<int>/*!*/ fixnumCast, 
+            RubyClass/*!*/ self, object family) {
+            AddressFamily addressFamily = ConvertToAddressFamily(stringCast, fixnumCast, self.Context, family);
             Socket socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
             return new UDPSocket(self.Context, socket);
         }
@@ -44,8 +45,10 @@ namespace IronRuby.StandardLibrary.Sockets {
         #region Public Instance Methods
 
         [RubyMethod("bind")]
-        public static int Bind(RubyContext/*!*/ context, UDPSocket/*!*/ self, object hostname, object port) {
-            int iPort = ConvertToPortNum(context, port);
+        public static int Bind(ConversionStorage<MutableString>/*!*/ stringCast, ConversionStorage<int>/*!*/ fixnumCast, 
+            RubyContext/*!*/ context, UDPSocket/*!*/ self, object hostname, object port) {
+
+            int iPort = ConvertToPortNum(stringCast, fixnumCast, context, port);
             if (hostname == null) {
                 hostname = MutableString.Create("localhost");
             }
@@ -56,19 +59,21 @@ namespace IronRuby.StandardLibrary.Sockets {
         }
 
         [RubyMethod("connect")]
-        public static int Connect(RubyContext/*!*/ context, UDPSocket/*!*/ self, object hostname, object port) {
+        public static int Connect(ConversionStorage<MutableString>/*!*/ stringCast, ConversionStorage<int>/*!*/ fixnumCast, 
+            RubyContext/*!*/ context, UDPSocket/*!*/ self, object hostname, object port) {
+
             MutableString strHostname = ConvertToHostString(context, hostname);
-            int iPort = ConvertToPortNum(context, port);
+            int iPort = ConvertToPortNum(stringCast, fixnumCast, context, port);
             self.Socket.Connect(strHostname.ConvertToString(), iPort);
             return 0;
         }
 
         [RubyMethod("recvfrom_nonblock")]
-        public static RubyArray/*!*/ ReceiveFromNonBlocking(RubyContext/*!*/ context, IPSocket/*!*/ self, int length) {
+        public static RubyArray/*!*/ ReceiveFromNonBlocking(ConversionStorage<int>/*!*/ fixnumCast, RubyContext/*!*/ context, IPSocket/*!*/ self, int length) {
             bool blocking = self.Socket.Blocking;
             try {
                 self.Socket.Blocking = false;
-                return ReceiveFrom(context, self, length, null);
+                return ReceiveFrom(fixnumCast, context, self, length, null);
             } finally {
                 // Reset the blocking
                 self.Socket.Blocking = blocking;
@@ -76,11 +81,11 @@ namespace IronRuby.StandardLibrary.Sockets {
         }
 
         [RubyMethod("recvfrom_nonblock")]
-        public static RubyArray/*!*/ ReceiveFromNonBlocking(RubyContext/*!*/ context, IPSocket/*!*/ self, int length, object/*Numeric*/ flags) {
+        public static RubyArray/*!*/ ReceiveFromNonBlocking(ConversionStorage<int>/*!*/ fixnumCast, RubyContext/*!*/ context, IPSocket/*!*/ self, int length, object/*Numeric*/ flags) {
             bool blocking = self.Socket.Blocking;
             try {
                 self.Socket.Blocking = false;
-                return ReceiveFrom(context, self, length, flags);
+                return ReceiveFrom(fixnumCast, context, self, length, flags);
             } finally {
                 // Reset the blocking
                 self.Socket.Blocking = blocking;
@@ -88,26 +93,33 @@ namespace IronRuby.StandardLibrary.Sockets {
         }
 
         [RubyMethod("send")]
-        public static int Send(RubyContext/*!*/ context, RubyBasicSocket/*!*/ self, object message, object flags, object hostname, object port) {
+        public static int Send(ConversionStorage<int>/*!*/ fixnumCast, ConversionStorage<MutableString>/*!*/ stringCast,
+            RubyContext/*!*/ context, RubyBasicSocket/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ message, 
+            object flags, object hostname, object port) {
+            
             Protocols.CheckSafeLevel(context, 4, "send");
+            int iPort = ConvertToPortNum(stringCast, fixnumCast, context, port);
+            SocketFlags sFlags = ConvertToSocketFlag(fixnumCast, context, flags);
+
             // Convert the parameters
-            SocketFlags sFlags = ConvertToSocketFlag(context, flags);
-            MutableString strMessage = Protocols.CastToString(context, message);
             MutableString address = GetAddressInternal(context, hostname);
-            int iPort = ConvertToPortNum(context, port);
             EndPoint toEndPoint = new IPEndPoint(IPAddress.Parse(address.ConvertToString()), iPort);
-            return self.Socket.SendTo(strMessage.ConvertToBytes(), sFlags, toEndPoint);
+            return self.Socket.SendTo(message.ConvertToBytes(), sFlags, toEndPoint);
         }
 
         // These overwritten methods have to be here because we kill the ones in RubyBasicSocket by creating the one above
         [RubyMethod("send")]
-        public static new int Send(RubyContext/*!*/ context, RubyBasicSocket/*!*/ self, object message, object flags) {
-            return RubyBasicSocket.Send(context, self, message, flags);
+        public static new int Send(ConversionStorage<int>/*!*/ fixnumCast, RubyContext/*!*/ context, 
+            RubyBasicSocket/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ message, object flags) {
+            return RubyBasicSocket.Send(fixnumCast, context, self, message, flags);
         }
 
         [RubyMethod("send")]
-        public static new int Send(RubyContext/*!*/ context, RubyBasicSocket/*!*/ self, object message, object flags, object to) {
-            return RubyBasicSocket.Send(context, self, message, flags, to);
+        public static new int Send(ConversionStorage<int>/*!*/ fixnumCast, RubyContext/*!*/ context,
+            RubyBasicSocket/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ message, object flags, 
+            [DefaultProtocol, NotNull]MutableString/*!*/ to) {
+
+            return RubyBasicSocket.Send(fixnumCast, context, self, message, flags, to);
         }
 
         #endregion

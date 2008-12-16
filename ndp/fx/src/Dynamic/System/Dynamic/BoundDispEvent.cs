@@ -19,15 +19,6 @@ using System.Linq.Expressions;
 using System.Runtime.CompilerServices;
 
 namespace System.Dynamic {
-    // TODO: Either this should be an IDO, or we need to return a delegate 
-    // (instead of this object) when the event is requested. The latter
-    // approach seems preferrable, because then languages could use their
-    // normal syntax for adding to delegates. But it's tricky because we
-    // wouldn't have notification whether the event has handlers or not, so
-    // we'd have to always hook the COM event once the delegate is fetched
-    //
-    // Note: returning a delegate has an additional benefit: we wouldn't need
-    // SplatCallSite.
     internal sealed class BoundDispEvent {
         private object _rcw;
         private Guid _sourceIid;

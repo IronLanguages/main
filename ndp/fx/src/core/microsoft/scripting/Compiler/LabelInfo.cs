@@ -52,10 +52,9 @@ namespace System.Linq.Expressions.Compiler {
         // point. Otherwise Leave and Branch are not equivalent
         private OpCode _opCode;
 
-        // IL Generator
-        private readonly ILGen _ilg;
+        private readonly ILGenerator _ilg;
 
-        internal LabelInfo(ILGen il, LabelTarget node, bool canReturn) {
+        internal LabelInfo(ILGenerator il, LabelTarget node, bool canReturn) {
             _ilg = il;
             Node = node;
             Label = il.DefineLabel();
@@ -77,7 +76,7 @@ namespace System.Linq.Expressions.Compiler {
 
         // Returns true if the label was successfully defined
         // or false if the label is now ambiguous
-        internal void Define(ILGen il, LabelBlockInfo block) {
+        internal void Define(ILGenerator il, LabelBlockInfo block) {
             // Prevent the label from being shadowed, which enforces cleaner
             // trees. Also we depend on this for simplicity (keeping only one
             // active IL Label per LabelInfo)
@@ -181,18 +180,20 @@ namespace System.Linq.Expressions.Compiler {
                 return;
             }
 
-            if (Value != null) {
-                _ilg.Emit(OpCodes.Stloc, Value);
-            }
+            StoreValue();
             _ilg.Emit(_opCode, Label);
         }
 
-        // TODO: We could save the local if we could determine in advance that
-        // nothing will "leave" to the label ("branch" preserves its stack)
-        internal void Mark() {
+        internal void StoreValue() {
             if (Value != null) {
                 _ilg.Emit(OpCodes.Stloc, Value);
             }
+        }
+
+        // We always read the value from a local, because we don't know
+        // if there will be a "leave" instruction targeting it ("branch"
+        // preserves its stack, but "leave" empties the stack)
+        internal void Mark() {
             _ilg.MarkLabel(Label);
             if (Value != null) {
                 _ilg.Emit(OpCodes.Ldloc, Value);

@@ -150,22 +150,40 @@ namespace System.Dynamic {
             return _events.TryGetValue(name, out @event);
         }
 
-        internal string[] GetMemberNames() {
-            var names = new List<string>();
+        internal IEnumerable<string> GetMemberNames() {
+            var names = new Dictionary<string, object>();
             
             lock (_funcs) {
                 foreach (ComMethodDesc func in _funcs.Values) {
-                    names.Add(func.Name);
+                    names.Add(func.Name, null);
+                }
+            }
+
+            lock (_puts) {
+                foreach (ComMethodDesc func in _puts.Values) {
+                    if (!names.ContainsKey(func.Name)){
+                        names.Add(func.Name, null);
+                    }
+                }
+            }
+
+            lock (_putRefs) {
+                foreach (ComMethodDesc func in _putRefs.Values) {
+                    if (!names.ContainsKey(func.Name)) {
+                        names.Add(func.Name, null);
+                    }
                 }
             }
             
             if (_events != null && _events.Count > 0) {
                 foreach (string name in _events.Keys) {
-                    names.Add(name);
+                    if (!names.ContainsKey(name)) {
+                        names.Add(name, null);
+                    }
                 }
             }
 
-            return names.ToArray();
+            return names.Keys;
         }
 
         internal string TypeName {

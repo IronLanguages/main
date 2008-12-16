@@ -57,20 +57,20 @@ namespace IronRuby.Runtime.Calls {
             set { _treatRestrictionsAsConditions = value; }
         }
 
-        internal MetaObject/*!*/ CreateMetaObject(MetaObjectBinder/*!*/ action, MetaObject/*!*/ context, MetaObject/*!*/[]/*!*/ args) {
+        internal DynamicMetaObject/*!*/ CreateMetaObject(DynamicMetaObjectBinder/*!*/ action, DynamicMetaObject/*!*/ context, DynamicMetaObject/*!*/[]/*!*/ args) {
             return CreateMetaObject(action, ArrayUtils.Insert(context, args));
         }
 
-        internal MetaObject/*!*/ CreateMetaObject(MetaObjectBinder/*!*/ action, MetaObject/*!*/[]/*!*/ siteArgs) {
+        internal DynamicMetaObject/*!*/ CreateMetaObject(DynamicMetaObjectBinder/*!*/ action, DynamicMetaObject/*!*/[]/*!*/ siteArgs) {
             var expr = _error ? Ast.Throw(_result) : _result;
 
-            Restrictions restrictions;
+            BindingRestrictions restrictions;
             if (_condition != null) {
                 var deferral = action.Defer(siteArgs);
                 expr = Ast.Condition(_condition, AstUtils.Convert(expr, typeof(object)), deferral.Expression);
                 restrictions = deferral.Restrictions;
             } else {
-                restrictions = Restrictions.Empty;
+                restrictions = BindingRestrictions.Empty;
             }
 
             if (_temps != null) {
@@ -78,10 +78,10 @@ namespace IronRuby.Runtime.Calls {
             }
 
             if (_restriction != null) {
-                restrictions = restrictions.Merge(Restrictions.GetExpressionRestriction(_restriction));
+                restrictions = restrictions.Merge(BindingRestrictions.GetExpressionRestriction(_restriction));
             }
 
-            return new MetaObject(expr, restrictions);
+            return new DynamicMetaObject(expr, restrictions);
         }
 
         public void SetError(Expression/*!*/ expression) {
@@ -146,7 +146,7 @@ namespace IronRuby.Runtime.Calls {
             // singleton nil:
             if (target == null) {
                 AddRestriction(Ast.Equal(targetParameter, Ast.Constant(null)));
-                context.NilClass.AddFullVersionTest(this, contextExpression);
+                AddFullVersionTest(context.NilClass, context, contextExpression);
                 return;
             }
 
@@ -158,9 +158,9 @@ namespace IronRuby.Runtime.Calls {
                 ));
 
                 if ((bool)target) {
-                    context.TrueClass.AddFullVersionTest(this, contextExpression);
+                    AddFullVersionTest(context.TrueClass, context, contextExpression);
                 } else {
-                    context.FalseClass.AddFullVersionTest(this, contextExpression);
+                    AddFullVersionTest(context.FalseClass, context, contextExpression);
                 }
                 return;
 
@@ -178,7 +178,7 @@ namespace IronRuby.Runtime.Calls {
                 );
 
                 // we need to check for a runtime (e.g. "foo" .NET string instance could be shared accross runtimes):
-                immediateClass.AddFullVersionTest(this, contextExpression);
+                AddFullVersionTest(immediateClass, context, contextExpression);
                 return;
             }
 
@@ -203,8 +203,19 @@ namespace IronRuby.Runtime.Calls {
                 throw new NotSupportedException("Type implementing IRubyObject should have RubyClass getter");
             } else {
                 // CLR objects:
-                immediateClass.AddFullVersionTest(this, contextExpression);
+                AddFullVersionTest(immediateClass, context, contextExpression);
             }
+        }
+
+        internal void AddFullVersionTest(RubyModule/*!*/ module, RubyContext/*!*/ context, Expression/*!*/ contextExpression) {
+            Assert.NotNull(module, context, contextExpression);
+            module.EnsureInitialized(); // Initialization changes the version number, so ensure that the module is initialized
+
+            // check for runtime (note that the module's runtime could be different from the call-site runtime):
+            AddRestriction(Ast.Equal(contextExpression, Ast.Constant(context)));
+
+            // check for version:
+            AddCondition(Ast.Equal(Ast.Property(Ast.Constant(module), RubyModule.VersionProperty), Ast.Constant(module.Version)));
         }
 
         internal bool AddSplattedArgumentTest(object value, Expression/*!*/ expression, out int listLength, out ParameterExpression/*!*/ listVariable) {

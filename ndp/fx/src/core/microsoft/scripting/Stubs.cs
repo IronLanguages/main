@@ -124,14 +124,6 @@ namespace Microsoft.Contracts {
     [Conditional("SPECSHARP"), AttributeUsage(AttributeTargets.Field)]
     internal sealed class StrictReadonlyAttribute : Attribute {
     }
-
-    internal static class NonNullType {
-        [DebuggerStepThrough]
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters")]
-        public static void AssertInitialized<T>(T[] array) where T : class {
-            Assert.NotNullItems<T>(array);
-        }
-    }
 }
 
 #endif

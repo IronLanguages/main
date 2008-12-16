@@ -25,9 +25,6 @@ namespace System.Linq.Expressions {
     }
 
     //CONFORMING
-    // TODO: If annotations is added here, make sure MemberInitExpression.Reduce
-    // methods and ExpressionVisitor.Visit methods preserve it
-    // (But this probably does not need annotations)
     public abstract class MemberBinding {
         MemberBindingType _type;
         MemberInfo _member;

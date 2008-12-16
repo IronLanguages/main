@@ -1,12 +1,12 @@
 merlin/main/*.snk
 merlin/main/*.sln
 merlin/main/Rowan.vs*
-merlin/main/Spec*
+merlin/main/Samples
 merlin/main/*.proj
 merlin/main/*.htm
 merlin/main/makefile
 merlin/main/sources
-merlin/main/*.targets
 merlin/external/languages/ruby/ruby-1.8.6
 merlin/main/bin
 merlin/main/External
+merlin/main/silverlight.*.targets

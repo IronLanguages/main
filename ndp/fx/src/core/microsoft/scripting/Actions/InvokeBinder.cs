@@ -20,7 +20,7 @@ using System.Dynamic.Utils;
 using Microsoft.Contracts;
 
 namespace System.Dynamic {
-    public abstract class InvokeBinder : MetaObjectBinder {
+    public abstract class InvokeBinder : DynamicMetaObjectBinder {
         private readonly ReadOnlyCollection<ArgumentInfo> _arguments;
 
         protected InvokeBinder(params ArgumentInfo[] arguments)
@@ -35,13 +35,13 @@ namespace System.Dynamic {
             get { return _arguments; }
         }
 
-        public MetaObject FallbackInvoke(MetaObject target, MetaObject[] args) {
+        public DynamicMetaObject FallbackInvoke(DynamicMetaObject target, DynamicMetaObject[] args) {
             return FallbackInvoke(target, args, null);
         }
 
-        public abstract MetaObject FallbackInvoke(MetaObject target, MetaObject[] args, MetaObject errorSuggestion);
+        public abstract DynamicMetaObject FallbackInvoke(DynamicMetaObject target, DynamicMetaObject[] args, DynamicMetaObject errorSuggestion);
 
-        public sealed override MetaObject Bind(MetaObject target, MetaObject[] args) {
+        public sealed override DynamicMetaObject Bind(DynamicMetaObject target, DynamicMetaObject[] args) {
             ContractUtils.RequiresNotNull(target, "target");
             ContractUtils.RequiresNotNullItems(args, "args");
 

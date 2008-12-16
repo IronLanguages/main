@@ -13,9 +13,6 @@
  *
  * ***************************************************************************/
 
-using RespondToSite = System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite,
-    IronRuby.Runtime.RubyContext, object, Microsoft.Scripting.SymbolId, object>>;
-
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -511,11 +508,16 @@ namespace IronRuby.StandardLibrary.Zlib {
             }
 
             [RubyMethod("inflate", RubyMethodAttributes.PublicSingleton)]
-            public static MutableString InflateStream(SiteLocalStorage<CallSite<Func<CallSite, RubyContext, object, MutableString, MutableString>>>/*!*/ storage,
+            public static MutableString InflateStream(
+                CallSiteStorage<Func<CallSite, RubyContext, RubyClass, object>>/*!*/ allocateStorage,
+                CallSiteStorage<Func<CallSite, RubyContext, object, MutableString, MutableString>>/*!*/ inflateStorage,
                 RubyClass/*!*/ self, MutableString zstring) {
-                object obj = RubySites.Allocate(self);
-                var site = storage.GetCallSite("inflate", 1);
-                return site.Target(site, self.Context, obj, zstring);
+
+                var allocateSite = allocateStorage.GetCallSite("allocate", 0);
+                object obj = allocateSite.Target(allocateSite, self.Context, self);
+
+                var inflateSite = inflateStorage.GetCallSite("inflate", 1);
+                return inflateSite.Target(inflateSite, self.Context, obj, zstring);
             }
 
             internal class HuffmanTree {
@@ -617,7 +619,7 @@ namespace IronRuby.StandardLibrary.Zlib {
             }
 
             [RubyConstructor]
-            public static GZipReader/*!*/ Create(SiteLocalStorage<RespondToSite>/*!*/ respondToStorage, RubyClass/*!*/ self, object io) {
+            public static GZipReader/*!*/ Create(RespondToStorage/*!*/ respondToStorage, RubyClass/*!*/ self, object io) {
                 Stream stream = null;
                 if (io != null) {
                     stream = RubyIOOps.CreateIOWrapper(respondToStorage, self.Context, io, FileAccess.Read);

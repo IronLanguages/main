@@ -19,10 +19,7 @@ using System.Diagnostics;
 using System.Linq.Expressions;
 
 namespace System.Dynamic {
-
-    // TODO: Update with the newest version of the managed contracts stuff
     internal static class ContractUtils {
-
         internal static void Requires(bool precondition, string paramName) {
             Assert.NotEmpty(paramName);
 

@@ -17,7 +17,7 @@ using System.Dynamic.Utils;
 using Microsoft.Contracts;
 
 namespace System.Dynamic {
-    public abstract class ConvertBinder : MetaObjectBinder {
+    public abstract class ConvertBinder : DynamicMetaObjectBinder {
         private readonly Type _type;
         private readonly bool _explicit;
 
@@ -39,13 +39,13 @@ namespace System.Dynamic {
             }
         }
 
-        public MetaObject FallbackConvert(MetaObject target) {
+        public DynamicMetaObject FallbackConvert(DynamicMetaObject target) {
             return FallbackConvert(target, null);
         }
 
-        public abstract MetaObject FallbackConvert(MetaObject target, MetaObject errorSuggestion);
+        public abstract DynamicMetaObject FallbackConvert(DynamicMetaObject target, DynamicMetaObject errorSuggestion);
 
-        public sealed override MetaObject Bind(MetaObject target, MetaObject[] args) {
+        public sealed override DynamicMetaObject Bind(DynamicMetaObject target, DynamicMetaObject[] args) {
             ContractUtils.RequiresNotNull(target, "target");
             ContractUtils.Requires(args.Length == 0);
 

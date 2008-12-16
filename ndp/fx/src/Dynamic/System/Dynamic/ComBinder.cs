@@ -39,7 +39,7 @@ namespace System.Dynamic {
             return ComObject.IsComObject(value);
         }
 
-        public static bool TryBindGetMember(GetMemberBinder binder, MetaObject instance, out MetaObject result) {
+        public static bool TryBindGetMember(GetMemberBinder binder, DynamicMetaObject instance, out DynamicMetaObject result) {
             if (TryGetMetaObject(ref instance)) {
                 result = instance.BindGetMember(binder);
                 return true;
@@ -49,7 +49,7 @@ namespace System.Dynamic {
             }
         }
 
-        public static bool TryBindSetMember(SetMemberBinder binder, MetaObject instance, MetaObject value, out MetaObject result) {
+        public static bool TryBindSetMember(SetMemberBinder binder, DynamicMetaObject instance, DynamicMetaObject value, out DynamicMetaObject result) {
             if (TryGetMetaObject(ref instance)) {
                 result = instance.BindSetMember(binder, value);
                 return true;
@@ -59,7 +59,7 @@ namespace System.Dynamic {
             }
         }
 
-        public static bool TryBindInvoke(InvokeBinder binder, MetaObject instance, MetaObject[] args, out MetaObject result) {
+        public static bool TryBindInvoke(InvokeBinder binder, DynamicMetaObject instance, DynamicMetaObject[] args, out DynamicMetaObject result) {
             if (TryGetMetaObject(ref instance)) {
                 result = instance.BindInvoke(binder, args);
                 return true;
@@ -69,7 +69,7 @@ namespace System.Dynamic {
             }
         }
 
-        public static bool TryBindInvokeMember(InvokeMemberBinder binder, MetaObject instance, MetaObject[] args, out MetaObject result) {
+        public static bool TryBindInvokeMember(InvokeMemberBinder binder, DynamicMetaObject instance, DynamicMetaObject[] args, out DynamicMetaObject result) {
             if (TryGetMetaObject(ref instance)) {
                 result = instance.BindInvokeMember(binder, args);
                 return true;
@@ -79,7 +79,7 @@ namespace System.Dynamic {
             }
         }
 
-        public static bool TryBindGetIndex(GetIndexBinder binder, MetaObject instance, MetaObject[] args, out MetaObject result) {
+        public static bool TryBindGetIndex(GetIndexBinder binder, DynamicMetaObject instance, DynamicMetaObject[] args, out DynamicMetaObject result) {
             if (TryGetMetaObject(ref instance)) {
                 result = instance.BindGetIndex(binder, args);
                 return true;
@@ -89,7 +89,7 @@ namespace System.Dynamic {
             }
         }
 
-        public static bool TryBindSetIndex(SetIndexBinder binder, MetaObject instance, MetaObject[] args, MetaObject value, out MetaObject result) {
+        public static bool TryBindSetIndex(SetIndexBinder binder, DynamicMetaObject instance, DynamicMetaObject[] args, DynamicMetaObject value, out DynamicMetaObject result) {
             if (TryGetMetaObject(ref instance)) {
                 result = instance.BindSetIndex(binder, args, value);
                 return true;
@@ -115,7 +115,7 @@ namespace System.Dynamic {
             return ComObject.ObjectToComObject(value).DataMembers;
         }
 
-        private static bool TryGetMetaObject(ref MetaObject instance) {
+        private static bool TryGetMetaObject(ref DynamicMetaObject instance) {
             // If we're already a COM MO don't make a new one
             // (we do this to prevent recursion if we call Fallback from COM)
             if (instance is ComUnwrappedMetaObject) {

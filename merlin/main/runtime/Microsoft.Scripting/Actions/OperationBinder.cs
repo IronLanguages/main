@@ -20,7 +20,7 @@ using System;
 
 namespace Microsoft.Scripting.Actions {
     [Obsolete("Use ExtensionBinaryOperationBinder or ExtensionUnaryOperationBinder")]
-    public abstract class OperationBinder : MetaObjectBinder {
+    public abstract class OperationBinder : DynamicMetaObjectBinder {
         private string _operation;
 
         protected OperationBinder(string operation) {
@@ -33,13 +33,13 @@ namespace Microsoft.Scripting.Actions {
             }
         }
 
-        public MetaObject FallbackOperation(MetaObject target, MetaObject[] args) {
+        public DynamicMetaObject FallbackOperation(DynamicMetaObject target, DynamicMetaObject[] args) {
             return FallbackOperation(target, args, null);
         }
 
-        public abstract MetaObject FallbackOperation(MetaObject target, MetaObject[] args, MetaObject errorSuggestion);
+        public abstract DynamicMetaObject FallbackOperation(DynamicMetaObject target, DynamicMetaObject[] args, DynamicMetaObject errorSuggestion);
 
-        public sealed override MetaObject Bind(MetaObject target, MetaObject[] args) {
+        public sealed override DynamicMetaObject Bind(DynamicMetaObject target, DynamicMetaObject[] args) {
             ContractUtils.RequiresNotNull(target, "target");
             ContractUtils.RequiresNotNullItems(args, "args");
 

@@ -44,7 +44,7 @@ namespace IronRuby.Runtime.Calls {
         /// - sourceId passed to Transform method
         /// - site offset within the source code
         /// </summary>
-        public static void Register(Action<MetaObject, MetaObject[], MetaObject, int, int>/*!*/ tracer) {
+        public static void Register(Action<DynamicMetaObject, DynamicMetaObject[], DynamicMetaObject, int, int>/*!*/ tracer) {
             ContractUtils.RequiresNotNull(tracer, "tracer");
             TracingRubyCallAction.Tracer = tracer;
         }
@@ -68,7 +68,7 @@ namespace IronRuby.Runtime.Calls {
             private static int _Location;
 
             [ThreadStatic]
-            internal static Action<MetaObject, MetaObject[], MetaObject, int, int> Tracer;
+            internal static Action<DynamicMetaObject, DynamicMetaObject[], DynamicMetaObject, int, int> Tracer;
 
             [Emitted]
             public static T EnterCallSite<T>(T result, int id, int location) {
@@ -85,7 +85,7 @@ namespace IronRuby.Runtime.Calls {
                 return base.ToString() + "!";
             }
 
-            public override MetaObject/*!*/ Bind(MetaObject/*!*/ context, MetaObject/*!*/[]/*!*/ args) {
+            public override DynamicMetaObject/*!*/ Bind(DynamicMetaObject/*!*/ context, DynamicMetaObject/*!*/[]/*!*/ args) {
                 var result = base.Bind(context, args);
                 var tracer = Tracer;
                 if (tracer != null) {

@@ -27,6 +27,7 @@ require 'benchmark'
 
 $failures = 0
 
+# Represents the list of all TestFiles to be run.
 class TestListFile
     def TestListFile.load
         test_lst_file = File.join(THIS_DIRECTORY, "test.lst")
@@ -40,10 +41,12 @@ class TestListFile
         lines.collect do |l|
             parts = l.split
             raise "unexpected test entry: #{l}" if parts.length > 2
-            TestListFile.new(*parts) 
+            TestFile.new(*parts) 
         end 
     end 
+end
     
+class TestFile
     def initialize(file_name, driver_list='all')
         @file_name = file_name
         @driver_list = driver_list 
@@ -114,22 +117,22 @@ applicable_drivers.uniq!
 
 test_files = TestListFile::load 
 
-bms = []
 applicable_drivers.each do |driver|
-	bms << Benchmark.measure(driver.to_s) do
+	time = Benchmark.measure(driver.to_s) do
 		puts "#{driver}"
 		puts "    log @ #{driver.logger} \n"
 	    
-		if ARGV.include? "-neg"
+		if ARGV.include? "-neg" # The user wants to run all the unsupported test cases
 			test_files.each { |tf| tf.run_skipped_by(driver) }
 		else
 			test_files.each { |tf| tf.run_by(driver) }
 		end
-		puts "\n\n"
+		puts "\n"
    end		
+   puts time.format("Time: %10.6r\n\n")
 end
 
-bms.each { |t| puts t.format("%n\n%10.6r\n") }
+# Some folders use run_<name>.rb instead of a test list
 
 if applicable_drivers.include? Test::Iron_m2 and !ARGV.include? "-fast"
     [
@@ -148,6 +151,6 @@ if applicable_drivers.include? Test::Iron_m2 and !ARGV.include? "-fast"
     end
 end 
 
-puts "\nSummary: #{$failures}\n"
+puts "\nSummary: #{$failures} failures in run.rb\n"
 
 exit($failures)

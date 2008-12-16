@@ -33,7 +33,7 @@ namespace System.Dynamic {
 
             if (type == typeof(String) ||
                 type == typeof(DBNull) ||
-                type == typeof(Null) ||
+                type == typeof(DynamicNull) ||
                 type == typeof(System.Reflection.Missing) ||
                 type == typeof(CurrencyWrapper)) {
 
@@ -43,12 +43,12 @@ namespace System.Dynamic {
             }
         }
 
-        internal static bool IsByRef(MetaObject mo) {
+        internal static bool IsByRef(DynamicMetaObject mo) {
             ParameterExpression pe = mo.Expression as ParameterExpression;
             return pe != null && pe.IsByRef;
         }
 
-        internal static bool IsStrongBoxArg(MetaObject o) {
+        internal static bool IsStrongBoxArg(DynamicMetaObject o) {
             if (IsByRef(o)) {
                 return false;
             }
@@ -57,34 +57,33 @@ namespace System.Dynamic {
             return t.IsGenericType && t.GetGenericTypeDefinition() == typeof(StrongBox<>);
         }
 
-        internal static MetaObject RewriteStrongBoxAsRef(CallSiteBinder action, MetaObject target, MetaObject[] args, bool hasRhs) {
+        internal static DynamicMetaObject RewriteStrongBoxAsRef(CallSiteBinder action, DynamicMetaObject target, DynamicMetaObject[] args, bool hasRhs) {
             Debug.Assert(action != null && target != null && args != null);
 
-            var restrictions = target.Restrictions.Merge(Restrictions.Combine(args));
+            var restrictions = target.Restrictions.Merge(BindingRestrictions.Combine(args));
 
             Expression[] argExpressions = new Expression[args.Length + 1];
             Type[] signatureTypes = new Type[args.Length + 3]; // args + CallSite, target, returnType
 
             signatureTypes[0] = typeof(CallSite);
 
-            //TODO: we are not restricting on target type here, but in theory we could. 
-            //It is a tradeoff between rule reuse and higher polymorphism of the site. 
+            //we are not restricting on target type here.
             argExpressions[0] = target.Expression;
             signatureTypes[1] = target.Expression.Type;
 
             int argsToProcess = args.Length;
 
             if (hasRhs) {
-                MetaObject rhsArgument = args[args.Length - 1];
+                DynamicMetaObject rhsArgument = args[args.Length - 1];
                 argExpressions[args.Length] = rhsArgument.Expression;
                 signatureTypes[args.Length + 1] = rhsArgument.Expression.Type;
                 argsToProcess--;
             }
 
             for (int i = 0; i < argsToProcess; i++) {
-                MetaObject currArgument = args[i];
+                DynamicMetaObject currArgument = args[i];
                 if (IsStrongBoxArg(currArgument)) {
-                    restrictions = restrictions.Merge(Restrictions.GetTypeRestriction(currArgument.Expression, currArgument.LimitType));
+                    restrictions = restrictions.Merge(BindingRestrictions.GetTypeRestriction(currArgument.Expression, currArgument.LimitType));
 
                     // we have restricted this argument to LimitType so we can convert and conversion will be trivial cast.
                     Expression boxedValueAccessor = Expression.Field(
@@ -106,7 +105,7 @@ namespace System.Dynamic {
             // Last signatureType is the return value
             signatureTypes[signatureTypes.Length - 1] = typeof(object);
 
-            return new MetaObject(
+            return new DynamicMetaObject(
                 Expression.MakeDynamic(
                     Expression.GetDelegateType(signatureTypes),
                     action,

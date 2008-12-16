@@ -14,8 +14,19 @@
 # ****************************************************************************
 
 #
-# format spec: test, drivers, tags
-#     - drivers:    <empty> | all | none | cruby | ironm1 | coreclr
+# format spec:
+#     test_file drivers tags
+#
+# where drivers can be:
+#     <empty> 
+#     all           : Run with all drivers
+#     <driver>      : Run only with specified driver
+#     <driver>-     : Do not run with specified driver
+#     none          : Run with no driver ie. the test is disabled
+#     cruby         : Run with MRI
+#     ironm1        : Standard mode driver
+#     coreclr       : Silverlight driver
+#
 # all character !!lowercased!! (ctrl+u)
 #
 

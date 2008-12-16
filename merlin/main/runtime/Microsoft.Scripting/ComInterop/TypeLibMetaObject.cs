@@ -22,21 +22,21 @@ using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace Microsoft.Scripting.ComInterop {
 
-    internal class TypeLibMetaObject : MetaObject {
+    internal class TypeLibMetaObject : DynamicMetaObject {
         private readonly ComTypeLibDesc _lib;
 
         internal TypeLibMetaObject(Expression expression, ComTypeLibDesc lib)
-            : base(expression, Restrictions.Empty, lib) {
+            : base(expression, BindingRestrictions.Empty, lib) {
             _lib = lib;
         }
 
-        public override MetaObject BindGetMember(GetMemberBinder binder) {
+        public override DynamicMetaObject BindGetMember(GetMemberBinder binder) {
             if (_lib.HasMember(binder.Name)) {
-                Restrictions restrictions =
-                    Restrictions.GetTypeRestriction(
+                BindingRestrictions restrictions =
+                    BindingRestrictions.GetTypeRestriction(
                         Expression, typeof(ComTypeLibDesc)
                     ).Merge(
-                        Restrictions.GetExpressionRestriction(
+                        BindingRestrictions.GetExpressionRestriction(
                             Expression.Equal(
                                 Expression.Property(
                                     AstUtils.Convert(
@@ -49,7 +49,7 @@ namespace Microsoft.Scripting.ComInterop {
                         )
                     );
 
-                return new MetaObject(
+                return new DynamicMetaObject(
                     Expression.Constant(
                         ((ComTypeLibDesc)Value).GetTypeLibObjectDesc(binder.Name)
                     ),

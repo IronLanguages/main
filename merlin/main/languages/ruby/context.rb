@@ -237,7 +237,16 @@ module IronRubyUtils
   # Low-level command helpers
 
   def is_test?
-    ENV['test'] == 'true'
+    ENV['test']
+  end
+  
+  def mono?
+    ENV['mono']
+  end
+  
+  def rake_version
+    cmd = mono? ? "rake" : "rake.bat"
+    `#{cmd} --version`.chomp.gsub(/.*?(\d\.\d\.\d)/, '\1')
   end
 
   def exec(cmd)
@@ -738,7 +747,7 @@ class IronRuby < ProjectContext
   map :gppg, :merlin => 'merlin/main/utilities/gppg', :svn => 'bin', :recurse => false
   map :dlr_core, :merlin => 'ndp/fx/src/core/microsoft/scripting', :svn => 'src/microsoft.scripting.core'
   map :dlr_libs, :merlin => 'merlin/main/runtime/microsoft.scripting', :svn => 'src/microsoft.scripting'
-  map :dlr_com, :merlin => 'ndp/fx/src/dynamic', :svn => 'src/dynamic'
+  map :dlr_com, :merlin => 'ndp/fx/src/dynamic/system/dynamic', :svn => 'src/dynamic'
   map :ironruby, :merlin => 'merlin/main/languages/ruby/ruby', :svn => 'src/ironruby'
   map :libraries, :merlin => 'merlin/main/languages/ruby/libraries.lca_restricted', :svn => 'src/IronRuby.Libraries'
   map :yaml, :merlin => 'merlin/external/languages/ironruby/yaml/ironruby.libraries.yaml', :svn => 'src/yaml'

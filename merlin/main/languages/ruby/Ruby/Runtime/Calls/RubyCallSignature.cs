@@ -38,7 +38,7 @@ namespace IronRuby.Runtime.Calls {
         HasImplicitSelf = 16,
 
         // Tries to call the method, if not successful returns a RubyOps.MethodNotFound singleton.
-        IsTryCall = 32
+        IsTryCall = 32,
     }
         
     /// <summary>

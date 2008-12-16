@@ -1,4 +1,4 @@
-/* ****************************************************************************
+﻿/* ****************************************************************************
  *
  * Copyright (c) Microsoft Corporation. 
  *
@@ -92,7 +92,10 @@ namespace Microsoft.Scripting.Interpretation {
                 case ExpressionType.Throw: return InterpretThrowUnaryExpression(state, expr);
                 case ExpressionType.Try: return InterpretTryExpression(state, expr);
                 case ExpressionType.Unbox: return InterpretUnboxUnaryExpression(state, expr);
+                case ExpressionType.TypeEqual: return InterpretTypeBinaryExpression(state, expr);
                 case ExpressionType.OnesComplement: return InterpretUnaryExpression(state, expr);
+                case ExpressionType.IsTrue: return InterpretUnaryExpression(state, expr);
+                case ExpressionType.IsFalse: return InterpretUnaryExpression(state, expr);
                 case ExpressionType.AddAssign:
                 case ExpressionType.AndAssign:
                 case ExpressionType.DivideAssign:
@@ -111,7 +114,6 @@ namespace Microsoft.Scripting.Interpretation {
                 case ExpressionType.PreDecrementAssign:
                 case ExpressionType.PostIncrementAssign:
                 case ExpressionType.PostDecrementAssign:
-                case ExpressionType.TypeEqual:
                     return InterpretReducibleExpression(state, expr);
 
                 // *** END GENERATED CODE ***

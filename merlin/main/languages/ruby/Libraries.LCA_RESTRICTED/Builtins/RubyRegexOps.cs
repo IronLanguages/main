@@ -320,8 +320,8 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("~")]
-        public static object ImplicitMatch(RubyScope/*!*/ scope, RubyRegex/*!*/ self) {
-            return MatchIndex(scope, self, Protocols.CastToString(scope.RubyContext, scope.GetInnerMostClosureScope().LastInputLine));
+        public static object ImplicitMatch(ConversionStorage<MutableString>/*!*/ stringCast, RubyScope/*!*/ scope, RubyRegex/*!*/ self) {
+            return MatchIndex(scope, self, Protocols.CastToString(stringCast, scope.RubyContext, scope.GetInnerMostClosureScope().LastInputLine));
         }
 
         [RubyMethod("source")]
@@ -346,7 +346,7 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("union", RubyMethodAttributes.PublicSingleton)]
-        public static RubyRegex/*!*/ Union(RubyClass/*!*/ self, [NotNull]params object[]/*!*/ strings) {
+        public static RubyRegex/*!*/ Union(ConversionStorage<MutableString>/*!*/ stringCast, RubyClass/*!*/ self, [NotNull]params object[]/*!*/ strings) {
 
             if (strings.Length == 0) {
                 return new RubyRegex("(?!)", RubyRegexOptions.NONE);
@@ -366,7 +366,7 @@ namespace IronRuby.Builtins {
 
                     Append(regex, result);
                 } else {
-                    result.Append(RubyRegex.Escape(Protocols.CastToString(self.Context, strings[i])));
+                    result.Append(RubyRegex.Escape(Protocols.CastToString(stringCast, self.Context, strings[i])));
                 }
             }
 

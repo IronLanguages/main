@@ -64,8 +64,8 @@ namespace IronRuby.StandardLibrary.Sockets {
         }
 
         [RubyConstructor]
-        public static TCPServer/*!*/ CreateTCPServer(RubyClass/*!*/ self, 
-            [DefaultProtocol]MutableString hostname, [DefaultParameterValue(null)]object port) {
+        public static TCPServer/*!*/ CreateTCPServer(ConversionStorage<MutableString>/*!*/ stringCast, ConversionStorage<int>/*!*/ fixnumCast, 
+            RubyClass/*!*/ self, [DefaultProtocol]MutableString hostname, [DefaultParameterValue(null)]object port) {
 
             IPAddress listeningInterface = null;
             if (hostname == null) {
@@ -96,7 +96,7 @@ namespace IronRuby.StandardLibrary.Sockets {
             }
 
             Socket socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-            socket.Bind(new IPEndPoint(listeningInterface, ConvertToPortNum(self.Context, port)));
+            socket.Bind(new IPEndPoint(listeningInterface, ConvertToPortNum(stringCast, fixnumCast, self.Context, port)));
             socket.Listen(10);
 
             return new TCPServer(self.Context, socket);

@@ -57,7 +57,7 @@ namespace System.Dynamic {
             get { return _dispId; }
         }
 
-        public MetaObject GetMetaObject(Expression parameter) {
+        public DynamicMetaObject GetMetaObject(Expression parameter) {
             return new DispCallableMetaObject(parameter, this);
         }
 

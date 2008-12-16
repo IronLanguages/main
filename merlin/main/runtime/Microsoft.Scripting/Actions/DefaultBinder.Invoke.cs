@@ -38,7 +38,7 @@ namespace Microsoft.Scripting.Actions {
         /// Additional meta objects are the parameters for the call as specified by the CallSignature in the CallAction.
         /// </param>
         /// <returns>A MetaObject representing the call or the error.</returns>
-        public MetaObject Call(CallSignature signature, MetaObject target, params MetaObject[] args) {
+        public DynamicMetaObject Call(CallSignature signature, DynamicMetaObject target, params DynamicMetaObject[] args) {
             return Call(signature, new ParameterBinder(this), target, args);
         }
 
@@ -52,7 +52,7 @@ namespace Microsoft.Scripting.Actions {
         /// </param>
         /// <param name="parameterBinder">ParameterBinder used to map arguments to parameters.</param>
         /// <returns>A MetaObject representing the call or the error.</returns>
-        public MetaObject Call(CallSignature signature, ParameterBinder parameterBinder, MetaObject target, params MetaObject[] args) {
+        public DynamicMetaObject Call(CallSignature signature, ParameterBinder parameterBinder, DynamicMetaObject target, params DynamicMetaObject[] args) {
             ContractUtils.RequiresNotNullItems(args, "args");
             ContractUtils.RequiresNotNull(parameterBinder, "parameterBinder");
 
@@ -69,8 +69,8 @@ namespace Microsoft.Scripting.Actions {
 
         #region Method Call Rule
 
-        private MetaObject MakeMetaMethodCall(CallSignature signature, ParameterBinder parameterBinder, TargetInfo targetInfo) {
-            Restrictions restrictions = Restrictions.Combine(targetInfo.Arguments).Merge(targetInfo.Restrictions);
+        private DynamicMetaObject MakeMetaMethodCall(CallSignature signature, ParameterBinder parameterBinder, TargetInfo targetInfo) {
+            BindingRestrictions restrictions = BindingRestrictions.Combine(targetInfo.Arguments).Merge(targetInfo.Restrictions);
             if (targetInfo.Instance != null) {
                 restrictions = targetInfo.Instance.Restrictions.Merge(restrictions);
             }
@@ -106,7 +106,7 @@ namespace Microsoft.Scripting.Actions {
         /// If this object is a BoundMemberTracker we bind to the methods with the bound instance.
         /// If the underlying type has defined an operator Call method we'll bind to that method.
         /// </summary>
-        private TargetInfo GetTargetInfo(CallSignature signature, MetaObject target, MetaObject[] args) {
+        private TargetInfo GetTargetInfo(CallSignature signature, DynamicMetaObject target, DynamicMetaObject[] args) {
             Debug.Assert(target.HasValue);
             object objTarget = target.Value;
 
@@ -121,7 +121,7 @@ namespace Microsoft.Scripting.Actions {
         /// <summary>
         /// Binds to the methods in a method group.
         /// </summary>
-        private static TargetInfo TryGetMethodGroupTargets(MetaObject target, MetaObject[] args, MethodGroup mthgrp) {
+        private static TargetInfo TryGetMethodGroupTargets(DynamicMetaObject target, DynamicMetaObject[] args, MethodGroup mthgrp) {
             if (mthgrp != null) {
                 List<MethodBase> foundTargets = new List<MethodBase>();
 
@@ -129,7 +129,7 @@ namespace Microsoft.Scripting.Actions {
                     foundTargets.Add(mt.Method);
                 }
 
-                return new TargetInfo(null, ArrayUtils.Insert(target, args), Restrictions.GetInstanceRestriction(target.Expression, mthgrp), foundTargets.ToArray());
+                return new TargetInfo(null, ArrayUtils.Insert(target, args), BindingRestrictions.GetInstanceRestriction(target.Expression, mthgrp), foundTargets.ToArray());
             }
             return null;
         }
@@ -139,7 +139,7 @@ namespace Microsoft.Scripting.Actions {
         /// 
         /// TODO: We should really only have either MemberGroup or MethodGroup, not both.
         /// </summary>
-        private static TargetInfo TryGetMemberGroupTargets(MetaObject target, MetaObject[] args, MemberGroup mg) {
+        private static TargetInfo TryGetMemberGroupTargets(DynamicMetaObject target, DynamicMetaObject[] args, MemberGroup mg) {
             if (mg != null) {
                 MethodBase[] targets;
                 List<MethodInfo> foundTargets = new List<MethodInfo>();
@@ -158,7 +158,7 @@ namespace Microsoft.Scripting.Actions {
         /// Binds to the BoundMemberTracker and uses the instance in the tracker and restricts
         /// based upon the object instance type.
         /// </summary>
-        private TargetInfo TryGetBoundMemberTargets(MetaObject self, MetaObject[] args, BoundMemberTracker bmt) {
+        private TargetInfo TryGetBoundMemberTargets(DynamicMetaObject self, DynamicMetaObject[] args, BoundMemberTracker bmt) {
             if (bmt != null) {
                 Debug.Assert(bmt.Instance == null); // should be null for trackers that leak to user code
 
@@ -166,7 +166,7 @@ namespace Microsoft.Scripting.Actions {
 
                 // instance is pulled from the BoundMemberTracker and restricted to the correct
                 // type.
-                MetaObject instance = new MetaObject(
+                DynamicMetaObject instance = new DynamicMetaObject(
                     Ast.Convert(
                         Ast.Property(
                             Ast.Convert(self.Expression, typeof(BoundMemberTracker)),
@@ -178,7 +178,7 @@ namespace Microsoft.Scripting.Actions {
                 ).Restrict(CompilerHelpers.GetType(bmt.ObjectInstance));
 
                 // we also add a restriction to make sure we're going to the same BoundMemberTracker
-                Restrictions restrictions = Restrictions.GetExpressionRestriction(
+                BindingRestrictions restrictions = BindingRestrictions.GetExpressionRestriction(
                     Ast.Equal(
                         Ast.Property(
                             Ast.Convert(self.Expression, typeof(BoundMemberTracker)),
@@ -207,7 +207,7 @@ namespace Microsoft.Scripting.Actions {
         /// <summary>
         /// Binds to the Invoke method on a delegate if this is a delegate type.
         /// </summary>
-        private static TargetInfo TryGetDelegateTargets(MetaObject target, MetaObject[] args, Delegate d) {
+        private static TargetInfo TryGetDelegateTargets(DynamicMetaObject target, DynamicMetaObject[] args, Delegate d) {
             if (d != null) {
                 return new TargetInfo(target, args, d.GetType().GetMethod("Invoke"));
             }
@@ -217,7 +217,7 @@ namespace Microsoft.Scripting.Actions {
         /// <summary>
         /// Attempts to bind to an operator Call method.
         /// </summary>
-        private TargetInfo TryGetOperatorTargets(MetaObject self, MetaObject[] args, object target, CallSignature signature) {
+        private TargetInfo TryGetOperatorTargets(DynamicMetaObject self, DynamicMetaObject[] args, object target, CallSignature signature) {
             MethodBase[] targets;
 
             Type targetType = CompilerHelpers.GetType(target);
@@ -247,7 +247,7 @@ namespace Microsoft.Scripting.Actions {
 
         #region Error support
 
-        private MetaObject MakeCannotCallRule(MetaObject self, Type type) {
+        private DynamicMetaObject MakeCannotCallRule(DynamicMetaObject self, Type type) {
             return MakeError(
                 ErrorInfo.FromException(
                     Ast.New(
@@ -255,7 +255,7 @@ namespace Microsoft.Scripting.Actions {
                         Ast.Constant(type.Name + " is not callable")
                     )
                 ),
-                self.Restrictions.Merge(Restrictions.GetTypeRestriction(self.Expression, type))
+                self.Restrictions.Merge(BindingRestrictions.GetTypeRestriction(self.Expression, type))
             );
         }
 
@@ -268,16 +268,16 @@ namespace Microsoft.Scripting.Actions {
         /// the methods that we'll be calling as well as any restrictions required to perform the call.
         /// </summary>
         class TargetInfo {
-            public readonly MetaObject Instance;
-            public readonly MetaObject[] Arguments;
+            public readonly DynamicMetaObject Instance;
+            public readonly DynamicMetaObject[] Arguments;
             public readonly MethodBase[] Targets;
-            public readonly Restrictions Restrictions;
+            public readonly BindingRestrictions Restrictions;
 
-            public TargetInfo(MetaObject instance, MetaObject[] arguments, params MethodBase[] args) :
-                this(instance, arguments, Restrictions.Empty, args) {
+            public TargetInfo(DynamicMetaObject instance, DynamicMetaObject[] arguments, params MethodBase[] args) :
+                this(instance, arguments, BindingRestrictions.Empty, args) {
             }
 
-            public TargetInfo(MetaObject instance, MetaObject[] arguments, Restrictions restrictions, params MethodBase[] targets) {
+            public TargetInfo(DynamicMetaObject instance, DynamicMetaObject[] arguments, BindingRestrictions restrictions, params MethodBase[] targets) {
                 Assert.NotNullItems(targets);
                 Assert.NotNull(restrictions);
 

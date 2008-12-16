@@ -165,7 +165,9 @@ namespace System.Runtime.CompilerServices {
             return addr;
         }
 
-        // TODO: Remove Me
+        /// <summary>
+        /// Clears the rule cache ... used by the call site tests.
+        /// </summary>
         private static void ClearRuleCache() {
             if (_cache != null) {
                 lock (_cache) {
@@ -600,8 +602,6 @@ namespace System.Runtime.CompilerServices {
                         new ReadOnlyCollection<Expression>(body)
                     )
                 ),
-                // TODO: fix the name '_stub_', for now it's the easy way to
-                // get languages to skip this frame in backtraces
                 "_stub_",
                 new ReadOnlyCollection<ParameterExpression>(@params)
             );
@@ -612,7 +612,6 @@ namespace System.Runtime.CompilerServices {
             return LambdaCompiler.CompileLambda<T>(lambda, true, out method);
         }
 
-        // TODO: is this general enough that it should be on Expression?
         /// <summary>
         /// Behaves like an "if" statement in imperative languages. The type is
         /// always treated as void regardless of the body's type. The else

@@ -237,7 +237,7 @@ namespace Microsoft.Scripting.Actions {
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic")]
         public Expression MakeTypeTest(Type type, Expression tested) {
-            if (type == null || type == typeof(Null)) {
+            if (type == null || type == typeof(DynamicNull)) {
                 return Ast.Equal(tested, Ast.Constant(null));
             }
 

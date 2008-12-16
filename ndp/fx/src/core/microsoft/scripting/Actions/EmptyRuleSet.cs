@@ -27,8 +27,6 @@ namespace System.Dynamic {
         }
 
         internal override CallSiteRule<T>[] GetRules() {
-            // TODO: could return an empty array, which would save the null
-            // check in UpdateAndExecute
             return null;
         }
 

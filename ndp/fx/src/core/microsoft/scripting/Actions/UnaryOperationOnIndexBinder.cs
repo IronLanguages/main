@@ -25,7 +25,7 @@ namespace System.Dynamic {
     /// (op) a[b]
     /// For example : ++ a[b]
     /// </summary>
-    public abstract class UnaryOperationOnIndexBinder : MetaObjectBinder {
+    public abstract class UnaryOperationOnIndexBinder : DynamicMetaObjectBinder {
         private ExpressionType _operation;
         private readonly ReadOnlyCollection<ArgumentInfo> _arguments;
 
@@ -87,7 +87,7 @@ namespace System.Dynamic {
         /// <param name="target">Target of the operation.</param>
         /// <param name="args">List of indexes and right-hand value</param>
         /// <returns>MetaObject representing the binding.</returns>
-        public sealed override MetaObject Bind(MetaObject target, MetaObject[] args) {
+        public sealed override DynamicMetaObject Bind(DynamicMetaObject target, DynamicMetaObject[] args) {
             ContractUtils.RequiresNotNull(target, "target");
             ContractUtils.RequiresNotNullItems(args, "args");
 
@@ -104,7 +104,7 @@ namespace System.Dynamic {
         /// </summary>
         /// <param name="target">Target of the operation.</param>
         /// <returns>MetaObject representing the binding result.</returns>
-        public MetaObject FallbackUnaryOperation(MetaObject target) {
+        public DynamicMetaObject FallbackUnaryOperation(DynamicMetaObject target) {
             return FallbackUnaryOperation(target, null);
         }
 
@@ -119,7 +119,7 @@ namespace System.Dynamic {
         /// <param name="target">Target of the operation.</param>
         /// <param name="errorSuggestion">The representaiton of the binding error that the target meta object recommends the language to use if the language cannot bind. This allows the target meta object to participate in the error handling process.</param>
         /// <returns>MetaObject representing the binding result.</returns>
-        public abstract MetaObject FallbackUnaryOperation(MetaObject target, MetaObject errorSuggestion);
+        public abstract DynamicMetaObject FallbackUnaryOperation(DynamicMetaObject target, DynamicMetaObject errorSuggestion);
 
         /// <summary>
         /// Implements a binding logic for the operation. This is called by the target when
@@ -128,7 +128,7 @@ namespace System.Dynamic {
         /// <param name="target">Target of the operation.</param>
         /// <param name="indexes">List of indexes and right-hand value</param>
         /// <returns>MetaObject representing the binding.</returns>
-        public MetaObject FallbackUnaryOperationOnIndex(MetaObject target, MetaObject[] indexes) {
+        public DynamicMetaObject FallbackUnaryOperationOnIndex(DynamicMetaObject target, DynamicMetaObject[] indexes) {
             return FallbackUnaryOperationOnIndex(target, indexes, null);
         }
 
@@ -140,6 +140,6 @@ namespace System.Dynamic {
         /// <param name="indexes">List of indexes and right-hand value</param>
         /// <param name="errorSuggestion">The representaiton of the binding error that the target meta object recommends the language to use if the language cannot bind. This allows the target meta object to participate in the error handling process.</param>
         /// <returns>MetaObject representing the binding.</returns>
-        public abstract MetaObject FallbackUnaryOperationOnIndex(MetaObject target, MetaObject[] indexes, MetaObject errorSuggestion);
+        public abstract DynamicMetaObject FallbackUnaryOperationOnIndex(DynamicMetaObject target, DynamicMetaObject[] indexes, DynamicMetaObject errorSuggestion);
     }
 }

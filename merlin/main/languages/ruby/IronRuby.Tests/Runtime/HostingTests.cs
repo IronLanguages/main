@@ -113,6 +113,37 @@ foo
 => nil
 ");
         }
+        
+        public void CrossRuntime1() {
+            AssertOutput(() => {
+                CompilerTest(@"
+load_assembly 'IronRuby.Libraries', 'IronRuby.StandardLibrary.IronRubyModule'
+engine = IronRuby.create_engine
+puts engine.execute('1+1')
+puts engine.execute('Fixnum')
+engine.execute('class Fixnum; def + other; 123; end; end')
+puts 1+1
+puts engine.execute('1+1')
+");
+            }, @"
+2
+Fixnum@*
+2
+123
+", OutputFlags.Match);
+        }
+
+        public void CrossRuntime2() {
+            var engine2 = Ruby.CreateEngine();
+            Engine.Runtime.Globals.SetVariable("C", engine2.Execute("class C; def bar; end; self; end"));
+            AssertExceptionThrown<InvalidOperationException>(() => Engine.Execute("class C; def foo; end; end"));
+            AssertExceptionThrown<InvalidOperationException>(() => Engine.Execute("class C; alias foo bar; end"));
+            AssertExceptionThrown<InvalidOperationException>(() => Engine.Execute("class C; define_method(:goo) {}; end"));
+            AssertExceptionThrown<InvalidOperationException>(() => Engine.Execute(@"
+module M; end
+class C; include M; end
+"));
+        }
 
         public void Scenario_RubyConsole2() {
 #if OBSOLETE

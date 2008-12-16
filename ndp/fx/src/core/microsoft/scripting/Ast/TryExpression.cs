@@ -72,33 +72,24 @@ namespace System.Linq.Expressions {
         }
     }
 
-    // TODO: CatchBlock handlers come last because they're params--is this
-    // confusing? The alternative is to put them after the body but remove
-    // params. Fortunately, they're strongly typed and not Expressions which
-    // mitigates this concern somewhat.
     public partial class Expression {
 
-        // TryFault
         public static TryExpression TryFault(Expression body, Expression fault) {
             return MakeTry(body, null, fault, null);
         }
 
-        // TryFinally
         public static TryExpression TryFinally(Expression body, Expression @finally) {
             return MakeTry(body, @finally, null, null);
         }
 
-        // TryCatch
         public static TryExpression TryCatch(Expression body, params CatchBlock[] handlers) {
             return MakeTry(body, null, null, handlers);
         }
 
-        // TryCatchFinally
         public static TryExpression TryCatchFinally(Expression body, Expression @finally, params CatchBlock[] handlers) {
             return MakeTry(body, @finally, null, handlers);
         }
 
-        // MakeTry: the one factory that creates TryStatement
         public static TryExpression MakeTry(Expression body, Expression @finally, Expression fault, IEnumerable<CatchBlock> handlers) {
             RequiresCanRead(body, "body");
 

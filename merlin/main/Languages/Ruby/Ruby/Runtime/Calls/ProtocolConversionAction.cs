@@ -30,12 +30,40 @@ using Microsoft.Scripting.Math;
 using IronRuby.Compiler.Generation;
 using System.Collections;
 using System.Reflection;
+using System.Collections.Generic;
 
 namespace IronRuby.Runtime.Calls {
+    public abstract class RubyConversionAction : DynamicMetaObjectBinder, IExpressionSerializable {
+        protected RubyConversionAction() {
+        }
 
-    public abstract class ProtocolConversionAction : MetaObjectBinder, IExpressionSerializable {
-        internal static readonly RubyCallSignature Signature = RubyCallSignature.WithScope(0);
+        // All protocol conversion actions ignore the current scope and use RubyContext only. 
+        // That means if the to_xxx conversion methods or respond_to? are aliased to scope manipulating methods (e.g. eval, private, ...)
+        // it won't work. We assume that this is acceptable (it could be easily changed, we can define 2 kinds of protocol actions: with scope and with context).
+        internal static readonly RubyCallSignature Signature = RubyCallSignature.WithImplicitSelf(0);
+        
+        public override object/*!*/ CacheIdentity {
+            get { return this; }
+        }
 
+        public override DynamicMetaObject/*!*/ Bind(DynamicMetaObject/*!*/ context, DynamicMetaObject/*!*/[]/*!*/ args) {
+            var mo = new MetaObjectBuilder();
+            SetRule(mo, new CallArguments(context, args, Signature));
+            return mo.CreateMetaObject(this, context, args);
+        }
+
+        Expression/*!*/ IExpressionSerializable.CreateExpression() {
+            return Ast.Call(GetType().GetMethod("Make"));
+        }
+
+        protected abstract void SetRule(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args);
+    }
+
+    // Conversion operations:
+    // 1) tries implicit conversions
+    // 2) calls respond_to? :to_xxx
+    // 3) calls to_xxx
+    public abstract class ProtocolConversionAction : RubyConversionAction, IExpressionSerializable {
         protected ProtocolConversionAction() {
         }
 
@@ -44,6 +72,10 @@ namespace IronRuby.Runtime.Calls {
                 return ConvertToStrAction.Instance;
             }
 
+            // TODO: combined to_str + to_int cast -> String/Fixnum   (socket)
+            // TODO: combined to_int + to_i cast -> Fixnum/Bignum
+            
+            // TODO: nullable int (see Array#fill, Sockets:ConvertToSocketFlag)
             if (parameterType == typeof(int)) {
                 return ConvertToFixnumAction.Instance;
             }
@@ -64,21 +96,11 @@ namespace IronRuby.Runtime.Calls {
                 return ConvertToArrayAction.Instance;
             }
 
+            if (parameterType == typeof(IDictionary<object, object>)) {
+                return ConvertToHashAction.Instance;
+            }
+
             return null;
-        }
-
-        public override object/*!*/ CacheIdentity {
-            get { return this; }
-        }
-
-        public override MetaObject/*!*/ Bind(MetaObject/*!*/ context, MetaObject/*!*/[]/*!*/ args) {
-            var mo = new MetaObjectBuilder();
-            SetRule(mo, new CallArguments(context, args, Signature));
-            return mo.CreateMetaObject(this, context, args);
-        }
-
-        Expression/*!*/ IExpressionSerializable.CreateExpression() {
-            return Ast.Call(GetType().GetMethod("Make"));
         }
 
         protected abstract string/*!*/ ToMethodName { get; }
@@ -87,10 +109,10 @@ namespace IronRuby.Runtime.Calls {
         
         protected abstract bool TryImplicitConversion(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args);
 
-        internal void SetRule(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args) {
+        protected override void SetRule(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args) {
             Assert.NotNull(metaBuilder, args);
             Debug.Assert(args.SimpleArgumentCount == 0 && !args.Signature.HasBlock && !args.Signature.HasSplattedArgument && !args.Signature.HasRhsArgument);
-            Debug.Assert(args.Signature.HasScope);
+            Debug.Assert(!args.Signature.HasScope);
 
             var ec = args.RubyContext;
 
@@ -139,9 +161,9 @@ namespace IronRuby.Runtime.Calls {
             // slow path: invoke respond_to?, to_xxx and result validation:
 
             var conversionCallSite = Ast.Dynamic(
-                RubyCallAction.Make(toMethodName, RubyCallSignature.WithScope(0)),
+                RubyCallAction.Make(toMethodName, RubyCallSignature.WithImplicitSelf(0)),
                 typeof(object),
-                args.ScopeExpression, args.TargetExpression
+                args.ContextExpression, args.TargetExpression
             );
 
             Expression opCall;
@@ -151,9 +173,9 @@ namespace IronRuby.Runtime.Calls {
                 // respond_to?()
                 Methods.IsTrue.OpCall(
                     Ast.Dynamic(
-                        RubyCallAction.Make(Symbols.RespondTo, RubyCallSignature.WithScope(1)),
+                        RubyCallAction.Make(Symbols.RespondTo, RubyCallSignature.WithImplicitSelf(1)),
                         typeof(object),
-                        args.ScopeExpression, args.TargetExpression, Ast.Constant(SymbolTable.StringToId(toMethodName))
+                        args.ContextExpression, args.TargetExpression, Ast.Constant(SymbolTable.StringToId(toMethodName))
                     )
                 ),
 
@@ -283,6 +305,26 @@ namespace IronRuby.Runtime.Calls {
         }
     }
 
+    public sealed class ConvertToHashAction : ConvertToReferenceTypeAction<IDictionary<object, object>>, IEquatable<ConvertToHashAction> {
+        public static readonly ConvertToHashAction Instance = new ConvertToHashAction();
+
+        protected override string/*!*/ ToMethodName { get { return Symbols.ToHash; } }
+        protected override string/*!*/ TargetTypeName { get { return "Hash"; } }
+        protected override MethodInfo ConversionResultValidator { get { return Methods.ToHashValidator; } }
+
+        private ConvertToHashAction() {
+        }
+
+        [Emitted]
+        public static ConvertToHashAction/*!*/ Make() {
+            return Instance;
+        }
+
+        public bool Equals(ConvertToHashAction other) {
+            return other != null;
+        }
+    }
+
     public sealed class TryConvertToArrayAction : ConvertToReferenceTypeAction<IList>, IEquatable<TryConvertToArrayAction> {
         public static readonly TryConvertToArrayAction Instance = new TryConvertToArrayAction();
 
@@ -299,26 +341,6 @@ namespace IronRuby.Runtime.Calls {
         }
 
         public bool Equals(TryConvertToArrayAction other) {
-            return other != null;
-        }
-    }
-
-    public sealed class ConvertToSAction : ConvertToReferenceTypeAction<MutableString>, IEquatable<ConvertToSAction> {
-        public static readonly ConvertToSAction Instance = new ConvertToSAction();
-
-        protected override string/*!*/ ToMethodName { get { return Symbols.ToS; } }
-        protected override string/*!*/ TargetTypeName { get { return "String"; } }
-        protected override MethodInfo ConversionResultValidator { get { return Methods.ToSValidator; } }
-
-        private ConvertToSAction() {
-        }
-
-        [Emitted]
-        public static ConvertToSAction/*!*/ Make() {
-            return Instance;
-        }
-
-        public bool Equals(ConvertToSAction other) {
             return other != null;
         }
     }

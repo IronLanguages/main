@@ -112,7 +112,7 @@ namespace Microsoft.Scripting.Actions {
         /// </summary>
         private bool TryAssignableConversion(Type toType, Type type) {
             if (toType.IsAssignableFrom(type) ||
-                (type == typeof(Null) && (toType.IsClass || toType.IsInterface))) {
+                (type == typeof(DynamicNull) && (toType.IsClass || toType.IsInterface))) {
                 if (toType == typeof(IEnumerator) && typeof(IEnumerable).IsAssignableFrom(type)) {
                     // Special case to handle C#-defined enumerators that implement both IEnumerable and IEnumerator
                     return false;
@@ -249,7 +249,7 @@ namespace Microsoft.Scripting.Actions {
         /// </summary>
         private bool TryNullableConversion(Type toType, Type knownType) {
             if (toType.IsGenericType && toType.GetGenericTypeDefinition() == typeof(Nullable<>)) {
-                if (knownType == typeof(Null)) {
+                if (knownType == typeof(DynamicNull)) {
                     // null -> Nullable<T>
                     MakeNullToNullableOfTTarget(toType);
                     return true;
@@ -284,7 +284,7 @@ namespace Microsoft.Scripting.Actions {
         /// Checks to see if there's a conversion of null to a reference type
         /// </summary>
         private bool TryNullConversion(Type toType, Type knownType) {
-            if (knownType == typeof(Null) && !toType.IsValueType) {
+            if (knownType == typeof(DynamicNull) && !toType.IsValueType) {
                 MakeNullTarget(toType);
                 return true;
             }
@@ -414,7 +414,7 @@ namespace Microsoft.Scripting.Actions {
                     );
             } else {
                 Expression arg = _rule.Parameters[0];
-                if (arg.Type != knownType && knownType != typeof(Null)) {
+                if (arg.Type != knownType && knownType != typeof(DynamicNull)) {
                     arg = Ast.Convert(arg, CompilerHelpers.GetVisibleType(knownType));
                 }
                 _rule.Target =

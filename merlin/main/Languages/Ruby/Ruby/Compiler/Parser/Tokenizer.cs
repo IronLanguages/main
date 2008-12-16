@@ -28,21 +28,21 @@ using IronRuby.Compiler.Ast;
 using System.Text.RegularExpressions;
 
 namespace IronRuby.Compiler {
-    public enum LexicalState {
-        EXPR_BEG,			/* ignore newline, +/- is a sign. */
-        EXPR_END,			/* newline significant, +/- is a operator. */
-        EXPR_ARG,			/* newline significant, +/- is a operator. */
-        EXPR_CMDARG,		/* newline significant, +/- is a operator. */
-        EXPR_ENDARG,		/* newline significant, +/- is a operator. */
-        EXPR_MID,			/* newline significant, +/- is a operator. */
-        EXPR_FNAME,			/* ignore newline, no reserved words. */
-        EXPR_DOT,			/* right after `.' or `::', no reserved words. */
-        EXPR_CLASS,			/* immediate after `class', no here document. */
+    internal enum LexicalState {
+        EXPR_BEG,			// ignore newline, +/- is a sign.
+        EXPR_END,			// newline significant, +/- is a operator.
+        EXPR_ARG,			// newline significant, +/- is a operator.
+        EXPR_CMDARG,		// newline significant, +/- is a operator.
+        EXPR_ENDARG,		// newline significant, +/- is a operator.
+        EXPR_MID,			// newline significant, +/- is a operator.
+        EXPR_FNAME,			// ignore newline, no reserved words.
+        EXPR_DOT,			// right after `.' or `::', no reserved words.
+        EXPR_CLASS,			// immediate after `class', no here document.
     };
 
     public class Tokenizer : TokenizerService {
         public sealed class BignumParser : UnsignedBigIntegerParser {
-            private char[] _buffer; // TODO: TokenizerBuffer
+            private char[] _buffer;
             private int _position;
 
             public int Position { get { return _position; } set { _position = value; } }
@@ -71,155 +71,33 @@ namespace IronRuby.Compiler {
             }
         }
 
-        #region DLR
-
-        private const int DefaultBufferCapacity = 1024;
-
-        // tokenizer properties:
-        private SourceUnit _sourceUnit;
-
-        //private TokenizerBuffer _buffer;
-        private ErrorSink/*!*/ _errorSink;
-        private TokenValue _tokenValue;
-        private bool _verbatim;
-        private bool _eofReached;
-
-        // __END__
-        private int _dataOffset;
-
+        private const int InitialBufferSize = 80;
+        
+        private TextReader _input;
+        private SourceLocation _initialLocation;
         private RubyCompatibility _compatibility;
-
+        private bool _verbatim;
+        
+        private SourceUnit _sourceUnit;
+        private ErrorSink/*!*/ _errorSink;
+        private BignumParser _bigIntParser;
         private ILexicalVariableResolver/*!*/ _localVariableResolver;
-
-        public override object CurrentState {
-            get { return null; }
-        }
-
-        public SourceUnit SourceUnit {
-            get { return _sourceUnit; }
-        }
-
-        public int DataOffset {
-            get { return _dataOffset; } 
-        }
-
-        public override ErrorSink/*!*/ ErrorSink {
-            get { return _errorSink; }
-            set {
-                ContractUtils.RequiresNotNull(value, "value");
-                _errorSink = value;
-            }
-        }
-
-        public RubyCompatibility Compatibility {
-            get { return _compatibility; }
-            set { _compatibility = value; }
-        }
-
-        public override bool IsRestartable {
-            get { return false; }
-        }
-
-        internal bool IsEndOfFile {
-            get { 
-                return _eofReached;
-            }
-        }
-
-        public override SourceLocation CurrentPosition {
-            get { return _tokenSpan.End; } // TODO: ???
-        }
-
-        public SourceSpan TokenSpan {
-            get {
-                return _tokenSpan;
-            }
-        }
-
-        public TokenValue TokenValue {
-            get {
-                return _tokenValue;
-            }
-        }
-
-        internal LexicalState LexicalState {
-            get {
-                return _lexicalState;
-            }
-        }
         
-        public Tokenizer() 
-            : this(true) {
-        }
+        #region State
 
-        public Tokenizer(bool verbatim)
-            : this(verbatim, ErrorSink.Null) {
-        }
-
-        public Tokenizer(bool verbatim, ErrorSink/*!*/ errorSink)
-            : this(verbatim, errorSink, DummyVariableResolver.AllMethodNames) {
-        }
-        
-        public Tokenizer(bool verbatim, ErrorSink/*!*/ errorSink, ILexicalVariableResolver/*!*/ localVariableResolver) {
-            ContractUtils.RequiresNotNull(errorSink, "errorSink");
-            ContractUtils.RequiresNotNull(localVariableResolver, "localVariableResolver");
-            
-            _bigIntParser = new BignumParser();
-            _errorSink = errorSink;
-            _sourceUnit = null;
-            _localVariableResolver = localVariableResolver;
-            _verbatim = verbatim;
-            _compatibility = RubyCompatibility.Default;
-            _initialLocation = SourceLocation.Invalid;
-            _tokenSpan = SourceSpan.Invalid;
-            _tokenValue = new TokenValue();
-            _bufferPos = 0;
-            
-            // TODO:
-            _input = null;
-        }
-
-        public void Initialize(SourceUnit sourceUnit) {
-            ContractUtils.RequiresNotNull(sourceUnit, "sourceUnit");
-
-            Initialize(null, sourceUnit.GetReader(), sourceUnit, SourceLocation.MinValue, DefaultBufferCapacity);
-        }
-
-        public override void Initialize(object state, TextReader/*!*/ reader, SourceUnit/*!*/ sourceUnit, SourceLocation initialLocation) {
-            Initialize(state, reader, sourceUnit, initialLocation, DefaultBufferCapacity);
-        }
-
-        public void Initialize(object state, TextReader/*!*/ reader, SourceUnit sourceUnit, SourceLocation initialLocation, int bufferCapacity) {
-            ContractUtils.RequiresNotNull(reader, "reader");
-
-            _sourceUnit = sourceUnit;
-
-            _input = reader;
-            _initialLocation = initialLocation;
-            _currentLine = _initialLocation.Line;
-            _currentLineIndex = _initialLocation.Index;
-            _tokenSpan = new SourceSpan(initialLocation, initialLocation);
-            _tokenValue = new TokenValue();
-            
-            _eofReached = false;
-            SetState(LexicalState.EXPR_BEG);
-                
-            UnterminatedToken = false;
-
-            DumpBeginningOfUnit();
-        }
-
-        #endregion
-
-        private readonly BignumParser/*!*/ _bigIntParser;
         private LexicalState _lexicalState;
-
         private bool _commaStart = true;
         private StringTokenizer _currentString = null;
+        private int _cmdArgStack = 0;
+        private int _condStack = 0;
 
-        private TextReader _input;
+        // Non-zero => End of the last heredoc that finished reading content.
+        // While non-zero the current stream position doesn't correspond the current line and line index 
+        // (the stream is ahead, we are reading from a buffer restored by the last heredoc).
+        private int _heredocEndLine;
+        private int _heredocEndLineIndex = -1;
 
-        private const int InitialBufferSize = 80;
+        #endregion
 
         // Entire line that is currently being tokenized.
         // Includes \r, \n, \r\n if there was eoln in input.
@@ -230,24 +108,19 @@ namespace IronRuby.Compiler {
 
         // index in the current buffer/line:
         private int _bufferPos;
-        
+
         // current line no:
         private int _currentLine;
         private int _currentLineIndex;
-
-        // Non-zero => End of the last heredoc that finished reading content.
-        // While non-zero the current stream position doesn't correspond the current line and line index 
-        // (the stream is ahead, we are reading from a buffer restored by the last heredoc).
-        private int _heredocEndLine;
-        private int _heredocEndLineIndex = -1;
-
-        private SourceLocation _initialLocation;
         
-        private int _cmdArgStack = 0;
-        private int _condStack = 0;
-
-        internal bool UnterminatedToken;
-
+        // out: whether the last token terminated
+        private bool _unterminatedToken;
+        private bool _eofReached;
+        // out: offset data following __END__ token
+        private int _dataOffset;
+        // out: token value:
+        private TokenValue _tokenValue;
+        
         // token positions set during tokenization (TODO: to be replaced by tokenizer buffer):
         private SourceLocation _currentTokenStart;
         private SourceLocation _currentTokenEnd;
@@ -255,6 +128,55 @@ namespace IronRuby.Compiler {
 
         // last token span:
         private SourceSpan _tokenSpan;
+        
+        #region Initialization
+
+        public Tokenizer() 
+            : this(true) {
+        }
+
+        public Tokenizer(bool verbatim)
+            : this(verbatim, DummyVariableResolver.AllMethodNames) {
+        }
+
+        public Tokenizer(bool verbatim, ILexicalVariableResolver/*!*/ localVariableResolver) {
+            ContractUtils.RequiresNotNull(localVariableResolver, "localVariableResolver");
+            
+            _errorSink = ErrorSink.Null;
+            _localVariableResolver = localVariableResolver;
+            _verbatim = verbatim;
+        }
+
+        public void Initialize(SourceUnit/*!*/ sourceUnit) {
+            ContractUtils.RequiresNotNull(sourceUnit, "sourceUnit");
+            Initialize(null, sourceUnit.GetReader(), sourceUnit, SourceLocation.MinValue);
+        }
+
+        public void Initialize(TextReader/*!*/ reader) {
+            Initialize(null, reader, null, SourceLocation.MinValue);
+        }
+
+        public override void Initialize(object state, TextReader/*!*/ reader, SourceUnit sourceUnit, SourceLocation initialLocation) {
+            ContractUtils.RequiresNotNull(reader, "reader");
+
+            _sourceUnit = sourceUnit;
+
+            _input = reader;
+            _initialLocation = initialLocation;
+            _currentLine = _initialLocation.Line;
+            _currentLineIndex = _initialLocation.Index;
+            _tokenSpan = new SourceSpan(initialLocation, initialLocation);
+
+            SetState(LexicalState.EXPR_BEG);
+
+            _tokenValue = new TokenValue();
+            _eofReached = false;
+            _unterminatedToken = false;
+
+            DumpBeginningOfUnit();
+        }
+
+        #endregion
 
         #region Debug Logging
 
@@ -306,13 +228,17 @@ namespace IronRuby.Compiler {
 
         #endregion
 
-        #region Parser Callbacks, State Operations
+        #region Parser API, State Operations
 
+        internal LexicalState LexicalState {
+            get { return _lexicalState; }
+        }
+        
         private bool IS_ARG() {
             return _lexicalState == LexicalState.EXPR_ARG || _lexicalState == LexicalState.EXPR_CMDARG;
         }
 
-        public void SetState(LexicalState state) {
+        internal void SetState(LexicalState state) {
             _lexicalState = state;
         }
 
@@ -611,6 +537,8 @@ namespace IronRuby.Compiler {
 
         #endregion
 
+        #region Token Spans
+
         private void MarkTokenEnd(bool isMultiLine) {
             if (isMultiLine) {
                 MarkMultiLineTokenEnd();
@@ -656,26 +584,15 @@ namespace IronRuby.Compiler {
             return new SourceSpan(loc, loc);
         }
 
+        #endregion
+
+        #region Main Tokenization
+
         public Tokens GetNextToken() {
-            //if (_buffer == null) throw new InvalidOperationException("Uninitialized");
-            if (_input == null) throw new InvalidOperationException("Uninitialized");
-
-#if DEBUG
-            _tokenValue = new TokenValue();
-#endif
-
-            Tokens result = Tokenize();
-
-            if (result == Tokens.EndOfFile) {
-                _eofReached = true;
+            if (_input == null) {
+                throw new InvalidOperationException("Uninitialized");
             }
 
-            return result;
-        }
-
-        private Tokens Tokenize() {
-            bool whitespaceSeen = false;
-            
             if (_currentString != null) {
                 // TODO:
                 RefillBuffer();
@@ -690,6 +607,7 @@ namespace IronRuby.Compiler {
                 return token;
             }
 
+            bool whitespaceSeen = false;
             bool cmdState = _commaStart;
             _commaStart = false;
 
@@ -718,6 +636,10 @@ namespace IronRuby.Compiler {
                     case Tokens.EndOfLine: // not considered whitespace
                     case Tokens.InvalidCharacter:
                         continue;
+
+                    case Tokens.EndOfFile:
+                        _eofReached = true;
+                        break;
                 }
 
                 return token;
@@ -892,6 +814,10 @@ namespace IronRuby.Compiler {
             }
         }
 
+        #endregion
+
+        #region End-Of-Line
+
         private Tokens ReadNonEolnWhiteSpace() {
             while (true) {
                 int c = Peek();
@@ -984,6 +910,8 @@ namespace IronRuby.Compiler {
             eolnWidth = 1;
             return c;
         }
+
+        #endregion
 
         #region Identifiers and Keywords
 
@@ -1168,7 +1096,7 @@ namespace IronRuby.Compiler {
 
                     int c = Read();
                     if (c == -1) {
-                        UnterminatedToken = true;
+                        _unterminatedToken = true;
                         ReportError(Errors.UnterminatedEmbeddedDocument);
                         return true;
                     }
@@ -1210,7 +1138,9 @@ namespace IronRuby.Compiler {
         }
 
         #endregion
-        
+
+        #region Tokens
+
         // Assignment: =
         // Operators: == === =~ =>
         private Tokens ReadEquals() {
@@ -1865,7 +1795,7 @@ namespace IronRuby.Compiler {
             // ?[:EOF:]
             int c = Peek();
             if (c == -1) {
-                UnterminatedToken = true;
+                _unterminatedToken = true;
                 MarkSingleLineTokenEnd();
                 ReportError(Errors.IncompleteCharacter);
                 return Tokens.EndOfFile;
@@ -2090,6 +2020,8 @@ namespace IronRuby.Compiler {
 
             return options | encoding;
         }
+
+        #endregion
 
         #region Character Escapes
 
@@ -2501,7 +2433,7 @@ namespace IronRuby.Compiler {
             // unterminated string (error recovery is slightly different from MRI):
             if (c == -1) {
                 ReportError(Errors.UnterminatedString);
-                UnterminatedToken = true;
+                _unterminatedToken = true;
                 MarkSingleLineTokenEnd();
                 return Tokens.StringEnd;
             }
@@ -2608,7 +2540,7 @@ namespace IronRuby.Compiler {
                 while (true) {
                     c = Read(); 
                     if (c == -1) {
-                        UnterminatedToken = true;
+                        _unterminatedToken = true;
                         ReportError(Errors.UnterminatedHereDocIdentifier);
                         c = term;
                         break;
@@ -2676,7 +2608,7 @@ namespace IronRuby.Compiler {
                 ReportError(Errors.UnterminatedHereDoc, heredoc.Label);
                 MarkSingleLineTokenEnd();
                 HeredocRestore(heredoc);
-                UnterminatedToken = true;
+                _unterminatedToken = true;
                 return Tokens.StringEnd;
             }
 
@@ -2818,6 +2750,8 @@ namespace IronRuby.Compiler {
 
         #endregion
 
+        #region String Quotations
+
         // Quotation start: 
         //   %[QqWwxrs]?[^:alpha-numeric:]
         private Tokens TokenizeQuotationStart() {
@@ -2884,7 +2818,7 @@ namespace IronRuby.Compiler {
             int parenthesis = terminator;
             switch (terminator) {
                 case -1:
-                    UnterminatedToken = true;
+                    _unterminatedToken = true;
                     MarkSingleLineTokenEnd();
                     ReportError(Errors.UnterminatedQuotedString);
                     return Tokens.EndOfFile;
@@ -2922,6 +2856,8 @@ namespace IronRuby.Compiler {
             _tokenValue.SetStringTokenizer(_currentString);
             return token;
         }
+
+        #endregion
 
         #region Numbers
 
@@ -3201,6 +3137,10 @@ namespace IronRuby.Compiler {
 
                     // TODO: store only the digit count, the actual value will be parsed later:
                     // TODO: skip initial zeros
+                    if (_bigIntParser == null) {
+                        _bigIntParser = new BignumParser();
+                    }
+
                     _bigIntParser.Position = numberStartIndex;
                     _bigIntParser.Buffer = _lineBuffer;
 
@@ -3298,6 +3238,21 @@ namespace IronRuby.Compiler {
             return Double.TryParse(sb.ToString(), NumberStyles.Float, CultureInfo.InvariantCulture, out result);
         }
 
+        private static bool TryDecodeDouble(string/*!*/ str, int first, int end, out double result) {
+            StringBuilder sb = new StringBuilder(end - first);
+            sb.Length = end - first;
+
+            int j = 0;
+            for (int i = first; i < end; i++) {
+                if (str[i] != '_') {
+                    sb[j++] = str[i];
+                }
+            }
+
+            sb.Length = j;
+            return Double.TryParse(sb.ToString(), NumberStyles.Float, CultureInfo.InvariantCulture, out result);
+        }
+
         private Tokens DecodeDouble(int first, int end) {
             double result;
             if (!TryDecodeDouble(_lineBuffer, first, end, out result)) {
@@ -3310,7 +3265,7 @@ namespace IronRuby.Compiler {
 
         #endregion
 
-        #region Characters
+        #region Character Categories
 
         public static bool IsDecimalDigit(int c) {
             return unchecked((uint)c - '0' <= (uint)'9' - '0');
@@ -3412,26 +3367,63 @@ namespace IronRuby.Compiler {
 
         #region Public API
 
-        private static int nextc(char[]/*!*/ str, ref int i) {
+        public SourceUnit SourceUnit {
+            get { return _sourceUnit; }
+        }
+
+        public int DataOffset {
+            get { return _dataOffset; }
+        }
+
+        public RubyCompatibility Compatibility {
+            get { return _compatibility; }
+            set { _compatibility = value; }
+        }
+
+        public SourceSpan TokenSpan {
+            get { return _tokenSpan; }
+        }
+
+        public TokenValue TokenValue {
+            get { return _tokenValue; }
+        }
+
+        public bool EndOfFileReached {
+            get { return _eofReached; }
+        }
+
+        public bool UnterminatedToken {
+            get { return _unterminatedToken; }
+        }
+
+        private static int Read(string/*!*/ str, ref int i) {
             i++;
             return (i < str.Length) ? str[i] : -1;
         }
 
         // subsequent _ are not considered error
-        public static double ParseDouble(char[]/*!*/ str) {
+        public static bool TryParseDouble(string/*!*/ str, out double result, out bool complete) {
             double sign;
             int i = -1;
 
             int c;
-            do { c = nextc(str, ref i); } while (IsWhiteSpace(c));
+            do { c = Read(str, ref i); } while (IsWhiteSpace(c));
             
             if (c == '-') {
-                c = nextc(str, ref i);
-                if (c == '_') return 0.0;
+                c = Read(str, ref i);
+                if (c == '_') {
+                    result = 0.0;
+                    complete = false;
+                    return false;
+                }
                 sign = -1;
             } else if (c == '+') {
-                c = nextc(str, ref i);
-                if (c == '_') return 0.0;
+                c = Read(str, ref i);
+                if (c == '_') {
+                    result = 0.0;
+                    complete = false;
+                    return false;
+                }
                 sign = +1;
             } else {
                 sign = +1;
@@ -3440,13 +3432,13 @@ namespace IronRuby.Compiler {
             int start = i;
 
             while (c == '_' || IsDecimalDigit(c)) {
-                c = nextc(str, ref i);
+                c = Read(str, ref i);
             }
 
             if (c == '.') {
-                c = nextc(str, ref i);
+                c = Read(str, ref i);
                 while (c == '_' || IsDecimalDigit(c)) {
-                    c = nextc(str, ref i);
+                    c = Read(str, ref i);
                 }
             }
 
@@ -3454,9 +3446,9 @@ namespace IronRuby.Compiler {
             int end = i;
 
             if (c == 'e' || c == 'E') {
-                c = nextc(str, ref i);
+                c = Read(str, ref i);
                 if (c == '+' || c == '-') {
-                    c = nextc(str, ref i);
+                    c = Read(str, ref i);
                 }
 
                 int expEnd = end;
@@ -3467,14 +3459,16 @@ namespace IronRuby.Compiler {
                     } else if (c != '_') {
                         break;
                     }
-                    c = nextc(str, ref i);
+                    c = Read(str, ref i);
                 }
 
                 end = expEnd;
             }
 
-            double result;
-            return TryDecodeDouble(str, start, end, out result) ? result * sign : 0.0;
+            bool success = TryDecodeDouble(str, start, end, out result);
+            result *= sign;
+            complete = end == str.Length;
+            return success;
         }
 
         private const string EncodingHeaderPattern = @"^[#].*?coding\s*[:=]\s*(?<encoding>[a-z0-9_-]+)";
@@ -3557,6 +3551,26 @@ namespace IronRuby.Compiler {
         #endregion
 
         #region Tokenizer Service
+
+        public override object CurrentState {
+            get { return null; }
+        }
+
+        public override ErrorSink/*!*/ ErrorSink {
+            get { return _errorSink; }
+            set {
+                ContractUtils.RequiresNotNull(value, "value");
+                _errorSink = value;
+            }
+        }
+
+        public override bool IsRestartable {
+            get { return false; }
+        }
+
+        public override SourceLocation CurrentPosition {
+            get { return _tokenSpan.End; } // TODO: ???
+        }
 
         public override bool SkipToken() {
             return GetNextToken() != Tokens.EndOfFile;

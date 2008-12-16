@@ -23,45 +23,45 @@ using System.Collections.Generic;
 namespace System.Dynamic {
 
     // Note: we only need to support the operations used by ComBinder
-    internal class ComMetaObject : MetaObject {
-        internal ComMetaObject(Expression expression, Restrictions restrictions, object arg)
+    internal class ComMetaObject : DynamicMetaObject {
+        internal ComMetaObject(Expression expression, BindingRestrictions restrictions, object arg)
             : base(expression, restrictions, arg) {
         }
 
-        public override MetaObject BindInvokeMember(InvokeMemberBinder binder, MetaObject[] args) {
+        public override DynamicMetaObject BindInvokeMember(InvokeMemberBinder binder, DynamicMetaObject[] args) {
             ContractUtils.RequiresNotNull(binder, "binder");
             return binder.Defer(args.AddFirst(WrapSelf()));
         }
 
-        public override MetaObject BindInvoke(InvokeBinder binder, MetaObject[] args) {
+        public override DynamicMetaObject BindInvoke(InvokeBinder binder, DynamicMetaObject[] args) {
             ContractUtils.RequiresNotNull(binder, "binder");
             return binder.Defer(args.AddFirst(WrapSelf()));
         }
 
-        public override MetaObject BindGetMember(GetMemberBinder binder) {
+        public override DynamicMetaObject BindGetMember(GetMemberBinder binder) {
             ContractUtils.RequiresNotNull(binder, "binder");
             return binder.Defer(WrapSelf());
         }
 
-        public override MetaObject BindSetMember(SetMemberBinder binder, MetaObject value) {
+        public override DynamicMetaObject BindSetMember(SetMemberBinder binder, DynamicMetaObject value) {
             ContractUtils.RequiresNotNull(binder, "binder");
             return binder.Defer(WrapSelf(), value);
         }
 
-        public override MetaObject BindGetIndex(GetIndexBinder binder, MetaObject[] indexes) {
+        public override DynamicMetaObject BindGetIndex(GetIndexBinder binder, DynamicMetaObject[] indexes) {
             ContractUtils.RequiresNotNull(binder, "binder");
             return binder.Defer(WrapSelf(), indexes);
         }
 
-        public override MetaObject BindSetIndex(SetIndexBinder binder, MetaObject[] indexes, MetaObject value) {
+        public override DynamicMetaObject BindSetIndex(SetIndexBinder binder, DynamicMetaObject[] indexes, DynamicMetaObject value) {
             ContractUtils.RequiresNotNull(binder, "binder");
             return binder.Defer(WrapSelf(), indexes.AddLast(value));
         }
 
-        private MetaObject WrapSelf() {
-            return new MetaObject(
+        private DynamicMetaObject WrapSelf() {
+            return new DynamicMetaObject(
                 ComObject.RcwToComObject(Expression),
-                Restrictions.GetExpressionRestriction(
+                BindingRestrictions.GetExpressionRestriction(
                     Expression.AndAlso(
                         Expression.NotEqual(
                             Helpers.Convert(Expression, typeof(object)),

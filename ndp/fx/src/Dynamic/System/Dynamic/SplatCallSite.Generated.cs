@@ -18,8 +18,6 @@ using System.Runtime.CompilerServices;
 namespace System.Dynamic {
 
     internal sealed partial class SplatCallSite {
-        // TODO: is it worth having the generated helpers?
-
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "args")]
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode")]
         [Obsolete("used by generated code", true)]

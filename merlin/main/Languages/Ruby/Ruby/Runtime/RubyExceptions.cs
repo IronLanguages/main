@@ -23,6 +23,8 @@ using IronRuby.Builtins;
 using IronRuby.Compiler;
 using System.Runtime.InteropServices;
 using System.Net.Sockets;
+using System.Runtime.CompilerServices;
+using IronRuby.Runtime.Calls;
 
 namespace IronRuby.Runtime {
     /// <summary>
@@ -139,6 +141,8 @@ namespace IronRuby.Runtime {
             return FormatMethodMissingMessage(context, self, name, "undefined method `{0}' for {1}");
         }
 
+        private static readonly UnaryOpStorage/*!*/ ToSSiteStorage = new UnaryOpStorage();
+
         private static string/*!*/ FormatMethodMissingMessage(RubyContext/*!*/ context, object self, string/*!*/ name, string/*!*/ message) {
             Assert.NotNull(name);
             string strObject;
@@ -146,7 +150,10 @@ namespace IronRuby.Runtime {
             if (self == null) {
                 strObject = "nil:NilClass";
             } else {
-                strObject = RubySites.ToS(context, self).ConvertToString();
+                // TODO: cross-runtime
+                var site = ToSSiteStorage.GetCallSite("to_s", RubyCallSignature.WithImplicitSelf(0));
+                strObject = (site.Target(site, context, self) as MutableString ?? RubyUtils.ObjectToMutableString(context, self)).ConvertToString();
+
                 if (!strObject.StartsWith("#")) {
                     strObject += ":" + RubyUtils.GetClassName(context, self);
                 }

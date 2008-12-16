@@ -26,7 +26,7 @@ namespace Microsoft.Scripting.Actions {
     using Ast = System.Linq.Expressions.Expression;
 
     public partial class DefaultBinder : ActionBinder {
-        public MetaObject Create(CallSignature signature, ParameterBinderWithCodeContext parameterBinder, MetaObject target, MetaObject[] args) {
+        public DynamicMetaObject Create(CallSignature signature, ParameterBinderWithCodeContext parameterBinder, DynamicMetaObject target, DynamicMetaObject[] args) {
             Type t = GetTargetType(target.Value);
 
             if (t != null) {
@@ -35,9 +35,9 @@ namespace Microsoft.Scripting.Actions {
                     MethodInfo dc = GetDelegateCtor(t);
 
                     // BinderOps.CreateDelegate<T>(CodeContext context, object callable);
-                    return new MetaObject(
+                    return new DynamicMetaObject(
                         Ast.Call(null, dc, parameterBinder.ContextExpression, args[0].Expression),
-                        target.Restrictions.Merge(Restrictions.GetInstanceRestriction(target.Expression, target.Value))
+                        target.Restrictions.Merge(BindingRestrictions.GetInstanceRestriction(target.Expression, target.Value))
                     );
                 }
 

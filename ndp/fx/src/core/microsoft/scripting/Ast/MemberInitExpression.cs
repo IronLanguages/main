@@ -92,7 +92,7 @@ namespace System.Linq.Expressions {
                     return ReduceListInit(member, ((MemberListBinding)binding).Initializers, false);
                 case MemberBindingType.MemberBinding:
                     return ReduceMemberInit(member, ((MemberMemberBinding)binding).Bindings, false);
-                default: throw Assert.Unreachable;
+                default: throw ContractUtils.Unreachable;
             }
         }
     }

@@ -13,9 +13,6 @@
  *
  * ***************************************************************************/
 
-using BinaryOpSite = System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite,
-    IronRuby.Runtime.RubyContext, object, object, object>>;
-
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -56,7 +53,7 @@ namespace IronRuby.Builtins {
         }
 
         [RubyConstructor]
-        public static object CreateArray(BlockParam block, RubyClass/*!*/ self, 
+        public static object CreateArray(ConversionStorage<int>/*!*/ conversionStorage, BlockParam block, RubyClass/*!*/ self, 
             [NotNull]object/*!*/ arrayOrSize) {
 
             IList array = Protocols.AsArray(self.Context, arrayOrSize);
@@ -65,7 +62,7 @@ namespace IronRuby.Builtins {
                 return CreateArray(array); 
             }
 
-            int size = Protocols.CastToFixnum(self.Context, arrayOrSize);
+            int size = Protocols.CastToFixnum(conversionStorage, self.Context, arrayOrSize);
             if (block != null) {
                 return CreateArray(block, size);
             } else {
@@ -74,7 +71,7 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("initialize", RubyMethodAttributes.PrivateInstance)]
-        public static object Reinitialize(RubyContext/*!*/ context, BlockParam block, RubyArray/*!*/ self, 
+        public static object Reinitialize(ConversionStorage<int>/*!*/ conversionStorage, RubyContext/*!*/ context, BlockParam block, RubyArray/*!*/ self, 
             [NotNull]object/*!*/ arrayOrSize) {
             RubyUtils.RequiresNotFrozen(context, self);
 
@@ -84,7 +81,7 @@ namespace IronRuby.Builtins {
                 return Reinitialize(self, array);
             }
 
-            int size = Protocols.CastToFixnum(context, arrayOrSize);
+            int size = Protocols.CastToFixnum(conversionStorage, context, arrayOrSize);
             if (block != null) {
                 return Reinitialize(block, self, size);
             } else {
@@ -232,7 +229,9 @@ namespace IronRuby.Builtins {
         #region pack
 
         [RubyMethod("pack")]
-        public static MutableString/*!*/ Pack(RubyContext/*!*/ context, RubyArray/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ format) {
+        public static MutableString/*!*/ Pack(ConversionStorage<MutableString>/*!*/ stringCast, 
+            RubyContext/*!*/ context, RubyArray/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ format) {
+
             using (MutableStringStream stream = new MutableStringStream()) {
                 BinaryWriter writer = new BinaryWriter(stream);
                 int i = 0;
@@ -254,7 +253,7 @@ namespace IronRuby.Builtins {
                         case 'a':
                         case 'Z':
                             count = 1;
-                            char[] cstr = Protocols.CastToString(context, self[i]).ToString().ToCharArray();
+                            char[] cstr = Protocols.CastToString(stringCast, context, self[i]).ToString().ToCharArray();
                             int len1 = directive.Count.HasValue ? directive.Count.Value : cstr.Length;
                             int len2 = (len1 > cstr.Length) ? cstr.Length : len1;
                             writer.Write(cstr, 0, len2);
@@ -332,7 +331,7 @@ namespace IronRuby.Builtins {
 
                         case 'm':
                             count = 1;
-                            str = Protocols.CastToString(context, self[i]);
+                            str = Protocols.CastToString(stringCast, context, self[i]);
                             char[] base64 = Convert.ToBase64String(str.ToByteArray()).ToCharArray();
                             for (int j = 0; j < base64.Length; j += 60) {
                                 int len = base64.Length - j;
@@ -373,7 +372,7 @@ namespace IronRuby.Builtins {
                         case 'H':
                             // MRI skips null, unlike in "m" directive:
                             if (self[i] != null) {
-                                str = Protocols.CastToString(context, self[i]);
+                                str = Protocols.CastToString(stringCast, context, self[i]);
                                 FromHex(writer, str, directive.Count ?? str.GetByteCount(), directive.Directive == 'h');
                             }
                             break;
@@ -462,9 +461,9 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("sort")]
         public static RubyArray/*!*/ Sort(
-            SiteLocalStorage<BinaryOpSite>/*!*/ comparisonStorage,
-            SiteLocalStorage<BinaryOpSite>/*!*/ lessThanStorage,
-            SiteLocalStorage<BinaryOpSite>/*!*/ greaterThanStorage,
+            BinaryOpStorage/*!*/ comparisonStorage,
+            BinaryOpStorage/*!*/ lessThanStorage,
+            BinaryOpStorage/*!*/ greaterThanStorage,
             RubyContext/*!*/ context, BlockParam block, RubyArray/*!*/ self) {
 
             RubyArray result = self.CreateInstance();
@@ -474,9 +473,9 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("sort!")]
         public static RubyArray/*!*/ SortInPlace(
-            SiteLocalStorage<BinaryOpSite>/*!*/ comparisonStorage,
-            SiteLocalStorage<BinaryOpSite>/*!*/ lessThanStorage,
-            SiteLocalStorage<BinaryOpSite>/*!*/ greaterThanStorage,            
+            BinaryOpStorage/*!*/ comparisonStorage,
+            BinaryOpStorage/*!*/ lessThanStorage,
+            BinaryOpStorage/*!*/ greaterThanStorage,            
             RubyContext/*!*/ context, BlockParam block, RubyArray/*!*/ self) {
             RubyUtils.RequiresNotFrozen(context, self);
 

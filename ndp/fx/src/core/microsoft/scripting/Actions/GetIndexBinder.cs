@@ -20,7 +20,7 @@ using System.Dynamic.Utils;
 using Microsoft.Contracts;
 
 namespace System.Dynamic {
-    public abstract class GetIndexBinder : MetaObjectBinder {
+    public abstract class GetIndexBinder : DynamicMetaObjectBinder {
         private readonly ReadOnlyCollection<ArgumentInfo> _arguments;
 
         protected GetIndexBinder(params ArgumentInfo[] arguments)
@@ -46,17 +46,17 @@ namespace System.Dynamic {
             return GetIndexBinderHash ^ _arguments.ListHashCode();
         }
 
-        public sealed override MetaObject Bind(MetaObject target, MetaObject[] args) {
+        public sealed override DynamicMetaObject Bind(DynamicMetaObject target, DynamicMetaObject[] args) {
             ContractUtils.RequiresNotNull(target, "target");
             ContractUtils.RequiresNotNullItems(args, "args");
 
             return target.BindGetIndex(this, args);
         }
 
-        public MetaObject FallbackGetIndex(MetaObject target, MetaObject[] indexes) {
+        public DynamicMetaObject FallbackGetIndex(DynamicMetaObject target, DynamicMetaObject[] indexes) {
             return FallbackGetIndex(target, indexes, null);
         }
 
-        public abstract MetaObject FallbackGetIndex(MetaObject target, MetaObject[] indexes, MetaObject errorSuggestion);
+        public abstract DynamicMetaObject FallbackGetIndex(DynamicMetaObject target, DynamicMetaObject[] indexes, DynamicMetaObject errorSuggestion);
     }
 }

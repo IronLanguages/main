@@ -1,0 +1,4 @@
+<?xml version="1.0"?>
+<root phase="2">
+    <assembly publish="$(SDK_REF_PATH)\..\..\..\internal\sdk\ref\WinFX\v4.0\System.Dynamic.dll"/>
+</root>

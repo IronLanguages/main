@@ -34,10 +34,55 @@ using Microsoft.Scripting.Math;
 using System.Runtime.CompilerServices;
 using Microsoft.Scripting.Generation;
 
-using RespondToSite = System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, 
-    IronRuby.Runtime.RubyContext, object, Microsoft.Scripting.SymbolId, object>>;
-
 namespace IronRuby.Runtime {
+
+    public class CallSiteStorage<TCallSiteFunc> : SiteLocalStorage<CallSite<TCallSiteFunc>> where TCallSiteFunc : class {
+        public CallSite<TCallSiteFunc>/*!*/ GetCallSite(string/*!*/ methodName, int argumentCount) {
+
+            if (Data == null) {
+                Interlocked.CompareExchange(ref Data,
+                    CallSite<TCallSiteFunc>.Create(RubyCallAction.Make(methodName, RubyCallSignature.WithImplicitSelf(argumentCount))), null);
+            }
+            return Data;
+        }
+
+        public CallSite<TCallSiteFunc>/*!*/ GetCallSite(string/*!*/ methodName, RubyCallSignature signature) {
+
+            if (Data == null) {
+                Interlocked.CompareExchange(ref Data,
+                    CallSite<TCallSiteFunc>.Create(RubyCallAction.Make(methodName, signature)), null);
+            }
+            return Data;
+        }
+    }
+
+    public class BinaryOpStorage : CallSiteStorage<Func<CallSite, RubyContext, object, object, object>> {
+        public CallSite<Func<CallSite, RubyContext, object, object, object>>/*!*/ GetCallSite(string/*!*/ methodName) {
+            return GetCallSite(methodName, 1);
+        }
+    }
+
+    public class UnaryOpStorage : CallSiteStorage<Func<CallSite, RubyContext, object, object>> {
+        public CallSite<Func<CallSite, RubyContext, object, object>>/*!*/ GetCallSite(string/*!*/ methodName) {
+            return GetCallSite(methodName, 0);
+        }
+    }
+
+    public class RespondToStorage : CallSiteStorage<Func<CallSite, RubyContext, object, SymbolId, object>> {
+        public CallSite<Func<CallSite, RubyContext, object, SymbolId, object>>/*!*/ GetCallSite() {
+            return GetCallSite("respond_to?", 1);
+        }
+    }
+
+    public class ConversionStorage<TResult> : CallSiteStorage<Func<CallSite, RubyContext, object, TResult>> {
+        public CallSite<Func<CallSite, RubyContext, object, TResult>>/*!*/ GetSite(RubyConversionAction/*!*/ conversion) {
+            if (Data == null) {
+                Interlocked.CompareExchange(ref Data, CallSite<Func<CallSite, RubyContext, object, TResult>>.Create(conversion), null);
+            }
+            return Data;
+        }
+    }
+
 
     public static class RubyUtils {
         #region Objects
@@ -83,21 +128,23 @@ namespace IronRuby.Runtime {
             return context.GetClassOf(self).Name;
         }
 
-        public static MutableString/*!*/ ObjectToMutableString(RubyContext/*!*/ context, object obj) {
+        public static MutableString/*!*/ InspectObject(UnaryOpStorage/*!*/ inspectStorage, ConversionStorage<MutableString>/*!*/ tosStorage,
+            RubyContext/*!*/ context, object obj) {
+
             using (IDisposable handle = RubyUtils.InfiniteInspectTracker.TrackObject(obj)) {
                 if (handle == null) {
                     return MutableString.Create("...");
                 }
 
+                RubyClass objClass = context.GetClassOf(obj);
                 MutableString str = MutableString.CreateMutable();
                 str.Append("#<");
-                str.Append(context.GetClassOf(obj).Name);
+                str.Append(objClass.GetName(context));
 
                 // Ruby prints 2*object_id for objects
                 str.Append(':');
                 AppendFormatHexObjectId(str, GetObjectId(context, obj));
 
-                // display instance variables
                 RubyInstanceData data = context.TryGetInstanceData(obj);
                 if (data != null) {
                     var vars = data.GetInstanceVariablePairs();
@@ -111,20 +158,53 @@ namespace IronRuby.Runtime {
                         }
                         str.Append(var.Key);
                         str.Append("=");
-                        str.Append(RubySites.Inspect(context, var.Value));
+
+                        var inspectSite = inspectStorage.GetCallSite("inspect");
+                        object inspectedValue = inspectSite.Target(inspectSite, context, var.Value);
+
+                        var tosSite = tosStorage.GetSite(ConvertToSAction.Instance);
+                        str.Append(tosSite.Target(tosSite, context, inspectedValue));
+
+                        str.TaintBy(var.Value, context);
                     }
                 }
                 str.Append(">");
 
+                str.TaintBy(obj, context);
                 return str;
             }
+        }
+
+        public static MutableString/*!*/ ObjectToMutableString(RubyContext/*!*/ context, object obj) {
+            RubyClass objClass = context.GetClassOf(obj);
+            MutableString str = MutableString.CreateMutable();
+            str.Append("#<");
+            str.Append(objClass.GetName(context));
+
+            // Ruby prints 2*object_id for objects
+            str.Append(':');
+            AppendFormatHexObjectId(str, GetObjectId(context, obj));
+
+            str.Append(">");
+
+            str.TaintBy(obj, context);
+            return str;
+        }
+
+        public static MutableString/*!*/ ObjectToMutableString(UnaryOpStorage/*!*/ tosStorage, RubyContext/*!*/ context, object obj) {
+            var site = tosStorage.GetCallSite("to_s");
+            return site.Target(site, context, obj) as MutableString ?? ObjectToMutableString(context, obj);
         }
 
         public static MutableString/*!*/ AppendFormatHexObjectId(MutableString/*!*/ str, int objectId) {
             return str.AppendFormat("0x{0:x7}", 2 * objectId);
         }
 
-        public static bool TryDuplicateObject(RubyContext/*!*/ context, object obj, bool cloneSemantics, out object copy) {
+        public static bool TryDuplicateObject(
+            CallSiteStorage<Func<CallSite, RubyContext, object, object, object>>/*!*/ initializeCopyStorage,
+            CallSiteStorage<Func<CallSite, RubyContext, RubyClass, object>>/*!*/ allocateStorage, 
+            RubyContext/*!*/ context, object obj, bool cloneSemantics, out object copy) {
+
             // Ruby value types can't be cloned
             if (RubyUtils.IsRubyValueType(obj)) {
                 copy = null;
@@ -136,24 +216,20 @@ namespace IronRuby.Runtime {
                 copy = clonable.Duplicate(context, cloneSemantics);
             } else {
                 // .NET classes and library clases that doesn't implement IDuplicable:
-                copy = RubySites.Allocate(context.GetClassOf(obj));
+                var allocateSite = allocateStorage.GetCallSite("allocate", 0);
+                copy = allocateSite.Target(allocateSite, context, context.GetClassOf(obj));
+
                 context.CopyInstanceData(obj, copy, cloneSemantics);
             }
 
-            // TODO: optimize
-            _InitializeCopySharedSite.Target(_InitializeCopySharedSite, context, copy, obj);
+            var initializeCopySite = initializeCopyStorage.GetCallSite("initialize_copy", 1);
+            initializeCopySite.Target(initializeCopySite, context, copy, obj);
             if (cloneSemantics) {
                 context.FreezeObjectBy(copy, obj);
             }
 
             return true;
-        }
-
-        private static readonly CallSite<Func<CallSite, RubyContext, object, object, object>> _InitializeCopySharedSite =
-            CallSite<Func<CallSite, RubyContext, object, object, object>>.Create(
-            RubyCallAction.Make("initialize_copy", RubyCallSignature.WithImplicitSelf(1))
-        );
-        
+        }        
 
 #if FALSE
         [MultiRuntimeAware]
@@ -448,14 +524,12 @@ namespace IronRuby.Runtime {
             Assert.NotNull(context);
             RubyModule module = obj as RubyModule;
             if (module == null) {
-                throw RubyExceptions.CreateTypeError(
-                    RubyUtils.ObjectToMutableString(context, obj).Append(" is not a class/module").ConvertToString()
-                );
+                throw RubyExceptions.CreateTypeError(String.Format("{0} is not a class/module", context.GetClassOf(obj)));
             }
             return module;
         }
 
-        public static void RequireNonClasses(params RubyModule[]/*!*/ modules) {
+        public static void RequireMixins(RubyModule/*!*/ target, params RubyModule[]/*!*/ modules) {
             foreach (RubyModule module in modules) {
                 if (module == null) {
                     throw RubyExceptions.CreateTypeError("wrong argument type nil (expected Module)");
@@ -463,6 +537,12 @@ namespace IronRuby.Runtime {
 
                 if (module.IsClass) {
                     throw RubyExceptions.CreateTypeError("wrong argument type Class (expected Module)");
+                }
+
+                if (module.Context != target.Context) {
+                    throw RubyExceptions.CreateTypeError(String.Format("cannot mix a foreign module `{0}' into `{1}' (runtime mismatch)", 
+                        module.GetName(target.Context), target.GetName(module.Context)
+                    ));
                 }
             }
         }
@@ -759,26 +839,6 @@ namespace IronRuby.Runtime {
 
         #region Call Site Storage Extensions
 
-        public static CallSite<TCallSiteFunc>/*!*/ GetCallSite<TCallSiteFunc>(this SiteLocalStorage<CallSite<TCallSiteFunc>>/*!*/ storage, 
-            string/*!*/ methodName, int argumentCount) where TCallSiteFunc : class {
-
-            if (storage.Data == null) {
-                Interlocked.CompareExchange(ref storage.Data,
-                    CallSite<TCallSiteFunc>.Create(RubyCallAction.Make(methodName, RubyCallSignature.WithImplicitSelf(argumentCount))), null);
-            }
-            return storage.Data;
-        }
-
-        public static CallSite<TCallSiteFunc>/*!*/ GetCallSite<TCallSiteFunc>(this SiteLocalStorage<CallSite<TCallSiteFunc>>/*!*/ storage,
-            string/*!*/ methodName, RubyCallSignature signature) where TCallSiteFunc : class {
-
-            if (storage.Data == null) {
-                Interlocked.CompareExchange(ref storage.Data,
-                    CallSite<TCallSiteFunc>.Create(RubyCallAction.Make(methodName, signature)), null);
-            }
-            return storage.Data;
-        }
-
         public static CallSite<TCallSiteFunc>/*!*/ GetCallSite<TCallSiteFunc>(ref CallSite<TCallSiteFunc>/*!*/ site,
             string/*!*/ methodName, int argumentCount) where TCallSiteFunc : class {
 
@@ -804,5 +864,6 @@ namespace IronRuby.Runtime {
         }
 
         #endregion
+
     }
 }

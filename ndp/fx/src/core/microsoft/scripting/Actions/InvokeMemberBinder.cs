@@ -20,7 +20,7 @@ using System.Dynamic.Utils;
 using Microsoft.Contracts;
 
 namespace System.Dynamic {
-    public abstract class InvokeMemberBinder : MetaObjectBinder {
+    public abstract class InvokeMemberBinder : DynamicMetaObjectBinder {
         private readonly string _name;
         private readonly bool _ignoreCase;
         private readonly ReadOnlyCollection<ArgumentInfo> _arguments;
@@ -53,19 +53,19 @@ namespace System.Dynamic {
             }
         }
 
-        public sealed override MetaObject Bind(MetaObject target, MetaObject[] args) {
+        public sealed override DynamicMetaObject Bind(DynamicMetaObject target, DynamicMetaObject[] args) {
             ContractUtils.RequiresNotNull(target, "target");
             ContractUtils.RequiresNotNullItems(args, "args");
 
             return target.BindInvokeMember(this, args);
         }
 
-        public MetaObject FallbackInvokeMember(MetaObject target, MetaObject[] args) {
+        public DynamicMetaObject FallbackInvokeMember(DynamicMetaObject target, DynamicMetaObject[] args) {
             return FallbackInvokeMember(target, args, null);
         }
 
-        public abstract MetaObject FallbackInvokeMember(MetaObject target, MetaObject[] args, MetaObject errorSuggestion);
-        public abstract MetaObject FallbackInvoke(MetaObject target, MetaObject[] args, MetaObject errorSuggestion);
+        public abstract DynamicMetaObject FallbackInvokeMember(DynamicMetaObject target, DynamicMetaObject[] args, DynamicMetaObject errorSuggestion);
+        public abstract DynamicMetaObject FallbackInvoke(DynamicMetaObject target, DynamicMetaObject[] args, DynamicMetaObject errorSuggestion);
 
         [Confined]
         public override bool Equals(object obj) {

@@ -29,21 +29,21 @@ using IronRuby.Compiler;
     
 namespace IronRuby.Runtime {
     public sealed partial class BlockParam : IDynamicObject {
-        public MetaObject/*!*/ GetMetaObject(Expression/*!*/ parameter) {
-            return new Meta(parameter, Restrictions.Empty, this);
+        public DynamicMetaObject/*!*/ GetMetaObject(Expression/*!*/ parameter) {
+            return new Meta(parameter, BindingRestrictions.Empty, this);
         }
 
-        internal sealed class Meta : MetaObject {
+        internal sealed class Meta : DynamicMetaObject {
             private BlockParam BlockParam {
                 get { return (BlockParam)Value; }
             }
 
-            public Meta(Expression/*!*/ expression, Restrictions/*!*/ restrictions, BlockParam/*!*/ value)
+            public Meta(Expression/*!*/ expression, BindingRestrictions/*!*/ restrictions, BlockParam/*!*/ value)
                 : base(expression, restrictions, value) {
                 ContractUtils.RequiresNotNull(value, "value");
             }
 
-            public override MetaObject/*!*/ BindInvoke(InvokeBinder/*!*/ action, MetaObject/*!*/[]/*!*/ args) {
+            public override DynamicMetaObject/*!*/ BindInvoke(InvokeBinder/*!*/ action, DynamicMetaObject/*!*/[]/*!*/ args) {
                 RubyCallSignature callSignature;
                 if (RubyCallSignature.TryCreate(action.Arguments, out callSignature)) {
                     return action.FallbackInvoke(this, args);
@@ -51,9 +51,9 @@ namespace IronRuby.Runtime {
 
                 var metaBuilder = new MetaObjectBuilder();
 
-                var context = new MetaObject(
+                var context = new DynamicMetaObject(
                     Methods.GetContextFromBlockParam.OpCall(AstUtils.Convert(Expression, typeof(BlockParam))),
-                    Restrictions.Empty,
+                    BindingRestrictions.Empty,
                     RubyOps.GetContextFromBlockParam((BlockParam)Value)
                 );
 

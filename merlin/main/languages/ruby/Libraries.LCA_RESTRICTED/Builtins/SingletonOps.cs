@@ -63,9 +63,6 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("include", RubyMethodAttributes.PublicInstance)]
         public static RubyClass/*!*/ Include(RubyContext/*!*/ context, object/*!*/ self, params RubyModule[]/*!*/ modules) {
-            ContractUtils.RequiresNotNullItems(modules, "modules");
-            RubyUtils.RequireNonClasses(modules);
-
             RubyClass result = context.GetClassOf(self);
             result.IncludeModules(modules);
             return result;

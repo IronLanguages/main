@@ -35,7 +35,7 @@ namespace IronRuby.Builtins {
         /// So, if <code>klass.induced_from</code> doesn't return an instance of klass, it will be necessary to reimplement prec.
         /// </remarks>
         [RubyMethod("prec")]
-        public static object Prec(SiteLocalStorage<CallSite<Func<CallSite, RubyContext, RubyClass, object, object>>>/*!*/ inducedFromStorage,
+        public static object Prec(CallSiteStorage<Func<CallSite, RubyContext, RubyClass, object, object>>/*!*/ inducedFromStorage,
             object self, [NotNull]RubyClass/*!*/ klass) {
 
             var inducedFrom = inducedFromStorage.GetCallSite("induced_from", 1);
@@ -47,7 +47,7 @@ namespace IronRuby.Builtins {
         /// </summary>
         [RubyMethod("prec_i")]
         public static object PrecInteger(
-            SiteLocalStorage<CallSite<Func<CallSite, RubyContext, object, RubyClass, object>>>/*!*/ precStorage,
+            CallSiteStorage<Func<CallSite, RubyContext, object, RubyClass, object>>/*!*/ precStorage,
             RubyContext/*!*/ context, object self) {
 
             var prec = precStorage.GetCallSite("prec", 1);
@@ -58,7 +58,7 @@ namespace IronRuby.Builtins {
         /// Returns a Float converted from self. It is equivalent to <code>prec(Float)</code>.
         /// </summary>
         [RubyMethod("prec_f")]
-        public static object PrecFloat(SiteLocalStorage<CallSite<Func<CallSite, RubyContext, object, RubyClass, object>>>/*!*/ precStorage, 
+        public static object PrecFloat(CallSiteStorage<Func<CallSite, RubyContext, object, RubyClass, object>>/*!*/ precStorage, 
             RubyContext/*!*/ context, object self) {
 
             var prec = precStorage.GetCallSite("prec", 1);

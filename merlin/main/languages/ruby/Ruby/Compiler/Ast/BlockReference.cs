@@ -43,7 +43,7 @@ namespace IronRuby.Compiler.Ast {
             return Ast.Dynamic(
                 ConvertToProcAction.Instance,
                 typeof(Proc),
-                gen.CurrentScopeVariable, _expression.TransformRead(gen)
+                Methods.GetContextFromScope.OpCall(gen.CurrentScopeVariable), _expression.TransformRead(gen)
             );
         }
     }

@@ -120,8 +120,10 @@ namespace Microsoft.Scripting {
         protected virtual MethodBuilder CompileForSave(TypeGen typeGen, Dictionary<SymbolId, FieldBuilder> symbolDict) {
             var diskRewriter = new ToDiskRewriter(typeGen);
             var lambda = diskRewriter.RewriteLambda(_code);
-            
-            return lambda.CompileToMethod(typeGen.TypeBuilder, CompilerHelpers.PublicStatic | MethodAttributes.SpecialName, false);
+
+            MethodBuilder mb = typeGen.TypeBuilder.DefineMethod(lambda.Name ?? "lambda_method", CompilerHelpers.PublicStatic | MethodAttributes.SpecialName);
+            lambda.CompileToMethod(mb, false);
+            return mb;
         }
 
         /// <summary>

@@ -147,7 +147,6 @@ namespace System.Linq.Expressions {
         // CTS places no restrictions on properties (see ECMA-335 8.11.3),
         // so we validate that the property conforms to CLS rules here.
         //
-        // TODO: Do we still need all of this now that we take PropertyInfo?
         // Does reflection help us out at all? Expression.Property skips all of
         // these checks, so either it needs more checks or we need less here.
         private static void ValidateIndexedProperty(Expression instance, PropertyInfo property, ref ReadOnlyCollection<Expression> argList) {

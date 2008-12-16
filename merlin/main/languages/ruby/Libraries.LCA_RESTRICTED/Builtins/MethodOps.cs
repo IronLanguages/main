@@ -52,8 +52,8 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("to_s")]
-        public static MutableString/*!*/ ToS(RubyMethod/*!*/ self) {
-            return UnboundMethod.ToS(self.Name, self.Info.DeclaringModule, self.GetTargetClass(), "Method");
+        public static MutableString/*!*/ ToS(RubyContext/*!*/ context, RubyMethod/*!*/ self) {
+            return UnboundMethod.ToS(context, self.Name, self.Info.DeclaringModule, self.GetTargetClass(), "Method");
         }
 
         [RubyMethod("to_proc")]

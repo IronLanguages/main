@@ -53,7 +53,7 @@ namespace System.Linq.Expressions.Compiler {
                     paramTypes[i + 1] = args[i].Type;
                 }
 
-                return DelegateType = MakeDelegate(paramTypes);
+                return DelegateType = MakeNewDelegate(paramTypes);
             }
         }
 
@@ -75,7 +75,7 @@ namespace System.Linq.Expressions.Compiler {
                 // see if we have the delegate already
                 if (curTypeInfo.DelegateType == null) {
                     // clone because MakeCustomDelegate can hold onto the array.
-                    curTypeInfo.DelegateType = MakeDelegate((Type[])types.Clone());
+                    curTypeInfo.DelegateType = MakeNewDelegate((Type[])types.Clone());
                 }
 
                 return curTypeInfo.DelegateType;
@@ -118,7 +118,7 @@ namespace System.Linq.Expressions.Compiler {
         /// We take the array of MetaObject explicitly to avoid allocating memory (an array of types) on
         /// lookup of delegate types.
         /// </summary>
-        internal static Type MakeDeferredSiteDelegate(MetaObject[] args, Type returnType) {
+        internal static Type MakeDeferredSiteDelegate(DynamicMetaObject[] args, Type returnType) {
             lock (_DelegateCache) {
                 TypeInfo curTypeInfo = _DelegateCache;
 
@@ -127,7 +127,7 @@ namespace System.Linq.Expressions.Compiler {
 
                 // arguments
                 for (int i = 0; i < args.Length; i++) {
-                    MetaObject mo = args[i];
+                    DynamicMetaObject mo = args[i];
                     Type paramType = mo.Expression.Type;
                     if (IsByRef(mo)) {
                         paramType = paramType.MakeByRefType();
@@ -146,7 +146,7 @@ namespace System.Linq.Expressions.Compiler {
                     paramTypes[0] = typeof(CallSite);
                     paramTypes[paramTypes.Length - 1] = returnType;
                     for (int i = 0; i < args.Length; i++) {
-                        MetaObject mo = args[i];
+                        DynamicMetaObject mo = args[i];
                         Type paramType = mo.Expression.Type;
                         if (IsByRef(mo)) {
                             paramType = paramType.MakeByRefType();
@@ -154,14 +154,14 @@ namespace System.Linq.Expressions.Compiler {
                         paramTypes[i + 1] = paramType;
                     }
 
-                    curTypeInfo.DelegateType = MakeDelegate(paramTypes);
+                    curTypeInfo.DelegateType = MakeNewDelegate(paramTypes);
                 }
 
                 return curTypeInfo.DelegateType;
             }
         }
 
-        private static bool IsByRef(MetaObject mo) {
+        private static bool IsByRef(DynamicMetaObject mo) {
             ParameterExpression pe = mo.Expression as ParameterExpression;
             return pe != null && pe.IsByRef;
         }
@@ -191,14 +191,18 @@ namespace System.Linq.Expressions.Compiler {
             return nextTypeInfo;
         }
 
+        /// <summary>
+        /// Creates a new delegate, or uses a func/action
+        /// Note: this method does not cache
+        /// </summary>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity")]
-        internal static Type MakeDelegate(Type[] types) {
+        private static Type MakeNewDelegate(Type[] types) {
             Debug.Assert(types != null && types.Length > 0);
 
             // Can only used predefined delegates if we have no byref types and
             // the arity is small enough to fit in Func<...> or Action<...>
             if (types.Length > MaximumArity || types.Any(t => t.IsByRef)) {
-                return MakeCustomDelegate(types);
+                return MakeNewCustomDelegate(types);
             }
 
             Type result;

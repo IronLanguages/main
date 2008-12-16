@@ -142,7 +142,7 @@ Hello from Python
         public class TestLibraryInitializer1 : LibraryInitializer {
             protected override void LoadModules() {
                 Context.ObjectClass.SetConstant("TEST_LIBRARY", "hello from library");
-                DefineGlobalModule("Object", typeof(Object), ObjectMonkeyPatch, null, RubyModule.EmptyArray);  
+                DefineGlobalModule("Object", typeof(Object), true, ObjectMonkeyPatch, null, RubyModule.EmptyArray);  
             }
 
             private void ObjectMonkeyPatch(RubyModule/*!*/ module) {

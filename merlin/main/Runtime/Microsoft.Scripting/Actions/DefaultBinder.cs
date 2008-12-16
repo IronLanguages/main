@@ -275,8 +275,8 @@ namespace Microsoft.Scripting.Actions {
             }
         }
 
-        public static MetaObject MakeError(ErrorInfo error, Restrictions restrictions) {
-            return new MetaObject(MakeError(error), restrictions);
+        public static DynamicMetaObject MakeError(ErrorInfo error, BindingRestrictions restrictions) {
+            return new DynamicMetaObject(MakeError(error), restrictions);
         }
 
         protected TrackerTypes GetMemberType(MemberGroup members, out Expression error) {

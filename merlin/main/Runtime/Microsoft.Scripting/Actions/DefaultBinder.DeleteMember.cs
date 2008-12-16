@@ -28,7 +28,7 @@ namespace Microsoft.Scripting.Actions {
         /// Builds a MetaObject for performing a member delete.  Supports all built-in .NET members, the OperatorMethod 
         /// DeleteMember, and StrongBox instances.
         /// </summary>
-        public MetaObject DeleteMember(string name, MetaObject target) {
+        public DynamicMetaObject DeleteMember(string name, DynamicMetaObject target) {
             ContractUtils.RequiresNotNull(name, "name");
             ContractUtils.RequiresNotNull(target, "target");
 
@@ -39,7 +39,7 @@ namespace Microsoft.Scripting.Actions {
             );
         }
 
-        public MetaObject DeleteMember(string name, MetaObject target, Expression codeContext) {
+        public DynamicMetaObject DeleteMember(string name, DynamicMetaObject target, Expression codeContext) {
             ContractUtils.RequiresNotNull(name, "name");
             ContractUtils.RequiresNotNull(target, "target");
 
@@ -52,9 +52,9 @@ namespace Microsoft.Scripting.Actions {
             );
         }
 
-        private MetaObject MakeDeleteMemberTarget(SetOrDeleteMemberInfo delInfo, MetaObject target) {
+        private DynamicMetaObject MakeDeleteMemberTarget(SetOrDeleteMemberInfo delInfo, DynamicMetaObject target) {
             Type type = target.LimitType;
-            Restrictions restrictions = target.Restrictions;
+            BindingRestrictions restrictions = target.Restrictions;
             Expression self = target.Expression;
 
             // needed for DeleteMember call until DynamicAction goes away
@@ -65,7 +65,7 @@ namespace Microsoft.Scripting.Actions {
 
             if (typeof(TypeTracker).IsAssignableFrom(type)) {
                 restrictions = restrictions.Merge(
-                    Restrictions.GetInstanceRestriction(target.Expression, target.Value)
+                    BindingRestrictions.GetInstanceRestriction(target.Expression, target.Value)
                 );
 
                 type = ((TypeTracker)target.Value).Type;

@@ -34,7 +34,7 @@ namespace Microsoft.Scripting.Actions {
         private readonly List<Expression> _bodies = new List<Expression>();
         private readonly List<ParameterExpression> _variables = new List<ParameterExpression>();
         private Expression _body;
-        private Restrictions _restrictions = Restrictions.Empty;
+        private BindingRestrictions _restrictions = BindingRestrictions.Empty;
 
         /// <summary>
         /// Adds a new conditional and body.  The first call this becomes the top-level
@@ -81,7 +81,7 @@ namespace Microsoft.Scripting.Actions {
             );
         }
 
-        public Restrictions Restrictions {
+        public BindingRestrictions Restrictions {
             get {
                 return _restrictions;
             }
@@ -95,14 +95,14 @@ namespace Microsoft.Scripting.Actions {
         /// Gets the resulting meta object for the full body.  FinishCondition
         /// must have been called.
         /// </summary>
-        public MetaObject GetMetaObject(params MetaObject[] types) {
+        public DynamicMetaObject GetMetaObject(params DynamicMetaObject[] types) {
             if (_body == null) {
                 throw new InvalidOperationException("FinishCondition should have been called");
             }
 
-            return new MetaObject(
+            return new DynamicMetaObject(
                 _body,
-                Restrictions.Combine(types).Merge(Restrictions)
+                BindingRestrictions.Combine(types).Merge(Restrictions)
             );
         }
 

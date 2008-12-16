@@ -26,7 +26,7 @@ namespace Microsoft.Scripting.Actions {
     /// and provide a List of BinderMappingInfo representing this data.  From there the ComboBinder
     /// just processes the list to create the resulting code.
     /// </summary>
-    public class ComboBinder : MetaObjectBinder {
+    public class ComboBinder : DynamicMetaObjectBinder {
         private readonly BinderMappingInfo[] _metaBinders;
 
         public ComboBinder(params BinderMappingInfo[] binders)
@@ -39,19 +39,19 @@ namespace Microsoft.Scripting.Actions {
             _metaBinders = ArrayUtils.ToArray(binders);
         }
 
-        public override MetaObject Bind(MetaObject target, params MetaObject[] args) {
+        public override DynamicMetaObject Bind(DynamicMetaObject target, params DynamicMetaObject[] args) {
             args = ArrayUtils.Insert(target, args);
 
-            List<MetaObject> results = new List<MetaObject>(_metaBinders.Length);
+            List<DynamicMetaObject> results = new List<DynamicMetaObject>(_metaBinders.Length);
             List<Expression> steps = new List<Expression>();
             List<ParameterExpression> temps = new List<ParameterExpression>();
-            Restrictions restrictions = Restrictions.Empty;
+            BindingRestrictions restrictions = BindingRestrictions.Empty;
 
             for (int i = 0; i < _metaBinders.Length; i++) {
                 BinderMappingInfo curBinder = _metaBinders[i];
 
-                MetaObject[] tmpargs = GetArguments(args, results, i);
-                MetaObject next = curBinder.Binder.Bind(tmpargs[0], ArrayUtils.RemoveFirst(tmpargs));
+                DynamicMetaObject[] tmpargs = GetArguments(args, results, i);
+                DynamicMetaObject next = curBinder.Binder.Bind(tmpargs[0], ArrayUtils.RemoveFirst(tmpargs));
 
                 if (next.Expression.NodeType == ExpressionType.Throw) {
                     // end of the line... the expression is throwing, none of the other 
@@ -64,11 +64,11 @@ namespace Microsoft.Scripting.Actions {
                 temps.Add(tmp);
 
                 steps.Add(Expression.Assign(tmp, next.Expression));
-                results.Add(new MetaObject(tmp, next.Restrictions));
+                results.Add(new DynamicMetaObject(tmp, next.Restrictions));
                 restrictions = restrictions.Merge(next.Restrictions);
             }
 
-            return new MetaObject(
+            return new DynamicMetaObject(
                 Expression.Block(
                     temps.ToArray(),
                     steps.ToArray()
@@ -77,10 +77,10 @@ namespace Microsoft.Scripting.Actions {
             );
         }
 
-        private MetaObject[] GetArguments(MetaObject[] args, IList<MetaObject> results, int metaBinderIndex) {
+        private DynamicMetaObject[] GetArguments(DynamicMetaObject[] args, IList<DynamicMetaObject> results, int metaBinderIndex) {
             BinderMappingInfo indices = _metaBinders[metaBinderIndex];
 
-            MetaObject[] res = new MetaObject[indices.MappingInfo.Count];
+            DynamicMetaObject[] res = new DynamicMetaObject[indices.MappingInfo.Count];
             for (int i = 0; i < res.Length; i++) {
                 ParameterMappingInfo mappingInfo = indices.MappingInfo[i];
 
@@ -92,9 +92,9 @@ namespace Microsoft.Scripting.Actions {
                     res[i] = args[mappingInfo.ParameterIndex];
                 } else {
                     // input is a constant
-                    res[i] = new MetaObject(
+                    res[i] = new DynamicMetaObject(
                         mappingInfo.Constant,
-                        Restrictions.Empty,
+                        BindingRestrictions.Empty,
                         mappingInfo.Constant.Value
                     );
                 }
@@ -265,15 +265,15 @@ namespace Microsoft.Scripting.Actions {
     /// meta-binder and the mapping of parameters, sub-sites, and constants into the binding.
     /// </summary>
     public class BinderMappingInfo {
-        public MetaObjectBinder Binder;
+        public DynamicMetaObjectBinder Binder;
         public IList<ParameterMappingInfo> MappingInfo;
 
-        public BinderMappingInfo(MetaObjectBinder binder, IList<ParameterMappingInfo> mappingInfo) {
+        public BinderMappingInfo(DynamicMetaObjectBinder binder, IList<ParameterMappingInfo> mappingInfo) {
             Binder = binder;
             MappingInfo = mappingInfo;
         }
 
-        public BinderMappingInfo(MetaObjectBinder binder, params ParameterMappingInfo[] mappingInfos)
+        public BinderMappingInfo(DynamicMetaObjectBinder binder, params ParameterMappingInfo[] mappingInfos)
             : this(binder, (IList<ParameterMappingInfo>)mappingInfos) {
         }
 

@@ -48,8 +48,7 @@ namespace IronRuby.Runtime.Calls {
             var i = 0;
 
             while (i < parameterInfos.Length
-                && parameterInfos[i].ParameterType.IsGenericType
-                && parameterInfos[i].ParameterType.GetGenericTypeDefinition() == typeof(SiteLocalStorage<>)) {
+                && parameterInfos[i].ParameterType.IsSubclassOf(typeof(SiteLocalStorage))) {
 
                 arguments.Add(new SiteLocalStorageBuilder(parameterInfos[i]));
                 i++;
@@ -242,7 +241,7 @@ namespace IronRuby.Runtime.Calls {
             }
 
             Expression convertExpr = null;
-            if (expr.Type == typeof(Null)) {
+            if (expr.Type == typeof(DynamicNull)) {
                 convertExpr = Ast.Default(visType);
             } else {
                 convertExpr = Ast.Convert(expr, visType);
@@ -285,7 +284,7 @@ namespace IronRuby.Runtime.Calls {
             // protocol conversions:
             if (toParameter.ParameterInfo != null && toParameter.ParameterInfo.IsDefined(typeof(DefaultProtocolAttribute), false)) {
                 // any type is potentially convertible, except for nil if [NotNull] is used:
-                return fromType != typeof(Null) || !toParameter.ProhibitNull;
+                return fromType != typeof(DynamicNull) || !toParameter.ProhibitNull;
             }
 
             return false;
@@ -295,7 +294,7 @@ namespace IronRuby.Runtime.Calls {
             Type typeOne = candidateOne.Type;
             Type typeTwo = candidateTwo.Type;
 
-            if (actualType == typeof(Null)) {
+            if (actualType == typeof(DynamicNull)) {
                 // if nil is passed as a block argument prefer BlockParam over missing block;
                 if (typeOne == typeof(BlockParam) && typeTwo == typeof(MissingBlockParam)) {
                     return Candidate.One;
@@ -389,7 +388,7 @@ namespace IronRuby.Runtime.Calls {
 
         #region MetaObjects
 
-        internal static Expression/*!*/[]/*!*/ ToExpressions(MetaObject/*!*/[]/*!*/ args, int start) {
+        internal static Expression/*!*/[]/*!*/ ToExpressions(DynamicMetaObject/*!*/[]/*!*/ args, int start) {
             var result = new Expression[args.Length - start];
             for (int i = 0; i < result.Length; i++) {
                 result[i] = args[start + i].Expression;
@@ -397,7 +396,7 @@ namespace IronRuby.Runtime.Calls {
             return result;
         }
 
-        internal static object/*!*/[]/*!*/ ToValues(MetaObject/*!*/[]/*!*/ args, int start) {
+        internal static object/*!*/[]/*!*/ ToValues(DynamicMetaObject/*!*/[]/*!*/ args, int start) {
             var result = new object[args.Length - start];
             for (int i = 0; i < result.Length; i++) {
                 result[i] = args[start + i].Value;
@@ -405,14 +404,14 @@ namespace IronRuby.Runtime.Calls {
             return result;
         }
 
-        internal static MetaObject TryBindCovertToDelegate(ConvertBinder/*!*/ action, MetaObject/*!*/ target) {
+        internal static DynamicMetaObject TryBindCovertToDelegate(ConvertBinder/*!*/ action, DynamicMetaObject/*!*/ target) {
             if (typeof(Delegate).IsAssignableFrom(action.Type)) {
-                return new MetaObject(
+                return new DynamicMetaObject(
                     Methods.CreateDelegateFromMethod.OpCall(
                         Ast.Constant(action.Type),
                         AstUtils.Convert(target.Expression, typeof(RubyMethod))
                     ),
-                    target.Restrictions.Merge(Restrictions.GetTypeRestriction(target.Expression, target.Value.GetType()))
+                    target.Restrictions.Merge(BindingRestrictions.GetTypeRestriction(target.Expression, target.Value.GetType()))
                 );
             }
             return null;

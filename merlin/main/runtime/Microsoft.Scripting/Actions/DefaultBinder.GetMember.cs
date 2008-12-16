@@ -38,7 +38,7 @@ namespace Microsoft.Scripting.Actions {
         /// <param name="target">
         /// The MetaObject from which the member is retrieved.
         /// </param>
-        public MetaObject GetMember(string name, MetaObject target) {
+        public DynamicMetaObject GetMember(string name, DynamicMetaObject target) {
             return GetMember(name, target, Ast.Constant(null, typeof(CodeContext)));
         }
 
@@ -58,7 +58,7 @@ namespace Microsoft.Scripting.Actions {
         /// accessing the member (e.g. for an extension property which takes CodeContext).  By default this
         /// a null CodeContext object is passed.
         /// </param>
-        public MetaObject GetMember(string name, MetaObject target, Expression codeContext) {
+        public DynamicMetaObject GetMember(string name, DynamicMetaObject target, Expression codeContext) {
             return GetMember(
                 name,
                 target,
@@ -87,7 +87,7 @@ namespace Microsoft.Scripting.Actions {
         /// True if the operation should return Operation.Failed on failure, false if it
         /// should return the exception produced by MakeMissingMemberError.
         /// </param>
-        public MetaObject GetMember(string name, MetaObject target, Expression codeContext, bool isNoThrow) {
+        public DynamicMetaObject GetMember(string name, DynamicMetaObject target, Expression codeContext, bool isNoThrow) {
             ContractUtils.RequiresNotNull(name, "name");
             ContractUtils.RequiresNotNull(target, "target");
             ContractUtils.RequiresNotNull(codeContext, "codeContext");
@@ -102,9 +102,9 @@ namespace Microsoft.Scripting.Actions {
             );
         }
 
-        private MetaObject MakeGetMemberTarget(GetMemberInfo getMemInfo, MetaObject target) {
+        private DynamicMetaObject MakeGetMemberTarget(GetMemberInfo getMemInfo, DynamicMetaObject target) {
             Type type = target.LimitType.IsCOMObject ? target.Expression.Type : target.LimitType;
-            Restrictions restrictions = target.Restrictions;
+            BindingRestrictions restrictions = target.Restrictions;
             Expression self = target.Expression;
             target = target.Restrict(target.LimitType);
 
@@ -119,7 +119,7 @@ namespace Microsoft.Scripting.Actions {
             MemberGroup members = MemberGroup.EmptyGroup;
             if (typeof(TypeTracker).IsAssignableFrom(type)) {
                 restrictions = restrictions.Merge(
-                    Restrictions.GetInstanceRestriction(target.Expression, target.Value)
+                    BindingRestrictions.GetInstanceRestriction(target.Expression, target.Value)
                 );
 
                 TypeGroup tg = target.Value as TypeGroup;

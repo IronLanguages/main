@@ -146,7 +146,8 @@ namespace Microsoft.Scripting.Runtime {
 
             // Compile lambda
             LambdaExpression lambda = rewriter.RewriteLambda(Code, "Initialize");
-            lambda.CompileToMethod(typeGen.TypeBuilder, CompilerHelpers.PublicStatic, SourceUnit.EmitDebugSymbols);
+            MethodBuilder mb = typeGen.TypeBuilder.DefineMethod(lambda.Name, CompilerHelpers.PublicStatic);
+            lambda.CompileToMethod(mb, SourceUnit.EmitDebugSymbols);
 
             // Create globals dictionary, finish type
             rewriter.EmitDictionary();
@@ -195,7 +196,8 @@ namespace Microsoft.Scripting.Runtime {
             var globalRewriter = new GlobalArrayRewriter(symbolDict, typeGen);
             lambda = globalRewriter.RewriteLambda(lambda);
             
-            MethodBuilder builder = lambda.CompileToMethod(typeGen.TypeBuilder, CompilerHelpers.PublicStatic | MethodAttributes.SpecialName, false);
+            MethodBuilder builder = typeGen.TypeBuilder.DefineMethod(lambda.Name ?? "lambda_method", CompilerHelpers.PublicStatic | MethodAttributes.SpecialName);
+            lambda.CompileToMethod(builder, false);
 
             builder.SetCustomAttribute(new CustomAttributeBuilder(
                 typeof(CachedOptimizedCodeAttribute).GetConstructor(new Type[] { typeof(string[]) }),

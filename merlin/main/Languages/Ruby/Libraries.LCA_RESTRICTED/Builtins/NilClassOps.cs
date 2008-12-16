@@ -21,7 +21,7 @@ using IronRuby.Runtime;
 
 namespace IronRuby.Builtins {
 
-    [RubyClass("NilClass", Extends = typeof(Null))]
+    [RubyClass("NilClass", Extends = typeof(DynamicNull))]
     public static class NilClassOps {
         #region Public Instance Methods
 
@@ -91,7 +91,7 @@ namespace IronRuby.Builtins {
         }
 
         [SpecialName]
-        public static bool op_Implicit(Null self) {
+        public static bool op_Implicit(DynamicNull self) {
             Debug.Assert(self == null);
             return false;
         }

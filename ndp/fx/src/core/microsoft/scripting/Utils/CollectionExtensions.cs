@@ -220,9 +220,4 @@ namespace System.Dynamic.Utils {
     internal static class EmptyReadOnlyCollection<T> {
         internal static ReadOnlyCollection<T> Instance = new ReadOnlyCollection<T>(new T[0]);
     }
-    // TODO: Should we use this everywhere for empty arrays?
-    // my thought is, probably more hassle than its worth
-    internal static class EmptyArray<T> {
-        internal static T[] Instance = new T[0];
-    }
 }

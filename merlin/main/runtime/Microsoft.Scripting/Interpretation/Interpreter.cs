@@ -697,6 +697,7 @@ namespace Microsoft.Scripting.Interpretation {
 
         private static object InterpretTypeBinaryExpression(InterpreterState state, Expression expr) {
             TypeBinaryExpression node = (TypeBinaryExpression)expr;
+
             object value;
             if (InterpretAndCheckFlow(state, node.Expression, out value)) {
                 return value;
@@ -706,9 +707,13 @@ namespace Microsoft.Scripting.Interpretation {
                 return ControlFlow.NextForYield;
             }
 
-            return ScriptingRuntimeHelpers.BooleanToObject(
-                node.TypeOperand.IsInstanceOfType(value)
-            );
+            bool result;
+            if (node.NodeType == ExpressionType.TypeEqual) {
+                result = value != null && value.GetType() == node.TypeOperand;
+            } else {
+                result = node.TypeOperand.IsInstanceOfType(value);
+            }
+            return ScriptingRuntimeHelpers.BooleanToObject(result);
         }
 
         private static object InterpretDynamicExpression(InterpreterState state, Expression expr) {
@@ -738,7 +743,7 @@ namespace Microsoft.Scripting.Interpretation {
                 return ControlFlow.NextForYield;
             }
 
-            var metaAction = node.Binder as MetaObjectBinder;
+            var metaAction = node.Binder as DynamicMetaObjectBinder;
             if (metaAction != null) {
                 return InterpretMetaAction(state, metaAction, node, args);
             }
@@ -750,7 +755,7 @@ namespace Microsoft.Scripting.Interpretation {
 
         private const int SiteCompileThreshold = 2;
 
-        private static object InterpretMetaAction(InterpreterState state, MetaObjectBinder action, DynamicExpression node, object[] argValues) {
+        private static object InterpretMetaAction(InterpreterState state, DynamicMetaObjectBinder action, DynamicExpression node, object[] argValues) {
             var callSites = state.LambdaState.ScriptCode.CallSites;
             CallSiteInfo callSiteInfo;
 
@@ -776,19 +781,19 @@ namespace Microsoft.Scripting.Interpretation {
                 throw new InvalidOperationException();
             }
 
-            MetaObject[] args = MetaObject.EmptyMetaObjects;
+            DynamicMetaObject[] args = DynamicMetaObject.EmptyMetaObjects;
             if (argValues.Length != 1) {
-                args = new MetaObject[argValues.Length - 1];
+                args = new DynamicMetaObject[argValues.Length - 1];
                 for (int i = 0; i < args.Length; i++) {
-                    args[i] = MetaObject.ObjectToMetaObject(
+                    args[i] = DynamicMetaObject.ObjectToMetaObject(
                         argValues[i + 1],
                         Expression.Constant(argValues[i + 1])
                     );
                 }
             }
 
-            MetaObject binding = action.Bind(
-                MetaObject.ObjectToMetaObject(
+            DynamicMetaObject binding = action.Bind(
+                DynamicMetaObject.ObjectToMetaObject(
                     argValues[0],
                     Expression.Constant(argValues[0])
                 ),
@@ -807,7 +812,7 @@ namespace Microsoft.Scripting.Interpretation {
         }
 
         [Conditional("DEBUG")]
-        private static void AssertTrueRestrictions(InterpreterState state, MetaObject binding) {
+        private static void AssertTrueRestrictions(InterpreterState state, DynamicMetaObject binding) {
             var test = binding.Restrictions.ToExpression();
             var result = Interpret(state, test);
             Debug.Assert(result is bool && (bool)result);

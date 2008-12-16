@@ -22,25 +22,25 @@ using System.Dynamic.Utils;
 using System.Runtime.CompilerServices;
 
 namespace System.Dynamic {
-    internal class DispCallableMetaObject : MetaObject {
+    internal class DispCallableMetaObject : DynamicMetaObject {
         private readonly DispCallable _callable;
 
         internal DispCallableMetaObject(Expression expression, DispCallable callable)
-            : base(expression, Restrictions.Empty, callable) {
+            : base(expression, BindingRestrictions.Empty, callable) {
             _callable = callable;
         }
 
-        public override MetaObject BindGetIndex(GetIndexBinder binder, MetaObject[] indexes) {
+        public override DynamicMetaObject BindGetIndex(GetIndexBinder binder, DynamicMetaObject[] indexes) {
             return BindGetOrInvoke(binder, indexes, binder.Arguments) ??
                 base.BindGetIndex(binder, indexes);
         }
 
-        public override MetaObject BindInvoke(InvokeBinder binder, MetaObject[] args) {
+        public override DynamicMetaObject BindInvoke(InvokeBinder binder, DynamicMetaObject[] args) {
             return BindGetOrInvoke(binder, args, binder.Arguments) ??
                 base.BindInvoke(binder, args);
         }
 
-        private MetaObject BindGetOrInvoke(CallSiteBinder binder, MetaObject[] args, IList<ArgumentInfo> argInfos) {
+        private DynamicMetaObject BindGetOrInvoke(CallSiteBinder binder, DynamicMetaObject[] args, IList<ArgumentInfo> argInfos) {
             if (args.Any(arg => ComBinderHelpers.IsStrongBoxArg(arg))) {
                 return ComBinderHelpers.RewriteStrongBoxAsRef(binder, this, args, false);
             }
@@ -58,7 +58,7 @@ namespace System.Dynamic {
         }
 
 
-        public override MetaObject BindSetIndex(SetIndexBinder binder, MetaObject[] indexes, MetaObject value) {
+        public override DynamicMetaObject BindSetIndex(SetIndexBinder binder, DynamicMetaObject[] indexes, DynamicMetaObject value) {
             if (indexes.Any(arg => ComBinderHelpers.IsStrongBoxArg(arg))) {
                 return ComBinderHelpers.RewriteStrongBoxAsRef(binder, this, indexes.AddLast(value), true);
             }
@@ -76,7 +76,7 @@ namespace System.Dynamic {
             return base.BindSetIndex(binder, indexes, value);
         }
 
-        private MetaObject BindComInvoke(ComMethodDesc method, MetaObject[] indexes, IList<ArgumentInfo> argInfos) {
+        private DynamicMetaObject BindComInvoke(ComMethodDesc method, DynamicMetaObject[] indexes, IList<ArgumentInfo> argInfos) {
             var callable = Expression;
             var dispCall = Helpers.Convert(callable, typeof(DispCallable));
 
@@ -93,16 +93,16 @@ namespace System.Dynamic {
             ).Invoke();
         }
 
-        private Restrictions DispCallableRestrictions() {
+        private BindingRestrictions DispCallableRestrictions() {
             var callable = Expression;
 
-            var callableTypeRestrictions = Restrictions.GetTypeRestriction(callable, typeof(DispCallable));
+            var callableTypeRestrictions = BindingRestrictions.GetTypeRestriction(callable, typeof(DispCallable));
             var dispCall = Helpers.Convert(callable, typeof(DispCallable));
             var dispatch = Expression.Property(dispCall, typeof(DispCallable).GetProperty("DispatchComObject"));
             var dispId = Expression.Property(dispCall, typeof(DispCallable).GetProperty("DispId"));
 
             var dispatchRestriction = IDispatchMetaObject.IDispatchRestriction(dispatch, _callable.DispatchComObject.ComTypeDesc);
-            var memberRestriction = Restrictions.GetExpressionRestriction(
+            var memberRestriction = BindingRestrictions.GetExpressionRestriction(
                 Expression.Equal(dispId, Expression.Constant(_callable.DispId))
             );
 
