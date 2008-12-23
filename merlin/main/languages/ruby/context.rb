@@ -24,7 +24,7 @@ SVN_ROOT = Pathname.new 'c:/svn/trunk'
 EXCLUDED_EXTENSIONS   = %w[.old .suo .vspscc .vssscc .user .log .pdb .cache .swp]
 DEFAULT_ROBOCOPY_OPTIONS = "/XF *#{EXCLUDED_EXTENSIONS.join(' *')} /NP /COPY:DAT /A-:R "
 
-
+#bogus comment for jredville testing
 class Pathname
   def filtered_subdirs(extras = [])
     return [] unless exist?
