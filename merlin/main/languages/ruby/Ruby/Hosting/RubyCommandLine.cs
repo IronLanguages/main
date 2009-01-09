@@ -19,6 +19,7 @@ using IronRuby.Runtime;
 using Microsoft.Scripting;
 using Microsoft.Scripting.Hosting.Shell;
 using Microsoft.Scripting.Runtime;
+using System.Threading;
 
 namespace IronRuby.Hosting {
    
@@ -31,7 +32,7 @@ namespace IronRuby.Hosting {
 
         protected override string Logo {
             get {
-                return String.Format("IronRuby {1} on .NET {2}{0}Copyright (c) Microsoft Corporation. All rights reserved.{0}{0}Note that local variables do not work today in the console.{0}As a workaround, use globals instead (eg $x = 42 instead of x = 42).{0}{0}",
+                return String.Format("IronRuby {1} on .NET {2}{0}Copyright (c) Microsoft Corporation. All rights reserved.{0}{0}",
                     Environment.NewLine, RubyContext.IronRubyVersion, Environment.Version);
             }
         }
@@ -39,6 +40,13 @@ namespace IronRuby.Hosting {
         protected override int? TryInteractiveAction() {
             try {
                 return base.TryInteractiveAction();
+            } catch (ThreadAbortException e) {
+                Exception visibleException = RubyOps.GetVisibleException(e);
+                if (visibleException == e) {
+                    throw;
+                } else {
+                    throw visibleException;
+                }
             } catch (SystemExit e) {
                 return e.Status;
             }

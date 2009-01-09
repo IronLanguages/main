@@ -475,11 +475,6 @@ namespace System.Linq.Expressions {
                 return ".null";
             }
 
-            ITemplatedValue itv = value as ITemplatedValue;
-            if (itv != null) {
-                return ".template" + itv.Index.ToString(CultureInfo.CurrentCulture) + " (" + itv.ObjectValue.ToString() + ")";
-            }
-
             string s;
             if ((s = value as string) != null) {
                 return "\"" + s + "\"";
@@ -528,6 +523,10 @@ namespace System.Linq.Expressions {
         }
 
         private static bool NeedsParentheses(Expression parent, Expression child) {
+            Debug.Assert(parent != null);
+            if (child == null) { 
+                return false;
+            }
             return GetOperatorPrecedence(child) < GetOperatorPrecedence(parent);
         }
         
@@ -600,6 +599,8 @@ namespace System.Linq.Expressions {
                 case ExpressionType.PreIncrementAssign:
                 case ExpressionType.PreDecrementAssign:
                 case ExpressionType.OnesComplement:
+                case ExpressionType.IsFalse:
+                case ExpressionType.IsTrue:
                     return 13;
 
                 case ExpressionType.PostIncrementAssign:
@@ -712,6 +713,12 @@ namespace System.Linq.Expressions {
                     break;
                 case ExpressionType.Throw:
                     Out(".throw ");
+                    break;
+                case ExpressionType.IsFalse:
+                    Out(".IsFalse ");
+                    break;
+                case ExpressionType.IsTrue:
+                    Out(".IsTrue ");
                     break;
             }
 

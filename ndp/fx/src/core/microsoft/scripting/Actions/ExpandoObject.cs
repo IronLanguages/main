@@ -16,15 +16,14 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
-using System.Linq.Expressions;
-using System.Runtime.CompilerServices;
 using System.Dynamic;
 using System.Dynamic.Utils;
+using System.Linq.Expressions;
+using System.Runtime.CompilerServices;
 
 namespace System.Dynamic {
     /// <summary>
-    /// Simple type which implements IDynamicObject to support getting/setting/deleting members
-    /// at runtime.
+    /// Represents an object with members that can be dynamically added and removed at runtime.
     /// </summary>
     public sealed class ExpandoObject : IDynamicObject {
         private ExpandoData _data;                                  // the data currently being held by the Expando object
@@ -32,7 +31,7 @@ namespace System.Dynamic {
         internal static object Uninitialized = new object();        // A marker object used to identify that a value is uninitialized.
 
         /// <summary>
-        /// Creates a new Expando object with no members.
+        /// Creates a new ExpandoObject with no members.
         /// </summary>
         public ExpandoObject() {
             _data = ExpandoData.Empty;
@@ -425,48 +424,103 @@ namespace System.Dynamic {
 
 namespace System.Runtime.CompilerServices {
     public static partial class RuntimeOps {
+        /// <summary>
+        /// Gets the value of an item in an expando object.
+        /// </summary>
+        /// <param name="expando">The expando object.</param>
+        /// <param name="indexClass">The class of the expando object.</param>
+        /// <param name="index">The index of the member.</param>
+        /// <returns>The value of the member.</returns>
         [Obsolete("used by generated code", true)]
         public static object ExpandoGetValue(ExpandoObject expando, object indexClass, int index) {
             ContractUtils.RequiresNotNull(expando, "expando");
             return expando.GetValue((ExpandoClass)indexClass, index, false);
         }
 
+        /// <summary>
+        /// Gets the value of an item in an expando object, ignoring the case of the member name.
+        /// </summary>
+        /// <param name="expando">The expando object.</param>
+        /// <param name="indexClass">The class of the expando object.</param>
+        /// <param name="index">The index of the member.</param>
+        /// <returns>The value of the member.</returns>
         [Obsolete("used by generated code", true)]
         public static object ExpandoGetValueIgnoreCase(ExpandoObject expando, object indexClass, int index) {
             ContractUtils.RequiresNotNull(expando, "expando");
             return expando.GetValue((ExpandoClass)indexClass, index, true);
         }
 
+        /// <summary>
+        /// Sets the value of an item in an expando object.
+        /// </summary>
+        /// <param name="expando">The expando object.</param>
+        /// <param name="indexClass">The class of the expando object.</param>
+        /// <param name="index">The index of the member.</param>
+        /// <param name="value">The value of the member.</param>
         [Obsolete("used by generated code", true)]
         public static void ExpandoSetValue(ExpandoObject expando, object indexClass, int index, object value) {
             ContractUtils.RequiresNotNull(expando, "expando");
             expando.SetValue((ExpandoClass)indexClass, index, false, value);
         }
 
+        /// <summary>
+        /// Sets the value of an item in an expando object, ignoring the case of the member name.
+        /// </summary>
+        /// <param name="expando">The expando object.</param>
+        /// <param name="indexClass">The class of the expando object.</param>
+        /// <param name="index">The index of the member.</param>
+        /// <param name="value">The value of the member.</param>
         [Obsolete("used by generated code", true)]
         public static void ExpandoSetValueIgnoreCase(ExpandoObject expando, object indexClass, int index, object value) {
             ContractUtils.RequiresNotNull(expando, "expando");
             expando.SetValue((ExpandoClass)indexClass, index, true, value);
         }
 
+        /// <summary>
+        /// Deletes the value of an item in an expando object.
+        /// </summary>
+        /// <param name="expando">The expando object.</param>
+        /// <param name="indexClass">The class of the expando object.</param>
+        /// <param name="index">The index of the member.</param>
+        /// <returns>true if the item was successfully removed; otherwise, false.</returns>
         [Obsolete("used by generated code", true)]
         public static bool ExpandoDeleteValue(ExpandoObject expando, object indexClass, int index) {
             ContractUtils.RequiresNotNull(expando, "expando");
             return expando.DeleteValue((ExpandoClass)indexClass, index, false);
         }
 
+        /// <summary>
+        /// Deletes the value of an item in an expando object, ignoring the case of the member name.
+        /// </summary>
+        /// <param name="expando">The expando object.</param>
+        /// <param name="indexClass">The class of the expando object.</param>
+        /// <param name="index">The index of the member.</param>
+        /// <returns>true if the item was successfully removed; otherwise, false.</returns>
         [Obsolete("used by generated code", true)]
         public static bool ExpandoDeleteValueIgnoreCase(ExpandoObject expando, object indexClass, int index) {
             ContractUtils.RequiresNotNull(expando, "expando");
             return expando.DeleteValue((ExpandoClass)indexClass, index, true);
         }
 
+        /// <summary>
+        /// Checks the version of the expando object.
+        /// </summary>
+        /// <param name="expando">The expando object.</param>
+        /// <param name="version">the version to check.</param>
+        /// <returns>true if the version is equal; otherwise, false.</returns>
         [Obsolete("used by generated code", true)]
         public static bool ExpandoCheckVersion(ExpandoObject expando, object version) {
             ContractUtils.RequiresNotNull(expando, "expando");
             return expando.Class == version;
         }
 
+        /// <summary>
+        /// Promotes an expando object from one class to a new class.
+        /// </summary>
+        /// <param name="expando">The expando object.</param>
+        /// <param name="oldClass">The old class of the expando object.</param>
+        /// <param name="newClass">The new class of the expando object.</param>
+        [Obsolete("used by generated code", true)]
         public static void ExpandoPromoteClass(ExpandoObject expando, object oldClass, object newClass) {
             ContractUtils.RequiresNotNull(expando, "expando");
             expando.PromoteClass((ExpandoClass)oldClass, (ExpandoClass)newClass);

@@ -258,9 +258,12 @@ namespace IronRuby.Runtime.Calls {
                 // Allocates a variable holding BlockParam. At runtime the BlockParam is created with a new RFC instance that
                 // identifies the library method frame as a proc-converter target of a method unwinder triggered by break from a block.
                 //
-                // NOTE: We check for null block here -> test fore that fact is added in MakeActualArgs
-                if (metaBuilder.BfcVariable == null && args.Signature.HasBlock && args.GetBlock() != null && calleeHasBlockParam) {
-                    metaBuilder.BfcVariable = metaBuilder.GetTemporary(typeof(BlockParam), "#bfc");
+                // NOTE: We check for null block here -> test for that fact is added in MakeActualArgs
+                if (args.Signature.HasBlock && args.GetBlock() != null && calleeHasBlockParam) {
+                    if (metaBuilder.BfcVariable == null) {
+                        metaBuilder.BfcVariable = metaBuilder.GetTemporary(typeof(BlockParam), "#bfc");
+                    }
+                    metaBuilder.ControlFlowBuilder = RuleControlFlowBuilder;
                 }
 
                 var actualArgs = MakeActualArgs(metaBuilder, args, includeSelf, selfIsInstance, calleeHasBlockParam, true);
@@ -279,15 +282,11 @@ namespace IronRuby.Runtime.Calls {
             }
         }
 
-        internal override void ApplyBlockFlowHandling(MetaObjectBuilder metaBuilder, CallArguments args) {
-            ApplyBlockFlowHandlingInternal(metaBuilder, args);
-        }
-
         /// <summary>
         /// Takes current result and wraps it into try-filter(MethodUnwinder)-finally block that ensures correct "break" behavior for 
         /// library method calls with block given in bfcVariable (BlockParam).
         /// </summary>
-        internal static void ApplyBlockFlowHandlingInternal(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args) {
+        public static void RuleControlFlowBuilder(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args) {
             if (metaBuilder.Error) {
                 return;
             }

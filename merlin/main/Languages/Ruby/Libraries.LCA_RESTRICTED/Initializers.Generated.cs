@@ -131,7 +131,7 @@ namespace IronRuby.Builtins {
                 new System.Func<IronRuby.Builtins.RubyClass, IronRuby.Builtins.RubyRegex, System.Int32, System.Object, IronRuby.Builtins.RubyRegex>(IronRuby.Builtins.RegexpOps.Create),
                 new System.Func<IronRuby.Builtins.RubyClass, IronRuby.Builtins.RubyRegex, System.Object, System.Object, IronRuby.Builtins.RubyRegex>(IronRuby.Builtins.RegexpOps.Create),
                 new System.Func<IronRuby.Builtins.RubyClass, IronRuby.Builtins.MutableString, System.Int32, IronRuby.Builtins.MutableString, IronRuby.Builtins.RubyRegex>(IronRuby.Builtins.RegexpOps.Create),
-                new System.Func<IronRuby.Runtime.RubyScope, IronRuby.Builtins.RubyClass, IronRuby.Builtins.MutableString, System.Object, IronRuby.Builtins.MutableString, IronRuby.Builtins.RubyRegex>(IronRuby.Builtins.RegexpOps.Create),
+                new System.Func<IronRuby.Builtins.RubyClass, IronRuby.Builtins.MutableString, System.Object, IronRuby.Builtins.MutableString, IronRuby.Builtins.RubyRegex>(IronRuby.Builtins.RegexpOps.Create),
             });
             DefineGlobalClass("String", typeof(IronRuby.Builtins.MutableString), false, Context.ObjectClass, new System.Action<IronRuby.Builtins.RubyModule>(LoadString_Instance), null, new IronRuby.Builtins.RubyModule[] {def21, def30, }, new System.Delegate[] {
                 new System.Func<IronRuby.Builtins.RubyClass, IronRuby.Builtins.MutableString>(IronRuby.Builtins.MutableStringOps.Create),
@@ -2066,6 +2066,11 @@ namespace IronRuby.Builtins {
                 new System.Func<IronRuby.Runtime.RubyScope, IronRuby.Builtins.RubyIO, IronRuby.Builtins.MutableString, IronRuby.Builtins.MutableString>(IronRuby.Builtins.RubyIOOps.Gets),
             });
             
+            module.DefineLibraryMethod("initialize", 0x52, new System.Delegate[] {
+                new System.Action<IronRuby.Builtins.RubyIO>(IronRuby.Builtins.RubyIOOps.CreateIO),
+                new System.Action<IronRuby.Builtins.RubyIO, System.Int32, IronRuby.Builtins.MutableString>(IronRuby.Builtins.RubyIOOps.CreateIO),
+            });
+            
             module.DefineLibraryMethod("internal_encoding", 0x51, new System.Delegate[] {
                 new System.Func<IronRuby.Builtins.RubyIO, IronRuby.Builtins.RubyEncoding>(IronRuby.Builtins.RubyIOOps.GetInternalEncoding),
             });
@@ -2189,12 +2194,7 @@ namespace IronRuby.Builtins {
                 new System.Action<IronRuby.Runtime.BlockParam, IronRuby.Builtins.RubyClass, IronRuby.Builtins.MutableString, IronRuby.Builtins.MutableString>(IronRuby.Builtins.RubyIOOps.ForEach),
             });
             
-            module.DefineLibraryMethod("open", 0x61, new System.Delegate[] {
-                new System.Func<IronRuby.Runtime.RubyContext, IronRuby.Runtime.BlockParam, IronRuby.Builtins.RubyClass, System.Int32, System.Object>(IronRuby.Builtins.RubyIOOps.Open),
-                new System.Func<IronRuby.Runtime.RubyContext, IronRuby.Runtime.BlockParam, IronRuby.Builtins.RubyClass, System.Int32, IronRuby.Builtins.MutableString, System.Object>(IronRuby.Builtins.RubyIOOps.Open),
-                new System.Func<IronRuby.Runtime.RubyContext, IronRuby.Runtime.BlockParam, IronRuby.Builtins.RubyClass, System.Int32, System.Object, System.Object>(IronRuby.Builtins.RubyIOOps.Open),
-                new System.Func<IronRuby.Runtime.RubyContext, IronRuby.Runtime.BlockParam, IronRuby.Builtins.RubyClass, IronRuby.Builtins.MutableString, System.Int32, System.Object>(IronRuby.Builtins.RubyIOOps.Open),
-            });
+            module.DefineRuleGenerator("open", 0x61, IronRuby.Builtins.RubyIOOps.Open());
             
             #if !SILVERLIGHT
             module.DefineLibraryMethod("popen", 0x61, new System.Delegate[] {
@@ -2445,7 +2445,7 @@ namespace IronRuby.Builtins {
             });
             
             module.DefineLibraryMethod("load_assembly", 0x52, new System.Delegate[] {
-                new System.Func<IronRuby.Runtime.RubyScope, System.Object, IronRuby.Builtins.MutableString, IronRuby.Builtins.MutableString, System.Boolean>(IronRuby.Builtins.KernelOps.LoadAssembly),
+                new System.Func<IronRuby.Runtime.RubyContext, System.Object, IronRuby.Builtins.MutableString, IronRuby.Builtins.MutableString, System.Boolean>(IronRuby.Builtins.KernelOps.LoadAssembly),
             });
             
             module.DefineLibraryMethod("local_variables", 0x52, new System.Delegate[] {
@@ -2632,7 +2632,7 @@ namespace IronRuby.Builtins {
             });
             
             module.DefineLibraryMethod("to_a", 0x51, new System.Delegate[] {
-                new System.Func<IronRuby.Runtime.RubyScope, System.Object, IronRuby.Builtins.RubyArray>(IronRuby.Builtins.KernelOps.ToA),
+                new System.Func<IronRuby.Runtime.RubyContext, System.Object, IronRuby.Builtins.RubyArray>(IronRuby.Builtins.KernelOps.ToA),
             });
             
             module.DefineLibraryMethod("to_s", 0x51, new System.Delegate[] {
@@ -2641,8 +2641,8 @@ namespace IronRuby.Builtins {
             
             #if !SILVERLIGHT
             module.DefineLibraryMethod("trap", 0x52, new System.Delegate[] {
-                new System.Func<IronRuby.Runtime.RubyContext, IronRuby.Runtime.BlockParam, System.Object, System.Object, System.Object>(IronRuby.Builtins.KernelOps.Trap),
                 new System.Func<IronRuby.Runtime.RubyContext, System.Object, System.Object, IronRuby.Builtins.Proc, System.Object>(IronRuby.Builtins.KernelOps.Trap),
+                new System.Func<IronRuby.Runtime.RubyContext, IronRuby.Runtime.BlockParam, System.Object, System.Object, System.Object>(IronRuby.Builtins.KernelOps.Trap),
             });
             
             #endif
@@ -2755,7 +2755,7 @@ namespace IronRuby.Builtins {
             });
             
             module.DefineLibraryMethod("load_assembly", 0x61, new System.Delegate[] {
-                new System.Func<IronRuby.Runtime.RubyScope, System.Object, IronRuby.Builtins.MutableString, IronRuby.Builtins.MutableString, System.Boolean>(IronRuby.Builtins.KernelOps.LoadAssembly),
+                new System.Func<IronRuby.Runtime.RubyContext, System.Object, IronRuby.Builtins.MutableString, IronRuby.Builtins.MutableString, System.Boolean>(IronRuby.Builtins.KernelOps.LoadAssembly),
             });
             
             module.DefineLibraryMethod("local_variables", 0x61, new System.Delegate[] {
@@ -2869,8 +2869,8 @@ namespace IronRuby.Builtins {
             
             #if !SILVERLIGHT
             module.DefineLibraryMethod("trap", 0x61, new System.Delegate[] {
-                new System.Func<IronRuby.Runtime.RubyContext, IronRuby.Runtime.BlockParam, System.Object, System.Object, System.Object>(IronRuby.Builtins.KernelOps.Trap),
                 new System.Func<IronRuby.Runtime.RubyContext, System.Object, System.Object, IronRuby.Builtins.Proc, System.Object>(IronRuby.Builtins.KernelOps.Trap),
+                new System.Func<IronRuby.Runtime.RubyContext, IronRuby.Runtime.BlockParam, System.Object, System.Object, System.Object>(IronRuby.Builtins.KernelOps.Trap),
             });
             
             #endif
@@ -4176,9 +4176,9 @@ namespace IronRuby.Builtins {
             });
             
             module.DefineLibraryMethod("gsub", 0x51, new System.Delegate[] {
-                new System.Func<IronRuby.Runtime.RubyScope, IronRuby.Builtins.MutableString, IronRuby.Builtins.RubyRegex, IronRuby.Builtins.MutableString, IronRuby.Builtins.MutableString>(IronRuby.Builtins.MutableStringOps.ReplaceAll),
                 new System.Func<IronRuby.Runtime.ConversionStorage<IronRuby.Builtins.MutableString>, IronRuby.Runtime.RubyScope, IronRuby.Runtime.BlockParam, IronRuby.Builtins.MutableString, IronRuby.Builtins.RubyRegex, System.Object>(IronRuby.Builtins.MutableStringOps.BlockReplaceAll),
                 new System.Func<IronRuby.Runtime.ConversionStorage<IronRuby.Builtins.MutableString>, IronRuby.Runtime.RubyScope, IronRuby.Runtime.BlockParam, IronRuby.Builtins.MutableString, IronRuby.Builtins.MutableString, System.Object>(IronRuby.Builtins.MutableStringOps.BlockReplaceAll),
+                new System.Func<IronRuby.Runtime.RubyScope, IronRuby.Builtins.MutableString, IronRuby.Builtins.RubyRegex, IronRuby.Builtins.MutableString, IronRuby.Builtins.MutableString>(IronRuby.Builtins.MutableStringOps.ReplaceAll),
             });
             
             module.DefineLibraryMethod("gsub!", 0x51, new System.Delegate[] {
@@ -5121,14 +5121,24 @@ namespace IronRuby.Builtins {
                 new System.Func<System.Threading.Thread, System.Threading.Thread>(IronRuby.Builtins.ThreadOps.Kill),
             });
             
+            module.DefineLibraryMethod("raise", 0x51, new System.Delegate[] {
+                new System.Action<IronRuby.Runtime.RubyContext, System.Threading.Thread>(IronRuby.Builtins.ThreadOps.RaiseException),
+                new System.Action<System.Threading.Thread, IronRuby.Builtins.MutableString>(IronRuby.Builtins.ThreadOps.RaiseException),
+                new System.Action<IronRuby.Runtime.RespondToStorage, IronRuby.Runtime.UnaryOpStorage, IronRuby.Runtime.BinaryOpStorage, IronRuby.Runtime.RubyContext, System.Threading.Thread, System.Object, System.Object, IronRuby.Builtins.RubyArray>(IronRuby.Builtins.ThreadOps.RaiseException),
+            });
+            
             #if !SILVERLIGHT
             module.DefineLibraryMethod("run", 0x51, new System.Delegate[] {
-                new System.Action<System.Threading.Thread>(IronRuby.Builtins.ThreadOps.Run),
+                new System.Func<System.Threading.Thread, System.Threading.Thread>(IronRuby.Builtins.ThreadOps.Run),
             });
             
             #endif
             module.DefineLibraryMethod("status", 0x51, new System.Delegate[] {
                 new System.Func<System.Threading.Thread, System.Object>(IronRuby.Builtins.ThreadOps.Status),
+            });
+            
+            module.DefineLibraryMethod("stop?", 0x51, new System.Delegate[] {
+                new System.Func<System.Threading.Thread, System.Boolean>(IronRuby.Builtins.ThreadOps.IsStopped),
             });
             
             module.DefineLibraryMethod("terminate", 0x51, new System.Delegate[] {
@@ -5141,7 +5151,7 @@ namespace IronRuby.Builtins {
             
             #if !SILVERLIGHT
             module.DefineLibraryMethod("wakeup", 0x51, new System.Delegate[] {
-                new System.Action<System.Threading.Thread>(IronRuby.Builtins.ThreadOps.Run),
+                new System.Func<System.Threading.Thread, System.Threading.Thread>(IronRuby.Builtins.ThreadOps.Run),
             });
             
             #endif
@@ -5157,11 +5167,11 @@ namespace IronRuby.Builtins {
             });
             
             module.DefineLibraryMethod("critical", 0x61, new System.Delegate[] {
-                new System.Func<System.Object, System.Boolean>(IronRuby.Builtins.ThreadOps.Critical),
+                new System.Func<IronRuby.Runtime.RubyContext, System.Object, System.Boolean>(IronRuby.Builtins.ThreadOps.Critical),
             });
             
             module.DefineLibraryMethod("critical=", 0x61, new System.Delegate[] {
-                new System.Func<System.Object, System.Boolean, System.Boolean>(IronRuby.Builtins.ThreadOps.Critical),
+                new System.Action<IronRuby.Runtime.RubyContext, System.Object, System.Boolean>(IronRuby.Builtins.ThreadOps.Critical),
             });
             
             module.DefineLibraryMethod("current", 0x61, new System.Delegate[] {
@@ -5170,6 +5180,10 @@ namespace IronRuby.Builtins {
             
             module.DefineLibraryMethod("list", 0x61, new System.Delegate[] {
                 new System.Func<System.Object, IronRuby.Builtins.RubyArray>(IronRuby.Builtins.ThreadOps.List),
+            });
+            
+            module.DefineLibraryMethod("main", 0x61, new System.Delegate[] {
+                new System.Func<IronRuby.Runtime.RubyContext, IronRuby.Builtins.RubyClass, System.Threading.Thread>(IronRuby.Builtins.ThreadOps.GetMainThread),
             });
             
             module.DefineLibraryMethod("new", 0x61, new System.Delegate[] {
@@ -5185,7 +5199,7 @@ namespace IronRuby.Builtins {
             });
             
             module.DefineLibraryMethod("stop", 0x61, new System.Delegate[] {
-                new System.Action<System.Object>(IronRuby.Builtins.ThreadOps.Stop),
+                new System.Action<IronRuby.Runtime.RubyContext, System.Object>(IronRuby.Builtins.ThreadOps.Stop),
             });
             
         }

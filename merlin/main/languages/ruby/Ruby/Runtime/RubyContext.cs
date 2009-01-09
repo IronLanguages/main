@@ -89,6 +89,11 @@ namespace IronRuby.Runtime {
         private static KCode _kcode;
 
         /// <summary>
+        /// Thread#main
+        /// </summary>
+        private Thread _mainThread;
+
+        /// <summary>
         /// $/, $-O
         /// </summary>
         private MutableString _inputSeparator;
@@ -112,6 +117,8 @@ namespace IronRuby.Runtime {
         private readonly RubyInputProvider/*!*/ _inputProvider;
         private readonly Dictionary<string/*!*/, GlobalVariable>/*!*/ _globalVariables;
         private Proc _traceListener;
+        private readonly object _criticalMonitor = new object();
+        private bool _isInCriticalRegion;
 
         [ThreadStatic]
         private bool _traceListenerSuspended;
@@ -241,14 +248,9 @@ namespace IronRuby.Runtime {
             get { return _emptyScope; }
         }
 
-        // TODO:
-        internal Scope/*!*/ DefaultGlobalScope {
-            get { return DomainManager.Globals; }
-        }
-
         public Exception CurrentException {
             get { return _currentException; }
-            set { _currentException = value; }
+            set { _currentException = RubyOps.GetVisibleException(value); }
         }
 
         public int CurrentSafeLevel {
@@ -257,6 +259,10 @@ namespace IronRuby.Runtime {
 
         public KCode KCode {
             get { return _kcode; }
+        }
+
+        public Thread MainThread {
+            get { return _mainThread; }
         }
 
         public MutableString InputSeparator {
@@ -277,6 +283,15 @@ namespace IronRuby.Runtime {
         public MutableString ItemSeparator {
             get { return _itemSeparator; }
             set { _itemSeparator = value; }
+        }
+
+        public object CriticalMonitor {
+            get { return _criticalMonitor; }
+        }
+
+        public bool IsInCriticalRegion {
+            get { return _isInCriticalRegion; }
+            set { _isInCriticalRegion = value; }
         }
 
         public Proc TraceListener {
@@ -380,6 +395,7 @@ namespace IronRuby.Runtime {
             _stringSeparator = null;
             _itemSeparator = null;
             _kcode = KCode.Default;
+            _mainThread = Thread.CurrentThread;
             
             if (_options.Verbosity <= 0) {
                 Verbose = null;
@@ -1050,7 +1066,7 @@ namespace IronRuby.Runtime {
             return GetImmediateClassOf(target).ResolveSuperMethod(name, declaringModule);
         }
 
-        public bool TryGetModule(Scope autoloadScope, string/*!*/ moduleName, out RubyModule result) {
+        public bool TryGetModule(RubyGlobalScope autoloadScope, string/*!*/ moduleName, out RubyModule result) {
             result = _objectClass;
             int pos = 0;
             while (true) {
@@ -1067,7 +1083,7 @@ namespace IronRuby.Runtime {
                     result = null;
                     return false;
                 }
-                result = (tmp as RubyModule);
+                result = tmp as RubyModule;
                 if (result == null) {
                     return false;
                 } else if (pos2 < 0) {
@@ -1345,6 +1361,7 @@ namespace IronRuby.Runtime {
                 throw RubyExceptions.CreateTypeError("assigning non-exception to $!");
             }
 
+            Debug.Assert(RubyOps.GetVisibleException(e) == e);
             return _currentException = e;
         }
 
@@ -1685,7 +1702,22 @@ namespace IronRuby.Runtime {
         }
 
         public override CompilerOptions/*!*/ GetCompilerOptions() {
-            return new RubyCompilerOptions(_options);
+            return new RubyCompilerOptions(_options) {
+                FactoryKind = TopScopeFactoryKind.Default
+            };
+        }
+
+        public override CompilerOptions/*!*/ GetCompilerOptions(Scope/*!*/ scope) {
+            var result = new RubyCompilerOptions(_options) {
+                FactoryKind = TopScopeFactoryKind.GlobalScopeBound
+            };
+
+            var rubyGlobalScope = (RubyGlobalScope)scope.GetExtension(ContextId);
+            if (rubyGlobalScope != null && rubyGlobalScope.TopLocalScope != null) {
+                result.LocalNames = rubyGlobalScope.TopLocalScope.GetVisibleLocalNames();
+            }
+
+            return result;
         }
 
         public override ErrorSink GetCompilerErrorSink() {
@@ -1697,59 +1729,41 @@ namespace IronRuby.Runtime {
         #region Global Scope
 
         /// <summary>
-        /// Creates a scope extension for DLR scopes that haven't been created by Ruby.
-        /// These scopes adds method_missing and const_missing methods to handle lookups to the DLR scope.
+        /// Creates a scope extension for a DLR scope unless it already exists for the given scope.
         /// </summary>
-        internal GlobalScopeExtension/*!*/ InitializeGlobalScope(Scope/*!*/ globalScope) {
+        internal RubyGlobalScope/*!*/ InitializeGlobalScope(Scope/*!*/ globalScope, bool createHosted) {
             Assert.NotNull(globalScope);
 
             var scopeExtension = globalScope.GetExtension(ContextId);
             if (scopeExtension != null) {
-                return (GlobalScopeExtension)scopeExtension;
+                return (RubyGlobalScope)scopeExtension;
             }
 
             object mainObject = new Object();
             RubyClass singletonClass = CreateMainSingleton(mainObject);
 
-            // method_missing:
-            singletonClass.SetMethodNoEvent(this, Symbols.MethodMissing, new RubyMethodGroupInfo(new Delegate[] {
-                new Func<RubyScope, BlockParam, object, SymbolId, object[], object>(RubyTopLevelScope.TopMethodMissing)
-            }, RubyMemberFlags.Private, singletonClass));
-
-            // TODO:
-            // TOPLEVEL_BINDING:
-            //singletonClass.SetMethod(Symbols.MethodMissing, new RubyMethodGroupInfo(new Delegate[] {
-            //    new Func<CodeContext>(RubyScope.GetTopLevelBinding)
-            //}, RubyMethodVisibility.Private, singletonClass, false));
-
-            GlobalScopeExtension result = new GlobalScopeExtension(this, globalScope, mainObject, true);
-            singletonClass.SetGlobalScope(result);
-
+            RubyGlobalScope result = new RubyGlobalScope(this, globalScope, mainObject, createHosted);
             globalScope.SetExtension(ContextId, result);
+            
+            if (createHosted) {
+                // method_missing:
+                singletonClass.SetMethodNoEvent(this, Symbols.MethodMissing, new RubyMethodGroupInfo(new Delegate[] {
+                    new Func<RubyScope, BlockParam, object, SymbolId, object[], object>(RubyTopLevelScope.TopMethodMissing)
+                }, RubyMemberFlags.Private, singletonClass));
+                
+                singletonClass.SetGlobalScope(result);
+            }
+
             return result;
-        }
-
-        //
-        // Create a scope extension for Ruby program/file.
-        //
-        internal GlobalScopeExtension/*!*/ CreateScopeExtensionForProgram(Scope/*!*/ globalScope) {
-            Assert.NotNull(globalScope);
-
-            object mainObject = new Object();
-            CreateMainSingleton(mainObject);
-
-            return new GlobalScopeExtension(this, globalScope, mainObject, false);
         }
 
         public override int ExecuteProgram(SourceUnit/*!*/ program) {
             try {
-                RubyCompilerOptions options = new RubyCompilerOptions(_options);
-                ScriptCode compiledCode = CompileSourceCode(program, options, _runtimeErrorSink);
+                RubyCompilerOptions options = new RubyCompilerOptions(_options) {
+                    FactoryKind = TopScopeFactoryKind.Main
+                };
 
-                Scope scope = new Scope();
-                scope.SetExtension(ContextId, CreateScopeExtensionForProgram(scope));
-
-                compiledCode.Run(scope);
+                CompileSourceCode(program, options, _runtimeErrorSink).Run();
             } catch (SystemExit e) {
                 return e.Status;
             }

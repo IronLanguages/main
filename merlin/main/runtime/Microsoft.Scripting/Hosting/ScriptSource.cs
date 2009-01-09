@@ -108,7 +108,7 @@ namespace Microsoft.Scripting.Hosting {
 
         private CompiledCode CompileInternal(CompilerOptions compilerOptions, ErrorListener errorListener) {
             ErrorSink errorSink = new ErrorListenerProxySink(this, errorListener);
-            ScriptCode code = _unit.Compile(compilerOptions ?? _unit.LanguageContext.GetCompilerOptions(), errorSink);
+            ScriptCode code = compilerOptions != null ? _unit.Compile(compilerOptions, errorSink) : _unit.Compile(errorSink);
 
             return (code != null) ? new CompiledCode(_engine, code) : null;
         }
@@ -126,14 +126,16 @@ namespace Microsoft.Scripting.Hosting {
         public object Execute(ScriptScope scope) {
             ContractUtils.RequiresNotNull(scope, "scope");
 
-            return _unit.Execute(scope.Scope, ErrorSink.Default);
+            return _unit.Execute(scope.Scope);
         }
 
         /// <summary>
-        /// Executes the code in an empty scope.
+        /// Executes the source code. The execution is not bound to any particular scope.
         /// </summary>
         public object Execute() {
-            return _unit.Execute(new Scope(), ErrorSink.Default);
+            // The host doesn't need the scope so do not create it here. 
+            // The language can treat the code as not bound to a DLR scope and change global lookup semantics accordingly.
+            return _unit.Execute();
         }
 
         /// <summary>

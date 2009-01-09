@@ -209,83 +209,6 @@ namespace System.Linq.Expressions.Compiler {
 
         #region AndAlso
 
-        // for a userdefined type T which has Op_False defined and Lhs, Rhs are nullable L AndAlso R  is computed as
-        // L.HasValue 
-        //     ? (T.False(L.Value) 
-        //         ? L 
-        //         : (R.HasValue 
-        //             ? (T?)(T.&(L.Value, R.Value)) 
-        //             : R))
-        //     : L
-        private void EmitUserdefinedLiftedAndAlso(BinaryExpression b) {
-            Type type = b.Left.Type;
-            Type nnType = TypeUtils.GetNonNullableType(type);
-            Label labReturnLeft = _ilg.DefineLabel();
-            Label labReturnRight = _ilg.DefineLabel();
-            Label labExit = _ilg.DefineLabel();
-
-            LocalBuilder locLeft = GetLocal(type);
-            LocalBuilder locRight = GetLocal(type);
-            LocalBuilder locNNLeft = GetLocal(nnType);
-            LocalBuilder locNNRight = GetLocal(nnType);
-
-            // load left
-            EmitExpression(b.Left);
-            _ilg.Emit(OpCodes.Stloc, locLeft);
-
-            //check left
-            _ilg.Emit(OpCodes.Ldloca, locLeft);
-            _ilg.EmitHasValue(type);
-            _ilg.Emit(OpCodes.Brfalse, labExit);
-
-            //try false on left
-            _ilg.Emit(OpCodes.Ldloca, locLeft);
-            _ilg.EmitGetValueOrDefault(type);
-            MethodInfo opFalse = TypeUtils.GetBooleanOperator(b.Method.DeclaringType, "op_False");
-            Debug.Assert(opFalse != null, "factory should check that the method exists");
-            _ilg.Emit(OpCodes.Call, opFalse);
-            _ilg.Emit(OpCodes.Brtrue, labExit);
-
-            //load right 
-            EmitExpression(b.Right);
-            _ilg.Emit(OpCodes.Stloc, locRight);
-
-            // Check right
-            _ilg.Emit(OpCodes.Ldloca, locRight);
-            _ilg.EmitHasValue(type);
-            _ilg.Emit(OpCodes.Brfalse, labReturnRight);
-
-            //Compute bitwise And
-            _ilg.Emit(OpCodes.Ldloca, locLeft);
-            _ilg.EmitGetValueOrDefault(type);
-            _ilg.Emit(OpCodes.Stloc, locNNLeft);
-            _ilg.Emit(OpCodes.Ldloca, locRight);
-            _ilg.EmitGetValueOrDefault(type);
-            _ilg.Emit(OpCodes.Stloc, locNNRight);
-            Debug.Assert(b.Method.Name == "op_BitwiseAnd");
-            _ilg.Emit(OpCodes.Ldloc, locNNLeft);
-            _ilg.Emit(OpCodes.Ldloc, locNNRight);
-            _ilg.Emit(OpCodes.Call, b.Method);
-            if (b.Method.ReturnType != type) {
-                _ilg.EmitConvertToType(b.Method.ReturnType, type, true);
-            }
-            _ilg.Emit(OpCodes.Stloc, locLeft);
-            _ilg.Emit(OpCodes.Br, labExit);
-
-            //return right
-            _ilg.MarkLabel(labReturnRight);
-            _ilg.Emit(OpCodes.Ldloc, locRight);
-            _ilg.Emit(OpCodes.Stloc, locLeft);
-            _ilg.MarkLabel(labExit);
-            //return left
-            _ilg.Emit(OpCodes.Ldloc, locLeft);
-
-            FreeLocal(locLeft);
-            FreeLocal(locRight);
-            FreeLocal(locNNLeft);
-            FreeLocal(locNNRight);
-        }
-
         private void EmitLiftedAndAlso(BinaryExpression b) {
             Type type = typeof(bool?);
             Label labComputeRight = _ilg.DefineLabel();
@@ -371,12 +294,12 @@ namespace System.Linq.Expressions.Compiler {
         private void EmitAndAlsoBinaryExpression(Expression expr) {
             BinaryExpression b = (BinaryExpression)expr;
 
-            if (b.Method != null && !IsLiftedLogicalBinaryOperator(b.Left.Type, b.Right.Type, b.Method)) {
+            if (b.Method != null && !b.IsLiftedLogical) {
                 EmitMethodAndAlso(b);
             } else if (b.Left.Type == typeof(bool?)) {
                 EmitLiftedAndAlso(b);
-            } else if (IsLiftedLogicalBinaryOperator(b.Left.Type, b.Right.Type, b.Method)) {
-                EmitUserdefinedLiftedAndAlso(b);
+            } else if (b.IsLiftedLogical) {
+                EmitExpression(b.ReduceUserdefinedLifted());
             } else {
                 EmitUnliftedAndAlso(b);
             }
@@ -385,80 +308,6 @@ namespace System.Linq.Expressions.Compiler {
         #endregion
 
         #region OrElse
-
-        // For a userdefined type T which has Op_True defined and Lhs, Rhs are nullable L OrElse R  is computed as
-        // L.HasValue 
-        //     ? (T.True(L.Value) 
-        //         ? L 
-        //         : (R.HasValue 
-        //             ? (T?)(T.|(L.Value, R.Value)) 
-        //             : R))
-        //     : R
-        private void EmitUserdefinedLiftedOrElse(BinaryExpression b) {
-            Type type = b.Left.Type;
-            Type nnType = TypeUtils.GetNonNullableType(type);
-            Label labReturnLeft = _ilg.DefineLabel();
-            Label labReturnRight = _ilg.DefineLabel();
-            Label labExit = _ilg.DefineLabel();
-
-            LocalBuilder locLeft = GetLocal(type);
-            LocalBuilder locRight = GetLocal(type);
-            LocalBuilder locNNLeft = GetLocal(nnType);
-            LocalBuilder locNNRight = GetLocal(nnType);
-
-            // Load left
-            EmitExpression(b.Left);
-            _ilg.Emit(OpCodes.Stloc, locLeft);
-
-            // Check left
-            _ilg.Emit(OpCodes.Ldloca, locLeft);
-            _ilg.EmitHasValue(type);
-            _ilg.Emit(OpCodes.Brfalse, labReturnRight);
-            _ilg.Emit(OpCodes.Ldloca, locLeft);
-            _ilg.EmitGetValueOrDefault(type);
-            MethodInfo opTrue = TypeUtils.GetBooleanOperator(b.Method.DeclaringType, "op_True");
-            Debug.Assert(opTrue != null, "factory should check that the method exists");
-            _ilg.Emit(OpCodes.Call, opTrue);
-            _ilg.Emit(OpCodes.Brtrue, labExit);
-
-            // Load right
-            EmitExpression(b.Right);
-            _ilg.Emit(OpCodes.Stloc, locRight);
-
-            // Check right
-            _ilg.Emit(OpCodes.Ldloca, locRight);
-            _ilg.EmitHasValue(type);
-            _ilg.Emit(OpCodes.Brfalse, labReturnRight);
-
-            //Compute bitwise Or
-            _ilg.Emit(OpCodes.Ldloca, locLeft);
-            _ilg.EmitGetValueOrDefault(type);
-            _ilg.Emit(OpCodes.Stloc, locNNLeft);
-            _ilg.Emit(OpCodes.Ldloca, locRight);
-            _ilg.EmitGetValueOrDefault(type);
-            _ilg.Emit(OpCodes.Stloc, locNNRight);
-            _ilg.Emit(OpCodes.Ldloc, locNNLeft);
-            _ilg.Emit(OpCodes.Ldloc, locNNRight);
-            Debug.Assert(b.Method.Name == "op_BitwiseOr");
-            _ilg.Emit(OpCodes.Call, b.Method);
-            if (b.Method.ReturnType != type) {
-                _ilg.EmitConvertToType(b.Method.ReturnType, type, true);
-            }
-            _ilg.Emit(OpCodes.Stloc, locLeft);
-            _ilg.Emit(OpCodes.Br, labExit);
-            //return right
-            _ilg.MarkLabel(labReturnRight);
-            _ilg.Emit(OpCodes.Ldloc, locRight);
-            _ilg.Emit(OpCodes.Stloc, locLeft);
-            _ilg.MarkLabel(labExit);
-            //return left
-            _ilg.Emit(OpCodes.Ldloc, locLeft);
-
-            FreeLocal(locNNLeft);
-            FreeLocal(locNNRight);
-            FreeLocal(locLeft);
-            FreeLocal(locRight);
-        }
 
         private void EmitLiftedOrElse(BinaryExpression b) {
             Type type = typeof(bool?);
@@ -545,25 +394,18 @@ namespace System.Linq.Expressions.Compiler {
         private void EmitOrElseBinaryExpression(Expression expr) {
             BinaryExpression b = (BinaryExpression)expr;
 
-            if (b.Method != null && !IsLiftedLogicalBinaryOperator(b.Left.Type, b.Right.Type, b.Method)) {
+            if (b.Method != null && !b.IsLiftedLogical) {
                 EmitMethodOrElse(b);
             } else if (b.Left.Type == typeof(bool?)) {
                 EmitLiftedOrElse(b);
-            } else if (IsLiftedLogicalBinaryOperator(b.Left.Type, b.Right.Type, b.Method)) {
-                EmitUserdefinedLiftedOrElse(b);
+            } else if (b.IsLiftedLogical) {
+                EmitExpression(b.ReduceUserdefinedLifted());
             } else {
                 EmitUnliftedOrElse(b);
             }
         }
 
         #endregion
-
-        private static bool IsLiftedLogicalBinaryOperator(Type left, Type right, MethodInfo method) {
-            return right == left &&
-                TypeUtils.IsNullableType(left) &&
-                method != null &&
-                method.ReturnType == TypeUtils.GetNonNullableType(left);
-        }
 
         #region Optimized branching
 

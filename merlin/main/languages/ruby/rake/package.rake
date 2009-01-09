@@ -21,7 +21,7 @@ def transform_dlr_project(csproj_filename)
     replace_output_path contents, '..\..\..\..\..\..\Merlin\Main\Bin\Release\\', '..\..\build\release\\'
     replace_output_path contents, '..\..\..\..\..\..\Merlin\Main\Bin\Silverlight Debug\\', '..\..\build\silverlight debug\\'
     replace_output_path contents, '..\..\..\..\..\..\Merlin\Main\Bin\Silverlight Release\\', '..\..\build\silverlight release\\'
-    replace_import_project contents, '..\..\..\..\..\..\Merlin\Main\SpecSharp.targets', '..\..\SpecSharp.targets'
+    replace_import_project contents, '..\..\..\..\..\..\Merlin\Main\Support\SpecSharp.targets', '..\..\SpecSharp.targets'
     replace_doc_path contents,    '..\..\..\..\..\..\Merlin\Main\Bin\Debug\Microsoft.Scripting.Core.xml', '..\..\build\debug\Microsoft.Scripting.Core.xml'
     replace_doc_path contents,    '..\..\..\..\..\..\Merlin\Main\Bin\Release\Microsoft.Scripting.Core.xml', '..\..\build\release\Microsoft.Scripting.Core.xml'
     replace_doc_path contents,    '..\..\..\..\..\..\Merlin\Main\Bin\Silverlight Debug\Microsoft.Scripting.Core.xml', '..\..\build\silverlight debug\Microsoft.Scripting.Core.xml'
@@ -157,7 +157,7 @@ def push
       replace_output_path contents, '..\..\..\..\Merlin\Main\Bin\Release\\', '..\..\build\release\\'
       replace_output_path contents, '..\..\..\..\Merlin\Main\Bin\Silverlight Debug\\', '..\..\build\silverlight debug\\'
       replace_output_path contents, '..\..\..\..\Merlin\Main\Bin\Silverlight Release\\', '..\..\build\silverlight release\\'
-      replace_import_project contents, '..\..\..\..\Merlin\Main\SpecSharp.targets', '..\..\SpecSharp.targets'
+      replace_import_project contents, '..\..\..\..\Merlin\Main\Support\SpecSharp.targets', '..\..\SpecSharp.targets'
       replace_doc_path contents,    '..\..\..\..\Merlin\Main\Bin\Debug\Microsoft.Scripting.Core.xml', '..\..\build\debug\Microsoft.Scripting.Core.xml'
       replace_doc_path contents,    '..\..\..\..\Merlin\Main\Bin\Release\Microsoft.Scripting.Core.xml', '..\..\build\release\Microsoft.Scripting.Core.xml'
       replace_doc_path contents,    '..\..\..\..\Merlin\Main\Bin\Silverlight Debug\Microsoft.Scripting.Core.xml', '..\..\build\silverlight debug\Microsoft.Scripting.Core.xml'
@@ -178,7 +178,7 @@ def push
       replace_output_path contents, '..\..\..\..\..\Main\Bin\Release\\', '..\..\build\release\\'
       replace_output_path contents, '..\..\..\..\..\Main\Bin\Silverlight Debug\\', '..\..\build\silverlight debug\\'
       replace_output_path contents, '..\..\..\..\..\Main\Bin\Silverlight Release\\', '..\..\build\silverlight release\\'
-      replace_import_project contents, '..\..\..\..\Main\SpecSharp.targets', '..\..\SpecSharp.targets'
+      replace_import_project contents, '..\..\..\..\Main\Support\SpecSharp.targets', '..\..\SpecSharp.targets'
     end
     transform_project :generator, 'classinitgenerator.csproj'
     transform_project(:console, 'ruby.console.csproj') do |contents|
@@ -199,7 +199,7 @@ def push
       
       replace_app_config_path contents, '..\..\..\App.config', '..\..\App.config'
       unless IronRuby.is_merlin?
-        replace_key_path    contents, '..\..\RubyTestKey.snk', '..\..\..\MSSharedLibKey.snk'
+        replace_key_path    contents, '..\..\RubyTestKey.snk', '..\..\..\Support\MSSharedLibKey.snk'
       end      
     end
 

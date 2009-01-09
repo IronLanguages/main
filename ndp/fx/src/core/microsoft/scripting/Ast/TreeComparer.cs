@@ -21,24 +21,21 @@ using System.Dynamic.Utils;
 
 namespace System.Linq.Expressions {
 
-    static class TreeComparer {
+    internal enum TreeCompareResult {
+        Incompatible,
+        Compatible,
+        TooSpecific,
+    }
+
+    internal class TreeComparer {
         #region Tree Walker
 
         /// <summary>
         /// Walks all of the nodes of a tree and puts all of the expressions into
         /// a list.
         /// </summary>
-        class FlatTreeWalker : ExpressionVisitor {
-            public List<Expression> Expressions = new List<Expression>();
-            public Dictionary<ConstantExpression, ConstantExpression> _templated;
-
-            internal bool IsTemplatedConstant(ConstantExpression constantExpr) {
-                if (_templated == null) {
-                    return false;
-                }
-
-                return _templated.ContainsKey(constantExpr);
-            }
+        private class FlatTreeWalker : ExpressionVisitor {
+            internal List<Expression> Expressions = new List<Expression>();
 
             protected internal override Expression VisitDynamic(DynamicExpression node) {
                 Expressions.Add(node);
@@ -66,23 +63,7 @@ namespace System.Linq.Expressions {
             }
 
             protected internal override Expression VisitConstant(ConstantExpression node) {
-                // if we've promoted a value to a templated constant turn it
-                // back into a normal constant for the purpose of comparing the trees
-                ITemplatedValue tempVal = node.Value as ITemplatedValue;
-                if (tempVal != null) {
-                    if (_templated == null) {
-                        _templated = new Dictionary<ConstantExpression, ConstantExpression>();
-                    }
-
-                    // if we have templated constants we need to make sure to remember their
-                    // templated to see if the resulting rules will be compatible.
-                    ConstantExpression newConstant = Expression.Constant(tempVal.ObjectValue, tempVal.GetType().GetGenericArguments()[0]);
-
-                    _templated[newConstant] = newConstant;
-                    Expressions.Add(newConstant);
-                } else {
-                    Expressions.Add(node);
-                }
+                Expressions.Add(node);
                 return base.VisitConstant(node);
             }
 
@@ -112,14 +93,7 @@ namespace System.Linq.Expressions {
             }
 
             protected internal override Expression VisitMember(MemberExpression node) {
-                // ignore the templated constants but add normal member expressions
-                Expression target = node.Expression;
-                if (target == null ||
-                    !target.Type.IsGenericType ||
-                    target.Type.GetGenericTypeDefinition() != typeof(TemplatedValue<>)) {
-                    Expressions.Add(node);
-                }
-
+                Expressions.Add(node);
                 return base.VisitMember(node);
             }
 
@@ -175,12 +149,12 @@ namespace System.Linq.Expressions {
 
         #endregion
 
-        class VariableInfo {
+        private class VariableInfo {
             private Dictionary<ParameterExpression, int> _left = new Dictionary<ParameterExpression, int>();
             private Dictionary<ParameterExpression, int> _right = new Dictionary<ParameterExpression, int>();
             private int _curLeft, _curRight;
 
-            public int GetLeftVariable(ParameterExpression ve) {
+            internal int GetLeftVariable(ParameterExpression ve) {
                 if (ve == null) {
                     return -1;
                 }
@@ -193,7 +167,7 @@ namespace System.Linq.Expressions {
                 return res;
             }
 
-            public int GetRightVariable(ParameterExpression ve) {
+            internal int GetRightVariable(ParameterExpression ve) {
                 if (ve == null) {
                     return -1;
                 }
@@ -207,57 +181,112 @@ namespace System.Linq.Expressions {
             }
         }
 
-        /// <summary>
-        /// Compares two trees.  If the trees differ only by constants then the list of constants which differ
-        /// is provided as a list via an out-param.  The constants collected are the constants in the left
-        /// side of the tree and only include constants which differ in value.
-        /// </summary>
-        public static bool Compare(Expression left, Expression right, out List<ConstantExpression> replacementNodes, out bool tooSpecific) {
-            replacementNodes = null;
-            tooSpecific = false;
+        private VariableInfo _varInfo;
+        private int _curConstNum;
 
+        /// <summary>
+        /// Constants that were templated in original tree.
+        /// </summary>
+        private System.Linq.Expressions.Compiler.Set<int> _templated;
+
+        /// <summary>
+        /// New tree requires more general template.
+        /// </summary>
+        private bool _tooSpecific;
+        
+        /// <summary>
+        /// New tree is sufficiently similar to the old one.
+        /// </summary>
+        private bool _compatible;
+
+        /// <summary>
+        /// Constants that require parameterisation and their position 
+        /// The numbering is assumed as in traversal by ExpressionVisitor.
+        /// </summary>
+        private List<KeyValuePair<ConstantExpression, int>> _replacementList;
+
+        private TreeComparer(System.Linq.Expressions.Compiler.Set<int> templated) {
+            _templated = templated;
+        }
+
+        internal static TreeCompareResult CompareTrees(
+                Expression left, 
+                Expression right, 
+                System.Linq.Expressions.Compiler.Set<int> templated,
+                out List<KeyValuePair<ConstantExpression, int>> ReplacementList){
+
+
+            TreeComparer comparer = new TreeComparer(templated);
+            comparer.Compare(left, right);
+
+            if (!comparer._compatible) {
+                ReplacementList = null;
+                return TreeCompareResult.Incompatible;
+            }
+
+            ReplacementList = comparer._replacementList;
+            if (comparer._tooSpecific) {
+                return TreeCompareResult.TooSpecific;
+            } else {
+                return TreeCompareResult.Compatible;
+            }
+        }
+
+        /// <summary>
+        /// Compares two trees.
+        /// If trees differ only in constants, produces list of constants that should be parameterised.
+        /// Also verifies if existing template is sufficient and could be reused.
+        /// </summary>
+        private void Compare(Expression left, Expression right) {
             FlatTreeWalker walkLeft = new FlatTreeWalker();
             FlatTreeWalker walkRight = new FlatTreeWalker();
             walkLeft.Visit(left);
-
-            Debug.Assert(walkLeft._templated == null);
-
             walkRight.Visit(right);
+
+            // false untill proven compatible.
+            _compatible = false;
 
             // check the length first to see if the trees are obviously different            
             if (walkLeft.Expressions.Count != walkRight.Expressions.Count) {
-                return false;
+                return;
             }
 
-            // then see if they differ by just constants which we could replace
-            List<ConstantExpression> needsReplacement = new List<ConstantExpression>();
+            _varInfo = new VariableInfo();
+            _curConstNum = -1;
+            _replacementList = new List<KeyValuePair<ConstantExpression, int>>();           
 
-            VariableInfo varInfo = new VariableInfo();
+            // then see if they differ by just constants which we could replace
             for (int i = 0; i < walkLeft.Expressions.Count; i++) {
                 Expression currentLeft = walkLeft.Expressions[i], currentRight = walkRight.Expressions[i];
 
-                // ReductionRewriter should have removed these
-
                 if (currentLeft.NodeType != currentRight.NodeType) {
                     // different node types, they can't possibly be equal
-                    return false;
+                    return;
                 } else if (currentLeft.Type != currentRight.Type) {
                     // they can't possibly be a match
-                    return false;
+                    return;
                 }
 
-                if (!CompareTwoNodes(walkRight, needsReplacement, varInfo, currentLeft, currentRight, ref tooSpecific)) {
-                    return false;
+                if (!CompareTwoNodes(currentLeft, currentRight)) {
+                    return;
                 }
             }
 
-            replacementNodes = needsReplacement;
-            return true;
+            _compatible = true;
+            return;
+        }
+
+        private bool IsTemplatedConstant(int constantNum) {
+            return _templated != null && _templated.Contains(constantNum);
+        }
+
+        private void AddToReplacementList(ConstantExpression ce) {
+            _replacementList.Add(new KeyValuePair<ConstantExpression, int>(ce, _curConstNum));
         }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity")]
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1800:DoNotCastUnnecessarily")]
-        private static bool CompareTwoNodes(FlatTreeWalker walkRight, List<ConstantExpression> needsReplacement, VariableInfo varInfo, Expression currentLeft, Expression currentRight, ref bool tooSpecific) {
+        private bool CompareTwoNodes(Expression currentLeft, Expression currentRight) {
             switch (currentLeft.NodeType) {
                 case ExpressionType.Dynamic:
                     var dynLeft = (DynamicExpression)currentLeft;
@@ -268,6 +297,8 @@ namespace System.Linq.Expressions {
                     }
                     break;
                 case ExpressionType.Constant:
+                    _curConstNum++;
+
                     // check constant value                        
                     ConstantExpression ceLeft = (ConstantExpression)currentLeft;
                     ConstantExpression ceRight = (ConstantExpression)currentRight;
@@ -275,14 +306,9 @@ namespace System.Linq.Expressions {
                     object leftValue = ceLeft.Value;
                     object rightValue = ceRight.Value;
 
-                    if (leftValue == null && rightValue == null) {
-                        // both are null, no need to template this param.
-                        break;
-                    }
-
                     // See if they're both sites
-                    CallSite leftSite = ceLeft.Value as CallSite;
-                    CallSite rightSite = ceRight.Value as CallSite;
+                    CallSite leftSite = leftValue as CallSite;
+                    CallSite rightSite = rightValue as CallSite;
                     if (leftSite != null) {
                         if (rightSite == null) {
                             return false;
@@ -297,22 +323,26 @@ namespace System.Linq.Expressions {
                         return false;
                     }
 
-                    // add if left is null and right's something else or
-                    // left and right aren't equal.  We'll also add it if
-                    // the existing rule has hoisted this value into a template
-                    // parameter.
-                    if (leftValue == null ||
-                        !leftValue.Equals(rightValue) ||
-                        walkRight.IsTemplatedConstant(ceRight)) {
-
-                        if (walkRight._templated != null && !walkRight.IsTemplatedConstant(ceRight)) {
-                            // if we have template args on the right hand side and this isn't
-                            // one of them we need to re-compile a more general rule.
-                            tooSpecific = true;
+                    if (IsTemplatedConstant(_curConstNum)) {
+                        // always add already templated values
+                        AddToReplacementList(ceLeft);
+                    } else {
+                        // different constants should become parameters in the template.
+                        if (leftValue == null) {
+                            if (rightValue != null) {
+                                //new templated const
+                                _tooSpecific = true;
+                                AddToReplacementList(ceLeft);
+                            }
+                        } else {
+                            if (!leftValue.Equals(rightValue)){
+                                //new templated const
+                                _tooSpecific = true;
+                                AddToReplacementList(ceLeft);
+                            }
                         }
-
-                        needsReplacement.Add(ceLeft);
                     }
+
                     break;
                 case ExpressionType.Equal:
                 case ExpressionType.NotEqual:
@@ -375,7 +405,7 @@ namespace System.Linq.Expressions {
                     break;
                 case ExpressionType.Block:
                     // compare factory method
-                    if (!Compare(varInfo, (BlockExpression)currentLeft, (BlockExpression)currentRight)) {
+                    if (!Compare(_varInfo, (BlockExpression)currentLeft, (BlockExpression)currentRight)) {
                         return false;
                     }
                     break;
@@ -387,12 +417,12 @@ namespace System.Linq.Expressions {
                     break;
                 case ExpressionType.Try:
                     // compare catch finally blocks and their handler types
-                    if (!Compare(varInfo, (TryExpression)currentLeft, (TryExpression)currentRight)) {
+                    if (!Compare(_varInfo, (TryExpression)currentLeft, (TryExpression)currentRight)) {
                         return false;
                     }
                     break;
                 case ExpressionType.Parameter:
-                    if (!Compare(varInfo, (ParameterExpression)currentLeft, (ParameterExpression)currentRight)) {
+                    if (!Compare(_varInfo, (ParameterExpression)currentLeft, (ParameterExpression)currentRight)) {
                         return false;
                     }
                     break;
@@ -407,6 +437,8 @@ namespace System.Linq.Expressions {
                 case ExpressionType.Unbox:
                 case ExpressionType.Negate:
                 case ExpressionType.Not:
+                case ExpressionType.IsFalse:
+                case ExpressionType.IsTrue:
                 case ExpressionType.OnesComplement:
                 case ExpressionType.Conditional:
                 case ExpressionType.NewArrayInit:

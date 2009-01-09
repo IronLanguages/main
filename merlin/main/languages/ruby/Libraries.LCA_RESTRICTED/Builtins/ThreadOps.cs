@@ -24,11 +24,53 @@ using Microsoft.Scripting.Utils;
 using System.Threading;
 using IronRuby.Runtime;
 using System.Text;
+using System.Runtime.InteropServices;
 
 namespace IronRuby.Builtins {
+    /// <summary>
+    /// Ruby threads are represented by CLR thread objects (System.Threading.Thread).
+    /// Ruby 1.8.N has green threads where the language does the thread scheduling. We map the green threads 
+    /// directly to CLR threads.
+    /// 
+    /// Ruby supports asynchronously manipulating of an arbitrary thread with methods like Thread#raise, Thread#exit, etc.
+    /// For such methods, we use Thread.Abort which is unsafe. Howevever, Ruby 1.9 may not support green threads,
+    /// and this will not be an issue then.
+    /// </summary>
     [RubyClass("Thread", Extends = typeof(Thread), Inherits = typeof(object))]
     public static class ThreadOps {
         static bool _globalAbortOnException;
+
+        private class ThreadExitMarker {
+        }
+
+        /// <summary>
+        /// The ThreadState enumeration is a flag, and multiple values could be set simultaneously. Also,
+        /// there is other state that IronRuby tracks. RubyThreadStatus flattens out the different states
+        /// into non-overlapping values.
+        /// </summary>
+        private enum RubyThreadStatus {
+            /// <summary>
+            /// Ruby does not expose such a state. However, since IronRuby uses CLR threads, this state can exist for
+            /// threads that are not created directly from Ruby code
+            /// </summary>
+            Unstarted,
+
+            Running,
+
+            Sleeping,
+
+            Completed,
+
+            /// <summary>
+            /// TODO - Ruby samples show this state. Is it really needed?
+            /// </summary>
+            // Aborting,
+
+            /// <summary>
+            /// An unhandled exception was thrown by the thread
+            /// </summary>
+            Aborted
+        }
 
         internal class RubyThreadInfo {
             private static readonly Dictionary<int, RubyThreadInfo> _mapping = new Dictionary<int, RubyThreadInfo>();
@@ -37,6 +79,8 @@ namespace IronRuby.Builtins {
             private ThreadGroup _group;
             private readonly Thread _thread;
             private bool _abortOnException;
+            private AutoResetEvent _runSignal = new AutoResetEvent(false);
+            private bool _isSleeping;
 
             private RubyThreadInfo(Thread thread) {
                 _threadLocalStorage = new Dictionary<SymbolId, object>();
@@ -115,6 +159,7 @@ namespace IronRuby.Builtins {
 
             internal Exception Exception { get; set; }
             internal object Result { get; set; }
+            internal bool CreatedFromRuby { get; set; }
 
             internal bool AbortOnException {
                 get {
@@ -136,6 +181,25 @@ namespace IronRuby.Builtins {
                         }
                         return result.ToArray();
                     }
+                }
+            }
+
+            /// <summary>
+            /// We do not use Thread.Sleep here as another thread can call Thread#wakeup/Thread#run. Instead, we use our own
+            /// lock which can be signalled from another thread.
+            /// </summary>
+            internal void Sleep() {
+                try {
+                    _isSleeping = true;
+                    _runSignal.WaitOne();
+                } finally {
+                    _isSleeping = false;
+                }
+            }
+
+            internal void Run() {
+                if (_isSleeping) {
+                    _runSignal.Set();
                 }
             }
         }
@@ -223,12 +287,21 @@ namespace IronRuby.Builtins {
             RubyUtils.AppendFormatHexObjectId(result, RubyUtils.GetObjectId(context, self));
             result.Append(' ');
 
-            if ((self.ThreadState & ThreadState.WaitSleepJoin) != 0) {
-                result.Append("sleep");
-            } else if ((self.ThreadState & (ThreadState.Stopped | ThreadState.Aborted | ThreadState.AbortRequested)) != 0) {
-                result.Append("dead");
-            } else {
-                result.Append("run");
+            RubyThreadStatus status = GetStatus(self);
+            switch (status) {
+                case RubyThreadStatus.Unstarted:
+                    result.Append("unstarted");
+                    break;
+                case RubyThreadStatus.Running:
+                    result.Append("run");
+                    break;
+                case RubyThreadStatus.Sleeping:
+                    result.Append("sleep");
+                    break;
+                case RubyThreadStatus.Completed:
+                case RubyThreadStatus.Aborted:
+                    result.Append("dead");
+                    break;
             }
 
             result.Append('>');
@@ -239,9 +312,7 @@ namespace IronRuby.Builtins {
         public static Thread/*!*/ Join(Thread/*!*/ self) {
             RubyThreadInfo.RegisterThread(Thread.CurrentThread);
 
-            if (!(self.ThreadState == ThreadState.AbortRequested || self.ThreadState == ThreadState.Aborted)) {
-                self.Join();
-            }
+            self.Join();
 
             Exception threadException = RubyThreadInfo.FromThread(self).Exception;
             if (threadException != null) {
@@ -276,7 +347,11 @@ namespace IronRuby.Builtins {
         [RubyMethod("terminate")]
         public static Thread Kill(Thread/*!*/ self) {
             RubyThreadInfo.RegisterThread(Thread.CurrentThread);
+#if SILVERLIGHT // Thread.Abort(stateInfo)
             self.Abort();
+#else
+            self.Abort(new ThreadExitMarker());
+#endif
             return self;
         }
 
@@ -304,7 +379,82 @@ namespace IronRuby.Builtins {
 
         //    priority
         //    priority=
-        //    raise
+
+        #region raise, fail
+
+#if !SILVERLIGHT
+        private static void RaiseAsyncException(Thread thread, Exception exception) {
+            RubyThreadStatus status = GetStatus(thread);
+
+            // rethrow semantics, preserves the backtrace associated with the exception:
+            RubyOps.RaiseAsyncException(thread, exception);
+
+            if (status == RubyThreadStatus.Sleeping) {
+                // Thread.Abort can interrupt a thread with ThreadState.WaitSleepJoin. However, Thread.Abort 
+                // is deferred while the thread is in a catch block. If there is a Kernel.sleep in a catch block,
+                // then that sleep will not be interrupted. 
+                // TODO: We should call Run to nudge the thread if its CurrentException is not-null, and 
+                // ThreadOps.Stop should have a checkpoint to see whether an async exception needs to be thrown
+
+                // Run(thread);
+            }
+        }
+#endif
+
+        [RubyMethod("raise")]
+        [RubyStackTraceHidden]
+        public static void RaiseException(RubyContext/*!*/ context, Thread/*!*/ self) {
+            if (self == Thread.CurrentThread) {
+                KernelOps.RaiseException(context, self);
+                return;
+            }
+
+#if SILVERLIGHT
+            throw new NotImplementedError("Thread#raise is not implemented on Silverlight");
+#else
+            // TODO: RubyContext.CurrentException is a thread-local static, and cannot be accessed from other threads
+            // To fix this, it would have to be stored somehow without using ThreadStaticAttribute
+            // For now, we just throw a RuntimeError
+            RaiseAsyncException(self, new RuntimeError());
+#endif
+        }
+
+        [RubyMethod("raise")]
+        [RubyStackTraceHidden]
+        public static void RaiseException(Thread/*!*/ self, [NotNull]MutableString/*!*/ message) {
+            if (self == Thread.CurrentThread) {
+                KernelOps.RaiseException(self, message);
+                return;
+            }
+
+#if SILVERLIGHT
+            throw new NotImplementedError("Thread#raise is not implemented on Silverlight");
+#else
+            Exception e = RubyExceptionData.InitializeException(new RuntimeError(message.ToString()), message);
+            RaiseAsyncException(self, e);
+#endif
+        }
+
+        [RubyMethod("raise")]
+        [RubyStackTraceHidden]
+        public static void RaiseException(RespondToStorage/*!*/ respondToStorage, UnaryOpStorage/*!*/ storage0, BinaryOpStorage/*!*/ storage1,
+            RubyContext/*!*/ context, Thread/*!*/ self, object/*!*/ obj, [Optional]object arg, [Optional]RubyArray backtrace) {
+
+            if (self == Thread.CurrentThread) {
+                KernelOps.RaiseException(respondToStorage, storage0, storage1, context, self, obj, arg, backtrace);
+                return;
+            }
+
+#if SILVERLIGHT
+            throw new NotImplementedError("Thread#raise is not implemented on Silverlight");
+#else
+            Exception e = KernelOps.CreateExceptionToRaise(respondToStorage, storage0, storage1, context, obj, arg, backtrace);
+            RaiseAsyncException(self, e);
+#endif
+        }
+
+        #endregion
+
         //    safe_level
 
         // TODO: these two methods interrupt a sleeping thread via the Thread.Interrupt API.
@@ -315,28 +465,68 @@ namespace IronRuby.Builtins {
 #if !SILVERLIGHT
         [RubyMethod("run", BuildConfig = "!SILVERLIGHT")]
         [RubyMethod("wakeup", BuildConfig = "!SILVERLIGHT")]
-        public static void Run(Thread/*!*/ self) {
+        public static Thread Run(Thread/*!*/ self) {
             RubyThreadInfo.RegisterThread(Thread.CurrentThread);
-            self.Interrupt();
+            RubyThreadInfo info = RubyThreadInfo.FromThread(self);
+            info.Run();
+            return self;
         }
 #endif
+
+        private static RubyThreadStatus GetStatus(Thread thread) {
+            ThreadState state = thread.ThreadState;
+            RubyThreadInfo info = RubyThreadInfo.FromThread(thread);
+
+            if ((state & ThreadState.Unstarted) == ThreadState.Unstarted) {
+                if (info.CreatedFromRuby) {
+                    // Ruby threads do not have an unstarted status. We must be in the tiny window when ThreadOps.CreateThread
+                    // created the thread, but has not called Thread.Start on it yet.
+                    return RubyThreadStatus.Running;
+                } else {
+                    // This is a thread created from outside Ruby. In such a case, we do not know when Thread.Start
+                    // will be called on it. So we report it as unstarted.
+                    return RubyThreadStatus.Unstarted;
+                }
+            }
+
+            if ((state & (ThreadState.Stopped|ThreadState.Aborted)) != 0) {
+                if (RubyThreadInfo.FromThread(thread).Exception == null) {
+                    return RubyThreadStatus.Completed;
+                } else {
+                    return RubyThreadStatus.Aborted;
+                }
+            }
+
+            if ((state & ThreadState.WaitSleepJoin) == ThreadState.WaitSleepJoin) {
+                // We will report a thread to be sleeping more often than in CRuby. This is because any "lock" statement
+                // can potentially cause ThreadState.WaitSleepJoin. Also, "Thread.pass" does System.Threading.Thread.Sleep(0)
+                // which also briefly changes the state to ThreadState.WaitSleepJoin
+                return RubyThreadStatus.Sleeping;
+            }
+
+            if ((state & ThreadState.Running) == ThreadState.Running) {
+                return RubyThreadStatus.Running;
+            }
+
+            throw new ArgumentException("unknown thread status: " + state);
+        }
 
         [RubyMethod("status")]
         public static object Status(Thread/*!*/ self) {
             RubyThreadInfo.RegisterThread(Thread.CurrentThread);
-            switch (self.ThreadState) {
-                case ThreadState.WaitSleepJoin:
-                    return MutableString.Create("sleep");
-                case ThreadState.Running:
+            switch (GetStatus(self)) {
+                case RubyThreadStatus.Unstarted:
+                    return MutableString.Create("unstarted");
+                case RubyThreadStatus.Running:
                     return MutableString.Create("run");
-                case ThreadState.Aborted:
-                case ThreadState.AbortRequested:
-                    return null;
-                case ThreadState.Stopped:
-                case ThreadState.StopRequested:
+                case RubyThreadStatus.Sleeping:
+                    return MutableString.Create("sleep");
+                case RubyThreadStatus.Completed:
                     return false;
+                case RubyThreadStatus.Aborted:
+                    return null;
                 default:
-                    throw new ArgumentException("unknown thread status: " + self.ThreadState.ToString());
+                    throw new ArgumentException("unknown thread status");
             }
         }
 
@@ -361,19 +551,22 @@ namespace IronRuby.Builtins {
             return value;
         }
 
-        //    critical
-        //    critical=
-
         [RubyMethod("critical", RubyMethodAttributes.PublicSingleton)]
-        public static bool Critical(object self) {
+        public static bool Critical(RubyContext/*!*/ context, object self) {
             RubyThreadInfo.RegisterThread(Thread.CurrentThread);
-            return false;
+            return context.IsInCriticalRegion;
         }
 
         [RubyMethod("critical=", RubyMethodAttributes.PublicSingleton)]
-        public static bool Critical(object self, bool value) {
+        public static void Critical(RubyContext/*!*/ context, object self, bool value) {
             RubyThreadInfo.RegisterThread(Thread.CurrentThread);
-            return false;
+            if (value) {
+                Monitor.Enter(context.CriticalMonitor);
+                context.IsInCriticalRegion = true;
+            } else {
+                context.IsInCriticalRegion = false;
+                Monitor.Exit(context.CriticalMonitor);
+            }
         }
 
         [RubyMethod("current", RubyMethodAttributes.PublicSingleton)]
@@ -400,7 +593,30 @@ namespace IronRuby.Builtins {
             return result;
         }
 
-        //    main
+        /// <summary>
+        /// Thread#exit is implemented by calling Thread.Abort. However, we need to distinguish a call to Thread#exit
+        /// from a raw call to Thread.Abort.
+        /// </summary>
+        /// <returns>true if the exception was raised by Thread#exit. In that case, it should not be treated as an uncaught exception</returns>
+        private static bool IsRubyThreadExit(Exception e) {
+            ThreadAbortException tae = e as ThreadAbortException;
+            if (tae != null) {
+#if SILVERLIGHT // Thread.ExceptionState
+                return true;
+#else
+                if (tae.ExceptionState is ThreadExitMarker) {
+                    Thread.ResetAbort();
+                    return true;
+                }
+#endif
+            }
+            return false;
+        }
+
+        [RubyMethod("main", RubyMethodAttributes.PublicSingleton)]
+        public static Thread/*!*/ GetMainThread(RubyContext/*!*/ context, RubyClass self) {
+            return context.MainThread;
+        }
 
         [RubyMethod("new", RubyMethodAttributes.PublicSingleton)]
         [RubyMethod("start", RubyMethodAttributes.PublicSingleton)]
@@ -409,20 +625,29 @@ namespace IronRuby.Builtins {
                 throw new ThreadError("must be called with a block");
             }
             ThreadGroup group = Group(Thread.CurrentThread);
-            Thread result = new Thread(new ThreadStart(delegate() {
-                RubyThreadInfo info = RubyThreadInfo.FromThread(Thread.CurrentThread);
-                info.Group = group;
+            Thread result = new Thread(new ThreadStart(delegate() { RubyThreadStart(startRoutine, args, group); }));
+            result.Start();
+            return result;
+        }
 
-                try {
-                    object threadResult;
-                    // TODO: break?
-                    startRoutine.Yield(args, out threadResult);
-                    info.Result = threadResult;
-#if !SILVERLIGHT
-                } catch (ThreadInterruptedException) {
-                    // Do nothing with this for now
-#endif
-                } catch (Exception e) {
+        private static void RubyThreadStart(BlockParam startRoutine, object[]/*!*/ args, ThreadGroup group) {
+            RubyThreadInfo info = RubyThreadInfo.FromThread(Thread.CurrentThread);
+            info.CreatedFromRuby = true;
+
+            info.Group = group;
+
+            try {
+                object threadResult;
+                // TODO: break?
+                startRoutine.Yield(args, out threadResult);
+                info.Result = threadResult;
+            } catch (Exception e) {
+                if (IsRubyThreadExit(e)) {
+                    Utils.Log(String.Format("Thread {0} exited.", info.Thread.ManagedThreadId), "THREAD");
+                    info.Result = false;
+                } else {
+                    e = RubyOps.GetVisibleException(e);
+                    RubyExceptionData.ActiveExceptionHandled(e);
                     info.Exception = e;
 
                     StringBuilder trace = new StringBuilder();
@@ -432,8 +657,11 @@ namespace IronRuby.Builtins {
                     trace.Append(e.StackTrace);
                     trace.AppendLine();
                     trace.AppendLine();
-                    foreach (var frame in RubyExceptionData.GetInstance(e).Backtrace) {
-                        trace.Append(frame.ToString());
+                    RubyExceptionData data = RubyExceptionData.GetInstance(e);
+                    if (data.Backtrace != null) { // ReinitializeException sets Backtrace to null
+                        foreach (var frame in data.Backtrace) {
+                            trace.Append(frame.ToString());
+                        }
                     }
 
                     Utils.Log(trace.ToString(), "THREAD");
@@ -442,10 +670,7 @@ namespace IronRuby.Builtins {
                         throw;
                     }
                 }
-            }));
-
-            result.Start();
-            return result;
+            }
         }
 
         [RubyMethod("pass", RubyMethodAttributes.PublicSingleton)]
@@ -455,10 +680,25 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("stop", RubyMethodAttributes.PublicSingleton)]
-        public static void Stop(object self) {
+        public static void Stop(RubyContext/*!*/ context, object self) {
+            if (context.IsInCriticalRegion) {
+                Critical(context, self, false);
+            }
+            DoSleep();
+        }
+
+        internal static void DoSleep() {
             RubyThreadInfo.RegisterThread(Thread.CurrentThread);
             // TODO: MRI throws an exception if you try to stop the main thread
-            Thread.Sleep(Timeout.Infinite);
+            RubyThreadInfo info = RubyThreadInfo.FromThread(Thread.CurrentThread);
+            info.Sleep();
+        }
+
+        [RubyMethod("stop?", RubyMethodAttributes.PublicInstance)]
+        public static bool IsStopped(Thread self) {
+            RubyThreadInfo.RegisterThread(Thread.CurrentThread);
+            RubyThreadStatus status = GetStatus(self);
+            return status == RubyThreadStatus.Sleeping || status == RubyThreadStatus.Completed || status == RubyThreadStatus.Aborted;
         }
     }
 }

@@ -106,22 +106,18 @@ namespace IronRuby.Runtime.Calls {
             throw Assert.Unreachable;
         }
 
-        internal virtual void ApplyBlockFlowHandling(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args) {
-            // nop
-        }
-
         internal void BuildCall(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args, string/*!*/ name) {
             BuildCallNoFlow(metaBuilder, args, name);
-            ApplyBlockFlowHandling(metaBuilder, args);
+            metaBuilder.BuildControlFlow(args);
         }
 
         internal virtual void BuildSuperCallNoFlow(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args, string/*!*/ name, RubyModule/*!*/ declaringModule) {
             BuildCallNoFlow(metaBuilder, args, name);
         }
 
-        internal virtual void BuildSuperCall(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args, string/*!*/ name, RubyModule/*!*/ declaringModule) {
+        internal void BuildSuperCall(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args, string/*!*/ name, RubyModule/*!*/ declaringModule) {
             BuildSuperCallNoFlow(metaBuilder, args, name, declaringModule);
-            ApplyBlockFlowHandling(metaBuilder, args);
+            metaBuilder.BuildControlFlow(args);
         }
     }
 }

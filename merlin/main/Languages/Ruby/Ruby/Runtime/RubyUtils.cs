@@ -418,21 +418,21 @@ namespace IronRuby.Runtime {
 
         #region Constants, Methods
 
-        public static object GetConstant(RubyScope/*!*/ scope, RubyModule/*!*/ owner, string/*!*/ name, bool lookupObject) {
-            Assert.NotNull(scope, owner, name);
+        public static object GetConstant(RubyGlobalScope/*!*/ globalScope, RubyModule/*!*/ owner, string/*!*/ name, bool lookupObject) {
+            Assert.NotNull(globalScope, owner, name);
 
             object result;
-            if (owner.TryResolveConstant(scope.GlobalScope, name, out result)) {
+            if (owner.TryResolveConstant(globalScope, name, out result)) {
                 return result;
             }
 
             RubyClass objectClass = owner.Context.ObjectClass;
-            if (owner != objectClass && lookupObject && objectClass.TryResolveConstant(scope.GlobalScope, name, out result)) {
+            if (owner != objectClass && lookupObject && objectClass.TryResolveConstant(globalScope, name, out result)) {
                 return result;
             }
 
             CheckConstantName(name);
-            return RubySites.ModuleConstMissing(scope.RubyContext, owner, name);
+            return RubySites.ModuleConstMissing(globalScope.Context, owner, name);
         }
 
         public static void SetConstant(RubyModule/*!*/ owner, string/*!*/ name, object value) {
@@ -464,7 +464,7 @@ namespace IronRuby.Runtime {
 
         #region Modules, Classes
 
-        internal static RubyModule/*!*/ DefineModule(Scope/*!*/ autoloadScope, RubyModule/*!*/ owner, string/*!*/ name) {
+        internal static RubyModule/*!*/ DefineModule(RubyGlobalScope/*!*/ autoloadScope, RubyModule/*!*/ owner, string/*!*/ name) {
             Assert.NotNull(autoloadScope, owner);
 
             object existing;
@@ -480,7 +480,7 @@ namespace IronRuby.Runtime {
             }
         }
 
-        internal static RubyClass/*!*/ DefineClass(Scope/*!*/ autoloadScope, RubyModule/*!*/ owner, string/*!*/ name, object superClassObject) {
+        internal static RubyClass/*!*/ DefineClass(RubyGlobalScope/*!*/ autoloadScope, RubyModule/*!*/ owner, string/*!*/ name, object superClassObject) {
             Assert.NotNull(owner);
             RubyClass superClass = ToSuperClass(owner.Context, superClassObject);
 
@@ -659,7 +659,7 @@ namespace IronRuby.Runtime {
 
             return new RubyCompilerOptions(targetScope.RubyContext.RubyOptions) {
                 IsEval = true,
-                IsModuleEval = isModuleEval,
+                FactoryKind = isModuleEval ? TopScopeFactoryKind.Module : TopScopeFactoryKind.None,
                 LocalNames = targetScope.GetVisibleLocalNames(),
                 TopLevelMethodName = (methodScope != null) ? methodScope.Method.DefinitionName : null,
                 InitialLocation = new SourceLocation(0, line <= 0 ? 1 : line, 1),

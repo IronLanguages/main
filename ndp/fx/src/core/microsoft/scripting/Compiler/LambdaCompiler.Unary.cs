@@ -131,8 +131,9 @@ namespace System.Linq.Expressions.Compiler {
                     case ExpressionType.Negate:
                     case ExpressionType.Increment:
                     case ExpressionType.Decrement:
-                    case ExpressionType.OnesComplement: 
-                        {
+                    case ExpressionType.OnesComplement:
+                    case ExpressionType.IsFalse:
+                    case ExpressionType.IsTrue: {
                             Debug.Assert(operandType == resultType);
                             Label labIfNull = _ilg.DefineLabel();
                             Label labEnd = _ilg.DefineLabel();
@@ -188,6 +189,14 @@ namespace System.Linq.Expressions.Compiler {
                         break;
                     case ExpressionType.OnesComplement:
                         _ilg.Emit(OpCodes.Not);
+                        break;
+                    case ExpressionType.IsFalse:
+                        _ilg.Emit(OpCodes.Ldc_I4_0);
+                        _ilg.Emit(OpCodes.Ceq);
+                        break;
+                    case ExpressionType.IsTrue:
+                        _ilg.Emit(OpCodes.Ldc_I4_1);
+                        _ilg.Emit(OpCodes.Ceq);
                         break;
                     case ExpressionType.UnaryPlus:
                         _ilg.Emit(OpCodes.Nop);

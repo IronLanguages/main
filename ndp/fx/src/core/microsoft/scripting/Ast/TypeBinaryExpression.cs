@@ -18,7 +18,9 @@ using System.Dynamic.Utils;
 using System.Text;
 
 namespace System.Linq.Expressions {
-    //CONFORMING
+    /// <summary>
+    /// Represents an operation between an expression and a type. 
+    /// </summary>
     public sealed class TypeBinaryExpression : Expression {
         private readonly Expression _expression;
         private readonly Type _typeOperand;
@@ -30,18 +32,33 @@ namespace System.Linq.Expressions {
             _nodeKind = nodeKind;
         }
 
+        /// <summary>
+        /// Gets the static type of the expression that this <see cref="Expression" /> represents.
+        /// </summary>
+        /// <returns>The <see cref="Type"/> that represents the static type of the expression.</returns>
         protected override Type GetExpressionType() {
             return typeof(bool);
         }
 
+        /// <summary>
+        /// Returns the node type of this Expression. Extension nodes should return
+        /// ExpressionType.Extension when overriding this method.
+        /// </summary>
+        /// <returns>The <see cref="ExpressionType"/> of the expression.</returns>
         protected override ExpressionType GetNodeKind() {
             return _nodeKind;
         }
 
+        /// <summary>
+        /// Gets the expression operand of a type test operation.
+        /// </summary>
         public Expression Expression {
             get { return _expression; }
         }
 
+        /// <summary>
+        /// Gets the type operand of a type test operation.
+        /// </summary>
         public Type TypeOperand {
             get { return _typeOperand; }
         }
@@ -92,7 +109,7 @@ namespace System.Linq.Expressions {
                         value,
                         typeof(object).GetMethod("GetType")
                     ),
-                    Expression.Constant(_typeOperand)
+                    Expression.Constant(_typeOperand, typeof(Type))
                 )
             );
         }
@@ -116,11 +133,13 @@ namespace System.Linq.Expressions {
         }
     }
 
-    /// <summary>
-    /// Factory methods.
-    /// </summary>
     public partial class Expression {
-        //CONFORMING
+        /// <summary>
+        /// Creates a <see cref="TypeBinaryExpression"/>.
+        /// </summary>
+        /// <param name="expression">An <see cref="Expression"/> to set the <see cref="Expression"/> property equal to.</param>
+        /// <param name="type">A <see cref="Type"/> to set the <see cref="TypeBinaryExpression.TypeOperand"/> property equal to.</param>
+        /// <returns>A <see cref="TypeBinaryExpression"/> for which the <see cref="NodeType"/> property is equal to <see cref="TypeIs"/> and for which the <see cref="Expression"/> and <see cref="TypeBinaryExpression.TypeOperand"/> properties are set to the specified values.</returns>
         public static TypeBinaryExpression TypeIs(Expression expression, Type type) {
             RequiresCanRead(expression, "expression");
             ContractUtils.RequiresNotNull(type, "type");
@@ -130,15 +149,11 @@ namespace System.Linq.Expressions {
         }
 
         /// <summary>
-        /// Creates an Expression that compares run-time type identity. It is
-        /// roughly equivalent to a tree that does this:
-        ///     obj != null &amp;&amp; obj.GetType() == type
-        ///     
-        /// If you want to check for "null" use Expression.Equal
+        /// Creates a <see cref="TypeBinaryExpression"/> that compares run-time type identity.
         /// </summary>
-        /// <param name="expression">The operand.</param>
-        /// <param name="type">The type to check for at run-time.</param>
-        /// <returns>A new Expression that performs a type equality check.</returns>
+        /// <param name="expression">An <see cref="Expression"/> to set the <see cref="Expression"/> property equal to.</param>
+        /// <param name="type">A <see cref="Type"/> to set the <see cref="TypeBinaryExpression.TypeOperand"/> property equal to.</param>
+        /// <returns>A <see cref="TypeBinaryExpression"/> for which the <see cref="NodeType"/> property is equal to <see cref="TypeEqual"/> and for which the <see cref="Expression"/> and <see cref="TypeBinaryExpression.TypeOperand"/> properties are set to the specified values.</returns>
         public static TypeBinaryExpression TypeEqual(Expression expression, Type type) {
             RequiresCanRead(expression, "expression");
             ContractUtils.RequiresNotNull(type, "type");

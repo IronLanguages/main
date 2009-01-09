@@ -22,10 +22,11 @@ namespace System.Linq.Expressions {
     /// Represents a try/catch/finally/fault block.
     /// 
     /// The body is protected by the try block.
-    /// The handlers consist of a set of CatchBlocks that can either be catch or filters.
+    /// The handlers consist of a set of <see cref="CatchBlock"/>s that can either be catch or filters.
     /// The fault runs if an exception is thrown.
     /// The finally runs regardless of how control exits the body.
-    /// Only fault or finally can be supplied
+    /// Only one of fault or finally can be supplied.
+    /// The return type of the try block must match the return type of any associated catch statements.
     /// </summary>
     public sealed class TryExpression : Expression {
         private readonly Expression _body;
@@ -40,6 +41,10 @@ namespace System.Linq.Expressions {
             _fault = fault;
         }
 
+        /// <summary>
+        /// Gets the static type of the expression that this <see cref="Expression" /> represents. (Inherited from <see cref="Expression"/>.)
+        /// </summary>
+        /// <returns>The <see cref="Type"/> that represents the static type of the expression.</returns>
         protected override Type GetExpressionType() {
             if (_body == null) {
                 return typeof(void);
@@ -47,22 +52,38 @@ namespace System.Linq.Expressions {
             return _body.Type;
         }
 
+        /// <summary>
+        /// Returns the node type of this <see cref="Expression" />. (Inherited from <see cref="Expression" />.)
+        /// </summary>
+        /// <returns>The <see cref="ExpressionType"/> that represents this expression.</returns>
         protected override ExpressionType GetNodeKind() {
             return ExpressionType.Try;
         }
 
+        /// <summary>
+        /// Gets the <see cref="Expression"/> representing the body of the try block.
+        /// </summary>
         public Expression Body {
             get { return _body; }
         }
 
+        /// <summary>
+        /// Gets the collection of <see cref="CatchBlock"/>s associated with the try block.
+        /// </summary>
         public ReadOnlyCollection<CatchBlock> Handlers {
             get { return _handlers; }
         }
 
+        /// <summary>
+        /// Gets the <see cref="Expression"/> representing the finally block.
+        /// </summary>
         public Expression Finally {
             get { return _finally; }
         }
 
+        /// <summary>
+        /// Gets the <see cref="Expression"/> representing the fault block.
+        /// </summary>
         public Expression Fault {
             get { return _fault; }
         }
@@ -74,22 +95,55 @@ namespace System.Linq.Expressions {
 
     public partial class Expression {
 
+        /// <summary>
+        /// Creates a <see cref="TryExpression"/> representing a try block with a fault block and no catch statements.
+        /// </summary>
+        /// <param name="body">The body of the try block.</param>
+        /// <param name="fault">The body of the fault block.</param>
+        /// <returns>The created <see cref="TryExpression"/>.</returns>
         public static TryExpression TryFault(Expression body, Expression fault) {
             return MakeTry(body, null, fault, null);
         }
 
+        /// <summary>
+        /// Creates a <see cref="TryExpression"/> representing a try block with a finally block and no catch statements.
+        /// </summary>
+        /// <param name="body">The body of the try block.</param>
+        /// <param name="finally">The body of the finally block.</param>
+        /// <returns>The created <see cref="TryExpression"/>.</returns>
         public static TryExpression TryFinally(Expression body, Expression @finally) {
             return MakeTry(body, @finally, null, null);
         }
 
+        /// <summary>
+        /// Creates a <see cref="TryExpression"/> representing a try block with any number of catch statements and neither a fault nor finally block.
+        /// </summary>
+        /// <param name="body">The body of the try block.</param>
+        /// <param name="handlers">The array of zero or more <see cref="CatchBlock"/>s representing the catch statements to be associated with the try block.</param>
+        /// <returns>The created <see cref="TryExpression"/>.</returns>
         public static TryExpression TryCatch(Expression body, params CatchBlock[] handlers) {
             return MakeTry(body, null, null, handlers);
         }
 
+        /// <summary>
+        /// Creates a <see cref="TryExpression"/> representing a try block with any number of catch statements and a finally block.
+        /// </summary>
+        /// <param name="body">The body of the try block.</param>
+        /// <param name="finally">The body of the finally block.</param>
+        /// <param name="handlers">The array of zero or more <see cref="CatchBlock"/>s representing the catch statements to be associated with the try block.</param>
+        /// <returns>The created <see cref="TryExpression"/>.</returns>
         public static TryExpression TryCatchFinally(Expression body, Expression @finally, params CatchBlock[] handlers) {
             return MakeTry(body, @finally, null, handlers);
         }
 
+        /// <summary>
+        /// Creates a <see cref="TryExpression"/> representing a try block with the specified elements.
+        /// </summary>
+        /// <param name="body">The body of the try block.</param>
+        /// <param name="finally">The body of the finally block. Pass null if the try block has no finally block associated with it.</param>
+        /// <param name="fault">The body of the t block. Pass null if the try block has no fault block associated with it.</param>
+        /// <param name="handlers">A collection of <see cref="CatchBlock"/>s representing the catch statements to be associated with the try block.</param>
+        /// <returns>The created <see cref="TryExpression"/>.</returns>
         public static TryExpression MakeTry(Expression body, Expression @finally, Expression fault, IEnumerable<CatchBlock> handlers) {
             RequiresCanRead(body, "body");
 

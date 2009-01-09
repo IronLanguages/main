@@ -33,7 +33,7 @@ namespace IronRuby.Tests {
         public void OverloadResolution_Block() {
             var t = GetType();
 
-            var gse = new GlobalScopeExtension(Context, new Scope(), new object(), true);
+            var gse = new RubyGlobalScope(Context, new Scope(), new object(), true);
             var scope = new RubyTopLevelScope(gse, null, new SymbolDictionary());
             var proc = new Proc(ProcKind.Proc, null, scope, new BlockDispatcher0((x, y) => null, BlockSignatureAttributes.None));
 

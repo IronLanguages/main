@@ -25,13 +25,13 @@ namespace System.Dynamic {
     /// at runtime.  Subclasses can override the various binder methods (GetMember, SetMember, Call, etc...)
     /// to provide custom behavior that will be invoked at runtime.  
     /// 
-    /// If a method is not overridden then the Dynamic object does not directly support that behavior and 
-    /// the call site will determine how the binder should be performed.
+    /// If a method is not overridden then the DynamicObject does not directly support that behavior and 
+    /// the call site will determine how the binding should be performed.
     /// </summary>
     public class DynamicObject : IDynamicObject {
 
         /// <summary>
-        /// Enables derived types to create a new instance of Dynamic.  Dynamic instances cannot be
+        /// Enables derived types to create a new instance of DynamicObject.  DynamicObject instances cannot be
         /// directly instantiated because they have no implementation of dynamic behavior.
         /// </summary>
         protected DynamicObject() {
@@ -40,170 +40,214 @@ namespace System.Dynamic {
         #region Public Virtual APIs
 
         /// <summary>
-        /// When overridden in a derived class provides the non-Meta implementation of getting a member.
-        /// 
-        /// When not overridden the call site requesting the binder determines the behavior.
+        /// Provides the implementation of getting a member.  Derived classes can override
+        /// this method to customize behavior.  When not overridden the call site requesting the
+        /// binder determines the behavior.
         /// </summary>
+        /// <param name="binder">The binder provided by the call site.</param>
+        /// <param name="result">The result of the get operation.</param>
+        /// <returns>true if the operation is complete, false if the call site should determine behavior.</returns>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1007:UseGenericsWhereAppropriate")]
         public virtual bool TryGetMember(GetMemberBinder binder, out object result) {
             throw new NotSupportedException();
         }
 
         /// <summary>
-        /// When overridden in a derived class provides the non-Meta implementation of setting a member.
-        /// 
-        /// When not overridden the call site requesting the binder determines the behavior.
+        /// Provides the implementation of setting a member.  Derived classes can override
+        /// this method to customize behavior.  When not overridden the call site requesting the
+        /// binder determines the behavior.
         /// </summary>
+        /// <param name="binder">The binder provided by the call site.</param>
+        /// <param name="value">The value to set.</param>
+        /// <returns>true if the operation is complete, false if the call site should determine behavior.</returns>
         public virtual bool TrySetMember(SetMemberBinder binder, object value) {
             throw new NotSupportedException();
         }
 
         /// <summary>
-        /// When overridden in a derived class provides the non-Meta implementation of deleting a member.
-        /// 
-        /// When not overridden the call site requesting the binder determines the behavior.
+        /// Provides the implementation of deleting a member.  Derived classes can override
+        /// this method to customize behavior.  When not overridden the call site requesting the
+        /// binder determines the behavior.
         /// </summary>
+        /// <param name="binder">The binder provided by the call site.</param>
+        /// <returns>true if the operation is complete, false if the call site should determine behavior.</returns>
         public virtual bool TryDeleteMember(DeleteMemberBinder binder) {
             throw new NotSupportedException();
         }
 
         /// <summary>
-        /// When overridden in a derived class provides the non-Meta implementation of calling a member
-        /// in the expando.
-        /// 
-        /// When not overridden the call site requesting the binder determines the behavior.
+        /// Provides the implementation of calling a member.  Derived classes can override
+        /// this method to customize behavior.  When not overridden the call site requesting the
+        /// binder determines the behavior.
         /// </summary>
+        /// <param name="binder">The binder provided by the call site.</param>
+        /// <param name="args">The arguments to be used for the invocation.</param>
+        /// <param name="result">The result of the invocation.</param>
+        /// <returns>true if the operation is complete, false if the call site should determine behavior.</returns>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1007:UseGenericsWhereAppropriate")]
         public virtual bool TryInvokeMember(InvokeMemberBinder binder, object[] args, out object result) {
             throw new NotSupportedException();
         }
 
         /// <summary>
-        /// When overridden in a derived class provides the non-Meta implementation of converting the
-        /// Dynamic object to another type.
-        /// 
-        /// When not overridden the call site requesting the binder determines the behavior.
+        /// Provides the implementation of converting the DynamicObject to another type.  Derived classes
+        /// can override this method to customize behavior.  When not overridden the call site
+        /// requesting the binder determines the behavior.
         /// </summary>
+        /// <param name="binder">The binder provided by the call site.</param>
+        /// <param name="result">The result of the conversion.</param>
+        /// <returns>true if the operation is complete, false if the call site should determine behavior.</returns>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1007:UseGenericsWhereAppropriate")]
         public virtual bool TryConvert(ConvertBinder binder, out object result) {
             throw new NotSupportedException();
         }
 
         /// <summary>
-        /// When overridden in a derived class provides the non-Meta implementation of creating an instance
-        /// of the Dynamic object.
-        /// 
-        /// When not overridden the call site requesting the binder determines the behavior.
+        /// Provides the implementation of creating an instance of the DynamicObject.  Derived classes
+        /// can override this method to customize behavior.  When not overridden the call site requesting
+        /// the binder determines the behavior.
         /// </summary>
+        /// <param name="binder">The binder provided by the call site.</param>
+        /// <param name="args">The arguments used for creation.</param>
+        /// <param name="result">The created instance.</param>
+        /// <returns>true if the operation is complete, false if the call site should determine behavior.</returns>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1007:UseGenericsWhereAppropriate")]
         public virtual bool TryCreateInstance(CreateInstanceBinder binder, object[] args, out object result) {
             throw new NotSupportedException();
         }
 
         /// <summary>
-        /// When overridden in a derived class provides the non-Meta implementation of invoking the
-        /// Dynamic object.
-        /// 
-        /// When not overridden the call site requesting the binder determines the behavior.
+        /// Provides the implementation of invoking the DynamicObject.  Derived classes can
+        /// override this method to customize behavior.  When not overridden the call site requesting
+        /// the binder determines the behavior.
         /// </summary>
+        /// <param name="binder">The binder provided by the call site.</param>
+        /// <param name="args">The arguments to be used for the invocation.</param>
+        /// <param name="result">The result of the invocation.</param>
+        /// <returns>true if the operation is complete, false if the call site should determine behavior.</returns>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1007:UseGenericsWhereAppropriate")]
         public virtual bool TryInvoke(InvokeBinder binder, object[] args, out object result) {
             throw new NotSupportedException();
         }
 
         /// <summary>
-        /// When overridden in a derived class provides the non-Meta implementation of
-        /// performing a binary operation.
-        /// 
-        /// When not overridden the call site requesting the binder determines the behavior.
+        /// Provides the implementation of performing a binary operation.  Derived classes can
+        /// override this method to customize behavior.  When not overridden the call site requesting
+        /// the binder determines the behavior.
         /// </summary>
+        /// <param name="binder">The binder provided by the call site.</param>
+        /// <param name="arg">The right operand for the operation.</param>
+        /// <param name="result">The result of the operation.</param>
+        /// <returns>true if the operation is complete, false if the call site should determine behavior.</returns>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1007:UseGenericsWhereAppropriate")]
         public virtual bool TryBinaryOperation(BinaryOperationBinder binder, object arg, out object result) {
             throw new NotSupportedException();
         }
 
         /// <summary>
-        /// When overridden in a derived class provides the non-Meta implementation of
-        /// performing a unary operation.
-        /// 
-        /// When not overridden the call site requesting the binder determines the behavior.
+        /// Provides the implementation of performing a unary operation.  Derived classes can
+        /// override this method to customize behavior.  When not overridden the call site requesting
+        /// the binder determines the behavior.
         /// </summary>
+        /// <param name="binder">The binder provided by the call site.</param>
+        /// <param name="result">The result of the operation.</param>
+        /// <returns>true if the operation is complete, false if the call site should determine behavior.</returns>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1007:UseGenericsWhereAppropriate")]
         public virtual bool TryUnaryOperation(UnaryOperationBinder binder, out object result) {
             throw new NotSupportedException();
         }
 
         /// <summary>
-        /// When overridden in a derived class provides the non-Meta implementation of
-        /// performing a get index operation.
-        /// 
-        /// When not overridden the call site requesting the binder determines the behavior.
+        /// Provides the implementation of performing a get index operation.  Derived classes can
+        /// override this method to customize behavior.  When not overridden the call site requesting
+        /// the binder determines the behavior.
         /// </summary>
+        /// <param name="binder">The binder provided by the call site.</param>
+        /// <param name="indexes">The indexes to be used.</param>
+        /// <param name="result">The result of the operation.</param>
+        /// <returns>true if the operation is complete, false if the call site should determine behavior.</returns>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1007:UseGenericsWhereAppropriate")]
-        public virtual bool TryGetIndex(GetIndexBinder binder, object[] args, out object result) {
+        public virtual bool TryGetIndex(GetIndexBinder binder, object[] indexes, out object result) {
             throw new NotSupportedException();
         }
 
         /// <summary>
-        /// When overridden in a derived class provides the non-Meta implementation of
-        /// performing a set index operation.
-        /// 
-        /// When not overridden the call site requesting the binder determines the behavior.
+        /// Provides the implementation of performing a set index operation.  Derived classes can
+        /// override this method to custmize behavior.  When not overridden the call site requesting
+        /// the binder determines the behavior.
         /// </summary>
+        /// <param name="binder">The binder provided by the call site.</param>
+        /// <param name="indexes">The indexes to be used.</param>
+        /// <param name="value">The value to set.</param>
+        /// <returns>true if the operation is complete, false if the call site should determine behavior.</returns>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1007:UseGenericsWhereAppropriate")]
         public virtual bool TrySetIndex(SetIndexBinder binder, object[] indexes, object value) {
             throw new NotSupportedException();
         }
 
         /// <summary>
-        /// When overridden in a derived class provides the non-Meta implementation of
-        /// performing a delete index operation.
-        /// 
-        /// When not overridden the call site requesting the binder determines the behavior.
+        /// Provides the implementation of performing a delete index operation.  Derived classes
+        /// can override this method to custmize behavior.  When not overridden the call site
+        /// requesting the binder determines the behavior.
         /// </summary>
+        /// <param name="binder">The binder provided by the call site.</param>
+        /// <param name="indexes">The indexes to be deleted.</param>
+        /// <returns>true if the operation is complete, false if the call site should determine behavior.</returns>
         public virtual bool TryDeleteIndex(DeleteIndexBinder binder, object[] indexes) {
             throw new NotSupportedException();
         }
 
         /// <summary>
-        /// When overridden in a derived class provides the non-Meta implementation of
-        /// performing an operation on member "a.b (op)=c" operation.
-        /// 
-        /// When not overridden the call site requesting the binder determines the behavior.
+        /// Provides the implementation of performing a binary operation on a member.  Derived classes
+        /// can override this method to custmize behavior.  When not overridden the call site
+        /// requesting the binder determines the behavior.
         /// </summary>
+        /// <param name="binder">The binder provided by the call site.</param>
+        /// <param name="value">The right operand for the operation.</param>
+        /// <param name="result">The result of the operation.</param>
+        /// <returns>true if the operation is complete, false if the call site should determine behavior.</returns>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1007:UseGenericsWhereAppropriate")]
         public virtual bool TryBinaryOperationOnMember(BinaryOperationOnMemberBinder binder, object value, out object result) {
             throw new NotSupportedException();
         }
 
         /// <summary>
-        /// When overridden in a derived class provides the non-Meta implementation of
-        /// performing an operation on index "a[i,j,k] (op)= c" operation.
-        /// 
-        /// When not overridden the call site requesting the binder determines the behavior.
+        /// Provides the implementation of performing a binary operation on an index.
+        /// Derived classes can override this method to custmize behavior.  When not overridden
+        /// the call site requesting the binder determines the behavior.
         /// </summary>
+        /// <param name="binder">The binder provided by the call site.</param>
+        /// <param name="indexes">The indexes to be used.</param>
+        /// <param name="value">The right operand for the operation.</param>
+        /// <param name="result">The result of the operation.</param>
+        /// <returns>true if the operation is complete, false if the call site should determine behavior.</returns>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1007:UseGenericsWhereAppropriate")]
         public virtual bool TryBinaryOperationOnIndex(BinaryOperationOnIndexBinder binder, object[] indexes, object value, out object result) {
             throw new NotSupportedException();
         }
 
         /// <summary>
-        /// When overridden in a derived class provides the non-Meta implementation of
-        /// performing an operation on member "a.b (op)" operation.
-        /// 
-        /// When not overridden the call site requesting the binder determines the behavior.
+        /// Provides the implementation of performing a unary operation on member.
+        /// Derived classes can override this method to custmize behavior.  When not overridden
+        /// the call site requesting the binder determines the behavior.
         /// </summary>
+        /// <param name="binder">The binder provided by the call site.</param>
+        /// <param name="result">The result of the operation.</param>
+        /// <returns>true if the operation is complete, false if the call site should determine behavior.</returns>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1007:UseGenericsWhereAppropriate")]
         public virtual bool TryUnaryOperationOnMember(UnaryOperationOnMemberBinder binder, out object result) {
             throw new NotSupportedException();
         }
 
         /// <summary>
-        /// When overridden in a derived class provides the non-Meta implementation of
-        /// performing an operation on index "a[i,j,k] (op)" operation.
-        /// 
-        /// When not overridden the call site requesting the binder determines the behavior.
+        /// Provides the implementation of performing a binary operation on an index.  Derived
+        /// classes can override this method to custmize behavior.  When not overridden the call
+        /// site requesting the binder determines the behavior.
         /// </summary>
+        /// <param name="binder">The binder provided by the call site.</param>
+        /// <param name="indexes">The indexes to be used.</param>
+        /// <param name="result">The result of the operation.</param>
+        /// <returns>true if the operation is complete, false if the call site should determine behavior.</returns>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1007:UseGenericsWhereAppropriate")]
         public virtual bool TryUnaryOperationOnIndex(UnaryOperationOnIndexBinder binder, object[] indexes, out object result) {
             throw new NotSupportedException();

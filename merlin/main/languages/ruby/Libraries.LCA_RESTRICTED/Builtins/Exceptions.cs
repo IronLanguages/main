@@ -62,7 +62,7 @@ namespace IronRuby.Builtins {
     public class RuntimeError : SystemException {
         public RuntimeError() : this(null, null) { }
         public RuntimeError(string message): this(message, null) { }
-        public RuntimeError(string message, Exception inner) : base(message ?? "RuntimeError", inner) { }
+        public RuntimeError(string message, Exception inner) : base(message ?? String.Empty, inner) { }
 
 #if !SILVERLIGHT
         protected RuntimeError(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) 

@@ -20,7 +20,7 @@ if "%1"=="" (
 )
 
 for %%f in (%FILELIST%) do (
-    %MERLIN_ROOT%\..\external\languages\cpython\25\python.exe %%f.py > %%f.lst
+    %MERLIN_ROOT%\..\external\Languages\IronPython\25\python.exe %%f.py > %%f.lst
     %MERLIN_ROOT%\..\external\languages\ruby\ruby-1.8.6\bin\ruby.exe run_compat.rb @%%f.lst
     if NOT "%ERRORLEVEL%" == "0" exit /b 1
 )

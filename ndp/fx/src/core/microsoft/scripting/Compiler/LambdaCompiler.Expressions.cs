@@ -173,7 +173,7 @@ namespace System.Linq.Expressions.Compiler {
         }
 
         private void EmitArrayIndexAssignment(BinaryExpression node, EmitAs emitAs) {
-            Debug.Assert(node.NodeType == ExpressionType.ArrayIndex);
+            Debug.Assert(node.Left.NodeType == ExpressionType.ArrayIndex);
             var arrayIndex = (BinaryExpression)node.Left;
 
             // Emit array object

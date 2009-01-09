@@ -51,7 +51,7 @@ namespace IronRuby.Builtins {
         // null for singletons:
         private Type _underlyingSystemType;
         private readonly bool _isRubyClass;
-        private GlobalScopeExtension _globalScope;
+        private RubyGlobalScope _globalScope;
 
         // if this class is a struct represents its layout:
         private RubyStruct.Info _structInfo;
@@ -87,11 +87,11 @@ namespace IronRuby.Builtins {
             set { _structInfo = value; }
         }
 
-        internal override GlobalScopeExtension GlobalScope {
+        internal override RubyGlobalScope GlobalScope {
             get { return _globalScope; }
         }
 
-        internal void SetGlobalScope(GlobalScopeExtension/*!*/ value) {
+        internal void SetGlobalScope(RubyGlobalScope/*!*/ value) {
             Assert.NotNull(value);
             _globalScope = value;
         }
@@ -462,6 +462,11 @@ namespace IronRuby.Builtins {
         /// Implements Class#new feature.
         /// </summary>
         public void BuildObjectConstruction(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args, string/*!*/ methodName) {
+            BuildObjectConstructionNoFlow(metaBuilder, args, methodName);
+            metaBuilder.BuildControlFlow(args);
+        }
+
+        public void BuildObjectConstructionNoFlow(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args, string/*!*/ methodName) {
             Debug.Assert(!IsSingletonClass, "Cannot instantiate singletons");
 
             Type type = GetUnderlyingSystemType();
@@ -504,7 +509,11 @@ namespace IronRuby.Builtins {
                 }
 
                 RubyMethodGroupInfo.BuildCallNoFlow(metaBuilder, args, methodName, constructionOverloads, includeSelf, false);
-                RubyMethodGroupInfo.ApplyBlockFlowHandlingInternal(metaBuilder, args);
+
+                // we need to handle break, which unwinds to a proc-converter that could be this method's frame:
+                if (!metaBuilder.Error) {
+                    metaBuilder.ControlFlowBuilder = RubyMethodGroupInfo.RuleControlFlowBuilder;
+                }
             }
         }
 
@@ -520,7 +529,7 @@ namespace IronRuby.Builtins {
             args.SetTarget(instanceVariable, null);
 
             if (initializer is RubyMethodInfo) {
-                initializer.BuildCall(metaBuilder, args, Symbols.Initialize);
+                initializer.BuildCallNoFlow(metaBuilder, args, Symbols.Initialize);
             } else {
                 // TODO: we need more refactoring of RubyMethodGroupInfo.BuildCall to be able to inline this:
                 metaBuilder.Result = Ast.Dynamic(
@@ -538,7 +547,9 @@ namespace IronRuby.Builtins {
                     Ast.Assign(instanceVariable, instanceExpr),
                     metaBuilder.Result
                 );
-                RubyMethodInfo.ApplyBlockFlowHandlingInternal(metaBuilder, args);
+
+                // we need to handle break, which unwinds to a proc-converter that could be this method's frame:
+                metaBuilder.ControlFlowBuilder = RubyMethodInfo.RuleControlFlowBuilder;
             }
         }
 

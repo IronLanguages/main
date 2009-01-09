@@ -25,6 +25,8 @@ using Microsoft.Scripting.Runtime;
 using IronRuby.Runtime.Calls;
 using System.Diagnostics;
 using Microsoft.Scripting.Generation;
+using IronRuby.Compiler.Generation;
+using Ast = System.Linq.Expressions.Expression;
 
 namespace IronRuby.Builtins {
 
@@ -67,6 +69,21 @@ namespace IronRuby.Builtins {
                 result.ResetIOMode(modeString.ConvertToString());
             }
             return result;
+        }
+
+        [RubyMethod("initialize", RubyMethodAttributes.PrivateInstance)]
+        public static void CreateIO(RubyIO/*!*/ self) {
+            // TODO:
+        }
+
+        [RubyMethod("initialize", RubyMethodAttributes.PrivateInstance)]
+        public static void CreateIO(RubyIO/*!*/ self,
+            [DefaultProtocol]int fileDescriptor, [DefaultProtocol, NotNull, Optional]MutableString modeString) {
+
+            // TODO:
+            if (modeString != null) {
+                self.ResetIOMode(modeString.ConvertToString());
+            }
         }
 
         //initialize_copy
@@ -137,27 +154,44 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("open", RubyMethodAttributes.PublicSingleton)]
-        public static object Open(RubyContext/*!*/ context, BlockParam/*!*/ block, RubyClass/*!*/ self, int fileDescriptor) {
-            RubyIO io = _CreateIOSharedSite1.Target(_CreateIOSharedSite1, context, self, fileDescriptor);
-            return TryInvokeOpenBlock(context, block, io);
+        public static RuleGenerator/*!*/ Open() {
+            return new RuleGenerator((metaBuilder, args, name) => {
+                var targetClass = (RubyClass)args.Target;
+                targetClass.BuildObjectConstructionNoFlow(metaBuilder, args, name);
+
+                // TODO: initialize yields the block?
+                // TODO: null block check
+                if (args.Signature.HasBlock) {
+                    // ignore flow builder set up so far, we need one that creates a BlockParam for library calls:
+                    metaBuilder.ControlFlowBuilder = null;
+
+                    if (metaBuilder.BfcVariable == null) {
+                        metaBuilder.BfcVariable = metaBuilder.GetTemporary(typeof(BlockParam), "#bfc");
+                    }
+
+                    metaBuilder.Result = Ast.Call(typeof(RubyIOOps).GetMethod("InvokeOpenBlock"), 
+                        args.ContextExpression, 
+                        metaBuilder.BfcVariable, 
+                        metaBuilder.Result
+                    );
+
+                    RubyMethodGroupInfo.RuleControlFlowBuilder(metaBuilder, args);
+                } else {
+                    metaBuilder.BuildControlFlow(args);
+                }
+            });
         }
 
-        [RubyMethod("open", RubyMethodAttributes.PublicSingleton)]
-        public static object Open(RubyContext/*!*/ context, BlockParam/*!*/ block, RubyClass/*!*/ self, int fileDescriptor, [NotNull]MutableString/*!*/ mode) {
-            RubyIO io = _CreateIOSharedSite11.Target(_CreateIOSharedSite11, context, self, fileDescriptor, mode);
-            return TryInvokeOpenBlock(context, block, io);
-        }
-
-        [RubyMethod("open", RubyMethodAttributes.PublicSingleton)]
-        public static object Open(RubyContext/*!*/ context, BlockParam/*!*/ block, RubyClass/*!*/ self, int fileDescriptor, object mode) {
-            RubyIO io = _CreateIOSharedSite11.Target(_CreateIOSharedSite11, context, self, fileDescriptor, Protocols.CastToString(context, mode));
-            return TryInvokeOpenBlock(context, block, io);
-        }
-
-        [RubyMethod("open", RubyMethodAttributes.PublicSingleton)]
-        public static object Open(RubyContext/*!*/ context, BlockParam/*!*/ block, RubyClass/*!*/ self, MutableString/*!*/ host, int port) {
-            RubyIO io = _CreateIOSharedSite6.Target(_CreateIOSharedSite6, context, self, host, port);
-            return TryInvokeOpenBlock(context, block, io);
+        [Emitted]
+        public static object InvokeOpenBlock(RubyContext/*!*/ context, BlockParam/*!*/ block, object obj) {
+            RubyIO io;
+            if (!RubyOps.IsRetrySingleton(obj) && block != null && (io = obj as RubyIO) != null) {
+                block.Yield(io, out obj);
+                if (!block.BlockJumped(obj)) {
+                    io.Close();
+                }
+            }
+            return obj;
         }
 
         private static RubyIO OpenFileForRead(RubyContext/*!*/ context, MutableString/*!*/ path) {

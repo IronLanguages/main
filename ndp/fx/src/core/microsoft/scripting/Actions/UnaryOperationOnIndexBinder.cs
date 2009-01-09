@@ -21,23 +21,26 @@ using Microsoft.Contracts;
 
 namespace System.Dynamic {
     /// <summary>
-    /// A Binder that is responsible for runtime binding of operation:
-    /// (op) a[b]
-    /// For example : ++ a[b]
+    /// Represents the unary dynamic operation on index at the call site, providing the binding semantic and the details about the operation.
     /// </summary>
     public abstract class UnaryOperationOnIndexBinder : DynamicMetaObjectBinder {
         private ExpressionType _operation;
         private readonly ReadOnlyCollection<ArgumentInfo> _arguments;
 
         /// <summary>
-        /// The constructor of the OperationOnIndexBinder object, representing "(op) a[b]" operation.
+        /// Initializes a new instance of the <see cref="UnaryOperationOnIndexBinder"/> class.
         /// </summary>
-        /// <param name="operation">Binary operation to be performed.</param>
-        /// <param name="arguments">Description of the indexes (named, positional)</param>
+        /// <param name="operation">The unary operation kind.</param>
+        /// <param name="arguments">The signature of the arguments at the call site.</param>
         protected UnaryOperationOnIndexBinder(ExpressionType operation, params ArgumentInfo[] arguments)
             : this(operation, (IEnumerable<ArgumentInfo>)arguments) {
         }
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="UnaryOperationOnIndexBinder"/> class.
+        /// </summary>
+        /// <param name="operation">The unary operation kind.</param>
+        /// <param name="arguments">The signature of the arguments at the call site.</param>
         protected UnaryOperationOnIndexBinder(ExpressionType operation, IEnumerable<ArgumentInfo> arguments) {
             ContractUtils.Requires(UnaryOperationBinder.OperationIsValid(operation), "operation");
             _operation = operation;
@@ -45,7 +48,7 @@ namespace System.Dynamic {
         }
 
         /// <summary>
-        /// The operation to be performed.
+        /// The unary operation kind.
         /// </summary>
         public ExpressionType Operation {
             get {
@@ -54,17 +57,17 @@ namespace System.Dynamic {
         }
 
         /// <summary>
-        /// Descriptions of arguments to the indexer. This allows for named and positional arguments.
+        /// The signature of the arguments at the call site.
         /// </summary>
         public ReadOnlyCollection<ArgumentInfo> Arguments {
             get { return _arguments; }
         }
 
         /// <summary>
-        /// Implements Equality operation for the OperationOnIndexBinder
+        /// Determines whether the specified System.Object is equal to the current <see cref="UnaryOperationOnIndexBinder"/>.
         /// </summary>
-        /// <param name="obj">Instance to comapre equal to.</param>
-        /// <returns>true/false</returns>
+        /// <param name="obj">The <see cref="Object"/> to compare with the current <see cref="UnaryOperationOnIndexBinder"/>.</param>
+        /// <returns>true if the specified System.Object is equal to the current <see cref="UnaryOperationOnIndexBinder"/>; otherwise, false.</returns>
         [Confined]
         public override bool Equals(object obj) {
             UnaryOperationOnIndexBinder ia = obj as UnaryOperationOnIndexBinder;
@@ -72,21 +75,20 @@ namespace System.Dynamic {
         }
 
         /// <summary>
-        /// Calculates hash code for the OperationOnIndexBinder
+        /// Returns the hash code for this instance. 
         /// </summary>
-        /// <returns>The hash code.</returns>
+        /// <returns>An <see cref="Int32"/> containing the hash code for this instance.</returns>
         [Confined]
         public override int GetHashCode() {
             return UnaryOperationOnIndexBinderHash ^ (int)_operation ^ _arguments.ListHashCode();
         }
 
         /// <summary>
-        /// Performs binding of the operation on the target (represented as meta object) and
-        /// list of arguments (indexes and right-hand value) represented as meta objects
+        /// Performs the binding of the dynamic unary operation.
         /// </summary>
-        /// <param name="target">Target of the operation.</param>
-        /// <param name="args">List of indexes and right-hand value</param>
-        /// <returns>MetaObject representing the binding.</returns>
+        /// <param name="target">The target of the dynamic operation.</param>
+        /// <param name="args">An array of arguments of the dynamic operation.</param>
+        /// <returns>The <see cref="DynamicMetaObject"/> representing the result of the binding.</returns>
         public sealed override DynamicMetaObject Bind(DynamicMetaObject target, DynamicMetaObject[] args) {
             ContractUtils.RequiresNotNull(target, "target");
             ContractUtils.RequiresNotNullItems(args, "args");
@@ -95,51 +97,47 @@ namespace System.Dynamic {
         }
 
         /// <summary>
-        /// Implements a binding logic for the binary operation part of the binding.
-        /// This is called by the target when the target implements the whole operation:
-        ///    (op) a[b]
-        /// as:
-        ///    a[b] = (op) a[b]
-        /// to let the language participate in the binding of the binary operation only.
+        /// Performs the binding of the unary dynamic operation if the target dynamic object cannot bind.
         /// </summary>
-        /// <param name="target">Target of the operation.</param>
-        /// <returns>MetaObject representing the binding result.</returns>
+        /// <param name="target">The target of the dynamic unary operation.</param>
+        /// <returns>The <see cref="DynamicMetaObject"/> representing the result of the binding.</returns>
+        /// <remarks> This method is called by the target when the target implements the unary operation on index
+        /// as a sequence of get index, unary operation and set index, to let the <see cref="DynamicMetaObject"/>
+        /// request the binding of the unary operation only.
+        /// </remarks>
         public DynamicMetaObject FallbackUnaryOperation(DynamicMetaObject target) {
             return FallbackUnaryOperation(target, null);
         }
 
         /// <summary>
-        /// Implements a binding logic for the binary operation part of the binding.
-        /// This is called by the target when the target implements the whole operation:
-        ///    (op) a[b]
-        /// as:
-        ///    a[b] = (op) a[b]
-        /// to let the language participate in the binding of the binary operation only.
+        /// When overridden in the derived class, performs the binding of the unary dynamic operation if the target dynamic object cannot bind.
         /// </summary>
-        /// <param name="target">Target of the operation.</param>
-        /// <param name="errorSuggestion">The representaiton of the binding error that the target meta object recommends the language to use if the language cannot bind. This allows the target meta object to participate in the error handling process.</param>
-        /// <returns>MetaObject representing the binding result.</returns>
+        /// <param name="target">The target of the dynamic unary operation.</param>
+        /// <param name="errorSuggestion">The binding result in case the binding fails, or null.</param>
+        /// <returns>The <see cref="DynamicMetaObject"/> representing the result of the binding.</returns>
+        /// <remarks> This method is called by the target when the target implements the unary operation on index
+        /// as a sequence of get index, unary operation and set index, to let the <see cref="DynamicMetaObject"/>
+        /// request the binding of the unary operation only.
+        /// </remarks>
         public abstract DynamicMetaObject FallbackUnaryOperation(DynamicMetaObject target, DynamicMetaObject errorSuggestion);
 
         /// <summary>
-        /// Implements a binding logic for the operation. This is called by the target when
-        /// the target lets the executing language participate in the binding process.
+        /// Performs the binding of the dynamic unary operation on index if the target dynamic object cannot bind.
         /// </summary>
-        /// <param name="target">Target of the operation.</param>
-        /// <param name="indexes">List of indexes and right-hand value</param>
-        /// <returns>MetaObject representing the binding.</returns>
+        /// <param name="target">The target of the dynamic unary operation on index.</param>
+        /// <param name="indexes">An array of <see cref="DynamicMetaObject"/> instances - indexes for the dynamic unary operation on index.</param>
+        /// <returns>The <see cref="DynamicMetaObject"/> representing the result of the binding.</returns>
         public DynamicMetaObject FallbackUnaryOperationOnIndex(DynamicMetaObject target, DynamicMetaObject[] indexes) {
             return FallbackUnaryOperationOnIndex(target, indexes, null);
         }
 
         /// <summary>
-        /// Implements a binding logic for the operation. This is called by the target when
-        /// the target lets the executing language participate in the binding process.
+        /// When overridden in the derived class, performs the binding of the dynamic unary operation on index if the target dynamic object cannot bind.
         /// </summary>
-        /// <param name="target">Target of the operation.</param>
-        /// <param name="indexes">List of indexes and right-hand value</param>
-        /// <param name="errorSuggestion">The representaiton of the binding error that the target meta object recommends the language to use if the language cannot bind. This allows the target meta object to participate in the error handling process.</param>
-        /// <returns>MetaObject representing the binding.</returns>
+        /// <param name="target">The target of the dynamic unary operation on index.</param>
+        /// <param name="indexes">An array of <see cref="DynamicMetaObject"/> instances - indexes for the dynamic unary operation on index.</param>
+        /// <param name="errorSuggestion">The binding result in case the binding fails, or null.</param>
+        /// <returns>The <see cref="DynamicMetaObject"/> representing the result of the binding.</returns>
         public abstract DynamicMetaObject FallbackUnaryOperationOnIndex(DynamicMetaObject target, DynamicMetaObject[] indexes, DynamicMetaObject errorSuggestion);
     }
 }

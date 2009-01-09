@@ -1070,13 +1070,23 @@ namespace System.Linq.Expressions.Compiler {
 
 namespace System.Runtime.CompilerServices {
 
+    /// <summary>
+    /// This API supports the .NET Framework infrastructure and is not intended to be used directly from your code.
+    /// Contains helper methods called from dynamically generated methods.
+    /// </summary>
     public static partial class RuntimeOps {
         private const int MIN_CACHE = -100;
         private const int MAX_CACHE = 1000;
         private static readonly object[] cache = MakeCache();
 
-        // Singleton boxed true/false
+        /// <summary>
+        /// A singleton boxed boolean true.
+        /// </summary>
         public static readonly object True = true;
+
+        /// <summary>
+        ///A singleton boxed boolean false.
+        /// </summary>
         public static readonly object False = false;
 
         private static object[] MakeCache() {
@@ -1089,6 +1099,11 @@ namespace System.Runtime.CompilerServices {
             return result;
         }
 
+        /// <summary>
+        /// Gets a singleton boxed value for the given integer if possible, otherwise boxes the integer.
+        /// </summary>
+        /// <param name="value">The value to box.</param>
+        /// <returns>The boxed value.</returns>
         public static object Int32ToObject(Int32 value) {
             // caches improves pystone by ~5-10% on MS .Net 1.1, this is a very integer intense app
             if (value < MAX_CACHE && value >= MIN_CACHE) {

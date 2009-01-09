@@ -164,11 +164,12 @@ namespace System.Linq.Expressions.Compiler {
             return c.CreateDelegate(delegateType, out method);
         }
 
-        internal static T CompileLambda<T>(LambdaExpression lambda, bool forceDynamic, out MethodInfo method) {
-            return (T)(object)CompileLambda(lambda, typeof(T), false, forceDynamic, out method);
+        internal static T CompileDynamic<T>(Expression<T> lambda) {
+            MethodInfo method;
+            return (T)(object)CompileLambda(lambda, typeof(T), false, true, out method);
         }
 
-        internal static T CompileLambda<T>(LambdaExpression lambda, bool emitDebugSymbols) {
+        internal static T CompileLambda<T>(Expression<T> lambda, bool emitDebugSymbols) {
             MethodInfo method;
             return (T)(object)CompileLambda(lambda, typeof(T), emitDebugSymbols, false, out method);
         }

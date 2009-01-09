@@ -386,6 +386,8 @@ namespace Microsoft.Scripting.Generation {
                 } else {
                     Emit(OpCodes.Ldobj, type);
                 }
+            } else if (type.IsGenericParameter) {
+                Emit(OpCodes.Ldobj, type);
             } else {
                 Emit(OpCodes.Ldind_Ref);
             }
@@ -416,6 +418,8 @@ namespace Microsoft.Scripting.Generation {
                 } else {
                     Emit(OpCodes.Stobj, type);
                 }
+            } else if (type.IsGenericParameter) {
+                Emit(OpCodes.Stobj, type);
             } else {
                 Emit(OpCodes.Stind_Ref);
             }
@@ -1098,6 +1102,8 @@ namespace Microsoft.Scripting.Generation {
                 } else {
                     Emit(OpCodes.Box, type);
                 }
+            } else if (type.IsGenericParameter) {
+                EmitCall(typeof(GeneratorOps).GetMethod("BoxGeneric").MakeGenericMethod(type));
             }
         }
 
@@ -1665,5 +1671,20 @@ namespace Microsoft.Scripting.Generation {
         }
 
         #endregion
+    }
+
+    public static partial class GeneratorOps {
+        public static object BoxGeneric<T>(T value) {
+            // Duplicates functionality of ILGen.EmitBoxing at runtime for templated types
+            Type type = typeof(T);
+            if (type == typeof(int)) {
+                return RuntimeOps.Int32ToObject((int)(object)value);
+            } else if (type == typeof(bool)) {
+                bool bValue = (bool)(object)value;
+                return bValue ? RuntimeOps.True : RuntimeOps.False;
+            } else {
+                return (object)value;
+            }
+        }
     }
 }

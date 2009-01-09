@@ -18,28 +18,34 @@ using System.Linq.Expressions;
 
 namespace System.Runtime.CompilerServices {
     /// <summary>
-    /// Class responsible for binding dynamic operations on the dynamic site.
+    /// Class responsible for runtime binding of the dynamic operations on the dynamic call site.
     /// </summary>
     public abstract class CallSiteBinder {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="CallSiteBinder"/> class.
+        /// </summary>
         protected CallSiteBinder() {
         }
 
         /// <summary>
-        /// Key used for the DLR caching
+        /// The key used by the binding rule cache. The expressions returned by the <see cref="Bind"/> method
+        /// are cached and shared across dynamic call sites. All call sites with their CacheIdentity equal
+        /// are considered to be performing identical dynamic operation and therefore the binding expressions
+        /// for such dynamic operations will be shared by the dynamic runtime.
         /// </summary>
         public abstract object CacheIdentity { get; }
 
         /// <summary>
-        /// The bind call to produce the binding.
+        /// Performs the runtime binding of the dynamic operation on a set of arguments.
         /// </summary>
-        /// <param name="args">Array of arguments to the call</param>
-        /// <param name="parameters">Array of ParameterExpressions that represent to parameters of the call site</param>
-        /// <param name="returnLabel">LabelTarget used to return the result of the call site</param>
+        /// <param name="args">An array of arguments to the dynamic operation.</param>
+        /// <param name="parameters">The array of <see cref="ParameterExpression"/> instances that represent the parameters of the call site in the binding process.</param>
+        /// <param name="returnLabel">A LabelTarget used to return the result of the dynamic binding.</param>
         /// <returns>
-        /// An Expression that performs tests on the arguments, and
-        /// returns a result if the test is valid. If the tests fail, Bind
-        /// will be called again to produce a new Expression for the new
-        /// argument types
+        /// An Expression that performs tests on the dynamic operation arguments, and
+        /// performs the dynamic operation if hte tests are valid. If the tests fail on
+        /// subsequent occurrences of the dynamic operation, Bind will be called again
+        /// to produce a new <see cref="Expression"/> for the new argument types.
         /// </returns>
         public abstract Expression Bind(object[] args, ReadOnlyCollection<ParameterExpression> parameters, LabelTarget returnLabel);
     }

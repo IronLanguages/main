@@ -56,7 +56,7 @@ namespace IronRuby.Builtins {
         }
 
         [RubyConstructor]
-        public static RubyRegex/*!*/ Create(RubyScope/*!*/ scope, RubyClass/*!*/ self,
+        public static RubyRegex/*!*/ Create(RubyClass/*!*/ self,
             [DefaultProtocol, NotNull]MutableString/*!*/ pattern, [DefaultParameterValue(null)]object ignoreCase, [DefaultProtocol, Optional]MutableString encoding) {
 
             return new RubyRegex(pattern, MakeOptions(ignoreCase, encoding));

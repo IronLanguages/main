@@ -101,12 +101,14 @@ namespace Microsoft.Scripting.Hosting {
         #region Code Execution (for convenience)
 
         /// <summary>
-        /// Executes an expression within a new scope.
+        /// Executes an expression. The execution is not bound to any particular scope.
         /// </summary>
         /// <exception cref="NotSupportedException">The engine doesn't support code execution.</exception>
         /// <exception cref="ArgumentNullException"><paramref name="expression"/> is a <c>null</c> reference.</exception>
         public object Execute(string expression) {
-            return Execute(expression, CreateScope());
+            // The host doesn't need the scope so do not create it here. 
+            // The language can treat the code as not bound to a DLR scope and change global lookup semantics accordingly.
+            return CreateScriptSourceFromString(expression).Execute(); 
         }
 
         /// <summary>

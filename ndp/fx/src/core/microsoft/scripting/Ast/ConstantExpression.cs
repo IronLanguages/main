@@ -19,6 +19,9 @@ using System.Dynamic;
 
 namespace System.Linq.Expressions {
     //CONFORMING
+    /// <summary>
+    /// Represents an expression that has a constant value.
+    /// </summary>
     public class ConstantExpression : Expression {
         internal static readonly ConstantExpression TrueLiteral = ConstantExpression.Make(true, typeof(bool));
         internal static readonly ConstantExpression FalseLiteral = ConstantExpression.Make(false, typeof(bool));
@@ -42,6 +45,10 @@ namespace System.Linq.Expressions {
             }
         }
 
+        /// <summary>
+        /// Gets the static type of the expression that this <see cref="Expression" /> represents.
+        /// </summary>
+        /// <returns>The <see cref="Type"/> that represents the static type of the expression.</returns>
         protected override Type GetExpressionType() {
             if(_value == null) {
                 return typeof(object);
@@ -49,10 +56,17 @@ namespace System.Linq.Expressions {
             return _value.GetType();
         }
 
+        /// <summary>
+        /// Returns the node type of this Expression. Extension nodes should return
+        /// ExpressionType.Extension when overriding this method.
+        /// </summary>
+        /// <returns>The <see cref="ExpressionType"/> of the expression.</returns>
         protected override ExpressionType GetNodeKind() {
             return ExpressionType.Constant;
         }
-
+        /// <summary>
+        /// Gets the value of the constant expression.
+        /// </summary>
         public object Value {
             get { return _value; }
         }
@@ -76,11 +90,27 @@ namespace System.Linq.Expressions {
     }
 
     public partial class Expression {
+        /// <summary>
+        /// Creates a <see cref="ConstantExpression"/> that has the <see cref="P:ConstantExpression.Value"/> property set to the specified boolean value. .
+        /// </summary>
+        /// <param name="value">An <see cref="System.Boolean"/> to set the <see cref="P:ConstantExpression.Value"/> property equal to.</param>
+        /// <returns>
+        /// A <see cref="ConstantExpression"/> that has the <see cref="P:Expression.NodeType"/> property equal to 
+        /// <see cref="F:ExpressionType.Constant"/> and the <see cref="P:ConstantExpression.Value"/> property set to the specified value.
+        /// </returns>
         public static ConstantExpression Constant(bool value) {
              return value ? ConstantExpression.TrueLiteral : ConstantExpression.FalseLiteral;
         }
         
         //CONFORMING
+        /// <summary>
+        /// Creates a <see cref="ConstantExpression"/> that has the <see cref="P:ConstantExpression.Value"/> property set to the specified value. .
+        /// </summary>
+        /// <param name="value">An <see cref="System.Object"/> to set the <see cref="P:ConstantExpression.Value"/> property equal to.</param>
+        /// <returns>
+        /// A <see cref="ConstantExpression"/> that has the <see cref="P:Expression.NodeType"/> property equal to 
+        /// <see cref="F:ExpressionType.Constant"/> and the <see cref="P:Expression.Value"/> property set to the specified value.
+        /// </returns>
         public static ConstantExpression Constant(object value) {
             if (value == null) {
                 return ConstantExpression.NullLiteral;
@@ -114,6 +144,17 @@ namespace System.Linq.Expressions {
         }
 
         //CONFORMING
+        /// <summary>
+        /// Creates a <see cref="ConstantExpression"/> that has the <see cref="P:ConstantExpression.Value"/> 
+        /// and <see cref="P:ConstantExpression.Type"/> properties set to the specified values. .
+        /// </summary>
+        /// <param name="value">An <see cref="System.Object"/> to set the <see cref="P:ConstantExpression.Value"/> property equal to.</param>
+        /// <param name="type">A <see cref="System.Type"/> to set the <see cref="P:Expression.Type"/> property equal to.</param>
+        /// <returns>
+        /// A <see cref="ConstantExpression"/> that has the <see cref="P:Expression.NodeType"/> property equal to 
+        /// <see cref="F:ExpressionType.Constant"/> and the <see cref="P:ConstantExpression.Value"/> and 
+        /// <see cref="P:Expression.Type"/> properties set to the specified values.
+        /// </returns>
         public static ConstantExpression Constant(object value, Type type) {
             ContractUtils.RequiresNotNull(type, "type");
             if (value == null && type.IsValueType && !TypeUtils.IsNullableType(type)) {

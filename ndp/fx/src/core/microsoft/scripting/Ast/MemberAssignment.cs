@@ -19,13 +19,18 @@ using System.Text;
 using System.Dynamic.Utils;
 
 namespace System.Linq.Expressions {
-    //CONFORMING
+    /// <summary>
+    /// Represents assignment to a member of an object.
+    /// </summary>
     public sealed class MemberAssignment : MemberBinding {
         Expression _expression;
         internal MemberAssignment(MemberInfo member, Expression expression)
             : base(MemberBindingType.Assignment, member) {
             _expression = expression;
         }
+        /// <summary>
+        /// Gets the <see cref="Expression"/> which represents the object whose member is being assigned to.
+        /// </summary>
         public Expression Expression {
             get { return _expression; }
         }
@@ -33,7 +38,12 @@ namespace System.Linq.Expressions {
 
 
     public partial class Expression {
-        //CONFORMING
+        /// <summary>
+        /// Creates a <see cref="MemberAssignment"/> binding the specified value to the given member.
+        /// </summary>
+        /// <param name="member">The <see cref="MemberInfo"/> for the member which is being assigned to.</param>
+        /// <param name="expression">The value to be assigned to <paramref name="member"/>.</param>
+        /// <returns>The created <see cref="MemberAssignment"/>.</returns>
         public static MemberAssignment Bind(MemberInfo member, Expression expression) {
             ContractUtils.RequiresNotNull(member, "member");
             RequiresCanRead(expression, "expression");
@@ -45,7 +55,12 @@ namespace System.Linq.Expressions {
             return new MemberAssignment(member, expression);
         }
 
-        //CONFORMING
+        /// <summary>
+        /// Creates a <see cref="MemberAssignment"/> binding the specified value to the given property.
+        /// </summary>
+        /// <param name="propertyAccessor">The <see cref="PropertyInfo"/> for the property which is being assigned to.</param>
+        /// <param name="expression">The value to be assigned to <paramref name="propertyAccessor"/>.</param>
+        /// <returns>The created <see cref="MemberAssignment"/>.</returns>
         public static MemberAssignment Bind(MethodInfo propertyAccessor, Expression expression) {
             ContractUtils.RequiresNotNull(propertyAccessor, "propertyAccessor");
             ContractUtils.RequiresNotNull(expression, "expression");

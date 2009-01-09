@@ -23,6 +23,7 @@ using System.ComponentModel;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using Microsoft.Scripting;
 
 #if SILVERLIGHT
 [assembly: DynamicLanguageProvider(typeof(RubyContext), RubyContext.IronRubyDisplayName, RubyContext.IronRubyNames, RubyContext.IronRubyFileExtensions)]
@@ -101,12 +102,22 @@ namespace IronRuby {
             ContractUtils.RequiresNotNull(engine, "engine");
             ContractUtils.RequiresNotNull(path, "path");
 
-            return HostingHelpers.CallEngine<string, bool>(engine, RequireFile, path);
+            return HostingHelpers.CallEngine<KeyValuePair<string, Scope>, bool>(engine, RequireFile, 
+                new KeyValuePair<string, Scope>(path, null));
         }
 
-        internal static bool RequireFile(LanguageContext/*!*/ context, string/*!*/ path) {
+        public static bool RequireFile(ScriptEngine/*!*/ engine, string/*!*/ path, ScriptScope/*!*/ scope) {
+            ContractUtils.RequiresNotNull(engine, "engine");
+            ContractUtils.RequiresNotNull(path, "path");
+            ContractUtils.RequiresNotNull(scope, "scope");
+
+            return HostingHelpers.CallEngine<KeyValuePair<string, Scope>, bool>(engine, RequireFile, 
+                new KeyValuePair<string, Scope>(path, HostingHelpers.GetScope(scope)));
+        }
+
+        internal static bool RequireFile(LanguageContext/*!*/ context, KeyValuePair<string, Scope> pathAndScope) {
             var rc = (RubyContext)context;
-            return rc.Loader.LoadFile(rc.DefaultGlobalScope, null, MutableString.Create(path), 
+            return rc.Loader.LoadFile(pathAndScope.Value, null, MutableString.Create(pathAndScope.Key),
                 LoadFlags.LoadOnce | LoadFlags.AppendExtensions);
         }
 

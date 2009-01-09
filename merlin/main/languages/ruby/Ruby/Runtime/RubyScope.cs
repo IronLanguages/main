@@ -78,8 +78,8 @@ namespace IronRuby.Runtime {
             get { return _runtimeFlowControl; }
         }
 
-        public Scope GlobalScope {
-            get { return _top.RubyGlobalScope.Scope; }
+        public RubyGlobalScope/*!*/ GlobalScope {
+            get { return _top.RubyGlobalScope; }
         }
 
         public RubyTopLevelScope/*!*/ Top {
@@ -261,8 +261,13 @@ namespace IronRuby.Runtime {
         }
 
         internal RubyModule/*!*/ GetMethodDefinitionOwner() {
+            // MRI 1.9: skips all module_eval and define_method blocks.
+            // MRI 1.8: skips module_eval and define_method blocks above method scope.
+            if (RubyContext.RubyOptions.Compatibility == RubyCompatibility.Ruby19) {
+                return GetInnerMostModule();
+            }
+
             RubyScope scope = this;
-            bool skipBlocks = false;
             while (true) {
                 Debug.Assert(scope != null);
 
@@ -275,17 +280,12 @@ namespace IronRuby.Runtime {
                         return scope.Module;
 
                     case ScopeKind.Method:
-                        // MRI 1.8: skips module_evals above
-                        // MRI 1.9: just continue search for a module or module_eval
-                        skipBlocks = RubyContext.RubyOptions.Compatibility == RubyCompatibility.Ruby18;
-                        break;
+                        return scope.GetInnerMostModule();
 
                     case ScopeKind.Block:
-                        if (!skipBlocks) {
-                            BlockParam blockParam = ((RubyBlockScope)scope).BlockParameter;
-                            if (blockParam.ModuleDeclaration != null) {
-                                return blockParam.ModuleDeclaration;
-                            }
+                        BlockParam blockParam = ((RubyBlockScope)scope).BlockParameter;
+                        if (blockParam.ModuleDeclaration != null) {
+                            return blockParam.ModuleDeclaration;
                         }
                         break;
                 }
@@ -307,7 +307,7 @@ namespace IronRuby.Runtime {
         }
 
         public bool TryResolveConstant(bool autoload, string/*!*/ name, out object result) {
-            Scope autoloadScope = autoload ? GlobalScope : null;
+            RubyGlobalScope autoloadScope = autoload ? GlobalScope : null;
             RubyScope scope = this;
 
             // lexical lookup first:
@@ -568,11 +568,11 @@ var closureScope = scope as RubyClosureScope;
         public override ScopeKind Kind { get { return ScopeKind.TopLevel; } }
         public override bool InheritsLocalVariables { get { return false; } }
 
-        private readonly GlobalScopeExtension/*!*/ _globalScope;
+        private readonly RubyGlobalScope/*!*/ _globalScope;
         private readonly RubyContext/*!*/ _context;
         private RubyModule _definitionsModule; 
 
-        public GlobalScopeExtension/*!*/ RubyGlobalScope {
+        public RubyGlobalScope/*!*/ RubyGlobalScope {
             get {
                 if (_globalScope == null) {
                     throw new InvalidOperationException("Empty scope has no global scope.");
@@ -603,40 +603,38 @@ var closureScope = scope as RubyClosureScope;
             _context = context;
         }
 
-        internal RubyTopLevelScope(GlobalScopeExtension/*!*/ globalScope, RubyModule definitionsModule, IAttributesCollection/*!*/ frame) 
+        internal RubyTopLevelScope(RubyGlobalScope/*!*/ globalScope, RubyModule definitionsModule, IAttributesCollection/*!*/ frame) 
             : base(frame) {
             Assert.NotNull(globalScope);
             _globalScope = globalScope;
             _context = globalScope.Context;
             _definitionsModule = definitionsModule;
         }
-        
-        // TODO: might be called by MI.Invoke -> needs to be public in partial trust
-        // method_missing on top-level DLR created scope:
+
+        // method_missing on main singleton in DLR Scope bound code.
+        // Might be called via a site -> needs to be public in partial trust.
         public static object TopMethodMissing(RubyScope/*!*/ scope, BlockParam block, object/*!*/ self, SymbolId name, [NotNull]params object[]/*!*/ args) {
             Assert.NotNull(scope, self);
             Debug.Assert(!scope.IsEmpty);
-            Scope globalScope = scope.GlobalScope;
+            Scope globalScope = scope.GlobalScope.Scope;
             Debug.Assert(globalScope != null);
 
             // TODO: error when arguments non-empty, block != null, ...
+            // TODO: name-mangling
 
-            object value;
-            if (globalScope.TryGetName(name, out value)) {
-                return value;
+            if (args.Length == 0) {
+                object value;
+                if (globalScope.TryGetName(name, out value)) {
+                    return value;
+                }
+            } else if (args.Length == 1) {
+                string str = SymbolTable.IdToString(name);
+                if (str.Length > 0 && str[str.Length - 1] == '=') {
+                    SymbolId plainName = SymbolTable.StringToId(str.Substring(0, str.Length - 1));
+                    globalScope.SetName(plainName, args[0]);
+                    return args[0];
+                }
             }
-
-            // TODO: assignment
-            //if (args.Length == 1) {
-            //    string str = SymbolTable.IdToString(name);
-            //    if (str.Length > 0 && str[str.Length - 1] == '=') {
-            //        SymbolId plainName = SymbolTable.StringToId(str.Substring(0, str.Length - 1));
-            //        if (globalScope.ContainsName(plainName)) {
-            //            globalScope.SetName(plainName, args[0]);
-            //        }
-            //        return value;
-            //    }
-            //}
 
             // TODO: call super
             throw RubyExceptions.CreateMethodMissing(scope.RubyContext, self, SymbolTable.IdToString(name));

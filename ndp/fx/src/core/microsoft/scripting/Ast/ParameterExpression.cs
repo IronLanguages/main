@@ -75,18 +75,32 @@ namespace System.Linq.Expressions {
             return new TypedParameterExpression(type, name);            
         }
 
+        /// <summary>
+        /// Gets the static type of the expression that this <see cref="Expression" /> represents. (Inherited from <see cref="Expression"/>.)
+        /// </summary>
+        /// <returns>The <see cref="Type"/> that represents the static type of the expression.</returns>
         protected override Type GetExpressionType() {
             return typeof(object);
         }
 
+        /// <summary>
+        /// Returns the node type of this <see cref="Expression" />. (Inherited from <see cref="Expression" />.)
+        /// </summary>
+        /// <returns>The <see cref="ExpressionType"/> that represents this expression.</returns>
         protected override ExpressionType GetNodeKind() {
             return ExpressionType.Parameter;
         }
 
+        /// <summary>
+        /// The Name of the parameter or variable.
+        /// </summary>
         public string Name {
             get { return _name; }
         }
 
+        /// <summary>
+        /// Indicates that this ParameterExpression is to be treated as a ByRef parameter.
+        /// </summary>
         public bool IsByRef {
             get {
                 return GetIsByRef();
@@ -150,6 +164,12 @@ namespace System.Linq.Expressions {
 
     public partial class Expression {
         //CONFORMING
+        /// <summary>
+        /// Creates a ParameterExpression node that can be used to identify a parameter or a variable in an expression tree.
+        /// </summary>
+        /// <param name="type">The type of the parameter or variable.</param>
+        /// <param name="name">The name of the parameter or variable.</param>
+        /// <returns>A ParameterExpression node with the specified name and type.</returns>
         public static ParameterExpression Parameter(Type type, string name) {
             ContractUtils.RequiresNotNull(type, "type");
 
@@ -165,6 +185,12 @@ namespace System.Linq.Expressions {
             return ParameterExpression.Make(type, name, byref);
         }
 
+        /// <summary>
+        /// Creates a ParameterExpression node that can be used to identify a parameter or a variable in an expression tree.
+        /// </summary>
+        /// <param name="type">The type of the parameter or variable.</param>
+        /// <param name="name">The name of the parameter or variable.</param>
+        /// <returns>A ParameterExpression node with the specified name and type.</returns>
         public static ParameterExpression Variable(Type type, string name) {
             ContractUtils.RequiresNotNull(type, "type");
             ContractUtils.Requires(type != typeof(void), "type", Strings.ArgumentCannotBeOfTypeVoid);

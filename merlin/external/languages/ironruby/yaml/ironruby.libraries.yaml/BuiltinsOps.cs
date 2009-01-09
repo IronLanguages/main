@@ -380,7 +380,7 @@ namespace IronRuby.StandardLibrary.Yaml {
     public static class YamlNodeOps {
         [RubyMethod("transform")]
         public static object Transform(RubyScope/*!*/ scope, Node/*!*/ self) {
-            return new RubyConstructor(scope, new SimpleNodeProvider(self)).GetData();
+            return new RubyConstructor(scope.GlobalScope, new SimpleNodeProvider(self)).GetData();
         }
     }
 }

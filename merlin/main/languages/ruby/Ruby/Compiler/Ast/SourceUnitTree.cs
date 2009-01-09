@@ -80,7 +80,8 @@ namespace IronRuby.Compiler.Ast {
             MSA.Expression blockParameter;
             MSA.Expression currentMethodVariable;
 
-            if (gen.CompilerOptions.IsEval) {
+            if (gen.CompilerOptions.FactoryKind == TopScopeFactoryKind.None ||
+                gen.CompilerOptions.FactoryKind == TopScopeFactoryKind.Module) {
                 parameters = new MSA.ParameterExpression[6];
 
                 parameters[0] = Ast.Parameter(typeof(RubyScope), "#scope");
@@ -90,7 +91,7 @@ namespace IronRuby.Compiler.Ast {
                 currentMethodVariable = parameters[4] = Ast.Parameter(typeof(RubyMethodInfo), "#method");
                 rfcVariable = parameters[5] = Ast.Parameter(typeof(RuntimeFlowControl), "#rfc");
 
-                if (gen.CompilerOptions.IsModuleEval) {
+                if (gen.CompilerOptions.FactoryKind == TopScopeFactoryKind.Module) {
                     runtimeScopeVariable = scope.DefineHiddenVariable("#scope", typeof(RubyScope));
                     parentScope = parameters[0];
                     moduleVariable = parameters[2];
@@ -129,21 +130,44 @@ namespace IronRuby.Compiler.Ast {
 
             MSA.Expression scopeFactoryCall;
 
-            if (gen.CompilerOptions.IsEval) {
-                if (gen.CompilerOptions.IsModuleEval) {
+            switch (gen.CompilerOptions.FactoryKind) {
+                case TopScopeFactoryKind.Default:
+                    scopeFactoryCall = Methods.CreateTopLevelScope.OpCall(
+                        scope.VisibleVariables(), parentScope, language, selfVariable, rfcVariable
+                    );
+                    break;
+
+                case TopScopeFactoryKind.GlobalScopeBound:
+                    scopeFactoryCall = Methods.CreateTopLevelHostedScope.OpCall(
+                        scope.VisibleVariables(), parentScope, language, selfVariable, rfcVariable
+                    );
+                    break;
+
+                case TopScopeFactoryKind.Main:
+                    scopeFactoryCall = Methods.CreateMainTopLevelScope.OpCall(
+                        scope.VisibleVariables(), parentScope, language, selfVariable, rfcVariable,
+                        Ast.Constant(gen.SourceUnit.Path, typeof(string)), Ast.Constant(_dataOffset)
+                    );
+                    break;
+
+                case TopScopeFactoryKind.None:
+                    scopeFactoryCall = null;
+                    break;
+
+                case TopScopeFactoryKind.Module:
                     scopeFactoryCall = Methods.CreateModuleEvalScope.OpCall(
                         scope.VisibleVariables(), parentScope, selfVariable, moduleVariable
                     );
-                } else {
-                    scopeFactoryCall = null;
-                }
-            } else if (!gen.CompilerOptions.IsIncluded) {
-                scopeFactoryCall = Methods.CreateMainTopLevelScope.OpCall(scope.VisibleVariables(), parentScope, language, selfVariable, rfcVariable, 
-                    Ast.Constant(gen.SourceUnit.Path, typeof(string)), Ast.Constant(_dataOffset));
-            } else if (gen.CompilerOptions.IsWrapped) {
-                scopeFactoryCall = Methods.CreateWrappedTopLevelScope.OpCall(scope.VisibleVariables(), parentScope, language, selfVariable, rfcVariable);
-            } else {
-                scopeFactoryCall = Methods.CreateTopLevelScope.OpCall(scope.VisibleVariables(), parentScope, language, selfVariable, rfcVariable);
+                    break;
+
+                case TopScopeFactoryKind.WrappedFile:
+                    scopeFactoryCall = Methods.CreateWrappedTopLevelScope.OpCall(
+                        scope.VisibleVariables(), parentScope, language, selfVariable, rfcVariable
+                    );
+                    break;
+
+                default:
+                    throw Assert.Unreachable;
             }
 
             MSA.Expression prologue, body;
@@ -170,6 +194,7 @@ namespace IronRuby.Compiler.Ast {
                 body = gen.TransformStatements(prologue, _statements, ResultOperation.Return);
             }
 
+            body = GenerateCheckForAsyncException(scope, runtimeScopeVariable, body);
             body = gen.AddReturnTarget(scope.CreateScope(body));
             gen.LeaveSourceUnit();
 
@@ -178,6 +203,40 @@ namespace IronRuby.Compiler.Ast {
                 RubyExceptionData.TopLevelMethodName,
                 parameters
             );
+        }
+
+        private static MSA.Expression GenerateCheckForAsyncException(ScopeBuilder scope, MSA.Expression runtimeScopeVariable, MSA.Expression body) {
+            MSA.ParameterExpression exception = scope.DefineHiddenVariable("#exception", typeof(System.Threading.ThreadAbortException));
+            MSA.CatchBlock handler = Ast.Catch(exception,
+                Ast.Call(
+                    typeof(SourceUnitTree).GetMethod("CheckForAsyncRaiseViaThreadAbort"),
+                    runtimeScopeVariable,
+                    exception));
+            if (body.Type == typeof(void)) {
+                body = Ast.TryCatch(body, handler);
+            } else {
+                MSA.ParameterExpression variable = scope.DefineHiddenVariable("#value", body.Type);
+                body = Ast.Block(
+                    Ast.TryCatch(
+                        Ast.Void(Ast.Assign(variable, body)),
+                        handler),
+                    variable);
+            }
+
+            return body;
+        }
+
+        public static void CheckForAsyncRaiseViaThreadAbort(RubyScope scope, System.Threading.ThreadAbortException exception) {
+            Exception visibleException = RubyOps.GetVisibleException(exception);
+            if (exception == visibleException) {
+                return;
+            } else {
+                RubyOps.SetCurrentExceptionAndStackTrace(scope, exception);
+                // We are starting a new exception throw here (with the downside that we will lose the full stack trace)
+                RubyExceptionData.ActiveExceptionHandled(visibleException);
+
+                throw visibleException;
+            }
         }
     }
 }

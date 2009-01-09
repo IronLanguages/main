@@ -21,6 +21,9 @@ using System.Dynamic.Utils;
 using System.Runtime.InteropServices;
 
 namespace System.Linq.Expressions {
+    /// <summary>
+    /// Represents a control expression that handles multiple selections by passing control to a <see cref="SwitchCase"/>.
+    /// </summary>
     public sealed class SwitchExpression : Expression {
         private readonly Expression _testValue;
         private readonly ReadOnlyCollection<SwitchCase> _cases;
@@ -32,22 +35,40 @@ namespace System.Linq.Expressions {
             _cases = cases;
         }
 
+        /// <summary>
+        /// Gets the static type of the expression that this <see cref="Expression" /> represents.
+        /// </summary>
+        /// <returns>The <see cref="Type"/> that represents the static type of the expression.</returns>
         protected override Type GetExpressionType() {
             return typeof(void);
         }
 
+        /// <summary>
+        /// Returns the node type of this Expression. Extension nodes should return
+        /// ExpressionType.Extension when overriding this method.
+        /// </summary>
+        /// <returns>The <see cref="ExpressionType"/> of the expression.</returns>
         protected override ExpressionType GetNodeKind() {
             return ExpressionType.Switch;
         }
 
+        /// <summary>
+        /// Gets the test for the switch.
+        /// </summary>
         public Expression Test {
             get { return _testValue; }
         }
 
+        /// <summary>
+        /// Gets the collection of <see cref="SwitchCase"/> objects for the switch.
+        /// </summary>
         public ReadOnlyCollection<SwitchCase> SwitchCases {
             get { return _cases; }
         }
 
+        /// <summary>
+        /// Gets the <see cref="LabelTarget"/>, which the <see cref="SwitchCase"/> instances can use as a break target to exit the switch.
+        /// </summary>
         public LabelTarget BreakLabel {
             get { return _label; }
         }
@@ -57,16 +78,35 @@ namespace System.Linq.Expressions {
         }
     }
 
-    /// <summary>
-    /// Factory methods.
-    /// </summary>
     public partial class Expression {
+        /// <summary>
+        /// Creates a <see cref="SwitchExpression"/>.
+        /// </summary>
+        /// <param name="value">The value to be tested against each case.</param>
+        /// <param name="cases">The valid cases for this switch.</param>
+        /// <returns>The created <see cref="SwitchExpression"/>.</returns>
         public static SwitchExpression Switch(Expression value, params SwitchCase[] cases) {
             return Switch(value, null, (IEnumerable<SwitchCase>)cases);
         }
+
+        /// <summary>
+        /// Creates a <see cref="SwitchExpression"/>.
+        /// </summary>
+        /// <param name="value">The value to be tested against each case.</param>
+        /// <param name="label">The label of the break target for exiting the switch.</param>
+        /// <param name="cases">The valid cases for this switch.</param>
+        /// <returns>The created <see cref="SwitchExpression"/>.</returns>
         public static SwitchExpression Switch(Expression value, LabelTarget label, params SwitchCase[] cases) {
             return Switch(value, label, (IEnumerable<SwitchCase>)cases);
         }
+
+        /// <summary>
+        /// Creates a <see cref="SwitchExpression"/>.
+        /// </summary>
+        /// <param name="value">The value to be tested against each case.</param>
+        /// <param name="label">The label of the break target for exiting the switch.</param>
+        /// <param name="cases">The valid cases for this switch.</param>
+        /// <returns>The created <see cref="SwitchExpression"/>.</returns>
         public static SwitchExpression Switch(Expression value, LabelTarget label, IEnumerable<SwitchCase> cases) {
             RequiresCanRead(value, "value");
             ContractUtils.Requires(value.Type == typeof(int), "value", Strings.ValueMustBeInt);

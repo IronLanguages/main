@@ -123,17 +123,16 @@ namespace Microsoft.Scripting.Runtime {
         }
 
         /// <summary>
-        /// Creates the language specific CompilerContext object for code compilation.  The 
-        /// language should flow any relevant options from the LanguageContext to the 
-        /// newly created CompilerContext.
+        /// Creates the language specific CompilerOptions object for compilation of code not bound to any particular scope.
+        /// The language should flow any relevant options from LanguageContext to the newly created options instance.
         /// </summary>
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate")] // TODO: fix
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate")]
         public virtual CompilerOptions GetCompilerOptions() {
             return new CompilerOptions();
         }
 
         /// <summary>
-        /// Creates compiler options initialized by the options associated with the module.
+        /// Creates the language specific CompilerOptions object for compilation of code bound to a given scope.
         /// </summary>
         public virtual CompilerOptions GetCompilerOptions(Scope scope) {
             return GetCompilerOptions();

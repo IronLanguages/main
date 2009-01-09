@@ -270,5 +270,78 @@ p M.public_instance_methods(false)
 []
 ");            
         }
+        
+        private string MethodDefinitionInDefineMethodCode1 = @"
+class A
+  $p = lambda { def foo; end }
+end
+
+class B
+  define_method :f, &$p    
+end
+
+B.new.f
+
+puts A.send(:remove_method, :foo) rescue puts B.send(:remove_method, :foo)
+";
+
+        [Options(Compatibility = RubyCompatibility.Ruby19)]
+        public void MethodDefinitionInDefineMethod1A() {
+            AssertOutput(() => CompilerTest(MethodDefinitionInDefineMethodCode1), "A");
+        }
+
+        [Options(Compatibility = RubyCompatibility.Ruby18)]
+        public void MethodDefinitionInDefineMethod1B() {
+            AssertOutput(() => CompilerTest(MethodDefinitionInDefineMethodCode1), "B");
+        }
+
+        private string MethodDefinitionInDefineMethodCode2 = @"
+class B
+  define_method :m do    
+    def foo; end
+  end
+end
+
+class A < B
+end
+
+A.new.m
+
+puts A.send(:remove_method, :foo) rescue puts B.send(:remove_method, :foo)
+";
+        [Options(Compatibility = RubyCompatibility.Ruby19)]
+        public void MethodDefinitionInDefineMethod2A() {
+            AssertOutput(() => CompilerTest(MethodDefinitionInDefineMethodCode2), "B");
+        }
+
+        /// <summary>
+        /// MRI 1.8 actually prints A. We consider it a bug that we won't copy.
+        /// </summary>
+        [Options(Compatibility = RubyCompatibility.Ruby18)]
+        public void MethodDefinitionInDefineMethod2B() {
+            AssertOutput(() => CompilerTest(MethodDefinitionInDefineMethodCode2), "B");
+        }
+
+        private string MethodDefinitionInModuleEvalCode = @"
+class A
+  $p = lambda { def foo; end }
+end
+
+class B
+  module_eval(&$p)
+end
+
+puts A.send(:remove_method, :foo) rescue puts B.send(:remove_method, :foo)
+";
+
+        [Options(Compatibility = RubyCompatibility.Ruby19)]
+        public void MethodDefinitionInModuleEval1A() {
+            AssertOutput(() => CompilerTest(MethodDefinitionInModuleEvalCode), "A");
+        }
+
+        [Options(Compatibility = RubyCompatibility.Ruby18)]
+        public void MethodDefinitionInModuleEval1B() {
+            AssertOutput(() => CompilerTest(MethodDefinitionInModuleEvalCode), "B");
+        }
     }
 }

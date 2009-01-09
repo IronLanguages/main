@@ -17,10 +17,10 @@ using System.Dynamic.Utils;
 
 namespace System.Linq.Expressions {
     /// <summary>
-    /// Represents a label, which can be placed in any Expression context. If
+    /// Represents a label, which can be placed in any <see cref="Expression"/> context. If
     /// it is jumped to, it will get the value provided by the corresponding
-    /// GotoExpression. Otherwise, it gets the value in DefaultValue. If the
-    /// Type equals System.Void, no value should be provided
+    /// <see cref="GotoExpression"/>. Otherwise, it gets the value in <paramref name="DefaultValue"/>. If the
+    /// <see cref="Type"/> equals System.Void, no value should be provided.
     /// </summary>
     public sealed class LabelExpression : Expression {
         private readonly Expression _defaultValue;
@@ -31,21 +31,32 @@ namespace System.Linq.Expressions {
             _defaultValue = defaultValue;
         }
 
+        /// <summary>
+        /// Gets the static type of the expression that this <see cref="Expression" /> represents. (Inherited from <see cref="Expression"/>.)
+        /// </summary>
+        /// <returns>The <see cref="Type"/> that represents the static type of the expression.</returns>
         protected override Type GetExpressionType() {
             return _target.Type;
         }
 
+        /// <summary>
+        /// Returns the node type of this <see cref="Expression" />. (Inherited from <see cref="Expression" />.)
+        /// </summary>
+        /// <returns>The <see cref="ExpressionType"/> that represents this expression.</returns>
         protected override ExpressionType GetNodeKind() {
             return ExpressionType.Label;
         }
 
+        /// <summary>
+        /// The <see cref="LabelTarget"/> which this label is associated with.
+        /// </summary>
         public LabelTarget Target {
             get { return _target; }
         }
 
         /// <summary>
-        /// The value of the LabelExpression when the label is reached through
-        /// normal control flow (e.g. is not jumped to)
+        /// The value of the <see cref="LabelExpression"/> when the label is reached through
+        /// normal control flow (e.g. is not jumped to).
         /// </summary>
         public Expression DefaultValue {
             get { return _defaultValue; }
@@ -57,9 +68,21 @@ namespace System.Linq.Expressions {
     }
 
     public partial class Expression {
+        /// <summary>
+        /// Creates a <see cref="LabelExpression"/> representing a label with no default value.
+        /// </summary>
+        /// <param name="target">The <see cref="LabelTarget"/> which this <see cref="LabelExpression"/> will be associated with.</param>
+        /// <returns>A <see cref="LabelExpression"/> with no default value.</returns>
         public static LabelExpression Label(LabelTarget target) {
             return Label(target, null);
         }
+
+        /// <summary>
+        /// Creates a <see cref="LabelExpression"/> representing a label with the given default value.
+        /// </summary>
+        /// <param name="target">The <see cref="LabelTarget"/> which this <see cref="LabelExpression"/> will be associated with.</param>
+        /// <param name="defaultValue">The value of this <see cref="LabelExpression"/> when the label is reached through normal control flow.</param>
+        /// <returns>A <see cref="LabelExpression"/> with the given default value.</returns>
         public static LabelExpression Label(LabelTarget target, Expression defaultValue) {
             ValidateGoto(target, ref defaultValue, "label", "defaultValue");
             return new LabelExpression(target, defaultValue);

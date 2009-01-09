@@ -25,7 +25,7 @@ using System.IO;
 
 namespace System.Linq.Expressions {
     /// <summary>
-    /// Expression is the base type for all nodes in Expression Trees
+    /// The base type for all nodes in Expression Trees.
     /// </summary>
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1506:AvoidExcessiveClassCoupling")]
     public abstract partial class Expression {
@@ -291,6 +291,11 @@ namespace System.Linq.Expressions {
 #pragma warning restore 612
 
         // LinqV1 ctor
+        /// <summary>
+        /// Constructs a new instance of <see cref="Expression"/>.
+        /// </summary>
+        /// <param name="nodeType">The <see ctype="ExpressionType"/> of the <see cref="Expression"/>.</param>
+        /// <param name="type">The <see cref="Type"/> of the <see cref="Expression"/>.</param>
         [Obsolete("use a different constructor that does not take ExpressionType.  Then override GetExpressionType and GetNodeKind to provide the values that would be specified to this constructor.")]
         protected Expression(ExpressionType nodeType, Type type) {
             // Can't enforce anything that V1 didn't
@@ -304,17 +309,25 @@ namespace System.Linq.Expressions {
 
             _legacyCtorSupportTable[this] = new ExtensionInfo(nodeType, type);
         }
-#endif
 
+#endif
+        /// <summary>
+        /// Constructs a new instance of <see cref="Expression"/>.
+        /// </summary>
         protected Expression() {
         }
         
-        //CONFORMING
+        /// <summary>
+        /// The <see cref="ExpressionType"/> of the <see cref="Expression"/>.
+        /// </summary>
         public ExpressionType NodeType {
             get { return GetNodeKind(); }
         }
 
         //CONFORMING
+        /// <summary>
+        /// The <see cref="Type"/> of the value represented by this <see cref="Expression"/>.
+        /// </summary>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1721:PropertyNamesShouldNotMatchGetMethods")]
         public Type Type {
             get { return GetExpressionType(); }
@@ -332,6 +345,7 @@ namespace System.Linq.Expressions {
         /// Returns the node type of this Expression. Extension nodes should return
         /// ExpressionType.Extension when overriding this method.
         /// </summary>
+        /// <returns>The <see cref="ExpressionType"/> of the expression.</returns>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate")]
         protected virtual ExpressionType GetNodeKind() {
 #if !MICROSOFT_SCRIPTING_CORE
@@ -345,6 +359,10 @@ namespace System.Linq.Expressions {
             throw Error.ExtensionNodeMustOverrideMethod("Expression.GetNodeKind()");
         }
 
+        /// <summary>
+        /// Gets the static type of the expression that this <see cref="Expression" /> represents.
+        /// </summary>
+        /// <returns>The <see cref="Type"/> that represents the static type of the expression.</returns>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate")]
         protected virtual Type GetExpressionType() {            
 #if !MICROSOFT_SCRIPTING_CORE
@@ -363,21 +381,24 @@ namespace System.Linq.Expressions {
         /// true, this should return a valid expression. This method is
         /// allowed to return another node which itself must be reduced.
         /// </summary>
-        /// <returns>the reduced expression</returns>
+        /// <returns>The reduced expression.</returns>
         public virtual Expression Reduce() {
             ContractUtils.Requires(!CanReduce, "this", Strings.ReducibleMustOverrideReduce);
             return this;
         }
 
         /// <summary>
-        /// Override this to provide logic to walk the node's children. A
-        /// typical implementation will call visitor.Visit on each of its
+        /// Reduces the node and then calls Visit on the reduced expression.
+        /// Throws an exception if the node isn't reducible.
+        /// </summary>
+        /// <param name="visitor">An instance of <see cref="ExpressionVisitor"/>.</param>
+        /// <returns>The expression being visited, or an expression which should replace it in the tree.</returns>
+        /// <remarks>
+        /// Override this method to provide logic to walk the node's children. 
+        /// A typical implementation will call visitor.Visit on each of its
         /// children, and if any of them change, should return a new copy of
         /// itself with the modified children.
-        /// 
-        /// The default implementation will reduce the node and then walk it
-        /// This will throw an exception if the node is not reducible
-        /// </summary>
+        /// </remarks>
         protected internal virtual Expression VisitChildren(ExpressionVisitor visitor) {
             ContractUtils.Requires(CanReduce, "this", Strings.MustBeReducible);
             return visitor.Visit(ReduceExtensions());
@@ -395,11 +416,12 @@ namespace System.Linq.Expressions {
         /// Reduces this node to a simpler expression. If CanReduce returns
         /// true, this should return a valid expression. This method is
         /// allowed to return another node which itself must be reduced.
-        /// 
-        /// Unlike Reduce, this method checks that the reduced node satisfies
-        /// certain invaraints.
         /// </summary>
-        /// <returns>the reduced expression</returns>
+        /// <returns>The reduced expression.</returns>
+        /// <remarks >
+        /// Unlike Reduce, this method checks that the reduced node satisfies
+        /// certain invariants.
+        /// </remarks>
         public Expression ReduceAndCheck() {
             ContractUtils.Requires(CanReduce, "this", Strings.MustBeReducible);
 
@@ -416,7 +438,7 @@ namespace System.Linq.Expressions {
         /// Reduces the expression to a known node type (i.e. not an Extension node)
         /// or simply returns the expression if it is already a known type.
         /// </summary>
-        /// <returns>the reduced expression</returns>
+        /// <returns>The reduced expression.</returns>
         public Expression ReduceExtensions() {
             var node = this;
             while (node.NodeType == ExpressionType.Extension) {
@@ -426,11 +448,19 @@ namespace System.Linq.Expressions {
         }
 
         //CONFORMING
+        /// <summary>
+        /// Creates a <see cref="String"/> representation of the Expression.
+        /// </summary>
+        /// <returns>A <see cref="String"/> representation of the Expression.</returns>
         public override string ToString() {
             return ExpressionStringBuilder.ExpressionToString(this);
         }
 
 #if MICROSOFT_SCRIPTING_CORE
+        /// <summary>
+        /// Creates a <see cref="String"/> representation of the Expression.
+        /// </summary>
+        /// <returns>A <see cref="String"/> representation of the Expression.</returns>
         public string Dump {
             get {
                 using (System.IO.StringWriter writer = new System.IO.StringWriter(CultureInfo.CurrentCulture)) {
@@ -440,6 +470,11 @@ namespace System.Linq.Expressions {
             }
         }
 
+        /// <summary>
+        /// Writes a <see cref="String"/> representation of the <see cref="Expression"/> to a <see cref="TextWriter"/>.
+        /// </summary>
+        /// <param name="descr">A description for the root Expression.</param>
+        /// <param name="writer">A <see cref="TextWriter"/> that will be used to build the string representation.</param>
         public void DumpExpression(string descr, TextWriter writer) {
             ExpressionWriter.Dump(this, descr, writer);
         }

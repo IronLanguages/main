@@ -22,21 +22,19 @@ using System.Threading;
 
 namespace System.Linq.Expressions {
     /// <summary>
-    /// Defines a block where variables are defined. The compiler will
-    /// automatically close over these variables if they're referenced in a
-    /// nested LambdaExpession.
-    /// 
-    /// Specialized subclasses exist which actually implement the storage
-    /// for the BlockExpression.
+    /// Represents a block that contains a sequence of expressions where variables can be defined.
     /// </summary>
     public class BlockExpression : Expression {
 
+        /// <summary>
+        /// Gets the expressions in this block.
+        /// </summary>
         public ReadOnlyCollection<Expression> Expressions {
             get { return GetOrMakeExpressions(); }
         }
 
         /// <summary>
-        /// The variables in this block.
+        /// Gets the variables defined in this block.
         /// </summary>
         public ReadOnlyCollection<ParameterExpression> Variables {
             get {
@@ -51,10 +49,19 @@ namespace System.Linq.Expressions {
             return visitor.VisitBlock(this);
         }
 
+        /// <summary>
+        /// Returns the node type of this Expression. Extension nodes should return
+        /// ExpressionType.Extension when overriding this method.
+        /// </summary>
+        /// <returns>The <see cref="ExpressionType"/> of the expression.</returns>
         protected override ExpressionType GetNodeKind() {
             return ExpressionType.Block;
         }
 
+        /// <summary>
+        /// Gets the static type of the expression that this <see cref="Expression" /> represents.
+        /// </summary>
+        /// <returns>The <see cref="Type"/> that represents the static type of the expression.</returns>
         protected override Type GetExpressionType() {
             return GetExpression(ExpressionCount - 1).Type;
         }
@@ -533,13 +540,25 @@ namespace System.Linq.Expressions {
 
     public partial class Expression {
 
+        /// <summary>
+        /// Creates a <see cref="BlockExpression"/> that contains two expressions and has no variables.
+        /// </summary>
+        /// <param name="arg0">The first expression in the block.</param>
+        /// <param name="arg1">The second expression in the block.</param>
+        /// <returns>The created <see cref="BlockExpression"/>.</returns>
         public static BlockExpression Block(Expression arg0, Expression arg1) {
             RequiresCanRead(arg0, "arg0");
             RequiresCanRead(arg1, "arg1");
             
             return new Block2(arg0, arg1);
         }
-
+        /// <summary>
+        /// Creates a <see cref="BlockExpression"/> that contains three expressions and has no variables.
+        /// </summary>
+        /// <param name="arg0">The first expression in the block.</param>
+        /// <param name="arg1">The second expression in the block.</param>
+        /// <param name="arg2">The third expression in the block.</param>
+        /// <returns>The created <see cref="BlockExpression"/>.</returns>
         public static BlockExpression Block(Expression arg0, Expression arg1, Expression arg2) {
             RequiresCanRead(arg0, "arg0");
             RequiresCanRead(arg1, "arg1");
@@ -547,6 +566,14 @@ namespace System.Linq.Expressions {
             return new Block3(arg0, arg1, arg2);
         }
 
+        /// <summary>
+        /// Creates a <see cref="BlockExpression"/> that contains four expressions and has no variables.
+        /// </summary>
+        /// <param name="arg0">The first expression in the block.</param>
+        /// <param name="arg1">The second expression in the block.</param>
+        /// <param name="arg2">The third expression in the block.</param>
+        /// <param name="arg3">The fourth expression in the block.</param>
+        /// <returns>The created <see cref="BlockExpression"/>.</returns>
         public static BlockExpression Block(Expression arg0, Expression arg1, Expression arg2, Expression arg3) {
             RequiresCanRead(arg0, "arg0");
             RequiresCanRead(arg1, "arg1");
@@ -555,6 +582,15 @@ namespace System.Linq.Expressions {
             return new Block4(arg0, arg1, arg2, arg3);
         }
 
+        /// <summary>
+        /// Creates a <see cref="BlockExpression"/> that contains five expressions and has no variables.
+        /// </summary>
+        /// <param name="arg0">The first expression in the block.</param>
+        /// <param name="arg1">The second expression in the block.</param>
+        /// <param name="arg2">The third expression in the block.</param>
+        /// <param name="arg3">The fourth expression in the block.</param>
+        /// <param name="arg4">The fifth expression in the block.</param>
+        /// <returns>The created <see cref="BlockExpression"/>.</returns>
         public static BlockExpression Block(Expression arg0, Expression arg1, Expression arg2, Expression arg3, Expression arg4) {
             RequiresCanRead(arg0, "arg0");
             RequiresCanRead(arg1, "arg1");
@@ -565,6 +601,11 @@ namespace System.Linq.Expressions {
             return new Block5(arg0, arg1, arg2, arg3, arg4);
         }
 
+        /// <summary>
+        /// Creates a <see cref="BlockExpression"/> that contains the given expressions and has no variables.
+        /// </summary>
+        /// <param name="expressions">The expressions in the block.</param>
+        /// <returns>The created <see cref="BlockExpression"/>.</returns>
         public static BlockExpression Block(params Expression[] expressions) {
             switch (expressions.Length) {
                 case 2: return Block(expressions[0], expressions[1]);
@@ -579,16 +620,30 @@ namespace System.Linq.Expressions {
         }
 
         /// <summary>
-        /// Creates a list of expressions whose value is the value of the last expression.
+        /// Creates a <see cref="BlockExpression"/> that contains the given expressions and has no variables.
         /// </summary>
+        /// <param name="expressions">The expressions in the block.</param>
+        /// <returns>The created <see cref="BlockExpression"/>.</returns>
         public static BlockExpression Block(IEnumerable<Expression> expressions) {
             return Block(EmptyReadOnlyCollection<ParameterExpression>.Instance, expressions);
         }
 
+        /// <summary>
+        /// Creates a <see cref="BlockExpression"/> that contains the given variables and expressions.
+        /// </summary>
+        /// <param name="variables">The variables in the block.</param>
+        /// <param name="expressions">The expressions in the block.</param>
+        /// <returns>The created <see cref="BlockExpression"/>.</returns>
         public static BlockExpression Block(IEnumerable<ParameterExpression> variables, params Expression[] expressions) {
             return Block(variables, (IEnumerable<Expression>)expressions);
         }
 
+        /// <summary>
+        /// Creates a <see cref="BlockExpression"/> that contains the given variables and expressions.
+        /// </summary>
+        /// <param name="variables">The variables in the block.</param>
+        /// <param name="expressions">The expressions in the block.</param>
+        /// <returns>The created <see cref="BlockExpression"/>.</returns>
         public static BlockExpression Block(IEnumerable<ParameterExpression> variables, IEnumerable<Expression> expressions) {
             ContractUtils.RequiresNotNull(expressions, "expressions");
             RequiresCanRead(expressions, "expressions");

@@ -33,6 +33,9 @@ namespace IronRuby {
         private readonly bool _profile;
         private readonly bool _hasSearchPaths;
         private readonly RubyCompatibility _compatibility;
+#if DEBUG
+        private static bool _UseThreadAbortForSyncRaise;
+#endif
 
         public ReadOnlyCollection<string>/*!*/ Arguments {
             get { return _arguments; }
@@ -74,6 +77,12 @@ namespace IronRuby {
             get { return _compatibility; }
         }
 
+#if DEBUG
+        public static bool UseThreadAbortForSyncRaise {
+            get { return _UseThreadAbortForSyncRaise; }
+        }
+#endif
+
         public RubyOptions(IDictionary<string, object>/*!*/ options)
             : base(options) {
             _arguments = GetStringCollectionOption(options, "Arguments") ?? EmptyStringCollection;
@@ -87,6 +96,9 @@ namespace IronRuby {
             _libraryPaths = GetStringCollectionOption(options, "LibraryPaths", ';', ',') ?? new ReadOnlyCollection<string>(new[] { "." });
             _hasSearchPaths = GetOption<object>(options, "SearchPaths", null) != null;
             _compatibility = GetCompatibility(options, "Compatibility", RubyCompatibility.Default);
+#if DEBUG
+            _UseThreadAbortForSyncRaise = GetOption(options, "UseThreadAbortForSyncRaise", false);
+#endif
         }
 
         private static RubyCompatibility GetCompatibility(IDictionary<string, object>/*!*/ options, string/*!*/ name, RubyCompatibility defaultValue) {

@@ -14,12 +14,10 @@
  * ***************************************************************************/
 
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq.Expressions;
-using System.Reflection;
-using System.Reflection.Emit;
-using System.Runtime.CompilerServices;
 using System.Dynamic.Utils;
+using System.Linq.Expressions;
+using System.Linq.Expressions.Compiler;
+using System.Runtime.CompilerServices;
 
 namespace System.Dynamic {
     /// <summary>
@@ -42,139 +40,148 @@ namespace System.Dynamic {
         /// or may not be a templated rule.</param>
         /// <param name="to">The new rule produced by a binder.</param>
         internal static CallSiteRule<T> CopyOrCreateTemplatedRule<T>(CallSiteRule<T> from, CallSiteRule<T> to) where T : class {
-            List<ConstantExpression> newConstants;   // the constants which need to be replaced in our new rule.
-            bool tooSpecific;
+            List<KeyValuePair<ConstantExpression, int>> replacementList;
 
-            from = FindCompatibleRuleForTemplate<T>(from, to, out newConstants, out tooSpecific);
-            if (from == null) {
-                // trees are incompatible
+            TreeCompareResult tc = TreeComparer.CompareTrees(to.Binding, from.Binding, from.TemplatedConsts, out replacementList);
+
+            if (tc == TreeCompareResult.Incompatible) {
                 return to;
             }
 
             // We have 2 rules which are compatible.  We should create a new template or 
             // re-use the existing one.
-            object[] templateArgs = GetConstantValues(newConstants);
 
-            Expression newBody = new TemplateRuleRewriter(newConstants).Visit(to.Binding);
+            TemplateData<T> template;
+            object[] values = GetConstantValues(replacementList);
 
-            if (from.Template == null || tooSpecific) {
+            if (tc == TreeCompareResult.TooSpecific || from.Template == null) {
                 // create a new one - either we are going from a non-templated rule to using a templated rule, 
                 // or we are further generalizing an existing rule.  We need to re-write the incoming tree 
                 // to be templated over the necessary constants and return the new rule bound to the template.
 
-                return new CallSiteRule<T>(newBody, null, new TemplateData<T>());
-            }
+                Expression<Func<Object[], T>> templateExpr = TemplateRuleRewriter.MakeTemplate<T>(to.RuleSet.Stitch(), replacementList);
 
-            // we have compatible templated rules, we can just swap out the constant pool and 
-            // be on our merry way.
-
-            // get the old target
-            Delegate target = (Delegate)(object)from.RuleSet.GetTarget();
-
-            // create a new delegate closed over our new argument array
-            T dlg;
-            DynamicMethod templateMethod = from.TemplateMethod as DynamicMethod;
-            if (templateMethod != null) {
-                dlg = (T)(object)templateMethod.CreateDelegate(typeof(T), CloneData(target.Target, templateArgs));
+                Func<Object[], T> templateFunction = LambdaCompiler.CompileDynamic(templateExpr);
+                Set<int> consts = new Set<int>(replacementList.Select(pair => pair.Value));
+                template = new TemplateData<T>(templateFunction, consts);
             } else {
-                dlg = (T)(object)Delegate.CreateDelegate(typeof(T), CloneData(target.Target, templateArgs), target.Method);
+                template = from.Template;
             }
 
-            // create a new rule which is bound to the new delegate w/ the expression tree from the old code.            
-            return new CallSiteRule<T>(newBody, dlg, from.Template);
+            T newBody = template.TemplateFunction(values);
+            return new CallSiteRule<T>(to.Binding, newBody, template);
         }
 
-        private static CallSiteRule<T> FindCompatibleRuleForTemplate<T>(CallSiteRule<T> from, CallSiteRule<T> to, out List<ConstantExpression> newConstants, out bool tooSpecific) where T : class {
-            // no templates exist for this rule, just compare the raw trees...
-            if (TreeComparer.Compare(to.Binding, from.Binding, out newConstants, out tooSpecific)) {
-                // the rules are not compatbile, don't add template values...
-                return from;
-            }
-
-            return null;
-        }
-
-        /// <summary>
-        /// Clones the delegate target to create new delegate around it.
-        /// The delegates created by the compiler are closed over the instance of Closure class.
-        /// </summary>
-        private static object CloneData(object data, params object[] newData) {
-            Debug.Assert(data != null);
-
-            Closure closure = data as Closure;
-            if (closure != null) {
-                Debug.Assert(closure.Locals == null);
-                return new Closure(CopyArray(newData, closure.Constants), null);
-            }
-
-            throw Error.BadDelegateData();
-        }
-
-        private static object[] CopyArray(object[] newData, object[] oldData) {
-            int copiedCount = 0;
-
-            object[] res = new object[oldData.Length];
-            for (int i = 0; i < oldData.Length; i++) {
-                ITemplatedValue itv = oldData[i] as ITemplatedValue;
-                if (itv == null) {
-                    res[i] = oldData[i];
-                    continue;
-                }
-                copiedCount++;
-
-                res[i] = itv.CopyWithNewValue(newData[itv.Index]);
-            }
-
-            Debug.Assert(copiedCount == newData.Length);
-            return res;
-        }
-
-        private static object[] GetConstantValues(List<ConstantExpression> newConstants) {
+        private static object[] GetConstantValues(List<KeyValuePair<ConstantExpression,int>> newConstants) {
             object[] res = new object[newConstants.Count];
             int index = 0;
-            foreach (ConstantExpression ce in newConstants) {
-                res[index++] = ce.Value;
+            foreach (KeyValuePair<ConstantExpression,int> ce in newConstants) {
+                res[index++] = ce.Key.Value;
             }
             return res;
         }
 
-        internal class TemplateRuleRewriter : ExpressionVisitor {
-            private readonly List<ConstantExpression> _constants;
-            private static CacheDict<Type, Func<object, int, object>> _templateCtors = new CacheDict<Type, Func<object, int, object>>(20);
 
-            public TemplateRuleRewriter(List<ConstantExpression> constants) {
-                _constants = constants;
+        internal class TemplateRuleRewriter : ExpressionVisitor {
+            private Dictionary<int, ParameterExpression> _map;
+            private int _curConstNum;
+
+            private TemplateRuleRewriter(Dictionary<int, ParameterExpression> map) {
+                _map = map;
+                _curConstNum = -1;
+            }
+
+            /// <summary>
+            /// Creates a higher order factory expression that can produce
+            /// instances of original expresion bound to given set of constant values.
+            /// </summary>
+            /// <typeparam name="T"></typeparam>
+            /// <param name="origTree">Original expresion.</param>
+            /// <param name="constToTemplate">Which constants should be parameterised.</param>
+            /// <returns>Factory expression.</returns>
+            internal static Expression<Func<Object[], T>> MakeTemplate<T>(
+                    Expression<T> origTree, 
+                    List<KeyValuePair<ConstantExpression,int>> constToTemplate) {
+
+
+                // The goal is to produce a nested lambda 
+                // which is the same as original, but with specified constants re-bound to variables
+                // that we will initialize to given values.
+
+                ParameterExpression constsArg = Expression.Parameter(typeof(object[]), null);
+
+                // these are the variables that would act as constant replacements. 
+                // they will be hoisted into a closure so every produced rule will get its own version.
+                List<ParameterExpression> locals = new List<ParameterExpression>();
+
+                // maping of constants to locals to tell rewriter what to do.
+                Dictionary<int, ParameterExpression> map = new Dictionary<int, ParameterExpression>();
+
+                List<Expression> statements = new List<Expression>();
+
+                int i = 0;
+                foreach(var cur in constToTemplate) {
+                    Type curConstType = TypeUtils.GetConstantType(cur.Key.Type);
+                    var local = Expression.Parameter(curConstType, null);
+                    locals.Add(local);
+                    statements.Add(
+                        Expression.Assign(
+                            local,
+                            Helpers.Convert(
+                                Expression.ArrayIndex(constsArg, Expression.Constant(i)),
+                                curConstType
+                            )
+                        )
+                    );
+                    map.Add(cur.Value, local);
+                    i++;
+                }
+
+                // remap original lambda
+                TemplateRuleRewriter rewriter = new TemplateRuleRewriter(map);
+                Expression<T> templatedTree = (Expression<T>)rewriter.Visit(origTree);
+
+                statements.Add(templatedTree);
+
+                
+                //  T template(object[] constArg){
+                //      local0 = constArg[0];
+                //      local1 = constArg[1];
+                //      ...
+                //      localN = constArg[N];
+                //
+                //      return {original lambda, but with selected consts bound to locals}      
+                //  }
+
+                Expression<Func<Object[], T>> template = Expression.Lambda<Func<Object[], T>>(
+                    Expression.Block(
+                        locals,
+                        statements
+                    ),
+                    constsArg
+                );
+
+                // Need to compile with forceDynamic because T could be invisible,
+                // or one of the argument types could be invisible
+                return template;
             }
 
             protected internal override Expression VisitConstant(ConstantExpression node) {
-                int index = _constants.IndexOf(node);
-                if (index != -1) {
-                    // clear the constant from the list...  This is incase the rule contains the
-                    // same ConstantExpression instance multiple times and we're replacing the 
-                    // multiple entries.  In that case we want each constant duplicated value
-                    // to line up with a single index.
-                    _constants[index] = null;
+                _curConstNum++;
 
-                    // this is a constant we want to re-write, replace w/ a templated constant
-                    object value = node.Value;
-
-                    Type elementType = TypeUtils.GetConstantType(node.Type);
-
-                    Func<object, int, object> ctor;
-                    lock (_templateCtors) {
-                        if (!_templateCtors.TryGetValue(elementType, out ctor)) {
-                            MethodInfo genMethod = typeof(TemplatedValue<>).MakeGenericType(new Type[] { elementType }).GetMethod("Make", BindingFlags.NonPublic | BindingFlags.Static);
-                            _templateCtors[elementType] = ctor = (Func<object, int, object>)genMethod.CreateDelegate(typeof(Func<object, int, object>)); ;
-                        }
-                    }
-                    
-                    object constVal = ctor(value, index);                    
-
-                    return Expression.Property(Expression.Constant(constVal), ctor.Method.ReturnType.GetProperty("Value"));
+                if (_map.ContainsKey(_curConstNum)) {
+                    return _map[_curConstNum];
                 }
 
                 return base.VisitConstant(node);
             }
+
+            // Extensions may contain constants too. 
+            // We visit them in TreeCompare and so we do here.
+            protected internal override Expression VisitExtension(Expression node) {
+                return Visit(node.ReduceExtensions());
+            }
+
         }
     }
 }

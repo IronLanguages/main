@@ -114,7 +114,7 @@ namespace System.Linq.Expressions.Compiler {
         /// <summary>
         /// Rewrites child expressions, spilling them into temps if needed. The
         /// stack starts in the inital state, and after the first subexpression
-        /// is added it is change to non-empty. This behavior can be overriden
+        /// is added it is change to non-empty. This behavior can be overridden
         /// by setting the stack manually between adds.
         /// 
         /// When all children have been added, the caller should rewrite the 

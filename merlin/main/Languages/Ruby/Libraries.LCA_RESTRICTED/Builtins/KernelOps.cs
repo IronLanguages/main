@@ -371,23 +371,23 @@ namespace IronRuby.Builtins {
         [RubyMethod("load", RubyMethodAttributes.PublicSingleton)]
         public static bool Load(RubyScope/*!*/ scope, object self,
             [DefaultProtocol, NotNull]MutableString/*!*/ libraryName, [Optional]bool wrap) {
-            return scope.RubyContext.Loader.LoadFile(scope.GlobalScope, self, libraryName, wrap ? LoadFlags.LoadIsolated : LoadFlags.None);
+            return scope.RubyContext.Loader.LoadFile(scope.GlobalScope.Scope, self, libraryName, wrap ? LoadFlags.LoadIsolated : LoadFlags.None);
         }
 
         [RubyMethod("load_assembly", RubyMethodAttributes.PrivateInstance)]
         [RubyMethod("load_assembly", RubyMethodAttributes.PublicSingleton)]
-        public static bool LoadAssembly(RubyScope/*!*/ scope, object self,
+        public static bool LoadAssembly(RubyContext/*!*/ context, object self,
             [DefaultProtocol, NotNull]MutableString/*!*/ assemblyName, [DefaultProtocol, Optional, NotNull]MutableString libraryNamespace) {
 
             string initializer = libraryNamespace != null ? LibraryInitializer.GetFullTypeName(libraryNamespace.ConvertToString()) : null;
-            return scope.RubyContext.Loader.LoadAssembly(assemblyName.ConvertToString(), initializer, true);
+            return context.Loader.LoadAssembly(assemblyName.ConvertToString(), initializer, true);
         }
 
         [RubyMethod("require", RubyMethodAttributes.PrivateInstance)]
         [RubyMethod("require", RubyMethodAttributes.PublicSingleton)]
         public static bool Require(RubyScope/*!*/ scope, object self, 
             [DefaultProtocol, NotNull]MutableString/*!*/ libraryName) {
-            return scope.RubyContext.Loader.LoadFile(scope.GlobalScope, self, libraryName, LoadFlags.LoadOnce | LoadFlags.AppendExtensions);
+            return scope.RubyContext.Loader.LoadFile(scope.GlobalScope.Scope, self, libraryName, LoadFlags.LoadOnce | LoadFlags.AppendExtensions);
         }
 
         #endregion
@@ -664,6 +664,11 @@ namespace IronRuby.Builtins {
                 exception = new RuntimeError();
             }
 
+#if DEBUG && !SILVERLIGHT
+            if (RubyOptions.UseThreadAbortForSyncRaise) {
+                RubyOps.RaiseAsyncException(Thread.CurrentThread, exception);
+            }
+#endif
             // rethrow semantics, preserves the backtrace associated with the exception:
             throw exception;
         }
@@ -674,7 +679,14 @@ namespace IronRuby.Builtins {
         [RubyMethod("fail", RubyMethodAttributes.PublicSingleton)]
         [RubyStackTraceHidden]
         public static void RaiseException(object self, [NotNull]MutableString/*!*/ message) {
-            throw RubyExceptionData.InitializeException(new RuntimeError(message.ToString()), message);
+            Exception exception = RubyExceptionData.InitializeException(new RuntimeError(message.ToString()), message);
+
+#if DEBUG && !SILVERLIGHT
+            if (RubyOptions.UseThreadAbortForSyncRaise) {
+                RubyOps.RaiseAsyncException(Thread.CurrentThread, exception);
+            }
+#endif
+            throw exception;
         }
 
         [RubyMethod("raise", RubyMethodAttributes.PrivateInstance)]
@@ -685,8 +697,21 @@ namespace IronRuby.Builtins {
         public static void RaiseException(RespondToStorage/*!*/ respondToStorage, UnaryOpStorage/*!*/ storage0, BinaryOpStorage/*!*/ storage1, 
             RubyContext/*!*/ context, object self, object/*!*/ obj, [Optional]object arg, [Optional]RubyArray backtrace) {
 
+            Exception exception = CreateExceptionToRaise(respondToStorage, storage0, storage1, context, obj, arg, backtrace);
+#if DEBUG && !SILVERLIGHT
+            if (RubyOptions.UseThreadAbortForSyncRaise) {
+                RubyOps.RaiseAsyncException(Thread.CurrentThread, exception);
+            }
+#endif
+            // rethrow semantics, preserves the backtrace associated with the exception:
+            throw exception;
+        }
+
+        internal static Exception CreateExceptionToRaise(RespondToStorage/*!*/ respondToStorage, UnaryOpStorage/*!*/ storage0, BinaryOpStorage/*!*/ storage1,
+            RubyContext/*!*/ context, object/*!*/ obj, object arg, RubyArray backtrace) {
+
             if (Protocols.RespondTo(respondToStorage, context, obj, "exception")) {
-                Exception e;
+                Exception e = null;
                 if (arg != Missing.Value) {
                     var site = storage1.GetCallSite("exception");
                     e = site.Target(site, context, obj, arg) as Exception;
@@ -699,9 +724,7 @@ namespace IronRuby.Builtins {
                     if (backtrace != null) {
                         ExceptionOps.SetBacktrace(e, backtrace);
                     }
-
-                    // rethrow semantics, preserves the backtrace associated with the exception:
-                    throw e;
+                    return e;
                 }
             }
 
@@ -786,7 +809,7 @@ namespace IronRuby.Builtins {
         [RubyMethod("sleep", RubyMethodAttributes.PrivateInstance)]
         [RubyMethod("sleep", RubyMethodAttributes.PublicSingleton)]
         public static void Sleep(object self) {
-            Thread.Sleep(Timeout.Infinite);
+            ThreadOps.DoSleep();
         }
 
         [RubyMethod("sleep", RubyMethodAttributes.PrivateInstance)]
@@ -1385,11 +1408,11 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("to_a")]
-        public static RubyArray/*!*/ ToA(RubyScope/*!*/ scope, object self) {
+        public static RubyArray/*!*/ ToA(RubyContext/*!*/ context, object self) {
             // Return an array that contains self
             RubyArray result = new RubyArray(new object[] { self });
 
-            return scope.RubyContext.TaintObjectBy(result, self);
+            return context.TaintObjectBy(result, self);
         }
 
         [RubyMethod("to_s")]

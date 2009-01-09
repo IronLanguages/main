@@ -31,16 +31,25 @@ namespace System.Linq.Expressions {
             _variables = variables;
         }
 
+        /// <summary>
+        /// Gets the static type of the expression that this <see cref="Expression" /> represents.
+        /// </summary>
+        /// <returns>The <see cref="Type"/> that represents the static type of the expression.</returns>
         protected override Type GetExpressionType() {
             return typeof(IList<IStrongBox>);
         }
 
+        /// <summary>
+        /// Returns the node type of this Expression. Extension nodes should return
+        /// ExpressionType.Extension when overriding this method.
+        /// </summary>
+        /// <returns>The <see cref="ExpressionType"/> of the expression.</returns>
         protected override ExpressionType GetNodeKind() {
             return ExpressionType.RuntimeVariables;
         }
 
         /// <summary>
-        /// The variables or parameters to provide access to
+        /// The variables or parameters to which to provide runtime access.
         /// </summary>
         public ReadOnlyCollection<ParameterExpression> Variables {
             get { return _variables; }
@@ -53,9 +62,20 @@ namespace System.Linq.Expressions {
 
     public partial class Expression {
 
+        /// <summary>
+        /// Creates an instance of <see cref="T:System.Linq.Expressions.RuntimeVariablesExpression" />.
+        /// </summary>
+        /// <param name="variables">An array of <see cref="T:System.Linq.Expressions.ParameterExpression" /> objects to use to populate the <see cref="P:System.Linq.Expressions.RuntimeVariablesExpression.Variables" /> collection.</param>
+        /// <returns>An instance of <see cref="T:System.Linq.Expressions.RuntimeVariablesExpression" /> that has the <see cref="P:System.Linq.Expressions.Expression.NodeType" /> property equal to <see cref="F:System.Linq.Expressions.ExpressionType.RuntimeVariables" /> and the <see cref="P:System.Linq.Expressions.RuntimeVariablesExpression.Variables" /> property set to the specified value.</returns>
         public static RuntimeVariablesExpression RuntimeVariables(params ParameterExpression[] variables) {
             return RuntimeVariables((IEnumerable<ParameterExpression>)variables);
         }
+
+        /// <summary>
+        /// Creates an instance of <see cref="T:System.Linq.Expressions.RuntimeVariablesExpression" />.
+        /// </summary>
+        /// <param name="variables">A collection of <see cref="T:System.Linq.Expressions.ParameterExpression" /> objects to use to populate the <see cref="P:System.Linq.Expressions.RuntimeVariablesExpression.Variables" /> collection.</param>
+        /// <returns>An instance of <see cref="T:System.Linq.Expressions.RuntimeVariablesExpression" /> that has the <see cref="P:System.Linq.Expressions.Expression.NodeType" /> property equal to <see cref="F:System.Linq.Expressions.ExpressionType.RuntimeVariables" /> and the <see cref="P:System.Linq.Expressions.RuntimeVariablesExpression.Variables" /> property set to the specified value.</returns>
         public static RuntimeVariablesExpression RuntimeVariables(IEnumerable<ParameterExpression> variables) {
             ContractUtils.RequiresNotNull(variables, "variables");
 

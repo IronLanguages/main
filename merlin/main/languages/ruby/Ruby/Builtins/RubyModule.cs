@@ -154,7 +154,7 @@ namespace IronRuby.Builtins {
             get { return ReferenceEquals(this, _context.ObjectClass); }
         }
 
-        internal virtual GlobalScopeExtension GlobalScope {
+        internal virtual RubyGlobalScope GlobalScope {
             get { return null; }
         }
 
@@ -215,13 +215,15 @@ namespace IronRuby.Builtins {
         }
 
         internal virtual void EnsureInitialized() {
-            if (_state == State.Uninitialized) {
-                for (int i = 0; i < _mixins.Length; i++) {
-                    _mixins[i].EnsureInitialized();
-                }
-
+            lock(this) { // TODO: There is more work to be done to improve module initialization thread-safety and performance
                 if (_state == State.Uninitialized) {
-                    InitializeMembers();
+                    for (int i = 0; i < _mixins.Length; i++) {
+                        _mixins[i].EnsureInitialized();
+                    }
+
+                    if (_state == State.Uninitialized) {
+                        InitializeMembers();
+                    }
                 }
             }
         }
@@ -415,13 +417,13 @@ namespace IronRuby.Builtins {
                 _path = path;
             }
 
-            public bool Load(RubyContext/*!*/ context, Scope/*!*/ autoloadScope) {
+            public bool Load(RubyGlobalScope/*!*/ autoloadScope) {
                 if (_loaded) {
                     return false;
                 }
 
                 _loaded = true;
-                return context.Loader.LoadFile(autoloadScope, null, _path, LoadFlags.LoadOnce | LoadFlags.AppendExtensions);
+                return autoloadScope.Context.Loader.LoadFile(autoloadScope.Scope, null, _path, LoadFlags.LoadOnce | LoadFlags.AppendExtensions);
             }
         }
 
@@ -486,7 +488,7 @@ namespace IronRuby.Builtins {
         /// <summary>
         /// Get constant defined in this module.
         /// </summary>
-        public bool TryGetConstant(Scope autoloadScope, string/*!*/ name, out object value) {
+        public bool TryGetConstant(RubyGlobalScope autoloadScope, string/*!*/ name, out object value) {
             return TryLookupConstant(false, false, autoloadScope, name, out value) != ConstantLookupResult.NotFound;
         }
 
@@ -500,7 +502,7 @@ namespace IronRuby.Builtins {
         /// <summary>
         /// Get constant defined in this module or any of its ancestors.
         /// </summary>
-        public bool TryResolveConstant(Scope autoloadScope, string/*!*/ name, out object value) {
+        public bool TryResolveConstant(RubyGlobalScope autoloadScope, string/*!*/ name, out object value) {
             return TryLookupConstant(true, true, autoloadScope, name, out value) != ConstantLookupResult.NotFound;
         }
 
@@ -510,7 +512,9 @@ namespace IronRuby.Builtins {
             FoundAutoload = 2,
         }
 
-        private ConstantLookupResult TryLookupConstant(bool included, bool inherited, Scope autoloadScope, string/*!*/ name, out object value) {
+        private ConstantLookupResult TryLookupConstant(bool included, bool inherited, RubyGlobalScope autoloadScope, 
+            string/*!*/ name, out object value) {
+
             Debug.Assert(included || !inherited);
 
             value = null;
@@ -539,7 +543,7 @@ namespace IronRuby.Builtins {
                 RemoveConstant(name);
 
                 // load file and try lookup again:
-                if (!autoloaded.Load(_context, autoloadScope)) {
+                if (!autoloaded.Load(autoloadScope)) {
                     return ConstantLookupResult.NotFound;
                 }
             }

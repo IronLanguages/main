@@ -116,7 +116,7 @@ task :happy do
       end
     end
 
-    if rake_version < "0.8.0"
+    if rake_version < "0.8.3"
       failure = true
     end
 

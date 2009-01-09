@@ -36,7 +36,14 @@ namespace System.Linq.Expressions.Compiler {
         internal Set(IList<T> list) {
             _data = new Dictionary<T, object>(list.Count);
             foreach (T t in list) {
-                _data.Add(t, null);
+                Add(t);
+            }
+        }
+
+        internal Set(IEnumerable<T> list) {
+            _data = new Dictionary<T, object>();
+            foreach (T t in list) {
+                Add(t);
             }
         }
 

@@ -27,8 +27,8 @@ CS_COMPILER           = ENV['mono'].nil? ? 'csc' : 'gmcs'
 EXCLUDED_DIRECTORIES  = ['.svn', 'obj', '.', '..']
 
 
-import 'rake\test.rake'
-import 'rake\compile.rake'
-import 'rake\package.rake'
-import 'rake\misc.rake'
-import 'rake\git.rake'
+import 'rake/test.rake'
+import 'rake/compile.rake'
+import 'rake/package.rake'
+import 'rake/misc.rake'
+import 'rake/git.rake'

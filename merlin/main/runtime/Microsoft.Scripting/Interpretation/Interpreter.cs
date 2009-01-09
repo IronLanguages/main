@@ -137,6 +137,11 @@ namespace Microsoft.Scripting.Interpretation {
                     return _caller.InvokeInstance(instance, parameters);
                 }
             } catch (Exception e) {
+                // Give the language a chance to associate the interpreter stack trace with the exception.
+                //
+                // Note that this should be called for any exception caused by any Expression node
+                // (for example, integer division by zero). For now, doing it for method calls
+                // catches a large portion of the interesting cases (including calls into the language's library assembly).
                 state.ScriptCode.LanguageContext.InterpretExceptionThrow(state, e, false);
                 throw;
             }
@@ -772,7 +777,13 @@ namespace Microsoft.Scripting.Interpretation {
                 if (callSiteInfo.CallSite == null) {
                     SetCallSite(callSiteInfo, node);
                 }
-                return callSiteInfo.CallerTarget(callSiteInfo.CallSite, argValues);
+
+                try {
+                    return callSiteInfo.CallerTarget(callSiteInfo.CallSite, argValues);
+                } catch(Exception e) {
+                    state.ScriptCode.LanguageContext.InterpretExceptionThrow(state, e, false);
+                    throw;
+                }
             }
 
             PerfTrack.NoteEvent(PerfTrack.Categories.Count, "Interpreter: Interpreting meta-action");

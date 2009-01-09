@@ -22,6 +22,9 @@ using System.Dynamic.Utils;
 
 namespace System.Linq.Expressions {
     //CONFORMING
+    /// <summary>
+    /// Represents the initialization of a list.
+    /// </summary>
     public sealed class ElementInit : IArgumentProvider {
         private MethodInfo _addMethod;
         private ReadOnlyCollection<Expression> _arguments;
@@ -30,9 +33,16 @@ namespace System.Linq.Expressions {
             _addMethod = addMethod;
             _arguments = arguments;
         }
+        /// <summary>
+        /// Gets the <see cref="MethodInfo"/> used to add elements to the object.
+        /// </summary>
         public MethodInfo AddMethod {
             get { return _addMethod; }
         }
+
+        /// <summary>
+        /// Gets the list of elements to be added to the object.
+        /// </summary>
         public ReadOnlyCollection<Expression> Arguments {
             get { return _arguments; }
         }
@@ -47,6 +57,10 @@ namespace System.Linq.Expressions {
             }
         }
 
+        /// <summary>
+        /// Creates a <see cref="String"/> representation of the node.
+        /// </summary>
+        /// <returns>A <see cref="String"/> representation of the node.</returns>
         public override string ToString() {
             return ExpressionStringBuilder.ElementInitBindingToString(this);
         }
@@ -55,10 +69,23 @@ namespace System.Linq.Expressions {
 
     public partial class Expression {
         //CONFORMING
+        /// <summary>
+        /// Creates an <see cref="System.Linq.Expressions.ElementInit">ElementInit</see> expression that represents the initialization of a list.
+        /// </summary>
+        /// <param name="addMethod">The <see cref="MethodInfo"/> for the list's Add method.</param>
+        /// <param name="arguments">An array containing the Expressions to be used to initialize the list.</param>
+        /// <returns>The created <see cref="System.Linq.Expressions.ElementInit">ElementInit</see> expression.</returns>
         public static ElementInit ElementInit(MethodInfo addMethod, params Expression[] arguments) {
             return ElementInit(addMethod, arguments as IEnumerable<Expression>);
         }
+
         //CONFORMING
+        /// <summary>
+        /// Creates an <see cref="System.Linq.Expressions.ElementInit">ElementInit</see> expression that represents the initialization of a list.
+        /// </summary>
+        /// <param name="addMethod">The <see cref="MethodInfo"/> for the list's Add method.</param>
+        /// <param name="arguments">An <see cref="IEnumerable{T}"/> containing <see cref="Expression"/> elements to initialize the list.</param>
+        /// <returns>The created <see cref="System.Linq.Expressions.ElementInit">ElementInit</see> expression.</returns>
         public static ElementInit ElementInit(MethodInfo addMethod, IEnumerable<Expression> arguments) {
             ContractUtils.RequiresNotNull(addMethod, "addMethod");
             ContractUtils.RequiresNotNull(arguments, "arguments");

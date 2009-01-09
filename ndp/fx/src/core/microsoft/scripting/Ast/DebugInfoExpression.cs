@@ -39,53 +39,77 @@ namespace System.Linq.Expressions {
             _endColumn = endColumn;
         }
 
+        /// <summary>
+        /// Gets the static type of the expression that this <see cref="Expression" /> represents. (Inherited from <see cref="Expression"/>.)
+        /// </summary>
+        /// <returns>The <see cref="Type"/> that represents the static type of the expression.</returns>
         protected override Type GetExpressionType() {
             return _expression.Type;
         }
 
+        /// <summary>
+        /// Returns the node type of this <see cref="Expression" />. (Inherited from <see cref="Expression" />.)
+        /// </summary>
+        /// <returns>The <see cref="ExpressionType"/> that represents this expression.</returns>
         protected override ExpressionType GetNodeKind() {
             return ExpressionType.DebugInfo;
         }
 
+        /// <summary>
+        /// Gets a boolean value indicating whether this expression is reducible.
+        /// </summary>
         public override bool CanReduce {
             get {
                 return true;
             }
         }
 
+        /// <summary>
+        /// Gets the start line of the code that was used to generate the wrapped expression.
+        /// </summary>
         public int StartLine {
             get { return _startLine; }
         }
 
+        /// <summary>
+        /// Gets the start column of the code that was used to generate the wrapped expression.
+        /// </summary>
         public int StartColumn {
             get { return _startColumn; }
         }
 
+        /// <summary>
+        /// Gets the end line of the code that was used to generate the wrapped expression.
+        /// </summary>
         public int EndLine {
             get { return _endLine; }
         }
 
+        /// <summary>
+        /// Gets the end column of the code that was used to generate the wrapped expression.
+        /// </summary>
         public int EndColumn {
             get { return _endColumn; }
         }
 
         /// <summary>
-        /// Information about the source file
+        /// Gets the <see cref="SymbolDocumentInfo"/> that represents the source file.
         /// </summary>
         public SymbolDocumentInfo Document {
             get { return _document; }
         }
 
         /// <summary>
-        /// The underlying expression to be evaluated
+        /// The underlying <see cref="Expression"/> that the <see cref="DebugInfoExpression"/> applies to.
         /// </summary>
         public Expression Expression {
             get { return _expression; }
         }
 
         /// <summary>
-        /// Returns the underlying expression
+        /// Returns the underlying expression that this <see cref="DebugInfoExpression"/> applies to.
         /// </summary>
+        /// <returns>The reduced expression.</returns>
         public override Expression Reduce() {
             return _expression;
         }
@@ -96,6 +120,16 @@ namespace System.Linq.Expressions {
     }
 
     public partial class Expression {
+        /// <summary>
+        /// Creates a <see cref="DebugInfoExpression"/> That identifies the source code that was used to generate an <see cref="Expression"/>.
+        /// </summary>
+        /// <param name="body">The <see cref="Expression"/> that this <see cref="DebugInfoExpression"/> applies to.</param>
+        /// <param name="document">The <see cref="SymbolDocumentInfo"/> that represents the source file.</param>
+        /// <param name="startLine">The start line of the code that was used to generate the wrapped expression. Must be greater than 0.</param>
+        /// <param name="startColumn">The start column of the code that was used to generate the wrapped expression. Must be greater than 0.</param>
+        /// <param name="endLine">The end line of the code that was used to generate the wrapped expression. Must be greater or equal than the start line.</param>
+        /// <param name="endColumn">The end column of the code that was used to generate the wrapped expression. If the end line is the same as the start line, it must be greater or equal than the start column. In any case, must be greater than 0.</param>
+        /// <returns>An instance of <see cref="DebugInfoExpression"/>.</returns>
         public static DebugInfoExpression DebugInfo(Expression body, SymbolDocumentInfo document, int startLine, int startColumn, int endLine, int endColumn) {
             ContractUtils.RequiresNotNull(body, "body");
             ContractUtils.RequiresNotNull(document, "document");

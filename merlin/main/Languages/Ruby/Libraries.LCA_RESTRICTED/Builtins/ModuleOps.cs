@@ -573,7 +573,7 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("const_get")]
         public static object GetConstantValue(RubyScope/*!*/ scope, RubyModule/*!*/ self, [DefaultProtocol]string/*!*/ constantName) {
-            return RubyUtils.GetConstant(scope, self, constantName, true);
+            return RubyUtils.GetConstant(scope.GlobalScope, self, constantName, true);
         }
 
         [RubyMethod("const_set")]

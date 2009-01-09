@@ -129,7 +129,7 @@ namespace IronRuby.StandardLibrary.Yaml {
         [RubyMethod("load", RubyMethodAttributes.PublicSingleton)]
         public static object Load(RubyScope/*!*/ scope, RubyModule/*!*/ self, object io) {
             try {
-                foreach (object obj in MakeConstructor(scope, CheckYamlPort(io))) {
+                foreach (object obj in MakeConstructor(scope.GlobalScope, CheckYamlPort(io))) {
                     return obj;
                 }
                 return null;
@@ -151,7 +151,7 @@ namespace IronRuby.StandardLibrary.Yaml {
         [RubyMethod("each_document", RubyMethodAttributes.PublicSingleton)]
         [RubyMethod("load_documents", RubyMethodAttributes.PublicSingleton)]
         public static object EachDocument(RubyScope/*!*/ scope, BlockParam block, RubyModule/*!*/ self, object io) {
-            RubyConstructor rc = MakeConstructor(scope, CheckYamlPort(io));
+            RubyConstructor rc = MakeConstructor(scope.GlobalScope, CheckYamlPort(io));
             if (block == null && rc.CheckData()) {
                 throw RubyExceptions.NoBlockGiven();
             }
@@ -167,8 +167,8 @@ namespace IronRuby.StandardLibrary.Yaml {
 
         [RubyMethod("load_stream", RubyMethodAttributes.PublicSingleton)]
         public static object LoadStream(RubyScope/*!*/ scope, RubyModule/*!*/ self, object io) {
-            RubyConstructor rc = MakeConstructor(scope, CheckYamlPort(io));
-            object streamClass = RubyUtils.GetConstant(scope, self, _Stream, false);
+            RubyConstructor rc = MakeConstructor(scope.GlobalScope, CheckYamlPort(io));
+            object streamClass = RubyUtils.GetConstant(scope.GlobalScope, self, _Stream, false);
             object stream = _New.Target(_New, scope.RubyContext, streamClass as RubyModule, null);
             foreach (object doc in rc) {
                 _Add.Target(_Add, scope.RubyContext, stream, doc);
@@ -216,7 +216,7 @@ namespace IronRuby.StandardLibrary.Yaml {
 
         [RubyMethod("dump_stream", RubyMethodAttributes.PublicSingleton)]
         public static object DumpStream(RubyScope/*!*/ scope, RubyModule/*!*/ self, [NotNull]params object[] args) {
-            object streamClass = RubyUtils.GetConstant(scope, self, _Stream, false);
+            object streamClass = RubyUtils.GetConstant(scope.GlobalScope, self, _Stream, false);
             object stream = _New.Target(_New, scope.RubyContext, streamClass as RubyModule, null);
             foreach (object arg in args) {
                 _Add.Target(_Add, scope.RubyContext, stream, arg);
@@ -283,7 +283,7 @@ namespace IronRuby.StandardLibrary.Yaml {
             return null;
         }
 
-        private static RubyConstructor/*!*/ MakeConstructor(RubyScope/*!*/ scope, TextReader/*!*/ reader) {
+        private static RubyConstructor/*!*/ MakeConstructor(RubyGlobalScope/*!*/ scope, TextReader/*!*/ reader) {
             return new RubyConstructor(scope, MakeComposer(reader));
         }
 

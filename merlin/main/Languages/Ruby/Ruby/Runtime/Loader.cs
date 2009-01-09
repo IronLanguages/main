@@ -229,8 +229,8 @@ namespace IronRuby.Runtime {
         /// <summary>
         /// Returns <b>true</b> if a Ruby file is successfully loaded, <b>false</b> if it is already loaded.
         /// </summary>
-        public bool LoadFile(Scope/*!*/ globalScope, object self, MutableString/*!*/ path, LoadFlags flags) {
-            Assert.NotNull(globalScope, path);
+        public bool LoadFile(Scope globalScope, object self, MutableString/*!*/ path, LoadFlags flags) {
+            Assert.NotNull(path);
 
             string assemblyName, typeName;
 
@@ -335,10 +335,10 @@ namespace IronRuby.Runtime {
             }
         }
 
-        private bool LoadFromPath(Scope/*!*/ globalScope, object self, string/*!*/ path, LoadFlags flags) {
-            Assert.NotNull(globalScope, path);
+        private bool LoadFromPath(Scope globalScope, object self, string/*!*/ path, LoadFlags flags) {
+            Assert.NotNull(path);
 
-            ResolvedFile file = FindFile(globalScope, path, (flags & LoadFlags.AppendExtensions) != 0);
+            ResolvedFile file = FindFile(path, (flags & LoadFlags.AppendExtensions) != 0);
             if (file == null) {
                 throw new LoadError(String.Format("no such file to load -- {0}", path));
             }
@@ -382,21 +382,24 @@ namespace IronRuby.Runtime {
             return true;
         }
 
-        private void ExecuteRubySourceUnit(SourceUnit/*!*/ sourceUnit, Scope/*!*/ globalScope, LoadFlags flags) {
-            Assert.NotNull(sourceUnit, globalScope);
+        private void ExecuteRubySourceUnit(SourceUnit/*!*/ sourceUnit, Scope globalScope, LoadFlags flags) {
+            Assert.NotNull(sourceUnit);
             
             // TODO: check file timestamp
             string fullPath = Platform.GetFullPath(sourceUnit.Path);
             CompiledFile compiledFile;
             if (TryGetCompiledFile(fullPath, out compiledFile)) {
                 Utils.Log(String.Format("{0}: {1}", ++_cacheHitCount, sourceUnit.Path), "LOAD_CACHED");
-                compiledFile.CompiledCode.Run(globalScope);
+                if (globalScope != null) {
+                    compiledFile.CompiledCode.Run(globalScope);
+                } else {
+                    compiledFile.CompiledCode.Run();
+                }
             } else {
                 Utils.Log(String.Format("{0}: {1}", ++_compiledFileCount, sourceUnit.Path), "LOAD_COMPILED");
 
                 RubyCompilerOptions options = new RubyCompilerOptions(_context.RubyOptions) {
-                    IsIncluded = true,
-                    IsWrapped = (flags & LoadFlags.LoadIsolated) != 0,
+                    FactoryKind = (flags & LoadFlags.LoadIsolated) != 0 ? TopScopeFactoryKind.WrappedFile : TopScopeFactoryKind.Default
                 };
 
                 long ts1 = Stopwatch.GetTimestamp();
@@ -410,16 +413,16 @@ namespace IronRuby.Runtime {
             }
         }
 
-        internal object CompileAndRun(Scope/*!*/ globalScope, ScriptCode/*!*/ code, bool tryEvaluate) {
+        internal object CompileAndRun(Scope globalScope, ScriptCode/*!*/ code, bool tryEvaluate) {
             long ts1 = Stopwatch.GetTimestamp();
             code.EnsureCompiled();
             long ts2 = Stopwatch.GetTimestamp();
             Interlocked.Add(ref _ILGenerationTimeTicks, ts2 - ts1);
 
-            return code.Run(globalScope);
+            return globalScope != null ? code.Run(globalScope) : code.Run();
         }
 
-        private ResolvedFile FindFile(Scope/*!*/ globalScope, string/*!*/ path, bool appendExtensions) {
+        private ResolvedFile FindFile(string/*!*/ path, bool appendExtensions) {
             Assert.NotNull(path);
             bool isAbsolutePath;
             string extension;
@@ -673,13 +676,11 @@ namespace IronRuby.Runtime {
             LoadLibrary(initializerType, true);
         }
 
-        public static string/*!*/ GetIronRubyAssemblyLongName(string/*!*/ simpleName) {
-            ContractUtils.RequiresNotNull(simpleName, "simpleName");
-#if SIGNED
-            return simpleName + ", Version=" + RubyContext.IronRubyVersionString + ", Culture=neutral, PublicKeyToken=31bf3856ad364e35";
-#else
-            return simpleName;
-#endif
+        public static string/*!*/ GetIronRubyAssemblyLongName(string/*!*/ baseName) {
+            ContractUtils.RequiresNotNull(baseName, "baseName");
+            string fullName = typeof(RubyContext).Assembly.FullName;
+            int firstComma = fullName.IndexOf(',');
+            return firstComma > 0 ? baseName + fullName.Substring(firstComma) : baseName;
         }
 
         /// <exception cref="LoadError"></exception>

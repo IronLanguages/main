@@ -13,9 +13,9 @@
  *
  * ***************************************************************************/
 
-using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.Dynamic.Utils;
 
 namespace System.Linq.Expressions.Compiler {
@@ -125,18 +125,34 @@ namespace System.Linq.Expressions.Compiler {
 
 
         protected internal override Expression VisitParameter(ParameterExpression node) {
-            var scope = _scopes.Peek();
-
-            if (scope.Definitions.ContainsKey(node)) {
-                return node;
-            }
-
-            if (scope.ReferenceCount == null) {
-                scope.ReferenceCount = new Dictionary<ParameterExpression, int>();
-            }
-
-            Helpers.IncrementCount(node, _scopes.Peek().ReferenceCount);
             Reference(node, VariableStorageKind.Local);
+
+            //
+            // Track reference count so we can emit it in a more optimal way if
+            // it is used a lot.
+            //
+            CompilerScope referenceScope = null;
+            foreach (CompilerScope scope in _scopes) {
+                //
+                // There are two times we care about references:
+                //   1. When we enter a lambda, we want to cache frequently
+                //      used variables
+                //   2. When we enter a scope with closed-over variables, we
+                //      want to cache it immediately when we allocate the
+                //      closure slot for it
+                //
+                if (scope.IsLambda || scope.Definitions.ContainsKey(node)) {
+                    referenceScope = scope;
+                    break;
+                }
+            }
+
+            Debug.Assert(referenceScope != null);
+            if (referenceScope.ReferenceCount == null) {
+                referenceScope.ReferenceCount = new Dictionary<ParameterExpression, int>();
+            }
+
+            Helpers.IncrementCount(node, referenceScope.ReferenceCount);
             return node;
         }
 
@@ -156,7 +172,7 @@ namespace System.Linq.Expressions.Compiler {
                     break;
                 }
                 scope.NeedsClosure = true;
-                if (scope.Node.NodeType == ExpressionType.Lambda) {
+                if (scope.IsLambda) {
                     storage = VariableStorageKind.Hoisted;
                 }
             }
@@ -174,7 +190,7 @@ namespace System.Linq.Expressions.Compiler {
         private CompilerScope LambdaScope {
             get {
                 foreach (var scope in _scopes) {
-                    if (scope.Node.NodeType == ExpressionType.Lambda) {
+                    if (scope.IsLambda) {
                         return scope;
                     }
                 }

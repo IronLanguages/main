@@ -17,21 +17,39 @@ using System.Dynamic.Utils;
 using Microsoft.Contracts;
 
 namespace System.Linq.Expressions {
+    /// <summary>
+    /// Specifies the kind of the argument.
+    /// </summary>
     public enum ArgumentKind {
+        /// <summary>
+        /// Specifies that argument is identified by position in the signature.
+        /// </summary>
         Positional,
+        /// <summary>
+        /// Specifies that argument is identified by name.
+        /// </summary>
         Named
     }
 
+    /// <summary>
+    /// Describes an argument.
+    /// </summary>
     public abstract class ArgumentInfo {
         internal ArgumentInfo() {
         }
 
+        /// <summary>
+        /// Gets a value indicating whether the argument is passed by reference.
+        /// </summary>
         public bool IsByRef {
             get {
                 return GetIsByRef();
             }
         }
 
+        /// <summary>
+        /// Gets a value indicating the kind of the argument.
+        /// </summary>
         public ArgumentKind ArgumentType {
             get { return GetArgumentType(); }
         }
@@ -40,6 +58,9 @@ namespace System.Linq.Expressions {
         internal abstract bool GetIsByRef();
     }
 
+    /// <summary>
+    /// Describes an argument that is identified by position in the signature.
+    /// </summary>
     public class PositionalArgumentInfo : ArgumentInfo {
         private readonly int _position;
 
@@ -47,6 +68,9 @@ namespace System.Linq.Expressions {
             _position = position;
         }
 
+        /// <summary>
+        /// Gets argument's position in the signature.
+        /// </summary>
         public int Position {
             get { return _position; }
         }
@@ -59,12 +83,21 @@ namespace System.Linq.Expressions {
             return false;
         }
 
+        /// <summary>
+        /// Determines whether the specified PositionalArgumentInfo instance is considered equal to the current.
+        /// </summary>
+        /// <param name="obj">The instance of PositionalArgumentInfo to compare with the current instance.</param>
+        /// <returns>true if the specified instance is equal to the current one otherwise, false.</returns>
         [Confined]
         public override bool Equals(object obj) {
             PositionalArgumentInfo arg = obj as PositionalArgumentInfo;
             return arg != null && arg._position == _position;
         }
 
+        /// <summary>
+        /// Serves as a hash function for the current argument.
+        /// </summary>
+        /// <returns>A hash code for the current argument.</returns>
         [Confined]
         public override int GetHashCode() {
             return _position;
@@ -90,6 +123,9 @@ namespace System.Linq.Expressions {
         }
     }
 
+    /// <summary>
+    /// Describes an argument that is identified by name.
+    /// </summary>
     public sealed class NamedArgumentInfo : ArgumentInfo {
         private readonly string _name;
 
@@ -97,6 +133,9 @@ namespace System.Linq.Expressions {
             _name = name;
         }
 
+        /// <summary>
+        /// Gets the argument's name.
+        /// </summary>
         public string Name {
             get { return _name; }
         }
@@ -109,12 +148,21 @@ namespace System.Linq.Expressions {
             return false;
         }
 
+        /// <summary>
+        /// Determines whether the specified NamedArgumentInfo instance is considered equal to the current.
+        /// </summary>
+        /// <param name="obj">The instance of NamedArgumentInfo to compare with the current instance.</param>
+        /// <returns>true if the specified instance is equal to the current one otherwise, false.</returns>
         [Confined]
         public override bool Equals(object obj) {
             NamedArgumentInfo arg = obj as NamedArgumentInfo;
             return arg != null && arg._name == _name;
         }
 
+        /// <summary>
+        /// Serves as a hash function for the current argument.
+        /// </summary>
+        /// <returns>A hash code for the current argument.</returns>
         [Confined]
         public override int GetHashCode() {
             return _name.GetHashCode();

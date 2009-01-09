@@ -178,7 +178,7 @@ namespace IronRuby.StandardLibrary.Yaml {
             }
 
             var comparisonStorage = new BinaryOpStorage();
-            return new Range(comparisonStorage, ctor.Scope.RubyContext, begin, end, excludeEnd);            
+            return new Range(comparisonStorage, ctor.GlobalScope.Context, begin, end, excludeEnd);            
         }
 
         public static RubyRegex ConstructRubyRegexp(IConstructor ctor, Node node) {
@@ -214,16 +214,16 @@ namespace IronRuby.StandardLibrary.Yaml {
                 throw new ConstructorException("can only construct private type from mapping node");
             }
             RubyModule module;
-            RubyScope scope = ctor.Scope;
-            if (scope.RubyContext.TryGetModule(scope.GlobalScope, className, out module)) {
+            RubyGlobalScope globalScope = ctor.GlobalScope;
+            if (globalScope.Context.TryGetModule(globalScope, className, out module)) {
                 if (!module.IsClass) {
                     throw new ConstructorException("Cannot construct module");
                 }
                 Hash values = ctor.ConstructMapping(mapping);
-                RubyMethodInfo method = (module.GetMethod("yaml_initialize") as RubyMethodInfo);
+                RubyMethodInfo method = module.GetMethod("yaml_initialize") as RubyMethodInfo;
                 if (method != null) {
                     object result = RubyUtils.CreateObject((RubyClass)module);
-                    _YamlInitialize.Target(_YamlInitialize, scope.RubyContext, result, className, values);
+                    _YamlInitialize.Target(_YamlInitialize, globalScope.Context, result, className, values);
                     return result;
                 } else {
                     return RubyUtils.CreateObject((RubyClass)module, values, true);
@@ -240,17 +240,17 @@ namespace IronRuby.StandardLibrary.Yaml {
                 throw new ConstructorException("can only construct struct from mapping node");
             }
 
-            RubyScope scope = ctor.Scope;
+            RubyContext context = ctor.GlobalScope.Context;
             RubyModule module;
             RubyClass cls;
-            if (scope.RubyContext.TryGetModule(scope.GlobalScope, className, out module)) {
+            if (context.TryGetModule(ctor.GlobalScope, className, out module)) {
                 cls = module as RubyClass;
                 if (cls == null) {
                     throw new ConstructorException("Struct type name must be Ruby class");
                 }
             } else {
-                RubyModule structModule = scope.RubyContext.GetModule(typeof(RubyStruct));
-                cls = RubyUtils.GetConstant(scope, structModule, className, false) as RubyClass;
+                RubyModule structModule = context.GetModule(typeof(RubyStruct));
+                cls = RubyUtils.GetConstant(ctor.GlobalScope, structModule, className, false) as RubyClass;
                 if (cls == null) {
                     throw new ConstructorException(String.Format("Cannot find struct class \"{0}\"", className));
                 }
@@ -280,9 +280,8 @@ namespace IronRuby.StandardLibrary.Yaml {
                 int day_ymd = int.Parse(match.Groups[3].Value);
 
                 RubyModule module;
-                RubyScope scope = ctor.Scope;
-                if (scope.RubyContext.TryGetModule(scope.GlobalScope, "Date", out module)) {
-                    return _New.Target(_New, scope.RubyContext, module, year_ymd, month_ymd, day_ymd);
+                if (ctor.GlobalScope.Context.TryGetModule(ctor.GlobalScope, "Date", out module)) {
+                    return _New.Target(_New, ctor.GlobalScope.Context, module, year_ymd, month_ymd, day_ymd);
                 } else {
                     throw new ConstructorException("Date class not found.");
                 }
@@ -290,7 +289,7 @@ namespace IronRuby.StandardLibrary.Yaml {
             throw new ConstructorException("Invalid tag:yaml.org,2002:timestamp#ymd value.");
         }
 
-        public RubyConstructor(RubyScope/*!*/ scope, NodeProvider/*!*/ nodeProvider)
+        public RubyConstructor(RubyGlobalScope/*!*/ scope, NodeProvider/*!*/ nodeProvider)
             : base(nodeProvider, scope) {            
             AddConstructor("tag:yaml.org,2002:str", ConstructRubyScalar);
             AddConstructor("tag:ruby.yaml.org,2002:range", ConstructRubyRange);

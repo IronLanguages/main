@@ -20,14 +20,53 @@ using System.Dynamic;
 using IronRuby.Runtime;
 
 namespace IronRuby.Compiler {
+    internal enum TopScopeFactoryKind {
+        /// <summary>
+        /// Simple scope without DLR Scope binding.
+        /// Used by Execute("code") w/o scope.
+        /// </summary>
+        Default,
+
+        /// <summary>
+        /// Main script scope w/o DLR Scope binding.
+        /// The factory sets TOPLEVEL_BINDING and DATA constants.
+        /// Used by ExecuteProgram. 
+        /// </summary>
+        Main,
+
+        /// <summary>
+        /// Hosted scope, i.e. scope with DLR Scope binding.
+        /// Used by Execute("code", scope).
+        /// </summary>
+        GlobalScopeBound,
+
+        /// <summary>
+        /// Top scope is passed by parameter to the top-level lambda, it is not scope is created.
+        /// Used by eval("code"), eval("code", binding).
+        /// </summary>
+        None,
+
+        /// <summary>
+        /// Creates a module scope with parent scope passed into the top-level lambda.
+        /// Used by module_eval("code")/instance_eval("code").
+        /// </summary>
+        Module,
+
+        /// <summary>
+        /// File executed via load(true).
+        /// </summary>
+        WrappedFile,
+    }
+
     [Serializable]
     public sealed class RubyCompilerOptions : CompilerOptions {
-        // TODO: replace bool's by flags/enum
+        /// <summary>
+        /// Embedded code. The code being compiled is embedded into an already compiled code.
+        /// </summary>
         internal bool IsEval { get; set; }
-        internal bool IsModuleEval { get; set; }
-        internal bool IsIncluded { get; set; }
-        internal bool IsWrapped { get; set; }
-
+        
+        internal TopScopeFactoryKind FactoryKind { get; set; }
+        
         private SourceLocation _initialLocation = SourceLocation.MinValue;
 
         internal SourceLocation InitialLocation {

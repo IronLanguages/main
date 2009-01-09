@@ -25,12 +25,13 @@ using IronRuby.Runtime.Calls;
 
 namespace IronRuby.Tests {
     public partial class Tests {
-        public void RubyHosting1() {
+        public void RubyHosting1A() {
             ScriptScope scope = Engine.Runtime.CreateScope();
             scope.SetVariable("x", 1);
             scope.SetVariable("y", 2);
 
-            // TODO: could we replace def self.z with z = ? - via dynamic binding
+            // reads x, y from scope via method_missing;
+            // copies z, w main-singleton methods to the scope:
             Engine.Execute("def self.z; x + y; end", scope);
             Engine.Execute("def self.w(a); a + 1; end", scope);
 
@@ -39,6 +40,45 @@ namespace IronRuby.Tests {
 
             int w = scope.GetVariable<Func<int, int>>("w")(1);
             Assert(w == 2);
+        }
+
+        public void RubyHosting1B() {
+            ScriptScope scope = Engine.Runtime.CreateScope();
+            scope.SetVariable("x", 1);
+            scope.SetVariable("y", 2);
+
+            // "tmp" is defined in the top-level binding, which is associated with the scope:
+            Engine.Execute("tmp = x + y", scope);
+            
+            // "tmp" symbol is extracted from scope's top-level binding and passed to the compiler as a compiler option
+            // so that the parser treats it as a local variable.
+            string tmpDefined = Engine.Execute<MutableString>("defined?(tmp)", scope).ToString();
+            Assert(tmpDefined == "local-variable");
+
+            // result= is turned into a scope variable assignment in method_missing:
+            Engine.Execute("self.result = tmp", scope);
+
+            int result = scope.GetVariable<int>("result");
+            Assert(result == 3);
+
+            // Ruby local variables are not exposed:
+            Assert(scope.ContainsVariable("tmp") == false);
+        }
+
+        public void RubyHosting1C() {
+            // Main singleton in a scope-unbound code doesn't define method_missing:
+            AssertExceptionThrown<MemberAccessException>(
+                () => Engine.Execute("class << self; remove_method(:method_missing); end")
+            );
+            
+            // Main singleton in a scope-bound code defines method_missing:
+            Engine.Execute("class << self; remove_method(:method_missing); end", Engine.CreateScope());
+
+            var scope = Engine.CreateScope();
+            Engine.Execute("self.tmp = 1", scope);
+            Assert(scope.ContainsVariable("tmp"));
+            
+            AssertExceptionThrown<MissingMethodException>(() => Engine.Execute("self.tmp = 1"));
         }
 
         public void RubyHosting2() {
@@ -232,6 +272,8 @@ end
         }
 
         public void PythonInterop1() {
+            if (!_driver.RunPython) return;
+
             var py = Runtime.GetEngine("python");
             Engine.Execute(@"
 class C
@@ -248,6 +290,8 @@ C.new().foo()    # TODO: C().foo()
         }
 
         public void PythonInterop2() {
+            if (!_driver.RunPython) return;
+
             var py = Runtime.GetEngine("python");
 
             py.CreateScriptSourceFromString(@"

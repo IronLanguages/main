@@ -14,94 +14,64 @@
  * ***************************************************************************/
 
 using System.Diagnostics;
-using System.Linq.Expressions.Compiler;
-using System.Reflection;
-using System.Reflection.Emit;
-using System.Runtime.CompilerServices;
-using System.Dynamic;
-using System.Dynamic.Utils;
 using System.Linq.Expressions;
 
 namespace System.Dynamic {
 
-    internal sealed partial class SplatCallSite {
-        internal delegate object SplatCaller(object[] args);
+    internal sealed class SplatCallSite {
+        // stored callable. also used as identity of the handler.
+        internal readonly object _callable;
 
-        private readonly SynchronizedDictionary<int, SplatCaller> _callers = new SynchronizedDictionary<int, SplatCaller>();
-        private readonly CallSiteBinder _binder;
+        // lambda that contains callsite expr.
+        private Func<object, object[], object> _caller = null;
 
-        public SplatCallSite(CallSiteBinder binder) {
-            _binder = binder;
+        internal SplatCallSite(object callable) {
+            Debug.Assert(callable != null);
+            _callable = callable;
         }
 
-        public object Invoke(object[] args) {
+        internal object Invoke(object[] args) {
             Debug.Assert(args != null);
-
-            SplatCaller caller;
-            if (!_callers.TryGetValue(args.Length, out caller)) {
-                _callers[args.Length] = caller = MakeCaller(args.Length);
+            
+            if (_caller == null) {
+                if (_callable as Delegate != null) {
+                    _caller = MakeDelegateCaller();
+                } else {
+                    _caller = MakeSplatCaller();
+                }
             }
 
-            return caller(args);
+            return _caller(_callable, args);
         }
-        
-        private SplatCaller MakeCaller(int args) {
-            MethodInfo mi = GetType().GetMethod("CallHelper" + args);
-            if (mi != null) {
-                Type delegateType = mi.GetParameters()[0].ParameterType.GetGenericArguments()[0];
-                CallSite site = CallSite.Create(delegateType, _binder);
-                return (SplatCaller)Delegate.CreateDelegate(typeof(SplatCaller), site, mi);
-            }
-            return MakeBigCaller(args);
+
+        private static Func<object, object[], object> MakeDelegateCaller() {
+            return (object del, object[] args) => ((Delegate)del).DynamicInvoke(args);
         }
+
 
         /// <summary>
-        /// Uses LCG to create method such as this:
-        /// 
-        /// object SplatCaller(CallSite{T} site, object[] args) {
-        ///      return site.Target(site, args[0], args[1], args[2], ...);
-        /// }
-        /// 
-        /// where the CallSite is bound to the delegate
+        /// creates a lambda that represent dynamic operation bound by SplatInvokeBinder
+        ///   (target, args) => SplatInvoke(target, args) 
         /// </summary>
-        /// <param name="args">the number of arguments</param>
-        /// <returns>a SplatCaller delegate.</returns>
-        private SplatCaller MakeBigCaller(int args) {
-            // Get the dynamic site type
-            var siteDelegateTypeArgs = new Type[args + 2];
-            siteDelegateTypeArgs[0] = typeof(CallSite);
-            for (int i = 1, n = siteDelegateTypeArgs.Length; i < n;  i++) {
-                siteDelegateTypeArgs[i] = typeof(object);
-            }
-            Type siteDelegateType = Expression.GetDelegateType(siteDelegateTypeArgs);
+        /// <returns></returns>
+        private static Func<object, object[], object> MakeSplatCaller() {
+            ParameterExpression target = Expression.Parameter(typeof(object), "target");
+            ParameterExpression args = Expression.Parameter(typeof(object[]), "args");
 
-            // Create the callsite and get its type
-            CallSite callSite = CallSite.Create(siteDelegateType, _binder);
-            Type siteType = callSite.GetType();
+            DynamicExpression de = Expression.Dynamic(
+                SplatInvokeBinder.Instance,
+                typeof(object),
+                target,
+                args
+            );
 
-            var method = new DynamicMethod("_stub_SplatCaller", typeof(object), new Type[] { siteType, typeof(object[]) }, true);
-            var gen = method.GetILGenerator();
-            
-            // Emit the site's target
-            gen.Emit(OpCodes.Ldarg_0);
-            gen.Emit(OpCodes.Ldfld, siteType.GetField("Target"));
+            var caller = Expression.Lambda<Func<object, object[], object>>(
+                de,
+                target,
+                args
+            );
 
-            // Emit the site
-            gen.Emit(OpCodes.Ldarg_0);
-
-            // Emit the arguments
-            for (int i = 0; i < args; i++) {
-                gen.Emit(OpCodes.Ldarg_1);
-                gen.EmitInt(i);
-                gen.Emit(OpCodes.Ldelem_Ref);
-            }
-            
-            // Invoke the target
-            gen.Emit(OpCodes.Callvirt, siteDelegateType.GetMethod("Invoke"));
-            gen.Emit(OpCodes.Ret);
-
-            // Create the delegate
-            return method.CreateDelegate<SplatCaller>(callSite);
+            return caller.Compile();
         }
     }
 }

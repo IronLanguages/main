@@ -210,10 +210,16 @@ namespace Microsoft.Scripting {
             return _language.CompileSourceCode(this, options, errorSink);
         }
 
+        /// <summary>
+        /// Executes against a specified scope.
+        /// </summary>
         public object Execute(Scope scope) {
             return Execute(scope, ErrorSink.Default);
         }
 
+        /// <summary>
+        /// Executes against a specified scope and reports errors to the given error sink.
+        /// </summary>
         public object Execute(Scope scope, ErrorSink errorSink) {
             ContractUtils.RequiresNotNull(scope, "scope");
 
@@ -227,14 +233,21 @@ namespace Microsoft.Scripting {
         }
 
         /// <summary>
-        /// Executes in an optimized scope.
+        /// Executes in a new scope created by the language.
         /// </summary>
         public object Execute() {
             return Compile().Run();
         }
 
         /// <summary>
-        /// Executes in an optimized scope.
+        /// Executes in a new scope created by the language.
+        /// </summary>
+        public object Execute(ErrorSink errorSink) {
+            return Compile(errorSink).Run();
+        }
+
+        /// <summary>
+        /// Executes in a new scope created by the language.
         /// </summary>
         public object Execute(CompilerOptions options, ErrorSink errorSink) {
             return Compile(options, errorSink).Run();

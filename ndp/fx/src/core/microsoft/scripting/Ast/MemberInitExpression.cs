@@ -19,7 +19,9 @@ using System.Dynamic.Utils;
 using System.Text;
 
 namespace System.Linq.Expressions {
-    //CONFORMING
+    /// <summary>
+    /// Represents calling a constructor and initializing one or more members of the new object.
+    /// </summary>
     public sealed class MemberInitExpression : Expression {
         private readonly NewExpression _newExpression;
         private readonly ReadOnlyCollection<MemberBinding> _bindings;
@@ -29,23 +31,40 @@ namespace System.Linq.Expressions {
             _bindings = bindings;
         }
 
+        /// <summary>
+        /// Gets the static type of the expression that this <see cref="Expression" /> represents.
+        /// </summary>
+        /// <returns>The <see cref="Type"/> that represents the static type of the expression.</returns>
         protected override Type GetExpressionType() {
             return _newExpression.Type;
         }
 
+        /// <summary>
+        /// Gets a value that indicates whether the expression tree node can be reduced. 
+        /// </summary>
         public override bool CanReduce {
             get {
                 return true;
             }
         }
 
+        /// <summary>
+        /// Returns the node type of this Expression. Extension nodes should return
+        /// ExpressionType.Extension when overriding this method.
+        /// </summary>
+        /// <returns>The <see cref="ExpressionType"/> of the expression.</returns>
         protected override ExpressionType GetNodeKind() {
             return ExpressionType.MemberInit;
         }
 
+        ///<summary>Gets the expression that represents the constructor call.</summary>
+        ///<returns>A <see cref="T:System.Linq.Expressions.NewExpression" /> that represents the constructor call.</returns>
         public NewExpression NewExpression {
             get { return _newExpression; }
         }
+
+        ///<summary>Gets the bindings that describe how to initialize the members of the newly created object.</summary>
+        ///<returns>A <see cref="T:System.Collections.ObjectModel.ReadOnlyCollection`1" /> of <see cref="T:System.Linq.Expressions.MemberBinding" /> objects which describe how to initialize the members.</returns>
         public ReadOnlyCollection<MemberBinding> Bindings {
             get { return _bindings; }
         }
@@ -54,6 +73,13 @@ namespace System.Linq.Expressions {
             return visitor.VisitMemberInit(this);
         }
 
+        /// <summary>
+        /// Reduces the <see cref="MemberInitExpression"/> to a simpler expression. 
+        /// If CanReduce returns true, this should return a valid expression.
+        /// This method is allowed to return another node which itself 
+        /// must be reduced.
+        /// </summary>
+        /// <returns>The reduced expression.</returns>
         public override Expression Reduce() {
             return ReduceMemberInit(_newExpression, _bindings, true);
         }
@@ -98,11 +124,24 @@ namespace System.Linq.Expressions {
     }
 
     public partial class Expression {
-        //CONFORMING
+        ///<summary>Creates a <see cref="T:System.Linq.Expressions.MemberInitExpression" />.</summary>
+        ///<returns>A <see cref="T:System.Linq.Expressions.MemberInitExpression" /> that has the <see cref="P:System.Linq.Expressions.Expression.NodeType" /> property equal to <see cref="F:System.Linq.Expressions.ExpressionType.MemberInit" /> and the <see cref="P:System.Linq.Expressions.MemberInitExpression.NewExpression" /> and <see cref="P:System.Linq.Expressions.MemberInitExpression.Bindings" /> properties set to the specified values.</returns>
+        ///<param name="newExpression">A <see cref="T:System.Linq.Expressions.NewExpression" /> to set the <see cref="P:System.Linq.Expressions.MemberInitExpression.NewExpression" /> property equal to.</param>
+        ///<param name="bindings">An array of <see cref="T:System.Linq.Expressions.MemberBinding" /> objects to use to populate the <see cref="P:System.Linq.Expressions.MemberInitExpression.Bindings" /> collection.</param>
+        ///<exception cref="T:System.ArgumentNullException">
+        ///<paramref name="newExpression" /> or <paramref name="bindings" /> is null.</exception>
+        ///<exception cref="T:System.ArgumentException">The <see cref="P:System.Linq.Expressions.MemberBinding.Member" /> property of an element of <paramref name="bindings" /> does not represent a member of the type that <paramref name="newExpression" />.Type represents.</exception>
         public static MemberInitExpression MemberInit(NewExpression newExpression, params MemberBinding[] bindings) {
             return MemberInit(newExpression, (IEnumerable<MemberBinding>)bindings);
         }
-        //CONFORMING
+
+        ///<summary>Creates a <see cref="T:System.Linq.Expressions.MemberInitExpression" />.</summary>
+        ///<returns>A <see cref="T:System.Linq.Expressions.MemberInitExpression" /> that has the <see cref="P:System.Linq.Expressions.Expression.NodeType" /> property equal to <see cref="F:System.Linq.Expressions.ExpressionType.MemberInit" /> and the <see cref="P:System.Linq.Expressions.MemberInitExpression.NewExpression" /> and <see cref="P:System.Linq.Expressions.MemberInitExpression.Bindings" /> properties set to the specified values.</returns>
+        ///<param name="newExpression">A <see cref="T:System.Linq.Expressions.NewExpression" /> to set the <see cref="P:System.Linq.Expressions.MemberInitExpression.NewExpression" /> property equal to.</param>
+        ///<param name="bindings">An <see cref="T:System.Collections.Generic.IEnumerable`1" /> that contains <see cref="T:System.Linq.Expressions.MemberBinding" /> objects to use to populate the <see cref="P:System.Linq.Expressions.MemberInitExpression.Bindings" /> collection.</param>
+        ///<exception cref="T:System.ArgumentNullException">
+        ///<paramref name="newExpression" /> or <paramref name="bindings" /> is null.</exception>
+        ///<exception cref="T:System.ArgumentException">The <see cref="P:System.Linq.Expressions.MemberBinding.Member" /> property of an element of <paramref name="bindings" /> does not represent a member of the type that <paramref name="newExpression" />.Type represents.</exception>
         public static MemberInitExpression MemberInit(NewExpression newExpression, IEnumerable<MemberBinding> bindings) {
             ContractUtils.RequiresNotNull(newExpression, "newExpression");
             ContractUtils.RequiresNotNull(bindings, "bindings");

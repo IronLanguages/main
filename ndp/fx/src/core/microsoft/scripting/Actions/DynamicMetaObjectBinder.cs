@@ -15,12 +15,20 @@
 
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.Dynamic.Utils;
 using System.Linq.Expressions;
 using System.Linq.Expressions.Compiler;
 using System.Runtime.CompilerServices;
-using System.Dynamic.Utils;
 
 namespace System.Dynamic {
+    /// <summary>
+    /// The dynamic call site binder that participates in the <see cref="DynamicMetaObject"/> binding protocol.
+    /// </summary>
+    /// <remarks>
+    /// The <see cref="CallSiteBinder"/> performs the binding of the dynamic operation using the runtime values
+    /// as input. On the other hand, the <see cref="DynamicMetaObjectBinder"/> participates in the <see cref="DynamicMetaObject"/>
+    /// binding protocol.
+    /// </remarks>
     public abstract class DynamicMetaObjectBinder : CallSiteBinder {
 
         #region Standard Binder Kinds
@@ -47,6 +55,24 @@ namespace System.Dynamic {
 
         #region Public APIs
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="DynamicMetaObjectBinder"/> class.
+        /// </summary>
+        protected DynamicMetaObjectBinder() {
+        }
+
+        /// <summary>
+        /// Performs the runtime binding of the dynamic operation on a set of arguments.
+        /// </summary>
+        /// <param name="args">An array of arguments to the dynamic operation.</param>
+        /// <param name="parameters">The array of <see cref="ParameterExpression"/> instances that represent the parameters of the call site in the binding process.</param>
+        /// <param name="returnLabel">A LabelTarget used to return the result of the dynamic binding.</param>
+        /// <returns>
+        /// An Expression that performs tests on the dynamic operation arguments, and
+        /// performs the dynamic operation if hte tests are valid. If the tests fail on
+        /// subsequent occurrences of the dynamic operation, Bind will be called again
+        /// to produce a new <see cref="Expression"/> for the new argument types.
+        /// </returns>
         public sealed override Expression Bind(object[] args, ReadOnlyCollection<ParameterExpression> parameters, LabelTarget returnLabel) {
             if (args.Length == 0) {
                 throw new InvalidOperationException();
@@ -74,8 +100,20 @@ namespace System.Dynamic {
             return GetMetaObjectRule(binding, returnLabel);
         }
 
+        /// <summary>
+        /// When overridden in the derived class, performs the binding of the dynamic operation.
+        /// </summary>
+        /// <param name="target">The target of the dynamic operation.</param>
+        /// <param name="args">An array of arguments of the dynamic operation.</param>
+        /// <returns>The <see cref="DynamicMetaObject"/> representing the result of the binding.</returns>
         public abstract DynamicMetaObject Bind(DynamicMetaObject target, DynamicMetaObject[] args);
 
+        /// <summary>
+        /// Defers the binding of the operation until later time when the runtime values of all dynamic operation arguments have been computed.
+        /// </summary>
+        /// <param name="target">The target of the dynamic operation.</param>
+        /// <param name="args">An array of arguments of the dynamic operation.</param>
+        /// <returns>The <see cref="DynamicMetaObject"/> representing the result of the binding.</returns>
         public DynamicMetaObject Defer(DynamicMetaObject target, params DynamicMetaObject[] args) {
             ContractUtils.RequiresNotNull(target, "target");
 
@@ -92,6 +130,11 @@ namespace System.Dynamic {
             }
         }
 
+        /// <summary>
+        /// Defers the binding of the operation until later time when the runtime values of all dynamic operation arguments have been computed.
+        /// </summary>
+        /// <param name="args">An array of arguments of the dynamic operation.</param>
+        /// <returns>The <see cref="DynamicMetaObject"/> representing the result of the binding.</returns>
         public DynamicMetaObject Defer(params DynamicMetaObject[] args) {
             return MakeDeferred(
                 BindingRestrictions.Combine(args),

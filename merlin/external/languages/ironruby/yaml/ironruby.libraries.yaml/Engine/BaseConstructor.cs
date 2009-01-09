@@ -46,7 +46,7 @@ namespace IronRuby.StandardLibrary.Yaml {
         void DoRecursionFix(Node node, object obj);
         void AddFixer(Node node, RecursiveFixer fixer);
 
-        RubyScope/*!*/ Scope { get; }
+        RubyGlobalScope/*!*/ GlobalScope { get; }
     }
 
     public class BaseConstructor : IConstructor {
@@ -56,16 +56,16 @@ namespace IronRuby.StandardLibrary.Yaml {
         
         private readonly Dictionary<Node, List<RecursiveFixer>>/*!*/ _recursiveObjects = new Dictionary<Node, List<RecursiveFixer>>();
         private readonly NodeProvider/*!*/ _nodeProvider;
-        private readonly RubyScope/*!*/ _scope;
+        private readonly RubyGlobalScope/*!*/ _globalScope;
 
-        public BaseConstructor(NodeProvider/*!*/ nodeProvider, RubyScope/*!*/ scope) {
-            Assert.NotNull(nodeProvider, scope);
+        public BaseConstructor(NodeProvider/*!*/ nodeProvider, RubyGlobalScope/*!*/ globalScope) {
+            Assert.NotNull(nodeProvider, globalScope);
             _nodeProvider = nodeProvider;
-            _scope = scope;
+            _globalScope = globalScope;
         }
 
-        public RubyScope/*!*/ Scope {
-            get { return _scope; }
+        public RubyGlobalScope/*!*/ GlobalScope {
+            get { return _globalScope; }
         }
 
         public virtual YamlConstructor GetYamlConstructor(string key) {
@@ -249,7 +249,7 @@ namespace IronRuby.StandardLibrary.Yaml {
             if (map == null) {
                 throw new ConstructorException("expected a mapping node, but found: " + mappingNode);
             }
-            Hash mapping = new Hash(_scope.RubyContext);
+            Hash mapping = new Hash(_globalScope.Context);
             LinkedList<Hash> merge = null;
             foreach (KeyValuePair<Node, Node> entry in map.Nodes) {
                 Node key_v = entry.Key;
@@ -284,18 +284,18 @@ namespace IronRuby.StandardLibrary.Yaml {
                     LinkNode linkNode = vv as LinkNode;
                     if (linkNode != null) {
                         AddFixer(linkNode.Linked, delegate (Node node, object real) {
-                            IDictionaryOps.SetElement(_scope.RubyContext, mapping, kk, real);
+                            IDictionaryOps.SetElement(_globalScope.Context, mapping, kk, real);
                         });
                     }
-                    IDictionaryOps.SetElement(_scope.RubyContext, mapping, kk, vv);
+                    IDictionaryOps.SetElement(_globalScope.Context, mapping, kk, vv);
                 }
             }
             if (null != merge) {
                 merge.AddLast(mapping);
-                mapping = new Hash(_scope.RubyContext);
+                mapping = new Hash(_globalScope.Context);
                 foreach (Hash m in merge) {                    
                     foreach (KeyValuePair<object, object> e in m) {
-                        IDictionaryOps.SetElement(_scope.RubyContext, mapping, e.Key, e.Value);
+                        IDictionaryOps.SetElement(_globalScope.Context, mapping, e.Key, e.Value);
                     }
                 }
             }

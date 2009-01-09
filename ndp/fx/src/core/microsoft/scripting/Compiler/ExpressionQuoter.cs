@@ -16,12 +16,19 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.Dynamic.Utils;
 using System.Linq.Expressions;
 using System.Linq.Expressions.Compiler;
-using System.Dynamic.Utils;
 
 namespace System.Runtime.CompilerServices {
     public partial class RuntimeOps {
+        /// <summary>
+        /// Quotes the provided expression tree.
+        /// </summary>
+        /// <param name="expression">The expression to quote.</param>
+        /// <param name="hoistedLocals">The hoisted local state provided by the compiler.</param>
+        /// <param name="locals">The actual hoisted local values.</param>
+        /// <returns>The quoted expression.</returns>
         [Obsolete("do not call this method", true)]
         public static Expression Quote(Expression expression, object hoistedLocals, object[] locals) {
             Debug.Assert(hoistedLocals != null && locals != null);
@@ -29,6 +36,13 @@ namespace System.Runtime.CompilerServices {
             return quoter.Visit(expression);
         }
 
+        /// <summary>
+        /// Combines two runtime variable lists and returns a new list.
+        /// </summary>
+        /// <param name="first">The first list.</param>
+        /// <param name="second">The second list.</param>
+        /// <param name="indexes">The index array indicating which list to get variables from.</param>
+        /// <returns>The merged runtime variables.</returns>
         [Obsolete("do not call this method", true)]
         public static IList<IStrongBox> MergeRuntimeVariables(IList<IStrongBox> first, IList<IStrongBox> second, int[] indexes) {
             return new MergedRuntimeVariables(first, second, indexes);

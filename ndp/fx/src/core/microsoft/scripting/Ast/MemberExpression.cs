@@ -21,17 +21,21 @@ using System.Text;
 namespace System.Linq.Expressions {
 
     /// <summary>
-    /// Member expression (statically typed) which represents 
-    /// property or field access, both static and instance.
-    /// For instance property/field, Expression must be != null.
+    /// Represents accessing a field or property.
     /// </summary>
     public class MemberExpression : Expression {
         private readonly Expression _expression;
 
+        /// <summary>
+        /// Gets the field or property to be accessed.
+        /// </summary>
         public MemberInfo Member {
             get { return GetMember(); }
         }
 
+        /// <summary>
+        /// Gets the containing object of the field or property.
+        /// </summary>
         public Expression Expression {
             get { return _expression; }
         }
@@ -52,6 +56,10 @@ namespace System.Linq.Expressions {
             }            
         }
 
+        /// <summary>
+        /// Returns the node type of this <see cref="Expression" />. (Inherited from <see cref="Expression" />.)
+        /// </summary>
+        /// <returns>The <see cref="ExpressionType"/> that represents this expression.</returns>
         protected override ExpressionType GetNodeKind() {
             return ExpressionType.MemberAccess;
         }
@@ -98,14 +106,16 @@ namespace System.Linq.Expressions {
         }
     }
 
-    /// <summary>
-    /// Factory methods.
-    /// </summary>
     public partial class Expression {
 
         #region Field
 
-        //CONFORMING
+        /// <summary>
+        /// Creates a <see cref="MemberExpression"/> accessing a field.
+        /// </summary>
+        /// <param name="expression">The containing object of the field.  This can be null for static fields.</param>
+        /// <param name="field">The field to be accessed.</param>
+        /// <returns>The created <see cref="MemberExpression"/>.</returns>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1719:ParameterNamesShouldNotMatchMemberNames")]
         public static MemberExpression Field(Expression expression, FieldInfo field) {
             ContractUtils.RequiresNotNull(field, "field");
@@ -122,7 +132,12 @@ namespace System.Linq.Expressions {
             return MemberExpression.Make(expression, field);
         }
 
-        //CONFORMING
+        /// <summary>
+        /// Creates a <see cref="MemberExpression"/> accessing a field.
+        /// </summary>
+        /// <param name="expression">The containing object of the field.  This can be null for static fields.</param>
+        /// <param name="fieldName">The field to be accessed.</param>
+        /// <returns>The created <see cref="MemberExpression"/>.</returns>
         public static MemberExpression Field(Expression expression, string fieldName) {
             RequiresCanRead(expression, "expression");
 
@@ -138,6 +153,13 @@ namespace System.Linq.Expressions {
         }
 
 
+        /// <summary>
+        /// Creates a <see cref="MemberExpression"/> accessing a field.
+        /// </summary>
+        /// <param name="expression">The containing object of the field.  This can be null for static fields.</param>
+        /// <param name="type">The <see cref="Type"/> containing the field.</param>
+        /// <param name="fieldName">The field to be accessed.</param>
+        /// <returns>The created <see cref="MemberExpression"/>.</returns>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1719:ParameterNamesShouldNotMatchMemberNames")]
         public static MemberExpression Field(Expression expression, Type type, string fieldName) {
             ContractUtils.RequiresNotNull(type, "type");
@@ -157,7 +179,12 @@ namespace System.Linq.Expressions {
 
         #region Property
 
-        //CONFORMING
+        /// <summary>
+        /// Creates a <see cref="MemberExpression"/> accessing a property.
+        /// </summary>
+        /// <param name="expression">The containing object of the property.  This can be null for static properties.</param>
+        /// <param name="propertyName">The property to be accessed.</param>
+        /// <returns>The created <see cref="MemberExpression"/>.</returns>
         public static MemberExpression Property(Expression expression, string propertyName) {
             RequiresCanRead(expression, "expression");
             // bind to public names first
@@ -171,6 +198,13 @@ namespace System.Linq.Expressions {
             return Property(expression, pi);
         }
 
+        /// <summary>
+        /// Creates a <see cref="MemberExpression"/> accessing a property.
+        /// </summary>
+        /// <param name="expression">The containing object of the property.  This can be null for static properties.</param>
+        /// <param name="type">The <see cref="Type"/> containing the property.</param>
+        /// <param name="propertyName">The property to be accessed.</param>
+        /// <returns>The created <see cref="MemberExpression"/>.</returns>
         public static MemberExpression Property(Expression expression, Type type, string propertyName) {
             ContractUtils.RequiresNotNull(type, "type");
             // bind to public names first
@@ -184,7 +218,12 @@ namespace System.Linq.Expressions {
             return Property(expression, pi);
         }
 
-        //CONFORMING
+        /// <summary>
+        /// Creates a <see cref="MemberExpression"/> accessing a property.
+        /// </summary>
+        /// <param name="expression">The containing object of the property.  This can be null for static properties.</param>
+        /// <param name="property">The property to be accessed.</param>
+        /// <returns>The created <see cref="MemberExpression"/>.</returns>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1719:ParameterNamesShouldNotMatchMemberNames")]
         public static MemberExpression Property(Expression expression, PropertyInfo property) {
             ContractUtils.RequiresNotNull(property, "property");
@@ -206,14 +245,19 @@ namespace System.Linq.Expressions {
             }
             return MemberExpression.Make(expression, property);
         }
-        //CONFORMING
+
+        /// <summary>
+        /// Creates a <see cref="MemberExpression"/> accessing a property.
+        /// </summary>
+        /// <param name="expression">The containing object of the property.  This can be null for static properties.</param>
+        /// <param name="propertyAccessor">An accessor method of the property to be accessed.</param>
+        /// <returns>The created <see cref="MemberExpression"/>.</returns>
         public static MemberExpression Property(Expression expression, MethodInfo propertyAccessor) {
             ContractUtils.RequiresNotNull(propertyAccessor, "propertyAccessor");
             ValidateMethodInfo(propertyAccessor);
             return Property(expression, GetProperty(propertyAccessor));
         }
 
-        //CONFORMING
         private static PropertyInfo GetProperty(MethodInfo mi) {
             Type type = mi.DeclaringType;
             BindingFlags flags = BindingFlags.Public | BindingFlags.NonPublic;
@@ -230,7 +274,6 @@ namespace System.Linq.Expressions {
             throw Error.MethodNotPropertyAccessor(mi.DeclaringType, mi.Name);
         }
 
-        //CONFORMING
         private static bool CheckMethod(MethodInfo method, MethodInfo propertyMethod) {
             if (method == propertyMethod) {
                 return true;
@@ -247,7 +290,12 @@ namespace System.Linq.Expressions {
 
         #endregion
 
-        //CONFORMING
+        /// <summary>
+        /// Creates a <see cref="MemberExpression"/> accessing a property or field.
+        /// </summary>
+        /// <param name="expression">The containing object of the member.  This can be null for static members.</param>
+        /// <param name="propertyOrFieldName">The member to be accessed.</param>
+        /// <returns>The created <see cref="MemberExpression"/>.</returns>
         public static MemberExpression PropertyOrField(Expression expression, string propertyOrFieldName) {
             RequiresCanRead(expression, "expression");
             // bind to public names first
@@ -267,7 +315,12 @@ namespace System.Linq.Expressions {
             throw Error.NotAMemberOfType(propertyOrFieldName, expression.Type);
         }
 
-        //CONFORMING
+        /// <summary>
+        /// Creates a <see cref="MemberExpression"/> accessing a property or field.
+        /// </summary>
+        /// <param name="expression">The containing object of the member.  This can be null for static members.</param>
+        /// <param name="member">The member to be accessed.</param>
+        /// <returns>The created <see cref="MemberExpression"/>.</returns>
         public static MemberExpression MakeMemberAccess(Expression expression, MemberInfo member) {
             ContractUtils.RequiresNotNull(member, "member");
 

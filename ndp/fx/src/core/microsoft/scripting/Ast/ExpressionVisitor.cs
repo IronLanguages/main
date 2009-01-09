@@ -18,18 +18,39 @@ using System.Collections.ObjectModel;
 using System.Dynamic.Utils;
 
 namespace System.Linq.Expressions {
+    
     /// <summary>
-    /// Base class for visiting and rewriting trees. Subclasses can override
-    /// individual Visit methods from which they can return rewritten nodes.
-    /// If a node is rewritten, all parent nodes will be rewritten
-    /// automatically.
+    /// Represents a visitor or rewriter for expression trees.
     /// </summary>
+    /// <remarks>
+    /// This class is designed to be inherited to create more specialized
+    /// classes whose functionality requires traversing, examining or copying
+    /// an expression tree.
+    /// </remarks>
     public abstract class ExpressionVisitor {
 
+        /// <summary>
+        /// Initializes a new instance of <see cref="ExpressionVisitor"/>.
+        /// </summary>
+        protected ExpressionVisitor() {
+        }
+
+        /// <summary>
+        /// Dispatches the expression to one of the more specialized visit methods in this class.
+        /// </summary>
+        /// <param name="node">The expression to visit.</param>
+        /// <returns>The modified expression, if it or any subexpression was modified;
+        /// otherwise, returns the original expression.</returns>
         public Expression Visit(Expression node) {
             return (node == null) ? null : node.Accept(this);
         }
 
+        /// <summary>
+        /// Dispatches the list of expressions to one of the more specialized visit methods in this class.
+        /// </summary>
+        /// <param name="nodes">The expressions to visit.</param>
+        /// <returns>The modified expression list, if any of the elements were modified;
+        /// otherwise, returns the original expression list.</returns>
         public ReadOnlyCollection<Expression> Visit(ReadOnlyCollection<Expression> nodes) {
             Expression[] newNodes = null;
             for (int i = 0, n = nodes.Count; i < n; i++) {
@@ -73,10 +94,12 @@ namespace System.Linq.Expressions {
         /// <summary>
         /// Visits all nodes in the collection using a specified element visitor.
         /// </summary>
-        /// <typeparam name="T">Element type.</typeparam>
-        /// <param name="nodes">Input collection.</param>
-        /// <param name="elementVisitor">Delegate that visits a single element.</param>
-        /// <returns>Collection of visited nodes. Original collection is returned if no nodes were modified.</returns>
+        /// <typeparam name="T">The type of the nodes.</typeparam>
+        /// <param name="nodes">The nodes to visit.</param>
+        /// <param name="elementVisitor">A delegate that visits a single element,
+        /// optionally replacing it with a new element.</param>
+        /// <returns>The modified node list, if any of the elements were modified;
+        /// otherwise, returns the original node list.</returns>
         protected static ReadOnlyCollection<T> Visit<T>(ReadOnlyCollection<T> nodes, Func<T, T> elementVisitor) {
             T[] newNodes = null;
             for (int i = 0, n = nodes.Count; i < n; i++) {
@@ -97,6 +120,15 @@ namespace System.Linq.Expressions {
             return new ReadOnlyCollection<T>(newNodes);
         }
 
+        /// <summary>
+        /// Visits an expression, casting the result back to the original expression type.
+        /// </summary>
+        /// <typeparam name="T">The type of the expression.</typeparam>
+        /// <param name="node">The expression to visit.</param>
+        /// <param name="callerName">The name of the calling method; used to report to report a better error message.</param>
+        /// <returns>The modified expression, if it or any subexpression was modified;
+        /// otherwise, returns the original expression.</returns>
+        /// <exception cref="InvalidOperationException">The visit method for this node returned a different type.</exception>
         protected T VisitAndConvert<T>(T node, string callerName) where T : Expression {
             if (node == null) {
                 return null;
@@ -109,10 +141,14 @@ namespace System.Linq.Expressions {
         }
 
         /// <summary>
-        /// Visits all of the nodes in the collection, and tries to convert each
-        /// result back to the original type. If any conversion fails, it
-        /// throws an error
+        /// Visits an expression, casting the result back to the original expression type.
         /// </summary>
+        /// <typeparam name="T">The type of the expression.</typeparam>
+        /// <param name="nodes">The expression to visit.</param>
+        /// <param name="callerName">The name of the calling method; used to report to report a better error message.</param>
+        /// <returns>The modified expression, if it or any subexpression was modified;
+        /// otherwise, returns the original expression.</returns>
+        /// <exception cref="InvalidOperationException">The visit method for this node returned a different type.</exception>
         protected ReadOnlyCollection<T> VisitAndConvert<T>(ReadOnlyCollection<T> nodes, string callerName) where T : Expression {
             T[] newNodes = null;
             for (int i = 0, n = nodes.Count; i < n; i++) {
@@ -137,6 +173,12 @@ namespace System.Linq.Expressions {
             return new ReadOnlyCollection<T>(newNodes);
         }
 
+        /// <summary>
+        /// Visits the children of the <see cref="BinaryExpression" />.
+        /// </summary>
+        /// <param name="node">The expression to visit.</param>
+        /// <returns>The modified expression, if it or any subexpression was modified;
+        /// otherwise, returns the original expression.</returns>
         protected internal virtual Expression VisitBinary(BinaryExpression node) {
             // Walk children in evaluation order: left, conversion, right
             Expression l = Visit(node.Left);
@@ -148,6 +190,12 @@ namespace System.Linq.Expressions {
             return Expression.MakeBinary(node.NodeType, l, r, node.IsLiftedToNull, node.Method, c);
         }
 
+        /// <summary>
+        /// Visits the children of the <see cref="BlockExpression" />.
+        /// </summary>
+        /// <param name="node">The expression to visit.</param>
+        /// <returns>The modified expression, if it or any subexpression was modified;
+        /// otherwise, returns the original expression.</returns>
         protected internal virtual Expression VisitBlock(BlockExpression node) {
             int count = node.ExpressionCount;
             Expression[] nodes = null;
@@ -177,6 +225,12 @@ namespace System.Linq.Expressions {
             return node.Rewrite(v, nodes);
         }
 
+        /// <summary>
+        /// Visits the children of the <see cref="ConditionalExpression" />.
+        /// </summary>
+        /// <param name="node">The expression to visit.</param>
+        /// <returns>The modified expression, if it or any subexpression was modified;
+        /// otherwise, returns the original expression.</returns>
         protected internal virtual Expression VisitConditional(ConditionalExpression node) {
             Expression t = Visit(node.Test);
             Expression l = Visit(node.IfTrue);
@@ -187,10 +241,22 @@ namespace System.Linq.Expressions {
             return Expression.Condition(t, l, r);
         }
 
+        /// <summary>
+        /// Visits the <see cref="ConstantExpression" />.
+        /// </summary>
+        /// <param name="node">The expression to visit.</param>
+        /// <returns>The modified expression, if it or any subexpression was modified;
+        /// otherwise, returns the original expression.</returns>
         protected internal virtual Expression VisitConstant(ConstantExpression node) {
             return node;
         }
 
+        /// <summary>
+        /// Visits the <see cref="DebugInfoExpression" />.
+        /// </summary>
+        /// <param name="node">The expression to visit.</param>
+        /// <returns>The modified expression, if it or any subexpression was modified;
+        /// otherwise, returns the original expression.</returns>
         protected internal virtual Expression VisitDebugInfo(DebugInfoExpression node) {
             Expression e = Visit(node.Expression);
             if (e == node.Expression) {
@@ -199,6 +265,12 @@ namespace System.Linq.Expressions {
             return Expression.DebugInfo(e, node.Document, node.StartLine, node.StartColumn, node.EndLine, node.EndColumn);
         }
 
+        /// <summary>
+        /// Visits the children of the <see cref="DynamicExpression" />.
+        /// </summary>
+        /// <param name="node">The expression to visit.</param>
+        /// <returns>The modified expression, if it or any subexpression was modified;
+        /// otherwise, returns the original expression.</returns>
         protected internal virtual Expression VisitDynamic(DynamicExpression node) {
             Expression[] a = VisitArguments((IArgumentProvider)node);
             if (a == null) {
@@ -208,20 +280,38 @@ namespace System.Linq.Expressions {
             return node.Rewrite(a);
         }
 
+        /// <summary>
+        /// Visits the <see cref="DefaultExpression" />.
+        /// </summary>
+        /// <param name="node">The expression to visit.</param>
+        /// <returns>The modified expression, if it or any subexpression was modified;
+        /// otherwise, returns the original expression.</returns>
         protected internal virtual Expression VisitDefault(DefaultExpression node) {
             return node;
         }
 
         /// <summary>
-        /// Override called for Extension nodes. This can be overriden to
-        /// rewrite certain extension nodes. If it's not overriden, this method
-        /// will call into Expression.Visit, which gives the node a chance to
-        /// walk its children
+        /// Visits the children of the extension expression.
         /// </summary>
+        /// <param name="node">The expression to visit.</param>
+        /// <returns>The modified expression, if it or any subexpression was modified;
+        /// otherwise, returns the original expression.</returns>
+        /// <remarks>
+        /// This can be overridden to visit or rewrite specific extension nodes.
+        /// If it is not overridden, this method will call <see cref="Expression.VisitChildren" />,
+        /// which gives the node a chance to walk its children. By default,
+        /// <see cref="Expression.VisitChildren" /> will try to reduce the node.
+        /// </remarks>
         protected internal virtual Expression VisitExtension(Expression node) {
             return node.VisitChildren(this);
         }
 
+        /// <summary>
+        /// Visits the children of the <see cref="GotoExpression" />.
+        /// </summary>
+        /// <param name="node">The expression to visit.</param>
+        /// <returns>The modified expression, if it or any subexpression was modified;
+        /// otherwise, returns the original expression.</returns>
         protected internal virtual Expression VisitGoto(GotoExpression node) {
             LabelTarget t = VisitLabelTarget(node.Target);
             Expression v = Visit(node.Value);
@@ -231,6 +321,12 @@ namespace System.Linq.Expressions {
             return Expression.MakeGoto(node.Kind, t, v);
         }
 
+        /// <summary>
+        /// Visits the children of the <see cref="InvocationExpression" />.
+        /// </summary>
+        /// <param name="node">The expression to visit.</param>
+        /// <returns>The modified expression, if it or any subexpression was modified;
+        /// otherwise, returns the original expression.</returns>
         protected internal virtual Expression VisitInvocation(InvocationExpression node) {
             Expression e = Visit(node.Expression);
             Expression[] a = VisitArguments(node);
@@ -240,10 +336,22 @@ namespace System.Linq.Expressions {
             return Expression.Invoke(e, a);
         }
 
+        /// <summary>
+        /// Visits the <see cref="LabelTarget" />.
+        /// </summary>
+        /// <param name="node">The expression to visit.</param>
+        /// <returns>The modified expression, if it or any subexpression was modified;
+        /// otherwise, returns the original expression.</returns>
         protected virtual LabelTarget VisitLabelTarget(LabelTarget node) {
             return node;
         }
 
+        /// <summary>
+        /// Visits the children of the <see cref="LabelExpression" />.
+        /// </summary>
+        /// <param name="node">The expression to visit.</param>
+        /// <returns>The modified expression, if it or any subexpression was modified;
+        /// otherwise, returns the original expression.</returns>
         protected internal virtual Expression VisitLabel(LabelExpression node) {
             LabelTarget l = VisitLabelTarget(node.Target);
             Expression d = Visit(node.DefaultValue);
@@ -253,6 +361,13 @@ namespace System.Linq.Expressions {
             return Expression.Label(l, d);
         }
 
+        /// <summary>
+        /// Visits the children of the <see cref="Expression&lt;T&gt;" />.
+        /// </summary>
+        /// <typeparam name="T">The type of the delegate.</typeparam>
+        /// <param name="node">The expression to visit.</param>
+        /// <returns>The modified expression, if it or any subexpression was modified;
+        /// otherwise, returns the original expression.</returns>
         protected internal virtual Expression VisitLambda<T>(Expression<T> node) {
             Expression b = Visit(node.Body);
             var p = VisitAndConvert(node.Parameters, "VisitLambda");
@@ -262,6 +377,12 @@ namespace System.Linq.Expressions {
             return Expression.Lambda<T>(b, node.Name, p);
         }
 
+        /// <summary>
+        /// Visits the children of the <see cref="LoopExpression" />.
+        /// </summary>
+        /// <param name="node">The expression to visit.</param>
+        /// <returns>The modified expression, if it or any subexpression was modified;
+        /// otherwise, returns the original expression.</returns>
         protected internal virtual Expression VisitLoop(LoopExpression node) {
             LabelTarget @break = VisitLabelTarget(node.BreakLabel);
             LabelTarget @continue = VisitLabelTarget(node.ContinueLabel);
@@ -274,6 +395,12 @@ namespace System.Linq.Expressions {
             return Expression.Loop(b, @break, @continue);
         }
 
+        /// <summary>
+        /// Visits the children of the <see cref="MemberExpression" />.
+        /// </summary>
+        /// <param name="node">The expression to visit.</param>
+        /// <returns>The modified expression, if it or any subexpression was modified;
+        /// otherwise, returns the original expression.</returns>
         protected internal virtual Expression VisitMember(MemberExpression node) {
             Expression e = Visit(node.Expression);
             if (e == node.Expression) {
@@ -282,6 +409,12 @@ namespace System.Linq.Expressions {
             return Expression.MakeMemberAccess(e, node.Member);
         }
 
+        /// <summary>
+        /// Visits the children of the <see cref="IndexExpression" />.
+        /// </summary>
+        /// <param name="node">The expression to visit.</param>
+        /// <returns>The modified expression, if it or any subexpression was modified;
+        /// otherwise, returns the original expression.</returns>
         protected internal virtual Expression VisitIndex(IndexExpression node) {
             Expression o = Visit(node.Object);
             IList<Expression> a = VisitArguments(node);
@@ -291,6 +424,12 @@ namespace System.Linq.Expressions {
             return Expression.MakeIndex(o, node.Indexer, a);
         }
 
+        /// <summary>
+        /// Visits the children of the <see cref="MethodCallExpression" />.
+        /// </summary>
+        /// <param name="node">The expression to visit.</param>
+        /// <returns>The modified expression, if it or any subexpression was modified;
+        /// otherwise, returns the original expression.</returns>
         protected internal virtual Expression VisitMethodCall(MethodCallExpression node) {
             Expression o = Visit(node.Object);
             Expression[] a = VisitArguments((IArgumentProvider)node);
@@ -301,6 +440,12 @@ namespace System.Linq.Expressions {
             return node.Rewrite(o, a);
         }
 
+        /// <summary>
+        /// Visits the children of the <see cref="NewArrayExpression" />.
+        /// </summary>
+        /// <param name="node">The expression to visit.</param>
+        /// <returns>The modified expression, if it or any subexpression was modified;
+        /// otherwise, returns the original expression.</returns>
         protected internal virtual Expression VisitNewArray(NewArrayExpression node) {
             ReadOnlyCollection<Expression> e = Visit(node.Expressions);
             if (e == node.Expressions) {
@@ -312,6 +457,12 @@ namespace System.Linq.Expressions {
             return Expression.NewArrayBounds(node.Type.GetElementType(), e);
         }
 
+        /// <summary>
+        /// Visits the children of the <see cref="NewExpression" />.
+        /// </summary>
+        /// <param name="node">The expression to visit.</param>
+        /// <returns>The modified expression, if it or any subexpression was modified;
+        /// otherwise, returns the original expression.</returns>
         protected internal virtual Expression VisitNew(NewExpression node) {
             ReadOnlyCollection<Expression> a = Visit(node.Arguments);
             if (a == node.Arguments) {
@@ -323,10 +474,22 @@ namespace System.Linq.Expressions {
             return Expression.New(node.Constructor, a);
         }
 
+        /// <summary>
+        /// Visits the <see cref="ParameterExpression" />.
+        /// </summary>
+        /// <param name="node">The expression to visit.</param>
+        /// <returns>The modified expression, if it or any subexpression was modified;
+        /// otherwise, returns the original expression.</returns>
         protected internal virtual Expression VisitParameter(ParameterExpression node) {
             return node;
         }
 
+        /// <summary>
+        /// Visits the children of the <see cref="RuntimeVariablesExpression" />.
+        /// </summary>
+        /// <param name="node">The expression to visit.</param>
+        /// <returns>The modified expression, if it or any subexpression was modified;
+        /// otherwise, returns the original expression.</returns>
         protected internal virtual Expression VisitRuntimeVariables(RuntimeVariablesExpression node) {
             var v = VisitAndConvert(node.Variables, "VisitRuntimeVariables");
             if (v == node.Variables) {
@@ -335,6 +498,12 @@ namespace System.Linq.Expressions {
             return Expression.RuntimeVariables(v);
         }
 
+        /// <summary>
+        /// Visits the children of the <see cref="SwitchCase" />.
+        /// </summary>
+        /// <param name="node">The expression to visit.</param>
+        /// <returns>The modified expression, if it or any subexpression was modified;
+        /// otherwise, returns the original expression.</returns>
         protected virtual SwitchCase VisitSwitchCase(SwitchCase node) {
             Expression b = Visit(node.Body);
             if (b == node.Body) {
@@ -346,6 +515,12 @@ namespace System.Linq.Expressions {
             return Expression.SwitchCase(node.Value, b);
         }
 
+        /// <summary>
+        /// Visits the children of the <see cref="SwitchExpression" />.
+        /// </summary>
+        /// <param name="node">The expression to visit.</param>
+        /// <returns>The modified expression, if it or any subexpression was modified;
+        /// otherwise, returns the original expression.</returns>
         protected internal virtual Expression VisitSwitch(SwitchExpression node) {
             LabelTarget l = VisitLabelTarget(node.BreakLabel);
             Expression t = Visit(node.Test);
@@ -357,6 +532,12 @@ namespace System.Linq.Expressions {
             return Expression.Switch(t, l, c);
         }
 
+        /// <summary>
+        /// Visits the children of the <see cref="CatchBlock" />.
+        /// </summary>
+        /// <param name="node">The expression to visit.</param>
+        /// <returns>The modified expression, if it or any subexpression was modified;
+        /// otherwise, returns the original expression.</returns>
         protected virtual CatchBlock VisitCatchBlock(CatchBlock node) {
             ParameterExpression v = VisitAndConvert(node.Variable, "VisitCatchBlock");
             Expression f = Visit(node.Filter);
@@ -367,6 +548,12 @@ namespace System.Linq.Expressions {
             return Expression.MakeCatchBlock(node.Test, v, b, f);
         }
 
+        /// <summary>
+        /// Visits the children of the <see cref="TryExpression" />.
+        /// </summary>
+        /// <param name="node">The expression to visit.</param>
+        /// <returns>The modified expression, if it or any subexpression was modified;
+        /// otherwise, returns the original expression.</returns>
         protected internal virtual Expression VisitTry(TryExpression node) {
             Expression b = Visit(node.Body);
             ReadOnlyCollection<CatchBlock> h = Visit(node.Handlers, VisitCatchBlock);
@@ -382,6 +569,12 @@ namespace System.Linq.Expressions {
             return Expression.MakeTry(b, y, f, h);
         }
 
+        /// <summary>
+        /// Visits the children of the <see cref="TypeBinaryExpression" />.
+        /// </summary>
+        /// <param name="node">The expression to visit.</param>
+        /// <returns>The modified expression, if it or any subexpression was modified;
+        /// otherwise, returns the original expression.</returns>
         protected internal virtual Expression VisitTypeBinary(TypeBinaryExpression node) {
             Expression e = Visit(node.Expression);
             if (e == node.Expression) {
@@ -390,6 +583,12 @@ namespace System.Linq.Expressions {
             return Expression.TypeIs(e, node.TypeOperand);
         }
 
+        /// <summary>
+        /// Visits the children of the <see cref="UnaryExpression" />.
+        /// </summary>
+        /// <param name="node">The expression to visit.</param>
+        /// <returns>The modified expression, if it or any subexpression was modified;
+        /// otherwise, returns the original expression.</returns>
         protected internal virtual Expression VisitUnary(UnaryExpression node) {
             Expression o = Visit(node.Operand);
             if (o == node.Operand) {
@@ -398,6 +597,12 @@ namespace System.Linq.Expressions {
             return Expression.MakeUnary(node.NodeType, o, node.Type, node.Method);
         }
 
+        /// <summary>
+        /// Visits the children of the <see cref="MemberInitExpression" />.
+        /// </summary>
+        /// <param name="node">The expression to visit.</param>
+        /// <returns>The modified expression, if it or any subexpression was modified;
+        /// otherwise, returns the original expression.</returns>
         protected internal virtual Expression VisitMemberInit(MemberInitExpression node) {
             NewExpression n = VisitAndConvert(node.NewExpression, "VisitMemberInit");
             ReadOnlyCollection<MemberBinding> bindings = Visit(node.Bindings, VisitMemberBinding);
@@ -407,6 +612,12 @@ namespace System.Linq.Expressions {
             return Expression.MemberInit(n, bindings);
         }
 
+        /// <summary>
+        /// Visits the children of the <see cref="ListInitExpression" />.
+        /// </summary>
+        /// <param name="node">The expression to visit.</param>
+        /// <returns>The modified expression, if it or any subexpression was modified;
+        /// otherwise, returns the original expression.</returns>
         protected internal virtual Expression VisitListInit(ListInitExpression node) {
             NewExpression n = VisitAndConvert(node.NewExpression, "VisitListInit");
             ReadOnlyCollection<ElementInit> initializers = Visit(node.Initializers, VisitElementInit);
@@ -416,49 +627,79 @@ namespace System.Linq.Expressions {
             return Expression.ListInit(n, initializers);
         }
 
-        protected virtual ElementInit VisitElementInit(ElementInit initializer) {
-            ReadOnlyCollection<Expression> arguments = Visit(initializer.Arguments);
-            if (arguments == initializer.Arguments) {
-                return initializer;
+        /// <summary>
+        /// Visits the children of the <see cref="ElementInit" />.
+        /// </summary>
+        /// <param name="node">The expression to visit.</param>
+        /// <returns>The modified expression, if it or any subexpression was modified;
+        /// otherwise, returns the original expression.</returns>
+        protected virtual ElementInit VisitElementInit(ElementInit node) {
+            ReadOnlyCollection<Expression> arguments = Visit(node.Arguments);
+            if (arguments == node.Arguments) {
+                return node;
             }
-            return Expression.ElementInit(initializer.AddMethod, arguments);
+            return Expression.ElementInit(node.AddMethod, arguments);
         }
 
-        protected virtual MemberBinding VisitMemberBinding(MemberBinding binding) {
-            switch (binding.BindingType) {
+        /// <summary>
+        /// Visits the children of the <see cref="MemberBinding" />.
+        /// </summary>
+        /// <param name="node">The expression to visit.</param>
+        /// <returns>The modified expression, if it or any subexpression was modified;
+        /// otherwise, returns the original expression.</returns>
+        protected virtual MemberBinding VisitMemberBinding(MemberBinding node) {
+            switch (node.BindingType) {
                 case MemberBindingType.Assignment:
-                    return VisitMemberAssignment((MemberAssignment)binding);
+                    return VisitMemberAssignment((MemberAssignment)node);
                 case MemberBindingType.MemberBinding:
-                    return VisitMemberMemberBinding((MemberMemberBinding)binding);
+                    return VisitMemberMemberBinding((MemberMemberBinding)node);
                 case MemberBindingType.ListBinding:
-                    return VisitMemberListBinding((MemberListBinding)binding);
+                    return VisitMemberListBinding((MemberListBinding)node);
                 default:
-                    throw Error.UnhandledBindingType(binding.BindingType);
+                    throw Error.UnhandledBindingType(node.BindingType);
             }
         }
 
-        protected virtual MemberAssignment VisitMemberAssignment(MemberAssignment assignment) {
-            Expression e = Visit(assignment.Expression);
-            if (e == assignment.Expression) {
-                return assignment;
+        /// <summary>
+        /// Visits the children of the <see cref="MemberAssignment" />.
+        /// </summary>
+        /// <param name="node">The expression to visit.</param>
+        /// <returns>The modified expression, if it or any subexpression was modified;
+        /// otherwise, returns the original expression.</returns>
+        protected virtual MemberAssignment VisitMemberAssignment(MemberAssignment node) {
+            Expression e = Visit(node.Expression);
+            if (e == node.Expression) {
+                return node;
             }
-            return Expression.Bind(assignment.Member, e);
+            return Expression.Bind(node.Member, e);
         }
 
-        protected virtual MemberMemberBinding VisitMemberMemberBinding(MemberMemberBinding binding) {
-            ReadOnlyCollection<MemberBinding> bindings = Visit(binding.Bindings, VisitMemberBinding);
-            if (bindings == binding.Bindings) {
-                return binding;
+        /// <summary>
+        /// Visits the children of the <see cref="MemberMemberBinding" />.
+        /// </summary>
+        /// <param name="node">The expression to visit.</param>
+        /// <returns>The modified expression, if it or any subexpression was modified;
+        /// otherwise, returns the original expression.</returns>
+        protected virtual MemberMemberBinding VisitMemberMemberBinding(MemberMemberBinding node) {
+            ReadOnlyCollection<MemberBinding> bindings = Visit(node.Bindings, VisitMemberBinding);
+            if (bindings == node.Bindings) {
+                return node;
             }
-            return Expression.MemberBind(binding.Member, bindings);
+            return Expression.MemberBind(node.Member, bindings);
         }
 
-        protected virtual MemberListBinding VisitMemberListBinding(MemberListBinding binding) {
-            ReadOnlyCollection<ElementInit> initializers = Visit(binding.Initializers, VisitElementInit);
-            if (initializers == binding.Initializers) {
-                return binding;
+        /// <summary>
+        /// Visits the children of the <see cref="MemberListBinding" />.
+        /// </summary>
+        /// <param name="node">The expression to visit.</param>
+        /// <returns>The modified expression, if it or any subexpression was modified;
+        /// otherwise, returns the original expression.</returns>
+        protected virtual MemberListBinding VisitMemberListBinding(MemberListBinding node) {
+            ReadOnlyCollection<ElementInit> initializers = Visit(node.Initializers, VisitElementInit);
+            if (initializers == node.Initializers) {
+                return node;
             }
-            return Expression.ListBind(binding.Member, initializers);
+            return Expression.ListBind(node.Member, initializers);
         }
     }
 }

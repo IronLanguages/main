@@ -213,7 +213,6 @@ end
 
 task :ruby_imp do
   IronRuby.source_context do
-    sleep 20
     $ruby_imp ||= %Q{#{path_to_ir} -T "-X:Interpret"}
   end
 end

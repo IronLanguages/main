@@ -52,6 +52,12 @@ namespace IronRuby.Runtime.Calls {
 
         public ParameterExpression BfcVariable { get; set; }
 
+        /// <summary>
+        /// A rule builder sets this up if the resulting rule is required to be wrapped in a non-local control flow handler.
+        /// This delegate must be called exactly once (<see cref="BuildControlFlow"/> method).
+        /// </summary>
+        public Action<MetaObjectBuilder, CallArguments> ControlFlowBuilder { get; set; }
+
         public bool TreatRestrictionsAsConditions {
             get { return _treatRestrictionsAsConditions; }
             set { _treatRestrictionsAsConditions = value; }
@@ -62,6 +68,8 @@ namespace IronRuby.Runtime.Calls {
         }
 
         internal DynamicMetaObject/*!*/ CreateMetaObject(DynamicMetaObjectBinder/*!*/ action, DynamicMetaObject/*!*/[]/*!*/ siteArgs) {
+            Debug.Assert(ControlFlowBuilder == null, "Control flow required but not built");
+
             var expr = _error ? Ast.Throw(_result) : _result;
 
             BindingRestrictions restrictions;
@@ -251,6 +259,13 @@ namespace IronRuby.Runtime.Calls {
             var variable = Ast.Variable(type, name);
             _temps.Add(variable);
             return variable;
+        }
+
+        public void BuildControlFlow(CallArguments/*!*/ args) {
+            if (ControlFlowBuilder != null) {
+                ControlFlowBuilder(this, args);
+                ControlFlowBuilder = null;
+            }
         }
     }
 }

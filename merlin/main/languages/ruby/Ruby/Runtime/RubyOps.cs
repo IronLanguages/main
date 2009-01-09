@@ -53,28 +53,25 @@ namespace IronRuby.Runtime {
             out object self, out RuntimeFlowControl/*!*/ rfc, string dataPath, int dataOffset) {
             Assert.NotNull(locals, globalScope, language);
 
-            GlobalScopeExtension rubyGlobalScope = ((RubyContext)language).InitializeGlobalScope(globalScope);
+            RubyContext context = (RubyContext)language;
+            RubyGlobalScope rubyGlobalScope = context.InitializeGlobalScope(globalScope, false);
 
             RubyTopLevelScope scope = new RubyTopLevelScope(rubyGlobalScope, null, locals);
             scope.Initialize(new RuntimeFlowControl(), RubyMethodAttributes.PrivateInstance, rubyGlobalScope.MainObject);
-            scope.SetDebugName(rubyGlobalScope.IsHosted ? "top-primary-hosted" : "top-primary");
+            scope.SetDebugName("top-main");
 
-            // define TOPLEVEL_BINDING constant:
-            if (!rubyGlobalScope.IsHosted) {
-                var objectClass = rubyGlobalScope.Context.ObjectClass;
-                    
-                objectClass.SetConstant("TOPLEVEL_BINDING", new Binding(scope));
-                if (dataOffset >= 0) {
-                    RubyFile dataFile;
-                    if (File.Exists(dataPath)) {
-                        dataFile = new RubyFile(rubyGlobalScope.Context, dataPath, RubyFileMode.RDONLY);
-                        dataFile.Seek(dataOffset, SeekOrigin.Begin);
-                    } else {
-                        dataFile = null;
-                    }
-
-                    objectClass.SetConstant("DATA", dataFile);
+            var objectClass = context.ObjectClass;
+            objectClass.SetConstant("TOPLEVEL_BINDING", new Binding(scope));
+            if (dataOffset >= 0) {
+                RubyFile dataFile;
+                if (File.Exists(dataPath)) {
+                    dataFile = new RubyFile(context, dataPath, RubyFileMode.RDONLY);
+                    dataFile.Seek(dataOffset, SeekOrigin.Begin);
+                } else {
+                    dataFile = null;
                 }
+
+                objectClass.SetConstant("DATA", dataFile);
             }
 
             self = scope.SelfObject;
@@ -84,10 +81,37 @@ namespace IronRuby.Runtime {
         }
 
         [Emitted]
+        public static RubyTopLevelScope/*!*/ CreateTopLevelHostedScope(LocalsDictionary/*!*/ locals, Scope/*!*/ globalScope, LanguageContext/*!*/ language,
+            out object self, out RuntimeFlowControl/*!*/ rfc) {
+
+            RubyContext context = (RubyContext)language;
+            RubyGlobalScope rubyGlobalScope = context.InitializeGlobalScope(globalScope, true);
+
+            // reuse existing top-level scope if available:
+            RubyTopLevelScope scope = rubyGlobalScope.TopLocalScope;
+            if (scope == null) {
+                scope = new RubyTopLevelScope(rubyGlobalScope, null, locals);
+                scope.Initialize(new RuntimeFlowControl(), RubyMethodAttributes.PrivateInstance, rubyGlobalScope.MainObject);
+                scope.SetDebugName("top-level-hosted");
+                rubyGlobalScope.TopLocalScope = scope;
+            }
+
+            self = scope.SelfObject;
+            rfc = scope.RuntimeFlowControl;
+            return scope;
+        }
+
+        [Emitted]
         public static RubyTopLevelScope/*!*/ CreateTopLevelScope(LocalsDictionary/*!*/ locals, Scope/*!*/ globalScope, LanguageContext/*!*/ language,
             out object self, out RuntimeFlowControl/*!*/ rfc) {
 
-            RubyTopLevelScope scope = CreateTopLevelScopeInternal(locals, globalScope, (RubyContext)language);
+            RubyContext context = (RubyContext)language;
+            RubyGlobalScope rubyGlobalScope = context.InitializeGlobalScope(globalScope, false);
+
+            RubyTopLevelScope scope = new RubyTopLevelScope(rubyGlobalScope, null, locals);
+            scope.Initialize(new RuntimeFlowControl(), RubyMethodAttributes.PrivateInstance, rubyGlobalScope.MainObject);
+            scope.SetDebugName("top-level");
+
             self = scope.SelfObject;
             rfc = scope.RuntimeFlowControl;
             return scope;
@@ -97,14 +121,18 @@ namespace IronRuby.Runtime {
         public static RubyTopLevelScope/*!*/ CreateWrappedTopLevelScope(LocalsDictionary/*!*/ locals, Scope/*!*/ globalScope, LanguageContext/*!*/ language,
             out object self, out RuntimeFlowControl/*!*/ rfc) {
 
-            RubyTopLevelScope scope = CreateTopLevelScopeInternal(locals, globalScope, (RubyContext)language);
-
-            RubyModule module = scope.RubyGlobalScope.Context.CreateModule(null, null, null, null, null);
+            RubyContext context = (RubyContext)language;
 
             object mainObject = new Object();
-            RubyClass mainSingleton = scope.RubyContext.CreateMainSingleton(mainObject);
+            RubyClass mainSingleton = context.CreateMainSingleton(mainObject);
+            
+            RubyModule module = context.CreateModule(null, null, null, null, null);
             mainSingleton.SetMixins(new RubyModule[] { module });
 
+            RubyGlobalScope rubyGlobalScope = context.InitializeGlobalScope(globalScope, false);
+            RubyTopLevelScope scope = new RubyTopLevelScope(rubyGlobalScope, null, locals);
+            scope.Initialize(new RuntimeFlowControl(), RubyMethodAttributes.PrivateInstance, rubyGlobalScope.MainObject);
+            scope.SetDebugName("top-level-wrapped");
             scope.SelfObject = mainObject;
             scope.SetModule(module);
 
@@ -113,19 +141,9 @@ namespace IronRuby.Runtime {
             return scope;
         }
 
-        private static RubyTopLevelScope/*!*/ CreateTopLevelScopeInternal(LocalsDictionary/*!*/ locals, Scope/*!*/ globalScope, RubyContext/*!*/ context) {
-            GlobalScopeExtension rubyGlobalScope = context.InitializeGlobalScope(globalScope);
-            RubyTopLevelScope result = new RubyTopLevelScope(rubyGlobalScope, null, locals);
-            result.Initialize(new RuntimeFlowControl(), RubyMethodAttributes.PrivateInstance, rubyGlobalScope.MainObject);
-            result.SetDebugName("top-level");
-
-            return result;
-        }
-
         [Emitted]
         public static RubyModuleScope/*!*/ CreateModuleEvalScope(LocalsDictionary/*!*/ locals, RubyScope/*!*/ parent, object self, RubyModule module) {
             RubyModuleScope scope = new RubyModuleScope(parent, locals, module, true);
-            // TODO: used to inherit parent.MethodAttributes
             scope.Initialize(parent.RuntimeFlowControl, RubyMethodAttributes.PublicInstance, self);
             scope.SetDebugName("top-module/instance-eval");                
             return scope;
@@ -475,7 +493,7 @@ namespace IronRuby.Runtime {
 
         [Emitted] // MethodDeclaration:
         public static RubyMethodInfo/*!*/ DefineMethod(object targetOrSelf, object/*!*/ ast, RubyScope/*!*/ scope,
-             bool hasTarget, string/*!*/ name, Delegate/*!*/ clrMethod, int mandatory, int optional, bool hasUnsplatParameter) {
+            bool hasTarget, string/*!*/ name, Delegate/*!*/ clrMethod, int mandatory, int optional, bool hasUnsplatParameter) {
 
             Assert.NotNull(ast, scope, clrMethod, name);
 
@@ -661,7 +679,7 @@ namespace IronRuby.Runtime {
 
         [Emitted] // ConstantVariable:
         public static object GetGlobalConstant(RubyScope/*!*/ scope, string/*!*/ name) {
-            return RubyUtils.GetConstant(scope, scope.RubyContext.ObjectClass, name, false);
+            return RubyUtils.GetConstant(scope.GlobalScope, scope.RubyContext.ObjectClass, name, false);
         }
 
         [Emitted] // ConstantVariable:
@@ -671,7 +689,7 @@ namespace IronRuby.Runtime {
 
         [Emitted] // ConstantVariable:
         public static object GetQualifiedConstant(object target, RubyScope/*!*/ scope, string/*!*/ name) {
-            return RubyUtils.GetConstant(scope, RubyUtils.GetModuleFromObject(scope.RubyContext, target), name, false);
+            return RubyUtils.GetConstant(scope.GlobalScope, RubyUtils.GetModuleFromObject(scope.RubyContext, target), name, false);
         }
 
 
@@ -1224,6 +1242,37 @@ namespace IronRuby.Runtime {
 
         #region Exceptions
 
+#if SILVERLIGHT // Thread.ExceptionState
+        public static Exception GetVisibleException(Exception e) { return e; }
+#else
+        /// <summary>
+        /// Thread#raise is implemented on top of System.Threading.Thread.ThreadAbort, and squirreling
+        /// the Ruby exception expected by the use in ThreadAbortException.ExceptionState.
+        /// </summary>
+        private class AsyncExceptionMarker {
+            internal Exception Exception { get; set; }
+            internal AsyncExceptionMarker(Exception e) {
+                this.Exception = e;
+            }
+        }
+
+        public static void RaiseAsyncException(Thread thread, Exception e) {
+            thread.Abort(new AsyncExceptionMarker(e));
+        }
+
+        public static Exception GetVisibleException(Exception e) {
+            ThreadAbortException tae = e as ThreadAbortException;
+            if (tae != null) {
+                AsyncExceptionMarker asyncExceptionMarker = tae.ExceptionState as AsyncExceptionMarker;
+                if (asyncExceptionMarker != null) {
+                    return asyncExceptionMarker.Exception;
+                }
+            }
+            return e;
+        }
+
+#endif
+
         //
         // NOTE:
         // Exception Ops go directly to the current exception object. MRI ignores potential aliases.
@@ -1256,8 +1305,12 @@ namespace IronRuby.Runtime {
             if (!(classObject is RubyModule)) {
                 throw RubyExceptions.CreateTypeError("class or module required for rescue clause");
             }
-
-            return _compareExceptionSite.Target(_compareExceptionSite, scope.RubyContext, classObject, scope.RubyContext.CurrentException);
+            
+            bool result = _compareExceptionSite.Target(_compareExceptionSite, scope.RubyContext, classObject, scope.RubyContext.CurrentException);
+            if (result) {
+                RubyExceptionData.ActiveExceptionHandled(scope.RubyContext.CurrentException);
+            }
+            return result;
         }
 
         [Emitted] //RescueClause:

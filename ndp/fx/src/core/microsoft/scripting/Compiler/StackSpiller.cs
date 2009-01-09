@@ -179,7 +179,7 @@ namespace System.Linq.Expressions.Compiler {
         }
 
         private Result RewriteArrayIndexAssignment(BinaryExpression node, Stack stack) {
-            Debug.Assert(node.NodeType == ExpressionType.ArrayIndex);
+            Debug.Assert(node.Left.NodeType == ExpressionType.ArrayIndex);
             BinaryExpression arrayIndex = (BinaryExpression)node.Left;
 
             ChildRewriter cr = new ChildRewriter(this, stack, 3);

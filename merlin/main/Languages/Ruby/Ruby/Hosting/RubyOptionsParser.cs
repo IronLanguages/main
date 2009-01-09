@@ -134,6 +134,10 @@ namespace IronRuby.Hosting {
                 case "-load":
                     LanguageSetup.Options["LoadFromDisk"] = ScriptingRuntimeHelpers.True;
                     break;
+
+                case "-useThreadAbortForSyncRaise":
+                    LanguageSetup.Options["UseThreadAbortForSyncRaise"] = true;
+                    break;
 #endif
                 case "-I":
                     _loadPaths.AddRange(PopNextArg().Split(Path.PathSeparator));
@@ -187,6 +191,7 @@ namespace IronRuby.Hosting {
 
             string [,] rubyOptions = new string[,] {
                 { "-opt", "dummy" }, 
+                { "-useThreadAbortForSyncRaise", "For testing purposes" },
             };
 
             // Append the Ruby-specific options and the standard options
