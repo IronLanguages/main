@@ -1,0 +1,34 @@
+# ****************************************************************************
+#
+# Copyright (c) Microsoft Corporation. 
+#
+# This source code is subject to terms and conditions of the Microsoft Public License. A 
+# copy of the license can be found in the License.html file at the root of this distribution. If 
+# you cannot locate the  Microsoft Public License, please send an email to 
+# ironruby@microsoft.com. By using this source code in any fashion, you are agreeing to be bound 
+# by the terms of the Microsoft Public License.
+#
+# You must not remove this notice, or any other, from this software.
+#
+#
+# ****************************************************************************
+#
+
+$rakefile_path = File.dirname(__FILE__)
+require 'context'
+
+require 'tmpdir'
+include REXML
+
+verbose(false) # default to non-verbose output
+
+IRONRUBY_COMPILER     = 'ir.exe'
+CS_COMPILER           = ENV['mono'].nil? ? 'csc' : 'gmcs'
+EXCLUDED_DIRECTORIES  = ['.svn', 'obj', '.', '..']
+
+
+import 'rake/test.rake'
+import 'rake/compile.rake'
+import 'rake/package.rake'
+import 'rake/misc.rake'
+import 'rake/git.rake'

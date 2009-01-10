@@ -1,1 +1,0 @@
-puts 'z.rb.rb'

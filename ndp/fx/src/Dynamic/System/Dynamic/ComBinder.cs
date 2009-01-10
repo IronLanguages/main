@@ -21,7 +21,6 @@ using System.Collections.Generic;
 using System.Linq.Expressions;
 using System.Dynamic.Utils;
 
-// Will be moved into its own assembly soon
 [assembly: System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1020:AvoidNamespacesWithFewTypes", Scope = "namespace", Target = "System.Dynamic")]
 namespace System.Dynamic {
 
@@ -34,11 +33,18 @@ namespace System.Dynamic {
         /// Determines if an object is a COM object.
         /// </summary>
         /// <param name="value">The object to test.</param>
-        /// <returns>True if the object is a COM object, False otherwise.</returns>
+        /// <returns>true if the object is a COM object, false otherwise.</returns>
         public static bool IsComObject(object value) {
             return ComObject.IsComObject(value);
         }
 
+        /// <summary>
+        /// Tries to perform binding of the dynamic get member operation.
+        /// </summary>
+        /// <param name="binder">An instance of the <see cref="GetMemberBinder"/> that represents the details of the dynamic operation.</param>
+        /// <param name="instance">The target of the dynamic operation. </param>
+        /// <param name="result">The new <see cref="DynamicMetaObject"/> representing the result of the binding.</param>
+        /// <returns>true if operation was bound successfully; otherwise, false.</returns>
         public static bool TryBindGetMember(GetMemberBinder binder, DynamicMetaObject instance, out DynamicMetaObject result) {
             if (TryGetMetaObject(ref instance)) {
                 result = instance.BindGetMember(binder);
@@ -49,6 +55,14 @@ namespace System.Dynamic {
             }
         }
 
+        /// <summary>
+        /// Tries to perform binding of the dynamic set member operation.
+        /// </summary>
+        /// <param name="binder">An instance of the <see cref="SetMemberBinder"/> that represents the details of the dynamic operation.</param>
+        /// <param name="instance">The target of the dynamic operation.</param>
+        /// <param name="value">The <see cref="DynamicMetaObject"/> representing the value for the set member operation.</param>
+        /// <param name="result">The new <see cref="DynamicMetaObject"/> representing the result of the binding.</param>
+        /// <returns>true if operation was bound successfully; otherwise, false.</returns>
         public static bool TryBindSetMember(SetMemberBinder binder, DynamicMetaObject instance, DynamicMetaObject value, out DynamicMetaObject result) {
             if (TryGetMetaObject(ref instance)) {
                 result = instance.BindSetMember(binder, value);
@@ -59,6 +73,14 @@ namespace System.Dynamic {
             }
         }
 
+        /// <summary>
+        /// Tries to perform binding of the dynamic invoke operation.
+        /// </summary>    
+        /// <param name="binder">An instance of the <see cref="GetMemberBinder"/> that represents the details of the dynamic operation.</param>
+        /// <param name="instance">The target of the dynamic operation. </param>
+        /// <param name="args">An array of <see cref="DynamicMetaObject"/> instances - arguments to the invoke member operation.</param>
+        /// <param name="result">The new <see cref="DynamicMetaObject"/> representing the result of the binding.</param>
+        /// <returns>true if operation was bound successfully; otherwise, false.</returns>
         public static bool TryBindInvoke(InvokeBinder binder, DynamicMetaObject instance, DynamicMetaObject[] args, out DynamicMetaObject result) {
             if (TryGetMetaObject(ref instance)) {
                 result = instance.BindInvoke(binder, args);
@@ -69,6 +91,14 @@ namespace System.Dynamic {
             }
         }
 
+        /// <summary>
+        /// Tries to perform binding of the dynamic invoke member operation.
+        /// </summary>
+        /// <param name="binder">An instance of the <see cref="InvokeMemberBinder"/> that represents the details of the dynamic operation.</param>
+        /// <param name="instance">The target of the dynamic operation. </param>
+        /// <param name="args">An array of <see cref="DynamicMetaObject"/> instances - arguments to the invoke member operation.</param>
+        /// <param name="result">The new <see cref="DynamicMetaObject"/> representing the result of the binding.</param>
+        /// <returns>true if operation was bound successfully; otherwise, false.</returns>
         public static bool TryBindInvokeMember(InvokeMemberBinder binder, DynamicMetaObject instance, DynamicMetaObject[] args, out DynamicMetaObject result) {
             if (TryGetMetaObject(ref instance)) {
                 result = instance.BindInvokeMember(binder, args);
@@ -79,6 +109,14 @@ namespace System.Dynamic {
             }
         }
 
+        /// <summary>
+        /// Tries to perform binding of the dynamic get index operation.
+        /// </summary>
+        /// <param name="binder">An instance of the <see cref="GetMemberBinder"/> that represents the details of the dynamic operation.</param>
+        /// <param name="instance">The target of the dynamic operation. </param>
+        /// <param name="args">An array of <see cref="DynamicMetaObject"/> instances - arguments to the invoke member operation.</param>
+        /// <param name="result">The new <see cref="DynamicMetaObject"/> representing the result of the binding.</param>
+        /// <returns>true if operation was bound successfully; otherwise, false.</returns>
         public static bool TryBindGetIndex(GetIndexBinder binder, DynamicMetaObject instance, DynamicMetaObject[] args, out DynamicMetaObject result) {
             if (TryGetMetaObject(ref instance)) {
                 result = instance.BindGetIndex(binder, args);
@@ -89,6 +127,15 @@ namespace System.Dynamic {
             }
         }
 
+        /// <summary>
+        /// Tries to perform binding of the dynamic set index operation.
+        /// </summary>
+        /// <param name="binder">An instance of the <see cref="GetMemberBinder"/> that represents the details of the dynamic operation.</param>
+        /// <param name="instance">The target of the dynamic operation. </param>
+        /// <param name="args">An array of <see cref="DynamicMetaObject"/> instances - arguments to the invoke member operation.</param>
+        /// <param name="value">The <see cref="DynamicMetaObject"/> representing the value for the set index operation.</param>
+        /// <param name="result">The new <see cref="DynamicMetaObject"/> representing the result of the binding.</param>
+        /// <returns>true if operation was bound successfully; otherwise, false.</returns>
         public static bool TryBindSetIndex(SetIndexBinder binder, DynamicMetaObject instance, DynamicMetaObject[] args, DynamicMetaObject value, out DynamicMetaObject result) {
             if (TryGetMetaObject(ref instance)) {
                 result = instance.BindSetIndex(binder, args, value);
@@ -99,6 +146,12 @@ namespace System.Dynamic {
             }
         }
 
+        /// <summary>
+        /// Gets the member names associated with the object.
+        /// This function can operate only with objects for which <see cref="IsComObject"/> returns true.
+        /// </summary>
+        /// <param name="value">The object for which member names are requested.</param>
+        /// <returns>The collection of member names.</returns>
         public static IEnumerable<string> GetDynamicMemberNames(object value) {
             ContractUtils.RequiresNotNull(value, "value");
             ContractUtils.Requires(IsComObject(value), "value", Strings.ComObjectExpected);
@@ -106,7 +159,12 @@ namespace System.Dynamic {
             return ComObject.ObjectToComObject(value).MemberNames;
         }
 
-        // IEnumerable<KeyValuePair<string, object>> is a standard idiom
+        /// <summary>
+        /// Gets the data-like members and associated data for an object.
+        /// This function can operate only with objects for which <see cref="IsComObject"/> returns true.
+        /// </summary>
+        /// <param name="value">The object for which data members are requested.</param>
+        /// <returns>The collection of pairs that represent data member's names and their data.</returns>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1006:DoNotNestGenericTypesInMemberSignatures")]
         public static IEnumerable<KeyValuePair<string, object>> GetDynamicDataMembers(object value) {
             ContractUtils.RequiresNotNull(value, "value");

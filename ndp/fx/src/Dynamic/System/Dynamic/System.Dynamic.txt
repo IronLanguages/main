@@ -18,6 +18,7 @@
 
 InvalidArgumentValue=Invalid argument value
 ComObjectExpected=COM object is expected.
+CannotCall=Cannot perform call.
 
 ## ExceptionType=InvalidOperationException
 RemovingUnregisteredEvent=Removing an event handler that is not registered.
