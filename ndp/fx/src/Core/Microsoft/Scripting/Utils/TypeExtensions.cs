@@ -51,11 +51,6 @@ namespace System.Dynamic.Utils {
             }
         }
 
-        // Warning: This can be slower than you might expect due to the generic type argument & static method
-        internal static T CreateDelegate<T>(this MethodInfo methodInfo, object target) {
-            return (T)(object)methodInfo.CreateDelegate(typeof(T), target);
-        }
-
         internal static Type GetReturnType(this MethodBase mi) {
             return (mi.IsConstructor) ? mi.DeclaringType : ((MethodInfo)mi).ReturnType;
         }
@@ -72,38 +67,11 @@ namespace System.Dynamic.Utils {
             return pis;
         }
 
-        internal static bool IsParamArray(this ParameterInfo parameter) {
-            return parameter.IsDefined(typeof(ParamArrayAttribute), false);
-        }
-
-        internal static bool IsOutParameter(this ParameterInfo pi) {
-            // not using IsIn/IsOut properties as they are not available in Silverlight:
-            return (pi.Attributes & (ParameterAttributes.Out | ParameterAttributes.In)) == ParameterAttributes.Out;
-        }
-
-        /// <summary>
-        /// Returns <c>true</c> if the specified parameter is mandatory, i.e. is not optional and doesn't have a default value.
-        /// </summary>
-        internal static bool IsMandatoryParameter(this ParameterInfo pi) {
-            return (pi.Attributes & (ParameterAttributes.Optional | ParameterAttributes.HasDefault)) == 0;
-        }
-
-        internal static bool HasDefaultValue(this ParameterInfo pi) {
-            return (pi.Attributes & ParameterAttributes.HasDefault) != 0;
-        }
-
         internal static bool IsByRefParameter(this ParameterInfo pi) {
             // not using IsIn/IsOut properties as they are not available in Silverlight:
             if (pi.ParameterType.IsByRef) return true;
 
             return (pi.Attributes & (ParameterAttributes.Out)) == ParameterAttributes.Out;
-        }
-
-        internal static string FormatTypeName(this Type type) {
-            Debug.Assert(type != null);
-            var str = new StringBuilder();
-            FormatTypeName(str, type);
-            return str.ToString();
         }
 
         internal static string FormatSignature(this MethodBase method) {

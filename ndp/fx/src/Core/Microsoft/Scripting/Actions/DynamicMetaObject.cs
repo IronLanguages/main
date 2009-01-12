@@ -129,15 +129,6 @@ namespace System.Dynamic {
         }
 
         /// <summary>
-        /// Gets the value indicating whether the runtime value of the <see cref="DynamicMetaObject"/> is <see cref="IDynamicObject"/>.
-        /// </summary>
-        public bool IsDynamicObject {
-            get {
-                return _value is IDynamicObject;
-            }
-        }
-
-        /// <summary>
         /// Performs the binding of the dynamic conversion operation.
         /// </summary>
         /// <param name="binder">An instance of the <see cref="ConvertBinder"/> that represents the details of the dynamic operation.</param>
@@ -348,7 +339,7 @@ namespace System.Dynamic {
         /// </summary>
         /// <param name="objects">An array of <see cref="DynamicMetaObject"/> instances to extract expressions from.</param>
         /// <returns>The array of expressions.</returns>
-        public static Expression[] GetExpressions(DynamicMetaObject[] objects) {
+        internal static Expression[] GetExpressions(DynamicMetaObject[] objects) {
             ContractUtils.RequiresNotNull(objects, "objects");
 
             Expression[] res = new Expression[objects.Length];
@@ -361,21 +352,6 @@ namespace System.Dynamic {
             }
 
             return res;
-        }
-
-        /// <summary>
-        /// Creates an instance of <see cref="DynamicMetaObject"/> for a runtime value and the expression that represents it during the binding process.
-        /// </summary>
-        /// <param name="argValue">The runtime value to be represented by the <see cref="DynamicMetaObject"/>.</param>
-        /// <param name="parameterExpression">An expression to represent this <see cref="DynamicMetaObject"/> during the binding process.</param>
-        /// <returns>The new instance of <see cref="DynamicMetaObject"/>.</returns>
-        public static DynamicMetaObject ObjectToMetaObject(object argValue, Expression parameterExpression) {
-            IDynamicObject ido = argValue as IDynamicObject;
-            if (ido != null) {
-                return ido.GetMetaObject(parameterExpression);
-            } else {
-                return new DynamicMetaObject(parameterExpression, BindingRestrictions.Empty, argValue);
-            }
         }
 
         /// <summary>

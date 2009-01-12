@@ -1242,37 +1242,19 @@ namespace IronRuby.Runtime {
 
         #region Exceptions
 
-#if SILVERLIGHT // Thread.ExceptionState
-        public static Exception GetVisibleException(Exception e) { return e; }
-#else
-        /// <summary>
-        /// Thread#raise is implemented on top of System.Threading.Thread.ThreadAbort, and squirreling
-        /// the Ruby exception expected by the use in ThreadAbortException.ExceptionState.
-        /// </summary>
-        private class AsyncExceptionMarker {
-            internal Exception Exception { get; set; }
-            internal AsyncExceptionMarker(Exception e) {
-                this.Exception = e;
+        [Emitted]
+        public static void CheckForAsyncRaiseViaThreadAbort(RubyScope scope, System.Threading.ThreadAbortException exception) {
+            Exception visibleException = RubyUtils.GetVisibleException(exception);
+            if (exception == visibleException || visibleException == null) {
+                return;
+            } else {
+                RubyOps.SetCurrentExceptionAndStackTrace(scope, exception);
+                // We are starting a new exception throw here (with the downside that we will lose the full stack trace)
+                RubyExceptionData.ActiveExceptionHandled(visibleException);
+
+                throw visibleException;
             }
         }
-
-        public static void RaiseAsyncException(Thread thread, Exception e) {
-            thread.Abort(new AsyncExceptionMarker(e));
-        }
-
-        public static Exception GetVisibleException(Exception e) {
-            ThreadAbortException tae = e as ThreadAbortException;
-            if (tae != null) {
-                AsyncExceptionMarker asyncExceptionMarker = tae.ExceptionState as AsyncExceptionMarker;
-                if (asyncExceptionMarker != null) {
-                    return asyncExceptionMarker.Exception;
-                }
-            }
-            return e;
-        }
-
-#endif
-
         //
         // NOTE:
         // Exception Ops go directly to the current exception object. MRI ignores potential aliases.

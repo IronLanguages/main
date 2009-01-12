@@ -796,7 +796,7 @@ namespace Microsoft.Scripting.Interpretation {
             if (argValues.Length != 1) {
                 args = new DynamicMetaObject[argValues.Length - 1];
                 for (int i = 0; i < args.Length; i++) {
-                    args[i] = DynamicMetaObject.ObjectToMetaObject(
+                    args[i] = DynamicUtils.ObjectToMetaObject(
                         argValues[i + 1],
                         Expression.Constant(argValues[i + 1])
                     );
@@ -804,7 +804,7 @@ namespace Microsoft.Scripting.Interpretation {
             }
 
             DynamicMetaObject binding = action.Bind(
-                DynamicMetaObject.ObjectToMetaObject(
+                DynamicUtils.ObjectToMetaObject(
                     argValues[0],
                     Expression.Constant(argValues[0])
                 ),

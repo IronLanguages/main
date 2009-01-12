@@ -41,8 +41,8 @@ namespace IronRuby.Hosting {
             try {
                 return base.TryInteractiveAction();
             } catch (ThreadAbortException e) {
-                Exception visibleException = RubyOps.GetVisibleException(e);
-                if (visibleException == e) {
+                Exception visibleException = RubyUtils.GetVisibleException(e);
+                if (visibleException == e || visibleException == null) {
                     throw;
                 } else {
                     throw visibleException;

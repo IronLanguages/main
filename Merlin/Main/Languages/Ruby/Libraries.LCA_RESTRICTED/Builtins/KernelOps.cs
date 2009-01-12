@@ -666,7 +666,7 @@ namespace IronRuby.Builtins {
 
 #if DEBUG && !SILVERLIGHT
             if (RubyOptions.UseThreadAbortForSyncRaise) {
-                RubyOps.RaiseAsyncException(Thread.CurrentThread, exception);
+                RubyUtils.RaiseAsyncException(Thread.CurrentThread, exception);
             }
 #endif
             // rethrow semantics, preserves the backtrace associated with the exception:
@@ -683,7 +683,7 @@ namespace IronRuby.Builtins {
 
 #if DEBUG && !SILVERLIGHT
             if (RubyOptions.UseThreadAbortForSyncRaise) {
-                RubyOps.RaiseAsyncException(Thread.CurrentThread, exception);
+                RubyUtils.RaiseAsyncException(Thread.CurrentThread, exception);
             }
 #endif
             throw exception;
@@ -700,7 +700,7 @@ namespace IronRuby.Builtins {
             Exception exception = CreateExceptionToRaise(respondToStorage, storage0, storage1, context, obj, arg, backtrace);
 #if DEBUG && !SILVERLIGHT
             if (RubyOptions.UseThreadAbortForSyncRaise) {
-                RubyOps.RaiseAsyncException(Thread.CurrentThread, exception);
+                RubyUtils.RaiseAsyncException(Thread.CurrentThread, exception);
             }
 #endif
             // rethrow semantics, preserves the backtrace associated with the exception:

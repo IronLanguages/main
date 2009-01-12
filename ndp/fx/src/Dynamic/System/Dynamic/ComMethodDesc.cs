@@ -76,18 +76,6 @@ namespace System.Dynamic {
             }
         }
 
-        internal bool HasTypeInfo {
-            get {
-                return _hasTypeInfo;
-            }
-        }
-
-        internal string DispIdString {
-            get {
-                return String.Format(CultureInfo.InvariantCulture, "[DISPID={0}]", _memid);
-            }
-        }
-
         public string Name {
             get {
                 Debug.Assert(_name != null);

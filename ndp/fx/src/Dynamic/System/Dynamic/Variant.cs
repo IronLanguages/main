@@ -125,7 +125,7 @@ namespace System.Dynamic {
         }
 
         /// <summary>
-        /// Primitive types are the basic COM types. It includes valuetypes like ints, but also reference tyeps
+        /// Primitive types are the basic COM types. It includes valuetypes like ints, but also reference types
         /// like BStrs. It does not include composite types like arrays and user-defined COM types (IUnknown/IDispatch).
         /// </summary>
         internal static bool IsPrimitiveType(VarEnum varEnum) {
@@ -658,7 +658,7 @@ namespace System.Dynamic {
                 Debug.Assert(IsEmpty); // The setter can only be called once as VariantClear might be needed otherwise
                 VariantType = VarEnum.VT_BSTR;
                 if (value != null) {
-                   Marshal.GetNativeVariantForObject(value, UnsafeMethods.ConvertVariantByrefToPtr(ref this));
+                    Marshal.GetNativeVariantForObject(value, UnsafeMethods.ConvertVariantByrefToPtr(ref this));
                 }
             }
         }
@@ -684,7 +684,7 @@ namespace System.Dynamic {
                 Debug.Assert(IsEmpty); // The setter can only be called once as VariantClear might be needed otherwise
                 VariantType = VarEnum.VT_UNKNOWN;
                 if (value != null) {
-                   _typeUnion._unionTypes._unknown = Marshal.GetIUnknownForObject(value);
+                    _typeUnion._unionTypes._unknown = Marshal.GetIUnknownForObject(value);
                 }
             }
         }
@@ -710,7 +710,7 @@ namespace System.Dynamic {
                 Debug.Assert(IsEmpty); // The setter can only be called once as VariantClear might be needed otherwise
                 VariantType = VarEnum.VT_DISPATCH;
                 if (value != null) {
-                   _typeUnion._unionTypes._unknown = Marshal.GetIDispatchForObject(value);
+                    _typeUnion._unionTypes._unknown = Marshal.GetIDispatchForObject(value);
                 }
             }
         }
@@ -736,7 +736,7 @@ namespace System.Dynamic {
             set {
                 Debug.Assert(IsEmpty); // The setter can only be called once as VariantClear might be needed otherwise
                 if (value != null) {
-                    Marshal.GetNativeVariantForObject(value, UnsafeMethods.ConvertVariantByrefToPtr(ref this));
+                    UnsafeMethods.InitVariantForObject(value, ref this);
                 }
             }
         }

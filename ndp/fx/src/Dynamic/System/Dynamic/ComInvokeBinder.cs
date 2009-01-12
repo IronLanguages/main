@@ -119,6 +119,7 @@ namespace System.Dynamic {
 
         private static Type MarshalType(DynamicMetaObject mo) {
             Type marshalType = mo.LimitType;
+
             if (ComBinderHelpers.IsByRef(mo)) {
                 // Null just means that null was supplied.
                 if (marshalType == typeof(DynamicNull)) {
@@ -131,19 +132,18 @@ namespace System.Dynamic {
 
         internal DynamicMetaObject Invoke() {
             _keywordArgNames = GetArgumentNames();
-            // will not include implicit instance argument (if any)
-            Type[] explicitArgTypes = _args.Map(a => a.LimitType);
-            Type[] marshalArgTypes = _args.Map(a => MarshalType(a));
-
-            Expression[] explicitArgExprs = _args.Map(a => a.Expression);
-            _totalExplicitArgs = explicitArgTypes.Length;
-
-            _varEnumSelector = new VarEnumSelector(marshalArgTypes);
+            _totalExplicitArgs = _args.Length;
+            
+            Type[] marshalArgTypes = new Type[_args.Length];
 
             // We already tested the instance, so no need to test it again
-            for (int i = 0; i < explicitArgTypes.Length; i++) {
-                _restrictions = _restrictions.Merge(BindingRestrictions.GetTypeRestriction(explicitArgExprs[i], explicitArgTypes[i]));
+            for (int i = 0; i < _args.Length; i++) {
+                DynamicMetaObject curMo = _args[i];
+                _restrictions = _restrictions.Merge(BindingRestrictions.GetTypeRestriction(curMo.Expression, curMo.LimitType));
+                marshalArgTypes[i] = MarshalType(curMo);
             }
+
+            _varEnumSelector = new VarEnumSelector(marshalArgTypes);
 
             return new DynamicMetaObject(
                 CreateScope(MakeIDispatchInvokeTarget()),
@@ -488,14 +488,17 @@ namespace System.Dynamic {
         /// Gets expressions to access all the arguments. This includes the instance argument.
         /// </summary>
         private Expression[] MakeArgumentExpressions() {
-            if (_instance == null) {
-                return DynamicMetaObject.GetExpressions(_args);
+            Expression[] res;
+            int copy = 0;
+            if (_instance != null) {
+                res = new Expression[_args.Length + 1];
+                res[copy++] = _instance;
+            } else {
+                res = new Expression[_args.Length];
             }
 
-            Expression[] res = new Expression[_args.Length + 1];
-            res[0] = _instance;
             for (int i = 0; i < _args.Length; i++) {
-                res[i + 1] = _args[i].Expression;
+                res[copy++] = _args[i].Expression;
             }
             return res;
         }
