@@ -13,11 +13,13 @@
  *
  * ***************************************************************************/
 
+using System;
+using System.Diagnostics;
+using System.Reflection;
 using Microsoft.Scripting.Actions;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 using IronRuby.Builtins;
-using System.Diagnostics;
 
 namespace IronRuby.Runtime.Calls {
 
@@ -102,6 +104,28 @@ namespace IronRuby.Runtime.Calls {
             throw Assert.Unreachable;
         }
 
+        /// <summary>
+        /// Gets all the CLR members represented by this member info. 
+        /// </summary>
+        public virtual MemberInfo/*!*/[]/*!*/ GetMembers() {
+            throw Assert.Unreachable;
+        }
+
+        /// <summary>
+        /// Returns a copy of this member info that groups only those members of this member info that are generic
+        /// and of generic arity equal to the length of the given array of type arguments. Returns null if there are no such generic members.
+        /// All the members in the resulting info are constructed generic methods bound to the given type arguments.
+        /// </summary>
+        public virtual RubyMemberInfo TryBindGenericParameters(Type/*!*/[]/*!*/ typeArguments) {
+            return null;
+        }
+
+        public virtual RubyMemberInfo TrySelectOverload(Type/*!*/[]/*!*/ parameterTypes) {
+            throw Assert.Unreachable;
+        }
+
+        #region Dynamic Operations
+
         internal virtual void BuildCallNoFlow(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args, string/*!*/ name) {
             throw Assert.Unreachable;
         }
@@ -119,5 +143,7 @@ namespace IronRuby.Runtime.Calls {
             BuildSuperCallNoFlow(metaBuilder, args, name, declaringModule);
             metaBuilder.BuildControlFlow(args);
         }
+
+        #endregion
     }
 }

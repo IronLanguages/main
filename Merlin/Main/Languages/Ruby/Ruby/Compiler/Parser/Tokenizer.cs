@@ -26,6 +26,7 @@ using Microsoft.Scripting.Utils;
 using IronRuby.Builtins;
 using IronRuby.Compiler.Ast;
 using System.Text.RegularExpressions;
+using IronRuby.Runtime;
 
 namespace IronRuby.Compiler {
     internal enum LexicalState {
@@ -624,25 +625,27 @@ namespace IronRuby.Compiler {
                 switch (token) {
                     case Tokens.MultiLineComment:
                     case Tokens.SingleLineComment:
-                        if (_verbatim) {
-                            return token;
-                        }
-                        continue;
+                        break;
 
                     case Tokens.Whitespace:
                         whitespaceSeen = true;
-                        continue;
+                        break;
 
                     case Tokens.EndOfLine: // not considered whitespace
                     case Tokens.InvalidCharacter:
-                        continue;
+                        break;
 
                     case Tokens.EndOfFile:
                         _eofReached = true;
-                        break;
+                        return token;
+
+                    default:
+                        return token;
                 }
 
-                return token;
+                if (_verbatim) {
+                    return token;
+                }
             }
         }
 
@@ -3396,6 +3399,114 @@ namespace IronRuby.Compiler {
             get { return _unterminatedToken; }
         }
 
+        #region ParseInteger
+
+        private static int NextChar(string/*!*/ str, ref int i) {
+            return i == str.Length ? -1 : str[i++];
+        }
+
+        public static IntegerValue ParseInteger(string/*!*/ str, int @base) {
+            int i = 0;
+            return ParseInteger(str, @base, ref i);
+        }
+        
+        // @base == 0:
+        //    [:whitespace:]*[+-]?(0x|0X|ob|0B|0d|0D|0o|0O)?([:base-digit:][_]?)*[:base-digit:].*
+        // otherwise:
+        //    [:whitespace:]*[+-]?([:base-digit:][_]?)*[:base-digit:].*
+        public static IntegerValue ParseInteger(string/*!*/ str, int @base, ref int i) {
+            ContractUtils.RequiresNotNull(str, "str");
+
+            int c;
+            do { c = NextChar(str, ref i); } while (IsWhiteSpace(c));
+
+            int sign;
+            if (c == '+') {
+                sign = +1;
+                c = NextChar(str, ref i);
+            } else if (c == '-') {
+                sign = -1;
+                c = NextChar(str, ref i);
+            } else {
+                sign = +1;
+            }
+
+            if (c == '0') {
+                c = NextChar(str, ref i);
+                int newBase = 0;
+                switch (c) {
+                    case 'x':
+                    case 'X': newBase = 16; break;
+                    case 'b':
+                    case 'B': newBase = 2; break;
+                    case 'd':
+                    case 'D': newBase = 10; break;
+                    case 'o':
+                    case 'O': newBase = 8; break;
+                }
+
+                if (newBase != 0) {
+                    // no base specified -> set the base
+                    // base specified -> skip prefix of that base
+                    if (@base == 0 || newBase == @base) {
+                        @base = newBase;
+                        c = NextChar(str, ref i);
+                    }
+                } else if (@base == 0) {
+                    @base = 8;
+                }
+            } else if (@base == 0) {
+                @base = 10;
+            }
+
+            bool underAllowed = false;
+            long value = 0;
+            int digitCount = 0;
+            int start = i - 1;
+            while (true) {
+                if (c != '_') {
+                    int digit = ToDigit(c);
+                    if (digit < @base) {
+                        if (value <= Int32.MaxValue) {
+                            value = value * @base + digit;
+                        }
+                        digitCount++;
+                    } else {
+                        break;
+                    }
+                    underAllowed = true;
+                } else if (underAllowed) {
+                    underAllowed = false;
+                } else {
+                    break;
+                }
+                c = NextChar(str, ref i);
+            }
+
+            if (digitCount == 0) {
+                return 0;
+            }
+            
+            if (value <= Int32.MaxValue) {
+                value *= sign;
+                if (value >= Int32.MinValue && value <= Int32.MaxValue) {
+                    return (int)value;
+                } else {
+                    return BigInteger.Create(value);
+                }
+            } else {
+                var parser = new BignumParser();
+                parser.Position = start;
+                parser.Buffer = str.ToCharArray();
+                
+                return parser.Parse(digitCount, @base) * sign;
+            }
+        }
+
+        #endregion
+
+        #region TryParseDouble
+
         private static int Read(string/*!*/ str, ref int i) {
             i++;
             return (i < str.Length) ? str[i] : -1;
@@ -3471,6 +3582,10 @@ namespace IronRuby.Compiler {
             return success;
         }
 
+        #endregion
+
+        #region TryParseEncodingHeader
+
         private const string EncodingHeaderPattern = @"^[#].*?coding\s*[:=]\s*(?<encoding>[a-z0-9_-]+)";
 
         // reads case insensitively, doesn't rewind the reader if the content doesn't match, doesn't read a line unless it starts with '#':
@@ -3504,6 +3619,10 @@ namespace IronRuby.Compiler {
 
             return false;
         }
+
+        #endregion
+
+        #region Names
 
         public static bool IsConstantName(string name) {
             return !String.IsNullOrEmpty(name) 
@@ -3547,6 +3666,8 @@ namespace IronRuby.Compiler {
 
             return true;
         }
+
+        #endregion
 
         #endregion
 

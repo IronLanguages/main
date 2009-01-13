@@ -1497,6 +1497,20 @@ namespace IronRuby.Runtime {
         }
 
         [Emitted] // ProtocolConversionAction
+        public static IntegerValue ToIntegerValidator(string/*!*/ className, object obj) {
+            if (obj is int) {
+                return new IntegerValue((int)obj);
+            }
+
+            var bignum = obj as BigInteger;
+            if ((object)bignum != null) {
+                return new IntegerValue(bignum);
+            }
+
+            throw new InvalidOperationException(String.Format("{0}#to_int/to_i should return Integer", className));
+        }
+
+        [Emitted] // ProtocolConversionAction
         public static Exception/*!*/ CreateTypeConversionError(string/*!*/ fromType, string/*!*/ toType) {
             return RubyExceptions.CreateTypeConversionError(fromType, toType);
         }

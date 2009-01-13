@@ -24,6 +24,7 @@ using Microsoft.Scripting.Actions;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 using Microsoft.Scripting.Generation;
+using Microsoft.Scripting;
 
 namespace IronRuby.Builtins {
 
@@ -656,8 +657,13 @@ namespace IronRuby.Builtins {
 
         internal static RubyArray/*!*/ GetMethods(RubyModule/*!*/ self, bool inherited, RubyMethodAttributes attributes) {
             var result = new RubyArray();
+            var symbolicNames = self.Context.RubyOptions.Compatibility > RubyCompatibility.Ruby18;
             self.ForEachMember(inherited, attributes, delegate(string/*!*/ name, RubyMemberInfo/*!*/ member) {
-                result.Add(MutableString.Create(name));
+                if (symbolicNames) {
+                    result.Add(SymbolTable.StringToId(name));
+                } else {
+                    result.Add(MutableString.Create(name));
+                }
             });
             return result;
         }

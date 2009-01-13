@@ -28,6 +28,8 @@ using Microsoft.Scripting.Math;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 using Microsoft.Scripting.Generation;
+using IronRuby.Compiler;
+using System.IO;
 
 namespace IronRuby.Builtins {
 
@@ -97,13 +99,27 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("Integer", RubyMethodAttributes.PrivateInstance)]
         [RubyMethod("Integer", RubyMethodAttributes.PublicSingleton)]
-        public static object/*!*/ ToInteger(RubyContext/*!*/ context, object self, object obj) {
-            // TODO: MRI converts strings with base prefix ("0x1", "0d1", "0o1") and octals "000" as well
-            // should the protocol do that or is is a specificity of this method?
-            int fixnum;
-            BigInteger bignum;
-            Protocols.ConvertToInteger(context, obj, out fixnum, out bignum);
-            return (object)bignum ?? ScriptingRuntimeHelpers.Int32ToObject(fixnum);
+        public static object/*!*/ ToInteger(object self, [NotNull]MutableString/*!*/ value) {
+            var str = value.ConvertToString();
+            int i = 0;
+            object result = Tokenizer.ParseInteger(str, 0, ref i).ToObject();
+            
+            while (i < str.Length && Tokenizer.IsWhiteSpace(str[i])) {
+                i++;
+            }
+
+            if (i < str.Length) {
+                throw RubyExceptions.CreateArgumentError(String.Format("invalid value for Integer: \"{0}\"", str));
+            }
+
+            return result;
+        }
+
+        [RubyMethod("Integer", RubyMethodAttributes.PrivateInstance)]
+        [RubyMethod("Integer", RubyMethodAttributes.PublicSingleton)]
+        public static object/*!*/ ToInteger(ConversionStorage<IntegerValue>/*!*/ integerConversion, RubyContext/*!*/ context, object self, object value) {
+            var integer = Protocols.ConvertToInteger(integerConversion, context, value);
+            return integer.IsFixnum ? ScriptingRuntimeHelpers.Int32ToObject(integer.Fixnum) : integer.Bignum;
         }
 
         [RubyMethod("String", RubyMethodAttributes.PrivateInstance)]
@@ -548,16 +564,24 @@ namespace IronRuby.Builtins {
         // this overload is called only if the first parameter is string:
         [RubyMethod("printf", RubyMethodAttributes.PrivateInstance)]
         [RubyMethod("printf", RubyMethodAttributes.PublicSingleton)]
-        public static void PrintFormatted(ConversionStorage<int>/*!*/ fixnumCast, ConversionStorage<MutableString>/*!*/ tosConversion, 
+        public static void PrintFormatted(
+            ConversionStorage<IntegerValue>/*!*/ integerConversion,
+            ConversionStorage<int>/*!*/ fixnumCast, 
+            ConversionStorage<MutableString>/*!*/ tosConversion,
+            ConversionStorage<MutableString>/*!*/ stringCast, 
             BinaryOpStorage/*!*/ writeStorage, 
             RubyContext/*!*/ context, object self, [NotNull]MutableString/*!*/ format, [NotNull]params object[]/*!*/ args) {
 
-            PrintFormatted(fixnumCast, tosConversion, writeStorage, context, self, context.StandardOutput, format, args);
+            PrintFormatted(integerConversion, fixnumCast, tosConversion, stringCast, writeStorage, context, self, context.StandardOutput, format, args);
         }
 
         [RubyMethod("printf", RubyMethodAttributes.PrivateInstance)]
         [RubyMethod("printf", RubyMethodAttributes.PublicSingleton)]
-        public static void PrintFormatted(ConversionStorage<int>/*!*/ fixnumCast, ConversionStorage<MutableString>/*!*/ tosConversion, 
+        public static void PrintFormatted(
+            ConversionStorage<IntegerValue>/*!*/ integerConversion, 
+            ConversionStorage<int>/*!*/ fixnumCast, 
+            ConversionStorage<MutableString>/*!*/ tosConversion,
+            ConversionStorage<MutableString>/*!*/ stringCast, 
             BinaryOpStorage/*!*/ writeStorage,
             RubyContext/*!*/ context, object self, object io, [NotNull]object/*!*/ format, [NotNull]params object[]/*!*/ args) {
 
@@ -566,7 +590,9 @@ namespace IronRuby.Builtins {
             // TODO: BindAsObject attribute on format?
             // format cannot be strongly typed to MutableString due to ambiguity between signatures (MS, object) vs (object, MS)
             var site = writeStorage.GetCallSite("write");
-            site.Target(site, context, io, Sprintf(fixnumCast, tosConversion, context, self, Protocols.CastToString(context, format), args));
+            site.Target(site, context, io,
+                Sprintf(integerConversion, fixnumCast, tosConversion, context, self, Protocols.CastToString(stringCast, context, format), args)
+            );
         }
 
         [RubyMethod("putc", RubyMethodAttributes.PrivateInstance)]
@@ -842,10 +868,11 @@ namespace IronRuby.Builtins {
         [RubyMethod("format", RubyMethodAttributes.PublicSingleton)]
         [RubyMethod("sprintf", RubyMethodAttributes.PrivateInstance)]
         [RubyMethod("sprintf", RubyMethodAttributes.PublicSingleton)]
-        public static MutableString/*!*/ Sprintf(ConversionStorage<int>/*!*/ fixnumCast, ConversionStorage<MutableString>/*!*/ tosConversion,
+        public static MutableString/*!*/ Sprintf(ConversionStorage<IntegerValue>/*!*/ integerCast, ConversionStorage<int>/*!*/ fixnumCast, 
+            ConversionStorage<MutableString>/*!*/ tosConversion,
             RubyContext/*!*/ context, object self, [DefaultProtocol, NotNull]MutableString/*!*/ format, [NotNull]params object[] args) {
 
-            return new StringFormatter(fixnumCast, tosConversion, context, format.ConvertToString(), args).Format();
+            return new StringFormatter(integerCast, fixnumCast, tosConversion, context, format.ConvertToString(), args).Format();
         }
 
         //srand
@@ -1211,9 +1238,9 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("respond_to?")]
         public static bool RespondTo(RubyContext/*!*/ context, object self, 
-            [DefaultProtocol]string/*!*/ methodName, [DefaultProtocol, Optional]bool includePrivate) {
+            [DefaultProtocol]string/*!*/ methodName, [DefaultParameterValue(null)]object includePrivate) {
 
-            return context.ResolveMethod(self, methodName, includePrivate) != null;
+            return context.ResolveMethod(self, methodName, Protocols.IsTrue(includePrivate)) != null;
         }
 
         #region __send__, send

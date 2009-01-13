@@ -330,11 +330,14 @@ namespace IronRuby.Builtins {
         #region %
 
         [RubyMethod("%")]
-        public static MutableString/*!*/ Format(ConversionStorage<int>/*!*/ fixnumCast, ConversionStorage<MutableString>/*!*/ tosConversion, 
+        public static MutableString/*!*/ Format(
+            ConversionStorage<IntegerValue>/*!*/ integerCast,
+            ConversionStorage<int>/*!*/ fixnumCast, 
+            ConversionStorage<MutableString>/*!*/ tosConversion, 
             RubyContext/*!*/ context, MutableString/*!*/ self, object arg) {
 
             IList args = arg as IList ?? new object[] { arg };
-            StringFormatter formatter = new StringFormatter(fixnumCast, tosConversion, context, self.ConvertToString(), args);
+            StringFormatter formatter = new StringFormatter(integerCast, fixnumCast, tosConversion, context, self.ConvertToString(), args);
             return formatter.Format().TaintBy(self);
         }
 
@@ -2311,94 +2314,22 @@ namespace IronRuby.Builtins {
 
         #region to_i, hex, oct
 
-        private static string/*!*/ StripWhitespace(MutableString/*!*/ str) {
-            int i = 0;
-            while (i < str.Length) {
-                char c = str.GetChar(i);
-                if (c == ' ' || c == '_' || c == '\t' || c == '\n' || c == '\r') {
-                    i += 1;
-                } else {
-                    return str.GetSlice(i).ConvertToString().Replace("_", "");
-                }
-            }
-            return str.ConvertToString().Replace("_", "");
-        }
-
-        private static string/*!*/ ParseSign(string/*!*/ number, ref bool isNegative) {
-            if (number[0] == '-') {
-                isNegative = true;
-                number = number.Remove(0, 1);
-            }
-            return number;
-        }
-
-        // This method only gets called if we are explicitly specifying base via argument to to_i
-        private static object ParseInteger(RubyContext/*!*/ context, string/*!*/ str, int @base) {
-            if (@base == 0) {
-                return ParseInteger(context, str);
-            }
-
-            if (str.Length == 0) {
-                return ScriptingRuntimeHelpers.Int32ToObject(0);
-            }
-
-            bool isNegative = false;
-            str = ParseSign(str, ref isNegative);
-
-            Tokenizer.BignumParser parser = new Tokenizer.BignumParser();
-            parser.Position = 0;
-            parser.Buffer = str.ToCharArray();
-            BigInteger result = parser.Parse(str.Length, @base);
-            int intValue;
-            if (result.AsInt32(out intValue))
-                return ScriptingRuntimeHelpers.Int32ToObject(isNegative ? -intValue : intValue);
-            else
-                return isNegative ? BigInteger.Negate(result) : result;
-        }
-
-        // This method uses the tokenizer to auto-detect the base type -- happens when agument to to_i is 0
-        private static object ParseInteger(RubyContext/*!*/ context, string/*!*/ str) {
-            bool isNegative = false;
-            if (str.Length == 0) {
-                return ScriptingRuntimeHelpers.Int32ToObject(0);
-            }
-
-            str = ParseSign(str, ref isNegative);
-
-            Tokenizer tokenizer = new Tokenizer();
-            tokenizer.Initialize(new StringReader(str));
-            Tokens token = tokenizer.GetNextToken();
-
-            TokenValue value = tokenizer.TokenValue;
-            if (token == Tokens.Integer)
-                return ScriptingRuntimeHelpers.Int32ToObject(isNegative ? -value.Integer1: value.Integer1);
-            else if (token == Tokens.BigInteger)
-                return isNegative ? BigInteger.Negate(value.BigInteger) : value.BigInteger;
-            else
-                return ScriptingRuntimeHelpers.Int32ToObject(0);
-        }
-
         [RubyMethod("to_i")]
-        public static object ToInteger(RubyContext/*!*/ context, MutableString/*!*/ self) {
-            return ParseInteger(context, StripWhitespace(self));
-        }
-
-        [RubyMethod("to_i")]
-        public static object ToInteger(RubyContext/*!*/ context, MutableString/*!*/ self, [DefaultProtocol]int @base) {
+        public static object/*!*/ ToInteger(MutableString/*!*/ self, [DefaultProtocol, DefaultParameterValue(10)]int @base) {
             if (@base == 1 || @base < 0 || @base > 36) {
                 throw RubyExceptions.CreateArgumentError(String.Format("illegal radix {0}", @base));
             }
-            return ParseInteger(context, StripWhitespace(self), @base);
+            return Tokenizer.ParseInteger(self.ConvertToString(), @base).ToObject();
         }
 
         [RubyMethod("hex")]
-        public static object ToIntegerHex(RubyContext/*!*/ context, MutableString/*!*/ self) {
-            return ParseInteger(context, StripWhitespace(self), 16);
+        public static object/*!*/ ToIntegerHex(MutableString/*!*/ self) {
+            return Tokenizer.ParseInteger(self.ConvertToString(), 16).ToObject();
         }
 
         [RubyMethod("oct")]
-        public static object ToIntegerOctal(RubyContext/*!*/ context, MutableString/*!*/ self) {
-            return ParseInteger(context, StripWhitespace(self), 8);
+        public static object/*!*/ ToIntegerOctal(MutableString/*!*/ self) {
+            return Tokenizer.ParseInteger(self.ConvertToString(), 8).ToObject();
         }
 
         #endregion

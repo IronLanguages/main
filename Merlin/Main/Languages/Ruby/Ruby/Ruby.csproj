@@ -188,6 +188,7 @@
     <Compile Include="Runtime\Calls\BlockDispatchers.cs" />
     <Compile Include="Builtins\RubyObject.cs" />
     <Compile Include="Builtins\RubyObject.Meta.cs" />
+    <Compile Include="Runtime\IntegerValue.cs" />
     <Compile Include="Runtime\IRubyObjectState.cs" />
     <Compile Include="Runtime\EqualityComparer.cs" />
     <Compile Include="Builtins\Hash.cs" />
@@ -318,6 +319,7 @@
     <Compile Include="Runtime\RuntimeFlowControl.cs" />
     <Compile Include="Runtime\RuntimeErrorSink.cs" />
     <Compile Include="Runtime\StackUnwinder.cs" />
+    <Compile Include="Runtime\Union.cs" />
     <Compile Include="Runtime\Utils.cs" />
     <Compile Include="Builtins\MatchData.Subclass.cs" />
     <Compile Include="Builtins\Range.Subclass.cs" />

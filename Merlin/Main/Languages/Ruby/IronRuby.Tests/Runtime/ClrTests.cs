@@ -222,6 +222,239 @@ none
 ");
         }
 
+#pragma warning disable 67 // event not used
+        public class GenericMethods {
+            public static string M0<T>() {
+                return "M0<" + typeof(T).Name + ">()";
+            }
+
+            public static string M1() {
+                return "M1()";
+            }
+            
+            public static string M1<T>() {
+                return "M1<" + typeof(T).Name + ">()";
+            }
+
+            public static string M1<S, T>() {
+                return "M1<" + typeof(S).Name + ", " + typeof(T).Name + ">()";
+            }
+
+            public static string M1<T>(int foo) {
+                return "M1<" + typeof(T).Name + ">(Fixnum)";
+            }
+
+            public static string M2(int foo) {
+                return "M2(Fixnum)";
+            }
+
+            public static string M2<T>(int foo) {
+                return "M2<" + typeof(T).Name + ">(Fixnum)";
+            }
+
+            public static int Field;
+            public static object Property { get; set; }
+            public static event Action<Object> Event;
+        }
+#pragma warning restore
+
+        public void ClrGenericMethods1() {
+            Context.ObjectClass.SetConstant("GM", Context.GetClass(typeof(GenericMethods)));
+            AssertOutput(() => CompilerTest(@"
+m = GM.method(:M1)
+puts m.call
+puts m.of().call
+puts m.of(String).call
+puts m.of(String, Fixnum).call
+puts m.call(1) rescue p $!
+puts m.of(String, String, String) rescue p $!
+"), @"
+M1()
+M1()
+M1<MutableString>()
+M1<MutableString, Int32>()
+#<ArgumentError: wrong number or type of arguments for `M1'>
+#<ArgumentError: wrong number of generic arguments for `M1'>
+"
+            );
+
+            AssertOutput(() => CompilerTest(@"
+m = GM.method(:M2)
+puts m.call(1)
+
+puts GM.method(:field).of(Fixnum) rescue p $!
+puts GM.method(:property).of(Fixnum) rescue p $!
+puts GM.method(:event).of(Fixnum) rescue p $!
+"), @"
+M2(Fixnum)
+#<ArgumentError: wrong number of generic arguments for `field'>
+#<ArgumentError: wrong number of generic arguments for `property'>
+#<ArgumentError: wrong number of generic arguments for `event'>
+"
+            );
+        }
+
+        public class OverloadedMethods {
+            public static string M1(RubyScope scope) {
+                return "M1()";
+            }
+
+            public static string M1(RubyContext context, MutableString foo) {
+                return "M1(String)";
+            }
+
+            public static string M1(RubyContext context, BinaryOpStorage storage, double foo) {
+                return "M1(Float)";
+            }
+
+            public static string M1(int foo, MutableString bar) {
+                return "M1(Fixnum, String)";
+            }
+
+            public static string M1(MutableString foo, MutableString bar) {
+                return "M1(String, String)";
+            }
+
+            public static string M1(int foo, params object[] bar) {
+                return "M1(Fixnum, Object*)";
+            }
+
+            public static string M1(int foo, object bar) {
+                return "M1(Fixnum, Object)";
+            }
+
+            public static string M1(int foo) {
+                return "M1(Fixnum)";
+            }
+
+
+            public static string M2(int foo) {
+                return "M2(Fixnum)";
+            }
+
+            public static string M2(object foo) {
+                return "M2(Object)";
+            }
+
+            public static string M2<T>(int foo) {
+                return "M2<" + typeof(T).Name + ">(Fixnum)";
+            }
+
+            public static string M2<T>(object foo) {
+                return "M2<" + typeof(T).Name + ">(Object)";
+            }
+        }
+
+        public void ClrOverloadSelection1() {
+            Context.ObjectClass.SetConstant("OM", Context.GetClass(typeof(OverloadedMethods)));
+            Runtime.LoadAssembly(typeof(object).Assembly);
+
+            AssertOutput(() => CompilerTest(@"
+m = OM.method(:M1)
+puts m.overloads.call
+puts m.overloads(String).call('')
+puts m.overloads(Float).call(1.0)
+puts m.overloads(Fixnum, String).call(1, '')
+puts m.overloads(String, String).call('', '')
+puts m.overloads(Fixnum, System::Array.of(Object)).call(1, 2, 3)
+puts m.overloads(Fixnum, Object).call(1, 2)
+puts m.overloads(Fixnum).call(1)
+"), @"
+M1()
+M1(String)
+M1(Float)
+M1(Fixnum, String)
+M1(String, String)
+M1(Fixnum, Object*)
+M1(Fixnum, Object)
+M1(Fixnum)
+"
+            );
+
+            AssertOutput(() => CompilerTest(@"
+m = OM.method(:M2)
+puts m.clr_members.size
+puts m.of(Object).clr_members.size
+puts m.overloads(Object).clr_members.size
+puts m.of(Object).overloads(Object).clr_members.size
+puts m.overloads(Object).of(Object).clr_members.size
+"), @"
+4
+2
+2
+1
+1
+"
+            );
+
+            AssertOutput(() => CompilerTest(@"
+m = OM.method(:M2)
+puts m.call(1)
+puts m.of(Float).call('')
+puts m.of(Float).overloads(Fixnum).call(1)
+puts m.overloads(Object).of(String).call(1)
+"), @"
+M2(Fixnum)
+M2<Double>(Object)
+M2<Double>(Fixnum)
+M2<MutableString>(Object)
+"
+            );
+
+            AssertOutput(() => CompilerTest(@"
+m = OM.method(:M2)
+m.overloads(Object, String) rescue p $!
+m.overloads() rescue p $!
+"), @"
+#<ArgumentError: no overload of `M2' matches given parameter types>
+#<ArgumentError: no overload of `M2' matches given parameter types>
+"
+            );
+
+            // overlods called on a Ruby method
+            AssertOutput(() => CompilerTest(@"
+def foo a,b
+  [a,b]
+end
+
+def bar a,*b
+  [a,*b]
+end
+
+p method(:foo).overloads(Object, Object).call(1,2)
+method(:foo).overloads(Object) rescue p $!
+
+p method(:bar).overloads(Object).call(1)
+p method(:bar).overloads(Object, Object).call(1,2)
+p method(:bar).overloads(Object, Object, Object).call(1,2,3)
+"), @"
+[1, 2]
+#<ArgumentError: no overload of `foo' matches given parameter types>
+[1]
+[1, 2]
+[1, 2, 3]
+"
+            );
+
+            // overlods called on a Ruby attribute accessor
+            AssertOutput(() => CompilerTest(@"
+class C
+  attr_reader :foo
+  attr_writer :foo
+  
+  c = new
+  c.foo = 1
+  p instance_method(:foo).overloads.bind(c).call
+  instance_method(:foo=).overloads(Object).bind(c).call(2)
+  p c.foo
+end
+"), @"
+1
+2
+"
+            );
+        }
+
         public class ClassWithInterfaces1 : IEnumerable {
             public IEnumerator GetEnumerator() {
                 yield return 1;
@@ -559,6 +792,5 @@ puts $d.p
 test
 ");
         }
-
     }
 }

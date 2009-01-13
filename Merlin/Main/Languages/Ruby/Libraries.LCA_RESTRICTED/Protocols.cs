@@ -41,8 +41,6 @@ namespace IronRuby.Runtime {
 
         private static readonly CallSite<Func<CallSite, RubyContext, object, object>>/*!*/
             _ToF = CallSite<Func<CallSite, RubyContext, object, object>>.Create(RubySites.InstanceCallAction("to_f")),
-            _ToI = CallSite<Func<CallSite, RubyContext, object, object>>.Create(RubySites.InstanceCallAction("to_i")),
-            _ToInt = CallSite<Func<CallSite, RubyContext, object, object>>.Create(RubySites.InstanceCallAction("to_int")),
             _ToStr = CallSite<Func<CallSite, RubyContext, object, object>>.Create(RubySites.InstanceCallAction("to_str")),
             _ToA = CallSite<Func<CallSite, RubyContext, object, object>>.Create(RubySites.InstanceCallAction("to_a")),
             _ToAry = CallSite<Func<CallSite, RubyContext, object, object>>.Create(RubySites.InstanceCallAction("to_ary"));
@@ -59,7 +57,7 @@ namespace IronRuby.Runtime {
         /// <remarks>
         /// Use this helper to downgrade BigIntegers as necessary.
         /// </remarks>
-        public static object Normalize(BigInteger x) {
+        public static object/*!*/ Normalize(BigInteger/*!*/ x) {
             int result;
             if (x.AsInt32(out result)) {
                 return ScriptingRuntimeHelpers.Int32ToObject(result);
@@ -156,11 +154,11 @@ namespace IronRuby.Runtime {
         /// Throws if conversion fails
         /// </summary>
         public static double ConvertToFloat(RubyContext/*!*/ context, object value) {
-            if (value == null) {
-                throw RubyExceptions.CreateTypeError("can't convert nil into Float");
+            if (value is double) {
+                return (double)value;
             }
-            if (value is int || value is double) {
-                return Converter.ConvertToDouble(value);
+            if (value is int) {
+                return (double)(int)value;
             }
             if (value is BigInteger) {
                 return ((BigInteger)value).ToFloat64();
@@ -169,6 +167,10 @@ namespace IronRuby.Runtime {
                 return ConvertStringToFloat(context, (MutableString)value);
             }
 
+            if (value == null) {
+                throw RubyExceptions.CreateTypeError("can't convert nil into Float");
+            }
+            
             if (RubySites.RespondTo(context, value, "to_f")) {
                 object obj = _ToF.Target(_ToF, context, value);
                 if (!(obj is double)) {
@@ -193,131 +195,61 @@ namespace IronRuby.Runtime {
 
         #endregion
 
-        #region ConvertToInteger, CastToInteger, CastToFixnum
+        #region ConvertToInteger, CastToInteger, CastToFixnum, CastToUInt32Unchecked, CastToUInt64Unchecked
 
-        private static bool AsPrimitiveInteger(object obj, out int intValue, out BigInteger bigValue) {
-            // TODO: All CLR primitive numeric types?
-            
-            if (obj is int) {
-                intValue = (int)obj;
-                bigValue = null;
-                return true;
-            }
-
-            var big = obj as BigInteger;
-            if ((object)big != null) {
-                intValue = 0;
-                bigValue = big;
-                return true;
-            }
-
-            intValue = 0;
-            bigValue = null;
-            return false;
+        public static IntegerValue ConvertToInteger(ConversionStorage<IntegerValue>/*!*/ integerConversion, RubyContext/*!*/ context, object value) {
+            var site = integerConversion.GetSite(CompositeConversionAction.ToIntToI);
+            return site.Target(site, context, value); 
         }
 
-        /// <summary>
-        /// Standard way to convert to a Ruby Integer, using to_int and to_i
-        /// Trys to call to_int, followed by to_i (if implemented).
-        /// If neither is callable, throws a type error.
-        /// </summary>
-        public static void ConvertToInteger(RubyContext/*!*/ context, object obj, out int fixnum, out BigInteger bignum) {
-            // Don't call to_int, to_i on primitive types:
-            if (AsPrimitiveInteger(obj, out fixnum, out bignum)) {
-                return;
-            }
-
-            if (RubySites.RespondTo(context, obj, "to_int")) {
-                object result = _ToInt.Target(_ToInt, context, obj);
-                if (AsPrimitiveInteger(result, out fixnum, out bignum)) {
-                    return;
-                }
-
-                throw RubyExceptions.MethodShouldReturnType(context, obj, "to_int", "Integer");
-            }
-
-            if (RubySites.RespondTo(context, obj, "to_i")) {
-                object result = _ToI.Target(_ToI, context, obj);
-                if (AsPrimitiveInteger(result, out fixnum, out bignum)) {
-                    return;
-                }
-
-                throw RubyExceptions.MethodShouldReturnType(context, obj, "to_i", "Integer");
-            }
-
-            throw RubyExceptions.CannotConvertTypeToTargetType(context, obj, "Integer");
+        public static IntegerValue CastToInteger(ConversionStorage<IntegerValue>/*!*/ integerConversion, RubyContext/*!*/ context, object value) {
+            var site = integerConversion.GetSite(ConvertToIntAction.Instance);
+            return site.Target(site, context, value);
         }
 
-        /// <summary>
-        /// Try to cast the object to an Integer using to_int
-        /// Throws if the cast fails
-        /// Can return either Bignum or Fixnum
-        /// </summary>
-        public static void CastToInteger(RubyContext/*!*/ context, object obj, out int fixnum, out BigInteger bignum) {
-            // Don't call to_int on types derived from Integer
-            if (AsPrimitiveInteger(obj, out fixnum, out bignum)) {
-                return;
-            }
-
-            if (RubySites.RespondTo(context, obj, "to_int")) {
-                object result = _ToInt.Target(_ToInt, context, obj);
-                if (AsPrimitiveInteger(result, out fixnum, out bignum)) {
-                    return;
-                }
-
-                throw RubyExceptions.InvalidValueForType(context, result, "Integer");
-            }
-
-            throw RubyExceptions.CannotConvertTypeToTargetType(context, obj, "Integer");
-        }
-
-        public static int CastToFixnum(ConversionStorage<int>/*!*/ conversionStorage, RubyContext/*!*/ context, object obj) {
+        public static int CastToFixnum(ConversionStorage<int>/*!*/ conversionStorage, RubyContext/*!*/ context, object value) {
             var site = conversionStorage.GetSite(ConvertToFixnumAction.Instance);
-            return site.Target(site, context, obj);
+            return site.Target(site, context, value);
         }
 
         /// <summary>
         /// Like CastToInteger, but converts the result to an unsigned int.
         /// </summary>
-        public static uint CastToUInt32Unchecked(RubyContext/*!*/ context, object obj) {
+        public static uint CastToUInt32Unchecked(ConversionStorage<IntegerValue>/*!*/ integerConversion, RubyContext/*!*/ context, object obj) {
             if (obj == null) {
                 throw RubyExceptions.CreateTypeError("no implicit conversion from nil to integer");
             }
 
-            int fixnum;
-            BigInteger bignum;
-            CastToInteger(context, obj, out fixnum, out bignum);
-            if ((object)bignum != null) {
-                uint u;
-                if (bignum.AsUInt32(out u)) {
-                    return u;
-                }
-                throw RubyExceptions.CreateRangeError("bignum too big to convert into `unsigned long'");
-            }
+            IntegerValue integer = CastToInteger(integerConversion, context, obj);
+            if (integer.IsFixnum) {
+                return unchecked((uint)integer.Fixnum);
+            } 
 
-            return unchecked((uint)fixnum);
+            uint u;
+            if (integer.Bignum.AsUInt32(out u)) {
+                return u;
+            }
+            throw RubyExceptions.CreateRangeError("bignum too big to convert into `unsigned long'");
         }
 
         /// <summary>
         /// Like CastToInteger, but converts the result to an unsigned int.
         /// </summary>
-        public static ulong CastToUInt64Unchecked(RubyContext/*!*/ context, object obj) {
+        public static ulong CastToUInt64Unchecked(ConversionStorage<IntegerValue>/*!*/ integerConversion, RubyContext/*!*/ context, object obj) {
             if (obj == null) {
                 throw RubyExceptions.CreateTypeError("no implicit conversion from nil to integer");
             }
 
-            int fixnum;
-            BigInteger bignum;
-            CastToInteger(context, obj, out fixnum, out bignum);
-            if ((object)bignum != null) {
-                ulong u;
-                if (bignum.AsUInt64(out u)) {
-                    return u;
-                }
-                throw RubyExceptions.CreateRangeError("bignum too big to convert into `quad long'");
+            IntegerValue integer = CastToInteger(integerConversion, context, obj);
+            if (integer.IsFixnum) {
+                return unchecked((ulong)integer.Fixnum);
             }
 
-            return unchecked((ulong)fixnum);
+            ulong u;
+            if (integer.Bignum.AsUInt64(out u)) {
+                return u;
+            }
+            throw RubyExceptions.CreateRangeError("bignum too big to convert into `quad long'");
         }
 
         #endregion

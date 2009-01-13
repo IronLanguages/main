@@ -149,9 +149,11 @@ namespace IronRuby.Tests {
         public void Scenario_RubyCategorizer1() {
             TestCategorizer(Engine, "print 'foo' #bar", -1, new TokenInfo[] {
                 new TokenInfo(new SourceSpan(new SourceLocation(0, 1, 1), new SourceLocation(5, 1, 6)), TokenCategory.Identifier, TokenTriggers.None),
+                new TokenInfo(new SourceSpan(new SourceLocation(5, 1, 6), new SourceLocation(6, 1, 7)), TokenCategory.WhiteSpace, TokenTriggers.None),
                 new TokenInfo(new SourceSpan(new SourceLocation(6, 1, 7), new SourceLocation(7, 1, 8)), TokenCategory.StringLiteral, TokenTriggers.None),
                 new TokenInfo(new SourceSpan(new SourceLocation(7, 1, 8), new SourceLocation(10, 1, 11)), TokenCategory.StringLiteral, TokenTriggers.None),
                 new TokenInfo(new SourceSpan(new SourceLocation(10, 1, 11), new SourceLocation(11, 1, 12)), TokenCategory.StringLiteral, TokenTriggers.None),
+                new TokenInfo(new SourceSpan(new SourceLocation(11, 1, 12), new SourceLocation(12, 1, 13)), TokenCategory.WhiteSpace, TokenTriggers.None),
                 new TokenInfo(new SourceSpan(new SourceLocation(12, 1, 13), new SourceLocation(16, 1, 17)), TokenCategory.LineComment, TokenTriggers.None),
             });
 
@@ -170,12 +172,16 @@ namespace IronRuby.Tests {
                 new TokenInfo(new SourceSpan(new SourceLocation(0, 1, 1), new SourceLocation(6, 1, 7)), TokenCategory.Identifier, TokenTriggers.None),          // canvas
                 new TokenInfo(new SourceSpan(new SourceLocation(6, 1, 7), new SourceLocation(7, 1, 8)), TokenCategory.Delimiter, TokenTriggers.MemberSelect),   // .
                 new TokenInfo(new SourceSpan(new SourceLocation(7, 1, 8), new SourceLocation(12, 1, 13)), TokenCategory.Identifier, TokenTriggers.None),        // Event
+                new TokenInfo(new SourceSpan(new SourceLocation(12, 1, 13), new SourceLocation(13, 1, 14)), TokenCategory.WhiteSpace, TokenTriggers.None),      //  
                 new TokenInfo(new SourceSpan(new SourceLocation(13, 1, 14), new SourceLocation(14, 1, 15)), TokenCategory.Grouping, TokenTriggers.MatchBraces), // {
+                new TokenInfo(new SourceSpan(new SourceLocation(14, 1, 15), new SourceLocation(15, 1, 16)), TokenCategory.WhiteSpace, TokenTriggers.None),      //  
                 new TokenInfo(new SourceSpan(new SourceLocation(15, 1, 16), new SourceLocation(16, 1, 17)), TokenCategory.Grouping, TokenTriggers.MatchBraces), // |
                 new TokenInfo(new SourceSpan(new SourceLocation(16, 1, 17), new SourceLocation(17, 1, 18)), TokenCategory.Identifier, TokenTriggers.None),      // x
                 new TokenInfo(new SourceSpan(new SourceLocation(17, 1, 18), new SourceLocation(18, 1, 19)), TokenCategory.Grouping, TokenTriggers.MatchBraces), // |
+                new TokenInfo(new SourceSpan(new SourceLocation(18, 1, 19), new SourceLocation(19, 1, 20)), TokenCategory.WhiteSpace, TokenTriggers.None),      // \n
                 // line 2
                 new TokenInfo(new SourceSpan(new SourceLocation(19, 2, 1), new SourceLocation(23, 2, 5)), TokenCategory.Identifier, TokenTriggers.None),        // puts
+                new TokenInfo(new SourceSpan(new SourceLocation(23, 2, 5), new SourceLocation(24, 2, 6)), TokenCategory.WhiteSpace, TokenTriggers.None),        //  
                 new TokenInfo(new SourceSpan(new SourceLocation(24, 2, 6), new SourceLocation(25, 2, 7)), TokenCategory.StringLiteral, TokenTriggers.None),     // '
                 new TokenInfo(new SourceSpan(new SourceLocation(25, 2, 7), new SourceLocation(31, 2, 13)), TokenCategory.StringLiteral, TokenTriggers.None),    // string
                 new TokenInfo(new SourceSpan(new SourceLocation(31, 2, 13), new SourceLocation(32, 2, 14)), TokenCategory.StringLiteral, TokenTriggers.None),   // '
@@ -277,6 +283,35 @@ namespace IronRuby.Tests {
             for (int i = 3; i <= 36; i++) {
                 TestBigInt("00010010000_00100000_01001000_00010000_00000010_01001000_11111111_00010000_00100000_00000011", i, 0);
             }
+        }
+
+        public void ParseIntegers1() {
+            IntegerValue x;
+            Assert((x = Tokenizer.ParseInteger("", 0)).Equals(0));
+            Assert((x = Tokenizer.ParseInteger("", 16)).Equals(0));
+            Assert((x = Tokenizer.ParseInteger("    ", 0)).Equals(0));
+            Assert((x = Tokenizer.ParseInteger("-", 0)).Equals(0));
+            Assert((x = Tokenizer.ParseInteger("+", 0)).Equals(0));
+            Assert((x = Tokenizer.ParseInteger("0", 0)).Equals(0));
+            Assert((x = Tokenizer.ParseInteger("00", 0)).Equals(0));
+            Assert((x = Tokenizer.ParseInteger("0x", 0)).Equals(0));
+            Assert((x = Tokenizer.ParseInteger("0x", 0)).Equals(0));
+            Assert((x = Tokenizer.ParseInteger("-0x", 0)).Equals(0));
+            Assert((x = Tokenizer.ParseInteger("+0x", 0)).Equals(0));
+            Assert((x = Tokenizer.ParseInteger("  1234   ", 0)).Equals(1234));
+            Assert((x = Tokenizer.ParseInteger("  1_2_3_4   ", 0)).Equals(1234));
+            Assert((x = Tokenizer.ParseInteger("  _1234   ", 0)).Equals(0));
+            Assert((x = Tokenizer.ParseInteger("  12a34   ", 0)).Equals(12));
+            Assert((x = Tokenizer.ParseInteger("  1_2__34   ", 0)).Equals(12));
+            Assert((x = Tokenizer.ParseInteger("  -1_2", 0)).Equals(-12));
+            Assert((x = Tokenizer.ParseInteger("0x1234", 0)).Equals(0x1234));
+            Assert((x = Tokenizer.ParseInteger("0x1234", 10)).Equals(0));
+            Assert((x = Tokenizer.ParseInteger("0b102", 0)).Equals(2));
+            Assert((x = Tokenizer.ParseInteger("1000_000000_0000000000", 0)).Bignum.ToString() == "10000000000000000000");
+            Assert((x = Tokenizer.ParseInteger("1000000_000000_0000000", 16)).Bignum.ToString() == "75557863725914323419136");
+            Assert((x = Tokenizer.ParseInteger("0x1000000_000000_0000000", 0)).Bignum.ToString() == "75557863725914323419136");
+            Assert((x = Tokenizer.ParseInteger("0b1000000_000000_0000000", 0)).Equals(524288));
+            Assert((x = Tokenizer.ParseInteger("-0b1000000_000000_0000000", 0)).Equals(-524288));
         }
 
         private void Scenario_ParseNumbers1() {
@@ -884,9 +919,6 @@ add 'foo', 'bar'
             foreach (TokenInfo info in actual) {
                 Assert(i < expected.Length);
                 if (!info.Equals(expected[i])) {
-#if DEBUG
-                    Console.WriteLine("");      // TODO: Fix Ruby
-#endif
                     Assert(false);
                 }
                 i++;

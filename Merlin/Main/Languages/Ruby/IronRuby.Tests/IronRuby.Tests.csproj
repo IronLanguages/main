@@ -71,6 +71,7 @@
     <Compile Include="Runtime\MiscTests.cs" />
     <Compile Include="Runtime\ModuleTests.cs" />
     <Compile Include="Runtime\OverloadResolutionTests.cs" />
+    <Compile Include="Runtime\ProtocolTests.cs" />
     <Compile Include="Runtime\RangeTests.cs" />
     <Compile Include="Runtime\RegexTests.cs" />
     <Compile Include="Runtime\StringTests.cs" />

@@ -229,7 +229,9 @@ namespace IronRuby.Builtins {
         #region pack
 
         [RubyMethod("pack")]
-        public static MutableString/*!*/ Pack(ConversionStorage<MutableString>/*!*/ stringCast, 
+        public static MutableString/*!*/ Pack(
+            ConversionStorage<IntegerValue>/*!*/ integerConversion, 
+            ConversionStorage<MutableString>/*!*/ stringCast, 
             RubyContext/*!*/ context, RubyArray/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ format) {
 
             using (MutableStringStream stream = new MutableStringStream()) {
@@ -271,61 +273,61 @@ namespace IronRuby.Builtins {
                         case 'Q':
                         case 'q':
                             for (int j = 0; j < count; j++) {
-                                writer.Write(Protocols.CastToUInt64Unchecked(context, self[i + j]));
+                                writer.Write(Protocols.CastToUInt64Unchecked(integerConversion, context, self[i + j]));
                             }
                             break;
 
                         case 'l':
                         case 'i':
                             for (int j = 0; j < count; j++) {
-                                writer.Write(unchecked((int)Protocols.CastToUInt32Unchecked(context, self[i + j])));
+                                writer.Write(unchecked((int)Protocols.CastToUInt32Unchecked(integerConversion, context, self[i + j])));
                             }
                             break;
 
                         case 'L':
                         case 'I':
                             for (int j = 0; j < count; j++) {
-                                writer.Write(Protocols.CastToUInt32Unchecked(context, self[i + j]));
+                                writer.Write(Protocols.CastToUInt32Unchecked(integerConversion, context, self[i + j]));
                             }
                             break;
 
                         case 'N': // unsigned 4-byte big-endian
-                            WriteUInt32(writer, self, context, i, count, BitConverter.IsLittleEndian);
+                            WriteUInt32(integerConversion, writer, self, context, i, count, BitConverter.IsLittleEndian);
                             break;
 
                         case 'n': // unsigned 2-byte big-endian
-                            WriteUInt16(writer, self, context, i, count, BitConverter.IsLittleEndian);
+                            WriteUInt16(integerConversion, writer, self, context, i, count, BitConverter.IsLittleEndian);
                             break;
 
                         case 'V': // unsigned 4-byte little-endian
-                            WriteUInt32(writer, self, context, i, count, !BitConverter.IsLittleEndian);
+                            WriteUInt32(integerConversion, writer, self, context, i, count, !BitConverter.IsLittleEndian);
                             break;
 
                         case 'v': // unsigned 2-byte little-endian
-                            WriteUInt16(writer, self, context, i, count, !BitConverter.IsLittleEndian);
+                            WriteUInt16(integerConversion, writer, self, context, i, count, !BitConverter.IsLittleEndian);
                             break;
 
                         case 's':
                             for (int j = 0; j < count; j++) {
-                                writer.Write(unchecked((short)Protocols.CastToUInt32Unchecked(context, self[i + j])));
+                                writer.Write(unchecked((short)Protocols.CastToUInt32Unchecked(integerConversion, context, self[i + j])));
                             }
                             break;
 
                         case 'S':
                             for (int j = 0; j < count; j++) {
-                                writer.Write(unchecked((ushort)Protocols.CastToUInt32Unchecked(context, self[i + j])));
+                                writer.Write(unchecked((ushort)Protocols.CastToUInt32Unchecked(integerConversion, context, self[i + j])));
                             }
                             break;
 
                         case 'c':
                             for (int j = 0; j < count; j++) {
-                                writer.Write(unchecked((sbyte)Protocols.CastToUInt32Unchecked(context, self[i + j])));
+                                writer.Write(unchecked((sbyte)Protocols.CastToUInt32Unchecked(integerConversion, context, self[i + j])));
                             }
                             break;
 
                         case 'C':
                             for (int j = 0; j < count; j++) {
-                                writer.Write(unchecked((byte)Protocols.CastToUInt32Unchecked(context, self[i + j])));
+                                writer.Write(unchecked((byte)Protocols.CastToUInt32Unchecked(integerConversion, context, self[i + j])));
                             }
                             break;
 
@@ -346,7 +348,7 @@ namespace IronRuby.Builtins {
                         case 'U':
                             char[] buffer = new char[count];
                             for (int j = 0; j < count; j++) {
-                                buffer[j] = unchecked((char)Protocols.CastToUInt32Unchecked(context, self[i + j]));
+                                buffer[j] = unchecked((char)Protocols.CastToUInt32Unchecked(integerConversion, context, self[i + j]));
                             }
                             writer.Write(Encoding.UTF8.GetBytes(buffer));
                             break;
@@ -391,9 +393,10 @@ namespace IronRuby.Builtins {
             }
         }
 
-        private static void WriteUInt64(BinaryWriter/*!*/ writer, RubyArray/*!*/ self, RubyContext/*!*/ context, int i, int count, bool swap) {
+        private static void WriteUInt64(ConversionStorage<IntegerValue>/*!*/ integerConversion, 
+            BinaryWriter/*!*/ writer, RubyArray/*!*/ self, RubyContext/*!*/ context, int i, int count, bool swap) {
             for (int j = 0; j < count; j++) {
-                uint n = Protocols.CastToUInt32Unchecked(context, self[i + j]);
+                uint n = Protocols.CastToUInt32Unchecked(integerConversion, context, self[i + j]);
                 if (swap) {
                     writer.Write((byte)(n >> 24));
                     writer.Write((byte)((n >> 16) & 0xff));
@@ -405,9 +408,10 @@ namespace IronRuby.Builtins {
             }
         }
         
-        private static void WriteUInt32(BinaryWriter/*!*/ writer, RubyArray/*!*/ self, RubyContext/*!*/ context, int i, int count, bool swap) {
+        private static void WriteUInt32(ConversionStorage<IntegerValue>/*!*/ integerConversion, 
+            BinaryWriter/*!*/ writer, RubyArray/*!*/ self, RubyContext/*!*/ context, int i, int count, bool swap) {
             for (int j = 0; j < count; j++) {
-                uint n = Protocols.CastToUInt32Unchecked(context, self[i + j]);
+                uint n = Protocols.CastToUInt32Unchecked(integerConversion, context, self[i + j]);
                 if (swap) {
                     writer.Write((byte)(n >> 24));
                     writer.Write((byte)((n >> 16) & 0xff));
@@ -419,9 +423,10 @@ namespace IronRuby.Builtins {
             }
         }
 
-        private static void WriteUInt16(BinaryWriter/*!*/ writer, RubyArray/*!*/ self, RubyContext/*!*/ context, int i, int count, bool swap) {
+        private static void WriteUInt16(ConversionStorage<IntegerValue>/*!*/ integerConversion, 
+            BinaryWriter/*!*/ writer, RubyArray/*!*/ self, RubyContext/*!*/ context, int i, int count, bool swap) {
             for (int j = 0; j < count; j++) {
-                uint n = Protocols.CastToUInt32Unchecked(context, self[i + j]);
+                uint n = Protocols.CastToUInt32Unchecked(integerConversion, context, self[i + j]);
                 if (swap) {
                     writer.Write((byte)((n >> 8) & 0xff));
                     writer.Write((byte)(n & 0xff));

@@ -28,6 +28,7 @@ using AstUtils = Microsoft.Scripting.Ast.Utils;
 using Ast = System.Linq.Expressions.Expression;
 using AstFactory = IronRuby.Compiler.Ast.AstFactory;
 using IronRuby.Compiler;
+using IronRuby.Compiler.Generation;
 
 namespace IronRuby.Runtime.Calls {
 
@@ -44,6 +45,7 @@ namespace IronRuby.Runtime.Calls {
             _lexicalScopeId = lexicalScopeId;
         }
 
+        [Emitted]
         public static SuperCallAction/*!*/ Make(RubyCallSignature signature, int lexicalScopeId) {
             return new SuperCallAction(signature, lexicalScopeId);
         }
@@ -131,7 +133,7 @@ namespace IronRuby.Runtime.Calls {
 
         Expression/*!*/ IExpressionSerializable.CreateExpression() {
             return Expression.Call(
-                typeof(SuperCallAction).GetMethod("Make", new Type[] { typeof(RubyCallSignature), typeof(int) }),
+                Methods.GetMethod(typeof(SuperCallAction), "Make", typeof(RubyCallSignature), typeof(int)),
                 _signature.CreateExpression(),
                 Expression.Constant(_lexicalScopeId)
             );

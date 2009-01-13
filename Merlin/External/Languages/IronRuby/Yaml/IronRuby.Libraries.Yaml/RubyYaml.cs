@@ -142,10 +142,8 @@ namespace IronRuby.StandardLibrary.Yaml {
         }
 
         [RubyMethod("load_file", RubyMethodAttributes.PublicSingleton)]
-        public static object LoadFile(RubyScope/*!*/ scope, RubyModule/*!*/ self, object arg) {
-            RubyClass file = self.Context.GetClass(typeof(RubyFile));
-            object io = RubyFileOps.Open(null, file, arg, MutableString.Create("r"));
-            return Load(scope, self, io as RubyIO);
+        public static object LoadFile(RubyScope/*!*/ scope, RubyModule/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ path) {
+            return Load(scope, self, new RubyFile(self.Context, path.ConvertToString(), "r"));
         }
 
         [RubyMethod("each_document", RubyMethodAttributes.PublicSingleton)]
@@ -208,10 +206,8 @@ namespace IronRuby.StandardLibrary.Yaml {
         }
 
         [RubyMethod("parse_file", RubyMethodAttributes.PublicSingleton)]
-        public static object ParseFile(RubyModule/*!*/ self, object arg) {
-            RubyClass file = self.Context.GetClass(typeof(RubyFile));
-            object io = RubyFileOps.Open(null, file, arg, MutableString.Create("r"));
-            return Parse(self, io as RubyIO);
+        public static object ParseFile(RubyModule/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ path) {
+            return Parse(self, new RubyFile(self.Context, path.ConvertToString(), "r"));
         }
 
         [RubyMethod("dump_stream", RubyMethodAttributes.PublicSingleton)]

@@ -1,12 +1,8 @@
-merlin/main/*.snk
-merlin/main/*.sln
-merlin/main/Rowan.vs*
-merlin/main/Samples
-merlin/main/*.proj
-merlin/main/*.htm
-merlin/main/makefile
-merlin/main/sources
+Merlin/Main/*.proj
+Merlin/Main/makefile
+Merlin/Main/sources
 Merlin/External/Languages/Ruby/ruby-1.8.6
 Merlin/Main/bin
 Merlin/Main/External
-merlin/main/silverlight.*.targets
+*.csproj.vspscc
+*.vssscc

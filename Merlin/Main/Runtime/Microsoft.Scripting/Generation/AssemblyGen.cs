@@ -334,7 +334,7 @@ namespace Microsoft.Scripting.Generation {
         }
 #endif
 
-        internal AssemblyBuilder AssemblyBuilder {
+        public AssemblyBuilder AssemblyBuilder {
             get { return _myAssembly; }
         }
 

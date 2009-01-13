@@ -185,7 +185,7 @@ namespace IronRuby.Builtins {
                 } else if (Double.IsNaN(value)) {
                     WriteStringValue(_nanString);
                 } else {
-                    StringFormatter sf = new StringFormatter(null, null, _context, "%.15g", new object[] { value });
+                    StringFormatter sf = new StringFormatter(_context, "%.15g", new object[] { value });
                     sf.TrailingZeroAfterWholeFloat = false;
                     WriteStringValue(sf.Format());
                 }

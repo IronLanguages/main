@@ -101,15 +101,80 @@ namespace IronRuby.Runtime.Calls {
 
         // copy ctor
         private RubyMethodGroupInfo(RubyMethodGroupInfo/*!*/ info, RubyMemberFlags flags, RubyModule/*!*/ module)
+            : this(info, flags, module, info._methodBases) {
+        }
+
+        // copy ctor
+        private RubyMethodGroupInfo(RubyMethodGroupInfo/*!*/ info, RubyMemberFlags flags, RubyModule/*!*/ module, IList<MethodBase> methodBases)
             : base(flags, module) {
-            _methodBases = info._methodBases;
+            _methodBases = methodBases;
             _overloads = info._overloads;
             _isRubyMethod = info._isRubyMethod;
             _isClrStatic = info._isClrStatic;
         }
 
+        public override MemberInfo/*!*/[]/*!*/ GetMembers() {
+            return ArrayUtils.MakeArray(MethodBases);
+        }
+
         protected internal override RubyMemberInfo/*!*/ Copy(RubyMemberFlags flags, RubyModule/*!*/ module) {
             return new RubyMethodGroupInfo(this, flags, module);
+        }
+
+        public override RubyMemberInfo TryBindGenericParameters(Type/*!*/[]/*!*/ typeArguments) {
+            var boundMethods = new List<MethodBase>();
+            foreach (var method in MethodBases) {
+                if (typeArguments.Length == 0) {
+                    boundMethods.Add(method);
+                } else if (method.IsGenericMethodDefinition && typeArguments.Length == method.GetGenericArguments().Length) {
+                    Debug.Assert(!(method is ConstructorInfo));
+                    boundMethods.Add(((MethodInfo)method).MakeGenericMethod(typeArguments));
+                }
+            }
+
+            if (boundMethods.Count == 0) {
+                return null;
+            }
+
+            return new RubyMethodGroupInfo(this, Flags, DeclaringModule, boundMethods);
+        }
+
+        /// <summary>
+        /// Filters out methods that don't exactly match parameter types except for hidden parameters (RubyContext, RubyScope, site local storage).
+        /// </summary>
+        public override RubyMemberInfo TrySelectOverload(Type/*!*/[]/*!*/ parameterTypes) {
+            var boundMethods = new List<MethodBase>();
+            foreach (var method in MethodBases) {
+                if (IsOverloadSignature(method, parameterTypes)) {
+                    boundMethods.Add(method);
+                }
+            }
+
+            if (boundMethods.Count == 0) {
+                return null;
+            }
+
+            return new RubyMethodGroupInfo(this, Flags, DeclaringModule, boundMethods);
+        }
+
+        private static bool IsOverloadSignature(MethodBase/*!*/ method, Type/*!*/[]/*!*/ parameterTypes) {
+            var infos = method.GetParameters();
+            int firstInfo = 0;
+            while (firstInfo < infos.Length && RubyBinder.IsHiddenParameter(infos[firstInfo])) {
+                firstInfo++;
+            }
+
+            if (infos.Length - firstInfo != parameterTypes.Length) {
+                return false;
+            }
+
+            for (int i = 0; i < parameterTypes.Length; i++) {
+                if (infos[firstInfo + i].ParameterType != parameterTypes[i]) {
+                    return false;
+                }
+            }
+
+            return true;
         }
 
         public override int Arity {

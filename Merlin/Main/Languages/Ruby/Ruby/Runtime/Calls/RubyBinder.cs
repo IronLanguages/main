@@ -95,11 +95,7 @@ namespace IronRuby.Runtime.Calls {
             mandatory = 0;
             optional = 0;
             foreach (ParameterInfo parameterInfo in parameterInfos) {
-                if (parameterInfo.ParameterType == typeof(RubyScope)) {
-                    continue;
-                } else if (parameterInfo.ParameterType == typeof(RubyContext)) {
-                    continue;
-                } else if (parameterInfo.ParameterType.IsSubclassOf(typeof(CallSite))) {
+                if (IsHiddenParameter(parameterInfo)) {
                     continue;
                 } else if (parameterInfo.ParameterType == typeof(BlockParam)) {
                     acceptsBlock = true;
@@ -116,6 +112,12 @@ namespace IronRuby.Runtime.Calls {
                     optional++;
                 }
             }
+        }
+
+        internal static bool IsHiddenParameter(ParameterInfo/*!*/ parameterInfo) {
+            return parameterInfo.ParameterType == typeof(RubyScope)
+                || parameterInfo.ParameterType == typeof(RubyContext)
+                || parameterInfo.ParameterType.IsSubclassOf(typeof(SiteLocalStorage));
         }
 
         internal sealed class RubyContextArgBuilder : ArgBuilder {

@@ -33,7 +33,7 @@ using System.Reflection;
 using System.Collections.Generic;
 
 namespace IronRuby.Runtime.Calls {
-    public abstract class RubyConversionAction : DynamicMetaObjectBinder, IExpressionSerializable {
+    public abstract class RubyConversionAction : DynamicMetaObjectBinder {
         protected RubyConversionAction() {
         }
 
@@ -48,33 +48,19 @@ namespace IronRuby.Runtime.Calls {
 
         public override DynamicMetaObject/*!*/ Bind(DynamicMetaObject/*!*/ context, DynamicMetaObject/*!*/[]/*!*/ args) {
             var mo = new MetaObjectBuilder();
-            SetRule(mo, new CallArguments(context, args, Signature));
+            BuildConversion(mo, new CallArguments(context, args, Signature));
             return mo.CreateMetaObject(this, context, args);
         }
 
-        Expression/*!*/ IExpressionSerializable.CreateExpression() {
-            return Ast.Call(GetType().GetMethod("Make"));
-        }
+        protected abstract void BuildConversion(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args);
 
-        protected abstract void SetRule(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args);
-    }
-
-    // Conversion operations:
-    // 1) tries implicit conversions
-    // 2) calls respond_to? :to_xxx
-    // 3) calls to_xxx
-    public abstract class ProtocolConversionAction : RubyConversionAction, IExpressionSerializable {
-        protected ProtocolConversionAction() {
-        }
-
-        public static ProtocolConversionAction TryGetConversionAction(Type/*!*/ parameterType) {
+        public static RubyConversionAction TryGetDefaultConversionAction(Type/*!*/ parameterType) {
             if (parameterType == typeof(MutableString)) {
                 return ConvertToStrAction.Instance;
             }
 
-            // TODO: combined to_str + to_int cast -> String/Fixnum   (socket)
-            // TODO: combined to_int + to_i cast -> Fixnum/Bignum
-            
+            // TODO: combined to_str + to_int cast -> String/Fixnum (socket)
+
             // TODO: nullable int (see Array#fill, Sockets:ConvertToSocketFlag)
             if (parameterType == typeof(int)) {
                 return ConvertToFixnumAction.Instance;
@@ -84,12 +70,20 @@ namespace IronRuby.Runtime.Calls {
                 return ConvertToSymbolAction.Instance;
             }
 
-            if (parameterType == typeof(RubyRegex)) {
-                return ConvertToRegexAction.Instance;
+            if (parameterType == typeof(IntegerValue)) {
+                return ConvertToIntAction.Instance;
             }
 
-            if (parameterType == typeof(bool)) {
-                return ConvertToBooleanAction.Instance;
+            if (parameterType == typeof(Union<int, MutableString>)) {
+                return CompositeConversionAction.ToFixnumToStr;
+            }
+
+            if (parameterType == typeof(Union<MutableString, int>)) {
+                return CompositeConversionAction.ToStrToFixnum;
+            }
+
+            if (parameterType == typeof(RubyRegex)) {
+                return ConvertToRegexAction.Instance;
             }
 
             if (parameterType == typeof(IList)) {
@@ -102,6 +96,15 @@ namespace IronRuby.Runtime.Calls {
 
             return null;
         }
+    }
+
+    // Conversion operations:
+    // 1) tries implicit conversions
+    // 2) calls respond_to? :to_xxx
+    // 3) calls to_xxx
+    public abstract class ProtocolConversionAction : RubyConversionAction {
+        protected ProtocolConversionAction() {
+        }
 
         protected abstract string/*!*/ ToMethodName { get; }
         protected abstract MethodInfo ConversionResultValidator { get; }
@@ -109,27 +112,37 @@ namespace IronRuby.Runtime.Calls {
         
         protected abstract bool TryImplicitConversion(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args);
 
-        protected override void SetRule(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args) {
-            Assert.NotNull(metaBuilder, args);
+        protected override void BuildConversion(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args) {
+            BuildConversion(metaBuilder, args, ConversionResultValidator != null ? ConversionResultValidator.ReturnType : typeof(object), this);
+        }
+
+        internal static void BuildConversion(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args, Type/*!*/ resultType, 
+            params ProtocolConversionAction[]/*!*/ conversions) {
+            Assert.NotNull(metaBuilder, args, conversions);
             Debug.Assert(args.SimpleArgumentCount == 0 && !args.Signature.HasBlock && !args.Signature.HasSplattedArgument && !args.Signature.HasRhsArgument);
             Debug.Assert(!args.Signature.HasScope);
 
             var ec = args.RubyContext;
 
-            // implicit conversions should only depend on a static type:
-            if (TryImplicitConversion(metaBuilder, args)) {
-                if (args.Target == null) {
-                    metaBuilder.AddRestriction(Ast.Equal(args.TargetExpression, Ast.Constant(null, args.TargetExpression.Type)));
-                } else {
-                    metaBuilder.AddTypeRestriction(args.Target.GetType(), args.TargetExpression);
+            // implicit conversions should only depend on the static type:
+            foreach (var conversion in conversions) {
+                if (conversion.TryImplicitConversion(metaBuilder, args)) {
+                    if (args.Target == null) {
+                        metaBuilder.AddRestriction(Ast.Equal(args.TargetExpression, Ast.Constant(null, args.TargetExpression.Type)));
+                    } else {
+                        metaBuilder.AddTypeRestriction(args.Target.GetType(), args.TargetExpression);
+                    }
+
+                    if (!metaBuilder.Error) {
+                        metaBuilder.Result = AstUtils.Convert(metaBuilder.Result, resultType);
+                    }
+                    return;
                 }
-                return;
             }
 
             // check for type version:
             metaBuilder.AddTargetTypeTest(args);
 
-            string toMethodName = ToMethodName;
             Expression targetClassNameConstant = Ast.Constant(ec.GetClassOf(args.Target).Name);
 
             // Kernel#respond_to? method is not overridden => we can optimize
@@ -138,64 +151,82 @@ namespace IronRuby.Runtime.Calls {
                 // the method is defined in library, hasn't been replaced by user defined method (TODO: maybe we should make this check better)
                 (respondToMethod.DeclaringModule == ec.KernelModule && respondToMethod is RubyMethodGroupInfo)) {
 
-                RubyMemberInfo conversionMethod = ec.ResolveMethod(args.Target, toMethodName, false).InvalidateSitesOnOverride();
+                ProtocolConversionAction selectedConversion = null;
+                RubyMemberInfo conversionMethod = null;
+                
+                foreach (var conversion in conversions) {
+                    selectedConversion = conversion;
+                    conversionMethod = ec.ResolveMethod(args.Target, conversion.ToMethodName, false).InvalidateSitesOnOverride();
+                    if (conversionMethod != null) {
+                        break;
+                    }
+                }
+
                 if (conversionMethod == null) {
                     // error:
-                    SetError(metaBuilder, targetClassNameConstant, args);
+                    selectedConversion.SetError(metaBuilder, targetClassNameConstant, args);
                     return;
                 } else {
                     // invoke target.to_xxx() and validate it; returns an instance of TTargetType:
-                    conversionMethod.BuildCall(metaBuilder, args, toMethodName);
+                    conversionMethod.BuildCall(metaBuilder, args, selectedConversion.ToMethodName);
 
-                    if (!metaBuilder.Error && ConversionResultValidator != null) {
-                        metaBuilder.Result = ConversionResultValidator.OpCall(targetClassNameConstant, AstFactory.Box(metaBuilder.Result));
+                    var validator = selectedConversion.ConversionResultValidator;
+                    if (!metaBuilder.Error) {
+                        if (validator != null) {
+                            metaBuilder.Result = validator.OpCall(targetClassNameConstant, AstFactory.Box(metaBuilder.Result));
+                        }
+                        metaBuilder.Result = AstUtils.Convert(metaBuilder.Result, resultType);
                     }
                     return;
                 }
             } else if (!RubyModule.IsMethodVisible(respondToMethod, false)) {
                 // respond_to? is private:
-                SetError(metaBuilder, targetClassNameConstant, args);
+                conversions[conversions.Length - 1].SetError(metaBuilder, targetClassNameConstant, args);
                 return;
             }
 
             // slow path: invoke respond_to?, to_xxx and result validation:
+            for (int i = conversions.Length - 1; i >= 0; i--) {
+                string toMethodName = conversions[i].ToMethodName;
+                MethodInfo validator = conversions[i].ConversionResultValidator;
+                
+                var conversionCallSite = Ast.Dynamic(
+                    RubyCallAction.Make(toMethodName, RubyCallSignature.WithImplicitSelf(0)),
+                    typeof(object),
+                    args.ContextExpression, args.TargetExpression
+                );
 
-            var conversionCallSite = Ast.Dynamic(
-                RubyCallAction.Make(toMethodName, RubyCallSignature.WithImplicitSelf(0)),
-                typeof(object),
-                args.ContextExpression, args.TargetExpression
-            );
+                metaBuilder.Result = Ast.Condition(
+                    // If
 
-            Expression opCall;
-            metaBuilder.Result = Ast.Condition(
-                // If
+                    // respond_to?()
+                    Methods.IsTrue.OpCall(
+                        Ast.Dynamic(
+                            RubyCallAction.Make(Symbols.RespondTo, RubyCallSignature.WithImplicitSelf(1)),
+                            typeof(object),
+                            args.ContextExpression, args.TargetExpression, Ast.Constant(SymbolTable.StringToId(toMethodName))
+                        )
+                    ),
 
-                // respond_to?()
-                Methods.IsTrue.OpCall(
-                    Ast.Dynamic(
-                        RubyCallAction.Make(Symbols.RespondTo, RubyCallSignature.WithImplicitSelf(1)),
-                        typeof(object),
-                        args.ContextExpression, args.TargetExpression, Ast.Constant(SymbolTable.StringToId(toMethodName))
-                    )
-                ),
+                    // Then
 
-                // Then
+                    // to_xxx():
+                    AstUtils.Convert(
+                        (validator == null) ? conversionCallSite :
+                            validator.OpCall(targetClassNameConstant, conversionCallSite),
+                        resultType
+                    ),
 
-                // to_xxx():
-                opCall = (ConversionResultValidator == null) ? conversionCallSite : 
-                    ConversionResultValidator.OpCall(targetClassNameConstant, conversionCallSite),
+                    // Else
 
-                // Else
-
-                AstUtils.Convert(
-                    (ConversionResultValidator == null) ? args.TargetExpression :
-                        AstUtils.Convert(
-                            Ast.Throw(Methods.CreateTypeConversionError.OpCall(targetClassNameConstant, Ast.Constant(TargetTypeName))),
-                            typeof(object)
-                        ), 
-                    opCall.Type
-                )
-            );
+                    (i < conversions.Length - 1) ? metaBuilder.Result : 
+                        (validator == null) ? AstUtils.Convert(args.TargetExpression, resultType) :
+                            Ast.Throw(
+                                Methods.CreateTypeConversionError.OpCall(targetClassNameConstant, Ast.Constant(conversions[i].TargetTypeName)), 
+                                resultType
+                            )
+                );
+            }
         }
 
         private void SetError(MetaObjectBuilder/*!*/ metaBuilder, Expression/*!*/ targetClassNameConstant, CallArguments/*!*/ args) {
@@ -207,8 +238,38 @@ namespace IronRuby.Runtime.Calls {
         }
     }
 
-    public abstract class ConvertToReferenceTypeAction<TTargetType> : ProtocolConversionAction where TTargetType : class {
+    public abstract class ProtocolConversionAction<TSelf> : ProtocolConversionAction, IEquatable<TSelf>, IExpressionSerializable
+        where TSelf : ProtocolConversionAction<TSelf>, new() {
+        
+        public static readonly TSelf Instance = new TSelf();
+
+        public bool Equals(TSelf other) {
+            return ReferenceEquals(this, other);
+        }
+
+        [Emitted]
+        public static TSelf/*!*/ Make() {
+            return Instance;
+        }
+
+        protected ProtocolConversionAction() {
+            Debug.Assert(GetType() == typeof(TSelf));
+        }
+
+        Expression/*!*/ IExpressionSerializable.CreateExpression() {
+            return Ast.Call(Methods.GetMethod(typeof(ProtocolConversionAction<TSelf>), "Make"));
+        }
+    }
+
+    public abstract class ConvertToReferenceTypeAction<TSelf, TTargetType> : ProtocolConversionAction<TSelf>
+        where TSelf : ConvertToReferenceTypeAction<TSelf, TTargetType>, new()
+        where TTargetType : class {
+
         protected override bool TryImplicitConversion(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args) {
+            return TryImplicitConversionInternal(metaBuilder, args);
+        }
+
+        internal static bool TryImplicitConversionInternal(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args) {
             if (args.Target == null) {
                 metaBuilder.Result = Ast.Constant(null);
                 return true;
@@ -223,151 +284,53 @@ namespace IronRuby.Runtime.Calls {
         }
     }
 
-    public sealed class ConvertToProcAction : ConvertToReferenceTypeAction<Proc>, IEquatable<ConvertToProcAction> {
-        public static readonly ConvertToProcAction Instance = new ConvertToProcAction();
-
+    public sealed class ConvertToProcAction : ConvertToReferenceTypeAction<ConvertToProcAction, Proc> {
         protected override string/*!*/ ToMethodName { get { return Symbols.ToProc; } }
         protected override string/*!*/ TargetTypeName { get { return "Proc"; } }
         protected override MethodInfo ConversionResultValidator { get { return Methods.ToProcValidator; } }
-
-        private ConvertToProcAction() {
-        }
-
-        [Emitted]
-        public static ConvertToProcAction/*!*/ Make() {
-            return Instance;
-        }
-
-        public bool Equals(ConvertToProcAction other) {
-            return other != null;
-        }
     }
 
-    public sealed class ConvertToStrAction : ConvertToReferenceTypeAction<MutableString>, IEquatable<ConvertToStrAction> {
-        public static readonly ConvertToStrAction Instance = new ConvertToStrAction();
-
+    public sealed class ConvertToStrAction : ConvertToReferenceTypeAction<ConvertToStrAction, MutableString> {
         protected override string/*!*/ ToMethodName { get { return Symbols.ToStr; } }
         protected override string/*!*/ TargetTypeName { get { return "String"; } }
         protected override MethodInfo ConversionResultValidator { get { return Methods.ToStringValidator; } }
-
-        private ConvertToStrAction() {
-        }
-
-        [Emitted]
-        public static ConvertToStrAction/*!*/ Make() {
-            return Instance;
-        }
-
-        public bool Equals(ConvertToStrAction other) {
-            return other != null;
-        }
     }
 
     // TODO: escaping vs. non-escaping?
     // This conversion escapes the regex. 
-    public sealed class ConvertToRegexAction : ConvertToReferenceTypeAction<RubyRegex>, IEquatable<ConvertToRegexAction> {
-        public static readonly ConvertToRegexAction Instance = new ConvertToRegexAction();
-
+    public sealed class ConvertToRegexAction : ConvertToReferenceTypeAction<ConvertToRegexAction, RubyRegex> {
         protected override string/*!*/ ToMethodName { get { return Symbols.ToStr; } }
         protected override string/*!*/ TargetTypeName { get { return "Regexp"; } }
         protected override MethodInfo ConversionResultValidator { get { return Methods.ToRegexValidator; } }
-
-        private ConvertToRegexAction() {
-        }
-
-        [Emitted]
-        public static ConvertToRegexAction/*!*/ Make() {
-            return Instance;
-        }
-
-        public bool Equals(ConvertToRegexAction other) {
-            return other != null;
-        }
     }
 
-    public sealed class ConvertToArrayAction : ConvertToReferenceTypeAction<IList>, IEquatable<ConvertToArrayAction> {
-        public static readonly ConvertToArrayAction Instance = new ConvertToArrayAction();
-
+    public sealed class ConvertToArrayAction : ConvertToReferenceTypeAction<ConvertToArrayAction, IList> {
         protected override string/*!*/ ToMethodName { get { return Symbols.ToAry; } }
         protected override string/*!*/ TargetTypeName { get { return "Array"; } }
         protected override MethodInfo ConversionResultValidator { get { return Methods.ToArrayValidator; } }
-        
-        private ConvertToArrayAction() {
-        }
-
-        [Emitted]
-        public static ConvertToArrayAction/*!*/ Make() {
-            return Instance;
-        }
-
-        public bool Equals(ConvertToArrayAction other) {
-            return other != null;
-        }
     }
 
-    public sealed class ConvertToHashAction : ConvertToReferenceTypeAction<IDictionary<object, object>>, IEquatable<ConvertToHashAction> {
-        public static readonly ConvertToHashAction Instance = new ConvertToHashAction();
-
+    public sealed class ConvertToHashAction : ConvertToReferenceTypeAction<ConvertToHashAction, IDictionary<object, object>> {
         protected override string/*!*/ ToMethodName { get { return Symbols.ToHash; } }
         protected override string/*!*/ TargetTypeName { get { return "Hash"; } }
         protected override MethodInfo ConversionResultValidator { get { return Methods.ToHashValidator; } }
-
-        private ConvertToHashAction() {
-        }
-
-        [Emitted]
-        public static ConvertToHashAction/*!*/ Make() {
-            return Instance;
-        }
-
-        public bool Equals(ConvertToHashAction other) {
-            return other != null;
-        }
     }
 
-    public sealed class TryConvertToArrayAction : ConvertToReferenceTypeAction<IList>, IEquatable<TryConvertToArrayAction> {
-        public static readonly TryConvertToArrayAction Instance = new TryConvertToArrayAction();
-
+    public sealed class TryConvertToArrayAction : ConvertToReferenceTypeAction<TryConvertToArrayAction, IList> {
         protected override string/*!*/ ToMethodName { get { return Symbols.ToAry; } }
         protected override string/*!*/ TargetTypeName { get { return "Array"; } }
         protected override MethodInfo ConversionResultValidator { get { return null; } }
-
-        private TryConvertToArrayAction() {
-        }
-
-        [Emitted]
-        public static TryConvertToArrayAction/*!*/ Make() {
-            return Instance;
-        }
-
-        public bool Equals(TryConvertToArrayAction other) {
-            return other != null;
-        }
     }
 
-    public sealed class ConvertToFixnumAction : ProtocolConversionAction, IEquatable<ConvertToFixnumAction> {
-        public static readonly ConvertToFixnumAction Instance = new ConvertToFixnumAction();
-
+    public sealed class ConvertToFixnumAction : ProtocolConversionAction<ConvertToFixnumAction> {
         protected override string/*!*/ ToMethodName { get { return Symbols.ToInt; } }
         protected override string/*!*/ TargetTypeName { get { return "Fixnum"; } }
         protected override MethodInfo ConversionResultValidator { get { return Methods.ToFixnumValidator; } }
 
-        private ConvertToFixnumAction() {
-        }
-
-        [Emitted]
-        public static ConvertToFixnumAction/*!*/ Make() {
-            return Instance;
-        }
-
-        public bool Equals(ConvertToFixnumAction other) {
-            return other != null;
-        }
-
         protected override bool TryImplicitConversion(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args) {
             object target = args.Target;
-            
-            if (args.Target == null) {
+
+            if (target == null) {
                 metaBuilder.SetError(Methods.CreateTypeConversionError.OpCall(Ast.Constant("nil"), Ast.Constant(TargetTypeName)));
                 return true;
             }
@@ -388,61 +351,55 @@ namespace IronRuby.Runtime.Calls {
         }
     }
 
-    public sealed class ConvertToBooleanAction : ProtocolConversionAction, IEquatable<ConvertToBooleanAction> {
-        public static readonly ConvertToBooleanAction Instance = new ConvertToBooleanAction();
+    public abstract class ConvertToIntegerActionBase<TSelf> : ProtocolConversionAction<TSelf>
+        where TSelf : ConvertToIntegerActionBase<TSelf>, new() {
 
-        protected override string/*!*/ ToMethodName { get { return Symbols.ToInt; } }
-        protected override string/*!*/ TargetTypeName { get { return "Fixnum"; } }
-        protected override MethodInfo ConversionResultValidator { get { return Methods.ToFixnumValidator; } }
-
-        private ConvertToBooleanAction() {
-        }
-
-        [Emitted]
-        public static ConvertToBooleanAction/*!*/ Make() {
-            return Instance;
-        }
-
-        public bool Equals(ConvertToBooleanAction other) {
-            return other != null;
-        }
+        protected override string/*!*/ TargetTypeName { get { return "Integer"; } }
 
         protected override bool TryImplicitConversion(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args) {
             object target = args.Target;
 
             if (args.Target == null) {
-                metaBuilder.Result = Ast.Constant(false);
-                return true;
-            } 
-            
-            if (target is bool) {
-                metaBuilder.Result = AstUtils.Convert(args.TargetExpression, typeof(bool));
+                metaBuilder.SetError(Methods.CreateTypeConversionError.OpCall(Ast.Constant("nil"), Ast.Constant(TargetTypeName)));
                 return true;
             }
 
-            return true;
+            // TODO: other .NET primitive integer types
+            if (target is int) {
+                metaBuilder.Result = AstUtils.Convert(args.TargetExpression, typeof(int));
+                return true;
+            }
+
+            var bignum = target as BigInteger;
+            if ((object)bignum != null) {
+                metaBuilder.Result = AstUtils.Convert(args.TargetExpression, typeof(BigInteger));
+                return true;
+            }
+
+            return false;
         }
     }
 
+    /// <summary>
+    /// Calls to_int and wraps the result (Fixnum or Bignum) into IntegerValue.
+    /// </summary>
+    public sealed class ConvertToIntAction : ConvertToIntegerActionBase<ConvertToIntAction> {
+        protected override string/*!*/ ToMethodName { get { return Symbols.ToInt; } }
+        protected override MethodInfo ConversionResultValidator { get { return Methods.ToIntegerValidator; } }
+    }
 
-    public sealed class ConvertToSymbolAction : ProtocolConversionAction, IEquatable<ConvertToSymbolAction> {
-        public static readonly ConvertToSymbolAction Instance = new ConvertToSymbolAction();
-
+    /// <summary>
+    /// Calls to_i and wraps the result (Fixnum or Bignum) into IntegerValue.
+    /// </summary>
+    public sealed class ConvertToIAction : ConvertToIntegerActionBase<ConvertToIAction> {
+        protected override string/*!*/ ToMethodName { get { return Symbols.ToI; } }
+        protected override MethodInfo ConversionResultValidator { get { return Methods.ToIntegerValidator; } }
+    }
+    
+    public sealed class ConvertToSymbolAction : ProtocolConversionAction<ConvertToSymbolAction> {
         protected override string/*!*/ ToMethodName { get { return Symbols.ToStr; } }
         protected override string/*!*/ TargetTypeName { get { return "Symbol"; } }
         protected override MethodInfo ConversionResultValidator { get { return Methods.ToSymbolValidator; } }
-
-        private ConvertToSymbolAction() {
-        }
-
-        [Emitted]
-        public static ConvertToSymbolAction/*!*/ Make() {
-            return Instance;
-        }
-
-        public bool Equals(ConvertToSymbolAction other) {
-            return other != null;
-        }
 
         protected override bool TryImplicitConversion(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args) {
             object target = args.Target;
@@ -476,6 +433,63 @@ namespace IronRuby.Runtime.Calls {
             }
 
             return false;
+        }
+    }
+
+    public sealed class CompositeConversionAction : RubyConversionAction, IExpressionSerializable, IEquatable<CompositeConversionAction> {
+        private readonly ProtocolConversionAction[]/*!*/ _conversions;
+        private readonly Type/*!*/ _resultType;
+
+        public static readonly CompositeConversionAction ToFixnumToStr =
+            new CompositeConversionAction(typeof(Union<int, MutableString>), ConvertToFixnumAction.Instance, ConvertToStrAction.Instance);
+
+        public static readonly CompositeConversionAction ToStrToFixnum =
+            new CompositeConversionAction(typeof(Union<MutableString, int>), ConvertToStrAction.Instance, ConvertToFixnumAction.Instance);
+
+        public static readonly CompositeConversionAction ToIntToI =
+            new CompositeConversionAction(typeof(IntegerValue), ConvertToIntAction.Instance, ConvertToIAction.Instance);
+
+        internal CompositeConversionAction(Type/*!*/ resultType, params ProtocolConversionAction[]/*!*/ conversions) {
+            Assert.NotNullItems(conversions);
+            Assert.NotEmpty(conversions);
+            _conversions = conversions;
+            _resultType = resultType;
+        }
+
+        Expression/*!*/ IExpressionSerializable.CreateExpression() {
+            if (ReferenceEquals(this, ToFixnumToStr)) {
+                return Ast.Call(Methods.GetMethod(GetType(), "MakeToFixnumToStr"));
+            }
+            if (ReferenceEquals(this, ToStrToFixnum)) {
+                return Ast.Call(Methods.GetMethod(GetType(), "MakeToStrToFixnum"));
+            }
+            if (ReferenceEquals(this, ToIntToI)) {
+                return Ast.Call(Methods.GetMethod(GetType(), "MakeToIntToI"));
+            }
+            throw Assert.Unreachable;
+        }
+
+        [Emitted]
+        public static CompositeConversionAction/*!*/ MakeToFixnumToStr() {
+            return ToFixnumToStr;
+        }
+
+        [Emitted]
+        public static CompositeConversionAction/*!*/ MakeToStrToFixnum() {
+            return ToStrToFixnum;
+        }
+
+        [Emitted]
+        public static CompositeConversionAction/*!*/ MakeToIntToI() {
+            return ToIntToI;
+        }
+
+        public bool Equals(CompositeConversionAction other) {
+            return ReferenceEquals(other, this);
+        }
+
+        protected override void BuildConversion(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args) {
+            ProtocolConversionAction.BuildConversion(metaBuilder, args, _resultType, _conversions);
         }
     }
 }

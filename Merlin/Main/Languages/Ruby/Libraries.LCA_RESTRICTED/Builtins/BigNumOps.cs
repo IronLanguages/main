@@ -540,14 +540,14 @@ namespace IronRuby.Builtins {
         /// This is because Bignum is supposed to look like it is stored in 2s complement format.
         /// </remarks>
         [RubyMethod("<<")]
-        public static object LeftShift(BigInteger/*!*/ self, int other) {
+        public static object/*!*/ LeftShift(BigInteger/*!*/ self, int other) {
             BigInteger result = self << other;
             result = ShiftOverflowCheck(self, result);
             return Protocols.Normalize(result);
         }
 
         [RubyMethod("<<")]
-        public static object LeftShift(BigInteger/*!*/ self, [NotNull]BigInteger/*!*/ other) {
+        public static object/*!*/ LeftShift(BigInteger/*!*/ self, [NotNull]BigInteger/*!*/ other) {
             // Dodgy error message but matches MRI
             throw RubyExceptions.CreateRangeError("bignum too big to convert into long");
         }
@@ -558,11 +558,8 @@ namespace IronRuby.Builtins {
         /// <returns>self << other, as Bignum or Fixnum</returns>
         /// <remarks>other is converted to an Integer by dynamically invoking self.to_int</remarks>
         [RubyMethod("<<")]
-        public static object LeftShift(RubyContext/*!*/ context, BigInteger/*!*/ self, object other) {
-            int fixnum;
-            BigInteger bignum;
-            Protocols.ConvertToInteger(context, other, out fixnum, out bignum);
-            return ((object)bignum != null) ? LeftShift(self, bignum) : LeftShift(self, fixnum);
+        public static object/*!*/ LeftShift(RubyContext/*!*/ context, BigInteger/*!*/ self, [DefaultProtocol]IntegerValue other) {
+            return other.IsFixnum ? LeftShift(self, other.Fixnum) : LeftShift(self, other.Bignum);
         }
 
         #endregion
@@ -578,14 +575,14 @@ namespace IronRuby.Builtins {
         /// This is because Bignum is supposed to look like it is stored in 2s complement format.
         /// </remarks>
         [RubyMethod(">>")]
-        public static object RightShift(BigInteger/*!*/ self, int other) {
+        public static object/*!*/ RightShift(BigInteger/*!*/ self, int other) {
             BigInteger result = self >> other;
             result = ShiftOverflowCheck(self, result);
             return Protocols.Normalize(result);
         }
 
         [RubyMethod(">>")]
-        public static object RightShift(BigInteger/*!*/ self, [NotNull]BigInteger/*!*/ other) {
+        public static object/*!*/ RightShift(BigInteger/*!*/ self, [NotNull]BigInteger/*!*/ other) {
             if (self.IsNegative()) {
                 return -1;
             }
@@ -598,11 +595,8 @@ namespace IronRuby.Builtins {
         /// <returns>self >> other, as Bignum or Fixnum</returns>
         /// <remarks>other is converted to an Integer by dynamically invoking self.to_int</remarks>
         [RubyMethod(">>")]
-        public static object RightShift(RubyContext/*!*/ context, BigInteger/*!*/ self, object other) {
-            int fixnum;
-            BigInteger bignum;
-            Protocols.ConvertToInteger(context, other, out fixnum, out bignum);
-            return ((object)bignum != null) ? RightShift(self, bignum) : RightShift(self, fixnum);
+        public static object/*!*/ RightShift(RubyContext/*!*/ context, BigInteger/*!*/ self, [DefaultProtocol]IntegerValue other) {
+            return other.IsFixnum ? RightShift(self, other.Fixnum) : RightShift(self, other.Bignum);
         }
 
         #endregion
@@ -610,12 +604,12 @@ namespace IronRuby.Builtins {
         #region |
 
         [RubyMethod("|")]
-        public static object BitwiseOr(BigInteger/*!*/ self, int other) {
+        public static object/*!*/ BitwiseOr(BigInteger/*!*/ self, int other) {
             return Protocols.Normalize(self | other);
         }
 
         [RubyMethod("|")]
-        public static object BitwiseOr(BigInteger/*!*/ self, [NotNull]BigInteger/*!*/ other) {
+        public static object/*!*/ BitwiseOr(BigInteger/*!*/ self, [NotNull]BigInteger/*!*/ other) {
             return Protocols.Normalize(self | other);
         }
 
@@ -624,11 +618,8 @@ namespace IronRuby.Builtins {
         /// </summary>
         /// <remarks>other is dynamically converted to an Integer by other.to_int then | is invoked dynamically. E.g. self | (index.to_int)</remarks>
         [RubyMethod("|")]
-        public static object BitwiseOr(RubyContext/*!*/ context, BigInteger/*!*/ self, object other) {
-            int fixnum;
-            BigInteger bignum;
-            Protocols.ConvertToInteger(context, other, out fixnum, out bignum);
-            return ((object)bignum != null) ? BitwiseOr(self, bignum) : BitwiseOr(self, fixnum);
+        public static object/*!*/ BitwiseOr(RubyContext/*!*/ context, BigInteger/*!*/ self, [DefaultProtocol]IntegerValue other) {
+            return other.IsFixnum ? BitwiseOr(self, other.Fixnum) : BitwiseOr(self, other.Bignum);
         }
 
         #endregion
@@ -636,12 +627,12 @@ namespace IronRuby.Builtins {
         #region &
 
         [RubyMethod("&")]
-        public static object And(BigInteger/*!*/ self, int other) {
+        public static object/*!*/ And(BigInteger/*!*/ self, int other) {
             return Protocols.Normalize(self & other);
         }
 
         [RubyMethod("&")]
-        public static object And(BigInteger/*!*/ self, [NotNull]BigInteger/*!*/ other) {
+        public static object/*!*/ And(BigInteger/*!*/ self, [NotNull]BigInteger/*!*/ other) {
             return Protocols.Normalize(self & other);
         }
 
@@ -650,11 +641,8 @@ namespace IronRuby.Builtins {
         /// </summary>
         /// <remarks>other is dynamically converted to an Integer by other.to_int then & is invoked dynamically. E.g. self & (index.to_int)</remarks>
         [RubyMethod("&")]
-        public static object And(RubyContext/*!*/ context, BigInteger/*!*/ self, object other) {
-            int fixnum;
-            BigInteger bignum;
-            Protocols.ConvertToInteger(context, other, out fixnum, out bignum);
-            return ((object)bignum != null) ? And(self, bignum) : And(self, fixnum);
+        public static object/*!*/ And(RubyContext/*!*/ context, BigInteger/*!*/ self, [DefaultProtocol]IntegerValue other) {
+            return other.IsFixnum ? And(self, other.Fixnum) : And(self, other.Bignum);
         }
 
         #endregion
@@ -662,12 +650,12 @@ namespace IronRuby.Builtins {
         #region ^
 
         [RubyMethod("^")]
-        public static object Xor(BigInteger/*!*/ self, int other) {
+        public static object/*!*/ Xor(BigInteger/*!*/ self, int other) {
             return Protocols.Normalize(self ^ other);
         }
 
         [RubyMethod("^")]
-        public static object Xor(BigInteger/*!*/ self, [NotNull]BigInteger/*!*/ other) {
+        public static object/*!*/ Xor(BigInteger/*!*/ self, [NotNull]BigInteger/*!*/ other) {
             return Protocols.Normalize(self ^ other);
         }
 
@@ -676,11 +664,8 @@ namespace IronRuby.Builtins {
         /// </summary>
         /// <remarks>other is dynamically converted to an Integer by other.to_int then ^ is invoked dynamically. E.g. self ^ (index.to_int)</remarks>
         [RubyMethod("^")]
-        public static object Xor(RubyContext/*!*/ context, BigInteger/*!*/ self, object other) {
-            int fixnum;
-            BigInteger bignum;
-            Protocols.ConvertToInteger(context, other, out fixnum, out bignum);
-            return ((object)bignum != null) ? Xor(self, bignum) : Xor(self, fixnum);
+        public static object/*!*/ Xor(RubyContext/*!*/ context, BigInteger/*!*/ self, [DefaultProtocol]IntegerValue other) {
+            return other.IsFixnum ? Xor(self, other.Fixnum) : Xor(self, other.Bignum);
         }
 
         #endregion

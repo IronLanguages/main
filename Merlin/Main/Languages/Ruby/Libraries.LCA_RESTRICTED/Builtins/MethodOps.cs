@@ -71,6 +71,37 @@ namespace IronRuby.Builtins {
             return new UnboundMethod(self.GetTargetClass(), self.Name, self.Info);
         }
 
+        internal static RubyMemberInfo/*!*/ BindGenericParameters(RubyContext/*!*/ context, RubyMemberInfo/*!*/ info, string/*!*/ name, object[]/*!*/ typeArgs) {
+            RubyMemberInfo result = info.TryBindGenericParameters(Protocols.ToTypes(context, typeArgs));
+            if (result == null) {
+                throw RubyExceptions.CreateArgumentError(String.Format("wrong number of generic arguments for `{0}'", name));
+            }
+            return result;
+        }
+
+        internal static RubyMemberInfo/*!*/ GetOverloads(RubyContext/*!*/ context, RubyMemberInfo/*!*/ info, string/*!*/ name, object[]/*!*/ typeArgs) {
+            RubyMemberInfo result = info.TrySelectOverload(Protocols.ToTypes(context, typeArgs));
+            if (result == null) {
+                throw RubyExceptions.CreateArgumentError(String.Format("no overload of `{0}' matches given parameter types", name));
+            }
+            return result;
+        }
+
+        [RubyMethod("of")]
+        public static RubyMethod/*!*/ BindGenericParameters(RubyContext/*!*/ context, RubyMethod/*!*/ self, [NotNull]params object[]/*!*/ typeArgs) {
+            return new RubyMethod(self.Target, BindGenericParameters(context, self.Info, self.Name, typeArgs), self.Name);
+        }
+
+        [RubyMethod("overloads")]
+        public static RubyMethod/*!*/ GetOverloads(RubyContext/*!*/ context, RubyMethod/*!*/ self, [NotNull]params object[]/*!*/ parameterTypes) {
+            return new RubyMethod(self.Target, GetOverloads(context, self.Info, self.Name, parameterTypes), self.Name);
+        }
+
+        [RubyMethod("clr_members")]
+        public static RubyArray/*!*/ GetClrMembers(RubyMethod/*!*/ self) {
+            return new RubyArray(self.Info.GetMembers());
+        }
+
         #endregion
     }
 }

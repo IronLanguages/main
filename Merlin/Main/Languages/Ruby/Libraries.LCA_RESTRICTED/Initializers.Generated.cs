@@ -108,7 +108,7 @@ namespace IronRuby.Builtins {
                 new System.Func<IronRuby.Runtime.BlockParam, IronRuby.Builtins.RubyClass, System.Object, IronRuby.Builtins.Hash>(IronRuby.Builtins.HashOps.CreateHash),
                 new System.Func<IronRuby.Runtime.BlockParam, IronRuby.Builtins.RubyClass, IronRuby.Builtins.Hash>(IronRuby.Builtins.HashOps.CreateHash),
             });
-            IronRuby.Builtins.RubyClass def32 = DefineGlobalClass("IO", typeof(IronRuby.Builtins.RubyIO), false, Context.ObjectClass, new System.Action<IronRuby.Builtins.RubyModule>(LoadIO_Instance), new System.Action<IronRuby.Builtins.RubyModule>(LoadIO_Class), new IronRuby.Builtins.RubyModule[] {def17, }, new System.Delegate[] {
+            IronRuby.Builtins.RubyClass def32 = DefineGlobalClass("IO", typeof(IronRuby.Builtins.RubyIO), false, Context.ObjectClass, new System.Action<IronRuby.Builtins.RubyModule>(LoadIO_Instance), new System.Action<IronRuby.Builtins.RubyModule>(LoadIO_Class), new IronRuby.Builtins.RubyModule[] {def17, def21, }, new System.Delegate[] {
                 new System.Func<IronRuby.Builtins.RubyClass, IronRuby.Builtins.RubyIO>(IronRuby.Builtins.RubyIOOps.CreateIO),
                 new System.Func<IronRuby.Builtins.RubyClass, System.Int32, IronRuby.Builtins.MutableString, IronRuby.Builtins.RubyIO>(IronRuby.Builtins.RubyIOOps.CreateIO),
             });
@@ -147,11 +147,11 @@ namespace IronRuby.Builtins {
             DefineGlobalClass("UnboundMethod", typeof(IronRuby.Builtins.UnboundMethod), true, Context.ObjectClass, new System.Action<IronRuby.Builtins.RubyModule>(LoadUnboundMethod_Instance), null, IronRuby.Builtins.RubyModule.EmptyArray, null);
             // Skipped primitive: Class
             IronRuby.Builtins.RubyClass def16 = DefineGlobalClass("File", typeof(IronRuby.Builtins.RubyFile), false, def32, new System.Action<IronRuby.Builtins.RubyModule>(LoadFile_Instance), new System.Action<IronRuby.Builtins.RubyModule>(LoadFile_Class), IronRuby.Builtins.RubyModule.EmptyArray, new System.Delegate[] {
-                new System.Func<IronRuby.Builtins.RubyClass, IronRuby.Builtins.MutableString, IronRuby.Builtins.RubyIO>(IronRuby.Builtins.RubyFileOps.CreateIO),
-                new System.Func<IronRuby.Builtins.RubyClass, IronRuby.Builtins.MutableString, IronRuby.Builtins.MutableString, IronRuby.Builtins.RubyIO>(IronRuby.Builtins.RubyFileOps.CreateIO),
-                new System.Func<IronRuby.Builtins.RubyClass, IronRuby.Builtins.MutableString, IronRuby.Builtins.MutableString, System.Int32, IronRuby.Builtins.RubyIO>(IronRuby.Builtins.RubyFileOps.CreateIO),
-                new System.Func<IronRuby.Builtins.RubyClass, IronRuby.Builtins.MutableString, System.Int32, IronRuby.Builtins.RubyIO>(IronRuby.Builtins.RubyFileOps.CreateIO),
-                new System.Func<IronRuby.Builtins.RubyClass, IronRuby.Builtins.MutableString, System.Int32, System.Int32, IronRuby.Builtins.RubyIO>(IronRuby.Builtins.RubyFileOps.CreateIO),
+                new System.Func<IronRuby.Builtins.RubyClass, IronRuby.Runtime.Union<System.Int32, IronRuby.Builtins.MutableString>, IronRuby.Builtins.MutableString, System.Int32, IronRuby.Builtins.RubyFile>(IronRuby.Builtins.RubyFileOps.CreateFile),
+                new System.Func<IronRuby.Builtins.RubyClass, IronRuby.Runtime.Union<System.Int32, IronRuby.Builtins.MutableString>, System.Int32, System.Int32, IronRuby.Builtins.RubyFile>(IronRuby.Builtins.RubyFileOps.CreateFile),
+                new System.Func<IronRuby.Builtins.RubyClass, IronRuby.Builtins.MutableString, IronRuby.Builtins.RubyFile>(IronRuby.Builtins.RubyFileOps.CreateFile),
+                new System.Func<IronRuby.Builtins.RubyClass, IronRuby.Builtins.MutableString, IronRuby.Builtins.MutableString, IronRuby.Builtins.RubyFile>(IronRuby.Builtins.RubyFileOps.CreateFile),
+                new System.Func<IronRuby.Builtins.RubyClass, IronRuby.Builtins.MutableString, System.Int32, IronRuby.Builtins.RubyFile>(IronRuby.Builtins.RubyFileOps.CreateFile),
             });
             DefineGlobalClass("Float", typeof(System.Double), false, def25, new System.Action<IronRuby.Builtins.RubyModule>(LoadFloat_Instance), new System.Action<IronRuby.Builtins.RubyModule>(LoadFloat_Class), new IronRuby.Builtins.RubyModule[] {def26, }, null);
             IronRuby.Builtins.RubyClass def33 = DefineGlobalClass("Integer", typeof(IronRuby.Builtins.Integer), true, def25, new System.Action<IronRuby.Builtins.RubyModule>(LoadInteger_Instance), new System.Action<IronRuby.Builtins.RubyModule>(LoadInteger_Class), new IronRuby.Builtins.RubyModule[] {def26, }, null);
@@ -326,7 +326,7 @@ namespace IronRuby.Builtins {
             });
             
             module.DefineLibraryMethod("pack", 0x51, new System.Delegate[] {
-                new System.Func<IronRuby.Runtime.ConversionStorage<IronRuby.Builtins.MutableString>, IronRuby.Runtime.RubyContext, IronRuby.Builtins.RubyArray, IronRuby.Builtins.MutableString, IronRuby.Builtins.MutableString>(IronRuby.Builtins.ArrayOps.Pack),
+                new System.Func<IronRuby.Runtime.ConversionStorage<IronRuby.Runtime.IntegerValue>, IronRuby.Runtime.ConversionStorage<IronRuby.Builtins.MutableString>, IronRuby.Runtime.RubyContext, IronRuby.Builtins.RubyArray, IronRuby.Builtins.MutableString, IronRuby.Builtins.MutableString>(IronRuby.Builtins.ArrayOps.Pack),
             });
             
             module.DefineLibraryMethod("reverse!", 0x51, new System.Delegate[] {
@@ -378,7 +378,7 @@ namespace IronRuby.Builtins {
             module.DefineLibraryMethod("&", 0x51, new System.Delegate[] {
                 new System.Func<Microsoft.Scripting.Math.BigInteger, System.Int32, System.Object>(IronRuby.Builtins.BignumOps.And),
                 new System.Func<Microsoft.Scripting.Math.BigInteger, Microsoft.Scripting.Math.BigInteger, System.Object>(IronRuby.Builtins.BignumOps.And),
-                new System.Func<IronRuby.Runtime.RubyContext, Microsoft.Scripting.Math.BigInteger, System.Object, System.Object>(IronRuby.Builtins.BignumOps.And),
+                new System.Func<IronRuby.Runtime.RubyContext, Microsoft.Scripting.Math.BigInteger, IronRuby.Runtime.IntegerValue, System.Object>(IronRuby.Builtins.BignumOps.And),
             });
             
             module.DefineLibraryMethod("*", 0x51, new System.Delegate[] {
@@ -412,13 +412,13 @@ namespace IronRuby.Builtins {
             module.DefineLibraryMethod("^", 0x51, new System.Delegate[] {
                 new System.Func<Microsoft.Scripting.Math.BigInteger, System.Int32, System.Object>(IronRuby.Builtins.BignumOps.Xor),
                 new System.Func<Microsoft.Scripting.Math.BigInteger, Microsoft.Scripting.Math.BigInteger, System.Object>(IronRuby.Builtins.BignumOps.Xor),
-                new System.Func<IronRuby.Runtime.RubyContext, Microsoft.Scripting.Math.BigInteger, System.Object, System.Object>(IronRuby.Builtins.BignumOps.Xor),
+                new System.Func<IronRuby.Runtime.RubyContext, Microsoft.Scripting.Math.BigInteger, IronRuby.Runtime.IntegerValue, System.Object>(IronRuby.Builtins.BignumOps.Xor),
             });
             
             module.DefineLibraryMethod("|", 0x51, new System.Delegate[] {
                 new System.Func<Microsoft.Scripting.Math.BigInteger, System.Int32, System.Object>(IronRuby.Builtins.BignumOps.BitwiseOr),
                 new System.Func<Microsoft.Scripting.Math.BigInteger, Microsoft.Scripting.Math.BigInteger, System.Object>(IronRuby.Builtins.BignumOps.BitwiseOr),
-                new System.Func<IronRuby.Runtime.RubyContext, Microsoft.Scripting.Math.BigInteger, System.Object, System.Object>(IronRuby.Builtins.BignumOps.BitwiseOr),
+                new System.Func<IronRuby.Runtime.RubyContext, Microsoft.Scripting.Math.BigInteger, IronRuby.Runtime.IntegerValue, System.Object>(IronRuby.Builtins.BignumOps.BitwiseOr),
             });
             
             module.DefineLibraryMethod("~", 0x51, new System.Delegate[] {
@@ -434,7 +434,7 @@ namespace IronRuby.Builtins {
             module.DefineLibraryMethod("<<", 0x51, new System.Delegate[] {
                 new System.Func<Microsoft.Scripting.Math.BigInteger, System.Int32, System.Object>(IronRuby.Builtins.BignumOps.LeftShift),
                 new System.Func<Microsoft.Scripting.Math.BigInteger, Microsoft.Scripting.Math.BigInteger, System.Object>(IronRuby.Builtins.BignumOps.LeftShift),
-                new System.Func<IronRuby.Runtime.RubyContext, Microsoft.Scripting.Math.BigInteger, System.Object, System.Object>(IronRuby.Builtins.BignumOps.LeftShift),
+                new System.Func<IronRuby.Runtime.RubyContext, Microsoft.Scripting.Math.BigInteger, IronRuby.Runtime.IntegerValue, System.Object>(IronRuby.Builtins.BignumOps.LeftShift),
             });
             
             module.DefineLibraryMethod("<=>", 0x51, new System.Delegate[] {
@@ -452,7 +452,7 @@ namespace IronRuby.Builtins {
             module.DefineLibraryMethod(">>", 0x51, new System.Delegate[] {
                 new System.Func<Microsoft.Scripting.Math.BigInteger, System.Int32, System.Object>(IronRuby.Builtins.BignumOps.RightShift),
                 new System.Func<Microsoft.Scripting.Math.BigInteger, Microsoft.Scripting.Math.BigInteger, System.Object>(IronRuby.Builtins.BignumOps.RightShift),
-                new System.Func<IronRuby.Runtime.RubyContext, Microsoft.Scripting.Math.BigInteger, System.Object, System.Object>(IronRuby.Builtins.BignumOps.RightShift),
+                new System.Func<IronRuby.Runtime.RubyContext, Microsoft.Scripting.Math.BigInteger, IronRuby.Runtime.IntegerValue, System.Object>(IronRuby.Builtins.BignumOps.RightShift),
             });
             
             module.DefineLibraryMethod("abs", 0x51, new System.Delegate[] {
@@ -1182,16 +1182,7 @@ namespace IronRuby.Builtins {
                 new System.Func<IronRuby.Builtins.RubyClass, IronRuby.Builtins.MutableString, System.DateTime>(IronRuby.Builtins.RubyFileOps.ModifiedTime),
             });
             
-            module.DefineLibraryMethod("open", 0x61, new System.Delegate[] {
-                new System.Func<IronRuby.Runtime.BlockParam, IronRuby.Builtins.RubyClass, IronRuby.Builtins.MutableString, IronRuby.Builtins.MutableString, System.Object>(IronRuby.Builtins.RubyFileOps.Open),
-                new System.Func<IronRuby.Runtime.BlockParam, IronRuby.Builtins.RubyClass, System.Object, System.Object, System.Object>(IronRuby.Builtins.RubyFileOps.Open),
-                new System.Func<IronRuby.Runtime.BlockParam, IronRuby.Builtins.RubyClass, IronRuby.Builtins.MutableString, System.Object>(IronRuby.Builtins.RubyFileOps.Open),
-                new System.Func<IronRuby.Runtime.BlockParam, IronRuby.Builtins.RubyClass, System.Object, System.Object>(IronRuby.Builtins.RubyFileOps.Open),
-                new System.Func<IronRuby.Runtime.BlockParam, IronRuby.Builtins.RubyClass, IronRuby.Builtins.MutableString, System.Int32, System.Object>(IronRuby.Builtins.RubyFileOps.Open),
-                new System.Func<IronRuby.Runtime.BlockParam, IronRuby.Builtins.RubyClass, System.Object, System.Int32, System.Object>(IronRuby.Builtins.RubyFileOps.Open),
-                new System.Func<IronRuby.Runtime.BlockParam, IronRuby.Builtins.RubyClass, System.Object, System.Int32, System.Int32, System.Object>(IronRuby.Builtins.RubyFileOps.Open),
-                new System.Func<IronRuby.Runtime.BlockParam, IronRuby.Builtins.RubyClass, IronRuby.Builtins.MutableString, IronRuby.Builtins.MutableString, System.Int32, System.Object>(IronRuby.Builtins.RubyFileOps.Open),
-            });
+            module.DefineRuleGenerator("open", 0x61, IronRuby.Builtins.RubyFileOps.Open());
             
             module.DefineLibraryMethod("owned?", 0x61, new System.Delegate[] {
                 new System.Func<IronRuby.Builtins.RubyClass, IronRuby.Builtins.MutableString, System.Boolean>(IronRuby.Builtins.RubyFileOps.IsUserOwned),
@@ -1304,9 +1295,6 @@ namespace IronRuby.Builtins {
             module.SetConstant("NONBLOCK", IronRuby.Builtins.RubyFileOps.Constants.NONBLOCK);
             module.SetConstant("RDONLY", IronRuby.Builtins.RubyFileOps.Constants.RDONLY);
             module.SetConstant("RDWR", IronRuby.Builtins.RubyFileOps.Constants.RDWR);
-            module.SetConstant("SEEK_CUR", IronRuby.Builtins.RubyFileOps.Constants.SEEK_CUR);
-            module.SetConstant("SEEK_END", IronRuby.Builtins.RubyFileOps.Constants.SEEK_END);
-            module.SetConstant("SEEK_SET", IronRuby.Builtins.RubyFileOps.Constants.SEEK_SET);
             module.SetConstant("TRUNC", IronRuby.Builtins.RubyFileOps.Constants.TRUNC);
             module.SetConstant("WRONLY", IronRuby.Builtins.RubyFileOps.Constants.WRONLY);
             
@@ -1506,7 +1494,7 @@ namespace IronRuby.Builtins {
             module.DefineLibraryMethod("&", 0x51, new System.Delegate[] {
                 new System.Func<System.Int32, System.Int32, System.Object>(IronRuby.Builtins.FixnumOps.BitwiseAnd),
                 new System.Func<System.Int32, Microsoft.Scripting.Math.BigInteger, System.Object>(IronRuby.Builtins.FixnumOps.BitwiseAnd),
-                new System.Func<IronRuby.Runtime.RubyContext, System.Int32, System.Object, System.Object>(IronRuby.Builtins.FixnumOps.BitwiseAnd),
+                new System.Func<IronRuby.Runtime.RubyContext, System.Int32, IronRuby.Runtime.IntegerValue, System.Object>(IronRuby.Builtins.FixnumOps.BitwiseAnd),
             });
             
             module.DefineLibraryMethod("*", 0x51, new System.Delegate[] {
@@ -1539,13 +1527,13 @@ namespace IronRuby.Builtins {
             module.DefineLibraryMethod("^", 0x51, new System.Delegate[] {
                 new System.Func<System.Int32, System.Int32, System.Object>(IronRuby.Builtins.FixnumOps.BitwiseXor),
                 new System.Func<System.Int32, Microsoft.Scripting.Math.BigInteger, System.Object>(IronRuby.Builtins.FixnumOps.BitwiseXor),
-                new System.Func<IronRuby.Runtime.RubyContext, System.Int32, System.Object, System.Object>(IronRuby.Builtins.FixnumOps.BitwiseXor),
+                new System.Func<IronRuby.Runtime.RubyContext, System.Int32, IronRuby.Runtime.IntegerValue, System.Object>(IronRuby.Builtins.FixnumOps.BitwiseXor),
             });
             
             module.DefineLibraryMethod("|", 0x51, new System.Delegate[] {
                 new System.Func<System.Int32, System.Int32, System.Object>(IronRuby.Builtins.FixnumOps.BitwiseOr),
                 new System.Func<System.Int32, Microsoft.Scripting.Math.BigInteger, System.Object>(IronRuby.Builtins.FixnumOps.BitwiseOr),
-                new System.Func<IronRuby.Runtime.RubyContext, System.Int32, System.Object, System.Object>(IronRuby.Builtins.FixnumOps.BitwiseOr),
+                new System.Func<IronRuby.Runtime.RubyContext, System.Int32, IronRuby.Runtime.IntegerValue, System.Object>(IronRuby.Builtins.FixnumOps.BitwiseOr),
             });
             
             module.DefineLibraryMethod("~", 0x51, new System.Delegate[] {
@@ -1565,7 +1553,7 @@ namespace IronRuby.Builtins {
             
             module.DefineLibraryMethod("<<", 0x51, new System.Delegate[] {
                 new System.Func<System.Int32, System.Int32, System.Object>(IronRuby.Builtins.FixnumOps.LeftShift),
-                new System.Func<IronRuby.Runtime.RubyContext, System.Int32, System.Object, System.Object>(IronRuby.Builtins.FixnumOps.LeftShift),
+                new System.Func<IronRuby.Runtime.RubyContext, System.Int32, IronRuby.Runtime.IntegerValue, System.Object>(IronRuby.Builtins.FixnumOps.LeftShift),
             });
             
             module.DefineLibraryMethod("<=", 0x51, new System.Delegate[] {
@@ -1595,7 +1583,7 @@ namespace IronRuby.Builtins {
             
             module.DefineLibraryMethod(">>", 0x51, new System.Delegate[] {
                 new System.Func<System.Int32, System.Int32, System.Object>(IronRuby.Builtins.FixnumOps.RightShift),
-                new System.Func<IronRuby.Runtime.RubyContext, System.Int32, System.Object, System.Object>(IronRuby.Builtins.FixnumOps.RightShift),
+                new System.Func<IronRuby.Runtime.RubyContext, System.Int32, IronRuby.Runtime.IntegerValue, System.Object>(IronRuby.Builtins.FixnumOps.RightShift),
             });
             
             module.DefineLibraryMethod("abs", 0x51, new System.Delegate[] {
@@ -2106,7 +2094,7 @@ namespace IronRuby.Builtins {
             });
             
             module.DefineLibraryMethod("printf", 0x51, new System.Delegate[] {
-                new System.Action<IronRuby.Runtime.ConversionStorage<System.Int32>, IronRuby.Runtime.ConversionStorage<IronRuby.Builtins.MutableString>, IronRuby.Runtime.BinaryOpStorage, IronRuby.Runtime.RubyContext, IronRuby.Builtins.RubyIO, IronRuby.Builtins.MutableString, System.Object[]>(IronRuby.Builtins.RubyIOOps.PrintFormatted),
+                new System.Action<IronRuby.Runtime.ConversionStorage<IronRuby.Runtime.IntegerValue>, IronRuby.Runtime.ConversionStorage<System.Int32>, IronRuby.Runtime.ConversionStorage<IronRuby.Builtins.MutableString>, IronRuby.Runtime.ConversionStorage<IronRuby.Builtins.MutableString>, IronRuby.Runtime.BinaryOpStorage, IronRuby.Runtime.RubyContext, IronRuby.Builtins.RubyIO, IronRuby.Builtins.MutableString, System.Object[]>(IronRuby.Builtins.RubyIOOps.PrintFormatted),
             });
             
             module.DefineLibraryMethod("putc", 0x51, new System.Delegate[] {
@@ -2185,9 +2173,7 @@ namespace IronRuby.Builtins {
         }
         
         private void LoadIO_Class(IronRuby.Builtins.RubyModule/*!*/ module) {
-            module.DefineLibraryMethod("for_fd", 0x61, new System.Delegate[] {
-                new System.Func<IronRuby.Builtins.RubyClass, System.Int32, IronRuby.Builtins.MutableString, IronRuby.Builtins.RubyIO>(IronRuby.Builtins.RubyIOOps.ForFd),
-            });
+            module.DefineRuleGenerator("for_fd", 0x61, IronRuby.Builtins.RubyIOOps.ForFileDescriptor());
             
             module.DefineLibraryMethod("foreach", 0x61, new System.Delegate[] {
                 new System.Action<IronRuby.Runtime.BlockParam, IronRuby.Builtins.RubyClass, IronRuby.Builtins.MutableString>(IronRuby.Builtins.RubyIOOps.ForEach),
@@ -2354,7 +2340,7 @@ namespace IronRuby.Builtins {
             });
             
             module.DefineLibraryMethod("format", 0x52, new System.Delegate[] {
-                new System.Func<IronRuby.Runtime.ConversionStorage<System.Int32>, IronRuby.Runtime.ConversionStorage<IronRuby.Builtins.MutableString>, IronRuby.Runtime.RubyContext, System.Object, IronRuby.Builtins.MutableString, System.Object[], IronRuby.Builtins.MutableString>(IronRuby.Builtins.KernelOps.Sprintf),
+                new System.Func<IronRuby.Runtime.ConversionStorage<IronRuby.Runtime.IntegerValue>, IronRuby.Runtime.ConversionStorage<System.Int32>, IronRuby.Runtime.ConversionStorage<IronRuby.Builtins.MutableString>, IronRuby.Runtime.RubyContext, System.Object, IronRuby.Builtins.MutableString, System.Object[], IronRuby.Builtins.MutableString>(IronRuby.Builtins.KernelOps.Sprintf),
             });
             
             module.DefineLibraryMethod("freeze", 0x51, new System.Delegate[] {
@@ -2421,7 +2407,8 @@ namespace IronRuby.Builtins {
             });
             
             module.DefineLibraryMethod("Integer", 0x52, new System.Delegate[] {
-                new System.Func<IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>(IronRuby.Builtins.KernelOps.ToInteger),
+                new System.Func<System.Object, IronRuby.Builtins.MutableString, System.Object>(IronRuby.Builtins.KernelOps.ToInteger),
+                new System.Func<IronRuby.Runtime.ConversionStorage<IronRuby.Runtime.IntegerValue>, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>(IronRuby.Builtins.KernelOps.ToInteger),
             });
             
             module.DefineLibraryMethod("is_a?", 0x51, new System.Delegate[] {
@@ -2500,8 +2487,8 @@ namespace IronRuby.Builtins {
             });
             
             module.DefineLibraryMethod("printf", 0x52, new System.Delegate[] {
-                new System.Action<IronRuby.Runtime.ConversionStorage<System.Int32>, IronRuby.Runtime.ConversionStorage<IronRuby.Builtins.MutableString>, IronRuby.Runtime.BinaryOpStorage, IronRuby.Runtime.RubyContext, System.Object, IronRuby.Builtins.MutableString, System.Object[]>(IronRuby.Builtins.KernelOps.PrintFormatted),
-                new System.Action<IronRuby.Runtime.ConversionStorage<System.Int32>, IronRuby.Runtime.ConversionStorage<IronRuby.Builtins.MutableString>, IronRuby.Runtime.BinaryOpStorage, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object, System.Object[]>(IronRuby.Builtins.KernelOps.PrintFormatted),
+                new System.Action<IronRuby.Runtime.ConversionStorage<IronRuby.Runtime.IntegerValue>, IronRuby.Runtime.ConversionStorage<System.Int32>, IronRuby.Runtime.ConversionStorage<IronRuby.Builtins.MutableString>, IronRuby.Runtime.ConversionStorage<IronRuby.Builtins.MutableString>, IronRuby.Runtime.BinaryOpStorage, IronRuby.Runtime.RubyContext, System.Object, IronRuby.Builtins.MutableString, System.Object[]>(IronRuby.Builtins.KernelOps.PrintFormatted),
+                new System.Action<IronRuby.Runtime.ConversionStorage<IronRuby.Runtime.IntegerValue>, IronRuby.Runtime.ConversionStorage<System.Int32>, IronRuby.Runtime.ConversionStorage<IronRuby.Builtins.MutableString>, IronRuby.Runtime.ConversionStorage<IronRuby.Builtins.MutableString>, IronRuby.Runtime.BinaryOpStorage, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object, System.Object[]>(IronRuby.Builtins.KernelOps.PrintFormatted),
             });
             
             module.DefineLibraryMethod("private_methods", 0x51, new System.Delegate[] {
@@ -2555,7 +2542,7 @@ namespace IronRuby.Builtins {
             });
             
             module.DefineLibraryMethod("respond_to?", 0x51, new System.Delegate[] {
-                new System.Func<IronRuby.Runtime.RubyContext, System.Object, System.String, System.Boolean, System.Boolean>(IronRuby.Builtins.KernelOps.RespondTo),
+                new System.Func<IronRuby.Runtime.RubyContext, System.Object, System.String, System.Object, System.Boolean>(IronRuby.Builtins.KernelOps.RespondTo),
             });
             
             module.DefineLibraryMethod("select", 0x52, new System.Delegate[] {
@@ -2605,7 +2592,7 @@ namespace IronRuby.Builtins {
             });
             
             module.DefineLibraryMethod("sprintf", 0x52, new System.Delegate[] {
-                new System.Func<IronRuby.Runtime.ConversionStorage<System.Int32>, IronRuby.Runtime.ConversionStorage<IronRuby.Builtins.MutableString>, IronRuby.Runtime.RubyContext, System.Object, IronRuby.Builtins.MutableString, System.Object[], IronRuby.Builtins.MutableString>(IronRuby.Builtins.KernelOps.Sprintf),
+                new System.Func<IronRuby.Runtime.ConversionStorage<IronRuby.Runtime.IntegerValue>, IronRuby.Runtime.ConversionStorage<System.Int32>, IronRuby.Runtime.ConversionStorage<IronRuby.Builtins.MutableString>, IronRuby.Runtime.RubyContext, System.Object, IronRuby.Builtins.MutableString, System.Object[], IronRuby.Builtins.MutableString>(IronRuby.Builtins.KernelOps.Sprintf),
             });
             
             module.DefineLibraryMethod("String", 0x52, new System.Delegate[] {
@@ -2726,7 +2713,7 @@ namespace IronRuby.Builtins {
             });
             
             module.DefineLibraryMethod("format", 0x61, new System.Delegate[] {
-                new System.Func<IronRuby.Runtime.ConversionStorage<System.Int32>, IronRuby.Runtime.ConversionStorage<IronRuby.Builtins.MutableString>, IronRuby.Runtime.RubyContext, System.Object, IronRuby.Builtins.MutableString, System.Object[], IronRuby.Builtins.MutableString>(IronRuby.Builtins.KernelOps.Sprintf),
+                new System.Func<IronRuby.Runtime.ConversionStorage<IronRuby.Runtime.IntegerValue>, IronRuby.Runtime.ConversionStorage<System.Int32>, IronRuby.Runtime.ConversionStorage<IronRuby.Builtins.MutableString>, IronRuby.Runtime.RubyContext, System.Object, IronRuby.Builtins.MutableString, System.Object[], IronRuby.Builtins.MutableString>(IronRuby.Builtins.KernelOps.Sprintf),
             });
             
             module.DefineLibraryMethod("getc", 0x61, new System.Delegate[] {
@@ -2743,7 +2730,8 @@ namespace IronRuby.Builtins {
             });
             
             module.DefineLibraryMethod("Integer", 0x61, new System.Delegate[] {
-                new System.Func<IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>(IronRuby.Builtins.KernelOps.ToInteger),
+                new System.Func<System.Object, IronRuby.Builtins.MutableString, System.Object>(IronRuby.Builtins.KernelOps.ToInteger),
+                new System.Func<IronRuby.Runtime.ConversionStorage<IronRuby.Runtime.IntegerValue>, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>(IronRuby.Builtins.KernelOps.ToInteger),
             });
             
             module.DefineLibraryMethod("lambda", 0x61, new System.Delegate[] {
@@ -2794,8 +2782,8 @@ namespace IronRuby.Builtins {
             });
             
             module.DefineLibraryMethod("printf", 0x61, new System.Delegate[] {
-                new System.Action<IronRuby.Runtime.ConversionStorage<System.Int32>, IronRuby.Runtime.ConversionStorage<IronRuby.Builtins.MutableString>, IronRuby.Runtime.BinaryOpStorage, IronRuby.Runtime.RubyContext, System.Object, IronRuby.Builtins.MutableString, System.Object[]>(IronRuby.Builtins.KernelOps.PrintFormatted),
-                new System.Action<IronRuby.Runtime.ConversionStorage<System.Int32>, IronRuby.Runtime.ConversionStorage<IronRuby.Builtins.MutableString>, IronRuby.Runtime.BinaryOpStorage, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object, System.Object[]>(IronRuby.Builtins.KernelOps.PrintFormatted),
+                new System.Action<IronRuby.Runtime.ConversionStorage<IronRuby.Runtime.IntegerValue>, IronRuby.Runtime.ConversionStorage<System.Int32>, IronRuby.Runtime.ConversionStorage<IronRuby.Builtins.MutableString>, IronRuby.Runtime.ConversionStorage<IronRuby.Builtins.MutableString>, IronRuby.Runtime.BinaryOpStorage, IronRuby.Runtime.RubyContext, System.Object, IronRuby.Builtins.MutableString, System.Object[]>(IronRuby.Builtins.KernelOps.PrintFormatted),
+                new System.Action<IronRuby.Runtime.ConversionStorage<IronRuby.Runtime.IntegerValue>, IronRuby.Runtime.ConversionStorage<System.Int32>, IronRuby.Runtime.ConversionStorage<IronRuby.Builtins.MutableString>, IronRuby.Runtime.ConversionStorage<IronRuby.Builtins.MutableString>, IronRuby.Runtime.BinaryOpStorage, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object, System.Object[]>(IronRuby.Builtins.KernelOps.PrintFormatted),
             });
             
             module.DefineLibraryMethod("proc", 0x61, new System.Delegate[] {
@@ -2849,7 +2837,7 @@ namespace IronRuby.Builtins {
             });
             
             module.DefineLibraryMethod("sprintf", 0x61, new System.Delegate[] {
-                new System.Func<IronRuby.Runtime.ConversionStorage<System.Int32>, IronRuby.Runtime.ConversionStorage<IronRuby.Builtins.MutableString>, IronRuby.Runtime.RubyContext, System.Object, IronRuby.Builtins.MutableString, System.Object[], IronRuby.Builtins.MutableString>(IronRuby.Builtins.KernelOps.Sprintf),
+                new System.Func<IronRuby.Runtime.ConversionStorage<IronRuby.Runtime.IntegerValue>, IronRuby.Runtime.ConversionStorage<System.Int32>, IronRuby.Runtime.ConversionStorage<IronRuby.Builtins.MutableString>, IronRuby.Runtime.RubyContext, System.Object, IronRuby.Builtins.MutableString, System.Object[], IronRuby.Builtins.MutableString>(IronRuby.Builtins.KernelOps.Sprintf),
             });
             
             module.DefineLibraryMethod("String", 0x61, new System.Delegate[] {
@@ -3184,6 +3172,18 @@ namespace IronRuby.Builtins {
             
             module.DefineLibraryMethod("clone", 0x51, new System.Delegate[] {
                 new System.Func<IronRuby.Builtins.RubyMethod, IronRuby.Builtins.RubyMethod>(IronRuby.Builtins.MethodOps.Clone),
+            });
+            
+            module.DefineLibraryMethod("clr_members", 0x51, new System.Delegate[] {
+                new System.Func<IronRuby.Builtins.RubyMethod, IronRuby.Builtins.RubyArray>(IronRuby.Builtins.MethodOps.GetClrMembers),
+            });
+            
+            module.DefineLibraryMethod("of", 0x51, new System.Delegate[] {
+                new System.Func<IronRuby.Runtime.RubyContext, IronRuby.Builtins.RubyMethod, System.Object[], IronRuby.Builtins.RubyMethod>(IronRuby.Builtins.MethodOps.BindGenericParameters),
+            });
+            
+            module.DefineLibraryMethod("overloads", 0x51, new System.Delegate[] {
+                new System.Func<IronRuby.Runtime.RubyContext, IronRuby.Builtins.RubyMethod, System.Object[], IronRuby.Builtins.RubyMethod>(IronRuby.Builtins.MethodOps.GetOverloads),
             });
             
             module.DefineLibraryMethod("to_proc", 0x51, new System.Delegate[] {
@@ -4035,7 +4035,7 @@ namespace IronRuby.Builtins {
             module.HideMethod("clone");
             module.HideMethod("version");
             module.DefineLibraryMethod("%", 0x51, new System.Delegate[] {
-                new System.Func<IronRuby.Runtime.ConversionStorage<System.Int32>, IronRuby.Runtime.ConversionStorage<IronRuby.Builtins.MutableString>, IronRuby.Runtime.RubyContext, IronRuby.Builtins.MutableString, System.Object, IronRuby.Builtins.MutableString>(IronRuby.Builtins.MutableStringOps.Format),
+                new System.Func<IronRuby.Runtime.ConversionStorage<IronRuby.Runtime.IntegerValue>, IronRuby.Runtime.ConversionStorage<System.Int32>, IronRuby.Runtime.ConversionStorage<IronRuby.Builtins.MutableString>, IronRuby.Runtime.RubyContext, IronRuby.Builtins.MutableString, System.Object, IronRuby.Builtins.MutableString>(IronRuby.Builtins.MutableStringOps.Format),
             });
             
             module.DefineLibraryMethod("*", 0x51, new System.Delegate[] {
@@ -4176,9 +4176,9 @@ namespace IronRuby.Builtins {
             });
             
             module.DefineLibraryMethod("gsub", 0x51, new System.Delegate[] {
+                new System.Func<IronRuby.Runtime.RubyScope, IronRuby.Builtins.MutableString, IronRuby.Builtins.RubyRegex, IronRuby.Builtins.MutableString, IronRuby.Builtins.MutableString>(IronRuby.Builtins.MutableStringOps.ReplaceAll),
                 new System.Func<IronRuby.Runtime.ConversionStorage<IronRuby.Builtins.MutableString>, IronRuby.Runtime.RubyScope, IronRuby.Runtime.BlockParam, IronRuby.Builtins.MutableString, IronRuby.Builtins.RubyRegex, System.Object>(IronRuby.Builtins.MutableStringOps.BlockReplaceAll),
                 new System.Func<IronRuby.Runtime.ConversionStorage<IronRuby.Builtins.MutableString>, IronRuby.Runtime.RubyScope, IronRuby.Runtime.BlockParam, IronRuby.Builtins.MutableString, IronRuby.Builtins.MutableString, System.Object>(IronRuby.Builtins.MutableStringOps.BlockReplaceAll),
-                new System.Func<IronRuby.Runtime.RubyScope, IronRuby.Builtins.MutableString, IronRuby.Builtins.RubyRegex, IronRuby.Builtins.MutableString, IronRuby.Builtins.MutableString>(IronRuby.Builtins.MutableStringOps.ReplaceAll),
             });
             
             module.DefineLibraryMethod("gsub!", 0x51, new System.Delegate[] {
@@ -4187,7 +4187,7 @@ namespace IronRuby.Builtins {
             });
             
             module.DefineLibraryMethod("hex", 0x51, new System.Delegate[] {
-                new System.Func<IronRuby.Runtime.RubyContext, IronRuby.Builtins.MutableString, System.Object>(IronRuby.Builtins.MutableStringOps.ToIntegerHex),
+                new System.Func<IronRuby.Builtins.MutableString, System.Object>(IronRuby.Builtins.MutableStringOps.ToIntegerHex),
             });
             
             module.DefineLibraryMethod("include?", 0x51, new System.Delegate[] {
@@ -4253,7 +4253,7 @@ namespace IronRuby.Builtins {
             });
             
             module.DefineLibraryMethod("oct", 0x51, new System.Delegate[] {
-                new System.Func<IronRuby.Runtime.RubyContext, IronRuby.Builtins.MutableString, System.Object>(IronRuby.Builtins.MutableStringOps.ToIntegerOctal),
+                new System.Func<IronRuby.Builtins.MutableString, System.Object>(IronRuby.Builtins.MutableStringOps.ToIntegerOctal),
             });
             
             module.DefineLibraryMethod("replace", 0x51, new System.Delegate[] {
@@ -4378,8 +4378,7 @@ namespace IronRuby.Builtins {
             });
             
             module.DefineLibraryMethod("to_i", 0x51, new System.Delegate[] {
-                new System.Func<IronRuby.Runtime.RubyContext, IronRuby.Builtins.MutableString, System.Object>(IronRuby.Builtins.MutableStringOps.ToInteger),
-                new System.Func<IronRuby.Runtime.RubyContext, IronRuby.Builtins.MutableString, System.Int32, System.Object>(IronRuby.Builtins.MutableStringOps.ToInteger),
+                new System.Func<IronRuby.Builtins.MutableString, System.Int32, System.Object>(IronRuby.Builtins.MutableStringOps.ToInteger),
             });
             
             module.DefineLibraryMethod("to_s", 0x51, new System.Delegate[] {
@@ -5501,6 +5500,18 @@ namespace IronRuby.Builtins {
             
             module.DefineLibraryMethod("clone", 0x51, new System.Delegate[] {
                 new System.Func<IronRuby.Builtins.UnboundMethod, IronRuby.Builtins.UnboundMethod>(IronRuby.Builtins.UnboundMethod.Clone),
+            });
+            
+            module.DefineLibraryMethod("clr_members", 0x51, new System.Delegate[] {
+                new System.Func<IronRuby.Builtins.UnboundMethod, IronRuby.Builtins.RubyArray>(IronRuby.Builtins.UnboundMethod.GetClrMembers),
+            });
+            
+            module.DefineLibraryMethod("of", 0x51, new System.Delegate[] {
+                new System.Func<IronRuby.Runtime.RubyContext, IronRuby.Builtins.UnboundMethod, System.Object[], IronRuby.Builtins.UnboundMethod>(IronRuby.Builtins.UnboundMethod.BingGenericParameters),
+            });
+            
+            module.DefineLibraryMethod("overloads", 0x51, new System.Delegate[] {
+                new System.Func<IronRuby.Runtime.RubyContext, IronRuby.Builtins.UnboundMethod, System.Object[], IronRuby.Builtins.UnboundMethod>(IronRuby.Builtins.UnboundMethod.GetOverloads),
             });
             
             module.DefineLibraryMethod("to_s", 0x51, new System.Delegate[] {
