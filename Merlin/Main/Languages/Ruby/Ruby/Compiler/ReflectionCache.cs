@@ -35,8 +35,14 @@ using Microsoft.Scripting.Runtime;
 namespace IronRuby.Compiler {
     internal static class Fields {
         private static FieldInfo _RubyOps_DefaultArgumentField, _RubyOps_MethodNotFound;
-        public static FieldInfo RubyOps_DefaultArgumentField { get { return _RubyOps_DefaultArgumentField ?? (_RubyOps_DefaultArgumentField = typeof(RubyOps).GetField("DefaultArgument")); } }
-        public static FieldInfo RubyOps_MethodNotFound { get { return _RubyOps_MethodNotFound ?? (_RubyOps_MethodNotFound = typeof(RubyOps).GetField("MethodNotFound")); } }
+        public static FieldInfo RubyOps_DefaultArgumentField { get { return _RubyOps_DefaultArgumentField ?? (_RubyOps_DefaultArgumentField = GetField(typeof(RubyOps), "DefaultArgument")); } }
+        public static FieldInfo RubyOps_MethodNotFound { get { return _RubyOps_MethodNotFound ?? (_RubyOps_MethodNotFound = GetField(typeof(RubyOps), "MethodNotFound")); } }
+
+        internal static FieldInfo/*!*/ GetField(Type/*!*/ type, string/*!*/ name) {
+            var field = type.GetField(name);
+            Debug.Assert(field != null, type.Name + "::" + name);
+            return field;
+        }
     }
     
     internal static partial class Methods {
@@ -44,20 +50,30 @@ namespace IronRuby.Compiler {
         private static MethodInfo _Stopwatch_GetTimestamp, _IEnumerable_Of_Object_GetEnumerator, _IEnumerator_MoveNext,
             _IEnumerator_get_Current;
 
-        public static ConstructorInfo RubyCallSignatureCtor { get { return _RubyCallSignatureCtor ?? (_RubyCallSignatureCtor = typeof(RubyCallSignature).GetConstructor(new[] { typeof(int) })); } }
+        public static ConstructorInfo RubyCallSignatureCtor { get { return _RubyCallSignatureCtor ?? (_RubyCallSignatureCtor = GetConstructor(typeof(RubyCallSignature), typeof(uint))); } }
 
         public static MethodInfo Stopwatch_GetTimestamp { get { return _Stopwatch_GetTimestamp ?? (_Stopwatch_GetTimestamp = GetMethod(typeof(Stopwatch), "GetTimestamp")); } }
         public static MethodInfo IEnumerable_Of_Object_GetEnumerator { get { return _IEnumerable_Of_Object_GetEnumerator ?? (_IEnumerable_Of_Object_GetEnumerator = GetMethod(typeof(IEnumerable<object>), "GetEnumerator", BindingFlags.Instance, Type.EmptyTypes)); } }
         public static MethodInfo IEnumerator_get_Current { get { return _IEnumerator_get_Current ?? (_IEnumerator_get_Current = GetMethod(typeof(IEnumerator), "get_Current", BindingFlags.Instance, Type.EmptyTypes)); } }
         public static MethodInfo IEnumerator_MoveNext { get { return _IEnumerator_MoveNext ?? (_IEnumerator_MoveNext = GetMethod(typeof(IEnumerator), "MoveNext", BindingFlags.Instance, Type.EmptyTypes)); } }
 
-        private static MethodInfo/*!*/ GetMethod(Type/*!*/ type, string/*!*/ name) {
+        internal static ConstructorInfo/*!*/ GetConstructor(Type/*!*/ type, params Type/*!*/[]/*!*/ signature) {
+            var ctor = type.GetConstructor(signature);
+            Debug.Assert(ctor != null, type.Name + "::.ctor");
+            return ctor;
+        }
+
+        internal static MethodInfo/*!*/ GetMethod(Type/*!*/ type, string/*!*/ name) {
             var method = type.GetMethod(name, BindingFlags.Public | BindingFlags.Static | BindingFlags.DeclaredOnly);
             Debug.Assert(method != null, type.Name + "::" + name);
             return method;
         }
 
-        private static MethodInfo/*!*/ GetMethod(Type/*!*/ type, string/*!*/ name, BindingFlags flags, Type/*!*/[]/*!*/ signature) {
+        internal static MethodInfo/*!*/ GetMethod(Type/*!*/ type, string/*!*/ name, params Type/*!*/[]/*!*/ signature) {
+            return GetMethod(type, name, BindingFlags.Public | BindingFlags.Static | BindingFlags.DeclaredOnly, signature);
+        }
+
+        internal static MethodInfo/*!*/ GetMethod(Type/*!*/ type, string/*!*/ name, BindingFlags flags, params Type/*!*/[]/*!*/ signature) {
             var method = type.GetMethod(name, flags | BindingFlags.Public | BindingFlags.DeclaredOnly, null, signature, null);
 
             Debug.Assert(method != null, type.Name + "::" + name);

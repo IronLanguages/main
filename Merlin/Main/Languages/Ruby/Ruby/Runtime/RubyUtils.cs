@@ -865,5 +865,78 @@ namespace IronRuby.Runtime {
 
         #endregion
 
+        #region Exceptions
+
+#if SILVERLIGHT // Thread.ExceptionState, Thread.Abort(stateInfo)
+        public static Exception GetVisibleException(Exception e) { return e; }
+
+        public static void ExitThread(Thread/*!*/ thread) {
+            thread.Abort();
+        }
+
+        public static bool IsRubyThreadExit(Exception e) {
+            return e is ThreadAbortException;
+        }
+#else
+        /// <summary>
+        /// Thread#raise is implemented on top of System.Threading.Thread.ThreadAbort, and squirreling
+        /// the Ruby exception expected by the use in ThreadAbortException.ExceptionState.
+        /// </summary>
+        private class AsyncExceptionMarker {
+            internal Exception Exception { get; set; }
+            internal AsyncExceptionMarker(Exception e) {
+                this.Exception = e;
+            }
+        }
+
+        public static void RaiseAsyncException(Thread thread, Exception e) {
+            thread.Abort(new AsyncExceptionMarker(e));
+        }
+
+        // TODO: This is redundant with ThreadOps.RubyThreadInfo.ExitRequested. However, we cannot access that
+        // from here as it is in a separate assembly.
+        private class ThreadExitMarker {
+        }
+
+        public static void ExitThread(Thread/*!*/ thread) {
+            thread.Abort(new ThreadExitMarker());
+        }
+
+        /// <summary>
+        /// Thread#exit is implemented by calling Thread.Abort. However, we need to distinguish a call to Thread#exit
+        /// from a raw call to Thread.Abort.
+        /// 
+        /// Note that if a finally block raises an exception while an Abort is pending, that exception can be propagated instead of a ThreadAbortException.
+        /// </summary>
+        public static bool IsRubyThreadExit(Exception e) {
+            ThreadAbortException tae = e as ThreadAbortException;
+            if (tae != null) {
+                if (tae.ExceptionState is ThreadExitMarker) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Can return null for Thread#kill
+        /// </summary>
+        public static Exception GetVisibleException(Exception e) {
+            ThreadAbortException tae = e as ThreadAbortException;
+            if (tae != null) {
+                if (IsRubyThreadExit(e)) {
+                    return null;
+                }
+                AsyncExceptionMarker asyncExceptionMarker = tae.ExceptionState as AsyncExceptionMarker;
+                if (asyncExceptionMarker != null) {
+                    return asyncExceptionMarker.Exception;
+                }
+            }
+            return e;
+        }
+
+#endif
+
+        #endregion
     }
 }

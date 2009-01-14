@@ -684,7 +684,7 @@ namespace System.Linq.Expressions.Compiler {
             }
 
             if (action != RewriteAction.None) {
-                expr = Expression.MakeGoto(node.Kind, node.Target, value.Node);
+                expr = Expression.MakeGoto(node.Kind, node.Target, value.Node, node.Type);
             }
             return new Result(action, expr);
         }

@@ -250,7 +250,7 @@ namespace IronRuby.Runtime {
 
         public Exception CurrentException {
             get { return _currentException; }
-            set { _currentException = RubyOps.GetVisibleException(value); }
+            set { _currentException = RubyUtils.GetVisibleException(value); }
         }
 
         public int CurrentSafeLevel {
@@ -1361,7 +1361,7 @@ namespace IronRuby.Runtime {
                 throw RubyExceptions.CreateTypeError("assigning non-exception to $!");
             }
 
-            Debug.Assert(RubyOps.GetVisibleException(e) == e);
+            Debug.Assert(RubyUtils.GetVisibleException(e) == e);
             return _currentException = e;
         }
 

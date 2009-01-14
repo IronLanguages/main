@@ -380,11 +380,27 @@ namespace System.Dynamic {
             }
         }
 
-        [Obsolete("do not use this method", true)]
-        public static Variant GetVariantForObject(object obj) {
+        internal static Variant GetVariantForObject(object obj) {
             Variant variant = default(Variant);
-            System.Runtime.InteropServices.Marshal.GetNativeVariantForObject(obj, UnsafeMethods.ConvertVariantByrefToPtr(ref variant));
+            if (obj == null) {
+                return variant;
+            }
+            InitVariantForObject(obj, ref variant);
             return variant;
+        }
+        internal static void InitVariantForObject(object obj, ref Variant variant) {
+            Debug.Assert(obj != null);
+
+            // GetNativeVariantForObject is very expensive for values that marshal as VT_DISPATCH
+            // also is is extremely common scenario when object at hand is an RCW. 
+            // Therefore we are going to test for IDispatch before defaulting to GetNativeVariantForObject.
+            IDispatch disp = obj as IDispatch;
+            if (disp != null) {
+                variant.AsDispatch = obj;
+                return;
+            }
+
+            System.Runtime.InteropServices.Marshal.GetNativeVariantForObject(obj, UnsafeMethods.ConvertVariantByrefToPtr(ref variant));
         }
 
         [Obsolete("do not use this method", true)]

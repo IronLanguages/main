@@ -22,7 +22,7 @@ namespace Microsoft.Scripting.Ast {
         [Obsolete("Use Expression.Break(target, null, Expression.Annotate(span)) instead")]
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "span")]
         public static GotoExpression Break(LabelTarget target, SourceSpan span) {
-            return Expression.Break(target, null);
+            return Expression.Break(target);
         }
     }
 }

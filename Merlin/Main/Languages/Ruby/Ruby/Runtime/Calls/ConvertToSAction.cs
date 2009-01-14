@@ -18,6 +18,9 @@ using IronRuby.Builtins;
 using IronRuby.Compiler;
 using IronRuby.Compiler.Generation;
 using Microsoft.Scripting.Runtime;
+using System.Linq.Expressions;
+using Ast = System.Linq.Expressions.Expression;
+using AstFactory = IronRuby.Compiler.Ast.AstFactory;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace IronRuby.Runtime.Calls {
@@ -39,7 +42,11 @@ namespace IronRuby.Runtime.Calls {
             return other != null;
         }
 
-        protected override void SetRule(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args) {
+        Expression/*!*/ IExpressionSerializable.CreateExpression() {
+            return Ast.Call(Methods.GetMethod(GetType(), "Make"));
+        }
+
+        protected override void BuildConversion(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args) {
             const string ToS = "to_s";
 
             // no conversion for a subclass of string:

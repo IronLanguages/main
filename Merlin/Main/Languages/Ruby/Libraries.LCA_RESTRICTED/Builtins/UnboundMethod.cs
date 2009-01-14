@@ -23,7 +23,7 @@ using IronRuby.Runtime.Calls;
 namespace IronRuby.Builtins {
 
     [RubyClass("UnboundMethod")]
-    public class UnboundMethod : Object {
+    public class UnboundMethod {
         private readonly string/*!*/ _name;
         private readonly RubyMemberInfo/*!*/ _info;
         private readonly RubyModule/*!*/ _targetConstraint;
@@ -109,6 +109,21 @@ namespace IronRuby.Builtins {
             result.Append(methodName);
             result.Append('>');
             return result; 
+        }
+
+        [RubyMethod("of")]
+        public static UnboundMethod/*!*/ BingGenericParameters(RubyContext/*!*/ context, UnboundMethod/*!*/ self, [NotNull]params object[]/*!*/ typeArgs) {
+            return new UnboundMethod(self.TargetConstraint, self.Name, MethodOps.BindGenericParameters(context, self.Info, self.Name, typeArgs));
+        }
+
+        [RubyMethod("overloads")]
+        public static UnboundMethod/*!*/ GetOverloads(RubyContext/*!*/ context, UnboundMethod/*!*/ self, [NotNull]params object[]/*!*/ parameterTypes) {
+            return new UnboundMethod(self.TargetConstraint, self.Name, MethodOps.GetOverloads(context, self.Info, self.Name, parameterTypes));
+        }
+
+        [RubyMethod("clr_members")]
+        public static RubyArray/*!*/ GetClrMembers(UnboundMethod/*!*/ self) {
+            return new RubyArray(self.Info.GetMembers());
         }
 
         #endregion

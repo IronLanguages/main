@@ -88,6 +88,7 @@ namespace :git do
       banner "Copying from #{@target} to #{merlin}\\..\\.."
       copy_dir(@target, "#{merlin}\\..\\..", "/MIR")
       checked_system("tfpt online /adds /deletes /diff /noprompt /recursive")
+      checked_system("tfpt uu /noget")
     end
   end
 end

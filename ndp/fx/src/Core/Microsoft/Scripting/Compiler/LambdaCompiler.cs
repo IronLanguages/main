@@ -241,21 +241,11 @@ namespace System.Linq.Expressions.Compiler {
         internal LocalBuilder GetNamedLocal(Type type, string name) {
             Debug.Assert(type != null);
 
+            LocalBuilder lb = _ilg.DeclareLocal(type);
             if (_emitDebugSymbols && name != null) {
-                LocalBuilder lb = _ilg.DeclareLocal(type);
-                // If we set the lexical scope properly, we could free and reuse the local
                 lb.SetLocalSymInfo(name);
-                return lb;
             }
-            return GetLocal(type);
-        }
-
-        internal void FreeNamedLocal(LocalBuilder local, string name) {
-            if (_emitDebugSymbols && name != null) {
-                // local has a name, we can't free it
-                return;
-            }
-            FreeLocal(local);
+            return lb;
         }
 
         /// <summary>

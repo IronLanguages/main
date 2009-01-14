@@ -912,7 +912,7 @@ ifoo
 ");
         }
 
-        public void Methods() {
+        public void Methods1() {
             AssertOutput(delegate() {
                 CompilerTest(@"
 class C

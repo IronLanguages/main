@@ -318,7 +318,7 @@ namespace IronRuby.StandardLibrary.Yaml {
             });
             
             module.DefineLibraryMethod("load_file", 0x21, new System.Delegate[] {
-                new System.Func<IronRuby.Runtime.RubyScope, IronRuby.Builtins.RubyModule, System.Object, System.Object>(IronRuby.StandardLibrary.Yaml.RubyYaml.LoadFile),
+                new System.Func<IronRuby.Runtime.RubyScope, IronRuby.Builtins.RubyModule, IronRuby.Builtins.MutableString, System.Object>(IronRuby.StandardLibrary.Yaml.RubyYaml.LoadFile),
             });
             
             module.DefineLibraryMethod("load_stream", 0x21, new System.Delegate[] {
@@ -334,7 +334,7 @@ namespace IronRuby.StandardLibrary.Yaml {
             });
             
             module.DefineLibraryMethod("parse_file", 0x21, new System.Delegate[] {
-                new System.Func<IronRuby.Builtins.RubyModule, System.Object, System.Object>(IronRuby.StandardLibrary.Yaml.RubyYaml.ParseFile),
+                new System.Func<IronRuby.Builtins.RubyModule, IronRuby.Builtins.MutableString, System.Object>(IronRuby.StandardLibrary.Yaml.RubyYaml.ParseFile),
             });
             
             module.DefineLibraryMethod("quick_emit", 0x21, new System.Delegate[] {

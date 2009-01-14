@@ -89,7 +89,7 @@ namespace IronRuby.Runtime.Calls {
 
         Expression/*!*/ IExpressionSerializable.CreateExpression() {
             return Expression.Call(
-                typeof(RubyCallAction).GetMethod("Make", new Type[] { typeof(string), typeof(RubyCallSignature) }),
+                Methods.GetMethod(typeof(RubyCallAction), "Make", typeof(string), typeof(RubyCallSignature)),
                 Expression.Constant(_methodName),
                 _signature.CreateExpression()
             );

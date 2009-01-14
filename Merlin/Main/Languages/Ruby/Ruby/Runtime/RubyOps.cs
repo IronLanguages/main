@@ -1242,37 +1242,19 @@ namespace IronRuby.Runtime {
 
         #region Exceptions
 
-#if SILVERLIGHT // Thread.ExceptionState
-        public static Exception GetVisibleException(Exception e) { return e; }
-#else
-        /// <summary>
-        /// Thread#raise is implemented on top of System.Threading.Thread.ThreadAbort, and squirreling
-        /// the Ruby exception expected by the use in ThreadAbortException.ExceptionState.
-        /// </summary>
-        private class AsyncExceptionMarker {
-            internal Exception Exception { get; set; }
-            internal AsyncExceptionMarker(Exception e) {
-                this.Exception = e;
+        [Emitted]
+        public static void CheckForAsyncRaiseViaThreadAbort(RubyScope scope, System.Threading.ThreadAbortException exception) {
+            Exception visibleException = RubyUtils.GetVisibleException(exception);
+            if (exception == visibleException || visibleException == null) {
+                return;
+            } else {
+                RubyOps.SetCurrentExceptionAndStackTrace(scope, exception);
+                // We are starting a new exception throw here (with the downside that we will lose the full stack trace)
+                RubyExceptionData.ActiveExceptionHandled(visibleException);
+
+                throw visibleException;
             }
         }
-
-        public static void RaiseAsyncException(Thread thread, Exception e) {
-            thread.Abort(new AsyncExceptionMarker(e));
-        }
-
-        public static Exception GetVisibleException(Exception e) {
-            ThreadAbortException tae = e as ThreadAbortException;
-            if (tae != null) {
-                AsyncExceptionMarker asyncExceptionMarker = tae.ExceptionState as AsyncExceptionMarker;
-                if (asyncExceptionMarker != null) {
-                    return asyncExceptionMarker.Exception;
-                }
-            }
-            return e;
-        }
-
-#endif
-
         //
         // NOTE:
         // Exception Ops go directly to the current exception object. MRI ignores potential aliases.
@@ -1512,6 +1494,20 @@ namespace IronRuby.Runtime {
             }
 
             throw new InvalidOperationException(String.Format("{0}#to_int should return Integer", className));
+        }
+
+        [Emitted] // ProtocolConversionAction
+        public static IntegerValue ToIntegerValidator(string/*!*/ className, object obj) {
+            if (obj is int) {
+                return new IntegerValue((int)obj);
+            }
+
+            var bignum = obj as BigInteger;
+            if ((object)bignum != null) {
+                return new IntegerValue(bignum);
+            }
+
+            throw new InvalidOperationException(String.Format("{0}#to_int/to_i should return Integer", className));
         }
 
         [Emitted] // ProtocolConversionAction

@@ -82,14 +82,14 @@ namespace System.Dynamic {
             if (args.Length != 1) {
                 mos = new DynamicMetaObject[args.Length - 1];
                 for (int i = 1; i < args.Length; i++) {
-                    mos[i - 1] = DynamicMetaObject.ObjectToMetaObject(args[i], parameters[i]);
+                    mos[i - 1] = ObjectToMetaObject(args[i], parameters[i]);
                 }
             } else {
                 mos = DynamicMetaObject.EmptyMetaObjects;
             }
 
             DynamicMetaObject binding = Bind(
-                DynamicMetaObject.ObjectToMetaObject(args[0], parameters[0]),
+                ObjectToMetaObject(args[0], parameters[0]),
                 mos
             );
 
@@ -98,6 +98,15 @@ namespace System.Dynamic {
             }
 
             return GetMetaObjectRule(binding, returnLabel);
+        }
+
+        private static DynamicMetaObject ObjectToMetaObject(object argValue, Expression parameterExpression) {
+            IDynamicObject ido = argValue as IDynamicObject;
+            if (ido != null) {
+                return ido.GetMetaObject(parameterExpression);
+            } else {
+                return new DynamicMetaObject(parameterExpression, BindingRestrictions.Empty, argValue);
+            }
         }
 
         /// <summary>

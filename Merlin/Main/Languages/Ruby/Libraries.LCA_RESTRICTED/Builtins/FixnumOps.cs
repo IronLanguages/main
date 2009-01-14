@@ -105,7 +105,7 @@ namespace IronRuby.Builtins {
         /// <returns>The value after the shift</returns>
         /// <remarks>Converts to Bignum if the result cannot fit into Fixnum</remarks>
         [RubyMethod("<<")]
-        public static object LeftShift(RubyContext/*!*/ context, int self, object other) {
+        public static object LeftShift(RubyContext/*!*/ context, int self, [DefaultProtocol]IntegerValue other) {
             return BignumOps.LeftShift(context, self, other);
         }
 
@@ -140,7 +140,7 @@ namespace IronRuby.Builtins {
         /// <returns>The value after the shift</returns>
         /// <remarks>Converts to Bignum if the result cannot fit into Fixnum</remarks>
         [RubyMethod(">>")]
-        public static object RightShift(RubyContext/*!*/ context, int self, object other) {
+        public static object RightShift(RubyContext/*!*/ context, int self, [DefaultProtocol]IntegerValue other) {
             return BignumOps.RightShift(context, self, other);
         }
 
@@ -199,30 +199,35 @@ namespace IronRuby.Builtins {
         #endregion
 
         #region ^
+
         /// <summary>
         /// Performs bitwise XOR on self and other
         /// </summary>
         [RubyMethod("^")]
-        public static object BitwiseXor(int self, int other) {
+        public static object/*!*/ BitwiseXor(int self, int other) {
             return self ^ other;
         }
+
         /// <summary>
         /// Performs bitwise XOR on self and other
         /// </summary>
         [RubyMethod("^")]
-        public static object BitwiseXor(int self, [NotNull]BigInteger/*!*/ other) {
+        public static object/*!*/ BitwiseXor(int self, [NotNull]BigInteger/*!*/ other) {
             return other ^ self;
         }
+
         /// <summary>
         /// Performs bitwise XOR on self and other, where other is not Fixnum or Bignum
         /// </summary>
         [RubyMethod("^")]
-        public static object BitwiseXor(RubyContext/*!*/ context, int self, object other) {
+        public static object/*!*/ BitwiseXor(RubyContext/*!*/ context, int self, [DefaultProtocol]IntegerValue other) {
             return BignumOps.Xor(context, self, other);
         }
+
         #endregion
 
         #region &
+
         /// <summary>
         /// Performs bitwise AND on self and other, where other is Fixnum
         /// </summary>
@@ -230,6 +235,7 @@ namespace IronRuby.Builtins {
         public static object BitwiseAnd(int self, int other) {
             return self & other;
         }
+
         /// <summary>
         /// Performs bitwise AND on self and other, where other is Bignum
         /// </summary>
@@ -237,16 +243,19 @@ namespace IronRuby.Builtins {
         public static object BitwiseAnd(int self, [NotNull]BigInteger/*!*/ other) {
             return other & self;
         }
+
         /// <summary>
         /// Performs bitwise AND on self and other, where other is not Fixnum or Bignum
         /// </summary>
         [RubyMethod("&")]
-        public static object BitwiseAnd(RubyContext/*!*/ context, int self, object other) {
+        public static object BitwiseAnd(RubyContext/*!*/ context, int self, [DefaultProtocol]IntegerValue other) {
             return BignumOps.And(context, self, other);
         }
+
         #endregion
 
         #region |
+
         /// <summary>
         /// Performs bitwise OR on self and other
         /// </summary>
@@ -254,6 +263,7 @@ namespace IronRuby.Builtins {
         public static object BitwiseOr(int self, int other) {
             return self | other;
         }
+
         /// <summary>
         /// Performs bitwise OR on self and other
         /// </summary>
@@ -261,13 +271,15 @@ namespace IronRuby.Builtins {
         public static object BitwiseOr(int self, [NotNull]BigInteger/*!*/ other) {
             return other | self;
         }
+
         /// <summary>
         /// Performs bitwise OR on self and other, where other is not Fixnum or Bignum
         /// </summary>
         [RubyMethod("|")]
-        public static object BitwiseOr(RubyContext/*!*/ context, int self, object other) {
+        public static object BitwiseOr(RubyContext/*!*/ context, int self, [DefaultProtocol]IntegerValue other) {
             return BignumOps.BitwiseOr(context, self, other);
         }
+
         #endregion
 
         #region ~

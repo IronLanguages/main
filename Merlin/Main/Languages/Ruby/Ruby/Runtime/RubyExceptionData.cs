@@ -359,8 +359,8 @@ namespace IronRuby.Runtime {
         internal static RubyExceptionData/*!*/ AssociateInstance(Exception/*!*/ e) {
             RubyExceptionData result;
 
-            Exception visibleException = RubyOps.GetVisibleException(e);
-            if (e == visibleException) {
+            Exception visibleException = RubyUtils.GetVisibleException(e);
+            if (e == visibleException || visibleException == null) {
                 result = new RubyExceptionData(e);
             } else {
                 // Async exception
@@ -457,7 +457,7 @@ namespace IronRuby.Runtime {
         /// </summary>
         /// <param name="visibleException"></param>
         public static void ActiveExceptionHandled(Exception visibleException) {
-            Debug.Assert(RubyOps.GetVisibleException(visibleException) == visibleException);
+            Debug.Assert(RubyUtils.GetVisibleException(visibleException) == visibleException);
 
             RubyExceptionData data = RubyExceptionData.GetInstance(visibleException);
             if (data._exception != visibleException && data._throwingThread == Thread.CurrentThread) {

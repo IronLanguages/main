@@ -318,7 +318,7 @@ namespace System.Linq.Expressions {
             if (t == node.Target && v == node.Value) {
                 return node;
             }
-            return Expression.MakeGoto(node.Kind, t, v);
+            return Expression.MakeGoto(node.Kind, t, v, node.Type);
         }
 
         /// <summary>

@@ -14,13 +14,13 @@
  * ***************************************************************************/
 
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
-using Microsoft.Scripting;
-using Microsoft.Scripting.Runtime;
 using IronRuby.Runtime;
 using IronRuby.Runtime.Calls;
-using System.Diagnostics;
+using Microsoft.Scripting;
+using Microsoft.Scripting.Runtime;
 
 namespace IronRuby.Builtins {
 
@@ -30,40 +30,57 @@ namespace IronRuby.Builtins {
     [RubyClass("File", Extends = typeof(RubyFile))]
     public class RubyFileOps {
 
+        #region Construction
+
         [RubyConstructor]
-        public static RubyIO CreateIO(RubyClass/*!*/ self, MutableString/*!*/ path) {
+        public static RubyFile/*!*/ CreateFile(RubyClass/*!*/ self, 
+            [DefaultProtocol]Union<int, MutableString> descriptorOrPath, [Optional, DefaultProtocol]MutableString mode, [Optional]int permission) {
+
+            if (descriptorOrPath.IsFixnum()) {
+                // TODO: descriptor
+                throw new NotImplementedException();
+            } else {
+                // TODO: permissions
+                return CreateFile(self, descriptorOrPath.Second, mode);
+            }
+        }
+
+        [RubyConstructor]
+        public static RubyFile/*!*/ CreateFile(RubyClass/*!*/ self,
+            [DefaultProtocol]Union<int, MutableString> descriptorOrPath, int mode, [Optional]int permission) {
+
+            if (descriptorOrPath.IsFixnum()) {
+                // TODO: descriptor
+                throw new NotImplementedException();
+            } else {
+                // TODO: permissions
+                return CreateFile(self, descriptorOrPath.Second, mode);
+            }
+        }
+
+        [RubyConstructor]
+        public static RubyFile/*!*/ CreateFile(RubyClass/*!*/ self, MutableString/*!*/ path) {
             return new RubyFile(self.Context, path.ConvertToString(), "r");
         }
 
         [RubyConstructor]
-        public static RubyIO CreateIO(RubyClass/*!*/ self, MutableString/*!*/ path, MutableString modeString) {
-            return new RubyFile(self.Context, path.ConvertToString(),
-                (modeString != null) ? modeString.ConvertToString() : "r");
+        public static RubyFile/*!*/ CreateFile(RubyClass/*!*/ self, MutableString/*!*/ path, MutableString mode) {
+            return new RubyFile(self.Context, path.ConvertToString(), (mode != null) ? mode.ConvertToString() : "r");
         }
 
         [RubyConstructor]
-        public static RubyIO CreateIO(RubyClass/*!*/ self, MutableString/*!*/ path, MutableString modeString, int permissions) {
-            // TODO: make this actually do something with permissions
-            return new RubyFile(self.Context, path.ConvertToString(),
-                (modeString != null) ? modeString.ConvertToString() : "r");
+        public static RubyFile/*!*/ CreateFile(RubyClass/*!*/ self, MutableString/*!*/ path, int mode) {
+            return new RubyFile(self.Context, path.ConvertToString(), (RubyFileMode)mode);
         }
-
-        [RubyConstructor]
-        public static RubyIO CreateIO(RubyClass/*!*/ self, MutableString/*!*/ path, int fileMode) {
-            return new RubyFile(self.Context, path.ConvertToString(), (RubyFileMode)fileMode);
-        }
-
-        [RubyConstructor]
-        public static RubyIO CreateIO(RubyClass/*!*/ self, MutableString/*!*/ path, int fileMode, int permissions) {
-            // TODO: make this actually do something with permissions
-            return new RubyFile(self.Context, path.ConvertToString(), (RubyFileMode)fileMode);
-        }
-
-        #region Private Singleton Methods
 
         #endregion
 
         #region Public Singleton Methods
+
+        [RubyMethod("open", RubyMethodAttributes.PublicSingleton)]
+        public static RuleGenerator/*!*/ Open() {
+            return RubyIOOps.Open();
+        }
 
         [RubyMethod("atime", RubyMethodAttributes.PublicSingleton)]
         public static DateTime AccessTime(RubyClass/*!*/ self, [DefaultProtocol]MutableString/*!*/ path) {
@@ -397,54 +414,6 @@ namespace IronRuby.Builtins {
             return RubyStatOps.ModifiedTime(RubyStatOps.Create(self.Context, path));
         }
 
-        [RubyMethod("open", RubyMethodAttributes.PublicSingleton)]
-        public static object Open(BlockParam/*!*/ block, RubyClass/*!*/ self, [NotNull]MutableString/*!*/ path, [NotNull]MutableString/*!*/ mode) {
-            RubyIO io = RubyIOOps._CreateIOSharedSite2.Target(RubyIOOps._CreateIOSharedSite2, self.Context, self, path, mode);
-            return RubyIOOps.TryInvokeOpenBlock(self.Context, block, io);
-        }
-
-        [RubyMethod("open", RubyMethodAttributes.PublicSingleton)]
-        public static object Open(BlockParam/*!*/ block, RubyClass/*!*/ self, object path, object mode) {
-            RubyIO io = RubyIOOps._CreateIOSharedSite2.Target(RubyIOOps._CreateIOSharedSite2, self.Context, self, Protocols.CastToString(self.Context, path), Protocols.CastToString(self.Context, mode));
-            return RubyIOOps.TryInvokeOpenBlock(self.Context, block, io);
-        }
-
-        [RubyMethod("open", RubyMethodAttributes.PublicSingleton)]
-        public static object Open(BlockParam/*!*/ block, RubyClass/*!*/ self, [NotNull]MutableString/*!*/ path) {
-            RubyIO io = RubyIOOps._CreateIOSharedSite3.Target(RubyIOOps._CreateIOSharedSite3, self.Context, self, path);
-            return RubyIOOps.TryInvokeOpenBlock(self.Context, block, io);
-        }
-
-        [RubyMethod("open", RubyMethodAttributes.PublicSingleton)]
-        public static object Open(BlockParam/*!*/ block, RubyClass/*!*/ self, object path) {
-            RubyIO io = RubyIOOps._CreateIOSharedSite3.Target(RubyIOOps._CreateIOSharedSite3, self.Context, self, Protocols.CastToString(self.Context, path));
-            return RubyIOOps.TryInvokeOpenBlock(self.Context, block, io);
-        }
-
-        [RubyMethod("open", RubyMethodAttributes.PublicSingleton)]
-        public static object Open(BlockParam/*!*/ block, RubyClass/*!*/ self, [NotNull]MutableString/*!*/ path, int fileMode) {
-            RubyIO io = RubyIOOps._CreateIOSharedSite4.Target(RubyIOOps._CreateIOSharedSite4, self.Context, self, path, fileMode);
-            return RubyIOOps.TryInvokeOpenBlock(self.Context, block, io);
-        }
-
-        [RubyMethod("open", RubyMethodAttributes.PublicSingleton)]
-        public static object Open(BlockParam/*!*/ block, RubyClass/*!*/ self, object path, int fileMode) {
-            RubyIO io = RubyIOOps._CreateIOSharedSite4.Target(RubyIOOps._CreateIOSharedSite4, self.Context, self, Protocols.CastToString(self.Context, path), fileMode);
-            return RubyIOOps.TryInvokeOpenBlock(self.Context, block, io);
-        }
-
-        [RubyMethod("open", RubyMethodAttributes.PublicSingleton)]
-        public static object Open(BlockParam/*!*/ block, RubyClass/*!*/ self, object path, int fileMode, int permissions) {
-            RubyIO io = RubyIOOps._CreateIOSharedSite5.Target(RubyIOOps._CreateIOSharedSite5, self.Context, self, Protocols.CastToString(self.Context, path), fileMode, permissions);
-            return RubyIOOps.TryInvokeOpenBlock(self.Context, block, io);
-        }
-
-        [RubyMethod("open", RubyMethodAttributes.PublicSingleton)]
-        public static object Open(BlockParam/*!*/ block, RubyClass/*!*/ self, MutableString/*!*/ path, MutableString/*!*/ mode, int permissions) {
-            RubyIO io = RubyIOOps._CreateIOSharedSite7.Target(RubyIOOps._CreateIOSharedSite7, self.Context, self, path, mode, permissions);
-            return RubyIOOps.TryInvokeOpenBlock(self.Context, block, io);
-        }
-
         [RubyMethod("owned?", RubyMethodAttributes.PublicSingleton)]
         public static bool IsUserOwned(RubyClass/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ path) {
             return RubyStatOps.IsUserOwned(RubyStatOps.Create(self.Context, path));
@@ -698,12 +667,6 @@ namespace IronRuby.Builtins {
             public readonly static int RDONLY = (int)RubyFileMode.RDONLY;
             [RubyConstant]
             public readonly static int RDWR = (int)RubyFileMode.RDWR;
-            [RubyConstant]
-            public readonly static int SEEK_CUR = 0x01;
-            [RubyConstant]
-            public readonly static int SEEK_END = 0x02;
-            [RubyConstant]
-            public readonly static int SEEK_SET = 0x00;
             [RubyConstant]
             public readonly static int TRUNC = (int)RubyFileMode.TRUNC;
             [RubyConstant]

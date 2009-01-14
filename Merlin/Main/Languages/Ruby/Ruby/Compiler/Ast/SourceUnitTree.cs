@@ -209,7 +209,7 @@ namespace IronRuby.Compiler.Ast {
             MSA.ParameterExpression exception = scope.DefineHiddenVariable("#exception", typeof(System.Threading.ThreadAbortException));
             MSA.CatchBlock handler = Ast.Catch(exception,
                 Ast.Call(
-                    typeof(SourceUnitTree).GetMethod("CheckForAsyncRaiseViaThreadAbort"),
+                    Methods.CheckForAsyncRaiseViaThreadAbort,
                     runtimeScopeVariable,
                     exception));
             if (body.Type == typeof(void)) {
@@ -224,19 +224,6 @@ namespace IronRuby.Compiler.Ast {
             }
 
             return body;
-        }
-
-        public static void CheckForAsyncRaiseViaThreadAbort(RubyScope scope, System.Threading.ThreadAbortException exception) {
-            Exception visibleException = RubyOps.GetVisibleException(exception);
-            if (exception == visibleException) {
-                return;
-            } else {
-                RubyOps.SetCurrentExceptionAndStackTrace(scope, exception);
-                // We are starting a new exception throw here (with the downside that we will lose the full stack trace)
-                RubyExceptionData.ActiveExceptionHandled(visibleException);
-
-                throw visibleException;
-            }
         }
     }
 }

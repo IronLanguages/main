@@ -27,6 +27,7 @@ using MethodDeclaration = IronRuby.Compiler.Ast.MethodDeclaration;
 using AstFactory = IronRuby.Compiler.Ast.AstFactory;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 using Ast = System.Linq.Expressions.Expression;
+using System.Reflection;
 
 namespace IronRuby.Runtime.Calls {
     public sealed class RubyMethodInfo : RubyMemberInfo {
@@ -70,6 +71,16 @@ namespace IronRuby.Runtime.Calls {
             return new RubyMethodInfo(_ast, _method, module, _definitionName, _mandatoryParamCount, _optionalParamCount, 
                 _hasUnsplatParameter, flags
             );
+        }
+
+        public override RubyMemberInfo TrySelectOverload(Type/*!*/[]/*!*/ parameterTypes) {
+            return parameterTypes.Length >= MandatoryParamCount 
+                && (HasUnsplatParameter || parameterTypes.Length <= MandatoryParamCount + OptionalParamCount)
+                && parameterTypes.TrueForAll((type) => type == typeof(object)) ? this : null;
+        }
+
+        public override MemberInfo/*!*/[]/*!*/ GetMembers() {
+            return new MemberInfo[] { _method.Method };
         }
 
         public override int Arity {

@@ -23,6 +23,7 @@ using System.Text;
 using Microsoft.Scripting.Math;
 using IronRuby.Runtime;
 using SM = System.Math;
+using IronRuby.Runtime.Calls;
 
 namespace IronRuby.Builtins {
 
@@ -83,21 +84,33 @@ namespace IronRuby.Builtins {
 
         private StringBuilder _buf;
 
-        private readonly ConversionStorage<int>/*!*/ _fixnumCast;
-        private readonly ConversionStorage<MutableString>/*!*/ _tosConversion;
+        private readonly ConversionStorage<int> _fixnumCast;
+        private readonly ConversionStorage<MutableString> _tosConversion;
+        private readonly ConversionStorage<IntegerValue> _integerConversion;
 
         #region Constructors
 
-        internal StringFormatter(ConversionStorage<int>/*!*/ fixnumCast, ConversionStorage<MutableString>/*!*/ tosConversion, 
-            RubyContext/*!*/ context, string/*!*/ format, IList/*!*/ data) {
+        // TODO: remove
+        internal StringFormatter(RubyContext/*!*/ context, string/*!*/ format, IList/*!*/ data) {
             Assert.NotNull(context, format, data);
-            // TODO: Assert.NotNull(fixnumCast,tosConversion)
+
+            _context = context;
+            _format = format;
+            _data = data;
+        }
+
+        internal StringFormatter(
+            ConversionStorage<IntegerValue>/*!*/ integerConversion,
+            ConversionStorage<int>/*!*/ fixnumCast,
+            ConversionStorage<MutableString>/*!*/ tosConversion,
+            RubyContext/*!*/ context, string/*!*/ format, IList/*!*/ data)
+            : this(context, format, data) {
+
+            Assert.NotNull(integerConversion, fixnumCast, tosConversion);
 
             _fixnumCast = fixnumCast;
             _tosConversion = tosConversion;
-            _format = format;
-            _data = data;
-            _context = context;
+            _integerConversion = integerConversion;
         }
 
         #endregion
@@ -314,18 +327,16 @@ namespace IronRuby.Builtins {
         }
 
         private void AppendInt(char format) {
-            int fixnum;
-            BigInteger bignum; 
-            Protocols.ConvertToInteger(_context, _opts.Value, out fixnum, out bignum);
+            IntegerValue integer = (_opts.Value == null) ? 0 : Protocols.ConvertToInteger(_integerConversion, _context, _opts.Value);
 
             object val;
             bool isPositive;
-            if ((object)bignum != null) {
-                isPositive = bignum.IsPositive();
-                val = bignum;
+            if (integer.IsFixnum) {
+                isPositive = integer.Fixnum > 0;
+                val = integer.Fixnum;
             } else {
-                isPositive = fixnum > 0;
-                val = fixnum;
+                isPositive = integer.Bignum.IsPositive();
+                val = integer.Bignum;
             }
 
             if (_opts.LeftAdj) {
@@ -766,12 +777,10 @@ namespace IronRuby.Builtins {
         /// for BigInteger below that should be kept in sync.
         /// </summary>
         private void AppendBase(char format, int radix) {
-            BigInteger bignum;
-            int fixnum;
-            Protocols.ConvertToInteger(_context, _opts.Value, out fixnum, out bignum);
+            IntegerValue integer = (_opts.Value == null) ? 0 : Protocols.ConvertToInteger(_integerConversion, _context, _opts.Value);
 
             // TODO: split paths for bignum and fixnum
-            object value = ((object)bignum) ?? fixnum;
+            object value = integer.IsFixnum ? (object)integer.Fixnum : (object)integer.Bignum;
 
             bool isNegative = IsNegative(value);
             if (isNegative) {

@@ -106,7 +106,7 @@ namespace Microsoft.Scripting.Actions {
                 Ast.Throw(
                     AstUtils.ComplexCallHelper(
                         typeof(BinderOps).GetMethod("BadArgumentsForOperation"),
-                        ArrayUtils.Insert((Expression)Ast.Constant(info.Operator), DynamicMetaObject.GetExpressions(args))
+                        ArrayUtils.Insert((Expression)Ast.Constant(info.Operator), DynamicUtils.GetExpressions(args))
                     )
                 ),
                 BindingRestrictions.Combine(args)

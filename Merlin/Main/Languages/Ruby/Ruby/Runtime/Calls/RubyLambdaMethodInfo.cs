@@ -13,6 +13,9 @@
  *
  * ***************************************************************************/
 
+using System;
+using System.Diagnostics;
+using System.Reflection;
 using Microsoft.Scripting;
 using Microsoft.Scripting.Actions;
 using Microsoft.Scripting.Runtime;
@@ -21,7 +24,6 @@ using IronRuby.Builtins;
 
 namespace IronRuby.Runtime.Calls {
     using Ast = System.Linq.Expressions.Expression;
-    using System.Diagnostics;
 
     public class RubyLambdaMethodInfo : RubyMemberInfo {
         private readonly Proc/*!*/ _lambda;
@@ -42,8 +44,17 @@ namespace IronRuby.Runtime.Calls {
             _definitionName = definitionName;
         }
 
+        public override MemberInfo/*!*/[]/*!*/ GetMembers() {
+            return new MemberInfo[] { _lambda.Dispatcher.Method.Method };
+        }
+
         protected internal override RubyMemberInfo/*!*/ Copy(RubyMemberFlags flags, RubyModule/*!*/ module) {
             return new RubyLambdaMethodInfo(_lambda, _definitionName, flags, module);
+        }
+
+        public override RubyMemberInfo TrySelectOverload(Type/*!*/[]/*!*/ parameterTypes) {
+            return parameterTypes.Length == _lambda.Dispatcher.ParameterCount 
+                && parameterTypes.TrueForAll((type) => type == typeof(object)) ? this : null;
         }
 
         internal override void BuildCallNoFlow(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args, string/*!*/ name) {

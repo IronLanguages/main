@@ -593,7 +593,7 @@ namespace IronRuby.Builtins {
         /// </remarks>
         [RubyMethod("to_s")]
         public static MutableString ToS(RubyContext/*!*/ context, double self) {
-            StringFormatter sf = new StringFormatter(null, null, context, "%.15g", new object[] { self });
+            StringFormatter sf = new StringFormatter(context, "%.15g", new object[] { self });
             sf.TrailingZeroAfterWholeFloat = true;
             return sf.Format();
         }

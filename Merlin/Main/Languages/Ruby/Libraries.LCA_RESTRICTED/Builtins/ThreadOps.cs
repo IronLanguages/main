@@ -40,9 +40,6 @@ namespace IronRuby.Builtins {
     public static class ThreadOps {
         static bool _globalAbortOnException;
 
-        private class ThreadExitMarker {
-        }
-
         /// <summary>
         /// The ThreadState enumeration is a flag, and multiple values could be set simultaneously. Also,
         /// there is other state that IronRuby tracks. RubyThreadStatus flattens out the different states
@@ -62,9 +59,9 @@ namespace IronRuby.Builtins {
             Completed,
 
             /// <summary>
-            /// TODO - Ruby samples show this state. Is it really needed?
+            /// If Thread#kill has been called, and the thread is not sleeping
             /// </summary>
-            // Aborting,
+            Aborting,
 
             /// <summary>
             /// An unhandled exception was thrown by the thread
@@ -160,6 +157,7 @@ namespace IronRuby.Builtins {
             internal Exception Exception { get; set; }
             internal object Result { get; set; }
             internal bool CreatedFromRuby { get; set; }
+            internal bool ExitRequested { get; set; }
 
             internal bool AbortOnException {
                 get {
@@ -298,6 +296,9 @@ namespace IronRuby.Builtins {
                 case RubyThreadStatus.Sleeping:
                     result.Append("sleep");
                     break;
+                case RubyThreadStatus.Aborting:
+                    result.Append("aborting");
+                    break;
                 case RubyThreadStatus.Completed:
                 case RubyThreadStatus.Aborted:
                     result.Append("dead");
@@ -347,11 +348,15 @@ namespace IronRuby.Builtins {
         [RubyMethod("terminate")]
         public static Thread Kill(Thread/*!*/ self) {
             RubyThreadInfo.RegisterThread(Thread.CurrentThread);
-#if SILVERLIGHT // Thread.Abort(stateInfo)
-            self.Abort();
-#else
-            self.Abort(new ThreadExitMarker());
-#endif
+            RubyThreadInfo info = RubyThreadInfo.FromThread(self);
+            if (GetStatus(self) == RubyThreadStatus.Sleeping && info.ExitRequested) {
+                // Thread must be sleeping in an ensure clause. Wake up the thread and allow ensure clause to complete
+                info.Run();
+                return self;
+            }
+
+            info.ExitRequested = true;
+            RubyUtils.ExitThread(self);
             return self;
         }
 
@@ -387,7 +392,7 @@ namespace IronRuby.Builtins {
             RubyThreadStatus status = GetStatus(thread);
 
             // rethrow semantics, preserves the backtrace associated with the exception:
-            RubyOps.RaiseAsyncException(thread, exception);
+            RubyUtils.RaiseAsyncException(thread, exception);
 
             if (status == RubyThreadStatus.Sleeping) {
                 // Thread.Abort can interrupt a thread with ThreadState.WaitSleepJoin. However, Thread.Abort 
@@ -504,6 +509,10 @@ namespace IronRuby.Builtins {
                 return RubyThreadStatus.Sleeping;
             }
 
+            if ((state & ThreadState.AbortRequested) != 0) {
+                return RubyThreadStatus.Aborting;
+            }
+
             if ((state & ThreadState.Running) == ThreadState.Running) {
                 return RubyThreadStatus.Running;
             }
@@ -521,6 +530,8 @@ namespace IronRuby.Builtins {
                     return MutableString.Create("run");
                 case RubyThreadStatus.Sleeping:
                     return MutableString.Create("sleep");
+                case RubyThreadStatus.Aborting:
+                    return MutableString.Create("aborting");
                 case RubyThreadStatus.Completed:
                     return false;
                 case RubyThreadStatus.Aborted:
@@ -593,26 +604,6 @@ namespace IronRuby.Builtins {
             return result;
         }
 
-        /// <summary>
-        /// Thread#exit is implemented by calling Thread.Abort. However, we need to distinguish a call to Thread#exit
-        /// from a raw call to Thread.Abort.
-        /// </summary>
-        /// <returns>true if the exception was raised by Thread#exit. In that case, it should not be treated as an uncaught exception</returns>
-        private static bool IsRubyThreadExit(Exception e) {
-            ThreadAbortException tae = e as ThreadAbortException;
-            if (tae != null) {
-#if SILVERLIGHT // Thread.ExceptionState
-                return true;
-#else
-                if (tae.ExceptionState is ThreadExitMarker) {
-                    Thread.ResetAbort();
-                    return true;
-                }
-#endif
-            }
-            return false;
-        }
-
         [RubyMethod("main", RubyMethodAttributes.PublicSingleton)]
         public static Thread/*!*/ GetMainThread(RubyContext/*!*/ context, RubyClass self) {
             return context.MainThread;
@@ -642,11 +633,16 @@ namespace IronRuby.Builtins {
                 startRoutine.Yield(args, out threadResult);
                 info.Result = threadResult;
             } catch (Exception e) {
-                if (IsRubyThreadExit(e)) {
+                if (info.ExitRequested) {
+                    // Note that "e" may not be ThreadAbortException at this point If an exception was raised from a finally block,
+                    // we will get that here instead
                     Utils.Log(String.Format("Thread {0} exited.", info.Thread.ManagedThreadId), "THREAD");
                     info.Result = false;
+#if !SILVERLIGHT
+                    Thread.ResetAbort();
+#endif
                 } else {
-                    e = RubyOps.GetVisibleException(e);
+                    e = RubyUtils.GetVisibleException(e);
                     RubyExceptionData.ActiveExceptionHandled(e);
                     info.Exception = e;
 

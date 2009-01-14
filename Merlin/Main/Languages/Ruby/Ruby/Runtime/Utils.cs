@@ -17,12 +17,16 @@ using System;
 using Microsoft.Scripting.Utils;
 using System.Diagnostics;
 using System.Text;
+using System.Reflection;
 
 namespace IronRuby.Runtime {
     public static class Utils {
         public static class Array {
             [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2105:ArrayFieldsShouldNotBeReadOnly")]
             public static readonly byte[] EmptyBytes = new byte[0];
+
+	        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2105:ArrayFieldsShouldNotBeReadOnly")]
+	        public static readonly MemberInfo[] EmptyMemberInfos = new MemberInfo[0];
 
             public static int IndexOf(/*this*/ string[]/*!*/ array, string/*!*/ value, StringComparer/*!*/ comparer) {
                 ContractUtils.RequiresNotNull(array, "array");
@@ -65,7 +69,7 @@ namespace IronRuby.Runtime {
         }
     }
 
-    public static class StringBuilderExtensions {
+    public static class BclExtensions {
         public static int IndexOf(this StringBuilder/*!*/ sb, char value) {
             ContractUtils.RequiresNotNull(sb, "sb");
 
@@ -76,6 +80,19 @@ namespace IronRuby.Runtime {
             }
 
             return -1;
+        }
+
+        public static bool TrueForAll<T>(this T[]/*!*/ array, Predicate<T>/*!*/ predicate) {
+#if SILVERLIGHT
+            foreach (var item in array) {
+                if (!predicate(item)) {
+                    return false;
+                }
+            }
+            return true;
+#else
+            return Array.TrueForAll(array, predicate);
+#endif
         }
     }
 }
