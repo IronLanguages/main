@@ -1,0 +1,3 @@
+
+def f():
+    print "abc"

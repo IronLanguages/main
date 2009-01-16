@@ -32,9 +32,9 @@ namespace System.Dynamic {
 
         private partial class Matchmaker {
             internal bool Match;
-            internal Delegate Delegete;
+            internal Delegate Delegate;
         }
-        
+
         //
         // WARNING: do not edit these methods here. The real source code lives
         // in two places: generate_dynsites.py, which generates the methods in
@@ -67,9 +67,9 @@ namespace System.Dynamic {
             Matchmaker mm = Interlocked.Exchange(ref MatchmakerCache<Func<CallSite, T0, TRet>>.Info, null);
             if (mm == null) {
                 mm = new Matchmaker();
-                mm.Delegete = ruleTarget = mm.Fallback1<T0, TRet>;
+                mm.Delegate = ruleTarget = mm.Fallback1<T0, TRet>;
             } else {
-                ruleTarget = (Func<CallSite, T0, TRet>)mm.Delegete;
+                ruleTarget = (Func<CallSite, T0, TRet>)mm.Delegate;
             }
 
             try {    
@@ -123,12 +123,11 @@ namespace System.Dynamic {
                 //
                 // Level 2 cache lookup
                 //
-                var args = new object[] { arg0 };
 
                 //
                 // Any applicable rules in level 2 cache?
                 //
-                if ((applicable = CallSiteOps.FindApplicableRules(@this, args)) != null) {
+                if ((applicable = CallSiteOps.FindApplicableRules(@this)) != null) {
                     for (index = 0, count = applicable.Length; index < count; index++) {
                         rule = applicable[index];
 
@@ -149,7 +148,7 @@ namespace System.Dynamic {
                                 //
                                 CallSiteOps.AddRule(@this, rule);
                                 // and then move it to the front of the L2 cache
-                                @this.RuleCache.MoveRule(rule, args);
+                                @this.RuleCache.MoveRule(rule);
                             }
                         }
 
@@ -169,6 +168,7 @@ namespace System.Dynamic {
                 //
 
                 rule = null;
+                var args = new object[] { arg0 };
 
                 for (; ; ) {
                     rule = CallSiteOps.CreateNewRule(@this, rule, originalRule, args);
@@ -227,9 +227,9 @@ namespace System.Dynamic {
             Matchmaker mm = Interlocked.Exchange(ref MatchmakerCache<Func<CallSite, T0, T1, TRet>>.Info, null);
             if (mm == null) {
                 mm = new Matchmaker();
-                mm.Delegete = ruleTarget = mm.Fallback2<T0, T1, TRet>;
+                mm.Delegate = ruleTarget = mm.Fallback2<T0, T1, TRet>;
             } else {
-                ruleTarget = (Func<CallSite, T0, T1, TRet>)mm.Delegete;
+                ruleTarget = (Func<CallSite, T0, T1, TRet>)mm.Delegate;
             }
 
             try {    
@@ -283,12 +283,11 @@ namespace System.Dynamic {
                 //
                 // Level 2 cache lookup
                 //
-                var args = new object[] { arg0, arg1 };
 
                 //
                 // Any applicable rules in level 2 cache?
                 //
-                if ((applicable = CallSiteOps.FindApplicableRules(@this, args)) != null) {
+                if ((applicable = CallSiteOps.FindApplicableRules(@this)) != null) {
                     for (index = 0, count = applicable.Length; index < count; index++) {
                         rule = applicable[index];
 
@@ -309,7 +308,7 @@ namespace System.Dynamic {
                                 //
                                 CallSiteOps.AddRule(@this, rule);
                                 // and then move it to the front of the L2 cache
-                                @this.RuleCache.MoveRule(rule, args);
+                                @this.RuleCache.MoveRule(rule);
                             }
                         }
 
@@ -329,6 +328,7 @@ namespace System.Dynamic {
                 //
 
                 rule = null;
+                var args = new object[] { arg0, arg1 };
 
                 for (; ; ) {
                     rule = CallSiteOps.CreateNewRule(@this, rule, originalRule, args);
@@ -387,9 +387,9 @@ namespace System.Dynamic {
             Matchmaker mm = Interlocked.Exchange(ref MatchmakerCache<Func<CallSite, T0, T1, T2, TRet>>.Info, null);
             if (mm == null) {
                 mm = new Matchmaker();
-                mm.Delegete = ruleTarget = mm.Fallback3<T0, T1, T2, TRet>;
+                mm.Delegate = ruleTarget = mm.Fallback3<T0, T1, T2, TRet>;
             } else {
-                ruleTarget = (Func<CallSite, T0, T1, T2, TRet>)mm.Delegete;
+                ruleTarget = (Func<CallSite, T0, T1, T2, TRet>)mm.Delegate;
             }
 
             try {    
@@ -443,12 +443,11 @@ namespace System.Dynamic {
                 //
                 // Level 2 cache lookup
                 //
-                var args = new object[] { arg0, arg1, arg2 };
 
                 //
                 // Any applicable rules in level 2 cache?
                 //
-                if ((applicable = CallSiteOps.FindApplicableRules(@this, args)) != null) {
+                if ((applicable = CallSiteOps.FindApplicableRules(@this)) != null) {
                     for (index = 0, count = applicable.Length; index < count; index++) {
                         rule = applicable[index];
 
@@ -469,7 +468,7 @@ namespace System.Dynamic {
                                 //
                                 CallSiteOps.AddRule(@this, rule);
                                 // and then move it to the front of the L2 cache
-                                @this.RuleCache.MoveRule(rule, args);
+                                @this.RuleCache.MoveRule(rule);
                             }
                         }
 
@@ -489,6 +488,7 @@ namespace System.Dynamic {
                 //
 
                 rule = null;
+                var args = new object[] { arg0, arg1, arg2 };
 
                 for (; ; ) {
                     rule = CallSiteOps.CreateNewRule(@this, rule, originalRule, args);
@@ -547,9 +547,9 @@ namespace System.Dynamic {
             Matchmaker mm = Interlocked.Exchange(ref MatchmakerCache<Func<CallSite, T0, T1, T2, T3, TRet>>.Info, null);
             if (mm == null) {
                 mm = new Matchmaker();
-                mm.Delegete = ruleTarget = mm.Fallback4<T0, T1, T2, T3, TRet>;
+                mm.Delegate = ruleTarget = mm.Fallback4<T0, T1, T2, T3, TRet>;
             } else {
-                ruleTarget = (Func<CallSite, T0, T1, T2, T3, TRet>)mm.Delegete;
+                ruleTarget = (Func<CallSite, T0, T1, T2, T3, TRet>)mm.Delegate;
             }
 
             try {    
@@ -603,12 +603,11 @@ namespace System.Dynamic {
                 //
                 // Level 2 cache lookup
                 //
-                var args = new object[] { arg0, arg1, arg2, arg3 };
 
                 //
                 // Any applicable rules in level 2 cache?
                 //
-                if ((applicable = CallSiteOps.FindApplicableRules(@this, args)) != null) {
+                if ((applicable = CallSiteOps.FindApplicableRules(@this)) != null) {
                     for (index = 0, count = applicable.Length; index < count; index++) {
                         rule = applicable[index];
 
@@ -629,7 +628,7 @@ namespace System.Dynamic {
                                 //
                                 CallSiteOps.AddRule(@this, rule);
                                 // and then move it to the front of the L2 cache
-                                @this.RuleCache.MoveRule(rule, args);
+                                @this.RuleCache.MoveRule(rule);
                             }
                         }
 
@@ -649,6 +648,7 @@ namespace System.Dynamic {
                 //
 
                 rule = null;
+                var args = new object[] { arg0, arg1, arg2, arg3 };
 
                 for (; ; ) {
                     rule = CallSiteOps.CreateNewRule(@this, rule, originalRule, args);
@@ -707,9 +707,9 @@ namespace System.Dynamic {
             Matchmaker mm = Interlocked.Exchange(ref MatchmakerCache<Func<CallSite, T0, T1, T2, T3, T4, TRet>>.Info, null);
             if (mm == null) {
                 mm = new Matchmaker();
-                mm.Delegete = ruleTarget = mm.Fallback5<T0, T1, T2, T3, T4, TRet>;
+                mm.Delegate = ruleTarget = mm.Fallback5<T0, T1, T2, T3, T4, TRet>;
             } else {
-                ruleTarget = (Func<CallSite, T0, T1, T2, T3, T4, TRet>)mm.Delegete;
+                ruleTarget = (Func<CallSite, T0, T1, T2, T3, T4, TRet>)mm.Delegate;
             }
 
             try {    
@@ -763,12 +763,11 @@ namespace System.Dynamic {
                 //
                 // Level 2 cache lookup
                 //
-                var args = new object[] { arg0, arg1, arg2, arg3, arg4 };
 
                 //
                 // Any applicable rules in level 2 cache?
                 //
-                if ((applicable = CallSiteOps.FindApplicableRules(@this, args)) != null) {
+                if ((applicable = CallSiteOps.FindApplicableRules(@this)) != null) {
                     for (index = 0, count = applicable.Length; index < count; index++) {
                         rule = applicable[index];
 
@@ -789,7 +788,7 @@ namespace System.Dynamic {
                                 //
                                 CallSiteOps.AddRule(@this, rule);
                                 // and then move it to the front of the L2 cache
-                                @this.RuleCache.MoveRule(rule, args);
+                                @this.RuleCache.MoveRule(rule);
                             }
                         }
 
@@ -809,6 +808,7 @@ namespace System.Dynamic {
                 //
 
                 rule = null;
+                var args = new object[] { arg0, arg1, arg2, arg3, arg4 };
 
                 for (; ; ) {
                     rule = CallSiteOps.CreateNewRule(@this, rule, originalRule, args);
@@ -867,9 +867,9 @@ namespace System.Dynamic {
             Matchmaker mm = Interlocked.Exchange(ref MatchmakerCache<Func<CallSite, T0, T1, T2, T3, T4, T5, TRet>>.Info, null);
             if (mm == null) {
                 mm = new Matchmaker();
-                mm.Delegete = ruleTarget = mm.Fallback6<T0, T1, T2, T3, T4, T5, TRet>;
+                mm.Delegate = ruleTarget = mm.Fallback6<T0, T1, T2, T3, T4, T5, TRet>;
             } else {
-                ruleTarget = (Func<CallSite, T0, T1, T2, T3, T4, T5, TRet>)mm.Delegete;
+                ruleTarget = (Func<CallSite, T0, T1, T2, T3, T4, T5, TRet>)mm.Delegate;
             }
 
             try {    
@@ -923,12 +923,11 @@ namespace System.Dynamic {
                 //
                 // Level 2 cache lookup
                 //
-                var args = new object[] { arg0, arg1, arg2, arg3, arg4, arg5 };
 
                 //
                 // Any applicable rules in level 2 cache?
                 //
-                if ((applicable = CallSiteOps.FindApplicableRules(@this, args)) != null) {
+                if ((applicable = CallSiteOps.FindApplicableRules(@this)) != null) {
                     for (index = 0, count = applicable.Length; index < count; index++) {
                         rule = applicable[index];
 
@@ -949,7 +948,7 @@ namespace System.Dynamic {
                                 //
                                 CallSiteOps.AddRule(@this, rule);
                                 // and then move it to the front of the L2 cache
-                                @this.RuleCache.MoveRule(rule, args);
+                                @this.RuleCache.MoveRule(rule);
                             }
                         }
 
@@ -969,6 +968,7 @@ namespace System.Dynamic {
                 //
 
                 rule = null;
+                var args = new object[] { arg0, arg1, arg2, arg3, arg4, arg5 };
 
                 for (; ; ) {
                     rule = CallSiteOps.CreateNewRule(@this, rule, originalRule, args);
@@ -1027,9 +1027,9 @@ namespace System.Dynamic {
             Matchmaker mm = Interlocked.Exchange(ref MatchmakerCache<Func<CallSite, T0, T1, T2, T3, T4, T5, T6, TRet>>.Info, null);
             if (mm == null) {
                 mm = new Matchmaker();
-                mm.Delegete = ruleTarget = mm.Fallback7<T0, T1, T2, T3, T4, T5, T6, TRet>;
+                mm.Delegate = ruleTarget = mm.Fallback7<T0, T1, T2, T3, T4, T5, T6, TRet>;
             } else {
-                ruleTarget = (Func<CallSite, T0, T1, T2, T3, T4, T5, T6, TRet>)mm.Delegete;
+                ruleTarget = (Func<CallSite, T0, T1, T2, T3, T4, T5, T6, TRet>)mm.Delegate;
             }
 
             try {    
@@ -1083,12 +1083,11 @@ namespace System.Dynamic {
                 //
                 // Level 2 cache lookup
                 //
-                var args = new object[] { arg0, arg1, arg2, arg3, arg4, arg5, arg6 };
 
                 //
                 // Any applicable rules in level 2 cache?
                 //
-                if ((applicable = CallSiteOps.FindApplicableRules(@this, args)) != null) {
+                if ((applicable = CallSiteOps.FindApplicableRules(@this)) != null) {
                     for (index = 0, count = applicable.Length; index < count; index++) {
                         rule = applicable[index];
 
@@ -1109,7 +1108,7 @@ namespace System.Dynamic {
                                 //
                                 CallSiteOps.AddRule(@this, rule);
                                 // and then move it to the front of the L2 cache
-                                @this.RuleCache.MoveRule(rule, args);
+                                @this.RuleCache.MoveRule(rule);
                             }
                         }
 
@@ -1129,6 +1128,7 @@ namespace System.Dynamic {
                 //
 
                 rule = null;
+                var args = new object[] { arg0, arg1, arg2, arg3, arg4, arg5, arg6 };
 
                 for (; ; ) {
                     rule = CallSiteOps.CreateNewRule(@this, rule, originalRule, args);
@@ -1187,9 +1187,9 @@ namespace System.Dynamic {
             Matchmaker mm = Interlocked.Exchange(ref MatchmakerCache<Func<CallSite, T0, T1, T2, T3, T4, T5, T6, T7, TRet>>.Info, null);
             if (mm == null) {
                 mm = new Matchmaker();
-                mm.Delegete = ruleTarget = mm.Fallback8<T0, T1, T2, T3, T4, T5, T6, T7, TRet>;
+                mm.Delegate = ruleTarget = mm.Fallback8<T0, T1, T2, T3, T4, T5, T6, T7, TRet>;
             } else {
-                ruleTarget = (Func<CallSite, T0, T1, T2, T3, T4, T5, T6, T7, TRet>)mm.Delegete;
+                ruleTarget = (Func<CallSite, T0, T1, T2, T3, T4, T5, T6, T7, TRet>)mm.Delegate;
             }
 
             try {    
@@ -1243,12 +1243,11 @@ namespace System.Dynamic {
                 //
                 // Level 2 cache lookup
                 //
-                var args = new object[] { arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7 };
 
                 //
                 // Any applicable rules in level 2 cache?
                 //
-                if ((applicable = CallSiteOps.FindApplicableRules(@this, args)) != null) {
+                if ((applicable = CallSiteOps.FindApplicableRules(@this)) != null) {
                     for (index = 0, count = applicable.Length; index < count; index++) {
                         rule = applicable[index];
 
@@ -1269,7 +1268,7 @@ namespace System.Dynamic {
                                 //
                                 CallSiteOps.AddRule(@this, rule);
                                 // and then move it to the front of the L2 cache
-                                @this.RuleCache.MoveRule(rule, args);
+                                @this.RuleCache.MoveRule(rule);
                             }
                         }
 
@@ -1289,6 +1288,7 @@ namespace System.Dynamic {
                 //
 
                 rule = null;
+                var args = new object[] { arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7 };
 
                 for (; ; ) {
                     rule = CallSiteOps.CreateNewRule(@this, rule, originalRule, args);
@@ -1347,9 +1347,9 @@ namespace System.Dynamic {
             Matchmaker mm = Interlocked.Exchange(ref MatchmakerCache<Func<CallSite, T0, T1, T2, T3, T4, T5, T6, T7, T8, TRet>>.Info, null);
             if (mm == null) {
                 mm = new Matchmaker();
-                mm.Delegete = ruleTarget = mm.Fallback9<T0, T1, T2, T3, T4, T5, T6, T7, T8, TRet>;
+                mm.Delegate = ruleTarget = mm.Fallback9<T0, T1, T2, T3, T4, T5, T6, T7, T8, TRet>;
             } else {
-                ruleTarget = (Func<CallSite, T0, T1, T2, T3, T4, T5, T6, T7, T8, TRet>)mm.Delegete;
+                ruleTarget = (Func<CallSite, T0, T1, T2, T3, T4, T5, T6, T7, T8, TRet>)mm.Delegate;
             }
 
             try {    
@@ -1403,12 +1403,11 @@ namespace System.Dynamic {
                 //
                 // Level 2 cache lookup
                 //
-                var args = new object[] { arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8 };
 
                 //
                 // Any applicable rules in level 2 cache?
                 //
-                if ((applicable = CallSiteOps.FindApplicableRules(@this, args)) != null) {
+                if ((applicable = CallSiteOps.FindApplicableRules(@this)) != null) {
                     for (index = 0, count = applicable.Length; index < count; index++) {
                         rule = applicable[index];
 
@@ -1429,7 +1428,7 @@ namespace System.Dynamic {
                                 //
                                 CallSiteOps.AddRule(@this, rule);
                                 // and then move it to the front of the L2 cache
-                                @this.RuleCache.MoveRule(rule, args);
+                                @this.RuleCache.MoveRule(rule);
                             }
                         }
 
@@ -1449,6 +1448,7 @@ namespace System.Dynamic {
                 //
 
                 rule = null;
+                var args = new object[] { arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8 };
 
                 for (; ; ) {
                     rule = CallSiteOps.CreateNewRule(@this, rule, originalRule, args);
@@ -1507,9 +1507,9 @@ namespace System.Dynamic {
             Matchmaker mm = Interlocked.Exchange(ref MatchmakerCache<Func<CallSite, T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, TRet>>.Info, null);
             if (mm == null) {
                 mm = new Matchmaker();
-                mm.Delegete = ruleTarget = mm.Fallback10<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, TRet>;
+                mm.Delegate = ruleTarget = mm.Fallback10<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, TRet>;
             } else {
-                ruleTarget = (Func<CallSite, T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, TRet>)mm.Delegete;
+                ruleTarget = (Func<CallSite, T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, TRet>)mm.Delegate;
             }
 
             try {    
@@ -1563,12 +1563,11 @@ namespace System.Dynamic {
                 //
                 // Level 2 cache lookup
                 //
-                var args = new object[] { arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9 };
 
                 //
                 // Any applicable rules in level 2 cache?
                 //
-                if ((applicable = CallSiteOps.FindApplicableRules(@this, args)) != null) {
+                if ((applicable = CallSiteOps.FindApplicableRules(@this)) != null) {
                     for (index = 0, count = applicable.Length; index < count; index++) {
                         rule = applicable[index];
 
@@ -1589,7 +1588,7 @@ namespace System.Dynamic {
                                 //
                                 CallSiteOps.AddRule(@this, rule);
                                 // and then move it to the front of the L2 cache
-                                @this.RuleCache.MoveRule(rule, args);
+                                @this.RuleCache.MoveRule(rule);
                             }
                         }
 
@@ -1609,6 +1608,7 @@ namespace System.Dynamic {
                 //
 
                 rule = null;
+                var args = new object[] { arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9 };
 
                 for (; ; ) {
                     rule = CallSiteOps.CreateNewRule(@this, rule, originalRule, args);
@@ -1666,9 +1666,9 @@ namespace System.Dynamic {
             Matchmaker mm = Interlocked.Exchange(ref MatchmakerCache<Action<CallSite, T0>>.Info, null);
             if (mm == null) {
                 mm = new Matchmaker();
-                mm.Delegete = ruleTarget = mm.FallbackVoid1<T0>;
+                mm.Delegate = ruleTarget = mm.FallbackVoid1<T0>;
             } else {
-                ruleTarget = (Action<CallSite, T0>)mm.Delegete;
+                ruleTarget = (Action<CallSite, T0>)mm.Delegate;
             }
 
             try {    
@@ -1722,12 +1722,11 @@ namespace System.Dynamic {
                 //
                 // Level 2 cache lookup
                 //
-                var args = new object[] { arg0 };
 
                 //
                 // Any applicable rules in level 2 cache?
                 //
-                if ((applicable = CallSiteOps.FindApplicableRules(@this, args)) != null) {
+                if ((applicable = CallSiteOps.FindApplicableRules(@this)) != null) {
                     for (index = 0, count = applicable.Length; index < count; index++) {
                         rule = applicable[index];
 
@@ -1748,7 +1747,7 @@ namespace System.Dynamic {
                                 //
                                 CallSiteOps.AddRule(@this, rule);
                                 // and then move it to the front of the L2 cache
-                                @this.RuleCache.MoveRule(rule, args);
+                                @this.RuleCache.MoveRule(rule);
                             }
                         }
 
@@ -1768,6 +1767,7 @@ namespace System.Dynamic {
                 //
 
                 rule = null;
+                var args = new object[] { arg0 };
 
                 for (; ; ) {
                     rule = CallSiteOps.CreateNewRule(@this, rule, originalRule, args);
@@ -1825,9 +1825,9 @@ namespace System.Dynamic {
             Matchmaker mm = Interlocked.Exchange(ref MatchmakerCache<Action<CallSite, T0, T1>>.Info, null);
             if (mm == null) {
                 mm = new Matchmaker();
-                mm.Delegete = ruleTarget = mm.FallbackVoid2<T0, T1>;
+                mm.Delegate = ruleTarget = mm.FallbackVoid2<T0, T1>;
             } else {
-                ruleTarget = (Action<CallSite, T0, T1>)mm.Delegete;
+                ruleTarget = (Action<CallSite, T0, T1>)mm.Delegate;
             }
 
             try {    
@@ -1881,12 +1881,11 @@ namespace System.Dynamic {
                 //
                 // Level 2 cache lookup
                 //
-                var args = new object[] { arg0, arg1 };
 
                 //
                 // Any applicable rules in level 2 cache?
                 //
-                if ((applicable = CallSiteOps.FindApplicableRules(@this, args)) != null) {
+                if ((applicable = CallSiteOps.FindApplicableRules(@this)) != null) {
                     for (index = 0, count = applicable.Length; index < count; index++) {
                         rule = applicable[index];
 
@@ -1907,7 +1906,7 @@ namespace System.Dynamic {
                                 //
                                 CallSiteOps.AddRule(@this, rule);
                                 // and then move it to the front of the L2 cache
-                                @this.RuleCache.MoveRule(rule, args);
+                                @this.RuleCache.MoveRule(rule);
                             }
                         }
 
@@ -1927,6 +1926,7 @@ namespace System.Dynamic {
                 //
 
                 rule = null;
+                var args = new object[] { arg0, arg1 };
 
                 for (; ; ) {
                     rule = CallSiteOps.CreateNewRule(@this, rule, originalRule, args);
@@ -1984,9 +1984,9 @@ namespace System.Dynamic {
             Matchmaker mm = Interlocked.Exchange(ref MatchmakerCache<Action<CallSite, T0, T1, T2>>.Info, null);
             if (mm == null) {
                 mm = new Matchmaker();
-                mm.Delegete = ruleTarget = mm.FallbackVoid3<T0, T1, T2>;
+                mm.Delegate = ruleTarget = mm.FallbackVoid3<T0, T1, T2>;
             } else {
-                ruleTarget = (Action<CallSite, T0, T1, T2>)mm.Delegete;
+                ruleTarget = (Action<CallSite, T0, T1, T2>)mm.Delegate;
             }
 
             try {    
@@ -2040,12 +2040,11 @@ namespace System.Dynamic {
                 //
                 // Level 2 cache lookup
                 //
-                var args = new object[] { arg0, arg1, arg2 };
 
                 //
                 // Any applicable rules in level 2 cache?
                 //
-                if ((applicable = CallSiteOps.FindApplicableRules(@this, args)) != null) {
+                if ((applicable = CallSiteOps.FindApplicableRules(@this)) != null) {
                     for (index = 0, count = applicable.Length; index < count; index++) {
                         rule = applicable[index];
 
@@ -2066,7 +2065,7 @@ namespace System.Dynamic {
                                 //
                                 CallSiteOps.AddRule(@this, rule);
                                 // and then move it to the front of the L2 cache
-                                @this.RuleCache.MoveRule(rule, args);
+                                @this.RuleCache.MoveRule(rule);
                             }
                         }
 
@@ -2086,6 +2085,7 @@ namespace System.Dynamic {
                 //
 
                 rule = null;
+                var args = new object[] { arg0, arg1, arg2 };
 
                 for (; ; ) {
                     rule = CallSiteOps.CreateNewRule(@this, rule, originalRule, args);
@@ -2143,9 +2143,9 @@ namespace System.Dynamic {
             Matchmaker mm = Interlocked.Exchange(ref MatchmakerCache<Action<CallSite, T0, T1, T2, T3>>.Info, null);
             if (mm == null) {
                 mm = new Matchmaker();
-                mm.Delegete = ruleTarget = mm.FallbackVoid4<T0, T1, T2, T3>;
+                mm.Delegate = ruleTarget = mm.FallbackVoid4<T0, T1, T2, T3>;
             } else {
-                ruleTarget = (Action<CallSite, T0, T1, T2, T3>)mm.Delegete;
+                ruleTarget = (Action<CallSite, T0, T1, T2, T3>)mm.Delegate;
             }
 
             try {    
@@ -2199,12 +2199,11 @@ namespace System.Dynamic {
                 //
                 // Level 2 cache lookup
                 //
-                var args = new object[] { arg0, arg1, arg2, arg3 };
 
                 //
                 // Any applicable rules in level 2 cache?
                 //
-                if ((applicable = CallSiteOps.FindApplicableRules(@this, args)) != null) {
+                if ((applicable = CallSiteOps.FindApplicableRules(@this)) != null) {
                     for (index = 0, count = applicable.Length; index < count; index++) {
                         rule = applicable[index];
 
@@ -2225,7 +2224,7 @@ namespace System.Dynamic {
                                 //
                                 CallSiteOps.AddRule(@this, rule);
                                 // and then move it to the front of the L2 cache
-                                @this.RuleCache.MoveRule(rule, args);
+                                @this.RuleCache.MoveRule(rule);
                             }
                         }
 
@@ -2245,6 +2244,7 @@ namespace System.Dynamic {
                 //
 
                 rule = null;
+                var args = new object[] { arg0, arg1, arg2, arg3 };
 
                 for (; ; ) {
                     rule = CallSiteOps.CreateNewRule(@this, rule, originalRule, args);
@@ -2302,9 +2302,9 @@ namespace System.Dynamic {
             Matchmaker mm = Interlocked.Exchange(ref MatchmakerCache<Action<CallSite, T0, T1, T2, T3, T4>>.Info, null);
             if (mm == null) {
                 mm = new Matchmaker();
-                mm.Delegete = ruleTarget = mm.FallbackVoid5<T0, T1, T2, T3, T4>;
+                mm.Delegate = ruleTarget = mm.FallbackVoid5<T0, T1, T2, T3, T4>;
             } else {
-                ruleTarget = (Action<CallSite, T0, T1, T2, T3, T4>)mm.Delegete;
+                ruleTarget = (Action<CallSite, T0, T1, T2, T3, T4>)mm.Delegate;
             }
 
             try {    
@@ -2358,12 +2358,11 @@ namespace System.Dynamic {
                 //
                 // Level 2 cache lookup
                 //
-                var args = new object[] { arg0, arg1, arg2, arg3, arg4 };
 
                 //
                 // Any applicable rules in level 2 cache?
                 //
-                if ((applicable = CallSiteOps.FindApplicableRules(@this, args)) != null) {
+                if ((applicable = CallSiteOps.FindApplicableRules(@this)) != null) {
                     for (index = 0, count = applicable.Length; index < count; index++) {
                         rule = applicable[index];
 
@@ -2384,7 +2383,7 @@ namespace System.Dynamic {
                                 //
                                 CallSiteOps.AddRule(@this, rule);
                                 // and then move it to the front of the L2 cache
-                                @this.RuleCache.MoveRule(rule, args);
+                                @this.RuleCache.MoveRule(rule);
                             }
                         }
 
@@ -2404,6 +2403,7 @@ namespace System.Dynamic {
                 //
 
                 rule = null;
+                var args = new object[] { arg0, arg1, arg2, arg3, arg4 };
 
                 for (; ; ) {
                     rule = CallSiteOps.CreateNewRule(@this, rule, originalRule, args);
@@ -2461,9 +2461,9 @@ namespace System.Dynamic {
             Matchmaker mm = Interlocked.Exchange(ref MatchmakerCache<Action<CallSite, T0, T1, T2, T3, T4, T5>>.Info, null);
             if (mm == null) {
                 mm = new Matchmaker();
-                mm.Delegete = ruleTarget = mm.FallbackVoid6<T0, T1, T2, T3, T4, T5>;
+                mm.Delegate = ruleTarget = mm.FallbackVoid6<T0, T1, T2, T3, T4, T5>;
             } else {
-                ruleTarget = (Action<CallSite, T0, T1, T2, T3, T4, T5>)mm.Delegete;
+                ruleTarget = (Action<CallSite, T0, T1, T2, T3, T4, T5>)mm.Delegate;
             }
 
             try {    
@@ -2517,12 +2517,11 @@ namespace System.Dynamic {
                 //
                 // Level 2 cache lookup
                 //
-                var args = new object[] { arg0, arg1, arg2, arg3, arg4, arg5 };
 
                 //
                 // Any applicable rules in level 2 cache?
                 //
-                if ((applicable = CallSiteOps.FindApplicableRules(@this, args)) != null) {
+                if ((applicable = CallSiteOps.FindApplicableRules(@this)) != null) {
                     for (index = 0, count = applicable.Length; index < count; index++) {
                         rule = applicable[index];
 
@@ -2543,7 +2542,7 @@ namespace System.Dynamic {
                                 //
                                 CallSiteOps.AddRule(@this, rule);
                                 // and then move it to the front of the L2 cache
-                                @this.RuleCache.MoveRule(rule, args);
+                                @this.RuleCache.MoveRule(rule);
                             }
                         }
 
@@ -2563,6 +2562,7 @@ namespace System.Dynamic {
                 //
 
                 rule = null;
+                var args = new object[] { arg0, arg1, arg2, arg3, arg4, arg5 };
 
                 for (; ; ) {
                     rule = CallSiteOps.CreateNewRule(@this, rule, originalRule, args);
@@ -2620,9 +2620,9 @@ namespace System.Dynamic {
             Matchmaker mm = Interlocked.Exchange(ref MatchmakerCache<Action<CallSite, T0, T1, T2, T3, T4, T5, T6>>.Info, null);
             if (mm == null) {
                 mm = new Matchmaker();
-                mm.Delegete = ruleTarget = mm.FallbackVoid7<T0, T1, T2, T3, T4, T5, T6>;
+                mm.Delegate = ruleTarget = mm.FallbackVoid7<T0, T1, T2, T3, T4, T5, T6>;
             } else {
-                ruleTarget = (Action<CallSite, T0, T1, T2, T3, T4, T5, T6>)mm.Delegete;
+                ruleTarget = (Action<CallSite, T0, T1, T2, T3, T4, T5, T6>)mm.Delegate;
             }
 
             try {    
@@ -2676,12 +2676,11 @@ namespace System.Dynamic {
                 //
                 // Level 2 cache lookup
                 //
-                var args = new object[] { arg0, arg1, arg2, arg3, arg4, arg5, arg6 };
 
                 //
                 // Any applicable rules in level 2 cache?
                 //
-                if ((applicable = CallSiteOps.FindApplicableRules(@this, args)) != null) {
+                if ((applicable = CallSiteOps.FindApplicableRules(@this)) != null) {
                     for (index = 0, count = applicable.Length; index < count; index++) {
                         rule = applicable[index];
 
@@ -2702,7 +2701,7 @@ namespace System.Dynamic {
                                 //
                                 CallSiteOps.AddRule(@this, rule);
                                 // and then move it to the front of the L2 cache
-                                @this.RuleCache.MoveRule(rule, args);
+                                @this.RuleCache.MoveRule(rule);
                             }
                         }
 
@@ -2722,6 +2721,7 @@ namespace System.Dynamic {
                 //
 
                 rule = null;
+                var args = new object[] { arg0, arg1, arg2, arg3, arg4, arg5, arg6 };
 
                 for (; ; ) {
                     rule = CallSiteOps.CreateNewRule(@this, rule, originalRule, args);
@@ -2779,9 +2779,9 @@ namespace System.Dynamic {
             Matchmaker mm = Interlocked.Exchange(ref MatchmakerCache<Action<CallSite, T0, T1, T2, T3, T4, T5, T6, T7>>.Info, null);
             if (mm == null) {
                 mm = new Matchmaker();
-                mm.Delegete = ruleTarget = mm.FallbackVoid8<T0, T1, T2, T3, T4, T5, T6, T7>;
+                mm.Delegate = ruleTarget = mm.FallbackVoid8<T0, T1, T2, T3, T4, T5, T6, T7>;
             } else {
-                ruleTarget = (Action<CallSite, T0, T1, T2, T3, T4, T5, T6, T7>)mm.Delegete;
+                ruleTarget = (Action<CallSite, T0, T1, T2, T3, T4, T5, T6, T7>)mm.Delegate;
             }
 
             try {    
@@ -2835,12 +2835,11 @@ namespace System.Dynamic {
                 //
                 // Level 2 cache lookup
                 //
-                var args = new object[] { arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7 };
 
                 //
                 // Any applicable rules in level 2 cache?
                 //
-                if ((applicable = CallSiteOps.FindApplicableRules(@this, args)) != null) {
+                if ((applicable = CallSiteOps.FindApplicableRules(@this)) != null) {
                     for (index = 0, count = applicable.Length; index < count; index++) {
                         rule = applicable[index];
 
@@ -2861,7 +2860,7 @@ namespace System.Dynamic {
                                 //
                                 CallSiteOps.AddRule(@this, rule);
                                 // and then move it to the front of the L2 cache
-                                @this.RuleCache.MoveRule(rule, args);
+                                @this.RuleCache.MoveRule(rule);
                             }
                         }
 
@@ -2881,6 +2880,7 @@ namespace System.Dynamic {
                 //
 
                 rule = null;
+                var args = new object[] { arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7 };
 
                 for (; ; ) {
                     rule = CallSiteOps.CreateNewRule(@this, rule, originalRule, args);
@@ -2938,9 +2938,9 @@ namespace System.Dynamic {
             Matchmaker mm = Interlocked.Exchange(ref MatchmakerCache<Action<CallSite, T0, T1, T2, T3, T4, T5, T6, T7, T8>>.Info, null);
             if (mm == null) {
                 mm = new Matchmaker();
-                mm.Delegete = ruleTarget = mm.FallbackVoid9<T0, T1, T2, T3, T4, T5, T6, T7, T8>;
+                mm.Delegate = ruleTarget = mm.FallbackVoid9<T0, T1, T2, T3, T4, T5, T6, T7, T8>;
             } else {
-                ruleTarget = (Action<CallSite, T0, T1, T2, T3, T4, T5, T6, T7, T8>)mm.Delegete;
+                ruleTarget = (Action<CallSite, T0, T1, T2, T3, T4, T5, T6, T7, T8>)mm.Delegate;
             }
 
             try {    
@@ -2994,12 +2994,11 @@ namespace System.Dynamic {
                 //
                 // Level 2 cache lookup
                 //
-                var args = new object[] { arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8 };
 
                 //
                 // Any applicable rules in level 2 cache?
                 //
-                if ((applicable = CallSiteOps.FindApplicableRules(@this, args)) != null) {
+                if ((applicable = CallSiteOps.FindApplicableRules(@this)) != null) {
                     for (index = 0, count = applicable.Length; index < count; index++) {
                         rule = applicable[index];
 
@@ -3020,7 +3019,7 @@ namespace System.Dynamic {
                                 //
                                 CallSiteOps.AddRule(@this, rule);
                                 // and then move it to the front of the L2 cache
-                                @this.RuleCache.MoveRule(rule, args);
+                                @this.RuleCache.MoveRule(rule);
                             }
                         }
 
@@ -3040,6 +3039,7 @@ namespace System.Dynamic {
                 //
 
                 rule = null;
+                var args = new object[] { arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8 };
 
                 for (; ; ) {
                     rule = CallSiteOps.CreateNewRule(@this, rule, originalRule, args);
@@ -3097,9 +3097,9 @@ namespace System.Dynamic {
             Matchmaker mm = Interlocked.Exchange(ref MatchmakerCache<Action<CallSite, T0, T1, T2, T3, T4, T5, T6, T7, T8, T9>>.Info, null);
             if (mm == null) {
                 mm = new Matchmaker();
-                mm.Delegete = ruleTarget = mm.FallbackVoid10<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9>;
+                mm.Delegate = ruleTarget = mm.FallbackVoid10<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9>;
             } else {
-                ruleTarget = (Action<CallSite, T0, T1, T2, T3, T4, T5, T6, T7, T8, T9>)mm.Delegete;
+                ruleTarget = (Action<CallSite, T0, T1, T2, T3, T4, T5, T6, T7, T8, T9>)mm.Delegate;
             }
 
             try {    
@@ -3153,12 +3153,11 @@ namespace System.Dynamic {
                 //
                 // Level 2 cache lookup
                 //
-                var args = new object[] { arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9 };
 
                 //
                 // Any applicable rules in level 2 cache?
                 //
-                if ((applicable = CallSiteOps.FindApplicableRules(@this, args)) != null) {
+                if ((applicable = CallSiteOps.FindApplicableRules(@this)) != null) {
                     for (index = 0, count = applicable.Length; index < count; index++) {
                         rule = applicable[index];
 
@@ -3179,7 +3178,7 @@ namespace System.Dynamic {
                                 //
                                 CallSiteOps.AddRule(@this, rule);
                                 // and then move it to the front of the L2 cache
-                                @this.RuleCache.MoveRule(rule, args);
+                                @this.RuleCache.MoveRule(rule);
                             }
                         }
 
@@ -3199,6 +3198,7 @@ namespace System.Dynamic {
                 //
 
                 rule = null;
+                var args = new object[] { arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9 };
 
                 for (; ; ) {
                     rule = CallSiteOps.CreateNewRule(@this, rule, originalRule, args);

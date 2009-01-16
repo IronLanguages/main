@@ -346,7 +346,7 @@ namespace Microsoft.Scripting.Generation {
         /// return a MethodInfo which will dispatch to the original MethodInfo but is declared
         /// on a public type.
         /// 
-        /// Returns null if a public method cannot be obtained.
+        /// Returns the original method if the method if a public version cannot be found.
         /// </summary>
         public static MethodInfo TryGetCallableMethod(MethodInfo method) {
             if (method.DeclaringType.IsVisible) return method;
@@ -386,21 +386,28 @@ namespace Microsoft.Scripting.Generation {
                     switch (foundMembers[i].MemberType) {
                         case MemberTypes.Method:
                             visible = TryGetCallableMethod((MethodInfo)foundMembers[i]);
+                            if (!visible.DeclaringType.IsVisible) {
+                                visible = null;
+                            }
                             break;
                         case MemberTypes.Property:
                             PropertyInfo pi = (PropertyInfo)foundMembers[i];
                             mi = pi.GetGetMethod() ?? pi.GetSetMethod();
                             visible = TryGetCallableMethod(mi);
-                            if (visible != null) {
+                            if (visible.DeclaringType.IsVisible) {
                                 visible = visible.DeclaringType.GetProperty(pi.Name);
+                            } else {
+                                visible = null;
                             }
                             break;
                         case MemberTypes.Event:
                             EventInfo ei = (EventInfo)foundMembers[i];
                             mi = ei.GetAddMethod() ?? ei.GetRemoveMethod() ?? ei.GetRaiseMethod();
                             visible = TryGetCallableMethod(mi);
-                            if (visible != null) {
+                            if (visible.DeclaringType.IsVisible) {
                                 visible = visible.DeclaringType.GetEvent(ei.Name);
+                            } else {
+                                visible = null;
                             }
                             break;
                         // all others can't be exposed out this way

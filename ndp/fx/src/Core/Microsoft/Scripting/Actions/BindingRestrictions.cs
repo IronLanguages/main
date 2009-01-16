@@ -266,16 +266,35 @@ namespace System.Dynamic {
         private static Expression CreateInstanceRestriction(Expression expression, object value) {
             if (value == null) {
                 return Expression.Equal(
-                    expression,
-                    Expression.Constant(null, expression.Type)
+                    Helpers.Convert(expression, typeof(object)),
+                    Expression.Constant(null)
                 );
             }
 
-            return Expression.Equal(
-                expression,
+            // TODO: need to add special cases for valuetypes and nullables
+            ParameterExpression temp = Expression.Parameter(typeof(object), null);
+
+            Expression init = Expression.Assign(
+                temp,                        
                 Expression.Property(
                     Expression.Constant(new WeakReference(value)),
                     typeof(WeakReference).GetProperty("Target")
+                )
+            );
+           
+            return Expression.Block(
+                new ParameterExpression[]{ temp},
+                init,
+                Expression.AndAlso(
+                    //check that WeekReference was not collected.
+                    Expression.NotEqual(
+                        temp,
+                        Expression.Constant(null)
+                    ),
+                    Expression.Equal(
+                        temp,
+                        Helpers.Convert(expression, typeof(object))
+                    )
                 )
             );
         }
