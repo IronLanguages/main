@@ -111,8 +111,8 @@ namespace Microsoft.Scripting.Hosting {
                 BindingFlags.Default, 
                 null, 
                 new object[] { setup }, 
-                null, 
-                null, 
+                null,
+                null,
                 null
             );
         }

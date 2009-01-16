@@ -387,7 +387,7 @@ namespace IronRuby.Builtins {
                 _pattern = (pattern == "**") ? "*" : pattern;
                 _flags = flags | Constants.FNM_CASEFOLD;
                 _result = new List<string>();
-                _dirOnly = (_pattern.Length > 0) && (_pattern[_pattern.Length - 1] == '/');
+                _dirOnly = _pattern.LastCharacter() == '/';
                 _stripTwo = false;
             }
 

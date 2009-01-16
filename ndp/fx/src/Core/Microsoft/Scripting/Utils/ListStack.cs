@@ -15,7 +15,6 @@
 
 using System.Collections;
 using System.Collections.Generic;
-using Microsoft.Contracts;
 using System.Linq.Expressions;
 
 namespace System.Dynamic.Utils {
@@ -81,7 +80,6 @@ namespace System.Dynamic.Utils {
         /// Enumerates from the top of the stack to the bottom.
         /// </summary>
         /// <exception cref="InvalidOperationException">Stack has been modified during enumeration.</exception>
-        [Pure]
         public IEnumerator<T> GetEnumerator() {
             int version = _version;
             for (int i = _list.Count - 1; i >= 0; i--) {
@@ -92,7 +90,6 @@ namespace System.Dynamic.Utils {
             }
         }
 
-        [Pure]
         IEnumerator IEnumerable.GetEnumerator() {
             return GetEnumerator();
         }

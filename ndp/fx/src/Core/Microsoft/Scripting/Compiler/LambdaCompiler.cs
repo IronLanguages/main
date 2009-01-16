@@ -36,12 +36,6 @@ namespace System.Linq.Expressions.Compiler {
         // Information on the entire lambda tree currently being compiled
         private readonly AnalyzedTree _tree;
 
-        // Indicates that the method should logically be treated as a
-        // DynamicMethod. We need this because in debuggable code we have to
-        // emit into a MethodBuilder, but we still want to pretend it's a
-        // DynamicMethod
-        private readonly bool _dynamicMethod;
-
         private readonly ILGenerator _ilg;
 
         // The TypeBuilder backing this method, if any
@@ -79,40 +73,68 @@ namespace System.Linq.Expressions.Compiler {
         // Free list of locals, so we reuse them rather than creating new ones
         private readonly KeyedQueue<Type, LocalBuilder> _freeLocals = new KeyedQueue<Type, LocalBuilder>();
 
-        private LambdaCompiler(
-            AnalyzedTree tree,
-            LambdaExpression lambda,
-            TypeBuilder typeBuilder,
-            MethodInfo method,
-            ILGenerator ilg,
-            IList<Type> paramTypes,
-            bool dynamicMethod,
-            bool emitDebugSymbols) {
+        /// <summary>
+        /// Creates a lambda compiler that will compile to a dynamic method
+        /// </summary>
+        private LambdaCompiler(AnalyzedTree tree, LambdaExpression lambda) {
+            Type[] parameterTypes = GetParameterTypes(lambda).AddFirst(typeof(Closure));
 
-            ContractUtils.Requires(dynamicMethod || method.IsStatic, "dynamicMethod");
+#if SILVERLIGHT
+            var method = new DynamicMethod(GetGeneratedName(lambda.Name), lambda.ReturnType, parameterTypes);
+#else
+            var method = new DynamicMethod(GetGeneratedName(lambda.Name), lambda.ReturnType, parameterTypes, true);
+#endif
+
             _tree = tree;
             _lambda = lambda;
-            _typeBuilder = typeBuilder;
             _method = method;
-            _paramTypes = new ReadOnlyCollection<Type>(paramTypes);
-            _dynamicMethod = dynamicMethod;
+            _ilg = method.GetILGenerator();
+            _paramTypes = new ReadOnlyCollection<Type>(parameterTypes);
 
             // These are populated by AnalyzeTree/VariableBinder
             _scope = tree.Scopes[lambda];
             _boundConstants = tree.Constants[lambda];
 
-            if (!dynamicMethod && _boundConstants.Count > 0) {
-                throw Error.RtConstRequiresBundDelegate();
+            Initialize();
+        }
+
+        /// <summary>
+        /// Creates a lambda compiler that will compile into the provided Methodbuilder
+        /// </summary>
+        private LambdaCompiler(AnalyzedTree tree, LambdaExpression lambda, MethodBuilder method, bool emitDebugSymbols) {
+            bool closure = tree.Scopes[lambda].NeedsClosure;
+            Type[] paramTypes = GetParameterTypes(lambda);
+            if (closure) {
+                paramTypes = paramTypes.AddFirst(typeof(Closure));
             }
 
-            _ilg = ilg;
+            method.SetReturnType(lambda.ReturnType);
+            method.SetParameters(paramTypes);
+            var paramNames = lambda.Parameters.Map(p => p.Name);
+            // parameters are index from 1, with closure argument we need to skip the first arg
+            int startIndex = closure ? 2 : 1;
+            for (int i = 0; i < paramNames.Length; i++) {
+                method.DefineParameter(i + startIndex, ParameterAttributes.None, paramNames[i]);
+            }
 
-            Debug.Assert(!emitDebugSymbols || _typeBuilder != null, "emitting debug symbols requires a TypeBuilder");
+            _tree = tree;
+            _lambda = lambda;
+            _typeBuilder = (TypeBuilder)method.DeclaringType;
+            _method = method;
+            _ilg = method.GetILGenerator();
+            _paramTypes = new ReadOnlyCollection<Type>(paramTypes);
             _emitDebugSymbols = emitDebugSymbols;
 
+            // These are populated by AnalyzeTree/VariableBinder
+            _scope = tree.Scopes[lambda];
+            _boundConstants = tree.Constants[lambda];
+
+            Initialize();
+        }
+
+        private void Initialize() {
             // See if we can find a return label, so we can emit better IL
             AddReturnLabel(_lambda.Body);
-
             _boundConstants.EmitCacheConstants(this);
         }
 
@@ -133,79 +155,40 @@ namespace System.Linq.Expressions.Compiler {
         }
 
         #region Compiler entry points
-
+        
         /// <summary>
         /// Compiler entry point
         /// </summary>
         /// <param name="lambda">LambdaExpression to compile.</param>
-        /// <param name="method">Product of compilation</param>
-        /// <param name="delegateType">Type of the delegate to create</param>
-        /// <param name="emitDebugSymbols">True to emit debug symbols, false otherwise.</param>
-        /// <param name="forceDynamic">Force dynamic method regardless of save assemblies.</param>
         /// <returns>The compiled delegate.</returns>
-        internal static Delegate CompileLambda(LambdaExpression lambda, Type delegateType, bool emitDebugSymbols, bool forceDynamic, out MethodInfo method) {
-            // 1. Create signature
-            List<Type> types;
-            List<string> names;
-            string name;
-            Type returnType;
-            ComputeSignature(lambda, out types, out names, out name, out returnType);
-
-            // 2. Bind lambda
+        internal static Delegate Compile(LambdaExpression lambda) {
+            // 1. Bind lambda
             AnalyzedTree tree = AnalyzeLambda(ref lambda);
 
-            // 3. Create lambda compiler
-            LambdaCompiler c = CreateDynamicCompiler(tree, lambda, name, returnType, types, null, emitDebugSymbols, forceDynamic);
+            // 2. Create lambda compiler
+            LambdaCompiler c = new LambdaCompiler(tree, lambda);
 
-            // 4. Emit
+            // 3. Emit
             c.EmitLambdaBody(null);
 
-            // 5. Return the delegate.
-            return c.CreateDelegate(delegateType, out method);
-        }
-
-        internal static T CompileDynamic<T>(Expression<T> lambda) {
-            MethodInfo method;
-            return (T)(object)CompileLambda(lambda, typeof(T), false, true, out method);
-        }
-
-        internal static T CompileLambda<T>(Expression<T> lambda, bool emitDebugSymbols) {
-            MethodInfo method;
-            return (T)(object)CompileLambda(lambda, typeof(T), emitDebugSymbols, false, out method);
-        }
-
-        internal static Delegate CompileLambda(LambdaExpression lambda, bool emitDebugSymbols) {
-            MethodInfo method;
-            return CompileLambda(lambda, lambda.Type, emitDebugSymbols, false, out method);
+            // 4. Return the delegate.
+            return c.CreateDelegate();
         }
 
         /// <summary>
-        /// mutates the MethodBuilder parameter
+        /// Mutates the MethodBuilder parameter, filling in IL, parameters,
+        /// and return type.
+        /// 
+        /// (probably shouldn't be modifying parameters/return type...)
         /// </summary>
-        internal static void CompileLambda(LambdaExpression lambda, MethodBuilder method, bool emitDebugSymbols) {
-            // 1. Create signature
-            List<Type> types;
-            List<string> names;
-            string lambdaName;
-            Type returnType;
-            ComputeSignature(lambda, out types, out names, out lambdaName, out returnType);
-
-            // 2. Bind lambda
+        internal static void Compile(LambdaExpression lambda, MethodBuilder method, bool emitDebugSymbols) {
+            // 1. Bind lambda
             AnalyzedTree tree = AnalyzeLambda(ref lambda);
 
-            // 3. Create lambda compiler
-            LambdaCompiler c = CreateStaticCompiler(
-                tree,
-                lambda,
-                method,
-                returnType,
-                types,
-                names,
-                false, // dynamicMethod
-                emitDebugSymbols
-            );
+            // 2. Create lambda compiler
+            LambdaCompiler c = new LambdaCompiler(tree, lambda, method, emitDebugSymbols);
 
-            // 4. Emit
+            // 3. Emit
             c.EmitLambdaBody(null);
         }
 
@@ -275,132 +258,10 @@ namespace System.Linq.Expressions.Compiler {
             _ilg.EmitLoadArg(0);
         }
 
-        private MethodInfo CreateDelegateMethodInfo() {
-            if (_method is DynamicMethod) {
-                return (MethodInfo)_method;
-            } else {
-                var mb = (MethodBuilder)_method;
-                Type methodType = _typeBuilder.CreateType();
-                return methodType.GetMethod(mb.Name);
-            }
+        private Delegate CreateDelegate() {
+            Debug.Assert(_method is DynamicMethod);
+
+            return _method.CreateDelegate(_lambda.Type, new Closure(_boundConstants.ToArray(), null));
         }
-
-        private Delegate CreateDelegate(Type delegateType, out MethodInfo method) {
-            method = CreateDelegateMethodInfo();
-
-            if (_dynamicMethod) {
-                return method.CreateDelegate(delegateType, new Closure(_boundConstants.ToArray(), null));
-            } else {
-                return method.CreateDelegate(delegateType);
-            }
-        }
-
-        #region Factory methods
-
-        /// <summary>
-        /// Creates a compiler backed by dynamic method. Sometimes (when debugging is required) the dynamic
-        /// method is actually a 'fake' dynamic method and is backed by static type created specifically for
-        /// the one method
-        /// </summary>
-        private static LambdaCompiler CreateDynamicCompiler(
-            AnalyzedTree tree,
-            LambdaExpression lambda,
-            string methodName,
-            Type returnType,
-            IList<Type> paramTypes,
-            IList<string> paramNames,
-            bool emitDebugSymbols,
-            bool forceDynamic) {
-
-            Debug.Assert(!string.IsNullOrEmpty(methodName));
-            Debug.Assert(returnType != null);
-
-            LambdaCompiler lc;
-
-            //
-            // Generate a static method if either
-            // 1) we want to dump all geneated IL to an assembly on disk (SaveSnippets on)
-            // 2) the method is debuggable, i.e. DebugMode is on and a source unit is associated with the method
-            //
-            if ((AssemblyGen.SaveAssemblies || emitDebugSymbols) && !forceDynamic) {
-                var typeBuilder = AssemblyGen.GetAssembly(emitDebugSymbols).DefinePublicType(methodName, typeof(object), false);
-                var mb = typeBuilder.DefineMethod(methodName, TypeUtils.PublicStatic, returnType, paramTypes.ToArray());
-                lc = CreateStaticCompiler(
-                    tree,
-                    lambda,
-                    mb,
-                    returnType,
-                    paramTypes,
-                    paramNames,
-                    true, // dynamicMethod
-                    emitDebugSymbols
-                );
-            } else {
-                Type[] parameterTypes = paramTypes.AddFirst(typeof(Closure));
-                DynamicMethod target = Helpers.CreateDynamicMethod(methodName, returnType, parameterTypes);
-                lc = new LambdaCompiler(
-                    tree,
-                    lambda,
-                    null, // typeGen
-                    target,
-                    target.GetILGenerator(),
-                    parameterTypes,
-                    true, // dynamicMethod
-                    false // emitDebugSymbols
-                );
-            }
-
-            return lc;
-        }
-
-        /// <summary>
-        /// Creates a LambdaCompiler backed by a method on a static type
-        /// </summary>
-        private static LambdaCompiler CreateStaticCompiler(
-            AnalyzedTree tree,
-            LambdaExpression lambda,
-            MethodBuilder method,
-            Type retType,
-            IList<Type> paramTypes,
-            IList<string> paramNames,
-            bool dynamicMethod,
-            bool emitDebugSymbols) {
-
-            Debug.Assert(retType != null);
-
-            bool closure = tree.Scopes[lambda].NeedsClosure;
-            Type[] parameterTypes;
-            if (dynamicMethod || closure) {
-                parameterTypes = paramTypes.AddFirst(typeof(Closure));
-            } else {
-                parameterTypes = paramTypes.ToArray();
-            }
-
-            method.SetReturnType(retType);
-            method.SetParameters(parameterTypes);
-            TypeBuilder typeBuilder = method.DeclaringType as TypeBuilder;
-            Debug.Assert(typeBuilder != null);
-            LambdaCompiler lc = new LambdaCompiler(
-                tree,
-                lambda,
-                typeBuilder,
-                method,
-                method.GetILGenerator(),
-                parameterTypes,
-                dynamicMethod,
-                emitDebugSymbols
-            );
-
-            if (paramNames != null) {
-                // parameters are index from 1, with closure argument we need to skip the first arg
-                int startIndex = (dynamicMethod || closure) ? 2 : 1;
-                for (int i = 0; i < paramNames.Count; i++) {
-                    method.DefineParameter(i + startIndex, ParameterAttributes.None, paramNames[i]);
-                }
-            }
-            return lc;
-        }
-
-        #endregion
     }
 }

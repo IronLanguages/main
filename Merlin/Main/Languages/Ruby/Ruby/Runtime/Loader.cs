@@ -507,7 +507,7 @@ namespace IronRuby.Runtime {
             // MRI doesn't load file w/o .rb extension:
             if (IsKnownExtension(extension, knownExtensions)) {
                 return GetSourceUnit(path, extension, false);
-            } else if (Utils.Array.IndexOf(_LibraryExtensions, extension, DlrConfiguration.FileExtensionComparer) != -1) {
+            } else if (_LibraryExtensions.IndexOf(extension, DlrConfiguration.FileExtensionComparer) != -1) {
                 if (Platform.FileExists(path)) {
                     return new ResolvedFile(path, null);
                 }

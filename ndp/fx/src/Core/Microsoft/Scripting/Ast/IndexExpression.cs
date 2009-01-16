@@ -273,7 +273,7 @@ namespace System.Linq.Expressions {
                     TypeUtils.ValidateType(pType);
 
                     if (!TypeUtils.AreReferenceAssignable(pType, arg.Type)) {
-                        if (TypeUtils.IsSameOrSubclass(typeof(Expression), pType) && pType.IsAssignableFrom(arg.GetType())) {
+                        if (TypeUtils.IsSameOrSubclass(typeof(LambdaExpression), pType) && pType.IsAssignableFrom(arg.GetType())) {
                             arg = Expression.Quote(arg);
                         } else {
                             throw Error.ExpressionTypeDoesNotMatchMethodParameter(arg.Type, pType, method);

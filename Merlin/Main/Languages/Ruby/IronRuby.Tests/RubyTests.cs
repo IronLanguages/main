@@ -316,6 +316,7 @@ namespace IronRuby.Tests {
                 ClrGenerics1,
                 ClrMethods1,
                 ClrMethodsVisibility1,
+                ClrIndexers1,
                 ClrGenericMethods1,
                 ClrOverloadSelection1,
                 ClrInterfaces1,

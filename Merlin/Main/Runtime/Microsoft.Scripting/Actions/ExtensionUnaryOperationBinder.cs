@@ -34,7 +34,7 @@ namespace Microsoft.Scripting.Actions {
         }
 
         public override int GetHashCode() {
-            return GetHashCode() ^ _operation.GetHashCode();
+            return base.GetHashCode() ^ _operation.GetHashCode();
         }
 
         public override bool Equals(object obj) {

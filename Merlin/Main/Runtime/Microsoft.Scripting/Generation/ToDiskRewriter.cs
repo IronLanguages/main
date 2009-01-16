@@ -31,7 +31,7 @@ namespace Microsoft.Scripting.Generation {
     /// <summary>
     /// Serializes constants and dynamic sites so the code can be saved to disk
     /// </summary>
-    internal sealed class ToDiskRewriter : StaticLambdaRewriter {
+    internal sealed class ToDiskRewriter : ExpressionVisitor {
         private static int _uniqueNameId;
         private List<Expression> _constants;
         private ParameterExpression _constantPool;
@@ -130,7 +130,9 @@ namespace Microsoft.Scripting.Generation {
             if (RewriteDelegate(node.DelegateType, out delegateType)) {
                 node = Expression.MakeDynamic(delegateType, node.Binder, node.Arguments);
             }
-            return base.VisitDynamic(node);
+
+            // Reduce dynamic expression so that the lambda can be emitted as a non-dynamic method.
+            return Visit(CompilerHelpers.Reduce(node));
         }
 
         private bool RewriteDelegate(Type delegateType, out Type newDelegateType) {

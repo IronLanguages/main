@@ -222,6 +222,38 @@ none
 ");
         }
 
+        public class ClassWithIndexer1 {
+            public int[,] Values = new int[,] { {0, 10}, {20, 30} };
+
+            public int this[int i, int j] { get { return Values[i,j]; } set { Values[i,j] = value; } }
+        }
+
+        public void ClrIndexers1() {
+            Context.ObjectClass.SetConstant("CI", Context.GetClass(typeof(ClassWithIndexer1)));
+            
+            // default indexers:
+            AssertOutput(() => CompilerTest(@"
+c = CI.new
+c[0,1] += 1
+p c[0, 1]
+"), @"
+11
+");
+            // non-default indexers:
+            // TODO: We need to use VB or generate IL to test this.
+            // TODO: improve access
+            //   If a property accessor with parameters is called without arguments the result is a PropertyAccessor object with [], []= defined.
+            //   Then the calls could look like c.foo[1,2] = 3. 
+
+//            AssertOutput(() => CompilerTest(@"
+//c = CI.new
+//c.method(:foo=).call(1, 0, c.method(:foo).call(1, 0) + 5)
+//p c.method(:foo).call(1, 0)
+//"), @"
+//25
+//");
+        }
+
 #pragma warning disable 67 // event not used
         public class GenericMethods {
             public static string M0<T>() {
@@ -344,7 +376,7 @@ M2(Fixnum)
                 return "M2<" + typeof(T).Name + ">(Object)";
             }
         }
-
+        
         public void ClrOverloadSelection1() {
             Context.ObjectClass.SetConstant("OM", Context.GetClass(typeof(OverloadedMethods)));
             Runtime.LoadAssembly(typeof(object).Assembly);
@@ -374,12 +406,14 @@ M1(Fixnum)
             AssertOutput(() => CompilerTest(@"
 m = OM.method(:M2)
 puts m.clr_members.size
+puts m.of.clr_members.size
 puts m.of(Object).clr_members.size
 puts m.overloads(Object).clr_members.size
 puts m.of(Object).overloads(Object).clr_members.size
 puts m.overloads(Object).of(Object).clr_members.size
 "), @"
 4
+2
 2
 2
 1

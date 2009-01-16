@@ -1747,7 +1747,7 @@ namespace IronRuby.Runtime {
             
             if (createHosted) {
                 // method_missing:
-                singletonClass.SetMethodNoEvent(this, Symbols.MethodMissing, new RubyMethodGroupInfo(new Delegate[] {
+                singletonClass.SetMethodNoEvent(this, Symbols.MethodMissing, new RubyLibraryMethodInfo(new Delegate[] {
                     new Func<RubyScope, BlockParam, object, SymbolId, object[], object>(RubyTopLevelScope.TopMethodMissing)
                 }, RubyMemberFlags.Private, singletonClass));
                 

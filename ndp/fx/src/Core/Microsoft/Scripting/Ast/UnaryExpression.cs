@@ -780,6 +780,7 @@ namespace System.Linq.Expressions {
         ///<paramref name="expression" /> is null.</exception>
         public static UnaryExpression Quote(Expression expression) {
             RequiresCanRead(expression, "expression");
+            ContractUtils.Requires(expression is LambdaExpression, Strings.QuotedExpressionMustBeLambda);
             return new UnaryExpression(ExpressionType.Quote, expression, expression.GetType(), null);
         }
 

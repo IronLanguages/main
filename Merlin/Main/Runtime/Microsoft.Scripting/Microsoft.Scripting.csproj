@@ -189,7 +189,6 @@
     <Compile Include="ComInterop\TypeLibInfoMetaObject.cs" />
     <Compile Include="ComInterop\TypeLibMetaObject.cs" />
     <Compile Include="ComInterop\VarEnumSelector.cs" />
-    <Compile Include="Generation\StaticLambdaRewriter.cs" />
     <Compile Include="Hosting\ErrorSinkProxyListener.cs" />
     <Compile Include="Hosting\Shell\ICommandDispatcher.cs" />
     <Compile Include="Hosting\Shell\Remote\ConsoleRestartManager.cs" />

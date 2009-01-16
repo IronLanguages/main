@@ -874,7 +874,7 @@ namespace System.Linq.Expressions {
             }
             TypeUtils.ValidateType(pType);
             if (!TypeUtils.AreReferenceAssignable(pType, arg.Type)) {
-                if (TypeUtils.IsSameOrSubclass(typeof(Expression), pType) && pType.IsAssignableFrom(arg.GetType())) {
+                if (TypeUtils.IsSameOrSubclass(typeof(LambdaExpression), pType) && pType.IsAssignableFrom(arg.GetType())) {
                     arg = Expression.Quote(arg);
                 } else {
                     // Throw the right error for the node we were given
@@ -944,7 +944,7 @@ namespace System.Linq.Expressions {
                     pType = pType.GetElementType();
                 }
                 if (!TypeUtils.AreReferenceAssignable(pType, argType) &&
-                    !(TypeUtils.IsSameOrSubclass(typeof(Expression), pType) && pType.IsAssignableFrom(arg.GetType()))) {
+                    !(TypeUtils.IsSameOrSubclass(typeof(LambdaExpression), pType) && pType.IsAssignableFrom(arg.GetType()))) {
                     return false;
                 }
             }

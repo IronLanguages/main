@@ -24,7 +24,6 @@ using System.Text;
 using System.Threading;
 
 namespace System.Linq.Expressions {
-    //CONFORMING
     /// <summary>
     /// Creates a <see cref="LambdaExpression"/> node.
     /// This captures a block of code that is similar to a .NET method body.
@@ -103,16 +102,7 @@ namespace System.Linq.Expressions {
         /// </summary>
         /// <returns>A delegate containing the compiled version of the lambda.</returns>
         public Delegate Compile() {
-            return LambdaCompiler.CompileLambda(this, false);
-        }
-
-        /// <summary>
-        /// Produces a delegate that represents the lambda expression.
-        /// </summary>
-        /// <param name="emitDebugSymbols">A paramter that indicates if debugging information should be emitted.</param>
-        /// <returns>A delegate containing the compiled version of the lambda.</returns>
-        public Delegate Compile(bool emitDebugSymbols) {
-            return LambdaCompiler.CompileLambda(this, emitDebugSymbols);
+            return LambdaCompiler.Compile(this);
         }
 
         /// <summary>
@@ -122,19 +112,22 @@ namespace System.Linq.Expressions {
         /// <param name="emitDebugSymbols">A parameter that indicates if debugging information should be emitted.</param>
         public void CompileToMethod(MethodBuilder method, bool emitDebugSymbols) {
             ContractUtils.RequiresNotNull(method, "method");
+            ContractUtils.Requires(method.IsStatic, "method");
+
             var type = method.DeclaringType as TypeBuilder;
             ContractUtils.Requires(type != null, "method", Strings.MethodBuilderDoesNotHaveTypeBuilder);
+            
             if (emitDebugSymbols) {
                 var module = method.Module as ModuleBuilder;
                 ContractUtils.Requires(module != null, "method", Strings.MethodBuilderDoesNotHaveModuleBuilder);
             }
-            LambdaCompiler.CompileLambda(this, method, emitDebugSymbols);
+
+            LambdaCompiler.Compile(this, method, emitDebugSymbols);
         }
 
         internal abstract LambdaExpression Accept(StackSpiller spiller);
     }
 
-    //CONFORMING
     /// <summary>
     /// Defines a <see cref="Expression{TDelegate}"/> node.
     /// This captures a block of code that is similar to a .NET method body.
@@ -157,16 +150,7 @@ namespace System.Linq.Expressions {
         /// </summary>
         /// <returns>A delegate containing the compiled version of the lambda.</returns>
         public new TDelegate Compile() {
-            return LambdaCompiler.CompileLambda(this, false);
-        }
-
-        /// <summary>
-        /// Produces a delegate that represents the lambda expression.
-        /// </summary>
-        /// <param name="emitDebugSymbols">A paramter that indicates if debugging information should be emitted.</param>
-        /// <returns>A delegate containing the compiled version of the lambda.</returns>
-        public new TDelegate Compile(bool emitDebugSymbols) {
-            return LambdaCompiler.CompileLambda(this, emitDebugSymbols);
+            return (TDelegate)(object)LambdaCompiler.Compile(this);
         }
 
         internal override Expression Accept(ExpressionVisitor visitor) {
@@ -256,7 +240,6 @@ namespace System.Linq.Expressions {
             return (LambdaExpression)ctor.Invoke(new object[] { nodeType, name, body, parameters });
         }
 
-        //CONFORMING
         /// <summary>
         /// Creates an <see cref="Expression{TDelegate}"/> where the delegate type is known at compile time. 
         /// </summary>
@@ -268,7 +251,6 @@ namespace System.Linq.Expressions {
             return Lambda<TDelegate>(body, (IEnumerable<ParameterExpression>)parameters);
         }
 
-        //CONFORMING
         /// <summary>
         /// Creates an <see cref="Expression{TDelegate}"/> where the delegate type is known at compile time. 
         /// </summary>
@@ -280,7 +262,6 @@ namespace System.Linq.Expressions {
             return Lambda<TDelegate>(body, "lambda_method", parameters);
         }
 
-        //CONFORMING
         /// <summary>
         /// Creates an <see cref="Expression{TDelegate}"/> where the delegate type is known at compile time. 
         /// </summary>
@@ -315,7 +296,6 @@ namespace System.Linq.Expressions {
             return Lambda(body, "lambda_method", parameters);
         }
 
-        //CONFORMING
         /// <summary>
         /// Creates a LambdaExpression by first constructing a delegate type. 
         /// </summary>
@@ -327,7 +307,6 @@ namespace System.Linq.Expressions {
             return Lambda(delegateType, body, "lambda_method", parameters);
         }
 
-        //CONFORMING
         /// <summary>
         /// Creates a LambdaExpression by first constructing a delegate type. 
         /// </summary>
@@ -339,7 +318,6 @@ namespace System.Linq.Expressions {
             return Lambda(delegateType, body, "lambda_method", parameters);
         }
 
-        //CONFORMING
         /// <summary>
         /// Creates a LambdaExpression by first constructing a delegate type. 
         /// </summary>
@@ -373,8 +351,6 @@ namespace System.Linq.Expressions {
             return Lambda(ExpressionType.Lambda, delegateType, name, body, parameterList);
         }
 
-        //CONFORMING
-        //CONFORMING
         /// <summary>
         /// Creates a LambdaExpression by first constructing a delegate type. 
         /// </summary>
@@ -390,7 +366,6 @@ namespace System.Linq.Expressions {
             return Lambda(ExpressionType.Lambda, delegateType, name, body, paramList);
         }
 
-        //CONFORMING
         private static void ValidateLambdaArgs(Type delegateType, ref Expression body, ReadOnlyCollection<ParameterExpression> parameters) {
             ContractUtils.RequiresNotNull(delegateType, "delegateType");
             RequiresCanRead(body, "body");
@@ -432,7 +407,7 @@ namespace System.Linq.Expressions {
                 throw Error.IncorrectNumberOfLambdaDeclarationParameters();
             }
             if (mi.ReturnType != typeof(void) && !TypeUtils.AreReferenceAssignable(mi.ReturnType, body.Type)) {
-                if (TypeUtils.IsSameOrSubclass(typeof(Expression), mi.ReturnType) && mi.ReturnType.IsAssignableFrom(body.GetType())) {
+                if (TypeUtils.IsSameOrSubclass(typeof(LambdaExpression), mi.ReturnType) && mi.ReturnType.IsAssignableFrom(body.GetType())) {
                     body = Expression.Quote(body);
                 } else {
                     throw Error.ExpressionTypeDoesNotMatchReturn(body.Type, mi.ReturnType);
@@ -440,7 +415,6 @@ namespace System.Linq.Expressions {
             }
         }
 
-        //CONFORMING
         /// <summary>
         /// Creates a Type object that represents a generic System.Func delegate type that has specific type arguments. 
         /// </summary>
@@ -455,7 +429,6 @@ namespace System.Linq.Expressions {
             return result;
         }
 
-        //CONFORMING
         /// <summary>
         /// Creates a Type object that represents a generic System.Action delegate type that has specific type arguments. 
         /// </summary>

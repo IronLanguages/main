@@ -37,7 +37,7 @@ namespace IronRuby.Runtime.Calls {
         }
 
         public override MemberInfo/*!*/[]/*!*/ GetMembers() {
-            return Utils.Array.EmptyMemberInfos;
+            return Utils.EmptyMemberInfos;
         }
     }
 
@@ -70,7 +70,7 @@ namespace IronRuby.Runtime.Calls {
 
         internal override void BuildCallNoFlow(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args, string/*!*/ name) {
 
-            var actualArgs = RubyMethodGroupInfo.MakeActualArgs(metaBuilder, args, true, false, false, false);
+            var actualArgs = RubyMethodGroupInfo.MakeActualArgs(metaBuilder, args, SelfCallConvention.SelfIsParameter, false, false);
 
             metaBuilder.Result = Methods.SetInstanceVariable.OpCall(
                 AstFactory.Box(actualArgs[0]),

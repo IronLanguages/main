@@ -76,20 +76,18 @@ namespace IronRuby.Runtime.Calls {
         public override RubyMemberInfo TrySelectOverload(Type/*!*/[]/*!*/ parameterTypes) {
             return parameterTypes.Length >= MandatoryParamCount 
                 && (HasUnsplatParameter || parameterTypes.Length <= MandatoryParamCount + OptionalParamCount)
-                && parameterTypes.TrueForAll((type) => type == typeof(object)) ? this : null;
+                && CollectionUtils.TrueForAll(parameterTypes, (type) => type == typeof(object)) ? this : null;
         }
 
         public override MemberInfo/*!*/[]/*!*/ GetMembers() {
             return new MemberInfo[] { _method.Method };
         }
 
-        public override int Arity {
-            get {
-                if (_optionalParamCount > 0) {
-                    return -_mandatoryParamCount - 1;
-                } else {
-                    return _mandatoryParamCount;
-                }
+        public override int GetArity() {
+            if (_optionalParamCount > 0) {
+                return -_mandatoryParamCount - 1;
+            } else {
+                return _mandatoryParamCount;
             }
         }
 

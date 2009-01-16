@@ -15,22 +15,21 @@
 
 using System;
 using System.Collections.Generic;
+using System.Dynamic;
 using System.Linq.Expressions;
 using System.Reflection;
+using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
-using System.Dynamic;
 using Microsoft.Contracts;
 using Microsoft.Scripting.Actions;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
-using RuntimeHelpers = Microsoft.Scripting.Runtime.ScriptingRuntimeHelpers;
 
 namespace Microsoft.Scripting.Generation {
-    using Ast = System.Linq.Expressions.Expression;
 
     public static class CompilerHelpers {
         public static readonly MethodAttributes PublicStatic = MethodAttributes.Public | MethodAttributes.Static;
-        private static readonly MethodInfo _CreateInstanceMethod = typeof(RuntimeHelpers).GetMethod("CreateInstance");
+        private static readonly MethodInfo _CreateInstanceMethod = typeof(ScriptingRuntimeHelpers).GetMethod("CreateInstance");
 
         public static string[] GetArgumentNames(ParameterInfo[] parameterInfos) {
             string[] ret = new string[parameterInfos.Length];
@@ -508,11 +507,11 @@ namespace Microsoft.Scripting.Generation {
         }
 
         private static MethodBase GetStructDefaultCtor(Type t) {
-            return typeof(RuntimeHelpers).GetMethod("CreateInstance").MakeGenericMethod(t);
+            return typeof(ScriptingRuntimeHelpers).GetMethod("CreateInstance").MakeGenericMethod(t);
         }
 
         private static MethodBase GetArrayCtor(Type t) {
-            return typeof(RuntimeHelpers).GetMethod("CreateArray").MakeGenericMethod(t.GetElementType());
+            return typeof(ScriptingRuntimeHelpers).GetMethod("CreateArray").MakeGenericMethod(t.GetElementType());
         }
 
         public static bool HasImplicitConversion(Type fromType, Type toType) {
@@ -590,9 +589,9 @@ namespace Microsoft.Scripting.Generation {
         public static Expression GetTryConvertReturnValue(Type type) {
             Expression res;
             if (type.IsInterface || type.IsClass || (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>))) {
-                res = Ast.Constant(null, type);
+                res = Expression.Constant(null, type);
             } else {
-                res = Ast.Constant(Activator.CreateInstance(type));
+                res = Expression.Constant(Activator.CreateInstance(type));
             }
 
             return res;
@@ -679,6 +678,156 @@ namespace Microsoft.Scripting.Generation {
 
         public static Type MakeCallSiteDelegateType(Type[] types) {
             return DelegateHelpers.MakeDelegate(types);
+        }
+
+        /// <summary>
+        /// Compiles the LambdaExpression.
+        /// 
+        /// If the lambda is compiled with emitDebugSymbols, it will be
+        /// generated into a TypeBuilder. Otherwise, this method is the same as
+        /// calling LambdaExpression.Compile()
+        /// 
+        /// This is a workaround for a CLR limitiation: DynamicMethods cannot
+        /// have debugging information.
+        /// </summary>
+        /// <param name="lambda">the lambda to compile</param>
+        /// <param name="emitDebugSymbols">true to generate a debuggable method, false otherwise</param>
+        /// <returns>the compiled delegate</returns>
+        public static T Compile<T>(this Expression<T> lambda, bool emitDebugSymbols) {
+            return emitDebugSymbols ? CompileToMethod(lambda, true) : lambda.Compile();
+        }
+
+        /// <summary>
+        /// Compiles the LambdaExpression, emitting it into a new type, and
+        /// optionally making it debuggable.
+        /// 
+        /// This is a workaround for a CLR limitiation: DynamicMethods cannot
+        /// have debugging information.
+        /// </summary>
+        /// <param name="lambda">the lambda to compile</param>
+        /// <param name="emitDebugSymbols">true to generate a debuggable method, false otherwise</param>
+        /// <returns>the compiled delegate</returns>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1011:ConsiderPassingBaseTypesAsParameters")]
+        public static T CompileToMethod<T>(Expression<T> lambda, bool emitDebugSymbols) {
+            var type = Snippets.Shared.DefineType(lambda.Name, typeof(object), false, emitDebugSymbols).TypeBuilder;
+            var rewriter = new BoundConstantsRewriter(type);
+            lambda = (Expression<T>)rewriter.Visit(lambda);
+
+            var method = type.DefineMethod(lambda.Name, CompilerHelpers.PublicStatic);
+            lambda.CompileToMethod(method, emitDebugSymbols);
+
+            var finished = type.CreateType();
+
+            rewriter.InitializeFields(finished);
+
+            return (T)(object)Delegate.CreateDelegate(lambda.Type, finished.GetMethod(method.Name));
+        }
+
+        // Matches ILGen.TryEmitConstant
+        internal static bool CanEmitConstant(object value, Type type) {
+            if (value == null || CanEmitILConstant(type)) {
+                return true;
+            }
+
+            Type t = value as Type;
+            if (t != null && ILGen.ShouldLdtoken(t)) {
+                return true;
+            }
+
+            MethodBase mb = value as MethodBase;
+            if (mb != null && ILGen.ShouldLdtoken(mb)) {
+                return true;
+            }
+
+            return false;
+        }
+
+        // Matches ILGen.TryEmitILConstant
+        internal static bool CanEmitILConstant(Type type) {
+            switch (Type.GetTypeCode(type)) {
+                case TypeCode.Boolean:
+                case TypeCode.SByte:
+                case TypeCode.Int16:
+                case TypeCode.Int32:
+                case TypeCode.Int64:
+                case TypeCode.Single:
+                case TypeCode.Double:
+                case TypeCode.Char:
+                case TypeCode.Byte:
+                case TypeCode.UInt16:
+                case TypeCode.UInt32:
+                case TypeCode.UInt64:
+                case TypeCode.Decimal:
+                case TypeCode.String:
+                    return true;
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Reduces the provided DynamicExpression into site.Target(site, *args).
+        /// </summary>
+        public static Expression Reduce(DynamicExpression node) {
+            // Store the callsite as a constant
+            var siteConstant = Expression.Constant(CallSite.Create(node.DelegateType, node.Binder));
+
+            // ($site = siteExpr).Target.Invoke($site, *args)
+            var site = Expression.Variable(siteConstant.Type, "$site");
+            return Expression.Block(
+                new[] { site },
+                Expression.Call(
+                    Expression.Field(
+                        Expression.Assign(site, siteConstant),
+                        siteConstant.Type.GetField("Target")
+                    ),
+                    node.DelegateType.GetMethod("Invoke"),
+                    ArrayUtils.Insert(site, node.Arguments)
+                )
+            );
+        }
+
+        /// <summary>
+        /// Removes all live objects and places them in static fields of a type.
+        /// </summary>
+        private sealed class BoundConstantsRewriter : ExpressionVisitor {
+            private readonly Dictionary<object, FieldBuilder> _fields = new Dictionary<object, FieldBuilder>(ReferenceEqualityComparer<object>.Instance);
+            private readonly TypeBuilder _type;
+
+            internal BoundConstantsRewriter(TypeBuilder type) {
+                _type = type;
+            }
+
+            internal void InitializeFields(Type type) {
+                foreach (var pair in _fields) {
+                    type.GetField(pair.Value.Name).SetValue(null, pair.Key);
+                }
+            }
+
+            protected override Expression VisitConstant(ConstantExpression node) {
+                if (CanEmitConstant(node.Value, node.Type)) {
+                    return node;
+                }
+
+                FieldBuilder field;
+                if (!_fields.TryGetValue(node.Value, out field)) {
+                    field = _type.DefineField(
+                        "$constant" + _fields.Count,
+                        GetVisibleType(node.Value.GetType()),
+                        FieldAttributes.Public | FieldAttributes.Static
+                    );
+                    _fields.Add(node.Value, field);
+                }
+
+                Expression result = Expression.Field(null, field);
+                if (result.Type != node.Type) {
+                    result = Expression.Convert(result, node.Type);
+                }
+                return result;
+            }
+
+            protected override Expression VisitDynamic(DynamicExpression node) {
+                return Visit(Reduce(node));
+            }
         }
     }
 }

@@ -24,10 +24,8 @@ using Microsoft.Scripting.Generation;
 using System.Reflection;
 
 namespace Microsoft.Scripting.Actions {
-    // TODO: replace this class with calls to LambdaExpression.GetDelegateType
+    // TODO: replace this class with calls to Expression.GetDelegateType
     public static class DynamicSiteHelpers {
-
-        private static readonly Dictionary<Type, CreateSite> _siteCtors = new Dictionary<Type, CreateSite>();
 
         private delegate object CreateSite(CallSiteBinder binder);
 
@@ -41,25 +39,11 @@ namespace Microsoft.Scripting.Actions {
 
         private static readonly Type[] _DelegateCtorSignature = new Type[] { typeof(object), typeof(IntPtr) };
 
-        internal static Type MakeCallSiteType(params Type[] types) {
-            return typeof(CallSite<>).MakeGenericType(MakeCallSiteDelegate(types));
-        }
-        // TODO: do we need this helper?
-        // if so, should it live on Expression?
+
+        // TODO: remove in favor of Expression.GetDelegateType
         internal static Type MakeCallSiteDelegate(params Type[] types) {
             Debug.Assert(types != null);
             return MakeDelegate(types.AddFirst(typeof(CallSite)));
-        }
-
-        internal static CallSite MakeSite(CallSiteBinder binder, Type siteType) {
-            CreateSite ctor;
-            lock (_siteCtors) {
-                if (!_siteCtors.TryGetValue(siteType, out ctor)) {
-                    _siteCtors[siteType] = ctor = (CreateSite)Delegate.CreateDelegate(typeof(CreateSite), siteType.GetMethod("Create"));
-                }
-            }
-
-            return (CallSite)ctor(binder);
         }
 
         private static Type MakeDelegate(Type[] types) {

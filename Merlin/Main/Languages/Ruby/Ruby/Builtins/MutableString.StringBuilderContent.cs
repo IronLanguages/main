@@ -37,7 +37,7 @@ namespace IronRuby.Builtins {
             #region Data Operations
 
             public byte[] DataToBytes() {
-                return _data.Length > 0 ? _owner._encoding.GetBytes(_data.ToString()) : IronRuby.Runtime.Utils.Array.EmptyBytes;
+                return _data.Length > 0 ? _owner._encoding.GetBytes(_data.ToString()) : IronRuby.Runtime.Utils.EmptyBytes;
             }
 
             public char DataGetChar(int index) {

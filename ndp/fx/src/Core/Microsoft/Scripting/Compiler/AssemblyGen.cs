@@ -14,12 +14,10 @@
  * ***************************************************************************/
 
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Dynamic.Utils;
 using System.IO;
 using System.Reflection;
 using System.Reflection.Emit;
-using System.Resources;
 using System.Security;
 using System.Text;
 using System.Threading;
@@ -27,7 +25,9 @@ using System.Threading;
 namespace System.Linq.Expressions.Compiler {
     internal sealed class AssemblyGen {
         private static AssemblyGen _assembly;
-        private static AssemblyGen _debugAssembly;
+
+        // Testing options. Only ever set in MICROSOFT_SCRIPTING_CORE build
+        // configurations, see SetSaveAssemblies
 #if MICROSOFT_SCRIPTING_CORE
         private static string _saveAssembliesPath;
         private static bool _saveAssemblies;
@@ -35,61 +35,28 @@ namespace System.Linq.Expressions.Compiler {
 
         private readonly AssemblyBuilder _myAssembly;
         private readonly ModuleBuilder _myModule;
-        private readonly bool _isDebuggable;
 
 #if MICROSOFT_SCRIPTING_CORE && !SILVERLIGHT
         private readonly string _outFileName;       // can be null iff !SaveAndReloadAssemblies
         private readonly string _outDir;            // null means the current directory
 #endif
-
         private int _index;
 
-        internal bool IsDebuggable {
-            get {
-#if !SILVERLIGHT
-                Debug.Assert(_isDebuggable == (_myModule.GetSymWriter() != null));
-#endif
-                return _isDebuggable;
-            }
-        }
-
-
-        // Testing option. Only ever set in MICROSOFT_SCRIPTING_CORE build
-        // configurations, see SetSaveAssemblies
-        internal static bool SaveAssemblies {
-            get {
-#if MICROSOFT_SCRIPTING_CORE
-                return _saveAssemblies;
-#else
-                return false;
-#endif
-            }
-        }
-
-        internal static AssemblyGen DebugAssembly {
-            get {
-                if (_debugAssembly == null) {
-                    Interlocked.CompareExchange(ref _debugAssembly, new AssemblyGen(true), null);
-                }
-                return _debugAssembly;
-            }
-        }
-
-        internal static AssemblyGen Assembly {
+        private static AssemblyGen Assembly {
             get {
                 if (_assembly == null) {
-                    Interlocked.CompareExchange(ref _assembly, new AssemblyGen(false), null);
+                    Interlocked.CompareExchange(ref _assembly, new AssemblyGen(), null);
                 }
                 return _assembly;
             }
         }
 
-        private AssemblyGen(bool isDebuggable) {
-            var name = new AssemblyName("Snippets" + (isDebuggable ? ".debug" : ""));
+        private AssemblyGen() {
+            var name = new AssemblyName("Snippets");
 
 #if SILVERLIGHT  // AssemblyBuilderAccess.RunAndSave, Environment.CurrentDirectory
             _myAssembly = AppDomain.CurrentDomain.DefineDynamicAssembly(name, AssemblyBuilderAccess.Run);
-            _myModule = _myAssembly.DefineDynamicModule(name.Name, isDebuggable);
+            _myModule = _myAssembly.DefineDynamicModule(name.Name, false);
 #else
 
             // mark the assembly transparent so that it works in partial trust:
@@ -116,76 +83,27 @@ namespace System.Linq.Expressions.Compiler {
                 _myAssembly = AppDomain.CurrentDomain.DefineDynamicAssembly(name, AssemblyBuilderAccess.RunAndSave, outDir,
                     null, null, null, null, false, attributes);
 
-                _myModule = _myAssembly.DefineDynamicModule(name.Name, _outFileName, isDebuggable);
+                _myModule = _myAssembly.DefineDynamicModule(name.Name, _outFileName, false);
             } else
 #endif
             {
                 _myAssembly = AppDomain.CurrentDomain.DefineDynamicAssembly(name, AssemblyBuilderAccess.Run, attributes);
-                _myModule = _myAssembly.DefineDynamicModule(name.Name, isDebuggable);                
+                _myModule = _myAssembly.DefineDynamicModule(name.Name, false);
             }
 
             _myAssembly.DefineVersionInfoResource();
 #endif
-            _isDebuggable = isDebuggable;
-
-            if (isDebuggable) {
-                SetDebuggableAttributes();
-            }
         }
 
-        internal void SetDebuggableAttributes() {
-            DebuggableAttribute.DebuggingModes attrs =
-                DebuggableAttribute.DebuggingModes.Default |
-                DebuggableAttribute.DebuggingModes.IgnoreSymbolStoreSequencePoints |
-                DebuggableAttribute.DebuggingModes.DisableOptimizations;
-
-            Type[] argTypes = new Type[] { typeof(DebuggableAttribute.DebuggingModes) };
-            Object[] argValues = new Object[] { attrs };
-
-            _myAssembly.SetCustomAttribute(new CustomAttributeBuilder(
-               typeof(DebuggableAttribute).GetConstructor(argTypes), argValues)
-            );
-
-            _myModule.SetCustomAttribute(new CustomAttributeBuilder(
-                typeof(DebuggableAttribute).GetConstructor(argTypes), argValues)
-            );
-        }
-
-#if !SILVERLIGHT // IResourceWriter
-        internal void AddResourceFile(string name, string file, ResourceAttributes attribute) {
-            IResourceWriter rw = _myModule.DefineResource(Path.GetFileName(file), name, attribute);
-
-            string ext = Path.GetExtension(file);
-            if (String.Equals(ext, ".resources", StringComparison.OrdinalIgnoreCase)) {
-                ResourceReader rr = new ResourceReader(file);
-                using (rr) {
-                    System.Collections.IDictionaryEnumerator de = rr.GetEnumerator();
-
-                    while (de.MoveNext()) {
-                        string key = de.Key as string;
-                        rw.AddResource(key, de.Value);
-                    }
-                }
-            } else {
-                rw.AddResource(name, File.ReadAllBytes(file));
-            }
-        }
-#endif
-
-        internal TypeBuilder DefinePublicType(string name, Type parent, bool preserveName) {
-            return DefineType(name, parent, TypeAttributes.Public, preserveName);
-        }
-
-        internal TypeBuilder DefineType(string name, Type parent, TypeAttributes attr, bool preserveName) {
+        private TypeBuilder DefineType(string name, Type parent, TypeAttributes attr) {
             ContractUtils.RequiresNotNull(name, "name");
             ContractUtils.RequiresNotNull(parent, "parent");
 
             StringBuilder sb = new StringBuilder(name);
-            if (!preserveName) {
-                int index = Interlocked.Increment(ref _index);
-                sb.Append("$");
-                sb.Append(index);
-            }
+
+            int index = Interlocked.Increment(ref _index);
+            sb.Append("$");
+            sb.Append(index);
 
             // There is a bug in Reflection.Emit that leads to 
             // Unhandled Exception: System.Runtime.InteropServices.COMException (0x80131130): Record not found on lookup.
@@ -197,30 +115,11 @@ namespace System.Linq.Expressions.Compiler {
             return _myModule.DefineType(name, attr, parent);
         }
 
-#if !SILVERLIGHT
-        internal void SetEntryPoint(MethodInfo mi, PEFileKinds kind) {
-            _myAssembly.SetEntryPoint(mi, kind);
-        }
-#endif
-
-        internal AssemblyBuilder AssemblyBuilder {
-            get { return _myAssembly; }
-        }
-
-        internal ModuleBuilder ModuleBuilder {
-            get { return _myModule; }
-        }
-
-        internal static AssemblyGen GetAssembly(bool emitDebugSymbols) {
-            return emitDebugSymbols ? DebugAssembly : Assembly;
-        }
-
         internal static TypeBuilder DefineDelegateType(string name) {
             return Assembly.DefineType(
                 name,
                 typeof(MulticastDelegate),
-                TypeAttributes.Class | TypeAttributes.Public | TypeAttributes.Sealed | TypeAttributes.AnsiClass | TypeAttributes.AutoClass,
-                false
+                TypeAttributes.Class | TypeAttributes.Public | TypeAttributes.Sealed | TypeAttributes.AnsiClass | TypeAttributes.AutoClass
             );
         }
 
@@ -259,28 +158,14 @@ namespace System.Linq.Expressions.Compiler {
                 _assembly = null;
             }
 
-            if (_debugAssembly != null) {
-                string debugAssemblyLocation = _debugAssembly.SaveAssembly();
-                if (debugAssemblyLocation != null) {
-                    assemlyLocations.Add(debugAssemblyLocation);
-                }
-                _debugAssembly = null;
-            }
-
             return assemlyLocations.ToArray();
         }
 #endif
     }
 
     internal static class SymbolGuids {
-        internal static readonly Guid LanguageType_ILAssembly =
-            new Guid(-1358664493, -12063, 0x11d2, 0x97, 0x7c, 0, 160, 0xc9, 180, 0xd5, 12);
-
         internal static readonly Guid DocumentType_Text =
             new Guid(0x5a869d0b, 0x6611, 0x11d3, 0xbd, 0x2a, 0, 0, 0xf8, 8, 0x49, 0xbd);
-
-        internal static readonly Guid LanguageVendor_Microsoft =
-            new Guid(-1723120188, -6423, 0x11d2, 0x90, 0x3f, 0, 0xc0, 0x4f, 0xa3, 2, 0xa1);
     }
 }
 

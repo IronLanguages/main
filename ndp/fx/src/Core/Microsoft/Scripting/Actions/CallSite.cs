@@ -614,7 +614,7 @@ namespace System.Runtime.CompilerServices {
 
             // Need to compile with forceDynamic because T could be invisible,
             // or one of the argument types could be invisible
-            return LambdaCompiler.CompileDynamic(lambda);
+            return lambda.Compile();
         }
 
         /// <summary>

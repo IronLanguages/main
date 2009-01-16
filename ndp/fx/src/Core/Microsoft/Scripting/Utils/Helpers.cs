@@ -35,19 +35,6 @@ namespace System.Dynamic.Utils {
             return Expression.Convert(expression, type);
         }
 
-        internal static DynamicMethod CreateDynamicMethod(string name, Type returnType, Type[] parameterTypes) {
-#if SILVERLIGHT // restrictedSkipVisibility is not available in SILVERLIGHT
-            return new DynamicMethod(name, returnType, parameterTypes);
-#else
-            //
-            // We set restrictedSkipVisibility == true  (last parameter)
-            // setting this bit will allow accessing nonpublic members
-            // for more information see http://msdn.microsoft.com/en-us/library/bb348332.aspx
-            //
-            return new DynamicMethod(name, returnType, parameterTypes, true);
-#endif
-        }
-
         /// <summary>
         /// Creates an array of size count with each element initialized to item
         /// </summary>
