@@ -18,7 +18,7 @@ using System.Collections.ObjectModel;
 using System.Dynamic.Utils;
 
 namespace System.Linq.Expressions {
-    
+
     /// <summary>
     /// Represents a visitor or rewriter for expression trees.
     /// </summary>
@@ -333,7 +333,8 @@ namespace System.Linq.Expressions {
             if (e == node.Expression && a == null) {
                 return node;
             }
-            return Expression.Invoke(e, a);
+
+            return node.Rewrite(e, a);
         }
 
         /// <summary>
@@ -417,11 +418,12 @@ namespace System.Linq.Expressions {
         /// otherwise, returns the original expression.</returns>
         protected internal virtual Expression VisitIndex(IndexExpression node) {
             Expression o = Visit(node.Object);
-            IList<Expression> a = VisitArguments(node);
+            Expression[] a = VisitArguments(node);
             if (o == node.Object && a == null) {
                 return node;
             }
-            return Expression.MakeIndex(o, node.Indexer, a);
+
+            return node.Rewrite(o, a);
         }
 
         /// <summary>

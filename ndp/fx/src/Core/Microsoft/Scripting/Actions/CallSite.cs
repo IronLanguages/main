@@ -54,7 +54,7 @@ namespace System.Runtime.CompilerServices {
 
         // Cache of CallSite constructors for a given delegate type
         private static CacheDict<Type, Func<CallSiteBinder, CallSite>> _SiteCtors;
-                
+
         /// <summary>
         /// The Binder responsible for binding operations at this call site.
         /// This binder is invoked by the UpdateAndExecute below if all Level 0,
@@ -128,7 +128,7 @@ namespace System.Runtime.CompilerServices {
         /// The Level 2 cache - all rules produced for the same generic instantiation
         /// of the dynamic site (all dynamic sites with matching delegate type).
         /// </summary>
-        private static Dictionary<object, RuleTree<T>> _cache;
+        private static Dictionary<object, RuleCache<T>> _cache;
 
         // Cached update delegate for all sites with a given T
         private static T _CachedUpdate;
@@ -182,21 +182,21 @@ namespace System.Runtime.CompilerServices {
             }
         }
 
-        internal RuleTree<T> RuleCache {
+        internal RuleCache<T> RuleCache {
             get {
-                RuleTree<T> tree;
+                RuleCache<T> tree;
                 object cookie = _binder.CacheIdentity;
-                
+
                 if (_cache == null) {
                     Interlocked.CompareExchange(
                         ref _cache,
-                         new Dictionary<object, RuleTree<T>>(),
+                         new Dictionary<object, RuleCache<T>>(),
                          null);
                 }
 
                 lock (_cache) {
                     if (!_cache.TryGetValue(cookie, out tree)) {
-                        _cache[cookie] = tree = new RuleTree<T>();
+                        _cache[cookie] = tree = new RuleCache<T>();
                     }
                 }
 
@@ -406,7 +406,7 @@ namespace System.Runtime.CompilerServices {
 
             var checkOriginalRule = IfThen(
                 Expression.Equal(
-                    Helpers.Convert(startingTarget, typeof(object)), 
+                    Helpers.Convert(startingTarget, typeof(object)),
                     Helpers.Convert(ruleTarget, typeof(object))
                 ),
                 Expression.Assign(originalRule, rule)
@@ -457,20 +457,11 @@ namespace System.Runtime.CompilerServices {
             ////
             //// Level 2 cache lookup
             ////
-            //var args = new object[] { arg0, arg1, ... };
-            var args = Expression.Variable(typeof(object[]), "args");
-            vars.Add(args);
-            body.Add(
-                Expression.Assign(
-                    args,
-                    Expression.NewArrayInit(typeof(object), arguments.Map(p => Convert(p, typeof(object))))
-                )
-            );
 
             ////
             //// Any applicable rules in level 2 cache?
             ////
-            //if ((applicable = CallSiteOps.FindApplicableRules(@this, args)) != null) {
+            //if ((applicable = CallSiteOps.FindApplicableRules(@this)) != null) {
             //    count = applicable.Length;
             //    for (index = 0; index < count; index++) {
             //        rule = applicable[index];
@@ -493,7 +484,7 @@ namespace System.Runtime.CompilerServices {
             //
             //                CallSiteOps.AddRule(@this, rule);
             //                // and then move it to the front of the L2 cache
-            //                @this.RuleCache.MoveRule(rule, args);
+            //                @this.RuleCache.MoveRule(rule);
             //            }
             //        }
             //
@@ -509,10 +500,10 @@ namespace System.Runtime.CompilerServices {
 
             tryRule = Expression.TryFinally(
                 invokeRule,
-                IfThen(match, 
+                IfThen(match,
                     Expression.Block(
                         Expression.Call(typeof(CallSiteOps), "AddRule", typeArgs, @this, rule),
-                        Expression.Call(typeof(CallSiteOps), "MoveRule", typeArgs, @this, rule, args)
+                        Expression.Call(typeof(CallSiteOps), "MoveRule", typeArgs, @this, rule)
                     )
                 )
             );
@@ -522,7 +513,7 @@ namespace System.Runtime.CompilerServices {
                     Expression.NotEqual(
                         Expression.Assign(
                             applicable,
-                            Expression.Call(typeof(CallSiteOps), "FindApplicableRules", typeArgs, @this, args)
+                            Expression.Call(typeof(CallSiteOps), "FindApplicableRules", typeArgs, @this)
                         ),
                         Expression.Constant(null, applicable.Type)
                     ),
@@ -550,6 +541,18 @@ namespace System.Runtime.CompilerServices {
             ////
 
             //rule = null;
+            body.Add(Expression.Assign(rule, Expression.Constant(null, rule.Type)));
+
+            //var args = new object[] { arg0, arg1, ... };
+            var args = Expression.Variable(typeof(object[]), "args");
+            vars.Add(args);
+            body.Add(
+                Expression.Assign(
+                    args,
+                    Expression.NewArrayInit(typeof(object), arguments.Map(p => Convert(p, typeof(object))))
+                )
+            );
+
             //for (; ; ) {
             //    rule = CallSiteOps.CreateNewRule(@this, rule, originalRule, args);
 
@@ -575,7 +578,6 @@ namespace System.Runtime.CompilerServices {
             //    // Rule we got back didn't work, try another one
             //    match = true;
             //}
-            body.Add(Expression.Assign(rule, Expression.Constant(null, rule.Type)));
 
             getRule = Expression.Assign(
                 ruleTarget,
@@ -588,6 +590,14 @@ namespace System.Runtime.CompilerServices {
                         rule,
                         Expression.Call(typeof(CallSiteOps), "CreateNewRule", typeArgs, @this, rule, originalRule, args)
                     )
+                )
+            );
+
+            tryRule = Expression.TryFinally(
+                invokeRule,
+                IfThen(
+                    match,
+                    Expression.Call(typeof(CallSiteOps), "AddRule", typeArgs, @this, rule)
                 )
             );
 
