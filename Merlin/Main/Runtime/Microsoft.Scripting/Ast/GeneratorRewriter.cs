@@ -105,8 +105,8 @@ namespace Microsoft.Scripting.Ast {
                         Expression.Assign(_state, Expression.Constant(Finished)),
                         Expression.Label(_returnLabels.Peek())
                     ),
-                    _state,
-                    _current
+                    _generator.Name,
+                    new ParameterExpression[] { _state, _current }
                 )
             );
 
