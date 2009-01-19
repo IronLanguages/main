@@ -146,3 +146,18 @@ describe "Repeated loading of custom assembly with strong name" do
     @engine.execute("load_assembly 'rowantest.baseclasscs, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null'").should == true
   end
 end
+
+describe "Loading of custom assembly outside of the load path" do
+  it "raises a LoadError" do
+    engine = IronRuby.create_engine
+    lambda {engine.execute("require 'rowantest.baseclasscs'")}.should raise_error(LoadError)
+    lambda {engine.execute("load 'rowantest.baseclasscs.dll'")}.should raise_error(LoadError)
+    lambda {engine.execute("load_assembly 'rowantest.baseclasscs.dll'")}.should raise_error(LoadError)
+  end
+
+  it "doesn't raise LoadError for strong names" do 
+    lambda {engine.execute("require 'rowantest.baseclasscs, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null'")}.should_not raise_error(LoadError)
+    lambda {engine.execute("load 'rowantest.baseclasscs, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null'")}.should_not raise_error(LoadError)
+    lambda {engine.execute("load_assembly 'rowantest.baseclasscs, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null'")}.should_not raise_error(LoadError)
+  end
+end
