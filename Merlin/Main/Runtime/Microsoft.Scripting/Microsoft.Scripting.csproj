@@ -3,7 +3,7 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProductVersion>9.0.21022</ProductVersion>
+    <ProductVersion>9.0.30729</ProductVersion>
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>{EB66B766-6354-4208-A3D4-AACBDCB5C3B3}</ProjectGuid>
     <OutputType>Library</OutputType>
@@ -196,6 +196,16 @@
     <Compile Include="Hosting\Shell\Remote\RemoteConsoleCommandLine.cs" />
     <Compile Include="Hosting\Shell\Remote\RemoteConsoleHost.cs" />
     <Compile Include="Hosting\Shell\Remote\RemoteRuntimeServer.cs" />
+    <Compile Include="Interpreter\LightLambda.Generated.cs" />
+    <Compile Include="Interpreter\Interpreter.cs" />
+    <Compile Include="Interpreter\DynamicInstructions.Generated.cs" />
+    <Compile Include="Interpreter\DynamicInstructions.cs" />
+    <Compile Include="Interpreter\LightGlobalRewriter.cs" />
+    <Compile Include="Interpreter\LightScriptCode.cs" />
+    <Compile Include="Interpreter\LightLambda.cs" />
+    <Compile Include="Interpreter\Instruction.cs" />
+    <Compile Include="Interpreter\LightCompiler.cs" />
+    <Compile Include="Interpreter\StackFrame.cs" />
     <Compile Include="Runtime\Generator.cs" />
     <Compile Include="Ast\GeneratorExpression.cs" />
     <Compile Include="Ast\GeneratorRewriter.cs" />

@@ -218,7 +218,8 @@ namespace Microsoft.Scripting.Hosting.Shell {
                 case "-X:Interpret":
                     LanguageSetup.Options["InterpretedMode"] = ScriptingRuntimeHelpers.True;
                     break;
-                
+
+                case "-X:AdaptiveCompilation":                
                 case "-X:ExceptionDetail":
                 case "-X:ShowClrExceptions":
                 case "-X:PerfStats":
@@ -270,6 +271,7 @@ namespace Microsoft.Scripting.Hosting.Shell {
                 { "-X:AutoIndent",               "" },
                 { "-X:ExceptionDetail",          "Enable ExceptionDetail mode" },
                 { "-X:Interpret",                "Enable interpreted mode" },
+                { "-X:AdaptiveCompilation",      "Enable adaptive compilation" },
                 { "-X:LightweightScopes",        "Generate optimized scopes that can be garbage collected" },
                 { "-X:MaxRecursion",             "Set the maximum recursion level" },
                 { "-X:PassExceptions",           "Do not catch exceptions that are unhandled by script code" },

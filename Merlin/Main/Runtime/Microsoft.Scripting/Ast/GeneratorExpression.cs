@@ -33,11 +33,13 @@ namespace Microsoft.Scripting.Ast {
         private readonly Expression _body;
         private Expression _reduced;
         private readonly Type _type;
+        private readonly string _name;
 
-        internal GeneratorExpression(Type type, LabelTarget label, Expression body) {
+        internal GeneratorExpression(string name, Type type, LabelTarget label, Expression body) {
             _target = label;
             _body = body;
             _type = type;
+            _name = name;
         }
 
         public override bool CanReduce {
@@ -50,6 +52,10 @@ namespace Microsoft.Scripting.Ast {
 
         protected override ExpressionType GetNodeKind() {
             return ExpressionType.Extension;
+        }
+
+        public string Name {
+            get { return _name; }
         }
 
         /// <summary>
@@ -80,7 +86,7 @@ namespace Microsoft.Scripting.Ast {
             if (b == _body) {
                 return this;
             }
-            return Utils.Generator(_target, b, Type);
+            return Utils.Generator(_name, _target, b, Type);
         }
 
         internal bool IsEnumerable {
@@ -97,9 +103,14 @@ namespace Microsoft.Scripting.Ast {
             ContractUtils.RequiresNotNull(body, "body");
             ContractUtils.Requires(label.Type != typeof(void), "label", "label must have a non-void type");
 
-            return new GeneratorExpression(typeof(IEnumerable<>).MakeGenericType(label.Type), label, body);
+            return new GeneratorExpression("generator", typeof(IEnumerable<>).MakeGenericType(label.Type), label, body);
         }
+
         public static GeneratorExpression Generator(LabelTarget label, Expression body, Type type) {
+            return Generator("generator", label, body, type);
+        }
+
+        public static GeneratorExpression Generator(string name, LabelTarget label, Expression body, Type type) {
             ContractUtils.RequiresNotNull(type, "type");
             ContractUtils.RequiresNotNull(body, "body");
             ContractUtils.RequiresNotNull(label, "label");
@@ -120,7 +131,7 @@ namespace Microsoft.Scripting.Ast {
 
             ContractUtils.RequiresNotNull(body, "body");
 
-            return new GeneratorExpression(type, label, body);
+            return new GeneratorExpression(name, type, label, body);
         }
 
         private static ArgumentException GeneratorTypeMustBeEnumerableOfT(Type type) {
@@ -179,7 +190,7 @@ namespace Microsoft.Scripting.Ast {
 
             return Expression.Lambda(
                  delegateType,
-                 Utils.Generator(label, body, generatorType),
+                 Utils.Generator(name, label, body, generatorType),
                  name,
                  paramList
              );

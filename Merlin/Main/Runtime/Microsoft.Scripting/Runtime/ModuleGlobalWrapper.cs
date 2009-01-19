@@ -55,6 +55,8 @@ namespace Microsoft.Scripting.Runtime {
             }
         }
 
+        public SymbolId Name { get { return _name; } }
+
         private object GetCachedValue() {
             if (_global.IsCaching) {
                 if (_global.HasValue) return _global.Value;

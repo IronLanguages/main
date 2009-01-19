@@ -31,8 +31,8 @@ namespace Microsoft.Scripting.Runtime {
     /// GlobalArrayRewriter
     /// </summary>
     public sealed class GlobalsDictionary : CustomSymbolDictionary, IModuleDictionaryInitialization {
-        private readonly ModuleGlobalWrapper[] _data;
-        private readonly SymbolId[] _names;
+        private ModuleGlobalWrapper[] _data;
+        private SymbolId[] _names;
 
         // lazily created mapping
         private Dictionary<SymbolId, int> _indexes;
@@ -43,7 +43,18 @@ namespace Microsoft.Scripting.Runtime {
             _data = new ModuleGlobalWrapper[names.Length];
             _names = names;
         }
-        
+
+        internal GlobalsDictionary() { }
+
+        internal void SetData(ModuleGlobalWrapper[] data) {
+            _data = data;
+            _names = new SymbolId[data.Length];
+            for (int i = 0; i < data.Length; i++) {
+                _names[i] = data[i].Name;
+            }
+        }
+
+
         internal ModuleGlobalWrapper[] Data {
             get { return _data; }
         }

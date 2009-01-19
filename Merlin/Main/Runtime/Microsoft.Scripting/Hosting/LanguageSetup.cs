@@ -32,7 +32,7 @@ namespace Microsoft.Scripting.Hosting {
         private IList<string> _fileExtensions;
         private IDictionary<string, object> _options;
         private bool _frozen;
-        private bool? _interpretedMode, _exceptionDetail, _perfStats;
+        private bool? _interpretedMode, _exceptionDetail, _perfStats, _adaptiveCompilation;
 
         /// <summary>
         /// Creates a new LanguageSetup
@@ -132,6 +132,14 @@ namespace Microsoft.Scripting.Hosting {
             set { 
                 CheckFrozen();
                 Options["InterpretedMode"] = value; 
+            }
+        }
+
+        public bool AdaptiveCompilation {
+            get { return GetCachedOption("AdaptiveCompilation", ref _adaptiveCompilation); }
+            set {
+                CheckFrozen();
+                Options["AdaptiveCompilation"] = value;
             }
         }
 
