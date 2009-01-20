@@ -161,3 +161,49 @@ describe "Loading of custom assembly outside of the load path" do
     lambda {engine.execute("load_assembly 'rowantest.baseclasscs, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null'")}.should_not raise_error(LoadError)
   end
 end
+
+
+describe "Modifying and reloading custom assembly" do 
+  before :each do
+    @engine = IronRuby.create_engine
+    @scope = @engine.create_scope
+    str = "$: << '#{ENV["MERLIN_ROOT"] + "\\Bin\\Debug\\"}'".gsub("\\", "/")
+    @engine.execute(str, @scope)
+    @engine.execute("require 'rowantest.baseclasscs'", @scope)
+    str = <<-EOL
+      class Merlin::Testing::BaseClass::EmptyClass
+        def foo
+          :foo
+        end
+      end
+    EOL
+    @engine.execute str, @scope
+    @engine.execute "ec = Merlin::Testing::BaseClass::EmptyClass.new", @scope
+  end
+
+  after :each do
+    @engine = nil
+  end
+  
+  it "is allowed" do
+    @engine.execute("ec.foo", @scope).should == :foo
+  end
+  
+  it "doesn't reload with require" do
+    @engine.execute("ec.foo", @scope).should == :foo
+    @engine.execute("require 'rowantest.baseclasscs'", @scope).should == false
+    @engine.execute("ec.foo", @scope).should == :foo
+  end
+
+  it "reloads with load, without rewriting the class or module" do
+    @engine.execute("ec.foo", @scope).should == :foo
+    @engine.execute("load 'rowantest.baseclasscs.dll'", @scope).should == true
+    @engine.execute("ec.foo", @scope).should == :foo
+  end
+
+  it "reloads with load_assembly, without rewriting the class or module" do
+    @engine.execute("ec.foo", @scope).should == :foo
+    @engine.execute("load_assembly 'rowantest.baseclasscs'", @scope).should == true
+    @engine.execute("ec.foo", @scope).should == :foo
+  end
+end
