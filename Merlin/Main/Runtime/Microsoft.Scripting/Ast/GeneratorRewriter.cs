@@ -60,7 +60,7 @@ namespace Microsoft.Scripting.Ast {
 
         private List<int> _debugCookies;
 
-        private readonly List<ParameterExpression> _vars = new List<ParameterExpression>();
+        private readonly Set<ParameterExpression> _vars = new Set<ParameterExpression>();
 
         // Possible optimization: reuse temps. Requires scoping them correctly,
         // and then storing them back in a free list
@@ -228,9 +228,6 @@ namespace Microsoft.Scripting.Ast {
 
             // Transform catches with yield to deferred handlers
             if (catchYields != tryYields) {
-                // Temps which are only needed temporarily, so they can go into
-                // a transient scope (contents will be lost each yield)
-                var temps = new List<ParameterExpression>();
                 var block = new List<Expression>();
 
                 block.Add(MakeYieldRouter(tryYields, catchYields, tryStart));
@@ -247,21 +244,38 @@ namespace Microsoft.Scripting.Ast {
                         handlers = handlers.ToArray();
                     }
 
-                    // TODO: when CatchBlock's variable is scoped properly, this
-                    // implementation will need to be different
-                    var deferredVar = Expression.Variable(c.Test, null);
-                    temps.Add(deferredVar);
-                    handlers[i] = Expression.Catch(deferredVar, Expression.Empty(), c.Filter);
+                    // the variable that will be scoped to the catch block
+                    var exceptionVar = Expression.Variable(c.Test, null);
+
+                    // the variable that the catch block body will use to
+                    // access the exception. We reuse the original variable if
+                    // the catch block had one. It needs to be hoisted because
+                    // the catch might contain yields.
+                    var deferredVar = c.Variable ?? Expression.Variable(c.Test, null);
+                    _vars.Add(deferredVar);
+
+                    // We need to ensure that filters can access the exception
+                    // variable
+                    Expression filter = c.Filter;
+                    if (filter != null && c.Variable != null) {
+                        filter = Expression.Block(new[] { c.Variable }, Expression.Assign(c.Variable, exceptionVar), filter);
+                    }
+
+                    // catch (ExceptionType exceptionVar) {
+                    //     deferredVar = exceptionVar;
+                    // }
+                    handlers[i] = Expression.Catch(
+                        exceptionVar,
+                        Expression.Void(Expression.Assign(deferredVar, exceptionVar)),
+                        filter
+                    );
 
                     // We need to rewrite rethrows into "throw deferredVar"
                     var catchBody = new RethrowRewriter { Exception = deferredVar }.Visit(c.Body);
-
-                    if (c.Variable != null) {
-                        catchBody = Expression.Block(Expression.Assign(c.Variable, deferredVar), catchBody);
-                    } else {
-                        catchBody = Expression.Block(catchBody);
-                    }
-
+                    
+                    // if (deferredVar != null) {
+                    //     ... catch body ...
+                    // }
                     block.Add(
                         Expression.Condition(
                             Expression.NotEqual(deferredVar, Expression.Constant(null, deferredVar.Type)),
@@ -272,7 +286,7 @@ namespace Microsoft.Scripting.Ast {
                 }
 
                 block[1] = Expression.MakeTry(@try, null, null, new ReadOnlyCollection<CatchBlock>(handlers));
-                @try = Expression.Block(temps, block);
+                @try = Expression.Block(block);
                 handlers = new CatchBlock[0]; // so we don't reuse these
             }
 
@@ -280,11 +294,12 @@ namespace Microsoft.Scripting.Ast {
                 // We need to add a catch block to save the exception, so we
                 // can rethrow in case there is a yield in the finally. Also,
                 // add logic for returning. It looks like this:
-                // try { ... } catch (Exception e) {}
+                //
+                // try { ... } catch (Exception all) { saved = all; }
                 // finally {
                 //  if (_finallyReturnVar) goto finallyReturn;
                 //   ...
-                //   if (e != null) throw e;
+                //   if (saved != null) throw saved;
                 //   finallyReturn:
                 // }
                 // if (_finallyReturnVar) goto _return;
@@ -303,14 +318,15 @@ namespace Microsoft.Scripting.Ast {
                 Expression inFinallyRouter = MakeYieldRouter(catchYields, finallyYields, tryEnd);
                 Expression inTryRouter = MakeYieldRouter(catchYields, finallyYields, tryStart);
 
-                var exception = Expression.Variable(typeof(Exception), "$temp$" + _temps.Count);
-                _temps.Add(exception);
+                var all = Expression.Variable(typeof(Exception), "e");
+                var saved = Expression.Variable(typeof(Exception), "$saved$" + _temps.Count);
+                _temps.Add(saved);
                 @try = Expression.Block(
                     Expression.TryCatchFinally(
                         Expression.Block(
                             inTryRouter,
                             @try,
-                            Expression.Assign(exception, Expression.Constant(null, exception.Type)),
+                            Expression.Assign(saved, Expression.Constant(null, saved.Type)),
                             Expression.Label(tryEnd)
                         ),
                         Expression.Block(
@@ -318,13 +334,13 @@ namespace Microsoft.Scripting.Ast {
                             inFinallyRouter,
                             @finally,
                             Expression.Condition(
-                                Expression.NotEqual(exception, Expression.Constant(null, exception.Type)),
-                                Expression.Throw(exception),
+                                Expression.NotEqual(saved, Expression.Constant(null, saved.Type)),
+                                Expression.Throw(saved),
                                 Expression.Empty()
                             ),
                             Expression.Label(finallyReturn)
                         ),
-                        Expression.Catch(exception, Expression.Empty())
+                        Expression.Catch(all, Expression.Void(Expression.Assign(saved, all)))
                     ),
                     Expression.Condition(
                         Expression.Equal(_gotoRouter, Expression.Constant(GotoRouterYielding)),
@@ -472,7 +488,7 @@ namespace Microsoft.Scripting.Ast {
 
             // save the variables for later
             // (they'll be hoisted outside of the lambda)
-            _vars.AddRange(node.Variables);
+            _vars.UnionWith(node.Variables);
 
             // Return a new block expression with the rewritten body except for that
             // all the variables are removed.

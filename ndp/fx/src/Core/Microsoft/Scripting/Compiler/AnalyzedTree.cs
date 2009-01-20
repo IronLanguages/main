@@ -20,7 +20,7 @@ using System.Dynamic.Utils;
 
 namespace System.Linq.Expressions.Compiler {
     internal sealed class AnalyzedTree {
-        internal readonly Dictionary<Expression, CompilerScope> Scopes = new Dictionary<Expression, CompilerScope>();
+        internal readonly Dictionary<object, CompilerScope> Scopes = new Dictionary<object, CompilerScope>();
         internal readonly Dictionary<LambdaExpression, BoundConstants> Constants = new Dictionary<LambdaExpression, BoundConstants>();
 
         // Lazy initialized because many trees will not need it
