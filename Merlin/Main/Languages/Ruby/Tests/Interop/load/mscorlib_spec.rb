@@ -164,3 +164,29 @@ describe "Repeated loading of mscorlib with Strong name" do
     @engine.execute("load_assembly 'mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089'").should == true
   end
 end
+
+describe "Modifying and reloading mscorlib" do 
+  before :each do
+    @engine = IronRuby.create_engine
+    @scope = @engine.create_scope
+    @engine.execute("require 'mscorlib'", @scope)
+    str = <<-EOL
+      class System::Collections::ArrayList
+        def foo
+          :foo
+        end
+      end
+    EOL
+    @engine.execute str, @scope
+    @engine.execute "al = System::Collections::ArrayList.new", @scope
+  end
+
+  after :each do
+    @engine = nil
+  end
+  
+  it "is allowed" do
+    @engine.execute("al.foo", @scope).should == :foo
+  end
+  
+end
