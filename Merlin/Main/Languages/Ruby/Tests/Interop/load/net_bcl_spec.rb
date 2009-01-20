@@ -48,7 +48,7 @@ describe "Single time loading of a .NET BCL Assembly with Strong name" do
 
   it "works via load_assembly" do
     @engine.execute("load_assembly 'System.Core, Version=3.5.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089'")
-    lambda {@engine.execute("System")}.should_not raise_error(NameError)
+    lambda {@engine.execute("System::Linq")}.should_not raise_error(NameError)
   end
 end
 
