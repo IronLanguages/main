@@ -189,4 +189,21 @@ describe "Modifying and reloading mscorlib" do
     @engine.execute("al.foo", @scope).should == :foo
   end
   
+  it "doesn't reload with require" do
+    @engine.execute("al.foo", @scope).should == :foo
+    @engine.execute("require 'mscorlib'", @scope).should == false
+    @engine.execute("al.foo", @scope).should == :foo
+  end
+
+  it "reloads with load, without rewriting the class or module" do
+    @engine.execute("al.foo", @scope).should == :foo
+    @engine.execute("load 'mscorlib'", @scope).should == true
+    @engine.execute("al.foo", @scope).should == :foo
+  end
+
+  it "reloads with load_assembly, without rewriting the class or module" do
+    @engine.execute("al.foo", @scope).should == :foo
+    @engine.execute("load_assembly 'mscorlib'", @scope).should == true
+    @engine.execute("al.foo", @scope).should == :foo
+  end
 end
