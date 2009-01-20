@@ -172,12 +172,6 @@ namespace Microsoft.Scripting.Ast {
 
             LabelTarget finallyEnd = block.FlowLabel;
             if (finallyEnd != null) {
-                if (@finally != null) {
-                    @finally = Expression.Label(finallyEnd, @finally);
-                }
-                if (fault != null) {
-                    fault = Expression.Label(finallyEnd, fault);
-                }
                 // Make a new target, which will be emitted after the try
                 block.FlowLabel = Expression.Label();
             }
@@ -197,6 +191,11 @@ namespace Microsoft.Scripting.Ast {
                 return Expression.MakeTry(@try, @finally, fault, handlers);
             }
 
+            if (node.Type != typeof(void)) {
+                // This is not hard to support in principle, but not needed by anyone yet.
+                throw new NotSupportedException("FinallyFlowControlExpression does not support TryExpressions of non-void type.");
+            }
+
             //  If there is a control flow in finally, emit outer:
             //  try {
             //      // try block body and all catch handling
@@ -213,39 +212,52 @@ namespace Microsoft.Scripting.Ast {
             //  try {
             //      // try block body and all catch handling
             //  } catch (Exception all) {
-            //      saved = all;
             //      fault_body
-            //      throw saved
+            //      throw all
             //  }
 
             if (handlers.Count > 0) {
                 @try = Expression.MakeTry(@try, null, null, handlers);
             }
 
-            var all = Expression.Variable(typeof(Exception), "$exception");
+            var saved = Expression.Variable(typeof(Exception), "$exception");
+            var all = Expression.Variable(typeof(Exception), "e");
             if (@finally != null) {
-                handlers = new[] { Expression.Catch(all.Type, Expression.Default(node.Type)) };
+                handlers = new[] {
+                    Expression.Catch(
+                        all,
+                        Expression.Block(
+                            Expression.Assign(saved, all),
+                            Expression.Default(node.Type)
+                        )
+                    )
+                };
                 @finally = Expression.Block(
                     @finally,
                     Expression.Condition(
-                        Expression.NotEqual(all, Expression.Constant(null, all.Type)),
-                        Expression.Throw(all),
+                        Expression.NotEqual(saved, Expression.Constant(null, saved.Type)),
+                        Expression.Throw(saved),
                         Expression.Empty()
                     )
                 );
+
+                if (finallyEnd != null) {
+                    @finally = Expression.Label(finallyEnd, @finally);
+                }
             } else {
-                handlers = new[] {
-                    Expression.Catch(
-                        all.Type, 
-                        Expression.Block(fault, Expression.Throw(all))
-                    )
-                };
+                Debug.Assert(fault != null);
+
+                fault = Expression.Block(fault, Expression.Throw(all));
+                if (finallyEnd != null) {
+                    fault = Expression.Label(finallyEnd, fault);
+                }
+                handlers = new[] { Expression.Catch(all, fault) };
                 fault = null;
             }
 
             // Emit flow control
             return Expression.Block(
-                new ParameterExpression[] { all },
+                new[] { saved },
                 Expression.MakeTry(@try, @finally, fault, handlers),
                 Expression.Label(block.FlowLabel),
                 MakeFlowControlSwitch(block)
