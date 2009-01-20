@@ -152,7 +152,6 @@
     <Compile Include="Actions\GetIndexBinder.cs" />
     <Compile Include="Actions\CreateInstanceBinder.cs" />
     <Compile Include="Actions\DeleteMemberBinder.cs" />
-    <Compile Include="Actions\EmptyRuleSet.cs" />
     <Compile Include="Actions\GetMemberBinder.cs" />
     <Compile Include="Actions\IDynamicObject.cs" />
     <Compile Include="Actions\InvokeBinder.cs" />
@@ -160,7 +159,6 @@
     <Compile Include="Actions\DynamicMetaObjectBinder.cs" />
     <Compile Include="Actions\BindingRestrictions.cs" />
     <Compile Include="Actions\RuleCache.cs" />
-    <Compile Include="Actions\RuleSet.cs" />
     <Compile Include="Actions\SetIndexBinder.cs" />
     <Compile Include="Actions\SetMemberBinder.cs" />
     <Compile Include="Actions\SmallRuleSet.cs" />

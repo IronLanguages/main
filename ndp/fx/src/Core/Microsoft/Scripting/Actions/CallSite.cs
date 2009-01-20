@@ -122,7 +122,7 @@ namespace System.Runtime.CompilerServices {
         /// <summary>
         /// The Level 1 cache - a history of the dynamic site.
         /// </summary>
-        internal RuleSet<T> Rules;
+        internal SmallRuleSet<T> Rules;
 
         /// <summary>
         /// The Level 2 cache - all rules produced for the same generic instantiation
@@ -354,30 +354,20 @@ namespace System.Runtime.CompilerServices {
             //        // Execute the rule
             //        //
             //        ruleTarget = CallSiteOps.SetTarget(@this, rule);
-
-            //        try {
+            //
+            //        if ((object)startingTarget == (object)ruleTarget) {
+            //            // if we produce another monomorphic
+            //            // rule we should try and share code between the two.
+            //            originalRule = rule;
+            //        }else{
             //            %(setResult)s ruleTarget(site, %(args)s);
             //            if (match) {
             //                %(returnResult)s;
-            //            }
-            //        } finally {
-            //            if (match) {
-            //                //
-            //                // Match in Level 1 cache. We saw the arguments that match the rule before and now we
-            //                // see them again. The site is polymorphic. Update the delegate and keep running
-            //                //
-            //                CallSiteOps.SetPolymorphicTarget(@this);
-            //            }
-            //        }
-
-            //        if (startingTarget == ruleTarget) {
-            //            // our rule was previously monomorphic, if we produce another monomorphic
-            //            // rule we should try and share code between the two.
-            //            originalRule = rule;
-            //        }
-
-            //        // Rule didn't match, try the next one
-            //        match = true;            
+            //            }        
+            //                    
+            //            // Rule didn't match, try the next one
+            //            match = true;            
+            //        }                
             //    }
             //}
             Expression invokeRule;
@@ -404,19 +394,15 @@ namespace System.Runtime.CompilerServices {
                 )
             );
 
-            var checkOriginalRule = IfThen(
+            var checkOriginalRuleOrInvoke = Expression.Condition(
                 Expression.Equal(
                     Helpers.Convert(startingTarget, typeof(object)),
                     Helpers.Convert(ruleTarget, typeof(object))
                 ),
-                Expression.Assign(originalRule, rule)
-            );
-
-            var tryRule = Expression.TryFinally(
-                invokeRule,
-                IfThen(
-                    match,
-                    Expression.Call(typeof(CallSiteOps), "SetPolymorphicTarget", typeArgs, @this)
+                Expression.Void(Expression.Assign(originalRule, rule)),
+                Expression.Block(
+                    invokeRule,
+                    Expression.Void(resetMatch)
                 )
             );
 
@@ -442,9 +428,7 @@ namespace System.Runtime.CompilerServices {
                             Expression.Block(
                                 breakIfDone,
                                 getRule,
-                                tryRule,
-                                checkOriginalRule,
-                                resetMatch,
+                                checkOriginalRuleOrInvoke,
                                 incrementIndex
                             ),
                             @break,
@@ -498,7 +482,7 @@ namespace System.Runtime.CompilerServices {
             //    }
             //}
 
-            tryRule = Expression.TryFinally(
+            var tryRule = Expression.TryFinally(
                 invokeRule,
                 IfThen(match,
                     Expression.Block(
@@ -506,6 +490,14 @@ namespace System.Runtime.CompilerServices {
                         Expression.Call(typeof(CallSiteOps), "MoveRule", typeArgs, @this, rule)
                     )
                 )
+            );
+
+            var checkOriginalRule = IfThen(
+                Expression.Equal(
+                    Helpers.Convert(startingTarget, typeof(object)),
+                    Helpers.Convert(ruleTarget, typeof(object))
+                ),
+                Expression.Assign(originalRule, rule)
             );
 
             body.Add(

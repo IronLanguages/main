@@ -137,22 +137,6 @@ namespace System.Runtime.CompilerServices {
         }
 
         /// <summary>
-        /// Sets the call site target to the delegate created from the set of dynamic binding rules.
-        /// </summary>
-        /// <typeparam name="T">The type of the delegate of the <see cref="CallSite"/>.</typeparam>
-        /// <param name="site">An instance of the dynamic call site.</param>
-        [Obsolete("do not use this method", true)]
-        public static void SetPolymorphicTarget<T>(CallSite<T> site) where T : class {
-            T target = site.Rules.GetTarget();
-            // If the site has gone megamorphic, we'll have an empty RuleSet
-            // with no target. In that case, we don't want to clear out the
-            // target
-            if (target != null) {
-                site.Target = target;
-            }
-        }
-
-        /// <summary>
         /// Gets the dynamic binding rules from the call site.
         /// </summary>
         /// <typeparam name="T">The type of the delegate of the <see cref="CallSite"/>.</typeparam>
