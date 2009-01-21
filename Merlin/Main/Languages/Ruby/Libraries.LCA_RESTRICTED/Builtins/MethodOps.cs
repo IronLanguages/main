@@ -37,7 +37,7 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("arity")]
         public static int GetArity(RubyMethod/*!*/ self) {
-            return self.Info.Arity;            
+            return self.Info.GetArity();            
         }
 
         [RubyMethod("clone")]
@@ -60,7 +60,7 @@ namespace IronRuby.Builtins {
         public static Proc/*!*/ ToProc(RubyContext/*!*/ context, RubyMethod/*!*/ self) {
             RubyMethodInfo mi = self.Info as RubyMethodInfo;
             if (mi != null) {
-                return Proc.Create(context, mi.Method, self.Target, mi.Arity);
+                return Proc.Create(context, mi.Method, self.Target, mi.GetArity());
             }
             // TODO: figure out what the semantics should be for a set of CLR methods returned ...
             throw new NotImplementedException();

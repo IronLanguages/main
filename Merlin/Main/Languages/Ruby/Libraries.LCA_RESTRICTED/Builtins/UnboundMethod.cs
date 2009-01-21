@@ -62,7 +62,7 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("arity")]
         public static int GetArity(UnboundMethod/*!*/ self) {
-            return self.Info.Arity;
+            return self.Info.GetArity();
         }
 
         [RubyMethod("bind")]

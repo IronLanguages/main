@@ -629,7 +629,7 @@ var closureScope = scope as RubyClosureScope;
                 }
             } else if (args.Length == 1) {
                 string str = SymbolTable.IdToString(name);
-                if (str.Length > 0 && str[str.Length - 1] == '=') {
+                if (str.LastCharacter() == '=') {
                     SymbolId plainName = SymbolTable.StringToId(str.Substring(0, str.Length - 1));
                     globalScope.SetName(plainName, args[0]);
                     return args[0];

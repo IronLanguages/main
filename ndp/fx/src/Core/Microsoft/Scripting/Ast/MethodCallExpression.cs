@@ -16,10 +16,8 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
-using System.Reflection;
-using System.Runtime.CompilerServices;
 using System.Dynamic.Utils;
-using System.Text;
+using System.Reflection;
 
 namespace System.Linq.Expressions {
     /// <summary>
@@ -147,7 +145,7 @@ namespace System.Linq.Expressions {
             Debug.Assert(instance == null);
             Debug.Assert(args == null || args.Count == _arguments.Count);
 
-            return new MethodCallExpressionN(Method, args ?? _arguments);
+            return Expression.Call(Method, args ?? _arguments);
         }
     }
 
@@ -183,7 +181,7 @@ namespace System.Linq.Expressions {
             Debug.Assert(instance != null);
             Debug.Assert(args == null || args.Count == _arguments.Count);
 
-            return new InstanceMethodCallExpressionN(Method, instance, args ?? _arguments);
+            return Expression.Call(instance, Method, args ?? _arguments);
         }
     }
 
@@ -217,10 +215,10 @@ namespace System.Linq.Expressions {
             Debug.Assert(args == null || args.Count == 1);
 
             if (args != null) {
-                return new MethodCallExpression1(Method, args[0]);
+                return Expression.Call(Method, args[0]);
             }
 
-            return new MethodCallExpression1(Method, ReturnObject<Expression>(_arg0));
+            return Expression.Call(Method, ReturnObject<Expression>(_arg0));
         }
     }
 
@@ -257,9 +255,9 @@ namespace System.Linq.Expressions {
             Debug.Assert(args == null || args.Count == 2);
 
             if (args != null) {
-                return new MethodCallExpression2(Method, args[0], args[1]);
+                return Expression.Call(Method, args[0], args[1]);
             }
-            return new MethodCallExpression2(Method, ReturnObject<Expression>(_arg0), _arg1);
+            return Expression.Call(Method, ReturnObject<Expression>(_arg0), _arg1);
         }
     }
 
@@ -298,9 +296,9 @@ namespace System.Linq.Expressions {
             Debug.Assert(args == null || args.Count == 3);
 
             if (args != null) {
-                return new MethodCallExpression3(Method, args[0], args[1], args[2]);
+                return Expression.Call(Method, args[0], args[1], args[2]);
             }
-            return new MethodCallExpression3(Method, ReturnObject<Expression>(_arg0), _arg1, _arg2);
+            return Expression.Call(Method, ReturnObject<Expression>(_arg0), _arg1, _arg2);
         }
     }
 
@@ -341,9 +339,9 @@ namespace System.Linq.Expressions {
             Debug.Assert(args == null || args.Count == 4);
 
             if (args != null) {
-                return new MethodCallExpression4(Method, args[0], args[1], args[2], args[3]);
+                return Expression.Call(Method, args[0], args[1], args[2], args[3]);
             }
-            return new MethodCallExpression4(Method, ReturnObject<Expression>(_arg0), _arg1, _arg2, _arg3);
+            return Expression.Call(Method, ReturnObject<Expression>(_arg0), _arg1, _arg2, _arg3);
         }
     }
 
@@ -386,10 +384,10 @@ namespace System.Linq.Expressions {
             Debug.Assert(args == null || args.Count == 5);
 
             if (args != null) {
-                return new MethodCallExpression5(Method, args[0], args[1], args[2], args[3], args[4]);
+                return Expression.Call(Method, args[0], args[1], args[2], args[3], args[4]);
             }
 
-            return new MethodCallExpression5(Method, ReturnObject<Expression>(_arg0), _arg1, _arg2, _arg3, _arg4);
+            return Expression.Call(Method, ReturnObject<Expression>(_arg0), _arg1, _arg2, _arg3, _arg4);
         }
     }
 
@@ -431,12 +429,12 @@ namespace System.Linq.Expressions {
 
         internal override MethodCallExpression Rewrite(Expression instance, IList<Expression> args) {
             Debug.Assert(instance != null);
-            Debug.Assert(args.Count == 2);
+            Debug.Assert(args == null || args.Count == 2);
 
             if (args != null) {
-                return new InstanceMethodCallExpression2(Method, instance, args[0], args[1]);
+                return Expression.Call(instance, Method, args[0], args[1]);
             }
-            return new InstanceMethodCallExpression2(Method, instance, ReturnObject<Expression>(_arg0), _arg1);
+            return Expression.Call(instance, Method, ReturnObject<Expression>(_arg0), _arg1);
         }
     }
 
@@ -480,12 +478,12 @@ namespace System.Linq.Expressions {
 
         internal override MethodCallExpression Rewrite(Expression instance, IList<Expression> args) {
             Debug.Assert(instance != null);
-            Debug.Assert(args.Count == 3);
+            Debug.Assert(args == null || args.Count == 3);
 
             if (args != null) {
-                return new InstanceMethodCallExpression3(Method, instance, args[0], args[1], args[2]);
+                return Expression.Call(instance, Method, args[0], args[1], args[2]);
             }
-            return new InstanceMethodCallExpression3(Method, instance, ReturnObject<Expression>(_arg0), _arg1, _arg2);
+            return Expression.Call(instance, Method, ReturnObject<Expression>(_arg0), _arg1, _arg2);
         }
     }
 
@@ -874,7 +872,7 @@ namespace System.Linq.Expressions {
             }
             TypeUtils.ValidateType(pType);
             if (!TypeUtils.AreReferenceAssignable(pType, arg.Type)) {
-                if (TypeUtils.IsSameOrSubclass(typeof(Expression), pType) && pType.IsAssignableFrom(arg.GetType())) {
+                if (TypeUtils.IsSameOrSubclass(typeof(LambdaExpression), pType) && pType.IsAssignableFrom(arg.GetType())) {
                     arg = Expression.Quote(arg);
                 } else {
                     // Throw the right error for the node we were given
@@ -944,7 +942,7 @@ namespace System.Linq.Expressions {
                     pType = pType.GetElementType();
                 }
                 if (!TypeUtils.AreReferenceAssignable(pType, argType) &&
-                    !(TypeUtils.IsSameOrSubclass(typeof(Expression), pType) && pType.IsAssignableFrom(arg.GetType()))) {
+                    !(TypeUtils.IsSameOrSubclass(typeof(LambdaExpression), pType) && pType.IsAssignableFrom(arg.GetType()))) {
                     return false;
                 }
             }

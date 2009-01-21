@@ -13,9 +13,7 @@
  *
  * ***************************************************************************/
 
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.SymbolStore;
 using System.Dynamic.Utils;
 using System.Reflection;
 using System.Reflection.Emit;
@@ -34,7 +32,7 @@ namespace System.Linq.Expressions.Compiler {
         internal void EmitConstantArray<T>(T[] array) {
             // Emit as runtime constant if possible
             // if not, emit into IL
-            if (_dynamicMethod) {
+            if (_method is DynamicMethod) {
                 EmitConstant(array, typeof(T[]));
             } else if(_typeBuilder != null) {
                 // store into field in our type builder, we will initialize
@@ -82,7 +80,8 @@ namespace System.Linq.Expressions.Compiler {
         /// Since the delegate is getting closed over the "Closure" argument, this
         /// cannot be used with virtual/instance methods (inner must be static method)
         /// </summary>
-        private void EmitDelegateConstruction(LambdaCompiler inner, Type delegateType) {
+        private void EmitDelegateConstruction(LambdaCompiler inner) {
+            Type delegateType = inner._lambda.Type;
             DynamicMethod dynamicMethod = inner._method as DynamicMethod;
             if (dynamicMethod != null) {
                 // dynamicMethod.CreateDelegate(delegateType, closure)
@@ -104,56 +103,31 @@ namespace System.Linq.Expressions.Compiler {
         /// May end up creating a wrapper to match the requested delegate type.
         /// </summary>
         /// <param name="lambda">Lambda for which to generate a delegate</param>
-        /// <param name="delegateType">Type of the delegate.</param>
-        private void EmitDelegateConstruction(LambdaExpression lambda, Type delegateType) {
-            // 1. create the signature
-            List<Type> paramTypes;
-            List<string> paramNames;
-            string implName;
-            Type returnType;
-            ComputeSignature(lambda, out paramTypes, out paramNames, out implName, out returnType);
-
-            // 2. create the new compiler
+        /// 
+        private void EmitDelegateConstruction(LambdaExpression lambda) {
+            // 1. Create the new compiler
             LambdaCompiler impl;
-            if (_dynamicMethod) {
-                impl = CreateDynamicCompiler(_tree, lambda, implName, returnType, paramTypes, paramNames, _emitDebugSymbols, _method is DynamicMethod);
+            if (_method is DynamicMethod) {
+                impl = new LambdaCompiler(_tree, lambda);
             } else {
                 //The lambda must be a nested one, we generate a private method for it.
-                MethodBuilder mb = _typeBuilder.DefineMethod(implName, MethodAttributes.Private | MethodAttributes.Static, returnType, paramTypes.ToArray());
-                impl = CreateStaticCompiler(_tree, lambda, mb, returnType, paramTypes, paramNames, _dynamicMethod, _emitDebugSymbols);
+                MethodBuilder mb = _typeBuilder.DefineMethod(GetGeneratedName(lambda.Name), MethodAttributes.Private | MethodAttributes.Static);
+                impl = new LambdaCompiler(_tree, lambda, mb, _emitDebugSymbols);
             }
 
             // 3. emit the lambda
             impl.EmitLambdaBody(_scope);
 
             // 4. emit the delegate creation in the outer lambda
-            EmitDelegateConstruction(impl, delegateType);
+            EmitDelegateConstruction(impl);
         }
 
-        /// <summary>
-        /// Creates the signature for the lambda as list of types and list of names separately
-        /// </summary>
-        private static void ComputeSignature(
-            LambdaExpression lambda,
-            out List<Type> paramTypes,
-            out List<string> paramNames,
-            out string implName,
-            out Type returnType) {
-
-            paramTypes = new List<Type>();
-            paramNames = new List<string>();
-
-            foreach (ParameterExpression p in lambda.Parameters) {
-                paramTypes.Add(p.IsByRef ? p.Type.MakeByRefType() : p.Type);
-                paramNames.Add(p.Name);
-            }
-
-            implName = GetGeneratedName(lambda.Name);
-            returnType = lambda.ReturnType;
+        private static Type[] GetParameterTypes(LambdaExpression lambda) {
+            return lambda.Parameters.Map(p => p.IsByRef ? p.Type.MakeByRefType() : p.Type);
         }
 
         private static string GetGeneratedName(string prefix) {
-            return prefix + "$" + Interlocked.Increment(ref _Counter);
+            return (prefix ?? "") + "$" + Interlocked.Increment(ref _Counter);
         }
 
         private void EmitLambdaBody(CompilerScope parent) {
@@ -174,10 +148,6 @@ namespace System.Linq.Expressions.Compiler {
             Debug.Assert(_labelBlock.Parent == null && _labelBlock.Kind == LabelBlockKind.Block);
             foreach (LabelInfo label in _labelInfo.Values) {
                 label.ValidateFinish();
-            }
-
-            if (_dynamicMethod) {
-                CreateDelegateMethodInfo();
             }
         }
     }

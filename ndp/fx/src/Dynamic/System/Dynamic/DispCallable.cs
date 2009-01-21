@@ -17,7 +17,6 @@
 
 using System.Linq.Expressions;
 using System.Dynamic;
-using Microsoft.Contracts;
 using System.Globalization;
 
 namespace System.Dynamic {

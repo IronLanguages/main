@@ -24,21 +24,9 @@ namespace System.Linq.Expressions.Compiler {
         }
 
         private void Emit(BlockExpression node, EmitAs emitAs) {
-            int count = node.ExpressionCount;
-
-            // Labels defined immediately in the block are valid for the whole block
-
-            for(int i = 0; i < count; i++) {
-                Expression e = node.GetExpression(i);
-
-                var label = e as LabelExpression;
-                if (label != null) {
-                    DefineLabel(label.Target);
-                }
-            }
-
             EnterScope(node);
 
+            int count = node.ExpressionCount;
             for (int index = 0; index < count - 1; index++) {
                 EmitExpressionAsVoid(node.GetExpression(index));
             }
@@ -54,8 +42,8 @@ namespace System.Linq.Expressions.Compiler {
             ExitScope(node);
         }
 
-        private void EnterScope(BlockExpression node) {
-            if (node.Variables.Count > 0 &&
+        private void EnterScope(object node) {
+            if (HasVariables(node) &&
                 (_scope.MergedScopes == null || !_scope.MergedScopes.Contains(node))) {
 
                 CompilerScope scope;
@@ -78,8 +66,16 @@ namespace System.Linq.Expressions.Compiler {
                 Debug.Assert(_scope.Node == node);
             }
         }
+                
+        private static bool HasVariables(object node) {
+            var block = node as BlockExpression;
+            if (block != null) {
+                return block.Variables.Count > 0;
+            }
+            return ((CatchBlock)node).Variable != null;
+        }
 
-        private void ExitScope(BlockExpression node) {
+        private void ExitScope(object node) {
             if (_scope.Node == node) {
                 _scope = _scope.Exit();
             }
@@ -100,7 +96,7 @@ namespace System.Linq.Expressions.Compiler {
             LabelInfo breakTarget = DefineLabel(node.BreakLabel);
             LabelInfo continueTarget = DefineLabel(node.ContinueLabel);
 
-            continueTarget.Mark();
+            continueTarget.MarkWithEmptyStack();
 
             EmitExpressionAsVoid(node.Body);
 
@@ -108,7 +104,7 @@ namespace System.Linq.Expressions.Compiler {
 
             PopLabelBlock(LabelBlockKind.Block);
 
-            breakTarget.Mark();
+            breakTarget.MarkWithEmptyStack();
         }
 
         #region SwitchStatement
@@ -153,7 +149,7 @@ namespace System.Linq.Expressions.Compiler {
                 EmitExpressionAsVoid(node.SwitchCases[i].Body);
             }
 
-            breakTarget.Mark();
+            breakTarget.MarkWithEmptyStack();
         }
 
         private const int MaxJumpTableSize = 65536;
@@ -303,6 +299,14 @@ namespace System.Linq.Expressions.Compiler {
                 PushLabelBlock(LabelBlockKind.Catch);
 
                 // Begin the strongly typed exception block
+                if (cb.Filter == null) {
+                    _ilg.BeginCatchBlock(cb.Test);
+                } else {
+                    _ilg.BeginExceptFilterBlock();
+                }
+
+                EnterScope(cb);
+
                 EmitCatchStart(cb);
 
                 //
@@ -313,6 +317,8 @@ namespace System.Linq.Expressions.Compiler {
                     //store the value of the catch block body
                     _ilg.Emit(OpCodes.Stloc, value);
                 }
+
+                ExitScope(cb);
 
                 PopLabelBlock(LabelBlockKind.Catch);
             }
@@ -353,15 +359,12 @@ namespace System.Linq.Expressions.Compiler {
         /// </summary>
         private void EmitCatchStart(CatchBlock cb) {
             if (cb.Filter == null) {
-                _ilg.BeginCatchBlock(cb.Test);
                 EmitSaveExceptionOrPop(cb);
                 return;
             }
 
             // emit filter block. Filter blocks are untyped so we need to do
             // the type check ourselves.  
-            _ilg.BeginExceptFilterBlock();
-
             Label endFilter = _ilg.DefineLabel();
             Label rightType = _ilg.DefineLabel();
 

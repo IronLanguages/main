@@ -1,0 +1,31 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<!-- saved from url=(0014)about:internet -->
+<!-- the saved comment must be at the top of the file, first or second element perhaps, to avoid
+     security dialogs and page load issues. -->
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <title>DLR/SPF Exception handling</title>
+
+    <script src="aghost.js" type="text/javascript"></script>
+
+</head>
+<body>
+    <div id="WpfeControl1Host">
+
+        <script type="text/javascript">
+    new agHost("WpfeControl1Host", "AgControl1", "50%", "100", "white", "eventhandler3.xaml", "false", "30", null, 0, 8, 5);
+        </script>
+
+    </div>
+    <span>
+        <hr />
+        <strong>Scenario:<br />
+        </strong>MouseEnter eventhanlder will raise AssertionError explicitly.<br />
+        <br />
+        <strong>Expected to See:<br />
+        </strong>move mouse over the text, it should throw<br />
+        <br />
+        <strong>Expected NOT to See:<br />
+        </strong>"I just left without trouble" ?</span>
+</body>
+</html>

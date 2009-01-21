@@ -101,9 +101,7 @@ namespace System.Dynamic {
         }              
 
         /// <summary>
-        /// Gets the data stored for the specified class at the specified index.  If the
-        /// class has changed a full lookup for the slot will be performed and the correct
-        /// value will be retrieved.
+        /// Deletes the data stored for the specified class at the specified index.
         /// </summary>
         internal bool DeleteValue(ExpandoClass klass, int index, bool caseInsensitive) {
             Debug.Assert(index != -1);
@@ -163,7 +161,7 @@ namespace System.Dynamic {
         }
 
         #endregion
-        
+
         #region IDynamicObject Members
 
         DynamicMetaObject IDynamicObject.GetMetaObject(Expression parameter) {
@@ -179,13 +177,13 @@ namespace System.Dynamic {
                 : base(expression, BindingRestrictions.Empty, value) {
             }
 
-            public override DynamicMetaObject BindGetMember(GetMemberBinder binder) {
-                ContractUtils.RequiresNotNull(binder, "binder");
-
+            //Get the DynamicMetaObject corresponding the the value for the
+            //specified member.
+            private DynamicMetaObject GetDynamicMetaObjectForMember(string name, bool ignoreCase, DynamicMetaObjectBinder binder) {
                 ExpandoClass klass = Value.Class;
 
-                int index = klass.GetValueIndex(binder.Name, binder.IgnoreCase);
-                string methodName = binder.IgnoreCase ? "ExpandoGetValueIgnoreCase" : "ExpandoGetValue";
+                int index = klass.GetValueIndex(name, ignoreCase);
+                string methodName = ignoreCase ? "ExpandoGetValueIgnoreCase" : "ExpandoGetValue";
 
                 Expression target;
                 if (index == -1) {
@@ -194,10 +192,10 @@ namespace System.Dynamic {
                         Expression.Throw(
                             Expression.New(
                                 typeof(MissingMemberException).GetConstructor(new Type[] { typeof(string) }),
-                                Expression.Constant(binder.Name)
+                                Expression.Constant(name)
                             )
                         ),
-                        typeof(object)                        
+                        typeof(object)
                     );
                 } else {
                     target = Expression.Call(
@@ -219,6 +217,35 @@ namespace System.Dynamic {
                     ),
                     GetRestrictions()
                 );
+            }
+
+            public override DynamicMetaObject BindGetMember(GetMemberBinder binder) {
+                ContractUtils.RequiresNotNull(binder, "binder");
+                return GetDynamicMetaObjectForMember(binder.Name, binder.IgnoreCase, binder);
+            }
+
+            public override DynamicMetaObject BindInvokeMember(InvokeMemberBinder binder, DynamicMetaObject[] args) {
+                ContractUtils.RequiresNotNull(binder, "binder");
+                DynamicMetaObject memberValue = GetDynamicMetaObjectForMember(binder.Name, binder.IgnoreCase, binder);
+                
+                //invoke the member value using the language's binder
+                return binder.FallbackInvoke(memberValue, args, null);
+            }
+
+            public override DynamicMetaObject BindUnaryOperationOnMember(UnaryOperationOnMemberBinder binder) {
+                ContractUtils.RequiresNotNull(binder, "binder");
+                DynamicMetaObject memberValue = GetDynamicMetaObjectForMember(binder.Name, binder.IgnoreCase, binder);
+
+                //apply the unary operation to the member value using the language's binder
+                return binder.FallbackUnaryOperationOnMember(memberValue);
+            }
+
+            public override DynamicMetaObject BindBinaryOperationOnMember(BinaryOperationOnMemberBinder binder, DynamicMetaObject value) {
+                ContractUtils.RequiresNotNull(binder, "binder");
+                DynamicMetaObject memberValue = GetDynamicMetaObjectForMember(binder.Name, binder.IgnoreCase, binder);
+
+                //apply the binary operation to the member value using the language's binder
+                return binder.FallbackBinaryOperationOnMember(memberValue, value);
             }
 
             public override DynamicMetaObject BindSetMember(SetMemberBinder binder, DynamicMetaObject value) {
@@ -286,8 +313,30 @@ namespace System.Dynamic {
                 );
             }
 
+            public override IEnumerable<KeyValuePair<string,object>> GetDynamicDataMembers()
+            {
+                var expandoData = Value._data;
+                var klass = expandoData.Class;
+                var data = expandoData.Data;
+                for (int i = 0; i < klass.Keys.Length; i++) {
+                    object val = data[i];
+                    // all members are data members in a class
+                    if (val != ExpandoObject.Uninitialized) {
+                        yield return new KeyValuePair<string, object>(klass.Keys[i], val);
+                    }
+                }
+            } 
+
             public override IEnumerable<string> GetDynamicMemberNames() {
-                return new ReadOnlyCollection<string>(Value._data.Class.Keys);
+                var expandoData = Value._data;
+                var klass = expandoData.Class;
+                var data = expandoData.Data;
+                for (int i = 0; i < klass.Keys.Length; i++) {
+                    object val = data[i];
+                    if (val != ExpandoObject.Uninitialized) {
+                        yield return klass.Keys[i];
+                    }
+                }
             }
 
             /// <summary>

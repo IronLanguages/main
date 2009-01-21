@@ -437,23 +437,28 @@ namespace System.Linq.Expressions.Compiler {
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1800:DoNotCastUnnecessarily")]
         private void EmitExpressionAndBranch(bool branchValue, Expression node, Label label) {
-            if (node.Type == typeof(bool)) {
-                switch (node.NodeType) {
-                    case ExpressionType.AndAlso:
-                    case ExpressionType.OrElse:
-                        EmitBranchLogical(branchValue, (BinaryExpression)node, label);
-                        return;
-                    case ExpressionType.Block:
-                        EmitBranchBlock(branchValue, (BlockExpression)node, label);
-                        return;
-                    case ExpressionType.Equal:
-                    case ExpressionType.NotEqual:
-                        EmitBranchComparison(branchValue, (BinaryExpression)node, label);
-                        return;
+            ExpressionStart startEmitted = EmitExpressionStart(node);
+            try {
+                if (node.Type == typeof(bool)) {
+                    switch (node.NodeType) {
+                        case ExpressionType.AndAlso:
+                        case ExpressionType.OrElse:
+                            EmitBranchLogical(branchValue, (BinaryExpression)node, label);
+                            return;
+                        case ExpressionType.Block:
+                            EmitBranchBlock(branchValue, (BlockExpression)node, label);
+                            return;
+                        case ExpressionType.Equal:
+                        case ExpressionType.NotEqual:
+                            EmitBranchComparison(branchValue, (BinaryExpression)node, label);
+                            return;
+                    }
                 }
+                EmitExpression(node, false);
+                EmitBranchOp(branchValue, label);
+            } finally {
+                EmitExpressionEnd(startEmitted);
             }
-            EmitExpression(node);
-            EmitBranchOp(branchValue, label);
         }
 
         private void EmitBranchOp(bool branch, Label label) {

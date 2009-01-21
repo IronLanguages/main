@@ -6,3 +6,5 @@ Merlin/Main/bin
 Merlin/Main/External
 *.csproj.vspscc
 *.vssscc
+obj
+*.suo

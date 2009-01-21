@@ -61,10 +61,9 @@ namespace System.Runtime.CompilerServices {
         /// <typeparam name="T">The type of the delegate of the <see cref="CallSite"/>.</typeparam>
         /// <param name="site">An instance of the dynamic call site.</param>
         /// <param name="rule">An instance of the call site rule.</param>
-        /// <param name="args">An array of arguments for the dynamic operation.</param>
         [Obsolete("do not use this method", true)]
-        public static void MoveRule<T>(CallSite<T> site, CallSiteRule<T> rule, object [] args) where T : class {
-            site.RuleCache.MoveRule(rule, args);
+        public static void MoveRule<T>(CallSite<T> site, CallSiteRule<T> rule) where T : class {
+            site.RuleCache.MoveRule(rule);
         }
 
         /// <summary>
@@ -95,7 +94,7 @@ namespace System.Runtime.CompilerServices {
                 // The rule didn't work and since we optimistically added it into the
                 // level 2 cache. Remove it now since the rule is no good.
                 //
-                site.RuleCache.RemoveRule(args, oldRule);
+                site.RuleCache.RemoveRule(oldRule);
             }
 
             Expression binding = site.Binder.Bind(args, CallSiteRule<T>.Parameters, CallSiteRule<T>.ReturnLabel);
@@ -121,7 +120,7 @@ namespace System.Runtime.CompilerServices {
             // add the originally added rule, not the templated one, to the global cache.  That
             // allows sites to template on their own.
             //
-            site.RuleCache.AddRule(args, rule);
+            site.RuleCache.AddRule(rule);
 
             return rule;
         }
@@ -131,27 +130,10 @@ namespace System.Runtime.CompilerServices {
         /// </summary>
         /// <typeparam name="T">The type of the delegate of the <see cref="CallSite"/>.</typeparam>
         /// <param name="site">An instance of the dynamic call site.</param>
-        /// <param name="args">An array of runtime values for the dynamic binding.</param>
         /// <returns>The array of applicable rules.</returns>
         [Obsolete("do not use this method", true)]
-        public static CallSiteRule<T>[] FindApplicableRules<T>(CallSite<T> site, object[] args) where T : class {
-            return site.RuleCache.FindApplicableRules(args);
-        }
-
-        /// <summary>
-        /// Sets the call site target to the delegate created from the set of dynamic binding rules.
-        /// </summary>
-        /// <typeparam name="T">The type of the delegate of the <see cref="CallSite"/>.</typeparam>
-        /// <param name="site">An instance of the dynamic call site.</param>
-        [Obsolete("do not use this method", true)]
-        public static void SetPolymorphicTarget<T>(CallSite<T> site) where T : class {
-            T target = site.Rules.GetTarget();
-            // If the site has gone megamorphic, we'll have an empty RuleSet
-            // with no target. In that case, we don't want to clear out the
-            // target
-            if (target != null) {
-                site.Target = target;
-            }
+        public static CallSiteRule<T>[] FindApplicableRules<T>(CallSite<T> site) where T : class {
+            return site.RuleCache.FindApplicableRules();
         }
 
         /// <summary>

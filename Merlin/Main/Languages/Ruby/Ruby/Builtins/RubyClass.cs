@@ -352,16 +352,26 @@ namespace IronRuby.Builtins {
                 return false;
             }
 
+            // We look only for members directly declared on the type and handle method overloads inheritance manually.  
             BindingFlags bindingFlags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly;
             bindingFlags |= (_isSingletonClass) ? BindingFlags.Static : BindingFlags.Instance;
 
-            if (name.EndsWith("=")) {
+            if (name == "[]" || name == "[]=") {
+                object[] attrs = type.GetCustomAttributes(typeof(DefaultMemberAttribute), false);
+                if (attrs.Length == 1) {
+                    // default indexer accessor:
+                    bool isSetter = name.Length == 3;
+                    if (TryGetClrProperty(type, bindingFlags, ((DefaultMemberAttribute)attrs[0]).MemberName, isSetter, out method)) {
+                        return true;
+                    }
+                }
+            } else if (name.LastCharacter() == '=') {
                 string propertyName = name.Substring(0, name.Length - 1);
                 
                 // property setter:
-                if (TryGetClrMethod(type, bindingFlags, "set_" + propertyName, out method)) return true;
+                if (TryGetClrProperty(type, bindingFlags, propertyName, true, out method)) return true;
                 unmangled = RubyUtils.TryUnmangleName(propertyName);
-                if (unmangled != null && TryGetClrMethod(type, bindingFlags, "set_" + unmangled, out method)) return true;
+                if (unmangled != null && TryGetClrProperty(type, bindingFlags, unmangled, true, out method)) return true;
 
                 // writeable field:
                 if (TryGetClrField(type, bindingFlags, propertyName, true, out method)) return true;
@@ -373,8 +383,8 @@ namespace IronRuby.Builtins {
                 if (unmangled != null && TryGetClrMethod(type, bindingFlags, unmangled, out method)) return true;
 
                 // getter:
-                if (TryGetClrMethod(type, bindingFlags, "get_" + name, out method)) return true;
-                if (unmangled != null && TryGetClrMethod(type, bindingFlags, "get_" + unmangled, out method)) return true;
+                if (TryGetClrProperty(type, bindingFlags, name, false, out method)) return true;
+                if (unmangled != null && TryGetClrProperty(type, bindingFlags, unmangled, false, out method)) return true;
 
                 // event:
                 if (TryGetClrEvent(type, bindingFlags, name, out method)) return true;
@@ -404,7 +414,7 @@ namespace IronRuby.Builtins {
             }
         }
 
-        private IList<MethodBase>/*!*/ SelectNonPrivateMethods(MemberInfo[]/*!*/ members) {
+        private MethodBase[]/*!*/ SelectNonPrivateMethods(MemberInfo[]/*!*/ members) {
             var result = new List<MethodBase>(members.Length);
             for (int i = 0; i < members.Length; i++) {
                 var method = (MethodBase)members[i];
@@ -412,7 +422,11 @@ namespace IronRuby.Builtins {
                     result.Add(method);
                 }
             }
-            return result;
+            return result.ToArray();
+        }
+
+        private bool TryGetClrProperty(Type/*!*/ type, BindingFlags bindingFlags, string/*!*/ name, bool isWrite, out RubyMemberInfo method) {
+            return TryGetClrMethod(type, bindingFlags, (isWrite ? "set_" : "get_") + name, out method);
         }
 
         private bool TryGetClrField(Type/*!*/ type, BindingFlags bindingFlags, string/*!*/ name, bool isWrite, out RubyMemberInfo method) {
@@ -492,23 +506,23 @@ namespace IronRuby.Builtins {
                 metaBuilder.Result = MakeDelegateConstructorCall(type, args);
             } else {
                 MethodBase[] constructionOverloads;
+                SelfCallConvention callConvention;
 
-                bool includeSelf;
                 if (_structInfo != null) {
                     constructionOverloads = new MethodBase[] { Methods.CreateStructInstance };
-                    includeSelf = true;
+                    callConvention = SelfCallConvention.SelfIsParameter;
                 } else if (_factories != null) {
                     constructionOverloads = (MethodBase[])ReflectionUtils.GetMethodInfos(_factories);
-                    includeSelf = true;
+                    callConvention = SelfCallConvention.SelfIsParameter;
                 } else {
                     constructionOverloads = type.GetConstructors();
                     if (constructionOverloads.Length == 0) {
                         throw RubyExceptions.CreateTypeError(String.Format("allocator undefined for {0}", Name));
                     }
-                    includeSelf = false;
+                    callConvention = SelfCallConvention.NoSelf;
                 }
 
-                RubyMethodGroupInfo.BuildCallNoFlow(metaBuilder, args, methodName, constructionOverloads, includeSelf, false);
+                RubyMethodGroupInfo.BuildCallNoFlow(metaBuilder, args, methodName, constructionOverloads, callConvention);
 
                 // we need to handle break, which unwinds to a proc-converter that could be this method's frame:
                 if (!metaBuilder.Error) {

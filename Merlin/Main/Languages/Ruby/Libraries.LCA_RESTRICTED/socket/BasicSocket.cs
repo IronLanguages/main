@@ -60,11 +60,11 @@ namespace IronRuby.StandardLibrary.Sockets {
         }
 
         public override WaitHandle/*!*/ CreateReadWaitHandle() {
-            return _socket.BeginReceive(Utils.Array.EmptyBytes, 0, 0, SocketFlags.Peek, null, null).AsyncWaitHandle;
+            return _socket.BeginReceive(Utils.EmptyBytes, 0, 0, SocketFlags.Peek, null, null).AsyncWaitHandle;
         }
 
         public override WaitHandle/*!*/ CreateWriteWaitHandle() {
-            return _socket.BeginSend(Utils.Array.EmptyBytes, 0, 0, SocketFlags.Peek, null, null).AsyncWaitHandle;
+            return _socket.BeginSend(Utils.EmptyBytes, 0, 0, SocketFlags.Peek, null, null).AsyncWaitHandle;
         }
 
         public override WaitHandle/*!*/ CreateErrorWaitHandle() {

@@ -74,5 +74,11 @@ namespace Microsoft.Scripting.Utils {
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() {
             return _data.Keys.GetEnumerator();
         }
+
+        public void UnionWith(IEnumerable<T> other) {
+            foreach (T t in other) {
+                Add(t);
+            }
+        }
     }
 }

@@ -84,7 +84,7 @@ namespace Microsoft.Scripting.Generation {
             Type type = node.Type;
 
             // if the constant can be emitted into IL, nothing to do
-            if (CanEmitConstant(data, type)) {
+            if (CompilerHelpers.CanEmitConstant(data, type)) {
                 return node;
             }
 
@@ -100,47 +100,6 @@ namespace Microsoft.Scripting.Generation {
             }
 
             return Expression.Field(null, _staticFields[index]);
-        }
-
-        // Matches ILGen.TryEmitConstant
-        private static bool CanEmitConstant(object value, Type type) {
-            if (value == null || CanEmitILConstant(type)) {
-                return true;
-            }
-
-            Type t = value as Type;
-            if (t != null && ILGen.ShouldLdtoken(t)) {
-                return true;
-            }
-
-            MethodBase mb = value as MethodBase;
-            if (mb != null && ILGen.ShouldLdtoken(mb)) {
-                return true;
-            }
-
-            return false;
-        }
-
-        // Matches ILGen.TryEmitILConstant
-        private static bool CanEmitILConstant(Type type) {
-            switch (Type.GetTypeCode(type)) {
-                case TypeCode.Boolean:
-                case TypeCode.SByte:
-                case TypeCode.Int16:
-                case TypeCode.Int32:
-                case TypeCode.Int64:
-                case TypeCode.Single:
-                case TypeCode.Double:
-                case TypeCode.Char:
-                case TypeCode.Byte:
-                case TypeCode.UInt16:
-                case TypeCode.UInt32:
-                case TypeCode.UInt64:
-                case TypeCode.Decimal:
-                case TypeCode.String:
-                    return true;
-            }
-            return false;
         }
 
         private static int AddStaticData(object data) {

@@ -42,7 +42,7 @@ namespace IronRuby.Builtins {
             #region Data Operations
 
             protected byte[] DataToBytes() {
-                return _data.Length > 0 ? _owner._encoding.GetBytes(_data) : IronRuby.Runtime.Utils.Array.EmptyBytes;
+                return _data.Length > 0 ? _owner._encoding.GetBytes(_data) : IronRuby.Runtime.Utils.EmptyBytes;
             }
 
             // TODO:

@@ -125,7 +125,7 @@ namespace System.Linq.Expressions {
                 RequiresCanRead(expr, "initializers");
 
                 if (!TypeUtils.AreReferenceAssignable(type, expr.Type)) {
-                    if (TypeUtils.IsSameOrSubclass(typeof(Expression), type) && type.IsAssignableFrom(expr.GetType())) {
+                    if (TypeUtils.IsSameOrSubclass(typeof(LambdaExpression), type) && type.IsAssignableFrom(expr.GetType())) {
                         expr = Expression.Quote(expr);
                     } else {
                         throw Error.ExpressionTypeCannotInitializeArrayType(expr.Type, type);

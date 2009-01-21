@@ -1,0 +1,10 @@
+<Canvas
+  xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+  x:Name="rootCanvas">
+  <x:Code Source="lowerevent1.py" Type="text/python" />
+  <Canvas Loaded="sayHello" />
+
+  <TextBlock x:Name="text1" MouseEnter="handleMouseEnter" MouseLeave="handleMouseLeave">Original TEXT</TextBlock>
+  
+</Canvas>

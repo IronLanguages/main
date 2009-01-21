@@ -13,19 +13,27 @@
  *
  * ***************************************************************************/
 
-using System.Linq.Expressions;
-using System.Runtime.CompilerServices;
+using System;
+using System.Collections.Generic;
+using System.Text;
+using Microsoft.Scripting.Hosting;
+using Microsoft.Scripting.Utils;
 
-namespace System.Dynamic {
+namespace Microsoft.Scripting.Silverlight {
 
     /// <summary>
-    /// A RuleSet is a collection of rules to apply to the objects at a DynamicSite.  Each Rule also
-    /// includes a target that is to be called if the rules' conditions are met.
-    /// RuleSets are all immutable.
+    /// ScriptHost for use inside the browser
+    /// Overrides certain operations to redirect to XAP or throw NotImplemented
     /// </summary>
-    internal abstract class RuleSet<T> where T : class {
-        internal abstract RuleSet<T> AddRule(CallSiteRule<T> newRule);
-        internal abstract CallSiteRule<T>[] GetRules();
-        internal abstract T GetTarget();
+    public sealed class BrowserScriptHost : ScriptHost {
+
+        public BrowserScriptHost() {
+        }
+
+        public override PlatformAdaptationLayer/*!*/ PlatformAdaptationLayer {
+            get {
+                return BrowserPAL.PAL;
+            }
+        }
     }
 }

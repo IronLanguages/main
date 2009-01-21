@@ -14,28 +14,39 @@
  * ***************************************************************************/
 
 using System.Collections.Generic;
-using System.Reflection.Emit;
-using System.Dynamic.Utils;
 using System.Diagnostics;
+using System.Dynamic.Utils;
+using System.Reflection.Emit;
 
 namespace System.Linq.Expressions.Compiler {
 
+    /// <summary>
+    /// Contains compiler state corresponding to a LabelTarget
+    /// </summary>
     internal sealed class LabelInfo {
         // The tree node representing this label
-        internal readonly LabelTarget Node;
+        private readonly LabelTarget _node;
 
         // The IL label, will be mutated if Node is redefined
-        internal Label Label { get; private set; }
+        private Label _label;
+        private bool _labelDefined;
+
+        internal Label Label {
+            get {
+                EnsureLabelAndValue();
+                return _label;
+            }
+        }
 
         // The local that carries the label's value, if any
-        internal readonly LocalBuilder Value;
+        private LocalBuilder _value;
 
         // The blocks where this label is defined. If it has more than one item,
         // the blocks can't be jumped to except from a child block
-        private readonly Set<LabelBlockInfo> Definitions = new Set<LabelBlockInfo>();
+        private readonly Set<LabelBlockInfo> _definitions = new Set<LabelBlockInfo>();
 
         // Blocks that jump to this block
-        private readonly List<LabelBlockInfo> References = new List<LabelBlockInfo>();
+        private readonly List<LabelBlockInfo> _references = new List<LabelBlockInfo>();
 
         // True if this label is the last thing in this block
         // (meaning we can emit a direct return)
@@ -50,61 +61,54 @@ namespace System.Linq.Expressions.Compiler {
         // which always works. Note: leave spills the stack, so we need to
         // ensure that StackSpiller has guarenteed us an empty stack at this
         // point. Otherwise Leave and Branch are not equivalent
-        private OpCode _opCode;
+        private OpCode _opCode = OpCodes.Leave;
 
         private readonly ILGenerator _ilg;
 
         internal LabelInfo(ILGenerator il, LabelTarget node, bool canReturn) {
             _ilg = il;
-            Node = node;
-            Label = il.DefineLabel();
+            _node = node;
             _canReturn = canReturn;
-            if (node != null && node.Type != typeof(void)) {
-                Value = il.DeclareLocal(node.Type);
-            }
-
-            // Until we have more information, default to a leave instruction, which always works
-            _opCode = OpCodes.Leave;
         }
 
         internal void Reference(LabelBlockInfo block) {
-            References.Add(block);
-            if (Definitions.Count > 0) {
+            _references.Add(block);
+            if (_definitions.Count > 0) {
                 ValidateJump(block);
             }
         }
 
         // Returns true if the label was successfully defined
         // or false if the label is now ambiguous
-        internal void Define(ILGenerator il, LabelBlockInfo block) {
+        internal void Define(LabelBlockInfo block) {
             // Prevent the label from being shadowed, which enforces cleaner
             // trees. Also we depend on this for simplicity (keeping only one
             // active IL Label per LabelInfo)
             for (LabelBlockInfo j = block; j != null; j = j.Parent) {
-                if (j.ContainsTarget(Node)) {
-                    throw Error.LabelTargetAlreadyDefined(Node.Name);
+                if (j.ContainsTarget(_node)) {
+                    throw Error.LabelTargetAlreadyDefined(_node.Name);
                 }
             }
 
-            Definitions.Add(block);
-            block.AddLabelInfo(Node, this);
+            _definitions.Add(block);
+            block.AddLabelInfo(_node, this);
 
             // Once defined, validate all jumps
-            if (Definitions.Count == 1) {
-                foreach (var r in References) {
+            if (_definitions.Count == 1) {
+                foreach (var r in _references) {
                     ValidateJump(r);
                 }
             } else {
                 // Was just redefined, if we had any across block jumps, they're
                 // now invalid
                 if (_acrossBlockJump) {
-                    throw Error.AmbiguousJump(Node.Name);
+                    throw Error.AmbiguousJump(_node.Name);
                 }
                 // For local jumps, we need a new IL label
                 // This is okay because:
                 //   1. no across block jumps have been made or will be made
                 //   2. we don't allow the label to be shadowed
-                Label = il.DefineLabel();
+                _labelDefined = false;
             }
         }
 
@@ -114,7 +118,7 @@ namespace System.Linq.Expressions.Compiler {
 
             // look for a simple jump out
             for (LabelBlockInfo j = reference; j != null; j = j.Parent) {
-                if (Definitions.Contains(j)) {
+                if (_definitions.Contains(j)) {
                     // found it, jump is valid!
                     return;
                 }
@@ -129,12 +133,12 @@ namespace System.Linq.Expressions.Compiler {
             }
 
             _acrossBlockJump = true;
-            if (Definitions.Count > 1) {
-                throw Error.AmbiguousJump(Node.Name);
+            if (_definitions.Count > 1) {
+                throw Error.AmbiguousJump(_node.Name);
             }
 
             // We didn't find an outward jump. Look for a jump across blocks
-            LabelBlockInfo def = Definitions.First();
+            LabelBlockInfo def = _definitions.First();
             LabelBlockInfo common = Helpers.CommonNode(def, reference, b => b.Parent);
 
             // Assume we can do a ret/branch
@@ -168,35 +172,72 @@ namespace System.Linq.Expressions.Compiler {
 
         internal void ValidateFinish() {
             // Make sure that if this label was jumped to, it is also defined
-            if (References.Count > 0 && Definitions.Count == 0) {
-                throw Error.LabelTargetUndefined(Node.Name);
+            if (_references.Count > 0 && _definitions.Count == 0) {
+                throw Error.LabelTargetUndefined(_node.Name);
             }
         }
 
-        // Return directly if we can
         internal void EmitJump() {
+            // Return directly if we can
             if (_opCode == OpCodes.Ret) {
                 _ilg.Emit(OpCodes.Ret);
-                return;
-            }
-
-            StoreValue();
-            _ilg.Emit(_opCode, Label);
-        }
-
-        internal void StoreValue() {
-            if (Value != null) {
-                _ilg.Emit(OpCodes.Stloc, Value);
+            } else {
+                StoreValue();
+                _ilg.Emit(_opCode, Label);
             }
         }
 
-        // We always read the value from a local, because we don't know
-        // if there will be a "leave" instruction targeting it ("branch"
-        // preserves its stack, but "leave" empties the stack)
+        private void StoreValue() {
+            EnsureLabelAndValue();
+            if (_value != null) {
+                _ilg.Emit(OpCodes.Stloc, _value);
+            }
+        }
+
         internal void Mark() {
+            if (_canReturn) {
+                // Don't mark return labels unless they were actually jumped to
+                // (returns are last so we know for sure if anyone jumped to it)
+                if (!_labelDefined) {
+                    // We don't even need to emit the "ret" because
+                    // LambdaCompiler does that for us.
+                    return;
+                }
+
+                // Otherwise, emit something like:
+                // ret
+                // <marked label>:
+                // ldloc <value>
+                _ilg.Emit(OpCodes.Ret);
+            } else {
+
+                // For the normal case, we emit:
+                // stloc <value>
+                // <marked label>:
+                // ldloc <value>
+                StoreValue();
+            }
+            MarkWithEmptyStack();
+        }
+
+        // Like Mark, but assumes the stack is empty
+        internal void MarkWithEmptyStack() {
             _ilg.MarkLabel(Label);
-            if (Value != null) {
-                _ilg.Emit(OpCodes.Ldloc, Value);
+            if (_value != null) {
+                // We always read the value from a local, because we don't know
+                // if there will be a "leave" instruction targeting it ("branch"
+                // preserves its stack, but "leave" empties the stack)
+                _ilg.Emit(OpCodes.Ldloc, _value);
+            }
+        }
+
+        private void EnsureLabelAndValue() {
+            if (!_labelDefined) {
+                _labelDefined = true;
+                _label = _ilg.DefineLabel();
+                if (_node != null && _node.Type != typeof(void)) {
+                    _value = _ilg.DeclareLocal(_node.Type);
+                }
             }
         }
     }

@@ -53,6 +53,13 @@ namespace IronRuby.Runtime.Calls {
         }
 
         /// <summary>
+        /// True if the member info hides all inherited CLR overloads.
+        /// </summary>
+        internal virtual bool HidesInheritedOverloads {
+            get { return true; }
+        }
+
+        /// <summary>
         /// Method definition that replaces/overrides this method will cause version update of all dependent subclasses/modules, which
         /// triggers invalidation of sites that are bound to those classes.
         /// </summary>
@@ -76,8 +83,8 @@ namespace IronRuby.Runtime.Calls {
         }
 
         // TODO: 
-        public virtual int Arity {
-            get { return 0; } 
+        public virtual int GetArity() {
+            return 0;
         }
 
         public bool IsUndefined {

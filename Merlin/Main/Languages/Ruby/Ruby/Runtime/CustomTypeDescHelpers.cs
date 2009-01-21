@@ -135,10 +135,13 @@ namespace IronRuby.Runtime {
                     flag = writable;
                 } else if (name == "initialize") {
                     // Special case; never a property
-                } else if (member.Arity == 0) {
-                    flag = readable;
-                } else if (member.Arity == 1 && name.EndsWith("=")) {
-                    flag = writable;
+                } else {
+                    int arity = member.GetArity();
+                    if (arity == 0) {
+                        flag = readable;
+                    } else if (arity == 1 && name.LastCharacter() == '=') {
+                        flag = writable;
+                    }
                 }
                 if (flag != 0) {
                     if (flag == writable) {

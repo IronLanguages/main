@@ -73,7 +73,7 @@ namespace System.Linq.Expressions.Compiler {
             EmitExpressionEnd(startEmitted);
         }
 
-        #region DebugMarkers
+        #region label block tracking
 
         private ExpressionStart EmitExpressionStart(Expression node) {
             if (TryPushLabelBlock(node)) {
@@ -92,7 +92,6 @@ namespace System.Linq.Expressions.Compiler {
 
         #region InvocationExpression
 
-        //CONFORMING
         private void EmitInvocationExpression(Expression expr) {
             InvocationExpression node = (InvocationExpression)expr;
 
@@ -233,14 +232,12 @@ namespace System.Linq.Expressions.Compiler {
 
         #region MethodCallExpression
 
-        //CONFORMING
         private void EmitMethodCallExpression(Expression expr) {
             MethodCallExpression node = (MethodCallExpression)expr;
 
             EmitMethodCall(node.Object, node.Method, node);
         }
 
-        //CONFORMING
         private void EmitMethodCall(Expression obj, MethodInfo method, IArgumentProvider methodCallExpr) {
             // Emit instance, if calling an instance method
             Type objectType = null;
@@ -251,7 +248,6 @@ namespace System.Linq.Expressions.Compiler {
             EmitMethodCall(method, methodCallExpr, objectType);
         }
 
-        //CONFORMING
         // assumes 'object' of non-static call is already on stack
         private void EmitMethodCall(MethodInfo mi, IArgumentProvider args, Type objectType) {
 
@@ -286,7 +282,6 @@ namespace System.Linq.Expressions.Compiler {
             _ilg.Emit(callOp, method);
         }
 
-        //CONFORMING
         private static bool UseVirtual(MethodInfo mi) {
             // There are two factors: is the method static, virtual or non-virtual instance?
             // And is the object ref or value?
@@ -318,7 +313,6 @@ namespace System.Linq.Expressions.Compiler {
         }
 
 
-        //CONFORMING
         private List<WriteBack> EmitArguments(MethodBase method, IArgumentProvider args) {
             ParameterInfo[] pis = method.GetParametersCached();
             Debug.Assert(args.ArgumentCount == pis.Length);
@@ -343,7 +337,6 @@ namespace System.Linq.Expressions.Compiler {
             return writeBacks;
         }
 
-        //CONFORMING
         private static void EmitWriteBack(IList<WriteBack> writeBacks) {
             foreach (WriteBack wb in writeBacks) {
                 wb();
@@ -352,14 +345,12 @@ namespace System.Linq.Expressions.Compiler {
 
         #endregion
 
-        //CONFORMING
         private void EmitConstantExpression(Expression expr) {
             ConstantExpression node = (ConstantExpression)expr;
 
             EmitConstant(node.Value, node.Type);
         }
 
-        //CONFORMING
         private void EmitConstant(object value, Type type) {
             // Try to emit the constant directly into IL
             if (ILGen.CanEmitConstant(value, type)) {
@@ -367,12 +358,18 @@ namespace System.Linq.Expressions.Compiler {
                 return;
             }
 
-            Debug.Assert(_dynamicMethod); // constructor enforces this
+            if (!(_method is DynamicMethod)) {
+                throw Error.CannotCompileConstant(value);
+            }
 
             _boundConstants.EmitConstant(this, value, type);
         }
 
         private void EmitDynamicExpression(Expression expr) {
+            if (!(_method is DynamicMethod)) {
+                throw Error.CannotCompileDynamic();
+            }
+
             var node = (DynamicExpression)expr;
             
             var site = CallSite.Create(node.DelegateType, node.Binder);
@@ -394,7 +391,6 @@ namespace System.Linq.Expressions.Compiler {
             EmitWriteBack(wb);
         }
 
-        //CONFORMING
         private void EmitNewExpression(Expression expr) {
             NewExpression node = (NewExpression)expr;
 
@@ -413,7 +409,6 @@ namespace System.Linq.Expressions.Compiler {
             }
         }
 
-        //CONFORMING
         private void EmitTypeBinaryExpression(Expression expr) {
             TypeBinaryExpression node = (TypeBinaryExpression)expr;
 
@@ -524,7 +519,7 @@ namespace System.Linq.Expressions.Compiler {
 
         private void EmitLambdaExpression(Expression expr) {
             LambdaExpression node = (LambdaExpression)expr;
-            EmitDelegateConstruction(node, node.Type);
+            EmitDelegateConstruction(node);
         }
 
         private void EmitRuntimeVariablesExpression(Expression expr) {
@@ -569,7 +564,6 @@ namespace System.Linq.Expressions.Compiler {
             }
         }
 
-        //CONFORMING
         private void EmitMemberExpression(Expression expr) {
             MemberExpression node = (MemberExpression)expr;
 
@@ -601,7 +595,6 @@ namespace System.Linq.Expressions.Compiler {
             }
         }
 
-        //CONFORMING
         private void EmitInstance(Expression instance, Type type) {
             if (instance != null) {
                 if (type.IsValueType) {
@@ -612,7 +605,6 @@ namespace System.Linq.Expressions.Compiler {
             }
         }
 
-        //CONFORMING
         private void EmitNewArrayExpression(Expression expr) {
             NewArrayExpression node = (NewArrayExpression)expr;
 
@@ -807,7 +799,6 @@ namespace System.Linq.Expressions.Compiler {
 
         #region Expression helpers
 
-        //CONFORMING
         internal static void ValidateLift(IList<ParameterExpression> variables, IList<Expression> arguments) {
             System.Diagnostics.Debug.Assert(variables != null);
             System.Diagnostics.Debug.Assert(arguments != null);
@@ -822,7 +813,6 @@ namespace System.Linq.Expressions.Compiler {
             }
         }
 
-        //CONFORMING
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity")]
         private void EmitLift(ExpressionType nodeType, Type resultType, MethodCallExpression mc, IList<ParameterExpression> parameters, IList<Expression> arguments) {
             Debug.Assert(TypeUtils.GetNonNullableType(resultType) == TypeUtils.GetNonNullableType(mc.Type));

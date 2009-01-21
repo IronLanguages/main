@@ -165,8 +165,9 @@ namespace System.Runtime.CompilerServices {
                     locals = HoistedLocals.GetParent(locals);
                 }
 
-                // Unbound variable: return null, so the original node is preserved
-                return null;
+                // Unbound variable: an error should've been thrown already
+                // from VariableBinder
+                throw ContractUtils.Unreachable;
             }
         }
 

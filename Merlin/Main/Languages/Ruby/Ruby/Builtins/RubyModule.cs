@@ -775,8 +775,9 @@ namespace IronRuby.Builtins {
         }
 
         public void DefineLibraryMethod(string/*!*/ name, int attributes, params Delegate[]/*!*/ overloads) {
+            var flags = (RubyMemberFlags)(attributes & (int)RubyMethodAttributes.MemberFlagsMask);
             bool skipEvent = ((RubyMethodAttributes)attributes & RubyMethodAttributes.NoEvent) != 0;
-            SetLibraryMethod(name, MakeMethodGroupInfo(attributes, overloads), skipEvent);
+            SetLibraryMethod(name, new RubyLibraryMethodInfo(overloads, flags, this), skipEvent);
         }
 
         public void DefineRuleGenerator(string/*!*/ name, int attributes, RuleGenerator/*!*/ generator) {
@@ -793,13 +794,6 @@ namespace IronRuby.Builtins {
             } else {
                 AddMethod(_context, name, method);
             }
-        }
-
-        private RubyMethodGroupInfo/*!*/ MakeMethodGroupInfo(int attributes, params Delegate[]/*!*/ overloads) {
-            Assert.NotNullItems(overloads);
-
-            var flags = (RubyMemberFlags)(attributes & (int)RubyMethodAttributes.MemberFlagsMask);
-            return new RubyMethodGroupInfo(overloads, flags, this);
         }
 
         // Looks only for those methods that were used. Doesn't need to initialize method tables (a used method is always stored in a table).

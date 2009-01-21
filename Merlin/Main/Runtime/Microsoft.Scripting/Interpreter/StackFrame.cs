@@ -15,24 +15,29 @@
 
 using System.Runtime.CompilerServices;
 
-namespace System.Dynamic {
-    internal sealed class EmptyRuleSet<T> : RuleSet<T> where T : class {
-        internal static readonly RuleSet<T> FixedInstance = new EmptyRuleSet<T>();
+namespace Microsoft.Scripting.Interpreter {
+    public class StackFrame {
+        public object[] Data;
+        public StrongBox<object>[] Closure;
+        public int StackIndex;
+        public StackFrame Parent;
+        public int InstructionIndex;
 
-        private EmptyRuleSet() {
+        public StackFrame(int numberOfLocals, int maxStackDepth) {
+            StackIndex = numberOfLocals;
+            Data = new object[numberOfLocals + maxStackDepth];
         }
 
-        internal override RuleSet<T> AddRule(CallSiteRule<T> newRule) {
-            return this;
+        public void Push(object value) {
+            Data[StackIndex++] = value;
         }
 
-        internal override CallSiteRule<T>[] GetRules() {
-            return null;
+        public object Pop() {
+            return Data[--StackIndex];
         }
 
-        internal override T GetTarget() {
-            // Return null so CallSiteOps.SetPolymorphicTarget won't update the target
-            return null;
+        public object Peek() {
+            return Data[StackIndex - 1];
         }
     }
 }

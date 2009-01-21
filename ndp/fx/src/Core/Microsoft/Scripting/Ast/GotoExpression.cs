@@ -335,7 +335,7 @@ namespace System.Linq.Expressions {
             RequiresCanRead(value, paramName);
             if (!TypeUtils.AreReferenceAssignable(expectedType, value.Type)) {
                 // C# autoquotes return values, so we'll do that here
-                if (TypeUtils.IsSameOrSubclass(typeof(Expression), expectedType) &&
+                if (TypeUtils.IsSameOrSubclass(typeof(LambdaExpression), expectedType) &&
                     expectedType.IsAssignableFrom(value.GetType())) {
                     value = Expression.Quote(value);
                 }

@@ -623,7 +623,7 @@ namespace System.Dynamic {
         /// The object can be encapsulated inside of another MetaObject to
         /// provide custom behavior for individual actions.
         /// </summary>
-        DynamicMetaObject IDynamicObject.GetMetaObject(Expression parameter) {
+        public virtual DynamicMetaObject GetMetaObject(Expression parameter) {
             return new MetaDynamic(parameter, this);
         }
 

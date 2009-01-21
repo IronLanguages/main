@@ -103,7 +103,8 @@ namespace Microsoft.Scripting.Hosting {
         /// Both Runtime and ScriptHost are collocated in the specified app-domain.
         /// </summary>
         public static ScriptRuntime CreateRemote(AppDomain domain, ScriptRuntimeSetup setup) {
-            ContractUtils.RequiresNotNull(domain, "domain");            
+            ContractUtils.RequiresNotNull(domain, "domain");
+#if SYSTEM_CORE
             return (ScriptRuntime)domain.CreateInstanceAndUnwrap(
                 typeof(ScriptRuntime).Assembly.FullName, 
                 typeof(ScriptRuntime).FullName, 
@@ -111,10 +112,23 @@ namespace Microsoft.Scripting.Hosting {
                 BindingFlags.Default, 
                 null, 
                 new object[] { setup }, 
-                null, 
-                null, 
+                null,
                 null
             );
+#else
+            //The API CreateInstanceAndUnwrap is obsolete in Dev10.
+            return (ScriptRuntime)domain.CreateInstanceAndUnwrap(
+                typeof(ScriptRuntime).Assembly.FullName, 
+                typeof(ScriptRuntime).FullName, 
+                false, 
+                BindingFlags.Default, 
+                null, 
+                new object[] { setup }, 
+                null,
+                null,
+                null
+            );
+#endif
         }
 
         // TODO: Figure out what is the right lifetime

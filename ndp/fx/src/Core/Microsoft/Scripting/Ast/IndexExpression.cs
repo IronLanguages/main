@@ -98,6 +98,13 @@ namespace System.Linq.Expressions {
         internal override Expression Accept(ExpressionVisitor visitor) {
             return visitor.VisitIndex(this);
         }
+
+        internal Expression Rewrite(Expression instance, Expression[] arguments) {
+            Debug.Assert(instance != null);
+            Debug.Assert(arguments == null || arguments.Length == _arguments.Count);
+
+            return Expression.MakeIndex(instance, _indexer, arguments ?? _arguments);
+        }
     }
 
     public partial class Expression {
@@ -273,7 +280,7 @@ namespace System.Linq.Expressions {
                     TypeUtils.ValidateType(pType);
 
                     if (!TypeUtils.AreReferenceAssignable(pType, arg.Type)) {
-                        if (TypeUtils.IsSameOrSubclass(typeof(Expression), pType) && pType.IsAssignableFrom(arg.GetType())) {
+                        if (TypeUtils.IsSameOrSubclass(typeof(LambdaExpression), pType) && pType.IsAssignableFrom(arg.GetType())) {
                             arg = Expression.Quote(arg);
                         } else {
                             throw Error.ExpressionTypeDoesNotMatchMethodParameter(arg.Type, pType, method);

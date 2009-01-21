@@ -42,7 +42,7 @@ namespace System.Linq.Expressions.Compiler {
                 return new LabelInfo(_ilg, null, false);
             }
             LabelInfo result = EnsureLabel(node);
-            result.Define(_ilg, _labelBlock);
+            result.Define(_labelBlock);
             return result;
         }
 
@@ -70,9 +70,6 @@ namespace System.Linq.Expressions.Compiler {
 
             if (node.DefaultValue != null) {
                 EmitExpression(node.DefaultValue);
-
-                // Store the value in a local so Mark can pick it up.
-                label.StoreValue();
             }
 
             label.Mark();
@@ -110,6 +107,19 @@ namespace System.Linq.Expressions.Compiler {
                         return true;
                     }
                     return false;
+                case ExpressionType.Block:
+                    // Labels defined immediately in the block are valid for the whole block
+                    PushLabelBlock(LabelBlockKind.Block);
+                    var block = (BlockExpression)node;
+                    for (int i = 0, n = block.ExpressionCount; i < n; i++) {
+                        Expression e = block.GetExpression(i);
+
+                        var label = e as LabelExpression;
+                        if (label != null) {
+                            DefineLabel(label.Target);
+                        }
+                    }
+                    return true;
                 case ExpressionType.Assign:
                     // Assignment where left side is a variable/parameter is
                     // safe to jump into
@@ -122,7 +132,6 @@ namespace System.Linq.Expressions.Compiler {
                     goto default;                    
                 case ExpressionType.DebugInfo:
                 case ExpressionType.Conditional:
-                case ExpressionType.Block:
                 case ExpressionType.Switch:
                 case ExpressionType.Loop:
                 case ExpressionType.Goto:

@@ -220,6 +220,13 @@ namespace Microsoft.Scripting.Runtime {
             foreach (StackFrame frame in WalkList(frames, reverseOrder)) {
                 MethodBase method = frame.GetMethod();
                 Type parentType = method.DeclaringType;
+
+                if (dynamicFrames.Count > 0 && frame.GetMethod() == dynamicFrames[dynamicFrames.Count - 1].GetMethod()) {
+                    yield return dynamicFrames[dynamicFrames.Count - 1];
+                    dynamicFrames.RemoveAt(dynamicFrames.Count - 1);
+                    continue;
+                } 
+
                 if (parentType != null) {
                     string typeName = parentType.FullName;
                     if (typeName == "System.Linq.Expressions.LambdaExpression" && method.Name == "DoExecute") {
@@ -243,12 +250,7 @@ namespace Microsoft.Scripting.Runtime {
                     continue;
                 }
 
-                if (dynamicFrames.Count > 0 && frame.GetMethod() == dynamicFrames[dynamicFrames.Count - 1].GetMethod()) {
-                    yield return dynamicFrames[dynamicFrames.Count - 1];
-                    dynamicFrames.RemoveAt(dynamicFrames.Count - 1);
-                } else {
-                    yield return GetStackFrame(frame);
-                }
+                yield return GetStackFrame(frame);
             }
         }
 

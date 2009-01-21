@@ -216,7 +216,7 @@ namespace System.Linq.Expressions {
                     Type memberType;
                     ValidateAnonymousTypeMember(ref member, out memberType);
                     if (!TypeUtils.AreReferenceAssignable(memberType, arg.Type)) {
-                        if (TypeUtils.IsSameOrSubclass(typeof(Expression), memberType) && memberType.IsAssignableFrom(arg.GetType())) {
+                        if (TypeUtils.IsSameOrSubclass(typeof(LambdaExpression), memberType) && memberType.IsAssignableFrom(arg.GetType())) {
                             arg = Expression.Quote(arg);
                         } else {
                             throw Error.ArgumentTypeDoesNotMatchMember(arg.Type, memberType);
@@ -228,7 +228,7 @@ namespace System.Linq.Expressions {
                         pType = pType.GetElementType();
                     }
                     if (!TypeUtils.AreReferenceAssignable(pType, arg.Type)) {
-                        if (TypeUtils.IsSameOrSubclass(typeof(Expression), pType) && pType.IsAssignableFrom(arg.Type)) {
+                        if (TypeUtils.IsSameOrSubclass(typeof(LambdaExpression), pType) && pType.IsAssignableFrom(arg.Type)) {
                             arg = Expression.Quote(arg);
                         } else {
                             throw Error.ExpressionTypeDoesNotMatchConstructorParameter(arg.Type, pType);

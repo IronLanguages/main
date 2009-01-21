@@ -152,15 +152,13 @@
     <Compile Include="Actions\GetIndexBinder.cs" />
     <Compile Include="Actions\CreateInstanceBinder.cs" />
     <Compile Include="Actions\DeleteMemberBinder.cs" />
-    <Compile Include="Actions\EmptyRuleSet.cs" />
     <Compile Include="Actions\GetMemberBinder.cs" />
     <Compile Include="Actions\IDynamicObject.cs" />
     <Compile Include="Actions\InvokeBinder.cs" />
     <Compile Include="Actions\DynamicMetaObject.cs" />
     <Compile Include="Actions\DynamicMetaObjectBinder.cs" />
     <Compile Include="Actions\BindingRestrictions.cs" />
-    <Compile Include="Actions\RuleSet.cs" />
-    <Compile Include="Actions\RuleTree.cs" />
+    <Compile Include="Actions\RuleCache.cs" />
     <Compile Include="Actions\SetIndexBinder.cs" />
     <Compile Include="Actions\SetMemberBinder.cs" />
     <Compile Include="Actions\SmallRuleSet.cs" />
@@ -274,6 +272,11 @@
       <Project>{8B0F1074-750E-4D64-BF23-A1E0F54261E5}</Project>
       <Name>Microsoft.Scripting.ExtensionAttribute</Name>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="..\..\System\Linq\Expressions\System.Linq.Expressions.txt">
+      <Link>Ast\System.Linq.Expressions.txt</Link>
+    </Content>
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" Condition=" '$(SilverlightTreeBuild)' != 'true' " />
   <Import Project="..\..\..\..\..\..\Merlin\Main\Support\silverlight.build.targets" Condition=" '$(SilverlightTreeBuild)' == 'true' " />

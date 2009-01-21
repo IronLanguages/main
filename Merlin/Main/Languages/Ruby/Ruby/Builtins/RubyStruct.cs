@@ -160,7 +160,7 @@ namespace IronRuby.Builtins {
         private static RuleGenerator/*!*/ CreateSetter(int index) {
             return delegate(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args, string/*!*/ name) {
 
-                var actualArgs = RubyMethodGroupInfo.MakeActualArgs(metaBuilder, args, true, false, false, false);
+                var actualArgs = RubyMethodGroupInfo.MakeActualArgs(metaBuilder, args, SelfCallConvention.SelfIsParameter, false, false);
 
                 metaBuilder.Result = Ast.Call(
                     Ast.Convert(actualArgs[0], typeof(RubyStruct)),

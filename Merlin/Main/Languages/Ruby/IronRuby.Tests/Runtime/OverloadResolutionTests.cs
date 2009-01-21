@@ -69,7 +69,7 @@ namespace IronRuby.Tests {
                     t.GetMethod("Times2"),
                     t.GetMethod("Times3"),
                     t.GetMethod("Times4"),
-                }, arguments[i], true, false);
+                }, arguments[i], SelfCallConvention.SelfIsParameter);
 
                 Assert(bindingTarget.Success);
                 Assert(bindingTarget.Method.Name == results[i]);

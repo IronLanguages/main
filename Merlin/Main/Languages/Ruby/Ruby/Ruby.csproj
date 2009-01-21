@@ -152,6 +152,8 @@
     <Compile Include="Compiler\Errors.cs" />
     <Compile Include="Compiler\Parser\ParserStack.cs" />
     <Compile Include="Runtime\Calls\ConvertToSAction.cs" />
+    <Compile Include="Runtime\Calls\RubyLibraryMethodInfo.cs" />
+    <Compile Include="Runtime\Calls\RubyMethodGroupBase.cs" />
     <Compile Include="Runtime\CustomTypeDescHelpers.cs" />
     <Compile Include="Compiler\Generation\OverriddenMembers.cs" />
     <Compile Include="Compiler\Generation\RubyTypeDispenser.cs" />

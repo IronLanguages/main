@@ -54,7 +54,7 @@ namespace IronRuby.Runtime.Calls {
 
         public override RubyMemberInfo TrySelectOverload(Type/*!*/[]/*!*/ parameterTypes) {
             return parameterTypes.Length == _lambda.Dispatcher.ParameterCount 
-                && parameterTypes.TrueForAll((type) => type == typeof(object)) ? this : null;
+                && CollectionUtils.TrueForAll(parameterTypes, (type) => type == typeof(object)) ? this : null;
         }
 
         internal override void BuildCallNoFlow(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args, string/*!*/ name) {
