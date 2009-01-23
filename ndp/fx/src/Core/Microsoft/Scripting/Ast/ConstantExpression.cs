@@ -98,7 +98,7 @@ namespace System.Linq.Expressions {
         /// A <see cref="ConstantExpression"/> that has the <see cref="P:Expression.NodeType"/> property equal to 
         /// <see cref="F:ExpressionType.Constant"/> and the <see cref="P:ConstantExpression.Value"/> property set to the specified value.
         /// </returns>
-        public static ConstantExpression Constant(bool value) {
+        internal static ConstantExpression Constant(bool value) {
              return value ? ConstantExpression.TrueLiteral : ConstantExpression.FalseLiteral;
         }
         

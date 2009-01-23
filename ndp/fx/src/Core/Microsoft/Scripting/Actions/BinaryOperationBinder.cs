@@ -80,7 +80,6 @@ namespace System.Dynamic {
         /// </summary>
         /// <param name="obj">The <see cref="Object"/> to compare with the current <see cref="BinaryOperationBinder"/>.</param>
         /// <returns>true if the specified System.Object is equal to the current <see cref="BinaryOperationBinder"/>; otherwise, false.</returns>
-        [Confined]
         public override bool Equals(object obj) {
             BinaryOperationBinder oa = obj as BinaryOperationBinder;
             return oa != null && oa._operation == _operation;
@@ -90,7 +89,6 @@ namespace System.Dynamic {
         /// Returns the hash code for this instance. 
         /// </summary>
         /// <returns>An <see cref="Int32"/> containing the hash code for this instance.</returns>
-        [Confined]
         public override int GetHashCode() {
             return BinaryOperationBinderHash ^ (int)_operation;
         }

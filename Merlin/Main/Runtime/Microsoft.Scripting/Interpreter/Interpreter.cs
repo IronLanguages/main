@@ -116,6 +116,10 @@ namespace Microsoft.Scripting.Interpreter {
                         if (!HandleCatch(frame, exc)) {
                             ExceptionHelpers.UpdateForRethrow(exc);
                             throw;
+                        } else if (exc is System.Threading.ThreadAbortException) {
+                            // we can't exit the catch block here or the CLR will forcibly rethrow
+                            // the exception on us.
+                            Run(frame);
                         }
                     }
                 }
