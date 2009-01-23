@@ -13,6 +13,8 @@
  *
  * ***************************************************************************/
 
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Dynamic.Utils;
 
 namespace System.Linq.Expressions {
@@ -20,28 +22,19 @@ namespace System.Linq.Expressions {
     /// Represents one case of a <see cref="SwitchExpression"/>.
     /// </summary>
     public sealed class SwitchCase {
-        private readonly bool _default;
-        private readonly int _value;
+        private readonly ReadOnlyCollection<Expression> _testValues;
         private readonly Expression _body;
 
-        internal SwitchCase(bool @default, int value, Expression body) {
-            _default = @default;
-            _value = value;
+        internal SwitchCase(Expression body, ReadOnlyCollection<Expression> testValues) {
             _body = body;
+            _testValues = testValues;
         }
 
         /// <summary>
-        /// True if this is the default case.
+        /// Gets the values of this case. This case is selected for execution when the <see cref="SwitchExpression.SwitchValue"/> matches any of these values.
         /// </summary>
-        public bool IsDefault {
-            get { return _default; }
-        }
-
-        /// <summary>
-        /// Gets the value of this case.  This case is selected for execution when the <see cref="SwitchExpression.Test"/> matches this value.
-        /// </summary>
-        public int Value {
-            get { return _value; }
+        public ReadOnlyCollection<Expression> TestValues {
+            get { return _testValues; }
         }
 
         /// <summary>
@@ -54,24 +47,36 @@ namespace System.Linq.Expressions {
 
     public partial class Expression {
         /// <summary>
-        /// Creates a default <see cref="SwitchCase"/>.
+        /// Creates a <see cref="System.Linq.Expressions.SwitchCase">SwitchCase</see> for use in a <see cref="SwitchExpression"/>.
         /// </summary>
         /// <param name="body">The body of the case.</param>
-        /// <returns>The created <see cref="SwitchCase"/>.</returns>
-        public static SwitchCase DefaultCase(Expression body) {
-            RequiresCanRead(body, "body");
-            return new SwitchCase(true, 0, body);
+        /// <param name="testValues">The test values of the case.</param>
+        /// <returns>The created <see cref="System.Linq.Expressions.SwitchCase">SwitchCase</see>.</returns>
+        public static SwitchCase SwitchCase(Expression body, params Expression[] testValues) {
+            return SwitchCase(body, (IEnumerable<Expression>)testValues);
         }
 
         /// <summary>
-        /// Creates a non-default <see cref="SwitchCase"/>.
+        /// Creates a <see cref="System.Linq.Expressions.SwitchCase">SwitchCase</see> for use in a <see cref="SwitchExpression"/>.
         /// </summary>
-        /// <param name="value">The test value of the case.</param>
         /// <param name="body">The body of the case.</param>
-        /// <returns>The created <see cref="SwitchCase"/>.</returns>
-        public static SwitchCase SwitchCase(int value, Expression body) {
+        /// <param name="testValues">The test values of the case.</param>
+        /// <returns>The created <see cref="System.Linq.Expressions.SwitchCase">SwitchCase</see>.</returns>
+        public static SwitchCase SwitchCase(Expression body, IEnumerable<Expression> testValues) {
             RequiresCanRead(body, "body");
-            return new SwitchCase(false, value, body);
+            
+            var values = testValues.ToReadOnly();
+            RequiresCanRead(values, "testValues");
+            ContractUtils.RequiresNotEmpty(values, "testValues");
+            if (values.Count > 1) {
+                // All test values must have the same type.
+                var type = values[0].Type;
+                for (int i = 1, n = values.Count; i < n; i++) {
+                    ContractUtils.Requires(type == values[i].Type, "testValues", Strings.AllTestValuesMustHaveSameType);
+                }
+            }
+
+            return new SwitchCase(body, values);
         }
     }
 }

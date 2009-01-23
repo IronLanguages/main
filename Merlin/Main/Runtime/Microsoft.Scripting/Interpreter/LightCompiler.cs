@@ -603,36 +603,49 @@ namespace Microsoft.Scripting.Interpreter {
         private void CompileSwitchExpression(Expression expr) {
             var node = (SwitchExpression)expr;
 
-            if (node.Test.Type != typeof(int)) throw new NotImplementedException();
+            // Currently only supports int test values, with no method
+            if (node.SwitchValue.Type != typeof(int) || node.Comparison != null) {
+                throw new NotImplementedException();
+            }
 
-            Debug.Assert(node.Type == typeof(void));
+            // Test values must be constant
+            if (!node.Cases.All(c => c.TestValues.All(t => t is ConstantExpression))) {
+                throw new NotImplementedException();
+            }
 
-            this.Compile(node.Test);
+            this.Compile(node.SwitchValue);
             int start = _instructions.Count;
             var switchInstruction = new SwitchInstruction();
             AddInstruction(switchInstruction);
-            bool setDefault = false;
+            var end = MakeLabel();
             int switchStack = _currentStackDepth;
-            foreach (var clause in node.SwitchCases) {
+            for (int i = 0, n = node.Cases.Count; i < n; i++) {
+                var clause = node.Cases[i];
                 _currentStackDepth = switchStack;
                 int offset = _instructions.Count - start;
-                if (clause.IsDefault) {
-                    setDefault = true;
-                    switchInstruction.AddDefault(offset);
-                } else {
-                    switchInstruction.AddCase(clause.Value, offset);
+                foreach (ConstantExpression testValue in clause.TestValues) {
+                    switchInstruction.AddCase((int)testValue.Value, offset);
                 }
                 this.Compile(clause.Body);
+                // Last case doesn't need branch
+                if (node.DefaultBody != null || i < n - 1) {
+                    AddBranch(end);
+                }
                 Debug.Assert(_currentStackDepth == -1 || _currentStackDepth == switchStack);
             }
-            if (!setDefault) {
-                switchInstruction.AddDefault(_instructions.Count - start);
+            switchInstruction.AddDefault(_instructions.Count - start);
+            if (node.DefaultBody != null) {
+                _currentStackDepth = switchStack;
+                this.Compile(node.DefaultBody);
+            }
+            if (node.Type != typeof(void)) {
+                Debug.Assert(_currentStackDepth == -1 || _currentStackDepth == switchStack + 1);
+                _currentStackDepth = switchStack + 1;
+            } else {
+                Debug.Assert(_currentStackDepth == -1 || _currentStackDepth == switchStack);
                 _currentStackDepth = switchStack;
             }
-
-            if (node.BreakLabel != null) {
-                ReferenceLabel(node.BreakLabel).Mark();
-            }
+            end.Mark();
         }
 
         private void CompileLabelExpression(Expression expr) {

@@ -1,4 +1,4 @@
-﻿/* ****************************************************************************
+/* ****************************************************************************
  *
  * Copyright (c) Microsoft Corporation. 
  *
@@ -356,6 +356,33 @@ namespace System.Linq.Expressions {
         }
 
         /// <summary>
+        /// A string like  "All test values must have the same type."
+        /// </summary>
+        internal static string AllTestValuesMustHaveSameType {
+            get {
+                return "All test values must have the same type.";
+            }
+        }
+
+        /// <summary>
+        /// A string like  "All case bodies and the default body must have the same type."
+        /// </summary>
+        internal static string AllCaseBodiesMustHaveSameType {
+            get {
+                return "All case bodies and the default body must have the same type.";
+            }
+        }
+
+        /// <summary>
+        /// A string like  "Default body must be supplied if case bodies are not System.Void."
+        /// </summary>
+        internal static string DefaultBodyMustBeSupplied {
+            get {
+                return "Default body must be supplied if case bodies are not System.Void.";
+            }
+        }
+
+        /// <summary>
         /// A string like  "MethodBuilder does not have a valid ModuleBuilder"
         /// </summary>
         internal static string MethodBuilderDoesNotHaveModuleBuilder {
@@ -535,6 +562,13 @@ namespace System.Linq.Expressions {
             get {
                 return "Argument must be boolean";
             }
+        }
+
+        /// <summary>
+        /// A string like  "The user-defined equality method '{0}' must return a boolean value."
+        /// </summary>
+        internal static string EqualityMustReturnBoolean(object p0) {
+            return FormatString("The user-defined equality method '{0}' must return a boolean value.", p0);
         }
 
         /// <summary>
@@ -1465,6 +1499,13 @@ namespace System.Linq.Expressions {
         /// </summary>
         internal static Exception ArgumentMustBeBoolean() {
             return new ArgumentException(Strings.ArgumentMustBeBoolean);
+        }
+
+        /// <summary>
+        /// ArgumentException with message like "The user-defined equality method '{0}' must return a boolean value."
+        /// </summary>
+        internal static Exception EqualityMustReturnBoolean(object p0) {
+            return new ArgumentException(Strings.EqualityMustReturnBoolean(p0));
         }
 
         /// <summary>

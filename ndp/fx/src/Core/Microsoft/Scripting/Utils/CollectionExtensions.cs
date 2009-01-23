@@ -214,6 +214,10 @@ namespace System.Dynamic.Utils {
             }
             throw new InvalidOperationException();
         }
+
+        internal static T Last<T>(this IList<T> list) {
+            return list[list.Count - 1];
+        }
     }
 
 

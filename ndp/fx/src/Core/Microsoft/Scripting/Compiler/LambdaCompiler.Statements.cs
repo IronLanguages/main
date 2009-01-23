@@ -13,8 +13,12 @@
  *
  * ***************************************************************************/
 
-using System.Reflection.Emit;
+using System.Collections.Generic;
 using System.Diagnostics;
+using System.Dynamic.Utils;
+using System.Reflection;
+using System.Reflection.Emit;
+using System.Globalization;
 
 namespace System.Linq.Expressions.Compiler {
     partial class LambdaCompiler {
@@ -42,8 +46,8 @@ namespace System.Linq.Expressions.Compiler {
             ExitScope(node);
         }
 
-        private void EnterScope(BlockExpression node) {
-            if (node.Variables.Count > 0 &&
+        private void EnterScope(object node) {
+            if (HasVariables(node) &&
                 (_scope.MergedScopes == null || !_scope.MergedScopes.Contains(node))) {
 
                 CompilerScope scope;
@@ -66,8 +70,16 @@ namespace System.Linq.Expressions.Compiler {
                 Debug.Assert(_scope.Node == node);
             }
         }
+                
+        private static bool HasVariables(object node) {
+            var block = node as BlockExpression;
+            if (block != null) {
+                return block.Variables.Count > 0;
+            }
+            return ((CatchBlock)node).Variable != null;
+        }
 
-        private void ExitScope(BlockExpression node) {
+        private void ExitScope(object node) {
             if (_scope.Node == node) {
                 _scope = _scope.Exit();
             }
@@ -84,7 +96,7 @@ namespace System.Linq.Expressions.Compiler {
         private void EmitLoopExpression(Expression expr) {
             LoopExpression node = (LoopExpression)expr;
 
-            PushLabelBlock(LabelBlockKind.Block);
+            PushLabelBlock(LabelScopeKind.Statement);
             LabelInfo breakTarget = DefineLabel(node.BreakLabel);
             LabelInfo continueTarget = DefineLabel(node.ContinueLabel);
 
@@ -94,130 +106,485 @@ namespace System.Linq.Expressions.Compiler {
 
             _ilg.Emit(OpCodes.Br, continueTarget.Label);
 
-            PopLabelBlock(LabelBlockKind.Block);
+            PopLabelBlock(LabelScopeKind.Statement);
 
             breakTarget.MarkWithEmptyStack();
         }
 
-        #region SwitchStatement
+        #region SwitchExpression
 
         private void EmitSwitchExpression(Expression expr) {
             SwitchExpression node = (SwitchExpression)expr;
 
-            LabelInfo breakTarget = DefineLabel(node.BreakLabel);
+            // Try to emit it as an IL switch. Works for integer types.
+            if (TryEmitSwitchInstruction(node)) {
+                return;
+            }
 
-            Label defaultTarget = breakTarget.Label;
-            Label[] labels = new Label[node.SwitchCases.Count];
+            // Try to emit as a hashtable lookup. Works for strings.
+            if (TryEmitHashtableSwitch(node)) {
+                return;
+            }
 
-            // Create all labels
-            for (int i = 0; i < node.SwitchCases.Count; i++) {
-                labels[i] = _ilg.DefineLabel();
+            //
+            // Fall back to a series of tests. We need to IL gen instead of
+            // transform the tree to avoid stack overflow on a big switch.
+            //
 
-                // Default case.
-                if (node.SwitchCases[i].IsDefault) {
-                    // Set the default target
-                    defaultTarget = labels[i];
+            var switchValue = Expression.Parameter(node.SwitchValue.Type, "switchValue");
+            var testValue = Expression.Parameter(node.Cases[0].TestValues[0].Type, "testValue");
+            _scope.AddLocal(this, switchValue);
+            _scope.AddLocal(this, testValue);
+            EmitExpression(node.SwitchValue);
+            _scope.EmitSet(switchValue);
+
+            // Emit tests
+            var labels = new Label[node.Cases.Count];
+            var isGoto = new bool[node.Cases.Count];
+            for (int i = 0, n = node.Cases.Count; i < n; i++) {
+                DefineSwitchCaseLabel(node.Cases[i], out labels[i], out isGoto[i]);
+                foreach (Expression test in node.Cases[i].TestValues) {
+                    // Pull the test out into a temp so it runs on the same
+                    // stack as the switch. This simplifies spilling.
+                    EmitExpression(test);
+                    _scope.EmitSet(testValue);
+                    EmitExpressionAndBranch(true, Expression.Equal(switchValue, testValue, false, node.Comparison), labels[i]);
                 }
             }
 
-            // Emit the test value
-            EmitExpression(node.Test);
+            // Define labels
+            Label end = _ilg.DefineLabel();
+            Label @default = (node.DefaultBody == null) ? end : _ilg.DefineLabel();
 
-            // Check if jmp table can be emitted
-            if (!TryEmitJumpTable(node, labels, defaultTarget)) {
-                // There might be scenario(s) where the jmp table is not emitted
-                // Emit the switch as conditional branches then
-                EmitConditionalBranches(node, labels);
-            }
-
-            // If "default" present, execute default code, else exit the switch            
-            _ilg.Emit(OpCodes.Br, defaultTarget);
-
-            // Emit the bodies
-            for (int i = 0; i < node.SwitchCases.Count; i++) {
-                // First put the corresponding labels
-                _ilg.MarkLabel(labels[i]);
-                // And then emit the Body!!
-                EmitExpressionAsVoid(node.SwitchCases[i].Body);
-            }
-
-            breakTarget.MarkWithEmptyStack();
+            // Emit the case and default bodies
+            EmitSwitchCases(node, labels, isGoto, @default, end);
         }
 
-        private const int MaxJumpTableSize = 65536;
-        private const double MaxJumpTableSparsity = 10;
+        private sealed class SwitchLabel {
+            internal readonly decimal Key;
+            internal readonly Label Label;
 
-        // Emits the switch as if stmts
-        private void EmitConditionalBranches(SwitchExpression node, Label[] labels) {
-            LocalBuilder testValueSlot = GetLocal(typeof(int));
-            _ilg.Emit(OpCodes.Stloc, testValueSlot);
+            // Boxed version of Key, preseving the original type.
+            internal readonly object Constant;
 
-            // For all the "cases" create their conditional branches
-            for (int i = 0; i < node.SwitchCases.Count; i++) {
-                // Not default case emit the condition
-                if (!node.SwitchCases[i].IsDefault) {
-                    // Test for equality of case value and the test expression
-                    _ilg.EmitInt(node.SwitchCases[i].Value);
-                    _ilg.Emit(OpCodes.Ldloc, testValueSlot);
-                    _ilg.Emit(OpCodes.Beq, labels[i]);
+            internal SwitchLabel(decimal key, object @constant, Label label) {
+                Key = key;
+                Constant = @constant;
+                Label = label;
+            }
+        }
+
+        private sealed class SwitchInfo {
+            internal readonly SwitchExpression Node;
+            internal readonly LocalBuilder Value;
+            internal readonly Label Default;
+            internal readonly Type Type;
+            internal readonly bool IsUnsigned;
+            internal readonly bool Is64BitSwitch;
+
+            internal SwitchInfo(SwitchExpression node, LocalBuilder value, Label @default) {
+                Node = node;
+                Value = value;
+                Default = @default;
+                Type = Node.SwitchValue.Type;
+                IsUnsigned = TypeUtils.IsUnsigned(Type);
+                var code = Type.GetTypeCode(Type);
+                Is64BitSwitch = code == TypeCode.UInt64 || code == TypeCode.Int64;
+            }
+        }
+
+        private static bool FitsInBucket(List<SwitchLabel> buckets, decimal key, int count) {
+            Debug.Assert(key > buckets[buckets.Count - 1].Key);
+            decimal jumpTableSlots = key - buckets[0].Key + 1;
+            if (jumpTableSlots > int.MaxValue) {
+                return false;
+            }
+            // density must be > 50%
+            return (buckets.Count + count) * 2 > jumpTableSlots;
+        }
+
+        private static void MergeBuckets(List<List<SwitchLabel>> buckets) {
+            while (buckets.Count > 1) {
+                List<SwitchLabel> first = buckets[buckets.Count - 2];
+                List<SwitchLabel> second = buckets[buckets.Count - 1];
+
+                if (!FitsInBucket(first, second[second.Count - 1].Key, second.Count)) {
+                    return;
+                }
+
+                // Merge them
+                first.AddRange(second);
+                buckets.RemoveAt(buckets.Count - 1);
+            }
+        }
+
+        // Add key to a new or existing bucket
+        private static void AddToBuckets(List<List<SwitchLabel>> buckets, SwitchLabel key) {
+            if (buckets.Count > 0) {
+                List<SwitchLabel> last = buckets[buckets.Count - 1];
+                if (FitsInBucket(last, key.Key, 1)) {
+                    last.Add(key);
+                    // we might be able to merge now
+                    MergeBuckets(buckets);
+                    return;
                 }
             }
-
-            FreeLocal(testValueSlot);
+            // else create a new bucket
+            buckets.Add(new List<SwitchLabel> { key });
         }
 
+        // Determines if the type is an integer we can switch on.
+        private static bool CanOptimizeSwitchType(Type valueType) {
+            // enums & char are allowed
+            switch (Type.GetTypeCode(valueType)) {
+                case TypeCode.Byte:
+                case TypeCode.SByte:
+                case TypeCode.Char:
+                case TypeCode.Int16:
+                case TypeCode.Int32:
+                case TypeCode.UInt16:
+                case TypeCode.UInt32:
+                case TypeCode.Int64:
+                case TypeCode.UInt64:
+                    return true;
+                default:
+                    return false;
+            }
+        }
+        
         // Tries to emit switch as a jmp table
-        private bool TryEmitJumpTable(SwitchExpression node, Label[] labels, Label defaultTarget) {
-            if (node.SwitchCases.Count > MaxJumpTableSize) {
+        private bool TryEmitSwitchInstruction(SwitchExpression node) {
+            // If we have a comparison, bail
+            if (node.Comparison != null) {
                 return false;
             }
 
-            int min = Int32.MaxValue;
-            int max = Int32.MinValue;
+            // Make sure the switch value type and the right side type
+            // are types we can optimize
+            Type type = node.SwitchValue.Type;
+            if (!CanOptimizeSwitchType(type) || type != node.Cases[0].TestValues[0].Type) {
+                return false;
+            }
 
-            // Find the min and max of the values
-            for (int i = 0; i < node.SwitchCases.Count; ++i) {
-                // Not the default case.
-                if (!node.SwitchCases[i].IsDefault) {
-                    int val = node.SwitchCases[i].Value;
-                    if (min > val) min = val;
-                    if (max < val) max = val;
+            // Make sure all test values are constant, or we can't emit the
+            // jump table.
+            if (!node.Cases.All(c => c.TestValues.All(t => t is ConstantExpression))) {
+                return false;
+            }
+
+            //
+            // We can emit the optimized switch, let's do it.
+            //
+
+            // Build target labels, collect keys.
+            var labels = new Label[node.Cases.Count];
+            var isGoto = new bool[node.Cases.Count];
+
+            var uniqueKeys = new Set<decimal>();
+            var keys = new List<SwitchLabel>();
+            for (int i = 0; i < node.Cases.Count; i++) {
+
+                DefineSwitchCaseLabel(node.Cases[i], out labels[i], out isGoto[i]);
+
+                foreach (ConstantExpression test in node.Cases[i].TestValues) {
+                    // Guarenteed to work thanks to CanOptimizeSwitchType.
+                    //
+                    // Use decimal because it can hold Int64 or UInt64 without
+                    // precision loss or signed/unsigned conversions.
+                    decimal key = ConvertSwitchValue(test.Value);
+
+                    // Only add each key once. If it appears twice, it's
+                    // allowed, but can't be reached.
+                    if (!uniqueKeys.Contains(key)) {
+                        keys.Add(new SwitchLabel(key, test.Value, labels[i]));
+                        uniqueKeys.Add(key);
+                    }
                 }
             }
 
-            long delta = (long)max - (long)min;
-            if (delta > MaxJumpTableSize) {
-                return false;
+            // Sort the keys, and group them into buckets.
+            keys.Sort((x, y) => Math.Sign(x.Key - y.Key));
+            var buckets = new List<List<SwitchLabel>>();
+            foreach (var key in keys) {
+                AddToBuckets(buckets, key);
             }
 
-            // Value distribution is too sparse, don't emit jump table.
-            if (delta > node.SwitchCases.Count + MaxJumpTableSparsity) {
-                return false;
+            // Emit the switchValue
+            LocalBuilder value = GetLocal(node.SwitchValue.Type);
+            EmitExpression(node.SwitchValue);
+            _ilg.Emit(OpCodes.Stloc, value);
+
+            // Create end label, and default label if needed
+            Label end = _ilg.DefineLabel();
+            Label @default = (node.DefaultBody == null) ? end : _ilg.DefineLabel();
+
+            // Emit the switch
+            var info = new SwitchInfo(node, value, @default);
+            EmitSwitchBuckets(info, buckets, 0, buckets.Count - 1);
+
+            // Emit the case bodies and default
+            EmitSwitchCases(node, labels, isGoto, @default, end);
+
+            FreeLocal(value);
+            return true;
+        }
+
+        private static decimal ConvertSwitchValue(object value) {
+            if (value is char) {
+                return (int)(char)value;
+            }
+            return Convert.ToDecimal(value, CultureInfo.InvariantCulture);
+        }
+
+        /// <summary>
+        /// Creates the label for this case.
+        /// Optimization: if the body is just a goto, and we can branch
+        /// to it, put the goto target directly in the jump table.
+        /// </summary>
+        private void DefineSwitchCaseLabel(SwitchCase @case, out Label label, out bool isGoto) {
+            var jump = @case.Body as GotoExpression;
+            // if it's a goto with no value
+            if (jump != null && jump.Value == null) {
+                // Reference the label from the switch. This will cause us to
+                // analyze the jump target and determine if it is safe.
+                LabelInfo jumpInfo = ReferenceLabel(jump.Target);
+
+                // If we have are allowed to emit the "branch" opcode, then we
+                // can jump directly there from the switch's jump table.
+                // (Otherwise, we need to emit the goto later as a "leave".)
+                if (jumpInfo.CanBranch) {
+                    label = jumpInfo.Label;
+                    isGoto = true;
+                    return;
+                }
+            }
+            // otherwise, just define a new label
+            label = _ilg.DefineLabel();
+            isGoto = false;
+        }
+
+        private void EmitSwitchCases(SwitchExpression node, Label[] labels, bool[] isGoto, Label @default, Label end) {
+            // Jump to default (to handle the fallthrough case)
+            _ilg.Emit(OpCodes.Br, @default);
+
+            // Emit the cases
+            for (int i = 0, n = node.Cases.Count; i < n; i++) {
+                // If the body is a goto, we already emitted an optimized
+                // branch directly to it. No need to emit anything else.
+                if (isGoto[i]) {
+                    continue;
+                }
+
+                _ilg.MarkLabel(labels[i]);
+                EmitExpression(node.Cases[i].Body);
+
+                // Last case doesn't need branch
+                if (node.DefaultBody != null || i < n - 1) {
+                    _ilg.Emit(OpCodes.Br, end);
+                }
             }
 
-            // The actual jmp table of switch
-            int len = (int)delta + 1;
+            // Default value
+            if (node.DefaultBody != null) {
+                _ilg.MarkLabel(@default);
+                EmitExpression(node.DefaultBody);
+            }
+
+            _ilg.MarkLabel(end);
+        }
+
+        private void EmitSwitchBuckets(SwitchInfo info, List<List<SwitchLabel>> buckets, int first, int last) {
+            if (first == last) {
+                EmitSwitchBucket(info, buckets[first]);
+                return;
+            }
+
+            // Split the buckets into two groups, and use an if test to find
+            // the right bucket. This ensures we'll only need O(lg(B)) tests
+            // where B is the number of buckets
+            int mid = (int)(((long)first + last + 1) / 2);
+
+            if (first == mid - 1) {
+                EmitSwitchBucket(info, buckets[first]);
+            } else {
+                // If the first half contains more than one, we need to emit an
+                // explicit guard
+                Label secondHalf = _ilg.DefineLabel();
+                _ilg.Emit(OpCodes.Ldloc, info.Value);
+                _ilg.EmitConstant(buckets[mid - 1].Last().Constant);
+                _ilg.Emit(info.IsUnsigned ? OpCodes.Bgt_Un : OpCodes.Bgt, secondHalf);
+                EmitSwitchBuckets(info, buckets, first, mid - 1);
+                _ilg.MarkLabel(secondHalf);
+            }
+
+            EmitSwitchBuckets(info, buckets, mid, last);
+        }
+
+        private void EmitSwitchBucket(SwitchInfo info, List<SwitchLabel> bucket) {
+            // No need for switch if we only have one value
+            if (bucket.Count == 1) {
+                _ilg.Emit(OpCodes.Ldloc, info.Value);
+                _ilg.EmitConstant(bucket[0].Constant);
+                _ilg.Emit(OpCodes.Beq, bucket[0].Label);
+                return;
+            }
+
+            // 
+            // If we're switching off of Int64/UInt64, we need more guards here
+            // because we'll have to narrow the switch value to an Int32, and
+            // we can't do that unless the value is in the right range.
+            //
+            Label? after = null;
+            if (info.Is64BitSwitch) {
+                after = _ilg.DefineLabel();
+                _ilg.Emit(OpCodes.Ldloc, info.Value);
+                _ilg.EmitConstant(bucket.Last().Constant);
+                _ilg.Emit(info.IsUnsigned ? OpCodes.Bgt_Un : OpCodes.Bgt, after.Value);
+                _ilg.Emit(OpCodes.Ldloc, info.Value);
+                _ilg.EmitConstant(bucket[0].Constant);
+                _ilg.Emit(info.IsUnsigned ? OpCodes.Blt_Un : OpCodes.Blt, after.Value);
+            }
+
+            _ilg.Emit(OpCodes.Ldloc, info.Value);
+
+            // Normalize key
+            decimal key = bucket[0].Key;
+            if (key != 0) {
+                _ilg.EmitConstant(bucket[0].Constant);
+                _ilg.Emit(OpCodes.Sub);
+            }
+
+            if (info.Is64BitSwitch) {
+                _ilg.Emit(OpCodes.Conv_I4);
+            }
+
+            // Collect labels
+            int len = (int)(bucket[bucket.Count - 1].Key - bucket[0].Key + 1);
             Label[] jmpLabels = new Label[len];
 
             // Initialize all labels to the default
-            for (int i = 0; i < len; i++) {
-                jmpLabels[i] = defaultTarget;
+            int slot = 0;
+            foreach (SwitchLabel label in bucket) {
+                while (key++ != label.Key) {
+                    jmpLabels[slot++] = info.Default;
+                }
+                jmpLabels[slot++] = label.Label;
             }
 
-            // Replace with the actual label target for all cases
-            for (int i = 0; i < node.SwitchCases.Count; i++) {
-                SwitchCase sc = node.SwitchCases[i];
-                if (!sc.IsDefault) {
-                    jmpLabels[sc.Value - min] = labels[i];
+            // check we used all keys and filled all slots
+            Debug.Assert(key == bucket[bucket.Count - 1].Key + 1);
+            Debug.Assert(slot == jmpLabels.Length);
+
+            // Finally, emit the switch instruction
+            _ilg.Emit(OpCodes.Switch, jmpLabels);
+
+            if (info.Is64BitSwitch) {
+                _ilg.MarkLabel(after.Value);
+            }
+        }
+
+        private bool TryEmitHashtableSwitch(SwitchExpression node) {
+            // If we have a comparison other than string equality, bail
+            if (node.Comparison != typeof(string).GetMethod("op_Equality", BindingFlags.Public | BindingFlags.Static | BindingFlags.ExactBinding, null, new[] { typeof(string), typeof(string) }, null)) {
+                return false;
+            }
+
+            // All test values must be constant.
+            int tests = 0;
+            foreach (SwitchCase c in node.Cases) {
+                foreach (Expression t in c.TestValues) {
+                    if (!(t is ConstantExpression)) {
+                        return false;
+                    }
+                    tests++;
                 }
             }
 
-            // Emit the normalized index and then switch based on that
-            if (min != 0) {
-                _ilg.EmitInt(min);
-                _ilg.Emit(OpCodes.Sub);
+            // Must have >= 7 labels for it to be worth it.
+            if (tests < 7) {
+                return false;
             }
-            _ilg.Emit(OpCodes.Switch, jmpLabels);
+
+            // If we're in a DynamicMethod, we could just build the dictionary
+            // immediately. But that would cause the two code paths to be more
+            // different than they really need to be.
+            var initializers = new List<ElementInit>(tests);
+            var cases = new List<SwitchCase>(node.Cases.Count);
+
+            int nullCase = -1;
+            MethodInfo add = typeof(Dictionary<string, int>).GetMethod("Add", new[] { typeof(string), typeof(int) });
+            for (int i = 0, n = node.Cases.Count; i < n; i++) {
+                foreach (ConstantExpression t in node.Cases[i].TestValues) {
+                    if (t.Value != null) {
+                        initializers.Add(Expression.ElementInit(add, t, Expression.Constant(i)));
+                    } else {
+                        nullCase = i;
+                    }
+                }
+                cases.Add(Expression.SwitchCase(node.Cases[i].Body, Expression.Constant(i)));
+            }
+
+            // Create the field to hold the lazily initialized dictionary
+            MemberExpression dictField = CreateLazyInitializedField<Dictionary<string, int>>("dictionarySwitch");
+
+            // If we happen to initialize it twice (multithreaded case), it's
+            // not the end of the world. The C# compiler does better here by
+            // emitting a volatile access to the field.
+            Expression dictInit = Expression.Condition(
+                Expression.Equal(dictField, Expression.Constant(null, dictField.Type)),
+                Expression.Assign(
+                    dictField,
+                    Expression.ListInit(
+                        Expression.New(
+                            typeof(Dictionary<string, int>).GetConstructor(new[] { typeof(int) }),
+                            Expression.Constant(initializers.Count)
+                        ),
+                        initializers
+                    )
+                ),
+                dictField
+            );
+
+            //
+            // Create a tree like:
+            //
+            // switchValue = switchValueExpression;
+            // if (switchValue == null) {
+            //     switchIndex = nullCase;
+            // } else {
+            //     if (_dictField == null) {
+            //         _dictField = new Dictionary<string, int>(count) { { ... }, ... };
+            //     }
+            //     if (!_dictField.TryGetValue(switchValue, out switchIndex)) {
+            //         switchIndex = -1;
+            //     }
+            // }
+            // switch (switchIndex) {
+            //     case 0: ...
+            //     case 1: ...
+            //     ...
+            //     default:
+            // }
+            //
+            var switchValue = Expression.Variable(typeof(string), "switchValue");
+            var switchIndex = Expression.Variable(typeof(int), "switchIndex");
+            var reduced = Expression.Block(
+                new[] { switchIndex, switchValue },
+                Expression.Assign(switchValue, node.SwitchValue),
+                Expression.Condition(
+                    Expression.Equal(switchValue, Expression.Constant(null, typeof(string))),
+                    Expression.Void(Expression.Assign(switchIndex, Expression.Constant(nullCase))),
+                    Expression.Condition(
+                        Expression.Call(dictInit, "TryGetValue", null, switchValue, switchIndex),
+                        Expression.Empty(),
+                        Expression.Void(Expression.Assign(switchIndex, Expression.Constant(-1)))
+                    )
+                ),
+                Expression.Switch(switchIndex, node.DefaultBody, null, cases)
+            );
+
+            // Emit it normally
+            EmitExpression(reduced);
             return true;
         }
 
@@ -225,10 +592,10 @@ namespace System.Linq.Expressions.Compiler {
 
         private void CheckRethrow() {
             // Rethrow is only valid inside a catch.
-            for (LabelBlockInfo j = _labelBlock; j != null; j = j.Parent) {
-                if (j.Kind == LabelBlockKind.Catch) {
+            for (LabelScopeInfo j = _labelBlock; j != null; j = j.Parent) {
+                if (j.Kind == LabelScopeKind.Catch) {
                     return;
-                } else if (j.Kind == LabelBlockKind.Finally) {
+                } else if (j.Kind == LabelScopeKind.Finally) {
                     // Rethrow from inside finally is not verifiable
                     break;
                 }
@@ -240,8 +607,8 @@ namespace System.Linq.Expressions.Compiler {
 
         private void CheckTry() {
             // Try inside a filter is not verifiable
-            for (LabelBlockInfo j = _labelBlock; j != null; j = j.Parent) {
-                if (j.Kind == LabelBlockKind.Filter) {
+            for (LabelScopeInfo j = _labelBlock; j != null; j = j.Parent) {
+                if (j.Kind == LabelScopeKind.Filter) {
                     throw Error.TryNotAllowedInFilter();
                 }
             }
@@ -267,7 +634,7 @@ namespace System.Linq.Expressions.Compiler {
             // 1. ENTERING TRY
             //******************************************************************
 
-            PushLabelBlock(LabelBlockKind.Try);
+            PushLabelBlock(LabelScopeKind.Try);
             _ilg.BeginExceptionBlock();
 
             //******************************************************************
@@ -288,9 +655,17 @@ namespace System.Linq.Expressions.Compiler {
             //******************************************************************
 
             foreach (CatchBlock cb in node.Handlers) {
-                PushLabelBlock(LabelBlockKind.Catch);
+                PushLabelBlock(LabelScopeKind.Catch);
 
                 // Begin the strongly typed exception block
+                if (cb.Filter == null) {
+                    _ilg.BeginCatchBlock(cb.Test);
+                } else {
+                    _ilg.BeginExceptFilterBlock();
+                }
+
+                EnterScope(cb);
+
                 EmitCatchStart(cb);
 
                 //
@@ -302,7 +677,9 @@ namespace System.Linq.Expressions.Compiler {
                     _ilg.Emit(OpCodes.Stloc, value);
                 }
 
-                PopLabelBlock(LabelBlockKind.Catch);
+                ExitScope(cb);
+
+                PopLabelBlock(LabelScopeKind.Catch);
             }
 
             //******************************************************************
@@ -310,7 +687,7 @@ namespace System.Linq.Expressions.Compiler {
             //******************************************************************
 
             if (node.Finally != null || node.Fault != null) {
-                PushLabelBlock(LabelBlockKind.Finally);
+                PushLabelBlock(LabelScopeKind.Finally);
 
                 if (node.Finally != null) {
                     _ilg.BeginFinallyBlock();
@@ -322,7 +699,7 @@ namespace System.Linq.Expressions.Compiler {
                 EmitExpressionAsVoid(node.Finally ?? node.Fault);
 
                 _ilg.EndExceptionBlock();
-                PopLabelBlock(LabelBlockKind.Finally);
+                PopLabelBlock(LabelScopeKind.Finally);
             } else {
                 _ilg.EndExceptionBlock();
             }
@@ -331,7 +708,7 @@ namespace System.Linq.Expressions.Compiler {
                 _ilg.Emit(OpCodes.Ldloc, value);
                 FreeLocal(value);
             }
-            PopLabelBlock(LabelBlockKind.Try);
+            PopLabelBlock(LabelScopeKind.Try);
         }
 
         /// <summary>
@@ -341,15 +718,12 @@ namespace System.Linq.Expressions.Compiler {
         /// </summary>
         private void EmitCatchStart(CatchBlock cb) {
             if (cb.Filter == null) {
-                _ilg.BeginCatchBlock(cb.Test);
                 EmitSaveExceptionOrPop(cb);
                 return;
             }
 
             // emit filter block. Filter blocks are untyped so we need to do
             // the type check ourselves.  
-            _ilg.BeginExceptFilterBlock();
-
             Label endFilter = _ilg.DefineLabel();
             Label rightType = _ilg.DefineLabel();
 
@@ -366,9 +740,9 @@ namespace System.Linq.Expressions.Compiler {
             // it's our type, save it and emit the filter.
             _ilg.MarkLabel(rightType);
             EmitSaveExceptionOrPop(cb);
-            PushLabelBlock(LabelBlockKind.Filter);
+            PushLabelBlock(LabelScopeKind.Filter);
             EmitExpression(cb.Filter);
-            PopLabelBlock(LabelBlockKind.Filter);
+            PopLabelBlock(LabelScopeKind.Filter);
 
             // begin the catch, clear the exception, we've 
             // already saved it
