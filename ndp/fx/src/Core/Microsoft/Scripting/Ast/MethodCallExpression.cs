@@ -31,17 +31,6 @@ namespace System.Linq.Expressions {
             _method = method;
         }
 
-        internal static MethodCallExpression Make(
-            MethodInfo method,
-            Expression instance,
-            ReadOnlyCollection<Expression> arguments) {
-            if (instance == null) {
-                return new MethodCallExpressionN(method, arguments);
-            } else {
-                return new InstanceMethodCallExpressionN(method, instance, arguments);
-            }
-        }
-
         internal virtual Expression GetInstance() {
             return null;
         }

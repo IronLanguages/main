@@ -50,15 +50,6 @@ namespace System.Linq.Expressions {
         }
 
         /// <summary>
-        /// A string like  "Non-empty string required"
-        /// </summary>
-        internal static string NonEmptyStringRequired {
-            get {
-                return "Non-empty string required";
-            }
-        }
-
-        /// <summary>
         /// A string like  "Non-empty collection required"
         /// </summary>
         internal static string NonEmptyCollectionRequired {
@@ -158,33 +149,6 @@ namespace System.Linq.Expressions {
         }
 
         /// <summary>
-        /// A string like  "Value must be int"
-        /// </summary>
-        internal static string ValueMustBeInt {
-            get {
-                return "Value must be int";
-            }
-        }
-
-        /// <summary>
-        /// A string like  "Only one default clause allowed"
-        /// </summary>
-        internal static string OnlyDefaultIsAllowed {
-            get {
-                return "Only one default clause allowed";
-            }
-        }
-
-        /// <summary>
-        /// A string like  "Case values must be unique"
-        /// </summary>
-        internal static string CaseValuesMustBeUnique {
-            get {
-                return "Case values must be unique";
-            }
-        }
-
-        /// <summary>
         /// A string like  "type must not be ByRef"
         /// </summary>
         internal static string TypeMustNotBeByRef {
@@ -208,24 +172,6 @@ namespace System.Linq.Expressions {
         internal static string TypeDoesNotHaveConstructorForTheSignature {
             get {
                 return "Type doesn't have constructor with a given signature";
-            }
-        }
-
-        /// <summary>
-        /// A string like  "Type doesn't have a method with a given name."
-        /// </summary>
-        internal static string TypeDoesNotHaveMethodForName {
-            get {
-                return "Type doesn't have a method with a given name.";
-            }
-        }
-
-        /// <summary>
-        /// A string like  "Type doesn't have a method with a given name and signature."
-        /// </summary>
-        internal static string TypeDoesNotHaveMethodForNameSignature {
-            get {
-                return "Type doesn't have a method with a given name and signature.";
             }
         }
 
@@ -352,6 +298,33 @@ namespace System.Linq.Expressions {
         internal static string MustBeReducible {
             get {
                 return "must be reducible node";
+            }
+        }
+
+        /// <summary>
+        /// A string like  "All test values must have the same type."
+        /// </summary>
+        internal static string AllTestValuesMustHaveSameType {
+            get {
+                return "All test values must have the same type.";
+            }
+        }
+
+        /// <summary>
+        /// A string like  "All case bodies and the default body must have the same type."
+        /// </summary>
+        internal static string AllCaseBodiesMustHaveSameType {
+            get {
+                return "All case bodies and the default body must have the same type.";
+            }
+        }
+
+        /// <summary>
+        /// A string like  "Default body must be supplied if case bodies are not System.Void."
+        /// </summary>
+        internal static string DefaultBodyMustBeSupplied {
+            get {
+                return "Default body must be supplied if case bodies are not System.Void.";
             }
         }
 
@@ -535,6 +508,13 @@ namespace System.Linq.Expressions {
             get {
                 return "Argument must be boolean";
             }
+        }
+
+        /// <summary>
+        /// A string like  "The user-defined equality method '{0}' must return a boolean value."
+        /// </summary>
+        internal static string EqualityMustReturnBoolean(object p0) {
+            return FormatString("The user-defined equality method '{0}' must return a boolean value.", p0);
         }
 
         /// <summary>
@@ -876,13 +856,6 @@ namespace System.Linq.Expressions {
         }
 
         /// <summary>
-        /// A string like  "Property '{0}.{1}' is not defined for type '{2}'"
-        /// </summary>
-        internal static string PropertyInfoNotDefinedForType(object p0, object p1, object p2) {
-            return FormatString("Property '{0}.{1}' is not defined for type '{2}'", p0, p1, p2);
-        }
-
-        /// <summary>
         /// A string like  "Method '{0}' is not defined for type '{1}'"
         /// </summary>
         internal static string MethodNotDefinedForType(object p0, object p1) {
@@ -1133,15 +1106,6 @@ namespace System.Linq.Expressions {
         }
 
         /// <summary>
-        /// A string like  "Bad data bound to delegate."
-        /// </summary>
-        internal static string BadDelegateData {
-            get {
-                return "Bad data bound to delegate.";
-            }
-        }
-
-        /// <summary>
         /// A string like  "Invalid operation: '{0}'"
         /// </summary>
         internal static string InvalidOperation(object p0) {
@@ -1282,15 +1246,6 @@ namespace System.Linq.Expressions {
         internal static string InvalidAsmNameOrExtension {
             get {
                 return "Invalid assembly name or file extension.";
-            }
-        }
-
-        /// <summary>
-        /// A string like  "Stack changed while enumerating."
-        /// </summary>
-        internal static string StackChangedWhileEnumerationg {
-            get {
-                return "Stack changed while enumerating.";
             }
         }
 
@@ -1465,6 +1420,13 @@ namespace System.Linq.Expressions {
         /// </summary>
         internal static Exception ArgumentMustBeBoolean() {
             return new ArgumentException(Strings.ArgumentMustBeBoolean);
+        }
+
+        /// <summary>
+        /// ArgumentException with message like "The user-defined equality method '{0}' must return a boolean value."
+        /// </summary>
+        internal static Exception EqualityMustReturnBoolean(object p0) {
+            return new ArgumentException(Strings.EqualityMustReturnBoolean(p0));
         }
 
         /// <summary>
@@ -1776,13 +1738,6 @@ namespace System.Linq.Expressions {
         }
 
         /// <summary>
-        /// ArgumentException with message like "Property '{0}.{1}' is not defined for type '{2}'"
-        /// </summary>
-        internal static Exception PropertyInfoNotDefinedForType(object p0, object p1, object p2) {
-            return new ArgumentException(Strings.PropertyInfoNotDefinedForType(p0, p1, p2));
-        }
-
-        /// <summary>
         /// ArgumentException with message like "Method '{0}' is not defined for type '{1}'"
         /// </summary>
         internal static Exception MethodNotDefinedForType(object p0, object p1) {
@@ -2007,13 +1962,6 @@ namespace System.Linq.Expressions {
         }
 
         /// <summary>
-        /// InvalidOperationException with message like "Bad data bound to delegate."
-        /// </summary>
-        internal static Exception BadDelegateData() {
-            return new InvalidOperationException(Strings.BadDelegateData);
-        }
-
-        /// <summary>
         /// ArgumentException with message like "Invalid operation: '{0}'"
         /// </summary>
         internal static Exception InvalidOperation(object p0) {
@@ -2137,13 +2085,6 @@ namespace System.Linq.Expressions {
         /// </summary>
         internal static Exception InvalidAsmNameOrExtension() {
             return new ArgumentException(Strings.InvalidAsmNameOrExtension);
-        }
-
-        /// <summary>
-        /// InvalidOperationException with message like "Stack changed while enumerating."
-        /// </summary>
-        internal static Exception StackChangedWhileEnumerationg() {
-            return new InvalidOperationException(Strings.StackChangedWhileEnumerationg);
         }
 
         /// <summary>

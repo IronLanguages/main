@@ -326,6 +326,14 @@ namespace Microsoft.Scripting.Hosting {
                     BindingRestrictions.Combine(args).Merge(BindingRestrictions.GetTypeRestriction(Expression, typeof(ScriptScope))).Merge(fallback.Restrictions)
                 );
             }
+
+            public override IEnumerable<KeyValuePair<string, object>> GetDynamicDataMembers() {
+                return ((ScriptScope)Value).GetItems();
+            }
+
+            public override IEnumerable<string> GetDynamicMemberNames() {
+                return ((ScriptScope)Value).GetVariableNames();
+            }
         }
 
         #endregion

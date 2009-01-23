@@ -707,20 +707,40 @@ namespace System.Linq.Expressions.Compiler {
             SwitchExpression node = (SwitchExpression)expr;
 
             // The switch statement test is emitted on the stack in current state
-            Result test = RewriteExpressionFreeTemps(node.Test, stack);
+            Result switchValue = RewriteExpressionFreeTemps(node.SwitchValue, stack);
 
-            RewriteAction action = test.Action;
-            ReadOnlyCollection<SwitchCase> cases = node.SwitchCases;
+            RewriteAction action = switchValue.Action;
+            ReadOnlyCollection<SwitchCase> cases = node.Cases;
             SwitchCase[] clone = null;
             for (int i = 0; i < cases.Count; i++) {
                 SwitchCase @case = cases[i];
+
+                Expression[] cloneTests = null;
+                ReadOnlyCollection<Expression> testValues = @case.TestValues;
+                for (int j = 0; j < testValues.Count; j++) {
+                    // All tests execute at the same stack state as the switch.
+                    // This is guarenteed by the compiler (to simplify spilling)
+                    Result test = RewriteExpression(testValues[j], stack);
+                    action |= test.Action;
+
+                    if (cloneTests == null && test.Action != RewriteAction.None) {
+                        cloneTests = Clone(testValues, j);
+                    }
+
+                    if (cloneTests != null) {
+                        cloneTests[j] = test.Node;
+                    }
+                }
 
                 // And all the cases also run on the same stack level.
                 Result body = RewriteExpression(@case.Body, stack);
                 action |= body.Action;
 
-                if (body.Action != RewriteAction.None) {
-                    @case = new SwitchCase(@case.IsDefault, @case.Value, body.Node);
+                if (body.Action != RewriteAction.None || cloneTests != null) {
+                    if (cloneTests != null) {
+                        testValues = new ReadOnlyCollection<Expression>(cloneTests);
+                    }
+                    @case = new SwitchCase(body.Node, testValues);
 
                     if (clone == null) {
                         clone = Clone(cases, i);
@@ -732,13 +752,17 @@ namespace System.Linq.Expressions.Compiler {
                 }
             }
 
+            // default body also runs on initial stack
+            Result defaultBody = RewriteExpression(node.DefaultBody, stack);
+            action |= defaultBody.Action;
+
             if (action != RewriteAction.None) {
                 if (clone != null) {
                     // okay to wrap because we aren't modifying the array
                     cases = new ReadOnlyCollection<SwitchCase>(clone);
                 }
 
-                expr = new SwitchExpression(test.Node, node.BreakLabel, cases);
+                expr = new SwitchExpression(switchValue.Node, defaultBody.Node, node.Comparison, cases);
             }
 
             return new Result(action, expr);
@@ -838,9 +862,5 @@ namespace System.Linq.Expressions.Compiler {
         }
 
         #endregion
-    }
-
-    internal partial class StackSpiller {
-
     }
 }

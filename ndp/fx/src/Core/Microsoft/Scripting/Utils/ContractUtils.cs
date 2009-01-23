@@ -60,42 +60,11 @@ namespace System.Dynamic.Utils {
             }
         }
 
-        internal static void RequiresNotEmpty(string str, string paramName) {
-            RequiresNotNull(str, paramName);
-            if (str.Length == 0) {
-                throw new ArgumentException(Strings.NonEmptyStringRequired, paramName);
-            }
-        }
-
         internal static void RequiresNotEmpty<T>(ICollection<T> collection, string paramName) {
             RequiresNotNull(collection, paramName);
             if (collection.Count == 0) {
                 throw new ArgumentException(Strings.NonEmptyCollectionRequired, paramName);
             }
-        }
-
-        /// <summary>
-        /// Requires the specified index to point inside the array.
-        /// </summary>
-        /// <exception cref="ArgumentNullException">Array is <c>null</c>.</exception>
-        /// <exception cref="ArgumentOutOfRangeException">Index is outside the array.</exception>
-        internal static void RequiresArrayIndex<T>(IList<T> array, int index, string indexName) {
-            Debug.Assert(!string.IsNullOrEmpty(indexName));
-            Debug.Assert(array != null);
-
-            if (index < 0 || index >= array.Count) throw new ArgumentOutOfRangeException(indexName);
-        }
-
-        /// <summary>
-        /// Requires the specified index to point inside the array or at the end
-        /// </summary>
-        /// <exception cref="ArgumentNullException">Array is <c>null</c>.</exception>
-        /// <exception cref="ArgumentOutOfRangeException">Index is outside the array.</exception>
-        internal static void RequiresArrayInsertIndex<T>(IList<T> array, int index, string indexName) {
-            Debug.Assert(!string.IsNullOrEmpty(indexName));
-            Debug.Assert(array != null);
-
-            if (index < 0 || index > array.Count) throw new ArgumentOutOfRangeException(indexName);
         }
 
         /// <summary>
@@ -110,34 +79,6 @@ namespace System.Dynamic.Utils {
 
             if (count < 0) throw new ArgumentOutOfRangeException(countName);
             if (offset < 0 || array.Count - offset < count) throw new ArgumentOutOfRangeException(offsetName);
-        }
-
-        /// <summary>
-        /// Requires the range [offset, offset + count] to be a subset of [0, array.Count].
-        /// </summary>
-        /// <exception cref="ArgumentNullException">Array is <c>null</c>.</exception>
-        /// <exception cref="ArgumentOutOfRangeException">Offset or count are out of range.</exception>
-        internal static void RequiresListRange(IList array, int offset, int count, string offsetName, string countName) {
-            Debug.Assert(!string.IsNullOrEmpty(offsetName));
-            Debug.Assert(!string.IsNullOrEmpty(countName));
-            Debug.Assert(array != null);
-
-            if (count < 0) throw new ArgumentOutOfRangeException(countName);
-            if (offset < 0 || array.Count - offset < count) throw new ArgumentOutOfRangeException(offsetName);
-        }
-
-        /// <summary>
-        /// Requires the range [offset, offset + count] to be a subset of [0, array.Count].
-        /// </summary>
-        /// <exception cref="ArgumentNullException">String is <c>null</c>.</exception>
-        /// <exception cref="ArgumentOutOfRangeException">Offset or count are out of range.</exception>
-        internal static void RequiresArrayRange(string str, int offset, int count, string offsetName, string countName) {
-            Debug.Assert(!string.IsNullOrEmpty(offsetName));
-            Debug.Assert(!string.IsNullOrEmpty(countName));
-            Debug.Assert(str != null);
-
-            if (count < 0) throw new ArgumentOutOfRangeException(countName);
-            if (offset < 0 || str.Length - offset < count) throw new ArgumentOutOfRangeException(offsetName);
         }
 
         /// <summary>

@@ -216,7 +216,6 @@
     <Compile Include="Ast\TypeBinaryExpression.cs" />
     <Compile Include="Ast\TypeUtils.cs" />
     <Compile Include="Ast\UnaryExpression.cs" />
-    <Compile Include="Compiler\CatchRecord.cs" />
     <Compile Include="Compiler\Closure.cs" />
     <Compile Include="Compiler\CompilerScope.Storage.cs" />
     <Compile Include="Compiler\CompilerScope.cs" />
@@ -253,8 +252,6 @@
     <Compile Include="Utils\ExceptionFactory.Generated.cs" />
     <Compile Include="Utils\Function.cs" />
     <Compile Include="Utils\Helpers.cs" />
-    <Compile Include="Utils\ListEqualityComparer.cs" />
-    <Compile Include="Utils\ListStack.cs" />
     <Compile Include="Utils\ReadOnlyDictionary.cs" />
     <Compile Include="Utils\ReferenceEqualityComparer.cs" />
     <Compile Include="Utils\StrongBox.cs" />

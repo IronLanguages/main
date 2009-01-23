@@ -37,7 +37,7 @@ namespace System.Linq.Expressions.Compiler {
         #region Instruction helpers
 
         internal static void EmitLoadArg(this ILGenerator il, int index) {
-            ContractUtils.Requires(index >= 0, "index");
+            Debug.Assert(index >= 0);
 
             switch (index) {
                 case 0:
@@ -63,7 +63,7 @@ namespace System.Linq.Expressions.Compiler {
         }
 
         internal static void EmitLoadArgAddress(this ILGenerator il, int index) {
-            ContractUtils.Requires(index >= 0, "index");
+            Debug.Assert(index >= 0);
 
             if (index <= Byte.MaxValue) {
                 il.Emit(OpCodes.Ldarga_S, (byte)index);
@@ -73,7 +73,7 @@ namespace System.Linq.Expressions.Compiler {
         }
 
         internal static void EmitStoreArg(this ILGenerator il, int index) {
-            ContractUtils.Requires(index >= 0, "index");
+            Debug.Assert(index >= 0);
 
             if (index <= Byte.MaxValue) {
                 il.Emit(OpCodes.Starg_S, (byte)index);
@@ -243,11 +243,6 @@ namespace System.Linq.Expressions.Compiler {
 
             il.Emit(OpCodes.Ldtoken, type);
             il.Emit(OpCodes.Call, typeof(Type).GetMethod("GetTypeFromHandle"));
-        }
-
-        internal static void EmitUnbox(this ILGenerator il, Type type) {
-            ContractUtils.RequiresNotNull(type, "type");
-            il.Emit(OpCodes.Unbox_Any, type);
         }
 
         #endregion
@@ -456,6 +451,11 @@ namespace System.Linq.Expressions.Compiler {
                     return true;
             }
             return false;
+        }
+
+        internal static void EmitConstant(this ILGenerator il, object value) {
+            Debug.Assert(value != null);
+            EmitConstant(il, value, value.GetType());
         }
 
         //CONFORMING

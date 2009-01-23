@@ -13,9 +13,26 @@
  *
  * ***************************************************************************/
 
-using System;
-using System.Reflection;
+using System.Runtime.CompilerServices;
 
-#if !SILVERLIGHT
-[assembly: AssemblyVersion("2.6.0.1")]
-#endif
+namespace System.Dynamic {
+    internal sealed class EmptyRuleSet<T> : RuleSet<T> where T : class {
+        internal static readonly RuleSet<T> FixedInstance = new EmptyRuleSet<T>();
+
+        private EmptyRuleSet() {
+        }
+
+        internal override RuleSet<T> AddRule(CallSiteRule<T> newRule) {
+            return this;
+        }
+
+        internal override CallSiteRule<T>[] GetRules() {
+            return null;
+        }
+
+        internal override T GetTarget() {
+            // Return null so CallSiteOps.SetPolymorphicTarget won't update the target
+            return null;
+        }
+    }
+}

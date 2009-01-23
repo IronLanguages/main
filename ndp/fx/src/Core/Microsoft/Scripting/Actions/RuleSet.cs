@@ -13,9 +13,19 @@
  *
  * ***************************************************************************/
 
-using System;
-using System.Reflection;
+using System.Linq.Expressions;
+using System.Runtime.CompilerServices;
 
-#if !SILVERLIGHT
-[assembly: AssemblyVersion("2.6.0.1")]
-#endif
+namespace System.Dynamic {
+
+    /// <summary>
+    /// A RuleSet is a collection of rules to apply to the objects at a DynamicSite.  Each Rule also
+    /// includes a target that is to be called if the rules' conditions are met.
+    /// RuleSets are all immutable.
+    /// </summary>
+    internal abstract class RuleSet<T> where T : class {
+        internal abstract RuleSet<T> AddRule(CallSiteRule<T> newRule);
+        internal abstract CallSiteRule<T>[] GetRules();
+        internal abstract T GetTarget();
+    }
+}

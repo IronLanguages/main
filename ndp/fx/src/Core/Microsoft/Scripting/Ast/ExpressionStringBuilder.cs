@@ -806,12 +806,11 @@ namespace System.Linq.Expressions {
 
         protected override SwitchCase VisitSwitchCase(SwitchCase node) {
             Indent();
-            if (node.IsDefault) {
-                Out("default");
-            } else {
-                Out("case " + node.Value);
+            foreach (var test in node.TestValues) {
+                Out("case (");
+                Visit(test);
+                Out("):", Flow.NewLine);
             }
-            Out(":", Flow.NewLine);
             Indent();
             Visit(node.Body);
             Dedent();
@@ -822,14 +821,19 @@ namespace System.Linq.Expressions {
 
         protected internal override Expression VisitSwitch(SwitchExpression node) {
             Out("switch ");
-            if (node.BreakLabel != null) {
-                DumpLabel(node.BreakLabel);
-                Out(Flow.Space, ":");
-            }
             Out("(");
-            Visit(node.Test);
+            Visit(node.SwitchValue);
             Out(") {", Flow.NewLine);
-            Visit(node.SwitchCases, VisitSwitchCase);
+            Visit(node.Cases, VisitSwitchCase);
+            if (node.DefaultBody != null) {
+                Indent();
+                Out("default:", Flow.NewLine);
+                Indent();
+                Visit(node.DefaultBody);
+                Dedent();
+                NewLine();
+                Dedent();
+            }
             Out("}", Flow.NewLine);
             return node;
         }

@@ -83,9 +83,9 @@ namespace Microsoft.Scripting.Ast {
             int count = _yields.Count;
             var cases = new SwitchCase[count + 1];
             for (int i = 0; i < count; i++) {
-                cases[i] = Expression.SwitchCase(_yields[i].State, Expression.Goto(_yields[i].Label));
+                cases[i] = Expression.SwitchCase(Expression.Goto(_yields[i].Label), Expression.Constant(_yields[i].State));
             }
-            cases[count] = Expression.SwitchCase(Finished, Expression.Goto(_returnLabels.Peek()));
+            cases[count] = Expression.SwitchCase(Expression.Goto(_returnLabels.Peek()), Expression.Constant(Finished));
 
             Type generatorNextOfT = typeof(GeneratorNext<>).MakeGenericType(_generator.Target.Type);
 
@@ -423,7 +423,7 @@ namespace Microsoft.Scripting.Ast {
             var cases = new SwitchCase[end - start];
             for (int i = start; i < end; i++) {
                 YieldMarker y = _yields[i];
-                cases[i - start] = Expression.SwitchCase(y.State, Expression.Goto(y.Label));
+                cases[i - start] = Expression.SwitchCase(Expression.Goto(y.Label), Expression.Constant(y.State));
                 // Any jumps from outer switch statements should go to the this
                 // router, not the original label (which they cannot legally jump to)
                 y.Label = newTarget;

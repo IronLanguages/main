@@ -20,6 +20,7 @@ using System.Dynamic.Utils;
 using System.Reflection;
 using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
+using System.Threading;
 
 namespace System.Linq.Expressions.Compiler {
 
@@ -44,7 +45,7 @@ namespace System.Linq.Expressions.Compiler {
         private readonly MethodInfo _method;
 
         // Currently active LabelTargets and their mapping to IL labels
-        private LabelBlockInfo _labelBlock = new LabelBlockInfo(null, LabelBlockKind.Block);
+        private LabelScopeInfo _labelBlock = new LabelScopeInfo(null, LabelScopeKind.Lambda);
         // Mapping of labels used for "long" jumps (jumping out and into blocks)
         private readonly Dictionary<LabelTarget, LabelInfo> _labelInfo = new Dictionary<LabelTarget, LabelInfo>();
 
@@ -240,10 +241,6 @@ namespace System.Linq.Expressions.Compiler {
             return index + (HasClosure ? 1 : 0) + (_method.IsStatic ? 0 : 1);
         }
 
-        internal Type GetLambdaArgumentType(int index) {
-            return _paramTypes[index + (HasClosure ? 1 : 0)];
-        }
-
         /// <summary>
         /// Returns the index-th argument. This method provides access to the actual arguments
         /// defined on the lambda itself, and excludes the possible 0-th closure argument.
@@ -262,6 +259,26 @@ namespace System.Linq.Expressions.Compiler {
             Debug.Assert(_method is DynamicMethod);
 
             return _method.CreateDelegate(_lambda.Type, new Closure(_boundConstants.ToArray(), null));
+        }
+
+        private FieldBuilder CreateStaticField(string name, Type type) {
+            // We are emitting into someone else's type. We don't want name
+            // conflicts, so choose a long name that is unlikely to confict.
+            // Naming scheme chosen here is similar to what the C# compiler
+            // uses.
+            return _typeBuilder.DefineField("<ExpressionCompilerImplementationDetails>{" + Interlocked.Increment(ref _Counter) + "}" + name, type, FieldAttributes.Static | FieldAttributes.Private);
+        }
+
+        /// <summary>
+        /// Creates an unitialized field suitible for private implementation details
+        /// Works with DynamicMethods or TypeBuilders.
+        /// </summary>
+        private MemberExpression CreateLazyInitializedField<T>(string name) {
+            if (_method is DynamicMethod) {
+                return Expression.Field(Expression.Constant(new StrongBox<T>()), "Value");
+            } else {
+                return Expression.Field(null, CreateStaticField(name, typeof(T)));
+            }
         }
     }
 }

@@ -73,7 +73,7 @@ def invoke_mspec(path_to_ruby, root_path = "core")
     spec_file = name == '-' ? '' : "#{name}_spec.rb"
     spec_dir = klass == '-' ? '' : "#{klass}/"
     spec_suite = spec_dir + spec_file
-    run_spec = root + "/1.8/#{root_path}/#{spec_suite}"
+    run_spec = root + "/#{root_path}/#{spec_suite}"
     reporter,tag  = extract_reporter(reporter)
 
     chdir(get_source_dir(:tests) +'util'){
