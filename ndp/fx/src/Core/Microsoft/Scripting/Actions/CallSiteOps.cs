@@ -39,6 +39,48 @@ namespace System.Runtime.CompilerServices {
         }
 
         /// <summary>
+        /// Creates an instance of a dynamic call site used for cache lookup.
+        /// </summary>
+        /// <returns>The new call site.</returns>
+        [Obsolete("do not use this method", true)]
+        public static CallSite CreateMatchmaker(){
+            var mm = new CallSite(null);
+            CallSiteOps.ClearMatch(mm);
+            return mm;
+        }
+
+        /// <summary>
+        /// Checks if a dynamic site requires an update.
+        /// </summary>
+        /// <param name="site">An instance of the dynamic call site.</param>
+        /// <returns>true if rule needs updating, false otherwise.</returns>
+        [Obsolete("do not use this method", true)]
+        public static bool NeedsUpdate(CallSite site) {
+            var res = site._match;
+            site._match = false;  //avoid branch here to make sure the method is inlined
+            return res;
+        }
+
+        /// <summary>
+        /// Checks whether the executed rule matched
+        /// </summary>
+        /// <param name="site">An instance of the dynamic call site.</param>
+        /// <returns>true if rule matched, false otherwise.</returns>
+        [Obsolete("do not use this method", true)]
+        public static bool GetMatch(CallSite site) {
+            return site._match;
+        }
+
+        /// <summary>
+        /// Clears the match flag on the matchmaker call site.
+        /// </summary>
+        /// <param name="site">An instance of the dynamic call site.</param>
+        [Obsolete("do not use this method", true)]
+        public static void ClearMatch(CallSite site) {
+            site._match = true;
+        }
+
+        /// <summary>
         /// Adds a rule to the cache maintained on the dynamic call site.
         /// </summary>
         /// <typeparam name="T">The type of the delegate of the <see cref="CallSite"/>.</typeparam>
@@ -46,12 +88,10 @@ namespace System.Runtime.CompilerServices {
         /// <param name="rule">An instance of the call site rule.</param>
         [Obsolete("do not use this method", true)]
         public static void AddRule<T>(CallSite<T> site, CallSiteRule<T> rule) where T : class {
-            lock (site) {
-                if (site.Rules == null) {
-                    site.Rules = rule.RuleSet;
-                } else {
-                    site.Rules = site.Rules.AddRule(rule);
-                }
+            if (site.Rules == null) {
+                site.Rules = rule.RuleSet;
+            } else {
+                site.Rules = site.Rules.AddRule(rule);
             }
         }
 
@@ -64,18 +104,6 @@ namespace System.Runtime.CompilerServices {
         [Obsolete("do not use this method", true)]
         public static void MoveRule<T>(CallSite<T> site, CallSiteRule<T> rule) where T : class {
             site.RuleCache.MoveRule(rule);
-        }
-
-        /// <summary>
-        /// Creates an instance of a dynamic call site used for cache lookup.
-        /// </summary>
-        /// <typeparam name="T">The type of the delegate of the <see cref="CallSite"/>.</typeparam>
-        /// <param name="site">An instance of the dynamic call site.</param>
-        /// <param name="matchmaker">An instance of a delegate matching the call site.</param>
-        /// <returns>The new call site.</returns>
-        [Obsolete("do not use this method", true)]
-        public static CallSite CreateMatchmaker<T>(CallSite<T> site, T matchmaker) where T : class {
-            return new CallSite<T>(site.Binder, matchmaker);
         }
 
         /// <summary>
@@ -134,22 +162,6 @@ namespace System.Runtime.CompilerServices {
         [Obsolete("do not use this method", true)]
         public static CallSiteRule<T>[] FindApplicableRules<T>(CallSite<T> site) where T : class {
             return site.RuleCache.FindApplicableRules();
-        }
-
-        /// <summary>
-        /// Sets the call site target to the delegate created from the set of dynamic binding rules.
-        /// </summary>
-        /// <typeparam name="T">The type of the delegate of the <see cref="CallSite"/>.</typeparam>
-        /// <param name="site">An instance of the dynamic call site.</param>
-        [Obsolete("do not use this method", true)]
-        public static void SetPolymorphicTarget<T>(CallSite<T> site) where T : class {
-            T target = site.Rules.GetTarget();
-            // If the site has gone megamorphic, we'll have an empty RuleSet
-            // with no target. In that case, we don't want to clear out the
-            // target
-            if (target != null) {
-                site.Target = target;
-            }
         }
 
         /// <summary>

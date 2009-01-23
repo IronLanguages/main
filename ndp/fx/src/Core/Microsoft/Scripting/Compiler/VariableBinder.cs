@@ -86,6 +86,17 @@ namespace System.Linq.Expressions.Compiler {
             return node;
         }
 
+        protected override CatchBlock VisitCatchBlock(CatchBlock node) {
+            if (node.Variable == null) {
+                Visit(node.Body);
+                return node;
+            }
+            _scopes.Push(_tree.Scopes[node] = new CompilerScope(node));
+            Visit(node.Body);
+            _scopes.Pop();
+            return node;
+        }
+
         // If the immediate child is another scope, merge it into this one
         // This is an optimization to save environment allocations and
         // array accesses.
@@ -104,7 +115,7 @@ namespace System.Linq.Expressions.Compiler {
 
                 if (block.Variables.Count > 0) {
                     if (currentScope.MergedScopes == null) {
-                        currentScope.MergedScopes = new Set<BlockExpression>();
+                        currentScope.MergedScopes = new Set<object>(ReferenceEqualityComparer<object>.Instance);
                     }
                     currentScope.MergedScopes.Add(block);
                     foreach (var v in block.Variables) {

@@ -241,10 +241,6 @@ namespace System.Linq.Expressions.Compiler {
             return index + (HasClosure ? 1 : 0) + (_method.IsStatic ? 0 : 1);
         }
 
-        internal Type GetLambdaArgumentType(int index) {
-            return _paramTypes[index + (HasClosure ? 1 : 0)];
-        }
-
         /// <summary>
         /// Returns the index-th argument. This method provides access to the actual arguments
         /// defined on the lambda itself, and excludes the possible 0-th closure argument.

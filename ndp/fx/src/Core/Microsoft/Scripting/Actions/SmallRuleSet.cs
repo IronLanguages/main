@@ -13,12 +13,13 @@
  *
  * ***************************************************************************/
 
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Dynamic.Utils;
 using System.Linq.Expressions;
+using System.Reflection;
 using System.Runtime.CompilerServices;
+
 
 namespace System.Dynamic {
 
@@ -27,18 +28,15 @@ namespace System.Dynamic {
     /// SmallRuleSet instance is immutable and therefore they may be cached
     /// and shared.  At the moment, the only ones that are shared are
     /// SmallRuleSets with a single rule.
-    /// 
-    /// When a new rule is added, then a new SmallRuleSet will be created
-    /// that contains all existing rules that are still considered valid with
-    /// the new rule added to the front of the list.  The target generated for
-    /// this type will simply try each of the rules in order and emit the
-    /// standard DynamicSite.UpdateBindingAndInvoke fallback call at the end.
     /// </summary>
     /// <typeparam name="T"></typeparam>
-    internal class SmallRuleSet<T> : RuleSet<T> where T : class {
+    internal sealed class SmallRuleSet<T> where T : class {
         private T _target;
         private const int MaxRules = 10;
         private readonly CallSiteRule<T>[] _rules;
+
+        // want to start replacing with the last
+        private int replaceNext = MaxRules - 1;
 
         internal SmallRuleSet(CallSiteRule<T>[] rules) {
             _rules = rules;
@@ -49,25 +47,34 @@ namespace System.Dynamic {
             _target = target;
         }
 
-        internal override RuleSet<T> AddRule(CallSiteRule<T> newRule) {
-            List<CallSiteRule<T>> newRules = new List<CallSiteRule<T>>();
-            newRules.Add(newRule);
-            foreach (CallSiteRule<T> rule in _rules) {
-                newRules.Add(rule);
-            }
+        internal SmallRuleSet<T> AddRule(CallSiteRule<T> newRule) {
+            int count = _rules.Length;
 
-            if (newRules.Count > MaxRules) {
-                return EmptyRuleSet<T>.FixedInstance;
+            if (count < MaxRules) {
+                count++;
+                CallSiteRule<T>[] newSet = new CallSiteRule<T>[count];
+                newSet[0] = newRule;
+
+                for (int i = 1; i < count; i++) {
+                    newSet[i] = _rules[i - 1];
+                }
+
+                return new SmallRuleSet<T>(newSet);
             } else {
-                return new SmallRuleSet<T>(newRules.ToArray());
+                // find replace position using FIFO
+                int i = replaceNext;
+                replaceNext = (i + 1) % MaxRules;
+
+                _rules[i] = newRule;
+                return this;
             }
         }
 
-        internal override CallSiteRule<T>[] GetRules() {
+        internal CallSiteRule<T>[] GetRules() {
             return _rules;
         }
 
-        internal override T GetTarget() {
+        internal T GetTarget() {
             if (_target == null) {
                 _target = MakeTarget();
             }
@@ -94,19 +101,29 @@ namespace System.Dynamic {
                 body[i] = _rules[i].Binding;
             }
 
-            var @params = CallSiteRule<T>.Parameters.AddFirst(Expression.Parameter(typeof(CallSite), "$site"));
+            var site = Expression.Parameter(typeof(CallSite), "$site");
+            var @params = CallSiteRule<T>.Parameters.AddFirst(site);
+
+            Expression Update = Expression.Invoke(
+                Expression.Property(
+                    Helpers.Convert(site, siteType),
+                    typeof(CallSite<T>).GetProperty("Update")
+                ),
+                new ReadOnlyCollection<Expression>(@params)
+            );
 
             body[_rules.Length] = Expression.Label(
                 CallSiteRule<T>.ReturnLabel,
-                Expression.Call(
-                    Expression.Field(
-                        Expression.Convert(@params[0], siteType),
-                        siteType.GetField("Update")
+                Expression.Condition(
+                    Expression.Call(
+                        typeof(CallSiteOps).GetMethod("NeedsUpdate"),
+                        @params.First()
                     ),
-                    targetType.GetMethod("Invoke"),
-                    new ReadOnlyCollection<Expression>(@params)
+                    Expression.Default(Update.Type),
+                    Update
                 )
             );
+
 
             return new Expression<T>(
                 "_stub_",
