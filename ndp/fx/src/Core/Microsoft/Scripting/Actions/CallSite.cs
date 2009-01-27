@@ -364,12 +364,12 @@ namespace System.Runtime.CompilerServices {
 
             if (@return.Type == typeof(void)) {
                 invokeRule = Expression.Block(
-                    Expression.Invoke(ruleTarget, new ReadOnlyCollection<Expression>(@params)),
+                    Expression.Invoke(ruleTarget, new TrueReadOnlyCollection<Expression>(@params)),
                     IfThen(getMatch, Expression.Return(@return))
                 );
             } else {
                 invokeRule = Expression.Block(
-                    Expression.Assign(result, Expression.Invoke(ruleTarget, new ReadOnlyCollection<Expression>(@params))),
+                    Expression.Assign(result, Expression.Invoke(ruleTarget, new TrueReadOnlyCollection<Expression>(@params))),
                     IfThen(getMatch, Expression.Return(@return, result))
                 );
             }

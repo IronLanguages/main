@@ -17,6 +17,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Dynamic.Utils;
 using System.Text;
+using System.Runtime.CompilerServices;
 
 namespace System.Linq.Expressions {
     /// <summary>
@@ -93,7 +94,7 @@ namespace System.Linq.Expressions {
                 block[i + 1] = ReduceMemberBinding(objVar, bindings[i]);
             }
             block[count + 1] = keepOnStack ? (Expression)objVar : Expression.Empty();
-            return Expression.Block(new ReadOnlyCollection<Expression>(block));
+            return Expression.Block(new TrueReadOnlyCollection<Expression>(block));
         }
 
         internal static Expression ReduceListInit(Expression listExpression, ReadOnlyCollection<ElementInit> initializers, bool keepOnStack) {
@@ -106,7 +107,7 @@ namespace System.Linq.Expressions {
                 block[i + 1] = Expression.Call(listVar, element.AddMethod, element.Arguments);
             }
             block[count + 1] = keepOnStack ? (Expression)listVar : Expression.Empty();
-            return Expression.Block(new ReadOnlyCollection<Expression>(block));
+            return Expression.Block(new TrueReadOnlyCollection<Expression>(block));
         }
 
         internal static Expression ReduceMemberBinding(ParameterExpression objVar, MemberBinding binding) {
@@ -145,7 +146,7 @@ namespace System.Linq.Expressions {
         public static MemberInitExpression MemberInit(NewExpression newExpression, IEnumerable<MemberBinding> bindings) {
             ContractUtils.RequiresNotNull(newExpression, "newExpression");
             ContractUtils.RequiresNotNull(bindings, "bindings");
-            ReadOnlyCollection<MemberBinding> roBindings = bindings.ToReadOnly();
+            var roBindings = bindings.ToReadOnly();
             ValidateMemberInitArgs(newExpression.Type, roBindings);
             return new MemberInitExpression(newExpression, roBindings);
         }

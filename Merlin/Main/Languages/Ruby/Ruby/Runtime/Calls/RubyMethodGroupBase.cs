@@ -242,14 +242,8 @@ namespace IronRuby.Runtime.Calls {
                 var targetExpression = bindingTarget.MakeExpression(parameterBinder, actualArgs);
 
                 metaBuilder.Result = targetExpression;
-            } else if (bindingTarget.Result == BindingResult.AmbiguousMatch) {
-                metaBuilder.SetError(
-                    Methods.MakeAmbiguousMatchError.OpCall(Ast.Constant(name))
-                );
             } else {
-                metaBuilder.SetError(
-                    Methods.MakeInvalidArgumentTypesError.OpCall(Ast.Constant(name))
-                );
+                metaBuilder.SetError(args.RubyContext.RubyBinder.MakeInvalidParametersError(bindingTarget).Expression);
             }
         }
 

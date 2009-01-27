@@ -13,10 +13,8 @@
  *
  * ***************************************************************************/
 
-using System;
-using System.Reflection;
-using System.Text;
 using System.Dynamic.Utils;
+using System.Reflection;
 
 namespace System.Linq.Expressions {
     /// <summary>
@@ -68,7 +66,7 @@ namespace System.Linq.Expressions {
             return Bind(GetProperty(propertyAccessor), expression);
         }
         
-        //CONFORMING
+
         private static void ValidateSettableFieldOrPropertyMember(MemberInfo member, out Type memberType) {
             FieldInfo fi = member as FieldInfo;
             if (fi == null) {

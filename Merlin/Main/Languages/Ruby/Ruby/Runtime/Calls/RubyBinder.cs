@@ -18,6 +18,7 @@ using System.Collections;
 using System.Diagnostics;
 using System.Linq.Expressions;
 using System.Reflection;
+using System.Text;
 using System.Dynamic;
 using System.Collections.Generic;
 
@@ -31,6 +32,7 @@ using Microsoft.Scripting.Utils;
 
 using Ast = System.Linq.Expressions.Expression;
 using AstFactory = IronRuby.Compiler.Ast.AstFactory;
+using Actions = Microsoft.Scripting.Actions;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 using IronRuby.Compiler;
 using IronRuby.Builtins;
@@ -38,8 +40,100 @@ using System.Runtime.CompilerServices;
 
 namespace IronRuby.Runtime.Calls {
     public sealed class RubyBinder : DefaultBinder {
-        internal RubyBinder(ScriptDomainManager/*!*/ manager)
-            : base(manager) {
+        RubyContext/*!*/ _context;
+
+        internal RubyBinder(RubyContext/*!*/ context)
+            : base(context.DomainManager) {
+            _context = context;
+        }
+
+        protected override string GetTypeName(Type t) {
+            RubyClass rubyClass = _context.GetOrCreateClass(t);
+            return rubyClass.Name;
+        }
+
+        public override Actions.ErrorInfo MakeInvalidParametersError(BindingTarget target) {
+            Expression exceptionValue;
+            switch (target.Result) {
+                case BindingResult.AmbiguousMatch:
+                    exceptionValue = MakeAmbiguousCallError(target);
+                    break;
+                case BindingResult.IncorrectArgumentCount: 
+                    exceptionValue = MakeIncorrectArgumentCountError(target);
+                    break;
+                case BindingResult.CallFailure: 
+                    exceptionValue = MakeCallFailureError(target);
+                    break;
+                default: throw new InvalidOperationException();
+            }
+            return Actions.ErrorInfo.FromException(exceptionValue);
+        }
+
+        private Expression MakeAmbiguousCallError(BindingTarget target) {
+            StringBuilder sb = new StringBuilder(string.Format("Found multiple methods for '{0}': ", target.Name));
+            string outerComma = "";
+            foreach (MethodTarget mt in target.AmbiguousMatches) {
+                Type[] types = mt.GetParameterTypes();
+                string innerComma = "";
+
+                sb.Append(outerComma);
+                sb.Append(target.Name);
+                sb.Append('(');
+                foreach (Type t in types) {
+                    sb.Append(innerComma);
+                    sb.Append(GetTypeName(t));
+                    innerComma = ", ";
+                }
+
+                sb.Append(')');
+                outerComma = ", ";
+            }
+
+            return Methods.MakeAmbiguousMatchError.OpCall(Ast.Constant(sb.ToString()));
+        }
+
+        private Expression MakeIncorrectArgumentCountError(BindingTarget target) {
+            int minArgs = Int32.MaxValue;
+            int maxArgs = Int32.MinValue;
+            foreach (int argCnt in target.ExpectedArgumentCount) {
+                minArgs = System.Math.Min(minArgs, argCnt);
+                maxArgs = System.Math.Max(maxArgs, argCnt);
+            }
+
+            return Methods.MakeWrongNumberOfArgumentsError.OpCall(
+                Ast.Constant(target.ActualArgumentCount),
+                Ast.Constant(minArgs));
+        }
+
+        private Expression MakeCallFailureError(BindingTarget target) {
+            foreach (CallFailure cf in target.CallFailures) {
+                switch (cf.Reason) {
+                    case CallFailureReason.ConversionFailure:
+                        foreach (ConversionResult cr in cf.ConversionResults) {
+                            if (cr.Failed) {
+                                if (typeof(Proc).IsAssignableFrom(cr.To)) {
+                                    return Methods.CreateArgumentsErrorForProc.OpCall(Ast.Constant(GetTypeName(cr.From)));
+                                }
+
+                                Debug.Assert(typeof(BlockParam).IsSealed);
+                                if (cr.To == typeof(BlockParam)) {
+                                    Debug.Assert(cr.From == typeof(MissingBlockParam));
+                                    return Methods.CreateArgumentsErrorForMissingBlock.OpCall();
+                                }
+
+                                return Methods.CreateTypeConversionError.OpCall(
+                                        Ast.Constant(GetTypeName(cr.From)),
+                                        Ast.Constant(GetTypeName(cr.To)));
+                            }
+                        }
+                        break;
+
+                    case CallFailureReason.DuplicateKeyword:
+                    case CallFailureReason.UnassignableKeyword:
+                        default: throw new InvalidOperationException();
+                }
+            }
+            throw new InvalidOperationException();
         }
 
         protected override int PrepareParametersBinding(ParameterInfo/*!*/[]/*!*/ parameterInfos, List<ArgBuilder>/*!*/ arguments,

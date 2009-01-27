@@ -16,6 +16,7 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 
 namespace System.Dynamic.Utils {
     internal static class CollectionExtensions {
@@ -31,9 +32,9 @@ namespace System.Dynamic.Utils {
                 return EmptyReadOnlyCollection<T>.Instance;
             }
 
-            var roCollection = enumerable as ReadOnlyCollection<T>;
-            if (roCollection != null) {
-                return roCollection;
+            var troc = enumerable as TrueReadOnlyCollection<T>;
+            if (troc != null) {
+                return troc;
             }
 
             var collection = enumerable as ICollection<T>;
@@ -43,13 +44,13 @@ namespace System.Dynamic.Utils {
                     return EmptyReadOnlyCollection<T>.Instance;
                 }
 
-                T[] array = new T[count];
-                collection.CopyTo(array, 0);
-                return new ReadOnlyCollection<T>(array);
+                T[] clone = new T[count];
+                collection.CopyTo(clone, 0);
+                return new TrueReadOnlyCollection<T>(clone);
             }
 
             // ToArray trims the excess space and speeds up access
-            return new ReadOnlyCollection<T>(new List<T>(enumerable).ToArray());
+            return new TrueReadOnlyCollection<T>(new List<T>(enumerable).ToArray());
         }
 
         // We could probably improve the hashing here
@@ -156,10 +157,16 @@ namespace System.Dynamic.Utils {
         internal static T Last<T>(this IList<T> list) {
             return list[list.Count - 1];
         }
+
+        internal static T[] Copy<T>(this T[] array) {
+            T[] copy = new T[array.Length];
+            Array.Copy(array, copy, array.Length);
+            return copy;
+        }
     }
 
 
     internal static class EmptyReadOnlyCollection<T> {
-        internal static ReadOnlyCollection<T> Instance = new ReadOnlyCollection<T>(new T[0]);
+        internal static ReadOnlyCollection<T> Instance = new TrueReadOnlyCollection<T>(new T[0]);
     }
 }

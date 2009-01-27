@@ -41,27 +41,40 @@ namespace IronRuby.Builtins {
         /// one instance of StructInfo.
         /// </summary>
         internal sealed class Info {
-            internal readonly string[] Members;
-            internal int Length { get { return Members.Length; } }
+            private readonly Dictionary<string, int>/*!*/ _nameIndices; // immutable
+            private readonly string/*!*/[]/*!*/ _names;                 // immutable
 
-            // This dictionary is an immutable hash used for fast lookup on the SymbolId indexer
-            internal readonly Dictionary<string, int> IndexMap;
+            internal Info(string/*!*/[]/*!*/ names) {
+                _names = ArrayUtils.Copy(names);
+                _nameIndices = new Dictionary<string, int>(names.Length);
+                for (int i = 0; i < names.Length; i++) {
+                    // overwrites duplicates:
+                    _nameIndices[names[i]] = i;
+                }
+            }
+            
+            internal int Length { 
+                get { return _names.Length; } 
+            }
+            
+            internal bool TryGetIndex(string/*!*/ name, out int index) {
+                return _nameIndices.TryGetValue(name, out index);
+            }
+
+            internal string/*!*/ GetName(int index) {
+                return _names[index];
+            }
 
             internal RubyArray/*!*/ GetMembers() {
-                RubyArray list = new RubyArray(Members.Length);
-                foreach (string id in Members) {
+                RubyArray list = new RubyArray(_names.Length);
+                foreach (string id in _names) {
                     list.Add(MutableString.Create(id));
                 }
                 return list;
             }
 
-            internal Info(string[]/*!*/ members) {
-                Members = members;
-                IndexMap = new Dictionary<string, int>(members.Length);
-                for (int i = 0; i < members.Length; i++) {
-                    // overwrites duplicates:
-                    IndexMap[members[i]] = i;
-                }
+            internal ReadOnlyCollection<string>/*!*/ GetNames() {
+                return new ReadOnlyCollection<string>(_names);
             }
         }
 
@@ -107,11 +120,12 @@ namespace IronRuby.Builtins {
         }
 
         // triggers "inherited" event, adds constant to the owner
-        public static RubyClass/*!*/ DefineStruct(RubyClass/*!*/ owner, string className, string[]/*!*/ attributeNames) {
+        public static RubyClass/*!*/ DefineStruct(RubyClass/*!*/ owner, string className, string/*!*/[]/*!*/ attributeNames) {
+            Assert.NotNullItems(attributeNames);
+            
             // MRI: "inherited" event is triggered by DefineClass before the members are defined and the body is evaluated.
             // Any exception thrown by the event will cancel struct initialization.
-            RubyClass result = owner.Context.DefineClass(owner, className, owner);
-            result.StructInfo = new Info(attributeNames);
+            RubyClass result = owner.Context.DefineClass(owner, className, owner, new Info(attributeNames));
 
             AddClassMembers(result, attributeNames);
 
@@ -175,7 +189,7 @@ namespace IronRuby.Builtins {
 
         public int GetIndex(string/*!*/ name) {
             int result;
-            if (Class.StructInfo.IndexMap.TryGetValue(name, out result)) {
+            if (Class.StructInfo.TryGetIndex(name, out result)) {
                 return result;
             }
             throw RubyExceptions.CreateNameError(String.Format("no member `{0}' in struct", name));
@@ -227,7 +241,7 @@ namespace IronRuby.Builtins {
 
         public IEnumerable<KeyValuePair<string, object>>/*!*/ GetItems() {
             for (int i = 0; i < _data.Length; i++) {
-                yield return new KeyValuePair<string, object>(Class.StructInfo.Members[i], _data[i]);
+                yield return new KeyValuePair<string, object>(Class.StructInfo.GetName(i), _data[i]);
             }
         }
 
@@ -236,7 +250,7 @@ namespace IronRuby.Builtins {
         }
 
         public ReadOnlyCollection<string>/*!*/ GetNames() {
-            return new ReadOnlyCollection<string>(Class.StructInfo.Members);
+            return Class.StructInfo.GetNames();
         }
 
         public void SetValues(object[]/*!*/ items) {

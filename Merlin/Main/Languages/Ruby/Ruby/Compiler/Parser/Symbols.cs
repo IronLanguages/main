@@ -41,6 +41,7 @@ namespace IronRuby.Compiler {
         public static readonly string ToHash = "to_hash";
         public static readonly string ToInt = "to_int";
         public static readonly string ToI = "to_i";
+        public static readonly string ToF = "to_f";
         public static readonly string Initialize = "initialize";
         public static readonly string InitializeCopy = "initialize_copy";
         public static readonly string Object = "Object";

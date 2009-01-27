@@ -135,11 +135,30 @@ bar
             AssertEquals(x, 2);
         }
 
-        public void Scenario_RubyInteractive() {
+        public void Scenario_RubyInteractive1() {
             ScriptScope scope = Runtime.CreateScope();
             AssertOutput(delegate() {
                 Engine.CreateScriptSourceFromString("1+1", SourceCodeKind.InteractiveCode).Execute(scope);
             }, "=> 2");
+        }
+
+        public void Scenario_RubyInteractive2() {
+            string s;
+            Assert((s = Engine.Operations.Format(new RubyArray(new[] { 1,2,3 }))) == "[1, 2, 3]");
+            
+            var obj = Engine.Execute(@"class C; def to_s; 'hello'; end; new; end");
+            Assert((s = Engine.Operations.Format(obj)) == "hello");
+
+            obj = Engine.Execute(@"class C; def to_s; 'bye'; end; new; end");
+            Assert((s = Engine.Operations.Format(obj)) == "bye");
+            
+            obj = Engine.Execute(@"class C; def inspect; [7,8,9]; end; new; end");
+            Assert((s = Engine.Operations.Format(obj)) == "789");
+
+            var scope = Engine.CreateScope();
+            scope.SetVariable("ops", Engine.Operations);
+            s = Engine.Execute<string>(@"ops.format({1 => 2, 3 => 4})", scope);
+            Assert(s == "{1=>2, 3=>4}");
         }
 
         public void Scenario_RubyConsole1() {
@@ -172,12 +191,15 @@ Fixnum@*
 123
 ", OutputFlags.Match);
         }
-
+        
         public void CrossRuntime2() {
             var engine2 = Ruby.CreateEngine();
             Engine.Runtime.Globals.SetVariable("C", engine2.Execute("class C; def bar; end; self; end"));
             AssertExceptionThrown<InvalidOperationException>(() => Engine.Execute("class C; def foo; end; end"));
-            AssertExceptionThrown<InvalidOperationException>(() => Engine.Execute("class C; alias foo bar; end"));
+            
+            // alias operates in the runtime of the class within which scope it is used:
+            Engine.Execute("class C; alias foo bar; end");
+
             AssertExceptionThrown<InvalidOperationException>(() => Engine.Execute("class C; define_method(:goo) {}; end"));
             AssertExceptionThrown<InvalidOperationException>(() => Engine.Execute(@"
 module M; end

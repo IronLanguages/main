@@ -14,16 +14,15 @@
  * ***************************************************************************/
 
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.Dynamic.Utils;
 using System.Reflection;
 using System.Reflection.Emit;
-using System.Dynamic.Utils;
 
 namespace System.Linq.Expressions.Compiler {
     partial class LambdaCompiler {
 
-        //CONFORMING
+
         private void EmitBinaryExpression(Expression expr) {
             BinaryExpression b = (BinaryExpression)expr;
 
@@ -61,7 +60,7 @@ namespace System.Linq.Expressions.Compiler {
             EmitBinaryOperator(b.NodeType, b.Left.Type, b.Right.Type, b.Type, b.IsLiftedToNull);
         }
 
-        //CONFORMING
+
         private void EmitNullEquality(ExpressionType op, Expression e, bool isLiftedToNull) {
             Debug.Assert(TypeUtils.IsNullableType(e.Type));
             Debug.Assert(op == ExpressionType.Equal || op == ExpressionType.NotEqual);
@@ -80,7 +79,7 @@ namespace System.Linq.Expressions.Compiler {
             }
         }
 
-        //CONFORMING
+
         private void EmitBinaryMethod(BinaryExpression b) {
             if (b.IsLifted) {
                 ParameterExpression p1 = Expression.Variable(TypeUtils.GetNonNullableType(b.Left.Type), null);
@@ -107,8 +106,8 @@ namespace System.Linq.Expressions.Compiler {
                             break;
                     }
                 }
-                IList<ParameterExpression> variables = new ParameterExpression[] { p1, p2 };
-                IList<Expression> arguments = new Expression[] { b.Left, b.Right };
+                var variables = new ParameterExpression[] { p1, p2 };
+                var arguments = new Expression[] { b.Left, b.Right };
                 ValidateLift(variables, arguments);
                 EmitLift(b.NodeType, resultType, mc, variables, arguments);
             } else {
@@ -116,7 +115,7 @@ namespace System.Linq.Expressions.Compiler {
             }
         }
 
-        //CONFORMING
+
         private void EmitBinaryOperator(ExpressionType op, Type leftType, Type rightType, Type resultType, bool liftedToNull) {
             bool leftIsNullable = TypeUtils.IsNullableType(leftType);
             bool rightIsNullable = TypeUtils.IsNullableType(rightType);
@@ -147,7 +146,7 @@ namespace System.Linq.Expressions.Compiler {
             }
         }
 
-        //CONFORMING
+
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity")]
         private void EmitUnliftedBinaryOp(ExpressionType op, Type leftType, Type rightType) {
             Debug.Assert(!TypeUtils.IsNullableType(leftType));
@@ -335,7 +334,7 @@ namespace System.Linq.Expressions.Compiler {
             FreeLocal(right);
         }
 
-        //CONFORMING
+
         private void EmitUnliftedEquality(ExpressionType op, Type type) {
             Debug.Assert(op == ExpressionType.Equal || op == ExpressionType.NotEqual);
             if (!type.IsPrimitive && type.IsValueType && !type.IsEnum) {
@@ -348,7 +347,7 @@ namespace System.Linq.Expressions.Compiler {
             }
         }
 
-        //CONFORMING
+
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity")]
         private void EmitLiftedBinaryOp(ExpressionType op, Type leftType, Type rightType, Type resultType, bool liftedToNull) {
             Debug.Assert(TypeUtils.IsNullableType(leftType) || TypeUtils.IsNullableType(rightType));
@@ -395,7 +394,7 @@ namespace System.Linq.Expressions.Compiler {
             }
         }
 
-        //CONFORMING
+
         private void EmitLiftedRelational(ExpressionType op, Type leftType, Type rightType, Type resultType, bool liftedToNull) {
             Debug.Assert(TypeUtils.IsNullableType(leftType));
 
@@ -505,7 +504,7 @@ namespace System.Linq.Expressions.Compiler {
             }
         }
 
-        //CONFORMING
+
         private void EmitLiftedBinaryArithmetic(ExpressionType op, Type leftType, Type rightType, Type resultType) {
             bool leftIsNullable = TypeUtils.IsNullableType(leftType);
             bool rightIsNullable = TypeUtils.IsNullableType(rightType);
@@ -575,7 +574,7 @@ namespace System.Linq.Expressions.Compiler {
             FreeLocal(locResult);
         }
 
-        //CONFORMING
+
         private void EmitLiftedBooleanAnd() {
             Type type = typeof(bool?);
             Label labComputeRight = _ilg.DefineLabel();
@@ -647,7 +646,7 @@ namespace System.Linq.Expressions.Compiler {
             FreeLocal(locLeft);
         }
 
-        //CONFORMING
+
         private void EmitLiftedBooleanOr() {
             Type type = typeof(bool?);
             Label labComputeRight = _ilg.DefineLabel();

@@ -21,7 +21,6 @@ using System.Text;
 using System.Dynamic.Utils;
 
 namespace System.Linq.Expressions {
-    //CONFORMING
     /// <summary>
     /// Represents the initialization of a list.
     /// </summary>
@@ -68,7 +67,6 @@ namespace System.Linq.Expressions {
 
 
     public partial class Expression {
-        //CONFORMING
         /// <summary>
         /// Creates an <see cref="System.Linq.Expressions.ElementInit">ElementInit</see> expression that represents the initialization of a list.
         /// </summary>
@@ -79,7 +77,6 @@ namespace System.Linq.Expressions {
             return ElementInit(addMethod, arguments as IEnumerable<Expression>);
         }
 
-        //CONFORMING
         /// <summary>
         /// Creates an <see cref="System.Linq.Expressions.ElementInit">ElementInit</see> expression that represents the initialization of a list.
         /// </summary>
@@ -89,14 +86,15 @@ namespace System.Linq.Expressions {
         public static ElementInit ElementInit(MethodInfo addMethod, IEnumerable<Expression> arguments) {
             ContractUtils.RequiresNotNull(addMethod, "addMethod");
             ContractUtils.RequiresNotNull(arguments, "arguments");
-            RequiresCanRead(arguments, "arguments");
+
+            var argumentsRO = arguments.ToReadOnly();
+
+            RequiresCanRead(argumentsRO, "arguments");
             ValidateElementInitAddMethodInfo(addMethod);
-            ReadOnlyCollection<Expression> argumentsRO = arguments.ToReadOnly();
             ValidateArgumentTypes(addMethod, ExpressionType.Call, ref argumentsRO);
             return new ElementInit(addMethod, argumentsRO);
         }
 
-        //CONFORMING
         private static void ValidateElementInitAddMethodInfo(MethodInfo addMethod) {
             ValidateMethodInfo(addMethod);
             ParameterInfo[] pis = addMethod.GetParametersCached();

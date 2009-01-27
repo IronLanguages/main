@@ -1133,7 +1133,7 @@ describe "string creation" do
   end
   
   it "String.new doesn't accept nil" do
-    should_raise(defined?(IRONRUBY_VERSION) ? ArgumentError : TypeError) { String.new(nil) }   
+    should_raise(TypeError) { String.new(nil) }   
   end
 
   it "String.new doesn't accept nil" do

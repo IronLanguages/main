@@ -55,14 +55,17 @@ namespace IronRuby.Builtins {
                         return result;
                     }
                 }
-                next.EnumerateConstants(delegate(RubyModule module, string name, object value) {
-                    RubyModule constAsModule = (value as RubyModule);
-                    if (constAsModule != null && !visited.ContainsKey(constAsModule)) {
-                        modules.Push(constAsModule);
-                        visited[module] = null;
-                    }
-                    return false;
-                });
+
+                using (theClass.Context.ClassHierarchyLocker()) {
+                    next.EnumerateConstants(delegate(RubyModule module, string name, object value) {
+                        RubyModule constAsModule = value as RubyModule;
+                        if (constAsModule != null && !visited.ContainsKey(constAsModule)) {
+                            modules.Push(constAsModule);
+                            visited[module] = null;
+                        }
+                        return false;
+                    });
+                }
             }
             return visited.Count;
         }

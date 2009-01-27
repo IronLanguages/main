@@ -17,6 +17,7 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Dynamic;
 using System.Dynamic.Utils;
+using System.Runtime.CompilerServices;
 
 namespace System.Linq.Expressions.Compiler {
 
@@ -65,7 +66,17 @@ namespace System.Linq.Expressions.Compiler {
         /// </summary>
         private readonly TempMaker _tm = new TempMaker();
 
-        #region StackSpiller entry points
+        /// <summary>
+        /// Initial stack state. Normally empty, but when inlining the lambda
+        /// we might have a non-empty starting stack state.
+        /// </summary>
+        private readonly Stack _startingStack;
+
+        /// <summary>
+        /// Lambda rewrite result. We need this for inlined lambdas to figure
+        /// out whether we need to guarentee it an empty stack.
+        /// </summary>
+        private RewriteAction _lambdaRewrite;
 
         /// <summary>
         /// Analyzes a lambda, producing a new one that has correct invariants
@@ -74,12 +85,11 @@ namespace System.Linq.Expressions.Compiler {
         /// entering a try statement).
         /// </summary>
         internal static LambdaExpression AnalyzeLambda(LambdaExpression lambda) {
-            return lambda.Accept(new StackSpiller());
+            return lambda.Accept(new StackSpiller(Stack.Empty));
         }
 
-        #endregion
-
-        private StackSpiller() {
+        private StackSpiller(Stack stack) {
+            _startingStack = stack;
         }
 
         // called by Expression<T>.Accept
@@ -87,7 +97,8 @@ namespace System.Linq.Expressions.Compiler {
             VerifyTemps();
 
             // Lambda starts with an empty stack
-            Result body = RewriteExpressionFreeTemps(lambda.Body, Stack.Empty);
+            Result body = RewriteExpressionFreeTemps(lambda.Body, _startingStack);
+            _lambdaRewrite = body.Action;
 
             VerifyTemps();
 
@@ -420,8 +431,30 @@ namespace System.Linq.Expressions.Compiler {
         private Result RewriteInvocationExpression(Expression expr, Stack stack) {
             InvocationExpression node = (InvocationExpression)expr;
 
+            ChildRewriter cr;
+
+            // See if the lambda will be inlined
+            LambdaExpression lambda = node.LambdaOperand;
+            if (lambda != null) {
+                // Arguments execute on current stack
+                cr = new ChildRewriter(this, stack, node.Arguments.Count);
+                cr.Add(node.Arguments);
+
+                // Lambda body also executes on current stack 
+                var spiller = new StackSpiller(stack);
+                lambda = lambda.Accept(spiller);
+
+                if (cr.Rewrite || spiller._lambdaRewrite != RewriteAction.None) {
+                    node = new InvocationExpression(lambda, cr[0, -1], node.Type);
+                }
+
+                Result result = cr.Finish(node);
+                return new Result(result.Action | spiller._lambdaRewrite, result.Node);
+            }
+
+            cr = new ChildRewriter(this, stack, node.Arguments.Count + 1);
+
             // first argument starts on stack as provided
-            ChildRewriter cr = new ChildRewriter(this, stack, node.Arguments.Count + 1);
             cr.Add(node.Expression);
 
             // rest of arguments have non-empty stack (delegate instance on the stack)
@@ -479,10 +512,10 @@ namespace System.Linq.Expressions.Compiler {
         // UnaryExpression
         private Result RewriteUnaryExpression(Expression expr, Stack stack) {
             UnaryExpression node = (UnaryExpression)expr;
-            
+
             Debug.Assert(node.NodeType != ExpressionType.Quote, "unexpected Quote");
             Debug.Assert(node.NodeType != ExpressionType.Throw, "unexpected Throw");
-            
+
             // Operand is emitted on top of the stack as is
             Result expression = RewriteExpression(node.Operand, stack);
             if (expression.Action != RewriteAction.None) {
@@ -528,7 +561,7 @@ namespace System.Linq.Expressions.Compiler {
                             newInits[i] = Expression.ElementInit(inits[i].AddMethod, cr[0, -1]);
                         }
                     }
-                    expr = Expression.ListInit((NewExpression)rewrittenNew, new ReadOnlyCollection<ElementInit>(newInits));
+                    expr = Expression.ListInit((NewExpression)rewrittenNew, new TrueReadOnlyCollection<ElementInit>(newInits));
                     break;
                 case RewriteAction.SpillStack:
                     ParameterExpression tempNew = MakeTemp(rewrittenNew.Type);
@@ -577,7 +610,7 @@ namespace System.Linq.Expressions.Compiler {
                     for (int i = 0; i < bindings.Count; i++) {
                         newBindings[i] = bindingRewriters[i].AsBinding();
                     }
-                    expr = Expression.MemberInit((NewExpression)rewrittenNew, new ReadOnlyCollection<MemberBinding>(newBindings));
+                    expr = Expression.MemberInit((NewExpression)rewrittenNew, new TrueReadOnlyCollection<MemberBinding>(newBindings));
                     break;
                 case RewriteAction.SpillStack:
                     ParameterExpression tempNew = MakeTemp(rewrittenNew.Type);

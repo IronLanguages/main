@@ -1,4 +1,4 @@
-﻿/* ****************************************************************************
+/* ****************************************************************************
  *
  * Copyright (c) Microsoft Corporation. 
  *
@@ -1311,6 +1311,38 @@ namespace System.Linq.Expressions {
             return FormatString("When called from '{0}', rewriting a node of type '{1}' should return a non-null value of the same type. Alternatively, override '{2}' and change it to not visit children of this type.", p0, p1, p2);
         }
 
+        /// <summary>
+        /// A string like  "The value null is not of type '{0}' and cannot be used in this collection."
+        /// </summary>
+        internal static string InvalidNullValue(object p0) {
+            return FormatString("The value null is not of type '{0}' and cannot be used in this collection.", p0);
+        }
+
+        /// <summary>
+        /// A string like  "The value '{0}' is not of type '{1}1 and cannot be used in this collection."
+        /// </summary>
+        internal static string InvalidObjectType(object p0, object p1) {
+            return FormatString("The value '{0}' is not of type '{1}1 and cannot be used in this collection.", p0, p1);
+        }
+
+        /// <summary>
+        /// A string like  "Collection was modified; enumeration operation may not execute."
+        /// </summary>
+        internal static string CollectionModifiedWhileEnumerating {
+            get {
+                return "Collection was modified; enumeration operation may not execute.";
+            }
+        }
+
+        /// <summary>
+        /// A string like  "Enumeration has either not started or has already finished."
+        /// </summary>
+        internal static string EnumerationIsDone {
+            get {
+                return "Enumeration has either not started or has already finished.";
+            }
+        }
+
     }
     /// <summary>
     ///    Strongly-typed and parameterized exception factory.
@@ -2141,6 +2173,34 @@ namespace System.Linq.Expressions {
         /// </summary>
         internal static Exception MustRewriteToSameType(object p0, object p1, object p2) {
             return new InvalidOperationException(Strings.MustRewriteToSameType(p0, p1, p2));
+        }
+
+        /// <summary>
+        /// ArgumentNullException with message like "The value null is not of type '{0}' and cannot be used in this collection."
+        /// </summary>
+        internal static Exception InvalidNullValue(object p0) {
+            return new ArgumentNullException(Strings.InvalidNullValue(p0));
+        }
+
+        /// <summary>
+        /// ArgumentException with message like "The value '{0}' is not of type '{1}1 and cannot be used in this collection."
+        /// </summary>
+        internal static Exception InvalidObjectType(object p0, object p1) {
+            return new ArgumentException(Strings.InvalidObjectType(p0, p1));
+        }
+
+        /// <summary>
+        /// InvalidOperationException with message like "Collection was modified; enumeration operation may not execute."
+        /// </summary>
+        internal static Exception CollectionModifiedWhileEnumerating() {
+            return new InvalidOperationException(Strings.CollectionModifiedWhileEnumerating);
+        }
+
+        /// <summary>
+        /// InvalidOperationException with message like "Enumeration has either not started or has already finished."
+        /// </summary>
+        internal static Exception EnumerationIsDone() {
+            return new InvalidOperationException(Strings.EnumerationIsDone);
         }
 
     }

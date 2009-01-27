@@ -53,89 +53,89 @@ namespace IronRuby.Builtins {
 
         [RubyMethodAttribute("acos", RubyMethodAttributes.PrivateInstance)]
         [RubyMethodAttribute("acos", RubyMethodAttributes.PublicSingleton)]
-        public static double Acos(object self, double x) {
+        public static double Acos(object self, [DefaultProtocol]double x) {
             return DomainCheck(SM.Acos(x), "acos");
         }
 
         [RubyMethodAttribute("acosh", RubyMethodAttributes.PrivateInstance)]
         [RubyMethodAttribute("acosh", RubyMethodAttributes.PublicSingleton)]
-        public static double Acosh(object self, double x) {
+        public static double Acosh(object self, [DefaultProtocol]double x) {
             //ln(x + sqrt(x*x - 1)) for x >= 1
             return DomainCheck(SM.Log(x + SM.Sqrt(x*x - 1)), "acosh");
         }
 
         [RubyMethodAttribute("asin", RubyMethodAttributes.PrivateInstance)]
         [RubyMethodAttribute("asin", RubyMethodAttributes.PublicSingleton)]
-        public static double Asin(object self, double x) {
+        public static double Asin(object self, [DefaultProtocol]double x) {
             return DomainCheck(SM.Asin(x), "asin");
         }
 
         [RubyMethodAttribute("asinh", RubyMethodAttributes.PrivateInstance)]
         [RubyMethodAttribute("asinh", RubyMethodAttributes.PublicSingleton)]
-        public static double Asinh(object self, double x) {
+        public static double Asinh(object self, [DefaultProtocol]double x) {
             //ln(x + sqrt(x*x + 1))
             return SM.Log(x + SM.Sqrt(x * x + 1));
         }
 
         [RubyMethodAttribute("atan", RubyMethodAttributes.PrivateInstance)]
         [RubyMethodAttribute("atan", RubyMethodAttributes.PublicSingleton)]
-        public static double Atan(object self, double x) {
+        public static double Atan(object self, [DefaultProtocol]double x) {
             return SM.Atan(x);
         }
 
         [RubyMethodAttribute("atan2", RubyMethodAttributes.PrivateInstance)]
         [RubyMethodAttribute("atan2", RubyMethodAttributes.PublicSingleton)]
-        public static double Atan2(object self, double y, double x) {
+        public static double Atan2(object self, [DefaultProtocol]double y, [DefaultProtocol]double x) {
             return SM.Atan2(y, x);
         }
         
         [RubyMethodAttribute("atanh", RubyMethodAttributes.PrivateInstance)]
         [RubyMethodAttribute("atanh", RubyMethodAttributes.PublicSingleton)]
-        public static double Atanh(object self, double x) {
+        public static double Atanh(object self, [DefaultProtocol]double x) {
             //(1/2) * ln((1+x)/(1-x))
             return DomainCheck((1 / 2) * SM.Log((1 + x) / (1 - x)), "atanh");
         }
         
         [RubyMethodAttribute("cos", RubyMethodAttributes.PrivateInstance)]
         [RubyMethodAttribute("cos", RubyMethodAttributes.PublicSingleton)]
-        public static double Cos(object self, double x) {
+        public static double Cos(object self, [DefaultProtocol]double x) {
             return SM.Cos(x);
         }
 
         [RubyMethodAttribute("cosh", RubyMethodAttributes.PrivateInstance)]
         [RubyMethodAttribute("cosh", RubyMethodAttributes.PublicSingleton)]
-        public static double Cosh(object self, double x) {
+        public static double Cosh(object self, [DefaultProtocol]double x) {
             return SM.Cosh(x);
         }
 
         [RubyMethodAttribute("erf", RubyMethodAttributes.PrivateInstance)]
         [RubyMethodAttribute("erf", RubyMethodAttributes.PublicSingleton)]
-        public static double Erf(object self, double x) {
+        public static double Erf(object self, [DefaultProtocol]double x) {
             throw new NotImplementedError("erf");
         }
 
         [RubyMethodAttribute("erfc", RubyMethodAttributes.PrivateInstance)]
         [RubyMethodAttribute("erfc", RubyMethodAttributes.PublicSingleton)]
-        public static double Erfc(object self, double x) {
+        public static double Erfc(object self, [DefaultProtocol]double x) {
             throw new NotImplementedError("erfc");
         }
 
         [RubyMethodAttribute("exp", RubyMethodAttributes.PrivateInstance)]
         [RubyMethodAttribute("exp", RubyMethodAttributes.PublicSingleton)]
-        public static double Exp(object self, double x) {
+        public static double Exp(object self, [DefaultProtocol]double x) {
             return SM.Exp(x);
         }
 
 
         [RubyMethodAttribute("hypot", RubyMethodAttributes.PrivateInstance)]
         [RubyMethodAttribute("hypot", RubyMethodAttributes.PublicSingleton)]
-        public static double Hypot(object self, double x, double y) {
+        public static double Hypot(object self, [DefaultProtocol]double x, [DefaultProtocol]double y) {
             return DomainCheck(SM.Sqrt(x*x+y*y), "hypot");
         }
 
         [RubyMethodAttribute("frexp", RubyMethodAttributes.PrivateInstance)]
         [RubyMethodAttribute("frexp", RubyMethodAttributes.PublicSingleton)]
-        public static RubyArray Frexp(object self, double x) {
+        public static RubyArray Frexp(object self, [DefaultProtocol]double x) {
             byte[] bytes;
             double mantissa;
             int exponent;
@@ -152,49 +152,49 @@ namespace IronRuby.Builtins {
 
         [RubyMethodAttribute("ldexp", RubyMethodAttributes.PrivateInstance)]
         [RubyMethodAttribute("ldexp", RubyMethodAttributes.PublicSingleton)]
-        public static double Ldexp(object self, double x, double y) {
-            return x * SM.Pow(2, SM.Floor(y));
+        public static double Ldexp(object self, [DefaultProtocol]double x, [DefaultProtocol]IntegerValue y) {
+            return x * SM.Pow(2, y.IsFixnum ? (double)y.Fixnum : y.Bignum.ToFloat64());
         }
         
         [RubyMethodAttribute("log", RubyMethodAttributes.PrivateInstance)]
         [RubyMethodAttribute("log", RubyMethodAttributes.PublicSingleton)]
-        public static double Log(object self, double x) {
+        public static double Log(object self, [DefaultProtocol]double x) {
             return DomainCheck(SM.Log(x), "log");
         }
 
         [RubyMethodAttribute("log10", RubyMethodAttributes.PrivateInstance)]
         [RubyMethodAttribute("log10", RubyMethodAttributes.PublicSingleton)]
-        public static double Log10(object self, double x) {
+        public static double Log10(object self, [DefaultProtocol]double x) {
             return DomainCheck(SM.Log10(x), "log10");
         }
 
         [RubyMethodAttribute("sin", RubyMethodAttributes.PrivateInstance)]
         [RubyMethodAttribute("sin", RubyMethodAttributes.PublicSingleton)]
-        public static double Sin(object self, double x) {
+        public static double Sin(object self, [DefaultProtocol]double x) {
             return SM.Sin(x);
         }
 
         [RubyMethodAttribute("sinh", RubyMethodAttributes.PrivateInstance)]
         [RubyMethodAttribute("sinh", RubyMethodAttributes.PublicSingleton)]
-        public static double Sinh(object self, double x) {
+        public static double Sinh(object self, [DefaultProtocol]double x) {
             return SM.Sinh(x);
         }
 
         [RubyMethodAttribute("sqrt", RubyMethodAttributes.PrivateInstance)]
         [RubyMethodAttribute("sqrt", RubyMethodAttributes.PublicSingleton)]
-        public static double Sqrt(object self, double x) {
+        public static double Sqrt(object self, [DefaultProtocol]double x) {
             return DomainCheck(SM.Sqrt(x), "sqrt");
         }
 
         [RubyMethodAttribute("tan", RubyMethodAttributes.PrivateInstance)]
         [RubyMethodAttribute("tan", RubyMethodAttributes.PublicSingleton)]
-        public static double Tan(object self, double x) {
+        public static double Tan(object self, [DefaultProtocol]double x) {
             return SM.Tan(x);
         }
 
         [RubyMethodAttribute("tanh", RubyMethodAttributes.PrivateInstance)]
         [RubyMethodAttribute("tanh", RubyMethodAttributes.PublicSingleton)]
-        public static double Tanh(object self, double x) {
+        public static double Tanh(object self, [DefaultProtocol]double x) {
             return SM.Tanh(x);
         }
 

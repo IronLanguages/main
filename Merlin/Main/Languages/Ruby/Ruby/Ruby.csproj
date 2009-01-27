@@ -3,7 +3,7 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProductVersion>9.0.30718</ProductVersion>
+    <ProductVersion>9.0.30729</ProductVersion>
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>{7F6984B4-EE6D-4E6F-ABB1-E210D7DC4FDD}</ProjectGuid>
     <OutputType>Library</OutputType>
@@ -154,6 +154,7 @@
     <Compile Include="Runtime\Calls\ConvertToSAction.cs" />
     <Compile Include="Runtime\Calls\RubyLibraryMethodInfo.cs" />
     <Compile Include="Runtime\Calls\RubyMethodGroupBase.cs" />
+    <Compile Include="Runtime\CheckedMonitor.cs" />
     <Compile Include="Runtime\CustomTypeDescHelpers.cs" />
     <Compile Include="Compiler\Generation\OverriddenMembers.cs" />
     <Compile Include="Compiler\Generation\RubyTypeDispenser.cs" />

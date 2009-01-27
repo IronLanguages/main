@@ -460,9 +460,17 @@ namespace Microsoft.Scripting.Hosting {
         /// <summary>
         /// Returns a string which describes the object as it appears in source code
         /// </summary>
+        [Obsolete("Use Format method instead.")]
         public string GetCodeRepresentation(object obj) {
             return obj.ToString();
             //return _ops.DoOperation<object, string>(StandardOperators.CodeRepresentation, obj);
+        }
+
+        /// <summary>
+        /// Returns a string representation of the object in a language specific object display format.
+        /// </summary>
+        public string Format(object obj) {
+            return _ops.Format(obj);
         }
 
         /// <summary>
@@ -499,7 +507,7 @@ namespace Microsoft.Scripting.Hosting {
         /// <summary>
         /// Returns true if the remote object is callable.
         /// </summary>
-        public bool IsCallable(ObjectHandle obj) {
+        public bool IsCallable([NotNull]ObjectHandle obj) {
             return IsCallable(GetLocalObject(obj));
         }
 
@@ -508,7 +516,7 @@ namespace Microsoft.Scripting.Hosting {
         /// 
         /// Though delegates are preferable for calls they may not always be usable for remote objects.
         /// </summary>
-        public ObjectHandle Call(ObjectHandle obj, params ObjectHandle[] parameters) {
+        public ObjectHandle Call([NotNull]ObjectHandle obj, [NotNull]params ObjectHandle[] parameters) {
             ContractUtils.RequiresNotNull(parameters, "parameters");
 
             return new ObjectHandle(Call(GetLocalObject(obj), GetLocalObjects(parameters)));
@@ -518,22 +526,22 @@ namespace Microsoft.Scripting.Hosting {
         /// Calls the specified remote object with the local parameters which will be serialized
         /// to the remote app domain.
         /// </summary>
-        public ObjectHandle Call(ObjectHandle obj, params object[] parameters) {
+        public ObjectHandle Call([NotNull]ObjectHandle obj, params object[] parameters) {
             return new ObjectHandle(Call(GetLocalObject(obj), parameters));
         }
 
-        public ObjectHandle Create(ObjectHandle obj, params ObjectHandle[] parameters) {
+        public ObjectHandle Create([NotNull]ObjectHandle obj, [NotNull]params ObjectHandle[] parameters) {
             return new ObjectHandle(CreateInstance(GetLocalObject(obj), GetLocalObjects(parameters)));
         }
 
-        public ObjectHandle Create(ObjectHandle obj, params object[] parameters) {
+        public ObjectHandle Create([NotNull]ObjectHandle obj, params object[] parameters) {
             return new ObjectHandle(CreateInstance(GetLocalObject(obj), parameters));
         }
 
         /// <summary>
         /// Sets the remote object as a member on the provided remote object.
         /// </summary>
-        public void SetMember(ObjectHandle obj, string name, ObjectHandle value) {
+        public void SetMember([NotNull]ObjectHandle obj, string name, [NotNull]ObjectHandle value) {
             SetMember(GetLocalObject(obj), name, GetLocalObject(value));
         }
 
@@ -541,7 +549,7 @@ namespace Microsoft.Scripting.Hosting {
         /// Sets the member name on the remote object obj to value.  This overload can be used to avoid
         /// boxing and casting of strongly typed members.
         /// </summary>
-        public void SetMember<T>(ObjectHandle obj, string name, T value) {
+        public void SetMember<T>([NotNull]ObjectHandle obj, string name, T value) {
             SetMember<T>(GetLocalObject(obj), name, value);
         }
 
@@ -549,7 +557,7 @@ namespace Microsoft.Scripting.Hosting {
         /// Gets the member name on the remote object.  Throws an exception if the member is not defined or
         /// is write-only.
         /// </summary>
-        public ObjectHandle GetMember(ObjectHandle obj, string name) {
+        public ObjectHandle GetMember([NotNull]ObjectHandle obj, string name) {
             return new ObjectHandle(GetMember(GetLocalObject(obj), name));
         }
 
@@ -557,7 +565,7 @@ namespace Microsoft.Scripting.Hosting {
         /// Gets the member name on the remote object.  Throws an exception if the member is not defined or
         /// is write-only.
         /// </summary>
-        public T GetMember<T>(ObjectHandle obj, string name) {
+        public T GetMember<T>([NotNull]ObjectHandle obj, string name) {
             return GetMember<T>(GetLocalObject(obj), name);
         }
 
@@ -565,7 +573,7 @@ namespace Microsoft.Scripting.Hosting {
         /// Gets the member name on the remote object.  Returns false if the member is not defined or
         /// is write-only.
         /// </summary>
-        public bool TryGetMember(ObjectHandle obj, string name, out ObjectHandle value) {
+        public bool TryGetMember([NotNull]ObjectHandle obj, string name, out ObjectHandle value) {
             object val;
             if (TryGetMember(GetLocalObject(obj), name, out val)) {
                 value = new ObjectHandle(val);
@@ -579,14 +587,14 @@ namespace Microsoft.Scripting.Hosting {
         /// <summary>
         /// Tests to see if the member name is defined on the remote object.  
         /// </summary>
-        public bool ContainsMember(ObjectHandle obj, string name) {
+        public bool ContainsMember([NotNull]ObjectHandle obj, string name) {
             return ContainsMember(GetLocalObject(obj), name);
         }
 
         /// <summary>
         /// Removes the member from the remote object
         /// </summary>
-        public bool RemoveMember(ObjectHandle obj, string name) {
+        public bool RemoveMember([NotNull]ObjectHandle obj, string name) {
             return RemoveMember(GetLocalObject(obj), name);
         }
 
@@ -594,7 +602,7 @@ namespace Microsoft.Scripting.Hosting {
         /// Converts the remote object into the specified type returning a handle to
         /// the new remote object.
         /// </summary>
-        public ObjectHandle ConvertTo<T>(ObjectHandle obj) {
+        public ObjectHandle ConvertTo<T>([NotNull]ObjectHandle obj) {
             return new ObjectHandle(ConvertTo<T>(GetLocalObject(obj)));
         }
 
@@ -602,7 +610,7 @@ namespace Microsoft.Scripting.Hosting {
         /// Converts the remote object into the specified type returning a handle to
         /// the new remote object.
         /// </summary>
-        public ObjectHandle ConvertTo(ObjectHandle obj, Type type) {
+        public ObjectHandle ConvertTo([NotNull]ObjectHandle obj, Type type) {
             return new ObjectHandle(ConvertTo(GetLocalObject(obj), type));
         }
 
@@ -611,7 +619,7 @@ namespace Microsoft.Scripting.Hosting {
         /// the new remote object. Returns true if the value can be converted,
         /// false if it cannot.
         /// </summary>
-        public bool TryConvertTo<T>(ObjectHandle obj, out ObjectHandle result) {
+        public bool TryConvertTo<T>([NotNull]ObjectHandle obj, out ObjectHandle result) {
             T resultObj;
             if (TryConvertTo<T>(GetLocalObject(obj), out resultObj)) {
                 result = new ObjectHandle(resultObj);
@@ -626,7 +634,7 @@ namespace Microsoft.Scripting.Hosting {
         /// the new remote object. Returns true if the value can be converted,
         /// false if it cannot.
         /// </summary>
-        public bool TryConvertTo(ObjectHandle obj, Type type, out ObjectHandle result) {
+        public bool TryConvertTo([NotNull]ObjectHandle obj, Type type, out ObjectHandle result) {
             object resultObj;
             if (TryConvertTo(GetLocalObject(obj), type, out resultObj)) {
                 result = new ObjectHandle(resultObj);
@@ -639,14 +647,14 @@ namespace Microsoft.Scripting.Hosting {
         /// <summary>
         /// Converts the object obj to the type T including explicit conversions which may lose information.
         /// </summary>
-        public ObjectHandle ExplicitConvertTo<T>(ObjectHandle obj) {
+        public ObjectHandle ExplicitConvertTo<T>([NotNull]ObjectHandle obj) {
             return new ObjectHandle(_ops.ExplicitConvertTo<T>(GetLocalObject(obj)));
         }
 
         /// <summary>
         /// Converts the object obj to the type type including explicit conversions which may lose information.
         /// </summary>
-        public ObjectHandle ExplicitConvertTo(ObjectHandle obj, Type type) {
+        public ObjectHandle ExplicitConvertTo([NotNull]ObjectHandle obj, Type type) {
             ContractUtils.RequiresNotNull(type, "type");
 
             return new ObjectHandle(_ops.ExplicitConvertTo(GetLocalObject(obj), type));
@@ -657,7 +665,7 @@ namespace Microsoft.Scripting.Hosting {
         /// 
         /// Returns true if the value can be converted, false if it cannot.
         /// </summary>
-        public bool TryExplicitConvertTo<T>(ObjectHandle obj, out ObjectHandle result) {
+        public bool TryExplicitConvertTo<T>([NotNull]ObjectHandle obj, out ObjectHandle result) {
             T outp;
             bool res = _ops.TryExplicitConvertTo<T>(GetLocalObject(obj), out outp);
             if (res) {
@@ -673,7 +681,7 @@ namespace Microsoft.Scripting.Hosting {
         /// 
         /// Returns true if the value can be converted, false if it cannot.
         /// </summary>
-        public bool TryExplicitConvertTo(ObjectHandle obj, Type type, out ObjectHandle result) {
+        public bool TryExplicitConvertTo([NotNull]ObjectHandle obj, Type type, out ObjectHandle result) {
             object outp;
             bool res = _ops.TryExplicitConvertTo(GetLocalObject(obj), type, out outp);
             if (res) {
@@ -688,175 +696,175 @@ namespace Microsoft.Scripting.Hosting {
         /// Unwraps the remote object and converts it into the specified type before
         /// returning it.
         /// </summary>
-        public T Unwrap<T>(ObjectHandle obj) {
+        public T Unwrap<T>([NotNull]ObjectHandle obj) {
             return ConvertTo<T>(GetLocalObject(obj));
         }
 
         /// <summary>
         /// Performs the specified unary operator on the remote object.
         /// </summary>
-        public object DoOperation(Operators op, ObjectHandle target) {
+        public object DoOperation(Operators op, [NotNull]ObjectHandle target) {
             return DoOperation(op, GetLocalObject(target));
         }
 
         /// <summary>
         /// Performs the specified binary operator on the remote object.
         /// </summary>
-        public ObjectHandle DoOperation(Operators op, ObjectHandle target, ObjectHandle other) {
+        public ObjectHandle DoOperation(Operators op, [NotNull]ObjectHandle target, [NotNull]ObjectHandle other) {
             return new ObjectHandle(DoOperation(op, GetLocalObject(target), GetLocalObject(other)));
         }
 
         /// <summary>
         /// Adds the two remote objects.  Throws an exception if the operation cannot be performed.
         /// </summary>
-        public ObjectHandle Add(ObjectHandle self, ObjectHandle other) {
+        public ObjectHandle Add([NotNull]ObjectHandle self, [NotNull]ObjectHandle other) {
             return new ObjectHandle(Add(GetLocalObject(self), GetLocalObject(other)));
         }
 
         /// <summary>
         /// Subtracts the 1st remote object from the second.  Throws an exception if the operation cannot be performed.
         /// </summary>
-        public ObjectHandle Subtract(ObjectHandle self, ObjectHandle other) {
+        public ObjectHandle Subtract([NotNull]ObjectHandle self, [NotNull]ObjectHandle other) {
             return new ObjectHandle(Subtract(GetLocalObject(self), GetLocalObject(other)));
         }
 
         /// <summary>
         /// Raises the 1st remote object to the power of the 2nd.  Throws an exception if the operation cannot be performed.
         /// </summary>
-        public ObjectHandle Power(ObjectHandle self, ObjectHandle other) {
+        public ObjectHandle Power([NotNull]ObjectHandle self, [NotNull]ObjectHandle other) {
             return new ObjectHandle(Power(GetLocalObject(self), GetLocalObject(other)));
         }
 
         /// <summary>
         /// Multiplies the two remote objects.  Throws an exception if the operation cannot be performed.
         /// </summary>
-        public ObjectHandle Multiply(ObjectHandle self, ObjectHandle other) {
+        public ObjectHandle Multiply([NotNull]ObjectHandle self, [NotNull]ObjectHandle other) {
             return new ObjectHandle(Multiply(GetLocalObject(self), GetLocalObject(other)));
         }
 
         /// <summary>
         /// Divides the 1st remote object by the 2nd. Throws an exception if the operation cannot be performed.
         /// </summary>
-        public ObjectHandle Divide(ObjectHandle self, ObjectHandle other) {
+        public ObjectHandle Divide([NotNull]ObjectHandle self, [NotNull]ObjectHandle other) {
             return new ObjectHandle(Divide(GetLocalObject(self), GetLocalObject(other)));
         }
 
         /// <summary>
         /// Performs modulus on the 1st remote object by the 2nd.  Throws an exception if the operation cannot be performed.
         /// </summary>
-        public ObjectHandle Modulus(ObjectHandle self, ObjectHandle other) {
+        public ObjectHandle Modulus([NotNull]ObjectHandle self, [NotNull]ObjectHandle other) {
             return new ObjectHandle(Modulus(GetLocalObject(self), GetLocalObject(other)));
         }
 
         /// <summary>
         /// Shifts the 1st remote object left by the 2nd remote object.  Throws an exception if the operation cannot be performed.
         /// </summary>
-        public ObjectHandle LeftShift(ObjectHandle self, ObjectHandle other) {
+        public ObjectHandle LeftShift([NotNull]ObjectHandle self, [NotNull]ObjectHandle other) {
             return new ObjectHandle(LeftShift(GetLocalObject(self), GetLocalObject(other)));
         }
 
         /// <summary>
         /// Shifts the 1st remote  object right by the 2nd remote object.  Throws an exception if the operation cannot be performed.
         /// </summary>
-        public ObjectHandle RightShift(ObjectHandle self, ObjectHandle other) {
+        public ObjectHandle RightShift([NotNull]ObjectHandle self, [NotNull]ObjectHandle other) {
             return new ObjectHandle(RightShift(GetLocalObject(self), GetLocalObject(other)));
         }
 
         /// <summary>
         /// Performs bitwise-and on the two remote objects.  Throws an exception if the operation cannot be performed.
         /// </summary>
-        public ObjectHandle BitwiseAnd(ObjectHandle self, ObjectHandle other) {
+        public ObjectHandle BitwiseAnd([NotNull]ObjectHandle self, [NotNull]ObjectHandle other) {
             return new ObjectHandle(BitwiseAnd(GetLocalObject(self), GetLocalObject(other)));
         }
 
         /// <summary>
         /// Performs bitwise-or on the two remote objects.  Throws an exception if the operation cannot be performed.
         /// </summary>
-        public ObjectHandle BitwiseOr(ObjectHandle self, ObjectHandle other) {
+        public ObjectHandle BitwiseOr([NotNull]ObjectHandle self, [NotNull]ObjectHandle other) {
             return new ObjectHandle(BitwiseOr(GetLocalObject(self), GetLocalObject(other)));
         }
 
         /// <summary>
         /// Performs exclusive-or on the two remote objects.  Throws an exception if the operation cannot be performed.
         /// </summary>
-        public ObjectHandle ExclusiveOr(ObjectHandle self, ObjectHandle other) {
+        public ObjectHandle ExclusiveOr([NotNull]ObjectHandle self, [NotNull]ObjectHandle other) {
             return new ObjectHandle(ExclusiveOr(GetLocalObject(self), GetLocalObject(other)));
         }
 
         /// <summary>
         /// Compares the two remote objects and returns true if the 1st is less than the 2nd.  Throws an exception if the operation cannot be performed.
         /// </summary>
-        public bool LessThan(ObjectHandle self, ObjectHandle other) {
+        public bool LessThan([NotNull]ObjectHandle self, [NotNull]ObjectHandle other) {
             return LessThan(GetLocalObject(self), GetLocalObject(other));
         }
 
         /// <summary>
         /// Compares the two remote objects and returns true if the 1st is greater than the 2nd.  Throws an exception if the operation cannot be performed.
         /// </summary>
-        public bool GreaterThan(ObjectHandle self, ObjectHandle other) {
+        public bool GreaterThan([NotNull]ObjectHandle self, [NotNull]ObjectHandle other) {
             return GreaterThan(GetLocalObject(self), GetLocalObject(other));
         }
 
         /// <summary>
         /// Compares the two remote objects and returns true if the 1st is less than or equal to the 2nd.  Throws an exception if the operation cannot be performed.
         /// </summary>
-        public bool LessThanOrEqual(ObjectHandle self, ObjectHandle other) {
+        public bool LessThanOrEqual([NotNull]ObjectHandle self, [NotNull]ObjectHandle other) {
             return LessThanOrEqual(GetLocalObject(self), GetLocalObject(other));
         }
 
         /// <summary>
         /// Compares the two remote objects and returns true if the 1st is greater than or equal to than the 2nd.  Throws an exception if the operation cannot be performed.
         /// </summary>
-        public bool GreaterThanOrEqual(ObjectHandle self, ObjectHandle other) {
+        public bool GreaterThanOrEqual([NotNull]ObjectHandle self, [NotNull]ObjectHandle other) {
             return GreaterThanOrEqual(GetLocalObject(self), GetLocalObject(other));
         }
 
         /// <summary>
         /// Compares the two remote objects and returns true if the 1st is equal to the 2nd.  Throws an exception if the operation cannot be performed.
         /// </summary>
-        public bool Equal(ObjectHandle self, ObjectHandle other) {
+        public bool Equal([NotNull]ObjectHandle self, [NotNull]ObjectHandle other) {
             return Equal(GetLocalObject(self), GetLocalObject(other));
         }
 
         /// <summary>
         /// Compares the two remote objects and returns true if the 1st is not equal to the 2nd.  Throws an exception if the operation cannot be performed.
         /// </summary>
-        public bool NotEqual(ObjectHandle self, ObjectHandle other) {
+        public bool NotEqual([NotNull]ObjectHandle self, [NotNull]ObjectHandle other) {
             return NotEqual(GetLocalObject(self), GetLocalObject(other));
         }
 
         /// <summary>
-        /// Returns a string which describes the remote object as it appears in source code
+        /// Returns a string representation of the object in a langauge specific object display format.
         /// </summary>
-        public string GetCodeRepresentation(ObjectHandle obj) {
-            return GetCodeRepresentation(GetLocalObject(obj));
+        public string Format([NotNull]ObjectHandle obj) {
+            return Format(GetLocalObject(obj));
         }
 
         /// <summary>
         /// Returns a list of strings which contain the known members of the remote object.
         /// </summary>
-        public IList<string> GetMemberNames(ObjectHandle obj) {
+        public IList<string> GetMemberNames([NotNull]ObjectHandle obj) {
             return GetMemberNames(GetLocalObject(obj));
         }
 
         /// <summary>
         /// Returns a string providing documentation for the specified remote object.
         /// </summary>
-        public string GetDocumentation(ObjectHandle obj) {
+        public string GetDocumentation([NotNull]ObjectHandle obj) {
             return GetDocumentation(GetLocalObject(obj));
         }
 
         /// <summary>
         /// Returns a list of signatures applicable for calling the specified object in a form displayable to the user.
         /// </summary>
-        public IList<string> GetCallSignatures(ObjectHandle obj) {
+        public IList<string> GetCallSignatures([NotNull]ObjectHandle obj) {
             return GetCallSignatures(GetLocalObject(obj));
         }
 
         /// <summary>
         /// Helper to unwrap an object - in the future maybe we should validate the current app domain.
         /// </summary>
-        private static object GetLocalObject(ObjectHandle obj) {
+        private static object GetLocalObject([NotNull]ObjectHandle obj) {
             ContractUtils.RequiresNotNull(obj, "obj");
 
             return obj.Unwrap();

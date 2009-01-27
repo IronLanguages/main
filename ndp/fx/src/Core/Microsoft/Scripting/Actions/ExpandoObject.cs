@@ -44,7 +44,7 @@ namespace System.Dynamic {
         /// class has changed a full lookup for the slot will be performed and the correct
         /// value will be retrieved.
         /// </summary>
-        internal object GetValue(ExpandoClass klass, int index, bool caseInsensitive) {
+        internal object GetValue(ExpandoClass klass, int index, bool caseInsensitive, string name) {
             Debug.Assert(index != -1);
 
             // read the data now.  The data is immutable so we get a consistent view.
@@ -52,10 +52,17 @@ namespace System.Dynamic {
             // that we won the race
             ExpandoData data = _data;
             object res = Uninitialized;
-            if (data.Class != klass) {
-                // the class has changed, we need to get the correct index and return
-                // the value there.
-                index = data.Class.GetValueIndex(klass.GetIndexName(index), caseInsensitive);
+            if (data.Class != klass || caseInsensitive) {
+                /* Re-search for the index matching the name here if
+                 *  1) the class has changed, we need to get the correct index and return
+                 *  the value there.
+                 *  2) the search is case insensitive:
+                 *      a. the member specified by index may be deleted, but there might be other
+                 *      members matching the name if the binder is case insensitive.
+                 *      b. the member that exactly matches the name didn't exist before and exists now,
+                 *      need to find the exact match.
+                 */
+                index = data.Class.GetValueIndex(name, caseInsensitive, this);
             }
 
             // index is now known to be correct
@@ -71,9 +78,10 @@ namespace System.Dynamic {
         /// <summary>
         /// Sets the data for the specified class at the specified index.  If the class has
         /// changed then a full look for the slot will be performed.  If the new class does
-        /// not have the provided slot then the Expando's class will change.
+        /// not have the provided slot then the Expando's class will change. Only case sensitive
+        /// setter is supported in ExpandoObject.
         /// </summary>
-        internal void SetValue(ExpandoClass klass, int index, bool caseInsensitive, object value) {
+        internal void SetValue(ExpandoClass klass, int index, object value) {
             Debug.Assert(index != -1);
 
             lock (this) {
@@ -85,12 +93,12 @@ namespace System.Dynamic {
                     // promote the class - that should only happen when we have multiple
                     // concurrent writers.
                     string name = klass.GetIndexName(index);
-                    index = data.Class.GetValueIndex(name, caseInsensitive);
+                    index = data.Class.GetValueIndexCaseSensitive(name);
                     if (index == -1) {
-                        ExpandoClass newClass = data.Class.FindNewClass(name, caseInsensitive);
+                        ExpandoClass newClass = data.Class.FindNewClass(name);
 
                         data = PromoteClassWorker(data.Class, newClass);
-                        index = data.Class.GetValueIndex(name, caseInsensitive);
+                        index = data.Class.GetValueIndexCaseSensitive(name);
 
                         Debug.Assert(index != -1);
                     }
@@ -103,7 +111,7 @@ namespace System.Dynamic {
         /// <summary>
         /// Deletes the data stored for the specified class at the specified index.
         /// </summary>
-        internal bool DeleteValue(ExpandoClass klass, int index, bool caseInsensitive) {
+        internal bool DeleteValue(ExpandoClass klass, int index) {
             Debug.Assert(index != -1);
 
             lock (this) {
@@ -113,7 +121,7 @@ namespace System.Dynamic {
                     // the class has changed, we need to get the correct index.  If there is
                     // no associated index we simply can't have the value and we return
                     // false.
-                    index = data.Class.GetValueIndex(klass.GetIndexName(index), caseInsensitive);
+                    index = data.Class.GetValueIndexCaseSensitive(klass.GetIndexName(index));
                     if (index == -1) {
                         return false;
                     }
@@ -124,6 +132,22 @@ namespace System.Dynamic {
 
                 return curValue != Uninitialized;
             }
+        }
+
+        /// <summary>
+        /// Returns true if the member at the specified index has been deleted,
+        /// otherwise false.
+        /// </summary>
+        internal bool IsDeletedMember(int index) {
+            ExpandoData data = _data;
+            Debug.Assert(index >= 0 && index <= data.Data.Length);
+
+            if (index == data.Data.Length) {
+                //the member is a newly added by SetMemberBinder and not in data yet
+                return false;
+            }
+
+            return _data.Data[index] == ExpandoObject.Uninitialized;
         }
 
         /// <summary>
@@ -182,7 +206,7 @@ namespace System.Dynamic {
             private DynamicMetaObject GetDynamicMetaObjectForMember(string name, bool ignoreCase, DynamicMetaObjectBinder binder) {
                 ExpandoClass klass = Value.Class;
 
-                int index = klass.GetValueIndex(name, ignoreCase);
+                int index = klass.GetValueIndex(name, ignoreCase, Value);
                 string methodName = ignoreCase ? "ExpandoGetValueIgnoreCase" : "ExpandoGetValue";
 
                 Expression target;
@@ -202,7 +226,8 @@ namespace System.Dynamic {
                         typeof(RuntimeOps).GetMethod(methodName),
                         GetLimitedSelf(),
                         Expression.Constant(klass),
-                        Expression.Constant(index)
+                        Expression.Constant(index),
+                        Expression.Constant(name)
                     );
                 }
 
@@ -255,10 +280,9 @@ namespace System.Dynamic {
                 ExpandoClass klass;
                 int index;
 
-                ExpandoClass originalClass = GetClassEnsureIndex(binder.Name, binder.IgnoreCase, out klass, out index);
+                ExpandoClass originalClass = GetClassEnsureIndex(binder.Name, out klass, out index);
 
-                string methodName = binder.IgnoreCase ? "ExpandoSetValueIgnoreCase" : "ExpandoSetValue";
-
+                //SetMember is always case sensitive
                 return new DynamicMetaObject(
                     AddDynamicTestAndDefer(
                         binder,
@@ -267,7 +291,7 @@ namespace System.Dynamic {
                         originalClass,
                         Helpers.Convert(
                             Expression.Call(
-                                typeof(RuntimeOps).GetMethod(methodName),
+                                typeof(RuntimeOps).GetMethod("ExpandoSetValue"),
                                 GetLimitedSelf(),
                                 Expression.Constant(klass),
                                 Expression.Constant(index),
@@ -289,19 +313,18 @@ namespace System.Dynamic {
                 ExpandoClass klass;
                 int index;
 
-                ExpandoClass originalClass = GetClassEnsureIndex(binder.Name, binder.IgnoreCase, out klass, out index);
+                ExpandoClass originalClass = GetClassEnsureIndex(binder.Name, out klass, out index);
 
-                string methodName = binder.IgnoreCase ? "ExpandoDeleteValueIgnoreCase" : "ExpandoDeleteValue";
-
+                //DeleteMember is always case sensitive
                 return new DynamicMetaObject(
                     AddDynamicTestAndDefer(
-                        binder, 
-                        new DynamicMetaObject[] { this }, 
-                        klass, 
+                        binder,
+                        new DynamicMetaObject[] { this },
+                        klass,
                         originalClass,
                         Helpers.Convert(
                             Expression.Call(
-                                typeof(RuntimeOps).GetMethod(methodName),
+                                typeof(RuntimeOps).GetMethod("ExpandoDeleteValue"),
                                 GetLimitedSelf(),
                                 Expression.Constant(klass),
                                 Expression.Constant(index)
@@ -380,16 +403,16 @@ namespace System.Dynamic {
             /// this returns both the original and desired new class.  A rule is created which includes the test for the
             /// original class, the promotion to the new class, and the set/delete based on the class post-promotion.
             /// </summary>
-            private ExpandoClass GetClassEnsureIndex(string name, bool ignoreCase, out ExpandoClass klass, out int index) {
+            private ExpandoClass GetClassEnsureIndex(string name, out ExpandoClass klass, out int index) {
                 ExpandoClass originalClass = Value.Class;
 
-                index = originalClass.GetValueIndex(name, ignoreCase);
+                index = originalClass.GetValueIndexCaseSensitive(name);
                 if (index == -1) {
                     // go ahead and find a new class now...
-                    ExpandoClass newClass = originalClass.FindNewClass(name, ignoreCase);
+                    ExpandoClass newClass = originalClass.FindNewClass(name);
 
                     klass = newClass;
-                    index = newClass.GetValueIndex(name, ignoreCase);
+                    index = newClass.GetValueIndexCaseSensitive(name);
 
                     Debug.Assert(index != -1);
                     return originalClass;
@@ -479,11 +502,12 @@ namespace System.Runtime.CompilerServices {
         /// <param name="expando">The expando object.</param>
         /// <param name="indexClass">The class of the expando object.</param>
         /// <param name="index">The index of the member.</param>
+        /// <param name="name">The name of the member.</param>
         /// <returns>The value of the member.</returns>
         [Obsolete("used by generated code", true)]
-        public static object ExpandoGetValue(ExpandoObject expando, object indexClass, int index) {
+        public static object ExpandoGetValue(ExpandoObject expando, object indexClass, int index, string name) {
             ContractUtils.RequiresNotNull(expando, "expando");
-            return expando.GetValue((ExpandoClass)indexClass, index, false);
+            return expando.GetValue((ExpandoClass)indexClass, index, false, name);
         }
 
         /// <summary>
@@ -492,11 +516,12 @@ namespace System.Runtime.CompilerServices {
         /// <param name="expando">The expando object.</param>
         /// <param name="indexClass">The class of the expando object.</param>
         /// <param name="index">The index of the member.</param>
+        /// <param name="name">The name of the member.</param>
         /// <returns>The value of the member.</returns>
         [Obsolete("used by generated code", true)]
-        public static object ExpandoGetValueIgnoreCase(ExpandoObject expando, object indexClass, int index) {
+        public static object ExpandoGetValueIgnoreCase(ExpandoObject expando, object indexClass, int index, string name) {
             ContractUtils.RequiresNotNull(expando, "expando");
-            return expando.GetValue((ExpandoClass)indexClass, index, true);
+            return expando.GetValue((ExpandoClass)indexClass, index, true, name);
         }
 
         /// <summary>
@@ -509,20 +534,7 @@ namespace System.Runtime.CompilerServices {
         [Obsolete("used by generated code", true)]
         public static void ExpandoSetValue(ExpandoObject expando, object indexClass, int index, object value) {
             ContractUtils.RequiresNotNull(expando, "expando");
-            expando.SetValue((ExpandoClass)indexClass, index, false, value);
-        }
-
-        /// <summary>
-        /// Sets the value of an item in an expando object, ignoring the case of the member name.
-        /// </summary>
-        /// <param name="expando">The expando object.</param>
-        /// <param name="indexClass">The class of the expando object.</param>
-        /// <param name="index">The index of the member.</param>
-        /// <param name="value">The value of the member.</param>
-        [Obsolete("used by generated code", true)]
-        public static void ExpandoSetValueIgnoreCase(ExpandoObject expando, object indexClass, int index, object value) {
-            ContractUtils.RequiresNotNull(expando, "expando");
-            expando.SetValue((ExpandoClass)indexClass, index, true, value);
+            expando.SetValue((ExpandoClass)indexClass, index, value);
         }
 
         /// <summary>
@@ -535,20 +547,7 @@ namespace System.Runtime.CompilerServices {
         [Obsolete("used by generated code", true)]
         public static bool ExpandoDeleteValue(ExpandoObject expando, object indexClass, int index) {
             ContractUtils.RequiresNotNull(expando, "expando");
-            return expando.DeleteValue((ExpandoClass)indexClass, index, false);
-        }
-
-        /// <summary>
-        /// Deletes the value of an item in an expando object, ignoring the case of the member name.
-        /// </summary>
-        /// <param name="expando">The expando object.</param>
-        /// <param name="indexClass">The class of the expando object.</param>
-        /// <param name="index">The index of the member.</param>
-        /// <returns>true if the item was successfully removed; otherwise, false.</returns>
-        [Obsolete("used by generated code", true)]
-        public static bool ExpandoDeleteValueIgnoreCase(ExpandoObject expando, object indexClass, int index) {
-            ContractUtils.RequiresNotNull(expando, "expando");
-            return expando.DeleteValue((ExpandoClass)indexClass, index, true);
+            return expando.DeleteValue((ExpandoClass)indexClass, index);
         }
 
         /// <summary>

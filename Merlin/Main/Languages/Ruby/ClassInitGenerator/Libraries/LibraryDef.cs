@@ -187,10 +187,11 @@ internal class LibraryDef {
         }
 
         public bool HasInstanceInitializer {
-            get {
-                return InstanceMethods.Count > 0 || HiddenInstanceMethods.Count > 0 || HasCopyInclusions || IsPrimitive ||
-                    Constants.Count > 0;
-            }
+            get { return InstanceMethods.Count > 0 || HiddenInstanceMethods.Count > 0 || HasCopyInclusions || IsPrimitive; }
+        }
+
+        public bool HasConstantsInitializer {
+            get { return Constants.Count > 0 /* TODO: || HasCopyInclusions */; }
         }
 
         public bool HasClassInitializer {
@@ -222,6 +223,13 @@ internal class LibraryDef {
 
         public override string/*!*/ ToString() {
             return QualifiedName;
+        }
+
+        internal string/*!*/ GetInitializerDelegates() {
+            return
+                (HasInstanceInitializer ? "Load" + Id + "_Instance" : "null") + ", " +
+                (HasClassInitializer ? "Load" + Id + "_Class" : "null") + ", " +
+                (HasConstantsInitializer ? "Load" + Id + "_Constants" : "null");
         }
     }
 
@@ -775,19 +783,14 @@ internal class LibraryDef {
             _output.WriteLine("Context.RegisterPrimitives(");
             _output.Indent++;
 
-            _output.WriteLine("new {0}(Load{1}_Instance),", TypeActionOfRubyModule, RubyClass.ClassSingletonName);
-            _output.WriteLine("new {0}(Load{1}_Instance),", TypeActionOfRubyModule, RubyClass.ClassSingletonSingletonName);
-            _output.WriteLine("new {0}(Load{1}_Instance),", TypeActionOfRubyModule, RubyClass.MainSingletonName);
+            _output.WriteLine("Load{0}_Instance,", RubyClass.ClassSingletonName);
+            _output.WriteLine("Load{0}_Instance,", RubyClass.ClassSingletonSingletonName);
+            _output.WriteLine("Load{0}_Instance,", RubyClass.MainSingletonName);
 
-            _output.WriteLine("new {0}(LoadKernel_Instance),", TypeActionOfRubyModule);
-            _output.WriteLine("new {0}(LoadObject_Instance),", TypeActionOfRubyModule);
-            _output.WriteLine("new {0}(LoadModule_Instance),", TypeActionOfRubyModule);
-            _output.WriteLine("new {0}(LoadClass_Instance),", TypeActionOfRubyModule);
-
-            _output.WriteLine("new {0}(LoadKernel_Class),", TypeActionOfRubyModule);
-            _output.WriteLine("new {0}(LoadObject_Class),", TypeActionOfRubyModule);
-            _output.WriteLine("new {0}(LoadModule_Class),", TypeActionOfRubyModule);
-            _output.WriteLine("new {0}(LoadClass_Class)", TypeActionOfRubyModule);
+            _output.WriteLine(_moduleDefs[typeof(Kernel)].GetInitializerDelegates() + ",");
+            _output.WriteLine(_moduleDefs[typeof(Object)].GetInitializerDelegates() + ",");
+            _output.WriteLine(_moduleDefs[typeof(RubyModule)].GetInitializerDelegates() + ",");
+            _output.WriteLine(_moduleDefs[typeof(RubyClass)].GetInitializerDelegates());
 
             _output.Indent--;
             _output.WriteLine(");");
@@ -889,33 +892,26 @@ internal class LibraryDef {
 #endif
 
                 if (def.IsExtension) {
-                    _output.Write("ExtendClass(typeof({0}), {1}, {2}, ",
-                        TypeName(def.Extends),
-                        (def.HasInstanceInitializer) ? String.Format("new {0}(Load{1}_Instance)", TypeActionOfRubyModule, def.Id) : "null",
-                        (def.HasClassInitializer) ? String.Format("new {0}(Load{1}_Class)", TypeActionOfRubyModule, def.Id) : "null"
-                    );
+                    _output.Write("ExtendClass(typeof({0}), {1}, ", TypeName(def.Extends), def.GetInitializerDelegates());
                 } else {
-                    _output.Write("Define{0}Class(\"{1}\", typeof({2}), {3}, {4}, {5}, {6}, ",
+                    _output.Write("Define{0}Class(\"{1}\", typeof({2}), {3}, {4}, {5}, ",
                         def.IsGlobal ? "Global" : "",
                         def.QualifiedName,
                         TypeName(def.Extends),
                         def.Extends == def.Trait ? "true" : "false", 
                         def.Super.RefName,
-                        (def.HasInstanceInitializer) ? String.Format("new {0}(Load{1}_Instance)", TypeActionOfRubyModule, def.Id) : "null",
-                        (def.HasClassInitializer) ? String.Format("new {0}(Load{1}_Class)", TypeActionOfRubyModule, def.Id) : "null"
+                        def.GetInitializerDelegates()
                     );
                 }
 
-                GenerateInclusions(def);
-
-                _output.Write(", ");
+                GenerateInclusions(def, true);
 
                 if (def.Factories.Count > 0) {
-                    GenerateDelegatesArrayCreation(def.Factories);
+                    _output.WriteLine(", ");
+                    GenerateDelegatesListCreation(def.Factories);
                 } else if (def.IsException) {
-                    GenerateExceptionFactoryDelegateArray(def);
-                } else {
-                    _output.Write("null");
+                    _output.WriteLine(", ");
+                    GenerateExceptionFactoryDelegateList(def);
                 }
 
                 _output.WriteLine(");");
@@ -927,23 +923,18 @@ internal class LibraryDef {
                 }
 
                 if (def.IsExtension) {
-                    _output.Write("ExtendModule(typeof({0}), {1}, {2}, ",
-                        TypeName(def.Extends),
-                        (def.HasInstanceInitializer) ? String.Format("new {0}(Load{1}_Instance)", TypeActionOfRubyModule, def.Id) : "null",
-                        (def.HasClassInitializer) ? String.Format("new {0}(Load{1}_Class)", TypeActionOfRubyModule, def.Id) : "null"
-                    );
+                    _output.Write("ExtendModule(typeof({0}), {1}, ", TypeName(def.Extends), def.GetInitializerDelegates());
                 } else {
-                    _output.Write("Define{0}Module(\"{1}\", typeof({2}), {3}, {4}, {5}, ",
+                    _output.Write("Define{0}Module(\"{1}\", typeof({2}), {3}, {4}, ",
                         def.IsGlobal ? "Global" : "",
                         def.QualifiedName,
                         TypeName(def.Extends),
                         def.Extends == def.Trait ? "true" : "false",
-                        (def.HasInstanceInitializer) ? String.Format("new {0}(Load{1}_Instance)", TypeActionOfRubyModule, def.Id) : "null",
-                        (def.HasClassInitializer) ? String.Format("new {0}(Load{1}_Class)", TypeActionOfRubyModule, def.Id) : "null"
+                        def.GetInitializerDelegates()
                     );
                 }
 
-                GenerateInclusions(def);
+                GenerateInclusions(def, false);
 
                 _output.WriteLine(");");
                 break;
@@ -953,12 +944,9 @@ internal class LibraryDef {
                     _output.Write("object {0} = ", def.Definition);
                 }
 
-                _output.Write("DefineSingleton({0}, {1}, ",
-                    (def.HasInstanceInitializer) ? String.Format("new {0}(Load{1}_Instance)", TypeActionOfRubyModule, def.Id) : "null",
-                    (def.HasClassInitializer) ? String.Format("new {0}(Load{1}_Class)", TypeActionOfRubyModule, def.Id) : "null"
-                );
+                _output.Write("DefineSingleton({0}, ", def.GetInitializerDelegates());
 
-                GenerateInclusions(def);
+                GenerateInclusions(def, false);
 
                 _output.WriteLine(");");
                 break;
@@ -972,16 +960,26 @@ internal class LibraryDef {
         }
     }
 
-    private void GenerateInclusions(ModuleDef/*!*/ def) {
+    private void GenerateInclusions(ModuleDef/*!*/ def, bool makeArray) {
         List<string> mixinRefs = new List<string>();
         AddMixinRefsRecursive(mixinRefs, def);
 
         if (mixinRefs.Count > 0) {
-            _output.Write("new {0}[] {{", TypeRubyModule);
-            foreach (string mixinRef in mixinRefs) {
-                _output.Write("{0}, ", mixinRef);
+            if (makeArray) {
+                _output.Write("new {0}[] {{", TypeRubyModule);
             }
-            _output.Write("}");
+            bool first = true;
+            foreach (string mixinRef in mixinRefs) {
+                if (first) {
+                    first = false;
+                } else {
+                    _output.Write(", ");
+                }
+                _output.Write(mixinRef);
+            }
+            if (makeArray) {
+                _output.Write("}");
+            }
         } else {
             _output.Write("{0}.EmptyArray", TypeRubyModule);
         }
@@ -1001,7 +999,7 @@ internal class LibraryDef {
         // Sort the items before we generate them to improve diff quality
         ModuleDef[] worklist = new ModuleDef[traitDefs.Count];
         traitDefs.Values.CopyTo(worklist, 0);
-        Array.Sort(worklist, delegate(ModuleDef x, ModuleDef y) { return x.QualifiedName.CompareTo(y.QualifiedName); });
+        Array.Sort(worklist, (x, y) => x.QualifiedName.CompareTo(y.QualifiedName));
 
         foreach (ModuleDef moduleDef in worklist) {
             GenerateTraitInitialization(moduleDef);
@@ -1009,6 +1007,7 @@ internal class LibraryDef {
     }
 
     private void GenerateTraitInitialization(ModuleDef/*!*/ moduleDef) {
+        GenerateConstantsInitialization(moduleDef);
         GenerateTraitInitialization(moduleDef, true);
         GenerateTraitInitialization(moduleDef, false);
     }
@@ -1018,16 +1017,32 @@ internal class LibraryDef {
             if (moduleDef.BuildConfig != null) {
                 _output.WriteLine("#if " + moduleDef.BuildConfig);
             }
-            _output.WriteLine("private void Load{0}_{2}({1}/*!*/ module) {{", moduleDef.Id, TypeRubyModule, isInstance ? "Instance" : "Class");
+            _output.WriteLine("private static void Load{0}_{2}({1}/*!*/ module) {{", moduleDef.Id, TypeRubyModule, isInstance ? "Instance" : "Class");
             _output.Indent++;
-
-            if (isInstance) {
-                GenerateConstants(moduleDef);
-            }
 
             GenerateIncludedTraitLoaders(moduleDef, isInstance);
             GenerateHiddenMethods(isInstance ? moduleDef.HiddenInstanceMethods : moduleDef.HiddenClassMethods);
             GenerateMethods(moduleDef.Trait, isInstance ? moduleDef.InstanceMethods : moduleDef.ClassMethods);
+
+            _output.Indent--;
+            _output.WriteLine("}");
+            if (moduleDef.BuildConfig != null) {
+                _output.WriteLine("#endif");
+            }
+            _output.WriteLine();
+        }
+    }
+
+    private void GenerateConstantsInitialization(ModuleDef/*!*/ moduleDef) {
+        if (moduleDef.HasConstantsInitializer) {
+            if (moduleDef.BuildConfig != null) {
+                _output.WriteLine("#if " + moduleDef.BuildConfig);
+            }
+            _output.WriteLine("private static void Load{0}_Constants({1}/*!*/ module) {{", moduleDef.Id, TypeRubyModule);
+            _output.Indent++;
+
+            // TODO: constants in copy-included traits
+            GenerateConstants(moduleDef);
 
             _output.Indent--;
             _output.WriteLine("}");
@@ -1073,7 +1088,10 @@ internal class LibraryDef {
     private void GenerateHiddenMethods(IDictionary<string, HiddenMethod>/*!*/ methods) {
         foreach (KeyValuePair<string, HiddenMethod> entry in methods) {
             if (entry.Value == HiddenMethod.Undefined) {
-                _output.WriteLine("module.UndefineLibraryMethod(\"{0}\");", entry.Key);
+                _output.WriteLine("module.{0}(\"{1}\");", 
+                    Builtins ? "UndefineMethodNoEvent" : "UndefineMethod",
+                    entry.Key
+                );
             } else {
                 _output.WriteLine("module.HideMethod(\"{0}\");", entry.Key);
             }
@@ -1095,9 +1113,9 @@ internal class LibraryDef {
             } else {
                 _output.Write("module.DefineLibraryMethod(\"{0}\", 0x{1:x}", def.Name, (int)def.Attributes);
 
-                _output.Write(", ");
+                _output.WriteLine(", ");
 
-                GenerateDelegatesArrayCreation(def.Overloads);
+                GenerateDelegatesListCreation(def.Overloads);
 
                 _output.WriteLine(");");
             }
@@ -1110,25 +1128,28 @@ internal class LibraryDef {
         }
     }
 
-    private void GenerateDelegatesArrayCreation(IEnumerable<MethodInfo>/*!*/ methods) {
-        _output.WriteLine("new {0}[] {{", TypeDelegate);
+    private void GenerateDelegatesListCreation(IEnumerable<MethodInfo>/*!*/ methods) {
         _output.Indent++;
 
+        bool first = true;
         foreach (MethodInfo method in methods) {
+            if (first) {
+                first = false;
+            } else {
+                _output.WriteLine(", ");
+            }
             GenerateDelegateCreation(method);
-            _output.WriteLine(",");
         }
 
+        _output.WriteLine();
         _output.Indent--;
-        _output.Write("}");
     }
 
     private const string ExceptionFactoryPrefix = "ExceptionFactory__";
 
-    private void GenerateExceptionFactoryDelegateArray(ModuleDef/*!*/ moduleDef) {
+    private void GenerateExceptionFactoryDelegateList(ModuleDef/*!*/ moduleDef) {
         Debug.Assert(moduleDef.IsException);
-        _output.Write("new {0}[] {{ new {1}{2}({3}.{4}{5}) }}",
-            TypeDelegate,
+        _output.Write("new {0}{1}({2}.{3}{4})",
             TypeFunction,
             ReflectionUtils.FormatTypeArgs(new StringBuilder(), new[] { typeof(RubyClass), typeof(object), typeof(Exception) }),
             _initializerName,
@@ -1179,7 +1200,7 @@ internal class LibraryDef {
 
     private void GenerateDelegateCreation(MethodInfo/*!*/ method) {
         ParameterInfo[] ps = method.GetParameters();
-        Type[] paramTypes = Array.ConvertAll<ParameterInfo, Type>(ps, delegate(ParameterInfo p) { return p.ParameterType; });
+        Type[] paramTypes = Array.ConvertAll(ps, (p) => p.ParameterType);
 
         string delegateType;
         if (method.ReturnType != typeof(void)) {

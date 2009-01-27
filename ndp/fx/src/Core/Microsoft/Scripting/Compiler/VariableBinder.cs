@@ -67,7 +67,7 @@ namespace System.Linq.Expressions.Compiler {
         }
 
         protected internal override Expression VisitLambda<T>(Expression<T> node) {
-            _scopes.Push(_tree.Scopes[node] = new CompilerScope(node));
+            _scopes.Push(_tree.Scopes[node] = new CompilerScope(node, true));
             _constants.Push(_tree.Constants[node] = new BoundConstants());
             Visit(MergeScopes(node));
             _constants.Pop();
@@ -75,12 +75,29 @@ namespace System.Linq.Expressions.Compiler {
             return node;
         }
 
+        protected internal override Expression VisitInvocation(InvocationExpression node) {
+            LambdaExpression lambda = node.LambdaOperand;
+
+            // optimization: inline code for literal lambda's directly
+            if (lambda != null) {
+                // visit the lambda, but treat it more like a scope
+                _scopes.Push(_tree.Scopes[lambda] = new CompilerScope(lambda, false));
+                Visit(MergeScopes(lambda));
+                _scopes.Pop();
+                // visit the invoke's arguments
+                Visit(node.Arguments);
+                return node;
+            }
+
+            return base.VisitInvocation(node);
+        }
+
         protected internal override Expression VisitBlock(BlockExpression node) {
             if (node.Variables.Count == 0) {
                 Visit(node.Expressions);
                 return node;
             }
-            _scopes.Push(_tree.Scopes[node] = new CompilerScope(node));
+            _scopes.Push(_tree.Scopes[node] = new CompilerScope(node, false));
             Visit(MergeScopes(node));
             _scopes.Pop();
             return node;
@@ -91,7 +108,7 @@ namespace System.Linq.Expressions.Compiler {
                 Visit(node.Body);
                 return node;
             }
-            _scopes.Push(_tree.Scopes[node] = new CompilerScope(node));
+            _scopes.Push(_tree.Scopes[node] = new CompilerScope(node, false));
             Visit(node.Body);
             _scopes.Pop();
             return node;
@@ -152,7 +169,7 @@ namespace System.Linq.Expressions.Compiler {
                 //      want to cache it immediately when we allocate the
                 //      closure slot for it
                 //
-                if (scope.IsLambda || scope.Definitions.ContainsKey(node)) {
+                if (scope.IsMethod || scope.Definitions.ContainsKey(node)) {
                     referenceScope = scope;
                     break;
                 }
@@ -183,7 +200,7 @@ namespace System.Linq.Expressions.Compiler {
                     break;
                 }
                 scope.NeedsClosure = true;
-                if (scope.IsLambda) {
+                if (scope.IsMethod) {
                     storage = VariableStorageKind.Hoisted;
                 }
             }
@@ -198,20 +215,15 @@ namespace System.Linq.Expressions.Compiler {
             }
         }
 
-        private CompilerScope LambdaScope {
+        private string CurrentLambdaName {
             get {
                 foreach (var scope in _scopes) {
-                    if (scope.IsLambda) {
-                        return scope;
+                    var lambda = scope.Node as LambdaExpression;
+                    if (lambda != null) {
+                        return lambda.Name;
                     }
                 }
                 throw ContractUtils.Unreachable;
-            }
-        }
-
-        private string CurrentLambdaName {
-            get {
-                return ((LambdaExpression)LambdaScope.Node).Name;
             }
         }
     }

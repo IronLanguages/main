@@ -54,15 +54,20 @@ namespace IronRuby.Builtins {
         private RubyGlobalScope _globalScope;
 
         // if this class is a struct represents its layout:
-        private RubyStruct.Info _structInfo;
+        private readonly RubyStruct.Info _structInfo;
 
         // whether initialize_copy can be called (the class has just been duplicated):
         private bool _isUninitializedCopy;
 
-        private Delegate[] _factories;
-        
+        // immutable:
+        private readonly Delegate/*!*/[]/*!*/ _factories;
+
         public RubyClass SuperClass {
             get { return _superClass; } 
+        }
+
+        internal override RubyClass GetSuperClass() {
+            return _superClass;
         }
 
         public override bool IsClass {
@@ -84,7 +89,6 @@ namespace IronRuby.Builtins {
 
         internal RubyStruct.Info StructInfo {
             get { return _structInfo; }
-            set { _structInfo = value; }
         }
 
         internal override RubyGlobalScope GlobalScope {
@@ -127,30 +131,24 @@ namespace IronRuby.Builtins {
             return _underlyingSystemType;
         }
 
-        private PropertyInfo/*!*/ UnderlyingSystemTypeProperty {
-            get { return typeof(RubyClass).GetProperty("UnderlyingSystemType"); }
-        }
-
-        public Delegate[] Factories {
-            get { return _factories; }
-            set { _factories = value; }
-        }
-
         // default allocator:
         public RubyClass(RubyClass/*!*/ rubyClass)
-            : this(rubyClass.Context, null, null, null, null, rubyClass.Context.ObjectClass, null, true, false) {
+            : this(rubyClass.Context, null, null, null, null, null, null, rubyClass.Context.ObjectClass, null, null, null, true, false) {
             
             // all modules need a singleton (see RubyContext.CreateModule):
-            rubyClass.Context.CreateDummySingletonClassFor(this, rubyClass, null);
+            InitializeDummySingletonClass(rubyClass, null);
         }
         
         // friend: RubyContext
         // tracker: non-null => show members declared on the tracker
-        internal RubyClass(RubyContext/*!*/ context, string name, Type type, object singletonClassOf, Action<RubyModule> initializer,
-            RubyClass superClass, TypeTracker tracker, bool isRubyClass, bool isSingletonClass)
-            : base(context, name, initializer, null, tracker) {
+        internal RubyClass(RubyContext/*!*/ context, string name, Type type, object singletonClassOf,
+            Action<RubyModule> methodsInitializer, Action<RubyModule> constantsInitializer, Delegate/*!*/[] factories, RubyClass superClass, 
+            RubyModule/*!*/[] expandedMixins, TypeTracker tracker, RubyStruct.Info structInfo, 
+            bool isRubyClass, bool isSingletonClass)
+            : base(context, name, methodsInitializer, constantsInitializer, expandedMixins, null, tracker) {
 
             Debug.Assert((superClass == null) == (type == typeof(object)), "All classes have a superclass, except for Object");
+            Debug.Assert(superClass != null || structInfo == null, "Object is not a struct");
             Debug.Assert(!isRubyClass || tracker == null, "Ruby class cannot have a tracker");
             Debug.Assert(singletonClassOf != null || !isSingletonClass, "Singleton classes don't have a type");
             Debug.Assert(superClass != this);
@@ -160,17 +158,10 @@ namespace IronRuby.Builtins {
             _isSingletonClass = isSingletonClass;
             _isRubyClass = isRubyClass;
             _singletonClassOf = singletonClassOf;
-            
-            if (superClass != null) {
-                superClass.AddDependentModule(this);
-                _structInfo = superClass._structInfo; 
-            }
-        }
+            _factories = factories ?? Utils.EmptyDelegates;
 
-        internal override void EnsureInitialized() {
-            base.EnsureInitialized();
-            if (_superClass != null) {
-                _superClass.EnsureInitialized();
+            if (superClass != null) {
+                _structInfo = structInfo ?? superClass._structInfo;
             }
         }
 
@@ -179,10 +170,11 @@ namespace IronRuby.Builtins {
                 throw RubyExceptions.CreateTypeError("can't copy singleton class");
             }
 
-            RubyClass result = Duplicate(null);
-
-            result._isUninitializedCopy = true;
-            return result; 
+            using (Context.ClassHierarchyLocker()) {
+                RubyClass result = Duplicate(null);
+                result._isUninitializedCopy = true;
+                return result;
+            }
         }
 
         public void InitializeClassCopy(RubyClass/*!*/ rubyClass) {
@@ -199,8 +191,11 @@ namespace IronRuby.Builtins {
 
         /// <summary>
         /// Duplicates this class object. When duplicating singleton class a new "singletonClassOf" reference needs to be provided.
+        /// NOT thread safe.
         /// </summary>
         internal RubyClass/*!*/ Duplicate(object singletonClassOf) {
+            Context.RequiresClassHierarchyLock();
+
             Type type;
             bool isRubyClass;
 
@@ -215,14 +210,9 @@ namespace IronRuby.Builtins {
                 type = null;
             }
 
-            RubyClass result = Context.CreateClass(Name, type, singletonClassOf, null, null,
-                _superClass ?? Context.ObjectClass, null, isRubyClass, IsSingletonClass
+            RubyClass result = Context.CreateClass(Name, type, singletonClassOf, null, null, null, _factories, 
+                _superClass ?? Context.ObjectClass, null, null, _structInfo, isRubyClass, IsSingletonClass
             );
-
-            result._structInfo = _structInfo; 
-
-            // copy factories so that the class can be instantiated:
-            result._factories = (_factories != null) ? ArrayUtils.Copy(_factories) : _factories;
 
             if (!IsSingletonClass) {
                 // singleton members are copied here, not in InitializeCopy:
@@ -239,12 +229,12 @@ namespace IronRuby.Builtins {
         // TODO: public due to partial trust
         // implements Class#new
         public static object CreateAnonymousClass(RubyScope/*!*/ scope, BlockParam body, RubyClass/*!*/ self, [Optional]RubyClass superClass) {
-            RubyContext ec = scope.RubyContext;
+            RubyContext context = scope.RubyContext;
             RubyModule owner = scope.GetInnerMostModule();
             
             // MRI is inconsistent here, it triggers "inherited" event after the body of the method is evaluated.
             // In all other cases the order is event first, body next.
-            RubyClass newClass = ec.DefineClass(owner, null, superClass ?? ec.ObjectClass);
+            RubyClass newClass = context.DefineClass(owner, null, superClass ?? context.ObjectClass, null);
             return (body != null) ? RubyUtils.EvaluateInModule(newClass, body, newClass) : newClass;
         }
 
@@ -252,16 +242,14 @@ namespace IronRuby.Builtins {
             return Name;
         }
 
-        protected override bool ForEachAncestor(Func<RubyModule, bool>/*!*/ action) {
+        internal override bool ForEachAncestor(Func<RubyModule, bool>/*!*/ action) {
+            Context.RequiresClassHierarchyLock();
+
             // walk up the class hierarchy:
             for (RubyClass c = this; c != null; c = c._superClass) {
                 if (c.ForEachDeclaredAncestor(action)) return true;
             }
             return false;
-        }
-
-        internal override bool IsSuperClassAncestor(RubyModule/*!*/ module) {
-            return _superClass != null && _superClass.HasAncestor(module);
         }
 
         public bool IsSubclassOf(RubyClass/*!*/ super) {
@@ -288,9 +276,9 @@ namespace IronRuby.Builtins {
             return result;
         }
 
-        public override RubyMemberInfo ResolveMethodFallbackToObject(string/*!*/ name, bool includeMethod) {
+        public override RubyMemberInfo ResolveMethodFallbackToObjectNoLock(string/*!*/ name, bool includeMethod) {
             // Note: all classes include Object in ancestors, so we don't need to search there.
-            return ResolveMethod(name, includeMethod);
+            return ResolveMethodNoLock(name, includeMethod);
         }
 
         #region CLR Member Lookup
@@ -484,14 +472,15 @@ namespace IronRuby.Builtins {
             Debug.Assert(!IsSingletonClass, "Cannot instantiate singletons");
 
             Type type = GetUnderlyingSystemType();
-            
-            RubyMemberInfo initializer = ResolveMethod(Symbols.Initialize, true).InvalidateSitesOnOverride();
-            RubyMethodInfo overriddenInitializer = initializer as RubyMethodInfo;
 
-            // check the version of this class to ensure the initializer won't be changed without rebuilding the site:
-            metaBuilder.AddCondition(
-                Ast.Equal(Ast.Property(Ast.Constant(this), RubyModule.VersionProperty), Ast.Constant(this.Version))
-            );
+            RubyMemberInfo initializer;
+            using (Context.ClassHierarchyLocker()) {
+                metaBuilder.AddVersionTest(this);
+
+                initializer = ResolveMethodForSiteNoLock(Symbols.Initialize, true);
+            }
+
+            RubyMethodInfo overriddenInitializer = initializer as RubyMethodInfo;
 
             // Initializer is overridden => initializer is invoked on an uninitialized instance.
             // Is user class (defined in Ruby code) => construct it as if it had initializer that calls super immediately
@@ -511,7 +500,7 @@ namespace IronRuby.Builtins {
                 if (_structInfo != null) {
                     constructionOverloads = new MethodBase[] { Methods.CreateStructInstance };
                     callConvention = SelfCallConvention.SelfIsParameter;
-                } else if (_factories != null) {
+                } else if (_factories.Length != 0) {
                     constructionOverloads = (MethodBase[])ReflectionUtils.GetMethodInfos(_factories);
                     callConvention = SelfCallConvention.SelfIsParameter;
                 } else {

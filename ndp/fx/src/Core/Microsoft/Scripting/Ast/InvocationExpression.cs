@@ -15,11 +15,8 @@
 
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Reflection;
-using System.Dynamic;
-using System.Dynamic.Utils;
-using System.Text;
 using System.Diagnostics;
+using System.Dynamic.Utils;
 
 namespace System.Linq.Expressions {
     /// <summary>
@@ -87,6 +84,14 @@ namespace System.Linq.Expressions {
 
             return Expression.Invoke(lambda, arguments ?? _arguments);
         }
+
+        internal LambdaExpression LambdaOperand {
+            get {
+                return (_lambda.NodeType == ExpressionType.Quote)
+                    ? (LambdaExpression)((UnaryExpression)_lambda).Operand
+                    : (_lambda as LambdaExpression);
+            }
+        }
     }
 
     public partial class Expression {
@@ -102,7 +107,7 @@ namespace System.Linq.Expressions {
         ///<exception cref="T:System.InvalidOperationException">
         ///<paramref name="arguments" /> does not contain the same number of elements as the list of parameters for the delegate represented by <paramref name="expression" />.</exception>
         public static InvocationExpression Invoke(Expression expression, params Expression[] arguments) {
-            return Invoke(expression, arguments.ToReadOnly());
+            return Invoke(expression, (IEnumerable<Expression>)arguments);
         }
 
         ///<summary>Creates an <see cref="T:System.Linq.Expressions.InvocationExpression" />.</summary>

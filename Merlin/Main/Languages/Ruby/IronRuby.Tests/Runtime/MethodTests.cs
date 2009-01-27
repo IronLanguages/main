@@ -246,7 +246,74 @@ mm
 foo
 mm
 mm
-");            
+");
+        }
+
+        public void Visibility1() {
+            AssertOutput(() => CompilerTest(@"
+class A
+  def foo
+  end
+end
+
+module M
+  def bar
+  end
+end
+
+class A
+  include M
+  
+  alias_method :foo, :bar
+  
+  p instance_method(:foo)           # DeclaringModule of foo should be M
+  
+  private :foo                      # should make a copy of foo that rewrites the current foo, not define a super-forwarder
+  
+  alias_method :xxx, :foo           # should find foo
+end
+"), @"
+#<UnboundMethod: A(M)#foo>
+");
+        }
+
+        /// <summary>
+        /// public/private/protected define a super-forwarder - a method that calls super.
+        /// </summary>
+        public void Visibility2() {
+            AssertOutput(() => CompilerTest(@"
+class A
+  private
+  def foo
+    puts 'A::foo'
+  end
+end
+
+class B < A
+end
+
+class C < B
+  public :foo      # declaring module of D#foo is A 
+  
+  p instance_method(:foo) 
+end
+
+class A
+  remove_method(:foo)
+end
+
+class B
+  private
+  def foo
+    puts 'B::foo'
+  end
+end
+
+C.new.foo
+"), @"
+#<UnboundMethod: C(A)#foo>
+B::foo
+");
         }
 
         public void ModuleFunctionVisibility1() {
@@ -269,6 +336,113 @@ p M.public_instance_methods(false)
 [""f""]
 []
 ");            
+        }
+
+        /// <summary>
+        /// module_function/private/protected/public doesn't copy a method that is already private/private/protected/public.
+        /// </summary>
+        public void ModuleFunctionVisibility2() {
+            AssertOutput(delegate {
+                CompilerTest(@"
+module A
+  private
+  def pri; end
+  protected
+  def pro; end
+  public
+  def pub; end
+end
+
+module B
+  include A
+  module_function :pri
+  private :pri
+  protected :pro
+  public :pub
+  
+  p private_instance_methods(false)
+  p protected_instance_methods(false)
+  p public_instance_methods(false)
+  p singleton_methods(false)
+end
+");
+            }, @"
+[]
+[]
+[]
+[""pri""]
+");
+        }
+
+        /// <summary>
+        /// define_method copies given method and sets its visibility according to the the current scope flags.
+        /// </summary>
+        public void DefineMethodVisibility1() {
+            AssertOutput(() => CompilerTest(@"
+class A
+  def foo
+    puts 'foo'
+  end
+end
+
+class B < A
+  private
+  define_method(:foo, instance_method(:foo))
+end
+
+B.new.foo rescue p $!
+
+class A
+  remove_method :foo
+end
+
+B.new.send :foo
+"), @"
+#<NoMethodError: private method `foo' called for #<B:*>>
+foo
+", OutputFlags.Match);
+        }
+
+        /// <summary>
+        /// alias, alias_method ignore the current scope visibility flags and copy methods with their visibility unmodified.
+        /// </summary>
+        public void AliasedMethodVisibility1() {
+            AssertOutput(() => CompilerTest(@"
+class A
+  def pub; end
+  private
+  def pri; end
+  protected
+  def pro; end
+end
+
+class B < A
+  private
+  alias a_pub pub
+  protected
+  alias a_pri pri
+  public
+  alias a_pro pro
+  
+  p public_instance_methods(false).sort
+  p private_instance_methods(false).sort
+  
+  private
+  alias_method :am_pub, :pub
+  protected
+  alias_method :am_pri, :pri
+  public
+  alias_method :am_pro, :pro
+                       
+  p public_instance_methods(false).sort
+  p private_instance_methods(false).sort
+end
+    "), @"
+[""a_pub""]
+[""a_pri""]
+[""a_pub"", ""am_pub""]
+[""a_pri"", ""am_pri""]
+");
         }
         
         private string MethodDefinitionInDefineMethodCode1 = @"

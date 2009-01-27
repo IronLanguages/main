@@ -27,6 +27,9 @@ namespace IronRuby.Runtime {
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2105:ArrayFieldsShouldNotBeReadOnly")]
         public static readonly MemberInfo[] EmptyMemberInfos = new MemberInfo[0];
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2105:ArrayFieldsShouldNotBeReadOnly")]
+        public static readonly Delegate[] EmptyDelegates = new Delegate[0];
+        
         public static int IndexOf(this string[]/*!*/ array, string/*!*/ value, StringComparer/*!*/ comparer) {
             ContractUtils.RequiresNotNull(array, "array");
             ContractUtils.RequiresNotNull(value, "value");

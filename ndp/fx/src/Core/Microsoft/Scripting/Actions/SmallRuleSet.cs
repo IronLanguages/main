@@ -109,7 +109,7 @@ namespace System.Dynamic {
                     Helpers.Convert(site, siteType),
                     typeof(CallSite<T>).GetProperty("Update")
                 ),
-                new ReadOnlyCollection<Expression>(@params)
+                new TrueReadOnlyCollection<Expression>(@params)
             );
 
             body[_rules.Length] = Expression.Label(

@@ -37,7 +37,7 @@ namespace IronRuby.Runtime.Calls {
         private readonly RubyModule _declaringModule;
 
         public RubyMethodVisibility Visibility {
-            get { return (RubyMethodVisibility)(_flags & RubyMemberFlags.VisibilityMask); }            
+            get { return (RubyMethodVisibility)(_flags & RubyMemberFlags.VisibilityMask); }
         }
 
         internal bool IsModuleFunction {
@@ -46,6 +46,10 @@ namespace IronRuby.Runtime.Calls {
 
         internal bool IsEmpty {
             get { return (_flags & RubyMemberFlags.Empty) != 0; }
+        }
+
+        internal bool IsSuperForwarder {
+            get { return (_flags & RubyMemberFlags.SuperForwarder) != 0; }
         }
 
         internal RubyMemberFlags Flags {
@@ -64,8 +68,14 @@ namespace IronRuby.Runtime.Calls {
         /// triggers invalidation of sites that are bound to those classes.
         /// </summary>
         internal bool InvalidateSitesOnOverride {
-            get { return _invalidateSitesOnOverride; }
-            set { _invalidateSitesOnOverride = value; }
+            get {
+                Context.RequiresClassHierarchyLock();
+                return _invalidateSitesOnOverride;
+            }
+            set {
+                Context.RequiresClassHierarchyLock();
+                _invalidateSitesOnOverride = value;
+            }
         }
 
         public RubyModule/*!*/ DeclaringModule {

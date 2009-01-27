@@ -30,8 +30,8 @@ namespace IronRuby.Tests {
                     module.DefineLibraryMethod("to_str_to_int", (int)RubyMethodAttributes.PublicSingleton, new System.Delegate[] {
                         new Func<RubyModule, Union<MutableString, int>, RubyArray>(ToStrToInt),
                     });
-                },
-                RubyModule.EmptyArray);
+                }, 
+                null, RubyModule.EmptyArray);
         }
 
         public static RubyArray ToIntToStr(RubyModule/*!*/ self, [DefaultProtocol]Union<int, MutableString> value) {
@@ -115,6 +115,7 @@ class E
   end
 end
 ";
+        
         public void ToIntToStrConversion1() {
             Context.DefineGlobalVariable("protocol_tester", MutableString.Create(typeof(DefaultProtocolTester).AssemblyQualifiedName));
 

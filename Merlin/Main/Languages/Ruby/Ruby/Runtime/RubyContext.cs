@@ -61,37 +61,16 @@ namespace IronRuby.Runtime {
         private readonly RubyScope/*!*/ _emptyScope;
 
         private RubyOptions/*!*/ _options;
-        private Dictionary<object, object> _libraryData;
+        private readonly Loader/*!*/ _loader;
+        private readonly Scope/*!*/ _globalScope;
 
-        private readonly Stopwatch _upTime;
-
-        /// <summary>
-        /// $!
-        /// </summary>
-        [ThreadStatic]
-        private static Exception _currentException;
+        #region Global Variables (thread-safe access)
 
         /// <summary>
         /// $? of type Process::Status
         /// </summary>
         [ThreadStatic]
         private static object _childProcessExitStatus;
-
-        /// <summary>
-        /// $SAFE
-        /// </summary>
-        [ThreadStatic]
-        private static int _currentSafeLevel;
-
-        /// <summary>
-        /// $KCODE
-        /// </summary>
-        private static KCode _kcode;
-
-        /// <summary>
-        /// Thread#main
-        /// </summary>
-        private Thread _mainThread;
 
         /// <summary>
         /// $/, $-O
@@ -113,34 +92,88 @@ namespace IronRuby.Runtime {
         /// </summary>
         private MutableString _itemSeparator;
 
-        private readonly RuntimeErrorSink/*!*/ _runtimeErrorSink;
-        private readonly RubyInputProvider/*!*/ _inputProvider;
         private readonly Dictionary<string/*!*/, GlobalVariable>/*!*/ _globalVariables;
-        private Proc _traceListener;
-        private readonly object _criticalMonitor = new object();
+        public object/*!*/ GlobalVariablesLock { get { return _globalVariables; } }
+
+        // not thread safe: use GlobalVariablesLock to synchronize access to the variables:
+        public IEnumerable<KeyValuePair<string, GlobalVariable>>/*!*/ GlobalVariables {
+            get { return _globalVariables; }
+        }
+        
+        #endregion
+
+        #region Threading
+
+        // Thread#main
+        private readonly Thread _mainThread;
+
+        // Thread#critical=
         private bool _isInCriticalRegion;
+        private readonly object _criticalMonitor = new object();
+
+        #endregion
+
+        #region Tracing
+
+        private readonly RubyInputProvider/*!*/ _inputProvider;
+        private Proc _traceListener;
 
         [ThreadStatic]
         private bool _traceListenerSuspended;
+        
+        private readonly Stopwatch _upTime;
 
-        private EqualityComparer _equalityComparer;
+        #endregion
+
+        #region Look-aside tables
 
         /// <summary>
         /// Maps CLR types to Ruby classes/modules.
         /// Doesn't contain classes defined in Ruby.
         /// </summary>
         private readonly Dictionary<Type, RubyModule>/*!*/ _moduleCache;
-        private object ModuleCacheSyncRoot { get { return _moduleCache; } }
+        private object ModuleCacheLock { get { return _moduleCache; } }
 
         /// <summary>
         /// Maps CLR namespace trackers to Ruby modules.
         /// </summary>
         private readonly Dictionary<NamespaceTracker, RubyModule>/*!*/ _namespaceCache;
-        private object NamespaceCacheSyncRoot { get { return _namespaceCache; } }
+        private object NamespaceCacheLock { get { return _namespaceCache; } }
 
-        private readonly Loader/*!*/ _loader;
-        private Scope/*!*/ _globalScope;
-        private readonly List<RubyIO>/*!*/ _fileDescriptors = new List<RubyIO>(10);
+        // Maps objects to InstanceData. The keys store weak references to the objects.
+        // Objects are compared by reference (identity). 
+        // An entry can be removed as soon as the key object becomes unreachable.
+        private readonly InstanceDataWeakTable/*!*/ _referenceTypeInstanceData;
+
+        // Maps values to InstanceData. The keys store value representatives. 
+        // All objects that has the same value (value-equality) map to the same InstanceData.
+        // Entries cannot be ever freed since anytime in future one may create a new object whose value has already been mapped to InstanceData.
+        private readonly Dictionary<object, RubyInstanceData>/*!*/ _valueTypeInstanceData;
+        private object/*!*/ ValueTypeInstanceDataLock { get { return _valueTypeInstanceData; } }
+
+        // not thread-safe: 
+        private readonly RubyInstanceData/*!*/ _nilInstanceData = new RubyInstanceData(RubyUtils.NilObjectId);
+
+        #endregion
+
+        #region Class Hierarchy
+
+        public IDisposable/*!*/ ClassHierarchyLocker() {
+            return _classHierarchyLock.CreateLocker();
+        }
+
+        public IDisposable/*!*/ ClassHierarchyUnlocker() {
+            return _classHierarchyLock.CreateUnlocker();
+        }
+
+        private readonly CheckedMonitor/*!*/ _classHierarchyLock = new CheckedMonitor();
+
+        [Conditional("DEBUG")]
+        internal void RequiresClassHierarchyLock() {
+            if (!_classHierarchyLock.IsLocked) {
+                throw new InvalidOperationException("Code can only be executed while holding class hierarchy lock.");
+            }
+        }
 
         // classes used by runtime (we need to update initialization generator if any of these are added):
         private RubyModule/*!*/ _kernelModule;
@@ -169,72 +202,11 @@ namespace IronRuby.Runtime {
         public RubyClass StandardErrorClass { get { return _standardErrorClass; } set { _standardErrorClass = value; } }
 
         internal Action<RubyModule>/*!*/ ClassSingletonTrait { get { return _classSingletonTrait; } }
-
-        // Maps objects to InstanceData. The keys store weak references to the objects.
-        // Objects are compared by reference (identity). 
-        // An entry can be removed as soon as the key object becomes unreachable.
-        private readonly InstanceDataWeakTable/*!*/ _referenceTypeInstanceData;
-
-        // Maps values to InstanceData. The keys store value representatives. 
-        // All objects that has the same value (value-equality) map to the same InstanceData.
-        // Entries cannot be ever freed since anytime in future one may create a new object whose value has already been mapped to InstanceData.
-        private readonly Dictionary<object, RubyInstanceData>/*!*/ _valueTypeInstanceData;
-        private object/*!*/ ValueTypeInstanceDataSyncRoot { get { return _valueTypeInstanceData; } }
-
-        private RubyInstanceData/*!*/ _nilInstanceData = new RubyInstanceData(RubyUtils.NilObjectId);
-
-        #region Dynamic Sites
-
-        private CallSite<Func<CallSite, RubyContext, RubyModule, SymbolId, object>> _methodAddedCallbackSite;
-        private CallSite<Func<CallSite, RubyContext, RubyModule, SymbolId, object>> _methodRemovedCallbackSite;
-        private CallSite<Func<CallSite, RubyContext, RubyModule, SymbolId, object>> _methodUndefinedCallbackSite;
-        private CallSite<Func<CallSite, RubyContext, object, SymbolId, object>> _singletonMethodAddedCallbackSite;
-        private CallSite<Func<CallSite, RubyContext, object, SymbolId, object>> _singletonMethodRemovedCallbackSite;
-        private CallSite<Func<CallSite, RubyContext, object, SymbolId, object>> _singletonMethodUndefinedCallbackSite;
-        private CallSite<Func<CallSite, RubyContext, RubyClass, RubyClass, object>> _classInheritedCallbackSite;
-
-        private void MethodEvent(ref CallSite<Func<CallSite, RubyContext, RubyModule, SymbolId, object>> site, string/*!*/ eventName,
-            RubyContext/*!*/ context, RubyModule/*!*/ module, string/*!*/ methodName) {
-
-            if (site == null) {
-                Interlocked.CompareExchange(
-                    ref site,
-                    CallSite<Func<CallSite, RubyContext, RubyModule, SymbolId, object>>.Create(RubyCallAction.Make(eventName, RubyCallSignature.WithImplicitSelf(1))),
-                    null
-                );
-            }
-
-            site.Target(site, context, module, SymbolTable.StringToId(methodName));
-        }
-
-        private void SingletonMethodEvent(ref CallSite<Func<CallSite, RubyContext, object, SymbolId, object>> site, string/*!*/ eventName,
-            RubyContext/*!*/ context, object obj, string/*!*/ methodName) {
-
-            if (site == null) {
-                Interlocked.CompareExchange(
-                    ref site,
-                    CallSite<Func<CallSite, RubyContext, object, SymbolId, object>>.Create(RubyCallAction.Make(eventName, RubyCallSignature.WithImplicitSelf(1))),
-                    null
-                );
-            }
-
-            site.Target(site, context, obj, SymbolTable.StringToId(methodName));
-        }
-
-        private void ClassInheritedEvent(RubyClass/*!*/ superClass, RubyClass/*!*/ subClass) {
-            if (_classInheritedCallbackSite == null) {
-                Interlocked.CompareExchange(
-                    ref _classInheritedCallbackSite,
-                    CallSite<Func<CallSite, RubyContext, RubyClass, RubyClass, object>>.Create(RubyCallAction.Make(Symbols.Inherited, RubyCallSignature.WithImplicitSelf(1)
-                    )),
-                    null
-                );
-            }
-
-            _classInheritedCallbackSite.Target(_classInheritedCallbackSite, this, superClass, subClass);
-        }
+        internal Action<RubyModule>/*!*/ SingletonSingletonTrait { get { return _singletonSingletonTrait; } }
 
         #endregion
+
+        #region Properties
 
         public override LanguageOptions Options {
             get { return _options; }
@@ -244,21 +216,12 @@ namespace IronRuby.Runtime {
             get { return _options; }
         }
 
+        internal RubyBinder RubyBinder {
+            get { return (RubyBinder)Binder; }
+        }
+
         internal RubyScope/*!*/ EmptyScope {
             get { return _emptyScope; }
-        }
-
-        public Exception CurrentException {
-            get { return _currentException; }
-            set { _currentException = RubyUtils.GetVisibleException(value); }
-        }
-
-        public int CurrentSafeLevel {
-            get { return _currentSafeLevel; }
-        }
-
-        public KCode KCode {
-            get { return _kcode; }
         }
 
         public Thread MainThread {
@@ -299,20 +262,8 @@ namespace IronRuby.Runtime {
             set { _traceListener = value; }
         }
 
-        public IEnumerable<KeyValuePair<string, GlobalVariable>>/*!*/ GlobalVariables {
-            get { return _globalVariables; }
-        }
-
-        public object/*!*/ GlobalVariablesSyncRoot {
-            get { return _globalVariables; }
-        }
-
         public RubyInputProvider/*!*/ InputProvider {
             get { return _inputProvider; }
-        }
-
-        public RuntimeErrorSink/*!*/ RuntimeErrorSink {
-            get { return _runtimeErrorSink; }
         }
 
         public object ChildProcessExitStatus {
@@ -332,7 +283,7 @@ namespace IronRuby.Runtime {
             get { return false; }
         }
 
-        public EqualityComparer EqualityComparer {
+        public EqualityComparer/*!*/ EqualityComparer {
             get {
                 if (_equalityComparer == null) {
                     Interlocked.CompareExchange(ref _equalityComparer, new EqualityComparer(this), null);
@@ -340,15 +291,8 @@ namespace IronRuby.Runtime {
                 return _equalityComparer;
             }
         }
-
-        public const int StandardInputDescriptor = 0;
-        public const int StandardOutputDescriptor = 1;
-        public const int StandardErrorOutputDescriptor = 2;
-
-        public object StandardInput { get; set; }
-        public object StandardOutput { get; set; }
-        public object StandardErrorOutput { get; set; }
-
+        private EqualityComparer _equalityComparer;
+        
         public object Verbose { get; set; }
 
         public override Version LanguageVersion {
@@ -363,6 +307,8 @@ namespace IronRuby.Runtime {
             get { return _runtimeId; }
         }
 
+        #endregion
+
         #region Initialization
 
         public RubyContext(ScriptDomainManager/*!*/ manager, IDictionary<string, object> options)
@@ -374,7 +320,7 @@ namespace IronRuby.Runtime {
             _upTime = new Stopwatch();
             _upTime.Start();
 
-            Binder = new RubyBinder(manager);
+            Binder = new RubyBinder(this);
 
             _runtimeErrorSink = new RuntimeErrorSink(this);
             _globalVariables = new Dictionary<string, GlobalVariable>();
@@ -496,28 +442,28 @@ namespace IronRuby.Runtime {
             MutableString releaseDate = MutableString.Create(RubyContext.MriReleaseDate);
             MutableString rubyEngine = MutableString.Create("ironruby");
 
-            _objectClass.SetConstant("RUBY_ENGINE", rubyEngine);
-            _objectClass.SetConstant("RUBY_VERSION", version);
-            _objectClass.SetConstant("RUBY_PATCHLEVEL", 0);
-            _objectClass.SetConstant("RUBY_PLATFORM", platform);
-            _objectClass.SetConstant("RUBY_RELEASE_DATE", releaseDate);
+            SetGlobalConstant("RUBY_ENGINE", rubyEngine);
+            SetGlobalConstant("RUBY_VERSION", version);
+            SetGlobalConstant("RUBY_PATCHLEVEL", 0);
+            SetGlobalConstant("RUBY_PLATFORM", platform);
+            SetGlobalConstant("RUBY_RELEASE_DATE", releaseDate);
 
-            _objectClass.SetConstant("VERSION", version);
-            _objectClass.SetConstant("PLATFORM", platform);
-            _objectClass.SetConstant("RELEASE_DATE", releaseDate);
+            SetGlobalConstant("VERSION", version);
+            SetGlobalConstant("PLATFORM", platform);
+            SetGlobalConstant("RELEASE_DATE", releaseDate);
 
-            _objectClass.SetConstant("IRONRUBY_VERSION", MutableString.Create(RubyContext.IronRubyVersionString));
+            SetGlobalConstant("IRONRUBY_VERSION", MutableString.Create(RubyContext.IronRubyVersionString));
 
-            _objectClass.SetConstant("STDIN", StandardInput);
-            _objectClass.SetConstant("STDOUT", StandardOutput);
-            _objectClass.SetConstant("STDERR", StandardErrorOutput);
+            SetGlobalConstant("STDIN", StandardInput);
+            SetGlobalConstant("STDOUT", StandardOutput);
+            SetGlobalConstant("STDERR", StandardErrorOutput);
 
             object ARGF;
-            if (_objectClass.TryGetConstantNoAutoload("ARGF", out ARGF)) {
+            if (TryGetGlobalConstant("ARGF", out ARGF)) {
                 _inputProvider.Singleton = ARGF;
             }
 
-            _objectClass.SetConstant("ARGV", _inputProvider.CommandLineArguments);
+            SetGlobalConstant("ARGV", _inputProvider.CommandLineArguments);
 
             // File object
             //_objectClass.SetConstant("DATA", null);
@@ -527,6 +473,14 @@ namespace IronRuby.Runtime {
 
             // Hash
             // SCRIPT_LINES__
+        }
+
+        internal void SetGlobalConstant(string/*!*/ name, object value) {
+            _globalScope.SetName(SymbolTable.StringToId(name), value);
+        }
+
+        internal bool TryGetGlobalConstant(string/*!*/ name, out object value) {
+            return _globalScope.TryLookupName(SymbolTable.StringToId(name), out value);
         }
 
         private void InitializeFileDescriptors(SharedIO/*!*/ io) {
@@ -543,14 +497,20 @@ namespace IronRuby.Runtime {
             Action<RubyModule>/*!*/ mainSingletonTrait,
 
             Action<RubyModule>/*!*/ kernelInstanceTrait,
-            Action<RubyModule>/*!*/ objectInstanceTrait,
-            Action<RubyModule>/*!*/ moduleInstanceTrait,
-            Action<RubyModule>/*!*/ classInstanceTrait,
-
             Action<RubyModule>/*!*/ kernelClassTrait,
+            Action<RubyModule> kernelConstantsInitializer,
+
+            Action<RubyModule>/*!*/ objectInstanceTrait,
             Action<RubyModule>/*!*/ objectClassTrait,
+            Action<RubyModule> objectConstantsInitializer,
+
+            Action<RubyModule>/*!*/ moduleInstanceTrait,
             Action<RubyModule>/*!*/ moduleClassTrait,
-            Action<RubyModule>/*!*/ classClassTrait) {
+            Action<RubyModule> moduleConstantsInitializer,
+
+            Action<RubyModule>/*!*/ classInstanceTrait,
+            Action<RubyModule>/*!*/ classClassTrait,
+            Action<RubyModule> classConstantsInitializer) {
 
             Assert.NotNull(classSingletonTrait, singletonSingletonTrait, mainSingletonTrait);
             Assert.NotNull(objectInstanceTrait, kernelInstanceTrait, moduleInstanceTrait, classInstanceTrait);
@@ -576,36 +536,36 @@ namespace IronRuby.Runtime {
             // only Object should expose CLR methods:
             TypeTracker objectTracker = ReflectionCache.GetTypeTracker(typeof(object));
 
-            // we need to create object class before any other since constants are added in its dictionary:
-            _kernelModule = new RubyModule(this, Symbols.Kernel, kernelInstanceTrait, null, null);
-            _objectClass = new RubyClass(this, Symbols.Object, objectTracker.Type, null, objectInstanceTrait, null, objectTracker, false, false);
-            _moduleClass = new RubyClass(this, Symbols.Module, typeof(RubyModule), null, moduleInstanceTrait, _objectClass, null, false, false);
-            _classClass = new RubyClass(this, Symbols.Class, typeof(RubyClass), null, classInstanceTrait, _moduleClass, null, false, false);
+            var moduleFactories = new Delegate[] {
+                new Func<RubyScope, BlockParam, RubyClass, object>(RubyModule.CreateAnonymousModule),
+            };
 
-            CreateDummySingletonClassFor(_kernelModule, _moduleClass, kernelClassTrait);
-            CreateDummySingletonClassFor(_objectClass, _classClass, objectClassTrait);
-            CreateDummySingletonClassFor(_moduleClass, _objectClass.SingletonClass, moduleClassTrait);
-            CreateDummySingletonClassFor(_classClass, _moduleClass.SingletonClass, classClassTrait);
+            var classFactories = new Delegate[] {
+                new Func<RubyScope, BlockParam, RubyClass, RubyClass, object>(RubyClass.CreateAnonymousClass),
+            };
 
-            _objectClass.SetMixins(new RubyModule[] { _kernelModule });
+            // locks to comply with lock requirements:
+            using (ClassHierarchyLocker()) {
+                _kernelModule = new RubyModule(this, Symbols.Kernel, kernelInstanceTrait, kernelConstantsInitializer, null, null, null);
+                _objectClass = new RubyClass(this, Symbols.Object, objectTracker.Type, null, objectInstanceTrait, objectConstantsInitializer, null, null, new[] { _kernelModule }, objectTracker, null, false, false);
+                _moduleClass = new RubyClass(this, Symbols.Module, typeof(RubyModule), null, moduleInstanceTrait, moduleConstantsInitializer, moduleFactories, _objectClass, null, null, null, false, false);
+                _classClass = new RubyClass(this, Symbols.Class, typeof(RubyClass), null, classInstanceTrait, classConstantsInitializer, classFactories, _moduleClass, null, null, null, false, false);
+
+                _kernelModule.InitializeDummySingletonClass(_moduleClass, kernelClassTrait);
+                _objectClass.InitializeDummySingletonClass(_classClass, objectClassTrait);
+                _moduleClass.InitializeDummySingletonClass(_objectClass.SingletonClass, moduleClassTrait);
+                _classClass.InitializeDummySingletonClass(_moduleClass.SingletonClass, classClassTrait);
+            }
 
             AddModuleToCacheNoLock(typeof(Kernel), _kernelModule);
             AddModuleToCacheNoLock(objectTracker.Type, _objectClass);
             AddModuleToCacheNoLock(_moduleClass.GetUnderlyingSystemType(), _moduleClass);
             AddModuleToCacheNoLock(_classClass.GetUnderlyingSystemType(), _classClass);
 
-            _objectClass.SetConstant(_moduleClass.Name, _moduleClass);
-            _objectClass.SetConstant(_classClass.Name, _classClass);
-            _objectClass.SetConstant(_objectClass.Name, _objectClass);
-            _objectClass.SetConstant(_kernelModule.Name, _kernelModule);
-
-            _moduleClass.Factories = new Delegate[] {
-                new Func<RubyScope, BlockParam, RubyClass, object>(RubyModule.CreateAnonymousModule),
-            };
-
-            _classClass.Factories = new Delegate[] {
-                new Func<RubyScope, BlockParam, RubyClass, RubyClass, object>(RubyClass.CreateAnonymousClass),
-            };
+            SetGlobalConstant(_moduleClass.Name, _moduleClass);
+            SetGlobalConstant(_classClass.Name, _classClass);
+            SetGlobalConstant(_objectClass.Name, _objectClass);
+            SetGlobalConstant(_kernelModule.Name, _kernelModule);
         }
 
         #endregion
@@ -626,13 +586,13 @@ namespace IronRuby.Runtime {
         internal RubyModule/*!*/ GetOrCreateModule(NamespaceTracker/*!*/ tracker) {
             Assert.NotNull(tracker);
 
-            lock (ModuleCacheSyncRoot) {
+            lock (ModuleCacheLock) {
                 return GetOrCreateModuleNoLock(tracker);
             }
         }
 
         internal bool TryGetModule(NamespaceTracker/*!*/ namespaceTracker, out RubyModule result) {
-            lock (NamespaceCacheSyncRoot) {
+            lock (NamespaceCacheLock) {
                 return _namespaceCache.TryGetValue(namespaceTracker, out result);
             }
         }
@@ -640,7 +600,7 @@ namespace IronRuby.Runtime {
         internal RubyModule/*!*/ GetOrCreateModule(Type/*!*/ interfaceType) {
             Debug.Assert(interfaceType != null && interfaceType.IsInterface);
 
-            lock (ModuleCacheSyncRoot) {
+            lock (ModuleCacheLock) {
                 return GetOrCreateModuleNoLock(interfaceType);
             }
         }
@@ -666,7 +626,7 @@ namespace IronRuby.Runtime {
         internal RubyClass/*!*/ GetOrCreateClass(Type/*!*/ type) {
             Debug.Assert(type != null && !type.IsInterface);
 
-            lock (ModuleCacheSyncRoot) {
+            lock (ModuleCacheLock) {
                 return GetOrCreateClassNoLock(type);
             }
         }
@@ -679,7 +639,7 @@ namespace IronRuby.Runtime {
                 return result;
             }
 
-            result = CreateModule(RubyUtils.GetQualifiedName(tracker), null, null, tracker, null);
+            result = CreateModule(RubyUtils.GetQualifiedName(tracker), null, null, null, null, tracker, null);
             _namespaceCache[tracker] = result;
             return result;
         }
@@ -693,7 +653,7 @@ namespace IronRuby.Runtime {
             }
 
             TypeTracker tracker = (TypeTracker)TypeTracker.FromMemberInfo(interfaceType);
-            result = CreateModule(RubyUtils.GetQualifiedName(interfaceType), null, null, null, tracker);
+            result = CreateModule(RubyUtils.GetQualifiedName(interfaceType), null, null, null, null, null, tracker);
             _moduleCache[interfaceType] = result;
             return result;
         }
@@ -708,19 +668,24 @@ namespace IronRuby.Runtime {
 
             RubyClass baseClass = GetOrCreateClassNoLock(type.BaseType);
             TypeTracker tracker = (TypeTracker)TypeTracker.FromMemberInfo(type);
+            RubyModule[] interfaceMixins = GetDeclaredInterfaceModules(type);
+            RubyModule[] expandedMixins;
 
-            result = CreateClass(RubyUtils.GetQualifiedName(type), type, null, null, null, baseClass, tracker, false, false);
-
-            List<RubyModule> interfaceMixins = GetDeclaredInterfaceModules(type);
             if (interfaceMixins != null) {
-                result.SetMixins(interfaceMixins);
+                using (ClassHierarchyLocker()) {
+                    expandedMixins = RubyModule.ExpandMixinsNoLock(baseClass, interfaceMixins);
+                }
+            } else {
+                expandedMixins = RubyModule.EmptyArray;
             }
+
+            result = CreateClass(RubyUtils.GetQualifiedName(type), type, null, null, null, null, null, baseClass, expandedMixins, tracker, null, false, false);
 
             _moduleCache[type] = result;
             return result;
         }
 
-        private List<RubyModule> GetDeclaredInterfaceModules(Type/*!*/ type) {
+        private RubyModule[] GetDeclaredInterfaceModules(Type/*!*/ type) {
             // TODO:
             if (type.IsGenericTypeDefinition) {
                 return null;
@@ -731,49 +696,35 @@ namespace IronRuby.Runtime {
                 interfaces.Add(GetOrCreateModuleNoLock(iface));
             }
 
-            return interfaces.Count > 0 ? interfaces : null;
+            return interfaces.Count > 0 ? interfaces.ToArray() : null;
         }
 
         #endregion
 
-        #region Class and Module Factories
+        #region Class and Module Factories (thread-safe)
 
-        internal RubyClass/*!*/ CreateClass(string name, Type type, object classSingletonOf, Action<RubyModule> instanceTrait, Action<RubyModule> classTrait,
-            RubyClass/*!*/ superClass, TypeTracker tracker, bool isRubyClass, bool isSingletonClass) {
-            Debug.Assert(superClass != null);
+        internal RubyClass/*!*/ CreateClass(string name, Type type, object classSingletonOf,
+            Action<RubyModule> instanceTrait, Action<RubyModule> classTrait, Action<RubyModule> constantsInitializer, Delegate/*!*/[] factories,
+            RubyClass/*!*/ superClass, RubyModule/*!*/[] expandedMixins, TypeTracker tracker, RubyStruct.Info structInfo, 
+            bool isRubyClass, bool isSingletonClass) {
+            Assert.NotNull(superClass);
 
-            RubyClass result = new RubyClass(this, name, type, classSingletonOf, instanceTrait, superClass, tracker, isRubyClass, isSingletonClass);
-            CreateDummySingletonClassFor(result, superClass.SingletonClass, classTrait);
+            RubyClass result = new RubyClass(this, name, type, classSingletonOf,
+                instanceTrait, constantsInitializer, factories, superClass, expandedMixins, tracker, structInfo, 
+                isRubyClass, isSingletonClass
+            );
+
+            result.InitializeDummySingletonClass(superClass.SingletonClass, classTrait);
             return result;
         }
 
-        internal RubyModule/*!*/ CreateModule(string name, Action<RubyModule> instanceTrait, Action<RubyModule> classTrait,
-            NamespaceTracker namespaceTracker, TypeTracker typeTracker) {
-            RubyModule result = new RubyModule(this, name, instanceTrait, namespaceTracker, typeTracker);
-            CreateDummySingletonClassFor(result, _moduleClass, classTrait);
+        internal RubyModule/*!*/ CreateModule(string name,
+            Action<RubyModule> instanceTrait, Action<RubyModule> classTrait, Action<RubyModule> constantsInitializer,
+            RubyModule/*!*/[] expandedMixins, NamespaceTracker namespaceTracker, TypeTracker typeTracker) {
+
+            RubyModule result = new RubyModule(this, name, instanceTrait, constantsInitializer, expandedMixins, namespaceTracker, typeTracker);
+            result.InitializeDummySingletonClass(_moduleClass, classTrait);
             return result;
-        }
-
-        internal RubyClass/*!*/ CreateDummySingletonClassFor(RubyModule/*!*/ module, RubyClass/*!*/ superClass, Action<RubyModule>/*!*/ trait) {
-            // Note that in MRI, member tables of dummy singleton are shared with the class the dummy is singleton for
-            // This is obviously an implementation detail leaking to the language and we don't support that for code clarity.
-
-            // real class object and it's singleton share the tracker:
-            TypeTracker tracker = (module.IsSingletonClass) ? null : module.Tracker;
-
-            RubyClass result = new RubyClass(this, null, null, module, trait, superClass, tracker, false, true);
-            result.SingletonClass = result;
-            module.SingletonClass = result;
-#if DEBUG
-            result.DebugName = "S(" + module.DebugName + ")";
-#endif
-            return result;
-        }
-
-        internal RubyClass/*!*/ AppendDummySingleton(RubyClass/*!*/ singleton) {
-            Debug.Assert(singleton.IsDummySingletonClass);
-            RubyClass super = ((RubyModule)singleton.SingletonClassOf).IsClass ? _classClass.SingletonClass : _moduleClass.SingletonClass;
-            return CreateDummySingletonClassFor(singleton, super, _singletonSingletonTrait);
         }
 
         /// <summary>
@@ -786,18 +737,18 @@ namespace IronRuby.Runtime {
                 return module.CreateSingletonClass();
             }
 
-            return CreateInstanceSingleton(obj, null, null);
+            return CreateInstanceSingleton(obj, null, null, null, null);
         }
 
-        internal RubyClass/*!*/ CreateMainSingleton(object obj) {
-            return CreateInstanceSingleton(obj, _mainSingletonTrait, null);
+        internal RubyClass/*!*/ CreateMainSingleton(object obj, RubyModule/*!*/[] expandedMixins) {
+            return CreateInstanceSingleton(obj, _mainSingletonTrait, null, null, expandedMixins);
         }
 
-        internal RubyClass/*!*/ CreateInstanceSingleton(object obj, Action<RubyModule> instanceTrait, Action<RubyModule> classTrait)
-            //^ ensures result.IsSingletonClass && !result.IsDummySingletonClass;
-        {
+        internal RubyClass/*!*/ CreateInstanceSingleton(object obj, Action<RubyModule> instanceTrait, Action<RubyModule> classTrait, 
+            Action<RubyModule> constantsInitializer, RubyModule/*!*/[] expandedMixins) {
             Debug.Assert(!(obj is RubyModule));
             Debug.Assert(RubyUtils.CanCreateSingleton(obj));
+            // Contract.Ensures(result.IsSingletonClass && !result.IsDummySingletonClass);
 
             if (obj == null) {
                 return _nilClass;
@@ -816,11 +767,17 @@ namespace IronRuby.Runtime {
 
             RubyClass c = GetClassOf(obj, data);
 
-            result = CreateClass(null, null, obj, instanceTrait, classTrait ?? _classSingletonTrait, c, null, true, true);
-            c.Updated("CreateInstanceSingleton");
+            result = CreateClass(null, null, obj, instanceTrait, classTrait ?? _classSingletonTrait, constantsInitializer, null,
+                c, expandedMixins, null, null, true, true
+            );
+
+            using (ClassHierarchyLocker()) {
+                c.Updated("CreateInstanceSingleton");
+            }
+
             SetInstanceSingletonOf(obj, ref data, result);
 #if DEBUG
-            result.DebugName = (instanceTrait != null) ? instanceTrait.Method.DeclaringType.Name : "S(" + data.ObjectId + ")";
+            result.DebugName = "S(" + data.ObjectId + ")";
             result.SingletonClass.DebugName = "S(" + result.DebugName + ")";
 #endif
             return result;
@@ -829,17 +786,17 @@ namespace IronRuby.Runtime {
         public RubyModule/*!*/ DefineModule(RubyModule/*!*/ owner, string name) {
             ContractUtils.RequiresNotNull(owner, "owner");
 
-            RubyModule result = CreateModule(owner.MakeNestedModuleName(name), null, null, null, null);
+            RubyModule result = CreateModule(owner.MakeNestedModuleName(name), null, null, null, null, null, null);
             if (name != null) {
                 owner.SetConstant(name, result);
             }
             return result;
         }
 
+        // thread-safe:
         // triggers "inherited" event:
-        internal RubyClass/*!*/ DefineClass(RubyModule/*!*/ owner, string name, RubyClass/*!*/ superClass) {
-            ContractUtils.RequiresNotNull(owner, "owner");
-            ContractUtils.RequiresNotNull(superClass, "superClass");
+        internal RubyClass/*!*/ DefineClass(RubyModule/*!*/ owner, string name, RubyClass/*!*/ superClass, RubyStruct.Info structInfo) {
+            Assert.NotNull(owner, superClass);
 
             if (superClass.Tracker != null && superClass.Tracker.Type.ContainsGenericParameters) {
                 throw RubyExceptions.CreateTypeError(String.Format(
@@ -849,7 +806,7 @@ namespace IronRuby.Runtime {
             }
 
             string qualifiedName = owner.MakeNestedModuleName(name);
-            RubyClass result = CreateClass(qualifiedName, null, null, null, null, superClass, null, true, false);
+            RubyClass result = CreateClass(qualifiedName, null, null, null, null, null, null, superClass, null, null, structInfo, true, false);
 
             if (name != null) {
                 owner.SetConstant(name, result);
@@ -862,79 +819,90 @@ namespace IronRuby.Runtime {
 
         #endregion
 
-        #region Libraries
+        #region Libraries (thread-safe)
 
-        internal RubyModule/*!*/ DefineLibraryModule(string name, Type/*!*/ type, Action<RubyModule> instanceTrait,
-            Action<RubyModule> classTrait, RubyModule[]/*!*/ mixins, bool isSelfContained) {
+        internal RubyModule/*!*/ DefineLibraryModule(string name, Type/*!*/ type,
+            Action<RubyModule> instanceTrait, Action<RubyModule> classTrait, Action<RubyModule> constantsInitializer, 
+            RubyModule/*!*/[]/*!*/ mixins, bool isSelfContained) {
             Assert.NotNull(type);
             Assert.NotNullItems(mixins);
 
-            lock (ModuleCacheSyncRoot) {
-                RubyModule module;
+            var expandedMixins = RubyModule.ExpandMixinsNoLock(null, mixins);
 
-                if (TryGetModuleNoLock(type, out module)) {
-                    module.IncludeLibraryModule(instanceTrait, classTrait, mixins);
-                    return module;
+            RubyModule result;
+            bool exists;
+            lock (ModuleCacheLock) {
+                if (!(exists = TryGetModuleNoLock(type, out result))) {
+                    if (name == null) {
+                        name = RubyUtils.GetQualifiedName(type);
+                    }
+
+                    // Setting tracker on the module makes CLR methods visible.
+                    // Hide CLR methods if the type itself defines RubyMethods and is not an extension of another type.
+                    TypeTracker tracker = isSelfContained ? null : ReflectionCache.GetTypeTracker(type);
+
+                    result = CreateModule(name, instanceTrait, classTrait, constantsInitializer, expandedMixins, null, tracker);
+
+                    AddModuleToCacheNoLock(type, result);
                 }
-
-                if (name == null) {
-                    name = RubyUtils.GetQualifiedName(type);
-                }
-
-                // Setting tracker on the module makes CLR methods visible.
-                // Hide CLR methods if the type itself defines RubyMethods and is not an extension of another type.
-                TypeTracker tracker = isSelfContained ? null : ReflectionCache.GetTypeTracker(type);
-
-                module = CreateModule(name, instanceTrait, classTrait, null, tracker);
-                module.SetMixins(mixins);
-
-                AddModuleToCacheNoLock(type, module);
-                return module;
             }
+
+            if (exists) {
+                result.IncludeLibraryModule(instanceTrait, classTrait, constantsInitializer, mixins);
+            }
+
+            return result;
         }
 
         // isSelfContained: The traits are defined on type (public static methods marked by RubyMethod attribute).
-        internal RubyClass/*!*/ DefineLibraryClass(string name, Type/*!*/ type, Action<RubyModule> instanceTrait, Action<RubyModule> classTrait,
-            RubyClass super, RubyModule[]/*!*/ mixins, Delegate[] factories, bool isSelfContained, bool builtin) {
-
+        internal RubyClass/*!*/ DefineLibraryClass(string name, Type/*!*/ type,
+            Action<RubyModule> instanceTrait, Action<RubyModule> classTrait, Action<RubyModule> constantsInitializer,
+            RubyClass super, RubyModule[]/*!*/ mixins, Delegate/*!*/[] factories, bool isSelfContained, bool builtin) {
             Assert.NotNull(type);
+            Assert.NotNullItems(mixins);
 
-            RubyClass result;
-            lock (ModuleCacheSyncRoot) {
-                if (TryGetClassNoLock(type, out result)) {
-                    if (super != null && super != result.SuperClass) {
-                        // TODO: better message
-                        throw new InvalidOperationException("Cannot change super class");
-                    }
-
-                    result.IncludeLibraryModule(instanceTrait, classTrait, mixins);
-                    if (factories != null) {
-                        result.Factories = ArrayUtils.AppendRange(result.Factories, factories);
-                    }
-
-                    return result;
-                }
-
-                if (name == null) {
-                    name = RubyUtils.GetQualifiedName(type);
-                }
-
-                if (super == null) {
-                    super = GetOrCreateClassNoLock(type.BaseType);
-                }
-
-                // Setting tracker on the class makes CLR methods visible.
-                // Hide CLR methods if the type itself defines RubyMethods and is not an extension of another type.
-                TypeTracker tracker = isSelfContained ? null : ReflectionCache.GetTypeTracker(type);
-
-                result = CreateClass(name, type, null, instanceTrait, classTrait, super, tracker, false, false);
-                result.SetMixins(mixins);
-                result.Factories = factories;
-
-                AddModuleToCacheNoLock(type, result);
+            RubyModule[] expandedMixins;
+            using (ClassHierarchyLocker()) {
+                expandedMixins = RubyModule.ExpandMixinsNoLock(super, mixins);
             }
 
-            if (!builtin) {
+            RubyClass result;
+            bool exists;
+            lock (ModuleCacheLock) {
+                if (!(exists = TryGetClassNoLock(type, out result))) {
+                    if (name == null) {
+                        name = RubyUtils.GetQualifiedName(type);
+                    }
+
+                    if (super == null) {
+                        super = GetOrCreateClassNoLock(type.BaseType);
+                    }
+
+                    // Setting tracker on the class makes CLR methods visible.
+                    // Hide CLR methods if the type itself defines RubyMethods and is not an extension of another type.
+                    TypeTracker tracker = isSelfContained ? null : ReflectionCache.GetTypeTracker(type);
+
+                    result = CreateClass(name, type, null, instanceTrait, classTrait, constantsInitializer, factories, 
+                        super, expandedMixins, tracker, null, false, false
+                    );
+
+                    AddModuleToCacheNoLock(type, result);
+                }
+            }
+
+            if (exists) {
+                if (super != null && super != result.SuperClass) {
+                    // TODO: better message
+                    throw new InvalidOperationException("Cannot change super class");
+                }
+
+                if (factories != null && factories.Length != 0) {
+                    throw new InvalidOperationException("Cannot add factories to an existing class");
+                }
+
+                result.IncludeLibraryModule(instanceTrait, classTrait, constantsInitializer, mixins);
+                return result;
+            } else if (!builtin) {
                 ClassInheritedEvent(super, result);
             }
 
@@ -943,7 +911,7 @@ namespace IronRuby.Runtime {
 
         #endregion
 
-        #region Getting Modules and Classes from objects, CLR types and CLR namespaces.
+        #region Getting Modules and Classes from objects, CLR types and CLR namespaces (thread-safe)
 
         public RubyModule/*!*/ GetModule(Type/*!*/ type) {
             if (type.IsInterface) {
@@ -988,6 +956,7 @@ namespace IronRuby.Runtime {
 
         /// <summary>
         /// Gets a singleton or class for <c>obj</c>.
+        /// Might return a class object from a foreign runtime (if obj is a runtime bound object).
         /// </summary>
         public RubyClass/*!*/ GetImmediateClassOf(object obj) {
             RubyModule module = obj as RubyModule;
@@ -1056,45 +1025,47 @@ namespace IronRuby.Runtime {
 
         #endregion
 
-        #region Member Resolution
+        #region Member Resolution (thread-safe)
 
+        // thread-safe:
         public RubyMemberInfo ResolveMethod(object target, string/*!*/ name, bool includePrivate) {
             return GetImmediateClassOf(target).ResolveMethod(name, includePrivate);
         }
 
-        public RubyMemberInfo ResolveSuperMethod(object target, string/*!*/ name, RubyModule/*!*/ declaringModule) {
-            return GetImmediateClassOf(target).ResolveSuperMethod(name, declaringModule);
-        }
-
+        // thread-safe:
         public bool TryGetModule(RubyGlobalScope autoloadScope, string/*!*/ moduleName, out RubyModule result) {
-            result = _objectClass;
-            int pos = 0;
-            while (true) {
-                int pos2 = moduleName.IndexOf("::", pos);
-                string partialName;
-                if (pos2 < 0) {
-                    partialName = moduleName.Substring(pos);
-                } else {
-                    partialName = moduleName.Substring(pos, pos2 - pos);
-                    pos = pos2 + 2;
-                }
-                object tmp;
-                if (!result.TryResolveConstant(autoloadScope, partialName, out tmp)) {
-                    result = null;
-                    return false;
-                }
-                result = tmp as RubyModule;
-                if (result == null) {
-                    return false;
-                } else if (pos2 < 0) {
-                    return true;
+            using (ClassHierarchyLocker()) {
+                result = _objectClass;
+                int pos = 0;
+                while (true) {
+                    int pos2 = moduleName.IndexOf("::", pos);
+                    string partialName;
+                    if (pos2 < 0) {
+                        partialName = moduleName.Substring(pos);
+                    } else {
+                        partialName = moduleName.Substring(pos, pos2 - pos);
+                        pos = pos2 + 2;
+                    }
+                    object tmp;
+                    if (!result.TryResolveConstantNoLock(autoloadScope, partialName, out tmp)) {
+                        result = null;
+                        return false;
+                    }
+                    result = tmp as RubyModule;
+                    if (result == null) {
+                        return false;
+                    } else if (pos2 < 0) {
+                        return true;
+                    }
                 }
             }
         }
 
         #endregion
 
-        #region Object Operations
+        #region Object Operations: InstanceData access (thread-safe)
+
+        // Retrieving instance data is thread safe. Operations on the instance data object are not.
 
         internal RubyInstanceData TryGetInstanceData(object obj) {
             IRubyObject rubyObject = obj as IRubyObject;
@@ -1108,7 +1079,7 @@ namespace IronRuby.Runtime {
 
             RubyInstanceData result;
             if (RubyUtils.IsRubyValueType(obj)) {
-                lock (ValueTypeInstanceDataSyncRoot) {
+                lock (ValueTypeInstanceDataLock) {
                     _valueTypeInstanceData.TryGetValue(obj, out result);
                 }
                 return result;
@@ -1130,7 +1101,7 @@ namespace IronRuby.Runtime {
 
             RubyInstanceData result;
             if (RubyUtils.IsRubyValueType(obj)) {
-                lock (ValueTypeInstanceDataSyncRoot) {
+                lock (ValueTypeInstanceDataLock) {
                     if (!_valueTypeInstanceData.TryGetValue(obj, out result)) {
                         _valueTypeInstanceData.Add(obj, result = new RubyInstanceData());
                     }
@@ -1141,8 +1112,13 @@ namespace IronRuby.Runtime {
             return _referenceTypeInstanceData.GetValue(obj);
         }
 
+        #endregion
+
+        #region Object Operations: Instance variables, flags (NOT thread-safe)
+
         public bool HasInstanceVariables(object obj) {
-            return TryGetInstanceData(obj) != null;
+            RubyInstanceData data = TryGetInstanceData(obj);
+            return data != null && data.HasInstanceVariables;
         }
 
         public string[]/*!*/ GetInstanceVariableNames(object obj) {
@@ -1207,9 +1183,12 @@ namespace IronRuby.Runtime {
                 RubyClass singleton;
                 if (copySingletonMembers && (singleton = sourceData.InstanceSingleton) != null) {
                     if (targetData == null) targetData = GetInstanceData(target);
-                    
-                    var dup = singleton.Duplicate(target);
-                    dup.InitializeMembersFrom(singleton);
+
+                    RubyClass dup;
+                    using (ClassHierarchyLocker()) {
+                        dup = singleton.Duplicate(target);
+                        dup.InitializeMembersFrom(singleton);
+                    }
 
                     SetInstanceSingletonOf(target, ref targetData, dup);
                 }
@@ -1270,7 +1249,7 @@ namespace IronRuby.Runtime {
 
         #endregion
 
-        #region Global Variables
+        #region Global Variables: General access (thread-safe)
 
         public object GetGlobalVariable(string/*!*/ name) {
             object value;
@@ -1279,20 +1258,20 @@ namespace IronRuby.Runtime {
         }
 
         public void DefineGlobalVariable(string/*!*/ name, object value) {
-            lock (_globalVariables) {
+            lock (GlobalVariablesLock) {
                 _globalVariables[name] = new GlobalVariableInfo(value);
             }
         }
 
         public void DefineReadOnlyGlobalVariable(string/*!*/ name, object value) {
-            lock (_globalVariables) {
+            lock (GlobalVariablesLock) {
                 _globalVariables[name] = new ReadOnlyGlobalVariableInfo(value);
             }
         }
 
         public void DefineGlobalVariable(string/*!*/ name, GlobalVariable/*!*/ variable) {
             ContractUtils.RequiresNotNull(variable, "variable");
-            lock (_globalVariables) {
+            lock (GlobalVariablesLock) {
                 _globalVariables[name] = variable;
             }
         }
@@ -1302,13 +1281,13 @@ namespace IronRuby.Runtime {
         }
 
         public bool DeleteGlobalVariable(string/*!*/ name) {
-            lock (_globalVariables) {
+            lock (GlobalVariablesLock) {
                 return _globalVariables.Remove(name);
             }
         }
 
         public void AliasGlobalVariable(string/*!*/ newName, string/*!*/ oldName) {
-            lock (_globalVariables) {
+            lock (GlobalVariablesLock) {
                 GlobalVariable existing;
                 if (!_globalVariables.TryGetValue(oldName, out existing)) {
                     DefineGlobalVariableNoLock(oldName, existing = new GlobalVariableInfo(null, false));
@@ -1320,7 +1299,7 @@ namespace IronRuby.Runtime {
         // null scope should be used only when accessed outside Ruby code; in that case no scoped variables are available
         // we need scope here, bacause the variable might be an alias for scoped variable (regex matches):
         public void SetGlobalVariable(RubyScope scope, string/*!*/ name, object value) {
-            lock (_globalVariables) {
+            lock (GlobalVariablesLock) {
                 GlobalVariable global;
                 if (_globalVariables.TryGetValue(name, out global)) {
                     global.SetValue(this, scope, name, value);
@@ -1334,7 +1313,7 @@ namespace IronRuby.Runtime {
         // null scope should be used only when accessed outside Ruby code; in that case no scoped variables are available
         // we need scope here, bacause the variable might be an alias for scoped variable (regex matches):
         public bool TryGetGlobalVariable(RubyScope scope, string/*!*/ name, out object value) {
-            lock (_globalVariables) {
+            lock (GlobalVariablesLock) {
                 GlobalVariable global;
                 if (_globalVariables.TryGetValue(name, out global)) {
                     value = global.GetValue(this, scope);
@@ -1346,12 +1325,25 @@ namespace IronRuby.Runtime {
         }
 
         internal bool TryGetGlobalVariable(string/*!*/ name, out GlobalVariable variable) {
-            lock (_globalVariables) {
+            lock (GlobalVariablesLock) {
                 return _globalVariables.TryGetValue(name, out variable);
             }
         }
 
-        // special global accessors:
+        #endregion
+
+        #region Global Variables: Special variables (thread-safe)
+
+        /// <summary>
+        /// $!
+        /// </summary>
+        [ThreadStatic]
+        private static Exception _currentException;
+
+        public Exception CurrentException {
+            get { return _currentException; }
+            internal set { _currentException = RubyUtils.GetVisibleException(value); }
+        }
 
         internal Exception SetCurrentException(object value) {
             Exception e = value as Exception;
@@ -1389,13 +1381,13 @@ namespace IronRuby.Runtime {
             return array;
         }
 
-        public void SetSafeLevel(int value) {
-            if (_currentSafeLevel <= value) {
-                _currentSafeLevel = value;
-            } else {
-                throw RubyExceptions.CreateSecurityError(String.Format("tried to downgrade safe level from {0} to {1}",
-                    _currentSafeLevel, value));
-            }
+        /// <summary>
+        /// $KCODE
+        /// </summary>
+        private static KCode _kcode;
+
+        public KCode KCode {
+            get { return _kcode; }
         }
 
         public void SetKCode(MutableString encodingName) {
@@ -1452,17 +1444,38 @@ namespace IronRuby.Runtime {
             }
         }
 
+        /// <summary>
+        /// $SAFE
+        /// </summary>
+        [ThreadStatic]
+        private static int _currentSafeLevel;
+
+        public int CurrentSafeLevel {
+            get { return _currentSafeLevel; }
+        }
+
+        public void SetSafeLevel(int value) {
+            if (_currentSafeLevel <= value) {
+                _currentSafeLevel = value;
+            } else {
+                throw RubyExceptions.CreateSecurityError(String.Format("tried to downgrade safe level from {0} to {1}",
+                    _currentSafeLevel, value));
+            }
+        }
+
         #endregion
 
-        #region IO
+        #region IO (thread-safe)
 
-        public void ReportWarning(string/*!*/ message) {
-            ReportWarning(message, false);
-        }
+        private readonly List<RubyIO>/*!*/ _fileDescriptors = new List<RubyIO>(10);
 
-        public void ReportWarning(string/*!*/ message, bool isVerbose) {
-            _runtimeErrorSink.Add(null, message, SourceSpan.None, isVerbose ? Errors.RuntimeVerboseWarning : Errors.RuntimeWarning, Severity.Warning);
-        }
+        public const int StandardInputDescriptor = 0;
+        public const int StandardOutputDescriptor = 1;
+        public const int StandardErrorOutputDescriptor = 2;
+
+        public object StandardInput { get; set; }
+        public object StandardOutput { get; set; }
+        public object StandardErrorOutput { get; set; }
 
         public RubyIO GetDescriptor(int fileDescriptor) {
             lock (_fileDescriptors) {
@@ -1501,74 +1514,25 @@ namespace IronRuby.Runtime {
             }
         }
 
-        #endregion
+        private readonly RuntimeErrorSink/*!*/ _runtimeErrorSink;
 
-        #region Callbacks
-
-        // Ruby 1.8: called after method is added, except for alias_method which calls it before
-        // Ruby 1.9: called before method is added
-        internal void MethodAdded(RubyModule/*!*/ module, string/*!*/ name) {
-            Assert.NotNull(module, name);
-
-            // not called on singleton classes:
-            if (!module.IsSingletonClass) {
-                MethodEvent(ref _methodAddedCallbackSite, Symbols.MethodAdded,
-                    this, module, name);
-            } else {
-                SingletonMethodEvent(ref _singletonMethodAddedCallbackSite, Symbols.SingletonMethodAdded,
-                    this, ((RubyClass)module).SingletonClassOf, name);
-            }
+        public RuntimeErrorSink/*!*/ RuntimeErrorSink {
+            get { return _runtimeErrorSink; }
         }
 
-        internal void MethodRemoved(RubyModule/*!*/ module, string/*!*/ name) {
-            Assert.NotNull(module, name);
-
-            // not called on singleton classes:
-            if (!module.IsSingletonClass) {
-                MethodEvent(ref _methodRemovedCallbackSite, Symbols.MethodRemoved,
-                    this, module, name);
-            } else {
-                SingletonMethodEvent(ref _singletonMethodRemovedCallbackSite, Symbols.SingletonMethodRemoved,
-                    this, ((RubyClass)module).SingletonClassOf, name);
-            }
+        public void ReportWarning(string/*!*/ message) {
+            ReportWarning(message, false);
         }
 
-        internal void MethodUndefined(RubyModule/*!*/ module, string/*!*/ name) {
-            Assert.NotNull(module, name);
-
-            // not called on singleton classes:
-            if (!module.IsSingletonClass) {
-                MethodEvent(ref _methodUndefinedCallbackSite, Symbols.MethodUndefined,
-                    this, module, name);
-            } else {
-                SingletonMethodEvent(ref _singletonMethodUndefinedCallbackSite, Symbols.SingletonMethodUndefined,
-                    this, ((RubyClass)module).SingletonClassOf, name);
-            }
-        }
-
-        internal void ReportTraceEvent(string/*!*/ operation, RubyScope/*!*/ scope, RubyModule/*!*/ module, string/*!*/ name, string fileName, int lineNumber) {
-            if (_traceListener != null && !_traceListenerSuspended) {
-                
-                try {
-                    _traceListenerSuspended = true;
-
-                    _traceListener.Call(new[] {
-                        MutableString.Create(operation),                                          // event
-                        fileName != null ? MutableString.Create(fileName) : null,                 // file
-                        ScriptingRuntimeHelpers.Int32ToObject(lineNumber),                        // line
-                        SymbolTable.StringToId(name),                                             // TODO: alias
-                        new Binding(scope),                                                       // binding
-                        module.IsSingletonClass ? ((RubyClass)module).SingletonClassOf : module   // module
-                    });
-                } finally {
-                    _traceListenerSuspended = false;
-                }
-            }
+        public void ReportWarning(string/*!*/ message, bool isVerbose) {
+            _runtimeErrorSink.Add(null, message, SourceSpan.None, isVerbose ? Errors.RuntimeVerboseWarning : Errors.RuntimeWarning, Severity.Warning);
         }
 
         #endregion
 
-        #region Library Data
+        #region Library Data (thread-safe)
+
+        private Dictionary<object, object> _libraryData;
 
         private void EnsureLibraryData() {
             if (_libraryData == null) {
@@ -1612,7 +1576,7 @@ namespace IronRuby.Runtime {
 
         #endregion
 
-        #region Parsing, Compilation
+        #region Parsing, Compilation (thread-safe)
 
         protected override ScriptCode CompileSourceCode(SourceUnit/*!*/ sourceUnit, CompilerOptions/*!*/ options, ErrorSink/*!*/ errorSink) {
             ContractUtils.RequiresNotNull(sourceUnit, "sourceUnit");
@@ -1726,7 +1690,7 @@ namespace IronRuby.Runtime {
 
         #endregion
 
-        #region Global Scope
+        #region Global Scope (TODO: thread-safe)
 
         /// <summary>
         /// Creates a scope extension for a DLR scope unless it already exists for the given scope.
@@ -1734,22 +1698,25 @@ namespace IronRuby.Runtime {
         internal RubyGlobalScope/*!*/ InitializeGlobalScope(Scope/*!*/ globalScope, bool createHosted) {
             Assert.NotNull(globalScope);
 
+            // TODO: Scopes are not thread safe but should be!
             var scopeExtension = globalScope.GetExtension(ContextId);
             if (scopeExtension != null) {
                 return (RubyGlobalScope)scopeExtension;
             }
 
             object mainObject = new Object();
-            RubyClass singletonClass = CreateMainSingleton(mainObject);
+            RubyClass singletonClass = CreateMainSingleton(mainObject, null);
 
             RubyGlobalScope result = new RubyGlobalScope(this, globalScope, mainObject, createHosted);
             globalScope.SetExtension(ContextId, result);
             
             if (createHosted) {
                 // method_missing:
-                singletonClass.SetMethodNoEvent(this, Symbols.MethodMissing, new RubyLibraryMethodInfo(new Delegate[] {
-                    new Func<RubyScope, BlockParam, object, SymbolId, object[], object>(RubyTopLevelScope.TopMethodMissing)
-                }, RubyMemberFlags.Private, singletonClass));
+                singletonClass.SetMethodNoEvent(this, Symbols.MethodMissing, 
+                    new RubyLibraryMethodInfo(new Delegate[] {
+                        new Func<RubyScope, BlockParam, object, SymbolId, object[], object>(RubyTopLevelScope.TopMethodMissing)
+                    }, RubyMemberFlags.Private, singletonClass)
+                );
                 
                 singletonClass.SetGlobalScope(result);
             }
@@ -1773,13 +1740,41 @@ namespace IronRuby.Runtime {
 
         #endregion
 
-        #region Shutdown
+        #region Shutdown (thread-safe)
 
-        private List<BlockParam> _shutdownHandlers = new List<BlockParam>();
+        private readonly List<BlockParam> _shutdownHandlers = new List<BlockParam>();
+        private object ShutdownHandlersLock { get { return _shutdownHandlers; }}
 
-        public void RegisterShutdownHandler(BlockParam proc) {
-            lock (_shutdownHandlers) {
+        public void RegisterShutdownHandler(BlockParam/*!*/ proc) {
+            ContractUtils.RequiresNotNull(proc, "proc");
+
+            lock (ShutdownHandlersLock) {
                 _shutdownHandlers.Add(proc);
+            }
+        }
+
+        private void ExecuteShutdownHandlers() {
+            var handlers = new List<BlockParam>();
+
+            while (true) {
+                lock (ShutdownHandlersLock) {
+                    if (_shutdownHandlers.Count == 0) {
+                        break;
+                    }
+                    handlers.AddRange(_shutdownHandlers);
+                    _shutdownHandlers.Clear();
+                }
+
+                for (int i = handlers.Count - 1; i >= 0; --i) {
+                    try {
+                        object result;
+                        handlers[i].Yield(out result);
+                    } catch (SystemExit) {
+                        // ignored
+                    }
+                }
+
+                handlers.Clear();
             }
         }
 
@@ -1879,30 +1874,12 @@ namespace IronRuby.Runtime {
 #endif
             _loader.SaveCompiledCode();
 
-            List<BlockParam> handlers = new List<BlockParam>();
-
-            while (_shutdownHandlers.Count > 0) {
-                lock (_shutdownHandlers) {
-                    handlers.AddRange(_shutdownHandlers);
-                    _shutdownHandlers.Clear();
-                }
-
-                for (int i = handlers.Count - 1; i >= 0; --i) {
-                    try {
-                        object result;
-                        handlers[i].Yield(out result);
-                    } catch (SystemExit) {
-                        // ignored
-                    }
-                }
-
-                handlers.Clear();
-            }
+            ExecuteShutdownHandlers();
         }
 
         #endregion
 
-        #region Exceptions
+        #region Exceptions (thread-safe)
 
         // Formats exceptions like Ruby does, for example:
         //
@@ -1996,7 +1973,11 @@ namespace IronRuby.Runtime {
 #if SILVERLIGHT
             return base.GetSourceReader(stream, defaultEncoding);
 #else
-            if (_options.Compatibility <= RubyCompatibility.Ruby18) {
+            return GetSourceReader(stream, defaultEncoding, _options.Compatibility);
+        }
+
+        private static SourceCodeReader/*!*/ GetSourceReader(Stream/*!*/ stream, Encoding/*!*/ defaultEncoding, RubyCompatibility compatibility) {
+            if (compatibility <= RubyCompatibility.Ruby18) {
                 return new SourceCodeReader(new StreamReader(stream, BinaryEncoding.Instance, false), BinaryEncoding.Instance);
             }
 
@@ -2034,6 +2015,16 @@ namespace IronRuby.Runtime {
 #endif
         }
 
+        protected override string/*!*/ FormatObject(DynamicOperations/*!*/ operations, object obj) {
+            var inspectSite = operations.GetOrCreateSite<RubyContext, object, object>(
+                RubyCallAction.Make("inspect", RubyCallSignature.WithImplicitSelf(1))
+            );
+
+            var tosSite = operations.GetOrCreateSite<RubyContext, object, MutableString>(ConvertToSAction.Instance);
+
+            return tosSite.Target(tosSite, this, inspectSite.Target(inspectSite, this, obj)).ToString();
+        }
+
         #endregion
 
         #region MetaObject binding
@@ -2067,15 +2058,17 @@ namespace IronRuby.Runtime {
 
         #endregion
 
-        #region Special Call Sites
+        #region Special Call Sites (thread-safe)
 
-        private readonly Dictionary<KeyValuePair<string, RubyCallSignature>, CallSite> _sendSites =
+        private readonly Dictionary<KeyValuePair<string, RubyCallSignature>, CallSite>/*!*/ _sendSites =
             new Dictionary<KeyValuePair<string, RubyCallSignature>, CallSite>();
+
+        private object SendSitesLock { get { return _sendSites; } }
 
         public CallSite<TSiteFunc>/*!*/ GetOrCreateSendSite<TSiteFunc>(string/*!*/ methodName, RubyCallSignature callSignature)
             where TSiteFunc : class {
 
-            lock (_sendSites) {
+            lock (SendSitesLock) {
                 CallSite site;
                 if (_sendSites.TryGetValue(new KeyValuePair<string, RubyCallSignature>(methodName, callSignature), out site)) {
                     return (CallSite<TSiteFunc>)site;
@@ -2084,6 +2077,120 @@ namespace IronRuby.Runtime {
                 var newSite = CallSite<TSiteFunc>.Create(RubyCallAction.Make(methodName, callSignature));
                 _sendSites.Add(new KeyValuePair<string, RubyCallSignature>(methodName, callSignature), newSite);
                 return newSite;
+            }
+        }
+
+        #endregion
+
+        #region Ruby Events
+
+        private CallSite<Func<CallSite, RubyContext, RubyModule, SymbolId, object>> _methodAddedCallbackSite;
+        private CallSite<Func<CallSite, RubyContext, RubyModule, SymbolId, object>> _methodRemovedCallbackSite;
+        private CallSite<Func<CallSite, RubyContext, RubyModule, SymbolId, object>> _methodUndefinedCallbackSite;
+        private CallSite<Func<CallSite, RubyContext, object, SymbolId, object>> _singletonMethodAddedCallbackSite;
+        private CallSite<Func<CallSite, RubyContext, object, SymbolId, object>> _singletonMethodRemovedCallbackSite;
+        private CallSite<Func<CallSite, RubyContext, object, SymbolId, object>> _singletonMethodUndefinedCallbackSite;
+        private CallSite<Func<CallSite, RubyContext, RubyClass, RubyClass, object>> _classInheritedCallbackSite;
+
+        private void MethodEvent(ref CallSite<Func<CallSite, RubyContext, RubyModule, SymbolId, object>> site, string/*!*/ eventName,
+            RubyContext/*!*/ context, RubyModule/*!*/ module, string/*!*/ methodName) {
+
+            if (site == null) {
+                Interlocked.CompareExchange(
+                    ref site,
+                    CallSite<Func<CallSite, RubyContext, RubyModule, SymbolId, object>>.Create(RubyCallAction.Make(eventName, RubyCallSignature.WithImplicitSelf(1))),
+                    null
+                );
+            }
+
+            site.Target(site, context, module, SymbolTable.StringToId(methodName));
+        }
+
+        private void SingletonMethodEvent(ref CallSite<Func<CallSite, RubyContext, object, SymbolId, object>> site, string/*!*/ eventName,
+            RubyContext/*!*/ context, object obj, string/*!*/ methodName) {
+
+            if (site == null) {
+                Interlocked.CompareExchange(
+                    ref site,
+                    CallSite<Func<CallSite, RubyContext, object, SymbolId, object>>.Create(RubyCallAction.Make(eventName, RubyCallSignature.WithImplicitSelf(1))),
+                    null
+                );
+            }
+
+            site.Target(site, context, obj, SymbolTable.StringToId(methodName));
+        }
+
+        private void ClassInheritedEvent(RubyClass/*!*/ superClass, RubyClass/*!*/ subClass) {
+            if (_classInheritedCallbackSite == null) {
+                Interlocked.CompareExchange(
+                    ref _classInheritedCallbackSite,
+                    CallSite<Func<CallSite, RubyContext, RubyClass, RubyClass, object>>.Create(RubyCallAction.Make(Symbols.Inherited, RubyCallSignature.WithImplicitSelf(1)
+                    )),
+                    null
+                );
+            }
+
+            _classInheritedCallbackSite.Target(_classInheritedCallbackSite, this, superClass, subClass);
+        }
+
+        // Ruby 1.8: called after method is added, except for alias_method which calls it before
+        // Ruby 1.9: called before method is added
+        public void MethodAdded(RubyModule/*!*/ module, string/*!*/ name) {
+            Assert.NotNull(module, name);
+
+            // not called on singleton classes:
+            if (!module.IsSingletonClass) {
+                MethodEvent(ref _methodAddedCallbackSite, Symbols.MethodAdded,
+                    this, module, name);
+            } else {
+                SingletonMethodEvent(ref _singletonMethodAddedCallbackSite, Symbols.SingletonMethodAdded,
+                    this, ((RubyClass)module).SingletonClassOf, name);
+            }
+        }
+
+        internal void MethodRemoved(RubyModule/*!*/ module, string/*!*/ name) {
+            Assert.NotNull(module, name);
+
+            // not called on singleton classes:
+            if (!module.IsSingletonClass) {
+                MethodEvent(ref _methodRemovedCallbackSite, Symbols.MethodRemoved,
+                    this, module, name);
+            } else {
+                SingletonMethodEvent(ref _singletonMethodRemovedCallbackSite, Symbols.SingletonMethodRemoved,
+                    this, ((RubyClass)module).SingletonClassOf, name);
+            }
+        }
+
+        internal void MethodUndefined(RubyModule/*!*/ module, string/*!*/ name) {
+            Assert.NotNull(module, name);
+
+            // not called on singleton classes:
+            if (!module.IsSingletonClass) {
+                MethodEvent(ref _methodUndefinedCallbackSite, Symbols.MethodUndefined,
+                    this, module, name);
+            } else {
+                SingletonMethodEvent(ref _singletonMethodUndefinedCallbackSite, Symbols.SingletonMethodUndefined,
+                    this, ((RubyClass)module).SingletonClassOf, name);
+            }
+        }
+
+        internal void ReportTraceEvent(string/*!*/ operation, RubyScope/*!*/ scope, RubyModule/*!*/ module, string/*!*/ name, string fileName, int lineNumber) {
+            if (_traceListener != null && !_traceListenerSuspended) {
+
+                try {
+                    _traceListenerSuspended = true;
+
+                    _traceListener.Call(new[] {
+                        MutableString.Create(operation),                                          // event
+                        fileName != null ? MutableString.Create(fileName) : null,                 // file
+                        ScriptingRuntimeHelpers.Int32ToObject(lineNumber),                        // line
+                        SymbolTable.StringToId(name),                                             // TODO: alias
+                        new Binding(scope),                                                       // binding
+                        module.IsSingletonClass ? ((RubyClass)module).SingletonClassOf : module   // module
+                    });
+                } finally {
+                    _traceListenerSuspended = false;
+                }
             }
         }
 

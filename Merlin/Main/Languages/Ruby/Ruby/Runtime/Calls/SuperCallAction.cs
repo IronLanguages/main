@@ -83,11 +83,11 @@ namespace IronRuby.Runtime.Calls {
 
         public override DynamicMetaObject/*!*/ Bind(DynamicMetaObject/*!*/ context, DynamicMetaObject/*!*/[]/*!*/ args) {
             var mo = new MetaObjectBuilder();
-            SetRule(mo, new CallArguments(context, args, _signature));
+            BuildSuperCall(mo, new CallArguments(context, args, _signature));
             return mo.CreateMetaObject(this, context, args);
         }
 
-        internal void SetRule(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args) {
+        internal void BuildSuperCall(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args) {
             RubyModule currentDeclaringModule;
             string currentMethodName;
 
@@ -111,18 +111,29 @@ namespace IronRuby.Runtime.Calls {
 
             Debug.Assert(currentDeclaringModule != null);
 
-            // target is stored in a local, therefore it cannot be part of the restrictions:
-            metaBuilder.TreatRestrictionsAsConditions = true;
-            metaBuilder.AddTargetTypeTest(target, targetExpression, scope.RubyContext, args.ContextExpression);
-            metaBuilder.TreatRestrictionsAsConditions = false;
+            RubyMemberInfo method;
 
-            RubyMemberInfo method = scope.RubyContext.ResolveSuperMethod(target, currentMethodName, currentDeclaringModule);
+            // we need to lock the hierarchy of the target class:
+            var targetClass = scope.RubyContext.GetImmediateClassOf(target);
+            using (targetClass.Context.ClassHierarchyLocker()) {
+                // initialize all methods in ancestors:                
+                targetClass.InitializeMethodsNoLock();
+
+                // target is stored in a local, therefore it cannot be part of the restrictions:
+                metaBuilder.TreatRestrictionsAsConditions = true;
+                metaBuilder.AddTargetTypeTest(target, targetClass, targetExpression, scope.RubyContext, args.ContextExpression);
+                metaBuilder.TreatRestrictionsAsConditions = false;
+
+                method = targetClass.ResolveSuperMethodNoLock(currentMethodName, currentDeclaringModule);
+                if (method != null) {
+                    method.InvalidateSitesOnOverride = true;
+                }
+            }
 
             // super calls don't go to method_missing
             if (method == null) {
                 metaBuilder.SetError(Methods.MakeMissingSuperException.OpCall(Ast.Constant(currentMethodName)));
             } else {
-                method.InvalidateSitesOnOverride = true;
                 method.BuildSuperCall(metaBuilder, args, currentMethodName, currentDeclaringModule);
             }
         }

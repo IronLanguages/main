@@ -51,7 +51,7 @@ namespace System.Runtime.CompilerServices {
                 @params[i] = Expression.Parameter(pis[i + 1].ParameterType, "$arg" + i);
             }
 
-            Parameters = new ReadOnlyCollection<ParameterExpression>(@params);
+            Parameters = new TrueReadOnlyCollection<ParameterExpression>(@params);
             ReturnLabel = Expression.Label(invoke.GetReturnType());
         }
 

@@ -95,16 +95,16 @@ namespace System.Linq.Expressions.Compiler {
         private void EmitInvocationExpression(Expression expr) {
             InvocationExpression node = (InvocationExpression)expr;
 
-            // Note: If node.Expression is a lambda, ExpressionCompiler inlines
-            // the lambda here as an optimization. We don't, for various
-            // reasons:
+            // Optimization: inline code for literal lambda's directly
             //
-            // * It's not necessarily optimal for large statement trees (JIT
-            //   does better with small methods)
-            // * We support returning from anywhere,
-            // * The frame wouldn't show up in the stack trace,
-            // * Possibly other subtle semantic differences
+            // This is worth it because otherwise we end up with a extra call
+            // to DynamicMethod.CreateDelegate, which is expensive.
             //
+            if (node.LambdaOperand != null) {
+                EmitInlinedInvoke(node);
+                return;
+            }
+
             expr = node.Expression;
             if (typeof(LambdaExpression).IsAssignableFrom(expr.Type)) {
                 // if the invoke target is a lambda expression tree, first compile it into a delegate
@@ -113,6 +113,26 @@ namespace System.Linq.Expressions.Compiler {
             expr = Expression.Call(expr, expr.Type.GetMethod("Invoke"), node.Arguments);
 
             EmitExpression(expr);
+        }
+
+        private void EmitInlinedInvoke(InvocationExpression invoke) {
+            var lambda = invoke.LambdaOperand;
+
+            // This is tricky: we need to emit the arguments outside of the
+            // scope, but set them inside the scope. Fortunately, using the IL
+            // stack it is entirely doable.
+
+            // 1. Emit invoke arguments
+            List<WriteBack> wb = EmitArguments(lambda.Type.GetMethod("Invoke"), invoke);
+
+            // 2. Create the nested LambdaCompiler
+            var inner = new LambdaCompiler(this, lambda);
+
+            // 3. Emit the body
+            inner.EmitLambdaBody(_scope, true);
+
+            // 4. Emit writebacks if needed
+            EmitWriteBack(wb);
         }
 
         #endregion
@@ -371,7 +391,7 @@ namespace System.Linq.Expressions.Compiler {
             }
 
             var node = (DynamicExpression)expr;
-            
+
             var site = CallSite.Create(node.DelegateType, node.Binder);
             Type siteType = site.GetType();
 
@@ -814,10 +834,8 @@ namespace System.Linq.Expressions.Compiler {
         }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity")]
-        private void EmitLift(ExpressionType nodeType, Type resultType, MethodCallExpression mc, IList<ParameterExpression> parameters, IList<Expression> arguments) {
+        private void EmitLift(ExpressionType nodeType, Type resultType, MethodCallExpression mc, ParameterExpression[] paramList, Expression[] argList) {
             Debug.Assert(TypeUtils.GetNonNullableType(resultType) == TypeUtils.GetNonNullableType(mc.Type));
-            ReadOnlyCollection<ParameterExpression> paramList = new ReadOnlyCollection<ParameterExpression>(parameters);
-            ReadOnlyCollection<Expression> argList = new ReadOnlyCollection<Expression>(arguments);
 
             switch (nodeType) {
                 default:
@@ -828,7 +846,7 @@ namespace System.Linq.Expressions.Compiler {
                         Label exit = _ilg.DefineLabel();
                         Label exitNull = _ilg.DefineLabel();
                         LocalBuilder anyNull = _ilg.DeclareLocal(typeof(bool));
-                        for (int i = 0, n = paramList.Count; i < n; i++) {
+                        for (int i = 0, n = paramList.Length; i < n; i++) {
                             ParameterExpression v = paramList[i];
                             Expression arg = argList[i];
                             if (TypeUtils.IsNullableType(arg.Type)) {
@@ -903,7 +921,7 @@ namespace System.Linq.Expressions.Compiler {
                         _ilg.Emit(OpCodes.Ldc_I4_1);
                         _ilg.Emit(OpCodes.Stloc, allNull);
 
-                        for (int i = 0, n = paramList.Count; i < n; i++) {
+                        for (int i = 0, n = paramList.Length; i < n; i++) {
                             ParameterExpression v = paramList[i];
                             Expression arg = argList[i];
                             _scope.AddLocal(this, v);

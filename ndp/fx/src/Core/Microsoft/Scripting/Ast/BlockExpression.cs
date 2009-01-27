@@ -607,6 +607,8 @@ namespace System.Linq.Expressions {
         /// <param name="expressions">The expressions in the block.</param>
         /// <returns>The created <see cref="BlockExpression"/>.</returns>
         public static BlockExpression Block(params Expression[] expressions) {
+            ContractUtils.RequiresNotNull(expressions, "expressions");
+
             switch (expressions.Length) {
                 case 2: return Block(expressions[0], expressions[1]);
                 case 3: return Block(expressions[0], expressions[1], expressions[2]);
@@ -615,7 +617,7 @@ namespace System.Linq.Expressions {
                 default:
                     ContractUtils.RequiresNotEmpty(expressions, "expressions");
                     RequiresCanRead(expressions, "expressions");
-                    return new BlockN(expressions);
+                    return new BlockN(expressions.Copy());
             }
         }
 

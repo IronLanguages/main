@@ -13,11 +13,8 @@
  *
  * ***************************************************************************/
 
-using System.Dynamic.Utils;
-using System.Text;
-
 namespace System.Linq.Expressions {
-    //CONFORMING
+
     /// <summary>
     /// Represents an expression that has a conditional operator.
     /// </summary>
@@ -97,7 +94,7 @@ namespace System.Linq.Expressions {
     }
 
     public partial class Expression {
-        //CONFORMING
+
         /// <summary>
         /// Creates a <see cref="ConditionalExpression"/>.
         /// </summary>

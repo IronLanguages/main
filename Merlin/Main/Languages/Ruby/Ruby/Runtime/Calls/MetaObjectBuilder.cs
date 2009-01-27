@@ -142,15 +142,16 @@ namespace IronRuby.Runtime.Calls {
             AddCondition(GetObjectTypeTestExpression(value, expression));
         }
 
-        public void AddTargetTypeTest(CallArguments/*!*/ args) {
-            AddTargetTypeTest(args.Target, args.TargetExpression, args.RubyContext, args.ContextExpression);
-        }
-
         // TODO: do not test runtime for runtime bound sites
-        // TODO: ResolveMethod invalidates modules that were not initialized yet -> snapshot version after method resolution
-        // TODO: thread safety: synchronize version snapshot and method resolution
-        public void AddTargetTypeTest(object target, Expression/*!*/ targetParameter, RubyContext/*!*/ context, Expression/*!*/ contextExpression) {
+        public void AddTargetTypeTest(object target, RubyClass/*!*/ targetClass, Expression/*!*/ targetParameter, 
+            RubyContext/*!*/ context, Expression/*!*/ contextExpression) {
 
+            // no changes to the module's class hierarchy while building the test:
+            targetClass.Context.RequiresClassHierarchyLock();
+
+            // initialization changes the version number, so ensure that the module is initialized:
+            targetClass.InitializeMethodsNoLock(); 
+            
             // singleton nil:
             if (target == null) {
                 AddRestriction(Ast.Equal(targetParameter, Ast.Constant(null)));
@@ -174,10 +175,8 @@ namespace IronRuby.Runtime.Calls {
 
             }
 
-            RubyClass immediateClass = context.GetImmediateClassOf(target);
-
             // user defined instance singletons, modules, classes:
-            if (immediateClass.IsSingletonClass) {
+            if (targetClass.IsSingletonClass) {
                 AddRestriction(
                     Ast.Equal(
                         Ast.Convert(targetParameter, typeof(object)),
@@ -186,7 +185,7 @@ namespace IronRuby.Runtime.Calls {
                 );
 
                 // we need to check for a runtime (e.g. "foo" .NET string instance could be shared accross runtimes):
-                AddFullVersionTest(immediateClass, context, contextExpression);
+                AddFullVersionTest(targetClass, context, contextExpression);
                 return;
             }
 
@@ -198,10 +197,16 @@ namespace IronRuby.Runtime.Calls {
                 MethodInfo classGetter = type.GetMethod("get_" + RubyObject.ClassPropertyName, BindingFlags.Public | BindingFlags.Instance);
                 if (classGetter != null && classGetter.ReturnType == typeof(RubyClass)) {
                     AddCondition(
-                        // (#{type})target.Class.Version == #{immediateClass.Version}
+                        // (#{type})target.Class.Version.Value == #{immediateClass.Version}
                         Ast.Equal(
-                            Ast.Call(Ast.Call(Ast.Convert(targetParameter, type), classGetter), RubyModule.VersionProperty.GetGetMethod()),
-                            Ast.Constant(immediateClass.Version)
+                            Ast.Field(
+                                Ast.Field(
+                                    Ast.Call(Ast.Convert(targetParameter, type), classGetter), 
+                                    Fields.RubyModule_Version
+                                ), 
+                                Fields.StrongBox_Of_Int_Value
+                            ),
+                            Ast.Constant(targetClass.Version.Value)
                         )
                     );
                     return;
@@ -211,19 +216,25 @@ namespace IronRuby.Runtime.Calls {
                 throw new NotSupportedException("Type implementing IRubyObject should have RubyClass getter");
             } else {
                 // CLR objects:
-                AddFullVersionTest(immediateClass, context, contextExpression);
+                AddFullVersionTest(targetClass, context, contextExpression);
             }
         }
 
-        internal void AddFullVersionTest(RubyModule/*!*/ module, RubyContext/*!*/ context, Expression/*!*/ contextExpression) {
+        private void AddFullVersionTest(RubyModule/*!*/ module, RubyContext/*!*/ context, Expression/*!*/ contextExpression) {
             Assert.NotNull(module, context, contextExpression);
-            module.EnsureInitialized(); // Initialization changes the version number, so ensure that the module is initialized
+            module.Context.RequiresClassHierarchyLock();
 
             // check for runtime (note that the module's runtime could be different from the call-site runtime):
             AddRestriction(Ast.Equal(contextExpression, Ast.Constant(context)));
 
-            // check for version:
-            AddCondition(Ast.Equal(Ast.Property(Ast.Constant(module), RubyModule.VersionProperty), Ast.Constant(module.Version)));
+            AddVersionTest(module);
+        }
+
+        internal void AddVersionTest(RubyModule/*!*/ module) {
+            module.Context.RequiresClassHierarchyLock();
+
+            // check for module version (do not burn a module reference to the rule):
+            AddCondition(Ast.Equal(Ast.Field(Ast.Constant(module.Version), Fields.StrongBox_Of_Int_Value), Ast.Constant(module.Version.Value)));
         }
 
         internal bool AddSplattedArgumentTest(object value, Expression/*!*/ expression, out int listLength, out ParameterExpression/*!*/ listVariable) {

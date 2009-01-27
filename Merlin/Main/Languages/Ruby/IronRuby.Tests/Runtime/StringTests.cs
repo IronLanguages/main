@@ -17,8 +17,7 @@ using System;
 namespace IronRuby.Tests {
     public partial class Tests {
         public void StringsPlus() {
-            // TODO: Ruby raises TypeError (InvalidOperationException)
-            AssertExceptionThrown<ArgumentException>(delegate() {
+            AssertExceptionThrown<InvalidOperationException>(delegate() {
                 CompilerTest(@"
 puts 'foo' + nil
 ");

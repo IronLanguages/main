@@ -80,7 +80,7 @@ namespace System.Linq.Expressions {
             get { return GetNodeKind(); }
         }
 
-        //CONFORMING
+
         /// <summary>
         /// The <see cref="Type"/> of the value represented by this <see cref="Expression"/>.
         /// </summary>
@@ -203,7 +203,7 @@ namespace System.Linq.Expressions {
             return node;
         }
 
-        //CONFORMING
+
         /// <summary>
         /// Creates a <see cref="String"/> representation of the Expression.
         /// </summary>

@@ -54,7 +54,7 @@ namespace System.Linq.Expressions {
         public static MemberMemberBinding MemberBind(MemberInfo member, params MemberBinding[] bindings) {
             ContractUtils.RequiresNotNull(member, "member");
             ContractUtils.RequiresNotNull(bindings, "bindings");
-            return MemberBind(member, bindings.ToReadOnly());
+            return MemberBind(member, (IEnumerable<MemberBinding>)bindings);
         }
         
         /// <summary>

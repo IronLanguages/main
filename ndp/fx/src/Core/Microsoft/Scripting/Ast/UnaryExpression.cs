@@ -17,7 +17,7 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Reflection;
 using System.Dynamic.Utils;
-
+using System.Runtime.CompilerServices;
 namespace System.Linq.Expressions {
     
     /// <summary>
@@ -242,7 +242,7 @@ namespace System.Linq.Expressions {
                 block[i] = Assign(temps[i], arg);
                 i++;
             }
-            index = MakeIndex(temps[0], index.Indexer, new ReadOnlyCollection<Expression>(args));
+            index = MakeIndex(temps[0], index.Indexer, new TrueReadOnlyCollection<Expression>(args));
             if (!prefix) {
                 var lastTemp = temps[i] = Parameter(index.Type, null);
                 block[i] = Assign(temps[i], index);
@@ -255,7 +255,7 @@ namespace System.Linq.Expressions {
                 block[i++] = Assign(index, FunctionalOp(index));
             }
             Debug.Assert(i == block.Length);
-            return Block(new ReadOnlyCollection<ParameterExpression>(temps), new ReadOnlyCollection<Expression>(block));
+            return Block(new TrueReadOnlyCollection<ParameterExpression>(temps), new TrueReadOnlyCollection<Expression>(block));
         }
     }
 

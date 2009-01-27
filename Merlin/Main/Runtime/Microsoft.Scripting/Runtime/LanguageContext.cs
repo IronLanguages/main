@@ -331,7 +331,7 @@ namespace Microsoft.Scripting.Runtime {
             ContractUtils.RequiresNotNull(contentProvider, "contentProvider");
             ContractUtils.RequiresNotNull(encoding, "encoding");
             ContractUtils.Requires(path == null || path.Length > 0, "path", Strings.EmptyStringIsInvalidPath);
-            ContractUtils.Requires(EnumBounds.IsValid(kind), "kind");
+            ContractUtils.Requires(kind.IsValid(), "kind");
             ContractUtils.Requires(CanCreateSourceCode);
 
             return new SourceUnit(this, new LanguageBoundTextContentProvider(this, contentProvider, encoding), path, kind);
@@ -340,7 +340,7 @@ namespace Microsoft.Scripting.Runtime {
         public SourceUnit CreateSourceUnit(TextContentProvider contentProvider, string path, SourceCodeKind kind) {
             ContractUtils.RequiresNotNull(contentProvider, "contentProvider");
             ContractUtils.Requires(path == null || path.Length > 0, "path", Strings.EmptyStringIsInvalidPath);
-            ContractUtils.Requires(EnumBounds.IsValid(kind), "kind");
+            ContractUtils.Requires(kind.IsValid(), "kind");
             ContractUtils.Requires(CanCreateSourceCode);
 
             return new SourceUnit(this, contentProvider, path, kind);
@@ -645,6 +645,16 @@ namespace Microsoft.Scripting.Runtime {
                 return mo.GetDynamicMemberNames().ToReadOnly();
             }
             return EmptyArray<string>.Instance;
+        }
+
+        /// <summary>
+        /// Returns a string representation of the object in a language specific object display format.
+        /// </summary>
+        /// <param name="operations">Dynamic sites container that could be used for any dynamic dispatches necessary for formatting.</param>
+        /// <param name="obj">Object to format.</param>
+        /// <returns>A string representation of object.</returns>
+        internal protected virtual string FormatObject(DynamicOperations operations, object obj) {
+            return obj == null ? "null" : obj.ToString();
         }
     }
 }

@@ -275,18 +275,18 @@ namespace System.Dynamic {
             ParameterExpression temp = Expression.Parameter(typeof(object), null);
 
             Expression init = Expression.Assign(
-                temp,                        
+                temp,
                 Expression.Property(
                     Expression.Constant(new WeakReference(value)),
                     typeof(WeakReference).GetProperty("Target")
                 )
             );
-           
+
             return Expression.Block(
-                new ParameterExpression[]{ temp},
+                new ParameterExpression[] { temp },
                 init,
                 Expression.AndAlso(
-                    //check that WeekReference was not collected.
+                //check that WeekReference was not collected.
                     Expression.NotEqual(
                         temp,
                         Expression.Constant(null)

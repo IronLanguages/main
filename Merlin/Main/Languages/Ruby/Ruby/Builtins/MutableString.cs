@@ -29,7 +29,7 @@ namespace IronRuby.Builtins {
     // We don't want to do so since it would make libraries complex and frozen per-appdomain singletons impossible.
     // It would also consume more memory while the string subclassing is not a common scenario.
     // To allow inheriting from String in Ruby, we need a subclass that implements IRubyObject.
-    // We could genrate one the first time a String is subclassed. Having it defined explicitly (MutableStringSubclass) however
+    // We could genrate one the first time a String is subclassed. Having it defined explicitly (MutableString.Subclass) however
     // saves that code gen and also makes it simpler to detect whether or not we need to create a subclass of a string fast. 
     // That's a common operation String methods do.
     [Serializable]
@@ -91,7 +91,7 @@ namespace IronRuby.Builtins {
             _encoding = encoding;
         }
 
-        // Ruby subclasses (MutableStringSubclass):
+        // Ruby subclasses (MutableString.Subclass):
         protected MutableString(Encoding encoding) 
             : this(new StringBuilder(), encoding) {
         }

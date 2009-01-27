@@ -16,6 +16,7 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Dynamic.Utils;
+using System.Runtime.CompilerServices;
 
 namespace System.Linq.Expressions {
 
@@ -69,7 +70,7 @@ namespace System.Linq.Expressions {
             if (newNodes == null) {
                 return nodes;
             }
-            return new ReadOnlyCollection<Expression>(newNodes);
+            return new TrueReadOnlyCollection<Expression>(newNodes);
         }
 
         internal Expression[] VisitArguments(IArgumentProvider nodes) {
@@ -117,7 +118,7 @@ namespace System.Linq.Expressions {
             if (newNodes == null) {
                 return nodes;
             }
-            return new ReadOnlyCollection<T>(newNodes);
+            return new TrueReadOnlyCollection<T>(newNodes);
         }
 
         /// <summary>
@@ -170,7 +171,7 @@ namespace System.Linq.Expressions {
             if (newNodes == null) {
                 return nodes;
             }
-            return new ReadOnlyCollection<T>(newNodes);
+            return new TrueReadOnlyCollection<T>(newNodes);
         }
 
         /// <summary>

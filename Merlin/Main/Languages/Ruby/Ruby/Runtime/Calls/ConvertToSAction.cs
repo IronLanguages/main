@@ -57,11 +57,15 @@ namespace IronRuby.Runtime.Calls {
                 return;
             }
 
-            // check for type, version:
-            metaBuilder.AddTargetTypeTest(args);
+            RubyMemberInfo conversionMethod;
 
+            RubyClass targetClass = args.RubyContext.GetImmediateClassOf(args.Target);
+            using (targetClass.Context.ClassHierarchyLocker()) {
+                metaBuilder.AddTargetTypeTest(args.Target, targetClass, args.TargetExpression, args.RubyContext, args.ContextExpression);
+                conversionMethod = targetClass.ResolveMethodForSiteNoLock(ToS, false);
+            }
+            
             // invoke target.to_s and if successful convert the result to string unless it is already:
-            RubyMemberInfo conversionMethod = args.RubyContext.ResolveMethod(args.Target, ToS, false).InvalidateSitesOnOverride();
             if (conversionMethod != null) {
                 conversionMethod.BuildCall(metaBuilder, args, ToS);
 

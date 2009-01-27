@@ -144,7 +144,7 @@ namespace Chiron {
             }
         }
 
-        // Generates langauges.config file
+        // Generates languages.config file
         // this is needed by the DLR to load arbitrary DLR-based languages implementations
         private static void GenerateLanguagesConfig(ZipArchive zip, ICollection<LanguageInfo> langs) {
             bool needLangConfig = false;
@@ -155,7 +155,7 @@ namespace Chiron {
                 }
             }
 
-            // Only need langauge configuration file for non-builtin languages
+            // Only need language configuration file for non-builtin languages
             if (needLangConfig) {
                 Stream outStream = zip.Create("languages.config");
                 StreamWriter writer = new StreamWriter(outStream);
