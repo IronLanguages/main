@@ -330,22 +330,16 @@ namespace System.Linq.Expressions {
 
             var parameterList = parameters.ToReadOnly();
 
-            bool binder = body.Type == typeof(void);
-
             int paramCount = parameterList.Count;
-            Type[] typeArgs = new Type[paramCount + (binder ? 0 : 1)];
+            Type[] typeArgs = new Type[paramCount + 1];
             for (int i = 0; i < paramCount; i++) {
                 ContractUtils.RequiresNotNull(parameterList[i], "parameter");
-                typeArgs[i] = parameterList[i].Type;
+                Type pType = parameterList[i].Type;
+                typeArgs[i] = parameterList[i].IsByRef ? pType.MakeByRefType() : pType;
             }
+            typeArgs[paramCount] = body.Type;
 
-            Type delegateType;
-            if (binder)
-                delegateType = GetActionType(typeArgs);
-            else {
-                typeArgs[paramCount] = body.Type;
-                delegateType = GetFuncType(typeArgs);
-            }
+            Type delegateType = DelegateHelpers.MakeDelegateType(typeArgs);
 
             return Lambda(ExpressionType.Lambda, delegateType, name, body, parameterList);
         }
@@ -386,6 +380,7 @@ namespace System.Linq.Expressions {
                 if (pis.Length != parameters.Count) {
                     throw Error.IncorrectNumberOfLambdaDeclarationParameters();
                 }
+                var set = new Set<ParameterExpression>(pis.Length);
                 for (int i = 0, n = pis.Length; i < n; i++) {
                     ParameterExpression pex = parameters[i];
                     ParameterInfo pi = pis[i];
@@ -401,6 +396,10 @@ namespace System.Linq.Expressions {
                     if (!TypeUtils.AreReferenceAssignable(pex.Type, pType)) {
                         throw Error.ParameterExpressionNotValidAsDelegate(pex.Type, pType);
                     }
+                    if (set.Contains(pex)) {
+                        throw Error.DuplicateVariable(pex);
+                    }
+                    set.Add(pex);
                 }
             } else if (parameters.Count > 0) {
                 throw Error.IncorrectNumberOfLambdaDeclarationParameters();

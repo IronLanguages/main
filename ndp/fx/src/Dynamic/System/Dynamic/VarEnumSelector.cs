@@ -296,7 +296,9 @@ namespace System.Dynamic {
         /// Get the COM Variant type that argument should be marshaled as for a call to COM
         /// </summary>
         private VariantBuilder GetVariantBuilder(Type argumentType) {
-            if (argumentType == DynamicNull.Type) {
+            //argumentType is coming from MarshalType, null means the dynamic object holds
+            //a null value and not byref
+            if (argumentType == null) {
                 return new VariantBuilder(VarEnum.VT_EMPTY, new NullArgBuilder());
             }
 

@@ -21,6 +21,7 @@ using System.Dynamic;
 using Microsoft.Scripting.Actions;
 using Microsoft.Scripting.Utils;
 using Microsoft.Scripting.Generation;
+using Microsoft.Scripting.Runtime;
 
 namespace Microsoft.Scripting.Actions.Calls {
     /// <summary>
@@ -223,7 +224,7 @@ namespace Microsoft.Scripting.Actions.Calls {
             }
 
             for (NarrowingLevel curLevel = NarrowingLevel.None; curLevel <= NarrowingLevel.All; curLevel++) {
-                Candidate candidate = candidateOne._binder.SelectBestConversionFor(actualType.LimitType, candidateOne, candidateTwo, curLevel);
+                Candidate candidate = candidateOne._binder.SelectBestConversionFor(actualType.GetLimitType(), candidateOne, candidateTwo, curLevel);
                 if (candidate.Chosen()) {
                     return candidate;
                 }

@@ -110,7 +110,7 @@ namespace System.Dynamic {
                     if (_value != null) {
                         return _value.GetType();
                     } else {
-                        return typeof(DynamicNull);
+                        return null;
                     }
                 } else {
                     return null;

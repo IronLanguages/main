@@ -507,7 +507,7 @@ namespace IronRuby.Runtime.Calls {
                         Ast.Constant(action.Type),
                         AstUtils.Convert(target.Expression, typeof(RubyMethod))
                     ),
-                    target.Restrictions.Merge(BindingRestrictions.GetTypeRestriction(target.Expression, target.Value.GetType()))
+                    target.Restrictions.Merge(BindingRestrictionsHelpers.GetRuntimeTypeRestriction(target.Expression, target.Value.GetType()))
                 );
             }
             return null;

@@ -118,11 +118,11 @@ namespace System.Dynamic {
         }
 
         private static Type MarshalType(DynamicMetaObject mo) {
-            Type marshalType = mo.LimitType;
+            Type marshalType = (mo.Value == null && mo.HasValue) ? null : mo.LimitType;
 
             if (ComBinderHelpers.IsByRef(mo)) {
                 // Null just means that null was supplied.
-                if (marshalType == typeof(DynamicNull)) {
+                if (marshalType == null) {
                     marshalType = mo.Expression.Type;
                 }
                 marshalType = marshalType.MakeByRefType();
@@ -139,7 +139,7 @@ namespace System.Dynamic {
             // We already tested the instance, so no need to test it again
             for (int i = 0; i < _args.Length; i++) {
                 DynamicMetaObject curMo = _args[i];
-                _restrictions = _restrictions.Merge(BindingRestrictions.GetTypeRestriction(curMo.Expression, curMo.LimitType));
+                _restrictions = _restrictions.Merge(ComBinderHelpers.GetTypeRestrictionForDynamicMetaObject(curMo));
                 marshalArgTypes[i] = MarshalType(curMo);
             }
 

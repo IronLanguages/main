@@ -19,7 +19,7 @@ namespace System.Linq.Expressions {
     /// <summary>
     /// Represents a label, which can be placed in any <see cref="Expression"/> context. If
     /// it is jumped to, it will get the value provided by the corresponding
-    /// <see cref="GotoExpression"/>. Otherwise, it gets the value in <paramref name="DefaultValue"/>. If the
+    /// <see cref="GotoExpression"/>. Otherwise, it gets the value in <see cref="LabelExpression.DefaultValue"/>. If the
     /// <see cref="Type"/> equals System.Void, no value should be provided.
     /// </summary>
     public sealed class LabelExpression : Expression {

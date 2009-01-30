@@ -14,6 +14,7 @@
     <RootNamespace>System.Dynamic</RootNamespace>
     <NoWarn>0688</NoWarn><!-- mscorlib removed all link demands, so don't warn when overriding a method with no link demand -->
     <RunCodeAnalysis>true</RunCodeAnalysis>
+    <DocumentationFile>System.Dynamic.xml</DocumentationFile>
     <CodeAnalysisTreatWarningsAsErrors>true</CodeAnalysisTreatWarningsAsErrors>
   </PropertyGroup>
   <PropertyGroup>

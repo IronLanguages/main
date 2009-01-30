@@ -1,5 +1,3 @@
-include IronRubyUtils
-
 desc "Merge TFS into Git"
 task :to_git, [:repo] => [:happy] do |t, args|
   Rake::Task["git:ensure_repo"].invoke(args.repo)

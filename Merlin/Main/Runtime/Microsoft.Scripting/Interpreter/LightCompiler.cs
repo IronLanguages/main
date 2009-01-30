@@ -285,11 +285,10 @@ namespace Microsoft.Scripting.Interpreter {
                 return;
             }
 
-            index = _closureVariables.IndexOf(expr);
-            if (index == -1) {
+            if (!_closureVariables.Contains(expr)) {
                 _parent.EnsureAvailableForClosure(expr);
+                _closureVariables.Add(expr);
             }
-            _closureVariables.Add(expr);
         }
 
         private Instruction GetVariable(ParameterExpression expr) {
@@ -773,8 +772,9 @@ namespace Microsoft.Scripting.Interpreter {
                 // TODO we should only create one of these if needed for a rethrow
                 if (parameter == null) {
                     parameter = Expression.Parameter(handler.Test, "currentException");
-                    AddVariable(parameter);
                 }
+                // TODO: free the variable when it goes out of scope
+                AddVariable(parameter);
                 this.AddHandler(handler.Test, parameter, start, end);
 
                 _exceptionForRethrowStack.Push(parameter);
@@ -1038,7 +1038,7 @@ namespace Microsoft.Scripting.Interpreter {
                 var closureVar = compiler._closureVariables[i];
                 AddInstruction(GetBoxedVariable(closureVar));
             }
-            AddInstruction(new CreateDelegateInstruction(node.Type, interpreter, compiler._closureVariables.Count));
+            AddInstruction(new CreateDelegateInstruction(new LightDelegateCreator(interpreter, node, compiler._closureVariables)));
         }
 
         private void CompileCoalesceBinaryExpression(Expression expr) {

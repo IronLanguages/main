@@ -67,8 +67,9 @@ namespace System.Dynamic {
             var target = _callable.DispatchComObject;
             var name = _callable.MemberName;
 
-            if (target.TryGetPropertySetter(name, out method, value.LimitType) ||
-                target.TryGetPropertySetterExplicit(name, out method, value.LimitType)) {
+            bool holdsNull = value.Value == null && value.HasValue;
+            if (target.TryGetPropertySetter(name, out method, value.LimitType, holdsNull) ||
+                target.TryGetPropertySetterExplicit(name, out method, value.LimitType, holdsNull)) {
 
                 return BindComInvoke(method, indexes.AddLast(value), binder.Arguments);
             }

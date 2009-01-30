@@ -67,6 +67,8 @@ namespace System.Dynamic.Utils {
             return pis;
         }
 
+        // Expression trees/compiler just use IsByRef, why do we need this?
+        // (see LambdaCompiler.EmitArguments for usage in the compiler)
         internal static bool IsByRefParameter(this ParameterInfo pi) {
             // not using IsIn/IsOut properties as they are not available in Silverlight:
             if (pi.ParameterType.IsByRef) return true;

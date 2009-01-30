@@ -13,22 +13,16 @@
 #
 # ****************************************************************************
 
-
-
 desc "generate initializers.generated.cs file for IronRuby.Libraries"
 task :gen do
-  IronRuby.source_context do
-    cmd = "#{build_path + 'ClassInitGenerator.exe'} #{build_path + 'IronRuby.Libraries.dll'} /libraries:IronRuby.Builtins;IronRuby.StandardLibrary.Threading;IronRuby.StandardLibrary.Sockets;IronRuby.StandardLibrary.OpenSsl;IronRuby.StandardLibrary.Digest;IronRuby.StandardLibrary.Zlib;IronRuby.StandardLibrary.StringIO;IronRuby.StandardLibrary.StringScanner;IronRuby.StandardLibrary.Enumerator;IronRuby.StandardLibrary.FunctionControl;IronRuby.StandardLibrary.FileControl;IronRuby.StandardLibrary.BigDecimal /out:#{get_source_dir(:libraries) + 'Initializers.Generated.cs'}"
-    exec_net cmd
-  end
+  cmd = "#{build_path + 'ClassInitGenerator.exe'} #{build_path + 'IronRuby.Libraries.dll'} /libraries:IronRuby.Builtins;IronRuby.StandardLibrary.Threading;IronRuby.StandardLibrary.Sockets;IronRuby.StandardLibrary.OpenSsl;IronRuby.StandardLibrary.Digest;IronRuby.StandardLibrary.Zlib;IronRuby.StandardLibrary.StringIO;IronRuby.StandardLibrary.StringScanner;IronRuby.StandardLibrary.Enumerator;IronRuby.StandardLibrary.FunctionControl;IronRuby.StandardLibrary.FileControl;IronRuby.StandardLibrary.BigDecimal /out:#{IronRubyCompiler.dir(:libraries) + 'Initializers.Generated.cs'}"
+  exec_net cmd
 end
 
 desc "generate initializers.generated.cs file for IronRuby.Libraries.Yaml"
 task :gen_yaml do
-  IronRuby.source_context do
-    cmd = "#{build_path + 'ClassInitGenerator'} #{build_path + 'IronRuby.Libraries.Yaml.dll'} /libraries:IronRuby.StandardLibrary.Yaml /out:#{get_source_dir(:yaml) + 'Initializer.Generated.cs'}"
-    exec_net cmd
-  end
+  cmd = "#{build_path + 'ClassInitGenerator'} #{build_path + 'IronRuby.Libraries.Yaml.dll'} /libraries:IronRuby.StandardLibrary.Yaml /out:#{IronRubyCompiler.dir(:yaml) + 'Initializer.Generated.cs'}"
+  exec_net cmd
 end
 
 def path_exists?(paths, command)
@@ -53,81 +47,70 @@ end
 
 desc "perform gap analysis on app's library method usage and IronRuby"
 task :gap => [:compile_scanner] do
-  IronRuby.source_context do
-    libraries_file = Pathname.new(Dir.tmpdir) + "libraries.txt"
-    exec "#{build_path + 'IronRuby.Libraries.Scanner.exe'} > \"#{libraries_file}\""
+  libraries_file = Pathname.new(Dir.tmpdir) + "libraries.txt"
+  exec "#{build_path + 'IronRuby.Libraries.Scanner.exe'} > \"#{libraries_file}\""
 
-    library_methods = {}
-    IO.foreach(libraries_file) { |method| library_methods[method.strip] = true }
+  library_methods = {}
+  IO.foreach(libraries_file) { |method| library_methods[method.strip] = true }
 
-    # Generate list of methods used by program
-    trace_output_stream = File.open(Pathname.new(Dir.tmpdir) + 'trace.txt', 'w')
-    function_table = {}
+  # Generate list of methods used by program
+  trace_output_stream = File.open(Pathname.new(Dir.tmpdir) + 'trace.txt', 'w')
+  function_table = {}
 
-    ARGV.delete_at 0
-    if ARGV.length < 1
-      rake_output_message "usage: rake gap program [args]"
-      exit(-1)
-    end
-
-    app_name = ARGV.first
-    ARGV.delete_at 0
-
-    walk_classes(self.class)
-
-    set_trace_func proc { |event, file, line, id, binding, klass|
-      if event == "c-call" || event == "call"
-        method_name = klass.to_s + "#" + id.to_s
-        function_table[method_name] = true
-      end
-    }
-
-    at_exit do
-      rake_output_message 'shutdown ...'
-      function_table.keys.sort.each do |method_name|
-        class_name = method_name.split("#").first
-        if STDLIB_CLASSES.has_key?(class_name) && !library_methods.has_key?(method_name)
-          # output methods that aren't in standard library
-          trace_output_stream.puts method_name
-        end
-      end
-      trace_output_stream.close
-    end
-
-    load app_name
-    rake_output_message 'about to exit ...'
-    exit
+  ARGV.delete_at 0
+  if ARGV.length < 1
+    rake_output_message "usage: rake gap program [args]"
+    exit(-1)
   end
+
+  app_name = ARGV.first
+  ARGV.delete_at 0
+
+  walk_classes(self.class)
+
+  set_trace_func proc { |event, file, line, id, binding, klass|
+    if event == "c-call" || event == "call"
+      method_name = klass.to_s + "#" + id.to_s
+      function_table[method_name] = true
+    end
+  }
+
+  at_exit do
+    rake_output_message 'shutdown ...'
+    function_table.keys.sort.each do |method_name|
+      class_name = method_name.split("#").first
+      if STDLIB_CLASSES.has_key?(class_name) && !library_methods.has_key?(method_name)
+        # output methods that aren't in standard library
+        trace_output_stream.puts method_name
+      end
+    end
+    trace_output_stream.close
+  end
+
+  load app_name
+  rake_output_message 'about to exit ...'
+  exit
 end
 
 desc "is the environment setup for an IronRuby dev?"
 task :happy do
-  IronRuby.source_context do
-    commands = !mono? ? ['resgen.exe', 'csc.exe'] : ['resgen', 'gmcs']
-    commands += ['svn.exe'] if IronRuby.is_merlin?
+  commands = !mono? ? ['resgen.exe', 'csc.exe'] : ['resgen', 'gmcs']
 
-    paths = ENV['PATH'].split(File::PATH_SEPARATOR).collect { |path| Pathname.new path }
+  paths = ENV['PATH'].split(File::PATH_SEPARATOR).collect { |path| Pathname.new path }
 
-    failure = false
-    commands.each do |command|
-      if !path_exists? paths, command
-        rake_output_message "Cannot find #{command} on system path."
-        failure = true
-      end
-    end
-
-    if rake_version < "0.8.3"
+  failure = false
+  commands.each do |command|
+    if !path_exists? paths, command
+      rake_output_message "Cannot find #{command} on system path."
       failure = true
     end
+  end
 
-    if failure
-      rake_output_message "\n"
-      rake_output_message "***** Missing commands! You must have the .NET redist and the SDK"
-      rake_output_message "***** (for resgen.exe) installed. If you are synchronizing source"
-      rake_output_message "***** trees *inside* Microsoft, you must have both tfs.exe and"
-      rake_output_message "***** svn.exe on your path."
-      abort
-    end
+  if failure
+    rake_output_message "\n"
+    rake_output_message "***** Missing commands! You must have the .NET redist and the SDK"
+    rake_output_message "***** (for resgen.exe) installed. "
+    abort
   end
 end
 

@@ -258,7 +258,6 @@
     <Compile Include="Utils\StrongBox.cs" />
     <Compile Include="Utils\TrueReadOnlyCollection.cs" />
     <Compile Include="Utils\TypeExtensions.cs" />
-    <Compile Include="DynamicNull.cs" />
     <Compile Include="Stubs.cs" />
   </ItemGroup>
   <ItemGroup>

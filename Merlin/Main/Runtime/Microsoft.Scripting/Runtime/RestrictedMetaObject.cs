@@ -39,14 +39,14 @@ namespace Microsoft.Scripting.Runtime {
             if (HasValue) {
                 return new RestrictedMetaObject(
                     AstUtils.Convert(Expression, type),
-                    BindingRestrictions.GetTypeRestriction(Expression, type),
+                    BindingRestrictionsHelpers.GetRuntimeTypeRestriction(Expression, type),
                     Value
                 );
             }
 
             return new RestrictedMetaObject(
                 AstUtils.Convert(Expression, type),
-                BindingRestrictions.GetTypeRestriction(Expression, type)
+                BindingRestrictionsHelpers.GetRuntimeTypeRestriction(Expression, type)
             );
         }
 

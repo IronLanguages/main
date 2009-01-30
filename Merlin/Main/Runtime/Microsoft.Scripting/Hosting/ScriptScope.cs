@@ -268,7 +268,7 @@ namespace Microsoft.Scripting.Hosting {
                             AstUtils.Convert(fallback.Expression, typeof(object))
                         )
                     ),
-                    BindingRestrictions.GetTypeRestriction(Expression, typeof(ScriptScope)).Merge(fallback.Restrictions)
+                    BindingRestrictionsHelpers.GetRuntimeTypeRestriction(Expression, typeof(ScriptScope)).Merge(fallback.Restrictions)
                 );
             }
 
@@ -281,7 +281,7 @@ namespace Microsoft.Scripting.Hosting {
                         Expression.Constant(action.Name),
                         AstUtils.Convert(value.Expression, typeof(object))
                     ),
-                    Restrictions.Merge(value.Restrictions).Merge(BindingRestrictions.GetTypeRestriction(Expression, typeof(ScriptScope)))
+                    Restrictions.Merge(value.Restrictions).Merge(BindingRestrictionsHelpers.GetRuntimeTypeRestriction(Expression, typeof(ScriptScope)))
                 );
             }
 
@@ -298,7 +298,7 @@ namespace Microsoft.Scripting.Hosting {
                         Expression.Empty(),
                         Expression.Convert(fallback.Expression, typeof(void))
                     ),
-                    Restrictions.Merge(BindingRestrictions.GetTypeRestriction(Expression, typeof(ScriptScope))).Merge(fallback.Restrictions)
+                    Restrictions.Merge(BindingRestrictionsHelpers.GetRuntimeTypeRestriction(Expression, typeof(ScriptScope))).Merge(fallback.Restrictions)
                 );
             }
 
@@ -323,7 +323,7 @@ namespace Microsoft.Scripting.Hosting {
                             AstUtils.Convert(fallback.Expression, typeof(object))
                         )
                     ),
-                    BindingRestrictions.Combine(args).Merge(BindingRestrictions.GetTypeRestriction(Expression, typeof(ScriptScope))).Merge(fallback.Restrictions)
+                    BindingRestrictions.Combine(args).Merge(BindingRestrictionsHelpers.GetRuntimeTypeRestriction(Expression, typeof(ScriptScope))).Merge(fallback.Restrictions)
                 );
             }
 

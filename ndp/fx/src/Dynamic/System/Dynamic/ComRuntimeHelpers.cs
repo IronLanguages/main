@@ -245,16 +245,6 @@ namespace System.Dynamic {
     /// and other problems.
     /// </summary>
     /// 
-
-    // Security Note: In Microsoft.Scripting.Core we are running against the V2 CLR and are 100% SecurityTransparent.
-    // A call to any of these unsafe methods will result in the CLR performing a full demand against the callers stack
-    // and verifying that we have full trust for the unverifable code.  In V4 CLR we are in System.Core which is SecurityCritical
-    // and uses the V4 transparency model.  There we mark ourselves as SecuritySafeCritical but then demand unrestricted
-    // permission so again our callers stack needs full trust to access COM interop and unsafe code.
-#if !MICROSOFT_SCRIPTING_CORE
-    [SecuritySafeCritical]
-    [PermissionSet(SecurityAction.Demand, Unrestricted = true)]
-#endif
     internal static class UnsafeMethods {
         #region public members
 

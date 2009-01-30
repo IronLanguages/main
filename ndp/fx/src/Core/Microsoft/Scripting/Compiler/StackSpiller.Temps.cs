@@ -118,7 +118,7 @@ namespace System.Linq.Expressions.Compiler {
         /// by setting the stack manually between adds.
         /// 
         /// When all children have been added, the caller should rewrite the 
-        /// node if Rewrite is true. Then, it should call crFinish with etiher
+        /// node if Rewrite is true. Then, it should call Finish with etiher
         /// the orignal expression or the rewritten expression. Finish will call
         /// Expression.Comma if necessary and return a new Result.
         /// </summary>
@@ -159,6 +159,12 @@ namespace System.Linq.Expressions.Compiler {
                 }
             }
 
+            internal void AddArguments(IArgumentProvider expressions) {
+                for (int i = 0, count = expressions.ArgumentCount; i < count; i++) {
+                    Add(expressions.GetArgument(i));
+                }
+            }
+
             private void EnsureDone() {
                 // done adding arguments, build the comma if necessary
                 if (!_done) {
@@ -195,7 +201,7 @@ namespace System.Linq.Expressions.Compiler {
                 if (_action == RewriteAction.SpillStack) {
                     Debug.Assert(_comma.Capacity == _comma.Count + 1);
                     _comma.Add(expr);
-                    expr = Expression.Block(new ReadOnlyCollection<Expression>(_comma));
+                    expr = MakeBlock(_comma);
                 }
 
                 return new Result(_action, expr);
@@ -210,6 +216,7 @@ namespace System.Linq.Expressions.Compiler {
                     return _expressions[index];
                 }
             }
+
             internal Expression[] this[int first, int last] {
                 get {
                     EnsureDone();
@@ -260,6 +267,37 @@ namespace System.Linq.Expressions.Compiler {
             ParameterExpression temp = MakeTemp(expression.Type);
             save = Expression.Assign(temp, expression);
             return temp;
+        }
+
+        /// <summary>
+        /// Creates a special block that is marked as not allowing jumps in.
+        /// This should not be used for rewriting BlockExpression itself, or
+        /// anything else that supports jumping.
+        /// </summary>
+        private static Expression MakeBlock(params Expression[] expressions) {
+            return MakeBlock((IList<Expression>)expressions);
+        }
+
+        /// <summary>
+        /// Creates a special block that is marked as not allowing jumps in.
+        /// This should not be used for rewriting BlockExpression itself, or
+        /// anything else that supports jumping.
+        /// </summary>
+        private static Expression MakeBlock(IList<Expression> expressions) {
+            return new SpilledExpressionBlock(expressions);
+        }
+    }
+
+    /// <summary>
+    /// A special subtype of BlockExpression that indicates to the compiler
+    /// that this block is a spilled expression and should not allow jumps in.
+    /// </summary>
+    internal sealed class SpilledExpressionBlock : BlockN {
+        internal SpilledExpressionBlock(IList<Expression> expressions)
+            : base(expressions) {
+        }
+        internal override BlockExpression Rewrite(ReadOnlyCollection<ParameterExpression> variables, Expression[] args) {
+            throw ContractUtils.Unreachable;
         }
     }
 }

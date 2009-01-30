@@ -103,10 +103,10 @@ namespace Microsoft.Scripting.Actions {
         }
 
         private DynamicMetaObject MakeGetMemberTarget(GetMemberInfo getMemInfo, DynamicMetaObject target) {
-            Type type = target.LimitType.IsCOMObject ? target.Expression.Type : target.LimitType;
+            Type type = target.GetLimitType().IsCOMObject ? target.Expression.Type : target.GetLimitType();
             BindingRestrictions restrictions = target.Restrictions;
             Expression self = target.Expression;
-            target = target.Restrict(target.LimitType);
+            target = target.Restrict(target.GetLimitType());
 
             // needed for GetMember call until DynamicAction goes away
             OldDynamicAction act = OldGetMemberAction.Make(

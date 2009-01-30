@@ -398,7 +398,7 @@ namespace Microsoft.Scripting.Actions {
             if (testTypes) {
                 for (int i = 0; i < coll.Count; i++) {
                     res = res.Merge(
-                        BindingRestrictions.GetTypeRestriction(
+                        BindingRestrictionsHelpers.GetRuntimeTypeRestriction(
                             Ast.Call(
                                 AstUtils.Convert(
                                     listArg,
@@ -567,7 +567,7 @@ namespace Microsoft.Scripting.Actions {
 
             // restrict to the exact type of all parameters for errors
             for (int i = 0; i < args.Count; i++) {
-                args[i] = args[i].Restrict(args[i].LimitType);
+                args[i] = args[i].Restrict(args[i].GetLimitType());
             }
 
             return MakeError(

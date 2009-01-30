@@ -37,7 +37,7 @@ namespace IronRuby.StandardLibrary.Yaml {
             ExtendModule(typeof(Microsoft.Scripting.SymbolId), LoadMicrosoft__Scripting__SymbolId_Instance, null, null, IronRuby.Builtins.RubyModule.EmptyArray);
             ExtendModule(typeof(System.DateTime), LoadSystem__DateTime_Instance, null, null, IronRuby.Builtins.RubyModule.EmptyArray);
             ExtendModule(typeof(System.Double), LoadSystem__Double_Instance, null, null, IronRuby.Builtins.RubyModule.EmptyArray);
-            ExtendModule(typeof(System.Dynamic.DynamicNull), LoadSystem__Dynamic__DynamicNull_Instance, null, null, IronRuby.Builtins.RubyModule.EmptyArray);
+            ExtendModule(typeof(Microsoft.Scripting.Runtime.DynamicNull), LoadMicrosoft__Scripting__Runtime__DynamicNull_Instance, null, null, IronRuby.Builtins.RubyModule.EmptyArray);
             ExtendModule(typeof(System.Exception), LoadSystem__Exception_Instance, null, null, IronRuby.Builtins.RubyModule.EmptyArray);
             ExtendClass(typeof(System.Object), LoadSystem__Object_Instance, null, null, IronRuby.Builtins.RubyModule.EmptyArray);
             IronRuby.Builtins.RubyModule def1 = DefineGlobalModule("YAML", typeof(IronRuby.StandardLibrary.Yaml.RubyYaml), true, null, LoadYAML_Class, null, IronRuby.Builtins.RubyModule.EmptyArray);
@@ -219,7 +219,7 @@ namespace IronRuby.StandardLibrary.Yaml {
             
         }
         
-        private static void LoadSystem__Dynamic__DynamicNull_Instance(IronRuby.Builtins.RubyModule/*!*/ module) {
+        private static void LoadMicrosoft__Scripting__Runtime__DynamicNull_Instance(IronRuby.Builtins.RubyModule/*!*/ module) {
             module.DefineLibraryMethod("taguri", 0x11, 
                 new System.Func<System.Object, IronRuby.Builtins.MutableString>(IronRuby.StandardLibrary.Yaml.YamlNilOps.TagUri)
             );

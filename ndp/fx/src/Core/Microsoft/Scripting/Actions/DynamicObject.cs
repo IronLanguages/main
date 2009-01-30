@@ -297,6 +297,23 @@ namespace System.Dynamic {
             public override DynamicMetaObject BindInvokeMember(InvokeMemberBinder binder, DynamicMetaObject[] args) {
                 if (IsOverridden("TryInvokeMember")) {
                     return CallMethodWithResult("TryInvokeMember", binder, GetArgArray(args), (e) => binder.FallbackInvokeMember(this, args, e));
+                } else if (IsOverridden("TryGetMember")) {
+                    // Generate a tree like:
+                    //
+                    // {
+                    //   object result;
+                    //   TryGetMember(payload, out result) ? FallbackInvoke(result) : fallbackResult
+                    // }
+                    //
+                    // Then it calls FallbackInvokeMember with this tree as the
+                    // "error", giving the language the option of using this
+                    // tree or doing .NET binding.
+                    //
+                    return CallMethodWithResult(
+                        "TryGetMember", new GetBinderAdapter(binder), NoArgs,
+                        (e) => binder.FallbackInvokeMember(this, args, e),
+                        (e) => binder.FallbackInvoke(e, args, null)
+                    );
                 }
 
                 return base.BindInvokeMember(binder, args);
@@ -430,6 +447,14 @@ namespace System.Dynamic {
             /// specific method on Dynamic that returns a result
             /// </summary>
             private DynamicMetaObject CallMethodWithResult(string methodName, DynamicMetaObjectBinder binder, Expression[] args, Fallback fallback) {
+                return CallMethodWithResult(methodName, binder, args, fallback, null);
+            }
+
+            /// <summary>
+            /// Helper method for generating a MetaObject which calls a
+            /// specific method on Dynamic that returns a result
+            /// </summary>
+            private DynamicMetaObject CallMethodWithResult(string methodName, DynamicMetaObjectBinder binder, Expression[] args, Fallback fallback, Fallback fallbackInvoke) {
                 //
                 // First, call fallback to do default binding
                 // This produces either an error or a call to a .NET member
@@ -440,7 +465,7 @@ namespace System.Dynamic {
                 // Build a new expression like:
                 // {
                 //   object result;
-                //   TryGetMember(payload, out result) ? result : fallbackResult
+                //   TryGetMember(payload, out result) ? fallbackInvoke(result) : fallbackResult
                 // }
                 //
                 var result = Expression.Parameter(typeof(object), null);
@@ -449,6 +474,11 @@ namespace System.Dynamic {
                 Array.Copy(args, 0, callArgs, 1, args.Length);
                 callArgs[0] = Constant(binder);
                 callArgs[callArgs.Length - 1] = result;
+
+                var resultMO = new DynamicMetaObject(result, BindingRestrictions.Empty);
+                if (fallbackInvoke != null) {
+                    resultMO = fallbackInvoke(resultMO);
+                }
 
                 var callDynamic = new DynamicMetaObject(
                     Expression.Block(
@@ -459,11 +489,11 @@ namespace System.Dynamic {
                                 typeof(DynamicObject).GetMethod(methodName),
                                 callArgs
                             ),
-                            result,
+                            resultMO.Expression,
                             Helpers.Convert(fallbackResult.Expression, typeof(object))
                         )
                     ),
-                    GetRestrictions().Merge(fallbackResult.Restrictions)
+                    GetRestrictions().Merge(resultMO.Restrictions).Merge(fallbackResult.Restrictions)
                 );
                 
                 //
@@ -594,7 +624,7 @@ namespace System.Dynamic {
             private BindingRestrictions GetRestrictions() {
                 Debug.Assert(Restrictions == BindingRestrictions.Empty, "We don't merge, restrictions are always empty");
 
-                return BindingRestrictions.GetTypeRestriction(Expression, LimitType);
+                return BindingRestrictions.GetTypeRestriction(this);
             }
 
             /// <summary>
@@ -610,6 +640,24 @@ namespace System.Dynamic {
             private new DynamicObject Value {
                 get {
                     return (DynamicObject)base.Value;
+                }
+            }
+
+            // It is okay to throw NotSupported from this binder. This object
+            // is only used by DynamicObject.GetMember--it is not expected to
+            // (and cannot) implement binding semantics. It is just so the DO
+            // can use the Name and IgnoreCase properties.
+            private sealed class GetBinderAdapter : GetMemberBinder {
+                internal GetBinderAdapter(InvokeMemberBinder binder)
+                    : base(binder.Name, binder.IgnoreCase) {
+                }
+
+                public override DynamicMetaObject FallbackGetMember(DynamicMetaObject target, DynamicMetaObject errorSuggestion) {
+                    throw new NotSupportedException();
+                }
+
+                public override object CacheIdentity {
+                    get { throw new NotSupportedException(); }
                 }
             }
         }

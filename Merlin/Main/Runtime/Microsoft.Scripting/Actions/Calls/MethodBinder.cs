@@ -833,17 +833,26 @@ namespace Microsoft.Scripting.Actions.Calls {
 
                 DynamicMetaObject[] resObjects = new DynamicMetaObject[objects.Length];
                 for (int i = 0; i < objects.Length; i++) {
-                    if (_targets.Count > 0 && AreArgumentTypesOverloaded(i, objects.Length, candidates)) {
-                        resObjects[i] = objects[i].Restrict(objects[i].LimitType);
+                    if (_targets.Count > 0 && AreArgumentTypesOverloaded(i, objects.Length, candidates)) {                                                
+                        resObjects[i] = RestrictOne(objects[i], parameters[i]);
                     } else if (parameters[i].Type.IsAssignableFrom(objects[i].Expression.Type)) {
                         // we have a strong enough type already
                         resObjects[i] = objects[i];
                     } else {
-                        resObjects[i] = objects[i].Restrict(objects[i].LimitType);
+                        resObjects[i] = RestrictOne(objects[i], parameters[i]);
                     }
                 }
 
                 return resObjects;
+            }
+
+            private DynamicMetaObject RestrictOne(DynamicMetaObject obj, ParameterWrapper forParam) {
+                if (forParam.Type == typeof(object)) {
+                    // don't use Restrict as it'll box & unbox.
+                    return new DynamicMetaObject(obj.Expression, BindingRestrictionsHelpers.GetRuntimeTypeRestriction(obj.Expression, obj.GetLimitType()));
+                } else {
+                    return obj.Restrict(obj.GetLimitType());
+                }
             }
 
             private static bool AreArgumentTypesOverloaded(int argIndex, int argCount, IList<MethodCandidate> methods) {

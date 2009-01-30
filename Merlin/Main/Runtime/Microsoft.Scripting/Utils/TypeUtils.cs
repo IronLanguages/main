@@ -18,6 +18,7 @@ using System.Linq.Expressions;
 using System.Reflection;
 using System.Dynamic;
 using Microsoft.Scripting.Generation;
+using Microsoft.Scripting.Runtime;
 
 namespace Microsoft.Scripting.Utils {
     static class TypeUtils {

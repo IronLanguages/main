@@ -26,14 +26,14 @@ using System.Runtime.InteropServices;
 namespace System.Dynamic {
     internal static class ComBinderHelpers {
 
-        internal static bool PreferPut(Type type) {
+        internal static bool PreferPut(Type type, bool holdsNull) {
             Debug.Assert(type != null);
 
             if (type.IsValueType || type.IsArray) return true;
 
             if (type == typeof(String) ||
                 type == typeof(DBNull) ||
-                type == typeof(DynamicNull) ||
+                holdsNull ||
                 type == typeof(System.Reflection.Missing) ||
                 type == typeof(CurrencyWrapper)) {
 
@@ -83,7 +83,7 @@ namespace System.Dynamic {
             for (int i = 0; i < argsToProcess; i++) {
                 DynamicMetaObject currArgument = args[i];
                 if (IsStrongBoxArg(currArgument)) {
-                    restrictions = restrictions.Merge(BindingRestrictions.GetTypeRestriction(currArgument.Expression, currArgument.LimitType));
+                    restrictions = restrictions.Merge(GetTypeRestrictionForDynamicMetaObject(currArgument));
 
                     // we have restricted this argument to LimitType so we can convert and conversion will be trivial cast.
                     Expression boxedValueAccessor = Expression.Field(
@@ -113,6 +113,14 @@ namespace System.Dynamic {
                 ),
                 restrictions
             );
+        }
+
+        internal static BindingRestrictions GetTypeRestrictionForDynamicMetaObject(DynamicMetaObject obj) {
+            if (obj.Value == null && obj.HasValue) {
+                //If the meta object holds a null value, create an instance restriction for checking null
+                return BindingRestrictions.GetInstanceRestriction(obj.Expression, null);
+            }
+            return BindingRestrictions.GetTypeRestriction(obj.Expression, obj.LimitType);
         }
     }
 }

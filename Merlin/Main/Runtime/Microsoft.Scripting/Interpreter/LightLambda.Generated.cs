@@ -28,51 +28,82 @@ namespace Microsoft.Scripting.Interpreter {
 
         public const int MaxParameters = 16;
         public TRet Run0<TRet>() {
-            var frame = MakeFrame();
+            if (_compiled != null) {
+                return ((Func<TRet>)_compiled)();
+            }
+            var frame = PrepareToRun();
             return (TRet)_interpreter.Run(frame);
         }
         public void RunVoid0() {
-            var frame = MakeFrame();
+            if (_compiled != null) {
+                ((Action)_compiled)();
+                return;
+            }
+            var frame = PrepareToRun();
             _interpreter.Run(frame);
         }
         public TRet Run1<T0,TRet>(T0 arg0) {
-            var frame = MakeFrame();
+            if (_compiled != null) {
+                return ((Func<T0,TRet>)_compiled)(arg0);
+            }
+            var frame = PrepareToRun();
             frame.Data[0] = arg0;
             return (TRet)_interpreter.Run(frame);
         }
         public void RunVoid1<T0>(T0 arg0) {
-            var frame = MakeFrame();
+            if (_compiled != null) {
+                ((Action<T0>)_compiled)(arg0);
+                return;
+            }
+            var frame = PrepareToRun();
             frame.Data[0] = arg0;
             _interpreter.Run(frame);
         }
         public TRet Run2<T0,T1,TRet>(T0 arg0,T1 arg1) {
-            var frame = MakeFrame();
+            if (_compiled != null) {
+                return ((Func<T0,T1,TRet>)_compiled)(arg0, arg1);
+            }
+            var frame = PrepareToRun();
             frame.Data[0] = arg0;
             frame.Data[1] = arg1;
             return (TRet)_interpreter.Run(frame);
         }
         public void RunVoid2<T0,T1>(T0 arg0,T1 arg1) {
-            var frame = MakeFrame();
+            if (_compiled != null) {
+                ((Action<T0,T1>)_compiled)(arg0, arg1);
+                return;
+            }
+            var frame = PrepareToRun();
             frame.Data[0] = arg0;
             frame.Data[1] = arg1;
             _interpreter.Run(frame);
         }
         public TRet Run3<T0,T1,T2,TRet>(T0 arg0,T1 arg1,T2 arg2) {
-            var frame = MakeFrame();
+            if (_compiled != null) {
+                return ((Func<T0,T1,T2,TRet>)_compiled)(arg0, arg1, arg2);
+            }
+            var frame = PrepareToRun();
             frame.Data[0] = arg0;
             frame.Data[1] = arg1;
             frame.Data[2] = arg2;
             return (TRet)_interpreter.Run(frame);
         }
         public void RunVoid3<T0,T1,T2>(T0 arg0,T1 arg1,T2 arg2) {
-            var frame = MakeFrame();
+            if (_compiled != null) {
+                ((Action<T0,T1,T2>)_compiled)(arg0, arg1, arg2);
+                return;
+            }
+            var frame = PrepareToRun();
             frame.Data[0] = arg0;
             frame.Data[1] = arg1;
             frame.Data[2] = arg2;
             _interpreter.Run(frame);
         }
         public TRet Run4<T0,T1,T2,T3,TRet>(T0 arg0,T1 arg1,T2 arg2,T3 arg3) {
-            var frame = MakeFrame();
+            if (_compiled != null) {
+                return ((Func<T0,T1,T2,T3,TRet>)_compiled)(arg0, arg1, arg2, arg3);
+            }
+            var frame = PrepareToRun();
             frame.Data[0] = arg0;
             frame.Data[1] = arg1;
             frame.Data[2] = arg2;
@@ -80,7 +111,11 @@ namespace Microsoft.Scripting.Interpreter {
             return (TRet)_interpreter.Run(frame);
         }
         public void RunVoid4<T0,T1,T2,T3>(T0 arg0,T1 arg1,T2 arg2,T3 arg3) {
-            var frame = MakeFrame();
+            if (_compiled != null) {
+                ((Action<T0,T1,T2,T3>)_compiled)(arg0, arg1, arg2, arg3);
+                return;
+            }
+            var frame = PrepareToRun();
             frame.Data[0] = arg0;
             frame.Data[1] = arg1;
             frame.Data[2] = arg2;
@@ -88,7 +123,10 @@ namespace Microsoft.Scripting.Interpreter {
             _interpreter.Run(frame);
         }
         public TRet Run5<T0,T1,T2,T3,T4,TRet>(T0 arg0,T1 arg1,T2 arg2,T3 arg3,T4 arg4) {
-            var frame = MakeFrame();
+            if (_compiled != null) {
+                return ((Func<T0,T1,T2,T3,T4,TRet>)_compiled)(arg0, arg1, arg2, arg3, arg4);
+            }
+            var frame = PrepareToRun();
             frame.Data[0] = arg0;
             frame.Data[1] = arg1;
             frame.Data[2] = arg2;
@@ -97,7 +135,11 @@ namespace Microsoft.Scripting.Interpreter {
             return (TRet)_interpreter.Run(frame);
         }
         public void RunVoid5<T0,T1,T2,T3,T4>(T0 arg0,T1 arg1,T2 arg2,T3 arg3,T4 arg4) {
-            var frame = MakeFrame();
+            if (_compiled != null) {
+                ((Action<T0,T1,T2,T3,T4>)_compiled)(arg0, arg1, arg2, arg3, arg4);
+                return;
+            }
+            var frame = PrepareToRun();
             frame.Data[0] = arg0;
             frame.Data[1] = arg1;
             frame.Data[2] = arg2;
@@ -106,7 +148,10 @@ namespace Microsoft.Scripting.Interpreter {
             _interpreter.Run(frame);
         }
         public TRet Run6<T0,T1,T2,T3,T4,T5,TRet>(T0 arg0,T1 arg1,T2 arg2,T3 arg3,T4 arg4,T5 arg5) {
-            var frame = MakeFrame();
+            if (_compiled != null) {
+                return ((Func<T0,T1,T2,T3,T4,T5,TRet>)_compiled)(arg0, arg1, arg2, arg3, arg4, arg5);
+            }
+            var frame = PrepareToRun();
             frame.Data[0] = arg0;
             frame.Data[1] = arg1;
             frame.Data[2] = arg2;
@@ -116,7 +161,11 @@ namespace Microsoft.Scripting.Interpreter {
             return (TRet)_interpreter.Run(frame);
         }
         public void RunVoid6<T0,T1,T2,T3,T4,T5>(T0 arg0,T1 arg1,T2 arg2,T3 arg3,T4 arg4,T5 arg5) {
-            var frame = MakeFrame();
+            if (_compiled != null) {
+                ((Action<T0,T1,T2,T3,T4,T5>)_compiled)(arg0, arg1, arg2, arg3, arg4, arg5);
+                return;
+            }
+            var frame = PrepareToRun();
             frame.Data[0] = arg0;
             frame.Data[1] = arg1;
             frame.Data[2] = arg2;
@@ -126,7 +175,10 @@ namespace Microsoft.Scripting.Interpreter {
             _interpreter.Run(frame);
         }
         public TRet Run7<T0,T1,T2,T3,T4,T5,T6,TRet>(T0 arg0,T1 arg1,T2 arg2,T3 arg3,T4 arg4,T5 arg5,T6 arg6) {
-            var frame = MakeFrame();
+            if (_compiled != null) {
+                return ((Func<T0,T1,T2,T3,T4,T5,T6,TRet>)_compiled)(arg0, arg1, arg2, arg3, arg4, arg5, arg6);
+            }
+            var frame = PrepareToRun();
             frame.Data[0] = arg0;
             frame.Data[1] = arg1;
             frame.Data[2] = arg2;
@@ -137,7 +189,11 @@ namespace Microsoft.Scripting.Interpreter {
             return (TRet)_interpreter.Run(frame);
         }
         public void RunVoid7<T0,T1,T2,T3,T4,T5,T6>(T0 arg0,T1 arg1,T2 arg2,T3 arg3,T4 arg4,T5 arg5,T6 arg6) {
-            var frame = MakeFrame();
+            if (_compiled != null) {
+                ((Action<T0,T1,T2,T3,T4,T5,T6>)_compiled)(arg0, arg1, arg2, arg3, arg4, arg5, arg6);
+                return;
+            }
+            var frame = PrepareToRun();
             frame.Data[0] = arg0;
             frame.Data[1] = arg1;
             frame.Data[2] = arg2;
@@ -148,7 +204,10 @@ namespace Microsoft.Scripting.Interpreter {
             _interpreter.Run(frame);
         }
         public TRet Run8<T0,T1,T2,T3,T4,T5,T6,T7,TRet>(T0 arg0,T1 arg1,T2 arg2,T3 arg3,T4 arg4,T5 arg5,T6 arg6,T7 arg7) {
-            var frame = MakeFrame();
+            if (_compiled != null) {
+                return ((Func<T0,T1,T2,T3,T4,T5,T6,T7,TRet>)_compiled)(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7);
+            }
+            var frame = PrepareToRun();
             frame.Data[0] = arg0;
             frame.Data[1] = arg1;
             frame.Data[2] = arg2;
@@ -160,7 +219,11 @@ namespace Microsoft.Scripting.Interpreter {
             return (TRet)_interpreter.Run(frame);
         }
         public void RunVoid8<T0,T1,T2,T3,T4,T5,T6,T7>(T0 arg0,T1 arg1,T2 arg2,T3 arg3,T4 arg4,T5 arg5,T6 arg6,T7 arg7) {
-            var frame = MakeFrame();
+            if (_compiled != null) {
+                ((Action<T0,T1,T2,T3,T4,T5,T6,T7>)_compiled)(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7);
+                return;
+            }
+            var frame = PrepareToRun();
             frame.Data[0] = arg0;
             frame.Data[1] = arg1;
             frame.Data[2] = arg2;
@@ -172,7 +235,10 @@ namespace Microsoft.Scripting.Interpreter {
             _interpreter.Run(frame);
         }
         public TRet Run9<T0,T1,T2,T3,T4,T5,T6,T7,T8,TRet>(T0 arg0,T1 arg1,T2 arg2,T3 arg3,T4 arg4,T5 arg5,T6 arg6,T7 arg7,T8 arg8) {
-            var frame = MakeFrame();
+            if (_compiled != null) {
+                return ((Func<T0,T1,T2,T3,T4,T5,T6,T7,T8,TRet>)_compiled)(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8);
+            }
+            var frame = PrepareToRun();
             frame.Data[0] = arg0;
             frame.Data[1] = arg1;
             frame.Data[2] = arg2;
@@ -185,7 +251,11 @@ namespace Microsoft.Scripting.Interpreter {
             return (TRet)_interpreter.Run(frame);
         }
         public void RunVoid9<T0,T1,T2,T3,T4,T5,T6,T7,T8>(T0 arg0,T1 arg1,T2 arg2,T3 arg3,T4 arg4,T5 arg5,T6 arg6,T7 arg7,T8 arg8) {
-            var frame = MakeFrame();
+            if (_compiled != null) {
+                ((Action<T0,T1,T2,T3,T4,T5,T6,T7,T8>)_compiled)(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8);
+                return;
+            }
+            var frame = PrepareToRun();
             frame.Data[0] = arg0;
             frame.Data[1] = arg1;
             frame.Data[2] = arg2;
@@ -198,7 +268,10 @@ namespace Microsoft.Scripting.Interpreter {
             _interpreter.Run(frame);
         }
         public TRet Run10<T0,T1,T2,T3,T4,T5,T6,T7,T8,T9,TRet>(T0 arg0,T1 arg1,T2 arg2,T3 arg3,T4 arg4,T5 arg5,T6 arg6,T7 arg7,T8 arg8,T9 arg9) {
-            var frame = MakeFrame();
+            if (_compiled != null) {
+                return ((Func<T0,T1,T2,T3,T4,T5,T6,T7,T8,T9,TRet>)_compiled)(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9);
+            }
+            var frame = PrepareToRun();
             frame.Data[0] = arg0;
             frame.Data[1] = arg1;
             frame.Data[2] = arg2;
@@ -212,7 +285,11 @@ namespace Microsoft.Scripting.Interpreter {
             return (TRet)_interpreter.Run(frame);
         }
         public void RunVoid10<T0,T1,T2,T3,T4,T5,T6,T7,T8,T9>(T0 arg0,T1 arg1,T2 arg2,T3 arg3,T4 arg4,T5 arg5,T6 arg6,T7 arg7,T8 arg8,T9 arg9) {
-            var frame = MakeFrame();
+            if (_compiled != null) {
+                ((Action<T0,T1,T2,T3,T4,T5,T6,T7,T8,T9>)_compiled)(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9);
+                return;
+            }
+            var frame = PrepareToRun();
             frame.Data[0] = arg0;
             frame.Data[1] = arg1;
             frame.Data[2] = arg2;
@@ -226,7 +303,10 @@ namespace Microsoft.Scripting.Interpreter {
             _interpreter.Run(frame);
         }
         public TRet Run11<T0,T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,TRet>(T0 arg0,T1 arg1,T2 arg2,T3 arg3,T4 arg4,T5 arg5,T6 arg6,T7 arg7,T8 arg8,T9 arg9,T10 arg10) {
-            var frame = MakeFrame();
+            if (_compiled != null) {
+                return ((Func<T0,T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,TRet>)_compiled)(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10);
+            }
+            var frame = PrepareToRun();
             frame.Data[0] = arg0;
             frame.Data[1] = arg1;
             frame.Data[2] = arg2;
@@ -241,7 +321,11 @@ namespace Microsoft.Scripting.Interpreter {
             return (TRet)_interpreter.Run(frame);
         }
         public void RunVoid11<T0,T1,T2,T3,T4,T5,T6,T7,T8,T9,T10>(T0 arg0,T1 arg1,T2 arg2,T3 arg3,T4 arg4,T5 arg5,T6 arg6,T7 arg7,T8 arg8,T9 arg9,T10 arg10) {
-            var frame = MakeFrame();
+            if (_compiled != null) {
+                ((Action<T0,T1,T2,T3,T4,T5,T6,T7,T8,T9,T10>)_compiled)(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10);
+                return;
+            }
+            var frame = PrepareToRun();
             frame.Data[0] = arg0;
             frame.Data[1] = arg1;
             frame.Data[2] = arg2;
@@ -256,7 +340,10 @@ namespace Microsoft.Scripting.Interpreter {
             _interpreter.Run(frame);
         }
         public TRet Run12<T0,T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,TRet>(T0 arg0,T1 arg1,T2 arg2,T3 arg3,T4 arg4,T5 arg5,T6 arg6,T7 arg7,T8 arg8,T9 arg9,T10 arg10,T11 arg11) {
-            var frame = MakeFrame();
+            if (_compiled != null) {
+                return ((Func<T0,T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,TRet>)_compiled)(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11);
+            }
+            var frame = PrepareToRun();
             frame.Data[0] = arg0;
             frame.Data[1] = arg1;
             frame.Data[2] = arg2;
@@ -272,7 +359,11 @@ namespace Microsoft.Scripting.Interpreter {
             return (TRet)_interpreter.Run(frame);
         }
         public void RunVoid12<T0,T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11>(T0 arg0,T1 arg1,T2 arg2,T3 arg3,T4 arg4,T5 arg5,T6 arg6,T7 arg7,T8 arg8,T9 arg9,T10 arg10,T11 arg11) {
-            var frame = MakeFrame();
+            if (_compiled != null) {
+                ((Action<T0,T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11>)_compiled)(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11);
+                return;
+            }
+            var frame = PrepareToRun();
             frame.Data[0] = arg0;
             frame.Data[1] = arg1;
             frame.Data[2] = arg2;
@@ -288,7 +379,10 @@ namespace Microsoft.Scripting.Interpreter {
             _interpreter.Run(frame);
         }
         public TRet Run13<T0,T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,TRet>(T0 arg0,T1 arg1,T2 arg2,T3 arg3,T4 arg4,T5 arg5,T6 arg6,T7 arg7,T8 arg8,T9 arg9,T10 arg10,T11 arg11,T12 arg12) {
-            var frame = MakeFrame();
+            if (_compiled != null) {
+                return ((Func<T0,T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,TRet>)_compiled)(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12);
+            }
+            var frame = PrepareToRun();
             frame.Data[0] = arg0;
             frame.Data[1] = arg1;
             frame.Data[2] = arg2;
@@ -305,7 +399,11 @@ namespace Microsoft.Scripting.Interpreter {
             return (TRet)_interpreter.Run(frame);
         }
         public void RunVoid13<T0,T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12>(T0 arg0,T1 arg1,T2 arg2,T3 arg3,T4 arg4,T5 arg5,T6 arg6,T7 arg7,T8 arg8,T9 arg9,T10 arg10,T11 arg11,T12 arg12) {
-            var frame = MakeFrame();
+            if (_compiled != null) {
+                ((Action<T0,T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12>)_compiled)(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12);
+                return;
+            }
+            var frame = PrepareToRun();
             frame.Data[0] = arg0;
             frame.Data[1] = arg1;
             frame.Data[2] = arg2;
@@ -322,7 +420,10 @@ namespace Microsoft.Scripting.Interpreter {
             _interpreter.Run(frame);
         }
         public TRet Run14<T0,T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,T13,TRet>(T0 arg0,T1 arg1,T2 arg2,T3 arg3,T4 arg4,T5 arg5,T6 arg6,T7 arg7,T8 arg8,T9 arg9,T10 arg10,T11 arg11,T12 arg12,T13 arg13) {
-            var frame = MakeFrame();
+            if (_compiled != null) {
+                return ((Func<T0,T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,T13,TRet>)_compiled)(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13);
+            }
+            var frame = PrepareToRun();
             frame.Data[0] = arg0;
             frame.Data[1] = arg1;
             frame.Data[2] = arg2;
@@ -340,7 +441,11 @@ namespace Microsoft.Scripting.Interpreter {
             return (TRet)_interpreter.Run(frame);
         }
         public void RunVoid14<T0,T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,T13>(T0 arg0,T1 arg1,T2 arg2,T3 arg3,T4 arg4,T5 arg5,T6 arg6,T7 arg7,T8 arg8,T9 arg9,T10 arg10,T11 arg11,T12 arg12,T13 arg13) {
-            var frame = MakeFrame();
+            if (_compiled != null) {
+                ((Action<T0,T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,T13>)_compiled)(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13);
+                return;
+            }
+            var frame = PrepareToRun();
             frame.Data[0] = arg0;
             frame.Data[1] = arg1;
             frame.Data[2] = arg2;
@@ -358,7 +463,10 @@ namespace Microsoft.Scripting.Interpreter {
             _interpreter.Run(frame);
         }
         public TRet Run15<T0,T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,T13,T14,TRet>(T0 arg0,T1 arg1,T2 arg2,T3 arg3,T4 arg4,T5 arg5,T6 arg6,T7 arg7,T8 arg8,T9 arg9,T10 arg10,T11 arg11,T12 arg12,T13 arg13,T14 arg14) {
-            var frame = MakeFrame();
+            if (_compiled != null) {
+                return ((Func<T0,T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,T13,T14,TRet>)_compiled)(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13, arg14);
+            }
+            var frame = PrepareToRun();
             frame.Data[0] = arg0;
             frame.Data[1] = arg1;
             frame.Data[2] = arg2;
@@ -377,7 +485,11 @@ namespace Microsoft.Scripting.Interpreter {
             return (TRet)_interpreter.Run(frame);
         }
         public void RunVoid15<T0,T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,T13,T14>(T0 arg0,T1 arg1,T2 arg2,T3 arg3,T4 arg4,T5 arg5,T6 arg6,T7 arg7,T8 arg8,T9 arg9,T10 arg10,T11 arg11,T12 arg12,T13 arg13,T14 arg14) {
-            var frame = MakeFrame();
+            if (_compiled != null) {
+                ((Action<T0,T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,T13,T14>)_compiled)(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13, arg14);
+                return;
+            }
+            var frame = PrepareToRun();
             frame.Data[0] = arg0;
             frame.Data[1] = arg1;
             frame.Data[2] = arg2;
