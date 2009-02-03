@@ -40,18 +40,20 @@ namespace System.Dynamic {
         #region Get/Set/Delete Helpers
 
         /// <summary>
-        /// Gets the data stored for the specified class at the specified index.  If the
+        /// Try to get the data stored for the specified class at the specified index.  If the
         /// class has changed a full lookup for the slot will be performed and the correct
         /// value will be retrieved.
         /// </summary>
-        internal object GetValue(ExpandoClass klass, int index, bool caseInsensitive, string name) {
-            Debug.Assert(index != -1);
+        internal bool TryGetValue(ExpandoClass klass, int index, bool caseInsensitive, string name, out object value) {
+            if (index == -1) {
+                value = null;
+                return false;
+            }
 
             // read the data now.  The data is immutable so we get a consistent view.
             // If there's a concurrent writer they will replace data and it just appears
             // that we won the race
             ExpandoData data = _data;
-            object res = Uninitialized;
             if (data.Class != klass || caseInsensitive) {
                 /* Re-search for the index matching the name here if
                  *  1) the class has changed, we need to get the correct index and return
@@ -66,13 +68,8 @@ namespace System.Dynamic {
             }
 
             // index is now known to be correct
-            res = data.Data[index];
-
-            if (res == Uninitialized) {
-                throw new MissingMemberException(klass.GetIndexName(index));
-            }
-
-            return res;
+            value = data.Data[index];
+            return value != Uninitialized;
         }
         
         /// <summary>
@@ -111,8 +108,10 @@ namespace System.Dynamic {
         /// <summary>
         /// Deletes the data stored for the specified class at the specified index.
         /// </summary>
-        internal bool DeleteValue(ExpandoClass klass, int index) {
-            Debug.Assert(index != -1);
+        internal bool TryDeleteValue(ExpandoClass klass, int index) {
+            if (index == -1) {
+                return false;
+            }
 
             lock (this) {
                 ExpandoData data = _data;
@@ -127,10 +126,9 @@ namespace System.Dynamic {
                     }
                 }
 
-                object curValue = data.Data[index];
+                object oldValue = data.Data[index];
                 data.Data[index] = Uninitialized;
-
-                return curValue != Uninitialized;
+                return oldValue != Uninitialized;
             }
         }
 
@@ -201,76 +199,71 @@ namespace System.Dynamic {
                 : base(expression, BindingRestrictions.Empty, value) {
             }
 
-            //Get the DynamicMetaObject corresponding the the value for the
-            //specified member.
-            private DynamicMetaObject GetDynamicMetaObjectForMember(string name, bool ignoreCase, DynamicMetaObjectBinder binder) {
+            private DynamicMetaObject GetDynamicMetaObjectForMember(string name, bool ignoreCase, DynamicMetaObject fallback) {
                 ExpandoClass klass = Value.Class;
 
+                //try to find the member, including the deleted members
                 int index = klass.GetValueIndex(name, ignoreCase, Value);
-                string methodName = ignoreCase ? "ExpandoGetValueIgnoreCase" : "ExpandoGetValue";
+                string methodName = ignoreCase ? "ExpandoTryGetValueIgnoreCase" : "ExpandoTryGetValue";
 
-                Expression target;
-                if (index == -1) {
-                    // the key does not exist, report a MissingMemberException
-                    target = Helpers.Convert(
-                        Expression.Throw(
-                            Expression.New(
-                                typeof(MissingMemberException).GetConstructor(new Type[] { typeof(string) }),
-                                Expression.Constant(name)
-                            )
-                        ),
-                        typeof(object)
-                    );
-                } else {
-                    target = Expression.Call(
-                        typeof(RuntimeOps).GetMethod(methodName),
-                        GetLimitedSelf(),
-                        Expression.Constant(klass),
-                        Expression.Constant(index),
-                        Expression.Constant(name)
-                    );
-                }
+                ParameterExpression value = Expression.Parameter(typeof(object), "value");
 
-                // add the dynamic test for the target
+                Expression tryGetValue = Expression.Call(
+                    typeof(RuntimeOps).GetMethod(methodName),
+                    GetLimitedSelf(),
+                    Expression.Constant(klass),
+                    Expression.Constant(index),
+                    Expression.Constant(name),
+                    value
+                );
+
+                Expression memberValue = Expression.Block(
+                    new ParameterExpression[] { value },
+                    Expression.Condition(
+                        Expression.IsTrue(tryGetValue),
+                        value,
+                        Helpers.Convert(fallback.Expression, typeof(object))
+                    )
+                );
+
                 return new DynamicMetaObject(
-                    AddDynamicTestAndDefer(
-                        binder,
-                        new DynamicMetaObject[] { this },
-                        klass,
-                        null,
-                        target
-                    ),
-                    GetRestrictions()
+                        memberValue,
+                        fallback.Restrictions
                 );
             }
 
             public override DynamicMetaObject BindGetMember(GetMemberBinder binder) {
                 ContractUtils.RequiresNotNull(binder, "binder");
-                return GetDynamicMetaObjectForMember(binder.Name, binder.IgnoreCase, binder);
+                DynamicMetaObject memberValue = GetDynamicMetaObjectForMember(
+                    binder.Name, 
+                    binder.IgnoreCase,
+                    binder.FallbackGetMember(this)
+                );
+
+                return AddDynamicTestAndDefer(
+                    binder,
+                    new DynamicMetaObject[] { this },
+                    Value.Class,
+                    null,
+                    memberValue
+                );
             }
 
             public override DynamicMetaObject BindInvokeMember(InvokeMemberBinder binder, DynamicMetaObject[] args) {
                 ContractUtils.RequiresNotNull(binder, "binder");
-                DynamicMetaObject memberValue = GetDynamicMetaObjectForMember(binder.Name, binder.IgnoreCase, binder);
-                
+                DynamicMetaObject memberValue = GetDynamicMetaObjectForMember(
+                    binder.Name, 
+                    binder.IgnoreCase,
+                    binder.FallbackInvokeMember(this, args)
+                );
                 //invoke the member value using the language's binder
-                return binder.FallbackInvoke(memberValue, args, null);
-            }
-
-            public override DynamicMetaObject BindUnaryOperationOnMember(UnaryOperationOnMemberBinder binder) {
-                ContractUtils.RequiresNotNull(binder, "binder");
-                DynamicMetaObject memberValue = GetDynamicMetaObjectForMember(binder.Name, binder.IgnoreCase, binder);
-
-                //apply the unary operation to the member value using the language's binder
-                return binder.FallbackUnaryOperationOnMember(memberValue);
-            }
-
-            public override DynamicMetaObject BindBinaryOperationOnMember(BinaryOperationOnMemberBinder binder, DynamicMetaObject value) {
-                ContractUtils.RequiresNotNull(binder, "binder");
-                DynamicMetaObject memberValue = GetDynamicMetaObjectForMember(binder.Name, binder.IgnoreCase, binder);
-
-                //apply the binary operation to the member value using the language's binder
-                return binder.FallbackBinaryOperationOnMember(memberValue, value);
+                return AddDynamicTestAndDefer(
+                    binder,
+                    new DynamicMetaObject[] { this },
+                    Value.Class,
+                    null,
+                    binder.FallbackInvoke(memberValue, args, null)
+                );
             }
 
             public override DynamicMetaObject BindSetMember(SetMemberBinder binder, DynamicMetaObject value) {
@@ -283,12 +276,12 @@ namespace System.Dynamic {
                 ExpandoClass originalClass = GetClassEnsureIndex(binder.Name, out klass, out index);
 
                 //SetMember is always case sensitive
-                return new DynamicMetaObject(
-                    AddDynamicTestAndDefer(
-                        binder,
-                        new DynamicMetaObject[] { this, value },
-                        klass,
-                        originalClass,
+                return AddDynamicTestAndDefer(
+                    binder,
+                    new DynamicMetaObject[] { this, value },
+                    klass,
+                    originalClass,
+                    new DynamicMetaObject(
                         Helpers.Convert(
                             Expression.Call(
                                 typeof(RuntimeOps).GetMethod("ExpandoSetValue"),
@@ -301,38 +294,42 @@ namespace System.Dynamic {
                                 )
                             ),
                             typeof(object)
-                        )
-                    ),
-                    GetRestrictions()
+                        ),
+                        BindingRestrictions.Empty
+                    )
                 );
             }
 
             public override DynamicMetaObject BindDeleteMember(DeleteMemberBinder binder) {
                 ContractUtils.RequiresNotNull(binder, "binder");
 
-                ExpandoClass klass;
-                int index;
+                int index = Value.Class.GetValueIndex(binder.Name, false, Value);
 
-                ExpandoClass originalClass = GetClassEnsureIndex(binder.Name, out klass, out index);
+                Expression tryDelete = Expression.Call(
+                    typeof(RuntimeOps).GetMethod("ExpandoTryDeleteValue"),
+                    GetLimitedSelf(),
+                    Expression.Constant(Value.Class),
+                    Expression.Constant(index)
+                );
+
+                DynamicMetaObject fallback = binder.FallbackDeleteMember(this);
+
+                DynamicMetaObject target = new DynamicMetaObject(
+                    Expression.Condition(
+                        Expression.IsFalse(tryDelete),
+                        Helpers.Convert(fallback.Expression, typeof(object)), //if fail to delete, fall back
+                        Helpers.Convert(Expression.Constant(true), typeof(object))
+                    ),
+                    fallback.Restrictions
+                );
 
                 //DeleteMember is always case sensitive
-                return new DynamicMetaObject(
-                    AddDynamicTestAndDefer(
-                        binder,
-                        new DynamicMetaObject[] { this },
-                        klass,
-                        originalClass,
-                        Helpers.Convert(
-                            Expression.Call(
-                                typeof(RuntimeOps).GetMethod("ExpandoDeleteValue"),
-                                GetLimitedSelf(),
-                                Expression.Constant(klass),
-                                Expression.Constant(index)
-                            ),
-                            typeof(object)
-                        )
-                    ),
-                    GetRestrictions()
+                return AddDynamicTestAndDefer(
+                    binder,
+                    new DynamicMetaObject[] { this },
+                    Value.Class,
+                    null,
+                    target
                 );
             }
 
@@ -366,7 +363,14 @@ namespace System.Dynamic {
             /// Adds a dynamic test which checks if the version has changed.  The test is only necessary for
             /// performance as the methods will do the correct thing if called with an incorrect version.
             /// </summary>
-            private Expression AddDynamicTestAndDefer(DynamicMetaObjectBinder binder, DynamicMetaObject[] args, ExpandoClass klass, ExpandoClass originalClass, Expression ifTestSucceeds) {
+            private DynamicMetaObject AddDynamicTestAndDefer(
+                DynamicMetaObjectBinder binder, 
+                DynamicMetaObject[] args, 
+                ExpandoClass klass, 
+                ExpandoClass originalClass, 
+                DynamicMetaObject succeeds) {
+
+                Expression ifTestSucceeds = succeeds.Expression;
                 if (originalClass != null) {
                     // we are accessing a member which has not yet been defined on this class.
                     // We force a class promotion after the type check.  If the class changes the 
@@ -374,27 +378,33 @@ namespace System.Dynamic {
                     // class to discover the name.
                     Debug.Assert(originalClass != klass);
 
-                    ifTestSucceeds = Expression.Block(
-                        Expression.Call(
-                            null,
-                            typeof(RuntimeOps).GetMethod("ExpandoPromoteClass"),
-                            GetLimitedSelf(),
-                            Expression.Constant(originalClass),
-                            Expression.Constant(klass)
+                    ifTestSucceeds = Helpers.Convert(
+                        Expression.Block(
+                            Expression.Call(
+                                null,
+                                typeof(RuntimeOps).GetMethod("ExpandoPromoteClass"),
+                                GetLimitedSelf(),
+                                Expression.Constant(originalClass),
+                                Expression.Constant(klass)
+                            ),
+                            succeeds.Expression
                         ),
-                        ifTestSucceeds
+                        typeof(object)
                     );
                 }
 
-                return Expression.Condition(
-                    Expression.Call(
-                        null,
-                        typeof(RuntimeOps).GetMethod("ExpandoCheckVersion"),
-                        GetLimitedSelf(),
-                        Expression.Constant(originalClass ?? klass)
+                return new DynamicMetaObject(
+                    Expression.Condition(
+                        Expression.Call(
+                            null,
+                            typeof(RuntimeOps).GetMethod("ExpandoCheckVersion"),
+                            GetLimitedSelf(),
+                            Expression.Constant(originalClass ?? klass)
+                        ),
+                        Helpers.Convert(ifTestSucceeds, typeof(object)),
+                        Helpers.Convert(binder.Defer(args).Expression, typeof(object))
                     ),
-                    ifTestSucceeds,
-                    binder.Defer(args).Expression
+                    GetRestrictions().Merge(succeeds.Restrictions)
                 );
             }
 
@@ -503,11 +513,12 @@ namespace System.Runtime.CompilerServices {
         /// <param name="indexClass">The class of the expando object.</param>
         /// <param name="index">The index of the member.</param>
         /// <param name="name">The name of the member.</param>
-        /// <returns>The value of the member.</returns>
+        /// <param name="value">The out parameter containing the value of the member.</param>
+        /// <returns>True if the member exists in the expando object, otherwise false.</returns>
         [Obsolete("used by generated code", true)]
-        public static object ExpandoGetValue(ExpandoObject expando, object indexClass, int index, string name) {
+        public static bool ExpandoTryGetValue(ExpandoObject expando, object indexClass, int index, string name, out object value) {
             ContractUtils.RequiresNotNull(expando, "expando");
-            return expando.GetValue((ExpandoClass)indexClass, index, false, name);
+            return expando.TryGetValue((ExpandoClass)indexClass, index, false, name, out value);
         }
 
         /// <summary>
@@ -517,11 +528,12 @@ namespace System.Runtime.CompilerServices {
         /// <param name="indexClass">The class of the expando object.</param>
         /// <param name="index">The index of the member.</param>
         /// <param name="name">The name of the member.</param>
-        /// <returns>The value of the member.</returns>
+        /// <param name="value">The out parameter containing the value of the member.</param>
+        /// <returns>True if the member exists in the expando object, otherwise false.</returns>
         [Obsolete("used by generated code", true)]
-        public static object ExpandoGetValueIgnoreCase(ExpandoObject expando, object indexClass, int index, string name) {
+        public static bool ExpandoTryGetValueIgnoreCase(ExpandoObject expando, object indexClass, int index, string name, out object value) {
             ContractUtils.RequiresNotNull(expando, "expando");
-            return expando.GetValue((ExpandoClass)indexClass, index, true, name);
+            return expando.TryGetValue((ExpandoClass)indexClass, index, true, name, out value);
         }
 
         /// <summary>
@@ -545,16 +557,16 @@ namespace System.Runtime.CompilerServices {
         /// <param name="index">The index of the member.</param>
         /// <returns>true if the item was successfully removed; otherwise, false.</returns>
         [Obsolete("used by generated code", true)]
-        public static bool ExpandoDeleteValue(ExpandoObject expando, object indexClass, int index) {
+        public static bool ExpandoTryDeleteValue(ExpandoObject expando, object indexClass, int index) {
             ContractUtils.RequiresNotNull(expando, "expando");
-            return expando.DeleteValue((ExpandoClass)indexClass, index);
+            return expando.TryDeleteValue((ExpandoClass)indexClass, index);
         }
 
         /// <summary>
         /// Checks the version of the expando object.
         /// </summary>
         /// <param name="expando">The expando object.</param>
-        /// <param name="version">the version to check.</param>
+        /// <param name="version">The version to check.</param>
         /// <returns>true if the version is equal; otherwise, false.</returns>
         [Obsolete("used by generated code", true)]
         public static bool ExpandoCheckVersion(ExpandoObject expando, object version) {

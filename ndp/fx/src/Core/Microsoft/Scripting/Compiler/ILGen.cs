@@ -397,6 +397,14 @@ namespace System.Linq.Expressions.Compiler {
 
         internal static void EmitLong(this ILGenerator il, long value) {
             il.Emit(OpCodes.Ldc_I8, value);
+
+            //
+            // Now, emit convert to give the constant type information.
+            //
+            // Otherwise, it is treated as unsigned and overflow is not
+            // detected if it's used in checked ops.
+            //
+            il.Emit(OpCodes.Conv_I8);
         }
 
         internal static void EmitULong(this ILGenerator il, ulong value) {

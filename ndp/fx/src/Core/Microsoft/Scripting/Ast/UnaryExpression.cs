@@ -345,14 +345,15 @@ namespace System.Linq.Expressions {
             Type operandType = operand.Type;
             Type[] types = new Type[] { operandType };
             Type nnOperandType = TypeUtils.GetNonNullableType(operandType);
-            MethodInfo method = nnOperandType.GetMethod(name, BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic, null, types, null);
+            BindingFlags flags = BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic;
+            MethodInfo method = nnOperandType.GetMethodValidated(name, flags, null, types, null);
             if (method != null) {
                 return new UnaryExpression(unaryType, operand, method.ReturnType, method);
             }
             // try lifted call
             if (TypeUtils.IsNullableType(operandType)) {
                 types[0] = nnOperandType;
-                method = nnOperandType.GetMethod(name, BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic, null, types, null);
+                method = nnOperandType.GetMethodValidated(name, flags, null, types, null);
                 if (method != null && method.ReturnType.IsValueType && !TypeUtils.IsNullableType(method.ReturnType)) {
                     return new UnaryExpression(unaryType, operand, TypeUtils.GetNullableType(method.ReturnType), method);
                 }

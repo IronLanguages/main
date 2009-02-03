@@ -627,9 +627,9 @@ namespace System.Linq.Expressions {
             Type nnLeftType = TypeUtils.GetNonNullableType(leftType);
             Type nnRightType = TypeUtils.GetNonNullableType(rightType);
             BindingFlags flags = BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic;
-            MethodInfo method = nnLeftType.GetMethod(name, flags, null, types, null);
+            MethodInfo method = nnLeftType.GetMethodValidated(name, flags, null, types, null);
             if (method == null && leftType != rightType) {
-                method = nnRightType.GetMethod(name, flags, null, types, null);
+                method = nnRightType.GetMethodValidated(name, flags, null, types, null);
             }
 
             if (IsLiftingConditionalLogicalOperator(leftType, rightType, method, binaryType)) {

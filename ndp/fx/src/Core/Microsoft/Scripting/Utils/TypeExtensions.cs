@@ -74,6 +74,49 @@ namespace System.Dynamic.Utils {
             return (pi.Attributes & (ParameterAttributes.Out)) == ParameterAttributes.Out;
         }
 
+        // Returns the matching method if the parameter types are reference
+        // assignable from the provided type arguments, otherwise null. 
+        internal static MethodInfo GetMethodValidated(
+            this Type type,
+            string name,
+            BindingFlags bindingAttr,
+            Binder binder,
+            Type[] types,
+            ParameterModifier[] modifiers) {
+            
+            var method = type.GetMethod(name, bindingAttr, binder, types, modifiers);
+
+            return method.MatchesArgumentTypes(types) ? method : null;
+        }
+
+        /// <summary>
+        /// Returns true if the method's parameter types are reference assignable from
+        /// the argument types, otherwise false.
+        /// 
+        /// An example that can make the method return false is that 
+        /// typeof(double).GetMethod("op_Equality", ..., new[] { typeof(double), typeof(int) })
+        /// returns a method with two double parameters, which doesn't match the provided
+        /// argument types.
+        /// </summary>
+        /// <returns></returns>
+        private static bool MatchesArgumentTypes(this MethodInfo mi, Type[] argTypes) {
+            if (mi == null || argTypes == null) {
+                return false;
+            }
+            var ps = mi.GetParameters();
+
+            if (ps.Length != argTypes.Length) {
+                return false;
+            }
+
+            for (int i = 0; i < ps.Length; i++) {
+                if (!TypeUtils.AreReferenceAssignable(ps[i].ParameterType, argTypes[i])) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
         internal static string FormatSignature(this MethodBase method) {
             var str = new StringBuilder();
             FormatSignature(str, method);

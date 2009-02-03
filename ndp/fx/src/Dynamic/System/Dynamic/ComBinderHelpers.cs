@@ -22,18 +22,19 @@ using System.Linq.Expressions;
 using System.Linq.Expressions.Compiler;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Collections.Generic;
 
 namespace System.Dynamic {
     internal static class ComBinderHelpers {
 
-        internal static bool PreferPut(Type type) {
+        internal static bool PreferPut(Type type, bool holdsNull) {
             Debug.Assert(type != null);
 
             if (type.IsValueType || type.IsArray) return true;
 
             if (type == typeof(String) ||
                 type == typeof(DBNull) ||
-                type == typeof(DynamicNull) ||
+                holdsNull ||
                 type == typeof(System.Reflection.Missing) ||
                 type == typeof(CurrencyWrapper)) {
 
@@ -48,8 +49,8 @@ namespace System.Dynamic {
             return pe != null && pe.IsByRef;
         }
 
-        internal static bool IsStrongBoxArg(DynamicMetaObject o) {
-            if (IsByRef(o)) {
+        internal static bool IsStrongBoxArg(DynamicMetaObject o, ArgumentInfo argInfo) {
+            if (argInfo.IsByRef) {
                 return false;
             }
 
@@ -57,62 +58,111 @@ namespace System.Dynamic {
             return t.IsGenericType && t.GetGenericTypeDefinition() == typeof(StrongBox<>);
         }
 
-        internal static DynamicMetaObject RewriteStrongBoxAsRef(CallSiteBinder action, DynamicMetaObject target, DynamicMetaObject[] args, bool hasRhs) {
-            Debug.Assert(action != null && target != null && args != null);
-
-            var restrictions = target.Restrictions.Merge(BindingRestrictions.Combine(args));
-
-            Expression[] argExpressions = new Expression[args.Length + 1];
-            Type[] signatureTypes = new Type[args.Length + 3]; // args + CallSite, target, returnType
-
-            signatureTypes[0] = typeof(CallSite);
-
-            //we are not restricting on target type here.
-            argExpressions[0] = target.Expression;
-            signatureTypes[1] = target.Expression.Type;
-
-            int argsToProcess = args.Length;
-
-            if (hasRhs) {
-                DynamicMetaObject rhsArgument = args[args.Length - 1];
-                argExpressions[args.Length] = rhsArgument.Expression;
-                signatureTypes[args.Length + 1] = rhsArgument.Expression.Type;
-                argsToProcess--;
+        // this helper checks if we have arginfos and verifies the assumptions that we make about them.
+        private static bool HasArgInfos(DynamicMetaObject[] args, IList<ArgumentInfo> argInfos) {
+            // We either have valid ArgInfos on the binder or the collection is empty.
+            if (argInfos == null || argInfos.Count == 0) {
+                return false;
             }
 
-            for (int i = 0; i < argsToProcess; i++) {
-                DynamicMetaObject currArgument = args[i];
-                if (IsStrongBoxArg(currArgument)) {
-                    restrictions = restrictions.Merge(BindingRestrictions.GetTypeRestriction(currArgument.Expression, currArgument.LimitType));
+            // Number of arginfos matches number of metaobject arguments.
+            if(args.Length != argInfos.Count){
+                throw new InvalidOperationException();
+            }
+
+            // Named arguments go after positional ones.
+            bool seenNonPositional = false;
+            for (var i = 0; i < argInfos.Count; i++){
+                ArgumentInfo curInfo = argInfos[i];
+
+                PositionalArgumentInfo positional = curInfo as PositionalArgumentInfo;
+                if (positional != null) {
+                    if (seenNonPositional){
+                        throw Error.NamedArgsShouldFollowPositional();
+                    }
+                    if (positional.Position != i) {
+                        throw new InvalidOperationException();
+                    }
+                } else {
+                    seenNonPositional = true;
+                }
+            }
+            return true;
+        }
+
+        // this helper prepares arguments for COM binding by transforming ByVal StongBox arguments
+        // into ByRef expressions that represent the argument's Value fields.
+        internal static void ProcessArgumentsForCom(ref DynamicMetaObject[] args, ref IList<ArgumentInfo> argInfos) {
+            Debug.Assert(args != null);
+           
+            DynamicMetaObject[] newArgs = new DynamicMetaObject[args.Length];
+            ArgumentInfo[] newArgInfos = new ArgumentInfo[args.Length];
+
+            bool hasArgInfos = HasArgInfos(args, argInfos);
+
+            for (int i = 0; i < args.Length; i++) {
+                DynamicMetaObject curArgument = args[i];
+
+                // set new arg infos to their original values or set default ones
+                // we will do this fixup early so that we can assume we always have
+                // arginfos in COM binder.
+                if (hasArgInfos) {
+                    newArgInfos[i] = argInfos[i];
+                } else {
+                    // TODO: this fixup should not be needed once refness is expressed only by argInfos
+                    if (IsByRef(curArgument)) {
+                        newArgInfos[i] = Expression.ByRefPositionalArgument(i);
+                    } else {
+                        newArgInfos[i] = Expression.PositionalArg(i);
+                    }
+                }
+
+                if (IsStrongBoxArg(curArgument, newArgInfos[i])) {
+
+
+                    var restrictions = curArgument.Restrictions.Merge(
+                        GetTypeRestrictionForDynamicMetaObject(curArgument)
+                    );
 
                     // we have restricted this argument to LimitType so we can convert and conversion will be trivial cast.
                     Expression boxedValueAccessor = Expression.Field(
                         Helpers.Convert(
-                            currArgument.Expression,
-                            currArgument.LimitType
+                            curArgument.Expression,
+                            curArgument.LimitType
                         ),
-                        currArgument.LimitType.GetField("Value")
+                        curArgument.LimitType.GetField("Value")
                     );
 
-                    argExpressions[i + 1] = boxedValueAccessor;
-                    signatureTypes[i + 2] = boxedValueAccessor.Type.MakeByRefType();
+                    IStrongBox value = curArgument.Value as IStrongBox;
+                    object boxedValue = value != null ? value.Value : null;
+
+                    newArgs[i] = new DynamicMetaObject(
+                        boxedValueAccessor,
+                        restrictions,
+                        boxedValue
+                    );
+
+                    NamedArgumentInfo nai = newArgInfos[i] as NamedArgumentInfo;
+                    if (nai != null) {
+                        newArgInfos[i] = Expression.ByRefNamedArgument(nai.Name);
+                    } else {
+                        newArgInfos[i] = Expression.ByRefPositionalArgument(i);
+                    }
                 } else {
-                    argExpressions[i + 1] = currArgument.Expression;
-                    signatureTypes[i + 2] = currArgument.Expression.Type;
+                    newArgs[i] = curArgument;
                 }
             }
-            
-            // Last signatureType is the return value
-            signatureTypes[signatureTypes.Length - 1] = typeof(object);
 
-            return new DynamicMetaObject(
-                Expression.MakeDynamic(
-                    Expression.GetDelegateType(signatureTypes),
-                    action,
-                    argExpressions
-                ),
-                restrictions
-            );
+            args = newArgs;
+            argInfos = newArgInfos;
+        }
+
+        internal static BindingRestrictions GetTypeRestrictionForDynamicMetaObject(DynamicMetaObject obj) {
+            if (obj.Value == null && obj.HasValue) {
+                //If the meta object holds a null value, create an instance restriction for checking null
+                return BindingRestrictions.GetInstanceRestriction(obj.Expression, null);
+            }
+            return BindingRestrictions.GetTypeRestriction(obj.Expression, obj.LimitType);
         }
     }
 }

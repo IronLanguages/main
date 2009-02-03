@@ -14,10 +14,10 @@
  * ***************************************************************************/
 
 using System.Diagnostics;
+using System.Dynamic.Utils;
 using System.Reflection;
 using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
-using System.Dynamic.Utils;
 
 namespace System.Linq.Expressions.Compiler {
     partial class LambdaCompiler {
@@ -67,21 +67,23 @@ namespace System.Linq.Expressions.Compiler {
             EmitUnary((UnaryExpression)expr);
         }
 
-
         private void EmitUnary(UnaryExpression node) {
             if (node.Method != null) {
                 EmitUnaryMethod(node);
             } else if (node.NodeType == ExpressionType.NegateChecked && TypeUtils.IsInteger(node.Operand.Type)) {
+                EmitExpression(node.Operand);
+                LocalBuilder loc = GetLocal(node.Operand.Type);
+                _ilg.Emit(OpCodes.Stloc, loc);
                 _ilg.EmitInt(0);
                 _ilg.EmitConvertToType(typeof(int), node.Operand.Type, false);
-                EmitExpression(node.Operand);
+                _ilg.Emit(OpCodes.Ldloc, loc);
+                FreeLocal(loc);
                 EmitBinaryOperator(ExpressionType.SubtractChecked, node.Operand.Type, node.Operand.Type, node.Type, false);
             } else {
                 EmitExpression(node.Operand);
                 EmitUnaryOperator(node.NodeType, node.Operand.Type, node.Type);
             }
         }
-
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity")]
         private void EmitUnaryOperator(ExpressionType op, Type operandType, Type resultType) {

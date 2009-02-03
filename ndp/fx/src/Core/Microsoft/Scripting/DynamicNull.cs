@@ -19,11 +19,6 @@ namespace System.Dynamic {
     /// </summary>
     public sealed class DynamicNull {
         /// <summary>
-        /// Represents the singleton type of a null value.
-        /// </summary>
-        public static readonly Type Type = typeof(DynamicNull);
-
-        /// <summary>
         /// Private constructor is never called since 'null' is the only valid instance.
         /// </summary>
         private DynamicNull() { }

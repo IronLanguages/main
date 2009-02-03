@@ -164,7 +164,6 @@ namespace System.Linq.Expressions.Compiler {
                     _ilg.Emit(OpCodes.Add);
                     break;
                 case ExpressionType.AddChecked: 
-                    EmitOverflowHelper(leftType, rightType);
                     if (TypeUtils.IsFloatingPoint(leftType)) {
                         _ilg.Emit(OpCodes.Add);
                     } else if (TypeUtils.IsUnsigned(leftType)) {
@@ -177,7 +176,6 @@ namespace System.Linq.Expressions.Compiler {
                     _ilg.Emit(OpCodes.Sub);
                     break;
                 case ExpressionType.SubtractChecked:
-                    EmitOverflowHelper(leftType, rightType);
                     if (TypeUtils.IsFloatingPoint(leftType)) {
                         _ilg.Emit(OpCodes.Sub);
                     } else if (TypeUtils.IsUnsigned(leftType)) {
@@ -190,7 +188,6 @@ namespace System.Linq.Expressions.Compiler {
                     _ilg.Emit(OpCodes.Mul);
                     break;
                 case ExpressionType.MultiplyChecked:
-                    EmitOverflowHelper(leftType, rightType);
                     if (TypeUtils.IsFloatingPoint(leftType)) {
                         _ilg.Emit(OpCodes.Mul);
                     } else if (TypeUtils.IsUnsigned(leftType)) {
@@ -314,26 +311,6 @@ namespace System.Linq.Expressions.Compiler {
                     break;
             }
         }
-
-        //
-        // This code is needed to make sure that we get overflow exception
-        //
-        // We should not need to do this. Instead we should be emitting the
-        // correct Conv instructions, so the JIT can track types on the stack.
-        // EmitConvertArithmeticResult emits convs for results now, but it
-        // looks like we should be doing it loading constants as well.
-        //
-        private void EmitOverflowHelper(Type leftType, Type rightType) {
-            LocalBuilder left = GetLocal(leftType);
-            LocalBuilder right = GetLocal(rightType);
-            _ilg.Emit(OpCodes.Stloc, right);
-            _ilg.Emit(OpCodes.Stloc, left);
-            _ilg.Emit(OpCodes.Ldloc, left);
-            _ilg.Emit(OpCodes.Ldloc, right);
-            FreeLocal(left);
-            FreeLocal(right);
-        }
-
 
         private void EmitUnliftedEquality(ExpressionType op, Type type) {
             Debug.Assert(op == ExpressionType.Equal || op == ExpressionType.NotEqual);

@@ -424,7 +424,16 @@ namespace System.Linq.Expressions.Compiler {
             ChildRewriter cr = new ChildRewriter(this, stack, node.Expressions.Count);
             cr.Add(node.Expressions);
 
-            return cr.Finish(cr.Rewrite ? Expression.NewArrayInit(node.Type.GetElementType(), cr[0, -1]) : expr);
+            if (cr.Rewrite) {
+                Type element = node.Type.GetElementType();
+                if (node.NodeType == ExpressionType.NewArrayInit) {
+                    expr = Expression.NewArrayInit(element, cr[0, -1]);
+                } else {
+                    expr = Expression.NewArrayBounds(element, cr[0, -1]);
+                }
+            }
+
+            return cr.Finish(expr);
         }
 
         // InvocationExpression

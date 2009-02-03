@@ -107,7 +107,7 @@ namespace Microsoft.Scripting.Actions {
 
             Type toType = toParameter.Type;
 
-            if (fromType == DynamicNull.Type) {
+            if (fromType == typeof(DynamicNull)) {
                 if (toParameter.ProhibitNull) {
                     return false;
                 }

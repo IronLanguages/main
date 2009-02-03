@@ -138,7 +138,7 @@ namespace System.Dynamic {
             foreach (Restriction r in list) {
                 bool found = false;
                 for (int j = 0; j < res.Count; j++) {
-                    if (res[j] == r) {
+                    if (res[j].Equals(r)) {
                         found = true;
                     }
                 }

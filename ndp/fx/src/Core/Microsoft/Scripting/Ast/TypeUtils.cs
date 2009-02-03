@@ -537,7 +537,7 @@ namespace System.Dynamic.Utils {
         /// </summary>
         internal static MethodInfo GetBooleanOperator(Type type, string name) {
             do {
-                MethodInfo result = type.GetMethod(name, AnyStatic, null, new Type[] { type }, null);
+                MethodInfo result = type.GetMethodValidated(name, AnyStatic, null, new Type[] { type }, null);
                 if (result != null && result.IsSpecialName && !result.ContainsGenericParameters) {
                     return result;
                 }
