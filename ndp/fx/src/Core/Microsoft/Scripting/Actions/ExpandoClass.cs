@@ -56,16 +56,17 @@ namespace System.Dynamic {
 
         /// <summary>
         /// Finds or creates a new ExpandoClass given the existing set of keys
-        /// in this ExpandoClass plus the new key to be added.
+        /// in this ExpandoClass plus the new key to be added. Members in an
+        /// ExpandoClass are always stored case sensitively.
         /// </summary>
-        internal ExpandoClass FindNewClass(string newKey, bool ignoreCase) {
+        internal ExpandoClass FindNewClass(string newKey) {
             // just XOR the newKey hash code 
             int hashCode = _hashCode ^ newKey.GetHashCode();
 
             lock (this) {
                 List<WeakReference> infos = GetTransitionList(hashCode);
 
-                for(int i = 0; i<infos.Count; i++) {
+                for (int i = 0; i < infos.Count; i++) {
                     ExpandoClass klass = infos[i].Target as ExpandoClass;
                     if (klass == null) {
                         infos.RemoveAt(i);
@@ -73,7 +74,7 @@ namespace System.Dynamic {
                         continue;
                     }
 
-                    if (string.Equals(klass._keys[klass._keys.Length - 1], newKey, GetStringComparison(ignoreCase))) {
+                    if (string.Equals(klass._keys[klass._keys.Length - 1], newKey, StringComparison.Ordinal)) {
                         // the new key is the key we added in this transition
                         return klass;
                     }
@@ -88,10 +89,6 @@ namespace System.Dynamic {
                 infos.Add(new WeakReference(ec));
                 return ec;
             }
-        }
-
-        private static StringComparison GetStringComparison(bool ignoreCase) {
-            return ignoreCase ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
         }
 
         /// <summary>
@@ -141,17 +138,75 @@ namespace System.Dynamic {
         /// <summary>
         /// Gets the index at which the value should be stored for the specified name.
         /// </summary>
-        internal int GetValueIndex(string name, bool caseInsensitive) {
+        internal int GetValueIndex(string name, bool caseInsensitive, ExpandoObject obj) {
+            if (caseInsensitive) {
+                return GetValueIndexCaseInsensitive(name, obj);
+            } else {
+                return GetValueIndexCaseSensitive(name);
+            }
+        }
+
+        /// <summary>
+        /// Gets the index at which the value should be stored for the specified name
+        /// case sensitively. Returns the index even if the member is marked as deleted.
+        /// </summary>
+        internal int GetValueIndexCaseSensitive(string name) {
             for (int i = 0; i < _keys.Length; i++) {
                 if (string.Equals(
                     _keys[i],
                     name,
-                    GetStringComparison(caseInsensitive))) {
+                    StringComparison.Ordinal)) {
                     return i;
                 }
             }
-
             return -1;
+        }
+
+        /// <summary>
+        /// Gets the index at which the value should be stored for the specified name,
+        /// the method is only used in the case-insensitive case.
+        /// </summary>
+        /// <param name="name">the name of the member</param>
+        /// <param name="obj">The ExpandoObject associated with the class
+        /// that is used to check if a member has been deleted.</param>
+        /// <returns>
+        /// the exact match if there is one
+    	/// if there is no exact match in the members, the matching member that is added 
+        /// to the ExpandoObject most recently.
+        /// </returns>
+        private int GetValueIndexCaseInsensitive(string name, ExpandoObject obj) {
+            int firstMatch = -1; //the location of the first matching member
+            lock (obj) {
+                //Search from back to front, so the matching member that is most recently added can be found first
+                for (int i = _keys.Length - 1; i >=0 ; i--) {
+                    if (firstMatch == -1) {
+                        if (string.Equals(
+                            _keys[i],
+                            name,
+                            StringComparison.OrdinalIgnoreCase)) {
+                            //if the matching member is deleted, continue searching
+                            if (!obj.IsDeletedMember(i)) {
+                                firstMatch = i;
+                            }
+                        }
+                    }
+                    //Try checking exact match if we got a first match already
+                    if (firstMatch != -1) {
+                        if (string.Equals(
+                            _keys[i],
+                            name,
+                            StringComparison.Ordinal)) {
+                            if (obj.IsDeletedMember(i)) {
+                                return firstMatch;
+                            } else {
+                                //the exact match has the highest priority
+                                return i;
+                            }
+                        }
+                    }
+                }
+            }
+            return firstMatch;
         }
 
         /// <summary>

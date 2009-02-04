@@ -24,6 +24,7 @@ using Microsoft.Contracts;
 using Microsoft.Scripting.Actions;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
+using Microsoft.Scripting.Interpreter;
 
 namespace Microsoft.Scripting.Generation {
 
@@ -305,7 +306,7 @@ namespace Microsoft.Scripting.Generation {
         /// </summary>
         public static Type GetType(object obj) {
             if (obj == null) {
-                return DynamicNull.Type;
+                return typeof(DynamicNull);
             }
 
             return obj.GetType();
@@ -685,6 +686,26 @@ namespace Microsoft.Scripting.Generation {
 
         public static Type MakeCallSiteDelegateType(Type[] types) {
             return DelegateHelpers.MakeDelegate(types);
+        }
+
+        /// <summary>
+        /// Creates an interpreted delegate for the lambda.
+        /// </summary>
+        /// <param name="lambda">The lambda to compile.</param>
+        /// <returns>A delegate which can interpret the lambda.</returns>
+        public static Delegate LightCompile(this LambdaExpression lambda) {
+            return new LightLambda(new LightCompiler().CompileTop(lambda), null).MakeDelegate(lambda.Type);
+        }
+
+        /// <summary>
+        /// Creates an interpreted delegate for the lambda.
+        /// </summary>
+        /// <typeparam name="T">The lambda's delegate type.</typeparam>
+        /// <param name="lambda">The lambda to compile.</param>
+        /// <returns>A delegate which can interpret the lambda.</returns>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1011:ConsiderPassingBaseTypesAsParameters")]
+        public static T LightCompile<T>(this Expression<T> lambda) {
+            return (T)(object)LightCompile((LambdaExpression)lambda);
         }
 
         /// <summary>

@@ -74,17 +74,17 @@ namespace Microsoft.Scripting.Runtime {
             switch (parameters.Length) {
                 case 0: {
                         CallSite<Func<CallSite, object, object>> site;
-                        site = GetSite<object, object>(_lc.CreateInvokeBinder());
+                        site = GetOrCreateSite<object, object>(_lc.CreateInvokeBinder());
                         return site.Target(site, obj);
                     }
                 case 1: {
                         CallSite<Func<CallSite, object, object, object>> site;
-                        site = GetSite<object, object, object>(_lc.CreateInvokeBinder(Expression.PositionalArg(0)));
+                        site = GetOrCreateSite<object, object, object>(_lc.CreateInvokeBinder(Expression.PositionalArg(0)));
                         return site.Target(site, obj, parameters[0]);
                     }
                 case 2: {
                         CallSite<Func<CallSite, object, object, object, object>> site;
-                        site = GetSite<object, object, object, object>(_lc.CreateInvokeBinder(Expression.PositionalArg(0), Expression.PositionalArg(1)));
+                        site = GetOrCreateSite<object, object, object, object>(_lc.CreateInvokeBinder(Expression.PositionalArg(0), Expression.PositionalArg(1)));
                         return site.Target(site, obj, parameters[0], parameters[1]);
                     }
                 default:
@@ -107,17 +107,17 @@ namespace Microsoft.Scripting.Runtime {
             switch (parameters.Length) {
                 case 0: {
                         CallSite<Func<CallSite, object, object>> site;
-                        site = GetSite<object, object>(_lc.CreateCallBinder(memberName, ignoreCase));
+                        site = GetOrCreateSite<object, object>(_lc.CreateCallBinder(memberName, ignoreCase));
                         return site.Target(site, obj);
                     }
                 case 1: {
                         CallSite<Func<CallSite, object, object, object>> site;
-                        site = GetSite<object, object, object>(_lc.CreateCallBinder(memberName, ignoreCase, Expression.PositionalArg(0)));
+                        site = GetOrCreateSite<object, object, object>(_lc.CreateCallBinder(memberName, ignoreCase, Expression.PositionalArg(0)));
                         return site.Target(site, obj, parameters[0]);
                     }
                 case 2: {
                         CallSite<Func<CallSite, object, object, object, object>> site;
-                        site = GetSite<object, object, object, object>(_lc.CreateCallBinder(memberName, ignoreCase, Expression.PositionalArg(0), Expression.PositionalArg(1)));
+                        site = GetOrCreateSite<object, object, object, object>(_lc.CreateCallBinder(memberName, ignoreCase, Expression.PositionalArg(0), Expression.PositionalArg(1)));
                         return site.Target(site, obj, parameters[0], parameters[1]);
                     }
                 default:
@@ -133,17 +133,17 @@ namespace Microsoft.Scripting.Runtime {
             switch (parameters.Length) {
                 case 0: {
                         CallSite<Func<CallSite, object, object>> site;
-                        site = GetSite<object, object>(_lc.CreateCreateBinder());
+                        site = GetOrCreateSite<object, object>(_lc.CreateCreateBinder());
                         return site.Target(site, obj);
                     }
                 case 1: {
                         CallSite<Func<CallSite, object, object, object>> site;
-                        site = GetSite<object, object, object>(_lc.CreateCreateBinder(Expression.PositionalArg(0)));
+                        site = GetOrCreateSite<object, object, object>(_lc.CreateCreateBinder(Expression.PositionalArg(0)));
                         return site.Target(site, obj, parameters[0]);
                     }
                 case 2: {
                         CallSite<Func<CallSite, object, object, object, object>> site;
-                        site = GetSite<object, object, object, object>(_lc.CreateCreateBinder(Expression.PositionalArg(0), Expression.PositionalArg(1)));
+                        site = GetOrCreateSite<object, object, object, object>(_lc.CreateCreateBinder(Expression.PositionalArg(0), Expression.PositionalArg(1)));
                         return site.Target(site, obj, parameters[0], parameters[1]);
                     }
                 default:
@@ -209,7 +209,7 @@ namespace Microsoft.Scripting.Runtime {
         /// </summary>
         public object GetMember(object obj, string name, bool ignoreCase) {
             CallSite<Func<CallSite, object, object>> site;
-            site = GetSite<object, object>(_lc.CreateGetMemberBinder(name, ignoreCase));
+            site = GetOrCreateSite<object, object>(_lc.CreateGetMemberBinder(name, ignoreCase));
             return site.Target(site, obj);
         }
 
@@ -218,8 +218,8 @@ namespace Microsoft.Scripting.Runtime {
         /// member does not exist, is write-only, or cannot be converted.
         /// </summary>
         public T GetMember<T>(object obj, string name, bool ignoreCase) {
-            CallSite<Func<CallSite, object, T>> convertSite = GetSite<object, T>(_lc.CreateConvertBinder(typeof(T), false));
-            CallSite<Func<CallSite, object, object>> site = GetSite<object, object>(_lc.CreateGetMemberBinder(name, ignoreCase));
+            CallSite<Func<CallSite, object, T>> convertSite = GetOrCreateSite<object, T>(_lc.CreateConvertBinder(typeof(T), false));
+            CallSite<Func<CallSite, object, object>> site = GetOrCreateSite<object, object>(_lc.CreateGetMemberBinder(name, ignoreCase));
             return convertSite.Target(convertSite, site.Target(site, obj));
         }
 
@@ -251,7 +251,7 @@ namespace Microsoft.Scripting.Runtime {
         /// </summary>
         public bool RemoveMember(object obj, string name, bool ignoreCase) {
             CallSite<Func<CallSite, object, bool>> site;
-            site = GetSite<object, bool>(_lc.CreateDeleteMemberBinder(name, ignoreCase));
+            site = GetOrCreateSite<object, bool>(_lc.CreateDeleteMemberBinder(name, ignoreCase));
             return site.Target(site, obj);
         }
 
@@ -260,7 +260,7 @@ namespace Microsoft.Scripting.Runtime {
         /// </summary>
         public void SetMember(object obj, string name, object value, bool ignoreCase) {
             CallSite<Func<CallSite, object, object, object>> site;
-            site = GetSite<object, object, object>(_lc.CreateSetMemberBinder(name, ignoreCase));
+            site = GetOrCreateSite<object, object, object>(_lc.CreateSetMemberBinder(name, ignoreCase));
             site.Target(site, obj, value);
         }
 
@@ -270,7 +270,7 @@ namespace Microsoft.Scripting.Runtime {
         /// </summary>
         public void SetMember<T>(object obj, string name, T value, bool ignoreCase) {
             CallSite<Func<CallSite, object, T, object>> site;
-            site = GetSite<object, T, object>(_lc.CreateSetMemberBinder(name, ignoreCase));
+            site = GetOrCreateSite<object, T, object>(_lc.CreateSetMemberBinder(name, ignoreCase));
             site.Target(site, obj, value);
         }
 
@@ -279,7 +279,7 @@ namespace Microsoft.Scripting.Runtime {
         /// </summary>
         public T ConvertTo<T>(object obj) {
             CallSite<Func<CallSite, object, T>> site;
-            site = GetSite<object, T>(_lc.CreateConvertBinder(typeof(T), false));
+            site = GetOrCreateSite<object, T>(_lc.CreateConvertBinder(typeof(T), false));
             return site.Target(site, obj);
         }
 
@@ -288,7 +288,7 @@ namespace Microsoft.Scripting.Runtime {
         /// </summary>
         public object ConvertTo(object obj, Type type) {
             CallSite<Func<CallSite, object, object>> site;
-            site = GetSite<object, object>(_lc.CreateConvertBinder(type, false));
+            site = GetOrCreateSite<object, object>(_lc.CreateConvertBinder(type, false));
             return site.Target(site, obj);
         }
 
@@ -329,7 +329,7 @@ namespace Microsoft.Scripting.Runtime {
         /// </summary>
         public T ExplicitConvertTo<T>(object obj) {
             CallSite<Func<CallSite, object, T>> site;
-            site = GetSite<object, T>(_lc.CreateConvertBinder(typeof(T), true));
+            site = GetOrCreateSite<object, T>(_lc.CreateConvertBinder(typeof(T), true));
             return site.Target(site, obj);
         }
 
@@ -338,7 +338,7 @@ namespace Microsoft.Scripting.Runtime {
         /// </summary>
         public object ExplicitConvertTo(object obj, Type type) {
             CallSite<Func<CallSite, object, object>> site;
-            site = GetSite<object, object>(_lc.CreateConvertBinder(type, true));
+            site = GetOrCreateSite<object, object>(_lc.CreateConvertBinder(type, true));
             return site.Target(site, obj);
         }
 
@@ -380,7 +380,7 @@ namespace Microsoft.Scripting.Runtime {
         /// Performs a generic unary operation on the strongly typed target and returns the value as the specified type
         /// </summary>
         public TResult DoOperation<TTarget, TResult>(ExpressionType operation, TTarget target) {
-            var site = GetSite<TTarget, TResult>(_lc.CreateUnaryOperationBinder(operation));
+            var site = GetOrCreateSite<TTarget, TResult>(_lc.CreateUnaryOperationBinder(operation));
             return site.Target(site, target);
         }
 
@@ -389,7 +389,7 @@ namespace Microsoft.Scripting.Runtime {
         /// the strongly typed result.
         /// </summary>
         public TResult DoOperation<TTarget, TOther, TResult>(ExpressionType operation, TTarget target, TOther other) {
-            var site = GetSite<TTarget, TOther, TResult>(_lc.CreateBinaryOperationBinder(operation));
+            var site = GetOrCreateSite<TTarget, TOther, TResult>(_lc.CreateBinaryOperationBinder(operation));
             return site.Target(site, target, other);
         }
         
@@ -407,7 +407,7 @@ namespace Microsoft.Scripting.Runtime {
         [Obsolete("Use UnaryOperation or BinaryOperation")]
         public TResult DoOperation<TTarget, TResult>(string op, TTarget target) {
             CallSite<Func<CallSite, TTarget, TResult>> site;
-            site = GetSite<TTarget, TResult>(_lc.CreateOperationBinder(op));
+            site = GetOrCreateSite<TTarget, TResult>(_lc.CreateOperationBinder(op));
             return site.Target(site, target);
         }
 
@@ -426,7 +426,7 @@ namespace Microsoft.Scripting.Runtime {
         [Obsolete("Use UnaryOperation or BinaryOperation")]
         public TResult DoOperation<TTarget, TOther, TResult>(string op, TTarget target, TOther other) {
             CallSite<Func<CallSite, TTarget, TOther, TResult>> site;
-            site = GetSite<TTarget, TOther, TResult>(_lc.CreateOperationBinder(op));
+            site = GetOrCreateSite<TTarget, TOther, TResult>(_lc.CreateOperationBinder(op));
             return site.Target(site, target, other);
         }
 
@@ -437,45 +437,66 @@ namespace Microsoft.Scripting.Runtime {
             return _lc.GetMemberNames(obj);
         }
 
+        /// <summary>
+        /// Returns a string representation of the object in a language specific object display format.
+        /// </summary>
+        public string Format(object obj) {
+            return _lc.FormatObject(this, obj);
+        }
+
         #endregion
 
         #region Private implementation details
 
         /// <summary>
-        /// Helper to create a new dynamic site w/ the specified type parameters for the provided action.
-        /// 
-        /// This will either get the site from the cache or create a new site and return it.  The cache
-        /// may be cleaned if it's gotten too big since the last usage.
+        /// Gets or creates a dynamic site w/ the specified type parameters for the provided binder.
         /// </summary>
-        private CallSite<Func<CallSite, T0, Tret>> GetSite<T0, Tret>(CallSiteBinder action) {
-            return GetSiteWorker<CallSite<Func<CallSite, T0, Tret>>>(action, CallSite<Func<CallSite, T0, Tret>>.Create);
+        /// <remarks>
+        /// This will either get the site from the cache or create a new site and return it. The cache
+        /// may be cleaned if it's gotten too big since the last usage.
+        /// </remarks>
+        public CallSite<Func<CallSite, T0, Tret>> GetOrCreateSite<T0, Tret>(CallSiteBinder siteBinder) {
+            return GetOrCreateSite<CallSite<Func<CallSite, T0, Tret>>>(siteBinder, CallSite<Func<CallSite, T0, Tret>>.Create);
         }
 
         /// <summary>
-        /// Helper to create a new dynamic site w/ the specified type parameters for the provided action.
-        /// 
-        /// This will either get the site from the cache or create a new site and return it.  The cache
-        /// may be cleaned if it's gotten too big since the last usage.
+        /// Gets or creates a dynamic site w/ the specified type parameters for the provided binder.
         /// </summary>
-        private CallSite<Func<CallSite, T0, T1, Tret>> GetSite<T0, T1, Tret>(CallSiteBinder action) {
-            return GetSiteWorker<CallSite<Func<CallSite, T0, T1, Tret>>>(action, CallSite<Func<CallSite, T0, T1, Tret>>.Create);
+        /// <remarks>
+        /// This will either get the site from the cache or create a new site and return it. The cache
+        /// may be cleaned if it's gotten too big since the last usage.
+        /// </remarks>
+        public CallSite<Func<CallSite, T0, T1, Tret>> GetOrCreateSite<T0, T1, Tret>(CallSiteBinder siteBinder) {
+            return GetOrCreateSite<CallSite<Func<CallSite, T0, T1, Tret>>>(siteBinder, CallSite<Func<CallSite, T0, T1, Tret>>.Create);
         }
 
         /// <summary>
-        /// Helper to create a new dynamic site w/ the specified type parameters for the provided action.
-        /// 
-        /// This will either get the site from the cache or create a new site and return it.  The cache
-        /// may be cleaned if it's gotten too big since the last usage.
+        /// Gets or creates a dynamic site w/ the specified type parameters for the provided binder.
         /// </summary>
-        private CallSite<Func<CallSite, T0, T1, T2, Tret>> GetSite<T0, T1, T2, Tret>(CallSiteBinder action) {
-            return GetSiteWorker<CallSite<Func<CallSite, T0, T1, T2, Tret>>>(action, CallSite<Func<CallSite, T0, T1, T2, Tret>>.Create);
+        /// <remarks>
+        /// This will either get the site from the cache or create a new site and return it. The cache
+        /// may be cleaned if it's gotten too big since the last usage.
+        /// </remarks>
+        public CallSite<Func<CallSite, T0, T1, T2, Tret>> GetOrCreateSite<T0, T1, T2, Tret>(CallSiteBinder siteBinder) {
+            return GetOrCreateSite<CallSite<Func<CallSite, T0, T1, T2, Tret>>>(siteBinder, CallSite<Func<CallSite, T0, T1, T2, Tret>>.Create);
+        }
+
+        /// <summary>
+        /// Gets or creates a dynamic site w/ the specified type parameters for the provided binder.
+        /// </summary>
+        /// <remarks>
+        /// This will either get the site from the cache or create a new site and return it. The cache
+        /// may be cleaned if it's gotten too big since the last usage.
+        /// </remarks>
+        public CallSite<TSiteFunc> GetOrCreateSite<TSiteFunc>(CallSiteBinder siteBinder) where TSiteFunc : class {
+            return GetOrCreateSite<CallSite<TSiteFunc>>(siteBinder, CallSite<TSiteFunc>.Create);
         }
 
         /// <summary>
         /// Helper to create to get or create the dynamic site - called by the GetSite methods.
         /// </summary>
-        private T GetSiteWorker<T>(CallSiteBinder action, Func<CallSiteBinder, T> ctor) where T : CallSite {
-            SiteKey sk = new SiteKey(typeof(T), action);
+        private T GetOrCreateSite<T>(CallSiteBinder siteBinder, Func<CallSiteBinder, T> factory) where T : CallSite {
+            SiteKey sk = new SiteKey(typeof(T), siteBinder);
 
             lock (_sites) {
                 SiteKey old;
@@ -486,16 +507,16 @@ namespace Microsoft.Scripting.Runtime {
                         SitesCreated = 0;
                         LastCleanup = 0;
                     }
-                    sk.Site = ctor(sk.Action);
+                    sk.Site = factory(sk.SiteBinder);
                     _sites[sk] = sk;
                 } else {
                     sk = old;
                 }
 
                 sk.HitCount++;
-            }
 
-            Cleanup();
+                CleanupNoLock();
+            }
 
             return (T)sk.Site;
         }
@@ -503,52 +524,50 @@ namespace Microsoft.Scripting.Runtime {
         /// <summary>
         /// Removes items from the cache that have the lowest usage...
         /// </summary>
-        private void Cleanup() {
-            lock (_sites) {
-                // cleanup only if we have too many sites and we've created a bunch since our last cleanup
-                if (_sites.Count > CleanupThreshold && (LastCleanup < SitesCreated - CleanupThreshold)) {
-                    LastCleanup = SitesCreated;
+        private void CleanupNoLock() {
+            // cleanup only if we have too many sites and we've created a bunch since our last cleanup
+            if (_sites.Count > CleanupThreshold && (LastCleanup < SitesCreated - CleanupThreshold)) {
+                LastCleanup = SitesCreated;
 
-                    // calculate the average use, remove up to StopCleanupThreshold that are below average.
-                    int totalUse = 0;
+                // calculate the average use, remove up to StopCleanupThreshold that are below average.
+                int totalUse = 0;
+                foreach (SiteKey sk in _sites.Keys) {
+                    totalUse += sk.HitCount;
+                }
+
+                int avgUse = totalUse / _sites.Count;
+                if (avgUse == 1 && _sites.Count > ClearThreshold) {
+                    // we only have a bunch of one-off requests
+                    _sites.Clear();
+                    return;
+                }
+
+                List<SiteKey> toRemove = null;
+                foreach (SiteKey sk in _sites.Keys) {
+                    if (sk.HitCount < (avgUse - RemoveThreshold)) {
+                        if (toRemove == null) {
+                            toRemove = new List<SiteKey>();
+                        }
+
+                        toRemove.Add(sk);
+                        if (toRemove.Count > StopCleanupThreshold) {
+                            // if we have a setup like weight(100), weight(1), weight(1), weight(1), ... we don't want
+                            // to just run through and remove all of the weight(1)'s. 
+                            break;
+                        }
+                    }
+
+                }
+
+                if (toRemove != null) {
+                    foreach (SiteKey sk in toRemove) {
+                        _sites.Remove(sk);
+                    }
+
+                    // reset all hit counts so the next time through is fair 
+                    // to newly added members which may take precedence.
                     foreach (SiteKey sk in _sites.Keys) {
-                        totalUse += sk.HitCount;
-                    }
-
-                    int avgUse = totalUse / _sites.Count;
-                    if (avgUse == 1 && _sites.Count > ClearThreshold) {
-                        // we only have a bunch of one-off requests
-                        _sites.Clear();
-                        return;
-                    }
-
-                    List<SiteKey> toRemove = null;
-                    foreach (SiteKey sk in _sites.Keys) {
-                        if (sk.HitCount < (avgUse - RemoveThreshold)) {
-                            if (toRemove == null) {
-                                toRemove = new List<SiteKey>();
-                            }
-
-                            toRemove.Add(sk);
-                            if (toRemove.Count > StopCleanupThreshold) {
-                                // if we have a setup like weight(100), weight(1), weight(1), weight(1), ... we don't want
-                                // to just run through and remove all of the weight(1)'s. 
-                                break;
-                            }
-                        }
-
-                    }
-
-                    if (toRemove != null) {
-                        foreach (SiteKey sk in toRemove) {
-                            _sites.Remove(sk);
-                        }
-
-                        // reset all hit counts so the next time through is fair 
-                        // to newly added members which may take precedence.
-                        foreach (SiteKey sk in _sites.Keys) {
-                            sk.HitCount = 0;
-                        }
+                        sk.HitCount = 0;
                     }
                 }
             }
@@ -556,26 +575,26 @@ namespace Microsoft.Scripting.Runtime {
 
         /// <summary>
         /// Helper class for tracking all of our unique dynamic sites and their
-        /// usage patterns.  We hash on the combination of the action and site type.
+        /// usage patterns.  We hash on the combination of the binder and site type.
         /// 
         /// We also track the hit count and the key holds the site associated w/ the 
-        /// key.  Logically this is a set based upon the action and site-type but we
+        /// key.  Logically this is a set based upon the binder and site-type but we
         /// store it in a dictionary.
         /// </summary>
         private class SiteKey : IEquatable<SiteKey> {
             // the key portion of the data
-            internal readonly CallSiteBinder Action;
+            internal readonly CallSiteBinder SiteBinder;
             private readonly Type _siteType;
 
             // not used for equality, used for caching strategy
             public int HitCount;
             public CallSite Site;
 
-            public SiteKey(Type siteType, CallSiteBinder action) {
+            public SiteKey(Type siteType, CallSiteBinder siteBinder) {
                 Debug.Assert(siteType != null);
-                Debug.Assert(action != null);
+                Debug.Assert(siteBinder != null);
 
-                Action = action;
+                SiteBinder = siteBinder;
                 _siteType = siteType;
             }
 
@@ -586,7 +605,7 @@ namespace Microsoft.Scripting.Runtime {
 
             [Confined]
             public override int GetHashCode() {
-                return Action.GetHashCode() ^ _siteType.GetHashCode();
+                return SiteBinder.GetHashCode() ^ _siteType.GetHashCode();
             }
 
             #region IEquatable<SiteKey> Members
@@ -595,7 +614,7 @@ namespace Microsoft.Scripting.Runtime {
             public bool Equals(SiteKey other) {
                 if (other == null) return false;
 
-                return other.Action.Equals(Action) &&
+                return other.SiteBinder.Equals(SiteBinder) &&
                     other._siteType == _siteType;
             }
 
@@ -603,7 +622,7 @@ namespace Microsoft.Scripting.Runtime {
 #if DEBUG
             [Confined]
             public override string ToString() {
-                return String.Format("{0} {1}", Action.ToString(), HitCount);
+                return String.Format("{0} {1}", SiteBinder.ToString(), HitCount);
             }
 #endif
         }

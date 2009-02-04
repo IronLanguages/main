@@ -44,11 +44,13 @@ namespace IronRuby.Builtins {
             return MutableString.Create("main");
         }
 
+        // thread-safe:
         [RubyMethod("public", RubyMethodAttributes.PublicInstance)]
         public static RubyModule/*!*/ SetPublicVisibility(RubyScope/*!*/ scope, object/*!*/ self, [NotNull]params object[]/*!*/ methodNames) {
             return SetVisibility(scope, self, methodNames, RubyMethodAttributes.PublicInstance);
         }
 
+        // thread-safe:
         [RubyMethod("private", RubyMethodAttributes.PublicInstance)]
         public static RubyModule/*!*/ SetPrivateVisibility(RubyScope/*!*/ scope, object/*!*/ self, [NotNull]params object[]/*!*/ methodNames) {
             return SetVisibility(scope, self, methodNames, RubyMethodAttributes.PrivateInstance);
@@ -61,6 +63,7 @@ namespace IronRuby.Builtins {
             return cls;
         }
 
+        // thread-safe:
         [RubyMethod("include", RubyMethodAttributes.PublicInstance)]
         public static RubyClass/*!*/ Include(RubyContext/*!*/ context, object/*!*/ self, params RubyModule[]/*!*/ modules) {
             RubyClass result = context.GetClassOf(self);

@@ -123,11 +123,9 @@ namespace IronRuby.Runtime {
 
             RubyContext context = (RubyContext)language;
 
+            RubyModule module = context.CreateModule(null, null, null, null, null, null, null);
             object mainObject = new Object();
-            RubyClass mainSingleton = context.CreateMainSingleton(mainObject);
-            
-            RubyModule module = context.CreateModule(null, null, null, null, null);
-            mainSingleton.SetMixins(new RubyModule[] { module });
+            RubyClass mainSingleton = context.CreateMainSingleton(mainObject, new[] { module });
 
             RubyGlobalScope rubyGlobalScope = context.InitializeGlobalScope(globalScope, false);
             RubyTopLevelScope scope = new RubyTopLevelScope(rubyGlobalScope, null, locals);
@@ -590,27 +588,16 @@ namespace IronRuby.Runtime {
 
         [Emitted] // AliasStatement:
         public static void AliasMethod(RubyScope/*!*/ scope, string/*!*/ newName, string/*!*/ oldName) {
-            // MRI 1.8: if (newName == oldName) return;
-            // MRI 1.9: no check
-
-            // lexical lookup:
-            RubyModule owner = scope.GetMethodDefinitionOwner();
-            RubyMemberInfo method = owner.ResolveMethodFallbackToObject(oldName, true);
-            if (method != null) {
-                owner.AddMethodAlias(scope.RubyContext, newName, method);
-                return;
-            }
-
-            throw RubyExceptions.CreateUndefinedMethodError(owner, oldName);
+            scope.GetMethodDefinitionOwner().AddMethodAlias(newName, oldName);
         }
 
         [Emitted] // UndefineMethod:
         public static void UndefineMethod(RubyScope/*!*/ scope, string/*!*/ name) {
             RubyModule owner = scope.GetInnerMostModule();
+
             if (owner.ResolveMethod(name, true) == null) {
                 throw RubyExceptions.CreateUndefinedMethodError(owner, name);
             }
-
             owner.UndefineMethod(name);
         }
 
@@ -639,11 +626,6 @@ namespace IronRuby.Runtime {
         public static RubyModule/*!*/ DefineModule(RubyScope/*!*/ scope, object target, string/*!*/ name) {
             Assert.NotNull(scope);
             return RubyUtils.DefineModule(scope.GlobalScope, RubyUtils.GetModuleFromObject(scope.RubyContext, target), name);
-        }
-
-        [Emitted]
-        public static RubyModule/*!*/ ConvertNamespaceToModule(RubyScope/*!*/ scope, NamespaceTracker/*!*/ tracker) {
-            return scope.RubyContext.GetOrCreateModule(tracker);
         }
 
         #endregion
@@ -1324,6 +1306,21 @@ namespace IronRuby.Runtime {
         }
 
         [Emitted]
+        public static ArgumentException/*!*/ CreateArgumentsError(string message) {
+            return (ArgumentException)RubyExceptions.CreateArgumentError(message);
+        }
+
+        [Emitted]
+        public static ArgumentException/*!*/ CreateArgumentsErrorForMissingBlock(string message) {
+            return (ArgumentException)RubyExceptions.CreateArgumentError("block not supplied");
+        }
+
+        [Emitted]
+        public static ArgumentException/*!*/ CreateArgumentsErrorForProc(string className) {
+            return (ArgumentException)RubyExceptions.CreateArgumentError(String.Format("wrong type argument {0} (should be callable)", className));
+        }
+
+        [Emitted]
         public static ArgumentException/*!*/ MakeWrongNumberOfArgumentsError(int actual, int expected) {
             return new ArgumentException(String.Format("wrong number of arguments ({0} for {1})", actual, expected));
         }
@@ -1345,9 +1342,9 @@ namespace IronRuby.Runtime {
         }
 
         [Emitted]
-        public static Exception/*!*/ MakeAmbiguousMatchError(string/*!*/ methodName) {
+        public static Exception/*!*/ MakeAmbiguousMatchError(string/*!*/ message) {
             // TODO:
-            return new AmbiguousMatchException(String.Format("Found multiple methods for `{0}'", methodName));
+            return new AmbiguousMatchException(message);
         }
 
         #endregion
@@ -1508,6 +1505,36 @@ namespace IronRuby.Runtime {
             }
 
             throw new InvalidOperationException(String.Format("{0}#to_int/to_i should return Integer", className));
+        }
+
+        [Emitted] // ProtocolConversionAction
+        public static double ToFloatValidator(string/*!*/ className, object obj) {
+            if (obj is double) {
+                return (double)obj;
+            }
+
+            // to_f should not return System.Single in pure Ruby code. However, we allow it in IronRuby code
+            if (obj is float) {
+                return (double)(float)obj;
+            }
+
+            throw new InvalidOperationException(String.Format("{0}#to_f should return Float", className));
+        }
+
+        [Emitted]
+        public static double ConvertBignumToFloat(BigInteger/*!*/ value) {
+            return value.ToFloat64();
+        }
+
+        [Emitted]
+        public static double ConvertStringToFloat(MutableString/*!*/ value) {
+            double result;
+            bool complete;
+            if (Tokenizer.TryParseDouble(value.ConvertToString(), out result, out complete) && complete) {
+                return result;
+            }
+
+            throw RubyExceptions.CreateArgumentError("String#to_f should return Float");
         }
 
         [Emitted] // ProtocolConversionAction

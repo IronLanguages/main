@@ -47,14 +47,19 @@ namespace Microsoft.Scripting {
         /// <summary>
         /// The code is an interactive command.
         /// </summary>
-        InteractiveCode = 5
+        InteractiveCode = 5,
+
+        /// <summary>
+        /// The language parser auto-detects the kind. A syntax error is reported if it is not able to do so.
+        /// </summary>
+        AutoDetect = 6
     }
 }
 
 namespace Microsoft.Scripting.Utils {
     public static partial class EnumBounds {
-        public static bool IsValid(/*this*/ SourceCodeKind value) {
-            return value > SourceCodeKind.Unspecified && value <= SourceCodeKind.InteractiveCode;
+        public static bool IsValid(this SourceCodeKind value) {
+            return value > SourceCodeKind.Unspecified && value <= SourceCodeKind.AutoDetect;
         }
     }
 }

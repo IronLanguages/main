@@ -1097,19 +1097,33 @@ namespace IronRuby.Builtins {
             }
         }
 
-        [RubyMethod("dump")]
-        [RubyMethod("inspect")]
-        public static MutableString/*!*/ Dump(RubyContext/*!*/ context, MutableString/*!*/ self) {
+        private static StringBuilder/*!*/ Dump(MutableString/*!*/ self) {
             StringBuilder result = new StringBuilder();
             result.Append('"');
-            
+
             byte[] bytes = self.ToByteArray();
             for (int i = 0; i < bytes.Length; i++) {
                 AppendStringRepresentationOfChar(result, bytes[i], i + 1 < bytes.Length ? bytes[i + 1] : -1, true);
             }
 
             result.Append('"');
+            return result;
+        }
+
+        [RubyMethod("dump")]
+        public static MutableString/*!*/ Dump(RubyContext/*!*/ context, MutableString/*!*/ self) {
+            StringBuilder result = Dump(self);
+            // Note that "self" could be a subclass of MutableString, and the return value should be
+            // of the same type
             return self.CreateInstance().Append(result).TaintBy(self);
+        }
+
+        [RubyMethod("inspect")]
+        public static MutableString/*!*/ Inspect(RubyContext/*!*/ context, MutableString/*!*/ self) {
+            StringBuilder result = Dump(self);
+            // Note that "self" could be a subclass of MutableString, but the return value should 
+            // always be just a MutableString
+            return MutableString.CreateMutable(result.Capacity).Append(result).TaintBy(self);
         }
 
         #endregion

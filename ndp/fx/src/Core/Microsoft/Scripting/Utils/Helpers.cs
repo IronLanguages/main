@@ -35,15 +35,6 @@ namespace System.Dynamic.Utils {
             return Expression.Convert(expression, type);
         }
 
-        /// <summary>
-        /// Creates an array of size count with each element initialized to item
-        /// </summary>
-        internal static T[] RepeatedArray<T>(T item, int count) {
-            T[] ret = new T[count];
-            for (int i = 0; i < count; i++) ret[i] = item;
-            return ret;
-        }
-
         internal static T CommonNode<T>(T first, T second, Func<T, T> parent) where T : class {
             var cmp = EqualityComparer<T>.Default;
             if (cmp.Equals(first, second)) {
@@ -65,51 +56,6 @@ namespace System.Dynamic.Utils {
             int count;
             dict.TryGetValue(key, out count);
             dict[key] = count + 1;
-        }
-
-        internal static string ToValidPath(string path) {
-            return ToValidPath(path, false, true);
-        }
-
-        internal static string ToValidPath(string path, bool isMask) {
-            return ToValidPath(path, isMask, true);
-        }
-
-        internal static string ToValidFileName(string path) {
-            return ToValidPath(path, false, false);
-        }
-
-        private static string ToValidPath(string path, bool isMask, bool isPath) {
-            Debug.Assert(!isMask || isPath);
-
-            if (String.IsNullOrEmpty(path)) {
-                return "_";
-            }
-
-            StringBuilder sb = new StringBuilder(path);
-
-            if (isPath) {
-                foreach (char c in Path.GetInvalidPathChars()) {
-                    sb.Replace(c, '_');
-                }
-            } else {
-#if SILVERLIGHT
-                foreach (char c in Path.GetInvalidPathChars()) {
-                    sb.Replace(c, '_');
-                }
-                sb.Replace(':', '_').Replace('*', '_').Replace('?', '_').Replace('\\', '_').Replace('/', '_');
-#else
-                foreach (char c in Path.GetInvalidFileNameChars()) {
-                    sb.Replace(c, '_');
-                }
-#endif
-            }
-
-            if (!isMask) {
-                sb.Replace('*', '_').Replace('?', '_');
-            }
-
-            return sb.ToString();
         }
     }
 }

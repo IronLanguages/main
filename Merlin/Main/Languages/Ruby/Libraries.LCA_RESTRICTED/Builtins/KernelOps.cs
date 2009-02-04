@@ -352,7 +352,7 @@ namespace IronRuby.Builtins {
         [RubyMethod("global_variables", RubyMethodAttributes.PublicSingleton)]
         public static RubyArray/*!*/ GetGlobalVariableNames(RubyContext/*!*/ context, object self) {
             RubyArray result = new RubyArray();
-            lock (context.GlobalVariablesSyncRoot) {
+            lock (context.GlobalVariablesLock) {
                 foreach (KeyValuePair<string, GlobalVariable> global in context.GlobalVariables) {
                     if (global.Value.IsEnumerated) {
                         // TODO: Ruby 1.9 returns symbols:
@@ -1156,13 +1156,15 @@ namespace IronRuby.Builtins {
             return RubyUtils.EvaluateInSingleton(self, block);
         }
 
-        #region nil?, instance_of?, is_a?, kind_of?
+        #region nil?, instance_of?, is_a?, kind_of? (thread-safe)
 
+        // thread-safe:
         [RubyMethod("nil?")]
         public static bool IsNil(object self) {
             return self == null;
         }
-       
+
+        // thread-safe:
         [RubyMethod("is_a?")]
         [RubyMethod("kind_of?")]
         public static bool IsKindOf(object self, RubyModule/*!*/ other) {
@@ -1170,6 +1172,7 @@ namespace IronRuby.Builtins {
             return other.Context.GetImmediateClassOf(self).HasAncestor(other);
         }
 
+        // thread-safe:
         [RubyMethod("instance_of?")]
         public static bool IsOfClass(object self, RubyModule/*!*/ other) {
             ContractUtils.RequiresNotNull(other, "other");
@@ -1363,8 +1366,9 @@ namespace IronRuby.Builtins {
 
         #endregion
 
-        #region method, methods, (private|protected|public|singleton)_methods
+        #region method, methods, (private|protected|public|singleton)_methods (thread-safe)
 
+        // thread-safe:
         [RubyMethod("method")]
         public static RubyMethod/*!*/ GetMethod(RubyContext/*!*/ context, object self, [DefaultProtocol]string/*!*/ name) {
             RubyMemberInfo info = context.ResolveMethod(self, name, true);
@@ -1374,6 +1378,7 @@ namespace IronRuby.Builtins {
             return new RubyMethod(self, info, name);
         }
 
+        // thread-safe:
         [RubyMethod("methods")]
         public static RubyArray/*!*/ GetMethods(RubyContext/*!*/ context, object self, [DefaultParameterValue(true)]bool inherited) {
             RubyClass immediateClass = context.GetImmediateClassOf(self);
@@ -1384,22 +1389,26 @@ namespace IronRuby.Builtins {
             return ModuleOps.GetMethods(immediateClass, inherited, RubyMethodAttributes.Public | RubyMethodAttributes.Protected);
         }
 
+        // thread-safe:
         [RubyMethod("singleton_methods")]
         public static RubyArray/*!*/ GetSingletonMethods(RubyContext/*!*/ context, object self, [DefaultParameterValue(true)]bool inherited) {
             RubyClass immediateClass = context.GetImmediateClassOf(self);
             return ModuleOps.GetMethods(immediateClass, inherited, RubyMethodAttributes.Singleton | RubyMethodAttributes.Public | RubyMethodAttributes.Protected);
         }
 
+        // thread-safe:
         [RubyMethod("private_methods")]
         public static RubyArray/*!*/ GetPrivateMethods(RubyContext/*!*/ context, object self, [DefaultParameterValue(true)]bool inherited) {
             return GetMethods(context, self, inherited, RubyMethodAttributes.PrivateInstance);
         }
 
+        // thread-safe:
         [RubyMethod("protected_methods")]
         public static RubyArray/*!*/ GetProtectedMethods(RubyContext/*!*/ context, object self, [DefaultParameterValue(true)]bool inherited) {
             return GetMethods(context, self, inherited, RubyMethodAttributes.ProtectedInstance);
         }
 
+        // thread-safe:
         [RubyMethod("public_methods")]
         public static RubyArray/*!*/ GetPublicMethods(RubyContext/*!*/ context, object self, [DefaultParameterValue(true)]bool inherited) {
             return GetMethods(context, self, inherited, RubyMethodAttributes.PublicInstance);

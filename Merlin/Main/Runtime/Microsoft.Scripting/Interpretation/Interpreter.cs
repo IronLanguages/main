@@ -1319,42 +1319,7 @@ namespace Microsoft.Scripting.Interpretation {
         }
 
         private static object InterpretSwitchExpression(InterpreterState state, Expression expr) {
-            // TODO: yield aware switch
-            SwitchExpression node = (SwitchExpression)expr;
-
-            object testValue;
-            if (InterpretAndCheckFlow(state, node.Test, out testValue)) {
-                return testValue;
-            }
-
-            int test = (int)testValue;
-            ReadOnlyCollection<SwitchCase> cases = node.SwitchCases;
-            int target = 0;
-            while (target < cases.Count) {
-                SwitchCase sc = cases[target];
-                if (sc.IsDefault || sc.Value == test) {
-                    break;
-                }
-
-                target++;
-            }
-
-            while (target < cases.Count) {
-                SwitchCase sc = cases[target];
-                object result = Interpret(state, sc.Body);
-
-                ControlFlow cf = result as ControlFlow;
-                if (cf != null) {
-                    if (cf.Label == node.BreakLabel) {
-                        return ControlFlow.NextStatement;
-                    } else if (cf.Kind == ControlFlowKind.Yield || cf.Kind == ControlFlowKind.Goto) {
-                        return cf;
-                    }
-                }
-                target++;
-            }
-
-            return ControlFlow.NextStatement;
+            throw new NotSupportedException("switch not supported by old interpreter");
         }
 
         #region Exceptions

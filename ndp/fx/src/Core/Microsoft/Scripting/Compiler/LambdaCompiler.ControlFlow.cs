@@ -46,12 +46,12 @@ namespace System.Linq.Expressions.Compiler {
             return result;
         }
 
-        private void PushLabelBlock(LabelBlockKind type) {
-            _labelBlock = new LabelBlockInfo(_labelBlock, type);
+        private void PushLabelBlock(LabelScopeKind type) {
+            _labelBlock = new LabelScopeInfo(_labelBlock, type);
         }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "kind")]
-        private void PopLabelBlock(LabelBlockKind kind) {
+        private void PopLabelBlock(LabelScopeKind kind) {
             Debug.Assert(_labelBlock != null && _labelBlock.Kind == kind);
             _labelBlock = _labelBlock.Parent;
         }
@@ -63,8 +63,21 @@ namespace System.Linq.Expressions.Compiler {
             // If we're an immediate child of a block, our label will already
             // be defined. If not, we need to define our own block so this
             // label isn't exposed except to its own child expression.
-            LabelInfo label;
-            if (!_labelBlock.TryGetLabelInfo(node.Target, out label)) {
+            LabelInfo label = null;
+
+            if (_labelBlock.Kind == LabelScopeKind.Block) {
+                _labelBlock.TryGetLabelInfo(node.Target, out label);
+
+                // We're in a block but didn't find our label, try switch
+                if (label == null && _labelBlock.Parent.Kind == LabelScopeKind.Switch) {
+                    _labelBlock.Parent.TryGetLabelInfo(node.Target, out label);
+                }
+
+                // if we're in a switch or block, we should've found the label
+                Debug.Assert(label != null);
+            }
+
+            if (label == null) {
                 label = DefineLabel(node.Target);
             }
 
@@ -93,50 +106,82 @@ namespace System.Linq.Expressions.Compiler {
             // jumped into
             switch (node.NodeType) {
                 default:
-                    if (_labelBlock.Kind != LabelBlockKind.Expression) {
-                        PushLabelBlock(LabelBlockKind.Expression);
+                    if (_labelBlock.Kind != LabelScopeKind.Expression) {
+                        PushLabelBlock(LabelScopeKind.Expression);
                         return true;
                     }
                     return false;
                 case ExpressionType.Label:
-                    // LabelExpression is a bit special, if it's directly in a block
-                    // it becomes associate with the block's scope
-                    if (_labelBlock.Kind != LabelBlockKind.Block ||
-                        !_labelBlock.ContainsTarget(((LabelExpression)node).Target)) {
-                        PushLabelBlock(LabelBlockKind.Block);
-                        return true;
-                    }
-                    return false;
-                case ExpressionType.Block:
-                    // Labels defined immediately in the block are valid for the whole block
-                    PushLabelBlock(LabelBlockKind.Block);
-                    var block = (BlockExpression)node;
-                    for (int i = 0, n = block.ExpressionCount; i < n; i++) {
-                        Expression e = block.GetExpression(i);
-
-                        var label = e as LabelExpression;
-                        if (label != null) {
-                            DefineLabel(label.Target);
+                    // LabelExpression is a bit special, if it's directly in a
+                    // block it becomes associate with the block's scope. Same
+                    // thing if it's in a switch case body.
+                    if (_labelBlock.Kind == LabelScopeKind.Block) {
+                        var label = ((LabelExpression)node).Target;
+                        if (_labelBlock.ContainsTarget(label)) {
+                            return false;
+                        }
+                        if (_labelBlock.Parent.Kind == LabelScopeKind.Switch &&
+                            _labelBlock.Parent.ContainsTarget(label)) {
+                            return false;
                         }
                     }
+                    PushLabelBlock(LabelScopeKind.Statement);
+                    return true;
+                case ExpressionType.Block:
+                    PushLabelBlock(LabelScopeKind.Block);
+                    // Labels defined immediately in the block are valid for
+                    // the whole block.
+                    if (_labelBlock.Parent.Kind != LabelScopeKind.Switch) {
+                        DefineBlockLabels(node);
+                    }
+                    return true;
+                case ExpressionType.Switch:
+                    PushLabelBlock(LabelScopeKind.Switch);
+                    // Define labels inside of the switch cases so theyare in
+                    // scope for the whole switch. This allows "goto case" and
+                    // "goto default" to be considered as local jumps.
+                    var @switch = (SwitchExpression)node;
+                    foreach (SwitchCase c in @switch.Cases) {
+                        DefineBlockLabels(c.Body);
+                    }
+                    DefineBlockLabels(@switch.DefaultBody);
                     return true;
                 case ExpressionType.Assign:
                     // Assignment where left side is a variable/parameter is
                     // safe to jump into
                     var assign = (BinaryExpression)node;
                     if (assign.Left.NodeType == ExpressionType.Parameter) {
-                        PushLabelBlock(LabelBlockKind.Block);
+                        PushLabelBlock(LabelScopeKind.Statement);
                         return true;
                     }
                     // Otherwise go to the default case
-                    goto default;                    
+                    goto default;
+
+                // Should we allow all UnaryExpressions to be treated as
+                // statements? We need to allow at least convert because it's
+                // essential in tree conversion (especially Void conversions)
+                case ExpressionType.Convert:
                 case ExpressionType.DebugInfo:
                 case ExpressionType.Conditional:
-                case ExpressionType.Switch:
                 case ExpressionType.Loop:
                 case ExpressionType.Goto:
-                    PushLabelBlock(LabelBlockKind.Block);
+                    PushLabelBlock(LabelScopeKind.Statement);
                     return true;
+            }
+        }
+
+        private void DefineBlockLabels(Expression node) {
+            var block = node as BlockExpression;
+            if (block == null) {
+                return;
+            }
+            for (int i = 0, n = block.ExpressionCount; i < n; i++) {
+                Expression e = block.GetExpression(i);
+
+                var label = e as LabelExpression;
+                if (label != null) {
+                    DefineLabel(label.Target);
+                }
             }
         }
 

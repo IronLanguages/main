@@ -105,41 +105,53 @@ namespace IronRuby.Runtime.Calls {
 
         /// <exception cref="MissingMethodException">The resolved method is Kernel#method_missing.</exception>
         internal static void Bind(MetaObjectBuilder/*!*/ metaBuilder, string/*!*/ methodName, CallArguments/*!*/ args) {
-            metaBuilder.AddTargetTypeTest(args);
+            RubyClass targetClass = args.RubyContext.GetImmediateClassOf(args.Target);
+            RubyMemberInfo method, methodMissing = null;
+            RubyMethodVisibility incompatibleVisibility = RubyMethodVisibility.None;
 
-            RubyMemberInfo method = args.RubyContext.ResolveMethod(args.Target, methodName, true).InvalidateSitesOnOverride();
-            if (method != null && RubyModule.IsMethodVisible(method, args.Signature.HasImplicitSelf)) {
+            using (targetClass.Context.ClassHierarchyLocker()) {
+                metaBuilder.AddTargetTypeTest(args.Target, targetClass, args.TargetExpression, args.RubyContext, args.ContextExpression);
+
+                method = targetClass.ResolveMethodForSiteNoLock(methodName, args.Signature.HasImplicitSelf, out incompatibleVisibility);
+                if (method == null) {
+                    if (args.Signature.IsTryCall) {
+                        // TODO: this shouldn't throw. We need to fix caching of non-existing methods.
+                        throw new MissingMethodException();
+                        // metaBuilder.Result = Ast.Constant(Fields.RubyOps_MethodNotFound);
+                    } else {
+                        methodMissing = targetClass.ResolveMethodForSiteNoLock(Symbols.MethodMissing, true);
+                    }
+                }
+            }
+
+            if (method != null) {
                 method.BuildCall(metaBuilder, args, methodName);
-            } else if (args.Signature.IsTryCall) {
-                // TODO: this shouldn't throw. We need to fix caching of non-existing methods.
-                throw new MissingMethodException();
-                // metaBuilder.Result = Ast.Constant(Fields.RubyOps_MethodNotFound);
             } else {
                 // insert the method name argument into the args
                 object symbol = SymbolTable.StringToId(methodName);
                 args.InsertSimple(0, new DynamicMetaObject(Ast.Constant(symbol), BindingRestrictions.Empty, symbol));
 
-                BindToMethodMissing(metaBuilder, methodName, args, method != null);
+                BindToMethodMissing(metaBuilder, args, methodName, methodMissing, incompatibleVisibility);
             }
         }
 
-        internal static void BindToMethodMissing(MetaObjectBuilder/*!*/ metaBuilder, string/*!*/ methodName, CallArguments/*!*/ args, bool privateMethod) {
-            // args already contain method name:
-            var method = args.RubyContext.ResolveMethod(args.Target, Symbols.MethodMissing, true).InvalidateSitesOnOverride();
-
+        internal static void BindToMethodMissing(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args, string/*!*/ methodName,
+            RubyMemberInfo methodMissing, RubyMethodVisibility incompatibleVisibility) {
+            // Assumption: args already contain method name.
+            
             // TODO: better check for builtin method
-            if (method == null ||
-                method.DeclaringModule == args.RubyContext.KernelModule && method is RubyMethodGroupInfo) {
-                
+            if (methodMissing == null ||
+                methodMissing.DeclaringModule == methodMissing.Context.KernelModule && methodMissing is RubyLibraryMethodInfo) {
+
                 // throw an exception immediately, do not cache the rule:
-                if (privateMethod) {
+                if (incompatibleVisibility == RubyMethodVisibility.Private) {
                     throw RubyExceptions.CreatePrivateMethodCalled(args.RubyContext, args.Target, methodName);
                 } else {
                     throw RubyExceptions.CreateMethodMissing(args.RubyContext, args.Target, methodName);
                 }
             }
 
-            method.BuildCall(metaBuilder, args, methodName);
+            methodMissing.BuildCall(metaBuilder, args, methodName);
         }
     }
 }

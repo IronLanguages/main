@@ -22,6 +22,7 @@ namespace System.Linq.Expressions.Compiler {
 
     /// <summary>
     /// Contains compiler state corresponding to a LabelTarget
+    /// See also LabelScopeInfo.
     /// </summary>
     internal sealed class LabelInfo {
         // The tree node representing this label
@@ -43,10 +44,10 @@ namespace System.Linq.Expressions.Compiler {
 
         // The blocks where this label is defined. If it has more than one item,
         // the blocks can't be jumped to except from a child block
-        private readonly Set<LabelBlockInfo> _definitions = new Set<LabelBlockInfo>();
+        private readonly Set<LabelScopeInfo> _definitions = new Set<LabelScopeInfo>();
 
         // Blocks that jump to this block
-        private readonly List<LabelBlockInfo> _references = new List<LabelBlockInfo>();
+        private readonly List<LabelScopeInfo> _references = new List<LabelScopeInfo>();
 
         // True if this label is the last thing in this block
         // (meaning we can emit a direct return)
@@ -71,7 +72,16 @@ namespace System.Linq.Expressions.Compiler {
             _canReturn = canReturn;
         }
 
-        internal void Reference(LabelBlockInfo block) {
+        /// <summary>
+        /// Indicates if it is legal to emit a "branch" instruction based on
+        /// currently available information. Call the Reference method before 
+        /// using this property.
+        /// </summary>
+        internal bool CanBranch {
+            get { return _opCode != OpCodes.Leave; }
+        }
+
+        internal void Reference(LabelScopeInfo block) {
             _references.Add(block);
             if (_definitions.Count > 0) {
                 ValidateJump(block);
@@ -80,11 +90,11 @@ namespace System.Linq.Expressions.Compiler {
 
         // Returns true if the label was successfully defined
         // or false if the label is now ambiguous
-        internal void Define(LabelBlockInfo block) {
+        internal void Define(LabelScopeInfo block) {
             // Prevent the label from being shadowed, which enforces cleaner
             // trees. Also we depend on this for simplicity (keeping only one
             // active IL Label per LabelInfo)
-            for (LabelBlockInfo j = block; j != null; j = j.Parent) {
+            for (LabelScopeInfo j = block; j != null; j = j.Parent) {
                 if (j.ContainsTarget(_node)) {
                     throw Error.LabelTargetAlreadyDefined(_node.Name);
                 }
@@ -112,22 +122,22 @@ namespace System.Linq.Expressions.Compiler {
             }
         }
 
-        private void ValidateJump(LabelBlockInfo reference) {
+        private void ValidateJump(LabelScopeInfo reference) {
             // Assume we can do a ret/branch
             _opCode = _canReturn ? OpCodes.Ret : OpCodes.Br;
 
             // look for a simple jump out
-            for (LabelBlockInfo j = reference; j != null; j = j.Parent) {
+            for (LabelScopeInfo j = reference; j != null; j = j.Parent) {
                 if (_definitions.Contains(j)) {
                     // found it, jump is valid!
                     return;
                 }
-                if (j.Kind == LabelBlockKind.Finally ||
-                    j.Kind == LabelBlockKind.Filter) {
+                if (j.Kind == LabelScopeKind.Finally ||
+                    j.Kind == LabelScopeKind.Filter) {
                     break;
                 }
-                if (j.Kind == LabelBlockKind.Try ||
-                    j.Kind == LabelBlockKind.Catch) {
+                if (j.Kind == LabelScopeKind.Try ||
+                    j.Kind == LabelScopeKind.Catch) {
                     _opCode = OpCodes.Leave;
                 }
             }
@@ -138,30 +148,30 @@ namespace System.Linq.Expressions.Compiler {
             }
 
             // We didn't find an outward jump. Look for a jump across blocks
-            LabelBlockInfo def = _definitions.First();
-            LabelBlockInfo common = Helpers.CommonNode(def, reference, b => b.Parent);
+            LabelScopeInfo def = _definitions.First();
+            LabelScopeInfo common = Helpers.CommonNode(def, reference, b => b.Parent);
 
             // Assume we can do a ret/branch
             _opCode = _canReturn ? OpCodes.Ret : OpCodes.Br;
 
             // Validate that we aren't jumping across a finally
-            for (LabelBlockInfo j = reference; j != common; j = j.Parent) {
-                if (j.Kind == LabelBlockKind.Finally) {
+            for (LabelScopeInfo j = reference; j != common; j = j.Parent) {
+                if (j.Kind == LabelScopeKind.Finally) {
                     throw Error.ControlCannotLeaveFinally();
                 }
-                if (j.Kind == LabelBlockKind.Filter) {
+                if (j.Kind == LabelScopeKind.Filter) {
                     throw Error.ControlCannotLeaveFilterTest();
                 }
-                if (j.Kind == LabelBlockKind.Try ||
-                    j.Kind == LabelBlockKind.Catch) {
+                if (j.Kind == LabelScopeKind.Try ||
+                    j.Kind == LabelScopeKind.Catch) {
                     _opCode = OpCodes.Leave;
                 }
             }
 
             // Valdiate that we aren't jumping into a catch or an expression
-            for (LabelBlockInfo j = def; j != common; j = j.Parent) {
-                if (j.Kind != LabelBlockKind.Block) {
-                    if (j.Kind == LabelBlockKind.Expression) {
+            for (LabelScopeInfo j = def; j != common; j = j.Parent) {
+                if (!j.CanJumpInto) {
+                    if (j.Kind == LabelScopeKind.Expression) {
                         throw Error.ControlCannotEnterExpression();
                     } else {
                         throw Error.ControlCannotEnterTry();
@@ -242,24 +252,64 @@ namespace System.Linq.Expressions.Compiler {
         }
     }
 
-    internal enum LabelBlockKind {
+    internal enum LabelScopeKind {
+        // any "statement like" node that can be jumped into
+        Statement,
+
+        // these correspond to the node of the same name
         Block,
-        Expression,
+        Switch,
+        Lambda,
         Try,
+
+        // these correspond to the part of the try block we're in
         Catch,
         Finally,
         Filter,
+
+        // the catch-all value for any other expression type
+        // (means we can't jump into it)
+        Expression,
     }
 
-    internal sealed class LabelBlockInfo {
+    //
+    // Tracks scoping information for LabelTargets. Logically corresponds to a
+    // "label scope". Even though we have arbitrary goto support, we still need
+    // to track what kinds of nodes that gotos are jumping through, both to
+    // emit property IL ("leave" out of a try block), and for validation, and
+    // to allow labels to be duplicated in the tree, as long as the jumps are
+    // considered "up only" jumps.
+    //
+    // We create one of these for every Expression that can be jumped into, as
+    // well as creating them for the first expression we can't jump into. The
+    // "Kind" property indicates what kind of scope this is.
+    //
+    internal sealed class LabelScopeInfo {
         private Dictionary<LabelTarget, LabelInfo> Labels; // lazily allocated, we typically use this only once every 6th-7th block
-        internal readonly LabelBlockKind Kind;
-        internal readonly LabelBlockInfo Parent;
+        internal readonly LabelScopeKind Kind;
+        internal readonly LabelScopeInfo Parent;
 
-        internal LabelBlockInfo(LabelBlockInfo parent, LabelBlockKind kind) {
+        internal LabelScopeInfo(LabelScopeInfo parent, LabelScopeKind kind) {
             Parent = parent;
             Kind = kind;
         }
+
+        /// <summary>
+        /// Returns true if we can jump into this node
+        /// </summary>
+        internal bool CanJumpInto {
+            get {
+                switch (Kind) {
+                    case LabelScopeKind.Block:
+                    case LabelScopeKind.Statement:
+                    case LabelScopeKind.Switch:
+                    case LabelScopeKind.Lambda:
+                        return true;
+                }
+                return false;
+            }
+        }
+
 
         internal bool ContainsTarget(LabelTarget target) {
             if (Labels == null) {
@@ -279,7 +329,7 @@ namespace System.Linq.Expressions.Compiler {
         }
 
         internal void AddLabelInfo(LabelTarget target, LabelInfo info) {
-            Debug.Assert(Kind == LabelBlockKind.Block);
+            Debug.Assert(CanJumpInto);
 
             if (Labels == null) {
                 Labels = new Dictionary<LabelTarget, LabelInfo>();

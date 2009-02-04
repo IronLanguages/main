@@ -61,19 +61,19 @@ namespace IronRuby.Tests {
             }
 
             var runtimeSetup = ScriptRuntimeSetup.ReadConfiguration();
-            LanguageSetup langaugeSetup = null;
+            LanguageSetup languageSetup = null;
             foreach (var language in runtimeSetup.LanguageSetups) {
                 if (language.TypeName == typeof(RubyContext).AssemblyQualifiedName) {
-                    langaugeSetup = language;
+                    languageSetup = language;
                     break;
                 }
             }
 
             // TODO: dynamic modules with symbols are not available in partial trust
             runtimeSetup.DebugMode = !driver.PartialTrust;
-            langaugeSetup.Options["InterpretedMode"] = _driver.Interpret;
-            langaugeSetup.Options["Verbosity"] = 2;
-            langaugeSetup.Options["Compatibility"] = testCase.Compatibility;
+            languageSetup.Options["InterpretedMode"] = _driver.Interpret;
+            languageSetup.Options["Verbosity"] = 2;
+            languageSetup.Options["Compatibility"] = testCase.Compatibility;
 
             _env = Ruby.CreateRuntime(runtimeSetup);
             _engine = Ruby.GetEngine(_env);

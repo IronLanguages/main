@@ -266,9 +266,9 @@ namespace Microsoft.Scripting.Ast {
 
         private Expression MakeFlowControlSwitch(BlockInfo block) {
             var cases = block.NeedFlowLabels.Map(
-                target => Expression.SwitchCase(_labels[target].FlowState, MakeFlowJump(target))
+                target => Expression.SwitchCase(MakeFlowJump(target), Expression.Constant(_labels[target].FlowState))
             );
-            return Expression.Switch(_flowVariable, null, new ReadOnlyCollection<SwitchCase>(cases));
+            return Expression.Switch(_flowVariable, null, null, new ReadOnlyCollection<SwitchCase>(cases));
         }
 
         // Determine if we can break directly to the label, or if we need to dispatch again

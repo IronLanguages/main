@@ -13,15 +13,12 @@
  *
  * ***************************************************************************/
 
-using System.Dynamic.Utils;
-using System.Text;
-using System.Diagnostics;
 using System.Collections.ObjectModel;
-using System.Collections.Generic;
-using System.Globalization;
+using System.Diagnostics;
+using System.Dynamic.Utils;
 
 namespace System.Linq.Expressions {
-    //CONFORMING
+
     /// <summary>
     /// Base class for specialized parameter expressions.  This version only holds onto the
     /// name which all subclasses need.  Specialized subclasses provide the type and by ref
@@ -163,7 +160,7 @@ namespace System.Linq.Expressions {
     }
 
     public partial class Expression {
-        //CONFORMING
+
         /// <summary>
         /// Creates a ParameterExpression node that can be used to identify a parameter or a variable in an expression tree.
         /// </summary>

@@ -37,7 +37,7 @@ namespace System.Linq.Expressions.Compiler {
             } else if(_typeBuilder != null) {
                 // store into field in our type builder, we will initialize
                 // the value only once.
-                FieldBuilder fb = _typeBuilder.DefineField("constantArray" + typeof(T).Name.Replace('.', '_').Replace('+', '_') + Interlocked.Increment(ref _Counter), typeof(T[]), FieldAttributes.Static | FieldAttributes.Private);
+                FieldBuilder fb = CreateStaticField("ConstantArray", typeof(T[]));
                 Label l = _ilg.DefineLabel();
                 _ilg.Emit(OpCodes.Ldsfld, fb);
                 _ilg.Emit(OpCodes.Ldnull);
@@ -115,10 +115,10 @@ namespace System.Linq.Expressions.Compiler {
                 impl = new LambdaCompiler(_tree, lambda, mb, _emitDebugSymbols);
             }
 
-            // 3. emit the lambda
-            impl.EmitLambdaBody(_scope);
+            // 2. emit the lambda
+            impl.EmitLambdaBody(_scope, false);
 
-            // 4. emit the delegate creation in the outer lambda
+            // 3. emit the delegate creation in the outer lambda
             EmitDelegateConstruction(impl);
         }
 
@@ -130,22 +130,47 @@ namespace System.Linq.Expressions.Compiler {
             return (prefix ?? "") + "$" + Interlocked.Increment(ref _Counter);
         }
 
-        private void EmitLambdaBody(CompilerScope parent) {
+        private void EmitLambdaBody() {
+            EmitLambdaBody(null, false);
+        }
+
+        /// <summary>
+        /// Emits the lambda body. If inlined, the parameters should already be
+        /// pushed onto the IL stack.
+        /// </summary>
+        /// <param name="parent">The parent scope.</param>
+        /// <param name="inlined">true if the lambda is inlined; false otherwise.</param>
+        private void EmitLambdaBody(CompilerScope parent, bool inlined) {
             _scope.Enter(this, parent);
 
-            Type returnType = _method.GetReturnType();
-            if (returnType == typeof(void)) {
+            if (inlined) {
+                // The arguments were already pushed onto the IL stack.
+                // Store them into locals, popping in reverse order.
+                //
+                // If any arguments were ByRef, the address is on the stack and
+                // we'll be storing it into the variable, which has a ref type.
+                for (int i = _lambda.Parameters.Count - 1; i >= 0; i--) {
+                    _scope.EmitSet(_lambda.Parameters[i]);
+                }
+            }
+
+            if (_lambda.ReturnType == typeof(void)) {
                 EmitExpressionAsVoid(_lambda.Body);
             } else {
-                Debug.Assert(_lambda.Body.Type != typeof(void));
                 EmitExpression(_lambda.Body);
             }
-            //must be the last instruction in the body
-            _ilg.Emit(OpCodes.Ret);
+
+            // Return must be the last instruction in a CLI method.
+            // But if we're inlining the lambda, we want to leave the return
+            // value on the IL stack.
+            if (!inlined) {
+                _ilg.Emit(OpCodes.Ret);
+            }
+
             _scope.Exit();
 
             // Validate labels
-            Debug.Assert(_labelBlock.Parent == null && _labelBlock.Kind == LabelBlockKind.Block);
+            Debug.Assert(_labelBlock.Parent == null && _labelBlock.Kind == LabelScopeKind.Lambda);
             foreach (LabelInfo label in _labelInfo.Values) {
                 label.ValidateFinish();
             }

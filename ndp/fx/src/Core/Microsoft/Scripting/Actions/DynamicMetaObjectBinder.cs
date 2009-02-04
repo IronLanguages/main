@@ -88,8 +88,10 @@ namespace System.Dynamic {
                 mos = DynamicMetaObject.EmptyMetaObjects;
             }
 
+            DynamicMetaObject target = ObjectToMetaObject(args[0], parameters[0]);
+
             DynamicMetaObject binding = Bind(
-                ObjectToMetaObject(args[0], parameters[0]),
+                target,
                 mos
             );
 
@@ -97,7 +99,18 @@ namespace System.Dynamic {
                 throw Error.BindingCannotBeNull();
             }
 
-            return GetMetaObjectRule(binding, returnLabel);
+            Expression bindingExpression = binding.Expression;
+            BindingRestrictions bindingRestrictions = binding.Restrictions;
+
+            // if target is an IDO we may have a target-specific binding. 
+            // so it makes sense to restrict on the target's type.
+            // ideally IDO's should do this, but they often miss this.
+            if (args[0] as IDynamicObject != null) {
+                BindingRestrictions idoRestriction = BindingRestrictions.GetTypeRestriction(target.Expression, target.LimitType);
+                bindingRestrictions = idoRestriction.Merge(bindingRestrictions);
+            }
+
+            return GetMetaObjectRule(bindingExpression, bindingRestrictions, returnLabel);
         }
 
         private static DynamicMetaObject ObjectToMetaObject(object argValue, Expression parameterExpression) {
@@ -163,7 +176,7 @@ namespace System.Dynamic {
                     typeof(object),
                     delegateType,
                     this,
-                    new ReadOnlyCollection<Expression>(exprs)
+                    new TrueReadOnlyCollection<Expression>(exprs)
                 ),
                 rs
             );
@@ -226,15 +239,13 @@ namespace System.Dynamic {
             return false;
         }
 
-        private Expression GetMetaObjectRule(DynamicMetaObject binding, LabelTarget @return) {
-            Debug.Assert(binding != null);
+        private Expression GetMetaObjectRule(Expression bindingExpression, BindingRestrictions bindingRestrictions, LabelTarget @return) {
+            Expression body = AddReturn(bindingExpression, @return);
 
-            Expression body = AddReturn(binding.Expression, @return);
-
-            if (binding.Restrictions != BindingRestrictions.Empty) {
+            if (bindingRestrictions != BindingRestrictions.Empty) {
                 // add the test only if we have one
                 body = Expression.Condition(
-                    binding.Restrictions.ToExpression(),
+                    bindingRestrictions.ToExpression(),
                     body,
                     Expression.Empty()
                 );

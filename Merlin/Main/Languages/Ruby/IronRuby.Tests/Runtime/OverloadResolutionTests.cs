@@ -94,5 +94,11 @@ namespace IronRuby.Tests {
 
         #endregion
 
+        public void AmbiguousMatch() {
+            AssertExceptionThrown<System.Reflection.AmbiguousMatchException>(() => CompilerTest(@"
+require 'mscorlib'
+System::Console.WriteLine(nil)
+"));
+        }
     }
 }

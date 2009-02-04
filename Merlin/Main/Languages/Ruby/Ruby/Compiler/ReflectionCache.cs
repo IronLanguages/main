@@ -31,12 +31,15 @@ using MSA = System.Linq.Expressions;
 using IronRuby.Runtime.Calls;
 using System.Collections.ObjectModel;
 using Microsoft.Scripting.Runtime;
+using System.Runtime.CompilerServices;
 
 namespace IronRuby.Compiler {
     internal static class Fields {
-        private static FieldInfo _RubyOps_DefaultArgumentField, _RubyOps_MethodNotFound;
+        private static FieldInfo _RubyOps_DefaultArgumentField, _RubyOps_MethodNotFound, _StrongBox_Of_Int_Value, _RubyModule_Version;
         public static FieldInfo RubyOps_DefaultArgumentField { get { return _RubyOps_DefaultArgumentField ?? (_RubyOps_DefaultArgumentField = GetField(typeof(RubyOps), "DefaultArgument")); } }
         public static FieldInfo RubyOps_MethodNotFound { get { return _RubyOps_MethodNotFound ?? (_RubyOps_MethodNotFound = GetField(typeof(RubyOps), "MethodNotFound")); } }
+        public static FieldInfo StrongBox_Of_Int_Value { get { return _StrongBox_Of_Int_Value ?? (_StrongBox_Of_Int_Value = GetField(typeof(StrongBox<int>), "Value")); } }
+        public static FieldInfo RubyModule_Version { get { return _RubyModule_Version ?? (_RubyModule_Version = GetField(typeof(RubyModule), "Version")); } }
 
         internal static FieldInfo/*!*/ GetField(Type/*!*/ type, string/*!*/ name) {
             var field = type.GetField(name);

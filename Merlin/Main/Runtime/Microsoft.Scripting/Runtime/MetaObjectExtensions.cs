@@ -69,7 +69,7 @@ namespace Microsoft.Scripting.Runtime {
                         self.Expression,
                         CompilerHelpers.GetVisibleType(type)
                     ),
-                    self.Restrictions.Merge(BindingRestrictions.GetTypeRestriction(self.Expression, type)),
+                    self.Restrictions.Merge(BindingRestrictionsHelpers.GetRuntimeTypeRestriction(self.Expression, type)),
                     self.Value
                 );
             }
@@ -79,8 +79,30 @@ namespace Microsoft.Scripting.Runtime {
                     self.Expression,
                     CompilerHelpers.GetVisibleType(type)
                 ),
-                self.Restrictions.Merge(BindingRestrictions.GetTypeRestriction(self.Expression, type))
+                self.Restrictions.Merge(BindingRestrictionsHelpers.GetRuntimeTypeRestriction(self.Expression, type))
             );
+        }
+
+        /// <summary>
+        ///Returns Microsoft.Scripting.Runtime.DynamicNull if the object contains a null value,
+        ///otherwise, returns self.LimitType
+        /// </summary>
+        public static Type GetLimitType(this DynamicMetaObject self) {
+            if (self.Value == null && self.HasValue) {
+                return typeof(DynamicNull);
+            }
+            return self.LimitType;
+        }
+
+        /// <summary>
+        ///Returns Microsoft.Scripting.Runtime.DynamicNull if the object contains a null value,
+        ///otherwise, returns self.RuntimeType
+        /// </summary>
+        public static Type GetRuntimeType(this DynamicMetaObject self) {
+            if (self.Value == null && self.HasValue) {
+                return typeof(DynamicNull);
+            }
+            return self.RuntimeType;
         }
     }
 }

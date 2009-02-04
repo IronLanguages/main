@@ -16,6 +16,7 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 
 namespace System.Dynamic.Utils {
     internal static class CollectionExtensions {
@@ -31,9 +32,9 @@ namespace System.Dynamic.Utils {
                 return EmptyReadOnlyCollection<T>.Instance;
             }
 
-            var roCollection = enumerable as ReadOnlyCollection<T>;
-            if (roCollection != null) {
-                return roCollection;
+            var troc = enumerable as TrueReadOnlyCollection<T>;
+            if (troc != null) {
+                return troc;
             }
 
             var collection = enumerable as ICollection<T>;
@@ -43,13 +44,13 @@ namespace System.Dynamic.Utils {
                     return EmptyReadOnlyCollection<T>.Instance;
                 }
 
-                T[] array = new T[count];
-                collection.CopyTo(array, 0);
-                return new ReadOnlyCollection<T>(array);
+                T[] clone = new T[count];
+                collection.CopyTo(clone, 0);
+                return new TrueReadOnlyCollection<T>(clone);
             }
 
             // ToArray trims the excess space and speeds up access
-            return new ReadOnlyCollection<T>(new List<T>(enumerable).ToArray());
+            return new TrueReadOnlyCollection<T>(new List<T>(enumerable).ToArray());
         }
 
         // We could probably improve the hashing here
@@ -104,26 +105,6 @@ namespace System.Dynamic.Utils {
             }
         }
 
-        internal static List<T> ToList<T>(this IEnumerable<T> enumerable) {
-            return new List<T>(enumerable);
-        }
-
-        internal static T[] ToArray<T>(this IEnumerable<T> enumerable) {
-            var c = enumerable as ICollection<T>;
-            if (c != null) {
-                var result = new T[c.Count];
-                c.CopyTo(result, 0);
-                return result;
-            }
-            return new List<T>(enumerable).ToArray();
-        }
-
-        internal static bool Any<T>(this IEnumerable<T> source) {
-            using (IEnumerator<T> e = source.GetEnumerator()) {
-                return e.MoveNext();
-            }
-        }
-
         internal static bool Any<T>(this IEnumerable<T> source, Func<T, bool> predicate) {
             foreach (T element in source) {
                 if (predicate(element)) {
@@ -141,16 +122,6 @@ namespace System.Dynamic.Utils {
             }
             return true;
         }
-
-#if !SILVERLIGHT // ICloneable
-        internal static T Copy<T>(this T obj) where T : ICloneable {
-            return (T)obj.Clone();
-        }
-#else
-        internal static T[] Copy<T>(this T[] obj) {
-            return (T[])obj.Clone();
-        }
-#endif
 
         internal static T[] RemoveFirst<T>(this T[] array) {
             T[] result = new T[array.Length - 1];
@@ -171,38 +142,6 @@ namespace System.Dynamic.Utils {
             return res;
         }
 
-        internal static T[] AddLast<T>(this IList<T> list, T item) {
-            T[] res = new T[list.Count + 1];
-            list.CopyTo(res, 0);
-            res[list.Count] = item;
-            return res;
-        }
-
-        internal static T[] RemoveAt<T>(this T[] array, int indexToRemove) {
-            Debug.Assert(array != null);
-            Debug.Assert(indexToRemove >= 0 && indexToRemove < array.Length);
-
-            T[] result = new T[array.Length - 1];
-            if (indexToRemove > 0) {
-                Array.Copy(array, 0, result, 0, indexToRemove);
-            }
-            int remaining = array.Length - indexToRemove - 1;
-            if (remaining > 0) {
-                Array.Copy(array, array.Length - remaining, result, result.Length - remaining, remaining);
-            }
-            return result;
-        }
-
-        internal static T[] RotateRight<T>(this T[] array, int count) {
-            Debug.Assert(count >= 0 && count <= array.Length);
-
-            T[] result = new T[array.Length];
-            // The head of the array is shifted, and the tail will be rotated to the head of the resulting array
-            int sizeOfShiftedArray = array.Length - count;
-            Array.Copy(array, 0, result, count, sizeOfShiftedArray);
-            Array.Copy(array, sizeOfShiftedArray, result, 0, count);
-            return result;
-        }
 
         internal static T First<T>(this IEnumerable<T> source) {
             var list = source as IList<T>;
@@ -214,10 +153,20 @@ namespace System.Dynamic.Utils {
             }
             throw new InvalidOperationException();
         }
+
+        internal static T Last<T>(this IList<T> list) {
+            return list[list.Count - 1];
+        }
+
+        internal static T[] Copy<T>(this T[] array) {
+            T[] copy = new T[array.Length];
+            Array.Copy(array, copy, array.Length);
+            return copy;
+        }
     }
 
 
     internal static class EmptyReadOnlyCollection<T> {
-        internal static ReadOnlyCollection<T> Instance = new ReadOnlyCollection<T>(new T[0]);
+        internal static ReadOnlyCollection<T> Instance = new TrueReadOnlyCollection<T>(new T[0]);
     }
 }

@@ -269,7 +269,6 @@
     <Compile Include="Ast\LambdaParameterRewriter.cs" />
     <Compile Include="Ast\LoopStatement.cs" />
     <Compile Include="Ast\MethodCallExpression.cs" />
-    <Compile Include="Ast\SwitchBuilder.cs" />
     <Compile Include="Ast\ThrowStatement.cs" />
     <Compile Include="Ast\TryStatementBuilder.cs" />
     <Compile Include="Ast\UnboundAssignment.cs" />

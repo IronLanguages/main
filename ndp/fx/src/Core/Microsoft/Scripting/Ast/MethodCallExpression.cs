@@ -18,6 +18,7 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Dynamic.Utils;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 
 namespace System.Linq.Expressions {
     /// <summary>
@@ -29,17 +30,6 @@ namespace System.Linq.Expressions {
         internal MethodCallExpression(MethodInfo method) {
 
             _method = method;
-        }
-
-        internal static MethodCallExpression Make(
-            MethodInfo method,
-            Expression instance,
-            ReadOnlyCollection<Expression> arguments) {
-            if (instance == null) {
-                return new MethodCallExpressionN(method, arguments);
-            } else {
-                return new InstanceMethodCallExpressionN(method, instance, arguments);
-            }
         }
 
         internal virtual Expression GetInstance() {
@@ -738,7 +728,9 @@ namespace System.Linq.Expressions {
         public static MethodCallExpression Call(Expression instance, string methodName, Type[] typeArguments, params Expression[] arguments) {
             ContractUtils.RequiresNotNull(instance, "instance");
             ContractUtils.RequiresNotNull(methodName, "methodName");
-            if (arguments == null) arguments = new Expression[] { };
+            if (arguments == null) {
+                arguments = new Expression[0];
+            }
 
             BindingFlags flags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.FlattenHierarchy;
             return Expression.Call(instance, FindMethod(instance.Type, methodName, typeArguments, arguments, flags), arguments);
@@ -834,7 +826,7 @@ namespace System.Linq.Expressions {
                 }
             }
             if (newArgs != null) {
-                arguments = new ReadOnlyCollection<Expression>(newArgs);
+                arguments = new TrueReadOnlyCollection<Expression>(newArgs);
             }
         }
 

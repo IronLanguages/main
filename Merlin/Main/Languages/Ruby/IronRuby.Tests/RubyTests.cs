@@ -40,6 +40,7 @@ namespace IronRuby.Tests {
                 Scenario_RubyNameMangling2,
 
                 OverloadResolution_Block,
+                AmbiguousMatch,
 
                 Scenario_RubySimpleCall1,
                 Scenario_RubySimpleCall2, 
@@ -332,7 +333,8 @@ namespace IronRuby.Tests {
                 ClrConstructor1,
                 // TODO: ClrConstructor2,
                 Scenario_RubyEngine1,
-                Scenario_RubyInteractive,
+                Scenario_RubyInteractive1,
+                Scenario_RubyInteractive2,
                 
                 Scenario_RubyReturnValues1,
                 Scenario_RubyReturnValues2,
@@ -381,7 +383,12 @@ namespace IronRuby.Tests {
                 MethodAdded1,
                 MethodLookup1,
                 VisibilityCaching1,
+                Visibility1,
+                Visibility2,
+                DefineMethodVisibility1,
+                AliasedMethodVisibility1,
                 ModuleFunctionVisibility1,
+                ModuleFunctionVisibility2,
                 MethodDefinitionInDefineMethod1A,
                 MethodDefinitionInDefineMethod1B,
                 MethodDefinitionInDefineMethod2A,

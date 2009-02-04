@@ -25,7 +25,7 @@ namespace System.Linq.Expressions.Compiler {
 
         #region Conditional
 
-        //CONFORMING
+
         private void EmitConditionalExpression(Expression expr) {
             ConditionalExpression node = (ConditionalExpression)expr;
             Debug.Assert(node.Test.Type == typeof(bool) && node.IfTrue.Type == node.IfFalse.Type);
@@ -68,7 +68,7 @@ namespace System.Linq.Expressions.Compiler {
 
         #region Coalesce
 
-        //CONFORMING
+
         private void EmitCoalesceBinaryExpression(Expression expr) {
             BinaryExpression b = (BinaryExpression)expr;
             Debug.Assert(b.Method == null);
@@ -84,7 +84,7 @@ namespace System.Linq.Expressions.Compiler {
             }
         }
 
-        //CONFORMING
+
         private void EmitNullableCoalesce(BinaryExpression b) {
             LocalBuilder loc = GetLocal(b.Left.Type);
             Label labIfNull = _ilg.DefineLabel();
@@ -147,7 +147,7 @@ namespace System.Linq.Expressions.Compiler {
             _ilg.MarkLabel(labEnd);
         }
 
-        //CONFORMING
+
         private void EmitLambdaReferenceCoalesce(BinaryExpression b) {
             LocalBuilder loc = GetLocal(b.Left.Type);
             Label labEnd = _ilg.DefineLabel();
@@ -179,7 +179,7 @@ namespace System.Linq.Expressions.Compiler {
             _ilg.MarkLabel(labEnd);
         }
 
-        //CONFORMING
+
         private void EmitReferenceCoalesceWithoutConversion(BinaryExpression b) {
             Label labEnd = _ilg.DefineLabel();
             Label labCast = _ilg.DefineLabel();

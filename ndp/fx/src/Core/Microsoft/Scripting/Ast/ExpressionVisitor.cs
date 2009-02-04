@@ -16,6 +16,7 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Dynamic.Utils;
+using System.Runtime.CompilerServices;
 
 namespace System.Linq.Expressions {
 
@@ -69,7 +70,7 @@ namespace System.Linq.Expressions {
             if (newNodes == null) {
                 return nodes;
             }
-            return new ReadOnlyCollection<Expression>(newNodes);
+            return new TrueReadOnlyCollection<Expression>(newNodes);
         }
 
         internal Expression[] VisitArguments(IArgumentProvider nodes) {
@@ -117,7 +118,7 @@ namespace System.Linq.Expressions {
             if (newNodes == null) {
                 return nodes;
             }
-            return new ReadOnlyCollection<T>(newNodes);
+            return new TrueReadOnlyCollection<T>(newNodes);
         }
 
         /// <summary>
@@ -170,7 +171,7 @@ namespace System.Linq.Expressions {
             if (newNodes == null) {
                 return nodes;
             }
-            return new ReadOnlyCollection<T>(newNodes);
+            return new TrueReadOnlyCollection<T>(newNodes);
         }
 
         /// <summary>
@@ -507,14 +508,12 @@ namespace System.Linq.Expressions {
         /// <returns>The modified expression, if it or any subexpression was modified;
         /// otherwise, returns the original expression.</returns>
         protected virtual SwitchCase VisitSwitchCase(SwitchCase node) {
+            ReadOnlyCollection<Expression> t = Visit(node.TestValues);
             Expression b = Visit(node.Body);
-            if (b == node.Body) {
+            if (t == node.TestValues && b == node.Body) {
                 return node;
             }
-            if (node.IsDefault) {
-                return Expression.DefaultCase(b);
-            }
-            return Expression.SwitchCase(node.Value, b);
+            return Expression.SwitchCase(b, t);
         }
 
         /// <summary>
@@ -524,14 +523,13 @@ namespace System.Linq.Expressions {
         /// <returns>The modified expression, if it or any subexpression was modified;
         /// otherwise, returns the original expression.</returns>
         protected internal virtual Expression VisitSwitch(SwitchExpression node) {
-            LabelTarget l = VisitLabelTarget(node.BreakLabel);
-            Expression t = Visit(node.Test);
-            ReadOnlyCollection<SwitchCase> c = Visit(node.SwitchCases, VisitSwitchCase);
-
-            if (l == node.BreakLabel && t == node.Test && c == node.SwitchCases) {
+            Expression s = Visit(node.SwitchValue);
+            ReadOnlyCollection<SwitchCase> c = Visit(node.Cases, VisitSwitchCase);
+            Expression d = Visit(node.DefaultBody);
+            if (s == node.SwitchValue && c == node.Cases && d == node.DefaultBody) {
                 return node;
             }
-            return Expression.Switch(t, l, c);
+            return Expression.Switch(s, d, node.Comparison, c);
         }
 
         /// <summary>

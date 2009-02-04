@@ -104,6 +104,6 @@
   <Import Project="$(NdpFxRoot)\Microsoft.Fx.targets" />
   <PropertyGroup>
     <DefineConstants>$(DefineConstants);PRODUCTION_BUILD</DefineConstants>
-    <PublishMetaAssemblyPath>$(InternalPath)\sdk\ref\WinFX\$(WINFX_REFS_VERSION)</PublishMetaAssemblyPath>
+    <PublishMetaAssemblyPath>$(SdkRefPath)</PublishMetaAssemblyPath>
   </PropertyGroup>
 </Project>

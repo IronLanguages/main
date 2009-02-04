@@ -305,7 +305,7 @@ M1()
 M1()
 M1<MutableString>()
 M1<MutableString, Int32>()
-#<ArgumentError: wrong number or type of arguments for `M1'>
+#<ArgumentError: wrong number of arguments (2 for 1)>
 #<ArgumentError: wrong number of generic arguments for `M1'>
 "
             );

@@ -418,17 +418,20 @@ namespace IronRuby.Runtime {
 
         #region Constants, Methods
 
+        // thread-safe:
         public static object GetConstant(RubyGlobalScope/*!*/ globalScope, RubyModule/*!*/ owner, string/*!*/ name, bool lookupObject) {
             Assert.NotNull(globalScope, owner, name);
 
-            object result;
-            if (owner.TryResolveConstant(globalScope, name, out result)) {
-                return result;
-            }
+            using (owner.Context.ClassHierarchyLocker()) {
+                object result;
+                if (owner.TryResolveConstantNoLock(globalScope, name, out result)) {
+                    return result;
+                }
 
-            RubyClass objectClass = owner.Context.ObjectClass;
-            if (owner != objectClass && lookupObject && objectClass.TryResolveConstant(globalScope, name, out result)) {
-                return result;
+                RubyClass objectClass = owner.Context.ObjectClass;
+                if (owner != objectClass && lookupObject && objectClass.TryResolveConstantNoLock(globalScope, name, out result)) {
+                    return result;
+                }
             }
 
             CheckConstantName(name);
@@ -453,13 +456,6 @@ namespace IronRuby.Runtime {
             return (methodName == Symbols.Initialize || methodName == Symbols.InitializeCopy) ? RubyMethodVisibility.Private : visibility;
         }
 
-        public static RubyMemberInfo InvalidateSitesOnOverride(this RubyMemberInfo member) {
-            if (member != null) {
-                member.InvalidateSitesOnOverride = true;
-            }
-            return member;
-        }
-
         #endregion
 
         #region Modules, Classes
@@ -480,6 +476,7 @@ namespace IronRuby.Runtime {
             }
         }
 
+        // thread-safe:
         internal static RubyClass/*!*/ DefineClass(RubyGlobalScope/*!*/ autoloadScope, RubyModule/*!*/ owner, string/*!*/ name, object superClassObject) {
             Assert.NotNull(owner);
             RubyClass superClass = ToSuperClass(owner.Context, superClassObject);
@@ -488,7 +485,7 @@ namespace IronRuby.Runtime {
             if (ReferenceEquals(owner, owner.Context.ObjectClass)
                 ? owner.TryResolveConstant(autoloadScope, name, out existing)
                 : owner.TryGetConstant(autoloadScope, name, out existing)) {
-                
+
                 RubyClass cls = existing as RubyClass;
                 if (cls == null || !cls.IsClass) {
                     throw RubyExceptions.CreateTypeError(String.Format("{0} is not a class", name));
@@ -499,7 +496,7 @@ namespace IronRuby.Runtime {
                 }
                 return cls;
             } else {
-                return owner.Context.DefineClass(owner, name, superClass);
+                return owner.Context.DefineClass(owner, name, superClass, null);
             }
         }
 
@@ -533,6 +530,10 @@ namespace IronRuby.Runtime {
             foreach (RubyModule module in modules) {
                 if (module == null) {
                     throw RubyExceptions.CreateTypeError("wrong argument type nil (expected Module)");
+                }
+
+                if (module == target) {
+                    throw RubyExceptions.CreateArgumentError("cyclic include detected");
                 }
 
                 if (module.IsClass) {

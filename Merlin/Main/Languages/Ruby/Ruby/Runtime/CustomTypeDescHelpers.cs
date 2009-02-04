@@ -127,31 +127,33 @@ namespace IronRuby.Runtime {
             const int writable = 0x02;
 
             var properties = new Dictionary<string, int>();
-            immediateClass.ForEachMember(true, RubyMethodAttributes.DefaultVisibility, delegate(string/*!*/ name, RubyMemberInfo/*!*/ member) {
-                int flag = 0;
-                if (member is RubyAttributeReaderInfo) {
-                    flag = readable;
-                } else if (member is RubyAttributeWriterInfo) {
-                    flag = writable;
-                } else if (name == "initialize") {
-                    // Special case; never a property
-                } else {
-                    int arity = member.GetArity();
-                    if (arity == 0) {
+            using (context.ClassHierarchyLocker()) {
+                immediateClass.ForEachMember(true, RubyMethodAttributes.DefaultVisibility, delegate(string/*!*/ name, RubyMemberInfo/*!*/ member) {
+                    int flag = 0;
+                    if (member is RubyAttributeReaderInfo) {
                         flag = readable;
-                    } else if (arity == 1 && name.LastCharacter() == '=') {
+                    } else if (member is RubyAttributeWriterInfo) {
                         flag = writable;
+                    } else if (name == "initialize") {
+                        // Special case; never a property
+                    } else {
+                        int arity = member.GetArity();
+                        if (arity == 0) {
+                            flag = readable;
+                        } else if (arity == 1 && name.LastCharacter() == '=') {
+                            flag = writable;
+                        }
                     }
-                }
-                if (flag != 0) {
-                    if (flag == writable) {
-                        name = name.Substring(0, name.Length - 1);
+                    if (flag != 0) {
+                        if (flag == writable) {
+                            name = name.Substring(0, name.Length - 1);
+                        }
+                        int oldFlag;
+                        properties.TryGetValue(name, out oldFlag);
+                        properties[name] = oldFlag | flag;
                     }
-                    int oldFlag;
-                    properties.TryGetValue(name, out oldFlag);
-                    properties[name] = oldFlag | flag;
-                }
-            });
+                });
+            }
 
             var result = new List<PropertyDescriptor>(properties.Count);
             foreach (var pair in properties) {

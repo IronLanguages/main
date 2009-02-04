@@ -46,12 +46,13 @@ namespace IronRuby.Builtins {
             public override IEnumerable<string> GetDynamicMemberNames() {
                 var self = (IRubyObject)Value;
                 RubyInstanceData instanceData = self.GetInstanceData();
-                RubyModule theClass = (instanceData != null ? instanceData.ImmediateClass : null);
-                theClass = theClass ?? self.Class;
+                RubyModule theClass = (instanceData != null ? instanceData.ImmediateClass : null) ?? self.Class;
                 var names = new List<string>();
-                theClass.ForEachMember(true, RubyMethodAttributes.DefaultVisibility, delegate(string/*!*/ name, RubyMemberInfo/*!*/ member) {
-                    names.Add(name);
-                });
+
+                using (theClass.Context.ClassHierarchyLocker()) {
+                    theClass.ForEachMember(true, RubyMethodAttributes.DefaultVisibility, (name, member) => names.Add(name));
+                }
+
                 return names;
             }
         }

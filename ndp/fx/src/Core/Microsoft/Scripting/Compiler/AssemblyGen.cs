@@ -126,6 +126,7 @@ namespace System.Linq.Expressions.Compiler {
 #if MICROSOFT_SCRIPTING_CORE
         //Return the location of the saved assembly file.
         //The file location is used by PE verification in Microsoft.Scripting.
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode")]
         internal string SaveAssembly() {
 #if !SILVERLIGHT // AssemblyBuilder.Save
             _myAssembly.Save(_outFileName, PortableExecutableKinds.ILOnly, ImageFileMachine.I386);
@@ -136,12 +137,14 @@ namespace System.Linq.Expressions.Compiler {
         }
 
         // NOTE: this method is called through reflection from Microsoft.Scripting
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode")]
         internal static void SetSaveAssemblies(bool enable, string directory) {
             _saveAssemblies = enable;
             _saveAssembliesPath = directory;
         }
 
         // NOTE: this method is called through reflection from Microsoft.Scripting
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode")]
         internal static string[] SaveAssembliesToDisk() {
             if (!_saveAssemblies) {
                 return new string[0];

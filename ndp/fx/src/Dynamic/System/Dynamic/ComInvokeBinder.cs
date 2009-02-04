@@ -117,12 +117,14 @@ namespace System.Dynamic {
             return var = Expression.Variable(type, name);
         }
 
-        private static Type MarshalType(DynamicMetaObject mo) {
-            Type marshalType = mo.LimitType;
+        private static Type MarshalType(DynamicMetaObject mo, ArgumentInfo ainf) {
+            Type marshalType = (mo.Value == null && mo.HasValue) ? null : mo.LimitType;
 
-            if (ComBinderHelpers.IsByRef(mo)) {
+            // we are not checking that mo.Expression is writeable or whether evaluating it has no sideeffects
+            // the assumption is that whoever matched it with ByRef arginfo took care of this.
+            if (ainf.IsByRef){
                 // Null just means that null was supplied.
-                if (marshalType == typeof(DynamicNull)) {
+                if (marshalType == null) {
                     marshalType = mo.Expression.Type;
                 }
                 marshalType = marshalType.MakeByRefType();
@@ -139,8 +141,9 @@ namespace System.Dynamic {
             // We already tested the instance, so no need to test it again
             for (int i = 0; i < _args.Length; i++) {
                 DynamicMetaObject curMo = _args[i];
-                _restrictions = _restrictions.Merge(BindingRestrictions.GetTypeRestriction(curMo.Expression, curMo.LimitType));
-                marshalArgTypes[i] = MarshalType(curMo);
+                ArgumentInfo curAinf = _arguments[i];
+                _restrictions = _restrictions.Merge(ComBinderHelpers.GetTypeRestrictionForDynamicMetaObject(curMo));
+                marshalArgTypes[i] = MarshalType(curMo, curAinf);
             }
 
             _varEnumSelector = new VarEnumSelector(marshalArgTypes);

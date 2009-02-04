@@ -294,6 +294,7 @@ namespace IronRuby.Runtime {
             }
         }
 
+        // thread-safe:
         // dynamic dispatch to "const_missing" if not found
         public object ResolveConstant(bool autoload, string/*!*/ name) {
             object result;
@@ -306,35 +307,39 @@ namespace IronRuby.Runtime {
             return RubySites.ModuleConstMissing(RubyContext, GetInnerMostModule(), name);
         }
 
+        // thread-safe:
         public bool TryResolveConstant(bool autoload, string/*!*/ name, out object result) {
-            RubyGlobalScope autoloadScope = autoload ? GlobalScope : null;
-            RubyScope scope = this;
+            var context = RubyContext;
+            using (context.ClassHierarchyLocker()) {
+                RubyGlobalScope autoloadScope = autoload ? GlobalScope : null;
+                RubyScope scope = this;
 
-            // lexical lookup first:
-            RubyModule innerMostModule = null;
-            do {
-                RubyModule module = scope.Module;
+                // lexical lookup first:
+                RubyModule innerMostModule = null;
+                do {
+                    RubyModule module = scope.Module;
 
-                if (module != null) {
-                    if (module.TryGetConstant(autoloadScope, name, out result)) {
-                        return true;
+                    if (module != null) {
+                        if (module.TryGetConstant(context, autoloadScope, name, out result)) {
+                            return true;
+                        }
+
+                        // remember the module:
+                        if (innerMostModule == null) {
+                            innerMostModule = module;
+                        }
                     }
 
-                    // remember the module:
-                    if (innerMostModule == null) {
-                        innerMostModule = module;
-                    }
+                    scope = (RubyScope)scope.Parent;
+                } while (scope != null);
+
+                // check the inner most module and it's base classes/mixins:
+                if (innerMostModule != null && innerMostModule.TryResolveConstant(context, autoloadScope, name, out result)) {
+                    return true;
                 }
 
-                scope = (RubyScope)scope.Parent;
-            } while (scope != null);
-
-            // check the inner most module and it's base classes/mixins:
-            if (innerMostModule != null && innerMostModule.TryResolveConstant(autoloadScope, name, out result)) {
-                return true;
+                return RubyContext.ObjectClass.TryResolveConstant(context, autoloadScope, name, out result);
             }
-
-            return RubyContext.ObjectClass.TryResolveConstant(autoloadScope, name, out result);
         }
 
         #region Debug View

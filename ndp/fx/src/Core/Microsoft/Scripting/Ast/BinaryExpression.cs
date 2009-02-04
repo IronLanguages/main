@@ -16,12 +16,11 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Reflection;
 using System.Dynamic.Utils;
-using System.Text;
+using System.Reflection;
 
 namespace System.Linq.Expressions {
-    //CONFORMING
+
     /// <summary>
     /// Represents an expression that has a binary operator.
     /// </summary>
@@ -528,7 +527,7 @@ namespace System.Linq.Expressions {
 
         #endregion
 
-        //CONFORMING
+
         private static BinaryExpression GetUserDefinedBinaryOperator(ExpressionType binaryType, string name, Expression left, Expression right, bool liftToNull) {
             // try exact match first
             MethodInfo method = GetUserDefinedBinaryOperator(binaryType, left.Type, right.Type, name);
@@ -551,7 +550,7 @@ namespace System.Linq.Expressions {
             return null;
         }
 
-        //CONFORMING
+
         private static BinaryExpression GetMethodBasedBinaryOperator(ExpressionType binaryType, Expression left, Expression right, MethodInfo method, bool liftToNull) {
             System.Diagnostics.Debug.Assert(method != null);
             ValidateOperator(method);
@@ -593,7 +592,7 @@ namespace System.Linq.Expressions {
             return b;
         }
 
-        //CONFORMING
+
         private static BinaryExpression GetUserDefinedBinaryOperatorOrThrow(ExpressionType binaryType, string name, Expression left, Expression right, bool liftToNull) {
             BinaryExpression b = GetUserDefinedBinaryOperator(binaryType, name, left, right, liftToNull);
             if (b != null) {
@@ -620,7 +619,7 @@ namespace System.Linq.Expressions {
             return b;
         }
 
-        //CONFORMING
+
         private static MethodInfo GetUserDefinedBinaryOperator(ExpressionType binaryType, Type leftType, Type rightType, string name) {
             // UNDONE: This algorithm is wrong, we should be checking for uniqueness and erroring if
             // UNDONE: it is defined on both types.
@@ -628,9 +627,9 @@ namespace System.Linq.Expressions {
             Type nnLeftType = TypeUtils.GetNonNullableType(leftType);
             Type nnRightType = TypeUtils.GetNonNullableType(rightType);
             BindingFlags flags = BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic;
-            MethodInfo method = nnLeftType.GetMethod(name, flags, null, types, null);
+            MethodInfo method = nnLeftType.GetMethodValidated(name, flags, null, types, null);
             if (method == null && leftType != rightType) {
-                method = nnRightType.GetMethod(name, flags, null, types, null);
+                method = nnRightType.GetMethodValidated(name, flags, null, types, null);
             }
 
             if (IsLiftingConditionalLogicalOperator(leftType, rightType, method, binaryType)) {
@@ -639,7 +638,7 @@ namespace System.Linq.Expressions {
             return method;
         }
 
-        //CONFORMING
+
         private static bool IsLiftingConditionalLogicalOperator(Type left, Type right, MethodInfo method, ExpressionType binaryType) {
             return TypeUtils.IsNullableType(right) &&
                     TypeUtils.IsNullableType(left) &&
@@ -647,7 +646,7 @@ namespace System.Linq.Expressions {
                     (binaryType == ExpressionType.AndAlso || binaryType == ExpressionType.OrElse);
         }
 
-        //CONFORMING
+
         private static bool ParameterIsAssignable(ParameterInfo pi, Type argType) {
             Type pType = pi.ParameterType;
             if (pType.IsByRef)
@@ -655,14 +654,14 @@ namespace System.Linq.Expressions {
             return TypeUtils.AreReferenceAssignable(pType, argType);
         }
 
-        //CONFORMING
+
         private static void ValidateParamswithOperandsOrThrow(Type paramType, Type operandType, ExpressionType exprType, string name) {
             if (TypeUtils.IsNullableType(paramType) && !TypeUtils.IsNullableType(operandType)) {
                 throw Error.OperandTypesDoNotMatchParameters(exprType, name);
             }
         }
 
-        //CONFORMING
+
         private static void ValidateOperator(MethodInfo method) {
             System.Diagnostics.Debug.Assert(method != null);
             ValidateMethodInfo(method);
@@ -672,7 +671,7 @@ namespace System.Linq.Expressions {
                 throw Error.UserDefinedOperatorMustNotBeVoid(method);
         }
 
-        //CONFORMING
+
         private static void ValidateMethodInfo(MethodInfo method) {
             if (method.IsGenericMethodDefinition)
                 throw Error.MethodIsGeneric(method);
@@ -680,7 +679,7 @@ namespace System.Linq.Expressions {
                 throw Error.MethodContainsGenericParameters(method);
         }
 
-        //CONFORMING
+
         private static bool IsNullComparison(Expression left, Expression right) {
             // If we have x==null, x!=null, null==x or null!=x where x is
             // nullable but not null, then this is treated as a call to x.HasValue
@@ -695,7 +694,7 @@ namespace System.Linq.Expressions {
             return false;
         }
 
-        //CONFORMING
+
         // Note: this has different meaning than ConstantCheck.IsNull
         // That function attempts to determine if the result of a tree will be
         // null at runtime. This function is used at tree construction time and
@@ -706,7 +705,7 @@ namespace System.Linq.Expressions {
             return c != null && c.Value == null;
         }
 
-        //CONFORMING
+
         private static void ValidateUserDefinedConditionalLogicOperator(ExpressionType nodeType, Type left, Type right, MethodInfo method) {
             ValidateOperator(method);
             ParameterInfo[] pms = method.GetParametersCached();
@@ -736,12 +735,12 @@ namespace System.Linq.Expressions {
             }
         }
 
-        //CONFORMING
+
         private static bool IsValidLiftedConditionalLogicalOperator(Type left, Type right, ParameterInfo[] pms) {
             return left == right && TypeUtils.IsNullableType(right) && pms[1].ParameterType == TypeUtils.GetNonNullableType(right);
         }
 
-        //CONFORMING
+
         /// <summary>
         /// Creates a BinaryExpression, given the left and right operands, by calling an appropriate factory method.
         /// </summary>
@@ -752,7 +751,7 @@ namespace System.Linq.Expressions {
         public static BinaryExpression MakeBinary(ExpressionType binaryType, Expression left, Expression right) {
             return MakeBinary(binaryType, left, right, false, null, null);
         }
-        //CONFORMING
+
         /// <summary>
         /// Creates a BinaryExpression, given the left and right operands, by calling an appropriate factory method.
         /// </summary>
@@ -765,7 +764,7 @@ namespace System.Linq.Expressions {
         public static BinaryExpression MakeBinary(ExpressionType binaryType, Expression left, Expression right, bool liftToNull, MethodInfo method) {
             return MakeBinary(binaryType, left, right, liftToNull, method, null);
         }
-        //CONFORMING
+
         ///
         /// <summary>
         /// Creates a BinaryExpression, given the left and right operands, by calling an appropriate factory method.
@@ -865,7 +864,7 @@ namespace System.Linq.Expressions {
 
         #region Equality Operators
 
-        //CONFORMING
+
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents an equality comparison.
         /// </summary>
@@ -876,7 +875,7 @@ namespace System.Linq.Expressions {
         public static BinaryExpression Equal(Expression left, Expression right) {
             return Equal(left, right, false, null);
         }
-        //CONFORMING
+
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents an equality comparison.
         /// </summary>
@@ -896,7 +895,7 @@ namespace System.Linq.Expressions {
             return GetMethodBasedBinaryOperator(ExpressionType.Equal, left, right, method, liftToNull);
         }
 
-        //CONFORMING
+
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents an inequality comparison.
         /// </summary>
@@ -907,7 +906,7 @@ namespace System.Linq.Expressions {
         public static BinaryExpression NotEqual(Expression left, Expression right) {
             return NotEqual(left, right, false, null);
         }
-        //CONFORMING
+
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents an inequality comparison.
         /// </summary>
@@ -927,7 +926,7 @@ namespace System.Linq.Expressions {
             return GetMethodBasedBinaryOperator(ExpressionType.NotEqual, left, right, method, liftToNull);
         }
 
-        //CONFORMING
+
         private static BinaryExpression GetEqualityComparisonOperator(ExpressionType binaryType, string opName, Expression left, Expression right, bool liftToNull) {
             // known comparison - numeric types, bools, object, enums
             if (left.Type == right.Type && (TypeUtils.IsNumeric(left.Type) || 
@@ -959,7 +958,7 @@ namespace System.Linq.Expressions {
 
         #region Comparison Expressions
 
-        //CONFORMING
+
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents a "greater than" numeric comparison.
         /// </summary>
@@ -970,7 +969,7 @@ namespace System.Linq.Expressions {
         public static BinaryExpression GreaterThan(Expression left, Expression right) {
             return GreaterThan(left, right, false, null);
         }
-        //CONFORMING
+
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents a "greater than" numeric comparison.
         /// </summary>
@@ -997,11 +996,11 @@ namespace System.Linq.Expressions {
         /// <param name="right">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Right"/> property equal to.</param>
         /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="P:Expression.NodeType"/> property equal to <see cref="F:ExpressionType.LessThan"/> 
         /// and the <see cref="P:BinaryExpression.Left"/> and <see cref="P:BinaryExpression.Right"/> properties set to the specified values.</returns>
-        //CONFORMING
+
         public static BinaryExpression LessThan(Expression left, Expression right) {
             return LessThan(left, right, false, null);
         }
-        //CONFORMING
+
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents a "less than" numeric comparison.
         /// </summary>
@@ -1021,7 +1020,7 @@ namespace System.Linq.Expressions {
             return GetMethodBasedBinaryOperator(ExpressionType.LessThan, left, right, method, liftToNull);
         }
 
-        //CONFORMING
+
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents a "greater than or equal" numeric comparison.
         /// </summary>
@@ -1032,7 +1031,7 @@ namespace System.Linq.Expressions {
         public static BinaryExpression GreaterThanOrEqual(Expression left, Expression right) {
             return GreaterThanOrEqual(left, right, false, null);
         }
-        //CONFORMING
+
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents a "greater than or equal" numeric comparison.
         /// </summary>
@@ -1052,7 +1051,7 @@ namespace System.Linq.Expressions {
             return GetMethodBasedBinaryOperator(ExpressionType.GreaterThanOrEqual, left, right, method, liftToNull);
         }
 
-        //CONFORMING
+
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents a "less than or equal" numeric comparison.
         /// </summary>
@@ -1063,7 +1062,7 @@ namespace System.Linq.Expressions {
         public static BinaryExpression LessThanOrEqual(Expression left, Expression right) {
             return LessThanOrEqual(left, right, false, null);
         }
-        //CONFORMING
+
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents a "less than or equal" numeric comparison.
         /// </summary>
@@ -1083,7 +1082,7 @@ namespace System.Linq.Expressions {
             return GetMethodBasedBinaryOperator(ExpressionType.LessThanOrEqual, left, right, method, liftToNull);
         }
 
-        //CONFORMING
+
         private static BinaryExpression GetComparisonOperator(ExpressionType binaryType, string opName, Expression left, Expression right, bool liftToNull) {
             if (left.Type == right.Type && TypeUtils.IsNumeric(left.Type)) {
                 if (TypeUtils.IsNullableType(left.Type) && liftToNull) {
@@ -1099,7 +1098,7 @@ namespace System.Linq.Expressions {
 
         #region Boolean Expressions
 
-        //CONFORMING
+
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents a conditional AND operation that evaluates the second operand only if it has to.
         /// </summary>
@@ -1110,7 +1109,7 @@ namespace System.Linq.Expressions {
         public static BinaryExpression AndAlso(Expression left, Expression right) {
             return AndAlso(left, right, null);
         }
-        //CONFORMING
+
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents a conditional AND operation that evaluates the second operand only if it has to.
         /// </summary>
@@ -1145,7 +1144,7 @@ namespace System.Linq.Expressions {
             return new MethodBinaryExpression(ExpressionType.AndAlso, left, right, returnType, method);
         }
 
-        //CONFORMING
+
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents a conditional OR operation that evaluates the second operand only if it has to.
         /// </summary>
@@ -1156,7 +1155,7 @@ namespace System.Linq.Expressions {
         public static BinaryExpression OrElse(Expression left, Expression right) {
             return OrElse(left, right, null);
         }
-        //CONFORMING
+
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents a conditional OR operation that evaluates the second operand only if it has to.
         /// </summary>
@@ -1195,7 +1194,7 @@ namespace System.Linq.Expressions {
 
         #region Coalescing Expressions
 
-        //CONFORMING
+
         /// <summary>
         /// Creates a BinaryExpression that represents a coalescing operation.
         /// </summary>
@@ -1206,7 +1205,7 @@ namespace System.Linq.Expressions {
             return Coalesce(left, right, null);
         }
 
-        //CONFORMING
+
         /// <summary>
         /// Creates a BinaryExpression that represents a coalescing operation.
         /// </summary>
@@ -1255,7 +1254,7 @@ namespace System.Linq.Expressions {
             return new CoalesceConversionBinaryExpression(left, right, conversion);
         }
 
-        //CONFORMING
+
         private static Type ValidateCoalesceArgTypes(Type left, Type right) {
             Type leftStripped = TypeUtils.GetNonNullableType(left);
             if (left.IsValueType && !TypeUtils.IsNullableType(left)) {
@@ -1277,7 +1276,7 @@ namespace System.Linq.Expressions {
 
         #region Arithmetic Expressions
 
-        //CONFORMING
+
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents an arithmetic addition operation that does not have overflow checking.
         /// </summary>
@@ -1288,7 +1287,7 @@ namespace System.Linq.Expressions {
         public static BinaryExpression Add(Expression left, Expression right) {
             return Add(left, right, null);
         }
-        //CONFORMING
+
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents an arithmetic addition operation that does not have overflow checking.
         /// </summary>
@@ -1310,7 +1309,7 @@ namespace System.Linq.Expressions {
             return GetMethodBasedBinaryOperator(ExpressionType.Add, left, right, method, true);
         }
 
-        //CONFORMING
+
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents an addition assignment operation that does not have overflow checking.
         /// </summary>
@@ -1321,7 +1320,7 @@ namespace System.Linq.Expressions {
         public static BinaryExpression AddAssign(Expression left, Expression right) {
             return AddAssign(left, right, null, null);
         }
-        //CONFORMING
+
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents an addition assignment operation that does not have overflow checking.
         /// </summary>
@@ -1334,7 +1333,7 @@ namespace System.Linq.Expressions {
         public static BinaryExpression AddAssign(Expression left, Expression right, MethodInfo method) {
             return AddAssign(left, right, method, null);
         }
-        //CONFORMING
+
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents an addition assignment operation that does not have overflow checking.
         /// </summary>
@@ -1385,7 +1384,7 @@ namespace System.Linq.Expressions {
             }
         }
 
-        //CONFORMING
+
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents an addition assignment operation that has overflow checking.
         /// </summary>
@@ -1398,7 +1397,7 @@ namespace System.Linq.Expressions {
         public static BinaryExpression AddAssignChecked(Expression left, Expression right) {
             return AddAssignChecked(left, right, null);
         }
-        //CONFORMING
+
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents an addition assignment operation that has overflow checking.
         /// </summary>
@@ -1411,7 +1410,7 @@ namespace System.Linq.Expressions {
         public static BinaryExpression AddAssignChecked(Expression left, Expression right, MethodInfo method) {
             return AddAssignChecked(left, right, method, null);
         }
-        //CONFORMING
+
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents an addition assignment operation that has overflow checking.
         /// </summary>
@@ -1441,7 +1440,7 @@ namespace System.Linq.Expressions {
             return GetMethodBasedAssignOperator(ExpressionType.AddAssignChecked, left, right, method, conversion, true);
         }
 
-        //CONFORMING
+
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents an arithmetic addition operation that has overflow checking.
         /// </summary>
@@ -1452,7 +1451,7 @@ namespace System.Linq.Expressions {
         public static BinaryExpression AddChecked(Expression left, Expression right) {
             return AddChecked(left, right, null);
         }
-        //CONFORMING
+
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents an arithmetic addition operation that has overflow checking.
         /// </summary>
@@ -1474,7 +1473,7 @@ namespace System.Linq.Expressions {
             return GetMethodBasedBinaryOperator(ExpressionType.AddChecked, left, right, method, true);
         }
 
-        //CONFORMING
+
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents an arithmetic subtraction operation that does not have overflow checking.
         /// </summary>
@@ -1485,7 +1484,7 @@ namespace System.Linq.Expressions {
         public static BinaryExpression Subtract(Expression left, Expression right) {
             return Subtract(left, right, null);
         }
-        //CONFORMING
+
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents an arithmetic subtraction operation that does not have overflow checking.
         /// </summary>
@@ -1507,7 +1506,7 @@ namespace System.Linq.Expressions {
             return GetMethodBasedBinaryOperator(ExpressionType.Subtract, left, right, method, true);
         }
 
-        //CONFORMING
+
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents a subtraction assignment operation that does not have overflow checking.
         /// </summary>
@@ -1518,7 +1517,7 @@ namespace System.Linq.Expressions {
         public static BinaryExpression SubtractAssign(Expression left, Expression right) {
             return SubtractAssign(left, right, null, null);
         }
-        //CONFORMING
+
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents a subtraction assignment operation that does not have overflow checking.
         /// </summary>
@@ -1531,7 +1530,7 @@ namespace System.Linq.Expressions {
         public static BinaryExpression SubtractAssign(Expression left, Expression right, MethodInfo method) {
             return SubtractAssign(left, right, method, null);
         }
-        //CONFORMING
+
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents a subtraction assignment operation that does not have overflow checking.
         /// </summary>
@@ -1560,7 +1559,7 @@ namespace System.Linq.Expressions {
             return GetMethodBasedAssignOperator(ExpressionType.SubtractAssign, left, right, method, conversion, true);
         }
 
-        //CONFORMING
+
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents a subtraction assignment operation that has overflow checking.
         /// </summary>
@@ -1571,7 +1570,7 @@ namespace System.Linq.Expressions {
         public static BinaryExpression SubtractAssignChecked(Expression left, Expression right) {
             return SubtractAssignChecked(left, right, null);
         }
-        //CONFORMING
+
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents a subtraction assignment operation that has overflow checking.
         /// </summary>
@@ -1584,7 +1583,7 @@ namespace System.Linq.Expressions {
         public static BinaryExpression SubtractAssignChecked(Expression left, Expression right, MethodInfo method) {
             return SubtractAssignChecked(left, right, method, null);
         }
-        //CONFORMING
+
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents a subtraction assignment operation that has overflow checking.
         /// </summary>
@@ -1613,7 +1612,7 @@ namespace System.Linq.Expressions {
             return GetMethodBasedAssignOperator(ExpressionType.SubtractAssignChecked, left, right, method, conversion, true);
         }
 
-        //CONFORMING
+
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents an arithmetic subtraction operation that has overflow checking.
         /// </summary>
@@ -1624,7 +1623,7 @@ namespace System.Linq.Expressions {
         public static BinaryExpression SubtractChecked(Expression left, Expression right) {
             return SubtractChecked(left, right, null);
         }
-        //CONFORMING
+
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents an arithmetic subtraction operation that has overflow checking.
         /// </summary>
@@ -1646,7 +1645,7 @@ namespace System.Linq.Expressions {
             return GetMethodBasedBinaryOperator(ExpressionType.SubtractChecked, left, right, method, true);
         }
 
-        //CONFORMING
+
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents an arithmetic division operation.
         /// </summary>
@@ -1657,7 +1656,7 @@ namespace System.Linq.Expressions {
         public static BinaryExpression Divide(Expression left, Expression right) {
             return Divide(left, right, null);
         }
-        //CONFORMING
+
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents an arithmetic division operation.
         /// </summary>
@@ -1679,7 +1678,7 @@ namespace System.Linq.Expressions {
             return GetMethodBasedBinaryOperator(ExpressionType.Divide, left, right, method, true);
         }
 
-        //CONFORMING
+
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents a division assignment operation that does not have overflow checking.
         /// </summary>
@@ -1690,7 +1689,7 @@ namespace System.Linq.Expressions {
         public static BinaryExpression DivideAssign(Expression left, Expression right) {
             return DivideAssign(left, right, null, null);
         }
-        //CONFORMING
+
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents a division assignment operation that does not have overflow checking.
         /// </summary>
@@ -1703,7 +1702,7 @@ namespace System.Linq.Expressions {
         public static BinaryExpression DivideAssign(Expression left, Expression right, MethodInfo method) {
             return DivideAssign(left, right, method, null);
         }
-        //CONFORMING
+
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents a division assignment operation that does not have overflow checking.
         /// </summary>
@@ -1732,7 +1731,7 @@ namespace System.Linq.Expressions {
             return GetMethodBasedAssignOperator(ExpressionType.DivideAssign, left, right, method, conversion, true);
         }
 
-        //CONFORMING
+
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents an arithmetic remainder operation.
         /// </summary>
@@ -1743,7 +1742,7 @@ namespace System.Linq.Expressions {
         public static BinaryExpression Modulo(Expression left, Expression right) {
             return Modulo(left, right, null);
         }
-        //CONFORMING
+
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents an arithmetic remainder operation.
         /// </summary>
@@ -1765,7 +1764,7 @@ namespace System.Linq.Expressions {
             return GetMethodBasedBinaryOperator(ExpressionType.Modulo, left, right, method, true);
         }
 
-        //CONFORMING
+
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents a remainder assignment operation.
         /// </summary>
@@ -1776,7 +1775,7 @@ namespace System.Linq.Expressions {
         public static BinaryExpression ModuloAssign(Expression left, Expression right) {
             return ModuloAssign(left, right, null, null);
         }
-        //CONFORMING
+
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents a remainder assignment operation.
         /// </summary>
@@ -1789,7 +1788,7 @@ namespace System.Linq.Expressions {
         public static BinaryExpression ModuloAssign(Expression left, Expression right, MethodInfo method) {
             return ModuloAssign(left, right, method, null);
         }
-        //CONFORMING
+
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents a remainder assignment operation.
         /// </summary>
@@ -1818,7 +1817,7 @@ namespace System.Linq.Expressions {
             return GetMethodBasedAssignOperator(ExpressionType.ModuloAssign, left, right, method, conversion, true);
         }
 
-        //CONFORMING
+
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents an arithmetic multiplication operation that does not have overflow checking.
         /// </summary>
@@ -1829,7 +1828,7 @@ namespace System.Linq.Expressions {
         public static BinaryExpression Multiply(Expression left, Expression right) {
             return Multiply(left, right, null);
         }
-        //CONFORMING
+
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents an arithmetic multiplication operation that does not have overflow checking.
         /// </summary>
@@ -1851,7 +1850,7 @@ namespace System.Linq.Expressions {
             return GetMethodBasedBinaryOperator(ExpressionType.Multiply, left, right, method, true);
         }
 
-        //CONFORMING
+
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents a multiplication assignment operation that does not have overflow checking.
         /// </summary>
@@ -1862,7 +1861,7 @@ namespace System.Linq.Expressions {
         public static BinaryExpression MultiplyAssign(Expression left, Expression right) {
             return MultiplyAssign(left, right, null, null);
         }
-        //CONFORMING
+
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents a multiplication assignment operation that does not have overflow checking.
         /// </summary>
@@ -1875,7 +1874,7 @@ namespace System.Linq.Expressions {
         public static BinaryExpression MultiplyAssign(Expression left, Expression right, MethodInfo method) {
             return MultiplyAssign(left, right, method, null);
         }
-        //CONFORMING
+
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents a multiplication assignment operation that does not have overflow checking.
         /// </summary>
@@ -1904,7 +1903,7 @@ namespace System.Linq.Expressions {
             return GetMethodBasedAssignOperator(ExpressionType.MultiplyAssign, left, right, method, conversion, true);
         }
 
-        //CONFORMING
+
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents a multiplication assignment operation that has overflow checking.
         /// </summary>
@@ -1915,7 +1914,7 @@ namespace System.Linq.Expressions {
         public static BinaryExpression MultiplyAssignChecked(Expression left, Expression right) {
             return MultiplyAssignChecked(left, right, null);
         }
-        //CONFORMING
+
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents a multiplication assignment operation that has overflow checking.
         /// </summary>
@@ -1928,7 +1927,7 @@ namespace System.Linq.Expressions {
         public static BinaryExpression MultiplyAssignChecked(Expression left, Expression right, MethodInfo method) {
             return MultiplyAssignChecked(left, right, method, null);
         }
-        //CONFORMING
+
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents a multiplication assignment operation that has overflow checking.
         /// </summary>
@@ -1957,7 +1956,7 @@ namespace System.Linq.Expressions {
             return GetMethodBasedAssignOperator(ExpressionType.MultiplyAssignChecked, left, right, method, conversion, true);
         }
 
-        //CONFORMING
+
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents an arithmetic multiplication operation that has overflow checking.
         /// </summary>
@@ -1968,7 +1967,7 @@ namespace System.Linq.Expressions {
         public static BinaryExpression MultiplyChecked(Expression left, Expression right) {
             return MultiplyChecked(left, right, null);
         }
-        //CONFORMING
+
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents an arithmetic multiplication operation that has overflow checking.
         /// </summary>
@@ -2003,7 +2002,7 @@ namespace System.Linq.Expressions {
             return left;
         }
 
-        //CONFORMING
+
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents an bitwise left-shift operation.
         /// </summary>
@@ -2014,7 +2013,7 @@ namespace System.Linq.Expressions {
         public static BinaryExpression LeftShift(Expression left, Expression right) {
             return LeftShift(left, right, null);
         }
-        //CONFORMING
+
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents an bitwise left-shift operation.
         /// </summary>
@@ -2037,7 +2036,7 @@ namespace System.Linq.Expressions {
             return GetMethodBasedBinaryOperator(ExpressionType.LeftShift, left, right, method, true);
         }
 
-        //CONFORMING
+
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents a bitwise left-shift assignment operation.
         /// </summary>
@@ -2048,7 +2047,7 @@ namespace System.Linq.Expressions {
         public static BinaryExpression LeftShiftAssign(Expression left, Expression right) {
             return LeftShiftAssign(left, right, null, null);
         }
-        //CONFORMING
+
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents a bitwise left-shift assignment operation.
         /// </summary>
@@ -2061,7 +2060,7 @@ namespace System.Linq.Expressions {
         public static BinaryExpression LeftShiftAssign(Expression left, Expression right, MethodInfo method) {
             return LeftShiftAssign(left, right, method, null);
         }
-        //CONFORMING
+
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents a bitwise left-shift assignment operation.
         /// </summary>
@@ -2091,7 +2090,7 @@ namespace System.Linq.Expressions {
             return GetMethodBasedAssignOperator(ExpressionType.LeftShiftAssign, left, right, method, conversion, true);
         }
 
-        //CONFORMING
+
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents an bitwise right-shift operation.
         /// </summary>
@@ -2102,7 +2101,7 @@ namespace System.Linq.Expressions {
         public static BinaryExpression RightShift(Expression left, Expression right) {
             return RightShift(left, right, null);
         }
-        //CONFORMING
+
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents an bitwise right-shift operation.
         /// </summary>
@@ -2125,7 +2124,7 @@ namespace System.Linq.Expressions {
             return GetMethodBasedBinaryOperator(ExpressionType.RightShift, left, right, method, true);
         }
 
-        //CONFORMING
+
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents a bitwise right-shift assignment operation.
         /// </summary>
@@ -2136,7 +2135,7 @@ namespace System.Linq.Expressions {
         public static BinaryExpression RightShiftAssign(Expression left, Expression right) {
             return RightShiftAssign(left, right, null, null);
         }
-        //CONFORMING
+
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents a bitwise right-shift assignment operation.
         /// </summary>
@@ -2149,7 +2148,7 @@ namespace System.Linq.Expressions {
         public static BinaryExpression RightShiftAssign(Expression left, Expression right, MethodInfo method) {
             return RightShiftAssign(left, right, method, null);
         }
-        //CONFORMING
+
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents a bitwise right-shift assignment operation.
         /// </summary>
@@ -2179,7 +2178,7 @@ namespace System.Linq.Expressions {
             return GetMethodBasedAssignOperator(ExpressionType.RightShiftAssign, left, right, method, conversion, true);
         }
 
-        //CONFORMING
+
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents an bitwise AND operation.
         /// </summary>
@@ -2190,7 +2189,7 @@ namespace System.Linq.Expressions {
         public static BinaryExpression And(Expression left, Expression right) {
             return And(left, right, null);
         }
-        //CONFORMING
+
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents an bitwise AND operation.
         /// </summary>
@@ -2212,7 +2211,7 @@ namespace System.Linq.Expressions {
             return GetMethodBasedBinaryOperator(ExpressionType.And, left, right, method, true);
         }
 
-        //CONFORMING
+
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents a bitwise AND assignment operation.
         /// </summary>
@@ -2223,7 +2222,7 @@ namespace System.Linq.Expressions {
         public static BinaryExpression AndAssign(Expression left, Expression right) {
             return AndAssign(left, right, null, null);
         }
-        //CONFORMING
+
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents a bitwise AND assignment operation.
         /// </summary>
@@ -2236,7 +2235,7 @@ namespace System.Linq.Expressions {
         public static BinaryExpression AndAssign(Expression left, Expression right, MethodInfo method) {
             return AndAssign(left, right, method, null);
         }
-        //CONFORMING
+
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents a bitwise AND assignment operation.
         /// </summary>
@@ -2265,7 +2264,7 @@ namespace System.Linq.Expressions {
             return GetMethodBasedAssignOperator(ExpressionType.AndAssign, left, right, method, conversion, true);
         }
 
-        //CONFORMING
+
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents an bitwise OR operation.
         /// </summary>
@@ -2276,7 +2275,7 @@ namespace System.Linq.Expressions {
         public static BinaryExpression Or(Expression left, Expression right) {
             return Or(left, right, null);
         }
-        //CONFORMING
+
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents an bitwise OR operation.
         /// </summary>
@@ -2298,7 +2297,7 @@ namespace System.Linq.Expressions {
             return GetMethodBasedBinaryOperator(ExpressionType.Or, left, right, method, true);
         }
 
-        //CONFORMING
+
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents a bitwise OR assignment operation.
         /// </summary>
@@ -2309,7 +2308,7 @@ namespace System.Linq.Expressions {
         public static BinaryExpression OrAssign(Expression left, Expression right) {
             return OrAssign(left, right, null, null);
         }
-        //CONFORMING
+
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents a bitwise OR assignment operation.
         /// </summary>
@@ -2322,7 +2321,7 @@ namespace System.Linq.Expressions {
         public static BinaryExpression OrAssign(Expression left, Expression right, MethodInfo method) {
             return OrAssign(left, right, method, null);
         }
-        //CONFORMING
+
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents a bitwise OR assignment operation.
         /// </summary>
@@ -2351,7 +2350,7 @@ namespace System.Linq.Expressions {
             return GetMethodBasedAssignOperator(ExpressionType.OrAssign, left, right, method, conversion, true);
         }
 
-        //CONFORMING
+
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents an bitwise XOR operation.
         /// </summary>
@@ -2362,7 +2361,7 @@ namespace System.Linq.Expressions {
         public static BinaryExpression ExclusiveOr(Expression left, Expression right) {
             return ExclusiveOr(left, right, null);
         }
-        //CONFORMING
+
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents an bitwise XOR operation.
         /// </summary>
@@ -2384,7 +2383,7 @@ namespace System.Linq.Expressions {
             return GetMethodBasedBinaryOperator(ExpressionType.ExclusiveOr, left, right, method, true);
         }
 
-        //CONFORMING
+
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents a bitwise XOR assignment operation.
         /// </summary>
@@ -2395,7 +2394,7 @@ namespace System.Linq.Expressions {
         public static BinaryExpression ExclusiveOrAssign(Expression left, Expression right) {
             return ExclusiveOrAssign(left, right, null, null);
         }
-        //CONFORMING
+
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents a bitwise XOR assignment operation.
         /// </summary>
@@ -2408,7 +2407,7 @@ namespace System.Linq.Expressions {
         public static BinaryExpression ExclusiveOrAssign(Expression left, Expression right, MethodInfo method) {
             return ExclusiveOrAssign(left, right, method, null);
         }
-        //CONFORMING
+
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents a bitwise XOR assignment operation.
         /// </summary>
@@ -2437,7 +2436,7 @@ namespace System.Linq.Expressions {
             return GetMethodBasedAssignOperator(ExpressionType.ExclusiveOrAssign, left, right, method, conversion, true);
         }
 
-        //CONFORMING
+
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents raising a number to a power.
         /// </summary>
@@ -2448,7 +2447,7 @@ namespace System.Linq.Expressions {
         public static BinaryExpression Power(Expression left, Expression right) {
             return Power(left, right, null);
         }
-        //CONFORMING
+
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents raising a number to a power.
         /// </summary>
@@ -2471,7 +2470,7 @@ namespace System.Linq.Expressions {
             return GetMethodBasedBinaryOperator(ExpressionType.Power, left, right, method, true);
         }
 
-        //CONFORMING
+
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents raising an expression to a power and assigning the result back to the expression.
         /// </summary>
@@ -2482,7 +2481,7 @@ namespace System.Linq.Expressions {
         public static BinaryExpression PowerAssign(Expression left, Expression right) {
             return PowerAssign(left, right, null, null);
         }
-        //CONFORMING
+
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents raising an expression to a power and assigning the result back to the expression.
         /// </summary>
@@ -2495,7 +2494,7 @@ namespace System.Linq.Expressions {
         public static BinaryExpression PowerAssign(Expression left, Expression right, MethodInfo method) {
             return PowerAssign(left, right, method, null);
         }
-        //CONFORMING
+
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents raising an expression to a power and assigning the result back to the expression.
         /// </summary>
@@ -2525,7 +2524,7 @@ namespace System.Linq.Expressions {
 
         #region ArrayIndex Expression
 
-        //CONFORMING
+
         /// <summary>
         /// Creates a BinaryExpression that represents applying an array index operator to an array of rank one.
         /// </summary>

@@ -13,25 +13,25 @@
  *
  * ***************************************************************************/
 
-using System.Collections;
-using System.Diagnostics;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Dynamic.Utils;
-using System.Runtime.InteropServices;
+using System.Reflection;
 
 namespace System.Linq.Expressions {
     /// <summary>
     /// Represents a control expression that handles multiple selections by passing control to a <see cref="SwitchCase"/>.
     /// </summary>
     public sealed class SwitchExpression : Expression {
-        private readonly Expression _testValue;
+        private readonly Expression _switchValue;
         private readonly ReadOnlyCollection<SwitchCase> _cases;
-        private readonly LabelTarget _label;
+        private readonly Expression _defaultBody;
+        private readonly MethodInfo _comparison;
 
-        internal SwitchExpression(Expression testValue, LabelTarget label, ReadOnlyCollection<SwitchCase> cases) {            
-            _label = label;
-            _testValue = testValue;
+        internal SwitchExpression(Expression switchValue, Expression defaultBody, MethodInfo comparison, ReadOnlyCollection<SwitchCase> cases) {
+            _switchValue = switchValue;
+            _defaultBody = defaultBody;
+            _comparison = comparison;
             _cases = cases;
         }
 
@@ -40,7 +40,7 @@ namespace System.Linq.Expressions {
         /// </summary>
         /// <returns>The <see cref="Type"/> that represents the static type of the expression.</returns>
         protected override Type GetExpressionType() {
-            return typeof(void);
+            return _cases[0].Body.Type;
         }
 
         /// <summary>
@@ -55,22 +55,29 @@ namespace System.Linq.Expressions {
         /// <summary>
         /// Gets the test for the switch.
         /// </summary>
-        public Expression Test {
-            get { return _testValue; }
+        public Expression SwitchValue {
+            get { return _switchValue; }
         }
 
         /// <summary>
         /// Gets the collection of <see cref="SwitchCase"/> objects for the switch.
         /// </summary>
-        public ReadOnlyCollection<SwitchCase> SwitchCases {
+        public ReadOnlyCollection<SwitchCase> Cases {
             get { return _cases; }
         }
 
         /// <summary>
-        /// Gets the <see cref="LabelTarget"/>, which the <see cref="SwitchCase"/> instances can use as a break target to exit the switch.
+        /// Gets the test for the switch.
         /// </summary>
-        public LabelTarget BreakLabel {
-            get { return _label; }
+        public Expression DefaultBody {
+            get { return _defaultBody; }
+        }
+
+        /// <summary>
+        /// Gets the equality comparison method, if any.
+        /// </summary>
+        public MethodInfo Comparison {
+            get { return _comparison; }
         }
 
         internal override Expression Accept(ExpressionVisitor visitor) {
@@ -82,134 +89,81 @@ namespace System.Linq.Expressions {
         /// <summary>
         /// Creates a <see cref="SwitchExpression"/>.
         /// </summary>
-        /// <param name="value">The value to be tested against each case.</param>
+        /// <param name="switchValue">The value to be tested against each case.</param>
         /// <param name="cases">The valid cases for this switch.</param>
         /// <returns>The created <see cref="SwitchExpression"/>.</returns>
-        public static SwitchExpression Switch(Expression value, params SwitchCase[] cases) {
-            return Switch(value, null, (IEnumerable<SwitchCase>)cases);
+        public static SwitchExpression Switch(Expression switchValue, params SwitchCase[] cases) {
+            return Switch(switchValue, null, null, (IEnumerable<SwitchCase>)cases);
         }
 
         /// <summary>
         /// Creates a <see cref="SwitchExpression"/>.
         /// </summary>
-        /// <param name="value">The value to be tested against each case.</param>
-        /// <param name="label">The label of the break target for exiting the switch.</param>
+        /// <param name="switchValue">The value to be tested against each case.</param>
+        /// <param name="defaultBody">The result of the switch if no cases are matched.</param>
         /// <param name="cases">The valid cases for this switch.</param>
         /// <returns>The created <see cref="SwitchExpression"/>.</returns>
-        public static SwitchExpression Switch(Expression value, LabelTarget label, params SwitchCase[] cases) {
-            return Switch(value, label, (IEnumerable<SwitchCase>)cases);
+        public static SwitchExpression Switch(Expression switchValue, Expression defaultBody, params SwitchCase[] cases) {
+            return Switch(switchValue, defaultBody, null, (IEnumerable<SwitchCase>)cases);
         }
 
         /// <summary>
         /// Creates a <see cref="SwitchExpression"/>.
         /// </summary>
-        /// <param name="value">The value to be tested against each case.</param>
-        /// <param name="label">The label of the break target for exiting the switch.</param>
+        /// <param name="switchValue">The value to be tested against each case.</param>
+        /// <param name="defaultBody">The result of the switch if no cases are matched.</param>
+        /// <param name="comparison">The equality comparison method to use.</param>
         /// <param name="cases">The valid cases for this switch.</param>
         /// <returns>The created <see cref="SwitchExpression"/>.</returns>
-        public static SwitchExpression Switch(Expression value, LabelTarget label, IEnumerable<SwitchCase> cases) {
-            RequiresCanRead(value, "value");
-            ContractUtils.Requires(value.Type == typeof(int), "value", Strings.ValueMustBeInt);
-            ContractUtils.RequiresNotNull(cases, "cases");
+        public static SwitchExpression Switch(Expression switchValue, Expression defaultBody, MethodInfo comparison, params SwitchCase[] cases) {
+            return Switch(switchValue, defaultBody, comparison, (IEnumerable<SwitchCase>)cases);
+        }
+
+        /// <summary>
+        /// Creates a <see cref="SwitchExpression"/>.
+        /// </summary>
+        /// <param name="switchValue">The value to be tested against each case.</param>
+        /// <param name="defaultBody">The result of the switch if no cases are matched.</param>
+        /// <param name="comparison">The equality comparison method to use.</param>
+        /// <param name="cases">The valid cases for this switch.</param>
+        /// <returns>The created <see cref="SwitchExpression"/>.</returns>
+        public static SwitchExpression Switch(Expression switchValue, Expression defaultBody, MethodInfo comparison, IEnumerable<SwitchCase> cases) {
+            RequiresCanRead(switchValue, "switchValue");
+            ContractUtils.Requires(switchValue.Type != typeof(void), "switchValue", Strings.ArgumentCannotBeOfTypeVoid);
+
             var caseList = cases.ToReadOnly();
             ContractUtils.RequiresNotEmpty(caseList, "cases");
             ContractUtils.RequiresNotNullItems(caseList, "cases");
-            ContractUtils.Requires(label == null || label.Type == typeof(void), "label", Strings.LabelTypeMustBeVoid);
 
-            bool @default = false;
-            int max = Int32.MinValue;
-            int min = Int32.MaxValue;
-            foreach (SwitchCase sc in caseList) {
-                if (sc.IsDefault) {
-                    ContractUtils.Requires(@default == false, "cases", Strings.OnlyDefaultIsAllowed);
-                    @default = true;
-                } else {
-                    int val = sc.Value;
-                    if (val > max) max = val;
-                    if (val < min) min = val;
-                }
+            Type switchType = caseList[0].Body.Type;
+            Type testValueType = caseList[0].TestValues[0].Type;
+
+            foreach (var c in caseList) {
+                ContractUtils.RequiresNotNull(c, "cases");
+                ContractUtils.Requires(switchType == c.Body.Type, "cases", Strings.AllCaseBodiesMustHaveSameType);
+                ContractUtils.Requires(testValueType == c.TestValues[0].Type, "cases", Strings.AllTestValuesMustHaveSameType);                
             }
 
-            ContractUtils.Requires(UniqueCaseValues(caseList, min, max), "cases", Strings.CaseValuesMustBeUnique);
-
-            return new SwitchExpression(value, label, caseList);
-        }
-
-        // Below his threshold we'll use brute force N^2 algorithm
-        private const int N2Threshold = 10;
-
-        // If values are in a small range, we'll use bit array
-        private const long BitArrayThreshold = 1024;
-
-        private static bool UniqueCaseValues(ReadOnlyCollection<SwitchCase> cases, int min, int max) {
-            int length = cases.Count;
-
-            // If we have small number of cases, use straightforward N2 algorithm
-            // which doesn't allocate memory
-            if (length < N2Threshold) {
-                for (int i = 0; i < length; i++) {
-                    SwitchCase sci = cases[i];
-                    if (sci.IsDefault) {
-                        continue;
-                    }
-                    for (int j = i + 1; j < length; j++) {
-                        SwitchCase scj = cases[j];
-                        if (scj.IsDefault) {
-                            continue;
-                        }
-
-                        if (sci.Value == scj.Value) {
-                            // Duplicate value found
-                            return false;
-                        }
-                    }
-                }
-
-                return true;
+            if (defaultBody == null) {
+                ContractUtils.Requires(switchType == typeof(void), "defaultBody", Strings.DefaultBodyMustBeSupplied);
+            } else {
+                ContractUtils.Requires(switchType == defaultBody.Type, "cases", Strings.AllCaseBodiesMustHaveSameType);
             }
 
-            // We have at least N2Threshold items so the min and max values
-            // are set to actual values and not the Int32.MaxValue and Int32.MaxValue
-            Debug.Assert(min <= max);
-            long delta = (long)max - (long)min;
-            if (delta < BitArrayThreshold) {
-                BitArray ba = new BitArray((int)delta + 1, false);
+            // Now we need to validate that switchValue.Type and testValueType
+            // make sense in an Equal node. Fortunately, Equal throws a
+            // reasonable error, so just call it.
+            var equal = Equal(switchValue, caseList[0].TestValues[0], false, comparison);
 
-                for (int i = 0; i < length; i++) {
-                    SwitchCase sc = cases[i];
-                    if (sc.IsDefault) {
-                        continue;
-                    }
-                    // normalize to 0 .. (max - min)
-                    int val = sc.Value - min;
-                    if (ba.Get(val)) {
-                        // Duplicate value found
-                        return false;
-                    }
-                    ba.Set(val, true);
-                }
+            // Get the comparison function from equals node.
+            comparison = equal.Method;
 
-                return true;
+            // if we found a non-boolean userdefined equals, we don't want it.
+            if (comparison != null && comparison.ReturnType != typeof(bool)) {
+                throw Error.EqualityMustReturnBoolean(comparison);
             }
 
-            // Too many values that are too spread around. Use dictionary
-            // Using Dictionary<int, object> as it is used elsewhere to
-            // minimize the impact of generic instantiation
-            Dictionary<int, object> dict = new Dictionary<int, object>(length);
-            for (int i = 0; i < length; i++) {
-                SwitchCase sc = cases[i];
-                if (sc.IsDefault) {
-                    continue;
-                }
-                int val = sc.Value;
-                if (dict.ContainsKey(val)) {
-                    // Duplicate value found
-                    return false;
-                }
-                dict[val] = null;
-            }
-
-            return true;
+            return new SwitchExpression(switchValue, defaultBody, comparison, caseList);
         }
     }
 }

@@ -782,7 +782,7 @@ class MSpecRunner
   end
 
   def regression(ruby, klass, method = nil)
-    cmd = %Q{"#{UserEnvironment.mri_binary}" "#{UserEnvironment.mspec}/bin/mspec" ci -t #{ruby} -fm -V -B "#{UserEnvironment.config}" "#{UserEnvironment.rubyspec}/1.8/core/#{klass}"}
+    cmd = %Q{"#{UserEnvironment.mri_binary}" "#{UserEnvironment.mspec}/bin/mspec" ci -t #{ruby} -fm -V -B "#{UserEnvironment.config}" "#{UserEnvironment.rubyspec}/core/#{klass}"}
     cmd += "/#{method}_spec.rb" unless method.nil?
     cmd += " > #{tempdir}/out.txt"
     system cmd
@@ -806,19 +806,19 @@ class MSpecRunner
   end
 
   def why_regression(ruby, klass, method = nil)
-    cmd = %Q{#{UserEnvironment.mri_binary} "#{UserEnvironment.mspec}/bin/mspec" ci -t #{ruby} -fs -V -B "#{UserEnvironment.config}" "#{UserEnvironment.rubyspec}/1.8/core/#{klass}"}
+    cmd = %Q{#{UserEnvironment.mri_binary} "#{UserEnvironment.mspec}/bin/mspec" ci -t #{ruby} -fs -V -B "#{UserEnvironment.config}" "#{UserEnvironment.rubyspec}/core/#{klass}"}
     cmd += "/#{method}_spec.rb" unless method.nil?
     system cmd
   end
 
   def test(ruby, klass, method = nil)
-    cmd = %Q{#{UserEnvironment.mri_binary} "#{UserEnvironment.mspec}/bin/mspec" run -t #{ruby} -Gcritical -V -fs -B "#{UserEnvironment.config}" "#{UserEnvironment.rubyspec}/1.8/core/#{klass}"}
+    cmd = %Q{#{UserEnvironment.mri_binary} "#{UserEnvironment.mspec}/bin/mspec" run -t #{ruby} -Gcritical -V -fs -B "#{UserEnvironment.config}" "#{UserEnvironment.rubyspec}/core/#{klass}"}
     cmd += "/#{method}_spec.rb" unless method.nil?
     system cmd
   end
 
   def baseline(ruby, klass, method = nil)
-    cmd = %Q{#{UserEnvironment.mri_binary} "#{UserEnvironment.mspec}/bin/mspec" tag -t #{ruby} -fs -V -Gcritical -B "#{UserEnvironment.config}" "#{UserEnvironment.rubyspec}/1.8/core/#{klass}"}
+    cmd = %Q{#{UserEnvironment.mri_binary} "#{UserEnvironment.mspec}/bin/mspec" tag -t #{ruby} -fs -V -Gcritical -B "#{UserEnvironment.config}" "#{UserEnvironment.rubyspec}/core/#{klass}"}
     cmd << "/#{method}_spec.rb" unless method.nil?
     system cmd
   end
@@ -828,9 +828,9 @@ class MSpecRunner
     return unless File.exist? "#{UserEnvironment.tags}\\critical_tags.txt"
     File.open("#{UserEnvironment.tags}\\critical_tags.txt", 'r') do |f|
       f.readlines.each do |line|
-        file,_,tag,*desc = line.chomp.split(":")
+        file,tag,*desc = line.chomp.split(":")
         fulltag = tag << ":" << desc.join(":")
-        filepath = "#{UserEnvironment.tags}/1.8/#{file}"
+        filepath = "#{UserEnvironment.tags}/#{file}"
         filedir = File.dirname(filepath)
         FileUtils.mkdir_p(filedir) unless File.exist?(filedir)
         FileUtils.touch(filepath) unless File.exist?(filepath)

@@ -20,15 +20,6 @@ using System.Diagnostics;
 namespace System.Dynamic {
     internal static class CollectionExtensions { 
 
-        internal static bool Any<T>(this IEnumerable<T> source, Func<T, bool> predicate) {
-            foreach (T element in source) {
-                if (predicate(element)) {
-                    return true;
-                }
-            }
-            return false;
-        }
-
         internal static T[] RemoveFirst<T>(this T[] array) {
             T[] result = new T[array.Length - 1];
             Array.Copy(array, 1, result, 0, result.Length);

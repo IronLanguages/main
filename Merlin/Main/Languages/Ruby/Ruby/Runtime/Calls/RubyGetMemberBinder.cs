@@ -19,6 +19,7 @@ using Microsoft.Scripting;
 using Microsoft.Scripting.Actions;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
+using IronRuby.Compiler;
 
 namespace IronRuby.Runtime.Calls {
     using IronRuby.Builtins;
@@ -51,10 +52,20 @@ namespace IronRuby.Runtime.Calls {
             var metaBuilder = new MetaObjectBuilder();
             var contextExpression = Ast.Constant(context);
 
-            metaBuilder.AddTargetTypeTest(target.Value, target.Expression, context, contextExpression);
+            RubyClass targetClass = context.GetImmediateClassOf(target.Value);
+            RubyMemberInfo method, methodMissing = null;
+            RubyMethodVisibility incompatibleVisibility = RubyMethodVisibility.None;
 
-            RubyMemberInfo method = context.ResolveMethod(target.Value, binder.Name, true).InvalidateSitesOnOverride();
-            if (method != null && RubyModule.IsMethodVisible(method, false)) {
+            using (targetClass.Context.ClassHierarchyLocker()) {
+                metaBuilder.AddTargetTypeTest(target.Value, targetClass, target.Expression, context, contextExpression);
+
+                method = targetClass.ResolveMethodForSiteNoLock(binder.Name, false, out incompatibleVisibility);
+                if (method == null) {
+                    methodMissing = targetClass.ResolveMethodForSiteNoLock(Symbols.MethodMissing, true);
+                }
+            }
+            
+            if (method != null) {
                 // we need to create a bound member:
                 metaBuilder.Result = Ast.Constant(new RubyMethod(target.Value, method, binder.Name));
             } else {
@@ -76,7 +87,7 @@ namespace IronRuby.Runtime.Calls {
                 //    This will not invoke the binder since the rule [1] is still valid.
                 //
                 object symbol = SymbolTable.StringToId(binder.Name);
-                RubyCallAction.BindToMethodMissing(metaBuilder, binder.Name,
+                RubyCallAction.BindToMethodMissing(metaBuilder, 
                     new CallArguments(
                         new DynamicMetaObject(contextExpression, BindingRestrictions.Empty, context),
                         new[] { 
@@ -84,8 +95,10 @@ namespace IronRuby.Runtime.Calls {
                             new DynamicMetaObject(Ast.Constant(symbol), BindingRestrictions.Empty, symbol) 
                         },
                         RubyCallSignature.Simple(1)
-                    ), 
-                    method != null
+                    ),
+                    binder.Name,
+                    methodMissing,
+                    incompatibleVisibility
                 );
             }
 

@@ -60,7 +60,7 @@ namespace IronRuby.StandardLibrary.Yaml {
         #endregion
 
         protected override Node CreateNode(object data) {
-            RubyMemberInfo method = _context.ResolveMethod(data, "to_yaml", false).InvalidateSitesOnOverride();
+            RubyMemberInfo method = _context.GetImmediateClassOf(data).ResolveMethodForSite("to_yaml", false);
 
             if (method == _objectToYamlMethod) {
                 return _ToYamlNode.Target(_ToYamlNode, _context, data, this);

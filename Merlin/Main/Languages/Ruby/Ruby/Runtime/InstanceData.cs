@@ -21,12 +21,10 @@ using Microsoft.Scripting.Utils;
 
 namespace IronRuby.Runtime {
     /// <summary>
-    /// Stores the per-instance data that all Ruby objects need
-    /// (frozen?, tainted?, instance_variables, etc)
-    /// 
+    /// Stores the per-instance data that all Ruby objects need (frozen?, tainted?, instance_variables, etc)
     /// Stored in a lookaside weak hashtable for types that don't implement IRubyObject (i.e. .NET types).
     /// </summary>
-    public class RubyInstanceData {
+    public sealed class RubyInstanceData {
         private static int _CurrentObjectId = 42; // Last unique Id we gave out.
 
         // These need to be seperate fields so we get atomic access to them

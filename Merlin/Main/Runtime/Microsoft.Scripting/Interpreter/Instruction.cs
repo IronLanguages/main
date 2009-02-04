@@ -427,7 +427,10 @@ namespace Microsoft.Scripting.Interpreter {
         }
 
         internal void AddCase(int test, int offset) {
-            _cases[test] = offset;
+            // First one wins if keys are duplicated
+            if (!_cases.ContainsKey(test)) {
+                _cases.Add(test, offset);
+            }
         }
         internal void AddDefault(int offset) {
             _defaultOffset = offset;

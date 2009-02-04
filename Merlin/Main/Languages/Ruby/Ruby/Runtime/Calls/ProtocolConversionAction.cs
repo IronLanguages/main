@@ -74,6 +74,10 @@ namespace IronRuby.Runtime.Calls {
                 return ConvertToIntAction.Instance;
             }
 
+            if (parameterType == typeof(double)) {
+                return ConvertToFAction.Instance;
+            }
+
             if (parameterType == typeof(Union<int, MutableString>)) {
                 return CompositeConversionAction.ToFixnumToStr;
             }
@@ -140,29 +144,39 @@ namespace IronRuby.Runtime.Calls {
                 }
             }
 
-            // check for type version:
-            metaBuilder.AddTargetTypeTest(args);
+            RubyClass targetClass = args.RubyContext.GetImmediateClassOf(args.Target);
+            Expression targetClassNameConstant = Ast.Constant(targetClass.GetNonSingletonClass().Name);
+            RubyMemberInfo respondToMethod;
+            ProtocolConversionAction selectedConversion = null;
+            RubyMemberInfo conversionMethod = null;
+            RubyMethodVisibility incompatibleRespondToVisibility = RubyMethodVisibility.None;
 
-            Expression targetClassNameConstant = Ast.Constant(ec.GetClassOf(args.Target).Name);
+            using (targetClass.Context.ClassHierarchyLocker()) {
+                // check for type version:
+                metaBuilder.AddTargetTypeTest(args.Target, targetClass, args.TargetExpression, args.RubyContext, args.ContextExpression);
 
-            // Kernel#respond_to? method is not overridden => we can optimize
-            RubyMemberInfo respondToMethod = ec.ResolveMethod(args.Target, Symbols.RespondTo, true).InvalidateSitesOnOverride();
-            if (respondToMethod == null ||
-                // the method is defined in library, hasn't been replaced by user defined method (TODO: maybe we should make this check better)
-                (respondToMethod.DeclaringModule == ec.KernelModule && respondToMethod is RubyMethodGroupInfo)) {
+                // we can optimize if Kernel#respond_to? method is not overridden:
+                respondToMethod = targetClass.ResolveMethodForSiteNoLock(Symbols.RespondTo, false, out incompatibleRespondToVisibility);
+                if (respondToMethod != null && respondToMethod.DeclaringModule == targetClass.Context.KernelModule && respondToMethod is RubyLibraryMethodInfo) { // TODO: better override detection
+                    respondToMethod = null;
 
-                ProtocolConversionAction selectedConversion = null;
-                RubyMemberInfo conversionMethod = null;
-                
-                foreach (var conversion in conversions) {
-                    selectedConversion = conversion;
-                    conversionMethod = ec.ResolveMethod(args.Target, conversion.ToMethodName, false).InvalidateSitesOnOverride();
-                    if (conversionMethod != null) {
-                        break;
+                    // get the first applicable conversion:
+                    foreach (var conversion in conversions) {
+                        selectedConversion = conversion;
+                        conversionMethod = targetClass.ResolveMethodForSiteNoLock(conversion.ToMethodName, false);
+                        if (conversionMethod != null) {
+                            break;
+                        }
                     }
                 }
+            }
 
-                if (conversionMethod == null) {
+            if (respondToMethod == null) {
+                if (incompatibleRespondToVisibility != RubyMethodVisibility.None) {
+                    // respond_to? is not visible:
+                    conversions[conversions.Length - 1].SetError(metaBuilder, targetClassNameConstant, args);
+                    return;
+                } else if (conversionMethod == null) {
                     // error:
                     selectedConversion.SetError(metaBuilder, targetClassNameConstant, args);
                     return;
@@ -179,10 +193,6 @@ namespace IronRuby.Runtime.Calls {
                     }
                     return;
                 }
-            } else if (!RubyModule.IsMethodVisible(respondToMethod, false)) {
-                // respond_to? is private:
-                conversions[conversions.Length - 1].SetError(metaBuilder, targetClassNameConstant, args);
-                return;
             }
 
             // slow path: invoke respond_to?, to_xxx and result validation:
@@ -395,7 +405,47 @@ namespace IronRuby.Runtime.Calls {
         protected override string/*!*/ ToMethodName { get { return Symbols.ToI; } }
         protected override MethodInfo ConversionResultValidator { get { return Methods.ToIntegerValidator; } }
     }
-    
+
+    /// <summary>
+    /// Calls to_f (in most cases) and wraps the result into double. It directly calls Kernel.Float for String, Fixnum and Bignum.
+    /// </summary>
+    public sealed class ConvertToFAction : ProtocolConversionAction<ConvertToFAction> {
+        protected override string/*!*/ TargetTypeName { get { return "Float"; } }
+        protected override string/*!*/ ToMethodName { get { return Symbols.ToF; } }
+        protected override MethodInfo ConversionResultValidator { get { return Methods.ToFloatValidator; } }
+
+        protected override bool TryImplicitConversion(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args) {
+            object target = args.Target;
+
+            if (args.Target == null) {
+                metaBuilder.SetError(Methods.CreateTypeConversionError.OpCall(Ast.Constant("nil"), Ast.Constant(TargetTypeName)));
+                return true;
+            }
+
+            if (target is double) {
+                metaBuilder.Result = AstUtils.Convert(args.TargetExpression, typeof(double));
+                return true;
+            }
+
+            if (target is int) {
+                metaBuilder.Result = AstUtils.Convert(AstUtils.Convert(args.TargetExpression, typeof(int)), typeof(double));
+                return true;
+            }
+            if (target is BigInteger) {
+                Expression bigInt = AstUtils.Convert(args.TargetExpression, typeof(BigInteger));
+                metaBuilder.Result = Ast.Call(bigInt, Methods.ConvertBignumToFloat);
+                return true;
+            }
+            if (target is MutableString) {
+                Expression str = AstUtils.Convert(args.TargetExpression, typeof(MutableString));
+                metaBuilder.Result = Ast.Call(Methods.ConvertStringToFloat, str);
+                return true;
+            }
+
+            return false;
+        }
+    }
+
     public sealed class ConvertToSymbolAction : ProtocolConversionAction<ConvertToSymbolAction> {
         protected override string/*!*/ ToMethodName { get { return Symbols.ToStr; } }
         protected override string/*!*/ TargetTypeName { get { return "Symbol"; } }

@@ -234,56 +234,6 @@ namespace System.Dynamic.Utils {
             }
         }
 
-        internal static bool IsGeneric(Type type) {
-            return type.ContainsGenericParameters || type.IsGenericTypeDefinition;
-        }
-
-        internal static bool CanCompareToNull(Type type) {
-            // This is a bit too conservative.
-            return !type.IsValueType;
-        }
-
-        /// <summary>
-        /// Returns a numerical code of the size of a type.  All types get both a horizontal
-        /// and vertical code.  Types that are lower in both dimensions have implicit conversions
-        /// to types that are higher in both dimensions.
-        /// </summary>
-        internal static bool GetNumericConversionOrder(TypeCode code, out int x, out int y) {
-            // implicit conversions:
-            //     0     1     2     3     4
-            // 0:       U1 -> U2 -> U4 -> U8
-            //          |     |     |
-            //          v     v     v
-            // 1: I1 -> I2 -> I4 -> I8
-            //          |     |     
-            //          v     v     
-            // 2:       R4 -> R8
-
-            switch (code) {
-                case TypeCode.Byte: x = 0; y = 0; break;
-                case TypeCode.UInt16: x = 1; y = 0; break;
-                case TypeCode.UInt32: x = 2; y = 0; break;
-                case TypeCode.UInt64: x = 3; y = 0; break;
-
-                case TypeCode.SByte: x = 0; y = 1; break;
-                case TypeCode.Int16: x = 1; y = 1; break;
-                case TypeCode.Int32: x = 2; y = 1; break;
-                case TypeCode.Int64: x = 3; y = 1; break;
-
-                case TypeCode.Single: x = 1; y = 2; break;
-                case TypeCode.Double: x = 2; y = 2; break;
-
-                default:
-                    x = y = 0;
-                    return false;
-            }
-            return true;
-        }
-
-        internal static bool IsImplicitlyConvertible(int fromX, int fromY, int toX, int toY) {
-            return fromX <= toX && fromY <= toY;
-        }
-
         internal static bool HasBuiltInEqualityOperator(Type left, Type right) {
             // If we have an interface and a reference type then we can do 
             // reference equality.
@@ -325,10 +275,6 @@ namespace System.Dynamic.Utils {
                 IsImplicitNullableConversion(source, destination);
         }
 
-        internal static bool IsImplicitlyConvertible(Type source, Type destination, bool considerUserDefined) {
-            return IsImplicitlyConvertible(source, destination) ||
-                (considerUserDefined && GetUserDefinedCoercionMethod(source, destination, true) != null);
-        }
 
         internal static MethodInfo GetUserDefinedCoercionMethod(Type convertFrom, Type convertToType, bool implicitOnly) {
             // check for implicit coercions first
@@ -524,10 +470,6 @@ namespace System.Dynamic.Utils {
             return null;
         }
 
-        internal static Type NoRef(Type type) {
-            return type.IsByRef ? type.GetElementType() : type;
-        }
-
         internal static bool IsUnsigned(Type type) {
             type = GetNonNullableType(type);
             switch (Type.GetTypeCode(type)) {
@@ -595,7 +537,7 @@ namespace System.Dynamic.Utils {
         /// </summary>
         internal static MethodInfo GetBooleanOperator(Type type, string name) {
             do {
-                MethodInfo result = type.GetMethod(name, AnyStatic, null, new Type[] { type }, null);
+                MethodInfo result = type.GetMethodValidated(name, AnyStatic, null, new Type[] { type }, null);
                 if (result != null && result.IsSpecialName && !result.ContainsGenericParameters) {
                     return result;
                 }

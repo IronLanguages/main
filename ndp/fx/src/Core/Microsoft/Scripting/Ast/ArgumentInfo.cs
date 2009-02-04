@@ -91,7 +91,7 @@ namespace System.Linq.Expressions {
         [Confined]
         public override bool Equals(object obj) {
             PositionalArgumentInfo arg = obj as PositionalArgumentInfo;
-            return arg != null && arg._position == _position;
+            return arg != null && arg._position == _position && arg.IsByRef == false;
         }
 
         /// <summary>
@@ -126,7 +126,7 @@ namespace System.Linq.Expressions {
     /// <summary>
     /// Describes an argument that is identified by name.
     /// </summary>
-    public sealed class NamedArgumentInfo : ArgumentInfo {
+    public class NamedArgumentInfo : ArgumentInfo {
         private readonly string _name;
 
         internal NamedArgumentInfo(string name) {
@@ -156,7 +156,7 @@ namespace System.Linq.Expressions {
         [Confined]
         public override bool Equals(object obj) {
             NamedArgumentInfo arg = obj as NamedArgumentInfo;
-            return arg != null && arg._name == _name;
+            return arg != null && arg._name == _name && arg.IsByRef == false;
         }
 
         /// <summary>
@@ -166,6 +166,25 @@ namespace System.Linq.Expressions {
         [Confined]
         public override int GetHashCode() {
             return _name.GetHashCode();
+        }
+    }
+
+    internal sealed class ByRefNamedArgumentInfo : NamedArgumentInfo {
+        internal ByRefNamedArgumentInfo(string name)
+            : base(name) {
+        }
+
+        internal override bool GetIsByRef() {
+            return true;
+        }
+
+        public override int GetHashCode() {
+            return base.GetHashCode() ^ unchecked((int)0x80000000);
+        }
+
+        public override bool Equals(object obj) {
+            ByRefNamedArgumentInfo arg = obj as ByRefNamedArgumentInfo;
+            return arg != null && arg.Name == Name;
         }
     }
 
@@ -195,9 +214,20 @@ namespace System.Linq.Expressions {
         /// </summary>
         /// <param name="position">A position of the argument in the call signature.</param>
         /// <returns>The new PositionalArgumentInfo.</returns>
-        public static PositionalArgumentInfo ByRefArgument(int position) {
+        public static PositionalArgumentInfo ByRefPositionalArgument(int position) {
             ContractUtils.Requires(position >= 0, "position", Strings.MustBePositive);
             return new ByRefPositionalArgumentInfo(position);
         }
+
+        /// <summary>
+        /// Returns a new NamedArgumentInfo that represents a named by ref argument in the dynamic binding process.
+        /// </summary>
+        /// <param name="name">The name of the argument at the call site.</param>
+        /// <returns>The new NamedArgumentInfo.</returns>
+        public static NamedArgumentInfo ByRefNamedArgument(string name) {
+            ContractUtils.Requires(!string.IsNullOrEmpty(name), "name");
+            return new ByRefNamedArgumentInfo(name);
+        }
+
     }
 }

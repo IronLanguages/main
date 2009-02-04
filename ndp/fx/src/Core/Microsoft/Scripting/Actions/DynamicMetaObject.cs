@@ -325,15 +325,6 @@ namespace System.Dynamic {
 
         // Internal helpers
 
-        internal static Type[] GetTypes(DynamicMetaObject[] objects) {
-            Type[] res = new Type[objects.Length];
-            for (int i = 0; i < objects.Length; i++) {
-                res[i] = objects[i].RuntimeType ?? objects[i].Expression.Type;
-            }
-
-            return res;
-        }
-
         /// <summary>
         /// Returns the list of expressions represented by the <see cref="DynamicMetaObject"/> instances.
         /// </summary>

@@ -41,7 +41,7 @@ namespace IronRuby.Compiler.Generation {
             // In Ruby, this simply returns the instance object
             // It's the callable site that's bound to the name through a RubyCallAction
             // Properties are equivalent to Ruby getter and setter methods
-            RubyClass cls = (clsObject as RubyClass);
+            RubyClass cls = clsObject as RubyClass;
             RubyMemberInfo method;
             // TODO: visibility
             if (cls == null || (method = cls.ResolveMethod(name, true)) == null || (method is RubyMethodGroupInfo)) {

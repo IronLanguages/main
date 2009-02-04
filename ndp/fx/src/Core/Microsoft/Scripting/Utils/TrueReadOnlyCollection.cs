@@ -14,21 +14,17 @@
  * ***************************************************************************/
 
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Dynamic.Utils;
 
-namespace System.Dynamic.Utils {
-    // Compares two ICollection<T>'s using element equality
-    internal sealed class ListEqualityComparer<T> : EqualityComparer<ICollection<T>> {
-        internal static readonly ListEqualityComparer<T> Instance = new ListEqualityComparer<T>();
-
-        private ListEqualityComparer() { }
-
-        // EqualityComparer<T> handles null and object identity for us
-        public override bool Equals(ICollection<T> x, ICollection<T> y) {
-            return x.ListEquals(y);
-        }
-
-        public override int GetHashCode(ICollection<T> obj) {
-            return obj.ListHashCode();
+namespace System.Runtime.CompilerServices {
+    sealed class TrueReadOnlyCollection<T> : ReadOnlyCollection<T> {
+        /// <summary>
+        /// Creates instnace of TrueReadOnlyCollection, wrapping passed in array.
+        /// !!! DOES NOT COPY THE ARRAY !!!
+        /// </summary>
+        internal TrueReadOnlyCollection(T[] list)
+            : base(list) {
         }
     }
 }

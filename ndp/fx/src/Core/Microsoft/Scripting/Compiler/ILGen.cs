@@ -37,7 +37,7 @@ namespace System.Linq.Expressions.Compiler {
         #region Instruction helpers
 
         internal static void EmitLoadArg(this ILGenerator il, int index) {
-            ContractUtils.Requires(index >= 0, "index");
+            Debug.Assert(index >= 0);
 
             switch (index) {
                 case 0:
@@ -63,7 +63,7 @@ namespace System.Linq.Expressions.Compiler {
         }
 
         internal static void EmitLoadArgAddress(this ILGenerator il, int index) {
-            ContractUtils.Requires(index >= 0, "index");
+            Debug.Assert(index >= 0);
 
             if (index <= Byte.MaxValue) {
                 il.Emit(OpCodes.Ldarga_S, (byte)index);
@@ -73,7 +73,7 @@ namespace System.Linq.Expressions.Compiler {
         }
 
         internal static void EmitStoreArg(this ILGenerator il, int index) {
-            ContractUtils.Requires(index >= 0, "index");
+            Debug.Assert(index >= 0);
 
             if (index <= Byte.MaxValue) {
                 il.Emit(OpCodes.Starg_S, (byte)index);
@@ -146,7 +146,7 @@ namespace System.Linq.Expressions.Compiler {
         }
 
         // Emits the Ldelem* instruction for the appropriate type
-        //CONFORMING
+
         internal static void EmitLoadElement(this ILGenerator il, Type type) {
             ContractUtils.RequiresNotNull(type, "type");
 
@@ -243,11 +243,6 @@ namespace System.Linq.Expressions.Compiler {
 
             il.Emit(OpCodes.Ldtoken, type);
             il.Emit(OpCodes.Call, typeof(Type).GetMethod("GetTypeFromHandle"));
-        }
-
-        internal static void EmitUnbox(this ILGenerator il, Type type) {
-            ContractUtils.RequiresNotNull(type, "type");
-            il.Emit(OpCodes.Unbox_Any, type);
         }
 
         #endregion
@@ -402,6 +397,14 @@ namespace System.Linq.Expressions.Compiler {
 
         internal static void EmitLong(this ILGenerator il, long value) {
             il.Emit(OpCodes.Ldc_I8, value);
+
+            //
+            // Now, emit convert to give the constant type information.
+            //
+            // Otherwise, it is treated as unsigned and overflow is not
+            // detected if it's used in checked ops.
+            //
+            il.Emit(OpCodes.Conv_I8);
         }
 
         internal static void EmitULong(this ILGenerator il, ulong value) {
@@ -458,7 +461,12 @@ namespace System.Linq.Expressions.Compiler {
             return false;
         }
 
-        //CONFORMING
+        internal static void EmitConstant(this ILGenerator il, object value) {
+            Debug.Assert(value != null);
+            EmitConstant(il, value, value.GetType());
+        }
+
+
         //
         // Note: we support emitting more things as IL constants than
         // Linq does
@@ -517,7 +525,7 @@ namespace System.Linq.Expressions.Compiler {
             return dt == null || ShouldLdtoken(dt);
         }
 
-        //CONFORMING
+
         private static bool TryEmitILConstant(this ILGenerator il, object value, Type type) {
             switch (Type.GetTypeCode(type)) {
                 case TypeCode.Boolean:
@@ -645,7 +653,7 @@ namespace System.Linq.Expressions.Compiler {
             }
         }
 
-        //CONFORMING
+
         private static void EmitCastToType(this ILGenerator il, Type typeFrom, Type typeTo) {
             if (!typeFrom.IsValueType && typeTo.IsValueType) {
                 il.Emit(OpCodes.Unbox_Any, typeTo);
@@ -661,7 +669,7 @@ namespace System.Linq.Expressions.Compiler {
             }
         }
 
-        //CONFORMING
+
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity")]
         private static void EmitNumericConversion(this ILGenerator il, Type typeFrom, Type typeTo, bool isChecked) {
             bool isFromUnsigned = TypeUtils.IsUnsigned(typeFrom);
@@ -788,7 +796,7 @@ namespace System.Linq.Expressions.Compiler {
             }
         }
 
-        //CONFORMING
+
         private static void EmitNullableToNullableConversion(this ILGenerator il, Type typeFrom, Type typeTo, bool isChecked) {
             Debug.Assert(TypeUtils.IsNullableType(typeFrom));
             Debug.Assert(TypeUtils.IsNullableType(typeTo));
@@ -823,7 +831,7 @@ namespace System.Linq.Expressions.Compiler {
             il.Emit(OpCodes.Ldloc, locTo);
         }
 
-        //CONFORMING
+
         private static void EmitNonNullableToNullableConversion(this ILGenerator il, Type typeFrom, Type typeTo, bool isChecked) {
             Debug.Assert(!TypeUtils.IsNullableType(typeFrom));
             Debug.Assert(TypeUtils.IsNullableType(typeTo));
@@ -837,7 +845,7 @@ namespace System.Linq.Expressions.Compiler {
             il.Emit(OpCodes.Ldloc, locTo);
         }
 
-        //CONFORMING
+
         private static void EmitNullableToNonNullableConversion(this ILGenerator il, Type typeFrom, Type typeTo, bool isChecked) {
             Debug.Assert(TypeUtils.IsNullableType(typeFrom));
             Debug.Assert(!TypeUtils.IsNullableType(typeTo));
@@ -847,7 +855,7 @@ namespace System.Linq.Expressions.Compiler {
                 il.EmitNullableToReferenceConversion(typeFrom);
         }
 
-        //CONFORMING
+
         private static void EmitNullableToNonNullableStructConversion(this ILGenerator il, Type typeFrom, Type typeTo, bool isChecked) {
             Debug.Assert(TypeUtils.IsNullableType(typeFrom));
             Debug.Assert(!TypeUtils.IsNullableType(typeTo));
@@ -861,7 +869,7 @@ namespace System.Linq.Expressions.Compiler {
             il.EmitConvertToType(nnTypeFrom, typeTo, isChecked);
         }
 
-        //CONFORMING
+
         private static void EmitNullableToReferenceConversion(this ILGenerator il, Type typeFrom) {
             Debug.Assert(TypeUtils.IsNullableType(typeFrom));
             // We've got a conversion from nullable to Object, ValueType, Enum, etc.  Just box it so that
@@ -869,7 +877,7 @@ namespace System.Linq.Expressions.Compiler {
             il.Emit(OpCodes.Box, typeFrom);
         }
 
-        //CONFORMING
+
         private static void EmitNullableConversion(this ILGenerator il, Type typeFrom, Type typeTo, bool isChecked) {
             bool isTypeFromNullable = TypeUtils.IsNullableType(typeFrom);
             bool isTypeToNullable = TypeUtils.IsNullableType(typeTo);
@@ -882,21 +890,21 @@ namespace System.Linq.Expressions.Compiler {
                 il.EmitNonNullableToNullableConversion(typeFrom, typeTo, isChecked);
         }
 
-        //CONFORMING
+
         internal static void EmitHasValue(this ILGenerator il, Type nullableType) {
             MethodInfo mi = nullableType.GetMethod("get_HasValue", BindingFlags.Instance | BindingFlags.Public);
             Debug.Assert(nullableType.IsValueType);
             il.Emit(OpCodes.Call, mi);
         }
 
-        //CONFORMING
+
         internal static void EmitGetValue(this ILGenerator il, Type nullableType) {
             MethodInfo mi = nullableType.GetMethod("get_Value", BindingFlags.Instance | BindingFlags.Public);
             Debug.Assert(nullableType.IsValueType);
             il.Emit(OpCodes.Call, mi);
         }
 
-        //CONFORMING
+
         internal static void EmitGetValueOrDefault(this ILGenerator il, Type nullableType) {
             MethodInfo mi = nullableType.GetMethod("GetValueOrDefault", System.Type.EmptyTypes);
             Debug.Assert(nullableType.IsValueType);

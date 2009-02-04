@@ -50,6 +50,13 @@ namespace System.Linq.Expressions.Compiler {
         internal readonly object Node;
 
         /// <summary>
+        /// True if this node corresponds to an IL method.
+        /// Can only be true if the Node is a LambdaExpression.
+        /// But inlined lambdas will have it set to false.
+        /// </summary>
+        internal readonly bool IsMethod;
+
+        /// <summary>
         /// Does this scope (or any inner scope) close over variables from any
         /// parent scope?
         /// Populated by VariableBinder
@@ -92,8 +99,9 @@ namespace System.Linq.Expressions.Compiler {
         /// </summary>
         private readonly Dictionary<ParameterExpression, Storage> _locals = new Dictionary<ParameterExpression, Storage>();
 
-        internal CompilerScope(object node) {
+        internal CompilerScope(object node, bool isMethod) {
             Node = node;
+            IsMethod = isMethod;
             var variables = GetVariables(node);
 
             Definitions = new Dictionary<ParameterExpression, VariableStorageKind>(variables.Count);
@@ -120,13 +128,13 @@ namespace System.Linq.Expressions.Compiler {
 
             AllocateLocals(lc);
 
-            if (IsLambda && _closureHoistedLocals != null) {
+            if (IsMethod && _closureHoistedLocals != null) {
                 EmitClosureAccess(lc, _closureHoistedLocals);
             }
 
             EmitNewHoistedLocals(lc);
 
-            if (IsLambda) {
+            if (IsMethod) {
                 EmitCachedVariables();
             }
 
@@ -138,7 +146,7 @@ namespace System.Linq.Expressions.Compiler {
         /// </summary>
         internal CompilerScope Exit() {
             // free scope's variables
-            if (!IsLambda) {
+            if (!IsMethod) {
                 foreach (Storage storage in _locals.Values) {
                     storage.FreeLocal();
                 }
@@ -232,7 +240,7 @@ namespace System.Linq.Expressions.Compiler {
                 }
 
                 // if this is a lambda, we're done
-                if (s.IsLambda) {
+                if (s.IsMethod) {
                     break;
                 }
             }
@@ -260,10 +268,6 @@ namespace System.Linq.Expressions.Compiler {
 
         #endregion
         
-        internal bool IsLambda {
-            get { return Node is LambdaExpression; }
-        }
-
         private void SetParent(LambdaCompiler lc, CompilerScope parent) {
             Debug.Assert(_parent == null && parent != this);
             _parent = parent;
@@ -298,7 +302,7 @@ namespace System.Linq.Expressions.Compiler {
                 lc.IL.EmitInt(i++);
                 Type boxType = typeof(StrongBox<>).MakeGenericType(v.Type);
 
-                if (lc.Parameters.Contains(v)) {
+                if (IsMethod && lc.Parameters.Contains(v)) {
                     // array[i] = new StrongBox<T>(argument);
                     int index = lc.Parameters.IndexOf(v);
                     lc.EmitLambdaArgument(index);
@@ -392,10 +396,15 @@ namespace System.Linq.Expressions.Compiler {
         private void AllocateLocals(LambdaCompiler lc) {
             foreach (ParameterExpression v in GetVariables()) {
                 if (Definitions[v] == VariableStorageKind.Local) {
+                    //
+                    // If v is in lc.Parameters, it is a parameter.
+                    // Otherwise, it is a local variable.
+                    //
+                    // Also, for inlined lambdas we'll create a local, which
+                    // is possibly a byref local if the parameter is byref.
+                    //
                     Storage s;
-                    //If v is in lc.Parameters, it is a parameter.
-                    //Otherwise, it is a local variable.
-                    if (lc.Parameters.Contains(v)) {
+                    if (IsMethod && lc.Parameters.Contains(v)) {
                         s = new ArgumentStorage(lc, v);
                     } else {
                         s = new LocalStorage(lc, v);

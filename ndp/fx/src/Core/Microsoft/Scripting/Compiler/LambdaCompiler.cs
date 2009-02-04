@@ -20,6 +20,7 @@ using System.Dynamic.Utils;
 using System.Reflection;
 using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
+using System.Threading;
 
 namespace System.Linq.Expressions.Compiler {
 
@@ -44,7 +45,7 @@ namespace System.Linq.Expressions.Compiler {
         private readonly MethodInfo _method;
 
         // Currently active LabelTargets and their mapping to IL labels
-        private LabelBlockInfo _labelBlock = new LabelBlockInfo(null, LabelBlockKind.Block);
+        private LabelScopeInfo _labelBlock = new LabelScopeInfo(null, LabelScopeKind.Lambda);
         // Mapping of labels used for "long" jumps (jumping out and into blocks)
         private readonly Dictionary<LabelTarget, LabelInfo> _labelInfo = new Dictionary<LabelTarget, LabelInfo>();
 
@@ -54,15 +55,8 @@ namespace System.Linq.Expressions.Compiler {
         // The lambda we are compiling
         private readonly LambdaExpression _lambda;
 
-        /// <summary>
-        /// Argument types
-        /// 
-        /// This list contains _all_ arguments on the underlying method builder (except for the
-        /// "this"). There are two views on the list. First provides the raw view (shows all
-        /// arguments), the second view provides view of the arguments which are in the original
-        /// lambda (so first argument, which may be closure argument, is skipped in that case)
-        /// </summary>
-        private readonly ReadOnlyCollection<Type> _paramTypes;
+        // True if the method's first argument is of type Closure
+        private readonly bool _hasClosureArgument;
 
         // True if we want to emitting debug symbols
         private readonly bool _emitDebugSymbols;
@@ -89,22 +83,22 @@ namespace System.Linq.Expressions.Compiler {
             _lambda = lambda;
             _method = method;
             _ilg = method.GetILGenerator();
-            _paramTypes = new ReadOnlyCollection<Type>(parameterTypes);
+            _hasClosureArgument = true;
 
             // These are populated by AnalyzeTree/VariableBinder
             _scope = tree.Scopes[lambda];
             _boundConstants = tree.Constants[lambda];
 
-            Initialize();
+            InitializeMethod();
         }
 
         /// <summary>
         /// Creates a lambda compiler that will compile into the provided Methodbuilder
         /// </summary>
         private LambdaCompiler(AnalyzedTree tree, LambdaExpression lambda, MethodBuilder method, bool emitDebugSymbols) {
-            bool closure = tree.Scopes[lambda].NeedsClosure;
+            _hasClosureArgument = tree.Scopes[lambda].NeedsClosure;
             Type[] paramTypes = GetParameterTypes(lambda);
-            if (closure) {
+            if (_hasClosureArgument) {
                 paramTypes = paramTypes.AddFirst(typeof(Closure));
             }
 
@@ -112,7 +106,7 @@ namespace System.Linq.Expressions.Compiler {
             method.SetParameters(paramTypes);
             var paramNames = lambda.Parameters.Map(p => p.Name);
             // parameters are index from 1, with closure argument we need to skip the first arg
-            int startIndex = closure ? 2 : 1;
+            int startIndex = _hasClosureArgument ? 2 : 1;
             for (int i = 0; i < paramNames.Length; i++) {
                 method.DefineParameter(i + startIndex, ParameterAttributes.None, paramNames[i]);
             }
@@ -122,17 +116,31 @@ namespace System.Linq.Expressions.Compiler {
             _typeBuilder = (TypeBuilder)method.DeclaringType;
             _method = method;
             _ilg = method.GetILGenerator();
-            _paramTypes = new ReadOnlyCollection<Type>(paramTypes);
             _emitDebugSymbols = emitDebugSymbols;
 
             // These are populated by AnalyzeTree/VariableBinder
             _scope = tree.Scopes[lambda];
             _boundConstants = tree.Constants[lambda];
 
-            Initialize();
+            InitializeMethod();
         }
 
-        private void Initialize() {
+        /// <summary>
+        /// Creates a lambda compiler for an inlined lambda
+        /// </summary>
+        private LambdaCompiler(LambdaCompiler parent, LambdaExpression lambda) {
+            _tree = parent._tree;
+            _lambda = lambda;
+            _method = parent._method;
+            _ilg = parent._ilg;
+            _hasClosureArgument = parent._hasClosureArgument;
+            _typeBuilder = parent._typeBuilder;
+            _emitDebugSymbols = parent._emitDebugSymbols;
+            _scope = _tree.Scopes[lambda];
+            _boundConstants = parent._boundConstants;
+        }
+
+        private void InitializeMethod() {
             // See if we can find a return label, so we can emit better IL
             AddReturnLabel(_lambda.Body);
             _boundConstants.EmitCacheConstants(this);
@@ -150,10 +158,6 @@ namespace System.Linq.Expressions.Compiler {
             get { return _lambda.Parameters; }
         }
 
-        private bool HasClosure {
-            get { return _paramTypes[0] == typeof(Closure); }
-        }
-
         #region Compiler entry points
         
         /// <summary>
@@ -169,7 +173,7 @@ namespace System.Linq.Expressions.Compiler {
             LambdaCompiler c = new LambdaCompiler(tree, lambda);
 
             // 3. Emit
-            c.EmitLambdaBody(null);
+            c.EmitLambdaBody();
 
             // 4. Return the delegate.
             return c.CreateDelegate();
@@ -189,7 +193,7 @@ namespace System.Linq.Expressions.Compiler {
             LambdaCompiler c = new LambdaCompiler(tree, lambda, method, emitDebugSymbols);
 
             // 3. Emit
-            c.EmitLambdaBody(null);
+            c.EmitLambdaBody();
         }
 
         #endregion
@@ -237,11 +241,7 @@ namespace System.Linq.Expressions.Compiler {
         /// arguments, followed by the real parameters stored in Parameters
         /// </summary>
         internal int GetLambdaArgument(int index) {
-            return index + (HasClosure ? 1 : 0) + (_method.IsStatic ? 0 : 1);
-        }
-
-        internal Type GetLambdaArgumentType(int index) {
-            return _paramTypes[index + (HasClosure ? 1 : 0)];
+            return index + (_hasClosureArgument ? 1 : 0) + (_method.IsStatic ? 0 : 1);
         }
 
         /// <summary>
@@ -253,7 +253,7 @@ namespace System.Linq.Expressions.Compiler {
         }
 
         internal void EmitClosureArgument() {
-            Debug.Assert(HasClosure, "must have a Closure argument");
+            Debug.Assert(_hasClosureArgument, "must have a Closure argument");
             Debug.Assert(_method.IsStatic, "must be a static method");
             _ilg.EmitLoadArg(0);
         }
@@ -262,6 +262,26 @@ namespace System.Linq.Expressions.Compiler {
             Debug.Assert(_method is DynamicMethod);
 
             return _method.CreateDelegate(_lambda.Type, new Closure(_boundConstants.ToArray(), null));
+        }
+
+        private FieldBuilder CreateStaticField(string name, Type type) {
+            // We are emitting into someone else's type. We don't want name
+            // conflicts, so choose a long name that is unlikely to confict.
+            // Naming scheme chosen here is similar to what the C# compiler
+            // uses.
+            return _typeBuilder.DefineField("<ExpressionCompilerImplementationDetails>{" + Interlocked.Increment(ref _Counter) + "}" + name, type, FieldAttributes.Static | FieldAttributes.Private);
+        }
+
+        /// <summary>
+        /// Creates an unitialized field suitible for private implementation details
+        /// Works with DynamicMethods or TypeBuilders.
+        /// </summary>
+        private MemberExpression CreateLazyInitializedField<T>(string name) {
+            if (_method is DynamicMethod) {
+                return Expression.Field(Expression.Constant(new StrongBox<T>()), "Value");
+            } else {
+                return Expression.Field(null, CreateStaticField(name, typeof(T)));
+            }
         }
     }
 }

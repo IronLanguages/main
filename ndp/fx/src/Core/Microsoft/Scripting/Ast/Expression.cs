@@ -15,13 +15,12 @@
 
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Globalization;
-using System.Reflection;
 using System.Dynamic.Utils;
-using System.Text;
-using System.Threading;
-using System.Diagnostics;
+using System.Globalization;
 using System.IO;
+using System.Reflection;
+using System.Runtime.CompilerServices;
+using System.Threading;
 
 namespace System.Linq.Expressions {
     /// <summary>
@@ -36,259 +35,17 @@ namespace System.Linq.Expressions {
         // protected ctors are part of API surface area
 
 #if !MICROSOFT_SCRIPTING_CORE
-        /******************************************************************************************************
-         * BUG BUG BUG BUG BUG BUG BUG BUG BUG BUG BUG BUG BUG BUG BUG BUG BUG BUG BUG BUG BUG BUG BUG BUG BUG 
-         *
-         * We need to switch to using ConditionalWeakHandle whenever that becomes available in our tools drop.
-         * Once that's done we can remove WeakDictionary entirely and just use mscorlib's ConditionalWeakTable.
-         */
-         
-         [Obsolete]
-         private class WeakDictionary<TKey, TValue> : IDictionary<TKey, TValue> {
-            // The one and only comparer instance.
-            static readonly IEqualityComparer<object> comparer = new WeakComparer<object>();
-    
-            IDictionary<object, TValue> dict = new Dictionary<object, TValue>(comparer);
-            int version, cleanupVersion;
-    
-    #if SILVERLIGHT // GC
-            WeakReference cleanupGC = new WeakReference(new object());
-    #else
-            int cleanupGC = 0;
-    #endif
-    
-            public WeakDictionary() {
+        private class ExtensionInfo {
+            public ExtensionInfo(ExpressionType nodeType, Type type) {
+                NodeType = nodeType;
+                Type = type;
             }
-    
-            #region IDictionary<TKey,TValue> Members
-    
-            public void Add(TKey key, TValue value) {
-                CheckCleanup();
-    
-                // If the WeakHash already holds this value as a key, it will lead to a circular-reference and result
-                // in the objects being kept alive forever. The caller needs to ensure that this cannot happen.
-                Debug.Assert(!dict.ContainsKey(value));
-    
-                dict.Add(new WeakObject<TKey>(key), value);
-            }
-    
-            public bool ContainsKey(TKey key) {
-                // We dont have to worry about creating "new WeakObject<TKey>(key)" since the comparer
-                // can compare raw objects with WeakObject<T>.
-                return dict.ContainsKey(key);
-            }
-    
-            [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1065:DoNotRaiseExceptionsInUnexpectedLocations")]
-            public ICollection<TKey> Keys {
-                get {
-                    throw ContractUtils.Unreachable;
-                }
-            }
-    
-            public bool Remove(TKey key) {
-                return dict.Remove(key);
-            }
-    
-            public bool TryGetValue(TKey key, out TValue value) {
-                return dict.TryGetValue(key, out value);
-            }
-    
-            [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1065:DoNotRaiseExceptionsInUnexpectedLocations")]
-            public ICollection<TValue> Values {
-                get {
-                    throw ContractUtils.Unreachable;
-                }
-            }
-    
-            public TValue this[TKey key] {
-                get {
-                    return dict[key];
-                }
-                set {
-                    // If the WeakHash already holds this value as a key, it will lead to a circular-reference and result
-                    // in the objects being kept alive forever. The caller needs to ensure that this cannot happen.
-                    Debug.Assert(!dict.ContainsKey(value));
-    
-                    dict[new WeakObject<TKey>(key)] = value;
-                }
-            }
-    
-            /// <summary>
-            /// Check if any of the keys have gotten collected
-            /// 
-            /// Currently, there is also no guarantee of how long the values will be kept alive even after the keys
-            /// get collected. This could be fixed by triggerring CheckCleanup() to be called on every garbage-collection
-            /// by having a dummy watch-dog object with a finalizer which calls CheckCleanup().
-            /// </summary>
-            void CheckCleanup() {
-                version++;
-    
-                long change = version - cleanupVersion;
-    
-                // Cleanup the table if it is a while since we have done it last time.
-                // Take the size of the table into account.
-                if (change > 1234 + dict.Count / 2) {
-                    // It makes sense to do the cleanup only if a GC has happened in the meantime.
-                    // WeakReferences can become zero only during the GC.
-    
-                    bool garbage_collected;
-#if SILVERLIGHT // GC.CollectionCount
-                    garbage_collected = !cleanupGC.IsAlive;
-                    if (garbage_collected) cleanupGC = new WeakReference(new object());
-#else
-                    int currentGC = GC.CollectionCount(0);
-                    garbage_collected = currentGC != cleanupGC;
-                    if (garbage_collected) cleanupGC = currentGC;
-#endif
-                    if (garbage_collected) {
-                        Cleanup();
-                        cleanupVersion = version;
-                    } else {
-                        cleanupVersion += 1234;
-                    }
-                }
-            }
-    
-            [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Reliability", "CA2004:RemoveCallsToGCKeepAlive")]
-            private void Cleanup() {
-    
-                int liveCount = 0;
-                int emptyCount = 0;
-    
-                foreach (WeakObject<TKey> w in dict.Keys) {
-                    if (w.Target != null)
-                        liveCount++;
-                    else
-                        emptyCount++;
-                }
-    
-                // Rehash the table if there is a significant number of empty slots
-                if (emptyCount > liveCount / 4) {
-                    Dictionary<object, TValue> newtable = new Dictionary<object, TValue>(liveCount + liveCount / 4, comparer);
-    
-                    foreach (WeakObject<TKey> w in dict.Keys) {
-                        object target = w.Target;
-    
-                        if (target != null)
-                            newtable[w] = dict[w];
-    
-                    }
-    
-                    dict = newtable;
-                }
-            }
-            #endregion
-    
-        #region ICollection<KeyValuePair<TKey,TValue>> Members
-    
-            public void Add(KeyValuePair<TKey, TValue> item) {
-                throw ContractUtils.Unreachable;
-            }
-    
-            public void Clear() {
-                throw ContractUtils.Unreachable;
-            }
-    
-            public bool Contains(KeyValuePair<TKey, TValue> item) {
-                throw ContractUtils.Unreachable;
-            }
-    
-            public void CopyTo(KeyValuePair<TKey, TValue>[] array, int arrayIndex) {
-                throw ContractUtils.Unreachable;
-            }
-    
-            [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1065:DoNotRaiseExceptionsInUnexpectedLocations")]
-            public int Count {
-                get {
-                    throw ContractUtils.Unreachable;
-                }
-            }
-    
-            [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1065:DoNotRaiseExceptionsInUnexpectedLocations")]
-            public bool IsReadOnly {
-                get {
-                    throw ContractUtils.Unreachable;
-                }
-            }
-    
-            public bool Remove(KeyValuePair<TKey, TValue> item) {
-                throw ContractUtils.Unreachable;
-            }
-    
-        #endregion
-    
-        #region IEnumerable<KeyValuePair<TKey,TValue>> Members
-    
-            public IEnumerator<KeyValuePair<TKey, TValue>> GetEnumerator() {
-                throw ContractUtils.Unreachable;
-            }
-    
-        #endregion
-    
-        #region IEnumerable Members
-    
-            System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() {
-                throw ContractUtils.Unreachable;
-            }
-    
-        #endregion
-            
-            // WeakComparer treats WeakObject as transparent envelope
-            sealed class WeakComparer<T> : IEqualityComparer<T> {
-                bool IEqualityComparer<T>.Equals(T x, T y) {
-                    WeakObject<T> wx = x as WeakObject<T>;
-                    if (wx != null)
-                        x = wx.Target;
-        
-                    WeakObject<T> wy = y as WeakObject<T>;
-                    if (wy != null)
-                        y = wy.Target;
-        
-                    return Object.Equals(x, y);
-                }
-        
-                int IEqualityComparer<T>.GetHashCode(T obj) {
-                    WeakObject<T> wobj = obj as WeakObject<T>;
-                    if (wobj != null)
-                        return wobj.GetHashCode();
-        
-                    return (obj == null) ? 0 : obj.GetHashCode();
-                }
-            }
-            
-            internal class WeakObject<T> {
-                WeakReference weakReference;
-                int hashCode;
-        
-                public WeakObject(T obj) {
-                    weakReference = new WeakReference(obj, true);
-                    hashCode = (obj == null) ? 0 : obj.GetHashCode();
-                }
-        
-                public T Target {
-                    get {
-                        return (T)weakReference.Target;
-                    }
-                }
-        
-                public override int GetHashCode() {
-                    return hashCode;
-                }
-        
-                public override bool Equals(object obj) {
-                    object target = weakReference.Target;
-                    if (target == null) {
-                        return false;
-                    }
-        
-                    return ((T)target).Equals(obj);
-                }
-            }
+
+            internal readonly ExpressionType NodeType;
+            internal readonly Type Type;
         }
-        
-#pragma warning disable 612
-        private static WeakDictionary<Expression, ExtensionInfo> _legacyCtorSupportTable;
-#pragma warning restore 612
+
+        private static ConditionalWeakTable<Expression, ExtensionInfo> _legacyCtorSupportTable;
 
         // LinqV1 ctor
         /// <summary>
@@ -299,24 +56,23 @@ namespace System.Linq.Expressions {
         [Obsolete("use a different constructor that does not take ExpressionType.  Then override GetExpressionType and GetNodeKind to provide the values that would be specified to this constructor.")]
         protected Expression(ExpressionType nodeType, Type type) {
             // Can't enforce anything that V1 didn't
-            if(_legacyCtorSupportTable == null) {
+            if (_legacyCtorSupportTable == null) {
                 Interlocked.CompareExchange(
-                    ref _legacyCtorSupportTable, 
-                    new WeakDictionary<Expression, ExtensionInfo>(),
+                    ref _legacyCtorSupportTable,
+                    new ConditionalWeakTable<Expression, ExtensionInfo>(),
                     null
                 );
             }
 
-            _legacyCtorSupportTable[this] = new ExtensionInfo(nodeType, type);
+            _legacyCtorSupportTable.Add(this, new ExtensionInfo(nodeType, type));
         }
-
 #endif
         /// <summary>
         /// Constructs a new instance of <see cref="Expression"/>.
         /// </summary>
         protected Expression() {
         }
-        
+
         /// <summary>
         /// The <see cref="ExpressionType"/> of the <see cref="Expression"/>.
         /// </summary>
@@ -324,7 +80,7 @@ namespace System.Linq.Expressions {
             get { return GetNodeKind(); }
         }
 
-        //CONFORMING
+
         /// <summary>
         /// The <see cref="Type"/> of the value represented by this <see cref="Expression"/>.
         /// </summary>
@@ -332,7 +88,7 @@ namespace System.Linq.Expressions {
         public Type Type {
             get { return GetExpressionType(); }
         }
-        
+
         /// <summary>
         /// Indicates that the node can be reduced to a simpler node. If this 
         /// returns true, Reduce() can be called to produce the reduced form.
@@ -364,7 +120,7 @@ namespace System.Linq.Expressions {
         /// </summary>
         /// <returns>The <see cref="Type"/> that represents the static type of the expression.</returns>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate")]
-        protected virtual Type GetExpressionType() {            
+        protected virtual Type GetExpressionType() {
 #if !MICROSOFT_SCRIPTING_CORE
             ExtensionInfo extInfo;
             if (_legacyCtorSupportTable.TryGetValue(this, out extInfo)) {
@@ -447,7 +203,7 @@ namespace System.Linq.Expressions {
             return node;
         }
 
-        //CONFORMING
+
         /// <summary>
         /// Creates a <see cref="String"/> representation of the Expression.
         /// </summary>
@@ -499,17 +255,17 @@ namespace System.Linq.Expressions {
             if (res != null) {
                 return res;
             }
-            
+
             // otherwise make sure only ROC every gets exposed
             Interlocked.CompareExchange<IList<T>>(
                 ref collection,
                 value.ToReadOnly(),
-                value 
+                value
             );
 
             // and return it
             return (ReadOnlyCollection<T>)collection;
-        }        
+        }
 
         /// <summary>
         /// Helper used for ensuring we only return 1 instance of a ReadOnlyCollection of T.
@@ -538,7 +294,7 @@ namespace System.Linq.Expressions {
 
             // and return what is not guaranteed to be a ROC
             return (ReadOnlyCollection<Expression>)collection;
-        }        
+        }
 
         /// <summary>
         /// Helper which is used for specialized subtypes which use ReturnReadOnly(ref object, ...). 
@@ -637,17 +393,5 @@ namespace System.Linq.Expressions {
                 throw new ArgumentException(Strings.ExpressionMustBeWriteable, paramName);
             }
         }
-
-#if !MICROSOFT_SCRIPTING_CORE
-        struct ExtensionInfo {
-            public ExtensionInfo(ExpressionType nodeType, Type type) {
-                NodeType = nodeType;
-                Type = type;
-            }
-
-            internal readonly ExpressionType NodeType;
-            internal readonly Type Type;
-        }
-#endif
     }
 }

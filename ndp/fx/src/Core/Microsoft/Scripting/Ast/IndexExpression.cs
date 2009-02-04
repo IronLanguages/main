@@ -16,10 +16,9 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
-using System.Reflection;
-using System.Dynamic;
 using System.Dynamic.Utils;
-using System.Text;
+using System.Reflection;
+using System.Runtime.CompilerServices;
 
 namespace System.Linq.Expressions {
     /// <summary>
@@ -59,7 +58,7 @@ namespace System.Linq.Expressions {
         /// <returns>The <see cref="Type"/> that represents the static type of the expression.</returns>
         protected override Type GetExpressionType() {
             if (_indexer != null) {
-                return _indexer.PropertyType; 
+                return _indexer.PropertyType;
             }
             return _instance.Type.GetElementType();
         }
@@ -252,9 +251,9 @@ namespace System.Linq.Expressions {
             ContractUtils.RequiresNotNull(arguments, "arguments");
 
             ValidateMethodInfo(method);
-            ContractUtils.Requires((method.CallingConvention & CallingConventions.VarArgs) == 0, "method", Strings.AccessorsCannotHaveVarArgs);            
+            ContractUtils.Requires((method.CallingConvention & CallingConventions.VarArgs) == 0, "method", Strings.AccessorsCannotHaveVarArgs);
             if (method.IsStatic) {
-                ContractUtils.Requires(instance == null, "instance", Strings.OnlyStaticMethodsHaveNullInstance); 
+                ContractUtils.Requires(instance == null, "instance", Strings.OnlyStaticMethodsHaveNullInstance);
             } else {
                 ContractUtils.Requires(instance != null, "method", Strings.OnlyStaticMethodsHaveNullInstance);
                 RequiresCanRead(instance, "instance");
@@ -297,7 +296,7 @@ namespace System.Linq.Expressions {
                     }
                 }
                 if (newArgs != null) {
-                    arguments = new ReadOnlyCollection<Expression>(newArgs);
+                    arguments = new TrueReadOnlyCollection<Expression>(newArgs);
                 }
 
             } else if (arguments.Count > 0) {
