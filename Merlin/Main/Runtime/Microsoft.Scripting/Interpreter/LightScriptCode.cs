@@ -39,14 +39,14 @@ namespace Microsoft.Scripting.Interpreter {
                 _optimizedScope = rewriter.Scope;
                 var compiler = new LightCompiler();
                 var interpreter = compiler.CompileTop(newLambda);
-                _optimizedCode = new LightLambda(interpreter, null);
+                _optimizedCode = new LightLambda(interpreter);
             } else {
                 if (_code != null) return;
                 var rewriter = new LightGlobalRewriter();
                 var newLambda = rewriter.RewriteLambda(Code, Code.Name, LanguageContext, optimized);
                 var compiler = new LightCompiler();
                 var interpreter = compiler.CompileTop(newLambda);
-                _code = new LightLambda(interpreter, null);
+                _code = new LightLambda(interpreter);
             }
         }
 

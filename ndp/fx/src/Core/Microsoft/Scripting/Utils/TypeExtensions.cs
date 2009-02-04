@@ -55,7 +55,7 @@ namespace System.Dynamic.Utils {
             return (mi.IsConstructor) ? mi.DeclaringType : ((MethodInfo)mi).ReturnType;
         }
 
-        private static CacheDict<MethodBase, ParameterInfo[]> _ParamInfoCache = new CacheDict<MethodBase, ParameterInfo[]>(75);
+        private static readonly CacheDict<MethodBase, ParameterInfo[]> _ParamInfoCache = new CacheDict<MethodBase, ParameterInfo[]>(75);
         
         internal static ParameterInfo[] GetParametersCached(this MethodBase method) {
             ParameterInfo[] pis;
@@ -67,6 +67,8 @@ namespace System.Dynamic.Utils {
             return pis;
         }
 
+        // Expression trees/compiler just use IsByRef, why do we need this?
+        // (see LambdaCompiler.EmitArguments for usage in the compiler)
         internal static bool IsByRefParameter(this ParameterInfo pi) {
             // not using IsIn/IsOut properties as they are not available in Silverlight:
             if (pi.ParameterType.IsByRef) return true;

@@ -15,13 +15,13 @@
 
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.Dynamic;
 using System.Dynamic.Utils;
 using System.Linq.Expressions;
 using System.Linq.Expressions.Compiler;
 using System.Reflection;
 using System.Threading;
-using System.Diagnostics;
 
 namespace System.Runtime.CompilerServices {
 
@@ -96,11 +96,13 @@ namespace System.Runtime.CompilerServices {
                 _SiteCtors = new CacheDict<Type, Func<CallSiteBinder, CallSite>>(100);
             }
             Func<CallSiteBinder, CallSite> ctor;
-            lock (_SiteCtors) {
-                if (!_SiteCtors.TryGetValue(delegateType, out ctor)) {
+
+            var ctors = _SiteCtors;
+            lock (ctors) {
+                if (!ctors.TryGetValue(delegateType, out ctor)) {
                     MethodInfo method = typeof(CallSite<>).MakeGenericType(delegateType).GetMethod("Create");
                     ctor = (Func<CallSiteBinder, CallSite>)Delegate.CreateDelegate(typeof(Func<CallSiteBinder, CallSite>), method);
-                    _SiteCtors.Add(delegateType, ctor);
+                    ctors.Add(delegateType, ctor);
                 }
             }
             return ctor(binder);

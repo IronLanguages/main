@@ -14,7 +14,6 @@
  * ***************************************************************************/
 
 using System.Collections.ObjectModel;
-using System.Diagnostics;
 using System.Dynamic.Utils;
 using System.Linq.Expressions;
 using System.Linq.Expressions.Compiler;
@@ -106,7 +105,7 @@ namespace System.Dynamic {
             // so it makes sense to restrict on the target's type.
             // ideally IDO's should do this, but they often miss this.
             if (args[0] as IDynamicObject != null) {
-                BindingRestrictions idoRestriction = BindingRestrictions.GetTypeRestriction(target.Expression, target.LimitType);
+                BindingRestrictions idoRestriction = BindingRestrictions.GetTypeRestriction(target);
                 bindingRestrictions = idoRestriction.Merge(bindingRestrictions);
             }
 

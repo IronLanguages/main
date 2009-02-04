@@ -33,7 +33,7 @@ namespace System.Dynamic {
         Dictionary<string, ComTypeEnumDesc> _enums;
         string _typeLibName;
 
-        private static Dictionary<Guid, ComTypeLibDesc> _CachedTypeLibDesc = new Dictionary<Guid, ComTypeLibDesc>();
+        private static readonly Dictionary<Guid, ComTypeLibDesc> _CachedTypeLibDesc = new Dictionary<Guid, ComTypeLibDesc>();
 
         private ComTypeLibDesc() {
             _enums = new Dictionary<string, ComTypeEnumDesc>();
@@ -75,8 +75,14 @@ namespace System.Dynamic {
                 }
             }
 
-            // cached the typelib using the guid as the dictionary key
+            // cache the typelib using the guid as the dictionary key
             lock (_CachedTypeLibDesc) {
+                //check if we are late and somebody already added the key.
+                ComTypeLibDesc curLibDesc;
+                if (_CachedTypeLibDesc.TryGetValue(typeLibAttr.guid, out curLibDesc)) {
+                    return curLibDesc;
+                }
+
                 _CachedTypeLibDesc.Add(typeLibAttr.guid, typeLibDesc);
             }
 

@@ -16,7 +16,6 @@
 using System.Collections.Generic;
 using System.Dynamic.Utils;
 using System.Linq.Expressions;
-using System.Linq.Expressions.Compiler;
 using System.Runtime.CompilerServices;
 
 namespace System.Dynamic {
@@ -128,7 +127,7 @@ namespace System.Dynamic {
                         Expression.Assign(
                             local,
                             Helpers.Convert(
-                                Expression.ArrayIndex(constsArg, Expression.Constant(i)),
+                                Expression.ArrayAccess(constsArg, Expression.Constant(i)),
                                 curConstType
                             )
                         )

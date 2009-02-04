@@ -503,24 +503,23 @@ namespace Microsoft.Scripting.Interpreter {
 
 
     public class CreateDelegateInstruction : Instruction {
-        private Type _type;
-        private Interpreter _interpreter;
-        private int _closureCount;
-        internal CreateDelegateInstruction(Type type, Interpreter interpreter, int closureCount) {
-            this._type = type;
-            this._interpreter = interpreter;
-            this._closureCount = closureCount;
+        private readonly LightDelegateCreator _creator;
+
+        internal CreateDelegateInstruction(LightDelegateCreator delegateCreator) {
+            this._creator = delegateCreator;
         }
 
-        public override int ConsumedStack { get { return _closureCount; } }
+        public override int ConsumedStack { get { return _creator.ClosureVariables.Count; } }
         public override int ProducedStack { get { return 1; } }
         public override int Run(StackFrame frame) {
-            StrongBox<object>[] closure = new StrongBox<object>[_closureCount];
+            StrongBox<object>[] closure = new StrongBox<object>[ConsumedStack];
             for (int i = closure.Length - 1; i >= 0; i-- ) {
                 closure[i] = (StrongBox<object>)frame.Pop();
             }
-            var ret = new LightLambda(_interpreter, closure);
-            frame.Push(ret.MakeDelegate(_type));
+
+            Delegate d = _creator.CreateDelegate(closure);
+
+            frame.Push(d);
             return +1;
         }
     }

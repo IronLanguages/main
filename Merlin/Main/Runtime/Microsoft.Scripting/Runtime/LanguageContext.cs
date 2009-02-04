@@ -454,10 +454,10 @@ namespace Microsoft.Scripting.Runtime {
             }
 
             public override DynamicMetaObject FallbackConvert(DynamicMetaObject self, DynamicMetaObject onBindingError) {
-                if (Type.IsAssignableFrom(self.LimitType)) {
+                if (Type.IsAssignableFrom(self.GetLimitType())) {
                     return new DynamicMetaObject(
                         self.Expression,
-                        BindingRestrictions.GetTypeRestriction(self.Expression, self.LimitType)
+                        BindingRestrictionsHelpers.GetRuntimeTypeRestriction(self.Expression, self.GetLimitType())
                     );
                 }
 
@@ -466,7 +466,7 @@ namespace Microsoft.Scripting.Runtime {
                         self,
                         DynamicMetaObject.EmptyMetaObjects,
                         typeof(ArgumentTypeException),
-                        String.Format("Expected {0}, got {1}", Type.FullName, self.LimitType.FullName)
+                        String.Format("Expected {0}, got {1}", Type.FullName, self.GetLimitType().FullName)
                     );
             }
 

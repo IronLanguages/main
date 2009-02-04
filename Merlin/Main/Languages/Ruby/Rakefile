@@ -19,12 +19,13 @@ require 'context'
 
 require 'tmpdir'
 include REXML
+include IronRubyUtils
 
 verbose(false) # default to non-verbose output
 
 IRONRUBY_COMPILER     = 'ir.exe'
 CS_COMPILER           = ENV['mono'].nil? ? 'csc' : 'gmcs'
-EXCLUDED_DIRECTORIES  = ['.svn', 'obj', '.', '..']
+EXCLUDED_DIRECTORIES  = ['obj', '.', '..']
 
 
 import 'rake/test.rake'

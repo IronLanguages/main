@@ -67,7 +67,7 @@ namespace System.Dynamic {
 
             // Number of arginfos matches number of metaobject arguments.
             if(args.Length != argInfos.Count){
-                throw new InvalidOperationException();
+                return false;
             }
 
             // Named arguments go after positional ones.

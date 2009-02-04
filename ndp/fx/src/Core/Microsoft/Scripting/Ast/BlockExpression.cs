@@ -16,7 +16,6 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
-
 using System.Dynamic.Utils;
 using System.Threading;
 
@@ -114,7 +113,7 @@ namespace System.Linq.Expressions {
         /// This helper is provided to allow re-writing of nodes to not depend on the specific optimized
         /// subclass of BlockExpression which is being used. 
         /// </summary>
-        internal virtual BlockExpression Rewrite(IList<ParameterExpression> variables, Expression[] args) {
+        internal virtual BlockExpression Rewrite(ReadOnlyCollection<ParameterExpression> variables, Expression[] args) {
             throw ContractUtils.Unreachable;
         }
 
@@ -176,7 +175,7 @@ namespace System.Linq.Expressions {
             return ReturnReadOnlyExpressions(this, ref _arg0);
         }
 
-        internal override BlockExpression Rewrite(IList<ParameterExpression> variables, Expression[] args) {
+        internal override BlockExpression Rewrite(ReadOnlyCollection<ParameterExpression> variables, Expression[] args) {
             Debug.Assert(args.Length == 2);
             Debug.Assert(variables == null || variables.Count == 0);
 
@@ -213,7 +212,7 @@ namespace System.Linq.Expressions {
             return ReturnReadOnlyExpressions(this, ref _arg0);
         }
 
-        internal override BlockExpression Rewrite(IList<ParameterExpression> variables, Expression[] args) {
+        internal override BlockExpression Rewrite(ReadOnlyCollection<ParameterExpression> variables, Expression[] args) {
             Debug.Assert(args.Length == 3);
             Debug.Assert(variables == null || variables.Count == 0);
 
@@ -252,7 +251,7 @@ namespace System.Linq.Expressions {
             return ReturnReadOnlyExpressions(this, ref _arg0);
         }
 
-        internal override BlockExpression Rewrite(IList<ParameterExpression> variables, Expression[] args) {
+        internal override BlockExpression Rewrite(ReadOnlyCollection<ParameterExpression> variables, Expression[] args) {
             Debug.Assert(args.Length == 4);
             Debug.Assert(variables == null || variables.Count == 0);
 
@@ -293,7 +292,7 @@ namespace System.Linq.Expressions {
             return ReturnReadOnlyExpressions(this, ref _arg0);
         }
 
-        internal override BlockExpression Rewrite(IList<ParameterExpression> variables, Expression[] args) {
+        internal override BlockExpression Rewrite(ReadOnlyCollection<ParameterExpression> variables, Expression[] args) {
             Debug.Assert(args.Length == 5);
             Debug.Assert(variables == null || variables.Count == 0);
 
@@ -301,7 +300,7 @@ namespace System.Linq.Expressions {
         }
     }
 
-    internal sealed class BlockN : BlockExpression {
+    internal class BlockN : BlockExpression {
         private IList<Expression> _expressions;         // either the original IList<Expression> or a ReadOnlyCollection if the user has accessed it.
 
         internal BlockN(IList<Expression> expressions) {
@@ -326,7 +325,7 @@ namespace System.Linq.Expressions {
             return ReturnReadOnly(ref _expressions);
         }
 
-        internal override BlockExpression Rewrite(IList<ParameterExpression> variables, Expression[] args) {
+        internal override BlockExpression Rewrite(ReadOnlyCollection<ParameterExpression> variables, Expression[] args) {
             Debug.Assert(variables == null || variables.Count == 0);
 
             return new BlockN(args);
@@ -386,11 +385,16 @@ namespace System.Linq.Expressions {
             return ReturnReadOnlyExpressions(this, ref _body);
         }
 
-        internal override BlockExpression Rewrite(IList<ParameterExpression> variables, Expression[] args) {
+        internal override BlockExpression Rewrite(ReadOnlyCollection<ParameterExpression> variables, Expression[] args) {
             Debug.Assert(args.Length == 1);
             Debug.Assert(variables == null || variables.Count == VariableCount);
 
-            return new Scope1(variables ?? VariablesList, args[0]);
+            if (variables != null && variables != VariablesList) {
+                // Need to validate the new variables (uniqueness, not byref)
+                ValidateVariables(variables, "variables");
+            }
+
+            return new Scope1(VariablesList, args[0]);
         }
     }
 
@@ -416,11 +420,16 @@ namespace System.Linq.Expressions {
             return ReturnReadOnly(ref _body);
         }
 
-        internal override BlockExpression Rewrite(IList<ParameterExpression> variables, Expression[] args) {
+        internal override BlockExpression Rewrite(ReadOnlyCollection<ParameterExpression> variables, Expression[] args) {
             Debug.Assert(args.Length == ExpressionCount);
             Debug.Assert(variables == null || variables.Count == VariableCount);
 
-            return new ScopeN(variables ?? VariablesList, args);
+            if (variables != null && variables != VariablesList) {
+                // Need to validate the new variables (uniqueness, not byref)
+                ValidateVariables(variables, "variables");
+            }
+
+            return new ScopeN(VariablesList, args);
         }
     }
 
@@ -661,14 +670,36 @@ namespace System.Linq.Expressions {
             RequiresCanRead(expressions, "expressions");
             var expressionList = expressions.ToReadOnly();
             ContractUtils.RequiresNotEmpty(expressionList, "expressions");
-            var varList = variables.ToReadOnly();
-            ContractUtils.RequiresNotNullItems(varList, "variables");
-            Expression.RequireVariablesNotByRef(varList, "variables");
+            var variableList = variables.ToReadOnly();
+            ValidateVariables(variableList, "variables");
 
             if (expressionList.Count == 1) {
-                return new Scope1(varList, expressionList[0]);
+                return new Scope1(variableList, expressionList[0]);
             } else {
-                return new ScopeN(varList, expressionList);
+                return new ScopeN(variableList, expressionList);
+            }
+        }
+
+        // Checks that all variables are non-null, not byref, and unique.
+        internal static void ValidateVariables(ReadOnlyCollection<ParameterExpression> varList, string collectionName) {
+            if (varList.Count == 0) {
+                return;
+            }
+
+            int count = varList.Count;
+            var set = new Set<ParameterExpression>(count);
+            for (int i = 0; i < count; i++) {
+                ParameterExpression v = varList[i];
+                if (v == null) {
+                    throw new ArgumentNullException(string.Format(System.Globalization.CultureInfo.CurrentCulture, "{0}[{1}]", collectionName, set.Count));
+                }
+                if (v.IsByRef) {
+                    throw Error.VariableMustNotBeByRef(v, v.Type);
+                }
+                if (set.Contains(v)) {
+                    throw Error.DuplicateVariable(v);
+                }
+                set.Add(v);
             }
         }
     }

@@ -27,6 +27,8 @@ using Microsoft.Scripting.Utils;
 using Microsoft.Scripting.Interpreter;
 
 namespace Microsoft.Scripting.Generation {
+    // TODO: keep this?
+    public delegate void ActionRef<T0, T1>(ref T0 arg0, ref T1 arg1);
 
     public static class CompilerHelpers {
         public static readonly MethodAttributes PublicStatic = MethodAttributes.Public | MethodAttributes.Static;
@@ -694,7 +696,7 @@ namespace Microsoft.Scripting.Generation {
         /// <param name="lambda">The lambda to compile.</param>
         /// <returns>A delegate which can interpret the lambda.</returns>
         public static Delegate LightCompile(this LambdaExpression lambda) {
-            return new LightLambda(new LightCompiler().CompileTop(lambda), null).MakeDelegate(lambda.Type);
+            return new LightLambda(new LightCompiler().CompileTop(lambda)).MakeDelegate(lambda.Type);
         }
 
         /// <summary>

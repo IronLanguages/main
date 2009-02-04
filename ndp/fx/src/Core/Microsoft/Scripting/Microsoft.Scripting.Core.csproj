@@ -136,8 +136,6 @@
     <Compile Include="..\..\..\..\..\..\Merlin\Main\Hosts\Silverlight\SilverlightVersion.cs" Condition=" '$(SilverlightBuild)' == 'true' ">
       <Link>Properties\SilverlightVersion.cs</Link>
     </Compile>
-    <Compile Include="Actions\BinaryOperationOnIndexBinder.cs" />
-    <Compile Include="Actions\BinaryOperationOnMemberBinder.cs" />
     <Compile Include="Actions\CallSiteOps.cs" />
     <Compile Include="Actions\InvokeMemberBinder.cs" />
     <Compile Include="Actions\BinaryOperationBinder.cs" />
@@ -162,8 +160,6 @@
     <Compile Include="Actions\SetIndexBinder.cs" />
     <Compile Include="Actions\SetMemberBinder.cs" />
     <Compile Include="Actions\SmallRuleSet.cs" />
-    <Compile Include="Actions\UnaryOperationOnIndexBinder.cs" />
-    <Compile Include="Actions\UnaryOperationOnMemberBinder.cs" />
     <Compile Include="Ast\IArgumentProvider.cs" />
     <Compile Include="Ast\ListArgumentProvider.cs" />
     <Compile Include="Compiler\ArgumentPrepender.cs" />
@@ -258,7 +254,6 @@
     <Compile Include="Utils\StrongBox.cs" />
     <Compile Include="Utils\TrueReadOnlyCollection.cs" />
     <Compile Include="Utils\TypeExtensions.cs" />
-    <Compile Include="DynamicNull.cs" />
     <Compile Include="Stubs.cs" />
   </ItemGroup>
   <ItemGroup>

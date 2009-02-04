@@ -63,7 +63,7 @@ namespace Microsoft.Scripting.Actions {
                 return MakeMetaMethodCall(signature, parameterBinder, targetInfo);
             } else {
                 // we can't call this object
-                return MakeCannotCallRule(target, target.LimitType);
+                return MakeCannotCallRule(target, target.GetLimitType());
             }
         }
 
@@ -255,7 +255,7 @@ namespace Microsoft.Scripting.Actions {
                         Ast.Constant(type.Name + " is not callable")
                     )
                 ),
-                self.Restrictions.Merge(BindingRestrictions.GetTypeRestriction(self.Expression, type))
+                self.Restrictions.Merge(BindingRestrictionsHelpers.GetRuntimeTypeRestriction(self.Expression, type))
             );
         }
 

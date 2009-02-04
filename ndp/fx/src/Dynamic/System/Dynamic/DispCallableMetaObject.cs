@@ -60,8 +60,9 @@ namespace System.Dynamic {
             var target = _callable.DispatchComObject;
             var name = _callable.MemberName;
 
-            if (target.TryGetPropertySetter(name, out method, value.LimitType) ||
-                target.TryGetPropertySetterExplicit(name, out method, value.LimitType)) {
+            bool holdsNull = value.Value == null && value.HasValue;
+            if (target.TryGetPropertySetter(name, out method, value.LimitType, holdsNull) ||
+                target.TryGetPropertySetterExplicit(name, out method, value.LimitType, holdsNull)) {
 
                 IList<ArgumentInfo> argInfos = binder.Arguments;
                 ComBinderHelpers.ProcessArgumentsForCom(ref indexes, ref argInfos);

@@ -191,35 +191,6 @@ namespace System.Linq.Expressions.Compiler {
             }
         }
 
-        private void EmitArrayIndexAssignment(BinaryExpression node, EmitAs emitAs) {
-            Debug.Assert(node.Left.NodeType == ExpressionType.ArrayIndex);
-            var arrayIndex = (BinaryExpression)node.Left;
-
-            // Emit array object
-            EmitInstance(arrayIndex.Left, arrayIndex.Left.Type);
-
-            // Emit index
-            EmitExpression(arrayIndex.Right);
-
-            // Emit value
-            EmitExpression(node.Right);
-
-            // Save the expression value, if needed
-            LocalBuilder temp = null;
-            if (emitAs != EmitAs.Void) {
-                _ilg.Emit(OpCodes.Dup);
-                _ilg.Emit(OpCodes.Stloc, temp = GetLocal(node.Type));
-            }
-
-            _ilg.EmitStoreElement(arrayIndex.Type);
-
-            // Restore the value
-            if (emitAs != EmitAs.Void) {
-                _ilg.Emit(OpCodes.Ldloc, temp);
-                FreeLocal(temp);
-            }
-        }
-
         private void EmitGetIndexCall(IndexExpression node, Type objectType) {
             if (node.Indexer != null) {
                 // For indexed properties, just call the getter
@@ -520,9 +491,6 @@ namespace System.Linq.Expressions.Compiler {
                     return;
                 case ExpressionType.Parameter:
                     EmitVariableAssignment(node, emitAs);
-                    return;
-                case ExpressionType.ArrayIndex:
-                    EmitArrayIndexAssignment(node, emitAs);
                     return;
                 default:
                     throw Error.InvalidLvalue(node.Left.NodeType);
