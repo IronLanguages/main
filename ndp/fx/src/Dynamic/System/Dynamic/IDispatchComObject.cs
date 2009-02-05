@@ -101,7 +101,7 @@ namespace System.Dynamic {
 
         private readonly IDispatch _dispatchObject;
         private ComTypeDesc _comTypeDesc;
-        private static Dictionary<Guid, ComTypeDesc> _CacheComTypeDesc = new Dictionary<Guid, ComTypeDesc>();
+        private static readonly Dictionary<Guid, ComTypeDesc> _CacheComTypeDesc = new Dictionary<Guid, ComTypeDesc>();
 
         internal IDispatchComObject(IDispatch rcw)
             : base(rcw) {
@@ -246,7 +246,7 @@ namespace System.Dynamic {
             }
         }
 
-        internal bool TryGetPropertySetterExplicit(string name, out ComMethodDesc method, Type limitType) {
+        internal bool TryGetPropertySetterExplicit(string name, out ComMethodDesc method, Type limitType, bool holdsNull) {
             EnsureScanDefinedMethods();
 
             int dispId;
@@ -261,7 +261,7 @@ namespace System.Dynamic {
                 ComMethodDesc putref = new ComMethodDesc(name, dispId, ComTypes.INVOKEKIND.INVOKE_PROPERTYPUTREF);
                 _comTypeDesc.AddPutRef(name, putref);
 
-                if (ComBinderHelpers.PreferPut(limitType)) {
+                if (ComBinderHelpers.PreferPut(limitType, holdsNull)) {
                     method = put;
                 } else {
                     method = putref;
@@ -587,10 +587,10 @@ namespace System.Dynamic {
             }
         }
 
-        internal bool TryGetPropertySetter(string name, out ComMethodDesc method, Type limitType) {
+        internal bool TryGetPropertySetter(string name, out ComMethodDesc method, Type limitType, bool holdsNull) {
             EnsureScanDefinedMethods();
 
-            if (ComBinderHelpers.PreferPut(limitType)) {
+            if (ComBinderHelpers.PreferPut(limitType, holdsNull)) {
                 return _comTypeDesc.TryGetPut(name, out method) ||
                     _comTypeDesc.TryGetPutRef(name, out method);
             } else {

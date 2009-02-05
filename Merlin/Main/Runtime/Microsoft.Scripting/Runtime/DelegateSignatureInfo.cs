@@ -34,8 +34,12 @@ namespace Microsoft.Scripting.Runtime {
         private readonly LanguageContext _context;
         private readonly Type _returnType;
         private readonly ParameterInfo[] _parameters;
+        private readonly ConvertBinder _convert;
+        private readonly InvokeBinder _invoke;
 
         internal static readonly object TargetPlaceHolder = new object();
+        internal static readonly object CallSitePlaceHolder = new object();
+        internal static readonly object ConvertSitePlaceHolder = new object();
 
         internal DelegateSignatureInfo(LanguageContext context, Type returnType, ParameterInfo[] parameters) {
             Assert.NotNull(context, returnType);
@@ -44,6 +48,17 @@ namespace Microsoft.Scripting.Runtime {
             _context = context;
             _parameters = parameters;
             _returnType = returnType;
+            
+            if (_returnType != typeof(void)) {
+                _convert = _context.CreateConvertBinder(_returnType, true);
+            }
+            
+            ArgumentInfo[] args = new ArgumentInfo[_parameters.Length];
+            for (int i = 0; i < args.Length; i++) {
+                args[i] = Expression.PositionalArg(i);
+            }
+
+            _invoke = _context.CreateInvokeBinder(args);
         }
 
         [Confined]
@@ -105,7 +120,7 @@ namespace Microsoft.Scripting.Runtime {
             object[] constants = EmitClrCallStub(cg);
 
             // Save the constants in the delegate info class
-            return new DelegateInfo(cg.Finish(), constants);
+            return new DelegateInfo(cg.Finish(), constants, this);
         }
 
         /// <summary>
@@ -114,31 +129,23 @@ namespace Microsoft.Scripting.Runtime {
         private object[] EmitClrCallStub(ILGen cg) {
 
             List<ReturnFixer> fixers = new List<ReturnFixer>(0);
-            ArgumentInfo[] args = new ArgumentInfo[_parameters.Length];
-            for (int i = 0; i < args.Length; i++) {
-                args[i] = Expression.PositionalArg(i);
-            }
-            ConvertBinder convert = _context.CreateConvertBinder(_returnType, true);
-            InvokeBinder action = _context.CreateInvokeBinder(args);
-
-
             // Create strongly typed return type from the site.
             // This will, among other things, generate tighter code.
             Type[] siteTypes = MakeSiteSignature();
 
-            CallSite callSite = CallSite.Create(DynamicSiteHelpers.MakeCallSiteDelegate(siteTypes), action);
+            CallSite callSite = CallSite.Create(DynamicSiteHelpers.MakeCallSiteDelegate(siteTypes), InvokeBinder);
             Type siteType = callSite.GetType();
 
             Type convertSiteType = null;
             CallSite convertSite = null;
 
             if (_returnType != typeof(void)) {
-                convertSite = CallSite.Create(DynamicSiteHelpers.MakeCallSiteDelegate(typeof(object), _returnType), convert);
+                convertSite = CallSite.Create(DynamicSiteHelpers.MakeCallSiteDelegate(typeof(object), _returnType), ConvertBinder);
                 convertSiteType = convertSite.GetType();
             }
 
             // build up constants array
-            object[] constants = new object[] { TargetPlaceHolder, callSite, convertSite };
+            object[] constants = new object[] { TargetPlaceHolder, CallSitePlaceHolder, ConvertSitePlaceHolder };
             const int TargetIndex = 0, CallSiteIndex = 1, ConvertSiteIndex = 2;
 
             LocalBuilder convertSiteLocal = null;
@@ -205,7 +212,7 @@ namespace Microsoft.Scripting.Runtime {
             }
         }
 
-        private Type[] MakeSiteSignature() {
+        internal Type[] MakeSiteSignature() {
             Type[] sig = new Type[_parameters.Length + 2];
             
             // target object
@@ -224,6 +231,24 @@ namespace Microsoft.Scripting.Runtime {
             sig[sig.Length - 1] = typeof(object);
 
             return sig;
+        }
+
+        internal Type ReturnType {
+            get {
+                return _returnType;
+            }
+        }
+
+        internal ConvertBinder ConvertBinder {
+            get {
+                return _convert;
+            }
+        }
+
+        internal InvokeBinder InvokeBinder {
+            get {
+                return _invoke;
+            }
         }
     }
 }

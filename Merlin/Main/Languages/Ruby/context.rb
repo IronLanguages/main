@@ -20,11 +20,10 @@ require 'fileutils'
 require 'tempfile'
 
 ENV['HOME'] ||= ENV['USERPROFILE']
-SVN_ROOT = Pathname.new 'c:/svn/trunk'
 EXCLUDED_EXTENSIONS   = %w[.old .suo .vspscc .vssscc .user .log .pdb .cache .swp]
 EXCLUDED_FILES = "dirs.proj makefile sources .gitignore"
 DEFAULT_ROBOCOPY_OPTIONS = "/XF *#{EXCLUDED_EXTENSIONS.join(' *')} #{EXCLUDED_FILES} /XD .git /NP /COPY:DAT /A-:R "
-
+CURRENT_DIR = File.dirname(File.expand_path(__FILE__))
 
 class Pathname
   def filtered_subdirs(extras = [])
@@ -46,58 +45,6 @@ class Pathname
   def filtered_files
     raise "Cannot call filtered_files on a filename path: #{self}" if !directory?
     files.find_all { |f| !EXCLUDED_EXTENSIONS.include?((self + f).extname) }.map { |f| f.downcase }
-  end
-end
-
-class String
-  def change_tag!(name, value = '')
-    change_tag_value!(name, "(.*?)", value)
-  end
-
-  def change_tag_value!(name, old_value, new_value)
-    pattern = Regexp.new "\<#{name}\>#{old_value}\<\/#{name}\>", Regexp::MULTILINE
-    self.gsub! pattern, "\<#{name}\>#{new_value}\<\/#{name}\>"
-  end
-
-  def change_configuration!(name, value)
-    source = self.clone
-    group = "<PropertyGroup Condition=\" '$(Configuration)|$(Platform)' == '#{name}' \">"
-    found = false
-    self.replace ''
-    source.each do |line|
-      match = line.match /\<DefineConstants\>/
-      index = match.nil? ? -1 : match.begin(0)
-      self << (found && index > 0 ? " " * 4 + "<DefineConstants>#{value}</DefineConstants>\n" : line)
-      found = true if line.include? group
-      found = false if line.include? "</PropertyGroup>"
-    end
-  end
-end
-
-module SvnProvider
-  def add(path)
-    exec_f "svn add --force #{path}"
-  end
-
-  def delete(path)
-    exec_f "svn delete --force #{path}"
-  end
-
-  def checkout(path)
-  end
-end
-
-module TfsProvider
-  def add(path)
-    exec_f "tf add #{path}"
-  end
-
-  def delete(path)
-    exec_f "tf delete #{path}"
-  end
-
-  def checkout(path)
-    exec_f "tf checkout #{path}"
   end
 end
 
@@ -272,495 +219,232 @@ module IronRubyUtils
     rescue
     end
   end
-end
 
-class ProjectContext
-  Mapping = Struct.new(:merlin_path, :svn_path, :recurse)
-  class CommandContext
-    include IronRubyUtils
-
-
-    # context is either :source or :target. project_context is reference
-    # to ProjectContext subclass class
-
-    def initialize(context, project_context)
-      if context == :source || context == :target
-        @project_context = project_context
-        @context = context
-      else
-        raise "CommandContext#initialize(context) must be :source or :target"
-      end
-    end
-
-    def get_mapping(name)
-      mapping = @project_context.resolve(name)
-      raise "cannot find #{name} in ProjectContext" if mapping.nil?
-      mapping
-    end
-
-    # There are three things to consider when getting the source directory path
-    # 1) The context (source or destination) we are running in
-    # 2) The name of the mapping that we want to look up the source path in
-    # 3) Whether we are running in MERLIN_ROOT or SVN_ROOT
-
-    def get_source_dir(name)
-      mapping = get_mapping name
-      context_path = @project_context.source
-      context_path + (@project_context.is_merlin? ? mapping.merlin_path : mapping.svn_path)
-    end
-
-    # Getting the target directory path is the same as source except for the
-    # reversal of logic around whether to get svn_path or merlin_path based on
-    # is_merlin? status
-
-    def get_target_dir(name)
-      mapping = get_mapping name
-      context_path = @project_context.target
-      context_path + (@project_context.is_merlin? ? mapping.svn_path : mapping.merlin_path)
-    end
-
-    def get_relative_target_dir(name)
-      mapping = get_mapping name
-      @project_context.is_merlin? ? mapping.svn_path : mapping.merlin_path
-    end
-
-    def is_recursive?(name)
-      get_mapping(name).recurse
-    end
-
-    def copy_to_temp_dir(name, temp_dir, extras = [])
-      IronRuby.source_context do
-        source = get_source_dir(name)
-        target = get_relative_target_dir(name)
-
-        if is_recursive? name
-          source_dirs = source.filtered_subdirs(extras)
-          source_dirs.each { |dir| copy_dir dir, temp_dir + target + dir.relative_path_from(source) }
-        else
-          copy_dir source, temp_dir + target
-        end
-      end
-    end
-
-    def del(name, *paths)
-      dir = name.is_a?(Symbol) ? get_source_dir(name) : name
-      Dir.chdir(dir) { paths.each { |path| exec_f %Q{del "#{path}"} } }
-    end
-
-    def chdir(env, &b)
-      dir = env.is_a?(Symbol) ? get_source_dir(env) : env
-      Dir.chdir(dir) { instance_eval(&b) }
-    end
-
-    def rd(name)
-      path = name.is_a?(Symbol) ? get_source_dir(name) : name
-      FileUtils.rm_rf path
-    end
-
-    def mkdir(name)
-      path = name.is_a?(Symbol) ? get_source_dir(name) : name
-      FileUtils.mkdir_p path
-    end
-
-    def generate_temp_dir
-      layout = Pathname.new(Dir.tmpdir) + 'layout'
-      del   Pathname.new(Dir.tmpdir), 'rake_transform.log'
-      rd    layout
-      mkdir layout
-      layout
-    end
-
-    # Source transformation related methods
-
-    def diff_directories(temp_dir)
-      source_dirs, target_dirs = [], []
-
-      nodes = [:root, :gppg, :dlr_core, :dlr_libs, :dlr_com, :ironruby, :libraries, :tests, :console, :generator, :test_runner, :scanner, :yaml, :stdlibs, :ironlibs]
-      nodes.each do |node|
-        if is_recursive? node
-          source_dirs += (temp_dir + get_relative_target_dir(node)).filtered_subdirs.map { |d| d.relative_path_from(temp_dir).downcase }
-
-          # Target directory may not exist, so we only add if we find it there
-          if get_target_dir(node).directory?
-            target_dirs += get_target_dir(node).filtered_subdirs.map { |d| d.relative_path_from(@project_context.target).downcase }
-          end
-        else
-          # This is also an unusual case - since there is a 1:1 mapping by
-          # definition in a non-recursive directory mapping, this will be
-          # flagged only as a change candidate and not an add or a delete.
-          source_dirs << get_relative_target_dir(node).downcase
-
-          # Target directory may not exist, so we only add if we find it there
-          target_dirs << get_relative_target_dir(node).downcase if get_target_dir(node).directory?
-        end
-      end
-
-      added             = source_dirs - target_dirs
-      removed           = target_dirs - source_dirs
-      change_candidates = source_dirs & target_dirs
-
-      return added, removed, change_candidates
-    end
-
-    def push_to_target(temp_dir)
-      rake_output_message "\n#{'=' * 78}\nApplying source changes to target source repository\n\n"
-      rake_output_message "Computing directory structure changes ...\n"
-
-      added, removed, change_candidates = diff_directories(temp_dir)
-
-      dest = @project_context.target
-
-      rake_output_message "Adding new directories to target source control\n"
-      added.each do |dir|
-        copy_dir(temp_dir + dir, dest + dir)
-        add(dest + dir)
-      end
-
-      rake_output_message "Deleting directories from target source control\n"
-      removed.each do |dir|
-        rd dest + dir
-        delete dest + dir
-      end
-
-      rake_output_message "Copying files in changed directories to target source control\n"
-      change_candidates.each do |dir|
-        src_file_list = (temp_dir + dir).filtered_files
-        dest_file_list = (dest + dir).filtered_files
-
-        added             = src_file_list - dest_file_list
-        removed           = dest_file_list - src_file_list
-        change_candidates = src_file_list & dest_file_list
-
-        added.each do |file|
-          copy temp_dir + dir + file, dest + dir + file
-          add dest + dir + file
-        end
-
-        removed.each do |file|
-          delete dest + dir + file
-        end
-
-        change_candidates.each do |file|
-          source_file = temp_dir + dir + file
-          dest_file = dest + dir + file
-
-          if !compare_file(source_file, dest_file)
-            checkout dest_file
-            copy source_file, dest_file
-          end
-        end
-      end
-    end
-
-    # Compiler-related methods
-
-    def resgen(base_path, resource_map)
-      resource_map.each_pair do |input, output|
-        exec %Q{resgen "#{base_path + input.dup}" "#{build_path + output}"}
-      end
-    end
-
-    def configuration
-      ENV['configuration'].nil? ? :debug : ENV['configuration'].to_sym
-    end
-
-    def clr
-      if ENV['mono'].nil?
-        ENV['clr'].nil? ? :desktop : ENV['clr'].to_sym
-      else
-        :mono
-      end
-    end
-
-    def platform
-      ENV['platform'].nil? ? :windows : ENV['platform'].to_sym
-    end
-
-    def resolve_framework_path(file)
-      Configuration.resolve_framework_path(clr, file)
-    end
-
-    def build_path
-      get_source_dir(:build) + "#{clr == :desktop ? configuration : "#{clr}_#{configuration}"}"
-    end
-
-    def compiler_switches
-      Configuration.get_switches(clr, configuration)
-    end
-
-    def references(refs, working_dir)
-      references = Configuration.get_references(clr)
-      refs.each do |ref|
-        references << if ref =~ /^\!/
-          resolve_framework_path(ref[1..ref.length])
-        else
-          (build_path + ref).relative_path_from(working_dir)
-        end
-      end unless refs.nil?
-      references
-    end
-
-    def get_case_sensitive_path(pathname)
-      elements = pathname.split '\\'
-      result = Pathname.new '.'
-      elements.each do |element|
-        entry = result.entries.find { |p| p.downcase == element.downcase }
-        result = result + entry
-      end
-      result.to_s
-    end
-
-    def get_compile_path_list(csproj)
-      csproj ||= '*.csproj' 
-      cs_proj_files = Dir[csproj]
-      if cs_proj_files.length == 1
-        doc = REXML::Document.new(File.open(cs_proj_files.first))
-        result = doc.elements.collect("/Project/ItemGroup/Compile") { |c| c.attributes['Include'] }
-        result.delete_if { |e| e =~ /(Silverlight\\SilverlightVersion.cs|System\\Dynamic\\Parameterized.System.Dynamic.cs)/ }
-        result.map! { |p| get_case_sensitive_path(p) } if ENV['mono']
-        result
-      else
-        raise ArgumentError.new("Found more than one .csproj file in directory! #{cs_proj_files.join(", ")}")
-      end
-    end
-
-    def compile(name, args)
-      banner name.to_s
-      working_dir = get_source_dir(name)
-      build_dir = build_path
-
-      Dir.chdir(working_dir) do |p|
-        cs_args = ["out:\"#{build_dir + args[:output]}\""]
-        cs_args += references(args[:references], working_dir).map { |ref| "r:\"#{ref}\"" }
-        cs_args += compiler_switches
-        cs_args += args[:switches] unless args[:switches].nil?
-
-        unless args[:resources].nil?
-          resgen working_dir, args[:resources]
-          args[:resources].each_value { |res| cs_args << "resource:\"#{build_path + res}\"" }
-        end
-        cmd = ''
-        cmd << CS_COMPILER
-        if cs_args.include?('noconfig')
-          cs_args.delete('noconfig')
-          cmd << " /noconfig"
-        end
-        temp = Tempfile.new(name.to_s)
-        cs_args.each { |opt| temp << ' /' + opt + "\n"}
-        options = get_compile_path_list(args[:csproj]).join("\n")
-        temp.puts options
-        temp.close
-        
-        cmd << " @" << temp.path
-        exec cmd
-      end
-    end
-
-    # Project transformation methods
-
-    def replace_output_path(contents, old, new)
-      old,new = new, old unless IronRuby.is_merlin?
-      contents.gsub! Regexp.new(Regexp.escape("<OutputPath>#{old}</OutputPath>"), Regexp::IGNORECASE), "<OutputPath>#{new}</OutputPath>"
-    end
-
-    def replace_doc_path(contents, old, new)
-      old,new = new, old unless IronRuby.is_merlin?
-      contents.gsub! Regexp.new(Regexp.escape("<DocumentationFile>#{old}</DocumentationFile>"), Regexp::IGNORECASE), "<DocumentationFile>#{new}</DocumentationFile>"
-    end
-
-    def replace_key_path(contents, old, new)
-      contents.gsub! Regexp.new(Regexp.escape("<AssemblyOriginatorKeyFile>#{old}</AssemblyOriginatorKeyFile>"), Regexp::IGNORECASE), "<AssemblyOriginatorKeyFile>#{new}</AssemblyOriginatorKeyFile>"
-    end
-
-    def replace_import_project(contents, old, new)
-      old,new = new, old unless IronRuby.is_merlin?
-      contents.gsub! Regexp.new(Regexp.escape("<Import Project=\"#{old}\" />"), Regexp::IGNORECASE), "<Import Project=\"#{new}\" />"
-    end
-
-    def replace_post_build_event(contents, old, new)
-      old,new = new, old unless IronRuby.is_merlin?
-      contents.gsub! Regexp.new(Regexp.escape("<PostBuildEvent>#{old}</PostBuildEvent>"), Regexp::IGNORECASE), "<PostBuildEvent>#{new}</PostBuildEvent>"
-    end
-
-    def replace_app_config_path(contents, old, new)
-      old,new = new, old unless IronRuby.is_merlin?
-      contents.gsub! Regexp.new(Regexp.escape(%Q{<None Include="#{old}" />}), Regexp::IGNORECASE), %Q{<None Include="#{new}" />}
-    end
-
-    def transform_project(name, project)
-      path = get_target_dir(name) + project
-      rake_output_message "Transforming: #{path}"
-      contents = path.read
-
-      # Extract the project name from .csproj filename
-      project_name = /(.*)\.csproj/.match(project)[1]
-
-      if @project_context.is_merlin?
-        contents.change_tag! 'SccProjectName'
-        contents.change_tag! 'SccLocalPath'
-        contents.change_tag! 'SccAuxPath'
-        contents.change_tag! 'SccProvider'
-
-        contents.change_tag! 'DelaySign', 'false'
-        contents.change_tag! 'SignAssembly', 'false'
-
-        contents.change_configuration! 'Debug|AnyCPU', 'TRACE;DEBUG'
-        contents.change_configuration! 'Release|AnyCPU', 'TRACE'
-        contents.change_configuration! 'Silverlight Debug|AnyCPU', 'TRACE;DEBUG;SILVERLIGHT'
-        contents.change_configuration! 'Silverlight Release|AnyCPU', 'TRACE;SILVERLIGHT'
-
-      else
-        contents.change_tag! 'SccProjectName', 'SAK'
-        contents.change_tag! 'SccLocalPath', 'SAK'
-        contents.change_tag! 'SccAuxPath', 'SAK'
-        contents.change_tag! 'SccProvider', 'SAK'
-
-        contents.change_tag! 'DelaySign', 'true'
-        contents.change_tag! 'SignAssembly', 'true'
-
-        contents.change_configuration! 'Debug|AnyCPU', 'TRACE;DEBUG;SIGNED'
-        contents.change_configuration! 'Release|AnyCPU', 'TRACE;SIGNED'
-        contents.change_configuration! 'Silverlight Debug|AnyCPU', 'TRACE;DEBUG;SILVERLIGHT'
-        contents.change_configuration! 'Silverlight Release|AnyCPU', 'TRACE;SILVERLIGHT'
-
-        unless block_given?
-          replace_key_path    contents, '..\..\RubyTestKey.snk', '..\..\..\Support\MSSharedLibKey.snk'
-        end
-      end
-      if block_given?
-        yield contents
-      else
-        replace_output_path contents, '..\..\..\Bin\Debug\\', '..\..\build\debug\\'
-        replace_output_path contents, '..\..\..\Bin\Release\\', '..\..\build\release\\'
-        replace_output_path contents, '..\..\..\Bin\Silverlight Debug\\', '..\..\build\silverlight debug\\'
-        replace_output_path contents, '..\..\..\Bin\Silverlight Release\\', '..\..\build\silverlight release\\'
-      end
-      path.open('w+') { |f| f.write contents }
-    end
+  
+  def configuration
+    ENV['configuration'] ? ENV['configuration'].to_sym : :debug
   end
 
-  # The Rakefile must always be found in the root directory of the source tree.
+  def platform
+    ENV['platform'].nil? ? :windows : ENV['platform'].to_sym
+  end
 
-  # If ENV['MERLIN_ROOT'] is defined, then we know that we are running on
-  # a machine with an enlistment in the MERLIN repository. This will enable
-  # features that require a source context and a destination context (such as
-  # pushing to / from MERLIN). Otherwise, destination context will always be
-  # nil and we will throw on an attempt to do operations that require a
-  # push.
-
-  private
-  def self.init_context
-    @rakefile_dir = Pathname.new(File.dirname(File.expand_path(__FILE__)).downcase)
-
-    if ENV['MERLIN_ROOT'].nil?
-      # Initialize the context for an external contributor who builds from
-      # a non-MERLIN command prompt
-      @source = @rakefile_dir
-      @target = nil
+  def clr
+    unless ENV['mono']
+      ENV['clr'] ? ENV['clr'].to_sym : :desktop
     else
-      # Initialize @source and @target to point to the right places based
-      # on whether we are within MERLIN_ROOT or SVN_ROOT
-      @merlin_root = Pathname.new(ENV['MERLIN_ROOT'].downcase) + '../../' # hack for changes in TFS layout
-      @ruby_root = @merlin_root + 'merlin/main/languages/ruby'
-
-      if @rakefile_dir == @ruby_root
-        @source = @merlin_root
-        @target = SVN_ROOT
-      elsif @rakefile_dir == SVN_ROOT
-        @source = @rakefile_dir
-        @target = @merlin_root
-      else
-        raise <<-EOF
-          Rakefile is at #{@rakefile_dir}. This is neither the SVN_ROOT nor
-          the MERLIN_ROOT. Possible causes of this are running from a
-          non-MERLIN command prompt (where MERLIN_ROOT environment variable
-          is defined) or if the SVN_ROOT constant in the Rakefile does not
-          point to where you downloaded the SVN repository for IronRuby.
-        EOF
-      end
-    end
-
-    @map = {}
-    @initialized = true
-  end
-
-  def self.make_pathname(path)
-    elements = path.split '/'
-    raise "must be an an array with at least one element: #{elements}" if elements.length < 1
-    result = Pathname.new elements.first
-    (1..elements.length-1).each { |i| result += elements[i] }
-    result
-  end
-
-  public
-  def self.map(name, args)
-    init_context unless @initialized
-    @map[name] = Mapping.new(make_pathname(args[:merlin]), make_pathname(args[:svn]), (args[:recurse].nil? ? true : args[:recurse]))
-  end
-
-  def self.resolve(name)
-    @map[name]
-  end
-
-  def self.is_merlin?
-    @merlin_root == @source
-  end
-
-  def self.source_context(&b)
-    context = CommandContext.new(:source, self)
-    context.extend(is_merlin? ? SvnProvider : TfsProvider)
-    context.instance_eval(&b)
-    context
-  end
-
-  def self.target_context(&b)
-    if @target.nil?
-      raise <<-EOF
-      Cannot invoke commands against target_context if you are not running in
-      a MERLIN_ROOT context. External folks should never see this error as they
-      should never be running commands that require moving things between
-      different contexts.
-      EOF
-    else
-      # Note that this is a bit unusual - the source control commands in the
-      # target are identical to the source control commands for the source. This
-      # is due to the semantics of the operation. The source is always
-      # authoritative in these kinds of push scenarios, so you'll never want to
-      # mutate the source repository, only the target repository.
-      context = CommandContext.new(:target, self)
-      context.extend(is_merlin? ? SvnProvider : TfsProvider)
-      context.instance_eval(&b)
-      context
+      :mono
     end
   end
 
-  def self.source
-    @source
+  def build_path
+    project_root + Pathname.new(File.join("Bin", "#{clr == :desktop ? configuration : "#{clr}_#{configuration}"}"))
   end
 
-  def self.target
-    @target
+  def project_root
+    Pathname.new(File.expand_path(File.join(CURRENT_DIR, "..",".."))) 
   end
 end
 
-class IronRuby < ProjectContext
-  map :root, :merlin => 'merlin/main/languages/ruby', :svn => '.', :recurse => false
-  map :gppg, :merlin => 'merlin/main/utilities/gppg', :svn => 'bin', :recurse => false
-  map :dlr_core, :merlin => 'ndp/fx/src/core/microsoft/scripting', :svn => 'src/microsoft.scripting.core'
-  map :dlr_libs, :merlin => 'merlin/main/runtime/microsoft.scripting', :svn => 'src/microsoft.scripting'
-  map :dlr_com, :merlin => 'ndp/fx/src/dynamic/system/dynamic', :svn => 'src/dynamic'
-  map :ironruby, :merlin => 'merlin/main/languages/ruby/ruby', :svn => 'src/ironruby'
-  map :libraries, :merlin => 'merlin/main/languages/ruby/libraries.lca_restricted', :svn => 'src/IronRuby.Libraries'
-  map :yaml, :merlin => 'merlin/external/languages/ironruby/yaml/ironruby.libraries.yaml', :svn => 'src/yaml'
-  map :tests, :merlin => 'merlin/main/languages/ruby/tests', :svn => 'tests/ironruby'
-  map :console, :merlin => 'merlin/main/languages/ruby/console', :svn => 'utils/ironruby.console'
-  map :generator, :merlin => 'merlin/main/languages/ruby/classinitgenerator', :svn => 'utils/ironruby.classinitgenerator'
-  map :test_runner, :merlin => 'merlin/main/languages/ruby/ironruby.tests', :svn => 'utils/IronRuby.Tests'
-  map :scanner, :merlin => 'merlin/main/languages/ruby/utils/ironruby.libraries.scanner', :svn => 'utils/ironruby.libraries.scanner'
-  map :build, :merlin => 'merlin/main/bin', :svn => 'build'
-  map :stdlibs, :merlin => 'merlin/external/languages/ruby/redist-libs', :svn => 'lib'
-  map :ironlibs, :merlin => 'merlin/main/languages/ruby/libs', :svn => 'lib/IronRuby'
-  map :lang_root, :merlin => 'merlin/main', :svn => '.'
+class CSProjCompiler
+  include IronRubyUtils
+  def initialize(&b)
+    @targets = {}
+    instance_eval(&b)
+  end
+
+  def dir(target)
+    Pathname.new(@targets[target][:dir])
+  end
+
+  def compile(name)
+    banner name.to_s
+    args = @targets[name.to_sym]
+    working_dir = File.expand_path(args[:dir])
+    build_dir = build_path
+
+    Dir.chdir(working_dir) do |p|
+      cs_args = ["out:\"#{build_dir + args[:output]}\""]
+      cs_args += references(args[:references], working_dir).map { |ref| "r:\"#{ref}\"" }
+      cs_args += compiler_switches
+      cs_args += args[:switches] if args[:switches]
+
+      if args[:resources]
+        resgen working_dir, args[:resources]
+        args[:resources].each_value { |res| cs_args << "resource:\"#{build_path + res}\"" }
+      end
+      cmd = ''
+      cmd << CS_COMPILER
+      if cs_args.include?('noconfig')
+        cs_args.delete('noconfig')
+        cmd << " /noconfig"
+      end
+      temp = Tempfile.new(name.to_s)
+      cs_args.each { |opt| temp << ' /' + opt + "\n"}
+      options = get_compile_path_list(args[:csproj]).join("\n")
+      temp.puts options
+      temp.close
+  
+      cmd << " @" << temp.path
+      exec cmd
+    end
+  end
+
+  def get_case_sensitive_path(pathname)
+    elements = pathname.split '\\'
+    result = Pathname.new '.'
+    elements.each do |element|
+      entry = result.entries.find { |p| p.downcase == element.downcase }
+      result = result + entry
+    end
+    result.to_s
+  end
+
+  def get_compile_path_list(csproj)
+    csproj ||= '*.csproj' 
+    cs_proj_files = Dir[csproj]
+    if cs_proj_files.length == 1
+      doc = REXML::Document.new(File.open(cs_proj_files.first))
+      result = doc.elements.collect("/Project/ItemGroup/Compile") { |c| c.attributes['Include'] }
+      result.delete_if { |e| e =~ /(Silverlight\\SilverlightVersion.cs|System\\Dynamic\\Parameterized.System.Dynamic.cs)/ }
+      result.map! { |p| get_case_sensitive_path(p) } if ENV['mono']
+      result
+    else
+      raise ArgumentError.new("Found more than one .csproj file in directory! #{cs_proj_files.join(", ")}")
+    end
+  end
+
+
+  def resgen(base_path, resource_map)
+    base_path = Pathname.new(base_path)
+    resource_map.each_pair do |input, output|
+      exec %Q{resgen "#{base_path + input.dup}" "#{build_path + output}"}
+    end
+  end
+
+
+  def resolve_framework_path(file)
+    Configuration.resolve_framework_path(clr, file)
+  end
+
+
+  def compiler_switches
+    Configuration.get_switches(clr, configuration)
+  end
+
+  def references(refs, working_dir)
+    references = Configuration.get_references(clr)
+    refs.each do |ref|
+      references << if ref =~ /^\!/
+        resolve_framework_path(ref[1..-1])
+      else
+        (build_path + ref).relative_path_from(working_dir)
+      end
+    end if refs
+    references
+  end
+
+  
+  def clean
+    FileUtils.rm_rf build_path
+    FileUtils.mkdir_p build_path
+  end
+
+  def transform_config(source_path, target_path, signed, paths)
+    file = File.new source_path
+    doc = Document.new file
+
+    # disable signing
+    unless signed 
+      configSections = XPath.each(doc, '/configuration/configSections/section') do |node|
+        node.attributes['type'].gsub!(/31bf3856ad364e35/, 'null')
+      end
+
+      # disable signing in IronRuby and replace the paths
+      languages = XPath.each(doc, '/configuration/microsoft.scripting/languages/language') do |node|
+        if node.attributes['names'] == 'IronRuby;Ruby;rb'
+          node.attributes['type'].gsub!(/31bf3856ad364e35/, 'null')
+        end
+      end
+    end
+
+    # replace LibraryPaths
+    options = XPath.each(doc, '/configuration/microsoft.scripting/options/set') do |node|
+      if node.attributes['language'] == 'Ruby' && node.attributes['option'] == 'LibraryPaths'
+        node.attributes['value'] = paths
+      end
+    end
+
+    File.open(target_path, 'w+') do |f|
+      f.write doc.to_s
+    end
+  end
+
+  def transform_config_file(configuration, source_path, target_build_path)
+    # signing is on for IronRuby in Merlin, off for SVN and Binary
+    layout = {'Merlin' => { :signing => false, :LibraryPaths => '..\..\Languages\Ruby\libs;..\..\..\External\Languages\Ruby\Ruby-1.8.6\lib\ruby\site_ruby\1.8;..\..\..\External\Languages\Ruby\Ruby-1.8.6\lib\ruby\site_ruby;..\..\..\External\Languages\Ruby\Ruby-1.8.6\lib\ruby\1.8' }, 
+              'Binary' => { :signing => true,  :LibraryPaths => '..\lib\IronRuby;..\lib\ruby\site_ruby\1.8;..\lib\ruby\site_ruby;..\lib\ruby\1.8' } }
+    
+    transform_config source_path, target_build_path, layout[configuration][:signing], layout[configuration][:LibraryPaths]
+  end
+
+  def move_config
+    source = project_root + "app.config"
+    config_file = build_path + "ir.exe.config"
+    transform_config_file('Merlin', source, config_file)
+  end
+
+  def method_missing(name, *args)
+    @targets[name.to_sym] = *args
+  end
+end
+
+IronRubyCompiler = CSProjCompiler.new do
+  dlr_core :references => ['!System.dll','!System.Configuration.dll','Microsoft.Scripting.ExtensionAttribute.dll'], 
+           :switches   => ['target:library', 'define:MICROSOFT_SCRIPTING_CORE'],
+           :output     => 'Microsoft.Scripting.Core.dll',
+           :csproj     => 'Microsoft.Scripting.Core.csproj',
+           :dir        => '../../../../ndp/fx/src/Core/Microsoft/Scripting'
+
+  dlr_extension :references => ['!System.dll'],
+                :switches   => ['target:library'],
+                :output     => 'Microsoft.Scripting.ExtensionAttribute.dll',
+                :csproj     => 'Microsoft.Scripting.ExtensionAttribute.csproj',
+                :dir        => '../../../../ndp/fx/src/Core/Microsoft/Scripting'
+  dlr_libs  :references => ['Microsoft.Scripting.Core.dll', '!System.Xml.dll', '!System.dll', '!System.Configuration.dll', 'Microsoft.Scripting.ExtensionAttribute.dll','!System.Runtime.Remoting.dll'],
+            :switches   => ['target:library'], 
+            :resources  => {Pathname.new('math') + 'MathResources.resx' => Pathname.new('Microsoft.Scripting.Math.MathResources.resources')}, 
+            :output     => 'Microsoft.Scripting.dll', 
+            :csproj     => 'Microsoft.Scripting.csproj',
+            :dir        => '../../Runtime/Microsoft.Scripting'
+  dlr_com :references   => ['Microsoft.Scripting.Core.dll', '!System.Xml.dll', '!System.dll', 'Microsoft.Scripting.ExtensionAttribute.dll'],
+          :switches     => ['target:library', 'unsafe'],
+          :output       => 'Microsoft.Dynamic.dll',
+          :dir          => '../../../../ndp/fx/src/Dynamic/System/Dynamic'
+  generator :references => ['Microsoft.Scripting.Core.dll', 'Microsoft.Scripting.dll','Microsoft.Scripting.ExtensionAttribute.dll', 'IronRuby.dll', '!System.dll'],
+            :output     => 'ClassInitGenerator.exe',
+            :dir        => './ClassInitGenerator'
+  ironruby :references => ['Microsoft.Scripting.Core.dll', 'Microsoft.Scripting.dll', 'Microsoft.Scripting.ExtensionAttribute.dll','!System.dll', '!System.Configuration.dll'],
+           :switches   => ['target:library'],
+           :output     => 'IronRuby.dll',
+           :dir        => './Ruby'
+  libraries :references => ['Microsoft.Scripting.Core.dll', 'Microsoft.Scripting.dll', 'Microsoft.Scripting.ExtensionAttribute.dll', 'IronRuby.dll', '!System.dll'],
+            :switches   => ['target:library'],
+            :output     => 'IronRuby.Libraries.dll',
+            :dir        => 'Libraries.LCA_RESTRICTED'
+  console :references => ['Microsoft.Scripting.Core.dll','Microsoft.Scripting.dll','IronRuby.dll'],
+          :output     => 'ir.exe',
+          :dir        => './Console'
+  test_runner :references => ['Microsoft.Scripting.Core.dll', 'Microsoft.Scripting.dll', 'IronRuby.dll', 'IronRuby.Libraries.dll', '!System.dll', '!System.Windows.Forms.dll'],
+              :output     => 'IronRuby.Tests.exe',
+              :dir        => './IronRuby.Tests'
+  scanner :references => ['Microsoft.Scripting.Core.dll', 'Microsoft.Scripting.dll', 'IronRuby.dll', 'IronRuby.Libraries.dll', '!System.Core.dll'],
+          :output     => 'IronRuby.Libraries.Scanner.exe',
+          :dir        => './IronRuby.Libraries.Scanner'
+  yaml :references => ['Microsoft.Scripting.Core.dll', 'Microsoft.Scripting.dll', 'IronRuby.dll', 'IronRuby.Libraries.dll', '!System.dll'],
+       :switches   => ['target:library'],
+       :output     => 'IronRuby.Libraries.Yaml.dll',
+       :dir        => '../../../External/Languages/IronRuby/Yaml/IronRuby.Libraries.Yaml'
 end
 
 # Spec runner helpers

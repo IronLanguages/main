@@ -128,6 +128,11 @@ namespace System.Linq.Expressions.Compiler {
                     PushLabelBlock(LabelScopeKind.Statement);
                     return true;
                 case ExpressionType.Block:
+                    if (node is SpilledExpressionBlock) {
+                        // treat it as an expression
+                        goto default;
+                    }
+
                     PushLabelBlock(LabelScopeKind.Block);
                     // Labels defined immediately in the block are valid for
                     // the whole block.
@@ -172,7 +177,7 @@ namespace System.Linq.Expressions.Compiler {
 
         private void DefineBlockLabels(Expression node) {
             var block = node as BlockExpression;
-            if (block == null) {
+            if (block == null || block is SpilledExpressionBlock) {
                 return;
             }
             for (int i = 0, n = block.ExpressionCount; i < n; i++) {

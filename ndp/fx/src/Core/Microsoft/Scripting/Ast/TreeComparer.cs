@@ -14,10 +14,8 @@
  * ***************************************************************************/
 
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.Runtime.CompilerServices;
-using System.Dynamic;
 using System.Dynamic.Utils;
+using System.Runtime.CompilerServices;
 
 namespace System.Linq.Expressions {
 
@@ -187,7 +185,7 @@ namespace System.Linq.Expressions {
         /// <summary>
         /// Constants that were templated in original tree.
         /// </summary>
-        private System.Linq.Expressions.Compiler.Set<int> _templated;
+        private Set<int> _templated;
 
         /// <summary>
         /// New tree requires more general template.
@@ -205,14 +203,14 @@ namespace System.Linq.Expressions {
         /// </summary>
         private List<KeyValuePair<ConstantExpression, int>> _replacementList;
 
-        private TreeComparer(System.Linq.Expressions.Compiler.Set<int> templated) {
+        private TreeComparer(Set<int> templated) {
             _templated = templated;
         }
 
         internal static TreeCompareResult CompareTrees(
                 Expression left, 
                 Expression right, 
-                System.Linq.Expressions.Compiler.Set<int> templated,
+                Set<int> templated,
                 out List<KeyValuePair<ConstantExpression, int>> ReplacementList){
 
 

@@ -13,10 +13,11 @@
  *
  * ***************************************************************************/
 
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
-using System.Dynamic;
 using System.Dynamic.Utils;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 
 namespace System.Linq.Expressions.Compiler {
@@ -158,10 +159,10 @@ namespace System.Linq.Expressions.Compiler {
 
             // CallSite is on the stack
             IArgumentProvider argNode = (IArgumentProvider)node;
-            int argCount = argNode.ArgumentCount;
-            ChildRewriter cr = new ChildRewriter(this, Stack.NonEmpty, argCount);
-            for (int i = 0; i < argCount; i++) {
-                cr.Add(argNode.GetArgument(i));
+            ChildRewriter cr = new ChildRewriter(this, Stack.NonEmpty, argNode.ArgumentCount);
+            cr.AddArguments(argNode);
+            if (cr.Action == RewriteAction.SpillStack) {
+                RequireNoRefArgs(node.DelegateType.GetMethod("Invoke"));
             }
             return cr.Finish(cr.Rewrite ? node.Rewrite(cr[0, -1]) : expr);
         }
@@ -174,6 +175,10 @@ namespace System.Linq.Expressions.Compiler {
             cr.Add(index.Object);
             cr.Add(index.Arguments);
             cr.Add(node.Right);
+
+            if (cr.Action == RewriteAction.SpillStack) {
+                RequireNotRefInstance(index.Object);
+            }
 
             if (cr.Rewrite) {
                 node = new AssignBinaryExpression(
@@ -189,32 +194,10 @@ namespace System.Linq.Expressions.Compiler {
             return cr.Finish(node);
         }
 
-        private Result RewriteArrayIndexAssignment(BinaryExpression node, Stack stack) {
-            Debug.Assert(node.Left.NodeType == ExpressionType.ArrayIndex);
-            BinaryExpression arrayIndex = (BinaryExpression)node.Left;
-
-            ChildRewriter cr = new ChildRewriter(this, stack, 3);
-
-            cr.Add(arrayIndex.Left);
-            cr.Add(arrayIndex.Right);
-            cr.Add(node.Right);
-
-            if (cr.Rewrite) {
-                node = new AssignBinaryExpression(
-                    Expression.ArrayIndex(
-                        cr[0],   // array
-                        cr[1]    // index                             
-                    ),
-                    cr[2]        // value
-                );
-            }
-
-            return cr.Finish(node);
-        }
-
         // BinaryExpression: AndAlso, OrElse
         private Result RewriteLogicalBinaryExpression(Expression expr, Stack stack) {
             BinaryExpression node = (BinaryExpression)expr;
+
             // Left expression runs on a stack as left by parent
             Result left = RewriteExpression(node.Left, stack);
             // ... and so does the right one
@@ -224,6 +207,11 @@ namespace System.Linq.Expressions.Compiler {
 
             RewriteAction action = left.Action | right.Action | conversion.Action;
             if (action != RewriteAction.None) {
+            
+	            // We don't have to worry about byref parameters here, because the
+	            // factory doesn't allow it (it requires identical parameters and
+	            // return type from the AndAlso/OrElse method)
+
                 expr = BinaryExpression.Create(
                     node.NodeType,
                     left.Node,
@@ -253,6 +241,10 @@ namespace System.Linq.Expressions.Compiler {
             cr.Add(node.Right);
             // conversion is a lambda, stack state will be ignored
             cr.Add(node.Conversion);
+
+            if (cr.Action == RewriteAction.SpillStack) {
+                RequireNoRefArgs(node.Method);
+            }
 
             return cr.Finish(cr.Rewrite ?
                                     BinaryExpression.Create(
@@ -287,8 +279,6 @@ namespace System.Linq.Expressions.Compiler {
                     return RewriteVariableAssignment(node, stack);
                 case ExpressionType.Extension:
                     return RewriteExtensionAssignment(node, stack);
-                case ExpressionType.ArrayIndex:
-                    return RewriteArrayIndexAssignment(node, stack);
                 default:
                     throw Error.InvalidLvalue(node.Left.NodeType);
             }
@@ -347,6 +337,10 @@ namespace System.Linq.Expressions.Compiler {
 
             cr.Add(node.Right);
 
+            if (cr.Action == RewriteAction.SpillStack) {
+                RequireNotRefInstance(lvalue.Expression);
+            }
+
             if (cr.Rewrite) {
                 return cr.Finish(
                     new AssignBinaryExpression(
@@ -365,6 +359,12 @@ namespace System.Linq.Expressions.Compiler {
             // Expression is emitted on top of the stack in current state
             Result expression = RewriteExpression(node.Expression, stack);
             if (expression.Action != RewriteAction.None) {
+                if (expression.Action == RewriteAction.SpillStack &&
+                    node.Member.MemberType == MemberTypes.Property) {
+                    // Only need to validate propreties because reading a field
+                    // is always side-effect free.
+                    RequireNotRefInstance(node.Expression);
+                }
                 expr = MemberExpression.Make(expression.Node, node.Member);
             }
             return new Result(expression.Action, expr);
@@ -380,6 +380,10 @@ namespace System.Linq.Expressions.Compiler {
             // stack as is, but stays on the stack, making it non-empty.
             cr.Add(node.Object);
             cr.Add(node.Arguments);
+
+            if (cr.Action == RewriteAction.SpillStack) {
+                RequireNotRefInstance(node.Object);
+            }
 
             if (cr.Rewrite) {
                 expr = new IndexExpression(
@@ -402,7 +406,12 @@ namespace System.Linq.Expressions.Compiler {
             // stack as is, but stays on the stack, making it non-empty.
             cr.Add(node.Object);
 
-            cr.Add(node.Arguments);
+            cr.AddArguments(node);
+
+            if (cr.Action == RewriteAction.SpillStack) {
+                RequireNotRefInstance(node.Object);
+                RequireNoRefArgs(node.Method);
+            }
 
             return cr.Finish(cr.Rewrite ? node.Rewrite(cr[0], cr[1, -1]) : expr);
         }
@@ -449,6 +458,10 @@ namespace System.Linq.Expressions.Compiler {
                 cr = new ChildRewriter(this, stack, node.Arguments.Count);
                 cr.Add(node.Arguments);
 
+                if (cr.Action == RewriteAction.SpillStack) {
+                    RequireNoRefArgs(Expression.GetInvokeMethod(node.Expression));
+                }
+
                 // Lambda body also executes on current stack 
                 var spiller = new StackSpiller(stack);
                 lambda = lambda.Accept(spiller);
@@ -469,6 +482,10 @@ namespace System.Linq.Expressions.Compiler {
             // rest of arguments have non-empty stack (delegate instance on the stack)
             cr.Add(node.Arguments);
 
+            if (cr.Action == RewriteAction.SpillStack) {
+                RequireNoRefArgs(Expression.GetInvokeMethod(node.Expression));
+            }
+
             return cr.Finish(cr.Rewrite ? new InvocationExpression(cr[0], cr[1, -1], node.Type) : expr);
         }
 
@@ -479,7 +496,11 @@ namespace System.Linq.Expressions.Compiler {
             // The first expression starts on a stack as provided by parent,
             // rest are definitely non-emtpy (which ChildRewriter guarantees)
             ChildRewriter cr = new ChildRewriter(this, stack, node.Arguments.Count);
-            cr.Add(node.Arguments);
+            cr.AddArguments(node);
+
+            if (cr.Action == RewriteAction.SpillStack) {
+                RequireNoRefArgs(node.Constructor);
+            }
 
             return cr.Finish(cr.Rewrite ? new NewExpression(node.Constructor, cr[0, -1], node.Members) : expr);
         }
@@ -527,6 +548,11 @@ namespace System.Linq.Expressions.Compiler {
 
             // Operand is emitted on top of the stack as is
             Result expression = RewriteExpression(node.Operand, stack);
+
+            if (expression.Action == RewriteAction.SpillStack) {
+                RequireNoRefArgs(node.Method);
+            }
+
             if (expression.Action != RewriteAction.None) {
                 expr = new UnaryExpression(node.NodeType, expression.Node, node.Type, node.Method);
             }
@@ -573,6 +599,8 @@ namespace System.Linq.Expressions.Compiler {
                     expr = Expression.ListInit((NewExpression)rewrittenNew, new TrueReadOnlyCollection<ElementInit>(newInits));
                     break;
                 case RewriteAction.SpillStack:
+                    RequireNotRefInstance(node.NewExpression);
+
                     ParameterExpression tempNew = MakeTemp(rewrittenNew.Type);
                     Expression[] comma = new Expression[inits.Count + 2];
                     comma[0] = Expression.Assign(tempNew, rewrittenNew);
@@ -583,7 +611,7 @@ namespace System.Linq.Expressions.Compiler {
                         comma[i + 1] = add.Node;
                     }
                     comma[inits.Count + 1] = tempNew;
-                    expr = Expression.Block(comma);
+                    expr = MakeBlock(comma);
                     break;
                 default:
                     throw ContractUtils.Unreachable;
@@ -622,6 +650,8 @@ namespace System.Linq.Expressions.Compiler {
                     expr = Expression.MemberInit((NewExpression)rewrittenNew, new TrueReadOnlyCollection<MemberBinding>(newBindings));
                     break;
                 case RewriteAction.SpillStack:
+                    RequireNotRefInstance(node.NewExpression);
+
                     ParameterExpression tempNew = MakeTemp(rewrittenNew.Type);
                     Expression[] comma = new Expression[bindings.Count + 2];
                     comma[0] = Expression.Assign(tempNew, rewrittenNew);
@@ -631,7 +661,7 @@ namespace System.Linq.Expressions.Compiler {
                         comma[i + 1] = initExpr;
                     }
                     comma[bindings.Count + 1] = tempNew;
-                    expr = Expression.Block(comma);
+                    expr = MakeBlock(comma);
                     break;
                 default:
                     throw ContractUtils.Unreachable;
@@ -904,5 +934,53 @@ namespace System.Linq.Expressions.Compiler {
         }
 
         #endregion
+
+        /// <summary>
+        /// If we are spilling, requires that there are no byref arguments to
+        /// the method call.
+        /// 
+        /// Used for:
+        ///   NewExpression,
+        ///   MethodCallExpression,
+        ///   InvocationExpression,
+        ///   DynamicExpression,
+        ///   UnaryExpression,
+        ///   BinaryExpression.
+        /// </summary>
+        /// <remarks>
+        /// We could support this if spilling happened later in the compiler.
+        /// Other expressions that can emit calls with arguments (such as
+        /// ListInitExpression and IndexExpression) don't allow byref arguments.
+        /// </remarks>
+        private static void RequireNoRefArgs(MethodBase method) {
+            if (method != null && method.GetParametersCached().Any(p => p.ParameterType.IsByRef)) {
+                throw Error.TryNotSupportedForMethodsWithRefArgs(method);
+            }
+        }
+
+        /// <summary>
+        /// Requires that the instance is not a value type (primitive types are
+        /// okay because they're immutable).
+        /// 
+        /// Used for:
+        ///  MethodCallExpression,
+        ///  MemberExpression (for properties),
+        ///  IndexExpression,
+        ///  ListInitExpression,
+        ///  MemberInitExpression,
+        ///  assign to MemberExpression,
+        ///  assign to IndexExpression.
+        /// </summary>
+        /// <remarks>
+        /// We could support this if spilling happened later in the compiler.
+        /// </remarks>
+        private static void RequireNotRefInstance(Expression instance) {
+            // Primitive value types are okay because they are all readonly,
+            // but we can't rely on this for non-primitive types. So we throw
+            // NotSupported.
+            if (instance != null && instance.Type.IsValueType && Type.GetTypeCode(instance.Type) == TypeCode.Object) {
+                throw Error.TryNotSupportedForValueTypeInstances(instance.Type);
+            }
+        }
     }
 }

@@ -1,4 +1,4 @@
-/* ****************************************************************************
+﻿/* ****************************************************************************
  *
  * Copyright (c) Microsoft Corporation. 
  *
@@ -154,15 +154,6 @@ namespace System.Linq.Expressions {
         internal static string TypeMustNotBeByRef {
             get {
                 return "type must not be ByRef";
-            }
-        }
-
-        /// <summary>
-        /// A string like  "variable must not be ByRef"
-        /// </summary>
-        internal static string VariableMustNotBeByRef {
-            get {
-                return "variable must not be ByRef";
             }
         }
 
@@ -389,6 +380,20 @@ namespace System.Linq.Expressions {
             get {
                 return "Quoted expression must be a lambda";
             }
+        }
+
+        /// <summary>
+        /// A string like  "Variable '{0}' uses unsupported type '{1}'. Reference types are not supported for variables."
+        /// </summary>
+        internal static string VariableMustNotBeByRef(object p0, object p1) {
+            return FormatString("Variable '{0}' uses unsupported type '{1}'. Reference types are not supported for variables.", p0, p1);
+        }
+
+        /// <summary>
+        /// A string like  "Found duplicate parameter '{0}'. Each ParameterExpression in the list must be a unique object."
+        /// </summary>
+        internal static string DuplicateVariable(object p0) {
+            return FormatString("Found duplicate parameter '{0}'. Each ParameterExpression in the list must be a unique object.", p0);
         }
 
         /// <summary>
@@ -1319,10 +1324,24 @@ namespace System.Linq.Expressions {
         }
 
         /// <summary>
-        /// A string like  "The value '{0}' is not of type '{1}1 and cannot be used in this collection."
+        /// A string like  "The value '{0}' is not of type '{1}' and cannot be used in this collection."
         /// </summary>
         internal static string InvalidObjectType(object p0, object p1) {
-            return FormatString("The value '{0}' is not of type '{1}1 and cannot be used in this collection.", p0, p1);
+            return FormatString("The value '{0}' is not of type '{1}' and cannot be used in this collection.", p0, p1);
+        }
+
+        /// <summary>
+        /// A string like  "TryExpression is not supported as an argument to method '{0}' because it has an argument with by-ref type. Construct the tree so the TryExpression is not nested inside of this expression."
+        /// </summary>
+        internal static string TryNotSupportedForMethodsWithRefArgs(object p0) {
+            return FormatString("TryExpression is not supported as an argument to method '{0}' because it has an argument with by-ref type. Construct the tree so the TryExpression is not nested inside of this expression.", p0);
+        }
+
+        /// <summary>
+        /// A string like  "TryExpression is not supported as a child expression when accessing a member on type '{0}' because it is a value type. Construct the tree so the TryExpression is not nested inside of this expression."
+        /// </summary>
+        internal static string TryNotSupportedForValueTypeInstances(object p0) {
+            return FormatString("TryExpression is not supported as a child expression when accessing a member on type '{0}' because it is a value type. Construct the tree so the TryExpression is not nested inside of this expression.", p0);
         }
 
         /// <summary>
@@ -1349,6 +1368,20 @@ namespace System.Linq.Expressions {
     /// </summary>
 
     internal static partial class Error {
+        /// <summary>
+        /// ArgumentException with message like "Variable '{0}' uses unsupported type '{1}'. Reference types are not supported for variables."
+        /// </summary>
+        internal static Exception VariableMustNotBeByRef(object p0, object p1) {
+            return new ArgumentException(Strings.VariableMustNotBeByRef(p0, p1));
+        }
+
+        /// <summary>
+        /// ArgumentException with message like "Found duplicate parameter '{0}'. Each ParameterExpression in the list must be a unique object."
+        /// </summary>
+        internal static Exception DuplicateVariable(object p0) {
+            return new ArgumentException(Strings.DuplicateVariable(p0));
+        }
+
         /// <summary>
         /// ArgumentException with message like "Start and End must be well ordered"
         /// </summary>
@@ -2183,10 +2216,24 @@ namespace System.Linq.Expressions {
         }
 
         /// <summary>
-        /// ArgumentException with message like "The value '{0}' is not of type '{1}1 and cannot be used in this collection."
+        /// ArgumentException with message like "The value '{0}' is not of type '{1}' and cannot be used in this collection."
         /// </summary>
         internal static Exception InvalidObjectType(object p0, object p1) {
             return new ArgumentException(Strings.InvalidObjectType(p0, p1));
+        }
+
+        /// <summary>
+        /// NotSupportedException with message like "TryExpression is not supported as an argument to method '{0}' because it has an argument with by-ref type. Construct the tree so the TryExpression is not nested inside of this expression."
+        /// </summary>
+        internal static Exception TryNotSupportedForMethodsWithRefArgs(object p0) {
+            return new NotSupportedException(Strings.TryNotSupportedForMethodsWithRefArgs(p0));
+        }
+
+        /// <summary>
+        /// NotSupportedException with message like "TryExpression is not supported as a child expression when accessing a member on type '{0}' because it is a value type. Construct the tree so the TryExpression is not nested inside of this expression."
+        /// </summary>
+        internal static Exception TryNotSupportedForValueTypeInstances(object p0) {
+            return new NotSupportedException(Strings.TryNotSupportedForValueTypeInstances(p0));
         }
 
         /// <summary>

@@ -127,10 +127,22 @@ namespace System.Linq.Expressions.Compiler {
             }
 
             var currentScope = _scopes.Peek();
-            while (IsMergeable(body)) {
+
+            // A block body is mergeable if the body only contains one single block node containing variables,
+            // and the child block has the same type as the parent block.
+            while (body.Count == 1 && body[0].NodeType == ExpressionType.Block) {
                 var block = (BlockExpression)body[0];
 
                 if (block.Variables.Count > 0) {
+                    // Make sure none of the variables are shadowed. If any
+                    // are, we can't merge it.
+                    foreach (var v in block.Variables) {
+                        if (currentScope.Definitions.ContainsKey(v)) {
+                            return body;
+                        }
+                    }
+
+                    // Otherwise, merge it
                     if (currentScope.MergedScopes == null) {
                         currentScope.MergedScopes = new Set<object>(ReferenceEqualityComparer<object>.Instance);
                     }
@@ -143,12 +155,6 @@ namespace System.Linq.Expressions.Compiler {
                 body = block.Expressions;
             }
             return body;
-        }
-
-        //A block body is mergeable if the body only contains one single block node containing variables,
-        //and the child block has the same type as the parent block.
-        private static bool IsMergeable(ReadOnlyCollection<Expression> body) {
-            return body.Count == 1 && body[0].NodeType == ExpressionType.Block;
         }
 
 

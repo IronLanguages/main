@@ -22,6 +22,7 @@ using System.Reflection.Emit;
 using System.Dynamic;
 using Microsoft.Scripting.Generation;
 using Microsoft.Scripting.Utils;
+using Microsoft.Scripting.Runtime;
 
 namespace Microsoft.Scripting {
     public abstract class Tuple {

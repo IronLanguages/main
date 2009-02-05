@@ -741,7 +741,8 @@ namespace Microsoft.Scripting.Ast {
             if (o == node.Operand) {
                 return node;
             }
-            if (yields == _yields.Count) {
+            // Convert can be jumped into, no need to spill
+            if (yields == _yields.Count || node.NodeType == ExpressionType.Convert) {
                 return Expression.MakeUnary(node.NodeType, o, node.Type, node.Method);
             }
             return Expression.Block(

@@ -48,12 +48,12 @@ namespace Microsoft.Scripting.Actions {
                     name,
                     codeContext
                 ),
-                target.Restrict(target.LimitType)
+                target.Restrict(target.GetLimitType())
             );
         }
 
         private DynamicMetaObject MakeDeleteMemberTarget(SetOrDeleteMemberInfo delInfo, DynamicMetaObject target) {
-            Type type = target.LimitType;
+            Type type = target.GetLimitType();
             BindingRestrictions restrictions = target.Restrictions;
             Expression self = target.Expression;
 

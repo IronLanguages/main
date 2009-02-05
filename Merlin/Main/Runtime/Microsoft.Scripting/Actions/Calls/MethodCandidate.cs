@@ -91,9 +91,9 @@ namespace Microsoft.Scripting.Actions.Calls {
                 /*if (objects[i].NeedsDeferral) {
                     conversionResults.Add(new ConversionResult(typeof(Dynamic), _parameters[i].Type, i, false));
                 } else*/ {
-                    bool success = _parameters[i].HasConversionFrom(objects[i].LimitType, narrowingLevel);
+                    bool success = _parameters[i].HasConversionFrom(objects[i].GetLimitType(), narrowingLevel);
 
-                    conversionResults.Add(new ConversionResult(objects[i].LimitType, _parameters[i].Type, i, !success));
+                    conversionResults.Add(new ConversionResult(objects[i].GetLimitType(), _parameters[i].Type, i, !success));
 
                     res &= success;
                 }

@@ -175,15 +175,27 @@ namespace Microsoft.Scripting.Actions.Calls {
             int i = 0;
             foreach (KeyValuePair<int, TargetSet> kvp in _targetSets) {
                 int count = kvp.Key;
-                if (callType == CallTypes.ImplicitInstance) {
-                    foreach (MethodCandidate cand in kvp.Value._targets) {
-                        if (!CompilerHelpers.IsStatic(cand.Target.Method)) {
-                            // dispatch includes an instance method, bump
-                            // one parameter off.
+
+                foreach (MethodCandidate cand in kvp.Value._targets) {
+                    foreach (var x in cand.Parameters) {
+                        if (x.IsParamsArray || x.IsParamsDict) {
                             count--;
                         }
                     }
                 }
+
+                if (callType == CallTypes.ImplicitInstance) {
+                    foreach (MethodCandidate cand in kvp.Value._targets) {
+                        if (IsInstanceMethod(cand)) {
+                            // dispatch includes an instance method, bump
+                            // one parameter off.
+                            count--;
+                            break;
+                        }
+                    }                    
+                }
+
+                
                 expectedArgs[i++] = count;
             }
             if (_paramsCandidates != null) {
@@ -215,13 +227,23 @@ namespace Microsoft.Scripting.Actions.Calls {
             int i = 0;
             foreach (KeyValuePair<int, TargetSet> kvp in _targetSets) {
                 int count = kvp.Key;
+                foreach (MethodCandidate cand in kvp.Value._targets) {
+                    foreach (var x in cand.Parameters) {
+                        if (x.IsParamsArray || x.IsParamsDict) {
+                            count--;
+                        }
+                    }
+                }
+
                 if (callType == CallTypes.ImplicitInstance) {
                     foreach (MethodCandidate cand in kvp.Value._targets) {
-                        if (!CompilerHelpers.IsStatic(cand.Target.Method)) {
+                        if (IsInstanceMethod(cand)) {
                             // dispatch includes an instance method, bump
                             // one parameter off.
                             count--;
+                            break;
                         }
+
                     }
                 }
                 expectedArgs[i++] = count;
@@ -231,6 +253,11 @@ namespace Microsoft.Scripting.Actions.Calls {
             }
 
             return new BindingTarget(Name, callType == CallTypes.None ? metaObjects.Length : metaObjects.Length - 1, expectedArgs);
+        }
+
+        private static bool IsInstanceMethod(MethodCandidate cand) {
+            return !CompilerHelpers.IsStatic(cand.Target.Method) ||
+                                        (cand.Target.Method.IsDefined(typeof(ExtensionAttribute), false));
         }
 
         /// <summary>
@@ -833,17 +860,26 @@ namespace Microsoft.Scripting.Actions.Calls {
 
                 DynamicMetaObject[] resObjects = new DynamicMetaObject[objects.Length];
                 for (int i = 0; i < objects.Length; i++) {
-                    if (_targets.Count > 0 && AreArgumentTypesOverloaded(i, objects.Length, candidates)) {
-                        resObjects[i] = objects[i].Restrict(objects[i].LimitType);
+                    if (_targets.Count > 0 && AreArgumentTypesOverloaded(i, objects.Length, candidates)) {                                                
+                        resObjects[i] = RestrictOne(objects[i], parameters[i]);
                     } else if (parameters[i].Type.IsAssignableFrom(objects[i].Expression.Type)) {
                         // we have a strong enough type already
                         resObjects[i] = objects[i];
                     } else {
-                        resObjects[i] = objects[i].Restrict(objects[i].LimitType);
+                        resObjects[i] = RestrictOne(objects[i], parameters[i]);
                     }
                 }
 
                 return resObjects;
+            }
+
+            private DynamicMetaObject RestrictOne(DynamicMetaObject obj, ParameterWrapper forParam) {
+                if (forParam.Type == typeof(object)) {
+                    // don't use Restrict as it'll box & unbox.
+                    return new DynamicMetaObject(obj.Expression, BindingRestrictionsHelpers.GetRuntimeTypeRestriction(obj.Expression, obj.GetLimitType()));
+                } else {
+                    return obj.Restrict(obj.GetLimitType());
+                }
             }
 
             private static bool AreArgumentTypesOverloaded(int argIndex, int argCount, IList<MethodCandidate> methods) {

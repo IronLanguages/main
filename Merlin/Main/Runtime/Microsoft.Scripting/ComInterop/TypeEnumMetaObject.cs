@@ -20,6 +20,7 @@ using System.Collections.Generic;
 using System.Linq.Expressions;
 using System.Dynamic;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
+using Microsoft.Scripting.Runtime;
 
 namespace Microsoft.Scripting.ComInterop {
 
@@ -48,7 +49,7 @@ namespace Microsoft.Scripting.ComInterop {
         }
 
         private BindingRestrictions EnumRestrictions() {
-            return BindingRestrictions.GetTypeRestriction(
+            return BindingRestrictionsHelpers.GetRuntimeTypeRestriction(
                 Expression, typeof(ComTypeEnumDesc)
             ).Merge(
                 // ((ComTypeEnumDesc)<arg>).TypeLib.Guid == <guid>

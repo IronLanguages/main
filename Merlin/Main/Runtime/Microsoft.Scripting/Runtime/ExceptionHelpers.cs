@@ -98,6 +98,16 @@ namespace Microsoft.Scripting.Runtime {
             return TryGetAssociatedStackTraces(rethrow, out result) ? result : null;
         }
 
+        /// <summary>
+        /// Does AssociateDynamicStackFrames, UpdateStackTrace, followed by UpdateForRethrow.
+        /// Used so we only have to codegen one helper call in LightLambdaClosureVisitor.
+        /// </summary>
+        public static void UpdateStackTraceForRethrow(Exception exception, MethodBase method, string funcName, string fileName, int line) {
+            AssociateDynamicStackFrames(exception);
+            UpdateStackTrace(null, method, funcName, fileName, line);
+            UpdateForRethrow(exception);
+        }
+
         public static void UpdateStackTrace(CodeContext context, MethodBase method, string funcName, string filename, int line) {
             Debug.Assert(filename != null);
             if (_stackFrames == null) _stackFrames = new List<DynamicStackFrame>();

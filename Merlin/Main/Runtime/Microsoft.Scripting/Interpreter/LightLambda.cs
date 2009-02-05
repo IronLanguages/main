@@ -14,26 +14,53 @@
  * ***************************************************************************/
 
 using System;
-using System.Runtime.CompilerServices;
-using System.Reflection;
-
 using System.Linq.Expressions;
+using System.Reflection;
+using System.Runtime.CompilerServices;
+using Microsoft.Scripting.Generation;
 
 namespace Microsoft.Scripting.Interpreter {
     internal partial class LightLambda {
         internal static StrongBox<object>[] EmptyClosure = new StrongBox<object>[0];
 
-        private Interpreter _interpreter;
-        private StrongBox<object>[] _closure;
+        private readonly Interpreter _interpreter;
+        private readonly StrongBox<object>[] _closure;
 
-        internal LightLambda(Interpreter interpreter, StrongBox<object>[] closure) {
+        // Adaptive compilation support
+        private readonly LightDelegateCreator _delegateCreator;
+        private Delegate _compiled;
+
+        internal LightLambda(Interpreter interpreter) {
             this._interpreter = interpreter;
-            this._closure = closure == null ? EmptyClosure : closure;
+            this._closure = EmptyClosure;
         }
 
-        private StackFrame MakeFrame() {
-            var ret = _interpreter.MakeFrame(_closure);
-            return ret;
+        internal LightLambda(Interpreter interpreter, StrongBox<object>[] closure, LightDelegateCreator delegateCreator) {
+            this._interpreter = interpreter;
+            this._closure = closure;
+            this._delegateCreator = delegateCreator;
+        }
+
+        /// <summary>
+        /// Set by LightDelegateCreator once the delegate is compiled.
+        /// </summary>
+        internal Delegate Compiled {
+            get { return _compiled; }
+            set { _compiled = value; }
+        }
+
+        /// <summary>
+        /// Used by LightDelegateCreator to set the delegate.
+        /// </summary>
+        internal StrongBox<object>[] Closure {
+            get { return _closure; }
+        }
+
+        private StackFrame PrepareToRun() {
+            if (_delegateCreator != null) {
+                _delegateCreator.UpdateExecutionCount();
+            }
+            return _interpreter.MakeFrame(_closure);
         }
 
         private static MethodInfo GetRunMethod(Type delegateType) {
@@ -100,7 +127,12 @@ namespace Microsoft.Scripting.Interpreter {
         }
 
         public void RunVoidRef2<T0, T1>(ref T0 arg0, ref T1 arg1) {
-            var frame = MakeFrame();
+            if (_compiled != null) {
+                ((ActionRef<T0, T1>)_compiled)(ref arg0, ref arg1);
+                return;
+            }
+
+            var frame = PrepareToRun();
             // copy in and copy out for today...
             frame.Data[0] = arg0;
             frame.Data[1] = arg1;
@@ -111,7 +143,11 @@ namespace Microsoft.Scripting.Interpreter {
 
         
         public object Run(params object[] arguments) {
-            var frame = MakeFrame();
+            if (_compiled != null) {
+                return _compiled.DynamicInvoke(arguments);
+            }
+
+            var frame = PrepareToRun();
             for (int i = 0; i < arguments.Length; i++) {
                 frame.Data[i] = arguments[i];
             }

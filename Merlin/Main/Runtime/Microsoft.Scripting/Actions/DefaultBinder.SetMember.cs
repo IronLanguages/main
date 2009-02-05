@@ -78,10 +78,10 @@ namespace Microsoft.Scripting.Actions {
         }
 
         private DynamicMetaObject MakeSetMemberTarget(SetOrDeleteMemberInfo memInfo, DynamicMetaObject target, DynamicMetaObject value) {
-            Type type = target.LimitType.IsCOMObject ? target.Expression.Type : target.LimitType;
+            Type type = target.GetLimitType().IsCOMObject ? target.Expression.Type : target.GetLimitType();
             Expression self = target.Expression;
             
-            target = target.Restrict(target.LimitType);
+            target = target.Restrict(target.GetLimitType());
 
             memInfo.Body.Restrictions = target.Restrictions;
 

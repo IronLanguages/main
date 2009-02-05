@@ -194,21 +194,5 @@ namespace System.Linq.Expressions {
             ContractUtils.Requires(!type.IsByRef, "type", Strings.TypeMustNotBeByRef);
             return ParameterExpression.Make(type, name, false);
         }
-
-        //Variables must not be ByRef.
-        internal static void RequireVariableNotByRef(ParameterExpression v, string varName) {
-            Debug.Assert(varName != null);
-            if (v != null && v.IsByRef) {
-                throw new ArgumentException(Strings.VariableMustNotBeByRef, varName);
-            }
-        }
-
-        internal static void RequireVariablesNotByRef(ReadOnlyCollection<ParameterExpression> vs, string collectionName) {
-            Debug.Assert(vs != null);
-            Debug.Assert(collectionName != null);
-            foreach (ParameterExpression v in vs) {
-                RequireVariableNotByRef(v, collectionName);
-            }
-        }
     }
 }

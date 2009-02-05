@@ -196,62 +196,6 @@ namespace System.Dynamic {
             throw new NotSupportedException();
         }
 
-        /// <summary>
-        /// Provides the implementation of performing a binary operation on a member.  Derived classes
-        /// can override this method to custmize behavior.  When not overridden the call site
-        /// requesting the binder determines the behavior.
-        /// </summary>
-        /// <param name="binder">The binder provided by the call site.</param>
-        /// <param name="value">The right operand for the operation.</param>
-        /// <param name="result">The result of the operation.</param>
-        /// <returns>true if the operation is complete, false if the call site should determine behavior.</returns>
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1007:UseGenericsWhereAppropriate")]
-        public virtual bool TryBinaryOperationOnMember(BinaryOperationOnMemberBinder binder, object value, out object result) {
-            throw new NotSupportedException();
-        }
-
-        /// <summary>
-        /// Provides the implementation of performing a binary operation on an index.
-        /// Derived classes can override this method to custmize behavior.  When not overridden
-        /// the call site requesting the binder determines the behavior.
-        /// </summary>
-        /// <param name="binder">The binder provided by the call site.</param>
-        /// <param name="indexes">The indexes to be used.</param>
-        /// <param name="value">The right operand for the operation.</param>
-        /// <param name="result">The result of the operation.</param>
-        /// <returns>true if the operation is complete, false if the call site should determine behavior.</returns>
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1007:UseGenericsWhereAppropriate")]
-        public virtual bool TryBinaryOperationOnIndex(BinaryOperationOnIndexBinder binder, object[] indexes, object value, out object result) {
-            throw new NotSupportedException();
-        }
-
-        /// <summary>
-        /// Provides the implementation of performing a unary operation on member.
-        /// Derived classes can override this method to custmize behavior.  When not overridden
-        /// the call site requesting the binder determines the behavior.
-        /// </summary>
-        /// <param name="binder">The binder provided by the call site.</param>
-        /// <param name="result">The result of the operation.</param>
-        /// <returns>true if the operation is complete, false if the call site should determine behavior.</returns>
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1007:UseGenericsWhereAppropriate")]
-        public virtual bool TryUnaryOperationOnMember(UnaryOperationOnMemberBinder binder, out object result) {
-            throw new NotSupportedException();
-        }
-
-        /// <summary>
-        /// Provides the implementation of performing a binary operation on an index.  Derived
-        /// classes can override this method to custmize behavior.  When not overridden the call
-        /// site requesting the binder determines the behavior.
-        /// </summary>
-        /// <param name="binder">The binder provided by the call site.</param>
-        /// <param name="indexes">The indexes to be used.</param>
-        /// <param name="result">The result of the operation.</param>
-        /// <returns>true if the operation is complete, false if the call site should determine behavior.</returns>
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1007:UseGenericsWhereAppropriate")]
-        public virtual bool TryUnaryOperationOnIndex(UnaryOperationOnIndexBinder binder, object[] indexes, out object result) {
-            throw new NotSupportedException();
-        }
-
         #endregion
 
         #region MetaDynamic
@@ -297,6 +241,23 @@ namespace System.Dynamic {
             public override DynamicMetaObject BindInvokeMember(InvokeMemberBinder binder, DynamicMetaObject[] args) {
                 if (IsOverridden("TryInvokeMember")) {
                     return CallMethodWithResult("TryInvokeMember", binder, GetArgArray(args), (e) => binder.FallbackInvokeMember(this, args, e));
+                } else if (IsOverridden("TryGetMember")) {
+                    // Generate a tree like:
+                    //
+                    // {
+                    //   object result;
+                    //   TryGetMember(payload, out result) ? FallbackInvoke(result) : fallbackResult
+                    // }
+                    //
+                    // Then it calls FallbackInvokeMember with this tree as the
+                    // "error", giving the language the option of using this
+                    // tree or doing .NET binding.
+                    //
+                    return CallMethodWithResult(
+                        "TryGetMember", new GetBinderAdapter(binder), NoArgs,
+                        (e) => binder.FallbackInvokeMember(this, args, e),
+                        (e) => binder.FallbackInvoke(e, args, null)
+                    );
                 }
 
                 return base.BindInvokeMember(binder, args);
@@ -359,39 +320,6 @@ namespace System.Dynamic {
                 return base.BindDeleteIndex(binder, indexes);
             }
 
-            public override DynamicMetaObject BindBinaryOperationOnMember(BinaryOperationOnMemberBinder binder, DynamicMetaObject value) {
-                if (IsOverridden("TryBinaryOperationOnMember")) {
-                    return CallMethodWithResult("TryBinaryOperationOnMember", binder, GetArgs(value), (e) => binder.FallbackBinaryOperationOnMember(this, value, e));
-                }
-
-                return base.BindBinaryOperationOnMember(binder, value);
-            }
-
-            public override DynamicMetaObject BindBinaryOperationOnIndex(BinaryOperationOnIndexBinder binder, DynamicMetaObject[] indexes, DynamicMetaObject value) {
-                if (IsOverridden("TryBinaryOperationOnIndex")) {
-                    return CallMethodWithResult("TryBinaryOperationOnIndex", binder, GetArgArray(indexes, value), (e) => binder.FallbackBinaryOperationOnIndex(this, indexes, value, e));
-                }
-
-                return base.BindBinaryOperationOnIndex(binder, indexes, value);
-            }
-
-
-            public override DynamicMetaObject BindUnaryOperationOnMember(UnaryOperationOnMemberBinder binder) {
-                if (IsOverridden("TryUnaryOperationOnMember")) {
-                    return CallMethodWithResult("TryUnaryOperationOnMember", binder, NoArgs, (e) => binder.FallbackUnaryOperationOnMember(this, e));
-                }
-
-                return base.BindUnaryOperationOnMember(binder);
-            }
-
-            public override DynamicMetaObject BindUnaryOperationOnIndex(UnaryOperationOnIndexBinder binder, DynamicMetaObject[] indexes) {
-                if (IsOverridden("TryUnaryOperationOnIndex")) {
-                    return CallMethodWithResult("TryUnaryOperationOnIndex", binder, GetArgArray(indexes), (e) => binder.FallbackUnaryOperationOnIndex(this, indexes, e));
-                }
-
-                return base.BindUnaryOperationOnIndex(binder, indexes);
-            }
-
             private delegate DynamicMetaObject Fallback(DynamicMetaObject errorSuggestion);
 
             private readonly static Expression[] NoArgs = new Expression[0];
@@ -430,6 +358,14 @@ namespace System.Dynamic {
             /// specific method on Dynamic that returns a result
             /// </summary>
             private DynamicMetaObject CallMethodWithResult(string methodName, DynamicMetaObjectBinder binder, Expression[] args, Fallback fallback) {
+                return CallMethodWithResult(methodName, binder, args, fallback, null);
+            }
+
+            /// <summary>
+            /// Helper method for generating a MetaObject which calls a
+            /// specific method on Dynamic that returns a result
+            /// </summary>
+            private DynamicMetaObject CallMethodWithResult(string methodName, DynamicMetaObjectBinder binder, Expression[] args, Fallback fallback, Fallback fallbackInvoke) {
                 //
                 // First, call fallback to do default binding
                 // This produces either an error or a call to a .NET member
@@ -440,7 +376,7 @@ namespace System.Dynamic {
                 // Build a new expression like:
                 // {
                 //   object result;
-                //   TryGetMember(payload, out result) ? result : fallbackResult
+                //   TryGetMember(payload, out result) ? fallbackInvoke(result) : fallbackResult
                 // }
                 //
                 var result = Expression.Parameter(typeof(object), null);
@@ -449,6 +385,11 @@ namespace System.Dynamic {
                 Array.Copy(args, 0, callArgs, 1, args.Length);
                 callArgs[0] = Constant(binder);
                 callArgs[callArgs.Length - 1] = result;
+
+                var resultMO = new DynamicMetaObject(result, BindingRestrictions.Empty);
+                if (fallbackInvoke != null) {
+                    resultMO = fallbackInvoke(resultMO);
+                }
 
                 var callDynamic = new DynamicMetaObject(
                     Expression.Block(
@@ -459,11 +400,11 @@ namespace System.Dynamic {
                                 typeof(DynamicObject).GetMethod(methodName),
                                 callArgs
                             ),
-                            result,
+                            resultMO.Expression,
                             Helpers.Convert(fallbackResult.Expression, typeof(object))
                         )
                     ),
-                    GetRestrictions().Merge(fallbackResult.Restrictions)
+                    GetRestrictions().Merge(resultMO.Restrictions).Merge(fallbackResult.Restrictions)
                 );
                 
                 //
@@ -594,7 +535,7 @@ namespace System.Dynamic {
             private BindingRestrictions GetRestrictions() {
                 Debug.Assert(Restrictions == BindingRestrictions.Empty, "We don't merge, restrictions are always empty");
 
-                return BindingRestrictions.GetTypeRestriction(Expression, LimitType);
+                return BindingRestrictions.GetTypeRestriction(this);
             }
 
             /// <summary>
@@ -610,6 +551,24 @@ namespace System.Dynamic {
             private new DynamicObject Value {
                 get {
                     return (DynamicObject)base.Value;
+                }
+            }
+
+            // It is okay to throw NotSupported from this binder. This object
+            // is only used by DynamicObject.GetMember--it is not expected to
+            // (and cannot) implement binding semantics. It is just so the DO
+            // can use the Name and IgnoreCase properties.
+            private sealed class GetBinderAdapter : GetMemberBinder {
+                internal GetBinderAdapter(InvokeMemberBinder binder)
+                    : base(binder.Name, binder.IgnoreCase) {
+                }
+
+                public override DynamicMetaObject FallbackGetMember(DynamicMetaObject target, DynamicMetaObject errorSuggestion) {
+                    throw new NotSupportedException();
+                }
+
+                public override object CacheIdentity {
+                    get { throw new NotSupportedException(); }
                 }
             }
         }

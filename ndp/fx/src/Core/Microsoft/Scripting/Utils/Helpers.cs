@@ -15,10 +15,6 @@
  * ***************************************************************************/
 
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.IO;
-using System.Reflection.Emit;
-using System.Text;
 using System.Linq.Expressions;
 
 namespace System.Dynamic.Utils {
@@ -40,7 +36,7 @@ namespace System.Dynamic.Utils {
             if (cmp.Equals(first, second)) {
                 return first;
             }
-            var set = new System.Linq.Expressions.Compiler.Set<T>(cmp);
+            var set = new Set<T>(cmp);
             for (T t = first; t != null; t = parent(t)) {
                 set.Add(t);
             }

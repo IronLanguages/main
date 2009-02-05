@@ -17,19 +17,17 @@ def run_specs(method_name)
   ARGV.delete_at 0
   runner = MSpecRunner.new
 
-  IronRuby.source_context do
-    iruby = $ruby_imp
+  iruby = $ruby_imp
 
-    if ARGV.length == 0
-      runner.all_core(method_name, iruby)
-    elsif ARGV.length == 1
-      runner.send(:"#{method_name}", iruby, ARGV.first)
-    elsif ARGV.length == 2
-      runner.send(:"#{method_name}", iruby, ARGV[0], ARGV[1])
-    else
-      rake_output_message "usage: rake #{method_name} [class] [method]"
-      exit(-1)
-    end
+  if ARGV.length == 0
+    runner.all_core(method_name, iruby)
+  elsif ARGV.length == 1
+    runner.send(:"#{method_name}", iruby, ARGV.first)
+  elsif ARGV.length == 2
+    runner.send(:"#{method_name}", iruby, ARGV[0], ARGV[1])
+  else
+    rake_output_message "usage: rake #{method_name} [class] [method]"
+    exit(-1)
   end
   runner
 end
@@ -68,38 +66,22 @@ def invoke_mspec(path_to_ruby, root_path = "core")
   else
     name, reporter, _ = split_args
   end
-  IronRuby.source_context do
-    root = UserEnvironment.rubyspec
-    spec_file = name == '-' ? '' : "#{name}_spec.rb"
-    spec_dir = klass == '-' ? '' : "#{klass}/"
-    spec_suite = spec_dir + spec_file
-    run_spec = root + "/#{root_path}/#{spec_suite}"
-    reporter,tag  = extract_reporter(reporter)
+  root = UserEnvironment.rubyspec
+  spec_file = name == '-' ? '' : "#{name}_spec.rb"
+  spec_dir = klass == '-' ? '' : "#{klass}/"
+  spec_suite = spec_dir + spec_file
+  run_spec = root + "/#{root_path}/#{spec_suite}"
+  reporter,tag  = extract_reporter(reporter)
 
-    chdir(get_source_dir(:tests) +'util'){
-      cmd =  "\"#{UserEnvironment.mri_binary}\" \"#{UserEnvironment.mspec}/bin/mspec\" #{tag || 'ci'} -t #{path_to_ruby} -B \"#{UserEnvironment.config}\" \"#{run_spec}\" #{reporter}"
-      exec_net cmd
-    }
-  end
+  cmd =  "\"#{UserEnvironment.mri_binary}\" \"#{UserEnvironment.mspec}/bin/mspec\" #{tag || 'ci'} -t#{path_to_ruby} -B \"#{UserEnvironment.config}\" \"#{run_spec}\" #{reporter}"
+  exec_net cmd
 end
 
-desc "[deprecated] run old school spec tests"
-task :test_libs do
-  IronRuby.source_context do
-    get_source_dir(:tests).filtered_subdirs.each do |dir|
-      chdir(dir) {
-        dir.glob('test_*.rb').each { |file| exec_net "\"#{build_path + IRONRUBY_COMPILER}\" \"#{file}\"" }
-      }
-    end
-  end
-end
-
-desc "run compiler only tests using IronRuby.Tests.exe C# driver"
+desc "run compiler only tests using IronRuby.Tests.exe C# driver, currently doesn't work in unsigned builds"
 task :test_compiler do
-  IronRuby.source_context do
-    exec_net "#{build_path + 'ironruby.tests.exe'}"
-    # TODO: make run.rb do the right thing in external svn-only install
-    chdir(:tests) { exec "ruby run.rb" }
+  exec_net "#{build_path + 'ironruby.tests.exe'}"
+  Dir.chdir("#{project_root + 'Languages/Ruby/Tests'}") do
+    exec "ruby run.rb"
   end
 end
 
@@ -109,43 +91,39 @@ task :mspec => "mspec:core"
 namespace :mspec do
   desc "Run RubySpec core suite"
   task :core => ["ruby_imp", :testhappy] do
-    IronRuby.source_context { invoke_mspec($ruby_imp) }
+    invoke_mspec($ruby_imp)
     exit
   end
 
   desc "Run core suite with both CRuby and Ironruby"
   task :dual => [:testhappy] do
-    IronRuby.source_context do
-      rake_output_message "Ruby\n"
-      invoke_mspec(UserEnvironment.mri_binary)
-      rake_output_message "IronRuby\n"
-      invoke_mspec(path_to_ir)
-      exit
-    end
+    rake_output_message "Ruby\n"
+    invoke_mspec(UserEnvironment.mri_binary)
+    rake_output_message "IronRuby\n"
+    invoke_mspec(path_to_ir)
+    exit
   end
 
   desc "Run RubySpec language suite"
   task :lang => ["ruby_imp", :testhappy] do
-    IronRuby.source_context { invoke_mspec($ruby_imp, 'language')}
+    invoke_mspec($ruby_imp, 'language')
     exit
   end
 
   desc "Run RubySpec library suite"
   task :lib => ["ruby_imp", :testhappy] do
-    IronRuby.source_context { invoke_mspec($ruby_imp, 'library')}
+    invoke_mspec($ruby_imp, 'library')
     exit
   end
 end
 
 desc "remove output files and generated debugging info from tests directory"
 task :clean_tests do
-  IronRuby.source_context do
-    chdir(:tests) do
-      exec "del /s *.log"
-      exec "del /s *.pdb"
-      exec "del /s *.exe"
-      exec "del /s *.dll"
-    end
+  Dir.chdir("#{project_root + 'Languages/Ruby/Tests'}") do
+    exec "del /s *.log"
+    exec "del /s *.pdb"
+    exec "del /s *.exe"
+    exec "del /s *.dll"
   end
 end
 
@@ -197,7 +175,7 @@ end
 
 desc "regenerate critical tags"
 task :regen_tags => [:testhappy] do
-  IronRuby.source_context { MSpecRunner.new.generate_critical_tags }
+  MSpecRunner.new.generate_critical_tags
 end
 
 desc "Set ruby runner to CRuby"
@@ -212,16 +190,14 @@ task :ruby do
 end
 
 task :ruby_imp do
-  IronRuby.source_context do
-    $ruby_imp ||= %Q{#{path_to_ir} -T "-X:Interpret"}
-  end
+  $ruby_imp ||= %Q{#{path_to_ir} -T "-X:Interpret"}
 end
 
 desc "Run PEVerify on the generated IL"
 task :peverify do
   begin
     old_verbose, $VERBOSE = $VERBOSE, nil
-    IronRuby.source_context {$ruby_imp ||= %Q{#{path_to_ir} -T "-X:SaveAssemblies"} }
+    $ruby_imp ||= %Q{#{path_to_ir} -T "-X:SaveAssemblies"}
     ARGV = [ARGV[0], *ARGV[2..-1]]
   ensure
     $VERBOSE = old_verbose
