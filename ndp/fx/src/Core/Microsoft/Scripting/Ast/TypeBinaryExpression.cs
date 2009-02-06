@@ -36,7 +36,7 @@ namespace System.Linq.Expressions {
         /// Gets the static type of the expression that this <see cref="Expression" /> represents.
         /// </summary>
         /// <returns>The <see cref="Type"/> that represents the static type of the expression.</returns>
-        protected override Type GetExpressionType() {
+        protected override Type TypeImpl() {
             return typeof(bool);
         }
 
@@ -45,7 +45,7 @@ namespace System.Linq.Expressions {
         /// ExpressionType.Extension when overriding this method.
         /// </summary>
         /// <returns>The <see cref="ExpressionType"/> of the expression.</returns>
-        protected override ExpressionType GetNodeKind() {
+        protected override ExpressionType NodeTypeImpl() {
             return _nodeKind;
         }
 
@@ -109,7 +109,7 @@ namespace System.Linq.Expressions {
                         value,
                         typeof(object).GetMethod("GetType")
                     ),
-                    Expression.Constant(_typeOperand, typeof(Type))
+                    Expression.Constant(_typeOperand.GetNonNullableType(), typeof(Type))
                 )
             );
         }
@@ -119,10 +119,8 @@ namespace System.Linq.Expressions {
             //TypeEqual(null, T) always returns false.
             if (ce.Value == null) {
                 return Expression.Constant(false);
-            } else if (_typeOperand.IsNullableType()) {
-                return Expression.Constant(_typeOperand == ce.Type);
             } else {
-                return Expression.Constant(_typeOperand == ce.Value.GetType());
+                return Expression.Constant(_typeOperand.GetNonNullableType() == ce.Value.GetType());
             }
         }
 

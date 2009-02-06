@@ -20,7 +20,11 @@ using System.Linq.Expressions;
 using System.Linq.Expressions.Compiler;
 
 namespace System.Runtime.CompilerServices {
-    
+
+    /// <summary>
+    /// This API supports the .NET Framework infrastructure and is not intended to be used directly from your code.
+    /// Contains helper methods called from dynamically generated methods.
+    /// </summary>
     public static partial class RuntimeOps {
         /// <summary>
         /// Creates an interface that can be used to modify closed over variables at runtime.

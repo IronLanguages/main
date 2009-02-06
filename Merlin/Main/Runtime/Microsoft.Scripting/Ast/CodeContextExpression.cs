@@ -32,11 +32,11 @@ namespace Microsoft.Scripting.Ast {
         internal CodeContextExpression() {
         }
 
-        protected override System.Type GetExpressionType() {
+        protected override System.Type TypeImpl() {
             return typeof(CodeContext);
         }
 
-        protected override ExpressionType GetNodeKind() {
+        protected override ExpressionType NodeTypeImpl() {
             return ExpressionType.Extension;
         }
 
@@ -60,11 +60,11 @@ namespace Microsoft.Scripting.Ast {
             _newContext = newContext;
         }
 
-        protected override Type GetExpressionType() {
+        protected override Type TypeImpl() {
             return _body.Type;
         }
 
-        protected override ExpressionType GetNodeKind() {
+        protected override ExpressionType NodeTypeImpl() {
             return ExpressionType.Extension;
         }
 

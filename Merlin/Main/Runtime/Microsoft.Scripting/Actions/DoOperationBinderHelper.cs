@@ -449,7 +449,7 @@ namespace Microsoft.Scripting.Actions {
         private Expression GetParamater(int index) {
             Expression expr = _rule.Parameters[index];
             if (_types[index].IsAssignableFrom(expr.Type)) return expr;
-            return Ast.Convert(expr, _types[index]);
+            return AstUtils.Convert(expr, _types[index]);
         }
 
         private bool TryMakeBindingTarget(MethodInfo[] targets) {

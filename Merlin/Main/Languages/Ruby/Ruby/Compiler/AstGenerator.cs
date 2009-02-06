@@ -780,11 +780,7 @@ namespace IronRuby.Compiler.Ast {
         }
 
         internal MSA.Expression/*!*/ AddDebugInfo(MSA.Expression/*!*/ expression, SourceSpan location) {
-            if (_document == null || !location.IsValid) {
-                return expression;
-            }
-            return MSA.Expression.DebugInfo(expression, _document,
-                location.Start.Line, location.Start.Column, location.End.Line, location.End.Column);
+            return Microsoft.Scripting.Ast.Utils.AddDebugInfo(expression, _document, location.Start, location.End);
         }
 
         internal MSA.Expression/*!*/ DebugMarker(string/*!*/ marker) {

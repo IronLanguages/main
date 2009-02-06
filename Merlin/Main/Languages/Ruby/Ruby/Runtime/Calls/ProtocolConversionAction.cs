@@ -41,10 +41,6 @@ namespace IronRuby.Runtime.Calls {
         // That means if the to_xxx conversion methods or respond_to? are aliased to scope manipulating methods (e.g. eval, private, ...)
         // it won't work. We assume that this is acceptable (it could be easily changed, we can define 2 kinds of protocol actions: with scope and with context).
         internal static readonly RubyCallSignature Signature = RubyCallSignature.WithImplicitSelf(0);
-        
-        public override object/*!*/ CacheIdentity {
-            get { return this; }
-        }
 
         public override DynamicMetaObject/*!*/ Bind(DynamicMetaObject/*!*/ context, DynamicMetaObject/*!*/[]/*!*/ args) {
             var mo = new MetaObjectBuilder();

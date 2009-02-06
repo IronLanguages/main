@@ -365,7 +365,7 @@ namespace Microsoft.Scripting.Actions {
         private void MakeConversionTarget(MethodTracker method, Type fromType, bool isImplicit) {
             Expression ret = _rule.MakeReturn(
                 Binder,
-                Binder.MakeCallExpression(_rule.Context, method.Method, Ast.Convert(_rule.Parameters[0], fromType))
+                Binder.MakeCallExpression(_rule.Context, method.Method, AstUtils.Convert(_rule.Parameters[0], fromType))
             );
 
             ret = WrapForThrowingTry(isImplicit, ret);
@@ -415,7 +415,7 @@ namespace Microsoft.Scripting.Actions {
             } else {
                 Expression arg = _rule.Parameters[0];
                 if (arg.Type != knownType && knownType != typeof(DynamicNull)) {
-                    arg = Ast.Convert(arg, CompilerHelpers.GetVisibleType(knownType));
+                    arg = AstUtils.Convert(arg, CompilerHelpers.GetVisibleType(knownType));
                 }
                 _rule.Target =
                     _rule.MakeReturn(
@@ -605,7 +605,7 @@ namespace Microsoft.Scripting.Actions {
         /// </summary>
         /// <param name="toType"></param>
         private void MakeNullTarget(Type toType) {
-            _rule.Target = _rule.MakeReturn(Binder, Ast.Convert(Ast.Constant(null), toType));
+            _rule.Target = _rule.MakeReturn(Binder, Ast.Constant(null, toType));
         }
 
         /// <summary>

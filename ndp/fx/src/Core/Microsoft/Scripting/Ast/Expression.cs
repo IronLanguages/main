@@ -77,7 +77,7 @@ namespace System.Linq.Expressions {
         /// The <see cref="ExpressionType"/> of the <see cref="Expression"/>.
         /// </summary>
         public ExpressionType NodeType {
-            get { return GetNodeKind(); }
+            get { return NodeTypeImpl(); }
         }
 
 
@@ -86,7 +86,7 @@ namespace System.Linq.Expressions {
         /// </summary>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1721:PropertyNamesShouldNotMatchGetMethods")]
         public Type Type {
-            get { return GetExpressionType(); }
+            get { return TypeImpl(); }
         }
 
         /// <summary>
@@ -103,7 +103,7 @@ namespace System.Linq.Expressions {
         /// </summary>
         /// <returns>The <see cref="ExpressionType"/> of the expression.</returns>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate")]
-        protected virtual ExpressionType GetNodeKind() {
+        protected virtual ExpressionType NodeTypeImpl() {
 #if !MICROSOFT_SCRIPTING_CORE
             ExtensionInfo extInfo;
             if (_legacyCtorSupportTable.TryGetValue(this, out extInfo)) {
@@ -111,8 +111,8 @@ namespace System.Linq.Expressions {
             }
 #endif
 
-            // the extension expression failed to override GetNodeKind
-            throw Error.ExtensionNodeMustOverrideMethod("Expression.GetNodeKind()");
+            // the extension expression failed to override NodeTypeImpl
+            throw Error.ExtensionNodeMustOverrideMethod("Expression.NodeTypeImpl()");
         }
 
         /// <summary>
@@ -120,7 +120,7 @@ namespace System.Linq.Expressions {
         /// </summary>
         /// <returns>The <see cref="Type"/> that represents the static type of the expression.</returns>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate")]
-        protected virtual Type GetExpressionType() {
+        protected virtual Type TypeImpl() {
 #if !MICROSOFT_SCRIPTING_CORE
             ExtensionInfo extInfo;
             if (_legacyCtorSupportTable.TryGetValue(this, out extInfo)) {
@@ -128,8 +128,8 @@ namespace System.Linq.Expressions {
             }
 #endif
 
-            // the extension expression failed to override GetExpressionType
-            throw Error.ExtensionNodeMustOverrideMethod("Expression.GetExpressionType()");
+            // the extension expression failed to override TypeImpl
+            throw Error.ExtensionNodeMustOverrideMethod("Expression.TypeImpl()");
         }
 
         /// <summary>

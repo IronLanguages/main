@@ -1,4 +1,4 @@
-/* ****************************************************************************
+﻿/* ****************************************************************************
  *
  * Copyright (c) Microsoft Corporation. 
  *
@@ -184,7 +184,7 @@ namespace System.Dynamic {
 
                 case VarEnum.VT_I1: return AsI1;
                 case VarEnum.VT_I2: return AsI2;
-                case VarEnum.VT_I4: return RuntimeOps.Int32ToObject(AsI4);
+                case VarEnum.VT_I4: return AsI4;
                 case VarEnum.VT_I8: return AsI8;
                 case VarEnum.VT_UI1: return AsUi1;
                 case VarEnum.VT_UI2: return AsUi2;
@@ -192,7 +192,7 @@ namespace System.Dynamic {
                 case VarEnum.VT_UI8: return AsUi8;
                 case VarEnum.VT_INT: return AsInt;
                 case VarEnum.VT_UINT: return AsUint;
-                case VarEnum.VT_BOOL: return AsBool ? RuntimeOps.True : RuntimeOps.False;
+                case VarEnum.VT_BOOL: return AsBool;
                 case VarEnum.VT_ERROR: return AsError;
                 case VarEnum.VT_R4: return AsR4;
                 case VarEnum.VT_R8: return AsR8;
@@ -269,7 +269,7 @@ namespace System.Dynamic {
             CultureInfo ci = CultureInfo.CurrentCulture;
 
             switch (tc) {
-                case TypeCode.Empty: SetAsNull(); break;
+                case TypeCode.Empty: break;
                 case TypeCode.Object: AsUnknown = value; break;
                 case TypeCode.DBNull: SetAsNull(); break;
                 case TypeCode.Boolean: AsBool = value.ToBoolean(ci); break;

@@ -21,6 +21,7 @@ using System.Reflection;
 using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 
 namespace Microsoft.Scripting.Generation {
@@ -1073,6 +1074,9 @@ namespace Microsoft.Scripting.Generation {
             return true;
         }
 
+        // TODO: we should try to remove this. It caused a 4x degrade in a
+        // conversion intense lambda. And also seems like a bad idea to mess
+        // with CLR boxing semantics.
         /// <summary>
         /// Boxes the value of the stack. No-op for reference types. Void is
         /// converted to a null reference. For almost all value types this
@@ -1089,15 +1093,15 @@ namespace Microsoft.Scripting.Generation {
                 if (type == typeof(void)) {
                     Emit(OpCodes.Ldnull);
                 } else if (type == typeof(int)) {
-                    EmitCall(typeof(RuntimeOps), "Int32ToObject");
+                    EmitCall(typeof(ScriptingRuntimeHelpers), "Int32ToObject");
                 } else if (type == typeof(bool)) {
                     var label = DefineLabel();
                     var end = DefineLabel();
                     Emit(OpCodes.Brtrue_S, label);
-                    Emit(OpCodes.Ldsfld, typeof(RuntimeOps).GetField("False"));
+                    Emit(OpCodes.Ldsfld, typeof(ScriptingRuntimeHelpers).GetField("False"));
                     Emit(OpCodes.Br_S, end);
                     MarkLabel(label);
-                    Emit(OpCodes.Ldsfld, typeof(RuntimeOps).GetField("True"));
+                    Emit(OpCodes.Ldsfld, typeof(ScriptingRuntimeHelpers).GetField("True"));
                     MarkLabel(end);
                 } else {
                     Emit(OpCodes.Box, type);
@@ -1678,10 +1682,10 @@ namespace Microsoft.Scripting.Generation {
             // Duplicates functionality of ILGen.EmitBoxing at runtime for templated types
             Type type = typeof(T);
             if (type == typeof(int)) {
-                return RuntimeOps.Int32ToObject((int)(object)value);
+                return ScriptingRuntimeHelpers.Int32ToObject((int)(object)value);
             } else if (type == typeof(bool)) {
                 bool bValue = (bool)(object)value;
-                return bValue ? RuntimeOps.True : RuntimeOps.False;
+                return bValue ? ScriptingRuntimeHelpers.True : ScriptingRuntimeHelpers.False;
             } else {
                 return (object)value;
             }

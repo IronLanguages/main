@@ -761,19 +761,6 @@ namespace System.Linq.Expressions.Compiler {
             return new Result(action, expr);
         }
 
-        // DebugInfoExpression
-        private Result RewriteDebugInfoExpression(Expression expr, Stack stack) {
-            var node = (DebugInfoExpression)expr;
-
-            Result body = RewriteExpression(node.Expression, stack);
-
-            RewriteAction action = body.Action;
-            if (action != RewriteAction.None) {
-                expr = new DebugInfoExpression(body.Node, node.Document, node.StartLine, node.StartColumn, node.EndLine, node.EndColumn);
-            }
-            return new Result(action, expr);
-        }
-
         // SwitchStatement
         private Result RewriteSwitchExpression(Expression expr, Stack stack) {
             SwitchExpression node = (SwitchExpression)expr;

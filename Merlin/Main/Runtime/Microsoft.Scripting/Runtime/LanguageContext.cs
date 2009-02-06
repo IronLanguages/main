@@ -404,10 +404,6 @@ namespace Microsoft.Scripting.Runtime {
             public override DynamicMetaObject FallbackUnaryOperation(DynamicMetaObject target, DynamicMetaObject errorSuggestion) {
                 return ErrorMetaObject(target, new[] { target }, errorSuggestion);
             }
-            
-            public override object CacheIdentity {
-                get { return this; }
-            }
         }
 
         public virtual BinaryOperationBinder CreateBinaryOperationBinder(ExpressionType operation) {
@@ -422,10 +418,6 @@ namespace Microsoft.Scripting.Runtime {
             public override DynamicMetaObject FallbackBinaryOperation(DynamicMetaObject target, DynamicMetaObject arg, DynamicMetaObject errorSuggestion) {
                 return ErrorMetaObject(target, new[] { target, arg }, errorSuggestion);
             }
-
-            public override object CacheIdentity {
-                get { return this; }
-            }
         }
 
         [Obsolete("Use UnaryOperation or BinaryOperation")]
@@ -436,10 +428,6 @@ namespace Microsoft.Scripting.Runtime {
 
             public override DynamicMetaObject FallbackOperation(DynamicMetaObject target, DynamicMetaObject[] args, DynamicMetaObject onBindingError) {
                 return ErrorMetaObject(target, args, onBindingError);
-            }
-
-            public override object CacheIdentity {
-                get { return this; }
             }
         }
 
@@ -469,10 +457,6 @@ namespace Microsoft.Scripting.Runtime {
                         String.Format("Expected {0}, got {1}", Type.FullName, self.GetLimitType().FullName)
                     );
             }
-
-            public override object CacheIdentity {
-                get { return this; }
-            }
         }
 
         public virtual ConvertBinder CreateConvertBinder(Type toType, bool explicitCast) {
@@ -486,10 +470,6 @@ namespace Microsoft.Scripting.Runtime {
 
             public override DynamicMetaObject FallbackGetMember(DynamicMetaObject self, DynamicMetaObject onBindingError) {
                 return ErrorMetaObject(self, DynamicMetaObject.EmptyMetaObjects, onBindingError);
-            }
-
-            public override object CacheIdentity {
-                get { return this; }
             }
         }
 
@@ -505,10 +485,6 @@ namespace Microsoft.Scripting.Runtime {
             public override DynamicMetaObject FallbackSetMember(DynamicMetaObject self, DynamicMetaObject value, DynamicMetaObject onBindingError) {
                 return ErrorMetaObject(self, new DynamicMetaObject[] { value }, onBindingError);
             }
-
-            public override object CacheIdentity {
-                get { return this; }
-            }
         }
 
         public virtual SetMemberBinder CreateSetMemberBinder(string name, bool ignoreCase) {
@@ -522,10 +498,6 @@ namespace Microsoft.Scripting.Runtime {
 
             public override DynamicMetaObject FallbackDeleteMember(DynamicMetaObject self, DynamicMetaObject onBindingError) {
                 return ErrorMetaObject(self, DynamicMetaObject.EmptyMetaObjects, onBindingError);
-            }
-
-            public override object CacheIdentity {
-                get { return this; }
             }
         }
 
@@ -566,10 +538,6 @@ namespace Microsoft.Scripting.Runtime {
                     target.Restrictions
                 );
             }
-
-            public override object CacheIdentity {
-                get { return this; }
-            }
         }
 
         public virtual InvokeMemberBinder CreateCallBinder(string name, bool ignoreCase, params ArgumentInfo[] arguments) {
@@ -584,10 +552,6 @@ namespace Microsoft.Scripting.Runtime {
             public override DynamicMetaObject FallbackInvoke(DynamicMetaObject target, DynamicMetaObject[] args, DynamicMetaObject onBindingError) {
                 return ErrorMetaObject(target, args, onBindingError);
             }
-
-            public override object CacheIdentity {
-                get { return this; }
-            }
         }
 
         public virtual InvokeBinder CreateInvokeBinder(params ArgumentInfo[] arguments) {
@@ -601,10 +565,6 @@ namespace Microsoft.Scripting.Runtime {
 
             public override DynamicMetaObject FallbackCreateInstance(DynamicMetaObject target, DynamicMetaObject[] args, DynamicMetaObject onBindingError) {
                 return ErrorMetaObject(target, args, onBindingError);
-            }
-
-            public override object CacheIdentity {
-                get { return this; }
             }
         }
 

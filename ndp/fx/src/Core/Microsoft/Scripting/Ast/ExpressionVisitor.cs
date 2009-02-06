@@ -43,7 +43,10 @@ namespace System.Linq.Expressions {
         /// <returns>The modified expression, if it or any subexpression was modified;
         /// otherwise, returns the original expression.</returns>
         public Expression Visit(Expression node) {
-            return (node == null) ? null : node.Accept(this);
+            if (node != null) {
+                return node.Accept(this);
+            }
+            return null;
         }
 
         /// <summary>
@@ -259,11 +262,7 @@ namespace System.Linq.Expressions {
         /// <returns>The modified expression, if it or any subexpression was modified;
         /// otherwise, returns the original expression.</returns>
         protected internal virtual Expression VisitDebugInfo(DebugInfoExpression node) {
-            Expression e = Visit(node.Expression);
-            if (e == node.Expression) {
-                return node;
-            }
-            return Expression.DebugInfo(e, node.Document, node.StartLine, node.StartColumn, node.EndLine, node.EndColumn);
+            return node;
         }
 
         /// <summary>

@@ -176,7 +176,7 @@ namespace System.Dynamic {
         /// </returns>
         private int GetValueIndexCaseInsensitive(string name, ExpandoObject obj) {
             int firstMatch = -1; //the location of the first matching member
-            lock (obj) {
+            lock (obj.LockObject) {
                 //Search from back to front, so the matching member that is most recently added can be found first
                 for (int i = _keys.Length - 1; i >=0 ; i--) {
                     if (firstMatch == -1) {

@@ -32,7 +32,17 @@ namespace System.Linq.Expressions.Compiler {
 
             int count = node.ExpressionCount;
             for (int index = 0; index < count - 1; index++) {
-                EmitExpressionAsVoid(node.GetExpression(index));
+                var e = node.GetExpression(index);
+
+                if (_emitDebugSymbols) {
+                    //No need to emit a clearance if the next expression in the block is also a
+                    //DebugInfoExprssion.
+                    var debugInfo = e as DebugInfoExpression;
+                    if (debugInfo != null && debugInfo.IsClear && node.GetExpression(index + 1) is DebugInfoExpression) {
+                        continue;
+                    }
+                }
+                EmitExpressionAsVoid(e);
             }
 
             // if the type of Block it means this is not a Comma

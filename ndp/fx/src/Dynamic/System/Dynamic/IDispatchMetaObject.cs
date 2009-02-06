@@ -101,7 +101,7 @@ namespace System.Dynamic {
 
         private DynamicMetaObject BindGetMember(ComMethodDesc method) {
             if (method.IsDataMember) {
-                if (method.Parameters.Length == 0) {
+                if (method.ParamCount == 0) {
                     return BindComInvoke(DynamicMetaObject.EmptyMetaObjects, method, new ArgumentInfo[0]);
                 }
             }

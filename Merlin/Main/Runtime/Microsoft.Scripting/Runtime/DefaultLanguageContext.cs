@@ -52,7 +52,7 @@ namespace Microsoft.Scripting.Runtime {
             if (toType.IsAssignableFrom(expr.Type)) {
                 return expr;
             }
-            return Expression.Convert(expr, toType);
+            return Ast.Utils.Convert(expr, toType);
         }
     }
 }

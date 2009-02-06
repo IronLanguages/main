@@ -23,10 +23,6 @@ using System.Diagnostics;
 
 namespace System.Dynamic {
     internal sealed class  ComInvokeAction : InvokeBinder {
-        public override object CacheIdentity {
-            get { return this; }
-        }
-
         internal ComInvokeAction(params ArgumentInfo[] arguments)
             : base(arguments) {
         }
@@ -117,12 +113,7 @@ namespace System.Dynamic {
                 restrictions
             );
         }
-
-        public override object CacheIdentity {
-            get { return this; }
-        }
     }
-
 }
 
 #endif

@@ -107,7 +107,7 @@ namespace System.Dynamic {
                             //
                             CallSiteOps.AddRule(@this, rule);
                             // and then move it to the front of the L2 cache
-                            @this.RuleCache.MoveRule(rule);
+                            CallSiteOps.MoveRule(@this, rule);
                         }
                     }
 
@@ -233,7 +233,7 @@ namespace System.Dynamic {
                             //
                             CallSiteOps.AddRule(@this, rule);
                             // and then move it to the front of the L2 cache
-                            @this.RuleCache.MoveRule(rule);
+                            CallSiteOps.MoveRule(@this, rule);
                         }
                     }
 
@@ -359,7 +359,7 @@ namespace System.Dynamic {
                             //
                             CallSiteOps.AddRule(@this, rule);
                             // and then move it to the front of the L2 cache
-                            @this.RuleCache.MoveRule(rule);
+                            CallSiteOps.MoveRule(@this, rule);
                         }
                     }
 
@@ -485,7 +485,7 @@ namespace System.Dynamic {
                             //
                             CallSiteOps.AddRule(@this, rule);
                             // and then move it to the front of the L2 cache
-                            @this.RuleCache.MoveRule(rule);
+                            CallSiteOps.MoveRule(@this, rule);
                         }
                     }
 
@@ -611,7 +611,7 @@ namespace System.Dynamic {
                             //
                             CallSiteOps.AddRule(@this, rule);
                             // and then move it to the front of the L2 cache
-                            @this.RuleCache.MoveRule(rule);
+                            CallSiteOps.MoveRule(@this, rule);
                         }
                     }
 
@@ -737,7 +737,7 @@ namespace System.Dynamic {
                             //
                             CallSiteOps.AddRule(@this, rule);
                             // and then move it to the front of the L2 cache
-                            @this.RuleCache.MoveRule(rule);
+                            CallSiteOps.MoveRule(@this, rule);
                         }
                     }
 
@@ -863,7 +863,7 @@ namespace System.Dynamic {
                             //
                             CallSiteOps.AddRule(@this, rule);
                             // and then move it to the front of the L2 cache
-                            @this.RuleCache.MoveRule(rule);
+                            CallSiteOps.MoveRule(@this, rule);
                         }
                     }
 
@@ -989,7 +989,7 @@ namespace System.Dynamic {
                             //
                             CallSiteOps.AddRule(@this, rule);
                             // and then move it to the front of the L2 cache
-                            @this.RuleCache.MoveRule(rule);
+                            CallSiteOps.MoveRule(@this, rule);
                         }
                     }
 
@@ -1115,7 +1115,7 @@ namespace System.Dynamic {
                             //
                             CallSiteOps.AddRule(@this, rule);
                             // and then move it to the front of the L2 cache
-                            @this.RuleCache.MoveRule(rule);
+                            CallSiteOps.MoveRule(@this, rule);
                         }
                     }
 
@@ -1241,7 +1241,7 @@ namespace System.Dynamic {
                             //
                             CallSiteOps.AddRule(@this, rule);
                             // and then move it to the front of the L2 cache
-                            @this.RuleCache.MoveRule(rule);
+                            CallSiteOps.MoveRule(@this, rule);
                         }
                     }
 
@@ -1367,7 +1367,7 @@ namespace System.Dynamic {
                             //
                             CallSiteOps.AddRule(@this, rule);
                             // and then move it to the front of the L2 cache
-                            @this.RuleCache.MoveRule(rule);
+                            CallSiteOps.MoveRule(@this, rule);
                         }
                     }
 
@@ -1492,7 +1492,7 @@ namespace System.Dynamic {
                             //
                             CallSiteOps.AddRule(@this, rule);
                             // and then move it to the front of the L2 cache
-                            @this.RuleCache.MoveRule(rule);
+                            CallSiteOps.MoveRule(@this, rule);
                         }
                     }
 
@@ -1617,7 +1617,7 @@ namespace System.Dynamic {
                             //
                             CallSiteOps.AddRule(@this, rule);
                             // and then move it to the front of the L2 cache
-                            @this.RuleCache.MoveRule(rule);
+                            CallSiteOps.MoveRule(@this, rule);
                         }
                     }
 
@@ -1742,7 +1742,7 @@ namespace System.Dynamic {
                             //
                             CallSiteOps.AddRule(@this, rule);
                             // and then move it to the front of the L2 cache
-                            @this.RuleCache.MoveRule(rule);
+                            CallSiteOps.MoveRule(@this, rule);
                         }
                     }
 
@@ -1867,7 +1867,7 @@ namespace System.Dynamic {
                             //
                             CallSiteOps.AddRule(@this, rule);
                             // and then move it to the front of the L2 cache
-                            @this.RuleCache.MoveRule(rule);
+                            CallSiteOps.MoveRule(@this, rule);
                         }
                     }
 
@@ -1992,7 +1992,7 @@ namespace System.Dynamic {
                             //
                             CallSiteOps.AddRule(@this, rule);
                             // and then move it to the front of the L2 cache
-                            @this.RuleCache.MoveRule(rule);
+                            CallSiteOps.MoveRule(@this, rule);
                         }
                     }
 
@@ -2117,7 +2117,7 @@ namespace System.Dynamic {
                             //
                             CallSiteOps.AddRule(@this, rule);
                             // and then move it to the front of the L2 cache
-                            @this.RuleCache.MoveRule(rule);
+                            CallSiteOps.MoveRule(@this, rule);
                         }
                     }
 
@@ -2242,7 +2242,7 @@ namespace System.Dynamic {
                             //
                             CallSiteOps.AddRule(@this, rule);
                             // and then move it to the front of the L2 cache
-                            @this.RuleCache.MoveRule(rule);
+                            CallSiteOps.MoveRule(@this, rule);
                         }
                     }
 
@@ -2367,7 +2367,7 @@ namespace System.Dynamic {
                             //
                             CallSiteOps.AddRule(@this, rule);
                             // and then move it to the front of the L2 cache
-                            @this.RuleCache.MoveRule(rule);
+                            CallSiteOps.MoveRule(@this, rule);
                         }
                     }
 
@@ -2492,7 +2492,7 @@ namespace System.Dynamic {
                             //
                             CallSiteOps.AddRule(@this, rule);
                             // and then move it to the front of the L2 cache
-                            @this.RuleCache.MoveRule(rule);
+                            CallSiteOps.MoveRule(@this, rule);
                         }
                     }
 
@@ -2617,7 +2617,7 @@ namespace System.Dynamic {
                             //
                             CallSiteOps.AddRule(@this, rule);
                             // and then move it to the front of the L2 cache
-                            @this.RuleCache.MoveRule(rule);
+                            CallSiteOps.MoveRule(@this, rule);
                         }
                     }
 

@@ -127,7 +127,7 @@ namespace Microsoft.Scripting.Actions {
         protected internal override Expression GetBoundValue(Expression context, ActionBinder binder, Type type, Expression instance) {
             if (IsPublic && DeclaringType.IsVisible) {
                 return Ast.Field(
-                    Ast.Convert(instance, Field.DeclaringType),
+                    AstUtils.Convert(instance, Field.DeclaringType),
                     Field
                 );
             }

@@ -34,10 +34,6 @@ namespace Microsoft.Scripting.Actions {
         protected OldDynamicAction() {
         }
 
-        public override object CacheIdentity {
-            get { return this; }
-        }
-
         public abstract DynamicActionKind Kind { get; }
 
         [Confined]

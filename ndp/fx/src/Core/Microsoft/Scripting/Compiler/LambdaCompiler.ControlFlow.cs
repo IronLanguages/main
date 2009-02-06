@@ -204,10 +204,6 @@ namespace System.Linq.Expressions.Compiler {
                         var label = ((LabelExpression)lambdaBody).Target;
                         _labelInfo.Add(label, new LabelInfo(_ilg, label, true));
                         return;
-                    case ExpressionType.DebugInfo:
-                        // Look in the body
-                        lambdaBody = ((DebugInfoExpression)lambdaBody).Expression;
-                        continue;
                     case ExpressionType.Block:
                         // Look in the last expression of a block
                         var body = (BlockExpression)lambdaBody;                        

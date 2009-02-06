@@ -485,7 +485,16 @@ namespace System.Linq.Expressions {
         }
 
         protected internal override Expression VisitDebugInfo(DebugInfoExpression node) {
-            Visit(node.Expression);
+            string s = String.Format(
+                CultureInfo.CurrentCulture,
+                "<DebugInfo({0}: {1}, {2}, {3}, {4})>",
+                node.Document.FileName,
+                node.StartLine,
+                node.StartColumn,
+                node.EndLine,
+                node.EndColumn
+            );
+            Out(s);
             return node;
         }
 

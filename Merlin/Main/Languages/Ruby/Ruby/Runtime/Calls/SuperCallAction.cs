@@ -55,10 +55,6 @@ namespace IronRuby.Runtime.Calls {
             return new SuperCallAction(RubyCallSignature.WithScope(argumentCount), lexicalScopeId);
         }
 
-        public override object/*!*/ CacheIdentity {
-            get { return this; }
-        }
-
         #region Object Overrides, IEquatable
 
         public override bool Equals(object obj) {

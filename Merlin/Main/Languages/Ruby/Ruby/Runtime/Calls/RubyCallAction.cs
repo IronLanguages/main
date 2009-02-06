@@ -61,10 +61,6 @@ namespace IronRuby.Runtime.Calls {
             return new RubyCallAction(methodName, signature);
         }
 
-        public override object/*!*/ CacheIdentity {
-            get { return this; }
-        }
-
         #region Object Overrides, IEquatable
 
         public override int GetHashCode() {

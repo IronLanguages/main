@@ -312,7 +312,7 @@ namespace System.Linq.Expressions {
                 Type left = _left.Type;
                 Type right = _right.Type;
                 MethodInfo method = GetMethod();
-                ExpressionType kind = GetNodeKind();
+                ExpressionType kind = NodeTypeImpl();
                 
                 return
                     (kind == ExpressionType.AndAlso || kind == ExpressionType.OrElse) &&
@@ -402,11 +402,11 @@ namespace System.Linq.Expressions {
             _nodeType = nodeType;
         }
 
-        protected override Type GetExpressionType() {
+        protected override Type TypeImpl() {
             return typeof(bool);
         }
 
-        protected override ExpressionType GetNodeKind() {
+        protected override ExpressionType NodeTypeImpl() {
             return _nodeType;
         }
     }
@@ -417,11 +417,11 @@ namespace System.Linq.Expressions {
             : base(left, right) {
         }
 
-        protected override Type GetExpressionType() {
+        protected override Type TypeImpl() {
             return Left.Type;
         }
 
-        protected override ExpressionType GetNodeKind() {
+        protected override ExpressionType NodeTypeImpl() {
             return ExpressionType.Assign;
         }
     }
@@ -441,11 +441,11 @@ namespace System.Linq.Expressions {
             return _conversion;
         }
 
-        protected override ExpressionType GetNodeKind() {
+        protected override ExpressionType NodeTypeImpl() {
             return ExpressionType.Coalesce;
         }
 
-        protected override Type GetExpressionType() {
+        protected override Type TypeImpl() {
             return Right.Type;
         }
     }
@@ -478,11 +478,11 @@ namespace System.Linq.Expressions {
             _type = type;
         }
 
-        protected override ExpressionType GetNodeKind() {
+        protected override ExpressionType NodeTypeImpl() {
             return _nodeType;
         }
 
-        protected override Type GetExpressionType() {
+        protected override Type TypeImpl() {
             return _type;
         }
     }

@@ -39,7 +39,7 @@ namespace Microsoft.Scripting.Ast {
 
 
         /// <summary>
-        /// The helper to create the AST method call node. Will add conversions (Expression.Convert())
+        /// The helper to create the AST method call node. Will add conversions (Utils.Convert)
         /// to parameters and instance if necessary.
         /// </summary>
         public static MethodCallExpression SimpleCallHelper(MethodInfo method, params Expression[] arguments) {
@@ -49,7 +49,7 @@ namespace Microsoft.Scripting.Ast {
         }
 
         /// <summary>
-        /// The helper to create the AST method call node. Will add conversions (Expression.Convert())
+        /// The helper to create the AST method call node. Will add conversions (Utils.Convert)
         /// to parameters and instance if necessary.
         /// </summary>
         public static MethodCallExpression SimpleCallHelper(Expression instance, MethodInfo method, params Expression[] arguments) {

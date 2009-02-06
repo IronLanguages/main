@@ -271,7 +271,7 @@ namespace Microsoft.Scripting.Actions.Calls {
                 for (int i = 0; i < args.Count; i++) {
                     args[i] = parameters[i];
                     if (knownTypes[i] != null && !knownTypes[i].IsAssignableFrom(parameters[i].Type)) {
-                        args[i] = Ast.Convert(parameters[i], CompilerHelpers.GetVisibleType(knownTypes[i]));
+                        args[i] = AstUtils.Convert(parameters[i], CompilerHelpers.GetVisibleType(knownTypes[i]));
                     }
                 }
             }

@@ -33,10 +33,6 @@ namespace IronRuby.Runtime.Calls {
             _context = context;
         }
 
-        public override object CacheIdentity {
-            get { return this; }
-        }
-
         public override DynamicMetaObject/*!*/ FallbackGetMember(DynamicMetaObject/*!*/ self, DynamicMetaObject/*!*/ onBindingError) {
             var result = TryBind(_context, this, self);
             if (result != null) {

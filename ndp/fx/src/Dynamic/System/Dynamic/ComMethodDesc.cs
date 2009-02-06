@@ -24,12 +24,10 @@ using Marshal = System.Runtime.InteropServices.Marshal;
 namespace System.Dynamic {
 
     internal sealed class ComMethodDesc {
-
-        private readonly bool _hasTypeInfo;
         private readonly int _memid;  // this is the member id extracted from FUNCDESC.memid
         private readonly string _name;
         internal readonly INVOKEKIND InvokeKind;
-        private readonly ComParamDesc[] _parameters;
+        private readonly int _paramCnt;
 
         private ComMethodDesc(int dispId) {
             _memid = dispId;
@@ -49,7 +47,6 @@ namespace System.Dynamic {
         internal ComMethodDesc(ITypeInfo typeInfo, FUNCDESC funcDesc)
             : this(funcDesc.memid) {
 
-            _hasTypeInfo = true;
             InvokeKind = funcDesc.invkind;
 
             int cNames;
@@ -62,18 +59,7 @@ namespace System.Dynamic {
             Debug.Assert(cNames == rgNames.Length);
             _name = rgNames[0];
 
-            _parameters = new ComParamDesc[funcDesc.cParams];
-
-            int offset = 0;
-            for (int i = 0; i < funcDesc.cParams; i++) {
-                ELEMDESC elemDesc = (ELEMDESC)Marshal.PtrToStructure(
-                    new IntPtr(funcDesc.lprgelemdescParam.ToInt64() + offset),
-                    typeof(ELEMDESC));
-
-                _parameters[i] = new ComParamDesc(ref elemDesc, rgNames[1 + i]);
-
-                offset += Marshal.SizeOf(typeof(ELEMDESC));
-            }
+            _paramCnt = funcDesc.cParams;
         }
 
         public string Name {
@@ -100,11 +86,8 @@ namespace System.Dynamic {
                     return false;
                 } 
 
-                //must have no arguments
-                if (_parameters == null || _parameters.Length > 0){
-                    return false;
-                }
-                return true;
+                //must have no parameters
+                return _paramCnt == 0;
             }
         }
 
@@ -120,29 +103,9 @@ namespace System.Dynamic {
             }
         }
 
-        internal ComParamDesc[] Parameters {
+        internal int ParamCount {
             get {
-                Debug.Assert((_parameters != null) == _hasTypeInfo);
-                return _parameters;  
-            }
-        }
-
-        public bool HasByrefOrOutParameters {
-            get {
-                if (!_hasTypeInfo) {
-                    // We have just a dispId and not ITypeInfo to get the list of parameters.
-                    // We have to assume that all parameters are In parameters. The user will explicitly have 
-                    // to pass StrongBox objects to represent ref or out parameters.
-                    return false;
-                }
-
-                for (int i = 0; i < _parameters.Length; i++) {
-                    if (_parameters[i].ByReference || _parameters[i].IsOut) {
-                        return true;
-                    }
-                }
-
-                return false;
+                return _paramCnt;  
             }
         }
     }

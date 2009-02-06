@@ -13,12 +13,10 @@
  *
  * ***************************************************************************/
 
-using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Reflection;
-using System.Text;
 using System.Dynamic.Utils;
+using System.Reflection;
 
 namespace System.Linq.Expressions {
     /// <summary>
@@ -31,7 +29,9 @@ namespace System.Linq.Expressions {
     public sealed class MemberMemberBinding : MemberBinding {
         ReadOnlyCollection<MemberBinding> _bindings;
         internal MemberMemberBinding(MemberInfo member, ReadOnlyCollection<MemberBinding> bindings)
+#pragma warning disable 618
             : base(MemberBindingType.MemberBinding, member) {
+#pragma warning restore 618
             _bindings = bindings;
         }
 

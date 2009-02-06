@@ -60,7 +60,7 @@ namespace System.Linq.Expressions {
         /// Returns the node type of this <see cref="Expression" />. (Inherited from <see cref="Expression" />.)
         /// </summary>
         /// <returns>The <see cref="ExpressionType"/> that represents this expression.</returns>
-        protected override ExpressionType GetNodeKind() {
+        protected override ExpressionType NodeTypeImpl() {
             return ExpressionType.MemberAccess;
         }
 
@@ -85,7 +85,7 @@ namespace System.Linq.Expressions {
             return _field;
         }
 
-        protected override Type GetExpressionType() {
+        protected override Type TypeImpl() {
             return _field.FieldType;
         }
     }
@@ -101,7 +101,7 @@ namespace System.Linq.Expressions {
             return _property;
         }
 
-        protected override Type GetExpressionType() {
+        protected override Type TypeImpl() {
             return _property.PropertyType;
         }
     }

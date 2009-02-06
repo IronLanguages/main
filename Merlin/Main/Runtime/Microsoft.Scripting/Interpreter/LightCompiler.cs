@@ -14,6 +14,7 @@
  * ***************************************************************************/
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq.Expressions;
@@ -60,11 +61,39 @@ namespace Microsoft.Scripting.Interpreter {
 
     public class DebugInfo {
         public int StartLine, EndLine;
-        public int StartIndex, EndIndex;
+        public int Index;
         public string FileName;
+        public bool IsClear;
+        private static readonly DebugInfoComparer _debugComparer = new DebugInfoComparer();
 
-        public bool Matches(int index) {
-            return index >= StartIndex && index < EndIndex;
+        private class DebugInfoComparer : IComparer<DebugInfo> {
+            //We allow comparison between int and DebugInfo here
+            int IComparer<DebugInfo>.Compare(DebugInfo d1, DebugInfo d2) {
+                if (d1.Index > d2.Index) return 1;
+                else if (d1.Index == d2.Index) return 0;
+                else return -1;
+            }
+        }
+        
+        public static DebugInfo GetMatchingDebugInfo(DebugInfo[] debugInfos, int index) {
+            //Create a faked DebugInfo to do the search
+            DebugInfo d = new DebugInfo { Index = index };
+
+            //to find the closest debug info before the current index
+
+            int i = Array.BinarySearch<DebugInfo>(debugInfos, d, _debugComparer);
+            if (i < 0) {
+                //~i is the index for the first bigger element
+                //if there is no bigger element, ~i is the length of the array
+                i = ~i;
+                if (i == 0) {
+                    return null;
+                }
+                //return the last one that is smaller
+                i = i - 1;
+            }
+
+            return debugInfos[i];
         }
     }
     
@@ -1003,15 +1032,13 @@ namespace Microsoft.Scripting.Interpreter {
         private void CompileDebugInfoExpression(Expression expr) {
             var node = (DebugInfoExpression)expr;
             int start = _instructions.Count;
-            this.Compile(node.Expression);
-            int end = _instructions.Count;
             var info = new DebugInfo()
             {
-                StartIndex = start,
-                EndIndex = end,
+                Index = start,
                 FileName = node.Document.FileName,
                 StartLine = node.StartLine,
-                EndLine = node.EndLine
+                EndLine = node.EndLine,
+                IsClear = node.IsClear
             };
             _debugInfos.Add(info);
         }

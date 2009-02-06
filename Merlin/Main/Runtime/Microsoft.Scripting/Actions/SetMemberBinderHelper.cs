@@ -202,7 +202,7 @@ namespace Microsoft.Scripting.Actions {
                                 Ast.Field(
                                     field.IsStatic ?
                                         null :
-                                        Ast.Convert(Rule.Parameters[0], field.DeclaringType),
+                                        AstUtils.Convert(Rule.Parameters[0], field.DeclaringType),
                                     field.Field
                                 ),                                
                                 Binder.ConvertExpression(Rule.Parameters[1], field.FieldType, ConversionResultKind.ExplicitCast, Rule.Context)

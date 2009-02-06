@@ -290,7 +290,7 @@ namespace System.Linq.Expressions {
                     var dynLeft = (DynamicExpression)currentLeft;
                     var dynRight = (DynamicExpression)currentRight;
 
-                    if (!dynRight.Binder.CacheIdentity.Equals(dynLeft.Binder.CacheIdentity)) {
+                    if (!dynRight.Binder.Equals(dynLeft.Binder)) {
                         return false;
                     }
                     break;
@@ -312,7 +312,7 @@ namespace System.Linq.Expressions {
                             return false;
                         }
 
-                        if (!leftSite.Binder.CacheIdentity.Equals(rightSite.Binder.CacheIdentity)) {
+                        if (!leftSite.Binder.Equals(rightSite.Binder)) {
                             return false;
                         }
 

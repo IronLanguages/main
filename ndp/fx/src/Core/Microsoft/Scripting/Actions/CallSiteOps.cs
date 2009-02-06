@@ -103,7 +103,7 @@ namespace System.Runtime.CompilerServices {
         /// <param name="rule">An instance of the call site rule.</param>
         [Obsolete("do not use this method", true)]
         public static void MoveRule<T>(CallSite<T> site, CallSiteRule<T> rule) where T : class {
-            site.RuleCache.MoveRule(rule);
+            site.Binder.GetRuleCache<T>().MoveRule(rule);
         }
 
         /// <summary>
@@ -117,12 +117,14 @@ namespace System.Runtime.CompilerServices {
         /// <returns>The new cal site rule.</returns>
         [Obsolete("do not use this method", true)]
         public static CallSiteRule<T> CreateNewRule<T>(CallSite<T> site, CallSiteRule<T> oldRule, CallSiteRule<T> originalRule, object[] args) where T : class {
+            var ruleCache = site.Binder.GetRuleCache<T>();
+            
             if (oldRule != null) {
                 //
                 // The rule didn't work and since we optimistically added it into the
                 // level 2 cache. Remove it now since the rule is no good.
                 //
-                site.RuleCache.RemoveRule(oldRule);
+                ruleCache.RemoveRule(oldRule);
             }
 
             Expression binding = site.Binder.Bind(args, CallSiteRule<T>.Parameters, CallSiteRule<T>.ReturnLabel);
@@ -144,11 +146,9 @@ namespace System.Runtime.CompilerServices {
 
             //
             // Add the rule to the level 2 cache. This is an optimistic add so that cache miss
-            // on another site can find this existing rule rather than building a new one.  We
-            // add the originally added rule, not the templated one, to the global cache.  That
-            // allows sites to template on their own.
+            // on another site can find this existing rule rather than building a new one.
             //
-            site.RuleCache.AddRule(rule);
+            ruleCache.AddRule(rule);
 
             return rule;
         }
@@ -161,7 +161,7 @@ namespace System.Runtime.CompilerServices {
         /// <returns>The array of applicable rules.</returns>
         [Obsolete("do not use this method", true)]
         public static CallSiteRule<T>[] FindApplicableRules<T>(CallSite<T> site) where T : class {
-            return site.RuleCache.FindApplicableRules();
+            return site.Binder.GetRuleCache<T>().FindApplicableRules();
         }
 
         /// <summary>

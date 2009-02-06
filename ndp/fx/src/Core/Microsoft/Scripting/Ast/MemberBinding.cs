@@ -14,7 +14,6 @@
  * ***************************************************************************/
 
 using System.Reflection;
-using System.Text;
 
 namespace System.Linq.Expressions {
     /// <summary>
@@ -47,6 +46,7 @@ namespace System.Linq.Expressions {
         /// </summary>
         /// <param name="type">The type of member binding.</param>
         /// <param name="member">The field or property to be initialized.</param>
+        [Obsolete("Do not use this constructor. It will be removed in future releases.")]
         protected MemberBinding(MemberBindingType type, MemberInfo member) {
             _type = type;
             _member = member;
