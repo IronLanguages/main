@@ -109,12 +109,55 @@ namespace System.Dynamic {
                 bindingRestrictions = idoRestriction.Merge(bindingRestrictions);
             }
 
+#if !SILVERLIGHT
+
+            for (int i = 0; i < parameters.Count; i++) {
+                var expr = parameters[i];
+                var value = args[i] as MarshalByRefObject;
+
+                // special case for MBR objects.
+                // when MBR objects are remoted they can have different conversion behavior
+                // so bindings created for local and remote objects should not be mixed.
+                if (value != null && !IsComObject(value)) {
+                    BindingRestrictions remotedRestriction;
+                    if (System.Runtime.Remoting.RemotingServices.IsObjectOutOfAppDomain(value)) {
+                        remotedRestriction = BindingRestrictions.GetExpressionRestriction(
+                            Expression.AndAlso(
+                                Expression.NotEqual(expr, Expression.Constant(null)),
+                                Expression.Call(
+                                    typeof(System.Runtime.Remoting.RemotingServices).GetMethod("IsObjectOutOfAppDomain"),
+                                    expr
+                                )
+                            )
+                        );
+                    } else {
+                        remotedRestriction = BindingRestrictions.GetExpressionRestriction(
+                            Expression.AndAlso(
+                                Expression.NotEqual(expr, Expression.Constant(null)),
+                                Expression.Not(
+                                    Expression.Call(
+                                        typeof(System.Runtime.Remoting.RemotingServices).GetMethod("IsObjectOutOfAppDomain"),
+                                        expr
+                                    )
+                                )
+                            )
+                        );
+                    }
+                    bindingRestrictions = bindingRestrictions.Merge(remotedRestriction);
+                }
+            }
+
+#endif
             return GetMetaObjectRule(bindingExpression, bindingRestrictions, returnLabel);
         }
 
         private static DynamicMetaObject ObjectToMetaObject(object argValue, Expression parameterExpression) {
             IDynamicObject ido = argValue as IDynamicObject;
+#if !SILVERLIGHT
+            if (ido != null && !System.Runtime.Remoting.RemotingServices.IsObjectOutOfAppDomain(argValue)) {
+#else
             if (ido != null) {
+#endif
                 return ido.GetMetaObject(parameterExpression);
             } else {
                 return new DynamicMetaObject(parameterExpression, BindingRestrictions.Empty, argValue);
@@ -252,5 +295,14 @@ namespace System.Dynamic {
 
             return body;
         }
+
+#if !SILVERLIGHT
+        private static readonly Type ComObjectType = typeof(object).Assembly.GetType("System.__ComObject");
+        private static bool IsComObject(object obj) {
+            // we can't use System.Runtime.InteropServices.Marshal.IsComObject(obj) since it doesn't work in partial trust
+            return obj != null && ComObjectType.IsAssignableFrom(obj.GetType());
+        }
+#endif
+
     }
 }

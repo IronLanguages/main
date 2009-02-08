@@ -253,7 +253,7 @@ namespace IronRuby.Builtins {
 
                 // we need to define new methods one by one since the method_added events can define a new method that might be used here:
                 using (context.ClassHierarchyLocker()) {
-                    method = module.ResolveMethodFallbackToObjectNoLock(methodName, true);
+                    method = module.ResolveMethodFallbackToObjectNoLock(methodName, true).Info;
                     if (method == null) {
                         throw RubyExceptions.CreateNameError(RubyExceptions.FormatMethodMissingMessage(context, module, methodName));
                     }
@@ -455,8 +455,7 @@ namespace IronRuby.Builtins {
         // thread-safe:
         [RubyMethod("undef_method", RubyMethodAttributes.PrivateInstance)]
         public static RubyModule/*!*/ UndefineMethod(RubyModule/*!*/ self, [DefaultProtocol]string/*!*/ methodName) {
-            RubyMemberInfo method = self.ResolveMethod(methodName, true);
-            if (method == null) {
+            if (!self.ResolveMethod(methodName, true).Found) {
                 throw RubyExceptions.CreateUndefinedMethodError(self, methodName);
             }
             self.UndefineMethod(methodName);
@@ -795,28 +794,28 @@ namespace IronRuby.Builtins {
         // thread-safe:
         [RubyMethod("method_defined?")]
         public static bool MethodDefined(RubyModule/*!*/ self, [DefaultProtocol]string/*!*/ methodName) {
-            RubyMemberInfo method = self.ResolveMethod(methodName, true);
+            RubyMemberInfo method = self.ResolveMethod(methodName, true).Info;
             return method != null && method.Visibility != RubyMethodVisibility.Private;
         }
 
         // thread-safe:
         [RubyMethod("private_method_defined?")]
         public static bool PrivateMethodDefined(RubyModule/*!*/ self, [DefaultProtocol]string/*!*/ methodName) {
-            RubyMemberInfo method = self.ResolveMethod(methodName, true);
+            RubyMemberInfo method = self.ResolveMethod(methodName, true).Info;
             return method != null && method.Visibility == RubyMethodVisibility.Private;
         }
 
         // thread-safe:
         [RubyMethod("protected_method_defined?")]
         public static bool ProtectedMethodDefined(RubyModule/*!*/ self, [DefaultProtocol]string/*!*/ methodName) {
-            RubyMemberInfo method = self.ResolveMethod(methodName, true);
+            RubyMemberInfo method = self.ResolveMethod(methodName, true).Info;
             return method != null && method.Visibility == RubyMethodVisibility.Protected;
         }
 
         // thread-safe:
         [RubyMethod("public_method_defined?")]
         public static bool PublicMethodDefined(RubyModule/*!*/ self, [DefaultProtocol]string/*!*/ methodName) {
-            RubyMemberInfo method = self.ResolveMethod(methodName, true);
+            RubyMemberInfo method = self.ResolveMethod(methodName, true).Info;
             return method != null && method.Visibility == RubyMethodVisibility.Public;
         }
 
@@ -827,7 +826,7 @@ namespace IronRuby.Builtins {
         // thread-safe:
         [RubyMethod("instance_method")]
         public static UnboundMethod/*!*/ GetInstanceMethod(RubyModule/*!*/ self, [DefaultProtocol]string/*!*/ methodName) {
-            RubyMemberInfo method = self.ResolveMethod(methodName, true);
+            RubyMemberInfo method = self.ResolveMethod(methodName, true).Info;
             if (method == null) {
                 throw RubyExceptions.CreateUndefinedMethodError(self, methodName);
             }

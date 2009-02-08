@@ -188,7 +188,7 @@ namespace Microsoft.Scripting.Ast {
             }
 
             if (!block.HasFlow) {
-                return Expression.MakeTry(@try, @finally, fault, handlers);
+                return Expression.MakeTry(null, @try, @finally, fault, handlers);
             }
 
             if (node.Type != typeof(void)) {
@@ -217,7 +217,7 @@ namespace Microsoft.Scripting.Ast {
             //  }
 
             if (handlers.Count > 0) {
-                @try = Expression.MakeTry(@try, null, null, handlers);
+                @try = Expression.MakeTry(null, @try, null, null, handlers);
             }
 
             var saved = Expression.Variable(typeof(Exception), "$exception");
@@ -258,7 +258,7 @@ namespace Microsoft.Scripting.Ast {
             // Emit flow control
             return Expression.Block(
                 new[] { saved },
-                Expression.MakeTry(@try, @finally, fault, handlers),
+                Expression.MakeTry(null, @try, @finally, fault, handlers),
                 Expression.Label(block.FlowLabel),
                 MakeFlowControlSwitch(block)
             );

@@ -43,21 +43,6 @@ namespace IronRuby.Runtime.Calls {
     public sealed class RubyLibraryMethodInfo : RubyMethodGroupBase {
         private readonly Delegate/*!*/[] _overloads;
 
-        protected override MethodBase/*!*/[]/*!*/ MethodBases {
-            get {
-                Debug.Assert(base.MethodBases != null || _overloads != null);
-                return base.MethodBases ?? SetMethodBases(_overloads.ConvertAll((d) => d.Method));
-            }
-        }
-
-        internal override bool HidesInheritedOverloads {
-            get { return true; }
-        }
-
-        internal override SelfCallConvention CallConvention {
-            get { return SelfCallConvention.SelfIsParameter; }
-        }
-
         /// <summary>
         /// Creates a Ruby method implemented by a method group of CLR methods.
         /// </summary>
@@ -71,6 +56,23 @@ namespace IronRuby.Runtime.Calls {
         // copy ctor
         private RubyLibraryMethodInfo(RubyLibraryMethodInfo/*!*/ info, MethodBase/*!*/[]/*!*/ methods)
             : base(methods, info.Flags, info.DeclaringModule) {
+        }
+
+        internal override bool IsRemovable {
+            get { return true; }
+        }
+
+        internal override SelfCallConvention CallConvention {
+            get { return SelfCallConvention.SelfIsParameter; }
+        }
+
+        internal protected override MethodBase/*!*/[]/*!*/ MethodBases {
+            get {
+                Debug.Assert(base.MethodBases != null || _overloads != null);
+
+                // don't need to lock MethodBases since all values calculated by multiple threads are the same: 
+                return base.MethodBases ?? SetMethodBasesNoLock(_overloads.ConvertAll((d) => d.Method));
+            }
         }
 
         public override MemberInfo/*!*/[]/*!*/ GetMembers() {

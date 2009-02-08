@@ -36,6 +36,10 @@ namespace IronRuby.Runtime.Calls {
             _instanceVariableName = variableName;
         }
 
+        internal override bool IsRemovable {
+            get { return true; }
+        }
+
         public override MemberInfo/*!*/[]/*!*/ GetMembers() {
             return Utils.EmptyMemberInfos;
         }

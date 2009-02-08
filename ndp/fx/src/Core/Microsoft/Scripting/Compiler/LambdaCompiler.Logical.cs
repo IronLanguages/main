@@ -14,10 +14,9 @@
  * ***************************************************************************/
 
 using System.Diagnostics;
+using System.Dynamic.Utils;
 using System.Reflection;
 using System.Reflection.Emit;
-using System.Dynamic;
-using System.Dynamic.Utils;
 
 namespace System.Linq.Expressions.Compiler {
 
@@ -28,17 +27,16 @@ namespace System.Linq.Expressions.Compiler {
 
         private void EmitConditionalExpression(Expression expr) {
             ConditionalExpression node = (ConditionalExpression)expr;
-            Debug.Assert(node.Test.Type == typeof(bool) && node.IfTrue.Type == node.IfFalse.Type);
-
+            Debug.Assert(node.Test.Type == typeof(bool));
             Label labFalse = _ilg.DefineLabel();
             EmitExpressionAndBranch(false, node.Test, labFalse);
-            EmitExpression(node.IfTrue);
+            EmitExpressionAsType(node.IfTrue, node.Type);
 
             if (Significant(node.IfFalse)) {
                 Label labEnd = _ilg.DefineLabel();
                 _ilg.Emit(OpCodes.Br, labEnd);
                 _ilg.MarkLabel(labFalse);
-                EmitExpression(node.IfFalse);
+                EmitExpressionAsType(node.IfFalse, node.Type);
                 _ilg.MarkLabel(labEnd);
             } else {
                 _ilg.MarkLabel(labFalse);
@@ -407,7 +405,7 @@ namespace System.Linq.Expressions.Compiler {
             //store the right value to local
             LocalBuilder locRight = GetLocal(b.Right.Type);
             _ilg.Emit(OpCodes.Stloc, locRight);
-            
+
             Debug.Assert(b.Method.IsStatic);
             _ilg.Emit(OpCodes.Ldloc, locLeft);
             _ilg.Emit(OpCodes.Ldloc, locRight);
@@ -521,8 +519,8 @@ namespace System.Linq.Expressions.Compiler {
                 EmitBranchOp(branch, label);
                 return;
             }
-            
-            
+
+
             bool isAnd = node.NodeType == ExpressionType.AndAlso;
 
             // To share code, we make the following substitutions:
@@ -561,7 +559,7 @@ namespace System.Linq.Expressions.Compiler {
                     EmitExpressionAndBranch(branch, node.Right, label);
                     _ilg.MarkLabel(endif);
                 }
-            }            
+            }
         }
 
         // Generates optimized OrElse with branch == true
@@ -592,7 +590,7 @@ namespace System.Linq.Expressions.Compiler {
                 EmitExpressionAsVoid(node.GetExpression(i));
             }
             EmitExpressionAndBranch(branch, node.GetExpression(count - 1), label);
-            
+
             ExitScope(node);
         }
 

@@ -171,6 +171,104 @@ namespace System.Linq.Expressions {
         #endregion
 
         #region Property
+        /// <summary>
+        /// Creates an <see cref="IndexExpression"/> representing the access to an indexed property.
+        /// </summary>
+        /// <param name="instance">The object to which the property belongs. If the property is static/shared, it must be null.</param>
+        /// <param name="propertyName">The name of the indexer.</param>
+        /// <param name="arguments">An array of <see cref="Expression"/> objects that are used to index the property.</param>
+        /// <returns>The created <see cref="IndexExpression"/>.</returns>
+        public static IndexExpression Property(Expression instance, string propertyName, params Expression[] arguments) {
+            RequiresCanRead(instance, "instance");
+            ContractUtils.RequiresNotNull(propertyName, "indexerName");
+            PropertyInfo pi = FindInstanceProperty(instance.Type, propertyName, arguments);
+            return Property(instance, pi, arguments);
+        }
+
+        #region methods for finding a PropertyInfo by its name
+        /// <summary>
+        /// The method finds the instance property with the specified name in a type. The property's type signature needs to be compatible with
+        /// the arguments if it is a indexer. If the arguments is null or empty, we get a normal property.
+        /// </summary>
+        private static PropertyInfo FindInstanceProperty(Type type, string propertyName, Expression[] arguments) {
+            // bind to public names first
+            BindingFlags flags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.IgnoreCase | BindingFlags.FlattenHierarchy;
+            PropertyInfo pi = FindProperty(type, propertyName, arguments, flags);
+            if (pi == null) {
+                flags = BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.IgnoreCase | BindingFlags.FlattenHierarchy;
+                pi = FindProperty(type, propertyName, arguments, flags);
+            }
+            if (pi == null) {
+                throw Error.InstancePropertyNotDefinedForType(propertyName, type);
+            }
+            return pi;
+        }
+
+        private static PropertyInfo FindProperty(Type type, string propertyName, Expression[] arguments, BindingFlags flags) {
+            MemberInfo[] members = type.FindMembers(MemberTypes.Property, flags, Type.FilterNameIgnoreCase, propertyName);
+            if (members == null || members.Length == 0)
+                return null;
+
+            PropertyInfo pi;
+            var propertyInfos = members.Map(t => (PropertyInfo)t);
+            int count = FindBestProperty(propertyInfos, arguments, out pi);
+
+            if (count == 0)
+                return null;
+            if (count > 1)
+                throw Error.PropertyWithMoreThanOneMatch(propertyName, type);
+            return pi;
+        }
+
+        private static int FindBestProperty(IEnumerable<PropertyInfo> properties, Expression[] args, out PropertyInfo property) {
+            int count = 0;
+            property = null;
+            foreach (PropertyInfo pi in properties) {
+                if (pi != null && IsCompatible(pi, args)) {
+                    if (property == null) {
+                        property = pi;
+                        count = 1;
+                    }
+                    else {
+                        count++;
+                    }
+                }
+            }
+            return count;
+        }
+
+        private static bool IsCompatible(PropertyInfo pi, Expression[] args) {
+            MethodInfo mi;
+
+            mi = pi.GetGetMethod(true);
+            ParameterInfo[] parms;
+            if (mi != null) {
+                parms = mi.GetParametersCached();
+            } else {
+                mi = pi.GetSetMethod(true);
+                //The setter has an additional parameter for the value to set,
+                //need to remove the last type to match the arguments.
+                parms = mi.GetParametersCached().RemoveLast();
+            }
+            
+            if (mi == null) {
+                return false;
+            }
+            if (args == null) {
+                return parms.Length == 0;
+            }
+            
+            if (parms.Length != args.Length)
+                return false;
+            for (int i = 0; i < args.Length; i++) {
+                if (args[i] == null) return false;
+                if (!TypeUtils.AreReferenceAssignable(parms[i].ParameterType, args[i].Type)) {
+                    return false;
+                }
+            }
+            return true;
+        }
+        #endregion
 
         /// <summary>
         /// Creates an <see cref="IndexExpression"/> representing the access to an indexed property.

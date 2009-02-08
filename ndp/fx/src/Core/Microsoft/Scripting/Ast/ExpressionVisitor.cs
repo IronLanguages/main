@@ -242,7 +242,7 @@ namespace System.Linq.Expressions {
             if (t == node.Test && l == node.IfTrue && r == node.IfFalse) {
                 return node;
             }
-            return Expression.Condition(t, l, r);
+            return Expression.Condition(t, l, r, node.Type);
         }
 
         /// <summary>
@@ -528,7 +528,7 @@ namespace System.Linq.Expressions {
             if (s == node.SwitchValue && c == node.Cases && d == node.DefaultBody) {
                 return node;
             }
-            return Expression.Switch(s, d, node.Comparison, c);
+            return Expression.Switch(node.Type, s, d, node.Comparison, c);
         }
 
         /// <summary>
@@ -565,7 +565,7 @@ namespace System.Linq.Expressions {
                 f == node.Fault) {
                 return node;
             }
-            return Expression.MakeTry(b, y, f, h);
+            return Expression.MakeTry(node.Type, b, y, f, h);
         }
 
         /// <summary>

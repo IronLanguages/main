@@ -47,20 +47,27 @@ namespace IronRuby.Runtime.Calls {
         // remove call site type object (CLR static methods don't accept self type):
         private readonly bool _isStatic;
 
-        internal override SelfCallConvention CallConvention {
-            get { return _isStatic ? SelfCallConvention.NoSelf : SelfCallConvention.SelfIsInstance; }
-        }
+        // A method group that owns each overload or null if all overloads are owned by this group.
+        // A null member also marks an overload owned by this group.
+        private readonly RubyMethodGroupInfo[] _overloadOwners; // immutable
 
-        internal override bool HidesInheritedOverloads {
-            get { return false; }
-        }
+        #region Mutable state guarded by ClassHierarchyLock
+
+        // Maximum over levels of all classes that are caching overloads from this group. -1 if there is no such class.
+        private int _maxCachedOverloadLevel = -1;
+
+        #endregion
 
         /// <summary>
         /// Creates a CLR method group.
         /// </summary>
-        internal RubyMethodGroupInfo(MethodBase/*!*/[]/*!*/ methods, RubyModule/*!*/ declaringModule, bool isStatic)
+        internal RubyMethodGroupInfo(MethodBase/*!*/[]/*!*/ methods, RubyModule/*!*/ declaringModule,
+            RubyMethodGroupInfo/*!*/[] overloadOwners,  bool isStatic)
             : base(methods, RubyMemberFlags.Public, declaringModule) {
+            Debug.Assert(overloadOwners == null || methods.Length == overloadOwners.Length);
+
             _isStatic = isStatic;
+            _overloadOwners = overloadOwners;
         }
 
         // copy ctor
@@ -69,12 +76,16 @@ namespace IronRuby.Runtime.Calls {
             _isStatic = info._isStatic;
             _hasVirtuals = info._hasVirtuals;
             _staticDispatchMethods = info._staticDispatchMethods;
+            // Note: overloadOwners and maxCachedOverloadLevel are cleared whenever the group is copied
+            // The resulting group captures an immutable set of underlying CLR members.
         }
 
         // copy ctor
         private RubyMethodGroupInfo(RubyMethodGroupInfo/*!*/ info, MethodBase/*!*/[] methods)
             : base(methods, info.Flags, info.DeclaringModule) {
             _isStatic = info._isStatic;
+            // Note: overloadOwners and maxCachedOverloadLevel are cleared whenever the group is copied.
+            // The resulting group captures an immutable set of underlying CLR members.
         }
 
         protected internal override RubyMemberInfo/*!*/ Copy(RubyMemberFlags flags, RubyModule/*!*/ module) {
@@ -84,9 +95,59 @@ namespace IronRuby.Runtime.Calls {
         protected override RubyMemberInfo/*!*/ Copy(MethodBase/*!*/[]/*!*/ methods) {
             return new RubyMethodGroupInfo(this, methods);
         }
-        
+
+        internal override SelfCallConvention CallConvention {
+            get { return _isStatic ? SelfCallConvention.NoSelf : SelfCallConvention.SelfIsInstance; }
+        }
+
+        internal RubyMethodGroupInfo[] OverloadOwners {
+            get { return _overloadOwners; }
+        }
+
         public override MemberInfo/*!*/[]/*!*/ GetMembers() {
             return ArrayUtils.MakeArray(MethodBases);
+        }
+
+        internal int MaxCachedOverloadLevel {
+            get { return _maxCachedOverloadLevel; }
+        }
+
+        // Called on this group whenever other group includes some overloads from this group.
+        // Updates maxCachedOverloadLevel - the max. class hierarchy level which caches an overload owned by this group.
+        internal void CachedInGroup(RubyMethodGroupInfo/*!*/ group) {
+            Context.RequiresClassHierarchyLock();
+
+            int groupLevel = ((RubyClass)group.DeclaringModule).Level;
+            if (_maxCachedOverloadLevel < groupLevel) {
+                _maxCachedOverloadLevel = groupLevel;
+            }
+        }
+
+        // Called whenever this group is used in a dynamic site. 
+        // We need to mark "invalidate sites on override" on all owners of the overloads stored in this group so that
+        // whenever any of them are overridden the sites are invalidated.
+        //
+        // A - MG{f(T1)}
+        // ^
+        // B                 2) def f
+        // ^ 
+        // C - MG{f(T1), f(T2)}
+        // ^
+        // D                 1) D.new.f()
+        //
+        internal override void SetInvalidateSitesOnOverride() {
+            Context.RequiresClassHierarchyLock();
+
+            SetInvalidateSitesOnOverride(this);
+
+            // Do not invalidate recursively. Only method groups that are listed needs invalidation. 
+            if (_overloadOwners != null) {
+                foreach (var overloadOwner in _overloadOwners) {
+                    if (overloadOwner != null) {
+                        SetInvalidateSitesOnOverride(overloadOwner);
+                    }
+                }
+            }
         }
         
         #region Static dispatch to virtual methods

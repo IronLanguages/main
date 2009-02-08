@@ -91,6 +91,221 @@ B.new.foo
             }, @"foo");
         }
         
+        public void MethodCallCaching1() {
+            AssertOutput(() => CompilerTest(@"
+module N
+  def foo
+    print 1
+  end
+end
+
+module M
+end
+
+class A
+  include N
+  include M
+end
+
+A.new.foo
+
+module M
+  def foo
+    print 2
+  end
+end
+
+A.new.foo
+"), 
+"12");
+        }
+
+        public void MethodCallCaching2() {
+            AssertOutput(() => CompilerTest(@"
+module M
+end
+
+class C
+  include M
+end
+
+module N
+  def foo
+    puts 'foo'
+  end
+end
+
+module M
+  include N
+end
+
+C.new.foo rescue puts 'error'
+
+class C
+  include M
+end
+
+C.new.foo
+"),
+@"
+error
+foo
+");
+        }
+
+        /// <summary>
+        /// A method defined in a module is overridden by another module's method.
+        /// </summary>
+        public void MethodCallCaching3() {
+            AssertOutput(() => CompilerTest(@"
+module N0; def f; 0; end; end
+module N1; def f; 1; end; end
+module N2; def f; 2; end; end
+
+class C; end
+class D < C; include N2; end
+
+print D.new.f                                   # cache N2::f in a dynamic site
+
+class C
+  include N0, N1, N2                            # def in N1 should invalidate site bound to def in N2
+                                                # def in N0 shouldn't prevent invalidation
+end
+
+print C.new.f
+"),
+@"20");
+        }
+
+        /// <summary>
+        /// method_missing
+        /// </summary>
+        public void MethodCallCaching4() {
+            LoadTestLibrary();
+            
+            AssertOutput(() => CompilerTest(@"
+class A
+  def method_missing name; name; end
+end
+class B < A
+end
+class C < B
+end
+
+puts C.new.h   
+v1 = TestHelpers.get_class_version(C)   
+
+class B
+  def g; 'g:B'; end
+end
+
+v2 = TestHelpers.get_class_version(C)   
+
+puts C.new.g
+
+class B
+  def h; 'h:B'; end
+end
+
+v3 = TestHelpers.get_class_version(C)   
+
+puts C.new.h   
+puts v1 == v2, v2 == v3
+
+class B
+  remove_method(:h)
+  remove_method(:g)
+end
+
+puts C.new.g
+puts C.new.h
+"),
+@"
+h
+g:B
+h:B
+true
+false
+g
+h
+");
+        }
+
+        /// <summary>
+        /// method_missing
+        /// </summary>
+        public void MethodCallCaching5() {
+            AssertOutput(() => CompilerTest(@"
+class A
+  def method_missing name; name.to_s + ':A'; end
+end
+class B < A
+end
+class C < B
+end
+
+puts C.new.f
+
+class B
+  def method_missing name; name.to_s + ':B'; end 
+end
+
+puts C.new.f
+
+class B
+  remove_method :method_missing
+end
+
+puts C.new.f
+
+class A
+  remove_method :method_missing
+end
+
+C.new.f rescue puts 'error'
+"),
+@"
+f:A
+f:B
+f:A
+error
+");
+        }
+
+        /// <summary>
+        /// method_missing
+        /// </summary>
+        public void MethodCallCaching6() {
+            AssertOutput(() => CompilerTest(@"
+class A
+  def f; 'f:A' end
+end
+class B < A
+end
+class C < B
+end
+
+puts C.new.f
+
+class B
+  def method_missing name; name.to_s + ':B'; end 
+end
+
+puts C.new.f
+
+class A
+  remove_method :f
+end
+
+puts C.new.f
+"),
+@"
+f:A
+f:A
+f:B
+");
+        }
+
         public void Send1() {
             AssertOutput(delegate {
                 CompilerTest(@"
@@ -215,7 +430,7 @@ end
 method_added
 ");
         }
-        
+
         public void VisibilityCaching1() {
             AssertOutput(delegate {
                 CompilerTest(@"
@@ -246,6 +461,39 @@ mm
 foo
 mm
 mm
+");
+        }
+
+        public void VisibilityCaching2() {
+            AssertOutput(() => CompilerTest(@"
+class B
+  def method_missing name; name; end
+end
+
+class C < B
+  private
+  def foo; 'foo:C'; end  
+end
+
+class D < C
+end
+
+puts D.new.foo
+
+class D
+  def foo; 'foo:D'; end  
+end
+
+class B
+  remove_method :method_missing
+end
+
+puts D.new.foo
+D.new.bar rescue puts 'error'
+"), @"
+foo
+foo:D
+error
 ");
         }
 

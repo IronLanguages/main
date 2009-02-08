@@ -1,4 +1,4 @@
-﻿/* ****************************************************************************
+/* ****************************************************************************
  *
  * Copyright (c) Microsoft Corporation. 
  *
@@ -1057,6 +1057,13 @@ namespace System.Linq.Expressions {
         }
 
         /// <summary>
+        /// A string like  "More than one property '{0}' on type '{1}' is compatible with the supplied arguments."
+        /// </summary>
+        internal static string PropertyWithMoreThanOneMatch(object p0, object p1) {
+            return FormatString("More than one property '{0}' on type '{1}' is compatible with the supplied arguments.", p0, p1);
+        }
+
+        /// <summary>
         /// A string like  "An incorrect number of type args were specified for the declaration of a Func type."
         /// </summary>
         internal static string IncorrectNumberOfTypeArgsForFunc {
@@ -1080,6 +1087,15 @@ namespace System.Linq.Expressions {
         internal static string ArgumentCannotBeOfTypeVoid {
             get {
                 return "Argument type cannot be System.Void.";
+            }
+        }
+
+        /// <summary>
+        /// A string like  "More than one matching member is found in the ExpandoObject."
+        /// </summary>
+        internal static string AmbiguousMatchInExpandoObject {
+            get {
+                return "More than one matching member is found in the ExpandoObject.";
             }
         }
 
@@ -1359,6 +1375,15 @@ namespace System.Linq.Expressions {
         internal static string EnumerationIsDone {
             get {
                 return "Enumeration has either not started or has already finished.";
+            }
+        }
+
+        /// <summary>
+        /// A string like  "The operation cannot be performed in heterogeneous app domain."
+        /// </summary>
+        internal static string HomogenousAppDomainRequired {
+            get {
+                return "The operation cannot be performed in heterogeneous app domain.";
             }
         }
 
@@ -1985,6 +2010,13 @@ namespace System.Linq.Expressions {
         }
 
         /// <summary>
+        /// InvalidOperationException with message like "More than one property '{0}' on type '{1}' is compatible with the supplied arguments."
+        /// </summary>
+        internal static Exception PropertyWithMoreThanOneMatch(object p0, object p1) {
+            return new InvalidOperationException(Strings.PropertyWithMoreThanOneMatch(p0, p1));
+        }
+
+        /// <summary>
         /// ArgumentException with message like "An incorrect number of type args were specified for the declaration of a Func type."
         /// </summary>
         internal static Exception IncorrectNumberOfTypeArgsForFunc() {
@@ -2003,6 +2035,13 @@ namespace System.Linq.Expressions {
         /// </summary>
         internal static Exception ArgumentCannotBeOfTypeVoid() {
             return new ArgumentException(Strings.ArgumentCannotBeOfTypeVoid);
+        }
+
+        /// <summary>
+        /// System.Reflection.AmbiguousMatchException with message like "More than one matching member is found in the ExpandoObject."
+        /// </summary>
+        internal static Exception AmbiguousMatchInExpandoObject() {
+            return new System.Reflection.AmbiguousMatchException(Strings.AmbiguousMatchInExpandoObject);
         }
 
         /// <summary>
@@ -2248,6 +2287,13 @@ namespace System.Linq.Expressions {
         /// </summary>
         internal static Exception EnumerationIsDone() {
             return new InvalidOperationException(Strings.EnumerationIsDone);
+        }
+
+        /// <summary>
+        /// InvalidOperationException with message like "The operation cannot be performed in heterogeneous app domain."
+        /// </summary>
+        internal static Exception HomogenousAppDomainRequired() {
+            return new InvalidOperationException(Strings.HomogenousAppDomainRequired);
         }
 
     }

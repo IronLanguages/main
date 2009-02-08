@@ -187,6 +187,7 @@ namespace System.Linq.Expressions {
         /// <returns>The created <see cref="MemberExpression"/>.</returns>
         public static MemberExpression Property(Expression expression, string propertyName) {
             RequiresCanRead(expression, "expression");
+            ContractUtils.RequiresNotNull(propertyName, "propertyName");
             // bind to public names first
             PropertyInfo pi = expression.Type.GetProperty(propertyName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.IgnoreCase | BindingFlags.FlattenHierarchy);
             if (pi == null) {
@@ -207,6 +208,7 @@ namespace System.Linq.Expressions {
         /// <returns>The created <see cref="MemberExpression"/>.</returns>
         public static MemberExpression Property(Expression expression, Type type, string propertyName) {
             ContractUtils.RequiresNotNull(type, "type");
+            ContractUtils.RequiresNotNull(propertyName, "propertyName");
             // bind to public names first
             PropertyInfo pi = type.GetProperty(propertyName, BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.IgnoreCase | BindingFlags.FlattenHierarchy);
             if (pi == null) {

@@ -27,6 +27,7 @@ using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 using IronRuby.Compiler;
 using IronRuby.Runtime;
+using IronRuby.Builtins;
 
 namespace IronRuby.Tests {
 
@@ -67,6 +68,12 @@ namespace IronRuby.Tests {
         }
     }
 
+    public class TestHelpers {
+        public static int GetClassVersion([NotNull]RubyClass/*!*/ cls) {
+            return cls.Version.Value;
+        }
+    }
+
     public partial class Tests {
         private readonly Driver/*!*/ _driver;
         private readonly Action[]/*!*/ _methods;
@@ -82,6 +89,10 @@ namespace IronRuby.Tests {
             } else {
                 return code.Replace("#<", "").Replace("#>", "");
             }
+        }
+
+        public void LoadTestLibrary() {
+            Context.ObjectClass.SetConstant("TestHelpers", Context.GetClass(typeof(TestHelpers)));
         }
 
         public void CompilerTest(string/*!*/ code) {

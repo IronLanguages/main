@@ -10,7 +10,8 @@ class PositiveExpectation
     if @obj != other
 	  msg = "Equality expected for '#{@obj.inspect}' and '#{other.inspect}'"
 	  $error_count += 1
-      $error_list << msg
+      $error_list << [msg, caller]
+      print 'F'
       raise Exception.new(msg)
     else
       print '.'
@@ -21,7 +22,8 @@ class PositiveExpectation
     if not @obj.equal?(other)
       msg = "Reference equality expected for '#{@obj.inspect}' and '#{other.inspect}'"
 	  $error_count += 1
-      $error_list << msg
+      $error_list << [msg, caller]
+      print 'F'
       raise Exception.new(msg)
     else
       print '.'
@@ -38,7 +40,8 @@ class NegativeExpectation
     if @obj == other
       msg = "Inequality expected for '#{@obj.inspect}' and '#{other.inspect}'"
       $error_count += 1
-      $error_list << msg
+      $error_list << [msg, caller]
+      print 'F'
       raise Exception.new(msg)
     else
       print '.'
@@ -49,7 +52,8 @@ class NegativeExpectation
     if @obj.equal?(other)
       msg = "Reference inequality expected for '#{@obj.inspect}' and '#{other.inspect}'"
       $error_count += 1
-      $error_list << msg
+      $error_list << [msg, caller]
+      print 'F'
       raise Exception.new(msg)
     else
       print '.'
@@ -94,18 +98,18 @@ def should_raise(expected_exception, expected_message=nil)
     yield
     msg = "'#{$name}' failed! expected '#{expected_exception}', but no error happened" 
     $error_count += 1
-    $error_list << msg
+    $error_list << [msg, caller]
     puts msg
   rescue Exception => actual_exception
     if expected_exception.name != actual_exception.class.name
       msg = "'#{$name}' failed! expected '#{expected_exception}' but got '#{actual_exception}'" 
       $error_count += 1
-      $error_list << msg
+      $error_list << [msg, $@]
       puts msg
     elsif expected_message != nil and actual_exception.message != expected_message
       msg = "'#{$name}' failed! expected message '#{expected_message}' but got '#{actual_exception.message}'" 
       $error_count += 1
-      $error_list << msg
+      $error_list << [msg, $@]
       puts msg      
     else
       print '.'
@@ -116,7 +120,8 @@ end
 def finished
   if $error_count > 0
     puts "\n\nErrors:"
-    $error_list.each { |msg| puts msg }
+    i = 1
+    $error_list.each { |msg, trace| puts "#{i})", msg, trace, ''; i += 1 }
     puts "\n\nTests failed == #{$error_count}"
     Kernel.exit(1)
   end

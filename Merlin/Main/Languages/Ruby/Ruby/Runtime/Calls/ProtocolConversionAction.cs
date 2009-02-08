@@ -142,24 +142,23 @@ namespace IronRuby.Runtime.Calls {
 
             RubyClass targetClass = args.RubyContext.GetImmediateClassOf(args.Target);
             Expression targetClassNameConstant = Ast.Constant(targetClass.GetNonSingletonClass().Name);
-            RubyMemberInfo respondToMethod;
+            MethodResolutionResult respondToMethod;
             ProtocolConversionAction selectedConversion = null;
             RubyMemberInfo conversionMethod = null;
-            RubyMethodVisibility incompatibleRespondToVisibility = RubyMethodVisibility.None;
 
             using (targetClass.Context.ClassHierarchyLocker()) {
                 // check for type version:
                 metaBuilder.AddTargetTypeTest(args.Target, targetClass, args.TargetExpression, args.RubyContext, args.ContextExpression);
 
                 // we can optimize if Kernel#respond_to? method is not overridden:
-                respondToMethod = targetClass.ResolveMethodForSiteNoLock(Symbols.RespondTo, false, out incompatibleRespondToVisibility);
-                if (respondToMethod != null && respondToMethod.DeclaringModule == targetClass.Context.KernelModule && respondToMethod is RubyLibraryMethodInfo) { // TODO: better override detection
-                    respondToMethod = null;
+                respondToMethod = targetClass.ResolveMethodForSiteNoLock(Symbols.RespondTo, false);
+                if (respondToMethod.Found && respondToMethod.Info.DeclaringModule == targetClass.Context.KernelModule && respondToMethod.Info is RubyLibraryMethodInfo) { // TODO: better override detection
+                    respondToMethod = MethodResolutionResult.NotFound;
 
                     // get the first applicable conversion:
                     foreach (var conversion in conversions) {
                         selectedConversion = conversion;
-                        conversionMethod = targetClass.ResolveMethodForSiteNoLock(conversion.ToMethodName, false);
+                        conversionMethod = targetClass.ResolveMethodForSiteNoLock(conversion.ToMethodName, false).Info;
                         if (conversionMethod != null) {
                             break;
                         }
@@ -167,8 +166,8 @@ namespace IronRuby.Runtime.Calls {
                 }
             }
 
-            if (respondToMethod == null) {
-                if (incompatibleRespondToVisibility != RubyMethodVisibility.None) {
+            if (!respondToMethod.Found) {
+                if (respondToMethod.IncompatibleVisibility != RubyMethodVisibility.None) {
                     // respond_to? is not visible:
                     conversions[conversions.Length - 1].SetError(metaBuilder, targetClassNameConstant, args);
                     return;

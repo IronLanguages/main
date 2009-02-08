@@ -210,7 +210,7 @@ namespace Microsoft.Scripting.Ast {
 
             // No yields, just return
             if (startYields == _yields.Count) {
-                return Expression.MakeTry(@try, @finally, fault, handlers);
+                return Expression.MakeTry(null, @try, @finally, fault, handlers);
             }
 
             if (fault != null && finallyYields != catchYields) {
@@ -285,7 +285,7 @@ namespace Microsoft.Scripting.Ast {
                     );
                 }
 
-                block[1] = Expression.MakeTry(@try, null, null, new ReadOnlyCollection<CatchBlock>(handlers));
+                block[1] = Expression.MakeTry(null, @try, null, null, new ReadOnlyCollection<CatchBlock>(handlers));
                 @try = Expression.Block(block);
                 handlers = new CatchBlock[0]; // so we don't reuse these
             }
@@ -307,7 +307,7 @@ namespace Microsoft.Scripting.Ast {
                 // We need to add a catch(Exception), so if we have catches,
                 // wrap them in a try
                 if (handlers.Count > 0) {
-                    @try = Expression.MakeTry(@try, null, null, handlers);
+                    @try = Expression.MakeTry(null, @try, null, null, handlers);
                     handlers = new CatchBlock[0];
                 }
 
@@ -361,7 +361,7 @@ namespace Microsoft.Scripting.Ast {
 
             // Make the outer try, if needed
             if (handlers.Count > 0 || @finally != null || fault != null) {
-                @try = Expression.MakeTry(@try, @finally, fault, handlers);
+                @try = Expression.MakeTry(null, @try, @finally, fault, handlers);
             }
 
             return Expression.Block(Expression.Label(tryStart), @try);
@@ -492,7 +492,7 @@ namespace Microsoft.Scripting.Ast {
 
             // Return a new block expression with the rewritten body except for that
             // all the variables are removed.
-            return Expression.Block(null, b);
+            return Expression.Block(b);
         }
 
         protected override Expression VisitLambda<T>(Expression<T> node) {

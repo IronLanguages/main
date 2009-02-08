@@ -44,10 +44,33 @@ namespace System.Dynamic {
         /// <param name="binder">An instance of the <see cref="GetMemberBinder"/> that represents the details of the dynamic operation.</param>
         /// <param name="instance">The target of the dynamic operation. </param>
         /// <param name="result">The new <see cref="DynamicMetaObject"/> representing the result of the binding.</param>
+        /// <param name="delayInvocation">true if member evaluation may be delayed.</param>
+        /// <returns>true if operation was bound successfully; otherwise, false.</returns>
+        public static bool TryBindGetMember(GetMemberBinder binder, DynamicMetaObject instance, out DynamicMetaObject result, bool delayInvocation) {
+            if (delayInvocation == false) {
+                return TryBindGetMember(binder, instance, out result);
+            }
+            if (TryGetMetaObject(ref instance)) {
+                result = instance.BindGetMember(binder);
+                return true;
+            } else {
+                result = null;
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Tries to perform binding of the dynamic get member operation.
+        /// </summary>
+        /// <param name="binder">An instance of the <see cref="GetMemberBinder"/> that represents the details of the dynamic operation.</param>
+        /// <param name="instance">The target of the dynamic operation. </param>
+        /// <param name="result">The new <see cref="DynamicMetaObject"/> representing the result of the binding.</param>
         /// <returns>true if operation was bound successfully; otherwise, false.</returns>
         public static bool TryBindGetMember(GetMemberBinder binder, DynamicMetaObject instance, out DynamicMetaObject result) {
             if (TryGetMetaObject(ref instance)) {
-                result = instance.BindGetMember(binder);
+                // in COM x.foo is equivalent to x.foo()
+                var adaptor = new ComGetMemberAsInvokeBinder(binder);
+                result = instance.BindInvokeMember(adaptor, new DynamicMetaObject[0]);
                 return true;
             } else {
                 result = null;
@@ -186,6 +209,23 @@ namespace System.Dynamic {
             }
 
             return false;
+        }
+
+        /// <summary>
+        /// Adaptor class that allows transforming GetMember into InvokeMember when member evaluation is forced.
+        /// </summary>
+        private class ComGetMemberAsInvokeBinder : InvokeMemberBinder {
+            private readonly GetMemberBinder _originalBinder;
+            internal ComGetMemberAsInvokeBinder(GetMemberBinder originalBinder) :
+                base(originalBinder.Name, originalBinder.IgnoreCase, new ArgumentInfo[0]) {
+                _originalBinder = originalBinder;
+            }
+            public override DynamicMetaObject FallbackInvokeMember(DynamicMetaObject target, DynamicMetaObject[] args, DynamicMetaObject errorSuggestion) {
+                return _originalBinder.FallbackGetMember(target);
+            }
+            public override DynamicMetaObject FallbackInvoke(DynamicMetaObject target, DynamicMetaObject[] args, DynamicMetaObject errorSuggestion) {
+                throw Assert.Unreachable;
+            }
         }
     }
 }

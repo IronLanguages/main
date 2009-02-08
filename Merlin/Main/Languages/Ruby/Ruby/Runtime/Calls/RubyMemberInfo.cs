@@ -26,15 +26,21 @@ namespace IronRuby.Runtime.Calls {
     public class RubyMemberInfo {
         // Singleton used to undefine methods: stops method resolution
         internal static readonly RubyMemberInfo/*!*/ UndefinedMethod = new RubyMemberInfo();
-        // Singleton used to hide CLR methods: doesn't stop method resolution, skips CLR method lookup
+
+        // Singleton used to hide CLR methods: method resolution skips all CLR methods since encountering a hidden method.
         internal static readonly RubyMemberInfo/*!*/ HiddenMethod = new RubyMemberInfo();
 
         private readonly RubyMemberFlags _flags;
-        private bool _invalidateSitesOnOverride;
 
-        // Method, UnboundMethod, super, trace: Aliased methods preserve the declaring module.
         // Null for dummy methods.
         private readonly RubyModule _declaringModule;
+        
+        #region Mutable state guarded by ClassHierarchyLock
+
+        private bool _invalidateSitesOnOverride;
+        private bool _invalidateGroupsOnRemoval;
+
+        #endregion
 
         public RubyMethodVisibility Visibility {
             get { return (RubyMethodVisibility)(_flags & RubyMemberFlags.VisibilityMask); }
@@ -52,15 +58,34 @@ namespace IronRuby.Runtime.Calls {
             get { return (_flags & RubyMemberFlags.SuperForwarder) != 0; }
         }
 
+        /// <summary>
+        /// Whether the member can be permanently removed (CLR members can't).
+        /// If the member cannot be removed we hide it.
+        /// </summary>
+        internal virtual bool IsRemovable {
+            get { return IsSuperForwarder; }
+        }
+
         internal RubyMemberFlags Flags {
             get { return _flags; }
         }
 
         /// <summary>
-        /// True if the member info hides all inherited CLR overloads.
+        /// True if this member hides any CLR overloads of groups below it.
         /// </summary>
-        internal virtual bool HidesInheritedOverloads {
-            get { return true; }
+        /// <remarks>
+        /// Undefined and Hidden method singletons cannot be removed so they don't need to be marked.
+        /// </remarks>
+        internal bool InvalidateGroupsOnRemoval {
+            get {
+                // RequiresClassHierarchyLock
+                return _invalidateGroupsOnRemoval;
+            }
+            set {
+                // RequiresClassHierarchyLock
+                Debug.Assert(IsRemovable);
+                _invalidateGroupsOnRemoval = value;
+            }
         }
 
         /// <summary>
@@ -72,10 +97,14 @@ namespace IronRuby.Runtime.Calls {
                 Context.RequiresClassHierarchyLock();
                 return _invalidateSitesOnOverride;
             }
-            set {
-                Context.RequiresClassHierarchyLock();
-                _invalidateSitesOnOverride = value;
-            }
+        }
+
+        internal virtual void SetInvalidateSitesOnOverride() {
+            _invalidateSitesOnOverride = true;
+        }
+
+        internal static void SetInvalidateSitesOnOverride(RubyMemberInfo/*!*/ member) {
+            member._invalidateSitesOnOverride = true;
         }
 
         public RubyModule/*!*/ DeclaringModule {
@@ -119,6 +148,13 @@ namespace IronRuby.Runtime.Calls {
 
         internal protected virtual RubyMemberInfo Copy(RubyMemberFlags flags, RubyModule/*!*/ module) {
             throw Assert.Unreachable;
+        }
+
+        public override string/*!*/ ToString() {
+            return 
+                IsHidden ? "<hidden>" :
+                IsUndefined ? "<undefined>" :
+                (GetType().Name + " " + _flags.ToString() + " (" + _declaringModule.Name + ")");
         }
 
         /// <summary>

@@ -202,7 +202,7 @@ namespace IronRuby.Runtime.Calls {
                             Ast.Field(
                                 Ast.Field(
                                     Ast.Call(Ast.Convert(targetParameter, type), classGetter), 
-                                    Fields.RubyModule_Version
+                                    Fields.RubyClass_Version
                                 ), 
                                 Fields.StrongBox_Of_Int_Value
                             ),
@@ -220,21 +220,21 @@ namespace IronRuby.Runtime.Calls {
             }
         }
 
-        private void AddFullVersionTest(RubyModule/*!*/ module, RubyContext/*!*/ context, Expression/*!*/ contextExpression) {
-            Assert.NotNull(module, context, contextExpression);
-            module.Context.RequiresClassHierarchyLock();
+        private void AddFullVersionTest(RubyClass/*!*/ cls, RubyContext/*!*/ context, Expression/*!*/ contextExpression) {
+            Assert.NotNull(cls, context, contextExpression);
+            cls.Context.RequiresClassHierarchyLock();
 
             // check for runtime (note that the module's runtime could be different from the call-site runtime):
             AddRestriction(Ast.Equal(contextExpression, Ast.Constant(context)));
 
-            AddVersionTest(module);
+            AddVersionTest(cls);
         }
 
-        internal void AddVersionTest(RubyModule/*!*/ module) {
-            module.Context.RequiresClassHierarchyLock();
+        internal void AddVersionTest(RubyClass/*!*/ cls) {
+            cls.Context.RequiresClassHierarchyLock();
 
             // check for module version (do not burn a module reference to the rule):
-            AddCondition(Ast.Equal(Ast.Field(Ast.Constant(module.Version), Fields.StrongBox_Of_Int_Value), Ast.Constant(module.Version.Value)));
+            AddCondition(Ast.Equal(Ast.Field(Ast.Constant(cls.Version), Fields.StrongBox_Of_Int_Value), Ast.Constant(cls.Version.Value)));
         }
 
         internal bool AddSplattedArgumentTest(object value, Expression/*!*/ expression, out int listLength, out ParameterExpression/*!*/ listVariable) {

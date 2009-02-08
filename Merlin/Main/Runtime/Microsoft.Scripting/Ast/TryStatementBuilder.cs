@@ -161,7 +161,7 @@ namespace Microsoft.Scripting.Ast {
                 handlers.Add(Expression.Catch(typeof(Exception), Expression.Block(_fault, Expression.Rethrow(_try.Type))));
             }
 
-            var result = Expression.MakeTry(_try, _finally, null, handlers);
+            var result = Expression.MakeTry(null, _try, _finally, null, handlers);
             if (_finally != null) {
                 return Utils.FinallyFlowControl(result);
             }

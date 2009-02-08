@@ -62,15 +62,9 @@ namespace System.Dynamic {
             return new DynamicMetaObject(
                 ComObject.RcwToComObject(Expression),
                 BindingRestrictions.GetExpressionRestriction(
-                    Expression.AndAlso(
-                        Expression.NotEqual(
-                            Helpers.Convert(Expression, typeof(object)),
-                            Expression.Constant(null)
-                        ),
-                        Expression.Call(
-                            typeof(System.Runtime.InteropServices.Marshal).GetMethod("IsComObject"),
-                            Helpers.Convert(Expression, typeof(object))
-                        )
+                    Expression.Call(
+                        typeof(ComObject).GetMethod("IsComObject", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic),
+                        Helpers.Convert(Expression, typeof(object))
                     )
                 )
             );

@@ -33,7 +33,7 @@ namespace System.Dynamic {
 
         private const int EmptyHashCode = 6551;                     // hash code of the empty ExpandoClass.
 
-        internal static ExpandoClass Empty = new ExpandoClass();                        // The empty Expando class - all Expando objects start off w/ this class.
+        internal static ExpandoClass Empty = new ExpandoClass();    // The empty Expando class - all Expando objects start off w/ this class.
         
         /// <summary>
         /// Constructs the empty ExpandoClass.  This is the class used when an
@@ -159,7 +159,7 @@ namespace System.Dynamic {
                     return i;
                 }
             }
-            return -1;
+            return ExpandoObject.NoMatch;
         }
 
         /// <summary>
@@ -171,33 +171,45 @@ namespace System.Dynamic {
         /// that is used to check if a member has been deleted.</param>
         /// <returns>
         /// the exact match if there is one
-    	/// if there is no exact match in the members, the matching member that is added 
-        /// to the ExpandoObject most recently.
+        /// if there is exactly one member with case insensitive match, return it
+        /// otherwise we throw AmbiguousMatchException.
         /// </returns>
         private int GetValueIndexCaseInsensitive(string name, ExpandoObject obj) {
-            int firstMatch = -1; //the location of the first matching member
+            int caseInsensitiveMatch = ExpandoObject.NoMatch; //the location of the case-insensitive matching member
+            int exactMatch = ExpandoObject.NoMatch;
+            bool hasAmbigousMatch = false;
+            bool isMatch = false;
             lock (obj.LockObject) {
-                //Search from back to front, so the matching member that is most recently added can be found first
-                for (int i = _keys.Length - 1; i >=0 ; i--) {
-                    if (firstMatch == -1) {
+                for (int i = _keys.Length - 1; i >= 0; i--) {
+                    if (!hasAmbigousMatch) {
+                        //Do case insensitive search if we are not sure if there are ambigous matches
                         if (string.Equals(
                             _keys[i],
                             name,
                             StringComparison.OrdinalIgnoreCase)) {
                             //if the matching member is deleted, continue searching
                             if (!obj.IsDeletedMember(i)) {
-                                firstMatch = i;
+                                if (caseInsensitiveMatch == ExpandoObject.NoMatch) {
+                                    caseInsensitiveMatch = i;
+                                } else {
+                                    hasAmbigousMatch = true;
+                                }
                             }
+                            isMatch = true;
+                        } else {
+                            isMatch = false;
                         }
                     }
-                    //Try checking exact match if we got a first match already
-                    if (firstMatch != -1) {
+                    //Try searching for exact match if we got a match already and haven't got an exact match.
+                    if (isMatch && caseInsensitiveMatch != ExpandoObject.NoMatch && exactMatch == ExpandoObject.NoMatch) {
                         if (string.Equals(
                             _keys[i],
                             name,
                             StringComparison.Ordinal)) {
                             if (obj.IsDeletedMember(i)) {
-                                return firstMatch;
+                                //We know there is an exact match but it is deleted.
+                                //No need to look for exact match after this.
+                                exactMatch = i;
                             } else {
                                 //the exact match has the highest priority
                                 return i;
@@ -206,7 +218,12 @@ namespace System.Dynamic {
                     }
                 }
             }
-            return firstMatch;
+            //if there is an available exact match, it should have been returned.
+            if (hasAmbigousMatch) {
+                return ExpandoObject.AmbiguousMatchFound;
+            }
+            //There is exactly one member with case insensitive match.
+            return caseInsensitiveMatch;
         }
 
         /// <summary>

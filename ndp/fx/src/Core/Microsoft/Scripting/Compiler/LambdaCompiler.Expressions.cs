@@ -73,6 +73,18 @@ namespace System.Linq.Expressions.Compiler {
             EmitExpressionEnd(startEmitted);
         }
 
+        private void EmitExpressionAsType(Expression node, Type type) {
+            if (type == typeof(void)) {
+                EmitExpressionAsVoid(node);
+            } else {
+                EmitExpression(node);
+                if (node.Type != type) {
+                    Debug.Assert(TypeUtils.AreReferenceAssignable(type, node.Type));
+                    _ilg.Emit(OpCodes.Castclass, type);
+                }
+            }
+        }
+
         #region label block tracking
 
         private ExpressionStart EmitExpressionStart(Expression node) {

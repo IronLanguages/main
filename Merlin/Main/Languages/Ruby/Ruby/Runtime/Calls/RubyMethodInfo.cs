@@ -72,6 +72,10 @@ namespace IronRuby.Runtime.Calls {
                 _hasUnsplatParameter, flags
             );
         }
+        
+        internal override bool IsRemovable {
+            get { return true; }
+        }
 
         public override RubyMemberInfo TrySelectOverload(Type/*!*/[]/*!*/ parameterTypes) {
             return parameterTypes.Length >= MandatoryParamCount 
