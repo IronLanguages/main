@@ -43,7 +43,7 @@ namespace System.Runtime.CompilerServices {
         /// </summary>
         /// <returns>The new call site.</returns>
         [Obsolete("do not use this method", true)]
-        public static CallSite CreateMatchmaker(){
+        public static CallSite CreateMatchmaker() {
             var mm = new CallSite(null);
             CallSiteOps.ClearMatch(mm);
             return mm;
@@ -96,35 +96,68 @@ namespace System.Runtime.CompilerServices {
         }
 
         /// <summary>
-        /// Moves the binding rule within the cache.
+        /// Gets the dynamic binding rules from the call site.
         /// </summary>
         /// <typeparam name="T">The type of the delegate of the <see cref="CallSite"/>.</typeparam>
         /// <param name="site">An instance of the dynamic call site.</param>
+        /// <returns>An array of dynamic binding rules.</returns>
+        [Obsolete("do not use this method", true)]
+        public static CallSiteRule<T>[] GetRules<T>(CallSite<T> site) where T : class {
+            return (site.Rules == null) ? null : site.Rules.GetRules();
+        }
+
+
+        /// <summary>
+        /// Retrieves binding rule cache.
+        /// </summary>
+        /// <typeparam name="T">The type of the delegate of the <see cref="CallSite"/>.</typeparam>
+        /// <param name="site">An instance of the dynamic call site.</param>
+        /// <returns>The cache.</returns>
+        [Obsolete("do not use this method", true)]
+        public static RuleCache<T> GetRuleCache<T>(CallSite<T> site) where T : class {
+            return site.Binder.GetRuleCache<T>();
+        }
+
+        /// <summary>
+        /// Moves the binding rule within the cache.
+        /// </summary>
+        /// <typeparam name="T">The type of the delegate of the <see cref="CallSite"/>.</typeparam>
+        /// <param name="cache">Cache.</param>
         /// <param name="rule">An instance of the call site rule.</param>
         [Obsolete("do not use this method", true)]
-        public static void MoveRule<T>(CallSite<T> site, CallSiteRule<T> rule) where T : class {
-            site.Binder.GetRuleCache<T>().MoveRule(rule);
+        public static void MoveRule<T>(RuleCache<T> cache, CallSiteRule<T> rule) where T : class {
+            cache.MoveRule(rule);
+        }
+
+        /// <summary>
+        /// Searches the dynamic rule cache for rules applicable to the dynamic operation.
+        /// </summary>
+        /// <typeparam name="T">The type of the delegate of the <see cref="CallSite"/>.</typeparam>
+        /// <param name="cache">The cache.</param>
+        /// <returns>The array of applicable rules.</returns>
+        [Obsolete("do not use this method", true)]
+        public static CallSiteRule<T>[] FindApplicableRules<T>(RuleCache<T> cache) where T : class {
+            return cache.FindApplicableRules();
         }
 
         /// <summary>
         /// Creates a new call site rule for the dynamic operation by calling the <see cref="CallSiteBinder.Bind"/> on the call site's binder.
         /// </summary>
         /// <typeparam name="T">The type of the delegate of the <see cref="CallSite"/>.</typeparam>
+        /// <param name="cache">Cache.</param>
         /// <param name="site">An instance of the dynamic call site.</param>
         /// <param name="oldRule">A binding rule to be removed from the cache.</param>
         /// <param name="originalRule">A binding rule originally found on the dynamic call site.</param>
         /// <param name="args">An array of runtime values for the dynamic binding.</param>
         /// <returns>The new cal site rule.</returns>
         [Obsolete("do not use this method", true)]
-        public static CallSiteRule<T> CreateNewRule<T>(CallSite<T> site, CallSiteRule<T> oldRule, CallSiteRule<T> originalRule, object[] args) where T : class {
-            var ruleCache = site.Binder.GetRuleCache<T>();
-            
+        public static CallSiteRule<T> CreateNewRule<T>(RuleCache<T> cache, CallSite<T> site, CallSiteRule<T> oldRule, CallSiteRule<T> originalRule, object[] args) where T : class {
             if (oldRule != null) {
                 //
                 // The rule didn't work and since we optimistically added it into the
                 // level 2 cache. Remove it now since the rule is no good.
                 //
-                ruleCache.RemoveRule(oldRule);
+                cache.RemoveRule(oldRule);
             }
 
             Expression binding = site.Binder.Bind(args, CallSiteRule<T>.Parameters, CallSiteRule<T>.ReturnLabel);
@@ -148,31 +181,9 @@ namespace System.Runtime.CompilerServices {
             // Add the rule to the level 2 cache. This is an optimistic add so that cache miss
             // on another site can find this existing rule rather than building a new one.
             //
-            ruleCache.AddRule(rule);
+            cache.AddRule(rule);
 
             return rule;
-        }
-
-        /// <summary>
-        /// Searches the dynamic rule cache for rules applicable to the dynamic operation and list of runtime arguments.
-        /// </summary>
-        /// <typeparam name="T">The type of the delegate of the <see cref="CallSite"/>.</typeparam>
-        /// <param name="site">An instance of the dynamic call site.</param>
-        /// <returns>The array of applicable rules.</returns>
-        [Obsolete("do not use this method", true)]
-        public static CallSiteRule<T>[] FindApplicableRules<T>(CallSite<T> site) where T : class {
-            return site.Binder.GetRuleCache<T>().FindApplicableRules();
-        }
-
-        /// <summary>
-        /// Gets the dynamic binding rules from the call site.
-        /// </summary>
-        /// <typeparam name="T">The type of the delegate of the <see cref="CallSite"/>.</typeparam>
-        /// <param name="site">An instance of the dynamic call site.</param>
-        /// <returns>An array of dynamic binding rules.</returns>
-        [Obsolete("do not use this method", true)]
-        public static CallSiteRule<T>[] GetRules<T>(CallSite<T> site) where T : class {
-            return (site.Rules == null) ? null : site.Rules.GetRules();
         }
     }
 }

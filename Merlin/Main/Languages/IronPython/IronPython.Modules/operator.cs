@@ -21,6 +21,7 @@ using IronPython.Runtime.Operations;
 using Microsoft.Scripting;
 using Microsoft.Scripting.Math;
 using Microsoft.Scripting.Runtime;
+using IronPython.Runtime.Binding;
 
 [assembly: PythonModule("operator", typeof(IronPython.Modules.PythonOperator))]
 namespace IronPython.Modules {
@@ -85,27 +86,27 @@ namespace IronPython.Modules {
         }
 
         public static object lt(CodeContext/*!*/ context, object a, object b) {
-            return PythonContext.GetContext(context).Operation(StandardOperators.LessThan, a, b);
+            return PythonContext.GetContext(context).Operation(PythonOperationKind.LessThan, a, b);
         }
 
         public static object le(CodeContext/*!*/ context, object a, object b) {
-            return PythonContext.GetContext(context).Operation(StandardOperators.LessThanOrEqual, a, b);
+            return PythonContext.GetContext(context).Operation(PythonOperationKind.LessThanOrEqual, a, b);
         }
 
         public static object eq(CodeContext/*!*/ context, object a, object b) {
-            return PythonContext.GetContext(context).Operation(StandardOperators.Equal, a, b);
+            return PythonContext.GetContext(context).Operation(PythonOperationKind.Equal, a, b);
         }
 
         public static object ne(CodeContext/*!*/ context, object a, object b) {
-            return PythonContext.GetContext(context).Operation(StandardOperators.NotEqual, a, b);
+            return PythonContext.GetContext(context).Operation(PythonOperationKind.NotEqual, a, b);
         }
 
         public static object ge(CodeContext/*!*/ context, object a, object b) {
-            return PythonContext.GetContext(context).Operation(StandardOperators.GreaterThanOrEqual, a, b);
+            return PythonContext.GetContext(context).Operation(PythonOperationKind.GreaterThanOrEqual, a, b);
         }
 
         public static object gt(CodeContext/*!*/ context, object a, object b) {
-            return PythonContext.GetContext(context).Operation(StandardOperators.GreaterThan, a, b);
+            return PythonContext.GetContext(context).Operation(PythonOperationKind.GreaterThan, a, b);
         }
 
         public static object __lt__(CodeContext/*!*/ context, object a, object b) {
@@ -161,7 +162,7 @@ namespace IronPython.Modules {
         }
 
         public static object add(CodeContext/*!*/ context, object a, object b) {
-            return PythonContext.GetContext(context).Operation(StandardOperators.Add, a, b);
+            return PythonContext.GetContext(context).Operation(PythonOperationKind.Add, a, b);
         }
 
         public static object __add__(CodeContext/*!*/ context, object a, object b) {
@@ -169,7 +170,7 @@ namespace IronPython.Modules {
         }
 
         public static object and_(CodeContext/*!*/ context, object a, object b) {
-            return PythonContext.GetContext(context).Operation(StandardOperators.BitwiseAnd, a, b);
+            return PythonContext.GetContext(context).Operation(PythonOperationKind.BitwiseAnd, a, b);
         }
 
         public static object __and__(CodeContext/*!*/ context, object a, object b) {
@@ -177,7 +178,7 @@ namespace IronPython.Modules {
         }
 
         public static object div(CodeContext/*!*/ context, object a, object b) {
-            return PythonContext.GetContext(context).Operation(StandardOperators.Divide, a, b);
+            return PythonContext.GetContext(context).Operation(PythonOperationKind.Divide, a, b);
         }
 
         public static object __div__(CodeContext/*!*/ context, object a, object b) {
@@ -185,7 +186,7 @@ namespace IronPython.Modules {
         }
 
         public static object floordiv(CodeContext/*!*/ context, object a, object b) {
-            return PythonContext.GetContext(context).Operation(StandardOperators.FloorDivide, a, b);
+            return PythonContext.GetContext(context).Operation(PythonOperationKind.FloorDivide, a, b);
         }
 
         public static object __floordiv__(CodeContext/*!*/ context, object a, object b) {
@@ -209,7 +210,7 @@ namespace IronPython.Modules {
         }
 
         public static object lshift(CodeContext/*!*/ context, object a, object b) {
-            return PythonContext.GetContext(context).Operation(StandardOperators.LeftShift, a, b);
+            return PythonContext.GetContext(context).Operation(PythonOperationKind.LeftShift, a, b);
         }
 
         public static object __lshift__(CodeContext/*!*/ context, object a, object b) {
@@ -217,7 +218,7 @@ namespace IronPython.Modules {
         }
 
         public static object mod(CodeContext/*!*/ context, object a, object b) {
-            return PythonContext.GetContext(context).Operation(StandardOperators.Mod, a, b);
+            return PythonContext.GetContext(context).Operation(PythonOperationKind.Mod, a, b);
         }
 
         public static object __mod__(CodeContext/*!*/ context, object a, object b) {
@@ -225,7 +226,7 @@ namespace IronPython.Modules {
         }
 
         public static object mul(CodeContext/*!*/ context, object a, object b) {
-            return PythonContext.GetContext(context).Operation(StandardOperators.Multiply, a, b);
+            return PythonContext.GetContext(context).Operation(PythonOperationKind.Multiply, a, b);
         }
 
         public static object __mul__(CodeContext/*!*/ context, object a, object b) {
@@ -241,7 +242,7 @@ namespace IronPython.Modules {
         }
 
         public static object or_(CodeContext/*!*/ context, object a, object b) {
-            return PythonContext.GetContext(context).Operation(StandardOperators.BitwiseOr, a, b);
+            return PythonContext.GetContext(context).Operation(PythonOperationKind.BitwiseOr, a, b);
         }
 
         public static object __or__(CodeContext/*!*/ context, object a, object b) {
@@ -257,7 +258,7 @@ namespace IronPython.Modules {
         }
 
         public static object pow(CodeContext/*!*/ context, object a, object b) {
-            return PythonContext.GetContext(context).Operation(StandardOperators.Power, a, b);
+            return PythonContext.GetContext(context).Operation(PythonOperationKind.Power, a, b);
         }
 
         public static object __pow__(CodeContext/*!*/ context, object a, object b) {
@@ -265,7 +266,7 @@ namespace IronPython.Modules {
         }
 
         public static object rshift(CodeContext/*!*/ context, object a, object b) {
-            return PythonContext.GetContext(context).Operation(StandardOperators.RightShift, a, b);
+            return PythonContext.GetContext(context).Operation(PythonOperationKind.RightShift, a, b);
         }
 
         public static object __rshift__(CodeContext/*!*/ context, object a, object b) {
@@ -273,7 +274,7 @@ namespace IronPython.Modules {
         }
 
         public static object sub(CodeContext/*!*/ context, object a, object b) {
-            return PythonContext.GetContext(context).Operation(StandardOperators.Subtract, a, b);
+            return PythonContext.GetContext(context).Operation(PythonOperationKind.Subtract, a, b);
         }
 
         public static object __sub__(CodeContext/*!*/ context, object a, object b) {
@@ -281,7 +282,7 @@ namespace IronPython.Modules {
         }
 
         public static object truediv(CodeContext/*!*/ context, object a, object b) {
-            return PythonContext.GetContext(context).Operation(StandardOperators.TrueDivide, a, b);
+            return PythonContext.GetContext(context).Operation(PythonOperationKind.TrueDivide, a, b);
         }
 
         public static object __truediv__(CodeContext/*!*/ context, object a, object b) {
@@ -289,7 +290,7 @@ namespace IronPython.Modules {
         }
 
         public static object xor(CodeContext/*!*/ context, object a, object b) {
-            return PythonContext.GetContext(context).Operation(StandardOperators.ExclusiveOr, a, b);
+            return PythonContext.GetContext(context).Operation(PythonOperationKind.ExclusiveOr, a, b);
         }
 
         public static object __xor__(CodeContext/*!*/ context, object a, object b) {
@@ -299,15 +300,15 @@ namespace IronPython.Modules {
         public static object concat(CodeContext/*!*/ context, object a, object b) {
             TestBothSequence(a, b);
 
-            return PythonContext.GetContext(context).Operation(StandardOperators.Add, a, b);
+            return PythonContext.GetContext(context).Operation(PythonOperationKind.Add, a, b);
         }
 
         public static object __concat__(CodeContext/*!*/ context, object a, object b) {
             return concat(context, a, b);
         }
 
-        public static object contains(CodeContext/*!*/ context, object a, object b) {            
-            return PythonContext.GetContext(context).Operation(StandardOperators.Contains, b, a);
+        public static object contains(CodeContext/*!*/ context, object a, object b) {
+            return PythonContext.GetContext(context).Operation(PythonOperationKind.Contains, b, a);
         }
 
         public static object __contains__(CodeContext/*!*/ context, object a, object b) {
@@ -383,7 +384,7 @@ namespace IronPython.Modules {
                 throw PythonOps.TypeError("integer required");
             }
 
-            return PythonContext.GetContext(context).Operation(StandardOperators.Multiply, a, b);
+            return PythonContext.GetContext(context).Operation(PythonOperationKind.Multiply, a, b);
         }
 
         public static object __repeat__(CodeContext/*!*/  context, object a, object b) {
@@ -453,61 +454,61 @@ namespace IronPython.Modules {
         }
         
         public static object iadd(CodeContext/*!*/ context, object a, object b) {
-            return PythonContext.GetContext(context).Operation(StandardOperators.InPlaceAdd, a, b);
+            return PythonContext.GetContext(context).Operation(PythonOperationKind.InPlaceAdd, a, b);
         }
 
         public static object iand(CodeContext/*!*/ context, object a, object b) {
-            return PythonContext.GetContext(context).Operation(StandardOperators.InPlaceBitwiseAnd, a, b);
+            return PythonContext.GetContext(context).Operation(PythonOperationKind.InPlaceBitwiseAnd, a, b);
         }
 
         public static object idiv(CodeContext/*!*/ context, object a, object b) {
-            return PythonContext.GetContext(context).Operation(StandardOperators.InPlaceDivide, a, b);
+            return PythonContext.GetContext(context).Operation(PythonOperationKind.InPlaceDivide, a, b);
         }
 
         public static object ifloordiv(CodeContext/*!*/ context, object a, object b) {
-            return PythonContext.GetContext(context).Operation(StandardOperators.InPlaceFloorDivide, a, b);
+            return PythonContext.GetContext(context).Operation(PythonOperationKind.InPlaceFloorDivide, a, b);
         }
 
         public static object ilshift(CodeContext/*!*/ context, object a, object b) {
-            return PythonContext.GetContext(context).Operation(StandardOperators.InPlaceLeftShift, a, b);
+            return PythonContext.GetContext(context).Operation(PythonOperationKind.InPlaceLeftShift, a, b);
         }
 
         public static object imod(CodeContext/*!*/ context, object a, object b) {
-            return PythonContext.GetContext(context).Operation(StandardOperators.InPlaceMod, a, b);
+            return PythonContext.GetContext(context).Operation(PythonOperationKind.InPlaceMod, a, b);
         }
 
         public static object imul(CodeContext/*!*/ context, object a, object b) {
-            return PythonContext.GetContext(context).Operation(StandardOperators.InPlaceMultiply, a, b);
+            return PythonContext.GetContext(context).Operation(PythonOperationKind.InPlaceMultiply, a, b);
         }
 
         public static object ior(CodeContext/*!*/ context, object a, object b) {
-            return PythonContext.GetContext(context).Operation(StandardOperators.InPlaceBitwiseOr, a, b);
+            return PythonContext.GetContext(context).Operation(PythonOperationKind.InPlaceBitwiseOr, a, b);
         }
 
         public static object ipow(CodeContext/*!*/ context, object a, object b) {
-            return PythonContext.GetContext(context).Operation(StandardOperators.InPlacePower, a, b);
+            return PythonContext.GetContext(context).Operation(PythonOperationKind.InPlacePower, a, b);
         }
 
         public static object irshift(CodeContext/*!*/ context, object a, object b) {
-            return PythonContext.GetContext(context).Operation(StandardOperators.InPlaceRightShift, a, b);
+            return PythonContext.GetContext(context).Operation(PythonOperationKind.InPlaceRightShift, a, b);
         }
 
         public static object isub(CodeContext/*!*/ context, object a, object b) {
-            return PythonContext.GetContext(context).Operation(StandardOperators.InPlaceSubtract, a, b);
+            return PythonContext.GetContext(context).Operation(PythonOperationKind.InPlaceSubtract, a, b);
         }
 
         public static object itruediv(CodeContext/*!*/ context, object a, object b) {
-            return PythonContext.GetContext(context).Operation(StandardOperators.InPlaceTrueDivide, a, b);
+            return PythonContext.GetContext(context).Operation(PythonOperationKind.InPlaceTrueDivide, a, b);
         }
 
         public static object ixor(CodeContext/*!*/ context, object a, object b) {
-            return PythonContext.GetContext(context).Operation(StandardOperators.InPlaceExclusiveOr, a, b);
+            return PythonContext.GetContext(context).Operation(PythonOperationKind.InPlaceExclusiveOr, a, b);
         }
 
         public static object iconcat(CodeContext/*!*/ context, object a, object b) {
             TestBothSequence(a, b);
 
-            return PythonContext.GetContext(context).Operation(StandardOperators.InPlaceAdd, a, b);
+            return PythonContext.GetContext(context).Operation(PythonOperationKind.InPlaceAdd, a, b);
         }
 
         public static object irepeat(CodeContext/*!*/ context, object a, object b) {
@@ -521,7 +522,7 @@ namespace IronPython.Modules {
                 throw PythonOps.TypeError("integer required");
             }
 
-            return PythonContext.GetContext(context).Operation(StandardOperators.InPlaceMultiply, a, b);
+            return PythonContext.GetContext(context).Operation(PythonOperationKind.InPlaceMultiply, a, b);
         }
 
         public static object __iadd__(CodeContext/*!*/ context, object a, object b) {

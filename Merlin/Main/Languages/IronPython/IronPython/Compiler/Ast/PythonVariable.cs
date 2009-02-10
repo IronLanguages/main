@@ -111,11 +111,11 @@ namespace IronPython.Compiler.Ast {
             string name = SymbolTable.IdToString(_name);
             switch (_kind) {
                 case VariableKind.Global:
+                case VariableKind.GlobalLocal:
                     return _variable = Utils.GlobalVariable(_type, name);
 
                 case VariableKind.Local:
                 case VariableKind.HiddenLocal:
-                case VariableKind.GlobalLocal:
                     if (_accessedInNestedScope) {
                         return _variable = ag.Block.ClosedOverVariable(_type, name);
                     } else {

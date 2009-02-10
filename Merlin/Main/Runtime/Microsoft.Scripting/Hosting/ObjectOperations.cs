@@ -65,16 +65,16 @@ namespace Microsoft.Scripting.Hosting {
         /// Even if an object is callable Call may still fail if an incorrect number of arguments or type of arguments are provided.
         /// </summary>
         public bool IsCallable(object obj) {
-            return _ops.DoOperation<object, bool>(StandardOperators.IsCallable, obj);
+            return _ops.IsCallable(obj);
         }
 
         /// <summary>
-        /// Calls the provided object with the given parameters and returns the result.
+        /// Invokes the provided object with the given parameters and returns the result.
         /// 
         /// The prefered way of calling objects is to convert the object to a strongly typed delegate 
         /// using the ConvertTo methods and then invoking that delegate.
         /// </summary>
-        public object Call(object obj, params object[] parameters) {
+        public object Invoke(object obj, params object[] parameters) {
             return _ops.Invoke(obj, parameters);
         }
 
@@ -293,40 +293,11 @@ namespace Microsoft.Scripting.Hosting {
         }
 
         /// <summary>
-        /// Performs a generic unary operation on the specified target and returns the result.
-        /// </summary>
-        public object DoOperation(Operators op, object target) {
-            return _ops.DoOperation(StandardOperators.FromOperator(op), target);
-        }
-
-        /// <summary>
-        /// Performs a generic unary operation on the strongly typed target and returns the value as the specified type
-        /// </summary>
-        public TResult DoOperation<TTarget, TResult>(Operators op, TTarget target) {
-            return _ops.DoOperation<TTarget, TResult>(StandardOperators.FromOperator(op), target);
-        }
-
-        /// <summary>
-        /// Performs the generic binary operation on the specified targets and returns the result.
-        /// </summary>
-        public object DoOperation(Operators op, object target, object other) {
-            return _ops.DoOperation(op, target, other);
-        }
-
-        /// <summary>
-        /// Peforms the generic binary operation on the specified strongly typed targets and returns
-        /// the strongly typed result.
-        /// </summary>
-        public TResult DoOperation<TTarget, TOther, TResult>(Operators op, TTarget target, TOther other) {
-            return _ops.DoOperation<TTarget, TOther, TResult>(StandardOperators.FromOperator(op), target, other);
-        }
-
-        /// <summary>
         /// Performs addition on the specified targets and returns the result.  Throws an exception
         /// if the operation cannot be performed.
         /// </summary>
         public object Add(object self, object other) {
-            return _ops.DoOperation(Operators.Add, self, other);
+            return DoOperation(ExpressionType.Add, self, other);
         }
 
         /// <summary>
@@ -334,7 +305,7 @@ namespace Microsoft.Scripting.Hosting {
         /// if the operation cannot be performed.
         /// </summary>
         public object Subtract(object self, object other) {
-            return _ops.DoOperation(Operators.Subtract, self, other);
+            return DoOperation(ExpressionType.Subtract, self, other);
         }
 
         /// <summary>
@@ -342,7 +313,7 @@ namespace Microsoft.Scripting.Hosting {
         /// if the operation cannot be performed.
         /// </summary>
         public object Power(object self, object other) {
-            return _ops.DoOperation(Operators.Power, self, other);
+            return DoOperation(ExpressionType.Power, self, other);
         }
 
         /// <summary>
@@ -350,7 +321,7 @@ namespace Microsoft.Scripting.Hosting {
         /// if the operation cannot be performed.
         /// </summary>
         public object Multiply(object self, object other) {
-            return _ops.DoOperation(Operators.Multiply, self, other);
+            return DoOperation(ExpressionType.Multiply, self, other);
         }
 
         /// <summary>
@@ -358,23 +329,22 @@ namespace Microsoft.Scripting.Hosting {
         /// if the operation cannot be performed.
         /// </summary>
         public object Divide(object self, object other) {
-            return _ops.DoOperation(Operators.Divide, self, other);
+            return DoOperation(ExpressionType.Divide, self, other);
         }
 
         /// <summary>
         /// Performs modulus of the 1st object by the second object.  Throws an exception
         /// if the operation cannot be performed.
         /// </summary>
-        public object Modulus(object self, object other) {
-            return _ops.DoOperation(Operators.Mod, self, other);
+        public object Modulo(object self, object other) {
+            return DoOperation(ExpressionType.Modulo, self, other);
         }
-
         /// <summary>
         /// Shifts the left object left by the right object.  Throws an exception if the
         /// operation cannot be performed.
         /// </summary>
         public object LeftShift(object self, object other) {
-            return _ops.DoOperation(Operators.LeftShift, self, other);
+            return DoOperation(ExpressionType.LeftShift, self, other);
         }
 
         /// <summary>
@@ -382,7 +352,7 @@ namespace Microsoft.Scripting.Hosting {
         /// operation cannot be performed.
         /// </summary>
         public object RightShift(object self, object other) {
-            return _ops.DoOperation(Operators.RightShift, self, other);
+            return DoOperation(ExpressionType.RightShift, self, other);
         }
 
         /// <summary>
@@ -390,7 +360,7 @@ namespace Microsoft.Scripting.Hosting {
         /// cannot be performed.
         /// </summary>
         public object BitwiseAnd(object self, object other) {
-            return _ops.DoOperation(Operators.BitwiseAnd, self, other);
+            return DoOperation(ExpressionType.And, self, other);
         }
 
         /// <summary>
@@ -398,7 +368,7 @@ namespace Microsoft.Scripting.Hosting {
         /// cannot be performed.
         /// </summary>
         public object BitwiseOr(object self, object other) {
-            return _ops.DoOperation(Operators.BitwiseOr, self, other);
+            return DoOperation(ExpressionType.Or, self, other);
         }
 
         /// <summary>
@@ -406,7 +376,7 @@ namespace Microsoft.Scripting.Hosting {
         /// cannot be performed.
         /// </summary>
         public object ExclusiveOr(object self, object other) {
-            return _ops.DoOperation(Operators.ExclusiveOr, self, other);
+            return DoOperation(ExpressionType.ExclusiveOr, self, other);
         }
 
         /// <summary>
@@ -414,7 +384,7 @@ namespace Microsoft.Scripting.Hosting {
         /// Throws an exception if hte comparison cannot be performed.
         /// </summary>
         public bool LessThan(object self, object other) {
-            return _ops.DoOperation<object, object, bool>(StandardOperators.LessThan, self, other);
+            return _ops.DoOperation<object, object, bool>(ExpressionType.LessThan, self, other);
         }
 
         /// <summary>
@@ -422,7 +392,7 @@ namespace Microsoft.Scripting.Hosting {
         /// Throws an exception if hte comparison cannot be performed.
         /// </summary>
         public bool GreaterThan(object self, object other) {
-            return _ops.DoOperation<object, object, bool>(StandardOperators.GreaterThan, self, other);
+            return _ops.DoOperation<object, object, bool>(ExpressionType.GreaterThan, self, other);
         }
 
         /// <summary>
@@ -430,7 +400,7 @@ namespace Microsoft.Scripting.Hosting {
         /// Throws an exception if hte comparison cannot be performed.
         /// </summary>
         public bool LessThanOrEqual(object self, object other) {
-            return _ops.DoOperation<object, object, bool>(StandardOperators.LessThanOrEqual, self, other);
+            return _ops.DoOperation<object, object, bool>(ExpressionType.LessThanOrEqual, self, other);
         }
 
         /// <summary>
@@ -438,7 +408,7 @@ namespace Microsoft.Scripting.Hosting {
         /// Throws an exception if hte comparison cannot be performed.
         /// </summary>
         public bool GreaterThanOrEqual(object self, object other) {
-            return _ops.DoOperation<object, object, bool>(StandardOperators.GreaterThanOrEqual, self, other);
+            return _ops.DoOperation<object, object, bool>(ExpressionType.GreaterThanOrEqual, self, other);
         }
 
         /// <summary>
@@ -446,7 +416,7 @@ namespace Microsoft.Scripting.Hosting {
         /// Throws an exception if the comparison cannot be performed.
         /// </summary>
         public bool Equal(object self, object other) {
-            return _ops.DoOperation<object, object, bool>(StandardOperators.Equal, self, other);
+            return _ops.DoOperation<object, object, bool>(ExpressionType.Equal, self, other);
         }
 
         /// <summary>
@@ -454,7 +424,7 @@ namespace Microsoft.Scripting.Hosting {
         /// Throws an exception if hte comparison cannot be performed.
         /// </summary>
         public bool NotEqual(object self, object other) {
-            return _ops.DoOperation<object, object, bool>(StandardOperators.NotEqual, self, other);
+            return _ops.DoOperation<object, object, bool>(ExpressionType.NotEqual, self, other);
         }
 
         /// <summary>
@@ -484,16 +454,163 @@ namespace Microsoft.Scripting.Hosting {
         /// Returns a string providing documentation for the specified object.
         /// </summary>
         public string GetDocumentation(object obj) {
-            return _ops.DoOperation<object, string>(StandardOperators.Documentation, obj);
+            return _ops.GetDocumentation(obj);
         }
 
         /// <summary>
         /// Returns a list of signatures applicable for calling the specified object in a form displayable to the user.
         /// </summary>
         public IList<string> GetCallSignatures(object obj) {
-            return _ops.DoOperation<object, IList<string>>(StandardOperators.CallSignatures, obj);
+            return _ops.GetCallSignatures(obj);
         }
 
+        #endregion
+
+        #region Obsolete Operations
+
+        /// <summary>
+        /// Calls the provided object with the given parameters and returns the result.
+        /// 
+        /// The prefered way of calling objects is to convert the object to a strongly typed delegate 
+        /// using the ConvertTo methods and then invoking that delegate.
+        /// </summary>
+        [Obsolete("Use Invoke instead")]
+        public object Call(object obj, params object[] parameters) {
+            return _ops.Invoke(obj, parameters);
+        }
+
+                /// <summary>
+        /// Performs a generic unary operation on the specified target and returns the result.
+        /// </summary>
+        [Obsolete]
+        public object DoOperation(Operators op, object target) {
+            ExpressionType newOp = GetLinqOp(op);
+
+            return _ops.DoOperation<object, object>(newOp, target);
+        }
+        
+        /// <summary>
+        /// Performs a generic unary operation on the strongly typed target and returns the value as the specified type
+        /// </summary>
+        [Obsolete("Use ExpressionType overload instead")]
+        public TResult DoOperation<TTarget, TResult>(Operators op, TTarget target) {
+            return _ops.DoOperation<TTarget, TResult>(GetLinqOp(op), target);
+        }
+
+        [Obsolete]
+        private static ExpressionType GetLinqOp(Operators op) {
+            ExpressionType? newOp = null;
+            switch (op) {
+                case Operators.Positive: newOp = ExpressionType.UnaryPlus; break;
+                case Operators.Negate: newOp = ExpressionType.Negate; break;
+                case Operators.OnesComplement: newOp = ExpressionType.OnesComplement; break;
+                case Operators.IsFalse: newOp = ExpressionType.IsFalse; break;
+                case Operators.Decrement: newOp = ExpressionType.Decrement; break;
+                case Operators.Increment: newOp = ExpressionType.Increment; break;
+                default:
+                    throw new InvalidOperationException(String.Format("Unrecognized shared operation: {0}", op));
+            }
+            return newOp.Value;
+        }
+
+        /// <summary>
+        /// Performs modulus of the 1st object by the second object.  Throws an exception
+        /// if the operation cannot be performed.
+        /// </summary>
+        [Obsolete("Use Modulo instead")]
+        public object Modulus(object self, object other) {
+            return Modulo(self, other);
+        }
+
+        /// <summary>
+        /// Performs the generic binary operation on the specified targets and returns the result.
+        /// </summary>
+        [Obsolete("Use ExpressionType overload instead")]
+        public object DoOperation(Operators op, object target, object other) {
+            return _ops.DoOperation<object, object, object>(GetLinqBinaryOp(op), target, other);
+        }
+
+        [Obsolete]
+        private static ExpressionType GetLinqBinaryOp(Operators op) {
+            ExpressionType? newOp = null;
+            switch (op) {
+                case Operators.Add: newOp = ExpressionType.Add; break;
+                case Operators.BitwiseAnd: newOp = ExpressionType.And; break;
+                case Operators.Divide: newOp = ExpressionType.Divide; break;
+                case Operators.ExclusiveOr: newOp = ExpressionType.ExclusiveOr; break;
+                case Operators.Mod: newOp = ExpressionType.Modulo; break;
+                case Operators.Multiply: newOp = ExpressionType.Multiply; break;
+                case Operators.BitwiseOr: newOp = ExpressionType.Or; break;
+                case Operators.Power: newOp = ExpressionType.Power; break;
+                case Operators.RightShift: newOp = ExpressionType.RightShift; break;
+                case Operators.LeftShift: newOp = ExpressionType.LeftShift; break;
+                case Operators.Subtract: newOp = ExpressionType.Subtract; break;
+
+                case Operators.Equals: newOp = ExpressionType.Equal; break;
+                case Operators.GreaterThan: newOp = ExpressionType.GreaterThan; break;
+                case Operators.GreaterThanOrEqual: newOp = ExpressionType.GreaterThanOrEqual; break;
+                case Operators.LessThan: newOp = ExpressionType.LessThan; break;
+                case Operators.LessThanOrEqual: newOp = ExpressionType.LessThanOrEqual; break;
+                case Operators.NotEquals: newOp = ExpressionType.NotEqual; break;
+                default:
+                    throw new InvalidOperationException(String.Format("Unrecognized shared operation: {0}", op));
+            }
+            return newOp.Value;
+        }
+
+        /// <summary>
+        /// Peforms the generic binary operation on the specified strongly typed targets and returns
+        /// the strongly typed result.
+        /// </summary>
+        [Obsolete]
+        public TResult DoOperation<TTarget, TOther, TResult>(Operators op, TTarget target, TOther other) {
+            return _ops.DoOperation<TTarget, TOther, TResult>(GetLinqBinaryOp(op), target, other);
+        }
+
+#if !SILVERLIGHT
+        /// <summary>
+        /// Calls the specified remote object with the specified remote parameters.
+        /// 
+        /// Though delegates are preferable for calls they may not always be usable for remote objects.
+        /// </summary>
+        [Obsolete("Use Invoke instead")]
+        public ObjectHandle Call(ObjectHandle obj, params ObjectHandle[] parameters) {
+            return Invoke(obj, parameters);
+        }
+
+        /// <summary>
+        /// Calls the specified remote object with the local parameters which will be serialized
+        /// to the remote app domain.
+        /// </summary>
+        [Obsolete("Use Invoke instead")]
+        public ObjectHandle Call(ObjectHandle obj, params object[] parameters) {
+            return Invoke(obj, parameters);
+        }
+
+        /// <summary>
+        /// Performs the specified unary operator on the remote object.
+        /// </summary>
+        [Obsolete("Use the ExpressionType overload instead")]
+        public object DoOperation(Operators op, ObjectHandle target) {
+            return DoOperation(op, GetLocalObject(target));
+        }
+
+        /// <summary>
+        /// Performs the specified binary operator on the remote object.
+        /// </summary>
+        [Obsolete("Use the ExpressionType enum instead")]
+        public ObjectHandle DoOperation(Operators op, ObjectHandle target, ObjectHandle other) {
+            return new ObjectHandle(DoOperation(op, GetLocalObject(target), GetLocalObject(other)));
+        }
+
+        /// <summary>
+        /// Performs modulus on the 1st remote object by the 2nd.  Throws an exception if the operation cannot be performed.
+        /// </summary>
+        [Obsolete("Use Modulo instead")]
+        public ObjectHandle Modulus(ObjectHandle self, ObjectHandle other) {
+            return Modulo(self, other);
+        }
+#endif
         #endregion
 
 #pragma warning restore 618
@@ -512,22 +629,22 @@ namespace Microsoft.Scripting.Hosting {
         }
 
         /// <summary>
-        /// Calls the specified remote object with the specified remote parameters.
+        /// Invokes the specified remote object with the specified remote parameters.
         /// 
         /// Though delegates are preferable for calls they may not always be usable for remote objects.
         /// </summary>
-        public ObjectHandle Call([NotNull]ObjectHandle obj, [NotNull]params ObjectHandle[] parameters) {
+        public ObjectHandle Invoke([NotNull]ObjectHandle obj, params ObjectHandle[] parameters) {
             ContractUtils.RequiresNotNull(parameters, "parameters");
 
-            return new ObjectHandle(Call(GetLocalObject(obj), GetLocalObjects(parameters)));
+            return new ObjectHandle(Invoke(GetLocalObject(obj), GetLocalObjects(parameters)));
         }
 
         /// <summary>
-        /// Calls the specified remote object with the local parameters which will be serialized
+        /// Invokes the specified remote object with the local parameters which will be serialized
         /// to the remote app domain.
         /// </summary>
-        public ObjectHandle Call([NotNull]ObjectHandle obj, params object[] parameters) {
-            return new ObjectHandle(Call(GetLocalObject(obj), parameters));
+        public ObjectHandle Invoke([NotNull]ObjectHandle obj, params object[] parameters) {
+            return new ObjectHandle(Invoke(GetLocalObject(obj), parameters));
         }
 
         public ObjectHandle Create([NotNull]ObjectHandle obj, [NotNull]params ObjectHandle[] parameters) {
@@ -703,14 +820,14 @@ namespace Microsoft.Scripting.Hosting {
         /// <summary>
         /// Performs the specified unary operator on the remote object.
         /// </summary>
-        public object DoOperation(Operators op, [NotNull]ObjectHandle target) {
+        public object DoOperation(ExpressionType op, [NotNull]ObjectHandle target) {
             return DoOperation(op, GetLocalObject(target));
         }
 
         /// <summary>
         /// Performs the specified binary operator on the remote object.
         /// </summary>
-        public ObjectHandle DoOperation(Operators op, [NotNull]ObjectHandle target, [NotNull]ObjectHandle other) {
+        public ObjectHandle DoOperation(ExpressionType op, ObjectHandle target, ObjectHandle other) {
             return new ObjectHandle(DoOperation(op, GetLocalObject(target), GetLocalObject(other)));
         }
 
@@ -751,9 +868,9 @@ namespace Microsoft.Scripting.Hosting {
 
         /// <summary>
         /// Performs modulus on the 1st remote object by the 2nd.  Throws an exception if the operation cannot be performed.
-        /// </summary>
-        public ObjectHandle Modulus([NotNull]ObjectHandle self, [NotNull]ObjectHandle other) {
-            return new ObjectHandle(Modulus(GetLocalObject(self), GetLocalObject(other)));
+        /// </summary>        
+        public ObjectHandle Modulo([NotNull]ObjectHandle self, [NotNull]ObjectHandle other) {
+            return new ObjectHandle(Modulo(GetLocalObject(self), GetLocalObject(other)));
         }
 
         /// <summary>

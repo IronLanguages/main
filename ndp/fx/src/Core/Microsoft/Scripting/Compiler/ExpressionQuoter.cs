@@ -151,30 +151,6 @@ namespace System.Runtime.CompilerServices {
                 return Expression.Field(Expression.Constant(box), "Value");
             }
 
-            // Currently we support jumping into RHS of assignment, but
-            // only if the lvalue is a parameter. So we need to do the
-            // reduction a bit differently.
-            //
-            // If that feature goes away, this method can be removed.
-            //
-            protected internal override Expression VisitBinary(BinaryExpression node) {
-                if (node.NodeType == ExpressionType.Assign &&
-                    node.Left.NodeType == ExpressionType.Parameter) {
-
-                    var variable = (ParameterExpression)node.Left;
-                    IStrongBox box = GetBox(variable);
-                    if (box != null) {
-                        return Expression.Block(
-                            new[] { variable },
-                            Expression.Assign(variable, Visit(node.Right)), 
-                            Expression.Assign(Expression.Field(Expression.Constant(box), "Value"), variable),
-                            variable
-                        );
-                    }
-                }
-                return base.VisitBinary(node);
-            }
-
             private IStrongBox GetBox(ParameterExpression variable) {
                 // Skip variables that are shadowed by a nested scope/lambda
                 foreach (Set<ParameterExpression> hidden in _shadowedVars) {

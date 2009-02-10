@@ -27,30 +27,35 @@ using IronPython.Runtime.Operations;
 namespace IronPython.Runtime.Binding {
     using Ast = System.Linq.Expressions.Expression;
 
-    class PythonOperationBinder : OperationBinder, IPythonSite, IExpressionSerializable {
+    class PythonOperationBinder : DynamicMetaObjectBinder, IPythonSite, IExpressionSerializable {
         private readonly BinderState/*!*/ _state;
+        private readonly PythonOperationKind _operation;
 
-        public PythonOperationBinder(BinderState/*!*/ state, string/*!*/ operation)
-            : base(operation) {
+        public PythonOperationBinder(BinderState/*!*/ state, PythonOperationKind/*!*/ operation) {
             _state = state;
+            _operation = operation;
         }
 
-        public override DynamicMetaObject/*!*/ FallbackOperation(DynamicMetaObject target, DynamicMetaObject/*!*/[]/*!*/ args, DynamicMetaObject onBindingError) {
-            // TODO: until we use the real GetIndex and SetIndex binders, we
-            // need to do this for COM interop
-            if (Operation == "GetItem") {
-                return target.BindGetIndex(new GetIndexAdapter(this), args);
-            }            
-            if (Operation == "SetItem") {
-                DynamicMetaObject[] indexes = ArrayUtils.RemoveLast(args);
-                DynamicMetaObject value = args[args.Length - 1];
-                return target.BindSetIndex(new SetIndexAdapter(this), indexes, value);
+        public override DynamicMetaObject Bind(DynamicMetaObject target, DynamicMetaObject[] args) {
+            IPythonOperable op = target as IPythonOperable;
+            if (op != null) {
+                DynamicMetaObject res = op.BindOperation(this, ArrayUtils.Insert(target, args));
+                if (res != null) {
+                    return res;
+                }
             }
+
             return PythonProtocol.Operation(this, ArrayUtils.Insert(target, args));
         }
 
+        public PythonOperationKind Operation {
+            get {
+                return _operation;
+            }
+        }
+
         public override int GetHashCode() {
-            return base.GetHashCode() ^ _state.Binder.GetHashCode();
+            return base.GetHashCode() ^ _state.Binder.GetHashCode() ^ _operation.GetHashCode();
         }
 
         public override bool Equals(object obj) {
@@ -78,7 +83,7 @@ namespace IronPython.Runtime.Binding {
             return Ast.Call(
                 typeof(PythonOps).GetMethod("MakeOperationAction"),
                 BindingHelpers.CreateBinderStateExpression(),
-                Expression.Constant(Operation)
+                Expression.Constant((int)Operation)
             );
         }
 

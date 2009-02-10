@@ -138,6 +138,10 @@ namespace IronRuby.Hosting {
                 case "-useThreadAbortForSyncRaise":
                     LanguageSetup.Options["UseThreadAbortForSyncRaise"] = true;
                     break;
+
+                case "-compileRegexps":
+                    LanguageSetup.Options["CompileRegexps"] = true;
+                    break;
 #endif
                 case "-I":
                     _loadPaths.AddRange(PopNextArg().Split(Path.PathSeparator));
@@ -191,7 +195,10 @@ namespace IronRuby.Hosting {
 
             string [,] rubyOptions = new string[,] {
                 { "-opt", "dummy" }, 
+#if DEBUG
                 { "-useThreadAbortForSyncRaise", "For testing purposes" },
+                { "-compileRegexps", "Faster throughput, slower startup" },
+#endif
             };
 
             // Append the Ruby-specific options and the standard options

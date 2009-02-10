@@ -68,7 +68,7 @@ namespace Microsoft.Scripting.Actions {
         //??? Do these belong here or mone Operators enum
         public bool IsComparision {
             get {
-                return CompilerHelpers.IsComparisonOperator(_operation);
+                return CompilerHelpers.IsComparisonOperator(OperatorInfo.OperatorToExpressionType(_operation).Value);
             }
         }
 

@@ -49,7 +49,7 @@ namespace IronPython.Runtime.Types {
         [MultiRuntimeAware]
         private static DocumentationDescriptor _docDescr;
         [MultiRuntimeAware]
-        internal static Dictionary<string, Operators> _pythonOperatorTable;
+        internal static Dictionary<string, PythonOperationKind> _pythonOperatorTable;
 
         #region Public member resolution
 
@@ -268,32 +268,32 @@ namespace IronPython.Runtime.Types {
         class OperatorResolver : MemberResolver {
             public override MemberGroup/*!*/ ResolveMember(MemberBinder/*!*/ binder, OldDynamicAction/*!*/ action, Type/*!*/ type, string/*!*/ name) {
                 if (type.IsSealed && type.IsAbstract) {
-                    // static types don't have operators
+                    // static types don't have PythonOperationKind
                     return MemberGroup.EmptyGroup;
                 }
 
                 // try mapping __*__ methods to .NET method names
-                Operators opMap;
+                PythonOperationKind opMap;
                 EnsureOperatorTable();
 
                 if (_pythonOperatorTable.TryGetValue(name, out opMap)) {
                     if (IncludeOperatorMethod(type, opMap)) {
-                        OperatorInfo opInfo;
+                        OperatorMapping opInfo;
                         if (IsReverseOperator(opMap)) {
-                            opInfo = OperatorInfo.GetOperatorInfo(CompilerHelpers.OperatorToReverseOperator(opMap));
+                            opInfo = OperatorMapping.GetOperatorMapping(opMap & ~PythonOperationKind.Reversed);
                         } else {
-                            opInfo = OperatorInfo.GetOperatorInfo(opMap);
+                            opInfo = OperatorMapping.GetOperatorMapping(opMap);
                         }
 
                         if (opInfo != null) {
                             foreach (Type curType in binder.GetContributingTypes(type)) {
                                 if (curType == typeof(BigInteger) &&
-                                    (opInfo.Operator == Operators.Mod ||
-                                    opInfo.Operator == Operators.RightShift ||
-                                    opInfo.Operator == Operators.LeftShift ||
-                                    opInfo.Operator == Operators.Compare ||
-                                    opInfo.Operator == Operators.Divide)) {
-                                    // we override these with our own modulus/power operators which are different from BigInteger.
+                                    (opInfo.Operator == PythonOperationKind.Mod ||
+                                    opInfo.Operator == PythonOperationKind.RightShift ||
+                                    opInfo.Operator == PythonOperationKind.LeftShift ||
+                                    opInfo.Operator == PythonOperationKind.Compare ||
+                                    opInfo.Operator == PythonOperationKind.Divide)) {
+                                    // we override these with our own modulus/power PythonOperationKind which are different from BigInteger.
                                     continue;
                                 }
 
@@ -330,7 +330,7 @@ namespace IronPython.Runtime.Types {
             }
 
             /// <summary>
-            /// Removes Object.Equals methods as we never return these for operators.
+            /// Removes Object.Equals methods as we never return these for PythonOperationKind.
             /// </summary>
             private MemberGroup/*!*/ FilterObjectEquality(MemberGroup/*!*/ group) {
                 List<MemberTracker> res = null;
@@ -507,19 +507,19 @@ namespace IronPython.Runtime.Types {
                 new OneOffResolver("__format__", FormatResolver),
                 new OneOffResolver("next", NextResolver),
 
-                // non standard operators which are Python specific
-                new OneOffResolver("__truediv__", new OneOffOperatorBinder("TrueDivide", "__truediv__", Operators.TrueDivide).Resolver),
-                new OneOffResolver("__rtruediv__", new OneOffOperatorBinder("TrueDivide", "__rtruediv__", Operators.ReverseTrueDivide).Resolver),
-                new OneOffResolver("__itruediv__", new OneOffOperatorBinder("InPlaceTrueDivide", "__itruediv__", Operators.InPlaceTrueDivide).Resolver),
-                new OneOffResolver("__floordiv__", new OneOffOperatorBinder("FloorDivide", "__floordiv__", Operators.FloorDivide).Resolver),
-                new OneOffResolver("__rfloordiv__", new OneOffOperatorBinder("FloorDivide", "__rfloordiv__", Operators.ReverseFloorDivide).Resolver),
-                new OneOffResolver("__ifloordiv__", new OneOffOperatorBinder("InPlaceFloorDivide", "__ifloordiv__", Operators.InPlaceFloorDivide).Resolver),
-                new OneOffResolver("__pow__", new OneOffPowerBinder("__pow__", Operators.Power).Resolver),
-                new OneOffResolver("__rpow__", new OneOffPowerBinder("__rpow__", Operators.ReversePower).Resolver),
-                new OneOffResolver("__ipow__", new OneOffOperatorBinder("InPlacePower", "__ipow__", Operators.InPlacePower).Resolver),
-                new OneOffResolver("__abs__", new OneOffOperatorBinder("Abs", "__abs__", Operators.AbsoluteValue).Resolver),
-                new OneOffResolver("__divmod__", new OneOffOperatorBinder("DivMod", "__divmod__", Operators.DivMod).Resolver),
-                new OneOffResolver("__rdivmod__", new OneOffOperatorBinder("DivMod", "__rdivmod__", Operators.DivMod).Resolver),
+                // non standard PythonOperationKind which are Python specific
+                new OneOffResolver("__truediv__", new OneOffOperatorBinder("TrueDivide", "__truediv__", PythonOperationKind.TrueDivide).Resolver),
+                new OneOffResolver("__rtruediv__", new OneOffOperatorBinder("TrueDivide", "__rtruediv__", PythonOperationKind.ReverseTrueDivide).Resolver),
+                new OneOffResolver("__itruediv__", new OneOffOperatorBinder("InPlaceTrueDivide", "__itruediv__", PythonOperationKind.InPlaceTrueDivide).Resolver),
+                new OneOffResolver("__floordiv__", new OneOffOperatorBinder("FloorDivide", "__floordiv__", PythonOperationKind.FloorDivide).Resolver),
+                new OneOffResolver("__rfloordiv__", new OneOffOperatorBinder("FloorDivide", "__rfloordiv__", PythonOperationKind.ReverseFloorDivide).Resolver),
+                new OneOffResolver("__ifloordiv__", new OneOffOperatorBinder("InPlaceFloorDivide", "__ifloordiv__", PythonOperationKind.InPlaceFloorDivide).Resolver),
+                new OneOffResolver("__pow__", new OneOffPowerBinder("__pow__", PythonOperationKind.Power).Resolver),
+                new OneOffResolver("__rpow__", new OneOffPowerBinder("__rpow__", PythonOperationKind.ReversePower).Resolver),
+                new OneOffResolver("__ipow__", new OneOffOperatorBinder("InPlacePower", "__ipow__", PythonOperationKind.InPlacePower).Resolver),
+                new OneOffResolver("__abs__", new OneOffOperatorBinder("Abs", "__abs__", PythonOperationKind.AbsoluteValue).Resolver),
+                new OneOffResolver("__divmod__", new OneOffOperatorBinder("DivMod", "__divmod__", PythonOperationKind.DivMod).Resolver),
+                new OneOffResolver("__rdivmod__", new OneOffOperatorBinder("DivMod", "__rdivmod__", PythonOperationKind.DivMod).Resolver),
                 
                 // The operator resolver maps standard .NET operator methods into Python operator
                 // methods
@@ -768,7 +768,7 @@ namespace IronPython.Runtime.Types {
         /// </summary>
         private static MemberGroup/*!*/ FallbackInequalityResolver(MemberBinder/*!*/ binder, Type/*!*/ type) {
             // if object defines __eq__ then we can call the reverse version
-            if (IncludeOperatorMethod(type, Operators.NotEquals)) {
+            if (IncludeOperatorMethod(type, PythonOperationKind.NotEqual)) {
                 foreach (Type curType in binder.GetContributingTypes(type)) {
                     MemberGroup mg = binder.GetMember(curType, "Equals");
 
@@ -1003,9 +1003,9 @@ namespace IronPython.Runtime.Types {
         private class OneOffOperatorBinder {
             private string/*!*/ _methodName;
             private string/*!*/ _pythonName;
-            private Operators/*!*/ _op;
+            private PythonOperationKind/*!*/ _op;
 
-            public OneOffOperatorBinder(string/*!*/ methodName, string/*!*/ pythonName, Operators opMap) {
+            public OneOffOperatorBinder(string/*!*/ methodName, string/*!*/ pythonName, PythonOperationKind opMap) {
                 Assert.NotNull(methodName, pythonName, opMap);
 
                 _methodName = methodName;
@@ -1015,7 +1015,7 @@ namespace IronPython.Runtime.Types {
 
             public MemberGroup/*!*/ Resolver(MemberBinder/*!*/ binder, Type/*!*/ type) {
                 if (type.IsSealed && type.IsAbstract) {
-                    // static types don't have operators
+                    // static types don't have PythonOperationKind
                     return MemberGroup.EmptyGroup;
                 }
 
@@ -1031,9 +1031,9 @@ namespace IronPython.Runtime.Types {
 
         private class OneOffPowerBinder {
             private string/*!*/ _pythonName;
-            private Operators/*!*/ _op;
+            private PythonOperationKind/*!*/ _op;
 
-            public OneOffPowerBinder(string/*!*/ pythonName, Operators op) {
+            public OneOffPowerBinder(string/*!*/ pythonName, PythonOperationKind op) {
                 Assert.NotNull(pythonName, op);
 
                 _pythonName = pythonName;
@@ -1042,7 +1042,7 @@ namespace IronPython.Runtime.Types {
 
             public MemberGroup/*!*/ Resolver(MemberBinder/*!*/ binder, Type/*!*/ type) {
                 if (type.IsSealed && type.IsAbstract) {
-                    // static types don't have operators
+                    // static types don't have PythonOperationKind
                     return MemberGroup.EmptyGroup;
                 }
 
@@ -1318,17 +1318,17 @@ namespace IronPython.Runtime.Types {
         /// <summary>
         /// Filters out methods which are present on standard .NET types but shouldn't be there in Python
         /// </summary>
-        internal static bool IncludeOperatorMethod(Type/*!*/ t, Operators op) {
+        internal static bool IncludeOperatorMethod(Type/*!*/ t, PythonOperationKind op) {
             // numeric types in python don't define equality, just __cmp__
             if (t == typeof(bool) ||
                 (Converter.IsNumeric(t) && t != typeof(Complex64) && t != typeof(double) && t != typeof(float))) {
                 switch (op) {
-                    case Operators.Equals:
-                    case Operators.NotEquals:
-                    case Operators.GreaterThan:
-                    case Operators.LessThan:
-                    case Operators.GreaterThanOrEqual:
-                    case Operators.LessThanOrEqual:
+                    case PythonOperationKind.Equal:
+                    case PythonOperationKind.NotEqual:
+                    case PythonOperationKind.GreaterThan:
+                    case PythonOperationKind.LessThan:
+                    case PythonOperationKind.GreaterThanOrEqual:
+                    case PythonOperationKind.LessThanOrEqual:
                         return false;
                 }
             }
@@ -1383,13 +1383,12 @@ namespace IronPython.Runtime.Types {
             }
         }
 
-        internal static bool IsReverseOperator(Operators op) {
-            // TODO: Should determine reverse some other way or Python should be recognizing reverse operators some other way.
-            return (op >= Operators.ReverseAdd && op <= Operators.ReverseExclusiveOr);
+        internal static bool IsReverseOperator(PythonOperationKind op) {
+            return (op & PythonOperationKind.Reversed) != 0;
         }
 
         internal static bool IsReverseOperator(string op) {
-            // TODO: Should determine reverse some other way or Python should be recognizing reverse operators some other way.
+            // TODO: Should determine reverse some other way or Python should be recognizing reverse PythonOperationKind some other way.
             return op.StartsWith("Reverse");
         }
         /// <summary>
@@ -1415,16 +1414,16 @@ namespace IronPython.Runtime.Types {
         /// if, for example, we had unicode and ASCII strings.  In that case Unicode strings would define addition taking both unicode and
         /// ASCII strings in both forms.
         /// </summary>
-        private static MemberGroup/*!*/ FilterForwardReverseMethods(string name, MemberGroup/*!*/ group, Type/*!*/ type, Operators oper) {
+        private static MemberGroup/*!*/ FilterForwardReverseMethods(string name, MemberGroup/*!*/ group, Type/*!*/ type, PythonOperationKind oper) {
             List<MethodTracker> res = new List<MethodTracker>(group.Count);
-            Operators reversed = CompilerHelpers.OperatorToReverseOperator(oper);
+            PythonOperationKind reversed = Symbols.OperatorToReverseOperator(oper);
             foreach (MemberTracker mt in group) {
                 if (mt.MemberType != TrackerTypes.Method) {
                     continue;
                 }
 
                 MethodTracker mTracker = (MethodTracker)mt;
-                if (reversed == Operators.None) {
+                if (reversed == PythonOperationKind.None) {
                     res.Add(mTracker);
                     continue;
                 }
@@ -1457,7 +1456,7 @@ namespace IronPython.Runtime.Types {
                         reverse = IsReverseOperator(oper);
                     } else {
                         regular = parms.Length > 0 && AreTypesCompatible(param1Type, type);
-                        reverse = !CompilerHelpers.IsComparisonOperator(oper) && parms.Length > 1 && AreTypesCompatible(param2Type, type);
+                        reverse = ((oper & PythonOperationKind.Comparison) == 0) && parms.Length > 1 && AreTypesCompatible(param2Type, type);
                     }
 
                     if (IsReverseOperator(oper)) {
@@ -1616,7 +1615,7 @@ namespace IronPython.Runtime.Types {
             }
 
             bool isPythonRecognizedOperator = false;
-            OperatorInfo oi = OperatorInfo.GetOperatorInfo(name);
+            OperatorMapping oi = OperatorMapping.GetOperatorMapping(name);
             if (oi != null) {
                 EnsureOperatorTable();
 

@@ -19,6 +19,7 @@ using System.Collections.ObjectModel;
 using Microsoft.Scripting;
 using Microsoft.Scripting.Runtime;
 
+using IronPython.Runtime.Binding;
 using IronPython.Runtime.Operations;
 
 using AstUtils = Microsoft.Scripting.Ast.Utils;
@@ -38,8 +39,8 @@ namespace IronPython.Compiler.Ast {
             get { return _items; }
         }
 
-        internal override MSAst.Expression TransformSet(AstGenerator ag, SourceSpan span, MSAst.Expression right, Operators op) {
-            if (op != Operators.None) {
+        internal override MSAst.Expression TransformSet(AstGenerator ag, SourceSpan span, MSAst.Expression right, PythonOperationKind op) {
+            if (op != PythonOperationKind.None) {
                 ag.AddError("augmented assign to sequence prohibited", Span);
                 return null;
             }
@@ -122,7 +123,7 @@ namespace IronPython.Compiler.Ast {
                         target.Span :
                         SourceSpan.None,
                     element,
-                    Operators.None
+                    PythonOperationKind.None
                 );
                 if (set == null) {
                     throw PythonOps.SyntaxError(string.Format("can't assign to {0}", target.NodeName), ag.Context.SourceUnit, target.Span, -1);

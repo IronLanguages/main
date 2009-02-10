@@ -1,4 +1,4 @@
-/* ****************************************************************************
+﻿/* ****************************************************************************
  *
  * Copyright (c) Microsoft Corporation. 
  *
@@ -1100,6 +1100,20 @@ namespace System.Linq.Expressions {
         }
 
         /// <summary>
+        /// A string like  "An element with the same key '{0}' already exists in the ExpandoObject."
+        /// </summary>
+        internal static string SameKeyExistsInExpando(object p0) {
+            return FormatString("An element with the same key '{0}' already exists in the ExpandoObject.", p0);
+        }
+
+        /// <summary>
+        /// A string like  "The specified key '{0}' does not exist in the ExpandoObject."
+        /// </summary>
+        internal static string KeyDoesNotExistInExpando(object p0) {
+            return FormatString("The specified key '{0}' does not exist in the ExpandoObject.", p0);
+        }
+
+        /// <summary>
         /// A string like  "No or Invalid rule produced"
         /// </summary>
         internal static string NoOrInvalidRuleProduced {
@@ -1157,10 +1171,10 @@ namespace System.Linq.Expressions {
         }
 
         /// <summary>
-        /// A string like  "Cannot jump to to undefined label '{0}'."
+        /// A string like  "Cannot jump to undefined label '{0}'."
         /// </summary>
         internal static string LabelTargetUndefined(object p0) {
-            return FormatString("Cannot jump to to undefined label '{0}'.", p0);
+            return FormatString("Cannot jump to undefined label '{0}'.", p0);
         }
 
         /// <summary>
@@ -1204,6 +1218,13 @@ namespace System.Linq.Expressions {
             get {
                 return "Control cannot enter an expression--only statements can be jumped into.";
             }
+        }
+
+        /// <summary>
+        /// A string like  "Cannot jump to non-local label '{0}' with a value. Only jumps to labels defined in outer blocks can pass values."
+        /// </summary>
+        internal static string NonLocalJumpWithValue(object p0) {
+            return FormatString("Cannot jump to non-local label '{0}' with a value. Only jumps to labels defined in outer blocks can pass values.", p0);
         }
 
         /// <summary>
@@ -2045,6 +2066,20 @@ namespace System.Linq.Expressions {
         }
 
         /// <summary>
+        /// ArgumentException with message like "An element with the same key '{0}' already exists in the ExpandoObject."
+        /// </summary>
+        internal static Exception SameKeyExistsInExpando(object p0) {
+            return new ArgumentException(Strings.SameKeyExistsInExpando(p0));
+        }
+
+        /// <summary>
+        /// System.Collections.Generic.KeyNotFoundException with message like "The specified key '{0}' does not exist in the ExpandoObject."
+        /// </summary>
+        internal static Exception KeyDoesNotExistInExpando(object p0) {
+            return new System.Collections.Generic.KeyNotFoundException(Strings.KeyDoesNotExistInExpando(p0));
+        }
+
+        /// <summary>
         /// InvalidOperationException with message like "No or Invalid rule produced"
         /// </summary>
         internal static Exception NoOrInvalidRuleProduced() {
@@ -2094,7 +2129,7 @@ namespace System.Linq.Expressions {
         }
 
         /// <summary>
-        /// InvalidOperationException with message like "Cannot jump to to undefined label '{0}'."
+        /// InvalidOperationException with message like "Cannot jump to undefined label '{0}'."
         /// </summary>
         internal static Exception LabelTargetUndefined(object p0) {
             return new InvalidOperationException(Strings.LabelTargetUndefined(p0));
@@ -2133,6 +2168,13 @@ namespace System.Linq.Expressions {
         /// </summary>
         internal static Exception ControlCannotEnterExpression() {
             return new InvalidOperationException(Strings.ControlCannotEnterExpression);
+        }
+
+        /// <summary>
+        /// InvalidOperationException with message like "Cannot jump to non-local label '{0}' with a value. Only jumps to labels defined in outer blocks can pass values."
+        /// </summary>
+        internal static Exception NonLocalJumpWithValue(object p0) {
+            return new InvalidOperationException(Strings.NonLocalJumpWithValue(p0));
         }
 
         /// <summary>

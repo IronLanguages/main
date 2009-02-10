@@ -30,10 +30,18 @@ namespace System.Dynamic.Utils {
         private readonly LinkedList<TKey> _list = new LinkedList<TKey>();
         private readonly int _maxSize;
 
+        /// <summary>
+        /// Creates a dictionary-like object used for caches.
+        /// </summary>
+        /// <param name="maxSize">The maximum number of elements to store.</param>
         internal CacheDict(int maxSize) {
             _maxSize = maxSize;
         }
 
+        /// <summary>
+        /// Tries to get the value associated with 'key', returning true if it's found and
+        /// false if it's not present.
+        /// </summary>
         internal bool TryGetValue(TKey key, out TValue value) {
             KeyInfo storedValue;
             if (_dict.TryGetValue(key, out storedValue)) {
@@ -52,8 +60,16 @@ namespace System.Dynamic.Utils {
             return false;
         }
 
+        /// <summary>
+        /// Adds a new element to the cache, replacing and moving it to the front if the
+        /// element is already present.
+        /// </summary>
         internal void Add(TKey key, TValue value) {
-            if (_list.Count == _maxSize) {
+            KeyInfo keyInfo;
+            if (_dict.TryGetValue(key, out keyInfo)) {
+                // remove original entry from the linked list
+                _list.Remove(keyInfo.List);
+            } else if (_list.Count == _maxSize) {
                 // we've reached capacity, remove the last used element...
                 LinkedListNode<TKey> node = _list.Last;
                 _list.RemoveLast();
@@ -67,6 +83,10 @@ namespace System.Dynamic.Utils {
             _dict[key] = new CacheDict<TKey, TValue>.KeyInfo(value, listNode);
         }
 
+        /// <summary>
+        /// Returns the value associated with the given key, or throws KeyNotFoundException
+        /// if the key is not present.
+        /// </summary>
         internal TValue this[TKey key] {
             get {
                 TValue res;

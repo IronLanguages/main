@@ -87,6 +87,11 @@ namespace IronRuby.Builtins {
             return _regex.GetPattern();
         }
 
+#if DEBUG
+        public string/*!*/ GetTransformedPattern() {
+            return _regex.GetTransformedPattern();
+        }
+#endif
         public bool Equals(RubyRegex other) {
             return ReferenceEquals(this, other) || other != null && _regex.Equals(other._regex);
         }
@@ -178,6 +183,15 @@ namespace IronRuby.Builtins {
         public static RegexOptions ToClrOptions(RubyRegexOptions options) {
             RegexOptions result = RegexOptions.Multiline;
 
+#if DEBUG
+            if (RubyOptions.CompileRegexps) {
+#if SILVERLIGHT // RegexOptions.Compiled
+                throw new NotSupportedException("RegexOptions.Compiled is not supported on Silverlight");
+#else
+                result |= RegexOptions.Compiled;
+#endif
+            }
+#endif
             if ((options & RubyRegexOptions.IgnoreCase) != 0) {
                 result |= RegexOptions.IgnoreCase;
             }

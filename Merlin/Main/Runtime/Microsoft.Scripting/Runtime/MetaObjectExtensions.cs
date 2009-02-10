@@ -63,22 +63,32 @@ namespace Microsoft.Scripting.Runtime {
                 );
             }
 
+            Expression converted;
+            // if we're converting to a value type just unbox to preserve
+            // object identity.  If we're converting from Enum then we're
+            // going to a specific enum value and an unbox is not allowed.
+            if (type.IsValueType && self.Expression.Type != typeof(Enum)) {
+                converted = Expression.Unbox(
+                    self.Expression,
+                    CompilerHelpers.GetVisibleType(type)
+                );
+            } else {
+                converted = AstUtils.Convert(
+                    self.Expression,
+                    CompilerHelpers.GetVisibleType(type)
+                );
+            }
+
             if (self.HasValue) {
                 return new DynamicMetaObject(
-                    AstUtils.Convert(
-                        self.Expression,
-                        CompilerHelpers.GetVisibleType(type)
-                    ),
+                    converted,
                     self.Restrictions.Merge(BindingRestrictionsHelpers.GetRuntimeTypeRestriction(self.Expression, type)),
                     self.Value
                 );
             }
 
             return new DynamicMetaObject(
-                AstUtils.Convert(
-                    self.Expression,
-                    CompilerHelpers.GetVisibleType(type)
-                ),
+                converted,
                 self.Restrictions.Merge(BindingRestrictionsHelpers.GetRuntimeTypeRestriction(self.Expression, type))
             );
         }

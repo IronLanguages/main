@@ -54,8 +54,8 @@ namespace IronPython.Compiler.Ast {
             );
         }
 
-        internal override MSAst.Expression TransformSet(AstGenerator ag, SourceSpan span, MSAst.Expression right, Operators op) {
-            if (op == Operators.None) {
+        internal override MSAst.Expression TransformSet(AstGenerator ag, SourceSpan span, MSAst.Expression right, PythonOperationKind op) {
+            if (op == PythonOperationKind.None) {
                 return ag.AddDebugInfoAndVoid(
                     Binders.Set(
                         ag.BinderState,
@@ -80,7 +80,7 @@ namespace IronPython.Compiler.Ast {
             }
         }
 
-        private MSAst.Expression SetMemberOperator(AstGenerator ag, MSAst.Expression right, Operators op, MSAst.ParameterExpression temp) {
+        private MSAst.Expression SetMemberOperator(AstGenerator ag, MSAst.Expression right, PythonOperationKind op, MSAst.ParameterExpression temp) {
             return Binders.Set(
                 ag.BinderState,
                 typeof(object),
@@ -89,7 +89,7 @@ namespace IronPython.Compiler.Ast {
                 Binders.Operation(
                     ag.BinderState,
                     typeof(object),
-                    StandardOperators.FromOperator(op),
+                    op,
                     Binders.Get(
                         ag.BinderState,
                         typeof(object),

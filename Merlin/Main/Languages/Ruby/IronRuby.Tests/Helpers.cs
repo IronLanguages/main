@@ -180,11 +180,13 @@ namespace IronRuby.Tests {
             Match = 2
         }
 
+        [DebuggerHiddenAttribute]
         private void AssertEquals<T>(object actual, T expected)
             where T : IEquatable<T> {
             Assert(actual is T && ((T)actual).Equals(expected));
         }
 
+        [DebuggerHiddenAttribute]
         private void XAssertOutput(Action f, string expectedOutput) {
             Console.WriteLine("Assertion check skipped.");
             // just run the code
@@ -197,10 +199,12 @@ namespace IronRuby.Tests {
             f();
         }
 
+        [DebuggerHiddenAttribute]
         private void AssertOutput(Action f, string expectedOutput) {
             AssertOutput(f, expectedOutput, OutputFlags.None);
         }
 
+        [DebuggerHiddenAttribute]
         private void AssertOutput(Action f, string expectedOutput, OutputFlags flags) {
 #if !SILVERLIGHT
             StringBuilder builder = new StringBuilder();
@@ -248,6 +252,7 @@ namespace IronRuby.Tests {
             return str.Replace("\r", "\\r").Replace("\n", "\\n").Replace("\t", "\\t").ToString();
         }
 
+        [DebuggerHiddenAttribute]
         private void RedirectOutput(TextWriter/*!*/ output, Action f) {
             // TODO:
             MemoryStream stream = new MemoryStream();
@@ -261,11 +266,13 @@ namespace IronRuby.Tests {
                 Runtime.IO.RedirectToConsole();
             }
         }
-      
+
+        [DebuggerHiddenAttribute]
         internal void AssertExceptionThrown<T>(Action f) where T : Exception {
             AssertExceptionThrown<T>(f, null);
         }
 
+        [DebuggerHiddenAttribute]
         internal void AssertExceptionThrown<T>(Action f, Predicate<T> condition) where T : Exception {
             try {
                 RedirectOutput(TextWriter.Null, f);
@@ -284,7 +291,8 @@ namespace IronRuby.Tests {
         /// <summary>
         /// Asserts two values are equal
         /// </summary>
-        internal static void AreEqual(object x, object y) {
+        [DebuggerHiddenAttribute]
+        internal void AreEqual(object x, object y) {
             if (x == null && y == null) return;
 
             Assert(x != null && x.Equals(y), String.Format("values aren't equal: {0} and {1}", x, y));
@@ -293,12 +301,16 @@ namespace IronRuby.Tests {
         /// <summary>
         /// Asserts an condition it true
         /// </summary>
-        internal static void Assert(bool condition, string msg) {
-            if (!condition) throw new Exception(String.Format("Assertion failed: {0}", msg));
+        [DebuggerHiddenAttribute]
+        internal void Assert(bool condition, string msg) {
+            if (!condition) {
+                _driver.AssertionFailed(msg);
+            }
         }
 
-        internal static void Assert(bool condition) {
-            if (!condition) throw new Exception("Assertion failed");
+        [DebuggerHiddenAttribute]
+        internal void Assert(bool condition) {
+            Assert(condition, "Assertion failed");
         }
     }
 }

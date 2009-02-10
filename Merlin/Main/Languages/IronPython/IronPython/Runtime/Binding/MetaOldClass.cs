@@ -31,7 +31,7 @@ using AstUtils = Microsoft.Scripting.Ast.Utils;
 namespace IronPython.Runtime.Binding {
     using Ast = System.Linq.Expressions.Expression;
 
-    class MetaOldClass : MetaPythonObject, IPythonInvokable, IPythonGetable {
+    class MetaOldClass : MetaPythonObject, IPythonInvokable, IPythonGetable, IPythonOperable {
         public MetaOldClass(Expression/*!*/ expression, BindingRestrictions/*!*/ restrictions, OldClass/*!*/ value)
             : base(expression, BindingRestrictions.Empty, value) {
             Assert.NotNull(value);
@@ -78,18 +78,6 @@ namespace IronPython.Runtime.Binding {
 
         public override DynamicMetaObject/*!*/ BindDeleteMember(DeleteMemberBinder/*!*/ member) {
             return MakeDeleteMember(member);
-        }
-
-        [Obsolete]
-        public override DynamicMetaObject/*!*/ BindOperation(OperationBinder operation, params DynamicMetaObject/*!*/[]/*!*/ args) {
-            if (operation.Operation == StandardOperators.IsCallable) {
-                return new DynamicMetaObject(
-                    Ast.Constant(true),
-                    Restrictions.Merge(BindingRestrictionsHelpers.GetRuntimeTypeRestriction(Expression, typeof(OldClass)))
-                );
-            }
-
-            return base.BindOperation(operation, args);
         }
 
         public override DynamicMetaObject BindConvert(ConvertBinder/*!*/ conversion) {
@@ -340,5 +328,20 @@ namespace IronPython.Runtime.Binding {
         }
 
         #endregion        
+    
+        #region IPythonOperable Members
+
+        DynamicMetaObject IPythonOperable.BindOperation(PythonOperationBinder action, DynamicMetaObject[] args) {
+            if (action.Operation == PythonOperationKind.IsCallable) {
+                return new DynamicMetaObject(
+                    Ast.Constant(true),
+                    Restrictions.Merge(BindingRestrictions.GetTypeRestriction(Expression, typeof(OldClass)))
+                );
+            }
+
+            return null;
+        }
+
+        #endregion
     }
 }

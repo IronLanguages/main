@@ -190,6 +190,24 @@ namespace IronPython.Runtime.Binding {
             );
         }
 
+        internal static bool NeedsDeferral(DynamicMetaObject[] args) {
+            foreach (DynamicMetaObject mo in args) {
+                if (mo.NeedsDeferral()) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        internal static ArgumentInfo[] GetSimpleArgumentInfos(int count) {
+            ArgumentInfo[] res = new ArgumentInfo[count];
+            for (int i = 0; i < count; i++) {
+                res[i] = Ast.PositionalArg(i);
+            }
+
+            return res;
+        }
+
         internal static CallSignature ArgumentArrayToSignature(ReadOnlyCollection<ArgumentInfo/*!*/>/*!*/ args) {
             Argument[] ai = new Argument[args.Count];
 

@@ -275,15 +275,15 @@ namespace System.Linq.Expressions {
             VisitExpressions(open, expressions, forceMultiline, (e) => Visit(e));
         }
 
-        private void VisitDeclarations(char open, IList<ParameterExpression> expressions, bool forceMultiline) {
-            VisitExpressions(open, expressions, forceMultiline, (variable) =>
+        private void VisitDeclarations(IList<ParameterExpression> expressions) {
+            VisitExpressions('(', expressions, true, (variable) =>
             {
                 Out(variable.Type.ToString());
                 if (variable.IsByRef) {
                     Out("&");
                 }
                 Out(" ");
-                Out(variable.Name ?? ".anonymous");
+                VisitParameter(variable);
             });
         }
 
@@ -420,7 +420,11 @@ namespace System.Linq.Expressions {
         }
 
         protected internal override Expression VisitParameter(ParameterExpression node) {
-            Out("$" + node.Name);
+            if (string.IsNullOrEmpty(node.Name)) {
+                Out(String.Format(CultureInfo.CurrentCulture, "$0x{0:x8}", node.GetHashCode()));
+            } else {
+                Out(String.Format(CultureInfo.CurrentCulture, "${0}", node.Name));
+            }
             return node;
         }
 
@@ -759,7 +763,7 @@ namespace System.Linq.Expressions {
             Out(node.Type == typeof(void) ? ".block " : ".comma ");
 
             if (node.Variables.Count > 0) {
-                VisitDeclarations('(', node.Variables, true);
+                VisitDeclarations(node.Variables);
             }
 
             Out(" ");
@@ -845,7 +849,8 @@ namespace System.Linq.Expressions {
         protected override CatchBlock VisitCatchBlock(CatchBlock node) {
             Out(Flow.NewLine, "} .catch (" + node.Test.Name);
             if (node.Variable != null) {
-                Out(Flow.Space, node.Variable.Name ?? "");
+                Out(Flow.Space, "");
+                VisitParameter(node.Variable);
             }
             if (node.Filter != null) {
                 Out(") if (", Flow.Break);
@@ -918,7 +923,7 @@ namespace System.Linq.Expressions {
         private void DumpLambda(LambdaExpression node) {
             Out(GetLambdaInfo(node));
 
-            VisitDeclarations('(', node.Parameters, true);
+            VisitDeclarations(node.Parameters);
 
             Out(Flow.Space, "{", Flow.NewLine);
             Indent();

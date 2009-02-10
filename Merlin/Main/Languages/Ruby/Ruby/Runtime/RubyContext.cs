@@ -605,6 +605,12 @@ namespace IronRuby.Runtime {
             }
         }
 
+        internal bool TryGetModule(Type/*!*/ type, out RubyModule result) {
+            lock (ModuleCacheLock) {
+                return _moduleCache.TryGetValue(type, out result);
+            }
+        }
+
         internal bool TryGetModuleNoLock(Type/*!*/ type, out RubyModule result) {
             return _moduleCache.TryGetValue(type, out result);
         }

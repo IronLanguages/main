@@ -25,6 +25,9 @@ using IronRuby.Builtins;
 using Microsoft.Scripting.Interpretation;
 using System.Linq.Expressions;
 using System.Threading;
+using System.IO;
+using Microsoft.Scripting;
+using IronRuby.Compiler;
 
 namespace IronRuby.Runtime {
     /// <summary>
@@ -33,7 +36,13 @@ namespace IronRuby.Runtime {
     [Serializable]
     public class RubyExceptionData {
         private static readonly object/*!*/ _DataKey = new object();
-        internal const string TopLevelMethodName = "#top-level-method#";
+        internal const string TopLevelMethodName = "#";
+
+#if SILVERLIGHT
+        private static readonly bool DebugInfoAvailable = false;
+#else
+        private static readonly bool DebugInfoAvailable = true;
+#endif
 
         // owner exception, needed for lazy initialization of message, backtrace
         private Exception/*!*/ _exception;
@@ -64,22 +73,16 @@ namespace IronRuby.Runtime {
 
         // Called lazily to create a Ruby backtrace.
         private void CreateBacktrace() {
-            RubyArray result;
-
             int skipFrames = 0;
             bool hasFileAccessPermissions = DetectFileAccessPermissions();
 
-#if SILVERLIGHT // TODO: StackTrace.ctor(exception) security critical
-            // throw-site trace is built already:
-            result = _backtrace ?? new RubyArray();
-#else
-            result = new RubyArray();
+            var result = new RubyArray();
             if (_throwSiteTrace == null) {
                 SetCompiledTrace();
             }
 
             AddBacktrace(result, _throwSiteTrace.GetFrames(), hasFileAccessPermissions, skipFrames, false);
-#endif
+
             if (_catchSiteTrace != null) {
                 // skip one frame - the catch-site frame is already included
                 AddBacktrace(result, _catchSiteTrace.GetFrames(), hasFileAccessPermissions, 1, false);
@@ -102,37 +105,8 @@ namespace IronRuby.Runtime {
 
             Debug.Assert(!_backtraceInitialized);
 
-#if SILVERLIGHT // TODO: StackTrace.ctor(exception) security critical
-            _catchSiteTrace = new StackTrace();
-
-            var result = new RubyArray();
-            foreach (string line in _exception.StackTrace.Split('\n')) {
-                string frame = line.Trim();
-                if (frame.StartsWith("at ")) {
-                    frame = frame.Substring("at ".Length);
-                }
-
-                if (frame.StartsWith("_stub_") ||
-                    frame.StartsWith("Microsoft.Scripting") ||
-                    frame.StartsWith("System.Runtime") ||
-                    frame.StartsWith("IronRuby.Builtins.Kernel.RaiseException") ||
-                    frame.StartsWith("IronRuby.Builtins.Kernel.MethodMissing")) {
-                    continue;
-                }
-
-                int lineNumber = 0;
-                string fileName = null;
-                string methodName = frame;
-                TryParseRubyMethodName(ref methodName, ref fileName, ref lineNumber);
-                result.Add(FormatFrame(methodName, lineNumber, fileName));
-            }
-
-            // save partial trace:
-            _backtrace = result; 
-#else
-            _catchSiteTrace = new StackTrace(true);
-            _throwSiteTrace = new StackTrace(_exception, true);
-#endif
+            _catchSiteTrace = DebugInfoAvailable ? new StackTrace(true) : new StackTrace();
+            _throwSiteTrace = DebugInfoAvailable ? new StackTrace(_exception, true) : new StackTrace(_exception);
         }
 
         internal void SetInterpretedTrace(InterpreterState/*!*/ state) {
@@ -163,11 +137,7 @@ namespace IronRuby.Runtime {
                 Debug.Assert(currentFrame != null); 
                 return AddBacktrace(new RubyArray(), currentFrame, skipFrames);
             } else {
-#if SILVERLIGHT
-                StackTrace trace = new StackTrace();
-#else
-                StackTrace trace = new StackTrace(true);
-#endif
+                var trace = DebugInfoAvailable ? new StackTrace(true) : new StackTrace();
                 return AddBacktrace(new RubyArray(), trace.GetFrames(), DetectFileAccessPermissions(), skipFrames, context.Options.ExceptionDetail);
             }
         }
@@ -218,11 +188,10 @@ namespace IronRuby.Runtime {
 
             if (stackTrace != null) {
                 foreach (StackFrame frame in stackTrace) {
-                    if (IsVisibleFrame(frame.GetMethod()) || exceptionDetail) {
+                    string methodName, file;
+                    int line;
+                    if (TryGetStackFrameInfo(frame, hasFileAccessPermission, exceptionDetail, out methodName, out file, out line)) {
                         if (skipFrames == 0) {
-                            string methodName, file;
-                            int line;
-                            GetStackFrameInfo(frame, hasFileAccessPermission, out methodName, out file, out line);
                             result.Add(MutableString.Create(FormatFrame(file, line, methodName)));
                         } else {
                             skipFrames--;
@@ -242,84 +211,52 @@ namespace IronRuby.Runtime {
             }
         }
 
-        private static void GetStackFrameInfo(StackFrame/*!*/ frame, bool hasFileAccessPermission, 
+        private static bool TryGetStackFrameInfo(StackFrame/*!*/ frame, bool hasFileAccessPermission, bool exceptionDetail,
             out string/*!*/ methodName, out string/*!*/ fileName, out int line) {
 
             MethodBase method = frame.GetMethod();
             methodName = method.Name;
 
-#if SILVERLIGHT
-            fileName = null;
-            line = 0;
-#else
             fileName = (hasFileAccessPermission) ? frame.GetFileName() : null;
             line = frame.GetFileLineNumber();
-#endif
-            if (!TryParseRubyMethodName(ref methodName, ref fileName, ref line)) {
-                object[] attrs = method.GetCustomAttributes(typeof(RubyMethodAttribute), false);
-                if (attrs.Length > 0) {
-                    // TODO: aliases
-                    methodName = ((RubyMethodAttribute)attrs[0]).Name;
-                }
-            }
 
-            if (methodName.StartsWith(TopLevelMethodName)) {
-                methodName = null;
-            }
-
-#if !SILVERLIGHT
-            if (String.IsNullOrEmpty(fileName)) {
-                if (method.DeclaringType != null) {
-                    fileName = (hasFileAccessPermission) ? method.DeclaringType.Assembly.GetName().Name : null;
-                    line = 0;
-                }
-            }
-#endif
-        }
-
-        // {method-name};{file-name};{line-number}${dlr-suffix}
-        private static bool TryParseRubyMethodName(ref string methodName, ref string fileName, ref int line) {
-            int dollar = methodName.IndexOf('$'); // TODO: no support in DLR
-            if (dollar != -1) {
-                string[] parts = methodName.Substring(0, dollar).Split(';');
-                methodName = parts[0];
-                if (parts.Length == 3) {
-                    if (fileName == null) {
-                        fileName = parts[1];
-                    }
-                    if (line == 0) {
-                        line = Int32.Parse(parts[2]);
-                    }
+            if (TryParseRubyMethodName(ref methodName, ref fileName, ref line)) {
+                // Ruby method:
+                if (methodName == TopLevelMethodName) {
+                    methodName = null;
                 }
                 return true;
+            } else if (method.IsDefined(typeof(RubyStackTraceHiddenAttribute), false)) {
+                return false;
             } else {
-                return false;
+                object[] attrs = method.GetCustomAttributes(typeof(RubyMethodAttribute), false);
+                if (attrs.Length > 0) {
+                    // Ruby library method:
+                    // TODO: aliases
+                    methodName = ((RubyMethodAttribute)attrs[0]).Name;
+                    fileName = null;
+                    line = 0;
+                    return true;
+                } else if (exceptionDetail || IsVisibleClrFrame(method)) {
+                    // Visible CLR method:
+                    if (String.IsNullOrEmpty(fileName)) {
+                        if (method.DeclaringType != null) {
+                            fileName = (hasFileAccessPermission) ? method.DeclaringType.Assembly.GetName().Name : null;
+                            line = 0;
+                        }
+                    }
+                    return true;
+                } else {
+                    // Invisible CLR method:
+                    return false;
+                }
             }
         }
 
-        private static string ParseRubyMethodName(string/*!*/ lambdaName) {
-            if (lambdaName.StartsWith(TopLevelMethodName)) {
-                return null;
-            }
-
-            int idx = lambdaName.IndexOf(';');
-            if (idx < 0) {
-                return lambdaName;
-            }
-
-            return lambdaName.Substring(0, idx);
-        }
-
-        // TODO: better filtering in DLR
-        private static bool IsVisibleFrame(MethodBase/*!*/ method) {
-            // filter out the _stub_ methods
-            if (method.Name.StartsWith("_stub_")) {
-                return false;
-            }
-                
+        private static bool IsVisibleClrFrame(MethodBase/*!*/ method) {
             Type type = method.DeclaringType;
-
             if (type != null) {
+                // TODO: better filtering
                 string typeName = type.FullName;
                 if (typeName.StartsWith("System.Reflection.") ||
                     typeName.StartsWith("System.Runtime") ||
@@ -328,21 +265,52 @@ namespace IronRuby.Runtime {
                     return false;
                 }
 
-                // TODO: check loaded assemblies
                 if (type.Assembly == typeof(RubyOps).Assembly) {
                     return false;
                 }
 
-                if (method.IsDefined(typeof(RubyStackTraceHiddenAttribute), false)) {
-                    return false;
-                }
-                 
-                if (type.Assembly.IsDefined(typeof(RubyLibraryAttribute), false)) {
-                    return method.IsDefined(typeof(RubyMethodAttribute), false);
+                // TODO: check loaded assemblies?
+                return true;
+            } else {
+                // TODO: hide dynamic methods:
+                return Methods.DefineMethod.GetType() == method.GetType();
+            }
+        }
+
+        private const string RubyMethodPrefix = "\u2111\u211c;";
+
+        internal static string/*!*/ EncodeMethodName(SourceUnit/*!*/ sourceUnit, string/*!*/ methodName, SourceSpan location) {
+            // encodes line number, file name into the method name
+            string fileName = sourceUnit.HasPath ? Path.GetFileName(sourceUnit.Path) : String.Empty;
+            return String.Format(RubyMethodPrefix + "{0};{1};{2};", methodName, fileName, location.IsValid ? location.Start.Line : 0);
+        }
+
+        // \u2111\u211c;{method-name};{file-name};{line-number};{dlr-suffix}
+        private static bool TryParseRubyMethodName(ref string methodName, ref string fileName, ref int line) {
+            if (methodName.StartsWith(RubyMethodPrefix)) {
+                string[] parts = methodName.Split(';');
+                if (parts.Length > 4) {
+                    methodName = parts[1];
+                    if (fileName == null) {
+                        fileName = parts[2];
+                    }
+                    if (line == 0) {
+                        line = Int32.Parse(parts[3]);
+                    }
+                    return true;
                 }
             }
-                
-            return true;
+            return false;
+        }
+
+        private static string ParseRubyMethodName(string/*!*/ lambdaName) {
+            if (!lambdaName.StartsWith(RubyMethodPrefix)) {
+                return lambdaName;
+            }
+
+            int nameEnd = lambdaName.IndexOf(';', RubyMethodPrefix.Length);
+            string name = lambdaName.Substring(RubyMethodPrefix.Length, nameEnd - RubyMethodPrefix.Length);
+            return (name != TopLevelMethodName) ? name : null;
         }
 
         /// <summary>

@@ -92,33 +92,6 @@ namespace System.Dynamic {
         }
 
         /// <summary>
-        /// Gets a new object array for storing the data that matches this
-        /// ExpandoClass given the old ExpandoClass and the instances associated 
-        /// data array.
-        /// </summary>
-        internal object[] GetNewKeys(object[] oldData) {
-            if (oldData.Length >= _keys.Length) {
-                // we have extra space in our buffer, just initialize it to Uninitialized.
-                oldData[_keys.Length - 1] = ExpandoObject.Uninitialized;
-                return oldData;
-            } 
-
-            // we've grown too much - we need a new object array
-            object[] res = new object[GetAlignedSize(_keys.Length)];
-            Array.Copy(oldData, res, oldData.Length);
-            res[oldData.Length] = ExpandoObject.Uninitialized;
-            return res;            
-        }
-
-        private static int GetAlignedSize(int len) {
-            // the alignment of the array for storage of values (must be a power of two)
-            const int DataArrayAlignment = 8;                   
-
-            // round up and then mask off lower bits
-            return (len + (DataArrayAlignment - 1)) & (~(DataArrayAlignment - 1));
-        }
-        
-        /// <summary>
         /// Gets the lists of transitions that are valid from this ExpandoClass
         /// to an ExpandoClass whos keys hash to the apporopriate hash code.
         /// </summary>
@@ -176,62 +149,26 @@ namespace System.Dynamic {
         /// </returns>
         private int GetValueIndexCaseInsensitive(string name, ExpandoObject obj) {
             int caseInsensitiveMatch = ExpandoObject.NoMatch; //the location of the case-insensitive matching member
-            int exactMatch = ExpandoObject.NoMatch;
-            bool hasAmbigousMatch = false;
-            bool isMatch = false;
             lock (obj.LockObject) {
                 for (int i = _keys.Length - 1; i >= 0; i--) {
-                    if (!hasAmbigousMatch) {
-                        //Do case insensitive search if we are not sure if there are ambigous matches
-                        if (string.Equals(
-                            _keys[i],
-                            name,
-                            StringComparison.OrdinalIgnoreCase)) {
-                            //if the matching member is deleted, continue searching
-                            if (!obj.IsDeletedMember(i)) {
-                                if (caseInsensitiveMatch == ExpandoObject.NoMatch) {
-                                    caseInsensitiveMatch = i;
-                                } else {
-                                    hasAmbigousMatch = true;
-                                }
-                            }
-                            isMatch = true;
-                        } else {
-                            isMatch = false;
-                        }
-                    }
-                    //Try searching for exact match if we got a match already and haven't got an exact match.
-                    if (isMatch && caseInsensitiveMatch != ExpandoObject.NoMatch && exactMatch == ExpandoObject.NoMatch) {
-                        if (string.Equals(
-                            _keys[i],
-                            name,
-                            StringComparison.Ordinal)) {
-                            if (obj.IsDeletedMember(i)) {
-                                //We know there is an exact match but it is deleted.
-                                //No need to look for exact match after this.
-                                exactMatch = i;
+                    if (string.Equals(
+                        _keys[i],
+                        name,
+                        StringComparison.OrdinalIgnoreCase)) {
+                        //if the matching member is deleted, continue searching
+                        if (!obj.IsDeletedMember(i)) {
+                            if (caseInsensitiveMatch == ExpandoObject.NoMatch) {
+                                caseInsensitiveMatch = i;
                             } else {
-                                //the exact match has the highest priority
-                                return i;
+                                //Ambigous match, stop searching
+                                return ExpandoObject.AmbiguousMatchFound;
                             }
                         }
                     }
                 }
             }
-            //if there is an available exact match, it should have been returned.
-            if (hasAmbigousMatch) {
-                return ExpandoObject.AmbiguousMatchFound;
-            }
             //There is exactly one member with case insensitive match.
             return caseInsensitiveMatch;
-        }
-
-        /// <summary>
-        /// Gets the name of the specified index.  Used for getting the name to 
-        /// create a new expando class when all we have is the class and old index.
-        /// </summary>
-        internal string GetIndexName(int index) {
-            return _keys[index];
         }
 
         /// <summary>

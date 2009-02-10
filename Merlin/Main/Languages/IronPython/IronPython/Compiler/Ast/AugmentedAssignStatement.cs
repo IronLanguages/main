@@ -15,7 +15,7 @@
 
 using System.Diagnostics;
 using MSAst = System.Linq.Expressions;
-using Operators = Microsoft.Scripting.Runtime.Operators;
+using IronPython.Runtime.Binding;
 
 namespace IronPython.Compiler.Ast {
     public class AugmentedAssignStatement : Statement {
@@ -45,38 +45,38 @@ namespace IronPython.Compiler.Ast {
             return _left.TransformSet(ag, Span, ag.Transform(_right), PythonOperatorToAction(_op));
         }
 
-        private static Operators PythonOperatorToAction(PythonOperator op) {
+        private static PythonOperationKind PythonOperatorToAction(PythonOperator op) {
             switch (op) {
                 // Binary
                 case PythonOperator.Add:
-                    return Operators.InPlaceAdd;
+                    return PythonOperationKind.InPlaceAdd;
                 case PythonOperator.Subtract:
-                    return Operators.InPlaceSubtract;
+                    return PythonOperationKind.InPlaceSubtract;
                 case PythonOperator.Multiply:
-                    return Operators.InPlaceMultiply;
+                    return PythonOperationKind.InPlaceMultiply;
                 case PythonOperator.Divide:
-                    return Operators.InPlaceDivide;
+                    return PythonOperationKind.InPlaceDivide;
                 case PythonOperator.TrueDivide:
-                    return Operators.InPlaceTrueDivide;
+                    return PythonOperationKind.InPlaceTrueDivide;
                 case PythonOperator.Mod:
-                    return Operators.InPlaceMod;
+                    return PythonOperationKind.InPlaceMod;
                 case PythonOperator.BitwiseAnd:
-                    return Operators.InPlaceBitwiseAnd;
+                    return PythonOperationKind.InPlaceBitwiseAnd;
                 case PythonOperator.BitwiseOr:
-                    return Operators.InPlaceBitwiseOr;
+                    return PythonOperationKind.InPlaceBitwiseOr;
                 case PythonOperator.Xor:
-                    return Operators.InPlaceExclusiveOr;
+                    return PythonOperationKind.InPlaceExclusiveOr;
                 case PythonOperator.LeftShift:
-                    return Operators.InPlaceLeftShift;
+                    return PythonOperationKind.InPlaceLeftShift;
                 case PythonOperator.RightShift:
-                    return Operators.InPlaceRightShift;
+                    return PythonOperationKind.InPlaceRightShift;
                 case PythonOperator.Power:
-                    return Operators.InPlacePower;
+                    return PythonOperationKind.InPlacePower;
                 case PythonOperator.FloorDivide:
-                    return Operators.InPlaceFloorDivide;
+                    return PythonOperationKind.InPlaceFloorDivide;
                 default:
                     Debug.Assert(false, "Unexpected PythonOperator: " + op.ToString());
-                    return Operators.None;
+                    return PythonOperationKind.None;
             }
         }
 

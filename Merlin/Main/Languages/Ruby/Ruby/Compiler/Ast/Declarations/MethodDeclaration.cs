@@ -82,7 +82,7 @@ namespace IronRuby.Compiler.Ast {
         }
 
         private MSA.Expression/*!*/ TransformBody(AstGenerator/*!*/ gen, MSA.Expression/*!*/ methodDefinitionVariable) {
-            string encodedName = gen.EncodeMethodName(_name, Location);
+            string encodedName = RubyExceptionData.EncodeMethodName(gen.SourceUnit, _name, Location);
             
             ScopeBuilder scope = new ScopeBuilder();
             MSA.Expression parentScope = gen.CurrentScopeVariable;

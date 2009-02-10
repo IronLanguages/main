@@ -16,9 +16,13 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using IronPython.Runtime.Operations;
+
 using Microsoft.Scripting;
 using Microsoft.Scripting.Runtime;
+
+using IronPython.Runtime.Binding;
+using IronPython.Runtime.Operations;
+
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 using MSAst = System.Linq.Expressions;
 
@@ -84,7 +88,7 @@ namespace IronPython.Compiler.Ast {
                 }
 
                 // 3. e = right_temp
-                MSAst.Expression transformed = e.TransformSet(ag, Span, right_temp, Operators.None);
+                MSAst.Expression transformed = e.TransformSet(ag, Span, right_temp, PythonOperationKind.None);
                 if (transformed == null) {
                     throw PythonOps.SyntaxError(String.Format("can't assign to {0}", e.NodeName), ag.Context.SourceUnit, e.Span, -1);
                 }
@@ -133,7 +137,7 @@ namespace IronPython.Compiler.Ast {
 
                 // then transform which can allocate more temps
                 for (int i = 0; i < cnt; i++) {
-                    body[i + cnt] = seLeft.Items[i].TransformSet(ag, SourceSpan.None, tmps[i], Operators.None);
+                    body[i + cnt] = seLeft.Items[i].TransformSet(ag, SourceSpan.None, tmps[i], PythonOperationKind.None);
                 }
 
                 // finally free the temps.
@@ -146,7 +150,7 @@ namespace IronPython.Compiler.Ast {
                 return ag.AddDebugInfo(Ast.Block(body), Span);
             }
 
-            return _left[0].TransformSet(ag, Span, ag.Transform(_right), Operators.None);
+            return _left[0].TransformSet(ag, Span, ag.Transform(_right), PythonOperationKind.None);
         }
 
         public override void Walk(PythonWalker walker) {

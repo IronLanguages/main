@@ -21,6 +21,7 @@ using Microsoft.Scripting.Actions;
 using Microsoft.Scripting.Utils;
 using Ast = System.Linq.Expressions.Expression;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
+using Microsoft.Scripting.Runtime;
 
 namespace IronPython.Runtime.Binding {
 
@@ -69,9 +70,9 @@ namespace IronPython.Runtime.Binding {
             );
         }
 
-        public static Expression/*!*/ Operation(BinderState/*!*/ binder, Type/*!*/ resultType, string/*!*/ operation, Expression arg0) {
+        public static Expression/*!*/ Operation(BinderState/*!*/ binder, Type/*!*/ resultType, PythonOperationKind operation, Expression arg0) {
             return Ast.Dynamic(
-                new PythonOperationBinder(
+                UnaryOperationBinder(
                     binder,
                     operation
                 ),
@@ -80,9 +81,9 @@ namespace IronPython.Runtime.Binding {
             );
         }
 
-        public static Expression/*!*/ Operation(BinderState/*!*/ binder, Type/*!*/ resultType, string/*!*/ operation, Expression arg0, Expression arg1) {
+        public static Expression/*!*/ Operation(BinderState/*!*/ binder, Type/*!*/ resultType, PythonOperationKind operation, Expression arg0, Expression arg1) {
             return Ast.Dynamic(
-                new PythonOperationBinder(
+                BinaryOperationBinder(
                     binder,
                     operation
                 ),
@@ -92,7 +93,12 @@ namespace IronPython.Runtime.Binding {
             );
         }
 
-        public static Expression/*!*/ Operation(BinderState/*!*/ binder, Type/*!*/ resultType, string/*!*/ operation, params Expression[] args) {
+        public static Expression/*!*/ Operation(BinderState/*!*/ binder, Type/*!*/ resultType, PythonOperationKind operation, params Expression[] args) {
+            if (args.Length == 1) {
+                return Operation(binder, resultType, operation, args[0]);
+            } else if (args.Length == 2) {
+                return Operation(binder, resultType, operation, args[0], args[1]);
+            }
             return Ast.Dynamic(
                 new PythonOperationBinder(
                     binder,
@@ -159,17 +165,14 @@ namespace IronPython.Runtime.Binding {
             );
         }
 
-        public static DynamicMetaObjectBinder/*!*/ BinaryOperationRetBool(BinderState/*!*/ state, string operatorName) {
+        public static DynamicMetaObjectBinder/*!*/ BinaryOperationRetBool(BinderState/*!*/ state, PythonOperationKind operatorName) {
             return BinaryOperationRetType(state, operatorName, typeof(bool));
         }
 
-        public static DynamicMetaObjectBinder/*!*/ BinaryOperationRetType(BinderState/*!*/ state, string operatorName, Type retType) {
+        public static DynamicMetaObjectBinder/*!*/ BinaryOperationRetType(BinderState/*!*/ state, PythonOperationKind operatorName, Type retType) {
             return new ComboBinder(
                 new BinderMappingInfo(
-                    new PythonOperationBinder(
-                        state,
-                        operatorName
-                    ),
+                    BinaryOperationBinder(state, operatorName),
                     ParameterMappingInfo.Parameter(0),
                     ParameterMappingInfo.Parameter(1)
                 ),
@@ -178,6 +181,78 @@ namespace IronPython.Runtime.Binding {
                     ParameterMappingInfo.Action(0)
                 )
             );
+        }
+
+        public static DynamicMetaObjectBinder UnaryOperationBinder(BinderState state, PythonOperationKind operatorName) {
+            ExpressionType? et = GetExpressionTypeFromUnaryOperator(operatorName);
+            
+            if (et == null) {
+                return new PythonOperationBinder(
+                    state,
+                    operatorName
+                );
+            }
+
+            return new PythonUnaryOperationBinder(state, et.Value);
+        }
+
+        private static ExpressionType? GetExpressionTypeFromUnaryOperator(PythonOperationKind operatorName) {
+            switch (operatorName) {
+                case PythonOperationKind.Positive: return ExpressionType.UnaryPlus;
+                case PythonOperationKind.Negate: return ExpressionType.Negate;
+                case PythonOperationKind.OnesComplement: return ExpressionType.OnesComplement;
+                case PythonOperationKind.Not: return ExpressionType.IsFalse;
+            }
+            return null;
+        }
+
+        public static DynamicMetaObjectBinder BinaryOperationBinder(BinderState state, PythonOperationKind operatorName) {
+            ExpressionType? et = GetExpressionTypeFromBinaryOperator(operatorName);
+
+            if (et == null) {
+                return new PythonOperationBinder(
+                    state,
+                    operatorName
+                );
+            }
+
+            return new PythonBinaryOperationBinder(state, et.Value);
+        }
+
+        private static ExpressionType? GetExpressionTypeFromBinaryOperator(PythonOperationKind operatorName) {
+            switch (operatorName) {
+                case PythonOperationKind.Add: return ExpressionType.Add;
+                case PythonOperationKind.BitwiseAnd: return ExpressionType.And;
+                case PythonOperationKind.Divide: return ExpressionType.Divide;
+                case PythonOperationKind.ExclusiveOr: return ExpressionType.ExclusiveOr;
+                case PythonOperationKind.Mod: return ExpressionType.Modulo;
+                case PythonOperationKind.Multiply: return ExpressionType.Multiply;
+                case PythonOperationKind.BitwiseOr: return ExpressionType.Or;
+                case PythonOperationKind.Power: return ExpressionType.Power;
+                case PythonOperationKind.RightShift: return ExpressionType.RightShift;
+                case PythonOperationKind.LeftShift: return ExpressionType.LeftShift;
+                case PythonOperationKind.Subtract: return ExpressionType.Subtract;
+
+                case PythonOperationKind.InPlaceAdd: return ExpressionType.AddAssign;
+                case PythonOperationKind.InPlaceBitwiseAnd: return ExpressionType.AndAssign;
+                case PythonOperationKind.InPlaceDivide: return ExpressionType.DivideAssign;
+                case PythonOperationKind.InPlaceExclusiveOr: return ExpressionType.ExclusiveOrAssign;
+                case PythonOperationKind.InPlaceMod: return ExpressionType.ModuloAssign;
+                case PythonOperationKind.InPlaceMultiply: return ExpressionType.MultiplyAssign;
+                case PythonOperationKind.InPlaceBitwiseOr: return ExpressionType.OrAssign;
+                case PythonOperationKind.InPlacePower: return ExpressionType.PowerAssign;
+                case PythonOperationKind.InPlaceRightShift: return ExpressionType.RightShiftAssign;
+                case PythonOperationKind.InPlaceLeftShift: return ExpressionType.LeftShiftAssign;
+                case PythonOperationKind.InPlaceSubtract: return ExpressionType.SubtractAssign;
+
+                case PythonOperationKind.Equal: return ExpressionType.Equal;
+                case PythonOperationKind.GreaterThan: return ExpressionType.GreaterThan;
+                case PythonOperationKind.GreaterThanOrEqual: return ExpressionType.GreaterThanOrEqual;
+                case PythonOperationKind.LessThan: return ExpressionType.LessThan;
+                case PythonOperationKind.LessThanOrEqual: return ExpressionType.LessThanOrEqual;
+                case PythonOperationKind.NotEqual: return ExpressionType.NotEqual;
+            }
+            return null;
         }
 
         public static DynamicMetaObjectBinder/*!*/ InvokeAndConvert(BinderState/*!*/ state, int argCount, Type retType) {
@@ -227,5 +302,63 @@ namespace IronPython.Runtime.Binding {
                 new CallSignature(new Argument(ArgumentType.List), new Argument(ArgumentType.Dictionary))
             );
         }
+
+        internal static Expression GetIndex(BinderState binderState, Type type, Expression[] expression) {
+            return Ast.Dynamic(
+                new PythonGetIndexBinder(
+                    binderState,
+                    expression.Length
+                ),
+                type,
+                expression
+            );
+        }
+
+        internal static Expression GetSlice(BinderState binderState, Type type, Expression[] expression) {
+            return Ast.Dynamic(
+                new PythonGetSliceBinder(binderState),
+                type,
+                expression
+            );
+        }
+
+        internal static Expression SetIndex(BinderState binderState, Type type, Expression[] expression) {
+            return Ast.Dynamic(
+                new PythonSetIndexBinder(
+                    binderState,
+                    expression.Length - 1
+                ),
+                type,
+                expression
+            );
+        }
+
+        internal static Expression SetSlice(BinderState binderState, Type type, Expression[] expression) {
+            return Ast.Dynamic(
+                new PythonSetSliceBinder(binderState),
+                type,
+                expression
+            );
+        }
+
+        internal static Expression DeleteIndex(BinderState binderState, Type type, Expression[] expression) {
+            return Ast.Dynamic(
+                new PythonDeleteIndexBinder(
+                    binderState,
+                    expression.Length
+                ),
+                type,
+                expression
+            );
+        }
+
+        internal static Expression DeleteSlice(BinderState binderState, Type type, Expression[] expression) {
+            return Ast.Dynamic(
+                new PythonDeleteSliceBinder(binderState),
+                type,
+                expression
+            );
+        }
+
     }
 }

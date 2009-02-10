@@ -110,6 +110,7 @@
     <Compile Include="Builtins\DuplexStream.cs" />
     <Compile Include="Builtins\GenericRegex.cs" />
     <Compile Include="Builtins\Hash.Subclass.cs" />
+    <Compile Include="Builtins\RegexpTransformer.cs" />
     <Compile Include="Builtins\RubyArray.Subclass.cs" />
     <Compile Include="Builtins\RubyRegex.Subclass.cs" />
     <Compile Include="Builtins\MutableString.Content.cs">

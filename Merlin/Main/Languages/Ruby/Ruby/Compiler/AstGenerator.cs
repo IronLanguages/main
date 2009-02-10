@@ -794,22 +794,6 @@ namespace IronRuby.Compiler.Ast {
         internal virtual void TraceCallSite(Expression/*!*/ expression, MSA.DynamicExpression/*!*/ callSite) {
         }
 
-        internal string/*!*/ EncodeMethodName(string/*!*/ name, SourceSpan location) {
-            string encoded = name;
-
-            // TODO: hack
-            // encodes line number, file name into the method name
-#if !SILVERLIGHT && !DEBUG
-            if (!_debugMode)
-#endif
-            {
-                string fileName = _sourceUnit.HasPath ? Path.GetFileName(_sourceUnit.Path) : String.Empty;
-                encoded = String.Format("{0};{1};{2}", encoded, fileName, location.Start.Line);
-            }
-
-            return String.IsNullOrEmpty(encoded) ? RubyExceptionData.TopLevelMethodName : encoded;
-        }
-
         internal MSA.Expression/*!*/ TryCatchAny(MSA.Expression/*!*/ tryBody, MSA.Expression/*!*/ catchBody) {
             var variable = CurrentScope.DefineHiddenVariable("#value", tryBody.Type);
 

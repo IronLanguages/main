@@ -48,8 +48,8 @@ namespace IronRuby.Runtime.Calls {
         }
 
         protected override string GetTypeName(Type t) {
-            RubyClass rubyClass = _context.GetOrCreateClass(t);
-            return rubyClass.Name;
+            RubyModule module;
+            return _context.TryGetModule(t, out module) ? module.Name : RubyUtils.GetQualifiedName(t);
         }
 
         public override Actions.ErrorInfo MakeInvalidParametersError(BindingTarget target) {

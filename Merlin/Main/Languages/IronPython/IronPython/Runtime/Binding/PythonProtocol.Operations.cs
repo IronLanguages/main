@@ -17,12 +17,11 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Dynamic;
 using System.Linq.Expressions;
 using System.Reflection;
-using System.Dynamic;
 using System.Text;
-using IronPython.Runtime.Operations;
-using IronPython.Runtime.Types;
+
 using Microsoft.Scripting;
 using Microsoft.Scripting.Actions;
 using Microsoft.Scripting.Actions.Calls;
@@ -32,6 +31,9 @@ using Microsoft.Scripting.Math;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 
+using IronPython.Runtime.Operations;
+using IronPython.Runtime.Types;
+
 namespace IronPython.Runtime.Binding {
     using Ast = System.Linq.Expressions.Expression;
     using AstUtils = Microsoft.Scripting.Ast.Utils;
@@ -39,17 +41,115 @@ namespace IronPython.Runtime.Binding {
     static partial class PythonProtocol {
         private const string DisallowCoerce = "DisallowCoerce";
 
-        public static DynamicMetaObject/*!*/ Operation(OperationBinder/*!*/ operation, params DynamicMetaObject/*!*/[]/*!*/ args) {
-            foreach (DynamicMetaObject mo in args) {
-                if (mo.NeedsDeferral()) {
-                    return operation.Defer(args);
-                }
+        public static DynamicMetaObject/*!*/ Operation(BinaryOperationBinder/*!*/ operation, DynamicMetaObject target, DynamicMetaObject arg) {
+            DynamicMetaObject[] args = new[] { target, arg };
+            if (BindingHelpers.NeedsDeferral(args)) {
+                return operation.Defer(target, arg);
             }
 
             ValidationInfo valInfo = BindingHelpers.GetValidationInfo(null, args);
 
-            DynamicMetaObject res = MakeOperationRule(operation, args);
+            PythonOperationKind? opString = null;
+            switch (operation.Operation) {
+                case ExpressionType.Add: opString = PythonOperationKind.Add; break;
+                case ExpressionType.And: opString = PythonOperationKind.BitwiseAnd; break;
+                case ExpressionType.Divide: opString = PythonOperationKind.Divide; break;
+                case ExpressionType.ExclusiveOr: opString = PythonOperationKind.ExclusiveOr; break;
+                case ExpressionType.Modulo: opString = PythonOperationKind.Mod; break;
+                case ExpressionType.Multiply: opString = PythonOperationKind.Multiply; break;
+                case ExpressionType.Or: opString = PythonOperationKind.BitwiseOr; break;
+                case ExpressionType.Power: opString = PythonOperationKind.Power; break;
+                case ExpressionType.RightShift: opString = PythonOperationKind.RightShift; break;
+                case ExpressionType.LeftShift: opString = PythonOperationKind.LeftShift; break;
+                case ExpressionType.Subtract: opString = PythonOperationKind.Subtract; break;
 
+                case ExpressionType.AddAssign: opString = PythonOperationKind.InPlaceAdd; break;
+                case ExpressionType.AndAssign: opString = PythonOperationKind.InPlaceBitwiseAnd; break;
+                case ExpressionType.DivideAssign: opString = PythonOperationKind.InPlaceDivide; break;
+                case ExpressionType.ExclusiveOrAssign: opString = PythonOperationKind.InPlaceExclusiveOr; break;
+                case ExpressionType.ModuloAssign: opString = PythonOperationKind.InPlaceMod; break;
+                case ExpressionType.MultiplyAssign: opString = PythonOperationKind.InPlaceMultiply; break;
+                case ExpressionType.OrAssign: opString = PythonOperationKind.InPlaceBitwiseOr; break;
+                case ExpressionType.PowerAssign: opString = PythonOperationKind.InPlacePower; break;
+                case ExpressionType.RightShiftAssign: opString = PythonOperationKind.InPlaceRightShift; break;
+                case ExpressionType.LeftShiftAssign: opString = PythonOperationKind.InPlaceLeftShift; break;
+                case ExpressionType.SubtractAssign: opString = PythonOperationKind.InPlaceSubtract; break;
+
+                case ExpressionType.Equal: opString = PythonOperationKind.Equal; break;
+                case ExpressionType.GreaterThan: opString = PythonOperationKind.GreaterThan; break;
+                case ExpressionType.GreaterThanOrEqual: opString = PythonOperationKind.GreaterThanOrEqual; break;
+                case ExpressionType.LessThan: opString = PythonOperationKind.LessThan; break;
+                case ExpressionType.LessThanOrEqual: opString = PythonOperationKind.LessThanOrEqual; break;
+                case ExpressionType.NotEqual: opString = PythonOperationKind.NotEqual; break;
+            }
+            
+            DynamicMetaObject res = null;
+            if (opString != null) {
+                res = MakeBinaryOperation(operation, args, opString.Value);
+            } else {
+                res = operation.FallbackBinaryOperation(target, arg);
+            }
+            
+            return BindingHelpers.AddDynamicTestAndDefer(operation, AddPythonBoxing(res), args, valInfo);
+        }
+
+        public static DynamicMetaObject/*!*/ Operation(UnaryOperationBinder/*!*/ operation, DynamicMetaObject arg) {
+            DynamicMetaObject[] args = new[] { arg };
+            if (arg.NeedsDeferral()) {
+                return operation.Defer(arg);
+            }
+
+            ValidationInfo valInfo = BindingHelpers.GetValidationInfo(null, args);
+
+            DynamicMetaObject res = null;
+
+            switch (operation.Operation) {
+                case ExpressionType.UnaryPlus: 
+                    res = MakeUnaryOperation(operation, arg, Symbols.Positive);
+                    break;
+                case ExpressionType.Negate: 
+                    res = MakeUnaryOperation(operation, arg, Symbols.OperatorNegate); 
+                    break;
+                case ExpressionType.OnesComplement: 
+                    res = MakeUnaryOperation(operation, arg, Symbols.OperatorOnesComplement); 
+                    break;
+                case ExpressionType.IsFalse:
+                    res = MakeUnaryNotOperation(operation, arg);
+                    break;
+                default:
+                    res = TypeError(operation, "unknown operation: " + operation.ToString(), args);
+                    break;
+                
+            }
+
+            return BindingHelpers.AddDynamicTestAndDefer(operation, AddPythonBoxing(res), args, valInfo);
+        }
+
+        public static DynamicMetaObject/*!*/ Index(DynamicMetaObjectBinder/*!*/ operation, PythonIndexType index, params DynamicMetaObject[] args) {
+            if (BindingHelpers.NeedsDeferral(args)) {
+                return operation.Defer(args);
+            }
+
+            ValidationInfo valInfo = BindingHelpers.GetValidationInfo(null, args);
+
+            DynamicMetaObject res = AddPythonBoxing(MakeIndexerOperation(operation, index, args));
+
+            return BindingHelpers.AddDynamicTestAndDefer(operation, res, args, valInfo);
+        }
+
+        public static DynamicMetaObject/*!*/ Operation(PythonOperationBinder/*!*/ operation, params DynamicMetaObject/*!*/[]/*!*/ args) {
+            if (BindingHelpers.NeedsDeferral(args)) {
+                return operation.Defer(args);
+            }
+
+            ValidationInfo valInfo = BindingHelpers.GetValidationInfo(null, args);
+
+            DynamicMetaObject res = AddPythonBoxing(MakeOperationRule(operation, args));
+
+            return BindingHelpers.AddDynamicTestAndDefer(operation, res, args, valInfo);
+        }
+
+        private static DynamicMetaObject AddPythonBoxing(DynamicMetaObject res) {
             if (res.Expression.Type.IsValueType) {
                 // Use Python boxing rules if we're return a value type
                 res = new DynamicMetaObject(
@@ -57,48 +157,40 @@ namespace IronPython.Runtime.Binding {
                     res.Restrictions
                 );
             }
-            return BindingHelpers.AddDynamicTestAndDefer(operation, res, args, valInfo);
+            return res;
         }
 
-        private static DynamicMetaObject/*!*/ MakeOperationRule(OperationBinder/*!*/ operation, DynamicMetaObject/*!*/[]/*!*/ args) {
-            switch (operation.Operation) {
-                case StandardOperators.Documentation:
+        private static DynamicMetaObject/*!*/ MakeOperationRule(PythonOperationBinder/*!*/ operation, DynamicMetaObject/*!*/[]/*!*/ args) {
+            switch (NormalizeOperator(operation.Operation)) {
+                case PythonOperationKind.Documentation:
                     return MakeDocumentationOperation(operation, args);
-                case StandardOperators.MemberNames:
+                case PythonOperationKind.MemberNames:
                     return MakeMemberNamesOperation(operation, args);
-                case StandardOperators.CallSignatures:
+                case PythonOperationKind.CallSignatures:
                     return MakeCallSignatureOperation(args[0], CompilerHelpers.GetMethodTargets(args[0].Value));
-                case StandardOperators.IsCallable:
+                case PythonOperationKind.IsCallable:
                     return MakeIscallableOperation(operation, args);
-
-                case StandardOperators.GetItem:
-                case StandardOperators.SetItem:
-                case StandardOperators.GetSlice:
-                case StandardOperators.SetSlice:
-                case StandardOperators.DeleteItem:
-                case StandardOperators.DeleteSlice:
-                    // Indexers need to see if the index argument is an expandable tuple.  This will
-                    // be captured in the AbstractValue in the future but today is captured in the
-                    // real value.
-                    return MakeIndexerOperation(operation, args);
-
-                case StandardOperators.Not:
-                    return MakeUnaryNotOperation(operation, args[0]);
-                case OperatorStrings.Hash:
+                case PythonOperationKind.Hash:
                     return MakeHashOperation(operation, args[0]);
-
-                case StandardOperators.Contains:
+                case PythonOperationKind.Not:
+                    return MakeUnaryNotOperation(operation, args[0]);
+                case PythonOperationKind.Contains:
                     return MakeContainsOperation(operation, args);
-
+                case PythonOperationKind.AbsoluteValue:
+                    return MakeUnaryOperation(operation, args[0], Symbols.AbsoluteValue);
+                case PythonOperationKind.Compare:
+                    return MakeSortComparisonRule(args, operation, operation.Operation);
                 default:
-                    if (IsUnary(operation.Operation)) {
-                        return MakeUnaryOperation(operation, args[0]);
-                    } else if (IsComparision(operation.Operation)) {
-                        return MakeComparisonOperation(args, operation);
-                    }
-
-                    return MakeSimpleOperation(args, operation);
+                    return MakeBinaryOperation(operation, args, operation.Operation);
             }
+        }
+
+        private static DynamicMetaObject MakeBinaryOperation(DynamicMetaObjectBinder operation, DynamicMetaObject/*!*/[] args, PythonOperationKind opStr) {
+            if (IsComparision(opStr)) {
+                return MakeComparisonOperation(args, operation, opStr);
+            }
+
+            return MakeSimpleOperation(args, operation, opStr);
         }
 
         #region Unary Operations
@@ -113,7 +205,7 @@ namespace IronPython.Runtime.Binding {
         /// 
         /// For normal .NET enumerables we'll walk the iterator and see if it's present.
         /// </summary>
-        private static DynamicMetaObject/*!*/ MakeContainsOperation(OperationBinder/*!*/ operation, DynamicMetaObject/*!*/[]/*!*/ types) {
+        private static DynamicMetaObject/*!*/ MakeContainsOperation(PythonOperationBinder/*!*/ operation, DynamicMetaObject/*!*/[]/*!*/ types) {
             DynamicMetaObject res;
             // the paramteres come in backwards from how we look up __contains__, flip them.
             Debug.Assert(types.Length == 2);
@@ -158,9 +250,9 @@ namespace IronPython.Runtime.Binding {
                         // if(getItemRes == param1) return true
                                     Utils.If(
                                         Ast.Dynamic(
-                                            new PythonOperationBinder(
+                                            new PythonBinaryOperationBinder(
                                                 state,
-                                                StandardOperators.Equal
+                                                ExpressionType.Equal
                                             ),
                                             typeof(bool),
                                             types[1].Expression,
@@ -239,7 +331,7 @@ namespace IronPython.Runtime.Binding {
             }
         }
 
-        private static DynamicMetaObject/*!*/ MakeHashOperation(OperationBinder/*!*/ operation, DynamicMetaObject/*!*/ self) {
+        private static DynamicMetaObject/*!*/ MakeHashOperation(PythonOperationBinder/*!*/ operation, DynamicMetaObject/*!*/ self) {
             self = self.Restrict(self.GetLimitType());
 
             BinderState state = BinderState.GetBinderState(operation);
@@ -285,7 +377,7 @@ namespace IronPython.Runtime.Binding {
             return res;
         }
 
-        private static DynamicExpression/*!*/ HashBigInt(OperationBinder/*!*/ operation, Expression/*!*/ expression) {
+        private static DynamicExpression/*!*/ HashBigInt(PythonOperationBinder/*!*/ operation, Expression/*!*/ expression) {
             return Ast.Dynamic(
                 operation,
                 typeof(int),
@@ -305,20 +397,20 @@ namespace IronPython.Runtime.Binding {
             );
         }
 
-        private static DynamicMetaObject/*!*/ MakeUnaryOperation(OperationBinder/*!*/ operation, DynamicMetaObject/*!*/ self) {
+        private static DynamicMetaObject MakeUnaryOperation(DynamicMetaObjectBinder binder, DynamicMetaObject self, SymbolId symbol) {
             self = self.Restrict(self.GetLimitType());
 
-            SlotOrFunction func = SlotOrFunction.GetSlotOrFunction(BinderState.GetBinderState(operation), Symbols.OperatorToSymbol(operation.Operation), self);
+            SlotOrFunction func = SlotOrFunction.GetSlotOrFunction(BinderState.GetBinderState(binder), symbol, self);
 
             if (!func.Success) {
                 // we get the error message w/ {0} so that PythonBinderHelper.TypeError formats it correctly
-                return TypeError(operation, MakeUnaryOpErrorMessage(operation.Operation.ToString(), "{0}"), self);
+                return TypeError(binder, MakeUnaryOpErrorMessage(symbol, "{0}"), self);
             }
 
             return func.Target;
         }
 
-        private static DynamicMetaObject/*!*/ MakeUnaryNotOperation(OperationBinder/*!*/ operation, DynamicMetaObject/*!*/ self) {
+        private static DynamicMetaObject/*!*/ MakeUnaryNotOperation(DynamicMetaObjectBinder/*!*/ operation, DynamicMetaObject/*!*/ self) {
             self = self.Restrict(self.GetLimitType());
 
             SlotOrFunction nonzero = SlotOrFunction.GetSlotOrFunction(BinderState.GetBinderState(operation), Symbols.NonZero, self);
@@ -350,9 +442,9 @@ namespace IronPython.Runtime.Binding {
                         notExpr = Ast.Equal(notExpr, Ast.Constant(0));
                     } else {
                         notExpr = Ast.Dynamic(
-                            new PythonOperationBinder(
+                            Binders.BinaryOperationBinder(
                                 BinderState.GetBinderState(operation),
-                                StandardOperators.Compare
+                                PythonOperationKind.Compare
                             ),
                             typeof(int),
                             notExpr,
@@ -373,7 +465,7 @@ namespace IronPython.Runtime.Binding {
 
         #region Reflective Operations
 
-        private static DynamicMetaObject/*!*/ MakeDocumentationOperation(OperationBinder/*!*/ operation, DynamicMetaObject/*!*/[]/*!*/ args) {
+        private static DynamicMetaObject/*!*/ MakeDocumentationOperation(PythonOperationBinder/*!*/ operation, DynamicMetaObject/*!*/[]/*!*/ args) {
             BinderState state = BinderState.GetBinderState(operation);
 
             return new DynamicMetaObject(
@@ -388,7 +480,7 @@ namespace IronPython.Runtime.Binding {
             );
         }
 
-        private static DynamicMetaObject/*!*/ MakeMemberNamesOperation(OperationBinder/*!*/ operation, DynamicMetaObject[] args) {
+        private static DynamicMetaObject/*!*/ MakeMemberNamesOperation(PythonOperationBinder/*!*/ operation, DynamicMetaObject[] args) {
             DynamicMetaObject self = args[0];
             CodeContext context;
             if (args.Length > 1 && args[0].GetLimitType() == typeof(CodeContext)) {
@@ -399,7 +491,7 @@ namespace IronPython.Runtime.Binding {
             }
 
             if (typeof(IMembersList).IsAssignableFrom(self.GetLimitType())) {
-                return BinderState.GetBinderState(operation).Binder.DoOperation(operation.Operation, BinderState.GetCodeContext(operation), args);
+                return BinderState.GetBinderState(operation).Binder.GetMemberNames(self, BinderState.GetCodeContext(operation));
             }
 
             PythonType pt = DynamicHelpers.GetPythonType(self.Value);
@@ -462,7 +554,7 @@ namespace IronPython.Runtime.Binding {
             );
         }
 
-        private static DynamicMetaObject/*!*/ MakeIscallableOperation(OperationBinder/*!*/ operation, DynamicMetaObject/*!*/[]/*!*/ args) {
+        private static DynamicMetaObject/*!*/ MakeIscallableOperation(PythonOperationBinder/*!*/ operation, DynamicMetaObject/*!*/[]/*!*/ args) {
             // Certain non-python types (encountered during interop) are callable, but don't have 
             // a __call__ attribute. The default base binder also checks these, but since we're overriding
             // the base binder, we check them here.
@@ -499,26 +591,24 @@ namespace IronPython.Runtime.Binding {
 
         #region Common Binary Operations
 
-        private static DynamicMetaObject/*!*/ MakeSimpleOperation(DynamicMetaObject/*!*/[]/*!*/ types, OperationBinder/*!*/ operation) {
+        private static DynamicMetaObject/*!*/ MakeSimpleOperation(DynamicMetaObject/*!*/[]/*!*/ types, DynamicMetaObjectBinder/*!*/ binder, PythonOperationKind operation) {
             RestrictTypes(types);
 
             SlotOrFunction fbinder;
             SlotOrFunction rbinder;
             PythonTypeSlot fSlot;
             PythonTypeSlot rSlot;
-            GetOpreatorMethods(types, operation.Operation, BinderState.GetBinderState(operation), out fbinder, out rbinder, out fSlot, out rSlot);
+            GetOpreatorMethods(types, operation, BinderState.GetBinderState(binder), out fbinder, out rbinder, out fSlot, out rSlot);
 
-            return MakeBinaryOperatorResult(types, operation, fbinder, rbinder, fSlot, rSlot);
+            return MakeBinaryOperatorResult(types, binder, operation, fbinder, rbinder, fSlot, rSlot);
         }
 
-        private static void GetOpreatorMethods(DynamicMetaObject/*!*/[]/*!*/ types, string oper, BinderState state, out SlotOrFunction fbinder, out SlotOrFunction rbinder, out PythonTypeSlot fSlot, out PythonTypeSlot rSlot) {
+        private static void GetOpreatorMethods(DynamicMetaObject/*!*/[]/*!*/ types, PythonOperationKind oper, BinderState state, out SlotOrFunction fbinder, out SlotOrFunction rbinder, out PythonTypeSlot fSlot, out PythonTypeSlot rSlot) {
             oper = NormalizeOperator(oper);
-            if (IsInPlace(oper)) {
-                oper = DirectOperation(oper);
-            }
+            oper &= ~PythonOperationKind.InPlace;
 
             SymbolId op, rop;
-            if (!TypeInfo.IsReverseOperator(oper)) {
+            if (!IsReverseOperator(oper)) {
                 op = Symbols.OperatorToSymbol(oper);
                 rop = Symbols.OperatorToReversedSymbol(oper);
             } else {
@@ -531,7 +621,7 @@ namespace IronPython.Runtime.Binding {
             rSlot = null;
             PythonType fParent, rParent;
 
-            if (oper == StandardOperators.Multiply && 
+            if (oper == PythonOperationKind.Multiply && 
                 IsSequence(types[0]) && 
                 !PythonOps.IsNonExtensibleNumericType(types[1].GetLimitType())) {
                 // class M:
@@ -586,11 +676,15 @@ namespace IronPython.Runtime.Binding {
             if (!fbinder.Success && !rbinder.Success && fSlot == null && rSlot == null) {
                 if (op == Symbols.OperatorTrueDivide || op == Symbols.OperatorReverseTrueDivide) {
                     // true div on a type which doesn't support it, go ahead and try normal divide
-                    string newOp = op == Symbols.OperatorTrueDivide ? StandardOperators.Divide : OperatorStrings.ReverseDivide;
+                    PythonOperationKind newOp = op == Symbols.OperatorTrueDivide ? PythonOperationKind.Divide : PythonOperationKind.ReverseDivide;
 
                     GetOpreatorMethods(types, newOp, state, out fbinder, out rbinder, out fSlot, out rSlot);
                 }
             }
+        }
+
+        private static bool IsReverseOperator(PythonOperationKind oper) {
+            return (oper & PythonOperationKind.Reversed) != 0;
         }
 
         private static bool IsSequence(DynamicMetaObject/*!*/ metaObject) {
@@ -602,16 +696,15 @@ namespace IronPython.Runtime.Binding {
             return false;
         }
 
-        private static DynamicMetaObject/*!*/ MakeBinaryOperatorResult(DynamicMetaObject/*!*/[]/*!*/ types, OperationBinder/*!*/ operation, SlotOrFunction/*!*/ fCand, SlotOrFunction/*!*/ rCand, PythonTypeSlot fSlot, PythonTypeSlot rSlot) {
+        private static DynamicMetaObject/*!*/ MakeBinaryOperatorResult(DynamicMetaObject/*!*/[]/*!*/ types, DynamicMetaObjectBinder/*!*/ operation, PythonOperationKind op, SlotOrFunction/*!*/ fCand, SlotOrFunction/*!*/ rCand, PythonTypeSlot fSlot, PythonTypeSlot rSlot) {
             Assert.NotNull(operation, fCand, rCand);
 
-            string op = operation.Operation;
             SlotOrFunction fTarget, rTarget;
+            BinderState state = BinderState.GetBinderState(operation);
 
-            // TODO: some Builder class for condition, body, vars
             ConditionalBuilder bodyBuilder = new ConditionalBuilder(operation);
 
-            if (IsInPlace(op)) {
+            if ((op & PythonOperationKind.InPlace) != 0) {
                 // in place operator, see if there's a specific method that handles it.
                 SlotOrFunction function = SlotOrFunction.GetSlotOrFunction(BinderState.GetBinderState(operation), Symbols.OperatorToSymbol(op), types);
 
@@ -625,22 +718,22 @@ namespace IronPython.Runtime.Binding {
             if (!SlotOrFunction.GetCombinedTargets(fCand, rCand, out fTarget, out rTarget) &&
                 fSlot == null &&
                 rSlot == null &&
-                !ShouldCoerce(operation, types[0], types[1], false) &&
-                !ShouldCoerce(operation, types[1], types[0], false) &&
+                !ShouldCoerce(state, op, types[0], types[1], false) &&
+                !ShouldCoerce(state, op, types[1], types[0], false) &&
                 bodyBuilder.NoConditions) {
                 return MakeRuleForNoMatch(operation, op, types);
             }
 
-            if (ShouldCoerce(operation, types[0], types[1], false) && 
-                (op != StandardOperators.Mod || !MetaPythonObject.GetPythonType(types[0]).IsSubclassOf(TypeCache.String))) {
+            if (ShouldCoerce(state, op, types[0], types[1], false) && 
+                (op != PythonOperationKind.Mod || !MetaPythonObject.GetPythonType(types[0]).IsSubclassOf(TypeCache.String))) {
                 // need to try __coerce__ first.
-                DoCoerce(operation, bodyBuilder, op, types, false);
+                DoCoerce(state, bodyBuilder, op, types, false);
             }
 
             if (MakeOneTarget(BinderState.GetBinderState(operation), fTarget, fSlot, bodyBuilder, false, types)) {
-                if (ShouldCoerce(operation, types[1], types[0], false)) {
+                if (ShouldCoerce(state, op, types[1], types[0], false)) {
                     // need to try __coerce__ on the reverse first                    
-                    DoCoerce(operation, bodyBuilder, op, new DynamicMetaObject[] { types[1], types[0] }, true);
+                    DoCoerce(state, bodyBuilder, op, new DynamicMetaObject[] { types[1], types[0] }, true);
                 }
 
                 if (rSlot != null) {
@@ -799,8 +892,8 @@ namespace IronPython.Runtime.Binding {
             bodyBuilder.AddVariable(tmp);
         }
 
-        private static void DoCoerce(OperationBinder/*!*/ operation, ConditionalBuilder/*!*/ bodyBuilder, string op, DynamicMetaObject/*!*/[]/*!*/ types, bool reverse) {
-            DoCoerce(operation, bodyBuilder, op, types, reverse, delegate(Expression e) {
+        private static void DoCoerce(BinderState/*!*/ state, ConditionalBuilder/*!*/ bodyBuilder, PythonOperationKind op, DynamicMetaObject/*!*/[]/*!*/ types, bool reverse) {
+            DoCoerce(state, bodyBuilder, op, types, reverse, delegate(Expression e) {
                 return e;
             });
         }
@@ -808,7 +901,7 @@ namespace IronPython.Runtime.Binding {
         /// <summary>
         /// calls __coerce__ for old-style classes and performs the operation if the coercion is successful.
         /// </summary>
-        private static void DoCoerce(OperationBinder/*!*/ operation, ConditionalBuilder/*!*/ bodyBuilder, string op, DynamicMetaObject/*!*/[]/*!*/ types, bool reverse, Func<Expression, Expression> returnTransform) {
+        private static void DoCoerce(BinderState/*!*/ state, ConditionalBuilder/*!*/ bodyBuilder, PythonOperationKind op, DynamicMetaObject/*!*/[]/*!*/ types, bool reverse, Func<Expression, Expression> returnTransform) {
             ParameterExpression coerceResult = Ast.Variable(typeof(object), "coerceResult");
             ParameterExpression coerceTuple = Ast.Variable(typeof(PythonTuple), "coerceTuple");
 
@@ -830,7 +923,7 @@ namespace IronPython.Runtime.Binding {
             // tmp = self.__coerce__(other)
             // if tmp != null && tmp != NotImplemented && (tuple = PythonOps.ValidateCoerceResult(tmp)) != null:
             //      return operation(tuple[0], tuple[1])                        
-            SlotOrFunction slot = SlotOrFunction.GetSlotOrFunction(BinderState.GetBinderState(operation), Symbols.Coerce, types);
+            SlotOrFunction slot = SlotOrFunction.GetSlotOrFunction(state, Symbols.Coerce, types);
 
             if (slot.Success) {
                 bodyBuilder.AddCondition(
@@ -858,9 +951,9 @@ namespace IronPython.Runtime.Binding {
                     BindingHelpers.AddRecursionCheck(
                         returnTransform(
                             Ast.Dynamic(
-                                new PythonOperationBinder(
-                                    BinderState.GetBinderState(operation),
-                                    DisallowCoerce + op
+                                Binders.BinaryOperationBinder(
+                                    state,
+                                    op | PythonOperationKind.DisableCoerce
                                 ),
                                 typeof(object),
                                 reverse ? CoerceTwo(coerceTuple) : CoerceOne(coerceTuple),
@@ -893,13 +986,10 @@ namespace IronPython.Runtime.Binding {
 
         #region Comparison Operations
 
-        private static DynamicMetaObject/*!*/ MakeComparisonOperation(DynamicMetaObject/*!*/[]/*!*/ types, OperationBinder/*!*/ operation) {
+        private static DynamicMetaObject/*!*/ MakeComparisonOperation(DynamicMetaObject/*!*/[]/*!*/ types, DynamicMetaObjectBinder/*!*/ operation, PythonOperationKind opString) {
             RestrictTypes(types);
 
-            string op = NormalizeOperator(operation.Operation);
-            if (op == StandardOperators.Compare) {
-                return MakeSortComparisonRule(types, operation);
-            }
+            PythonOperationKind op = NormalizeOperator(opString);
 
             BinderState state = BinderState.GetBinderState(operation);
             Debug.Assert(types.Length == 2);
@@ -925,8 +1015,8 @@ namespace IronPython.Runtime.Binding {
                 if (MakeOneCompareGeneric(rop, true, types, MakeCompareReturn, bodyBuilder)) {
 
                     // then try __cmp__ or __rcmp__ and compare the resulting int appropriaetly
-                    if (ShouldCoerce(operation, xType, yType, true)) {
-                        DoCoerce(operation, bodyBuilder, StandardOperators.Compare, types, false, delegate(Expression e) {
+                    if (ShouldCoerce(state, opString, xType, yType, true)) {
+                        DoCoerce(state, bodyBuilder, PythonOperationKind.Compare, types, false, delegate(Expression e) {
                             return GetCompareTest(op, e, false);
                         });
                     }
@@ -940,8 +1030,8 @@ namespace IronPython.Runtime.Binding {
                         },
                         bodyBuilder)) {
 
-                        if (ShouldCoerce(operation, yType, xType, true)) {
-                            DoCoerce(operation, bodyBuilder, StandardOperators.Compare, rTypes, true, delegate(Expression e) {
+                        if (ShouldCoerce(state, opString, yType, xType, true)) {
+                            DoCoerce(state, bodyBuilder, PythonOperationKind.Compare, rTypes, true, delegate(Expression e) {
                                 return GetCompareTest(op, e, true);
                             });
                         }
@@ -966,13 +1056,13 @@ namespace IronPython.Runtime.Binding {
         /// <summary>
         /// Makes the comparison rule which returns an int (-1, 0, 1).  TODO: Better name?
         /// </summary>
-        private static DynamicMetaObject/*!*/ MakeSortComparisonRule(DynamicMetaObject/*!*/[]/*!*/ types, OperationBinder/*!*/ operation) {
+        private static DynamicMetaObject/*!*/ MakeSortComparisonRule(DynamicMetaObject/*!*/[]/*!*/ types, DynamicMetaObjectBinder/*!*/ operation, PythonOperationKind op) {
+            RestrictTypes(types); 
+            
             DynamicMetaObject fastPath = FastPathCompare(types);
             if (fastPath != null) {
                 return fastPath;
             }
-
-            string op = operation.Operation;
 
             // Python compare semantics: 
             //      if the types are the same invoke __cmp__ first.
@@ -1030,9 +1120,9 @@ namespace IronPython.Runtime.Binding {
             bool tryRich = true, more = true;
             if (xType == yType && cTarget != SlotOrFunction.Empty) {
                 // if the types are equal try __cmp__ first
-                if (ShouldCoerce(operation, types[0], types[1], true)) {
+                if (ShouldCoerce(state, op, types[0], types[1], true)) {
                     // need to try __coerce__ first.
-                    DoCoerce(operation, bodyBuilder, StandardOperators.Compare, types, false);
+                    DoCoerce(state, bodyBuilder, PythonOperationKind.Compare, types, false);
                 }
 
                 more = more && MakeOneCompareGeneric(cTarget, false, types, MakeCompareReverse, bodyBuilder);
@@ -1063,16 +1153,16 @@ namespace IronPython.Runtime.Binding {
             }
 
             if (xType != yType) {
-                if (more && ShouldCoerce(operation, types[0], types[1], true)) {
+                if (more && ShouldCoerce(state, op, types[0], types[1], true)) {
                     // need to try __coerce__ first.
-                    DoCoerce(operation, bodyBuilder, StandardOperators.Compare, types, false);
+                    DoCoerce(state, bodyBuilder, PythonOperationKind.Compare, types, false);
                 }
 
                 more = more && MakeOneCompareGeneric(cTarget, false, types, MakeCompareReverse, bodyBuilder);
 
-                if (more && ShouldCoerce(operation, types[1], types[0], true)) {
+                if (more && ShouldCoerce(state, op, types[1], types[0], true)) {
                     // try __coerce__ first
-                    DoCoerce(operation, bodyBuilder, StandardOperators.Compare, rTypes, true, delegate(Expression e) {
+                    DoCoerce(state, bodyBuilder, PythonOperationKind.Compare, rTypes, true, delegate(Expression e) {
                         return ReverseCompareValue(e);
                     });
                 }
@@ -1185,11 +1275,11 @@ namespace IronPython.Runtime.Binding {
             MakeCompareReturn(bodyBuilder, retCondition, res, reverse);
         }
 
-        private static void MakeCompareTest(string op, ConditionalBuilder/*!*/ bodyBuilder, Expression retCond, Expression/*!*/ expr, bool reverse) {
+        private static void MakeCompareTest(PythonOperationKind op, ConditionalBuilder/*!*/ bodyBuilder, Expression retCond, Expression/*!*/ expr, bool reverse) {
             MakeCompareReturn(bodyBuilder, retCond, GetCompareTest(op, expr, reverse), reverse);
         }
 
-        private static Expression/*!*/ MakeFallbackCompare(string op, DynamicMetaObject[] types) {
+        private static Expression/*!*/ MakeFallbackCompare(PythonOperationKind op, DynamicMetaObject[] types) {
             return Ast.Call(
                 GetComparisonFallbackMethod(op),
                 AstUtils.Convert(types[0].Expression, typeof(object)),
@@ -1197,7 +1287,7 @@ namespace IronPython.Runtime.Binding {
             );
         }
 
-        private static Expression GetCompareTest(string op, Expression expr, bool reverse) {
+        private static Expression GetCompareTest(PythonOperationKind op, Expression expr, bool reverse) {
             if (expr.Type == typeof(int)) {
                 // fast path, just do a compare in IL
                 return GetCompareNode(op, reverse, expr);
@@ -1240,7 +1330,7 @@ namespace IronPython.Runtime.Binding {
         /// 
         /// So our job here is to first determine if we're to call a __*slice__ method or
         /// a __*item__ method.  
-        private static DynamicMetaObject/*!*/ MakeIndexerOperation(OperationBinder/*!*/ operation, DynamicMetaObject/*!*/[]/*!*/ types) {
+        private static DynamicMetaObject/*!*/ MakeIndexerOperation(DynamicMetaObjectBinder/*!*/ operation, PythonIndexType op, DynamicMetaObject/*!*/[]/*!*/ types) {
             SymbolId item, slice;
             DynamicMetaObject indexedType = types[0].Restrict(types[0].GetLimitType());
             BinderState state = BinderState.GetBinderState(operation);
@@ -1248,11 +1338,10 @@ namespace IronPython.Runtime.Binding {
             PythonTypeSlot itemSlot = null;
             bool callSlice = false;
             int mandatoryArgs;
-            string op = operation.Operation;
 
             GetIndexOperators(op, out item, out slice, out mandatoryArgs);
 
-            if (types.Length == mandatoryArgs + 1 && IsSlice(op) && HasOnlyNumericTypes(operation, types, op == StandardOperators.SetSlice)) {
+            if (types.Length == mandatoryArgs + 1 && IsSlice(op) && HasOnlyNumericTypes(operation, types, op == PythonIndexType.SetSlice)) {
                 // two slice indexes, all int arguments, need to call __*slice__ if it exists
                 callSlice = BindingHelpers.TryGetStaticFunction(state, slice, indexedType, out itemFunc);
                 if (itemFunc == null || !callSlice) {
@@ -1282,6 +1371,9 @@ namespace IronPython.Runtime.Binding {
                 Debug.Assert(IsSlice(op));
 
                 builder = new SliceBuilder(types, callable);
+
+                // slicing is dependent upon the types of the arguments (HasNumericTypes) 
+                // so we must restrict them.
                 args = ConvertArgs(types);
             } else {
                 // we're going to call a __*item__ method.
@@ -1290,9 +1382,16 @@ namespace IronPython.Runtime.Binding {
                     // we need to create a new Slice object.
                     args = GetItemSliceArguments(state, op, types);
                 } else {
-                    // we just need to pass the arguments as they are
-                    args = ConvertArgs(types);
+                    // no need to restrict the arguments.  We're not
+                    // a slice and so restrictions are not necessary
+                    // here because it's not dependent upon our types.
+                    args = (DynamicMetaObject[])types.Clone();
+
+                    // but we do need to restrict based upon the type
+                    // of object we're calling on.
+                    args[0] = types[0].Restrict(types[0].GetLimitType());
                 }
+
             }
 
             return builder.MakeRule(state, args);
@@ -1312,16 +1411,16 @@ namespace IronPython.Runtime.Binding {
         /// <summary>
         /// Gets the arguments that need to be provided to __*item__ when we need to pass a slice object.
         /// </summary>
-        private static DynamicMetaObject/*!*/[]/*!*/ GetItemSliceArguments(BinderState state, string op, DynamicMetaObject/*!*/[]/*!*/ types) {
+        private static DynamicMetaObject/*!*/[]/*!*/ GetItemSliceArguments(BinderState state, PythonIndexType op, DynamicMetaObject/*!*/[]/*!*/ types) {
             DynamicMetaObject[] args;
-            if (op == StandardOperators.SetSlice) {
+            if (op == PythonIndexType.SetSlice) {
                 args = new DynamicMetaObject[] { 
                     types[0].Restrict(types[0].GetLimitType()),
                     GetSetSlice(state, types), 
                     types[types.Length- 1].Restrict(types[types.Length - 1].GetLimitType())
                 };
             } else {
-                Debug.Assert(op == StandardOperators.GetSlice || op == StandardOperators.DeleteSlice);
+                Debug.Assert(op == PythonIndexType.GetSlice || op == PythonIndexType.DeleteSlice);
 
                 args = new DynamicMetaObject[] { 
                     types[0].Restrict(types[0].GetLimitType()),
@@ -1338,9 +1437,9 @@ namespace IronPython.Runtime.Binding {
         /// </summary>
         abstract class Callable {
             private readonly BinderState/*!*/ _binder;
-            private readonly string _op;
+            private readonly PythonIndexType _op;
 
-            protected Callable(BinderState/*!*/ binder, string op) {
+            protected Callable(BinderState/*!*/ binder, PythonIndexType op) {
                 Assert.NotNull(binder);
 
                 _binder = binder;
@@ -1351,7 +1450,7 @@ namespace IronPython.Runtime.Binding {
             /// Creates a new CallableObject.  If BuiltinFunction is available we'll create a BuiltinCallable otherwise
             /// we create a SlotCallable.
             /// </summary>
-            public static Callable MakeCallable(BinderState/*!*/ binder, string op, BuiltinFunction itemFunc, PythonTypeSlot itemSlot) {
+            public static Callable MakeCallable(BinderState/*!*/ binder, PythonIndexType op, BuiltinFunction itemFunc, PythonTypeSlot itemSlot) {
                 if (itemFunc != null) {
                     // we'll call a builtin function to produce the rule
                     return new BuiltinCallable(binder, op, itemFunc);
@@ -1431,12 +1530,12 @@ namespace IronPython.Runtime.Binding {
                 get { return _binder; }
             }
 
-            protected string Operator {
+            protected PythonIndexType Operator {
                 get { return _op; }
             }
 
             protected bool IsSetter {
-                get { return _op == StandardOperators.SetItem || _op == StandardOperators.SetSlice; }
+                get { return _op == PythonIndexType.SetItem || _op == PythonIndexType.SetSlice; }
             }
         }
 
@@ -1447,7 +1546,7 @@ namespace IronPython.Runtime.Binding {
         class BuiltinCallable : Callable {
             private readonly BuiltinFunction/*!*/ _bf;
 
-            public BuiltinCallable(BinderState/*!*/ binder, string op, BuiltinFunction/*!*/ func)
+            public BuiltinCallable(BinderState/*!*/ binder, PythonIndexType op, BuiltinFunction/*!*/ func)
                 : base(binder, op) {
                 Assert.NotNull(func);
 
@@ -1490,7 +1589,7 @@ namespace IronPython.Runtime.Binding {
                         );
                     }
                 } else if (customFailure == null || (res = customFailure()) == null) {
-                    res = DefaultBinder.MakeError(Binder.MakeInvalidParametersError(target), BindingRestrictions.Combine(args));
+                    res = DefaultBinder.MakeError(Binder.MakeInvalidParametersError(target), BindingRestrictions.Combine(ConvertArgs(args)));
                 }
 
                 return res;
@@ -1504,7 +1603,7 @@ namespace IronPython.Runtime.Binding {
         class SlotCallable : Callable {
             private PythonTypeSlot _slot;
 
-            public SlotCallable(BinderState/*!*/ binder, string op, PythonTypeSlot slot)
+            public SlotCallable(BinderState/*!*/ binder, PythonIndexType op, PythonTypeSlot slot)
                 : base(binder, op) {
                 _slot = slot;
             }
@@ -1780,30 +1879,30 @@ namespace IronPython.Runtime.Binding {
             return numeric;
         }
 
-        private static bool IsSlice(string op) {
-            return op == StandardOperators.GetSlice || op == StandardOperators.SetSlice || op == StandardOperators.DeleteSlice;
+        private static bool IsSlice(PythonIndexType op) {
+            return op >= PythonIndexType.GetSlice;
         }
 
         /// <summary>
         /// Helper to get the symbols for __*item__ and __*slice__ based upon if we're doing
         /// a get/set/delete and the minimum number of arguments required for each of those.
         /// </summary>
-        private static void GetIndexOperators(string op, out SymbolId item, out SymbolId slice, out int mandatoryArgs) {
+        private static void GetIndexOperators(PythonIndexType op, out SymbolId item, out SymbolId slice, out int mandatoryArgs) {
             switch (op) {
-                case StandardOperators.GetItem:
-                case StandardOperators.GetSlice:
+                case PythonIndexType.GetItem:
+                case PythonIndexType.GetSlice:
                     item = Symbols.GetItem;
                     slice = Symbols.GetSlice;
                     mandatoryArgs = 2;
                     return;
-                case StandardOperators.SetItem:
-                case StandardOperators.SetSlice:
+                case PythonIndexType.SetItem:
+                case PythonIndexType.SetSlice:
                     item = Symbols.SetItem;
                     slice = Symbols.SetSlice;
                     mandatoryArgs = 3;
                     return;
-                case StandardOperators.DeleteItem:
-                case StandardOperators.DeleteSlice:
+                case PythonIndexType.DeleteItem:
+                case PythonIndexType.DeleteSlice:
                     item = Symbols.DelItem;
                     slice = Symbols.DeleteSlice;
                     mandatoryArgs = 2;
@@ -1880,8 +1979,8 @@ namespace IronPython.Runtime.Binding {
         /// This matches the behavior of CPython.
         /// </summary>
         /// <returns></returns>
-        private static bool ShouldCoerce(OperationBinder/*!*/ operation, DynamicMetaObject/*!*/ x, DynamicMetaObject/*!*/ y, bool isCompare) {
-            if (operation.Operation.StartsWith(DisallowCoerce)) {
+        private static bool ShouldCoerce(BinderState/*!*/ state, PythonOperationKind operation, DynamicMetaObject/*!*/ x, DynamicMetaObject/*!*/ y, bool isCompare) {
+            if ((operation & PythonOperationKind.DisableCoerce) != 0) {
                 return false;
             }
 
@@ -1899,7 +1998,7 @@ namespace IronPython.Runtime.Binding {
                     // only when comparing against built-in types which
                     // define __coerce__
                     PythonTypeSlot pts;
-                    if (xType.TryResolveSlot(BinderState.GetBinderState(operation).Context, Symbols.Coerce, out pts)) {
+                    if (xType.TryResolveSlot(state.Context, Symbols.Coerce, out pts)) {
                         // don't call __coerce__ if it's declared on the base type
                         BuiltinMethodDescriptor bmd = pts as BuiltinMethodDescriptor;
                         if (bmd == null) return true;
@@ -1927,88 +2026,87 @@ namespace IronPython.Runtime.Binding {
             return false;
         }
 
-        public static string DirectOperation(string op) {
-            string res = CompilerHelpers.InPlaceOperatorToOperator(op);
-            if (res != StandardOperators.None) return res;
-
-            throw new InvalidOperationException();
-        }
-
-        private static bool IsUnary(string op) {
-            op = NormalizeOperator(op);
-
-            switch (op) {
-                case StandardOperators.OnesComplement:
-                case StandardOperators.Negate:
-                case StandardOperators.Positive:
-                case StandardOperators.AbsoluteValue:
-                case StandardOperators.Not:
-
-                // Added for COM support...
-                case StandardOperators.Documentation:
-                    return true;
+        public static PythonOperationKind DirectOperation(PythonOperationKind op) {
+            if ((op & PythonOperationKind.InPlace) == 0) {
+                throw new InvalidOperationException();
             }
-            return false;
+
+            return op & ~PythonOperationKind.InPlace;
         }
 
-        private static string NormalizeOperator(string op) {
-            if (op.StartsWith(DisallowCoerce)) {
-                op = op.Substring(DisallowCoerce.Length);
+        private static PythonOperationKind NormalizeOperator(PythonOperationKind op) {
+            if ((op & PythonOperationKind.DisableCoerce) != 0) {
+                op = op & ~PythonOperationKind.DisableCoerce;
             }
             return op;
         }
 
-        private static bool IsComparision(string op) {
-            return CompilerHelpers.IsComparisonOperator(NormalizeOperator(op));
+        private static bool IsComparisonOperator(PythonOperationKind op) {
+            return (op & PythonOperationKind.Comparison) != 0;
         }
 
-        private static bool IsInPlace(string op) {
-            return CompilerHelpers.InPlaceOperatorToOperator(op) != StandardOperators.None;
+        private static bool IsComparision(PythonOperationKind op) {
+            return IsComparisonOperator(NormalizeOperator(op));
         }
 
-        private static Expression/*!*/ GetCompareNode(string op, bool reverse, Expression expr) {
+        private static Expression/*!*/ GetCompareNode(PythonOperationKind op, bool reverse, Expression expr) {
             op = NormalizeOperator(op);
 
-            switch (reverse ? CompilerHelpers.OperatorToReverseOperator(op) : op) {
-                case StandardOperators.Equal: return Ast.Equal(expr, Ast.Constant(0));
-                case StandardOperators.NotEqual: return Ast.NotEqual(expr, Ast.Constant(0));
-                case StandardOperators.GreaterThan: return Ast.GreaterThan(expr, Ast.Constant(0));
-                case StandardOperators.GreaterThanOrEqual: return Ast.GreaterThanOrEqual(expr, Ast.Constant(0));
-                case StandardOperators.LessThan: return Ast.LessThan(expr, Ast.Constant(0));
-                case StandardOperators.LessThanOrEqual: return Ast.LessThanOrEqual(expr, Ast.Constant(0));
+            switch (reverse ? OperatorToReverseOperator(op) : op) {
+                case PythonOperationKind.Equal: return Ast.Equal(expr, Ast.Constant(0));
+                case PythonOperationKind.NotEqual: return Ast.NotEqual(expr, Ast.Constant(0));
+                case PythonOperationKind.GreaterThan: return Ast.GreaterThan(expr, Ast.Constant(0));
+                case PythonOperationKind.GreaterThanOrEqual: return Ast.GreaterThanOrEqual(expr, Ast.Constant(0));
+                case PythonOperationKind.LessThan: return Ast.LessThan(expr, Ast.Constant(0));
+                case PythonOperationKind.LessThanOrEqual: return Ast.LessThanOrEqual(expr, Ast.Constant(0));
                 default: throw new InvalidOperationException();
             }
         }
 
-        private static Expression/*!*/ GetCompareExpression(string op, bool reverse, Expression/*!*/ value) {
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity")]
+        public static PythonOperationKind OperatorToReverseOperator(PythonOperationKind op) {
+            switch (op) {
+                case PythonOperationKind.LessThan: return PythonOperationKind.GreaterThan;
+                case PythonOperationKind.LessThanOrEqual: return PythonOperationKind.GreaterThanOrEqual;
+                case PythonOperationKind.GreaterThan: return PythonOperationKind.LessThan;
+                case PythonOperationKind.GreaterThanOrEqual: return PythonOperationKind.LessThanOrEqual;
+                case PythonOperationKind.Equal: return PythonOperationKind.Equal;
+                case PythonOperationKind.NotEqual: return PythonOperationKind.NotEqual;
+                case PythonOperationKind.DivMod: return PythonOperationKind.ReverseDivMod;
+                case PythonOperationKind.ReverseDivMod: return PythonOperationKind.DivMod;
+                default:
+                    return op & ~PythonOperationKind.Reversed;
+            }
+        }
+        private static Expression/*!*/ GetCompareExpression(PythonOperationKind op, bool reverse, Expression/*!*/ value) {
             op = NormalizeOperator(op);
 
             Debug.Assert(value.Type == typeof(int));
 
             Expression zero = Ast.Constant(0);
-            switch (reverse ? CompilerHelpers.OperatorToReverseOperator(op) : op) {
-                case StandardOperators.Equal: return Ast.Equal(value, zero);
-                case StandardOperators.NotEqual: return Ast.NotEqual(value, zero);
-                case StandardOperators.GreaterThan: return Ast.GreaterThan(value, zero); ;
-                case StandardOperators.GreaterThanOrEqual: return Ast.GreaterThanOrEqual(value, zero);
-                case StandardOperators.LessThan: return Ast.LessThan(value, zero);
-                case StandardOperators.LessThanOrEqual: return Ast.LessThanOrEqual(value, zero);
+            switch (reverse ? OperatorToReverseOperator(op) : op) {
+                case PythonOperationKind.Equal: return Ast.Equal(value, zero);
+                case PythonOperationKind.NotEqual: return Ast.NotEqual(value, zero);
+                case PythonOperationKind.GreaterThan: return Ast.GreaterThan(value, zero); ;
+                case PythonOperationKind.GreaterThanOrEqual: return Ast.GreaterThanOrEqual(value, zero);
+                case PythonOperationKind.LessThan: return Ast.LessThan(value, zero);
+                case PythonOperationKind.LessThanOrEqual: return Ast.LessThanOrEqual(value, zero);
                 default: throw new InvalidOperationException();
             }
         }
 
-        private static MethodInfo/*!*/ GetComparisonFallbackMethod(string op) {
+        private static MethodInfo/*!*/ GetComparisonFallbackMethod(PythonOperationKind op) {
             op = NormalizeOperator(op);
 
             string name;
             switch (op) {
-                case StandardOperators.Equal: name = "CompareTypesEqual"; break;
-                case StandardOperators.NotEqual: name = "CompareTypesNotEqual"; break;
-                case StandardOperators.GreaterThan: name = "CompareTypesGreaterThan"; break;
-                case StandardOperators.LessThan: name = "CompareTypesLessThan"; break;
-                case StandardOperators.GreaterThanOrEqual: name = "CompareTypesGreaterThanOrEqual"; break;
-                case StandardOperators.LessThanOrEqual: name = "CompareTypesLessThanOrEqual"; break;
-                case StandardOperators.Compare: name = "CompareTypes"; break;
+                case PythonOperationKind.Equal: name = "CompareTypesEqual"; break;
+                case PythonOperationKind.NotEqual: name = "CompareTypesNotEqual"; break;
+                case PythonOperationKind.GreaterThan: name = "CompareTypesGreaterThan"; break;
+                case PythonOperationKind.LessThan: name = "CompareTypesLessThan"; break;
+                case PythonOperationKind.GreaterThanOrEqual: name = "CompareTypesGreaterThanOrEqual"; break;
+                case PythonOperationKind.LessThanOrEqual: name = "CompareTypesLessThanOrEqual"; break;
+                case PythonOperationKind.Compare: name = "CompareTypes"; break;
                 default: throw new InvalidOperationException();
             }
             return typeof(PythonOps).GetMethod(name);
@@ -2029,7 +2127,7 @@ namespace IronPython.Runtime.Binding {
             );
         }
         
-        private static DynamicMetaObject/*!*/ MakeRuleForNoMatch(OperationBinder/*!*/ operation, string/*!*/ op, params DynamicMetaObject/*!*/[]/*!*/ types) {
+        private static DynamicMetaObject/*!*/ MakeRuleForNoMatch(DynamicMetaObjectBinder/*!*/ operation, PythonOperationKind op, params DynamicMetaObject/*!*/[]/*!*/ types) {
             // we get the error message w/ {0}, {1} so that TypeError formats it correctly
             return TypeError(
                    operation,
@@ -2037,71 +2135,82 @@ namespace IronPython.Runtime.Binding {
                    types);
         }
 
-        internal static string/*!*/ MakeUnaryOpErrorMessage(string/*!*/ op, string/*!*/ xType) {
-            return string.Format("unsupported operand type for {1}: '{0}'", xType, op);
+        internal static string/*!*/ MakeUnaryOpErrorMessage(SymbolId op, string/*!*/ xType) {
+            if (op == Symbols.OperatorOnesComplement) {
+                return string.Format("bad operand type for unary ~: '{0}'", xType);
+            } else if (op == Symbols.AbsoluteValue) {
+                return string.Format("bad operand type for abs(): '{0}'", xType);
+            } else if (op == Symbols.Positive) {
+                return string.Format("bad operand type for unary +: '{0}'", xType);
+            } else if (op == Symbols.OperatorNegate) {
+                return string.Format("bad operand type for unary -: '{0}'", xType);
+            }
+
+            // unreachable
+            throw new InvalidOperationException();
         }
 
 
-        internal static string/*!*/ MakeBinaryOpErrorMessage(string op, string/*!*/ xType, string/*!*/ yType) {
+        internal static string/*!*/ MakeBinaryOpErrorMessage(PythonOperationKind op, string/*!*/ xType, string/*!*/ yType) {
             return string.Format("unsupported operand type(s) for {2}: '{0}' and '{1}'",
                                 xType, yType, GetOperatorDisplay(op));
         }
 
-        private static string/*!*/ GetOperatorDisplay(string op) {
+        private static string/*!*/ GetOperatorDisplay(PythonOperationKind op) {
             op = NormalizeOperator(op);
 
             switch (op) {
-                case StandardOperators.Add: return "+";
-                case StandardOperators.Subtract: return "-";
-                case StandardOperators.Power: return "**";
-                case StandardOperators.Multiply: return "*";
-                case StandardOperators.FloorDivide: return "/";
-                case StandardOperators.Divide: return "/";
-                case StandardOperators.TrueDivide: return "//";
-                case StandardOperators.Mod: return "%";
-                case StandardOperators.LeftShift: return "<<";
-                case StandardOperators.RightShift: return ">>";
-                case StandardOperators.BitwiseAnd: return "&";
-                case StandardOperators.BitwiseOr: return "|";
-                case StandardOperators.ExclusiveOr: return "^";
-                case StandardOperators.LessThan: return "<";
-                case StandardOperators.GreaterThan: return ">";
-                case StandardOperators.LessThanOrEqual: return "<=";
-                case StandardOperators.GreaterThanOrEqual: return ">=";
-                case StandardOperators.Equal: return "==";
-                case StandardOperators.NotEqual: return "!=";
-                case StandardOperators.LessThanGreaterThan: return "<>";
-                case StandardOperators.InPlaceAdd: return "+=";
-                case StandardOperators.InPlaceSubtract: return "-=";
-                case StandardOperators.InPlacePower: return "**=";
-                case StandardOperators.InPlaceMultiply: return "*=";
-                case StandardOperators.InPlaceFloorDivide: return "/=";
-                case StandardOperators.InPlaceDivide: return "/=";
-                case StandardOperators.InPlaceTrueDivide: return "//=";
-                case StandardOperators.InPlaceMod: return "%=";
-                case StandardOperators.InPlaceLeftShift: return "<<=";
-                case StandardOperators.InPlaceRightShift: return ">>=";
-                case StandardOperators.InPlaceBitwiseAnd: return "&=";
-                case StandardOperators.InPlaceBitwiseOr: return "|=";
-                case StandardOperators.InPlaceExclusiveOr: return "^=";
-                case OperatorStrings.ReverseAdd: return "+";
-                case OperatorStrings.ReverseSubtract: return "-";
-                case OperatorStrings.ReversePower: return "**";
-                case OperatorStrings.ReverseMultiply: return "*";
-                case OperatorStrings.ReverseFloorDivide: return "/";
-                case OperatorStrings.ReverseDivide: return "/";
-                case OperatorStrings.ReverseTrueDivide: return "//";
-                case OperatorStrings.ReverseMod: return "%";
-                case OperatorStrings.ReverseLeftShift: return "<<";
-                case OperatorStrings.ReverseRightShift: return ">>";
-                case OperatorStrings.ReverseBitwiseAnd: return "&";
-                case OperatorStrings.ReverseBitwiseOr: return "|";
-                case OperatorStrings.ReverseExclusiveOr: return "^";
+                case PythonOperationKind.Add: return "+";
+                case PythonOperationKind.Subtract: return "-";
+                case PythonOperationKind.Power: return "**";
+                case PythonOperationKind.Multiply: return "*";
+                case PythonOperationKind.FloorDivide: return "/";
+                case PythonOperationKind.Divide: return "/";
+                case PythonOperationKind.TrueDivide: return "//";
+                case PythonOperationKind.Mod: return "%";
+                case PythonOperationKind.LeftShift: return "<<";
+                case PythonOperationKind.RightShift: return ">>";
+                case PythonOperationKind.BitwiseAnd: return "&";
+                case PythonOperationKind.BitwiseOr: return "|";
+                case PythonOperationKind.ExclusiveOr: return "^";
+                case PythonOperationKind.LessThan: return "<";
+                case PythonOperationKind.GreaterThan: return ">";
+                case PythonOperationKind.LessThanOrEqual: return "<=";
+                case PythonOperationKind.GreaterThanOrEqual: return ">=";
+                case PythonOperationKind.Equal: return "==";
+                case PythonOperationKind.NotEqual: return "!=";
+                case PythonOperationKind.LessThanGreaterThan: return "<>";
+                case PythonOperationKind.InPlaceAdd: return "+=";
+                case PythonOperationKind.InPlaceSubtract: return "-=";
+                case PythonOperationKind.InPlacePower: return "**=";
+                case PythonOperationKind.InPlaceMultiply: return "*=";
+                case PythonOperationKind.InPlaceFloorDivide: return "/=";
+                case PythonOperationKind.InPlaceDivide: return "/=";
+                case PythonOperationKind.InPlaceTrueDivide: return "//=";
+                case PythonOperationKind.InPlaceMod: return "%=";
+                case PythonOperationKind.InPlaceLeftShift: return "<<=";
+                case PythonOperationKind.InPlaceRightShift: return ">>=";
+                case PythonOperationKind.InPlaceBitwiseAnd: return "&=";
+                case PythonOperationKind.InPlaceBitwiseOr: return "|=";
+                case PythonOperationKind.InPlaceExclusiveOr: return "^=";
+                case PythonOperationKind.ReverseAdd: return "+";
+                case PythonOperationKind.ReverseSubtract: return "-";
+                case PythonOperationKind.ReversePower: return "**";
+                case PythonOperationKind.ReverseMultiply: return "*";
+                case PythonOperationKind.ReverseFloorDivide: return "/";
+                case PythonOperationKind.ReverseDivide: return "/";
+                case PythonOperationKind.ReverseTrueDivide: return "//";
+                case PythonOperationKind.ReverseMod: return "%";
+                case PythonOperationKind.ReverseLeftShift: return "<<";
+                case PythonOperationKind.ReverseRightShift: return ">>";
+                case PythonOperationKind.ReverseBitwiseAnd: return "&";
+                case PythonOperationKind.ReverseBitwiseOr: return "|";
+                case PythonOperationKind.ReverseExclusiveOr: return "^";
                 default: return op.ToString();
             }
         }
 
-        private static DynamicMetaObject/*!*/ MakeBinaryThrow(OperationBinder/*!*/action, string/*!*/ op, DynamicMetaObject/*!*/[]/*!*/ args) {
+        private static DynamicMetaObject/*!*/ MakeBinaryThrow(DynamicMetaObjectBinder/*!*/ action, PythonOperationKind op, DynamicMetaObject/*!*/[]/*!*/ args) {
             if (action is IPythonSite) {
                 // produce the custom Python error message
                 return new DynamicMetaObject(
@@ -2118,7 +2227,7 @@ namespace IronPython.Runtime.Binding {
             }
 
             // let the site produce its own error
-            return action.FallbackOperation(args[0], new[] { args[1] });
+            return GenericFallback(action, args);
         }
 
         private static List<string/*!*/>/*!*/ GetMemberNames(CodeContext/*!*/ context, PythonType/*!*/ pt, object value) {
@@ -2139,7 +2248,7 @@ namespace IronPython.Runtime.Binding {
         /// Produces an error message for the provided message and type names.  The error message should contain
         /// string formatting characters ({0}, {1}, etc...) for each of the type names.
         /// </summary>
-        public static DynamicMetaObject/*!*/ TypeError(OperationBinder/*!*/ action, string message, params DynamicMetaObject[] types) {
+        public static DynamicMetaObject/*!*/ TypeError(DynamicMetaObjectBinder/*!*/ action, string message, params DynamicMetaObject[] types) {
             if (action is IPythonSite) {
                 // produce our custom errors for Python...
                 Expression[] formatArgs = new Expression[types.Length + 1];
@@ -2166,7 +2275,23 @@ namespace IronPython.Runtime.Binding {
                 );
             }
 
-            return action.FallbackOperation(types[0], ArrayUtils.RemoveFirst(types));
+            return GenericFallback(action, types);
+        }
+
+        private static DynamicMetaObject GenericFallback(DynamicMetaObjectBinder action, DynamicMetaObject[] types) {
+            if (action is GetIndexBinder) {
+                return ((GetIndexBinder)action).FallbackGetIndex(types[0], ArrayUtils.RemoveFirst(types));
+            } else if (action is SetIndexBinder) {
+                return ((SetIndexBinder)action).FallbackSetIndex(types[0], ArrayUtils.RemoveLast(ArrayUtils.RemoveFirst(types)), types[types.Length - 1]);
+            } else if (action is DeleteIndexBinder) {
+                return ((DeleteIndexBinder)action).FallbackDeleteIndex(types[0], ArrayUtils.RemoveFirst(types));
+            } else if (action is UnaryOperationBinder) {
+                return ((UnaryOperationBinder)action).FallbackUnaryOperation(types[0]);
+            } else if (action is BinaryOperationBinder) {
+                return ((BinaryOperationBinder)action).FallbackBinaryOperation(types[0], types[1]);
+            } else {
+                throw new NotImplementedException();
+            }
         }
     }
 }

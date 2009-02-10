@@ -68,17 +68,17 @@ namespace IronPython.Compiler.Ast {
             return read;
         }
 
-        internal override MSAst.Expression TransformSet(AstGenerator ag, SourceSpan span, MSAst.Expression right, Operators op) {
+        internal override MSAst.Expression TransformSet(AstGenerator ag, SourceSpan span, MSAst.Expression right, PythonOperationKind op) {
             MSAst.Expression variable = _reference.Variable;
             MSAst.Expression assignment;
 
             Type vt = variable != null ? variable.Type : typeof(object);
 
-            if (op != Operators.None) {
+            if (op != PythonOperationKind.None) {
                 right = Binders.Operation(
                     ag.BinderState,
                     vt,
-                    StandardOperators.FromOperator(op),
+                    op,
                     Transform(ag, vt),
                     right
                 );

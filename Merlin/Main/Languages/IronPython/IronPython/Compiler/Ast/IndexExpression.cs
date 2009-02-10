@@ -43,25 +43,22 @@ namespace IronPython.Compiler.Ast {
         }
 
         internal override MSAst.Expression Transform(AstGenerator ag, Type type) {
-            return Binders.Operation(
-                ag.BinderState,
-                type,
-                GetOperatorString,
-                ArrayUtils.RemoveFirst(GetActionArgumentsForGetOrDelete(ag))
-            );
+            if (IsSlice) {
+                return Binders.GetSlice(ag.BinderState, type, GetActionArgumentsForGetOrDelete(ag));
+            }
+            return Binders.GetIndex(ag.BinderState, type, GetActionArgumentsForGetOrDelete(ag));
         }
 
         private MSAst.Expression[] GetActionArgumentsForGetOrDelete(AstGenerator ag) {
             TupleExpression te = _index as TupleExpression;
             if (te != null && te.IsExpandable) {
-                return ArrayUtils.Insert(AstUtils.CodeContext(), ag.Transform(_target), ag.Transform(te.Items));
+                return ArrayUtils.Insert(ag.Transform(_target), ag.Transform(te.Items));
             }
 
             SliceExpression se = _index as SliceExpression;
             if (se != null) {
                 if (se.StepProvided) {
-                    return new MSAst.Expression[] { 
-                        AstUtils.CodeContext(),
+                    return new [] { 
                         ag.Transform(_target),
                         GetSliceValue(ag, se.SliceStart),
                         GetSliceValue(ag, se.SliceStop),
@@ -69,15 +66,14 @@ namespace IronPython.Compiler.Ast {
                     };
                 }
 
-                return new MSAst.Expression[] { 
-                    AstUtils.CodeContext(),
+                return new[] { 
                     ag.Transform(_target),
                     GetSliceValue(ag, se.SliceStart),
                     GetSliceValue(ag, se.SliceStop)
                 };
             }
 
-            return new MSAst.Expression[] { AstUtils.CodeContext(), ag.Transform(_target), ag.Transform(_index) };
+            return new[] { ag.Transform(_target), ag.Transform(_index) };
         }
 
         private static MSAst.Expression GetSliceValue(AstGenerator ag, Expression expr) {
@@ -92,43 +88,36 @@ namespace IronPython.Compiler.Ast {
             return ArrayUtils.Append(GetActionArgumentsForGetOrDelete(ag), right);
         }
 
-        internal override MSAst.Expression TransformSet(AstGenerator ag, SourceSpan span, MSAst.Expression right, Operators op) {
-            if (op != Operators.None) {
+        internal override MSAst.Expression TransformSet(AstGenerator ag, SourceSpan span, MSAst.Expression right, PythonOperationKind op) {
+            if (op != PythonOperationKind.None) {
                 right = Binders.Operation(
                     ag.BinderState,
                     typeof(object),
-                    StandardOperators.FromOperator(op),
-                    Binders.Operation(
-                        ag.BinderState,
-                        typeof(object),
-                        GetOperatorString,
-                        ArrayUtils.RemoveFirst(GetActionArgumentsForGetOrDelete(ag))
-                    ),
+                    op,
+                    Transform(ag, typeof(object)),
                     right
                 );                
             }
+
+            MSAst.Expression index;
+            if (IsSlice) {
+                index = Binders.SetSlice(ag.BinderState, typeof(object), GetActionArgumentsForSet(ag, right));
+            } else {
+                index = Binders.SetIndex(ag.BinderState, typeof(object), GetActionArgumentsForSet(ag, right));
+            }
             
-            return ag.AddDebugInfoAndVoid(
-                Binders.Operation(
-                    ag.BinderState,
-                    typeof(object),
-                    SetOperatorString,
-                    ArrayUtils.RemoveFirst(GetActionArgumentsForSet(ag, right))
-                ),
-                Span
-            );
+            return ag.AddDebugInfoAndVoid(index, Span);
         }
 
         internal override MSAst.Expression TransformDelete(AstGenerator ag) {
-            return ag.AddDebugInfoAndVoid(
-                Binders.Operation(
-                    ag.BinderState,
-                    typeof(object),
-                    DeleteOperatorString,
-                    ArrayUtils.RemoveFirst(GetActionArgumentsForGetOrDelete(ag))
-                ),
-                Span
-            );
+            MSAst.Expression index;
+            if (IsSlice) {
+                index = Binders.DeleteSlice(ag.BinderState, typeof(object), GetActionArgumentsForGetOrDelete(ag));
+            } else {
+                index = Binders.DeleteIndex(ag.BinderState, typeof(object), GetActionArgumentsForGetOrDelete(ag));
+            }
+
+            return ag.AddDebugInfoAndVoid(index, Span);
         }
 
         public override void Walk(PythonWalker walker) {
@@ -143,33 +132,9 @@ namespace IronPython.Compiler.Ast {
             walker.PostWalk(this);
         }
 
-        private string GetOperatorString {
+        private bool IsSlice {
             get {
-                if (_index is SliceExpression) {
-                    return StandardOperators.GetSlice;
-                }
-
-                return StandardOperators.GetItem;
-            }
-        }
-
-        private string SetOperatorString {
-            get {
-                if (_index is SliceExpression) {
-                    return StandardOperators.SetSlice;
-                }
-
-                return StandardOperators.SetItem;
-            }
-        }
-
-        private string DeleteOperatorString {
-            get {
-                if (_index is SliceExpression) {
-                    return StandardOperators.DeleteSlice;
-                }
-
-                return StandardOperators.DeleteItem;
+                return _index is SliceExpression;
             }
         }
     }

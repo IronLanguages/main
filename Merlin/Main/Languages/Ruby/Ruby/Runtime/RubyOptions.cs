@@ -35,6 +35,7 @@ namespace IronRuby {
         private readonly RubyCompatibility _compatibility;
 #if DEBUG
         private static bool _UseThreadAbortForSyncRaise;
+        private static bool _CompileRegexps;
 #endif
 
         public ReadOnlyCollection<string>/*!*/ Arguments {
@@ -81,6 +82,10 @@ namespace IronRuby {
         public static bool UseThreadAbortForSyncRaise {
             get { return _UseThreadAbortForSyncRaise; }
         }
+
+        public static bool CompileRegexps {
+            get { return _CompileRegexps; }
+        }
 #endif
 
         public RubyOptions(IDictionary<string, object>/*!*/ options)
@@ -98,6 +103,7 @@ namespace IronRuby {
             _compatibility = GetCompatibility(options, "Compatibility", RubyCompatibility.Default);
 #if DEBUG
             _UseThreadAbortForSyncRaise = GetOption(options, "UseThreadAbortForSyncRaise", false);
+            _CompileRegexps = GetOption(options, "CompileRegexps", false);
 #endif
         }
 

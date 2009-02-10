@@ -16,8 +16,12 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+
 using Microsoft.Scripting;
 using Microsoft.Scripting.Runtime;
+
+using IronPython.Runtime.Binding;
+
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 using MSAst = System.Linq.Expressions;
 
@@ -324,7 +328,7 @@ namespace IronPython.Compiler.Ast {
                                 Ast.Constant(null)
                             ),
                             Ast.Block(
-                                tsh.Target.TransformSet(ag, SourceSpan.None, converted, Operators.None),
+                                tsh.Target.TransformSet(ag, SourceSpan.None, converted, PythonOperationKind.None),
                                 GetTracebackHeader(
                                     new SourceSpan(tsh.Start, tsh.Header),
                                     ag,

@@ -153,7 +153,7 @@ namespace IronPython.Compiler.Ast {
                         Binders.Operation(
                             ag.BinderState,
                             typeof(bool),
-                            StandardOperators.Contains,
+                            PythonOperationKind.Contains,
                             left,
                             right
                         )                            
@@ -162,8 +162,8 @@ namespace IronPython.Compiler.Ast {
                 );
             }
 
-            Operators action = PythonOperatorToAction(op);
-            if (action != Operators.None) {
+            PythonOperationKind action = PythonOperatorToAction(op);
+            if (action != PythonOperationKind.None) {
                 // Create action expression
                 if (op == PythonOperator.Divide &&
                     (ag.DivisionOptions == PythonDivisionOptions.Warn || ag.DivisionOptions == PythonDivisionOptions.WarnAll)) {
@@ -186,7 +186,7 @@ namespace IronPython.Compiler.Ast {
                         Binders.Operation(
                             ag.BinderState,
                             type,
-                            StandardOperators.FromOperator(action),
+                            action,
                             tempLeft,
                             tempRight
                         )
@@ -196,7 +196,7 @@ namespace IronPython.Compiler.Ast {
                 return Binders.Operation(
                     ag.BinderState,
                     type,
-                    StandardOperators.FromOperator(action),
+                    action,
                     left,
                     right
                 );
@@ -218,61 +218,61 @@ namespace IronPython.Compiler.Ast {
             walker.PostWalk(this);
         }
 
-        private static Operators PythonOperatorToAction(PythonOperator op) {
+        private static PythonOperationKind PythonOperatorToAction(PythonOperator op) {
             switch (op) {
                 // Binary
                 case PythonOperator.Add:
-                    return Operators.Add;
+                    return PythonOperationKind.Add;
                 case PythonOperator.Subtract:
-                    return Operators.Subtract;
+                    return PythonOperationKind.Subtract;
                 case PythonOperator.Multiply:
-                    return Operators.Multiply;
+                    return PythonOperationKind.Multiply;
                 case PythonOperator.Divide:
-                    return Operators.Divide;
+                    return PythonOperationKind.Divide;
                 case PythonOperator.TrueDivide:
-                    return Operators.TrueDivide;
+                    return PythonOperationKind.TrueDivide;
                 case PythonOperator.Mod:
-                    return Operators.Mod;
+                    return PythonOperationKind.Mod;
                 case PythonOperator.BitwiseAnd:
-                    return Operators.BitwiseAnd;
+                    return PythonOperationKind.BitwiseAnd;
                 case PythonOperator.BitwiseOr:
-                    return Operators.BitwiseOr;
+                    return PythonOperationKind.BitwiseOr;
                 case PythonOperator.Xor:
-                    return Operators.ExclusiveOr;
+                    return PythonOperationKind.ExclusiveOr;
                 case PythonOperator.LeftShift:
-                    return Operators.LeftShift;
+                    return PythonOperationKind.LeftShift;
                 case PythonOperator.RightShift:
-                    return Operators.RightShift;
+                    return PythonOperationKind.RightShift;
                 case PythonOperator.Power:
-                    return Operators.Power;
+                    return PythonOperationKind.Power;
                 case PythonOperator.FloorDivide:
-                    return Operators.FloorDivide;
+                    return PythonOperationKind.FloorDivide;
 
                 // Comparisons
                 case PythonOperator.LessThan:
-                    return Operators.LessThan;
+                    return PythonOperationKind.LessThan;
                 case PythonOperator.LessThanOrEqual:
-                    return Operators.LessThanOrEqual;
+                    return PythonOperationKind.LessThanOrEqual;
                 case PythonOperator.GreaterThan:
-                    return Operators.GreaterThan;
+                    return PythonOperationKind.GreaterThan;
                 case PythonOperator.GreaterThanOrEqual:
-                    return Operators.GreaterThanOrEqual;
+                    return PythonOperationKind.GreaterThanOrEqual;
                 case PythonOperator.Equal:
-                    return Operators.Equals;
+                    return PythonOperationKind.Equal;
                 case PythonOperator.NotEqual:
-                    return Operators.NotEquals;
+                    return PythonOperationKind.NotEqual;
 
                 case PythonOperator.In:
-                    return Operators.Contains;
+                    return PythonOperationKind.Contains;
 
                 case PythonOperator.NotIn:
                 case PythonOperator.IsNot:
                 case PythonOperator.Is:
-                    return Operators.None;
+                    return PythonOperationKind.None;
 
                 default:
                     Debug.Assert(false, "Unexpected PythonOperator: " + op.ToString());
-                    return Operators.None;
+                    return PythonOperationKind.None;
             }
         }
 

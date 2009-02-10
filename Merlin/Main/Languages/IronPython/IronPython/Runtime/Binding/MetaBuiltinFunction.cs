@@ -34,7 +34,7 @@ using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace IronPython.Runtime.Binding {
 
-    class MetaBuiltinFunction : MetaPythonObject, IPythonInvokable {
+    class MetaBuiltinFunction : MetaPythonObject, IPythonInvokable, IPythonOperable {
         public MetaBuiltinFunction(Expression/*!*/ expression, BindingRestrictions/*!*/ restrictions, BuiltinFunction/*!*/ value)
             : base(expression, BindingRestrictions.Empty, value) {
             Assert.NotNull(value);
@@ -54,14 +54,13 @@ namespace IronPython.Runtime.Binding {
             return conversion.FallbackConvert(this);
         }
 
-        [Obsolete]
-        public override DynamicMetaObject BindOperation(OperationBinder action, DynamicMetaObject[] args) {
+        DynamicMetaObject IPythonOperable.BindOperation(PythonOperationBinder action, DynamicMetaObject[] args) {
             switch (action.Operation) {
-                case StandardOperators.CallSignatures:
+                case PythonOperationKind.CallSignatures:
                     return PythonProtocol.MakeCallSignatureOperation(this, Value.Targets);
             }
 
-            return base.BindOperation(action, args);
+            return null;
         }
 
         #endregion

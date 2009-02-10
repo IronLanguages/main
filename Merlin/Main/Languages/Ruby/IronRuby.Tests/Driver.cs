@@ -23,6 +23,9 @@ using System.Security.Policy;
 using Microsoft.Scripting.Generation;
 using Microsoft.Scripting.Hosting;
 using IronRuby.Runtime;
+using Microsoft.Scripting;
+using System.Diagnostics;
+using System.Reflection;
 
 namespace IronRuby.Tests {
     public class TestCase {
@@ -85,8 +88,10 @@ namespace IronRuby.Tests {
 
         private Tests _tests;
 
+        private readonly List<Tuple<string, StackFrame, string, object>>/*!*/ _failedAssertions = new List<Tuple<string, StackFrame, string, object>>();
+        private readonly List<Tuple<string, Exception>>/*!*/ _unexpectedExceptions = new List<Tuple<string, Exception>>();
+
         private TestRuntime _testRuntime; 
-        private static bool _interpretedMode;
         private static bool _excludeSelectedCases;
         private static bool _isDebug;
         private static bool _runTokenizerDriver;
@@ -99,12 +104,16 @@ namespace IronRuby.Tests {
             get { return _testRuntime; }
         }
 
-        public bool IsDebug {
-            get { return _isDebug; }
+        public List<Tuple<string, StackFrame, string, object>>/*!*/ FailedAssertions {
+            get { return _failedAssertions; }
         }
 
-        public bool InterpretedMode {
-            get { return _interpretedMode; }
+        public List<Tuple<string, Exception>>/*!*/ UnexpectedExceptions {
+            get { return _unexpectedExceptions; }
+        }
+
+        public bool IsDebug {
+            get { return _isDebug; }
         }
 
         public bool PartialTrust {
@@ -121,7 +130,6 @@ namespace IronRuby.Tests {
 
         private static bool ParseArguments(List<string>/*!*/ args) {
             if (args.Contains("/help") || args.Contains("-?") || args.Contains("/?") || args.Contains("-help")) {
-                Console.WriteLine("Run All Tests              : [-X:Interpret]");
                 Console.WriteLine("Partial trust              : /partial");
                 Console.WriteLine("Interpret                  : /interpret");
                 Console.WriteLine("Run Python interop tests   : /py");
@@ -147,6 +155,11 @@ namespace IronRuby.Tests {
                 _partialTrust = true;
             }
 
+            if (args.Contains("-X:Interpret")) {
+                args.Remove("-X:Interpret");
+                _interpret = true;
+            }
+
             if (args.Contains("/interpret")) {
                 args.Remove("/interpret");
                 _interpret = true;
@@ -160,11 +173,6 @@ namespace IronRuby.Tests {
             if (args.Contains("/exclude")) {
                 _excludeSelectedCases = true;
                 args.Remove("/exclude");
-            }
-
-            if (args.Contains("-X:Interpret")) {
-                args.Remove("-X:Interpret");
-                _interpretedMode = true;
             }
 
             if (args.Contains("/tokenizer")) {
@@ -285,8 +293,6 @@ namespace IronRuby.Tests {
         private void RunManualTest() {
             Console.WriteLine("Running hardcoded test case");
             
-            int failureCount = 0;
-
             if (Manual.ParseOnly) {
                 _testRuntime = new TestRuntime(this, new TestCase { Name = "<manual>" });
                 Tests.GetRubyTokens(_testRuntime.Context, new LoggingErrorSink(false), Manual.TestCode, !Manual.DumpReductions, Manual.DumpReductions);                
@@ -301,7 +307,7 @@ namespace IronRuby.Tests {
                     RunTestCase(new TestCase() {
                         Name = "$manual$",
                         TestMethod = () => _tests.CompilerTest(Manual.TestCode),
-                    }, ref failureCount);
+                    });
 
                 } finally {
                     for (int i = 0; i < Manual.RequiredFiles.Length; i += 2) {
@@ -316,8 +322,6 @@ namespace IronRuby.Tests {
         }
 
         private int RunUnitTests(List<string>/*!*/ largs) {
-
-            int failureCount = 0;
 
             _tests = new Tests(this);
             
@@ -353,10 +357,52 @@ namespace IronRuby.Tests {
             }
 
             foreach (TestCase testCase in selectedCases) {
-                RunTestCase(testCase, ref failureCount);
+                RunTestCase(testCase);
             }
 
-            return failureCount;
+            var failedCases = new List<string>();
+            if (_failedAssertions.Count > 0) {
+                for (int i = 0; i < _failedAssertions.Count; i++) {
+                    string test = _failedAssertions[i].Item000;
+                    StackFrame frame = _failedAssertions[i].Item001;
+                    string message = _failedAssertions[i].Item002;
+                    failedCases.Add(test);
+
+                    Console.Error.WriteLine();
+                    Console.ForegroundColor = ConsoleColor.Red;
+                    Console.Error.WriteLine("{0}) {1} {2} : {3}", failedCases.Count, test, frame.GetFileName(), frame.GetFileLineNumber());
+                    Console.ForegroundColor = ConsoleColor.Gray;
+                    Console.Error.WriteLine(message);
+                }
+            }
+
+            if (_unexpectedExceptions.Count > 0) {
+                for (int i = 0; i < _unexpectedExceptions.Count; i++) {
+                    string test = _unexpectedExceptions[i].Item000;
+                    Exception exception = _unexpectedExceptions[i].Item001;
+
+                    Console.Error.WriteLine();
+                    Console.ForegroundColor = ConsoleColor.Red;
+                    Console.Error.WriteLine("{0}) {1} (unexpected exception)", failedCases.Count, test);
+                    Console.ForegroundColor = ConsoleColor.Gray;
+                    Console.Error.WriteLine(exception);
+                    failedCases.Add(test);
+                }
+            }
+
+            if (failedCases.Count == 0) {
+                Console.ForegroundColor = ConsoleColor.Green;
+                Console.WriteLine("PASSED");
+                Console.ForegroundColor = ConsoleColor.Gray;
+            } else {
+                Console.WriteLine();
+                Console.Write("Repro: {0}", Environment.CommandLine);
+                if (largs.Count == 0) {
+                    Console.Write(" {0}", String.Join(" ", failedCases.ToArray()));
+                }
+                Console.WriteLine();
+            }
+            return failedCases.Count;
         }
 
         private void AddTestCases(IList<TestCase>/*!*/ cases, Action/*!*/ testMethod) {
@@ -377,7 +423,7 @@ namespace IronRuby.Tests {
             }
         }
 
-        private void RunTestCase(TestCase/*!*/ testCase, ref int failedCount) {
+        private void RunTestCase(TestCase/*!*/ testCase) {
             _testRuntime = new TestRuntime(this, testCase);
 
             Console.WriteLine("Executing {0}", testCase.Name);
@@ -385,11 +431,35 @@ namespace IronRuby.Tests {
             try {
                 testCase.TestMethod();
             } catch (Exception e) {
-                Console.Error.WriteLine(e);
-                failedCount++;
+                PrintTestCaseFailed();
+                _unexpectedExceptions.Add(new Tuple<string, Exception>(testCase.Name, e));
             } finally {
                 Snippets.SaveAndVerifyAssemblies();
             }
+        }
+
+        private void PrintTestCaseFailed() {
+            Console.ForegroundColor = ConsoleColor.Red;
+            Console.WriteLine("> FAILED");
+            Console.ForegroundColor = ConsoleColor.Gray;
+        }
+
+        [DebuggerHiddenAttribute]
+        internal void AssertionFailed(string/*!*/ msg) {
+            var trace = new StackTrace(true);
+            StackFrame frame = null;
+            for (int i = 0; i < trace.FrameCount; i++) {
+                frame = trace.GetFrame(i);
+                var method = frame.GetMethod();
+                if (!method.IsDefined(typeof(DebuggerHiddenAttribute), true)) {
+                    break;
+                }
+            }
+
+            Debug.Assert(frame != null);
+
+            _failedAssertions.Add(new Tuple<string, StackFrame, string, object>(_testRuntime.TestName, frame, msg, null));
+            PrintTestCaseFailed();
         }
 
         internal string/*!*/ MakeTempDir() {

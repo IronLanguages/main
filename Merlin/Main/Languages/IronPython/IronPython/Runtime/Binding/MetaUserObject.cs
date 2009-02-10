@@ -90,9 +90,12 @@ namespace IronPython.Runtime.Binding {
             );
         }
 
-        [Obsolete]
-        public override DynamicMetaObject/*!*/ BindOperation(OperationBinder/*!*/ operation, params DynamicMetaObject/*!*/[]/*!*/ args) {
-            return PythonProtocol.Operation(operation, ArrayUtils.Insert(this, args));
+        public override DynamicMetaObject BindBinaryOperation(BinaryOperationBinder binder, DynamicMetaObject arg) {
+            return PythonProtocol.Operation(binder, this, arg);
+        }
+
+        public override DynamicMetaObject BindUnaryOperation(UnaryOperationBinder binder) {
+            return PythonProtocol.Operation(binder, this);
         }
 
         public override DynamicMetaObject/*!*/ BindInvoke(InvokeBinder/*!*/ action, DynamicMetaObject/*!*/[]/*!*/ args) {

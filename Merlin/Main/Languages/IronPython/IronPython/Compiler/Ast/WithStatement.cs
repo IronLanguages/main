@@ -158,7 +158,7 @@ namespace IronPython.Compiler.Ast {
                         ag.AddDebugInfo(
                             Ast.Block(
                 // VAR = value
-                                _var.TransformSet(ag, SourceSpan.None, value, Operators.None),
+                                _var.TransformSet(ag, SourceSpan.None, value, PythonOperationKind.None),
                 // BLOCK
                                 ag.Transform(_body),
                                 Ast.Empty()
@@ -188,7 +188,7 @@ namespace IronPython.Compiler.Ast {
                                 Binders.Operation(
                                     ag.BinderState,
                                     typeof(object),
-                                    StandardOperators.Not,
+                                    PythonOperationKind.Not,
                                     MakeExitCall(ag, exit, exception)
                                 )
                             ),

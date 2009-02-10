@@ -29,6 +29,9 @@ namespace IronRuby.Builtins {
         public abstract bool IsEmpty { get; }
         public RubyRegexOptions Options { get { return _options; } }
         public abstract MutableString/*!*/ GetPattern();
+#if DEBUG
+        public abstract string/*!*/ GetTransformedPattern();
+#endif
 
         public abstract Match/*!*/ Match(MutableString/*!*/ input, int start, int count);
         public abstract Match/*!*/ ReverseMatch(MutableString/*!*/ input, int start);
@@ -84,6 +87,11 @@ namespace IronRuby.Builtins {
             return MutableString.CreateBinary(_pattern);
         }
 
+#if DEBUG
+        public override string/*!*/ GetTransformedPattern() {
+            throw new NotImplementedException();
+        }
+#endif
         public override MutableString[]/*!*/ Split(MutableString/*!*/ input, int count, int start) {
             throw new NotImplementedException();
         }
@@ -97,6 +105,8 @@ namespace IronRuby.Builtins {
     public class StringRegex : GenericRegex {
         internal static readonly StringRegex Empty = new StringRegex(new Regex(String.Empty, RubyRegex.ToClrOptions(RubyRegexOptions.NONE)));
 
+        private const int EndOfPattern = -1;
+
         private readonly Regex/*!*/ _regex;
         private readonly string/*!*/ _pattern;
 
@@ -105,7 +115,7 @@ namespace IronRuby.Builtins {
             Assert.NotNull(pattern);
             _pattern = pattern;
 
-            string transformed = TransformPattern(pattern, options);
+            string transformed = RegexpTransformer.Transform(pattern, options);
             try {
                 _regex = new Regex(transformed, RubyRegex.ToClrOptions(options));
             } catch (ArgumentException e) {
@@ -149,6 +159,11 @@ namespace IronRuby.Builtins {
             return MutableString.Create(_pattern);
         }
 
+#if DEBUG
+        public override string/*!*/ GetTransformedPattern() {
+            return _regex.ToString();
+        }
+#endif
         public override MutableString[]/*!*/ Split(MutableString/*!*/ input, int count, int start) {
             return MutableString.MakeArray(_regex.Split(input.ConvertToString(), count, start));
         }
@@ -198,7 +213,7 @@ namespace IronRuby.Builtins {
             }
 
             escaped = '\0';
-            return -1;
+            return EndOfPattern;
         }
 
         internal static string/*!*/ Escape(string/*!*/ pattern) {
@@ -211,7 +226,7 @@ namespace IronRuby.Builtins {
             char escaped;
             int i = SkipNonSpecial(pattern, 0, out escaped);
 
-            if (i == -1) {
+            if (i == EndOfPattern) {
                 return null;
             }
 
@@ -236,141 +251,8 @@ namespace IronRuby.Builtins {
             return result;
         }
 
-        private static int SkipWellEscaped(string/*!*/ pattern, int i) {
-            while (i < pattern.Length - 1) {
-                if (pattern[i] == '\\') {
-                    switch (pattern[i + 1]) {
-                        // metacharacters:
-                        case '$':
-                        case '^':
-                        case '|':
-                        case '[':
-                        case ']':
-                        case '(':
-                        case ')':
-                        case '\\':
-                        case '.':
-                        case '#':
-                        case '-':
-
-                        case '{':
-                        case '}':
-                        case '*':
-                        case '+':
-                        case '?':
-
-                        case '0': // octal
-                        case 't':
-                        case 'v':
-                        case 'n':
-                        case 'r':
-                        case 'f':
-                        case 'a':
-                        case 'e': // characters
-
-                        case 'b': // word boundary or backslash in character group
-                        case 'B': // not word boundary
-                        case 'A': // beginning of string
-                        case 'Z': // end of string, or before newline at the end
-                        case 'z': // end of string
-                        case 'G':
-
-                        case 'd':
-                        case 'D':
-                        case 's':
-                        case 'S':
-                        case 'w': // word character 
-                        case 'W': // non word char
-                        // TODO: may need non-Unicode adjustment
-
-                        case 'C': // control characters
-                        case 'M': // meta characters
-                        // TODO: replace
-
-                        // Oniguruma + .NET - character classes, they don't match so some fixups would be needed
-                        // MRI: doesn't support, but is also an error since it is followed by {name}, which is illegal
-                        case 'p':
-                        case 'P':
-                            // keep
-                            break;
-
-                        default:
-                            return i;
-                    }
-                    i += 2;
-                } else {
-                    i += 1;
-                }
-            }
-            return -1;
-        }
-
-        // fixes escapes
-        // - unescapes non-special characters
-        // - fixes \xF     -> \x0F
         internal static string/*!*/ TransformPattern(string/*!*/ pattern, RubyRegexOptions options) {
-
-            int first = 0;
-            int i = SkipWellEscaped(pattern, 0);
-
-            // trailing backslash is an error in both MRI, .NET
-            if (i == -1) {
-                return pattern;
-            }
-
-            StringBuilder result = new StringBuilder(pattern.Length);
-
-            do {
-                Debug.Assert(i + 1 < pattern.Length);
-                Debug.Assert(pattern[i] == '\\');
-
-                result.Append(pattern, first, i - first);
-                i++;
-
-                char c = pattern[i++];
-                switch (c) {
-                    case 'x':
-                        result.Append('\\');
-                        result.Append('x');
-
-                        // error:
-                        if (i == pattern.Length) {
-                            break;
-                        }
-
-                        // fix single digit:
-                        c = pattern[i++];
-                        if (i == pattern.Length || !Tokenizer.IsHexadecimalDigit(pattern[i])) {
-                            result.Append('0');
-                        }
-                        result.Append(c);
-                        break;
-
-                    case 'h': // Oniguruma only: [0-9A-Fa-f]
-                    case 'H': // Oniguruma only: [^0-9A-Fa-f]
-                    case 'g': // Oniguruma only
-                    case 'k': // Oniguruma, .NET: named backreference, MRI not supported
-                    // remove backslash
-
-                    default:
-                        if (Tokenizer.IsDecimalDigit(c)) {
-                            // TODO:
-                            // \([1-9][0-9]*) where there is no group of such number (replace by an empty string)
-                            result.Append('\\');
-                        }
-
-                        // .NET throws invalid escape exception, remove backslash:
-                        result.Append(c);
-                        break;
-                }
-                Debug.Assert(i <= pattern.Length);
-
-                first = i;
-                i = SkipWellEscaped(pattern, i);
-            } while (i >= 0);
-
-            result.Append(pattern, first, pattern.Length - first);
-            return result.ToString();
+            return RegexpTransformer.Transform(pattern, options);
         }
     }
 }

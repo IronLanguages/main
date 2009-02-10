@@ -333,13 +333,15 @@ namespace System.Linq.Expressions {
         // Standard argument validation, taken from ValidateArgumentTypes
         private static void ValidateGotoType(Type expectedType, ref Expression value, string paramName) {
             RequiresCanRead(value, paramName);
-            if (!TypeUtils.AreReferenceAssignable(expectedType, value.Type)) {
-                // C# autoquotes return values, so we'll do that here
-                if (TypeUtils.IsSameOrSubclass(typeof(LambdaExpression), expectedType) &&
-                    expectedType.IsAssignableFrom(value.GetType())) {
-                    value = Expression.Quote(value);
+            if (expectedType != typeof(void)) {
+                if (!TypeUtils.AreReferenceAssignable(expectedType, value.Type)) {
+                    // C# autoquotes return values, so we'll do that here
+                    if (TypeUtils.IsSameOrSubclass(typeof(LambdaExpression), expectedType) &&
+                        expectedType.IsAssignableFrom(value.GetType())) {
+                        value = Expression.Quote(value);
+                    }
+                    throw Error.ExpressionTypeDoesNotMatchLabel(value.Type, expectedType);
                 }
-                throw Error.ExpressionTypeDoesNotMatchLabel(value.Type, expectedType);
             }
         }
 

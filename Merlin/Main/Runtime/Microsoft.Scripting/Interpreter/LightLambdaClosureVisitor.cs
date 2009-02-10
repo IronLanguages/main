@@ -279,12 +279,7 @@ namespace Microsoft.Scripting.Interpreter {
                 var variable = (ParameterExpression)node.Left;
                 Expression box = GetBox(variable);
                 if (box != null) {
-                    // Currently we support jumping into RHS of assignment, but
-                    // only if the lvalue is a parameter. So we need to do the
-                    // reduction a bit differently.
-
-                    // This also handles the fact that we need to convert to
-                    // object to store the value in the box.
+                    // We need to convert to object to store the value in the box.
                     return Expression.Block(
                         new[] { variable },
                         Expression.Assign(variable, Visit(node.Right)), 

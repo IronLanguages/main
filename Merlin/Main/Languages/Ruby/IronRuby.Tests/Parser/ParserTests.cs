@@ -927,15 +927,15 @@ add 'foo', 'bar'
         }
 
         private AssertTokenizer/*!*/ AssertTokenBigInteger(string/*!*/ source, uint @base) {
-            return new AssertTokenizer(Context).Load(source).ReadBigInteger(source.Replace("_", "").TrimStart('0'), @base);
+            return new AssertTokenizer(this).Load(source).ReadBigInteger(source.Replace("_", "").TrimStart('0'), @base);
         }
 
         private AssertTokenizer/*!*/ AssertTokens(string/*!*/ source) {
-            return new AssertTokenizer(Context).Load(source);
+            return new AssertTokenizer(this).Load(source);
         }
 
         private AssertTokenizer/*!*/ AssertTokens() {
-            return new AssertTokenizer(Context);
+            return new AssertTokenizer(this);
         }
 
         #endregion

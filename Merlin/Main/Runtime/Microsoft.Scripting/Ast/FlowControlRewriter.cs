@@ -306,12 +306,13 @@ namespace Microsoft.Scripting.Ast {
 
                     var assignFlow = Expression.Assign(_flowVariable, Expression.Constant(info.FlowState));
                     var gotoFlow = Expression.Goto(block.FlowLabel);
+                    Expression value;
                     if (info.Variable == null) {
-                        return Expression.Block(assignFlow, gotoFlow);
+                        value = node.Value ?? Expression.Empty();
+                    } else {
+                        value = Expression.Assign(info.Variable, node.Value);
                     }
-
-                    var saveValue = Expression.Assign(info.Variable, node.Value);
-                    return Expression.Block(saveValue, assignFlow, gotoFlow);
+                    return Expression.Block(value, assignFlow, gotoFlow);
                 }
             }
             return base.VisitGoto(node);

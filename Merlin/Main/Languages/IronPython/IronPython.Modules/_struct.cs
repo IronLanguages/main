@@ -57,6 +57,20 @@ namespace IronPython.Modules {
             private int _encodingSize = -1;         // the number of bytes read/produced by the format
             private WeakRefTracker _tracker;        // storage for weak proxy's
 
+            private void Initialize(Struct s) {
+                _formatString = s._formatString;
+                _formats = s._formats;
+                _isStandardized = s._isStandardized;
+                _isLittleEndian = s._isLittleEndian;
+                _encodingCount = s._encodingCount;
+                _encodingSize = s._encodingSize;
+                _tracker = s._tracker;
+            }
+
+            internal Struct(CodeContext/*!*/ context, [NotNull]string/*!*/ fmt) {
+                __init__(context, fmt);
+            }
+
             #region Python construction
 
             [Documentation("creates a new uninitialized struct object - all arguments are ignored")]
@@ -72,7 +86,13 @@ namespace IronPython.Modules {
                 ContractUtils.RequiresNotNull(fmt, "fmt");
 
                 _formatString = fmt;
-                Compile(context, fmt);
+
+                Struct s;
+                if (_cache.TryGetValue(_formatString, out s)) {
+                    Initialize(s);
+                } else {
+                    Compile(context, fmt);
+                }
             }
 
             #endregion
@@ -111,6 +131,9 @@ namespace IronPython.Modules {
                     switch (curFormat.Type) {
                         case FormatType.PadByte:
                             res.Append('\0', curFormat.Count);
+                            break;
+                        case FormatType.Bool:
+                            res.Append(GetBoolValue(context, curObj++, values) ? (char)1 : '\0');
                             break;
                         case FormatType.Char:
                             for (int j = 0; j < curFormat.Count; j++) {
@@ -234,6 +257,11 @@ namespace IronPython.Modules {
                         case FormatType.PadByte:
                             curIndex += curFormat.Count;
                             break;
+                        case FormatType.Bool:
+                            for (int j = 0; j < curFormat.Count; j++) {
+                                res.Add(CreateBoolValue(context, ref curIndex, data));
+                            }
+                            break;
                         case FormatType.Char:
                             for (int j = 0; j < curFormat.Count; j++) {
                                 res.Add(CreateCharValue(context, ref curIndex, data).ToString());
@@ -311,6 +339,14 @@ namespace IronPython.Modules {
                 return new PythonTuple(res);
             }
 
+            public PythonTuple/*!*/ unpack(CodeContext/*!*/ context, [NotNull]ArrayModule.PythonArray/*!*/ buffer) {
+                return unpack_from(context, buffer, 0);
+            }
+
+            public PythonTuple/*!*/ unpack(CodeContext/*!*/ context, [NotNull]PythonBuffer/*!*/ buffer) {
+                return unpack_from(context, buffer, 0);
+            }
+
             [Documentation("reads the current format from the specified array")]
             public PythonTuple/*!*/ unpack_from(CodeContext/*!*/ context, [NotNull]ArrayModule.PythonArray/*!*/ buffer, [DefaultParameterValue(0)] int offset) {
                 return unpack_from(context, StringOps.FromByteArray(buffer.ToByteArray()), offset);
@@ -368,6 +404,10 @@ namespace IronPython.Modules {
                     switch (fmt[i]) {
                         case 'x': // pad byte
                             res.Add(new Format(FormatType.PadByte, count));
+                            count = 1;
+                            break;
+                        case '?': // bool
+                            res.Add(new Format(FormatType.Bool, count));
                             count = 1;
                             break;
                         case 'c': // char
@@ -489,6 +529,8 @@ namespace IronPython.Modules {
 
                     _encodingSize += GetNativeSize(_formats[i].Type) * _formats[i].Count;
                 }
+
+                _cache.Add(fmt, this);
             }
 
             #endregion
@@ -515,6 +557,7 @@ namespace IronPython.Modules {
             None,
 
             PadByte,
+            Bool,
             Char,
             SignedChar,
             UnsignedChar,
@@ -542,6 +585,7 @@ namespace IronPython.Modules {
                 case FormatType.SignedChar:
                 case FormatType.UnsignedChar:
                 case FormatType.PadByte:
+                case FormatType.Bool:
                 case FormatType.CString:
                 case FormatType.PascalString:
                     return 1;
@@ -581,6 +625,99 @@ namespace IronPython.Modules {
                     return GetNativeSize(Type);
                 }
             }
+        }
+
+        #endregion
+
+        #region Cache of compiled struct patterns
+
+        private const int MAX_CACHE_SIZE = 1024;
+        private static CacheDict<string, Struct> _cache = new CacheDict<string, Struct>(MAX_CACHE_SIZE);
+
+        [Documentation("Clear the internal cache.")]
+        public static void _clearcache() {
+            _cache = new CacheDict<string, Struct>(MAX_CACHE_SIZE);
+        }
+
+        [Documentation("int(x[, base]) -> integer\n\nConvert a string or number to an integer, if possible.  A floating point\nargument will be truncated towards zero (this does not include a string\nrepresentation of a floating point number!)  When converting a string, use\nthe optional base.  It is an error to supply a base when converting a\nnon-string.  If base is zero, the proper base is guessed based on the\nstring content.  If the argument is outside the integer range a\nlong object will be returned instead.")]
+        public static int calcsize(CodeContext/*!*/ context, [NotNull]string fmt) {
+            Struct s;
+            if (!_cache.TryGetValue(fmt, out s)) {
+                s = new Struct(context, fmt);
+            }
+            return s.size;
+        }
+
+        [Documentation("Return string containing values v1, v2, ... packed according to fmt.")]
+        public static string/*!*/ pack(CodeContext/*!*/ context, [NotNull]string fmt/*!*/, params object[] values) {
+            Struct s;
+            if (!_cache.TryGetValue(fmt, out s)) {
+                s = new Struct(context, fmt);
+            }
+            return s.pack(context, values);
+        }
+
+        [Documentation("Pack the values v1, v2, ... according to fmt.\nWrite the packed bytes into the writable buffer buf starting at offset.")]
+        public static void pack_into(CodeContext/*!*/ context, [NotNull]string/*!*/ fmt, [NotNull]ArrayModule.PythonArray/*!*/ buffer, int offset, params object[] args) {
+            Struct s;
+            if (!_cache.TryGetValue(fmt, out s)) {
+                s = new Struct(context, fmt);
+            }
+            s.pack_into(context, buffer, offset, args);
+        }
+
+        [Documentation("Unpack the string containing packed C structure data, according to fmt.\nRequires len(string) == calcsize(fmt).")]
+        public static PythonTuple/*!*/ unpack(CodeContext/*!*/ context, [NotNull]string/*!*/ fmt, [NotNull]string/*!*/ @string) {
+            Struct s;
+            if (!_cache.TryGetValue(fmt, out s)) {
+                s = new Struct(context, fmt);
+            }
+            return s.unpack(context, @string);
+        }
+
+        [Documentation("Unpack the string containing packed C structure data, according to fmt.\nRequires len(string) == calcsize(fmt).")]
+        public static PythonTuple/*!*/ unpack(CodeContext/*!*/ context, [NotNull]string/*!*/ fmt, [NotNull]ArrayModule.PythonArray/*!*/ buffer) {
+            Struct s;
+            if (!_cache.TryGetValue(fmt, out s)) {
+                s = new Struct(context, fmt);
+            }
+            return s.unpack(context, buffer);
+        }
+
+        [Documentation("Unpack the string containing packed C structure data, according to fmt.\nRequires len(string) == calcsize(fmt).")]
+        public static PythonTuple/*!*/ unpack(CodeContext/*!*/ context, [NotNull]string fmt/*!*/, [NotNull]PythonBuffer/*!*/ buffer) {
+            Struct s;
+            if (!_cache.TryGetValue(fmt, out s)) {
+                s = new Struct(context, fmt);
+            }
+            return s.unpack(context, buffer);
+        }
+
+        [Documentation("Unpack the buffer, containing packed C structure data, according to\nfmt, starting at offset. Requires len(buffer[offset:]) >= calcsize(fmt).")]
+        public static PythonTuple/*!*/ unpack_from(CodeContext/*!*/ context, [NotNull]string fmt/*!*/, [NotNull]ArrayModule.PythonArray/*!*/ buffer, [DefaultParameterValue(0)] int offset) {
+            Struct s;
+            if (!_cache.TryGetValue(fmt, out s)) {
+                s = new Struct(context, fmt);
+            }
+            return s.unpack_from(context, buffer, offset);
+        }
+
+        [Documentation("Unpack the buffer, containing packed C structure data, according to\nfmt, starting at offset. Requires len(buffer[offset:]) >= calcsize(fmt).")]
+        public static PythonTuple/*!*/ unpack_from(CodeContext/*!*/ context, [NotNull]string fmt/*!*/, [NotNull]string/*!*/ buffer, [DefaultParameterValue(0)] int offset) {
+            Struct s;
+            if (!_cache.TryGetValue(fmt, out s)) {
+                s = new Struct(context, fmt);
+            }
+            return s.unpack_from(context, buffer, offset);
+        }
+
+        [Documentation("Unpack the buffer, containing packed C structure data, according to\nfmt, starting at offset. Requires len(buffer[offset:]) >= calcsize(fmt).")]
+        public static PythonTuple/*!*/ unpack_from(CodeContext/*!*/ context, [NotNull]string fmt/*!*/, [NotNull]PythonBuffer/*!*/ buffer, [DefaultParameterValue(0)] int offset) {
+            Struct s;
+            if (!_cache.TryGetValue(fmt, out s)) {
+                s = new Struct(context, fmt);
+            }
+            return s.unpack_from(context, buffer, offset);
         }
 
         #endregion
@@ -749,6 +886,17 @@ namespace IronPython.Modules {
 
         #region Data getter helpers
 
+        internal static bool GetBoolValue(CodeContext/*!*/ context, int index, object[] args) {
+            object val = GetValue(context, index, args);
+
+            object res;
+            if (Converter.TryConvert(val, typeof(bool), out res)) {
+                return (bool)res;
+            }
+            // Should never happen
+            throw Error(context, "expected bool value got " + val.ToString());
+        }
+
         internal static char GetCharValue(CodeContext/*!*/ context, int index, object[] args) {
             string val = GetValue(context, index, args) as string;
             if (val == null || val.Length != 1) throw Error(context, "char format requires string of length 1");
@@ -873,6 +1021,10 @@ namespace IronPython.Modules {
         #endregion
 
         #region Data creater helpers
+
+        internal static bool CreateBoolValue(CodeContext/*!*/ context, ref int index, string data) {
+            return (int)ReadData(context, ref index, data) != 0;
+        }
 
         internal static char CreateCharValue(CodeContext/*!*/ context, ref int index, string data) {
             return ReadData(context, ref index, data);

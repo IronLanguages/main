@@ -549,6 +549,26 @@ del customSymbol", customModule);
             //AreEqual(d(1), CustomDictionary.customSymbolValue + 1);
         }
 
+        public void ScenarioCallClassInstance() {
+            ScriptScope scope = _env.CreateScope();
+            _pe.CreateScriptSourceFromString(@"
+class X(object):
+    def __call__(self, arg):
+        return arg
+
+a = X()
+
+class Y:
+    def __call__(self, arg):
+        return arg
+
+b = Y()", SourceCodeKind.Statements).Execute(scope);
+            var a = scope.GetVariable<Func<object, int>>("a");
+            var b = scope.GetVariable<Func<object, int>>("b");
+            AreEqual(a(42), 42);
+            AreEqual(b(42), 42);
+        }
+
         // Evaluate
         public void ScenarioEvaluate() {
             ScriptScope scope = _env.CreateScope();

@@ -137,7 +137,7 @@ namespace IronPython.Runtime {
             if (o is long) return Int64Ops.Abs((long)o);
             if (o is double) return DoubleOps.Abs((double)o);
             if (o is bool) return (((bool)o) ? 1 : 0);
-            if (o is string) throw PythonOps.TypeError("bad operand type for abs()");
+
             BigInteger bi = o as BigInteger;
             if (!Object.ReferenceEquals(bi, null)) return BigIntegerOps.__abs__(bi);
             if (o is Complex64) return ComplexOps.Abs((Complex64)o);
@@ -147,7 +147,7 @@ namespace IronPython.Runtime {
                 return value;
             }
 
-            throw PythonOps.TypeError("bad operand type for abs()");
+            throw PythonOps.TypeError("bad operand type for abs(): '{0}'", DynamicHelpers.GetPythonType(o).Name);
         }
 
         public static bool all(object x) {
@@ -1438,8 +1438,8 @@ namespace IronPython.Runtime {
             return (int)ch;
         }
 
-        public static object pow(CodeContext/*!*/ context, object x, object y) {        
-            return PythonContext.GetContext(context).Operation(StandardOperators.Power, x, y);
+        public static object pow(CodeContext/*!*/ context, object x, object y) {
+            return PythonContext.GetContext(context).Operation(PythonOperationKind.Power, x, y);
         }
 
         public static object pow(CodeContext/*!*/ context, object x, object y, object z) {

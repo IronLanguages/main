@@ -14,8 +14,12 @@
  * ***************************************************************************/
 
 using System;
+
 using Microsoft.Scripting;
 using Microsoft.Scripting.Runtime;
+
+using IronPython.Runtime.Binding;
+
 using MSAst = System.Linq.Expressions;
 
 namespace IronPython.Compiler.Ast {
@@ -29,7 +33,7 @@ namespace IronPython.Compiler.Ast {
             _expandable = expandable;
         }
 
-        internal override MSAst.Expression TransformSet(AstGenerator ag, SourceSpan span, MSAst.Expression right, Operators op) {
+        internal override MSAst.Expression TransformSet(AstGenerator ag, SourceSpan span, MSAst.Expression right, PythonOperationKind op) {
             if (Items.Length == 0) {
                 ag.AddError("can't assign to ()", Span);
                 return null;

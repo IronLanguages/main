@@ -27,7 +27,7 @@ namespace IronPython.Runtime.Binding {
     using Ast = System.Linq.Expressions.Expression;
     using AstUtils = Microsoft.Scripting.Ast.Utils;
 
-    partial class MetaPythonObject : OperationMetaObject {
+    partial class MetaPythonObject : DynamicMetaObject {
         public MetaPythonObject(Expression/*!*/ expression, BindingRestrictions/*!*/ restrictions)
             : base(expression, restrictions) {
         }
@@ -126,7 +126,7 @@ namespace IronPython.Runtime.Binding {
             } else {
                 context = DefaultContext.Default;
             }
-
+            
             return new DynamicMetaObject(
                 Ast.Call(
                     typeof(PythonOps).GetMethod("GetDelegate"),

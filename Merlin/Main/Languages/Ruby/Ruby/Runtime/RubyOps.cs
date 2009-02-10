@@ -64,7 +64,7 @@ namespace IronRuby.Runtime {
             objectClass.SetConstant("TOPLEVEL_BINDING", new Binding(scope));
             if (dataOffset >= 0) {
                 RubyFile dataFile;
-                if (File.Exists(dataPath)) {
+                if (context.DomainManager.Platform.FileExists(dataPath)) {
                     dataFile = new RubyFile(context, dataPath, RubyFileMode.RDONLY);
                     dataFile.Seek(dataOffset, SeekOrigin.Begin);
                 } else {
@@ -961,7 +961,14 @@ namespace IronRuby.Runtime {
 
         [Emitted]
         public static RubyRegex/*!*/ CreateRegexB(string/*!*/ str1, RubyRegexOptions options) {
-            return new RubyRegex(str1, options);
+            try {
+                return new RubyRegex(str1, options);
+            } catch (RegexpError e) {
+                // Ideally, this should be thrown during parsing of the source.
+                // Note that since the argument is a System.String, we know that this is a regexp literal,
+                // and not a literal with embedded variable interpolation/substitution (eg. /#{var}/)
+                throw new SyntaxError(e.Message);
+            }
         }
 
         [Emitted]

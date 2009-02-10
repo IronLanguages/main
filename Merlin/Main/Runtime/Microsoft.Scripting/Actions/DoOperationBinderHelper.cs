@@ -51,7 +51,11 @@ namespace Microsoft.Scripting.Actions {
                 }
             }
 
-            OperatorInfo info = OperatorInfo.GetOperatorInfo(Action.Operation);
+            ExpressionType? et = OperatorInfo.OperatorToExpressionType(Action.Operation);
+            if (et == null) {
+                throw new InvalidOperationException(String.Format("unknown ExpressionType: {0}", Action.Operation));
+            }
+            OperatorInfo info = OperatorInfo.GetOperatorInfo(et.Value);
             if (Action.IsComparision) {
                 MakeComparisonRule(info);
             } else {
@@ -80,8 +84,8 @@ namespace Microsoft.Scripting.Actions {
             }
 
             // try inverting the operator & result (e.g. if looking for Equals try NotEquals, LessThan for GreaterThan)...
-            Operators revOp = GetInvertedOperator(info.Operator);
-            OperatorInfo revInfo = OperatorInfo.GetOperatorInfo(revOp);
+            Operators revOp = GetInvertedOperator(OperatorInfo.ExpressionTypeToOperator(info.Operator));
+            OperatorInfo revInfo = OperatorInfo.GetOperatorInfo(OperatorInfo.OperatorToExpressionType(revOp).Value);
             Debug.Assert(revInfo != null);
 
             // try the 1st type's opposite function result negated 
@@ -117,14 +121,12 @@ namespace Microsoft.Scripting.Actions {
                 if (target.Success) {
                     Expression call = Ast.Convert(target.MakeExpression(_rule, _rule.Parameters), typeof(int));
                     switch (info.Operator) {
-                        case Operators.GreaterThan: call = Ast.GreaterThan(call, Ast.Constant(0)); break;
-                        case Operators.LessThan: call = Ast.LessThan(call, Ast.Constant(0)); break;
-                        case Operators.GreaterThanOrEqual: call = Ast.GreaterThanOrEqual(call, Ast.Constant(0)); break;
-                        case Operators.LessThanOrEqual: call = Ast.LessThanOrEqual(call, Ast.Constant(0)); break;
-                        case Operators.Equals: call = Ast.Equal(call, Ast.Constant(0)); break;
-                        case Operators.NotEquals: call = Ast.NotEqual(call, Ast.Constant(0)); break;
-                        case Operators.Compare:
-                            break;
+                        case ExpressionType.GreaterThan: call = Ast.GreaterThan(call, Ast.Constant(0)); break;
+                        case ExpressionType.LessThan: call = Ast.LessThan(call, Ast.Constant(0)); break;
+                        case ExpressionType.GreaterThanOrEqual: call = Ast.GreaterThanOrEqual(call, Ast.Constant(0)); break;
+                        case ExpressionType.LessThanOrEqual: call = Ast.LessThanOrEqual(call, Ast.Constant(0)); break;
+                        case ExpressionType.Equal: call = Ast.Equal(call, Ast.Constant(0)); break;
+                        case ExpressionType.NotEqual: call = Ast.NotEqual(call, Ast.Constant(0)); break;
                     }
                     _rule.Target = _rule.MakeReturn(Binder, call);
                     return true;
@@ -186,10 +188,7 @@ namespace Microsoft.Scripting.Actions {
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity")] // TODO: fix
         private void MakeOperatorRule(OperatorInfo info) {
             MethodInfo[] targets = GetApplicableMembers(info);
-            if (targets.Length == 0) {
-                targets = GetFallbackMembers(_types[0], info);
-            }
-
+            
             if (targets.Length > 0 && TryMakeBindingTarget(targets)) {
                 return;
             }
@@ -201,29 +200,22 @@ namespace Microsoft.Scripting.Actions {
                 }
             }
 
-            Operators op = CompilerHelpers.InPlaceOperatorToOperator(info.Operator) ;
-            if (op != Operators.None) {
-                // recurse to try and get the non-inplace action...
-                MakeOperatorRule(OperatorInfo.GetOperatorInfo(op));
-                return;
-            }
-
             if (_types.Length == 2 &&
                 TypeUtils.GetNonNullableType(_types[0]) == TypeUtils.GetNonNullableType(_types[1]) &&
                 TypeUtils.IsArithmetic(_types[0])) {
                 // TODO: Nullable<PrimitveType> Support
                 Expression expr;
                 switch (info.Operator) {
-                    case Operators.Add: expr = Ast.Add(Param0, Param1); break;
-                    case Operators.Subtract: expr = Ast.Subtract(Param0, Param1); break;
-                    case Operators.Divide: expr = Ast.Divide(Param0, Param1); break;
-                    case Operators.Mod: expr = Ast.Modulo(Param0, Param1); break;
-                    case Operators.Multiply:expr = Ast.Multiply(Param0, Param1); break;
-                    case Operators.LeftShift: expr = Ast.LeftShift(Param0, Param1); break;
-                    case Operators.RightShift: expr = Ast.RightShift(Param0, Param1); break;
-                    case Operators.BitwiseAnd: expr = Ast.And(Param0, Param1); break;
-                    case Operators.BitwiseOr: expr = Ast.Or(Param0, Param1); break;
-                    case Operators.ExclusiveOr: expr = Ast.ExclusiveOr(Param0, Param1); break;
+                    case ExpressionType.Add: expr = Ast.Add(Param0, Param1); break;
+                    case ExpressionType.Subtract: expr = Ast.Subtract(Param0, Param1); break;
+                    case ExpressionType.Divide: expr = Ast.Divide(Param0, Param1); break;
+                    case ExpressionType.Modulo: expr = Ast.Modulo(Param0, Param1); break;
+                    case ExpressionType.Multiply: expr = Ast.Multiply(Param0, Param1); break;
+                    case ExpressionType.LeftShift: expr = Ast.LeftShift(Param0, Param1); break;
+                    case ExpressionType.RightShift: expr = Ast.RightShift(Param0, Param1); break;
+                    case ExpressionType.And: expr = Ast.And(Param0, Param1); break;
+                    case ExpressionType.Or: expr = Ast.Or(Param0, Param1); break;
+                    case ExpressionType.ExclusiveOr: expr = Ast.ExclusiveOr(Param0, Param1); break;
                     default: throw new InvalidOperationException();
                 }
                 _rule.Target = _rule.MakeReturn(Binder, expr);
@@ -237,67 +229,24 @@ namespace Microsoft.Scripting.Actions {
 
         private bool TryMakeDefaultUnaryRule(OperatorInfo info) {
             switch (info.Operator) {
-                case Operators.IsTrue:
+                case ExpressionType.IsTrue:
                     if (_types[0] == typeof(bool)) {
                         _rule.Target = _rule.MakeReturn(Binder, Param0);
                         return true;
                     }
                     break;
-                case Operators.Negate:
+                case ExpressionType.Negate:
                     if (TypeUtils.IsArithmetic(_types[0])) {
                         _rule.Target = _rule.MakeReturn(Binder, Ast.Negate(Param0));
                         return true;
                     }
                     break;
-                case Operators.Not:
+                case ExpressionType.Not:
                     if (TypeUtils.IsIntegerOrBool(_types[0])) {
                         _rule.Target = _rule.MakeReturn(Binder, Ast.Not(Param0));
                         return true;
                     }
-                    break;                
-                case Operators.Documentation:
-                    object[] attrs = _types[0].GetCustomAttributes(typeof(DocumentationAttribute), true);
-                    string documentation = String.Empty;
-                    
-                    if (attrs.Length > 0) {
-                        documentation = ((DocumentationAttribute)attrs[0]).Documentation;
-                    } 
-
-                    _rule.Target = _rule.MakeReturn(Binder, Ast.Constant(documentation));
-                    return true;
-                case Operators.MemberNames:
-                    if (typeof(IMembersList).IsAssignableFrom(_types[0])) {
-                        MakeIMembersListRule();
-                        return true;
-                    }
-
-                    MemberInfo[] members = _types[0].GetMembers();
-                    Dictionary<string, string> mems = new Dictionary<string, string>();
-                    foreach (MemberInfo mi in members) {
-                        mems[mi.Name] = mi.Name;
-                    }
-
-                    string[] res = new string[mems.Count];
-                    mems.Keys.CopyTo(res, 0);
-                    _rule.Target = _rule.MakeReturn(Binder, Ast.Constant(res));
-                    return true;
-                case Operators.CallSignatures:
-                    MakeCallSignatureResult(CompilerHelpers.GetMethodTargets(_args[0]));
                     break;
-                case Operators.IsCallable:
-                    // IsCallable() is tightly tied to Call actions. So in general, we need the call-action providers to also
-                    // provide IsCallable() status. 
-                    // This is just a rough fallback. We could also attempt to simulate the default CallBinder logic to see
-                    // if there are any applicable calls targets, but that would be complex (the callbinder wants the argument list, 
-                    // which we don't have here), and still not correct. 
-                    bool callable = false;
-                    if (typeof(Delegate).IsAssignableFrom(_types[0]) ||
-                        typeof(MethodGroup).IsAssignableFrom(_types[0])) {
-                        callable = true;
-                    }
-
-                    _rule.Target = _rule.MakeReturn(Context.LanguageContext.Binder, Ast.Constant(callable));
-                    return true;
             }
             return false;
         }
@@ -521,41 +470,7 @@ namespace Microsoft.Scripting.Actions {
             // filter down to just methods
             return FilterNonMethods(t, members);
         }
-
-        /// <summary>
-        /// Gets alternate members which are specially recognized by the DLR for specific types when
-        /// all other member lookup fails.
-        /// </summary>
-        private MethodInfo[] GetFallbackMembers(Type t, OperatorInfo info) {
-            // if we have an event we need to make a strongly-typed event handler
-
-            if (t == typeof(EventTracker)) {
-                EventTracker et = ((EventTracker)_args[0]);
-                if (info.Operator == Operators.InPlaceAdd) {
-                    AddFallbackMemberTest(t, et);
-                    return new MethodInfo[] { typeof(BinderOps).GetMethod("EventTrackerInPlaceAdd").MakeGenericMethod(et.Event.EventHandlerType) };
-                } else if (info.Operator == Operators.InPlaceSubtract) {
-                    AddFallbackMemberTest(t, et);
-                    return new MethodInfo[] { typeof(BinderOps).GetMethod("EventTrackerInPlaceRemove").MakeGenericMethod(et.Event.EventHandlerType) };
-                }
-            } else if (t == typeof(BoundMemberTracker)) {
-                BoundMemberTracker bmt = ((BoundMemberTracker)_args[0]);
-                if (bmt.BoundTo.MemberType == TrackerTypes.Event) {
-                    EventTracker et = ((EventTracker)bmt.BoundTo);
-                    
-                    if (info.Operator == Operators.InPlaceAdd) {
-                        AddFallbackMemberTest(t, et);
-                        return new MethodInfo[] { typeof(BinderOps).GetMethod("BoundEventTrackerInPlaceAdd").MakeGenericMethod(et.Event.EventHandlerType) };
-                    } else if (info.Operator == Operators.InPlaceSubtract) {
-                        AddFallbackMemberTest(t, et);
-                        return new MethodInfo[] { typeof(BinderOps).GetMethod("BoundEventTrackerInPlaceRemove").MakeGenericMethod(et.Event.EventHandlerType) };
-                    }
-                }
-            }
-
-            return new MethodInfo[0];
-        }
-
+       
         private void AddFallbackMemberTest(Type t, EventTracker et) {
             if(t == typeof(EventTracker)){
                 //

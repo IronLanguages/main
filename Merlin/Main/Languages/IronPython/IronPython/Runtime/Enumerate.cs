@@ -32,10 +32,10 @@ namespace IronPython.Runtime {
     [Documentation("enumerate(iterable) -> iterator for index, value of iterable")]
     public class Enumerate : IEnumerator, IEnumerator<object> {
         private readonly IEnumerator _iter;
-        private int _index;
+        private int _index = -1;
 
         public Enumerate(object iter) {
-            this._iter = PythonOps.GetEnumerator(iter);
+            _iter = PythonOps.GetEnumerator(iter);
         }
 
         public object __iter__() {
@@ -50,7 +50,7 @@ namespace IronPython.Runtime {
 
         object IEnumerator.Current {
             get {
-                return PythonTuple.MakeTuple(_index++, _iter.Current);
+                return PythonTuple.MakeTuple(_index, _iter.Current);
             }
         }
 
@@ -61,6 +61,7 @@ namespace IronPython.Runtime {
         }
 
         bool IEnumerator.MoveNext() {
+            _index++;
             return _iter.MoveNext();
         }
 

@@ -18,6 +18,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Linq.Expressions;
+using System.Runtime.CompilerServices;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 
@@ -155,13 +156,49 @@ namespace Microsoft.Scripting.Ast {
             return result;
         }
 
-        private BinaryExpression ToTemp(ref Expression e) {
+        /// <summary>
+        /// Spills the right side into a temp, and replaces it with its temp.
+        /// Returns the expression that initializes the temp.
+        /// </summary>
+        private Expression ToTemp(ref Expression e) {
             Debug.Assert(e != null);
-            var temp = Expression.Variable(e.Type, "$temp$" + _temps.Count);
+            var temp = Expression.Variable(e.Type, "generatorTemp" + _temps.Count);
             _temps.Add(temp);
-            var result = Expression.Assign(temp, e);
+            var result = MakeAssign(temp, e);
             e = temp;
             return result;
+        }
+
+        /// <summary>
+        /// Makes an assignment to this variable. Pushes the assignment as far
+        /// into the right side as possible, to allow jumps into it.
+        /// </summary>
+        private Expression MakeAssign(ParameterExpression variable, Expression value) {
+            // TODO: this is not complete.
+            // It may end up generating a bad tree if any of these nodes
+            // contain yield and return a value: Switch, Loop, Goto, or Label.
+            // Those are not supported, but we can't throw here because we may
+            // end up disallowing valid uses (if some other expression contains
+            // yield, but not this one).
+            switch (value.NodeType) {
+                case ExpressionType.Block:
+                    return MakeAssignBlock(variable, value);
+                case ExpressionType.Conditional:
+                    return MakeAssignConditional(variable, value);
+            }
+            return Expression.Assign(variable, value);
+        }
+
+        private Expression MakeAssignBlock(ParameterExpression variable, Expression value) {
+            var node = (BlockExpression)value;
+            var newBlock = new ReadOnlyCollectionBuilder<Expression>(node.Expressions);
+            newBlock[newBlock.Count - 1] = MakeAssign(variable, newBlock[newBlock.Count - 1]);
+            return Expression.Block(node.Variables, newBlock);
+        }
+
+        private Expression MakeAssignConditional(ParameterExpression variable, Expression value) {
+            var node = (ConditionalExpression)value;
+            return Expression.Condition(node.Test, MakeAssign(variable, node.IfTrue), MakeAssign(variable, node.IfFalse));
         }
 
         private BlockExpression ToTemp(ref ReadOnlyCollection<Expression> args) {
@@ -463,7 +500,7 @@ namespace Microsoft.Scripting.Ast {
             }
 
             // Yield return
-            block.Add(Expression.Assign(_current, value));
+            block.Add(MakeAssign(_current, value));
             YieldMarker marker = GetYieldMarker(node);
             block.Add(Expression.Assign(_state, Expression.Constant(marker.State)));
             if (_inTryWithFinally) {
@@ -741,8 +778,10 @@ namespace Microsoft.Scripting.Ast {
             if (o == node.Operand) {
                 return node;
             }
-            // Convert can be jumped into, no need to spill
-            if (yields == _yields.Count || node.NodeType == ExpressionType.Convert) {
+            // Void convert can be jumped into, no need to spill
+            // TODO: remove when that feature goes away.
+            if (yields == _yields.Count ||
+                (node.NodeType == ExpressionType.Convert && node.Type == typeof(void))) {
                 return Expression.MakeUnary(node.NodeType, o, node.Type, node.Method);
             }
             return Expression.Block(

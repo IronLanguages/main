@@ -14,8 +14,12 @@
  * ***************************************************************************/
 
 using System;
+
 using Microsoft.Scripting;
 using Microsoft.Scripting.Runtime;
+
+using IronPython.Runtime.Binding;
+
 using MSAst = System.Linq.Expressions;
 
 namespace IronPython.Compiler.Ast {
@@ -35,7 +39,7 @@ namespace IronPython.Compiler.Ast {
             return ag.Transform(_expression, type);
         }
 
-        internal override MSAst.Expression TransformSet(AstGenerator ag, SourceSpan span, MSAst.Expression right, Operators op) {
+        internal override MSAst.Expression TransformSet(AstGenerator ag, SourceSpan span, MSAst.Expression right, PythonOperationKind op) {
             return _expression.TransformSet(ag, span, right, op);
         }
 

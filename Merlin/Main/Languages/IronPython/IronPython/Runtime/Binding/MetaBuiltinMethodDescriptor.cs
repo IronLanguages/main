@@ -29,7 +29,7 @@ using Ast = System.Linq.Expressions.Expression;
 
 namespace IronPython.Runtime.Binding {
 
-    class MetaBuiltinMethodDescriptor : MetaPythonObject, IPythonInvokable {
+    class MetaBuiltinMethodDescriptor : MetaPythonObject, IPythonInvokable, IPythonOperable {
         public MetaBuiltinMethodDescriptor(Expression/*!*/ expression, BindingRestrictions/*!*/ restrictions, BuiltinMethodDescriptor/*!*/ value)
             : base(expression, BindingRestrictions.Empty, value) {
             Assert.NotNull(value);
@@ -52,16 +52,6 @@ namespace IronPython.Runtime.Binding {
         public override DynamicMetaObject/*!*/ BindInvoke(InvokeBinder/*!*/ call, params DynamicMetaObject/*!*/[]/*!*/ args) {
             // TODO: Context should come from BuiltinFunction
             return InvokeWorker(call, BinderState.GetCodeContext(call), args);
-        }
-
-        [Obsolete]
-        public override DynamicMetaObject BindOperation(OperationBinder action, DynamicMetaObject[] args) {
-            switch (action.Operation) {
-                case StandardOperators.CallSignatures:
-                    return PythonProtocol.MakeCallSignatureOperation(this, Value.Template.Targets);
-            }
-
-            return base.BindOperation(action, args);
         }
 
         #endregion
@@ -129,6 +119,19 @@ namespace IronPython.Runtime.Binding {
             get {
                 return (BuiltinMethodDescriptor)base.Value;
             }
+        }
+
+        #endregion
+
+        #region IPythonOperable Members
+
+        DynamicMetaObject IPythonOperable.BindOperation(PythonOperationBinder action, DynamicMetaObject[] args) {
+            switch (action.Operation) {
+                case PythonOperationKind.CallSignatures:
+                    return PythonProtocol.MakeCallSignatureOperation(this, Value.Template.Targets);
+            }
+
+            return null;
         }
 
         #endregion

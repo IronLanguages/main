@@ -83,6 +83,31 @@ namespace IronPythonTest {
         }
     }
 
+    public struct StructIndexable {
+        private List<int?> _data;
+
+        public int? this[int index] {
+            get {
+                if (_data == null || _data.Count < index) {
+                    return null;
+                }
+
+                return _data[index];
+            }
+            set {
+                if (_data == null) {
+                    _data = new List<int?>();
+                }
+
+                while (_data.Count <= index) {
+                    _data.Add(null);
+                }
+
+                _data[index] = value;
+            }
+        }
+    }
+
     public class Indexable {
 #if !SILVERLIGHT
         System.Collections.Hashtable ht = new System.Collections.Hashtable();

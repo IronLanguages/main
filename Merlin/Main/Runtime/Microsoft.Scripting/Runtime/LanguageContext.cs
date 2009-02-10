@@ -607,6 +607,22 @@ namespace Microsoft.Scripting.Runtime {
             return EmptyArray<string>.Instance;
         }
 
+        public virtual string GetDocumentation(object obj) {
+            return String.Empty;
+        }
+
+        public virtual IList<string> GetCallSignatures(object obj) {
+            return new string[0];
+        }
+
+        public virtual bool IsCallable(object obj) {
+            if (obj == null) {
+                return false;
+            }
+
+            return typeof(Delegate).IsAssignableFrom(obj.GetType());
+        }
+
         /// <summary>
         /// Returns a string representation of the object in a language specific object display format.
         /// </summary>

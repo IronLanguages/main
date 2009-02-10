@@ -39,37 +39,110 @@ namespace Microsoft.Scripting.Actions {
             ContractUtils.RequiresNotNull(codeContext, "codeContext");
             ContractUtils.RequiresNotNullItems(args, "args");
 
-            return
-                MakeDefaultMemberRule(operation, args) ??   // see if we have a default member and we're doing indexing
-                MakeGeneralOperatorRule(operation, codeContext, args);   // Then try comparison / other operators
+            return MakeGeneralOperatorRule(operation, codeContext, args);   // Then try comparison / other ExpressionType
+        }
+
+        private enum IndexType {
+            Get,
+            Set
         }
 
         /// <summary>
         /// Creates the MetaObject for indexing directly into arrays or indexing into objects which have
         /// default members.  Returns null if we're not an indexing operation.
         /// </summary>
-        private DynamicMetaObject MakeDefaultMemberRule(string oper, DynamicMetaObject[] args) {
-            if (oper == StandardOperators.GetItem || oper == StandardOperators.SetItem) {
-                if (args[0].GetLimitType().IsArray) {
-                    return MakeArrayIndexRule(oper, args);
-                }
-
-                return MakeMethodIndexRule(oper, args);
+        public DynamicMetaObject GetIndex(DynamicMetaObject[] args) {
+            if (args[0].GetLimitType().IsArray) {
+                return MakeArrayIndexRule(IndexType.Get, args);
             }
 
-            return null;
+            return MakeMethodIndexRule(IndexType.Get, args);
+        }
+
+        /// <summary>
+        /// Creates the MetaObject for indexing directly into arrays or indexing into objects which have
+        /// default members.  Returns null if we're not an indexing operation.
+        /// </summary>
+        public DynamicMetaObject SetIndex(DynamicMetaObject[] args) {
+            if (args[0].LimitType.IsArray) {
+                return MakeArrayIndexRule(IndexType.Set, args);
+            }
+
+            return MakeMethodIndexRule(IndexType.Set, args);
+        }
+
+        public DynamicMetaObject GetDocumentation(DynamicMetaObject target) {
+            BindingRestrictions restrictions = BindingRestrictions.GetTypeRestriction(target.Expression, target.LimitType);
+
+            object[] attrs = target.LimitType.GetCustomAttributes(typeof(DocumentationAttribute), true);
+            string documentation = String.Empty;
+
+            if (attrs.Length > 0) {
+                documentation = ((DocumentationAttribute)attrs[0]).Documentation;
+            }
+
+            return new DynamicMetaObject(
+                Ast.Constant(documentation),
+                restrictions
+            );
+        }
+
+        public DynamicMetaObject GetMemberNames(DynamicMetaObject target, Expression codeContext) {
+            BindingRestrictions restrictions = BindingRestrictions.GetTypeRestriction(target.Expression, target.LimitType);
+
+            if (typeof(IMembersList).IsAssignableFrom(target.LimitType)) {
+                return MakeIMembersListRule(codeContext, target);
+            }
+
+            MemberInfo[] members = target.LimitType.GetMembers();
+            Dictionary<string, string> mems = new Dictionary<string, string>();
+            foreach (MemberInfo mi in members) {
+                mems[mi.Name] = mi.Name;
+            }
+
+            string[] res = new string[mems.Count];
+            mems.Keys.CopyTo(res, 0);
+
+            return new DynamicMetaObject(
+                Ast.Constant(res),
+                restrictions
+            );
+        }
+
+        public DynamicMetaObject GetCallSignatures(DynamicMetaObject target) {
+            return MakeCallSignatureResult(CompilerHelpers.GetMethodTargets(target.LimitType), target);
+        }
+
+        public DynamicMetaObject GetIsCallable(DynamicMetaObject target) {
+            // IsCallable() is tightly tied to Call actions. So in general, we need the call-action providers to also
+            // provide IsCallable() status. 
+            // This is just a rough fallback. We could also attempt to simulate the default CallBinder logic to see
+            // if there are any applicable calls targets, but that would be complex (the callbinder wants the argument list, 
+            // which we don't have here), and still not correct. 
+            BindingRestrictions restrictions = BindingRestrictions.GetTypeRestriction(target.Expression, target.LimitType);
+
+            bool callable = false;
+            if (typeof(Delegate).IsAssignableFrom(target.LimitType) ||
+                typeof(MethodGroup).IsAssignableFrom(target.LimitType)) {
+                callable = true;
+            }
+
+            return new DynamicMetaObject(
+                Ast.Constant(callable),
+                restrictions
+            );
         }
 
         /// <summary>
         /// Creates the meta object for the rest of the operations: comparisons and all other
-        /// operators.  If the operation cannot be completed a MetaObject which indicates an
+        /// ExpressionType.  If the operation cannot be completed a MetaObject which indicates an
         /// error will be returned.
         /// </summary>
         private DynamicMetaObject MakeGeneralOperatorRule(string operation, Expression codeContext, DynamicMetaObject[] args) {
             OperatorInfo info = OperatorInfo.GetOperatorInfo(operation);
             DynamicMetaObject res;
 
-            if (CompilerHelpers.IsComparisonOperator(operation)) {
+            if (CompilerHelpers.IsComparisonOperator(info.Operator)) {
                 res = MakeComparisonRule(info, codeContext, args);
             } else {
                 res = MakeOperatorRule(info, codeContext, args);
@@ -116,7 +189,7 @@ namespace Microsoft.Scripting.Actions {
         private DynamicMetaObject TryNumericComparison(OperatorInfo info, DynamicMetaObject[] args) {
             MethodInfo[] targets = FilterNonMethods(
                 args[0].GetLimitType(),
-                GetMember(OldDoOperationAction.Make(this, info.Operator),
+                GetMember(OldDoOperationAction.Make(this, OperatorInfo.ExpressionTypeToOperator(info.Operator)),
                 args[0].GetLimitType(),
                 "Compare")
             );
@@ -127,14 +200,12 @@ namespace Microsoft.Scripting.Actions {
                 if (target.Success) {
                     Expression call = AstUtils.Convert(target.MakeExpression(), typeof(int));
                     switch (info.Operator) {
-                        case Operators.GreaterThan: call = Ast.GreaterThan(call, Ast.Constant(0)); break;
-                        case Operators.LessThan: call = Ast.LessThan(call, Ast.Constant(0)); break;
-                        case Operators.GreaterThanOrEqual: call = Ast.GreaterThanOrEqual(call, Ast.Constant(0)); break;
-                        case Operators.LessThanOrEqual: call = Ast.LessThanOrEqual(call, Ast.Constant(0)); break;
-                        case Operators.Equals: call = Ast.Equal(call, Ast.Constant(0)); break;
-                        case Operators.NotEquals: call = Ast.NotEqual(call, Ast.Constant(0)); break;
-                        case Operators.Compare:
-                            break;
+                        case ExpressionType.GreaterThan: call = Ast.GreaterThan(call, Ast.Constant(0)); break;
+                        case ExpressionType.LessThan: call = Ast.LessThan(call, Ast.Constant(0)); break;
+                        case ExpressionType.GreaterThanOrEqual: call = Ast.GreaterThanOrEqual(call, Ast.Constant(0)); break;
+                        case ExpressionType.LessThanOrEqual: call = Ast.LessThanOrEqual(call, Ast.Constant(0)); break;
+                        case ExpressionType.Equal: call = Ast.Equal(call, Ast.Constant(0)); break;
+                        case ExpressionType.NotEqual: call = Ast.NotEqual(call, Ast.Constant(0)); break;
                     }
 
                     return new DynamicMetaObject(
@@ -148,7 +219,7 @@ namespace Microsoft.Scripting.Actions {
         }
 
         private DynamicMetaObject TryInvertedComparison(OperatorInfo info, DynamicMetaObject target, DynamicMetaObject[] args) {
-            Operators revOp = GetInvertedOperator(info.Operator);
+            ExpressionType revOp = GetInvertedOperator(info.Operator);
             OperatorInfo revInfo = OperatorInfo.GetOperatorInfo(revOp);
             Debug.Assert(revInfo != null);
 
@@ -206,12 +277,12 @@ namespace Microsoft.Scripting.Actions {
                 // TODO: Nullable<PrimitveType> Support
                 Expression expr;
                 switch (info.Operator) {
-                    case Operators.Equals: expr = Ast.Equal(arg0, arg1); break;
-                    case Operators.NotEquals: expr = Ast.NotEqual(arg0, arg1); break;
-                    case Operators.GreaterThan: expr = Ast.GreaterThan(arg0, arg1); break;
-                    case Operators.LessThan: expr = Ast.LessThan(arg0, arg1); break;
-                    case Operators.GreaterThanOrEqual: expr = Ast.GreaterThanOrEqual(arg0, arg1); break;
-                    case Operators.LessThanOrEqual: expr = Ast.LessThanOrEqual(arg0, arg1); break;
+                    case ExpressionType.Equal: expr = Ast.Equal(arg0, arg1); break;
+                    case ExpressionType.NotEqual: expr = Ast.NotEqual(arg0, arg1); break;
+                    case ExpressionType.GreaterThan: expr = Ast.GreaterThan(arg0, arg1); break;
+                    case ExpressionType.LessThan: expr = Ast.LessThan(arg0, arg1); break;
+                    case ExpressionType.GreaterThanOrEqual: expr = Ast.GreaterThanOrEqual(arg0, arg1); break;
+                    case ExpressionType.LessThanOrEqual: expr = Ast.LessThanOrEqual(arg0, arg1); break;
                     default: throw new InvalidOperationException();
                 }
 
@@ -233,7 +304,6 @@ namespace Microsoft.Scripting.Actions {
             return
                 TryForwardOperator(info, codeContext, args) ??
                 TryReverseOperator(info, codeContext, args) ??
-                TryInplaceOperator(info, codeContext, args) ??
                 TryPrimitiveOperator(info, args) ??
                 TryMakeDefaultUnaryRule(info, codeContext, args) ??
                 MakeOperatorError(info, args);
@@ -249,16 +319,16 @@ namespace Microsoft.Scripting.Actions {
                 DynamicMetaObject arg0 = args[1].Restrict(args[0].GetLimitType());
 
                 switch (info.Operator) {
-                    case Operators.Add: expr = Ast.Add(self.Expression, arg0.Expression); break;
-                    case Operators.Subtract: expr = Ast.Subtract(self.Expression, arg0.Expression); break;
-                    case Operators.Divide: expr = Ast.Divide(self.Expression, arg0.Expression); break;
-                    case Operators.Mod: expr = Ast.Modulo(self.Expression, arg0.Expression); break;
-                    case Operators.Multiply: expr = Ast.Multiply(self.Expression, arg0.Expression); break;
-                    case Operators.LeftShift: expr = Ast.LeftShift(self.Expression, arg0.Expression); break;
-                    case Operators.RightShift: expr = Ast.RightShift(self.Expression, arg0.Expression); break;
-                    case Operators.BitwiseAnd: expr = Ast.And(self.Expression, arg0.Expression); break;
-                    case Operators.BitwiseOr: expr = Ast.Or(self.Expression, arg0.Expression); break;
-                    case Operators.ExclusiveOr: expr = Ast.ExclusiveOr(self.Expression, arg0.Expression); break;
+                    case ExpressionType.Add: expr = Ast.Add(self.Expression, arg0.Expression); break;
+                    case ExpressionType.Subtract: expr = Ast.Subtract(self.Expression, arg0.Expression); break;
+                    case ExpressionType.Divide: expr = Ast.Divide(self.Expression, arg0.Expression); break;
+                    case ExpressionType.Modulo: expr = Ast.Modulo(self.Expression, arg0.Expression); break;
+                    case ExpressionType.Multiply: expr = Ast.Multiply(self.Expression, arg0.Expression); break;
+                    case ExpressionType.LeftShift: expr = Ast.LeftShift(self.Expression, arg0.Expression); break;
+                    case ExpressionType.RightShift: expr = Ast.RightShift(self.Expression, arg0.Expression); break;
+                    case ExpressionType.And: expr = Ast.And(self.Expression, arg0.Expression); break;
+                    case ExpressionType.Or: expr = Ast.Or(self.Expression, arg0.Expression); break;
+                    case ExpressionType.ExclusiveOr: expr = Ast.ExclusiveOr(self.Expression, arg0.Expression); break;
                     default: throw new InvalidOperationException();
                 }
 
@@ -272,17 +342,11 @@ namespace Microsoft.Scripting.Actions {
         }
 
         private DynamicMetaObject TryForwardOperator(OperatorInfo info, Expression codeContext, DynamicMetaObject[] args) {
-            // we need a special conversion for the return type on MemberNames
-            if (info.Operator != Operators.MemberNames) {
-                MethodInfo[] targets = GetApplicableMembers(args[0].GetLimitType(), info);
-                BindingRestrictions restrictions = BindingRestrictions.Empty;
-                if (targets.Length == 0) {
-                    targets = GetFallbackMembers(args[0].GetLimitType(), info, args, out restrictions);
-                }
+            MethodInfo[] targets = GetApplicableMembers(args[0].GetLimitType(), info);
+            BindingRestrictions restrictions = BindingRestrictions.Empty;
 
-                if (targets.Length > 0) {
-                    return TryMakeBindingTarget(targets, args, codeContext, restrictions);
-                }
+            if (targets.Length > 0) {
+                return TryMakeBindingTarget(targets, args, codeContext, restrictions);
             }
 
             return null;
@@ -290,24 +354,11 @@ namespace Microsoft.Scripting.Actions {
 
         private DynamicMetaObject TryReverseOperator(OperatorInfo info, Expression codeContext, DynamicMetaObject[] args) {
             // we need a special conversion for the return type on MemberNames
-            if (info.Operator != Operators.MemberNames) {
-                if (args.Length > 0) {
-                    MethodInfo[] targets = GetApplicableMembers(args[0].GetLimitType(), info);
-                    if (targets.Length > 0) {
-                        return TryMakeBindingTarget(targets, args, codeContext, BindingRestrictions.Empty);
-                    }
+            if (args.Length > 0) {
+                MethodInfo[] targets = GetApplicableMembers(args[0].LimitType, info);
+                if (targets.Length > 0) {
+                    return TryMakeBindingTarget(targets, args, codeContext, BindingRestrictions.Empty);
                 }
-            }
-
-            return null;
-        }
-
-        private DynamicMetaObject TryInplaceOperator(OperatorInfo info, Expression codeContext, DynamicMetaObject[] args) {
-            Operators op = CompilerHelpers.InPlaceOperatorToOperator(info.Operator);
-
-            if (op != Operators.None) {
-                // recurse to try and get the non-inplace action...
-                return MakeOperatorRule(OperatorInfo.GetOperatorInfo(op), codeContext, args);
             }
 
             return null;
@@ -317,12 +368,12 @@ namespace Microsoft.Scripting.Actions {
             if (args.Length == 1) {
                 BindingRestrictions restrictions = BindingRestrictionsHelpers.GetRuntimeTypeRestriction(args[0].Expression, args[0].GetLimitType()).Merge(BindingRestrictions.Combine(args));
                 switch (info.Operator) {
-                    case Operators.IsTrue:
+                    case ExpressionType.IsTrue:
                         if (args[0].GetLimitType() == typeof(bool)) {
                             return args[0];
                         }
                         break;
-                    case Operators.Negate:
+                    case ExpressionType.Negate:
                         if (TypeUtils.IsArithmetic(args[0].GetLimitType())) {
                             return new DynamicMetaObject(
                                 Ast.Negate(args[0].Expression),
@@ -330,7 +381,7 @@ namespace Microsoft.Scripting.Actions {
                             );
                         }
                         break;
-                    case Operators.Not:
+                    case ExpressionType.Not:
                         if (TypeUtils.IsIntegerOrBool(args[0].GetLimitType())) {
                             return new DynamicMetaObject(
                                 Ast.Not(args[0].Expression),
@@ -338,54 +389,6 @@ namespace Microsoft.Scripting.Actions {
                             );
                         }
                         break;
-                    case Operators.Documentation:
-                        object[] attrs = args[0].GetLimitType().GetCustomAttributes(typeof(DocumentationAttribute), true);
-                        string documentation = String.Empty;
-
-                        if (attrs.Length > 0) {
-                            documentation = ((DocumentationAttribute)attrs[0]).Documentation;
-                        }
-
-                        return new DynamicMetaObject(
-                            Ast.Constant(documentation),
-                            restrictions
-                        );
-                    case Operators.MemberNames:
-                        if (typeof(IMembersList).IsAssignableFrom(args[0].GetLimitType())) {
-                            return MakeIMembersListRule(codeContext, args[0]);
-                        }
-
-                        MemberInfo[] members = args[0].GetLimitType().GetMembers();
-                        Dictionary<string, string> mems = new Dictionary<string, string>();
-                        foreach (MemberInfo mi in members) {
-                            mems[mi.Name] = mi.Name;
-                        }
-
-                        string[] res = new string[mems.Count];
-                        mems.Keys.CopyTo(res, 0);
-
-                        return new DynamicMetaObject(
-                            Ast.Constant(res),
-                            restrictions
-                        );
-                    case Operators.CallSignatures:
-                        return MakeCallSignatureResult(CompilerHelpers.GetMethodTargets(args[0].GetLimitType()), args[0]);
-                    case Operators.IsCallable:
-                        // IsCallable() is tightly tied to Call actions. So in general, we need the call-action providers to also
-                        // provide IsCallable() status. 
-                        // This is just a rough fallback. We could also attempt to simulate the default CallBinder logic to see
-                        // if there are any applicable calls targets, but that would be complex (the callbinder wants the argument list, 
-                        // which we don't have here), and still not correct. 
-                        bool callable = false;
-                        if (typeof(Delegate).IsAssignableFrom(args[0].GetLimitType()) ||
-                            typeof(MethodGroup).IsAssignableFrom(args[0].GetLimitType())) {
-                            callable = true;
-                        }
-
-                        return new DynamicMetaObject(
-                            Ast.Constant(callable),
-                            restrictions
-                        );
                 }
             }
             return null;
@@ -439,18 +442,18 @@ namespace Microsoft.Scripting.Actions {
             return args[index].HasValue ? args[index].GetLimitType() : args[index].Expression.Type;
         }
 
-        private DynamicMetaObject MakeMethodIndexRule(string oper, DynamicMetaObject[] args) {
+        private DynamicMetaObject MakeMethodIndexRule(IndexType oper, DynamicMetaObject[] args) {
             MethodInfo[] defaults = GetMethodsFromDefaults(args[0].GetLimitType().GetDefaultMembers(), oper);
             if (defaults.Length != 0) {
                 MethodBinder binder = MethodBinder.MakeBinder(
                     this,
-                    oper == StandardOperators.GetItem ? "get_Item" : "set_Item",
+                    oper == IndexType.Get ? "get_Item" : "set_Item",
                     defaults);
 
                 DynamicMetaObject[] selfWithArgs = args;
                 ParameterExpression arg2 = null;
 
-                if (oper == StandardOperators.SetItem) {
+                if (oper == IndexType.Set) {
                     Debug.Assert(args.Length >= 2);
 
                     // need to save arg2 in a temp because it's also our result
@@ -467,7 +470,7 @@ namespace Microsoft.Scripting.Actions {
                 BindingRestrictions restrictions = BindingRestrictions.Combine(args);
 
                 if (target.Success) {
-                    if (oper == StandardOperators.GetItem) {
+                    if (oper == IndexType.Get) {
                         return new DynamicMetaObject(
                             target.MakeExpression(),
                             restrictions.Merge(BindingRestrictions.Combine(target.RestrictedArguments))
@@ -493,11 +496,11 @@ namespace Microsoft.Scripting.Actions {
             return null;
         }
 
-        private DynamicMetaObject MakeArrayIndexRule(string oper, DynamicMetaObject[] args) {
+        private DynamicMetaObject MakeArrayIndexRule(IndexType oper, DynamicMetaObject[] args) {
             if (CanConvertFrom(GetArgType(args, 1), typeof(int), false, NarrowingLevel.All)) {
                 BindingRestrictions restrictions = BindingRestrictionsHelpers.GetRuntimeTypeRestriction(args[0].Expression, args[0].GetLimitType()).Merge(BindingRestrictions.Combine(args));
 
-                if (oper == StandardOperators.GetItem) {
+                if (oper == IndexType.Get) {
                     return new DynamicMetaObject(
                         Ast.ArrayAccess(
                             args[0].Expression,
@@ -522,16 +525,16 @@ namespace Microsoft.Scripting.Actions {
             return null;
         }
 
-        private MethodInfo[] GetMethodsFromDefaults(MemberInfo[] defaults, string op) {
+        private MethodInfo[] GetMethodsFromDefaults(MemberInfo[] defaults, IndexType op) {
             List<MethodInfo> methods = new List<MethodInfo>();
             foreach (MemberInfo mi in defaults) {
                 PropertyInfo pi = mi as PropertyInfo;
 
                 if (pi != null) {
-                    if (op == StandardOperators.GetItem) {
+                    if (op == IndexType.Get) {
                         MethodInfo method = pi.GetGetMethod(PrivateBinding); 
                         if (method != null) methods.Add(method);
-                    } else if (op == StandardOperators.SetItem) {
+                    } else if (op == IndexType.Set) {
                         MethodInfo method = pi.GetSetMethod(PrivateBinding);
                         if (method != null) methods.Add(method);
                     }
@@ -590,14 +593,14 @@ namespace Microsoft.Scripting.Actions {
             return null;
         }
 
-        private static Operators GetInvertedOperator(Operators op) {
+        private static ExpressionType GetInvertedOperator(ExpressionType op) {
             switch (op) {
-                case Operators.LessThan: return Operators.GreaterThanOrEqual;
-                case Operators.LessThanOrEqual: return Operators.GreaterThan;
-                case Operators.GreaterThan: return Operators.LessThanOrEqual;
-                case Operators.GreaterThanOrEqual: return Operators.LessThan;
-                case Operators.Equals: return Operators.NotEquals;
-                case Operators.NotEquals: return Operators.Equals;
+                case ExpressionType.LessThan: return ExpressionType.GreaterThanOrEqual;
+                case ExpressionType.LessThanOrEqual: return ExpressionType.GreaterThan;
+                case ExpressionType.GreaterThan: return ExpressionType.LessThanOrEqual;
+                case ExpressionType.GreaterThanOrEqual: return ExpressionType.LessThan;
+                case ExpressionType.Equal: return ExpressionType.NotEqual;
+                case ExpressionType.NotEqual: return ExpressionType.Equal;
                 default: throw new InvalidOperationException();
             }
         }
@@ -614,7 +617,7 @@ namespace Microsoft.Scripting.Actions {
         private MethodInfo[] GetApplicableMembers(Type t, OperatorInfo info) {
             Assert.NotNull(t, info);
 
-            OldDoOperationAction act = OldDoOperationAction.Make(this, info.Operator);
+            OldDoOperationAction act = OldDoOperationAction.Make(this, OperatorInfo.ExpressionTypeToOperator(info.Operator));
 
             MemberGroup members = GetMember(act, t, info.Name);
             if (members.Count == 0 && info.AlternateName != null) {
@@ -624,44 +627,7 @@ namespace Microsoft.Scripting.Actions {
             // filter down to just methods
             return FilterNonMethods(t, members);
         }
-
-        /// <summary>
-        /// Gets alternate members which are specially recognized by the DLR for specific types when
-        /// all other member lookup fails.
-        /// </summary>
-        private static MethodInfo[] GetFallbackMembers(Type t, OperatorInfo info, DynamicMetaObject[] args, out BindingRestrictions restrictions) {
-            // if we have an event we need to make a strongly-typed event handler
-
-            // TODO: Events, we need to look in the args and pull out the real values
-
-            if (t == typeof(EventTracker)) {
-                EventTracker et = ((EventTracker)args[0].Value);
-                if (info.Operator == Operators.InPlaceAdd) {
-                    restrictions = GetFallbackRestrictions(t, et, args[0]);
-                    return new MethodInfo[] { typeof(BinderOps).GetMethod("EventTrackerInPlaceAdd").MakeGenericMethod(et.Event.EventHandlerType) };
-                } else if (info.Operator == Operators.InPlaceSubtract) {
-                    restrictions = GetFallbackRestrictions(t, et, args[0]);
-                    return new MethodInfo[] { typeof(BinderOps).GetMethod("EventTrackerInPlaceRemove").MakeGenericMethod(et.Event.EventHandlerType) };
-                }
-            } else if (t == typeof(BoundMemberTracker)) {
-                BoundMemberTracker bmt = ((BoundMemberTracker)args[0].Value);
-                if (bmt.BoundTo.MemberType == TrackerTypes.Event) {
-                    EventTracker et = ((EventTracker)bmt.BoundTo);
-
-                    if (info.Operator == Operators.InPlaceAdd) {
-                        restrictions = GetFallbackRestrictions(t, et, args[0]);
-                        return new MethodInfo[] { typeof(BinderOps).GetMethod("BoundEventTrackerInPlaceAdd").MakeGenericMethod(et.Event.EventHandlerType) };
-                    } else if (info.Operator == Operators.InPlaceSubtract) {
-                        restrictions = GetFallbackRestrictions(t, et, args[0]);
-                        return new MethodInfo[] { typeof(BinderOps).GetMethod("BoundEventTrackerInPlaceRemove").MakeGenericMethod(et.Event.EventHandlerType) };
-                    }
-                }
-            }
-
-            restrictions = BindingRestrictions.Empty;
-            return new MethodInfo[0];
-        }
-
+        
         private static BindingRestrictions GetFallbackRestrictions(Type t, EventTracker et, DynamicMetaObject self) {
             if (t == typeof(EventTracker)) {
                 //

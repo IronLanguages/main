@@ -505,6 +505,7 @@ namespace IronRuby.Tests {
                 Backtrace1,
                 Backtrace2,
                 Backtrace3,
+                Backtrace4,
             };
         }
     }

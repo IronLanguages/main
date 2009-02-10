@@ -14,15 +14,19 @@
  * ***************************************************************************/
 
 using System;
+
 using Microsoft.Scripting;
 using Microsoft.Scripting.Runtime;
+
+using IronPython.Runtime.Binding;
+
 using MSAst = System.Linq.Expressions;
 
 namespace IronPython.Compiler.Ast {
     public abstract class Expression : Node {
         internal abstract MSAst.Expression Transform(AstGenerator ag, Type type);
 
-        internal virtual MSAst.Expression TransformSet(AstGenerator ag, SourceSpan span, MSAst.Expression right, Operators op) {
+        internal virtual MSAst.Expression TransformSet(AstGenerator ag, SourceSpan span, MSAst.Expression right, PythonOperationKind op) {
             ag.AddError("can't assign to " + NodeName, Span);
             return null;
         }
