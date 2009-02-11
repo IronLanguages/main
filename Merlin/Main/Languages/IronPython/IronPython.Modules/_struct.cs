@@ -349,7 +349,7 @@ namespace IronPython.Modules {
 
             [Documentation("reads the current format from the specified array")]
             public PythonTuple/*!*/ unpack_from(CodeContext/*!*/ context, [NotNull]ArrayModule.PythonArray/*!*/ buffer, [DefaultParameterValue(0)] int offset) {
-                return unpack_from(context, StringOps.FromByteArray(buffer.ToByteArray()), offset);
+                return unpack_from(context, buffer.ToByteArray().MakeString(), offset);
             }
 
             [Documentation("reads the current format from the specified string")]

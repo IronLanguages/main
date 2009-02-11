@@ -28,7 +28,7 @@ using AstUtils = Microsoft.Scripting.Ast.Utils;
 using IronRuby.Compiler;
     
 namespace IronRuby.Runtime {
-    public sealed partial class BlockParam : IDynamicObject {
+    public sealed partial class BlockParam : IDynamicMetaObjectProvider {
         public DynamicMetaObject/*!*/ GetMetaObject(Expression/*!*/ parameter) {
             return new Meta(parameter, BindingRestrictions.Empty, this);
         }

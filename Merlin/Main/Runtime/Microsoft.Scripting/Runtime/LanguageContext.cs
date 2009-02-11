@@ -599,7 +599,7 @@ namespace Microsoft.Scripting.Runtime {
         /// By default, only returns IDO names
         /// </summary>
         internal protected virtual IList<string> GetMemberNames(object obj) {
-            var ido = obj as IDynamicObject;
+            var ido = obj as IDynamicMetaObjectProvider;
             if (ido != null) {
                 var mo = ido.GetMetaObject(Expression.Parameter(typeof(object), null));
                 return mo.GetDynamicMemberNames().ToReadOnly();

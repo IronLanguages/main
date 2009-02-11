@@ -38,7 +38,7 @@ namespace IronPython.Runtime {
     /// Created for a user-defined function.  
     /// </summary>
     [PythonType("function")]
-    public sealed class PythonFunction : PythonTypeSlot, IWeakReferenceable, IMembersList, IDynamicObject, ICodeFormattable, IOldDynamicObject {
+    public sealed class PythonFunction : PythonTypeSlot, IWeakReferenceable, IMembersList, IDynamicMetaObjectProvider, ICodeFormattable, IOldDynamicObject {
         private readonly CodeContext/*!*/ _context;     // the creating code context of the function
         [PythonHidden]
         public readonly Delegate Target;                // the target delegate to be invoked when called (should come from function code)
@@ -1308,9 +1308,9 @@ namespace IronPython.Runtime {
 
         #endregion
 
-        #region IDynamicObject Members
+        #region IDynamicMetaObjectProvider Members
 
-        DynamicMetaObject/*!*/ IDynamicObject.GetMetaObject(Expression/*!*/ parameter) {
+        DynamicMetaObject/*!*/ IDynamicMetaObjectProvider.GetMetaObject(Expression/*!*/ parameter) {
             return new Binding.MetaPythonFunction(parameter, BindingRestrictions.Empty, this);
         }
 

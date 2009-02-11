@@ -21,6 +21,8 @@ using IronRuby.Runtime;
 using IronRuby.Runtime.Calls;
 using Microsoft.Scripting;
 using Microsoft.Scripting.Runtime;
+using System.Collections;
+using System.Collections.Generic;
 
 namespace IronRuby.Builtins {
 
@@ -71,6 +73,79 @@ namespace IronRuby.Builtins {
         [RubyConstructor]
         public static RubyFile/*!*/ CreateFile(RubyClass/*!*/ self, MutableString/*!*/ path, int mode) {
             return new RubyFile(self.Context, path.ConvertToString(), (RubyFileMode)mode);
+        }
+
+        #endregion
+
+        #region Declared Constants
+
+        static RubyFileOps() {
+            ALT_SEPARATOR = MutableString.Create(AltDirectorySeparatorChar.ToString()).Freeze();
+            SEPARATOR = MutableString.Create(DirectorySeparatorChar.ToString()).Freeze();
+            Separator = SEPARATOR;
+            PATH_SEPARATOR = MutableString.Create(PathSeparatorChar.ToString()).Freeze();
+        }
+
+        private const char AltDirectorySeparatorChar = '\\';
+        private const char DirectorySeparatorChar = '/';
+        private const char PathSeparatorChar = ';';
+
+        internal static bool IsDirectorySeparator(int c) {
+            return c == DirectorySeparatorChar || c == AltDirectorySeparatorChar;
+        }
+
+        [RubyConstant]
+        public readonly static MutableString ALT_SEPARATOR;
+
+        [RubyConstant]
+        public readonly static MutableString PATH_SEPARATOR;
+
+        [RubyConstant]
+        public readonly static MutableString SEPARATOR;
+
+        [RubyConstant]
+        public readonly static MutableString Separator = SEPARATOR;
+
+        private const string NUL_VALUE = "NUL";
+
+        [RubyModule("Constants")]
+        public static class Constants {
+            [RubyConstant]
+            public readonly static int APPEND = (int)RubyFileMode.APPEND;
+            [RubyConstant]
+            public readonly static int BINARY = (int)RubyFileMode.BINARY;
+            [RubyConstant]
+            public readonly static int CREAT = (int)RubyFileMode.CREAT;
+            [RubyConstant]
+            public readonly static int EXCL = (int)RubyFileMode.EXCL;
+            [RubyConstant]
+            public readonly static int FNM_CASEFOLD = 0x08;
+            [RubyConstant]
+            public readonly static int FNM_DOTMATCH = 0x04;
+            [RubyConstant]
+            public readonly static int FNM_NOESCAPE = 0x01;
+            [RubyConstant]
+            public readonly static int FNM_PATHNAME = 0x02;
+            [RubyConstant]
+            public readonly static int FNM_SYSCASE = 0x08;
+            [RubyConstant]
+            public readonly static int LOCK_EX = 0x02;
+            [RubyConstant]
+            public readonly static int LOCK_NB = 0x04;
+            [RubyConstant]
+            public readonly static int LOCK_SH = 0x01;
+            [RubyConstant]
+            public readonly static int LOCK_UN = 0x08;
+            [RubyConstant]
+            public readonly static int NONBLOCK = (int)RubyFileMode.NONBLOCK;
+            [RubyConstant]
+            public readonly static int RDONLY = (int)RubyFileMode.RDONLY;
+            [RubyConstant]
+            public readonly static int RDWR = (int)RubyFileMode.RDWR;
+            [RubyConstant]
+            public readonly static int TRUNC = (int)RubyFileMode.TRUNC;
+            [RubyConstant]
+            public readonly static int WRONLY = (int)RubyFileMode.WRONLY;
         }
 
         #endregion
@@ -297,19 +372,83 @@ namespace IronRuby.Builtins {
 
         //identical?
 
-        [RubyMethod("join", RubyMethodAttributes.PublicSingleton)]
-        public static MutableString Join(ConversionStorage<MutableString>/*!*/ stringCast, RubyClass/*!*/ self, [NotNull]params object[] strings) {
-            MutableString result = MutableString.CreateMutable();
+        #region join
 
-            for (int i = 0; i < strings.Length; i++) {
-                result.Append(Protocols.CastToString(stringCast, self.Context, strings[i]));
-                if (i < strings.Length - 1) {
-                    result.Append(SEPARATOR);
+        private static readonly MutableString InfiniteRecursionMarker = MutableString.Create("[...]").Freeze();
+
+        [RubyMethod("join", RubyMethodAttributes.PublicSingleton)]
+        public static MutableString Join(ConversionStorage<MutableString>/*!*/ stringCast, RubyContext/*!*/ context, RubyClass/*!*/ self, 
+            [NotNull]params object[] parts) {
+
+            MutableString result = MutableString.CreateMutable();
+            Dictionary<object, bool> visitedLists = null;
+            var worklist = new Stack<object>();
+            int current = 0;
+            MutableString str;
+
+            Push(worklist, parts);
+            while (worklist.Count > 0) {
+                object part = worklist.Pop();
+                var list = part as IList;
+                if (list != null) {
+                    if (list.Count == 0) {
+                        str = MutableString.Empty;
+                    } else if (visitedLists != null && visitedLists.ContainsKey(list)) {
+                        str = InfiniteRecursionMarker;
+                    } else {
+                        if (visitedLists == null) {
+                            visitedLists = new Dictionary<object, bool>(ReferenceEqualityComparer<object>.Instance);
+                        }
+                        visitedLists.Add(list, true);
+                        Push(worklist, list);
+                        continue;
+                    }
+                } else if (part == null) {
+                    throw RubyExceptions.CreateTypeConversionError("NilClass", "String");
+                } else {
+                    str = Protocols.CastToString(stringCast, context, part);
                 }
+
+                if (current > 0) {
+                    AppendDirectoryName(result, str);
+                } else {
+                    result.Append(str);
+                }
+                current++;
             }
 
             return result;
         }
+
+        private static void Push(Stack<Object>/*!*/ stack, IList/*!*/ values) {
+            for (int i = values.Count - 1; i >= 0; i--) {
+                stack.Push(values[i]);
+            }
+        }
+
+        private static void AppendDirectoryName(MutableString/*!*/ result, MutableString/*!*/ name) {
+            int resultLength = result.GetCharCount();
+
+            int i;
+            for (i = resultLength - 1; i >= 0; i--) {
+                if (!IsDirectorySeparator(result.GetChar(i))) {
+                    break;
+                }
+            }
+
+            if (i == resultLength - 1) {
+                if (!IsDirectorySeparator(name.GetFirstChar())) {
+                    result.Append(DirectorySeparatorChar);
+                }
+                result.Append(name);
+            } else if (IsDirectorySeparator(name.GetFirstChar())) {
+                result.Replace(i + 1, resultLength - i - 1, name);
+            } else {
+                result.Append(name);
+            }
+        }
+
+        #endregion
 
         #region expand_path
 
@@ -613,65 +752,6 @@ namespace IronRuby.Builtins {
         }
 
         //truncate
-
-        #endregion
-
-        #region Declared Constants
-
-        [RubyConstant]
-        public readonly static MutableString ALT_SEPARATOR = MutableString.Create("\\");
-
-        [RubyConstant]
-        public readonly static MutableString PATH_SEPARATOR = MutableString.Create(";");
-
-        private readonly static MutableString INTERNAL_SEPARATOR = MutableString.Create("/");
-
-        private readonly static string NUL_VALUE = "NUL";
-        [RubyConstant]
-        public readonly static MutableString SEPARATOR = INTERNAL_SEPARATOR;
-
-        [RubyConstant]
-        public readonly static MutableString Separator = INTERNAL_SEPARATOR;
-
-        [RubyModule("Constants")]
-        public static class Constants {
-            [RubyConstant]
-            public readonly static int APPEND = (int)RubyFileMode.APPEND;
-            [RubyConstant]
-            public readonly static int BINARY = (int)RubyFileMode.BINARY;
-            [RubyConstant]
-            public readonly static int CREAT = (int)RubyFileMode.CREAT;
-            [RubyConstant]
-            public readonly static int EXCL = (int)RubyFileMode.EXCL;
-            [RubyConstant]
-            public readonly static int FNM_CASEFOLD = 0x08;
-            [RubyConstant]
-            public readonly static int FNM_DOTMATCH = 0x04;
-            [RubyConstant]
-            public readonly static int FNM_NOESCAPE = 0x01;
-            [RubyConstant]
-            public readonly static int FNM_PATHNAME = 0x02;
-            [RubyConstant]
-            public readonly static int FNM_SYSCASE = 0x08;
-            [RubyConstant]
-            public readonly static int LOCK_EX = 0x02;
-            [RubyConstant]
-            public readonly static int LOCK_NB = 0x04;
-            [RubyConstant]
-            public readonly static int LOCK_SH = 0x01;
-            [RubyConstant]
-            public readonly static int LOCK_UN = 0x08;
-            [RubyConstant]
-            public readonly static int NONBLOCK = (int)RubyFileMode.NONBLOCK;
-            [RubyConstant]
-            public readonly static int RDONLY = (int)RubyFileMode.RDONLY;
-            [RubyConstant]
-            public readonly static int RDWR = (int)RubyFileMode.RDWR;
-            [RubyConstant]
-            public readonly static int TRUNC = (int)RubyFileMode.TRUNC;
-            [RubyConstant]
-            public readonly static int WRONLY = (int)RubyFileMode.WRONLY;
-        }
 
         #endregion
 

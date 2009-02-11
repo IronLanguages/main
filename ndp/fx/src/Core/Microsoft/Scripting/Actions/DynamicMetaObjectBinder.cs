@@ -104,7 +104,7 @@ namespace System.Dynamic {
             // if target is an IDO we may have a target-specific binding. 
             // so it makes sense to restrict on the target's type.
             // ideally IDO's should do this, but they often miss this.
-            if (args[0] as IDynamicObject != null) {
+            if (args[0] as IDynamicMetaObjectProvider != null) {
                 BindingRestrictions idoRestriction = BindingRestrictions.GetTypeRestriction(target);
                 bindingRestrictions = idoRestriction.Merge(bindingRestrictions);
             }
@@ -152,7 +152,7 @@ namespace System.Dynamic {
         }
 
         private static DynamicMetaObject ObjectToMetaObject(object argValue, Expression parameterExpression) {
-            IDynamicObject ido = argValue as IDynamicObject;
+            IDynamicMetaObjectProvider ido = argValue as IDynamicMetaObjectProvider;
 #if !SILVERLIGHT
             if (ido != null && !System.Runtime.Remoting.RemotingServices.IsObjectOutOfAppDomain(argValue)) {
 #else

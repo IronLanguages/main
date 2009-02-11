@@ -299,14 +299,14 @@ namespace IronPython.Runtime {
             }
         }
 
-        internal PythonType EnsureModuleException(object key, IAttributesCollection dict, string name, string module) {
+        public PythonType EnsureModuleException(object key, IAttributesCollection dict, string name, string module) {
             return (PythonType)(dict[SymbolTable.StringToId(name)] = GetOrCreateModuleState(
                 key,
                 () => PythonExceptions.CreateSubType(this, PythonExceptions.Exception, name, module, "")
             ));
         }
 
-        internal void EnsureModuleException(object key, PythonType baseType, IAttributesCollection dict, string name, string module) {
+        public void EnsureModuleException(object key, PythonType baseType, IAttributesCollection dict, string name, string module) {
             dict[SymbolTable.StringToId(name)] = GetOrCreateModuleState(
                 key,
                 () => PythonExceptions.CreateSubType(this, baseType, name, module, "")

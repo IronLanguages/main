@@ -359,13 +359,13 @@ namespace IronRuby.Compiler.Generation {
 #endif
 
         private void DefineDynamicObjectImplementation() {
-            _tb.AddInterfaceImplementation(typeof(IDynamicObject));
+            _tb.AddInterfaceImplementation(typeof(IDynamicMetaObjectProvider));
 
-            // MetaObject! IDynamicObject.GetMetaObject(Expression! parameter) {
+            // MetaObject! IDynamicMetaObjectProvider.GetMetaObject(Expression! parameter) {
             //   return RubyOps.GetMetaObject(this, parameter);
             // }
 
-            MethodInfo decl = typeof(IDynamicObject).GetMethod("GetMetaObject");
+            MethodInfo decl = typeof(IDynamicMetaObjectProvider).GetMethod("GetMetaObject");
             MethodBuilder impl = _tb.DefineMethod(
                 decl.Name,
                 decl.Attributes & ~(MethodAttributes.Abstract | MethodAttributes.ReservedMask),

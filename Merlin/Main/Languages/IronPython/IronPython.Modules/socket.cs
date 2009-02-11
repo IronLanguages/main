@@ -329,7 +329,7 @@ namespace IronPython.Modules {
                         return (int)_socket.GetSocketOption(level, name);
                     } else {
                         // Byte string return value
-                        return StringOps.FromByteArray(_socket.GetSocketOption(level, name, optionLength));
+                        return _socket.GetSocketOption(level, name, optionLength).MakeString();
                     }
                 } catch (Exception e) {
                     throw MakeException(_context, e);
@@ -373,7 +373,7 @@ namespace IronPython.Modules {
                 } catch (Exception e) {
                     throw MakeException(_context, e);
                 }
-                return StringOps.FromByteArray(buffer, bytesRead);
+                return PythonOps.MakeString(buffer, bytesRead);
             }
 
             [Documentation("recvfrom(bufsize[, flags]) -> (string, address)\n\n"
@@ -391,7 +391,7 @@ namespace IronPython.Modules {
                 } catch (Exception e) {
                     throw MakeException(_context, e);
                 }
-                string data = StringOps.FromByteArray(buffer, bytesRead);
+                string data = PythonOps.MakeString(buffer, bytesRead);
                 PythonTuple remoteAddress = EndPointToTuple((IPEndPoint)remoteEP);
                 return PythonTuple.MakeTuple(data, remoteAddress);
             }
@@ -412,7 +412,7 @@ namespace IronPython.Modules {
                 + "had room to buffer your data for a network send"
                 )]
             public int send(string data, [DefaultParameterValue(0)] int flags) {
-                byte[] buffer = StringOps.ToByteArray(data);
+                byte[] buffer = data.MakeByteArray();
                 try {
                     return _socket.Send(buffer, (SocketFlags)flags);
                 } catch (Exception e) {
@@ -441,7 +441,7 @@ namespace IronPython.Modules {
                 + "had room to buffer your data for a network send"
                 )]
             public void sendall(string data, [DefaultParameterValue(0)] int flags) {
-                byte[] buffer = StringOps.ToByteArray(data);
+                byte[] buffer = data.MakeByteArray();
                 try {
                     int bytesTotal = buffer.Length;
                     int bytesRemaining = bytesTotal;
@@ -471,7 +471,7 @@ namespace IronPython.Modules {
                 + "had room to buffer your data for a network send"
                 )]
             public int sendto(string data, int flags, PythonTuple address) {
-                byte[] buffer = StringOps.ToByteArray(data);
+                byte[] buffer = data.MakeByteArray();
                 EndPoint remoteEP = TupleToEndPoint(_context, address, _socket.AddressFamily, out _hostName);
                 try {
                     return _socket.SendTo(buffer, (SocketFlags)flags, remoteEP);
@@ -581,7 +581,7 @@ namespace IronPython.Modules {
 
                     string strValue;
                     if (Converter.TryConvertToString(value, out strValue)) {
-                        _socket.SetSocketOption(level, name, StringOps.ToByteArray(strValue));
+                        _socket.SetSocketOption(level, name, strValue.MakeByteArray());
                         return;
                     }
                 } catch (Exception e) {
@@ -1116,7 +1116,7 @@ namespace IronPython.Modules {
             } catch (FormatException) {
                 throw PythonExceptions.CreateThrowable(error(context), "illegal IP address passed to inet_pton");
             }
-            return StringOps.FromByteArray(ip.GetAddressBytes());
+            return ip.GetAddressBytes().MakeString();
         }
 
         [Documentation("inet_ntop(address_family, packed_ip) -> ip_string\n\n"
@@ -1136,7 +1136,7 @@ namespace IronPython.Modules {
             )) {
                 throw PythonExceptions.CreateThrowable(error(context), "invalid length of packed IP address string");
             }
-            byte[] ipBytes = StringOps.ToByteArray(packedIP);
+            byte[] ipBytes = packedIP.MakeByteArray();
             if (addressFamily == (int)AddressFamily.InterNetworkV6) {
                 return IPv6BytesToColonHex(ipBytes);
             }

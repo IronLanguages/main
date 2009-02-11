@@ -25,7 +25,7 @@ namespace System.Dynamic {
     /// <summary>
     /// Represents an object with members that can be dynamically added and removed at runtime.
     /// </summary>
-    public sealed class ExpandoObject : IDynamicObject, IDictionary<string, object> {
+    public sealed class ExpandoObject : IDynamicMetaObjectProvider, IDictionary<string, object> {
         internal readonly object LockObject;                          // the readonly field is used for locking the Expando object
         private ExpandoData _data;                                    // the data currently being held by the Expando object
         private int _count;                                           // the count of available members
@@ -214,9 +214,9 @@ namespace System.Dynamic {
 
         #endregion
 
-        #region IDynamicObject Members
+        #region IDynamicMetaObjectProvider Members
 
-        DynamicMetaObject IDynamicObject.GetMetaObject(Expression parameter) {
+        DynamicMetaObject IDynamicMetaObjectProvider.GetMetaObject(Expression parameter) {
             return new MetaExpando(parameter, this);
         }
         #endregion

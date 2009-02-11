@@ -28,7 +28,7 @@ namespace Microsoft.Scripting.Runtime {
             }
 
             if (self.Expression.Type.IsSealedOrValueType()) {
-                return typeof(IDynamicObject).IsAssignableFrom(self.Expression.Type);
+                return typeof(IDynamicMetaObjectProvider).IsAssignableFrom(self.Expression.Type);
             }
 
             return true;

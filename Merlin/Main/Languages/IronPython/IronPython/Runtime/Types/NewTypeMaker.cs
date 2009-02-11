@@ -674,9 +674,9 @@ namespace IronPython.Runtime.Types {
         }
 
         private void DoInterfaceType(Type interfaceType, Dictionary<Type, bool> doneTypes, Dictionary<string, List<string>> specialNames) {
-            if (interfaceType == typeof(IDynamicObject)) {
+            if (interfaceType == typeof(IDynamicMetaObjectProvider)) {
                 // very tricky, we'll handle it when we're creating
-                // our own IDynamicObject interface
+                // our own IDynamicMetaObjectProvider interface
                 return;
             }
 
@@ -890,16 +890,16 @@ namespace IronPython.Runtime.Types {
         }
 
         private void ImplementDynamicObject() {
-            ImplementInterface(typeof(IDynamicObject));
+            ImplementInterface(typeof(IDynamicMetaObjectProvider));
 
             MethodInfo decl;
             MethodBuilder impl;
-            ILGen il = DefineMethodOverride(MethodAttributes.Private, typeof(IDynamicObject), "GetMetaObject", out decl, out impl);
+            ILGen il = DefineMethodOverride(MethodAttributes.Private, typeof(IDynamicMetaObjectProvider), "GetMetaObject", out decl, out impl);
             MethodInfo mi = typeof(UserTypeOps).GetMethod("GetMetaObjectHelper");
 
             bool explicitDynamicObject = false;
             foreach (Type t in _interfaceTypes) {
-                if (t == typeof(IDynamicObject)) {
+                if (t == typeof(IDynamicMetaObjectProvider)) {
                     explicitDynamicObject = true;
                     break;
                 }
@@ -934,7 +934,7 @@ namespace IronPython.Runtime.Types {
                 il.Emit(OpCodes.Brfalse, noOverride);
 
                 // call the user GetMetaObject function
-                EmitClrCallStub(il, typeof(IDynamicObject).GetMethod("GetMetaObject"), callTarget);
+                EmitClrCallStub(il, typeof(IDynamicMetaObjectProvider).GetMethod("GetMetaObject"), callTarget);
 
                 // check for null return
                 il.Emit(OpCodes.Dup);
@@ -973,8 +973,8 @@ namespace IronPython.Runtime.Types {
             il.EmitLoadArg(1);  // parameter
                 
             // baseMetaObject
-            if (typeof(IDynamicObject).IsAssignableFrom(_baseType)) {
-                InterfaceMapping imap = _baseType.GetInterfaceMap(typeof(IDynamicObject));
+            if (typeof(IDynamicMetaObjectProvider).IsAssignableFrom(_baseType)) {
+                InterfaceMapping imap = _baseType.GetInterfaceMap(typeof(IDynamicMetaObjectProvider));
 
                 il.EmitLoadArg(0);  // this
                 il.EmitLoadArg(1);  // parameter
@@ -1199,7 +1199,7 @@ namespace IronPython.Runtime.Types {
         private void ImplementProtectedFieldAccessors(Dictionary<string, List<string>> specialNames) {
             // For protected fields to be accessible from the derived type in Silverlight,
             // we need to create public helper methods that expose them. These methods are
-            // used by the IDynamicObject implementation (in MetaUserObject)
+            // used by the IDynamicMetaObjectProvider implementation (in MetaUserObject)
 
             FieldInfo[] fields = _baseType.GetFields(BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static | BindingFlags.FlattenHierarchy);
             foreach (FieldInfo fi in fields) {

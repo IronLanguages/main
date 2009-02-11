@@ -33,7 +33,7 @@ namespace IronPython.Runtime.Binding {
     /// things such as calling __call__ to perform calls, calling __nonzero__/__len__ to convert to
     /// bool, calling __add__/__radd__ to do addition, etc...  
     /// 
-    /// This logic gets shared between both the IDynamicObject implementation for Python objects as well
+    /// This logic gets shared between both the IDynamicMetaObjectProvider implementation for Python objects as well
     /// as the Python sites.  This ensures the logic we follow for our builtin types and user defined
     /// types is identical and properly conforming to the various protocols.
     /// </summary>

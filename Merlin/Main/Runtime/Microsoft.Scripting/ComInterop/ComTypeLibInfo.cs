@@ -21,7 +21,7 @@ using System.Dynamic;
 
 namespace Microsoft.Scripting.ComInterop {
 
-    public sealed class ComTypeLibInfo : IDynamicObject  {
+    public sealed class ComTypeLibInfo : IDynamicMetaObjectProvider  {
         private readonly ComTypeLibDesc _typeLibDesc;
 
         internal ComTypeLibInfo(ComTypeLibDesc typeLibDesc) {
@@ -53,7 +53,7 @@ namespace Microsoft.Scripting.ComInterop {
             return new string[] { this.Name, "Guid", "Name", "VersionMajor", "VersionMinor" };
         }
 
-        DynamicMetaObject IDynamicObject.GetMetaObject(Expression parameter) {
+        DynamicMetaObject IDynamicMetaObjectProvider.GetMetaObject(Expression parameter) {
             return new TypeLibInfoMetaObject(parameter, this);
         }
     }

@@ -26,7 +26,7 @@ using IronRuby.Compiler;
 
 namespace IronRuby.Builtins {
 
-    public partial class Proc : IDynamicObject {
+    public partial class Proc : IDynamicMetaObjectProvider {
         public DynamicMetaObject/*!*/ GetMetaObject(Expression/*!*/ parameter) {
             return new Meta(parameter, BindingRestrictions.Empty, this);
         }

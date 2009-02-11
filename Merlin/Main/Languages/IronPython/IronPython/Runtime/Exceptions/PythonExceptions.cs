@@ -88,7 +88,7 @@ namespace IronPython.Runtime.Exceptions {
         /// from this and have their own .NET class.
         /// </summary>
         [PythonType("BaseException"), DynamicBaseTypeAttribute, Serializable]
-        public class BaseException : ICodeFormattable, IPythonObject, IDynamicObject {
+        public class BaseException : ICodeFormattable, IPythonObject, IDynamicMetaObjectProvider {
             private PythonType/*!*/ _type;          // the actual Python type of the Exception object
             private object _message = String.Empty; // the message object, cached at __init__ time, not updated on args assignment
             private PythonTuple _args;              // the tuple of args provided at creation time
@@ -373,9 +373,9 @@ namespace IronPython.Runtime.Exceptions {
 
             #endregion            
         
-            #region IDynamicObject Members
+            #region IDynamicMetaObjectProvider Members
 
-            DynamicMetaObject/*!*/ IDynamicObject.GetMetaObject(Expression/*!*/ parameter) {
+            DynamicMetaObject/*!*/ IDynamicMetaObjectProvider.GetMetaObject(Expression/*!*/ parameter) {
                 return new Binding.MetaUserObject(parameter, BindingRestrictions.Empty, null, this);
             }
 

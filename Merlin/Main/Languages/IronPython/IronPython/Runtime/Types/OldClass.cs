@@ -55,7 +55,7 @@ namespace IronPython.Runtime.Types {
 #endif
  ICodeFormattable,
         IMembersList,
-        IDynamicObject {
+        IDynamicMetaObjectProvider {
 
         [NonSerialized]
         private List<OldClass> _bases;
@@ -296,8 +296,8 @@ namespace IronPython.Runtime.Types {
         // Calling an OldClass instance means instantiating that class and invoking the __init__() member if 
         // it's defined.
 
-        // OldClass impls IDynamicObject. But May wind up here still if IDynamicObj doesn't provide a rule (such as for list sigs).
-        // If our IDynamicObject implementation is complete, we can then remove these Call methods.
+        // OldClass impls IDynamicMetaObjectProvider. But May wind up here still if IDynamicObj doesn't provide a rule (such as for list sigs).
+        // If our IDynamicMetaObjectProvider implementation is complete, we can then remove these Call methods.
         [SpecialName]
         public object Call(CodeContext context, [NotNull]params object[] args\u00F8) {
             OldInstance inst = new OldInstance(context, this);
@@ -570,9 +570,9 @@ namespace IronPython.Runtime.Types {
 
         #endregion
 
-        #region IDynamicObject Members
+        #region IDynamicMetaObjectProvider Members
 
-        DynamicMetaObject/*!*/ IDynamicObject.GetMetaObject(Expression/*!*/ parameter) {
+        DynamicMetaObject/*!*/ IDynamicMetaObjectProvider.GetMetaObject(Expression/*!*/ parameter) {
             return new Binding.MetaOldClass(parameter, BindingRestrictions.Empty, this);
         }
 

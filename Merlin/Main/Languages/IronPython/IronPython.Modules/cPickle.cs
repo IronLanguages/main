@@ -108,7 +108,7 @@ namespace IronPython.Modules {
         public static object loads(CodeContext/*!*/ context, string @string) {
             PythonFile pf = PythonFile.Create(
                 context,
-                new MemoryStream(StringOps.ToByteArray(@string)),
+                new MemoryStream(@string.MakeByteArray()),
                 "loads",
                 "b"
             );
@@ -911,7 +911,7 @@ namespace IronPython.Modules {
             /// </summary>
             private void WriteUnicodeStringUtf8(CodeContext/*!*/ context, object value) {
                 Debug.Assert(DynamicHelpers.GetPythonType(value).Equals(TypeCache.String));
-                string encodedString = StringOps.FromByteArray(System.Text.Encoding.UTF8.GetBytes((string)value));
+                string encodedString = System.Text.Encoding.UTF8.GetBytes((string)value).MakeString();
                 WriteInt32(context, encodedString.Length);
                 Write(context, encodedString);
             }
@@ -1432,7 +1432,7 @@ namespace IronPython.Modules {
             }
 
             private object ReadLong(CodeContext/*!*/ context, int size) {
-                return BigInteger.Create(StringOps.ToByteArray(Read(context, size)));
+                return BigInteger.Create(Read(context, size).MakeByteArray());
             }
 
             private char ReadUInt8(CodeContext/*!*/ context) {

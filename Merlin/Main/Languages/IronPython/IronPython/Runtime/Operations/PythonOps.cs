@@ -89,7 +89,7 @@ namespace IronPython.Runtime.Operations {
             // In 1.x, we could check for certain interfaces like ICallable*, but those interfaces were deprecated
             // in favor of dynamic sites. 
             // This is difficult to infer because we'd need to simulate the entire callbinder, which can include
-            // looking for [SpecialName] call methods and checking for a rule from IDynamicObject. But even that wouldn't
+            // looking for [SpecialName] call methods and checking for a rule from IDynamicMetaObjectProvider. But even that wouldn't
             // be complete since sites require the argument list of the call, and we only have the instance here. 
             // Thus check a dedicated IsCallable operator. This lets each object describe if it's callable.
 
@@ -1023,7 +1023,7 @@ namespace IronPython.Runtime.Operations {
             }
 
             List res;
-            if (o is IDynamicObject) {
+            if (o is IDynamicMetaObjectProvider) {
                 res = new List();
 
                 PythonContext pc = PythonContext.GetContext(context);
@@ -2109,6 +2109,10 @@ namespace IronPython.Runtime.Operations {
             PerfTrack.NoteEvent(PerfTrack.Categories.Exceptions, throwable);
 
             return throwable;
+        }
+
+        public static Exception CreateThrowable(PythonType type, params object[] args) {
+            return PythonExceptions.CreateThrowable(type, args);
         }
 
         public static void ClearDynamicStackFrames() {
@@ -3333,6 +3337,39 @@ namespace IronPython.Runtime.Operations {
 
         public static int CompareFloats(double self, double other) {
             return DoubleOps.Compare(self, other);
+        }
+
+        public static byte[] MakeByteArray(this string s) {
+            byte[] ret = new byte[s.Length];
+            for (int i = 0; i < s.Length; i++) {
+                if (s[i] < 0x100) ret[i] = (byte)s[i];
+                else throw PythonOps.UnicodeDecodeError("'ascii' codec can't decode byte {0:X} in position {1}: ordinal not in range", (int)ret[i], i);
+            }
+            return ret;
+        }
+
+        public static string MakeString(this IList<byte> bytes) {
+            return MakeString(bytes, bytes.Count);
+        }
+
+        internal static string MakeString(this byte[] preamble, IList<byte> bytes) {
+            char[] chars = new char[preamble.Length + bytes.Count];
+            for (int i = 0; i < preamble.Length; i++) {
+                chars[i] = (char)preamble[i];
+            }
+            for (int i = 0; i < bytes.Count; i++) {
+                chars[i + preamble.Length] = (char)bytes[i];
+            }
+            return new String(chars);
+        }
+
+        internal static string MakeString(this IList<byte> bytes, int maxBytes) {
+            int bytesToCopy = Math.Min(bytes.Count, maxBytes);
+            StringBuilder b = new StringBuilder(bytesToCopy);
+            for (int i = 0; i < bytesToCopy; i++) {
+                b.Append((char)bytes[i]);
+            }
+            return b.ToString();
         }
 
         #region Exception Factories

@@ -23,7 +23,7 @@ using ComTypes = System.Runtime.InteropServices.ComTypes;
 
 namespace Microsoft.Scripting.ComInterop {
 
-    public class ComTypeClassDesc : ComTypeDesc, IDynamicObject {
+    public class ComTypeClassDesc : ComTypeDesc, IDynamicMetaObjectProvider {
         LinkedList<string> _itfs; // implemented interfaces
         LinkedList<string> _sourceItfs; // source interfaces supported by this coclass
         private Type _typeObj;
@@ -77,7 +77,7 @@ namespace Microsoft.Scripting.ComInterop {
                 return _itfs.Contains(itfName);
         }
 
-        #region IDynamicObject Members
+        #region IDynamicMetaObjectProvider Members
 
         public DynamicMetaObject GetMetaObject(Expression parameter) {
             return new ComClassMetaObject(parameter, this);

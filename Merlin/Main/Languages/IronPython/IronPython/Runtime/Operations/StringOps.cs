@@ -1341,40 +1341,6 @@ namespace IronPython.Runtime.Operations {
             return false;
         }
 
-        internal static byte[] ToByteArray(string s) {
-            byte[] ret = new byte[s.Length];
-            for (int i = 0; i < s.Length; i++) {
-                if (s[i] < 0x100) ret[i] = (byte)s[i];
-                else throw PythonOps.UnicodeDecodeError("'ascii' codec can't decode byte {0:X} in position {1}: ordinal not in range", (int)ret[i], i);
-            }
-            return ret;
-        }
-
-        internal static string FromByteArray(IList<byte> bytes) {
-            return FromByteArray(bytes, bytes.Count);
-        }
-
-
-        internal static string FromByteArray(byte[]preamble, IList<byte> bytes) {
-            char[] chars = new char[preamble.Length + bytes.Count];
-            for (int i = 0; i < preamble.Length; i++) {
-                chars[i] = (char)preamble[i];
-            }
-            for (int i = 0; i < bytes.Count; i++) {
-                chars[i + preamble.Length] = (char)bytes[i];
-            }
-            return new String(chars);
-        }
-
-        internal static string FromByteArray(IList<byte> bytes, int maxBytes) {
-            int bytesToCopy = Math.Min(bytes.Count, maxBytes);
-            StringBuilder b = new StringBuilder(bytesToCopy);
-            for (int i = 0; i < bytesToCopy; i++) {
-                b.Append((char)bytes[i]);
-            }
-            return b.ToString();
-        }
-
         internal static string RawUnicodeEscapeEncode(string s) {
             // in the common case we don't need to encode anything, so we
             // lazily create the StringBuilder only if necessary.
@@ -1569,7 +1535,7 @@ namespace IronPython.Runtime.Operations {
                 }
 #endif
 
-                byte[] bytes = ToByteArray(s);
+                byte[] bytes = s.MakeByteArray();
                 int start = GetStartingOffset(e, bytes);
 
                 return e.GetString(bytes, start, bytes.Length - start);
@@ -1648,7 +1614,7 @@ namespace IronPython.Runtime.Operations {
                 }
 
 #endif                
-                return FromByteArray(e.GetPreamble(), e.GetBytes(s));
+                return PythonOps.MakeString(e.GetPreamble(), e.GetBytes(s));
             }
 
                 // look for user-registered codecs

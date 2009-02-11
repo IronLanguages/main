@@ -15,6 +15,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Text;
 
 using IronPython.Runtime;
@@ -22,6 +23,7 @@ using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
 using Microsoft.Scripting;
+using Microsoft.Scripting.Runtime;
 
 [assembly: PythonModule("binascii", typeof(IronPython.Modules.PythonBinaryAscii))]
 namespace IronPython.Modules {
@@ -128,9 +130,48 @@ namespace IronPython.Modules {
         public static object crc_hqx(object data, object crc) {
             throw new NotImplementedException();
         }
-        public static object crc32(object data, object crc) {
-            throw new NotImplementedException();
+
+        [Documentation("crc32(string[, value]) -> string\n\nComputes a CRC (Cyclic Redundancy Check) checksum of string.")]
+        public static int crc32(string buffer, [DefaultParameterValue(0)] int baseValue) {
+            byte[] data = buffer.MakeByteArray();
+            uint result = crc32(data, 0, data.Length, unchecked((uint)baseValue));
+            return unchecked((int)result);
         }
+
+        [Documentation("crc32(string[, value]) -> string\n\nComputes a CRC (Cyclic Redundancy Check) checksum of string.")]
+        public static int crc32(string buffer, uint baseValue) {
+            byte[] data = buffer.MakeByteArray();
+            uint result = crc32(data, 0, data.Length, baseValue);
+            return unchecked((int)result);
+        }
+
+        [Documentation("crc32(byte_array[, value]) -> string\n\nComputes a CRC (Cyclic Redundancy Check) checksum of byte_array.")]
+        public static int crc32(byte[] buffer, [DefaultParameterValue(0)] int baseValue) {
+            uint result = crc32(buffer, 0, buffer.Length, unchecked((uint)baseValue));
+            return unchecked((int)result);
+        }
+
+        [Documentation("crc32(byte_array[, value]) -> string\n\nComputes a CRC (Cyclic Redundancy Check) checksum of byte_array.")]
+        public static int crc32(byte[] buffer, uint baseValue) {
+            uint result = crc32(buffer, 0, buffer.Length, baseValue);
+            return unchecked((int)result);
+        }
+
+        internal static uint crc32(byte[] buffer, int offset, int count, uint baseValue) {
+            uint remainder = (baseValue ^ 0xffffffff);
+            for (int i = offset; i < offset + count; i++) {
+                remainder = remainder ^ buffer[i];
+                for (int j = 0; j < 8; j++) {
+                    if ((remainder & 0x01) != 0) {
+                        remainder = (remainder >> 1) ^ 0xEDB88320;
+                    } else {
+                        remainder = (remainder >> 1);
+                    }
+                }
+            }
+            return (remainder ^ 0xffffffff);
+        }
+
         public static object b2a_hex(string data) {
             StringBuilder sb = new StringBuilder(data.Length * 2);
             for (int i = 0; i < data.Length; i++) {
@@ -138,6 +179,7 @@ namespace IronPython.Modules {
             }
             return sb.ToString();
         }
+
         public static object hexlify(string data) {
             return b2a_hex(data);
         }

@@ -143,13 +143,13 @@ namespace IronPython.Runtime.Operations {
                     return value;
                 }
 
-                return FastNew(context, StringOps.FromByteArray(s));
+                return FastNew(context, s.MakeString());
             }
 
             ValidateType(cls);
 
             // derived int creation...
-            return cls.CreateInstance(context, FastNew(context, StringOps.FromByteArray(s)));
+            return cls.CreateInstance(context, FastNew(context, s.MakeString()));
         }
 
         internal static string TrimRadix(string s) {

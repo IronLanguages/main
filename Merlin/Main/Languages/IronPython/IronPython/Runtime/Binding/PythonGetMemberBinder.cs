@@ -68,7 +68,7 @@ namespace IronPython.Runtime.Binding {
                     this,
                     cc.Expression
                 );
-            } else if (target.Value is IDynamicObject && !(target is MetaPythonObject)) {
+            } else if (target.Value is IDynamicMetaObjectProvider && !(target is MetaPythonObject)) {
                 return GetForeignObject(target);
             }
 #if !SILVERLIGHT

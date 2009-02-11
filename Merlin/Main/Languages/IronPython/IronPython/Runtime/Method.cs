@@ -28,7 +28,7 @@ using IronPython.Runtime.Types;
 namespace IronPython.Runtime {
 
     [PythonType("instancemethod")]
-    public sealed partial class Method : PythonTypeSlot, IWeakReferenceable, IMembersList, IDynamicObject, ICodeFormattable {
+    public sealed partial class Method : PythonTypeSlot, IWeakReferenceable, IMembersList, IDynamicMetaObjectProvider, ICodeFormattable {
         private readonly object _func;
         private readonly object _inst;
         private readonly object _declaringClass;
@@ -261,9 +261,9 @@ namespace IronPython.Runtime {
 
         #endregion
 
-        #region IDynamicObject Members
+        #region IDynamicMetaObjectProvider Members
 
-        DynamicMetaObject/*!*/ IDynamicObject.GetMetaObject(Expression/*!*/ parameter) {
+        DynamicMetaObject/*!*/ IDynamicMetaObjectProvider.GetMetaObject(Expression/*!*/ parameter) {
             return new Binding.MetaMethod(parameter, BindingRestrictions.Empty, this);
         }
 

@@ -50,7 +50,7 @@ namespace IronPython.Runtime {
         }
 
         public void __init__(CodeContext/*!*/ context, string unicode, string encoding) {
-            _bytes = new List<byte>(StringOps.ToByteArray(StringOps.encode(context, unicode, encoding, "strict")));
+            _bytes = new List<byte>(StringOps.encode(context, unicode, encoding, "strict").MakeByteArray());
         }
 
         #region Public Mutable Sequence API
@@ -194,7 +194,7 @@ namespace IronPython.Runtime {
         }
 
         public string decode(CodeContext/*!*/ context, [Optional]string encoding, [DefaultParameterValue("strict")]string errors) {
-            return StringOps.decode(context, StringOps.FromByteArray(_bytes), encoding, errors);
+            return StringOps.decode(context, _bytes.MakeString(), encoding, errors);
         }
 
         public bool endswith(IList<byte>/*!*/ suffix) {

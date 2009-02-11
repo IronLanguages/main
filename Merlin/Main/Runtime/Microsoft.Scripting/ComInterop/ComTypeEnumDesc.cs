@@ -24,7 +24,7 @@ using ComTypes = System.Runtime.InteropServices.ComTypes;
 
 namespace Microsoft.Scripting.ComInterop {
 
-    public sealed class ComTypeEnumDesc : ComTypeDesc, IDynamicObject {
+    public sealed class ComTypeEnumDesc : ComTypeDesc, IDynamicMetaObjectProvider {
         private readonly string[] _memberNames;
         private readonly object[] _memberValues;
 
@@ -65,7 +65,7 @@ namespace Microsoft.Scripting.ComInterop {
             _memberValues = memberValues;
         }
 
-        DynamicMetaObject IDynamicObject.GetMetaObject(Expression parameter) {
+        DynamicMetaObject IDynamicMetaObjectProvider.GetMetaObject(Expression parameter) {
             return new TypeEnumMetaObject(this, parameter);
         }
 
