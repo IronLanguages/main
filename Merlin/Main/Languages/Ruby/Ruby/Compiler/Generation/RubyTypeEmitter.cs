@@ -44,7 +44,7 @@ namespace IronRuby.Compiler.Generation {
             RubyClass cls = clsObject as RubyClass;
             RubyMemberInfo method;
             // TODO: visibility
-            if (cls == null || (method = cls.ResolveMethod(name, true)) == null || (method is RubyMethodGroupInfo)) {
+            if (cls == null || (method = cls.ResolveMethod(name, true).Info) == null || (method is RubyMethodGroupInfo)) {
                 callTarget = null;
                 return false;
             }

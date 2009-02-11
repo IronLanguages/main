@@ -188,7 +188,7 @@ namespace Microsoft.Scripting.Ast {
             }
 
             if (!block.HasFlow) {
-                return Expression.MakeTry(@try, @finally, fault, handlers);
+                return Expression.MakeTry(null, @try, @finally, fault, handlers);
             }
 
             if (node.Type != typeof(void)) {
@@ -217,7 +217,7 @@ namespace Microsoft.Scripting.Ast {
             //  }
 
             if (handlers.Count > 0) {
-                @try = Expression.MakeTry(@try, null, null, handlers);
+                @try = Expression.MakeTry(null, @try, null, null, handlers);
             }
 
             var saved = Expression.Variable(typeof(Exception), "$exception");
@@ -258,7 +258,7 @@ namespace Microsoft.Scripting.Ast {
             // Emit flow control
             return Expression.Block(
                 new[] { saved },
-                Expression.MakeTry(@try, @finally, fault, handlers),
+                Expression.MakeTry(null, @try, @finally, fault, handlers),
                 Expression.Label(block.FlowLabel),
                 MakeFlowControlSwitch(block)
             );
@@ -306,12 +306,13 @@ namespace Microsoft.Scripting.Ast {
 
                     var assignFlow = Expression.Assign(_flowVariable, Expression.Constant(info.FlowState));
                     var gotoFlow = Expression.Goto(block.FlowLabel);
+                    Expression value;
                     if (info.Variable == null) {
-                        return Expression.Block(assignFlow, gotoFlow);
+                        value = node.Value ?? Expression.Empty();
+                    } else {
+                        value = Expression.Assign(info.Variable, node.Value);
                     }
-
-                    var saveValue = Expression.Assign(info.Variable, node.Value);
-                    return Expression.Block(saveValue, assignFlow, gotoFlow);
+                    return Expression.Block(value, assignFlow, gotoFlow);
                 }
             }
             return base.VisitGoto(node);

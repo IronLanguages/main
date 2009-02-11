@@ -200,7 +200,7 @@ namespace IronRuby.Compiler.Ast {
 
             return Ast.Lambda<T>(
                 body,
-                RubyExceptionData.TopLevelMethodName,
+                RubyExceptionData.EncodeMethodName(gen.SourceUnit, RubyExceptionData.TopLevelMethodName, SourceSpan.None),
                 parameters
             );
         }

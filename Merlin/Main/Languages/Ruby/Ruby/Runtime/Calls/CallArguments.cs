@@ -24,6 +24,7 @@ using Microsoft.Scripting.Actions;
 using Ast = System.Linq.Expressions.Expression;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 using IronRuby.Compiler;
+using Microsoft.Scripting;
 
 namespace IronRuby.Runtime.Calls {
 
@@ -240,6 +241,12 @@ namespace IronRuby.Runtime.Calls {
 
             _args = ArrayUtils.InsertAt(_args, index, arg);
             _signature = new RubyCallSignature(_signature.ArgumentCount + 1, _signature.Flags);
+        }
+
+        internal void InsertMethodName(string/*!*/ methodName) {
+            // insert the method name argument into the args
+            object symbol = SymbolTable.StringToId(methodName);
+            InsertSimple(0, new DynamicMetaObject(Ast.Constant(symbol), BindingRestrictions.Empty, symbol));
         }
 
         public void SetSimpleArgument(int index, DynamicMetaObject/*!*/ arg) {

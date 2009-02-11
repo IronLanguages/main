@@ -20,11 +20,11 @@ using System.Dynamic.Utils;
 
 namespace System.Dynamic {
     /// <summary>
-    /// This uses linear search to find a rule.  Clearly that doesn't scale super well.
-    /// We will address this in the future.
+    /// This API supports the .NET Framework infrastructure and is not intended to be used directly from your code.
+    /// Represents a cache of runtime binding rules.
     /// </summary>
-    /// <typeparam name="T"></typeparam>
-    internal class RuleCache<T> where T : class {
+    /// <typeparam name="T">The delegate type.</typeparam>
+    public class RuleCache<T> where T : class {
         private readonly LinkedList<CallSiteRule<T>> _list = new LinkedList<CallSiteRule<T>>();
         private const int MaxRulesPerSignaturePerCallSiteBinder = 100;
 

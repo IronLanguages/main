@@ -222,6 +222,261 @@ none
 ");
         }
 
+        public static class OverloadInheritance1 {
+            public class A {
+                public string Foo(int a, int b, int c) {
+                    return "Foo: " + a.ToString() + ", " + b.ToString() + ", " + c.ToString();
+                }
+
+                public string Skip() {
+                    return "Skip";
+                }
+            }
+
+            public class B : A {
+                public string Foo(int a) {
+                    return "Foo: " + a.ToString();
+                }
+
+                public virtual string Foo(int a, int b) {
+                    return "Foo: " + a.ToString() + ", " + b.ToString();
+                }
+
+                public string Bar(int a) {
+                    return "Bar: " + a.ToString();
+                }
+
+                public string Hidden(int a) {
+                    return "Hidden: " + a.ToString();
+                }
+
+                public string Middle(int a) {
+                    return "Middle: " + a.ToString();
+                }
+            }
+
+            public class C : B {
+                public new string Foo(int a) {
+                    return "NewFoo: " + a.ToString();
+                }
+
+                public override string Foo(int a, int b) {
+                    return "OverriddenFoo: " + a.ToString() + ", " + b.ToString();
+                }
+
+                public string Bar(int a, int b) {
+                    return "Bar: " + a.ToString() + ", " + b.ToString();
+                }
+
+                public string Hidden(int a, int b) {
+                    return "Hidden: " + a.ToString() + ", " + b.ToString();
+                }
+
+                public string Skip(int a) {
+                    return "Skip: " + a.ToString();
+                }
+            }
+        }
+        
+        public void ClrOverloadInheritance1() {
+            Context.ObjectClass.SetConstant("Obj", new OverloadInheritance1.C());
+
+            AssertOutput(() => CompilerTest(@"
+puts Obj.foo(1)
+puts Obj.foo(1, 2)
+puts Obj.foo(1, 2, 3)
+puts Obj.bar(1)
+puts Obj.bar(1, 2)
+puts Obj.middle(1)
+puts Obj.skip
+puts Obj.skip(1)
+Obj.get_hash_code
+"), @"
+NewFoo: 1
+OverriddenFoo: 1, 2
+Foo: 1, 2, 3
+Bar: 1
+Bar: 1, 2
+Middle: 1
+Skip
+Skip: 1
+");
+            
+            AssertOutput(() => CompilerTest(@"
+p Obj.method(:foo)
+p Obj.method(:bar)
+p Obj.method(:middle)
+p Obj.method(:skip)
+"), @"
+#<Method: *C#foo>
+#<Method: *C#bar>
+#<Method: *C(*B)#middle>
+#<Method: *C#skip>
+", OutputFlags.Match);
+
+            // hides Hidden method when called using mangled name "hidden":
+            Context.GetClass(typeof(OverloadInheritance1.B)).HideMethod("hidden");
+
+            AssertOutput(() => CompilerTest(@"
+puts Obj.hidden(1) rescue puts 'error'
+puts Obj.Hidden(1)
+puts Obj.hidden(1, 2)
+puts Obj.Hidden(1, 2)
+"), @"
+error
+Hidden: 1
+Hidden: 1, 2
+Hidden: 1, 2
+");
+        }
+
+        public void ClrMethodEnumeration1() {
+            // TODO:
+//            Context.ObjectClass.SetConstant("Obj", Context.GetClass(typeof(OverloadInheritance1.B)));
+
+//            Context.GetClass(typeof(OverloadInheritance1.B)).HideMethod("hidden");
+
+//            XAssertOutput(() => CompilerTest(@"
+//p Obj.instance_methods(false)
+//"), @"
+//");
+        }
+
+        public static class OverloadInheritance2 {
+            public class A { public virtual string f(int a) { return "f1"; } }
+            public class B : A { }
+            public class C : B { }
+            public class D : C { public virtual string f(int a, int b) { return "f2"; } }
+            public class E : D { }
+            public class F : E { public virtual string f(int a, int b, int c, int d) { return "f4"; } }
+            public class G : F { }
+
+            public class X : B { public virtual string f(int a, int b, int c) { return "f3"; } }
+            public class Y : X { }
+            
+            public static void Load(RubyContext/*!*/ context) {
+                context.ObjectClass.SetConstant("A", context.GetClass(typeof(OverloadInheritance2.A)));
+                context.ObjectClass.SetConstant("B", context.GetClass(typeof(OverloadInheritance2.B)));
+                context.ObjectClass.SetConstant("C", context.GetClass(typeof(OverloadInheritance2.C)));
+                context.ObjectClass.SetConstant("D", context.GetClass(typeof(OverloadInheritance2.D)));
+                context.ObjectClass.SetConstant("E", context.GetClass(typeof(OverloadInheritance2.E)));
+                context.ObjectClass.SetConstant("F", context.GetClass(typeof(OverloadInheritance2.F)));
+                context.ObjectClass.SetConstant("G", context.GetClass(typeof(OverloadInheritance2.G)));
+                context.ObjectClass.SetConstant("X", context.GetClass(typeof(OverloadInheritance2.X)));
+                context.ObjectClass.SetConstant("Y", context.GetClass(typeof(OverloadInheritance2.Y)));
+            }
+        }
+
+        /// <summary>
+        /// Dynamic site and group caching.
+        /// </summary>
+        public void ClrOverloadInheritance2() {
+            OverloadInheritance2.Load(Context);
+
+            // method definition hides overloads:
+            AssertOutput(() => CompilerTest(@"
+puts E.new.f(1,2)                     # marks D::f2 and A::f1 as used in d.s.
+
+class C; def f; 'f:C'; end; end       # overrides A::f1 => invalidates all 'f'-groups in subtree of C
+
+puts E.new.f(1) rescue puts 'error'   # recreates D::f2 => A::f1 not visible
+puts E.new.f(1,2)                     # D::f still visible => marked as used in d.s.
+"), @"
+f2
+error
+f2
+");
+
+            // module inclusion hides overloads:
+            AssertOutput(() => CompilerTest(@"
+puts Y.new.f(1)                            
+
+module M; def f; 'f:M' end; end
+class X; include M; end               # hides A::f1, but not X::f3
+
+puts Y.new.f(1) rescue puts 'error' 
+puts Y.new.f(1,2,3)
+"), @"
+f1
+error
+f3
+");
+        }
+
+        public void ClrOverloadInheritance3() {
+            OverloadInheritance2.Load(Context);
+
+            // method definition hides overloads:
+            AssertOutput(() => CompilerTest(@"
+p D.instance_method(:f).clr_members.collect { |x| x.to_string }  # creates groups in A and D that are not used in d.s.
+
+class B; def f; 'f:B'; end; end                                  # hides A::f1
+
+p D.instance_method(:f).clr_members.collect { |x| x.to_string }  # only one overload should be present in the group
+"), @"
+[""System.String f(Int32)"", ""System.String f(Int32, Int32)""]
+[""System.String f(Int32, Int32)""]
+");
+        }
+        
+        public void ClrOverloadInheritance4() {
+            OverloadInheritance2.Load(Context);
+
+            AssertOutput(() => CompilerTest(@"
+puts D.new.f(1)
+puts D.new.f(1,2)
+class B; 
+  def f; 'f:B'; end
+end
+puts D.new.f(1) rescue puts 'error'
+puts D.new.f(1,2)
+class B
+  remove_method :f                                # f not used in DS, DS needs to be invalidated though 
+end
+puts D.new.f(1)
+puts D.new.f(1,2)
+"), @"
+f1
+f2
+error
+f2
+f1
+f2
+");
+        }
+
+        /// <summary>
+        /// Removing an overload barrier.
+        /// </summary>
+        public void ClrOverloadInheritance5() {
+            OverloadInheritance2.Load(Context);
+
+            AssertOutput(() => CompilerTest(@"
+puts E.new.f(1)
+
+class C; def f; 'f:C'; end; end
+
+E.new.f(1) rescue puts 'error'
+puts E.new.f(1,2)                              
+puts G.new.f(1,2,3,4)                          # group created after C:f barrier defined
+
+C.send :remove_method, :f
+
+puts G.new.f(1)
+puts E.new.f(1)
+"), @"
+f1
+error
+f2
+f4
+f1
+f1
+");
+        }
+
+        // TODO: CLR overloads
+        // - alias/pri/pub/pro/mf/dm/generics/explicit-overload
+
         public class ClassWithIndexer1 {
             public int[,] Values = new int[,] { {0, 10}, {20, 30} };
 

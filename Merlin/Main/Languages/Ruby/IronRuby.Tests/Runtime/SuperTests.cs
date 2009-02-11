@@ -197,6 +197,75 @@ true
 ");
         }
 
+        /// <summary>
+        /// Super calls method_missing.
+        /// </summary>
+        public void SuperAndMethodMissing1() {
+            AssertOutput(() => CompilerTest(@"
+class C
+  def method_missing name
+    puts ""mm(C): #{name}""
+  end
+end
+
+class D < C
+  def method_missing name
+    puts ""mm(D): #{name}""
+  end
+  
+  def bar
+    puts 'D: bar'    
+    super                                  # calls D#method_missing!
+  end
+end
+
+D.new.bar
+"), @"
+D: bar
+mm(D): bar
+");
+        }
+
+        public void SuperAndMethodMissing2() {
+            AssertOutput(() => CompilerTest(@"
+class D
+  def bar
+    super                                
+  end
+end
+
+D.new.bar rescue p $!
+"), @"
+#<NoMethodError: super: no superclass method `bar'>
+");
+        }
+
+        public void SuperCaching1() {
+            AssertOutput(() => CompilerTest(@"
+module M
+  def bar(x)
+    puts 'M'
+  end
+end
+class C
+  def bar(x)
+    puts 'C'
+    super(x)
+  end
+end
+C.new.bar(1) rescue puts 'error'
+class C
+  include M
+end
+C.new.bar(1)
+"), @"
+C
+error
+C
+M
+");
+        }
+
         // TODO: parameters
         public void SuperInDefineMethod1() {
             SuperInDefineMethod1_Test(false);

@@ -308,7 +308,7 @@ namespace Microsoft.Scripting.Actions {
                             Ast.Field(
                                 field.IsStatic ?
                                     null :
-                                    Ast.Convert(instance, field.DeclaringType),
+                                    AstUtils.Convert(instance, field.DeclaringType),
                                 field.Field
                             ),
                             ConvertExpression(target.Expression, field.FieldType, ConversionResultKind.ExplicitCast, memInfo.CodeContext)

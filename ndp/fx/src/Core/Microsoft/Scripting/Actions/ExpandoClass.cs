@@ -33,7 +33,7 @@ namespace System.Dynamic {
 
         private const int EmptyHashCode = 6551;                     // hash code of the empty ExpandoClass.
 
-        internal static ExpandoClass Empty = new ExpandoClass();                        // The empty Expando class - all Expando objects start off w/ this class.
+        internal static ExpandoClass Empty = new ExpandoClass();    // The empty Expando class - all Expando objects start off w/ this class.
         
         /// <summary>
         /// Constructs the empty ExpandoClass.  This is the class used when an
@@ -92,33 +92,6 @@ namespace System.Dynamic {
         }
 
         /// <summary>
-        /// Gets a new object array for storing the data that matches this
-        /// ExpandoClass given the old ExpandoClass and the instances associated 
-        /// data array.
-        /// </summary>
-        internal object[] GetNewKeys(object[] oldData) {
-            if (oldData.Length >= _keys.Length) {
-                // we have extra space in our buffer, just initialize it to Uninitialized.
-                oldData[_keys.Length - 1] = ExpandoObject.Uninitialized;
-                return oldData;
-            } 
-
-            // we've grown too much - we need a new object array
-            object[] res = new object[GetAlignedSize(_keys.Length)];
-            Array.Copy(oldData, res, oldData.Length);
-            res[oldData.Length] = ExpandoObject.Uninitialized;
-            return res;            
-        }
-
-        private static int GetAlignedSize(int len) {
-            // the alignment of the array for storage of values (must be a power of two)
-            const int DataArrayAlignment = 8;                   
-
-            // round up and then mask off lower bits
-            return (len + (DataArrayAlignment - 1)) & (~(DataArrayAlignment - 1));
-        }
-        
-        /// <summary>
         /// Gets the lists of transitions that are valid from this ExpandoClass
         /// to an ExpandoClass whos keys hash to the apporopriate hash code.
         /// </summary>
@@ -159,7 +132,7 @@ namespace System.Dynamic {
                     return i;
                 }
             }
-            return -1;
+            return ExpandoObject.NoMatch;
         }
 
         /// <summary>
@@ -171,50 +144,31 @@ namespace System.Dynamic {
         /// that is used to check if a member has been deleted.</param>
         /// <returns>
         /// the exact match if there is one
-    	/// if there is no exact match in the members, the matching member that is added 
-        /// to the ExpandoObject most recently.
+        /// if there is exactly one member with case insensitive match, return it
+        /// otherwise we throw AmbiguousMatchException.
         /// </returns>
         private int GetValueIndexCaseInsensitive(string name, ExpandoObject obj) {
-            int firstMatch = -1; //the location of the first matching member
-            lock (obj) {
-                //Search from back to front, so the matching member that is most recently added can be found first
-                for (int i = _keys.Length - 1; i >=0 ; i--) {
-                    if (firstMatch == -1) {
-                        if (string.Equals(
-                            _keys[i],
-                            name,
-                            StringComparison.OrdinalIgnoreCase)) {
-                            //if the matching member is deleted, continue searching
-                            if (!obj.IsDeletedMember(i)) {
-                                firstMatch = i;
-                            }
-                        }
-                    }
-                    //Try checking exact match if we got a first match already
-                    if (firstMatch != -1) {
-                        if (string.Equals(
-                            _keys[i],
-                            name,
-                            StringComparison.Ordinal)) {
-                            if (obj.IsDeletedMember(i)) {
-                                return firstMatch;
+            int caseInsensitiveMatch = ExpandoObject.NoMatch; //the location of the case-insensitive matching member
+            lock (obj.LockObject) {
+                for (int i = _keys.Length - 1; i >= 0; i--) {
+                    if (string.Equals(
+                        _keys[i],
+                        name,
+                        StringComparison.OrdinalIgnoreCase)) {
+                        //if the matching member is deleted, continue searching
+                        if (!obj.IsDeletedMember(i)) {
+                            if (caseInsensitiveMatch == ExpandoObject.NoMatch) {
+                                caseInsensitiveMatch = i;
                             } else {
-                                //the exact match has the highest priority
-                                return i;
+                                //Ambigous match, stop searching
+                                return ExpandoObject.AmbiguousMatchFound;
                             }
                         }
                     }
                 }
             }
-            return firstMatch;
-        }
-
-        /// <summary>
-        /// Gets the name of the specified index.  Used for getting the name to 
-        /// create a new expando class when all we have is the class and old index.
-        /// </summary>
-        internal string GetIndexName(int index) {
-            return _keys[index];
+            //There is exactly one member with case insensitive match.
+            return caseInsensitiveMatch;
         }
 
         /// <summary>

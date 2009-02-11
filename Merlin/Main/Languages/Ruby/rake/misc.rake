@@ -96,7 +96,7 @@ desc "is the environment setup for an IronRuby dev?"
 task :happy do
   commands = !mono? ? ['resgen.exe', 'csc.exe'] : ['resgen', 'gmcs']
 
-  paths = ENV['PATH'].split(File::PATH_SEPARATOR).collect { |path| Pathname.new path }
+  paths = ENV['PATH'].split(File::PATH_SEPARATOR).collect { |path| Pathname.new path.gsub(/\'|\"/,'') }
 
   failure = false
   commands.each do |command|

@@ -31,6 +31,7 @@ using Ast = System.Linq.Expressions.Expression;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 using AstFactory = IronRuby.Compiler.Ast.AstFactory;
 using IronRuby.Compiler.Generation;
+using System.Collections.Generic;
    
 namespace IronRuby.Runtime.Calls {
 
@@ -59,10 +60,6 @@ namespace IronRuby.Runtime.Calls {
         [Emitted]
         public static RubyCallAction/*!*/ Make(string/*!*/ methodName, RubyCallSignature signature) {
             return new RubyCallAction(methodName, signature);
-        }
-
-        public override object/*!*/ CacheIdentity {
-            get { return this; }
         }
 
         #region Object Overrides, IEquatable
@@ -106,52 +103,51 @@ namespace IronRuby.Runtime.Calls {
         /// <exception cref="MissingMethodException">The resolved method is Kernel#method_missing.</exception>
         internal static void Bind(MetaObjectBuilder/*!*/ metaBuilder, string/*!*/ methodName, CallArguments/*!*/ args) {
             RubyClass targetClass = args.RubyContext.GetImmediateClassOf(args.Target);
-            RubyMemberInfo method, methodMissing = null;
-            RubyMethodVisibility incompatibleVisibility = RubyMethodVisibility.None;
+            MethodResolutionResult method;
+            RubyMemberInfo methodMissing = null;
 
             using (targetClass.Context.ClassHierarchyLocker()) {
                 metaBuilder.AddTargetTypeTest(args.Target, targetClass, args.TargetExpression, args.RubyContext, args.ContextExpression);
 
-                method = targetClass.ResolveMethodForSiteNoLock(methodName, args.Signature.HasImplicitSelf, out incompatibleVisibility);
-                if (method == null) {
+                method = targetClass.ResolveMethodForSiteNoLock(methodName, args.Signature.HasImplicitSelf);
+                if (!method.Found) {
                     if (args.Signature.IsTryCall) {
                         // TODO: this shouldn't throw. We need to fix caching of non-existing methods.
                         throw new MissingMethodException();
                         // metaBuilder.Result = Ast.Constant(Fields.RubyOps_MethodNotFound);
                     } else {
-                        methodMissing = targetClass.ResolveMethodForSiteNoLock(Symbols.MethodMissing, true);
+                        methodMissing = targetClass.ResolveMethodMissingForSite(methodName, method.IncompatibleVisibility);
                     }
                 }
             }
 
-            if (method != null) {
-                method.BuildCall(metaBuilder, args, methodName);
+            if (method.Found) {
+                method.Info.BuildCall(metaBuilder, args, methodName);
             } else {
-                // insert the method name argument into the args
-                object symbol = SymbolTable.StringToId(methodName);
-                args.InsertSimple(0, new DynamicMetaObject(Ast.Constant(symbol), BindingRestrictions.Empty, symbol));
-
-                BindToMethodMissing(metaBuilder, args, methodName, methodMissing, incompatibleVisibility);
+                args.InsertMethodName(methodName);
+                BindToMethodMissing(metaBuilder, args, methodName, methodMissing, method.IncompatibleVisibility, false);
             }
         }
 
         internal static void BindToMethodMissing(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args, string/*!*/ methodName,
-            RubyMemberInfo methodMissing, RubyMethodVisibility incompatibleVisibility) {
+            RubyMemberInfo methodMissing, RubyMethodVisibility incompatibleVisibility, bool isSuperCall) {
             // Assumption: args already contain method name.
             
             // TODO: better check for builtin method
             if (methodMissing == null ||
                 methodMissing.DeclaringModule == methodMissing.Context.KernelModule && methodMissing is RubyLibraryMethodInfo) {
 
-                // throw an exception immediately, do not cache the rule:
-                if (incompatibleVisibility == RubyMethodVisibility.Private) {
-                    throw RubyExceptions.CreatePrivateMethodCalled(args.RubyContext, args.Target, methodName);
+                if (isSuperCall) {
+                    metaBuilder.SetError(Methods.MakeMissingSuperException.OpCall(Ast.Constant(methodName)));
+                } else if (incompatibleVisibility == RubyMethodVisibility.Private) {
+                    metaBuilder.SetError(Methods.MakePrivateMethodCalledError.OpCall(args.ContextExpression, args.TargetExpression, Ast.Constant(methodName)));
                 } else {
-                    throw RubyExceptions.CreateMethodMissing(args.RubyContext, args.Target, methodName);
+                    // TODO: fallback
+                    methodMissing.BuildCall(metaBuilder, args, methodName);
                 }
+            } else {
+                methodMissing.BuildCall(metaBuilder, args, methodName);
             }
-
-            methodMissing.BuildCall(metaBuilder, args, methodName);
         }
     }
 }

@@ -780,11 +780,7 @@ namespace IronRuby.Compiler.Ast {
         }
 
         internal MSA.Expression/*!*/ AddDebugInfo(MSA.Expression/*!*/ expression, SourceSpan location) {
-            if (_document == null || !location.IsValid) {
-                return expression;
-            }
-            return MSA.Expression.DebugInfo(expression, _document,
-                location.Start.Line, location.Start.Column, location.End.Line, location.End.Column);
+            return Microsoft.Scripting.Ast.Utils.AddDebugInfo(expression, _document, location.Start, location.End);
         }
 
         internal MSA.Expression/*!*/ DebugMarker(string/*!*/ marker) {
@@ -796,22 +792,6 @@ namespace IronRuby.Compiler.Ast {
         }
 
         internal virtual void TraceCallSite(Expression/*!*/ expression, MSA.DynamicExpression/*!*/ callSite) {
-        }
-
-        internal string/*!*/ EncodeMethodName(string/*!*/ name, SourceSpan location) {
-            string encoded = name;
-
-            // TODO: hack
-            // encodes line number, file name into the method name
-#if !SILVERLIGHT && !DEBUG
-            if (!_debugMode)
-#endif
-            {
-                string fileName = _sourceUnit.HasPath ? Path.GetFileName(_sourceUnit.Path) : String.Empty;
-                encoded = String.Format("{0};{1};{2}", encoded, fileName, location.Start.Line);
-            }
-
-            return String.IsNullOrEmpty(encoded) ? RubyExceptionData.TopLevelMethodName : encoded;
         }
 
         internal MSA.Expression/*!*/ TryCatchAny(MSA.Expression/*!*/ tryBody, MSA.Expression/*!*/ catchBody) {

@@ -13,6 +13,7 @@
  *
  * ***************************************************************************/
 
+using System;
 using System.Text.RegularExpressions;
 using IronRuby.Builtins;
 
@@ -108,13 +109,13 @@ puts(/b#{/a/}/)
             for (int i = 0; i < incorrectPatterns.Length; i += 2) {
                 string expected = incorrectPatterns[i + 1];
                 string actual = StringRegex.TransformPattern(incorrectPatterns[i], RubyRegexOptions.NONE);
-                Assert(actual == expected);
+                AreEqual(expected, actual);
             }
 
             for (int i = 0; i < correctPatterns.Length; i += 2) {
                 string expected = correctPatterns[i + 1];
                 string actual = StringRegex.TransformPattern(correctPatterns[i], RubyRegexOptions.NONE);
-                Assert(actual == expected);
+                AreEqual(expected, actual);
                 new Regex(expected);
             }
         }

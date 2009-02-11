@@ -39,6 +39,10 @@ namespace IronRuby.Runtime.Calls {
             return new RubyCustomMethodInfo(_ruleGenerator, flags, module);
         }
 
+        internal override bool IsRemovable {
+            get { return true; }
+        }
+
         public override MemberInfo/*!*/[]/*!*/ GetMembers() {
             return new MemberInfo[] { _ruleGenerator.Method };
         }

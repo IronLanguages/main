@@ -34,8 +34,8 @@ namespace IronRuby.Builtins {
 
     [RubyClass("String", Extends = typeof(MutableString), Inherits = typeof(Object))]
     [Includes(typeof(Enumerable), typeof(Comparable))]
-    [HideMethod("clone")]
-    [HideMethod("version")]
+    [HideMethod("clone")] // MutableString.Clone() would override Kernel#clone
+    [HideMethod("version")] // TODO: MutableString.Version would override some spec's method
     public class MutableStringOps {
 
         [RubyConstructor]

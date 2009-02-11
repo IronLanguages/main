@@ -35,11 +35,11 @@ using System.Runtime.CompilerServices;
 
 namespace IronRuby.Compiler {
     internal static class Fields {
-        private static FieldInfo _RubyOps_DefaultArgumentField, _RubyOps_MethodNotFound, _StrongBox_Of_Int_Value, _RubyModule_Version;
+        private static FieldInfo _RubyOps_DefaultArgumentField, _RubyOps_MethodNotFound, _StrongBox_Of_Int_Value, _RubyClass_Version;
         public static FieldInfo RubyOps_DefaultArgumentField { get { return _RubyOps_DefaultArgumentField ?? (_RubyOps_DefaultArgumentField = GetField(typeof(RubyOps), "DefaultArgument")); } }
         public static FieldInfo RubyOps_MethodNotFound { get { return _RubyOps_MethodNotFound ?? (_RubyOps_MethodNotFound = GetField(typeof(RubyOps), "MethodNotFound")); } }
         public static FieldInfo StrongBox_Of_Int_Value { get { return _StrongBox_Of_Int_Value ?? (_StrongBox_Of_Int_Value = GetField(typeof(StrongBox<int>), "Value")); } }
-        public static FieldInfo RubyModule_Version { get { return _RubyModule_Version ?? (_RubyModule_Version = GetField(typeof(RubyModule), "Version")); } }
+        public static FieldInfo RubyClass_Version { get { return _RubyClass_Version ?? (_RubyClass_Version = GetField(typeof(RubyClass), "Version")); } }
 
         internal static FieldInfo/*!*/ GetField(Type/*!*/ type, string/*!*/ name) {
             var field = type.GetField(name);

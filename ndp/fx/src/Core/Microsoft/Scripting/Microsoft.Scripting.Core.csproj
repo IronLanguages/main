@@ -35,21 +35,6 @@
     <NoWarn>
     </NoWarn>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'SpecSharp|AnyCPU' ">
-    <DebugType>pdbonly</DebugType>
-    <Optimize>true</Optimize>
-    <OutputPath>..\..\..\..\..\..\Merlin\Main\Bin\Debug\</OutputPath>
-    <DefineConstants>TRACE;DEBUG;SIGNED;MICROSOFT_SCRIPTING_CORE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-    <DelaySign>true</DelaySign>
-    <AssemblyOriginatorKeyFile>..\..\..\..\..\..\Merlin\Main\Support\MSSharedLibKey.snk</AssemblyOriginatorKeyFile>
-    <SignAssembly>true</SignAssembly>
-    <NoWarn>
-    </NoWarn>
-    <SpecSharpVerify>true</SpecSharpVerify>
-  </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
@@ -275,8 +260,6 @@
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" Condition=" '$(SilverlightTreeBuild)' != 'true' " />
   <Import Project="..\..\..\..\..\..\Merlin\Main\Support\silverlight.build.targets" Condition=" '$(SilverlightTreeBuild)' == 'true' " />
   <Import Condition=" '$(Golden)' == 'True'" Project="..\..\..\..\..\..\Merlin\External\Build\Microsoft.VersionNumber.targets" />
-  <Import Condition="'$(SpecSharpVerify)' == 'true'" Project="..\..\..\..\..\..\Merlin\Main\Support\SpecSharp.targets" />
-  <Target Name="AfterCompile" DependsOnTargets="Verify" Condition="'$(SpecSharpVerify)' == 'true'" />
   <!-- This task produces a list of Compile items. -->
   <Target Name="GetCompileItems" Outputs="@(CompileItems)">
     <CreateItem Include="%(Compile.Identity)">

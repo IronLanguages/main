@@ -1241,13 +1241,15 @@ namespace Microsoft.Scripting.Interpretation {
         private static object InterpretDebugInfoExpression(InterpreterState state, Expression expr) {
             var node = (DebugInfoExpression)expr;
 
-            if (state.CurrentYield == null) {
+            if (state.CurrentYield == null && !node.IsClear) {
+                //We may want to set CurrentLocation to None when the DebugInfo is a clearance,
+                //the current code keeps the previous behavior.
                 // Note: setting index to 0 because we don't have one available
                 // Index should be removed from SourceLocation
                 state.CurrentLocation = new SourceLocation(0, node.StartLine, node.StartColumn);
             }
 
-            return Interpret(state, node.Expression);
+            return null;
         }
 
         private static object InterpretBlockExpression(InterpreterState state, Expression expr) {

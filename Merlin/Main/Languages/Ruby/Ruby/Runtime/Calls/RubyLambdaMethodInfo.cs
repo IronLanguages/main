@@ -29,19 +29,23 @@ namespace IronRuby.Runtime.Calls {
         private readonly Proc/*!*/ _lambda;
         private readonly string/*!*/ _definitionName;
 
-        public Proc/*!*/ Lambda {
-            get { return _lambda; }
-        }
-
-        public string/*!*/ DefinitionName { 
-            get { return _definitionName; } 
-        }
-
         internal RubyLambdaMethodInfo(Proc/*!*/ lambda, string/*!*/ definitionName, RubyMemberFlags flags, RubyModule/*!*/ declaringModule) 
             : base(flags, declaringModule) {
             Assert.NotNull(lambda, definitionName, declaringModule);
             _lambda = lambda;
             _definitionName = definitionName;
+        }
+
+        public Proc/*!*/ Lambda {
+            get { return _lambda; }
+        }
+
+        public string/*!*/ DefinitionName {
+            get { return _definitionName; }
+        }
+
+        internal override bool IsRemovable {
+            get { return true; }
         }
 
         public override MemberInfo/*!*/[]/*!*/ GetMembers() {

@@ -51,8 +51,6 @@ namespace IronRuby.Builtins {
         private readonly RubyContext/*!*/ _context;
         private readonly TypeTracker _tracker;
 
-        private static int _globalVersion = 0;
-
         private string _name;
 
         // lazy interlocked init:
@@ -60,21 +58,13 @@ namespace IronRuby.Builtins {
 
         #region Mutable state guarded by ClassHierarchyLock
 
-        // TODO: internal setter
-        [Emitted]
-        public StrongBox<int> Version;
-
         // List of dependent modules (forms a DAG).
-        private List<RubyModule> _dependentModules = new List<RubyModule>();
+        private List<WeakReference/*!*/> _dependentClasses = new List<WeakReference>();        
         
-        // We postpone setting dependency edges from included mixins and the super class to those module
-        // until a member table of this module is initialized. True if the edges has been set up.
-        // This allows to create modules without locking. 
-        private bool _dependenciesInitialized;
+#if DEBUG
+        private int _referringMethodRulesSinceLastUpdate;
+#endif
 
-        // TODO: debug only
-        private int _updateCounter; // number of updates of this module
-        
         private enum MemberTableState {
             Uninitialized = 0,
             Initializing = 1,
@@ -85,14 +75,14 @@ namespace IronRuby.Builtins {
         private MemberTableState _constantsState = MemberTableState.Uninitialized;
         private Action<RubyModule> _constantsInitializer;
         private Dictionary<string, object> _constants;  // null means lookup the execution context's global namespace 
-        private readonly object _constantsMutex = new object();
-        private object ConstantTableLock { get { return _constantsMutex; } }
 
         // method table:
         private MemberTableState _methodsState = MemberTableState.Uninitialized;
         private Dictionary<string, RubyMemberInfo> _methods;
         private Action<RubyModule> _methodsInitializer;
-        private object MethodTableLock { get { return _methods; } }
+
+        // Set of names that method_missing defined on this module (if applicable) was resolved for and that are cached. Lazy init.
+        internal Dictionary<string, bool> MissingMethodsCachedInSites { get; set; }
 
         // class variable table:
         private Dictionary<string, object> _classVariables;
@@ -102,7 +92,7 @@ namespace IronRuby.Builtins {
         // When adding a module that itself contains other modules, Ruby tries to maintain the ordering of the
         // contained modules so that method resolution is reasonably consistent.
         //
-        // Guarded by ClassHierarchyLock.
+        // MRO walk: this, _mixins[0], _mixins[1], ..., _mixins[n-1], super, ...
         private RubyModule[]/*!*/ _mixins;
 
         // namespace constants:
@@ -131,6 +121,10 @@ namespace IronRuby.Builtins {
 
         public virtual bool IsSingletonClass {
             get { return false; }
+        }
+
+        internal RubyModule[]/*!*/ Mixins {
+            get { return _mixins; }
         }
 
 #if DEBUG
@@ -195,7 +189,6 @@ namespace IronRuby.Builtins {
             _clrConstants = clrConstants;
             _tracker = tracker;
             _mixins = expandedMixins ?? EmptyArray;
-            Version = new StrongBox<int>(Interlocked.Increment(ref _globalVersion));
         }
 
         #region Initialization (thread-safe)
@@ -231,7 +224,7 @@ namespace IronRuby.Builtins {
         private void InitializeMethodTableNoLock() {
             if (!MethodInitializationNeeded) return;
 
-            InitializeDependecies();
+            InitializeDependencies();
 
             _methods = new Dictionary<string, RubyMemberInfo>();
             _methodsState = MemberTableState.Initializing;
@@ -344,6 +337,10 @@ namespace IronRuby.Builtins {
 
             // dependentModules - skip
             // tracker - skip, .NET members not copied
+            
+            // TODO:
+            // - handle overloads cached in groups
+            // - version updates
             Updated("InitializeFrom");
         }
 
@@ -387,61 +384,99 @@ namespace IronRuby.Builtins {
 
         #region Versioning (thread-safe)
 
-        internal void InitializeDependecies() {
+        [Conditional("DEBUG")]
+        internal void OwnedMethodCachedInSite() {
             Context.RequiresClassHierarchyLock();
-            if (!_dependenciesInitialized) {
-                _dependenciesInitialized = true;
-                
-                var super = GetSuperClass();
-                if (super != null) {
-                    super.AddDependentModule(this);
+#if DEBUG
+            _referringMethodRulesSinceLastUpdate++;
+#endif
+        }
+
+        internal virtual void InitializeDependencies() {
+            // nop
+        }
+
+        internal IEnumerable<RubyClass>/*!*/ GetDependentClasses() {
+            int deadCount = 0;
+            for (int i = 0; i < _dependentClasses.Count; i++) {
+                object cls = _dependentClasses[i].Target;
+                if (cls != null) {
+                    yield return (RubyClass)cls;
+                } else {
+                    deadCount++;
                 }
-                SetDependency(_mixins);
             }
+
+            PruneDependencies(deadCount);
         }
 
-        internal void AddDependentModule(RubyModule/*!*/ dependentModule) {
+        internal void AddDependentClass(RubyClass/*!*/ dependentClass) {
             Context.RequiresClassHierarchyLock();
-            Assert.NotNull(dependentModule);
+            Assert.NotNull(dependentClass);
 
-            if (!_dependentModules.Contains(dependentModule)) {
-                _dependentModules.Add(dependentModule);
+            foreach (var cls in GetDependentClasses()) {
+                if (ReferenceEquals(dependentClass, cls)) {
+                    return;
+                }
             }
-        }
 
-        internal void SetDependency(IList<RubyModule/*!*/>/*!*/ modules) {
-            Context.RequiresClassHierarchyLock();
-
-            for (int i = 0; i < modules.Count; i++) {
-                modules[i].AddDependentModule(this);
-            }
+            _dependentClasses.Add(dependentClass.WeakSelf);
         }
 
         internal void Updated(string/*!*/ reason) {
             Context.RequiresClassHierarchyLock();
-
+         
             int affectedModules = 0;
-            int counter = Updated(ref affectedModules);
+            int affectedRules = 0;
+            Updated(ref affectedModules, ref affectedRules);
 
-            if (affectedModules > 1) {
-                Utils.Log(String.Format("{0,-50} {1,-30} affected={2,-5} total={3,-5}", Name, reason, affectedModules, counter), "UPDATED");
-            }
+            Utils.Log(String.Format("{0,-50} {1,-30} affected={2,-5} rules={3,-5}", Name, reason, affectedModules, affectedRules), "UPDATED");
         }
 
-        // TODO: optimize
-        private int Updated(ref int affectedModules) {
+        private void Updated(ref int affectedModules, ref int affectedRules) {
             Context.RequiresClassHierarchyLock();
 
-            // TODO: synchronize this with rule generators:
-            Version.Value = Interlocked.Increment(ref _globalVersion);
+            IncrementVersion();
+#if DEBUG
+            affectedModules++;
+            affectedRules += _referringMethodRulesSinceLastUpdate;
+            _referringMethodRulesSinceLastUpdate = 0;
+#endif
 
-            for (int i = 0; i < _dependentModules.Count; i++) {
-                _dependentModules[i].Updated(ref affectedModules);
+            // Updates dependent modules. If dependent modules haven't been initialized yet it means we don't need to follow them.
+            // TODO (opt): stop updating if a module that defines a method of the same name is reached.
+            foreach (var cls in GetDependentClasses()) {
+                cls.Updated(ref affectedModules, ref affectedRules);
+            } 
+        }
+
+        internal virtual void IncrementVersion() {
+            // nop
+        }
+
+        private void PruneDependencies(int estimatedDeadCount) {
+            Context.RequiresClassHierarchyLock();
+
+            // deadCount is greated than 1/5 of total => remove dead (the threshold is arbitrary, might need tuning):
+            if (estimatedDeadCount * 5 < _dependentClasses.Count) {
+                return;
             }
 
-            // debug:
-            affectedModules++;
-            return _updateCounter++;
+            int i = 0, j = 0;
+            while (i < _dependentClasses.Count) {
+                if (!_dependentClasses[i].IsAlive) {
+                    if (j != i) {
+                        _dependentClasses[j] = _dependentClasses[i];
+                    }
+                    j++;
+                }
+                i++;
+            }
+
+            if (j < i) {
+                _dependentClasses.RemoveRange(j, i - j);
+                _dependentClasses.TrimExcess();
+            }
         }
 
         #endregion
@@ -522,7 +557,6 @@ namespace IronRuby.Builtins {
             if (action(this)) return true;
 
             // mixins:
-            // (need to be walked in reverse order--last one wins)
             foreach (RubyModule m in _mixins) {
                 if (action(m)) return true;
             }
@@ -900,7 +934,7 @@ namespace IronRuby.Builtins {
 
             RubyMemberInfo method;
             using (Context.ClassHierarchyLocker()) {
-                method = ResolveMethodFallbackToObjectNoLock(oldName, true);
+                method = ResolveMethodFallbackToObjectNoLock(oldName, true).Info;
                 if (method == null) {
                     throw RubyExceptions.CreateUndefinedMethodError(this, oldName);
                 }
@@ -924,7 +958,8 @@ namespace IronRuby.Builtins {
             Context.RequiresClassHierarchyLock();
 
             RubyMemberInfo existing;
-            if (TryGetMethod(name, out existing)) {
+            bool skipHidden = false;
+            if (TryGetMethod(name, ref skipHidden, out existing)) {
                 SetMethodNoEventNoLock(callerContext, name, method.Copy((RubyMemberFlags)visibility, this));
             } else {
                 SetMethodNoEventNoLock(callerContext, name, new RubyMemberInfo((RubyMemberFlags)visibility | RubyMemberFlags.SuperForwarder, method.DeclaringModule));
@@ -961,30 +996,80 @@ namespace IronRuby.Builtins {
                     IsClass ? "class" : "module", _name, _context.RuntimeId));
             }
 
-            // Update only if the current method overrides/redefines another one in the inheritance hierarchy.
-            // Method lookup failures are not cached in dynamic sites. 
-            // Therefore a future invocation of the method will trigger resolution in binder that will find just added method.
-            // If, on the other hand, a method is overridden there might be a dynamic site that caches a method call to that method.
-            // In that case we need to update version to invalidate the site.
-
-            RubyMemberInfo overriddenMethod = ResolveMethodUsedInDynamicSite(name);
-
-            // TODO: cache this? (definition of method_missing could have updated all subclasses):
-            if (overriddenMethod == null) {
-                overriddenMethod = ResolveMethodUsedInDynamicSite(Symbols.MethodMissing);
-                // TODO: better check for builtin method
-                if (overriddenMethod != null && overriddenMethod.DeclaringModule == _context.KernelModule && overriddenMethod is RubyLibraryMethodInfo) {
-                    overriddenMethod = null;
-                }
-            }
+            PrepareMethodUpdate(name, method);
 
             InitializeMethodsNoLock();
             _methods[name] = method;
+        }
 
-            if (overriddenMethod != null) {
-                // TODO: stop updating if a module that defines a method of the same name is reached:
-                Updated("SetMethod: " + name);
+        internal virtual void PrepareMethodUpdate(string/*!*/ methodName, RubyMemberInfo/*!*/ method) {
+            InitializeMethodsNoLock();
+
+            // TODO (optimization): we might end up walking some classes multiple times, could we mark them somehow as visited?
+            foreach (var dependency in _dependentClasses) {
+                var cls = (RubyClass)dependency.Target;
+                if (cls != null) {
+                    cls.PrepareMethodUpdate(methodName, method, 0);
+                }
             }
+        }
+
+        // Returns max level in which a group has been invalidated.
+        internal int InvalidateGroupsInDependentClasses(string/*!*/ methodName, int maxLevel) {
+            int result = -1;
+            foreach (var cls in GetDependentClasses()) {
+                result = Math.Max(result, cls.InvalidateGroupsInSubClasses(methodName, maxLevel));
+            }
+
+            return result;
+        }
+
+        internal bool TryGetDefinedMethod(string/*!*/ name, out RubyMemberInfo method) {
+            Context.RequiresClassHierarchyLock();
+            if (_methods == null) {
+                method = null;
+                return false;
+            }
+            return _methods.TryGetValue(name, out method);
+        }
+
+        internal bool TryGetDefinedMethod(string/*!*/ name, ref bool skipHidden, out RubyMemberInfo method) {
+            Context.RequiresClassHierarchyLock();
+
+            if (TryGetDefinedMethod(name, out method)) {
+                if (method.IsHidden || skipHidden && !method.IsRemovable) {
+                    skipHidden = true;
+                    method = null;
+                    return false;
+                } else {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        internal IEnumerable<KeyValuePair<string/*!*/, RubyMemberInfo/*!*/>>/*!*/ GetMethods() {
+            Context.RequiresClassHierarchyLock();
+            return _methods;
+        }
+        
+        /// <summary>
+        /// Direct addition to the method table. Used only for core method table operations.
+        /// Do not use unless absolutely sure there is no overriding method used in a dynamic site.
+        /// </summary>
+        internal void AddMethodNoCacheInvalidation(string/*!*/ name, RubyMemberInfo/*!*/ method) {
+            Context.RequiresClassHierarchyLock();
+            Debug.Assert(_methods != null);
+            _methods.Add(name, method);
+        }
+
+        /// <summary>
+        /// Direct removal from the method table. Used only for core method table operations.
+        /// </summary>
+        internal bool RemoveMethodNoCacheInvalidation(string/*!*/ name) {
+            Context.RequiresClassHierarchyLock();
+            Debug.Assert(_methods != null);
+            return _methods.Remove(name);
         }
 
         // thread-safe:
@@ -1000,9 +1085,37 @@ namespace IronRuby.Builtins {
         private bool RemoveMethodNoEvent(string/*!*/ name) {
             using (Context.ClassHierarchyLocker()) {
                 InitializeMethodsNoLock();
-                bool result = _methods.Remove(name);
-                Updated("RemoveMethodNoEvent");
-                return result;
+
+                RubyMemberInfo method;
+                if (_methods.TryGetValue(name, out method)) {
+                    if (method.IsHidden || method.IsUndefined) {
+                        return false;
+                    } else if (method.IsRemovable) {
+                        // Method is used in a dynamic site or group => update version of all dependencies of this module.
+                        if (method.InvalidateSitesOnOverride || method.InvalidateGroupsOnRemoval) {
+                            Updated("RemoveMethod: " + name);
+                        }
+                        
+                        if (method.InvalidateSitesOnOverride && name == Symbols.MethodMissing) {
+                            method.DeclaringModule.MissingMethodsCachedInSites = null;
+                        }
+
+                        // Method hides CLR overloads => update method groups in all dependencies of this module.
+                        // TODO (opt): Do not update the entire subtree, update subtrees of all invalidated groups.
+                        // TODO (opt): We can calculate max-level but it requires maintanance whenever a method is overridden 
+                        //             and whenever method group is lazily created (TryGetClrMethod).
+                        if (method.InvalidateGroupsOnRemoval) {
+                            InvalidateGroupsInDependentClasses(name, Int32.MaxValue);
+                        }
+                        
+                        _methods.Remove(name);
+                    } else {
+                        SetMethodNoEventNoLock(Context, name, RubyMemberInfo.HiddenMethod);
+                    }
+                    return true;
+                } else {
+                    return false;
+                }
             }
         }
 
@@ -1068,82 +1181,47 @@ namespace IronRuby.Builtins {
             }
         }
 
-        // Looks only for those methods that were used. Doesn't need to initialize method tables (a used method is always stored in a table).
-        internal RubyMemberInfo ResolveMethodUsedInDynamicSite(string/*!*/ name) {
-            Context.RequiresClassHierarchyLock();
-
-            RubyMemberInfo result = null;
-
-            if (ForEachAncestor(delegate(RubyModule module) {
-                // Skip super-forwarder since the forwarded super ancestor is used in a site, not the forwarder itself.
-                // If the forwarded ancestor is overridden the forwarder will forward to the override.
-                return module._methods != null && module.TryGetMethod(name, out result) && !result.IsSuperForwarder;
-            })) {
-                // includes private methods:
-                return result != null && !result.IsUndefined && result.InvalidateSitesOnOverride ? result : null;
-            }
-
-            return null;
-        }
-
         // thread-safe:
-        public RubyMemberInfo ResolveMethodForSite(string/*!*/ name, bool includePrivate) {
+        public MethodResolutionResult ResolveMethodForSite(string/*!*/ name, bool includePrivate) {
             using (Context.ClassHierarchyLocker()) {
                 return ResolveMethodForSiteNoLock(name, includePrivate);
             }
         }
 
         // thread-safe:
-        public RubyMemberInfo ResolveMethod(string/*!*/ name, bool includePrivate) {
+        public MethodResolutionResult ResolveMethod(string/*!*/ name, bool includePrivate) {
             using (Context.ClassHierarchyLocker()) {
                 return ResolveMethodNoLock(name, includePrivate);
             }
         }
 
-        public RubyMemberInfo ResolveMethodForSiteNoLock(string/*!*/ name, bool includePrivate) {
-            RubyMethodVisibility incompatibleVisibility;
-            return ResolveMethodForSiteNoLock(name, includePrivate, out incompatibleVisibility);
+        public MethodResolutionResult ResolveMethodForSiteNoLock(string/*!*/ name, bool includePrivate) {
+            return ResolveMethodNoLock(name, includePrivate).InvalidateSitesOnOverride();
         }
 
-        public RubyMemberInfo ResolveMethodForSiteNoLock(string/*!*/ name, bool includePrivate, out RubyMethodVisibility incompatibleVisibility) {
-            Context.RequiresClassHierarchyLock();
-
-            RubyMemberInfo method = ResolveMethodNoLock(name, includePrivate, out incompatibleVisibility);
-            if (method != null) {
-                method.InvalidateSitesOnOverride = true;
-            }
-            return method;
-        }
-
-        public RubyMemberInfo ResolveMethodNoLock(string/*!*/ name, bool includePrivate) {
-            RubyMethodVisibility incompatibleVisibility;
-            return ResolveMethodNoLock(name, includePrivate, out incompatibleVisibility);
-        }
-
-        public RubyMemberInfo ResolveMethodNoLock(string/*!*/ name, bool includePrivate, out RubyMethodVisibility incompatibleVisibility) {
+        public MethodResolutionResult ResolveMethodNoLock(string/*!*/ name, bool includePrivate) {
             Context.RequiresClassHierarchyLock();
             Assert.NotNull(name);
 
             InitializeMethodsNoLock();
-            RubyMemberInfo result = null;
+            RubyMemberInfo info = null;
             RubyModule owner = null;
-            incompatibleVisibility = RubyMethodVisibility.None;
+            bool skipHidden = false;
 
-            if (ForEachAncestor((module) => (owner = module).TryGetMethod(name, out result))) {
-                if (result == null || result.IsUndefined) {
-                    return null;
-                } else if (!IsMethodVisible(result, includePrivate)) {
-                    incompatibleVisibility = result.Visibility;
-                    return null;
-                } else if (result.IsSuperForwarder) {
+            if (ForEachAncestor((module) => (owner = module).TryGetMethod(name, ref skipHidden, out info))) {
+                if (info == null || info.IsUndefined) {
+                    return MethodResolutionResult.NotFound;
+                } else if (!IsMethodVisible(info, includePrivate)) {
+                    return new MethodResolutionResult(info, owner, false);
+                } else if (info.IsSuperForwarder) {
                     // start again with owner's super ancestor and ignore visibility:
                     return owner.ResolveSuperMethodNoLock(name, owner);
                 } else {
-                    return result;
+                    return new MethodResolutionResult(info, owner, true);
                 }
             }
 
-            return result;
+            return MethodResolutionResult.NotFound;
         }
 
         private static bool IsMethodVisible(RubyMemberInfo/*!*/ method, bool includePrivate) {
@@ -1158,34 +1236,38 @@ namespace IronRuby.Builtins {
         /// <summary>
         /// Resolve method and if it is not found in this module's ancestors, resolve in Object.
         /// </summary>
-        public virtual RubyMemberInfo ResolveMethodFallbackToObjectNoLock(string/*!*/ name, bool includePrivate) {
+        public virtual MethodResolutionResult ResolveMethodFallbackToObjectNoLock(string/*!*/ name, bool includePrivate) {
             Context.RequiresClassHierarchyLock();
-            return ResolveMethodNoLock(name, includePrivate) ?? _context.ObjectClass.ResolveMethodNoLock(name, includePrivate);
+            var result = ResolveMethodNoLock(name, includePrivate);
+            return result.Found ? result : _context.ObjectClass.ResolveMethodNoLock(name, includePrivate);
         }
 
         // skip one method in the method resolution order (MRO)
-        public RubyMemberInfo ResolveSuperMethodNoLock(string/*!*/ name, RubyModule/*!*/ declaringModule) {
+        public MethodResolutionResult ResolveSuperMethodNoLock(string/*!*/ name, RubyModule/*!*/ callerModule) {
             Context.RequiresClassHierarchyLock();
-            Assert.NotNull(name, declaringModule);
+            Assert.NotNull(name, callerModule);
 
             InitializeMethodsNoLock();
 
-            RubyMemberInfo result = null;
+            RubyMemberInfo info = null;
+            RubyModule owner = null;
             bool foundModule = false;
-            
+            bool skipHidden = false;
+
             // start searching for the method in the MRO parent of the declaringModule:
-            if (ForEachAncestor(delegate(RubyModule/*!*/ module) {
-                if (module == declaringModule) {
+            if (ForEachAncestor((module) => {
+                if (module == callerModule) {
                     foundModule = true;
                     return false;
                 }
 
-                return foundModule && module.TryGetMethod(name, out result) && !result.IsSuperForwarder;
-            })) {
-                return result.IsUndefined ? null : result;
+                owner = module;
+                return foundModule && module.TryGetMethod(name, ref skipHidden, out info) && !info.IsSuperForwarder;
+            }) && !info.IsUndefined) {
+                return new MethodResolutionResult(info, owner, true);
             }
 
-            return null;
+            return MethodResolutionResult.NotFound;
         }
 
         // thread-safe:
@@ -1195,33 +1277,26 @@ namespace IronRuby.Builtins {
                 InitializeMethodsNoLock();
 
                 RubyMemberInfo method;
-                TryGetMethod(name, out method);
+                bool skipHidden = false;
+                TryGetMethod(name, ref skipHidden, out method);
                 return method;
             }
         }
 
-        protected bool TryGetMethod(string/*!*/ name, out RubyMemberInfo method) {
+        internal bool TryGetMethod(string/*!*/ name, ref bool skipHidden, out RubyMemberInfo method) {
             Context.RequiresClassHierarchyLock();
             Assert.NotNull(name);
             Debug.Assert(_methods != null);
 
             // lookup Ruby method first:    
-            if (_methods.TryGetValue(name, out method)) {
-
-                // method is hidden, continue resolution, but skip CLR method lookup:
-                if (method.IsHidden) {
-                    method = null;
-                    return false;
-                }
-
+            if (TryGetDefinedMethod(name, ref skipHidden, out method)) {
                 return true;
             }
 
-            // skip lookup on types that are not visible or interfaces:
-            if (_tracker != null && _tracker.Type.IsVisible && !_tracker.Type.IsInterface) {
+            // Skip hidden CLR overloads.
+            // Skip lookup on types that are not visible or interfaces.
+            if (!skipHidden && _tracker != null && _tracker.Type.IsVisible && !_tracker.Type.IsInterface) {
                 if (TryGetClrMember(_tracker.Type, name, out method)) {
-                    // We can add the resolved method to the method table since CLR types are immutable.
-                    // Doing so makes next lookup faster (prevents allocating new method groups each time).
                     _methods.Add(name, method);
                     return true;
                 }
@@ -1245,7 +1320,7 @@ namespace IronRuby.Builtins {
             }
 
             if (_tracker != null) {
-                // TODO: CLR methods but removed...
+                // TODO: CLR methods but removed, hidden...
             }
 
             return false;
@@ -1438,19 +1513,21 @@ namespace IronRuby.Builtins {
                 }
             }
 
-            // initialize added modules:
+            MixinsUpdated(_mixins, _mixins = expanded);
+        }
+
+        internal void InitializeNewMixin(RubyModule/*!*/ mixin) {
             if (_methodsState != MemberTableState.Uninitialized) {
-                InitializeMethodsNoLock(expanded);
+                mixin.InitializeMethodTableNoLock();
             }
 
             if (_constantsState != MemberTableState.Uninitialized) {
-                InitializeConstantsNoLock(expanded);
+                mixin.InitializeConstantTableNoLock();
             }
+        }
 
-            SetDependency(expanded);
-            _mixins = expanded;
-
-            Updated("IncludeModules");
+        internal virtual void MixinsUpdated(RubyModule/*!*/[]/*!*/ oldMixins, RubyModule/*!*/[]/*!*/ newMixins) {
+            // nop
         }
 
         // Requires hierarchy lock

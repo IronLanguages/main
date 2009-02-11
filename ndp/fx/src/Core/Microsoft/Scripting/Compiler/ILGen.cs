@@ -577,38 +577,6 @@ namespace System.Linq.Expressions.Compiler {
 
         #endregion
 
-        /// <summary>
-        /// Boxes the value of the stack. No-op for reference types. Void is
-        /// converted to a null reference. For almost all value types this
-        /// method will box them in the standard way. Int32 and Boolean are
-        /// handled with optimized conversions that reuse the same object for
-        /// small values. For Int32 this is purely a performance optimization.
-        /// For Boolean this is use to ensure that True and False are always
-        /// the same objects.
-        /// </summary>
-        internal static void EmitBoxing(this ILGenerator il, Type type) {
-            ContractUtils.RequiresNotNull(type, "type");
-
-            if (type.IsValueType) {
-                if (type == typeof(void)) {
-                    il.Emit(OpCodes.Ldnull);
-                } else if (type == typeof(int)) {
-                    il.Emit(OpCodes.Call, typeof(RuntimeOps).GetMethod("Int32ToObject"));
-                } else if (type == typeof(bool)) {
-                    var label = il.DefineLabel();
-                    var end = il.DefineLabel();
-                    il.Emit(OpCodes.Brtrue_S, label);
-                    il.Emit(OpCodes.Ldsfld, typeof(RuntimeOps).GetField("False"));
-                    il.Emit(OpCodes.Br_S, end);
-                    il.MarkLabel(label);
-                    il.Emit(OpCodes.Ldsfld, typeof(RuntimeOps).GetField("True"));
-                    il.MarkLabel(end);
-                } else {
-                    il.Emit(OpCodes.Box, type);
-                }
-            }
-        }
-
         #region Linq Conversions
 
         internal static void EmitConvertToType(this ILGenerator il, Type typeFrom, Type typeTo, bool isChecked) {
@@ -658,7 +626,7 @@ namespace System.Linq.Expressions.Compiler {
             if (!typeFrom.IsValueType && typeTo.IsValueType) {
                 il.Emit(OpCodes.Unbox_Any, typeTo);
             } else if (typeFrom.IsValueType && !typeTo.IsValueType) {
-                il.EmitBoxing(typeFrom);
+                il.Emit(OpCodes.Box, typeFrom);
                 if (typeTo != typeof(object)) {
                     il.Emit(OpCodes.Castclass, typeTo);
                 }
@@ -1074,51 +1042,4 @@ namespace System.Linq.Expressions.Compiler {
 
         #endregion
     }
-}
-
-namespace System.Runtime.CompilerServices {
-
-    /// <summary>
-    /// This API supports the .NET Framework infrastructure and is not intended to be used directly from your code.
-    /// Contains helper methods called from dynamically generated methods.
-    /// </summary>
-    public static partial class RuntimeOps {
-        private const int MIN_CACHE = -100;
-        private const int MAX_CACHE = 1000;
-        private static readonly object[] cache = MakeCache();
-
-        /// <summary>
-        /// A singleton boxed boolean true.
-        /// </summary>
-        public static readonly object True = true;
-
-        /// <summary>
-        ///A singleton boxed boolean false.
-        /// </summary>
-        public static readonly object False = false;
-
-        private static object[] MakeCache() {
-            object[] result = new object[MAX_CACHE - MIN_CACHE];
-
-            for (int i = 0; i < result.Length; i++) {
-                result[i] = (object)(i + MIN_CACHE);
-            }
-
-            return result;
-        }
-
-        /// <summary>
-        /// Gets a singleton boxed value for the given integer if possible, otherwise boxes the integer.
-        /// </summary>
-        /// <param name="value">The value to box.</param>
-        /// <returns>The boxed value.</returns>
-        public static object Int32ToObject(Int32 value) {
-            // caches improves pystone by ~5-10% on MS .Net 1.1, this is a very integer intense app
-            if (value < MAX_CACHE && value >= MIN_CACHE) {
-                return cache[value - MIN_CACHE];
-            }
-            return (object)value;
-        }
-    }
-
 }

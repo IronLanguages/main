@@ -273,6 +273,10 @@ namespace IronRuby.Runtime {
         }
     }
 
+    /// <summary>
+    /// Hides CLR method when called using give name. 
+    /// Doesn't apply on calls using a different (mangled/unmangled) name.
+    /// </summary>
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Interface, AllowMultiple = true)]
     public sealed class HideMethodAttribute : Attribute {
         private readonly string/*!*/ _name;

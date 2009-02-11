@@ -127,11 +127,9 @@ namespace Microsoft.Scripting.Interpreter {
         }
 
         private void UpdateStackTrace(StackFrame frame) {
-            foreach (var info in _debugInfos) {
-                if (info.Matches(frame.InstructionIndex)) {
-                    ExceptionHelpers.UpdateStackTrace(null, _runMethod, _lambda.Name, info.FileName, info.StartLine);
-                    return;
-                }
+            DebugInfo info = DebugInfo.GetMatchingDebugInfo(_debugInfos, frame.InstructionIndex);
+            if (info != null && !info.IsClear) {
+                ExceptionHelpers.UpdateStackTrace(null, _runMethod, _lambda.Name, info.FileName, info.StartLine);
             }
         }
 

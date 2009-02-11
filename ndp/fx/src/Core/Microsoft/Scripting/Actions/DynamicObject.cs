@@ -196,6 +196,14 @@ namespace System.Dynamic {
             throw new NotSupportedException();
         }
 
+        /// <summary>
+        /// Returns the enumeration of all dynamic member names.
+        /// </summary>
+        /// <returns>The list of dynamic member names.</returns>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate")]
+        public virtual System.Collections.Generic.IEnumerable<string> GetDynamicMemberNames() {
+            return new string[0];
+        }
         #endregion
 
         #region MetaDynamic
@@ -204,6 +212,11 @@ namespace System.Dynamic {
 
             internal MetaDynamic(Expression expression, DynamicObject value)
                 : base(expression, BindingRestrictions.Empty, value) {
+            }
+
+            public override System.Collections.Generic.IEnumerable<string> GetDynamicMemberNames()
+            {
+                return Value.GetDynamicMemberNames();
             }
 
             public override DynamicMetaObject BindGetMember(GetMemberBinder binder) {
@@ -565,10 +578,6 @@ namespace System.Dynamic {
 
                 public override DynamicMetaObject FallbackGetMember(DynamicMetaObject target, DynamicMetaObject errorSuggestion) {
                     throw new NotSupportedException();
-                }
-
-                public override object CacheIdentity {
-                    get { throw new NotSupportedException(); }
                 }
             }
         }

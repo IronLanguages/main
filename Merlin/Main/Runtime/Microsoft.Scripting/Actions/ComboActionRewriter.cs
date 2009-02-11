@@ -51,11 +51,11 @@ namespace Microsoft.Scripting.Actions {
                 get { return true; }
             }
 
-            protected override Type GetExpressionType() {
+            protected override Type TypeImpl() {
                 return _type;
             }
 
-            protected override ExpressionType GetNodeKind() {
+            protected override ExpressionType NodeTypeImpl() {
                 return ExpressionType.Extension;
             }
 

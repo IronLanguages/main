@@ -62,7 +62,7 @@ namespace IronRuby.Runtime.Calls {
             RubyClass targetClass = args.RubyContext.GetImmediateClassOf(args.Target);
             using (targetClass.Context.ClassHierarchyLocker()) {
                 metaBuilder.AddTargetTypeTest(args.Target, targetClass, args.TargetExpression, args.RubyContext, args.ContextExpression);
-                conversionMethod = targetClass.ResolveMethodForSiteNoLock(ToS, false);
+                conversionMethod = targetClass.ResolveMethodForSiteNoLock(ToS, false).Info;
             }
             
             // invoke target.to_s and if successful convert the result to string unless it is already:

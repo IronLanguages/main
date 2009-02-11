@@ -265,7 +265,7 @@ namespace Microsoft.Scripting.Actions {
                 }
                 targets = foundTargets.ToArray();
             } else if ((mthgrp = target as MethodGroup) != null) {
-                _test = Ast.AndAlso(_test, Ast.Equal(Ast.Convert(Rule.Parameters[0], typeof(object)), Ast.Constant(target)));
+                _test = Ast.AndAlso(_test, Ast.Equal(AstUtils.Convert(Rule.Parameters[0], typeof(object)), Ast.Constant(target)));
 
                 List<MethodBase> foundTargets = new List<MethodBase>();
                 foreach (MethodTracker mt in mthgrp.Methods) {
@@ -286,7 +286,7 @@ namespace Microsoft.Scripting.Actions {
             Debug.Assert(bmt.Instance == null); // should be null for trackers that leak to user code
 
             MethodBase[] targets;
-            _instance = Ast.Convert(
+            _instance = AstUtils.Convert(
                 Ast.Property(
                     Ast.Convert(Rule.Parameters[0], typeof(BoundMemberTracker)),
                     typeof(BoundMemberTracker).GetProperty("ObjectInstance")

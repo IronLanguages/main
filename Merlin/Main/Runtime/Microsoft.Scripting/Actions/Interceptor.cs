@@ -46,8 +46,12 @@ namespace Microsoft.Scripting.Actions {
                 _binder = binder;
             }
 
-            public override object CacheIdentity {
-                get { return _binder.CacheIdentity; }
+            public override int GetHashCode() {
+                return _binder.GetHashCode();
+            }
+
+            public override bool Equals(object obj) {
+                return obj != null && obj.Equals(_binder);
             }
 
             public override Expression Bind(object[] args, ReadOnlyCollection<ParameterExpression> parameters, LabelTarget returnLabel) {

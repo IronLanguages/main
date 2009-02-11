@@ -1243,7 +1243,7 @@ namespace IronRuby.Builtins {
         public static bool RespondTo(RubyContext/*!*/ context, object self, 
             [DefaultProtocol]string/*!*/ methodName, [DefaultParameterValue(null)]object includePrivate) {
 
-            return context.ResolveMethod(self, methodName, Protocols.IsTrue(includePrivate)) != null;
+            return context.ResolveMethod(self, methodName, Protocols.IsTrue(includePrivate)).Found;
         }
 
         #region __send__, send
@@ -1371,7 +1371,7 @@ namespace IronRuby.Builtins {
         // thread-safe:
         [RubyMethod("method")]
         public static RubyMethod/*!*/ GetMethod(RubyContext/*!*/ context, object self, [DefaultProtocol]string/*!*/ name) {
-            RubyMemberInfo info = context.ResolveMethod(self, name, true);
+            RubyMemberInfo info = context.ResolveMethod(self, name, true).Info;
             if (info == null) {
                 throw RubyExceptions.CreateUndefinedMethodError(context.GetClassOf(self), name);
             }

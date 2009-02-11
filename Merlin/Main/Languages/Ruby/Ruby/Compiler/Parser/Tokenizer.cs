@@ -118,7 +118,7 @@ namespace IronRuby.Compiler {
         private bool _unterminatedToken;
         private bool _eofReached;
         // out: offset data following __END__ token
-        private int _dataOffset;
+        private int _dataOffset = -1;
         // out: token value:
         private TokenValue _tokenValue;
         

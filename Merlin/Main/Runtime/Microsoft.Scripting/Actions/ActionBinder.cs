@@ -153,7 +153,7 @@ namespace Microsoft.Scripting.Actions {
 
             if (toType == typeof(object)) {
                 if (exprType.IsValueType) {
-                    return Expression.Convert(expr, toType);
+                    return AstUtils.Convert(expr, toType);
                 } else {
                     return expr;
                 }
@@ -320,10 +320,7 @@ namespace Microsoft.Scripting.Actions {
                 Expression.Call(
                     typeof(ScriptingRuntimeHelpers).GetMethod("CannotConvertError"),
                     Expression.Constant(toType),
-                    Expression.Convert(
-                        value,
-                        typeof(object)
-                    )
+                    AstUtils.Convert(value, typeof(object))
                )
             );
         }

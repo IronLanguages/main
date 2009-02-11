@@ -19,41 +19,18 @@ using Microsoft.Scripting.Utils;
 
 namespace IronRuby.Compiler {
     internal static partial class Methods {
-        private static MethodInfo _MakeAmbiguousMatchError, _IsSuperCallTarget, _CreateInclusiveRange, _CreateExclusiveRange, _CreateInclusiveIntegerRange, _CreateExclusiveIntegerRange, _AllocateStructInstance, _CreateStructInstance, _GetMetaObject, _ToProcValidator, _ToStringValidator, _ToSymbolValidator, _ConvertSymbolIdToSymbol, _ConvertFixnumToSymbol, _ConvertMutableStringToSymbol, _ToRegexValidator, _ToArrayValidator, _ToHashValidator, _ToFixnumValidator, 
-        _ToIntegerValidator, _ToFloatValidator, _ConvertBignumToFloat, _ConvertStringToFloat, _CreateTypeConversionError, _ConvertBignumToFixnum, _ToSDefaultConversion, _GetInstanceVariable, _IsDefinedInstanceVariable, _SetInstanceVariable, _GetObjectClassVariable, _GetClassVariable, _TryGetObjectClassVariable, _TryGetClassVariable, _IsDefinedObjectClassVariable, _IsDefinedClassVariable, _SetObjectClassVariable, _SetClassVariable, _GetInstanceData, _DeserializeObject, 
-        _SerializeObject, _HookupEvent, _CreateDelegateFromProc, _CreateDelegateFromMethod, _X, _IsDefinedQualifiedConstant, _SetGlobalConstant, _SetUnqualifiedConstant, _SetQualifiedConstant, _MakeArray0, _MakeArray1, _MakeArray2, _MakeArray3, _MakeArray4, _MakeArray5, _MakeArrayN, _MakeHash0, _MakeHash, _SplatAppend, _Splat, 
-        _SplatPair, _Unsplat, _GetArrayItem, _GetArraySuffix, _GetGlobalVariable, _IsDefinedGlobalVariable, _SetGlobalVariable, _AliasGlobalVariable, _GetCurrentMatchGroup, _GetCurrentMatchData, _GetCurrentMatchLastGroup, _GetCurrentMatchPrefix, _GetCurrentMatchSuffix, _MatchLastInputLine, _MatchString, _CreateRegexB, _CreateRegexU, _CreateRegexE, _CreateRegexM, _CreateRegexBM, 
-        _CreateRegexUM, _CreateRegexEM, _CreateRegexMB, _CreateRegexMU, _CreateRegexME, _CreateRegexMM, _CreateRegexN, _CreateMutableStringB, _CreateMutableStringU, _CreateMutableStringE, _CreateMutableStringM, _CreateMutableStringBM, _CreateMutableStringUM, _CreateMutableStringEM, _CreateMutableStringMB, _CreateMutableStringMU, _CreateMutableStringME, _CreateMutableStringMM, _CreateMutableStringN, _CreateSymbolB, 
-        _CreateSymbolU, _CreateSymbolE, _CreateSymbolM, _CreateSymbolBM, _CreateSymbolUM, _CreateSymbolEM, _CreateSymbolMB, _CreateSymbolMU, _CreateSymbolME, _CreateSymbolMM, _CreateSymbolN, _CreateEncoding, _IsTrue, _IsFalse, _CheckForAsyncRaiseViaThreadAbort, _GetCurrentException, _SetCurrentExceptionAndStackTrace, _SetCurrentException, _CompareException, _CompareSplattedExceptions, 
-        _CompareDefaultException, _GetDefaultExceptionMessage, _CreateArgumentsError, _CreateArgumentsErrorForMissingBlock, _CreateArgumentsErrorForProc, _MakeWrongNumberOfArgumentsError, _MakeTopLevelSuperException, _MakeMissingSuperException, _MakeInvalidArgumentTypesError, _UpdateProfileTicks, _IsProcConverterTarget, _CreateBfcForYield, _CreateBfcForMethodProcCall, _CreateBfcForProcCall, _CreateBfcForLibraryMethod, _LeaveProcConverter, _CreateRfcForMethod, _BlockRetry, _MethodRetry, _EvalRetry, 
-        _BlockBreak, _MethodBreak, _EvalBreak, _MethodNext, _EvalNext, _MethodRedo, _EvalRedo, _BlockReturn, _EvalReturn, _BlockYield, _MethodYield, _EvalYield, _MethodProcCall, _CanRescue, _IsRetrySingleton, _PropagateRetrySingleton, _GetRetrySingleton, _CreateMainTopLevelScope, _CreateTopLevelHostedScope, _CreateTopLevelScope, 
-        _CreateWrappedTopLevelScope, _CreateModuleEvalScope, _CreateModuleScope, _CreateMethodScope, _CreateBlockScope, _TraceMethodCall, _TraceMethodReturn, _TraceBlockCall, _TraceBlockReturn, _PrintInteractiveResult, _GetLocalVariable, _SetLocalVariable, _GetContextFromScope, _GetContextFromMethod, _GetContextFromBlockParam, _GetContextFromProc, _GetEmptyScope, _DefineBlock, _InitializeBlock, _Yield0, 
-        _Yield1, _Yield2, _Yield3, _Yield4, _YieldN, _YieldSplat0, _YieldSplat1, _YieldSplat2, _YieldSplat3, _YieldSplat4, _YieldSplatN, _YieldSplatNRhs, _DefineMethod, _MethodDefined, _AliasMethod, _UndefineMethod, _IsDefinedMethod, _DefineGlobalModule, _DefineNestedModule, _DefineModule, 
-        _DefineSingletonClass, _DefineGlobalClass, _DefineNestedClass, _DefineClass, _GetGlobalConstant, _GetUnqualifiedConstant, _GetQualifiedConstant, _IsDefinedGlobalConstant, _IsDefinedUnqualifiedConstant;
+        private static MethodInfo _CreateTypeConversionError, _ConvertBignumToFixnum, _ToSDefaultConversion, _GetInstanceVariable, _IsDefinedInstanceVariable, _SetInstanceVariable, _GetObjectClassVariable, _GetClassVariable, _TryGetObjectClassVariable, _TryGetClassVariable, _IsDefinedObjectClassVariable, _IsDefinedClassVariable, _SetObjectClassVariable, _SetClassVariable, _GetInstanceData, _DeserializeObject, _SerializeObject, _HookupEvent, _CreateDelegateFromProc, 
+        _CreateDelegateFromMethod, _X, _UpdateProfileTicks, _CreateRfcForMethod, _BlockRetry, _MethodRetry, _EvalRetry, _BlockBreak, _MethodBreak, _EvalBreak, _MethodNext, _EvalNext, _MethodRedo, _EvalRedo, _BlockReturn, _EvalReturn, _BlockYield, _MethodYield, _EvalYield, _MethodProcCall, 
+        _CanRescue, _IsRetrySingleton, _PropagateRetrySingleton, _GetRetrySingleton, _GetCurrentMatchLastGroup, _GetCurrentMatchPrefix, _GetCurrentMatchSuffix, _MatchLastInputLine, _MatchString, _CreateRegexB, _CreateRegexU, _CreateRegexE, _CreateRegexM, _CreateRegexBM, _CreateRegexUM, _CreateRegexEM, _CreateRegexMB, _CreateRegexMU, _CreateRegexME, _CreateRegexMM, 
+        _CreateRegexN, _CreateMutableStringB, _CreateMutableStringU, _CreateMutableStringE, _CreateMutableStringM, _CreateMutableStringBM, _CreateMutableStringUM, _CreateMutableStringEM, _CreateMutableStringMB, _CreateMutableStringMU, _CreateMutableStringME, _CreateMutableStringMM, _CreateMutableStringN, _CreateSymbolB, _CreateSymbolU, _CreateSymbolE, _CreateSymbolM, _CreateSymbolBM, _CreateSymbolUM, _CreateSymbolEM, 
+        _CreateSymbolMB, _CreateSymbolMU, _CreateSymbolME, _CreateSymbolMM, _CreateSymbolN, _CreateEncoding, _IsTrue, _IsFalse, _CheckForAsyncRaiseViaThreadAbort, _GetCurrentException, _SetCurrentExceptionAndStackTrace, _SetCurrentException, _CompareException, _CompareSplattedExceptions, _CompareDefaultException, _GetDefaultExceptionMessage, _CreateArgumentsError, _CreateArgumentsErrorForMissingBlock, _CreateArgumentsErrorForProc, _MakeWrongNumberOfArgumentsError, 
+        _MakeTopLevelSuperException, _MakeMissingSuperException, _MakeInvalidArgumentTypesError, _MakeAmbiguousMatchError, _MakePrivateMethodCalledError, _IsSuperCallTarget, _CreateInclusiveRange, _CreateExclusiveRange, _CreateInclusiveIntegerRange, _CreateExclusiveIntegerRange, _AllocateStructInstance, _CreateStructInstance, _GetMetaObject, _ToProcValidator, _ToStringValidator, _ToSymbolValidator, _ConvertSymbolIdToSymbol, _ConvertFixnumToSymbol, _ConvertMutableStringToSymbol, _ToRegexValidator, 
+        _ToArrayValidator, _ToHashValidator, _ToFixnumValidator, _ToIntegerValidator, _ToFloatValidator, _ConvertBignumToFloat, _ConvertStringToFloat, _IsProcConverterTarget, _CreateBfcForYield, _CreateBfcForMethodProcCall, _CreateBfcForProcCall, _CreateBfcForLibraryMethod, _LeaveProcConverter, _CreateMainTopLevelScope, _CreateTopLevelHostedScope, _CreateTopLevelScope, _CreateWrappedTopLevelScope, _CreateModuleEvalScope, _CreateModuleScope, _CreateMethodScope, 
+        _CreateBlockScope, _TraceMethodCall, _TraceMethodReturn, _TraceBlockCall, _TraceBlockReturn, _PrintInteractiveResult, _GetLocalVariable, _SetLocalVariable, _GetContextFromScope, _GetContextFromMethod, _GetContextFromBlockParam, _GetContextFromProc, _GetEmptyScope, _DefineBlock, _InitializeBlock, _Yield0, _Yield1, _Yield2, _Yield3, _Yield4, 
+        _YieldN, _YieldSplat0, _YieldSplat1, _YieldSplat2, _YieldSplat3, _YieldSplat4, _YieldSplatN, _YieldSplatNRhs, _DefineMethod, _MethodDefined, _AliasMethod, _UndefineMethod, _IsDefinedMethod, _DefineGlobalModule, _DefineNestedModule, _DefineModule, _DefineSingletonClass, _DefineGlobalClass, _DefineNestedClass, _DefineClass, 
+        _GetGlobalConstant, _GetUnqualifiedConstant, _GetQualifiedConstant, _IsDefinedGlobalConstant, _IsDefinedUnqualifiedConstant, _IsDefinedQualifiedConstant, _SetGlobalConstant, _SetUnqualifiedConstant, _SetQualifiedConstant, _MakeArray0, _MakeArray1, _MakeArray2, _MakeArray3, _MakeArray4, _MakeArray5, _MakeArrayN, _MakeHash0, _MakeHash, _SplatAppend, _Splat, 
+        _SplatPair, _Unsplat, _GetArrayItem, _GetArraySuffix, _GetGlobalVariable, _IsDefinedGlobalVariable, _SetGlobalVariable, _AliasGlobalVariable, _GetCurrentMatchGroup, _GetCurrentMatchData;
         
-        public static MethodInfo/*!*/ MakeAmbiguousMatchError { get { return _MakeAmbiguousMatchError ?? (_MakeAmbiguousMatchError = GetMethod(typeof(RubyOps), "MakeAmbiguousMatchError")); } }
-        public static MethodInfo/*!*/ IsSuperCallTarget { get { return _IsSuperCallTarget ?? (_IsSuperCallTarget = GetMethod(typeof(RubyOps), "IsSuperCallTarget")); } }
-        public static MethodInfo/*!*/ CreateInclusiveRange { get { return _CreateInclusiveRange ?? (_CreateInclusiveRange = GetMethod(typeof(RubyOps), "CreateInclusiveRange")); } }
-        public static MethodInfo/*!*/ CreateExclusiveRange { get { return _CreateExclusiveRange ?? (_CreateExclusiveRange = GetMethod(typeof(RubyOps), "CreateExclusiveRange")); } }
-        public static MethodInfo/*!*/ CreateInclusiveIntegerRange { get { return _CreateInclusiveIntegerRange ?? (_CreateInclusiveIntegerRange = GetMethod(typeof(RubyOps), "CreateInclusiveIntegerRange")); } }
-        public static MethodInfo/*!*/ CreateExclusiveIntegerRange { get { return _CreateExclusiveIntegerRange ?? (_CreateExclusiveIntegerRange = GetMethod(typeof(RubyOps), "CreateExclusiveIntegerRange")); } }
-        public static MethodInfo/*!*/ AllocateStructInstance { get { return _AllocateStructInstance ?? (_AllocateStructInstance = GetMethod(typeof(RubyOps), "AllocateStructInstance")); } }
-        public static MethodInfo/*!*/ CreateStructInstance { get { return _CreateStructInstance ?? (_CreateStructInstance = GetMethod(typeof(RubyOps), "CreateStructInstance")); } }
-        public static MethodInfo/*!*/ GetMetaObject { get { return _GetMetaObject ?? (_GetMetaObject = GetMethod(typeof(RubyOps), "GetMetaObject")); } }
-        public static MethodInfo/*!*/ ToProcValidator { get { return _ToProcValidator ?? (_ToProcValidator = GetMethod(typeof(RubyOps), "ToProcValidator")); } }
-        public static MethodInfo/*!*/ ToStringValidator { get { return _ToStringValidator ?? (_ToStringValidator = GetMethod(typeof(RubyOps), "ToStringValidator")); } }
-        public static MethodInfo/*!*/ ToSymbolValidator { get { return _ToSymbolValidator ?? (_ToSymbolValidator = GetMethod(typeof(RubyOps), "ToSymbolValidator")); } }
-        public static MethodInfo/*!*/ ConvertSymbolIdToSymbol { get { return _ConvertSymbolIdToSymbol ?? (_ConvertSymbolIdToSymbol = GetMethod(typeof(RubyOps), "ConvertSymbolIdToSymbol")); } }
-        public static MethodInfo/*!*/ ConvertFixnumToSymbol { get { return _ConvertFixnumToSymbol ?? (_ConvertFixnumToSymbol = GetMethod(typeof(RubyOps), "ConvertFixnumToSymbol")); } }
-        public static MethodInfo/*!*/ ConvertMutableStringToSymbol { get { return _ConvertMutableStringToSymbol ?? (_ConvertMutableStringToSymbol = GetMethod(typeof(RubyOps), "ConvertMutableStringToSymbol")); } }
-        public static MethodInfo/*!*/ ToRegexValidator { get { return _ToRegexValidator ?? (_ToRegexValidator = GetMethod(typeof(RubyOps), "ToRegexValidator")); } }
-        public static MethodInfo/*!*/ ToArrayValidator { get { return _ToArrayValidator ?? (_ToArrayValidator = GetMethod(typeof(RubyOps), "ToArrayValidator")); } }
-        public static MethodInfo/*!*/ ToHashValidator { get { return _ToHashValidator ?? (_ToHashValidator = GetMethod(typeof(RubyOps), "ToHashValidator")); } }
-        public static MethodInfo/*!*/ ToFixnumValidator { get { return _ToFixnumValidator ?? (_ToFixnumValidator = GetMethod(typeof(RubyOps), "ToFixnumValidator")); } }
-        public static MethodInfo/*!*/ ToIntegerValidator { get { return _ToIntegerValidator ?? (_ToIntegerValidator = GetMethod(typeof(RubyOps), "ToIntegerValidator")); } }
-        public static MethodInfo/*!*/ ToFloatValidator { get { return _ToFloatValidator ?? (_ToFloatValidator = GetMethod(typeof(RubyOps), "ToFloatValidator")); } }
-        public static MethodInfo/*!*/ ConvertBignumToFloat { get { return _ConvertBignumToFloat ?? (_ConvertBignumToFloat = GetMethod(typeof(RubyOps), "ConvertBignumToFloat")); } }
-        public static MethodInfo/*!*/ ConvertStringToFloat { get { return _ConvertStringToFloat ?? (_ConvertStringToFloat = GetMethod(typeof(RubyOps), "ConvertStringToFloat")); } }
         public static MethodInfo/*!*/ CreateTypeConversionError { get { return _CreateTypeConversionError ?? (_CreateTypeConversionError = GetMethod(typeof(RubyOps), "CreateTypeConversionError")); } }
         public static MethodInfo/*!*/ ConvertBignumToFixnum { get { return _ConvertBignumToFixnum ?? (_ConvertBignumToFixnum = GetMethod(typeof(RubyOps), "ConvertBignumToFixnum")); } }
         public static MethodInfo/*!*/ ToSDefaultConversion { get { return _ToSDefaultConversion ?? (_ToSDefaultConversion = GetMethod(typeof(RubyOps), "ToSDefaultConversion")); } }
@@ -75,31 +52,28 @@ namespace IronRuby.Compiler {
         public static MethodInfo/*!*/ CreateDelegateFromProc { get { return _CreateDelegateFromProc ?? (_CreateDelegateFromProc = GetMethod(typeof(RubyOps), "CreateDelegateFromProc")); } }
         public static MethodInfo/*!*/ CreateDelegateFromMethod { get { return _CreateDelegateFromMethod ?? (_CreateDelegateFromMethod = GetMethod(typeof(RubyOps), "CreateDelegateFromMethod")); } }
         public static MethodInfo/*!*/ X { get { return _X ?? (_X = GetMethod(typeof(RubyOps), "X")); } }
-        public static MethodInfo/*!*/ IsDefinedQualifiedConstant { get { return _IsDefinedQualifiedConstant ?? (_IsDefinedQualifiedConstant = GetMethod(typeof(RubyOps), "IsDefinedQualifiedConstant")); } }
-        public static MethodInfo/*!*/ SetGlobalConstant { get { return _SetGlobalConstant ?? (_SetGlobalConstant = GetMethod(typeof(RubyOps), "SetGlobalConstant")); } }
-        public static MethodInfo/*!*/ SetUnqualifiedConstant { get { return _SetUnqualifiedConstant ?? (_SetUnqualifiedConstant = GetMethod(typeof(RubyOps), "SetUnqualifiedConstant")); } }
-        public static MethodInfo/*!*/ SetQualifiedConstant { get { return _SetQualifiedConstant ?? (_SetQualifiedConstant = GetMethod(typeof(RubyOps), "SetQualifiedConstant")); } }
-        public static MethodInfo/*!*/ MakeArray0 { get { return _MakeArray0 ?? (_MakeArray0 = GetMethod(typeof(RubyOps), "MakeArray0")); } }
-        public static MethodInfo/*!*/ MakeArray1 { get { return _MakeArray1 ?? (_MakeArray1 = GetMethod(typeof(RubyOps), "MakeArray1")); } }
-        public static MethodInfo/*!*/ MakeArray2 { get { return _MakeArray2 ?? (_MakeArray2 = GetMethod(typeof(RubyOps), "MakeArray2")); } }
-        public static MethodInfo/*!*/ MakeArray3 { get { return _MakeArray3 ?? (_MakeArray3 = GetMethod(typeof(RubyOps), "MakeArray3")); } }
-        public static MethodInfo/*!*/ MakeArray4 { get { return _MakeArray4 ?? (_MakeArray4 = GetMethod(typeof(RubyOps), "MakeArray4")); } }
-        public static MethodInfo/*!*/ MakeArray5 { get { return _MakeArray5 ?? (_MakeArray5 = GetMethod(typeof(RubyOps), "MakeArray5")); } }
-        public static MethodInfo/*!*/ MakeArrayN { get { return _MakeArrayN ?? (_MakeArrayN = GetMethod(typeof(RubyOps), "MakeArrayN")); } }
-        public static MethodInfo/*!*/ MakeHash0 { get { return _MakeHash0 ?? (_MakeHash0 = GetMethod(typeof(RubyOps), "MakeHash0")); } }
-        public static MethodInfo/*!*/ MakeHash { get { return _MakeHash ?? (_MakeHash = GetMethod(typeof(RubyOps), "MakeHash")); } }
-        public static MethodInfo/*!*/ SplatAppend { get { return _SplatAppend ?? (_SplatAppend = GetMethod(typeof(RubyOps), "SplatAppend")); } }
-        public static MethodInfo/*!*/ Splat { get { return _Splat ?? (_Splat = GetMethod(typeof(RubyOps), "Splat")); } }
-        public static MethodInfo/*!*/ SplatPair { get { return _SplatPair ?? (_SplatPair = GetMethod(typeof(RubyOps), "SplatPair")); } }
-        public static MethodInfo/*!*/ Unsplat { get { return _Unsplat ?? (_Unsplat = GetMethod(typeof(RubyOps), "Unsplat")); } }
-        public static MethodInfo/*!*/ GetArrayItem { get { return _GetArrayItem ?? (_GetArrayItem = GetMethod(typeof(RubyOps), "GetArrayItem")); } }
-        public static MethodInfo/*!*/ GetArraySuffix { get { return _GetArraySuffix ?? (_GetArraySuffix = GetMethod(typeof(RubyOps), "GetArraySuffix")); } }
-        public static MethodInfo/*!*/ GetGlobalVariable { get { return _GetGlobalVariable ?? (_GetGlobalVariable = GetMethod(typeof(RubyOps), "GetGlobalVariable")); } }
-        public static MethodInfo/*!*/ IsDefinedGlobalVariable { get { return _IsDefinedGlobalVariable ?? (_IsDefinedGlobalVariable = GetMethod(typeof(RubyOps), "IsDefinedGlobalVariable")); } }
-        public static MethodInfo/*!*/ SetGlobalVariable { get { return _SetGlobalVariable ?? (_SetGlobalVariable = GetMethod(typeof(RubyOps), "SetGlobalVariable")); } }
-        public static MethodInfo/*!*/ AliasGlobalVariable { get { return _AliasGlobalVariable ?? (_AliasGlobalVariable = GetMethod(typeof(RubyOps), "AliasGlobalVariable")); } }
-        public static MethodInfo/*!*/ GetCurrentMatchGroup { get { return _GetCurrentMatchGroup ?? (_GetCurrentMatchGroup = GetMethod(typeof(RubyOps), "GetCurrentMatchGroup")); } }
-        public static MethodInfo/*!*/ GetCurrentMatchData { get { return _GetCurrentMatchData ?? (_GetCurrentMatchData = GetMethod(typeof(RubyOps), "GetCurrentMatchData")); } }
+        public static MethodInfo/*!*/ UpdateProfileTicks { get { return _UpdateProfileTicks ?? (_UpdateProfileTicks = GetMethod(typeof(RubyOps), "UpdateProfileTicks")); } }
+        public static MethodInfo/*!*/ CreateRfcForMethod { get { return _CreateRfcForMethod ?? (_CreateRfcForMethod = GetMethod(typeof(RubyOps), "CreateRfcForMethod")); } }
+        public static MethodInfo/*!*/ BlockRetry { get { return _BlockRetry ?? (_BlockRetry = GetMethod(typeof(RubyOps), "BlockRetry")); } }
+        public static MethodInfo/*!*/ MethodRetry { get { return _MethodRetry ?? (_MethodRetry = GetMethod(typeof(RubyOps), "MethodRetry")); } }
+        public static MethodInfo/*!*/ EvalRetry { get { return _EvalRetry ?? (_EvalRetry = GetMethod(typeof(RubyOps), "EvalRetry")); } }
+        public static MethodInfo/*!*/ BlockBreak { get { return _BlockBreak ?? (_BlockBreak = GetMethod(typeof(RubyOps), "BlockBreak")); } }
+        public static MethodInfo/*!*/ MethodBreak { get { return _MethodBreak ?? (_MethodBreak = GetMethod(typeof(RubyOps), "MethodBreak")); } }
+        public static MethodInfo/*!*/ EvalBreak { get { return _EvalBreak ?? (_EvalBreak = GetMethod(typeof(RubyOps), "EvalBreak")); } }
+        public static MethodInfo/*!*/ MethodNext { get { return _MethodNext ?? (_MethodNext = GetMethod(typeof(RubyOps), "MethodNext")); } }
+        public static MethodInfo/*!*/ EvalNext { get { return _EvalNext ?? (_EvalNext = GetMethod(typeof(RubyOps), "EvalNext")); } }
+        public static MethodInfo/*!*/ MethodRedo { get { return _MethodRedo ?? (_MethodRedo = GetMethod(typeof(RubyOps), "MethodRedo")); } }
+        public static MethodInfo/*!*/ EvalRedo { get { return _EvalRedo ?? (_EvalRedo = GetMethod(typeof(RubyOps), "EvalRedo")); } }
+        public static MethodInfo/*!*/ BlockReturn { get { return _BlockReturn ?? (_BlockReturn = GetMethod(typeof(RubyOps), "BlockReturn")); } }
+        public static MethodInfo/*!*/ EvalReturn { get { return _EvalReturn ?? (_EvalReturn = GetMethod(typeof(RubyOps), "EvalReturn")); } }
+        public static MethodInfo/*!*/ BlockYield { get { return _BlockYield ?? (_BlockYield = GetMethod(typeof(RubyOps), "BlockYield")); } }
+        public static MethodInfo/*!*/ MethodYield { get { return _MethodYield ?? (_MethodYield = GetMethod(typeof(RubyOps), "MethodYield")); } }
+        public static MethodInfo/*!*/ EvalYield { get { return _EvalYield ?? (_EvalYield = GetMethod(typeof(RubyOps), "EvalYield")); } }
+        public static MethodInfo/*!*/ MethodProcCall { get { return _MethodProcCall ?? (_MethodProcCall = GetMethod(typeof(RubyOps), "MethodProcCall")); } }
+        public static MethodInfo/*!*/ CanRescue { get { return _CanRescue ?? (_CanRescue = GetMethod(typeof(RubyOps), "CanRescue")); } }
+        public static MethodInfo/*!*/ IsRetrySingleton { get { return _IsRetrySingleton ?? (_IsRetrySingleton = GetMethod(typeof(RubyOps), "IsRetrySingleton")); } }
+        public static MethodInfo/*!*/ PropagateRetrySingleton { get { return _PropagateRetrySingleton ?? (_PropagateRetrySingleton = GetMethod(typeof(RubyOps), "PropagateRetrySingleton")); } }
+        public static MethodInfo/*!*/ GetRetrySingleton { get { return _GetRetrySingleton ?? (_GetRetrySingleton = GetMethod(typeof(RubyOps), "GetRetrySingleton")); } }
         public static MethodInfo/*!*/ GetCurrentMatchLastGroup { get { return _GetCurrentMatchLastGroup ?? (_GetCurrentMatchLastGroup = GetMethod(typeof(RubyOps), "GetCurrentMatchLastGroup")); } }
         public static MethodInfo/*!*/ GetCurrentMatchPrefix { get { return _GetCurrentMatchPrefix ?? (_GetCurrentMatchPrefix = GetMethod(typeof(RubyOps), "GetCurrentMatchPrefix")); } }
         public static MethodInfo/*!*/ GetCurrentMatchSuffix { get { return _GetCurrentMatchSuffix ?? (_GetCurrentMatchSuffix = GetMethod(typeof(RubyOps), "GetCurrentMatchSuffix")); } }
@@ -159,34 +133,36 @@ namespace IronRuby.Compiler {
         public static MethodInfo/*!*/ MakeTopLevelSuperException { get { return _MakeTopLevelSuperException ?? (_MakeTopLevelSuperException = GetMethod(typeof(RubyOps), "MakeTopLevelSuperException")); } }
         public static MethodInfo/*!*/ MakeMissingSuperException { get { return _MakeMissingSuperException ?? (_MakeMissingSuperException = GetMethod(typeof(RubyOps), "MakeMissingSuperException")); } }
         public static MethodInfo/*!*/ MakeInvalidArgumentTypesError { get { return _MakeInvalidArgumentTypesError ?? (_MakeInvalidArgumentTypesError = GetMethod(typeof(RubyOps), "MakeInvalidArgumentTypesError")); } }
-        public static MethodInfo/*!*/ UpdateProfileTicks { get { return _UpdateProfileTicks ?? (_UpdateProfileTicks = GetMethod(typeof(RubyOps), "UpdateProfileTicks")); } }
+        public static MethodInfo/*!*/ MakeAmbiguousMatchError { get { return _MakeAmbiguousMatchError ?? (_MakeAmbiguousMatchError = GetMethod(typeof(RubyOps), "MakeAmbiguousMatchError")); } }
+        public static MethodInfo/*!*/ MakePrivateMethodCalledError { get { return _MakePrivateMethodCalledError ?? (_MakePrivateMethodCalledError = GetMethod(typeof(RubyOps), "MakePrivateMethodCalledError")); } }
+        public static MethodInfo/*!*/ IsSuperCallTarget { get { return _IsSuperCallTarget ?? (_IsSuperCallTarget = GetMethod(typeof(RubyOps), "IsSuperCallTarget")); } }
+        public static MethodInfo/*!*/ CreateInclusiveRange { get { return _CreateInclusiveRange ?? (_CreateInclusiveRange = GetMethod(typeof(RubyOps), "CreateInclusiveRange")); } }
+        public static MethodInfo/*!*/ CreateExclusiveRange { get { return _CreateExclusiveRange ?? (_CreateExclusiveRange = GetMethod(typeof(RubyOps), "CreateExclusiveRange")); } }
+        public static MethodInfo/*!*/ CreateInclusiveIntegerRange { get { return _CreateInclusiveIntegerRange ?? (_CreateInclusiveIntegerRange = GetMethod(typeof(RubyOps), "CreateInclusiveIntegerRange")); } }
+        public static MethodInfo/*!*/ CreateExclusiveIntegerRange { get { return _CreateExclusiveIntegerRange ?? (_CreateExclusiveIntegerRange = GetMethod(typeof(RubyOps), "CreateExclusiveIntegerRange")); } }
+        public static MethodInfo/*!*/ AllocateStructInstance { get { return _AllocateStructInstance ?? (_AllocateStructInstance = GetMethod(typeof(RubyOps), "AllocateStructInstance")); } }
+        public static MethodInfo/*!*/ CreateStructInstance { get { return _CreateStructInstance ?? (_CreateStructInstance = GetMethod(typeof(RubyOps), "CreateStructInstance")); } }
+        public static MethodInfo/*!*/ GetMetaObject { get { return _GetMetaObject ?? (_GetMetaObject = GetMethod(typeof(RubyOps), "GetMetaObject")); } }
+        public static MethodInfo/*!*/ ToProcValidator { get { return _ToProcValidator ?? (_ToProcValidator = GetMethod(typeof(RubyOps), "ToProcValidator")); } }
+        public static MethodInfo/*!*/ ToStringValidator { get { return _ToStringValidator ?? (_ToStringValidator = GetMethod(typeof(RubyOps), "ToStringValidator")); } }
+        public static MethodInfo/*!*/ ToSymbolValidator { get { return _ToSymbolValidator ?? (_ToSymbolValidator = GetMethod(typeof(RubyOps), "ToSymbolValidator")); } }
+        public static MethodInfo/*!*/ ConvertSymbolIdToSymbol { get { return _ConvertSymbolIdToSymbol ?? (_ConvertSymbolIdToSymbol = GetMethod(typeof(RubyOps), "ConvertSymbolIdToSymbol")); } }
+        public static MethodInfo/*!*/ ConvertFixnumToSymbol { get { return _ConvertFixnumToSymbol ?? (_ConvertFixnumToSymbol = GetMethod(typeof(RubyOps), "ConvertFixnumToSymbol")); } }
+        public static MethodInfo/*!*/ ConvertMutableStringToSymbol { get { return _ConvertMutableStringToSymbol ?? (_ConvertMutableStringToSymbol = GetMethod(typeof(RubyOps), "ConvertMutableStringToSymbol")); } }
+        public static MethodInfo/*!*/ ToRegexValidator { get { return _ToRegexValidator ?? (_ToRegexValidator = GetMethod(typeof(RubyOps), "ToRegexValidator")); } }
+        public static MethodInfo/*!*/ ToArrayValidator { get { return _ToArrayValidator ?? (_ToArrayValidator = GetMethod(typeof(RubyOps), "ToArrayValidator")); } }
+        public static MethodInfo/*!*/ ToHashValidator { get { return _ToHashValidator ?? (_ToHashValidator = GetMethod(typeof(RubyOps), "ToHashValidator")); } }
+        public static MethodInfo/*!*/ ToFixnumValidator { get { return _ToFixnumValidator ?? (_ToFixnumValidator = GetMethod(typeof(RubyOps), "ToFixnumValidator")); } }
+        public static MethodInfo/*!*/ ToIntegerValidator { get { return _ToIntegerValidator ?? (_ToIntegerValidator = GetMethod(typeof(RubyOps), "ToIntegerValidator")); } }
+        public static MethodInfo/*!*/ ToFloatValidator { get { return _ToFloatValidator ?? (_ToFloatValidator = GetMethod(typeof(RubyOps), "ToFloatValidator")); } }
+        public static MethodInfo/*!*/ ConvertBignumToFloat { get { return _ConvertBignumToFloat ?? (_ConvertBignumToFloat = GetMethod(typeof(RubyOps), "ConvertBignumToFloat")); } }
+        public static MethodInfo/*!*/ ConvertStringToFloat { get { return _ConvertStringToFloat ?? (_ConvertStringToFloat = GetMethod(typeof(RubyOps), "ConvertStringToFloat")); } }
         public static MethodInfo/*!*/ IsProcConverterTarget { get { return _IsProcConverterTarget ?? (_IsProcConverterTarget = GetMethod(typeof(RubyOps), "IsProcConverterTarget")); } }
         public static MethodInfo/*!*/ CreateBfcForYield { get { return _CreateBfcForYield ?? (_CreateBfcForYield = GetMethod(typeof(RubyOps), "CreateBfcForYield")); } }
         public static MethodInfo/*!*/ CreateBfcForMethodProcCall { get { return _CreateBfcForMethodProcCall ?? (_CreateBfcForMethodProcCall = GetMethod(typeof(RubyOps), "CreateBfcForMethodProcCall")); } }
         public static MethodInfo/*!*/ CreateBfcForProcCall { get { return _CreateBfcForProcCall ?? (_CreateBfcForProcCall = GetMethod(typeof(RubyOps), "CreateBfcForProcCall")); } }
         public static MethodInfo/*!*/ CreateBfcForLibraryMethod { get { return _CreateBfcForLibraryMethod ?? (_CreateBfcForLibraryMethod = GetMethod(typeof(RubyOps), "CreateBfcForLibraryMethod")); } }
         public static MethodInfo/*!*/ LeaveProcConverter { get { return _LeaveProcConverter ?? (_LeaveProcConverter = GetMethod(typeof(RubyOps), "LeaveProcConverter")); } }
-        public static MethodInfo/*!*/ CreateRfcForMethod { get { return _CreateRfcForMethod ?? (_CreateRfcForMethod = GetMethod(typeof(RubyOps), "CreateRfcForMethod")); } }
-        public static MethodInfo/*!*/ BlockRetry { get { return _BlockRetry ?? (_BlockRetry = GetMethod(typeof(RubyOps), "BlockRetry")); } }
-        public static MethodInfo/*!*/ MethodRetry { get { return _MethodRetry ?? (_MethodRetry = GetMethod(typeof(RubyOps), "MethodRetry")); } }
-        public static MethodInfo/*!*/ EvalRetry { get { return _EvalRetry ?? (_EvalRetry = GetMethod(typeof(RubyOps), "EvalRetry")); } }
-        public static MethodInfo/*!*/ BlockBreak { get { return _BlockBreak ?? (_BlockBreak = GetMethod(typeof(RubyOps), "BlockBreak")); } }
-        public static MethodInfo/*!*/ MethodBreak { get { return _MethodBreak ?? (_MethodBreak = GetMethod(typeof(RubyOps), "MethodBreak")); } }
-        public static MethodInfo/*!*/ EvalBreak { get { return _EvalBreak ?? (_EvalBreak = GetMethod(typeof(RubyOps), "EvalBreak")); } }
-        public static MethodInfo/*!*/ MethodNext { get { return _MethodNext ?? (_MethodNext = GetMethod(typeof(RubyOps), "MethodNext")); } }
-        public static MethodInfo/*!*/ EvalNext { get { return _EvalNext ?? (_EvalNext = GetMethod(typeof(RubyOps), "EvalNext")); } }
-        public static MethodInfo/*!*/ MethodRedo { get { return _MethodRedo ?? (_MethodRedo = GetMethod(typeof(RubyOps), "MethodRedo")); } }
-        public static MethodInfo/*!*/ EvalRedo { get { return _EvalRedo ?? (_EvalRedo = GetMethod(typeof(RubyOps), "EvalRedo")); } }
-        public static MethodInfo/*!*/ BlockReturn { get { return _BlockReturn ?? (_BlockReturn = GetMethod(typeof(RubyOps), "BlockReturn")); } }
-        public static MethodInfo/*!*/ EvalReturn { get { return _EvalReturn ?? (_EvalReturn = GetMethod(typeof(RubyOps), "EvalReturn")); } }
-        public static MethodInfo/*!*/ BlockYield { get { return _BlockYield ?? (_BlockYield = GetMethod(typeof(RubyOps), "BlockYield")); } }
-        public static MethodInfo/*!*/ MethodYield { get { return _MethodYield ?? (_MethodYield = GetMethod(typeof(RubyOps), "MethodYield")); } }
-        public static MethodInfo/*!*/ EvalYield { get { return _EvalYield ?? (_EvalYield = GetMethod(typeof(RubyOps), "EvalYield")); } }
-        public static MethodInfo/*!*/ MethodProcCall { get { return _MethodProcCall ?? (_MethodProcCall = GetMethod(typeof(RubyOps), "MethodProcCall")); } }
-        public static MethodInfo/*!*/ CanRescue { get { return _CanRescue ?? (_CanRescue = GetMethod(typeof(RubyOps), "CanRescue")); } }
-        public static MethodInfo/*!*/ IsRetrySingleton { get { return _IsRetrySingleton ?? (_IsRetrySingleton = GetMethod(typeof(RubyOps), "IsRetrySingleton")); } }
-        public static MethodInfo/*!*/ PropagateRetrySingleton { get { return _PropagateRetrySingleton ?? (_PropagateRetrySingleton = GetMethod(typeof(RubyOps), "PropagateRetrySingleton")); } }
-        public static MethodInfo/*!*/ GetRetrySingleton { get { return _GetRetrySingleton ?? (_GetRetrySingleton = GetMethod(typeof(RubyOps), "GetRetrySingleton")); } }
         public static MethodInfo/*!*/ CreateMainTopLevelScope { get { return _CreateMainTopLevelScope ?? (_CreateMainTopLevelScope = GetMethod(typeof(RubyOps), "CreateMainTopLevelScope")); } }
         public static MethodInfo/*!*/ CreateTopLevelHostedScope { get { return _CreateTopLevelHostedScope ?? (_CreateTopLevelHostedScope = GetMethod(typeof(RubyOps), "CreateTopLevelHostedScope")); } }
         public static MethodInfo/*!*/ CreateTopLevelScope { get { return _CreateTopLevelScope ?? (_CreateTopLevelScope = GetMethod(typeof(RubyOps), "CreateTopLevelScope")); } }
@@ -239,6 +215,31 @@ namespace IronRuby.Compiler {
         public static MethodInfo/*!*/ GetQualifiedConstant { get { return _GetQualifiedConstant ?? (_GetQualifiedConstant = GetMethod(typeof(RubyOps), "GetQualifiedConstant")); } }
         public static MethodInfo/*!*/ IsDefinedGlobalConstant { get { return _IsDefinedGlobalConstant ?? (_IsDefinedGlobalConstant = GetMethod(typeof(RubyOps), "IsDefinedGlobalConstant")); } }
         public static MethodInfo/*!*/ IsDefinedUnqualifiedConstant { get { return _IsDefinedUnqualifiedConstant ?? (_IsDefinedUnqualifiedConstant = GetMethod(typeof(RubyOps), "IsDefinedUnqualifiedConstant")); } }
+        public static MethodInfo/*!*/ IsDefinedQualifiedConstant { get { return _IsDefinedQualifiedConstant ?? (_IsDefinedQualifiedConstant = GetMethod(typeof(RubyOps), "IsDefinedQualifiedConstant")); } }
+        public static MethodInfo/*!*/ SetGlobalConstant { get { return _SetGlobalConstant ?? (_SetGlobalConstant = GetMethod(typeof(RubyOps), "SetGlobalConstant")); } }
+        public static MethodInfo/*!*/ SetUnqualifiedConstant { get { return _SetUnqualifiedConstant ?? (_SetUnqualifiedConstant = GetMethod(typeof(RubyOps), "SetUnqualifiedConstant")); } }
+        public static MethodInfo/*!*/ SetQualifiedConstant { get { return _SetQualifiedConstant ?? (_SetQualifiedConstant = GetMethod(typeof(RubyOps), "SetQualifiedConstant")); } }
+        public static MethodInfo/*!*/ MakeArray0 { get { return _MakeArray0 ?? (_MakeArray0 = GetMethod(typeof(RubyOps), "MakeArray0")); } }
+        public static MethodInfo/*!*/ MakeArray1 { get { return _MakeArray1 ?? (_MakeArray1 = GetMethod(typeof(RubyOps), "MakeArray1")); } }
+        public static MethodInfo/*!*/ MakeArray2 { get { return _MakeArray2 ?? (_MakeArray2 = GetMethod(typeof(RubyOps), "MakeArray2")); } }
+        public static MethodInfo/*!*/ MakeArray3 { get { return _MakeArray3 ?? (_MakeArray3 = GetMethod(typeof(RubyOps), "MakeArray3")); } }
+        public static MethodInfo/*!*/ MakeArray4 { get { return _MakeArray4 ?? (_MakeArray4 = GetMethod(typeof(RubyOps), "MakeArray4")); } }
+        public static MethodInfo/*!*/ MakeArray5 { get { return _MakeArray5 ?? (_MakeArray5 = GetMethod(typeof(RubyOps), "MakeArray5")); } }
+        public static MethodInfo/*!*/ MakeArrayN { get { return _MakeArrayN ?? (_MakeArrayN = GetMethod(typeof(RubyOps), "MakeArrayN")); } }
+        public static MethodInfo/*!*/ MakeHash0 { get { return _MakeHash0 ?? (_MakeHash0 = GetMethod(typeof(RubyOps), "MakeHash0")); } }
+        public static MethodInfo/*!*/ MakeHash { get { return _MakeHash ?? (_MakeHash = GetMethod(typeof(RubyOps), "MakeHash")); } }
+        public static MethodInfo/*!*/ SplatAppend { get { return _SplatAppend ?? (_SplatAppend = GetMethod(typeof(RubyOps), "SplatAppend")); } }
+        public static MethodInfo/*!*/ Splat { get { return _Splat ?? (_Splat = GetMethod(typeof(RubyOps), "Splat")); } }
+        public static MethodInfo/*!*/ SplatPair { get { return _SplatPair ?? (_SplatPair = GetMethod(typeof(RubyOps), "SplatPair")); } }
+        public static MethodInfo/*!*/ Unsplat { get { return _Unsplat ?? (_Unsplat = GetMethod(typeof(RubyOps), "Unsplat")); } }
+        public static MethodInfo/*!*/ GetArrayItem { get { return _GetArrayItem ?? (_GetArrayItem = GetMethod(typeof(RubyOps), "GetArrayItem")); } }
+        public static MethodInfo/*!*/ GetArraySuffix { get { return _GetArraySuffix ?? (_GetArraySuffix = GetMethod(typeof(RubyOps), "GetArraySuffix")); } }
+        public static MethodInfo/*!*/ GetGlobalVariable { get { return _GetGlobalVariable ?? (_GetGlobalVariable = GetMethod(typeof(RubyOps), "GetGlobalVariable")); } }
+        public static MethodInfo/*!*/ IsDefinedGlobalVariable { get { return _IsDefinedGlobalVariable ?? (_IsDefinedGlobalVariable = GetMethod(typeof(RubyOps), "IsDefinedGlobalVariable")); } }
+        public static MethodInfo/*!*/ SetGlobalVariable { get { return _SetGlobalVariable ?? (_SetGlobalVariable = GetMethod(typeof(RubyOps), "SetGlobalVariable")); } }
+        public static MethodInfo/*!*/ AliasGlobalVariable { get { return _AliasGlobalVariable ?? (_AliasGlobalVariable = GetMethod(typeof(RubyOps), "AliasGlobalVariable")); } }
+        public static MethodInfo/*!*/ GetCurrentMatchGroup { get { return _GetCurrentMatchGroup ?? (_GetCurrentMatchGroup = GetMethod(typeof(RubyOps), "GetCurrentMatchGroup")); } }
+        public static MethodInfo/*!*/ GetCurrentMatchData { get { return _GetCurrentMatchData ?? (_GetCurrentMatchData = GetMethod(typeof(RubyOps), "GetCurrentMatchData")); } }
         
         public static MethodInfo/*!*/ CreateRegex(string/*!*/ suffix) {
             switch (suffix) {

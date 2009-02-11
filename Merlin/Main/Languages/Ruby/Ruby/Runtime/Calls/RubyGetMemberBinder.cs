@@ -33,10 +33,6 @@ namespace IronRuby.Runtime.Calls {
             _context = context;
         }
 
-        public override object CacheIdentity {
-            get { return this; }
-        }
-
         public override DynamicMetaObject/*!*/ FallbackGetMember(DynamicMetaObject/*!*/ self, DynamicMetaObject/*!*/ onBindingError) {
             var result = TryBind(_context, this, self);
             if (result != null) {
@@ -53,21 +49,21 @@ namespace IronRuby.Runtime.Calls {
             var contextExpression = Ast.Constant(context);
 
             RubyClass targetClass = context.GetImmediateClassOf(target.Value);
-            RubyMemberInfo method, methodMissing = null;
-            RubyMethodVisibility incompatibleVisibility = RubyMethodVisibility.None;
+            MethodResolutionResult method;
+            RubyMemberInfo methodMissing = null;
 
             using (targetClass.Context.ClassHierarchyLocker()) {
                 metaBuilder.AddTargetTypeTest(target.Value, targetClass, target.Expression, context, contextExpression);
 
-                method = targetClass.ResolveMethodForSiteNoLock(binder.Name, false, out incompatibleVisibility);
-                if (method == null) {
-                    methodMissing = targetClass.ResolveMethodForSiteNoLock(Symbols.MethodMissing, true);
+                method = targetClass.ResolveMethodForSiteNoLock(binder.Name, false);
+                if (method.Found) {
+                    methodMissing = targetClass.ResolveMethodForSiteNoLock(Symbols.MethodMissing, true).Info;
                 }
             }
             
-            if (method != null) {
+            if (method.Found) {
                 // we need to create a bound member:
-                metaBuilder.Result = Ast.Constant(new RubyMethod(target.Value, method, binder.Name));
+                metaBuilder.Result = Ast.Constant(new RubyMethod(target.Value, method.Info, binder.Name));
             } else {
                 // TODO:
                 // We need to throw an exception if we don't find method_missing so that our version update optimization works: 
@@ -98,7 +94,8 @@ namespace IronRuby.Runtime.Calls {
                     ),
                     binder.Name,
                     methodMissing,
-                    incompatibleVisibility
+                    method.IncompatibleVisibility,
+                    false
                 );
             }
 

@@ -37,6 +37,11 @@ namespace System.Dynamic.Utils {
                 return troc;
             }
 
+            var builder = enumerable as ReadOnlyCollectionBuilder<T>;
+            if (builder != null) {
+                return builder.ToReadOnlyCollection();
+            }
+
             var collection = enumerable as ICollection<T>;
             if (collection != null) {
                 int count = collection.Count;

@@ -605,6 +605,12 @@ namespace IronRuby.Runtime {
             }
         }
 
+        internal bool TryGetModule(Type/*!*/ type, out RubyModule result) {
+            lock (ModuleCacheLock) {
+                return _moduleCache.TryGetValue(type, out result);
+            }
+        }
+
         internal bool TryGetModuleNoLock(Type/*!*/ type, out RubyModule result) {
             return _moduleCache.TryGetValue(type, out result);
         }
@@ -772,6 +778,7 @@ namespace IronRuby.Runtime {
             );
 
             using (ClassHierarchyLocker()) {
+                // TODO: improve version updates
                 c.Updated("CreateInstanceSingleton");
             }
 
@@ -1028,7 +1035,7 @@ namespace IronRuby.Runtime {
         #region Member Resolution (thread-safe)
 
         // thread-safe:
-        public RubyMemberInfo ResolveMethod(object target, string/*!*/ name, bool includePrivate) {
+        public MethodResolutionResult ResolveMethod(object target, string/*!*/ name, bool includePrivate) {
             return GetImmediateClassOf(target).ResolveMethod(name, includePrivate);
         }
 

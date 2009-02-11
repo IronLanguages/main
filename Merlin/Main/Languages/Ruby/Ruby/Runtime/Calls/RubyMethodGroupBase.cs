@@ -47,24 +47,23 @@ namespace IronRuby.Runtime.Calls {
     /// Currently this is used for all builtin libary methods and interop calls to CLR methods
     /// </summary>
     public abstract class RubyMethodGroupBase : RubyMemberInfo {
+        // Not protected by a lock. Immutable after initialized. 
         private MethodBase/*!*/[] _methodBases;
         
         protected RubyMethodGroupBase(MethodBase/*!*/[] methods, RubyMemberFlags flags, RubyModule/*!*/ declaringModule)
             : base(flags, declaringModule) {
             if (methods != null) {
-                SetMethodBases(methods);
+                SetMethodBasesNoLock(methods);
             }
         }
 
         protected abstract RubyMemberInfo/*!*/ Copy(MethodBase/*!*/[]/*!*/ methods);
 
-        protected virtual MethodBase/*!*/[]/*!*/ MethodBases {
+        internal protected virtual MethodBase/*!*/[]/*!*/ MethodBases {
             get { return _methodBases; }
         }
 
-        protected MethodBase/*!*/[]/*!*/ SetMethodBases(MethodBase/*!*/[]/*!*/ methods) {
-            Debug.Assert(_methodBases == null);
-
+        internal MethodBase/*!*/[]/*!*/ SetMethodBasesNoLock(MethodBase/*!*/[]/*!*/ methods) {
             // either all methods in the group are static or instance, a mixture is not allowed:
             Debug.Assert(
                 CollectionUtils.TrueForAll(methods, (method) => method.IsStatic) ||

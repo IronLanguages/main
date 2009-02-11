@@ -27,6 +27,7 @@ using System.Collections.Generic;
 namespace IronRuby.Tests {
     internal class AssertTokenizer {
         private readonly RubyContext/*!*/ _context;
+        private readonly Tests/*!*/ _tests;
         private Tokenizer _tokenizer;
         private Tokens _actualToken;
         private TokenValue _actualValue;
@@ -35,9 +36,10 @@ namespace IronRuby.Tests {
         private List<Tokens>/*!*/ _allTokens;
         private List<object>/*!*/ _allValues;
 
-        public AssertTokenizer(RubyContext/*!*/ context) {
+        public AssertTokenizer(Tests/*!*/ tests) {
             _log = new LoggingErrorSink();
-            _context = context;
+            _tests = tests;
+            _context = tests.Context;
         }
 
         public AssertTokenizer/*!*/ B {
@@ -50,7 +52,7 @@ namespace IronRuby.Tests {
         }
 
         public AssertTokenizer/*!*/ Load(object/*!*/ source) { // source: byte[] or string
-            Tests.Assert(_log.Errors.Count == 0, "Previous test case reported unexpected error/warning(s)");
+            _tests.Assert(_log.Errors.Count == 0, "Previous test case reported unexpected error/warning(s)");
 
             _tokenizer = new Tokenizer(false, DummyVariableResolver.AllMethodNames) {
                 ErrorSink = _log,
@@ -89,69 +91,69 @@ namespace IronRuby.Tests {
 
         public AssertTokenizer/*!*/ Read(Tokens token) {
             Next();
-            Tests.Assert(_actualToken == token);
+            _tests.Assert(_actualToken == token);
             return this;
         }
 
         public AssertTokenizer/*!*/ Read(int expected) {
             Next();
-            Tests.Assert(_actualToken == Tokens.Integer);
-            Tests.Assert(expected == _actualValue.Integer1);
+            _tests.Assert(_actualToken == Tokens.Integer);
+            _tests.Assert(expected == _actualValue.Integer1);
             return this;
         }
 
         public AssertTokenizer/*!*/ Read(string/*!*/ expected) {
             Next();
-            Tests.Assert(_actualToken == Tokens.StringContent);
-            Tests.Assert(expected == _actualValue.String);
+            _tests.Assert(_actualToken == Tokens.StringContent);
+            _tests.Assert(expected == _actualValue.String);
             return this;
         }
 
         public AssertTokenizer/*!*/ ReadSymbol(Tokens token, string expected) {
             Next();
-            Tests.Assert(_actualToken == token);
-            Tests.Assert(expected == _actualValue.String);
+            _tests.Assert(_actualToken == token);
+            _tests.Assert(expected == _actualValue.String);
             return this;
         }
 
         public AssertTokenizer/*!*/ Read(RubyRegexOptions expected) {
             Next();
-            Tests.Assert(_actualToken == Tokens.RegexpEnd);
-            Tests.Assert(expected == _actualValue.RegExOptions);
+            _tests.Assert(_actualToken == Tokens.RegexpEnd);
+            _tests.Assert(expected == _actualValue.RegExOptions);
             return this;
         }
 
         public AssertTokenizer/*!*/ ReadBigInteger(string/*!*/ expected, uint @base) {
             Next();
-            Tests.Assert(_actualToken == Tokens.BigInteger);
-            Tests.Assert(StringComparer.OrdinalIgnoreCase.Compare(_actualValue.BigInteger.ToString(@base), expected) == 0);
+            _tests.Assert(_actualToken == Tokens.BigInteger);
+            _tests.Assert(StringComparer.OrdinalIgnoreCase.Compare(_actualValue.BigInteger.ToString(@base), expected) == 0);
             return this;
         }
 
         public AssertTokenizer/*!*/ Read(double expected) {
             Next();
-            Tests.Assert(_actualToken == Tokens.Float);
+            _tests.Assert(_actualToken == Tokens.Float);
 
             if (Double.IsNaN(expected)) {
-                Tests.Assert(Double.IsNaN(_actualValue.Double));
+                _tests.Assert(Double.IsNaN(_actualValue.Double));
             } else if (Double.IsNegativeInfinity(expected)) {
-                Tests.Assert(Double.IsNegativeInfinity(_actualValue.Double));
+                _tests.Assert(Double.IsNegativeInfinity(_actualValue.Double));
             } else if (Double.IsPositiveInfinity(expected)) {
-                Tests.Assert(Double.IsPositiveInfinity(_actualValue.Double));
+                _tests.Assert(Double.IsPositiveInfinity(_actualValue.Double));
             } else {
                 // TODO: is this correct?
-                Tests.Assert(System.Math.Abs(_actualValue.Double - expected) < Double.Epsilon);
+                _tests.Assert(System.Math.Abs(_actualValue.Double - expected) < Double.Epsilon);
             }
             return this;
         }
 
         public AssertTokenizer/*!*/ Expect(params ErrorInfo[] errors) {
             if (errors == null || errors.Length == 0) {
-                Tests.Assert(_log.Errors.Count == 0, "Unexpected error/warning(s)");
+                _tests.Assert(_log.Errors.Count == 0, "Unexpected error/warning(s)");
             } else {
-                Tests.Assert(_log.Errors.Count == errors.Length, String.Format("Expected {0} error/warning(s)", errors.Length));
+                _tests.Assert(_log.Errors.Count == errors.Length, String.Format("Expected {0} error/warning(s)", errors.Length));
                 for (int i = 0; i < errors.Length; i++) {
-                    Tests.Assert(_log.Errors[i].Code == errors[i].Code);
+                    _tests.Assert(_log.Errors[i].Code == errors[i].Code);
                 }
             }
             _log.Errors.Clear();
@@ -173,8 +175,8 @@ namespace IronRuby.Tests {
         public AssertTokenizer/*!*/ this[Tokens token, string/*!*/ expected] {
             get {
                 Next();
-                Tests.Assert(_actualToken == token);
-                Tests.Assert(expected == _actualValue.String);
+                _tests.Assert(_actualToken == token);
+                _tests.Assert(expected == _actualValue.String);
                 return this; 
             }
         }

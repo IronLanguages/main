@@ -103,14 +103,10 @@ namespace Microsoft.Scripting.Actions {
             return res;
         }
 
-        public override object CacheIdentity {
-            get { return this; }
-        }
-
         public override int GetHashCode() {
             int res = 6551;
             foreach (BinderMappingInfo metaBinder in _metaBinders) {
-                res ^= metaBinder.Binder.CacheIdentity.GetHashCode();
+                res ^= metaBinder.Binder.GetHashCode();
 
                 foreach (ParameterMappingInfo mapInfo in metaBinder.MappingInfo) {
                     res ^= mapInfo.GetHashCode();
@@ -131,7 +127,7 @@ namespace Microsoft.Scripting.Actions {
                     BinderMappingInfo self = _metaBinders[i];
                     BinderMappingInfo otherBinders = other._metaBinders[i];
 
-                    if (!self.Binder.CacheIdentity.Equals(otherBinders.Binder.CacheIdentity) ||
+                    if (!self.Binder.Equals(otherBinders.Binder) ||
                         self.MappingInfo.Count != otherBinders.MappingInfo.Count) {
                         return false;
                     }

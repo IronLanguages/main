@@ -32,7 +32,17 @@ namespace System.Linq.Expressions.Compiler {
 
             int count = node.ExpressionCount;
             for (int index = 0; index < count - 1; index++) {
-                EmitExpressionAsVoid(node.GetExpression(index));
+                var e = node.GetExpression(index);
+
+                if (_emitDebugSymbols) {
+                    //No need to emit a clearance if the next expression in the block is also a
+                    //DebugInfoExprssion.
+                    var debugInfo = e as DebugInfoExpression;
+                    if (debugInfo != null && debugInfo.IsClear && node.GetExpression(index + 1) is DebugInfoExpression) {
+                        continue;
+                    }
+                }
+                EmitExpressionAsVoid(e);
             }
 
             // if the type of Block it means this is not a Comma
@@ -40,7 +50,7 @@ namespace System.Linq.Expressions.Compiler {
             if (emitAs == EmitAs.Void || node.Type == typeof(void)) {
                 EmitExpressionAsVoid(node.GetExpression(count - 1));
             } else {
-                EmitExpression(node.GetExpression(count - 1));
+                EmitExpressionAsType(node.GetExpression(count - 1), node.Type);
             }
 
             ExitScope(node);
@@ -70,7 +80,7 @@ namespace System.Linq.Expressions.Compiler {
                 Debug.Assert(_scope.Node == node);
             }
         }
-                
+
         private static bool HasVariables(object node) {
             var block = node as BlockExpression;
             if (block != null) {
@@ -251,7 +261,7 @@ namespace System.Linq.Expressions.Compiler {
                     return false;
             }
         }
-        
+
         // Tries to emit switch as a jmp table
         private bool TryEmitSwitchInstruction(SwitchExpression node) {
             // If we have a comparison, bail
@@ -376,7 +386,7 @@ namespace System.Linq.Expressions.Compiler {
                 }
 
                 _ilg.MarkLabel(labels[i]);
-                EmitExpression(node.Cases[i].Body);
+                EmitExpressionAsType(node.Cases[i].Body, node.Type);
 
                 // Last case doesn't need branch
                 if (node.DefaultBody != null || i < n - 1) {
@@ -387,7 +397,7 @@ namespace System.Linq.Expressions.Compiler {
             // Default value
             if (node.DefaultBody != null) {
                 _ilg.MarkLabel(@default);
-                EmitExpression(node.DefaultBody);
+                EmitExpressionAsType(node.DefaultBody, node.Type);
             }
 
             _ilg.MarkLabel(end);
@@ -580,7 +590,7 @@ namespace System.Linq.Expressions.Compiler {
                         Expression.Void(Expression.Assign(switchIndex, Expression.Constant(-1)))
                     )
                 ),
-                Expression.Switch(switchIndex, node.DefaultBody, null, cases)
+                Expression.Switch(node.Type, switchIndex, node.DefaultBody, null, cases)
             );
 
             // Emit it normally

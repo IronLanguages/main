@@ -15,6 +15,7 @@
 
 using System;
 using System.Linq.Expressions;
+using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 
 namespace Microsoft.Scripting.Ast {
@@ -28,6 +29,16 @@ namespace Microsoft.Scripting.Ast {
 
             if (expression.Type == typeof(void)) {
                 return Expression.Block(expression, Expression.Default(type));
+            }
+
+            // TODO: this is not the right level for this to be at. It should
+            // be pushed into languages if they really want this behavior.
+            if (type == typeof(object)) {
+                if (expression.Type == typeof(int)) {
+                    return Expression.Convert(expression, typeof(object), typeof(ScriptingRuntimeHelpers).GetMethod("Int32ToObject"));
+                } else if (expression.Type == typeof(bool)) {
+                    return Expression.Convert(expression, typeof(object), typeof(ScriptingRuntimeHelpers).GetMethod("BooleanToObject"));
+                }
             }
 
             return Expression.Convert(expression, type);

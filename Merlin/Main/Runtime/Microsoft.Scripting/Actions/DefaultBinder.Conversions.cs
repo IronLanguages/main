@@ -494,7 +494,7 @@ namespace Microsoft.Scripting.Actions {
         /// </summary>
         private static DynamicMetaObject MakeNullTarget(Type toType, BindingRestrictions restrictions) {
             return new DynamicMetaObject(
-                Ast.Convert(Ast.Constant(null), toType),
+                Ast.Constant(null, toType),
                 restrictions
             );
         }

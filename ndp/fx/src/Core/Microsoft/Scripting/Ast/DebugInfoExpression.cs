@@ -20,76 +20,61 @@ using System.Dynamic.Utils;
 
 namespace System.Linq.Expressions {
     /// <summary>
-    /// Wraps an expression, emitting a sequence point around it
+    /// Emits or clears a sequence point for debug information.
     /// 
     /// This allows the debugger to highlight the correct source code when
     /// debugging.
     /// </summary>
-    public sealed class DebugInfoExpression : Expression {
-        private readonly Expression _expression;
-        private readonly int _startLine, _startColumn, _endLine, _endColumn;
+    public class DebugInfoExpression : Expression {
+
         private readonly SymbolDocumentInfo _document;
 
-        internal DebugInfoExpression(Expression body, SymbolDocumentInfo document, int startLine, int startColumn, int endLine, int endColumn) {
-            _expression = body;
+        internal DebugInfoExpression(SymbolDocumentInfo document) {
             _document = document;
-            _startLine = startLine;
-            _startColumn = startColumn;
-            _endLine = endLine;
-            _endColumn = endColumn;
         }
 
         /// <summary>
         /// Gets the static type of the expression that this <see cref="Expression" /> represents. (Inherited from <see cref="Expression"/>.)
         /// </summary>
         /// <returns>The <see cref="Type"/> that represents the static type of the expression.</returns>
-        protected override Type GetExpressionType() {
-            return _expression.Type;
+        protected override Type TypeImpl() {
+            return typeof(void);
         }
 
         /// <summary>
         /// Returns the node type of this <see cref="Expression" />. (Inherited from <see cref="Expression" />.)
         /// </summary>
         /// <returns>The <see cref="ExpressionType"/> that represents this expression.</returns>
-        protected override ExpressionType GetNodeKind() {
+        protected override ExpressionType NodeTypeImpl() {
             return ExpressionType.DebugInfo;
         }
 
         /// <summary>
-        /// Gets a boolean value indicating whether this expression is reducible.
+        /// Gets the start line of this <see cref="DebugInfoExpression" />.
         /// </summary>
-        public override bool CanReduce {
-            get {
-                return true;
-            }
+        public virtual int StartLine {
+            get { throw ContractUtils.Unreachable; }
         }
 
         /// <summary>
-        /// Gets the start line of the code that was used to generate the wrapped expression.
+        /// Gets the start column of this <see cref="DebugInfoExpression" />.
         /// </summary>
-        public int StartLine {
-            get { return _startLine; }
+        public virtual int StartColumn {
+            get { throw ContractUtils.Unreachable; }
         }
 
         /// <summary>
-        /// Gets the start column of the code that was used to generate the wrapped expression.
+        /// Gets the end line of this <see cref="DebugInfoExpression" />.
         /// </summary>
-        public int StartColumn {
-            get { return _startColumn; }
+        public virtual int EndLine {
+            get { throw ContractUtils.Unreachable; }
         }
 
         /// <summary>
-        /// Gets the end line of the code that was used to generate the wrapped expression.
+        /// Gets the end column of this <see cref="DebugInfoExpression" />.
         /// </summary>
-        public int EndLine {
-            get { return _endLine; }
-        }
-
-        /// <summary>
-        /// Gets the end column of the code that was used to generate the wrapped expression.
-        /// </summary>
-        public int EndColumn {
-            get { return _endColumn; }
+        public virtual int EndColumn {
+            get { throw ContractUtils.Unreachable; }
         }
 
         /// <summary>
@@ -100,18 +85,10 @@ namespace System.Linq.Expressions {
         }
 
         /// <summary>
-        /// The underlying <see cref="Expression"/> that the <see cref="DebugInfoExpression"/> applies to.
+        /// Gets the value to indicate if the <see cref="DebugInfoExpression"/> is for clearing a sequence point.
         /// </summary>
-        public Expression Expression {
-            get { return _expression; }
-        }
-
-        /// <summary>
-        /// Returns the underlying expression that this <see cref="DebugInfoExpression"/> applies to.
-        /// </summary>
-        /// <returns>The reduced expression.</returns>
-        public override Expression Reduce() {
-            return _expression;
+        public virtual bool IsClear {
+            get { throw ContractUtils.Unreachable; }
         }
 
         internal override Expression Accept(ExpressionVisitor visitor) {
@@ -119,24 +96,120 @@ namespace System.Linq.Expressions {
         }
     }
 
+    #region Specialized subclasses
+
+    internal sealed class SpanDebugInfoExpression : DebugInfoExpression {
+        private readonly int _startLine, _startColumn, _endLine, _endColumn;
+
+        internal SpanDebugInfoExpression(SymbolDocumentInfo document, int startLine, int startColumn, int endLine, int endColumn)
+            : base(document) {
+            _startLine = startLine;
+            _startColumn = startColumn;
+            _endLine = endLine;
+            _endColumn = endColumn;
+        }
+
+        public override int StartLine {
+            get {
+                return _startLine;
+            }
+        }
+
+        public override int StartColumn {
+            get {
+                return _startColumn;
+            }
+        }
+
+        public override int EndLine {
+            get {
+                return _endLine;
+            }
+        }
+
+        public override int EndColumn {
+            get {
+                return _endColumn;
+            }
+        }
+
+        public override bool IsClear {
+            get {
+                return false;
+            }
+        }
+
+        internal override Expression Accept(ExpressionVisitor visitor) {
+            return visitor.VisitDebugInfo(this);
+        }
+    }
+
+    internal sealed class ClearDebugInfoExpression : DebugInfoExpression {
+        internal ClearDebugInfoExpression(SymbolDocumentInfo document)
+            : base(document) {
+        }
+
+        public override bool IsClear {
+            get {
+                return true;
+            }
+        }
+
+        public override int StartLine {
+            get {
+                return 0xfeefee;
+            }
+        }
+
+        public override int StartColumn {
+            get {
+                return 0;
+            }
+        }
+
+        public override int EndLine {
+            get {
+                return 0xfeefee;
+            }
+        }
+
+        public override int EndColumn {
+            get {
+                return 0;
+            }
+        }
+    }
+    #endregion
+
     public partial class Expression {
         /// <summary>
-        /// Creates a <see cref="DebugInfoExpression"/> That identifies the source code that was used to generate an <see cref="Expression"/>.
+        /// Creates a <see cref="DebugInfoExpression"/> with the specified span.
         /// </summary>
-        /// <param name="body">The <see cref="Expression"/> that this <see cref="DebugInfoExpression"/> applies to.</param>
         /// <param name="document">The <see cref="SymbolDocumentInfo"/> that represents the source file.</param>
-        /// <param name="startLine">The start line of the code that was used to generate the wrapped expression. Must be greater than 0.</param>
-        /// <param name="startColumn">The start column of the code that was used to generate the wrapped expression. Must be greater than 0.</param>
-        /// <param name="endLine">The end line of the code that was used to generate the wrapped expression. Must be greater or equal than the start line.</param>
-        /// <param name="endColumn">The end column of the code that was used to generate the wrapped expression. If the end line is the same as the start line, it must be greater or equal than the start column. In any case, must be greater than 0.</param>
+        /// <param name="startLine">The start line of this <see cref="DebugInfoExpression" />. Must be greater than 0.</param>
+        /// <param name="startColumn">The start column of this <see cref="DebugInfoExpression" />. Must be greater than 0.</param>
+        /// <param name="endLine">The end line of this <see cref="DebugInfoExpression" />. Must be greater or equal than the start line.</param>
+        /// <param name="endColumn">The end column of this <see cref="DebugInfoExpression" />. If the end line is the same as the start line, it must be greater or equal than the start column. In any case, must be greater than 0.</param>
         /// <returns>An instance of <see cref="DebugInfoExpression"/>.</returns>
-        public static DebugInfoExpression DebugInfo(Expression body, SymbolDocumentInfo document, int startLine, int startColumn, int endLine, int endColumn) {
-            ContractUtils.RequiresNotNull(body, "body");
+        public static DebugInfoExpression DebugInfo(SymbolDocumentInfo document, int startLine, int startColumn, int endLine, int endColumn) {
             ContractUtils.RequiresNotNull(document, "document");
+            if (startLine == 0xfeefee && startColumn == 0 && endLine == 0xfeefee && endColumn == 0) {
+                return new ClearDebugInfoExpression(document);
+            }
 
             ValidateSpan(startLine, startColumn, endLine, endColumn);
-            
-            return new DebugInfoExpression(body, document, startLine, startColumn, endLine, endColumn);
+            return new SpanDebugInfoExpression(document, startLine, startColumn, endLine, endColumn);
+        }
+
+        /// <summary>
+        /// Creates a <see cref="DebugInfoExpression"/> for clearing a sequence point.
+        /// </summary>
+        /// <param name="document">The <see cref="SymbolDocumentInfo"/> that represents the source file.</param>
+        /// <returns>An instance of <see cref="DebugInfoExpression"/> for clearning a sequence point.</returns>
+        public static DebugInfoExpression ClearDebugInfo(SymbolDocumentInfo document) {
+            ContractUtils.RequiresNotNull(document, "document");
+
+            return new ClearDebugInfoExpression(document);
         }
 
         private static void ValidateSpan(int startLine, int startColumn, int endLine, int endColumn) {

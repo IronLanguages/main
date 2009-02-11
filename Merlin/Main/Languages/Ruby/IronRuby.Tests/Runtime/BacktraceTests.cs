@@ -14,6 +14,7 @@
  * ***************************************************************************/
 
 using Microsoft.Scripting;
+using System;
 namespace IronRuby.Tests {
     public partial class Tests {
         private bool PreciseTraces {
@@ -50,7 +51,7 @@ Backtrace1.rb:18
 Backtrace1.rb:10:in `bar'
 Backtrace1.rb:6:in `foo'
 Backtrace1.rb:2:in `goo'
-:0
+Backtrace1.rb:0
 ");
         }
 
@@ -90,7 +91,7 @@ Backtrace2.rb:14:in `baz'
 Backtrace2.rb:10:in `bar'
 Backtrace2.rb:6:in `foo'
 Backtrace2.rb:2:in `goo'
-:0
+Backtrace2.rb:0
 ");
         }
 
@@ -134,8 +135,52 @@ Backtrace3.rb:18:in `baz'
 Backtrace3.rb:12:in `bar'
 Backtrace3.rb:8:in `foo'
 Backtrace3.rb:2:in `goo'
-:0
+Backtrace3.rb:0
 ");
+        }
+
+        public class ClrBacktrace {
+            public void Bar(Action d) {
+                d();
+            }
+        }
+        
+        public void Backtrace4() {
+            // TODO: need to fix interpreter
+            if (_driver.Interpret) return;
+
+            Context.ObjectClass.SetConstant("C", Context.GetClass(typeof(ClrBacktrace)));
+            Context.ObjectClass.SetConstant("A", Context.GetClass(typeof(Action)));
+
+            AssertOutput(delegate() {
+                CompilerTest(@"
+def goo
+  puts caller[0..4]
+end
+
+def baz
+  goo
+end
+
+def foo
+  C.new.bar(A.new { baz })
+end
+
+foo
+");
+            }, PreciseTraces ? @"
+Backtrace4.rb:7:in `baz'
+Backtrace4.rb:11:in `foo'
+*.cs:*:in `Bar'
+Backtrace4.rb:11:in `foo'
+Backtrace4.rb:14
+" : @"
+Backtrace4.rb:6:in `baz'
+Backtrace4.rb:11:in `foo'
+:0:in `Bar'
+Backtrace4.rb:10:in `foo'
+Backtrace4.rb:0
+", OutputFlags.Match);
         }
     }
 }

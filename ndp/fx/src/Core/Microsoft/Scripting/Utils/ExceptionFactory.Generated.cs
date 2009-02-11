@@ -1057,6 +1057,13 @@ namespace System.Linq.Expressions {
         }
 
         /// <summary>
+        /// A string like  "More than one property '{0}' on type '{1}' is compatible with the supplied arguments."
+        /// </summary>
+        internal static string PropertyWithMoreThanOneMatch(object p0, object p1) {
+            return FormatString("More than one property '{0}' on type '{1}' is compatible with the supplied arguments.", p0, p1);
+        }
+
+        /// <summary>
         /// A string like  "An incorrect number of type args were specified for the declaration of a Func type."
         /// </summary>
         internal static string IncorrectNumberOfTypeArgsForFunc {
@@ -1081,6 +1088,29 @@ namespace System.Linq.Expressions {
             get {
                 return "Argument type cannot be System.Void.";
             }
+        }
+
+        /// <summary>
+        /// A string like  "More than one matching member is found in the ExpandoObject."
+        /// </summary>
+        internal static string AmbiguousMatchInExpandoObject {
+            get {
+                return "More than one matching member is found in the ExpandoObject.";
+            }
+        }
+
+        /// <summary>
+        /// A string like  "An element with the same key '{0}' already exists in the ExpandoObject."
+        /// </summary>
+        internal static string SameKeyExistsInExpando(object p0) {
+            return FormatString("An element with the same key '{0}' already exists in the ExpandoObject.", p0);
+        }
+
+        /// <summary>
+        /// A string like  "The specified key '{0}' does not exist in the ExpandoObject."
+        /// </summary>
+        internal static string KeyDoesNotExistInExpando(object p0) {
+            return FormatString("The specified key '{0}' does not exist in the ExpandoObject.", p0);
         }
 
         /// <summary>
@@ -1141,10 +1171,10 @@ namespace System.Linq.Expressions {
         }
 
         /// <summary>
-        /// A string like  "Cannot jump to to undefined label '{0}'."
+        /// A string like  "Cannot jump to undefined label '{0}'."
         /// </summary>
         internal static string LabelTargetUndefined(object p0) {
-            return FormatString("Cannot jump to to undefined label '{0}'.", p0);
+            return FormatString("Cannot jump to undefined label '{0}'.", p0);
         }
 
         /// <summary>
@@ -1188,6 +1218,13 @@ namespace System.Linq.Expressions {
             get {
                 return "Control cannot enter an expression--only statements can be jumped into.";
             }
+        }
+
+        /// <summary>
+        /// A string like  "Cannot jump to non-local label '{0}' with a value. Only jumps to labels defined in outer blocks can pass values."
+        /// </summary>
+        internal static string NonLocalJumpWithValue(object p0) {
+            return FormatString("Cannot jump to non-local label '{0}' with a value. Only jumps to labels defined in outer blocks can pass values.", p0);
         }
 
         /// <summary>
@@ -1359,6 +1396,15 @@ namespace System.Linq.Expressions {
         internal static string EnumerationIsDone {
             get {
                 return "Enumeration has either not started or has already finished.";
+            }
+        }
+
+        /// <summary>
+        /// A string like  "The operation cannot be performed in heterogeneous app domain."
+        /// </summary>
+        internal static string HomogenousAppDomainRequired {
+            get {
+                return "The operation cannot be performed in heterogeneous app domain.";
             }
         }
 
@@ -1985,6 +2031,13 @@ namespace System.Linq.Expressions {
         }
 
         /// <summary>
+        /// InvalidOperationException with message like "More than one property '{0}' on type '{1}' is compatible with the supplied arguments."
+        /// </summary>
+        internal static Exception PropertyWithMoreThanOneMatch(object p0, object p1) {
+            return new InvalidOperationException(Strings.PropertyWithMoreThanOneMatch(p0, p1));
+        }
+
+        /// <summary>
         /// ArgumentException with message like "An incorrect number of type args were specified for the declaration of a Func type."
         /// </summary>
         internal static Exception IncorrectNumberOfTypeArgsForFunc() {
@@ -2003,6 +2056,27 @@ namespace System.Linq.Expressions {
         /// </summary>
         internal static Exception ArgumentCannotBeOfTypeVoid() {
             return new ArgumentException(Strings.ArgumentCannotBeOfTypeVoid);
+        }
+
+        /// <summary>
+        /// System.Reflection.AmbiguousMatchException with message like "More than one matching member is found in the ExpandoObject."
+        /// </summary>
+        internal static Exception AmbiguousMatchInExpandoObject() {
+            return new System.Reflection.AmbiguousMatchException(Strings.AmbiguousMatchInExpandoObject);
+        }
+
+        /// <summary>
+        /// ArgumentException with message like "An element with the same key '{0}' already exists in the ExpandoObject."
+        /// </summary>
+        internal static Exception SameKeyExistsInExpando(object p0) {
+            return new ArgumentException(Strings.SameKeyExistsInExpando(p0));
+        }
+
+        /// <summary>
+        /// System.Collections.Generic.KeyNotFoundException with message like "The specified key '{0}' does not exist in the ExpandoObject."
+        /// </summary>
+        internal static Exception KeyDoesNotExistInExpando(object p0) {
+            return new System.Collections.Generic.KeyNotFoundException(Strings.KeyDoesNotExistInExpando(p0));
         }
 
         /// <summary>
@@ -2055,7 +2129,7 @@ namespace System.Linq.Expressions {
         }
 
         /// <summary>
-        /// InvalidOperationException with message like "Cannot jump to to undefined label '{0}'."
+        /// InvalidOperationException with message like "Cannot jump to undefined label '{0}'."
         /// </summary>
         internal static Exception LabelTargetUndefined(object p0) {
             return new InvalidOperationException(Strings.LabelTargetUndefined(p0));
@@ -2094,6 +2168,13 @@ namespace System.Linq.Expressions {
         /// </summary>
         internal static Exception ControlCannotEnterExpression() {
             return new InvalidOperationException(Strings.ControlCannotEnterExpression);
+        }
+
+        /// <summary>
+        /// InvalidOperationException with message like "Cannot jump to non-local label '{0}' with a value. Only jumps to labels defined in outer blocks can pass values."
+        /// </summary>
+        internal static Exception NonLocalJumpWithValue(object p0) {
+            return new InvalidOperationException(Strings.NonLocalJumpWithValue(p0));
         }
 
         /// <summary>
@@ -2248,6 +2329,13 @@ namespace System.Linq.Expressions {
         /// </summary>
         internal static Exception EnumerationIsDone() {
             return new InvalidOperationException(Strings.EnumerationIsDone);
+        }
+
+        /// <summary>
+        /// InvalidOperationException with message like "The operation cannot be performed in heterogeneous app domain."
+        /// </summary>
+        internal static Exception HomogenousAppDomainRequired() {
+            return new InvalidOperationException(Strings.HomogenousAppDomainRequired);
         }
 
     }

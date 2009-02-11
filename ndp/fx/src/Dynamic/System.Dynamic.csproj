@@ -60,7 +60,6 @@
       <Compile Include="System\Dynamic\ComMetaObject.cs" />
       <Compile Include="System\Dynamic\ComMethodDesc.cs" />
       <Compile Include="System\Dynamic\ComObject.cs" />
-      <Compile Include="System\Dynamic\ComParamDesc.cs" />
       <Compile Include="System\Dynamic\ComRuntimeHelpers.cs" />
       <Compile Include="System\Dynamic\ComTypeClassDesc.cs" />
       <Compile Include="System\Dynamic\ComTypeDesc.cs" />

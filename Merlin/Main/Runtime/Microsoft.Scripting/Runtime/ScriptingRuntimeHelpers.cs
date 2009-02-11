@@ -35,6 +35,45 @@ namespace Microsoft.Scripting.Runtime {
     /// </summary>
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1506:AvoidExcessiveClassCoupling")]
     public static partial class ScriptingRuntimeHelpers {
+        private const int MIN_CACHE = -100;
+        private const int MAX_CACHE = 1000;
+        private static readonly object[] cache = MakeCache();
+
+        /// <summary>
+        /// A singleton boxed boolean true.
+        /// </summary>
+        public static readonly object True = true;
+
+        /// <summary>
+        ///A singleton boxed boolean false.
+        /// </summary>
+        public static readonly object False = false;
+
+        private static object[] MakeCache() {
+            object[] result = new object[MAX_CACHE - MIN_CACHE];
+
+            for (int i = 0; i < result.Length; i++) {
+                result[i] = (object)(i + MIN_CACHE);
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// Gets a singleton boxed value for the given integer if possible, otherwise boxes the integer.
+        /// </summary>
+        /// <param name="value">The value to box.</param>
+        /// <returns>The boxed value.</returns>
+        public static object Int32ToObject(Int32 value) {
+            // caches improves pystone by ~5-10% on MS .Net 1.1, this is a very integer intense app
+            // TODO: investigate if this still helps perf. There's evidence that it's harmful on
+            // .NET 3.5 and 4.0
+            if (value < MAX_CACHE && value >= MIN_CACHE) {
+                return cache[value - MIN_CACHE];
+            }
+            return (object)value;
+        }
+
         private static readonly string[] chars = MakeSingleCharStrings();
 
         private static string[] MakeSingleCharStrings() {
@@ -47,17 +86,8 @@ namespace Microsoft.Scripting.Runtime {
             return result;
         }
 
-        public static object True {
-            get { return RuntimeOps.True; }
-        }
-        public static object False {
-            get { return RuntimeOps.False; }
-        }
         public static object BooleanToObject(bool value) {
-            return value ? RuntimeOps.True : RuntimeOps.False;
-        }
-        public static object Int32ToObject(int value) {
-            return RuntimeOps.Int32ToObject(value);
+            return value ? True : False;
         }
 
         public static string CharToString(char ch) {

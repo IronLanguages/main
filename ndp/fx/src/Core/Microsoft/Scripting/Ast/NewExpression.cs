@@ -39,7 +39,7 @@ namespace System.Linq.Expressions {
         /// Gets the static type of the expression that this <see cref="Expression" /> represents. (Inherited from <see cref="Expression"/>.)
         /// </summary>
         /// <returns>The <see cref="Type"/> that represents the static type of the expression.</returns>
-        protected override Type GetExpressionType() {
+        protected override Type TypeImpl() {
             return _constructor.DeclaringType;
         }
 
@@ -47,7 +47,7 @@ namespace System.Linq.Expressions {
         /// Returns the node type of this <see cref="Expression" />. (Inherited from <see cref="Expression" />.)
         /// </summary>
         /// <returns>The <see cref="ExpressionType"/> that represents this expression.</returns>
-        protected override ExpressionType GetNodeKind() {
+        protected override ExpressionType NodeTypeImpl() {
             return ExpressionType.New;
         }
 
@@ -95,7 +95,7 @@ namespace System.Linq.Expressions {
             _valueType = type;
         }
 
-        protected override Type GetExpressionType() {
+        protected override Type TypeImpl() {
             return _valueType;
         }
     }

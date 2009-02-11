@@ -55,10 +55,6 @@ namespace IronRuby.Runtime.Calls {
             return new SuperCallAction(RubyCallSignature.WithScope(argumentCount), lexicalScopeId);
         }
 
-        public override object/*!*/ CacheIdentity {
-            get { return this; }
-        }
-
         #region Object Overrides, IEquatable
 
         public override bool Equals(object obj) {
@@ -112,6 +108,7 @@ namespace IronRuby.Runtime.Calls {
             Debug.Assert(currentDeclaringModule != null);
 
             RubyMemberInfo method;
+            RubyMemberInfo methodMissing = null;
 
             // we need to lock the hierarchy of the target class:
             var targetClass = scope.RubyContext.GetImmediateClassOf(target);
@@ -124,17 +121,18 @@ namespace IronRuby.Runtime.Calls {
                 metaBuilder.AddTargetTypeTest(target, targetClass, targetExpression, scope.RubyContext, args.ContextExpression);
                 metaBuilder.TreatRestrictionsAsConditions = false;
 
-                method = targetClass.ResolveSuperMethodNoLock(currentMethodName, currentDeclaringModule);
-                if (method != null) {
-                    method.InvalidateSitesOnOverride = true;
+                method = targetClass.ResolveSuperMethodNoLock(currentMethodName, currentDeclaringModule).InvalidateSitesOnOverride().Info;
+                if (method == null) {
+                    // MRI: method_missing is called for the targetClass, not for the super:
+                    methodMissing = targetClass.ResolveMethodMissingForSite(currentMethodName, RubyMethodVisibility.None);
                 }
             }
 
-            // super calls don't go to method_missing
-            if (method == null) {
-                metaBuilder.SetError(Methods.MakeMissingSuperException.OpCall(Ast.Constant(currentMethodName)));
-            } else {
+            if (method != null) {
                 method.BuildSuperCall(metaBuilder, args, currentMethodName, currentDeclaringModule);
+            } else {
+                args.InsertMethodName(currentMethodName);
+                RubyCallAction.BindToMethodMissing(metaBuilder, args, currentMethodName, methodMissing, RubyMethodVisibility.None, true);
             }
         }
 

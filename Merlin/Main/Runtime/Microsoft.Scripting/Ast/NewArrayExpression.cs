@@ -46,7 +46,7 @@ namespace Microsoft.Scripting.Ast {
                     if (type.IsSubclassOf(typeof(Expression)) && TypeUtils.AreAssignable(type, initializer.GetType())) {
                         initializer = Expression.Quote(initializer);
                     } else {
-                        initializer = Expression.Convert(initializer, type);
+                        initializer = Convert(initializer, type);
                     }
 
                 }

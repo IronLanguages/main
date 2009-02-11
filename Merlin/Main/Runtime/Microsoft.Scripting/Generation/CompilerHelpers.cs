@@ -234,27 +234,6 @@ namespace Microsoft.Scripting.Generation {
             return Operators.None;
         }
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity")]
-        public static string OperatorToReverseOperator(string op) {
-            switch (op) {
-                case StandardOperators.LessThan: return StandardOperators.GreaterThan;
-                case StandardOperators.LessThanOrEqual: return StandardOperators.GreaterThanOrEqual;
-                case StandardOperators.GreaterThan: return StandardOperators.LessThan;
-                case StandardOperators.GreaterThanOrEqual: return StandardOperators.LessThanOrEqual;
-                case StandardOperators.Equal: return StandardOperators.Equal;
-                case StandardOperators.NotEqual: return StandardOperators.NotEqual;
-            }
-            return StandardOperators.None;
-        }
-
-        public static string InPlaceOperatorToOperator(string op) {
-            if (op.StartsWith("InPlace")) {
-                return op.Substring(7);
-            }
-
-            return StandardOperators.None;
-        }
-
         public static Operators InPlaceOperatorToOperator(Operators op) {
             switch (op) {
                 case Operators.InPlaceAdd: return Operators.Add;
@@ -275,28 +254,14 @@ namespace Microsoft.Scripting.Generation {
             }
 
         }
-        public static bool IsComparisonOperator(Operators op) {
+        public static bool IsComparisonOperator(ExpressionType op) {
             switch (op) {
-                case Operators.LessThan: return true;
-                case Operators.LessThanOrEqual: return true;
-                case Operators.GreaterThan: return true;
-                case Operators.GreaterThanOrEqual: return true;
-                case Operators.Equals: return true;
-                case Operators.NotEquals: return true;
-                case Operators.Compare: return true;
-            }
-            return false;
-        }
-
-        public static bool IsComparisonOperator(string op) {
-            switch (op) {
-                case StandardOperators.LessThan: return true;
-                case StandardOperators.LessThanOrEqual: return true;
-                case StandardOperators.GreaterThan: return true;
-                case StandardOperators.GreaterThanOrEqual: return true;
-                case StandardOperators.Equal: return true;
-                case StandardOperators.NotEqual: return true;
-                case StandardOperators.Compare: return true;
+                case ExpressionType.LessThan: return true;
+                case ExpressionType.LessThanOrEqual: return true;
+                case ExpressionType.GreaterThan: return true;
+                case ExpressionType.GreaterThanOrEqual: return true;
+                case ExpressionType.Equal: return true;
+                case ExpressionType.NotEqual: return true;
             }
             return false;
         }

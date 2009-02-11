@@ -1,0 +1,167 @@
+﻿<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="3.5">
+  <Import Condition=" '$(BuildingTraversal)' == 'true' " Project="..\..\..\Support\silverlight.settings.targets" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProductVersion>9.0.21022</ProductVersion>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{155CE436-1669-4A48-8095-410F2430237F}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>IronPython.Modules</RootNamespace>
+    <AssemblyName>IronPython.Modules</AssemblyName>
+    <SccProjectName>SAK</SccProjectName>
+    <SccLocalPath>SAK</SccLocalPath>
+    <SccAuxPath>SAK</SccAuxPath>
+    <SccProvider>SAK</SccProvider>
+    <OldToolsVersion>2.0</OldToolsVersion>
+    <WarningsNotAsErrors>618,1685</WarningsNotAsErrors>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>..\..\..\Bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE;SIGNED</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <DelaySign>true</DelaySign>
+    <AssemblyOriginatorKeyFile>..\..\..\Support\MSSharedLibKey.snk</AssemblyOriginatorKeyFile>
+    <SignAssembly>true</SignAssembly>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>..\..\..\Bin\Release\</OutputPath>
+    <DefineConstants>TRACE;SIGNED</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <DelaySign>true</DelaySign>
+    <AssemblyOriginatorKeyFile>..\..\..\Support\MSSharedLibKey.snk</AssemblyOriginatorKeyFile>
+    <SignAssembly>true</SignAssembly>
+    <BaseAddress>1936719872</BaseAddress>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)' == 'Silverlight Debug' ">
+    <DebugSymbols>true</DebugSymbols>
+    <OutputPath>..\..\..\Bin\Silverlight Debug\</OutputPath>
+    <DefineConstants>TRACE;DEBUG;SILVERLIGHT</DefineConstants>
+    <DebugType>full</DebugType>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <ErrorReport>prompt</ErrorReport>
+    <NoStdLib>true</NoStdLib>
+    <SignAssembly>true</SignAssembly>
+    <AssemblyOriginatorKeyFile>..\..\..\Support\SilverlightKey.snk</AssemblyOriginatorKeyFile>
+    <DelaySign>true</DelaySign>
+    <NoWarn>618</NoWarn>
+    <SilverlightBuild>true</SilverlightBuild>
+    <SilverlightSdkPath>..\..\..\Utilities\Silverlight\x86ret\</SilverlightSdkPath>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)' == 'Silverlight Release' ">
+    <OutputPath>..\..\..\Bin\Silverlight Release</OutputPath>
+    <DefineConstants>TRACE;SILVERLIGHT</DefineConstants>
+    <NoStdLib>true</NoStdLib>
+    <DebugType>pdbonly</DebugType>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <ErrorReport>prompt</ErrorReport>
+    <SignAssembly>true</SignAssembly>
+    <AssemblyOriginatorKeyFile>..\..\..\Support\SilverlightKey.snk</AssemblyOriginatorKeyFile>
+    <DelaySign>true</DelaySign>
+    <NoWarn>618</NoWarn>
+    <SilverlightBuild>true</SilverlightBuild>
+    <SilverlightSdkPath>..\..\..\Utilities\Silverlight\x86ret\</SilverlightSdkPath>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System" Condition=" '$(SilverlightBuild)' != 'true' " />
+    <Reference Include="mscorlib, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e" Condition=" '$(SilverlightBuild)' == 'true' ">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>$(SilverlightSdkPath)\mscorlib.dll</HintPath>
+    </Reference>
+    <Reference Include="System, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e" Condition=" '$(SilverlightBuild)' == 'true' ">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>$(SilverlightSdkPath)\System.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Core, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e" Condition=" '$(SilverlightBuild)' == 'true' ">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>$(SilverlightSdkPath)\System.Core.dll</HintPath>
+      <Aliases>systemcore</Aliases>
+    </Reference>
+    <Reference Include="System.Data" Condition=" $(SilverlightBuild) != 'true' " />
+    <Reference Include="System.Xml" Condition=" $(SilverlightBuild) != 'true' " />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="..\..\..\Hosts\Silverlight\SilverlightVersion.cs" Condition=" '$(SilverlightBuild)' == 'true' ">
+      <Link>Properties\SilverlightVersion.cs</Link>
+    </Compile>
+    <Compile Include="array.cs" />
+    <Compile Include="binascii.cs" />
+    <Compile Include="cmath.cs" />
+    <Compile Include="codecs.cs" />
+    <Compile Include="collections.cs" />
+    <Compile Include="copy_reg.cs" />
+    <Compile Include="cPickle.cs" />
+    <Compile Include="cStringIO.cs" />
+    <Compile Include="datetime.cs" />
+    <Compile Include="errno.cs" />
+    <Compile Include="gc.cs" />
+    <Compile Include="imp.cs" />
+    <Compile Include="IterTools.cs" />
+    <Compile Include="locale.cs" />
+    <Compile Include="marshal.cs" />
+    <Compile Include="math.cs" />
+    <Compile Include="math.Generated.cs" />
+    <Compile Include="md5.cs" />
+    <Compile Include="nt.cs" />
+    <Compile Include="operator.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="re.cs" />
+    <Compile Include="select.cs" />
+    <Compile Include="sha.cs" />
+    <Compile Include="sha256.cs" />
+    <Compile Include="sha512.cs" />
+    <Compile Include="socket.cs" />
+    <Compile Include="_struct.cs" />
+    <Compile Include="thread.cs" />
+    <Compile Include="time.cs" />
+    <Compile Include="xxsubtype.cs" />
+    <Compile Include="_functools.cs" />
+    <Compile Include="_random.cs" />
+    <Compile Include="_sre.cs" />
+    <Compile Include="_ssl.cs" />
+    <Compile Include="_warnings.cs" />
+    <Compile Include="_weakref.cs" />
+    <Compile Include="..\AssemblyVersion.cs">
+      <Link>Properties\AssemblyVersion.cs</Link>
+    </Compile>
+    <Compile Include="_winreg.cs" />
+    <Compile Include="_weakref.Generated.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\..\Support\SilverlightKey.snk" Condition=" '$(SilverlightBuild)' == 'true' ">
+      <Link>Properties\SilverlightKey.snk</Link>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\..\..\ndp\fx\src\Core\Microsoft\Scripting\Microsoft.Scripting.Core.csproj">
+      <Project>{2AE75F5A-CD1F-4925-9647-AF4D1C282FB4}</Project>
+      <Name>Microsoft.Scripting.Core</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\Runtime\Microsoft.Scripting\Microsoft.Scripting.csproj">
+      <Project>{EB66B766-6354-4208-A3D4-AACBDCB5C3B3}</Project>
+      <Name>Microsoft.Scripting</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\IronPython\IronPython.csproj">
+      <Project>{95289EA9-5778-489D-AB48-F81F2CE2DA32}</Project>
+      <Name>IronPython %28IronPython\IronPython%29</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" Condition=" '$(SilverlightTreeBuild)' != 'true' " />
+  <Import Project="..\..\..\Support\silverlight.build.targets" Condition=" '$(SilverlightTreeBuild)' == 'true' " />
+  <Import Condition=" '$(Golden)' == 'True'" Project="..\..\..\External\Build\Microsoft.VersionNumber.targets" />
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+</Project>

@@ -63,7 +63,7 @@ namespace System.Linq.Expressions {
         /// ExpressionType.Extension when overriding this method.
         /// </summary>
         /// <returns>The <see cref="ExpressionType"/> of the expression.</returns>
-        protected override ExpressionType GetNodeKind() {
+        protected override ExpressionType NodeTypeImpl() {
             return ExpressionType.Block;
         }
 
@@ -71,7 +71,7 @@ namespace System.Linq.Expressions {
         /// Gets the static type of the expression that this <see cref="Expression" /> represents.
         /// </summary>
         /// <returns>The <see cref="Type"/> that represents the static type of the expression.</returns>
-        protected override Type GetExpressionType() {
+        protected override Type TypeImpl() {
             return GetExpression(ExpressionCount - 1).Type;
         }
 
@@ -143,7 +143,7 @@ namespace System.Linq.Expressions {
 
             // and return what is not guaranteed to be a ROC
             return (ReadOnlyCollection<Expression>)collection;
-        }       
+        }
     }
 
     #region Specialized Subclasses
@@ -358,11 +358,22 @@ namespace System.Linq.Expressions {
                 return _variables;
             }
         }
+
+        // Used for rewrite of the nodes to either reuse existing set of variables if not rewritten.
+        internal IList<ParameterExpression> ReuseOrValidateVariables(ReadOnlyCollection<ParameterExpression> variables) {
+            if (variables != null && variables != VariablesList) {
+                // Need to validate the new variables (uniqueness, not byref)
+                ValidateVariables(variables, "variables");
+                return variables;
+            } else {
+                return VariablesList;
+            }
+        }
     }
 
     internal sealed class Scope1 : ScopeExpression {
         private object _body;
-      
+
         internal Scope1(IList<ParameterExpression> variables, Expression body)
             : base(variables) {
             _body = body;
@@ -389,16 +400,11 @@ namespace System.Linq.Expressions {
             Debug.Assert(args.Length == 1);
             Debug.Assert(variables == null || variables.Count == VariableCount);
 
-            if (variables != null && variables != VariablesList) {
-                // Need to validate the new variables (uniqueness, not byref)
-                ValidateVariables(variables, "variables");
-            }
-
-            return new Scope1(VariablesList, args[0]);
+            return new Scope1(ReuseOrValidateVariables(variables), args[0]);
         }
     }
 
-    internal sealed class ScopeN : ScopeExpression {
+    internal class ScopeN : ScopeExpression {
         private IList<Expression> _body;
 
         internal ScopeN(IList<ParameterExpression> variables, IList<Expression> body)
@@ -424,12 +430,27 @@ namespace System.Linq.Expressions {
             Debug.Assert(args.Length == ExpressionCount);
             Debug.Assert(variables == null || variables.Count == VariableCount);
 
-            if (variables != null && variables != VariablesList) {
-                // Need to validate the new variables (uniqueness, not byref)
-                ValidateVariables(variables, "variables");
-            }
+            return new ScopeN(ReuseOrValidateVariables(variables), args);
+        }
+    }
 
-            return new ScopeN(VariablesList, args);
+    internal class ScopeWithType : ScopeN {
+        private readonly Type _type;
+
+        internal ScopeWithType(IList<ParameterExpression> variables, IList<Expression> expressions, Type type)
+            : base(variables, expressions) {
+            _type = type;
+        }
+
+        protected override Type TypeImpl() {
+            return _type;
+        }
+
+        internal override BlockExpression Rewrite(ReadOnlyCollection<ParameterExpression> variables, Expression[] args) {
+            Debug.Assert(args.Length == ExpressionCount);
+            Debug.Assert(variables == null || variables.Count == VariableCount);
+
+            return new ScopeWithType(ReuseOrValidateVariables(variables), args, _type);
         }
     }
 
@@ -568,7 +589,7 @@ namespace System.Linq.Expressions {
         public static BlockExpression Block(Expression arg0, Expression arg1) {
             RequiresCanRead(arg0, "arg0");
             RequiresCanRead(arg1, "arg1");
-            
+
             return new Block2(arg0, arg1);
         }
         /// <summary>
@@ -650,6 +671,27 @@ namespace System.Linq.Expressions {
         }
 
         /// <summary>
+        /// Creates a <see cref="BlockExpression"/> that contains the given expressions, has no variables and has specific result type.
+        /// </summary>
+        /// <param name="type">The result type of the block.</param>
+        /// <param name="expressions">The expressions in the block.</param>
+        /// <returns>The created <see cref="BlockExpression"/>.</returns>
+        public static BlockExpression Block(Type type, params Expression[] expressions) {
+            ContractUtils.RequiresNotNull(expressions, "expressions");
+            return Block(type, (IEnumerable<Expression>)expressions);
+        }
+
+        /// <summary>
+        /// Creates a <see cref="BlockExpression"/> that contains the given expressions, has no variables and has specific result type.
+        /// </summary>
+        /// <param name="type">The result type of the block.</param>
+        /// <param name="expressions">The expressions in the block.</param>
+        /// <returns>The created <see cref="BlockExpression"/>.</returns>
+        public static BlockExpression Block(Type type, IEnumerable<Expression> expressions) {
+            return Block(type, EmptyReadOnlyCollection<ParameterExpression>.Instance, expressions);
+        }
+
+        /// <summary>
         /// Creates a <see cref="BlockExpression"/> that contains the given variables and expressions.
         /// </summary>
         /// <param name="variables">The variables in the block.</param>
@@ -662,21 +704,62 @@ namespace System.Linq.Expressions {
         /// <summary>
         /// Creates a <see cref="BlockExpression"/> that contains the given variables and expressions.
         /// </summary>
+        /// <param name="type">The result type of the block.</param>
+        /// <param name="variables">The variables in the block.</param>
+        /// <param name="expressions">The expressions in the block.</param>
+        /// <returns>The created <see cref="BlockExpression"/>.</returns>
+        public static BlockExpression Block(Type type, IEnumerable<ParameterExpression> variables, params Expression[] expressions) {
+            return Block(type, variables, (IEnumerable<Expression>)expressions);
+        }
+
+        /// <summary>
+        /// Creates a <see cref="BlockExpression"/> that contains the given variables and expressions.
+        /// </summary>
         /// <param name="variables">The variables in the block.</param>
         /// <param name="expressions">The expressions in the block.</param>
         /// <returns>The created <see cref="BlockExpression"/>.</returns>
         public static BlockExpression Block(IEnumerable<ParameterExpression> variables, IEnumerable<Expression> expressions) {
             ContractUtils.RequiresNotNull(expressions, "expressions");
-            RequiresCanRead(expressions, "expressions");
             var expressionList = expressions.ToReadOnly();
             ContractUtils.RequiresNotEmpty(expressionList, "expressions");
+            RequiresCanRead(expressionList, "expressions");
+
+            return Block(expressionList.Last().Type, variables, expressionList);
+        }
+
+        /// <summary>
+        /// Creates a <see cref="BlockExpression"/> that contains the given variables and expressions.
+        /// </summary>
+        /// <param name="type">The result type of the block.</param>
+        /// <param name="variables">The variables in the block.</param>
+        /// <param name="expressions">The expressions in the block.</param>
+        /// <returns>The created <see cref="BlockExpression"/>.</returns>
+        public static BlockExpression Block(Type type, IEnumerable<ParameterExpression> variables, IEnumerable<Expression> expressions) {
+            ContractUtils.RequiresNotNull(type, "type");
+            ContractUtils.RequiresNotNull(expressions, "expressions");
+
+            var expressionList = expressions.ToReadOnly();
             var variableList = variables.ToReadOnly();
+
+            ContractUtils.RequiresNotEmpty(expressionList, "expressions");
+            RequiresCanRead(expressionList, "expressions");
             ValidateVariables(variableList, "variables");
 
-            if (expressionList.Count == 1) {
-                return new Scope1(variableList, expressionList[0]);
+            Expression last = expressionList.Last();
+            if (type != typeof(void)) {
+                if (!TypeUtils.AreReferenceAssignable(type, last.Type)) {
+                    throw Error.ArgumentTypesMustMatch();
+                }
+            }
+
+            if (type != last.Type) {
+                return new ScopeWithType(variableList, expressionList, type);
             } else {
-                return new ScopeN(variableList, expressionList);
+                if (expressionList.Count == 1) {
+                    return new Scope1(variableList, expressionList[0]);
+                } else {
+                    return new ScopeN(variableList, expressionList);
+                }
             }
         }
 

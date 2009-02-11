@@ -110,6 +110,7 @@
     <Compile Include="Builtins\DuplexStream.cs" />
     <Compile Include="Builtins\GenericRegex.cs" />
     <Compile Include="Builtins\Hash.Subclass.cs" />
+    <Compile Include="Builtins\RegexpTransformer.cs" />
     <Compile Include="Builtins\RubyArray.Subclass.cs" />
     <Compile Include="Builtins\RubyRegex.Subclass.cs" />
     <Compile Include="Builtins\MutableString.Content.cs">
@@ -152,6 +153,7 @@
     <Compile Include="Compiler\Errors.cs" />
     <Compile Include="Compiler\Parser\ParserStack.cs" />
     <Compile Include="Runtime\Calls\ConvertToSAction.cs" />
+    <Compile Include="Runtime\Calls\MethodResolutionResult.cs" />
     <Compile Include="Runtime\Calls\RubyLibraryMethodInfo.cs" />
     <Compile Include="Runtime\Calls\RubyMethodGroupBase.cs" />
     <Compile Include="Runtime\CheckedMonitor.cs" />

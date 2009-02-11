@@ -411,6 +411,18 @@ namespace Microsoft.Scripting.Runtime {
             return site.Target(site, target);
         }
 
+        public string GetDocumentation(object o) {
+            return _lc.GetDocumentation(o);
+        }
+
+        public IList<string> GetCallSignatures(object o) {
+            return _lc.GetCallSignatures(o);
+        }
+
+        public bool IsCallable(object o) {
+            return _lc.IsCallable(o);
+        }
+
         /// <summary>
         /// Performs the generic binary operation on the specified targets and returns the result.
         /// </summary>

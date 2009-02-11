@@ -106,7 +106,6 @@
     <Compile Include="ComMetaObject.cs" />
     <Compile Include="ComMethodDesc.cs" />
     <Compile Include="ComObject.cs" />
-    <Compile Include="ComParamDesc.cs" />
     <Compile Include="ComRuntimeHelpers.cs" />
     <Compile Include="ComTypeClassDesc.cs" />
     <Compile Include="ComTypeDesc.cs" />

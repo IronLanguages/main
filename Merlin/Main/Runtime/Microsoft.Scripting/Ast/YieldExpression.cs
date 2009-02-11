@@ -39,11 +39,11 @@ namespace Microsoft.Scripting.Ast {
             get { return false; }
         }
 
-        protected override Type GetExpressionType() {
+        protected override Type TypeImpl() {
             return typeof(void);
         }
 
-        protected override ExpressionType GetNodeKind() {
+        protected override ExpressionType NodeTypeImpl() {
             return ExpressionType.Extension;
         }
 

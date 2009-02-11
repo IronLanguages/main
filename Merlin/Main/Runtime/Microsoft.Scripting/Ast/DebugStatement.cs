@@ -51,5 +51,43 @@ namespace Microsoft.Scripting.Ast {
             );
         }
 #endif
+
+        public static Expression AddDebugInfo(Expression expression, SymbolDocumentInfo document, SourceLocation start, SourceLocation end) {
+            if (document == null || !start.IsValid || !end.IsValid) {
+                return expression;
+            }
+            return AddDebugInfo(expression, document, start.Line, start.Column, end.Line, end.Column);
+        }
+
+        //The following method does not check the validaity of the span
+        public static Expression AddDebugInfo(Expression expression, SymbolDocumentInfo document, int startLine, int startColumn, int endLine, int endColumn) {
+            if (expression == null) {
+                throw new System.ArgumentNullException("expression");
+            }
+
+            var sequencePoint = Expression.DebugInfo(document,
+                startLine, startColumn, endLine, endColumn);
+
+            var clearance = Expression.ClearDebugInfo(document);
+            //always attach a clearance
+            if (expression.Type == typeof(void)) {
+                return Expression.Block(
+                    sequencePoint,
+                    expression,
+                    clearance
+                );
+            } else {
+                //save the expression to a variable
+                var p = Expression.Parameter(expression.Type, null);
+                return Expression.Block(
+                    new[] { p },
+                    sequencePoint,
+                    Expression.Assign(p, expression),
+                    clearance,
+                    p
+                );
+            }
+        }
+
     }
 }

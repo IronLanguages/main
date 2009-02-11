@@ -23,10 +23,11 @@ using Microsoft.Scripting.Generation;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 using Microsoft.Scripting.Actions.Calls;
+using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace Microsoft.Scripting.Actions {
     using Ast = System.Linq.Expressions.Expression;
-    
+
     public partial class DefaultBinder : ActionBinder {
 
         /// <summary>
@@ -167,7 +168,7 @@ namespace Microsoft.Scripting.Actions {
                 // instance is pulled from the BoundMemberTracker and restricted to the correct
                 // type.
                 DynamicMetaObject instance = new DynamicMetaObject(
-                    Ast.Convert(
+                    AstUtils.Convert(
                         Ast.Property(
                             Ast.Convert(self.Expression, typeof(BoundMemberTracker)),
                             typeof(BoundMemberTracker).GetProperty("ObjectInstance")

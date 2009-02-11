@@ -13,7 +13,9 @@
  *
  * ***************************************************************************/
 
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Dynamic;
 using System.Linq.Expressions;
 
 namespace System.Runtime.CompilerServices {
@@ -33,7 +35,9 @@ namespace System.Runtime.CompilerServices {
         /// are considered to be performing identical dynamic operation and therefore the binding expressions
         /// for such dynamic operations will be shared by the dynamic runtime.
         /// </summary>
-        public abstract object CacheIdentity { get; }
+        public virtual object CacheIdentity {
+            get { return this; }
+        }
 
         /// <summary>
         /// Performs the runtime binding of the dynamic operation on a set of arguments.
@@ -48,5 +52,75 @@ namespace System.Runtime.CompilerServices {
         /// to produce a new <see cref="Expression"/> for the new argument types.
         /// </returns>
         public abstract Expression Bind(object[] args, ReadOnlyCollection<ParameterExpression> parameters, LabelTarget returnLabel);
+
+
+        /// <summary>
+        /// The Level 2 cache - all rules produced for the same binder.
+        /// </summary>
+        internal Dictionary<Type, object> Cache;
+
+        internal RuleCache<T> GetRuleCache<T>() where T : class {
+            // make sure we have cache.
+            if (Cache == null) {
+                // to improve rule sharing try to get the primary binder and share with it.
+                CallSiteBinder theBinder = GetPrimaryBinderInstance();
+
+                // primary binder must have cache.
+                if (theBinder.Cache == null) {
+                    System.Threading.Interlocked.CompareExchange(
+                            ref theBinder.Cache,
+                            new Dictionary<Type, object>(),
+                            null);
+                }
+
+                Cache = theBinder.Cache;
+            }
+
+            object ruleCache;
+            var cache = Cache;
+            lock (cache) {
+                if (!cache.TryGetValue(typeof(T), out ruleCache)) {
+                    cache[typeof(T)] = ruleCache = new RuleCache<T>();
+                }
+            }
+
+            RuleCache<T> result = ruleCache as RuleCache<T>;
+            System.Diagnostics.Debug.Assert(result != null);
+
+            return result;
+        }
+
+
+        /// <summary>
+        /// Trivial binder atomizer.
+        /// </summary>
+        private static Dictionary<CallSiteBinder, CallSiteBinder> _binders = new Dictionary<CallSiteBinder, CallSiteBinder>(new BinderComparer());
+        private CallSiteBinder GetPrimaryBinderInstance() {
+            CallSiteBinder binder;
+            lock (_binders) {
+                if (!_binders.TryGetValue(this, out binder)) {
+                    _binders[this] = binder = this;
+                }
+            }
+            return binder;
+        }
+
+        private class BinderComparer : IEqualityComparer<CallSiteBinder> {
+            int IEqualityComparer<CallSiteBinder>.GetHashCode(CallSiteBinder obj) {
+                return obj.GetType().GetHashCode() ^ obj.GetHashCode();
+            }
+
+            bool IEqualityComparer<CallSiteBinder>.Equals(CallSiteBinder x, CallSiteBinder y) {
+                //trivial cases first.
+                if ((object)x == (object)y) {
+                    return true;
+                }
+                if (x == null || y == null) {
+                    return false;
+                }
+
+                return x.GetType() == y.GetType() && x.Equals(y);
+            }
+        }
     }
 }

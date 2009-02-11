@@ -68,6 +68,12 @@ namespace System.Linq.Expressions.Compiler {
         private readonly KeyedQueue<Type, LocalBuilder> _freeLocals = new KeyedQueue<Type, LocalBuilder>();
 
         /// <summary>
+        /// The value is true if a clearance was emitted and no new sequence point
+        /// has been emitted since that.
+        /// </summary>
+        bool _sequencePointCleared;
+
+        /// <summary>
         /// Creates a lambda compiler that will compile to a dynamic method
         /// </summary>
         private LambdaCompiler(AnalyzedTree tree, LambdaExpression lambda) {

@@ -36,11 +36,12 @@ namespace Microsoft.Scripting.Ast {
             _right = right;
         }
 
-        protected override System.Type GetExpressionType() {
-            return _right.Type;
+        protected override System.Type TypeImpl() {
+            //Need to be consistent with AssignBinaryExpression
+            return _left.Type;
         }
 
-        protected override ExpressionType GetNodeKind() {
+        protected override ExpressionType NodeTypeImpl() {
             return ExpressionType.Extension;
         }
 
