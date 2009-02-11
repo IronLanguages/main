@@ -350,23 +350,9 @@ class CSProjCompiler
     FileUtils.mkdir_p build_path
   end
 
-  def transform_config(source_path, target_path, signed, paths)
+  def transform_config(source_path, target_path, paths)
     file = File.new source_path
     doc = Document.new file
-
-    # disable signing
-    unless signed 
-      configSections = XPath.each(doc, '/configuration/configSections/section') do |node|
-        node.attributes['type'].gsub!(/31bf3856ad364e35/, 'null')
-      end
-
-      # disable signing in IronRuby and replace the paths
-      languages = XPath.each(doc, '/configuration/microsoft.scripting/languages/language') do |node|
-        if node.attributes['names'] == 'IronRuby;Ruby;rb'
-          node.attributes['type'].gsub!(/31bf3856ad364e35/, 'null')
-        end
-      end
-    end
 
     # replace LibraryPaths
     options = XPath.each(doc, '/configuration/microsoft.scripting/options/set') do |node|
@@ -385,11 +371,11 @@ class CSProjCompiler
     layout = {'Merlin' => { :signing => false, :LibraryPaths => '..\..\Languages\Ruby\libs;..\..\..\External\Languages\Ruby\Ruby-1.8.6\lib\ruby\site_ruby\1.8;..\..\..\External\Languages\Ruby\Ruby-1.8.6\lib\ruby\site_ruby;..\..\..\External\Languages\Ruby\Ruby-1.8.6\lib\ruby\1.8' }, 
               'Binary' => { :signing => true,  :LibraryPaths => '..\lib\IronRuby;..\lib\ruby\site_ruby\1.8;..\lib\ruby\site_ruby;..\lib\ruby\1.8' } }
     
-    transform_config source_path, target_build_path, layout[configuration][:signing], layout[configuration][:LibraryPaths]
+    transform_config source_path, target_build_path, layout[configuration][:LibraryPaths]
   end
 
   def move_config
-    source = project_root + "app.config"
+    source = project_root + "Config\\Unsigned\\app.config"
     config_file = build_path + "ir.exe.config"
     transform_config_file('Merlin', source, config_file)
   end
