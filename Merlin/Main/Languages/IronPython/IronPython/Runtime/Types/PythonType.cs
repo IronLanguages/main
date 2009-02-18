@@ -726,8 +726,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
                 lock (_tryGetMemSiteShowCls) {
                     if (!_tryGetMemSiteShowCls.TryGetValue(name, out site)) {
                         _tryGetMemSiteShowCls[name] = site = CallSite<Func<CallSite, object, CodeContext, object>>.Create(
-                            new PythonGetMemberBinder(
-                                PythonContext.GetContext(context).DefaultClsBinderState,
+                            PythonContext.GetContext(context).DefaultClsBinderState.GetMember(
                                 SymbolTable.IdToString(name),
                                 true
                             )
@@ -746,8 +745,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
                 lock (_tryGetMemSite) {
                     if (!_tryGetMemSite.TryGetValue(name, out site)) {
                         _tryGetMemSite[name] = site = CallSite<Func<CallSite, object, CodeContext, object>>.Create(
-                            new PythonGetMemberBinder(
-                                PythonContext.GetContext(context).DefaultBinderState,
+                            PythonContext.GetContext(context).DefaultBinderState.GetMember(
                                 SymbolTable.IdToString(name),
                                 true
                             )
@@ -771,8 +769,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
                 Interlocked.CompareExchange(
                     ref _hashSite,
                     CallSite<Func<CallSite, object, int>>.Create(
-                        new PythonOperationBinder(
-                            Context.DefaultBinderState,
+                        Context.DefaultBinderState.Operation(
                             PythonOperationKind.Hash
                         )
                     ),
@@ -786,10 +783,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
                 Interlocked.CompareExchange(
                     ref _lenSite,
                     CallSite<Func<CallSite, CodeContext, object, object>>.Create(
-                        new PythonInvokeBinder(
-                            Context.DefaultBinderState,
-                            new CallSignature(0)
-                        )
+                        Context.DefaultBinderState.InvokeNone
                     ),
                     null
                 );
@@ -1261,10 +1255,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
                 Interlocked.CompareExchange(
                     ref _getAttributeSite,
                     CallSite<Func<CallSite, CodeContext, object, string, object>>.Create(
-                        new PythonInvokeBinder(
-                            PythonContext.GetContext(context).DefaultBinderState,
-                            new CallSignature(1)
-                        )
+                        PythonContext.GetContext(context).DefaultBinderState.InvokeOne
                     ),
                     null
                 );
@@ -1347,8 +1338,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
                     Interlocked.CompareExchange(
                         ref _setAttrSite,
                         CallSite<Func<CallSite, CodeContext, object, object, string, object, object>>.Create(
-                            new PythonInvokeBinder(
-                                PythonContext.GetContext(context).DefaultBinderState,
+                            PythonContext.GetContext(context).DefaultBinderState.Invoke(
                                 new CallSignature(4)
                             )
                         ),
@@ -1495,10 +1485,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
                 Interlocked.CompareExchange(
                     ref _dirSite,
                     CallSite<Func<CallSite, CodeContext, object, object>>.Create(
-                        new PythonInvokeBinder(
-                            PythonContext.GetContext(context).DefaultBinderState,
-                            new CallSignature(0)
-                        )
+                        PythonContext.GetContext(context).DefaultBinderState.InvokeNone
                     ),
                     null);
             }

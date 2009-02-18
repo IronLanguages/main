@@ -158,7 +158,7 @@ namespace IronPython.Runtime.Binding {
                 this,
                 new DynamicMetaObject(
                     Expression.Dynamic(
-                        new CompatibilityInvokeBinder(_state, newArgs.ToArray()),
+                        _state.CompatInvoke(newArgs.ToArray()),
                         typeof(object),
                         metaArgs.ToArray()
                     ),

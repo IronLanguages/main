@@ -293,7 +293,7 @@ if is_silverlight:
     def load_iron_python_test(*args):
         import clr
 
-        clr.AddReference("Microsoft.Scripting.Core")
+        AddReferenceToDlrCore()
         clr.AddReference("Microsoft.Scripting")
         clr.AddReference("IronPython")
 
@@ -315,7 +315,7 @@ else:
     def load_iron_python_test(*args):
         import clr
 
-        clr.AddReference("Microsoft.Scripting.Core")
+        AddReferenceToDlrCore()
         clr.AddReference("Microsoft.Scripting")
         clr.AddReference("IronPython")
 
@@ -588,6 +588,19 @@ def add_clr_assemblies(*dlls):
             clr.AddReference(x)
         else:
             clr.AddReference(prefix + x)
+
+def AddReferenceToDlrCore():
+    import clr
+    import System
+    if System.Environment.Version.Major >=4:
+        clr.AddReference("System.Core")
+        if not is_silverlight:
+            clr.AddReference("System.Dynamic")
+    else:
+        clr.AddReference("Microsoft.Scripting.Core")
+        if not is_silverlight:
+            clr.AddReference("Microsoft.Dynamic")
+
     
 
 #------------------------------------------------------------------------------

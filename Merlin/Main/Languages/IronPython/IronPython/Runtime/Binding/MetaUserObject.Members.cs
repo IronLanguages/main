@@ -309,10 +309,7 @@ namespace IronPython.Runtime.Binding {
                                 Ast.Constant(null)
                             ),
                             Ast.Dynamic(
-                                new PythonInvokeBinder(
-                                    BinderState.GetBinderState(info.Action),
-                                    new CallSignature(1)
-                                ),
+                                BinderState.GetBinderState(info.Action).InvokeOne,
                                 typeof(object),
                                 Ast.Constant(BinderState.GetBinderState(info.Action).Context),
                                 tmpGetter,
@@ -397,10 +394,7 @@ namespace IronPython.Runtime.Binding {
 
         private Expression/*!*/ MakeGetAttrCall(GetBindingInfo/*!*/ info, Expression codeContext) {
             Expression call = Ast.Dynamic(
-                new PythonInvokeBinder(
-                    BinderState.GetBinderState(info.Action),
-                    new CallSignature(1)
-                ),
+                BinderState.GetBinderState(info.Action).InvokeOne,
                 typeof(object),
                 BinderState.GetCodeContext(info.Action),
                 info.Result,
@@ -526,8 +520,7 @@ namespace IronPython.Runtime.Binding {
                     tmp
                 ),
                 Ast.Dynamic(
-                    new PythonInvokeBinder(
-                        BinderState.GetBinderState(bindingInfo.Action),
+                    BinderState.GetBinderState(bindingInfo.Action).Invoke(
                         new CallSignature(2)
                     ),
                     typeof(object),
@@ -603,10 +596,7 @@ namespace IronPython.Runtime.Binding {
                             Ast.Block(
                                 Ast.Assign(tmp, info.Args[1].Expression),
                                 Ast.Dynamic(
-                                    new PythonInvokeBinder(
-                                        BinderState.GetBinderState(info.Action),
-                                        new CallSignature(1)
-                                    ),
+                                    BinderState.GetBinderState(info.Action).InvokeOne,
                                     typeof(void),
                                     Ast.Constant(BinderState.GetBinderState(info.Action).Context),
                                     tmpSetter,
@@ -751,10 +741,7 @@ namespace IronPython.Runtime.Binding {
                                 Ast.Constant(null)
                             ),
                             Ast.Dynamic(
-                                new PythonInvokeBinder(
-                                    BinderState.GetBinderState(info.Action),
-                                    new CallSignature(1)
-                                ),
+                                BinderState.GetBinderState(info.Action).InvokeOne,
                                 typeof(void),
                                 Ast.Constant(BinderState.GetBinderState(info.Action).Context),
                                 tmpDeleter,
@@ -803,10 +790,7 @@ namespace IronPython.Runtime.Binding {
                     tmp
                 ),
                 Ast.Dynamic(
-                    new PythonInvokeBinder(
-                        BinderState.GetBinderState(info.Action),
-                        new CallSignature(1)
-                    ),
+                    BinderState.GetBinderState(info.Action).InvokeOne,
                     typeof(object),
                     BinderState.GetCodeContext(info.Action),
                     tmp,

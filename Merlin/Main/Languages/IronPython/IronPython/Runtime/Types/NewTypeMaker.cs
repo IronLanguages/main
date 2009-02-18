@@ -611,10 +611,12 @@ namespace IronPython.Runtime.Types {
 
             // back-patch any existing functions so that cached rules will work
             // when called again...
-            foreach (BuiltinFunction bf in PythonTypeOps._functions.Values) {
-                if (bf.Name == pythonName && bf.DeclaringType == declType) {
-                    bf.AddMethod(mi);
-                    break;
+            lock (PythonTypeOps._functions) {
+                foreach (BuiltinFunction bf in PythonTypeOps._functions.Values) {
+                    if (bf.Name == pythonName && bf.DeclaringType == declType) {
+                        bf.AddMethod(mi);
+                        break;
+                    }
                 }
             }
 

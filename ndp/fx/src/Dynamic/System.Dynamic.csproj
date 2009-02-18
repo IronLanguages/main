@@ -17,10 +17,12 @@
     <DocumentationFile>System.Dynamic.xml</DocumentationFile>
     <CodeAnalysisTreatWarningsAsErrors>true</CodeAnalysisTreatWarningsAsErrors>
   </PropertyGroup>
-  <PropertyGroup>
-    <SuiteBinPath>$(BinariesDirectory)\SuiteBin\$(BuildArchitecture)\CSharp\</SuiteBinPath>
-    <CopyToSuiteBin>true</CopyToSuiteBin>
-  </PropertyGroup>
+  <ItemGroup>
+    <CopyFile Include="$(OutputPath)$(AssemblyName).dll">
+        <DestFolder>$(BinariesDirectory)\SuiteBin\$(BuildArchitecture)\CSharp\</DestFolder>
+        <OverwriteReadonlyFiles>true</OverwriteReadonlyFiles>
+    </CopyFile>
+  </ItemGroup>
   <ItemGroup>
     <Reference Include="mscorlib" />
     <Reference Include="System" />

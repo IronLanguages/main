@@ -82,7 +82,7 @@ namespace IronPython.Runtime.Binding {
         private DynamicMetaObject GetForeignObject(DynamicMetaObject self) {
             return new DynamicMetaObject(
                 Expression.Dynamic(
-                    new CompatibilityGetMember(_state, Name),
+                    _state.CompatGetMember(Name),
                     typeof(object),
                     self.Expression
                 ),
@@ -232,7 +232,8 @@ namespace IronPython.Runtime.Binding {
         private readonly BinderState/*!*/ _state;
 
         public CompatibilityGetMember(BinderState/*!*/ binder, string/*!*/ name)
-            : this(binder, name, false) {
+            : base(name, false) {
+            _state = binder;
         }
 
         public CompatibilityGetMember(BinderState/*!*/ binder, string/*!*/ name, bool ignoreCase)

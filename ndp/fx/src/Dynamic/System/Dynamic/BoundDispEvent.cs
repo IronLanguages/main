@@ -19,7 +19,7 @@ using System.Linq.Expressions;
 using System.Runtime.CompilerServices;
 
 namespace System.Dynamic {
-    internal sealed class BoundDispEvent {
+    internal sealed class BoundDispEvent : DynamicObject {
         private object _rcw;
         private Guid _sourceIid;
         private int _dispid;
@@ -30,16 +30,19 @@ namespace System.Dynamic {
             _dispid = dispid;
         }
 
+        public override bool TryBinaryOperation(BinaryOperationBinder binder, object arg, out object result) {
+            if (binder.Operation == ExpressionType.AddAssign) {
+                result = InPlaceAdd(arg);
+                return true;
+            }
 
-        /// <summary>
-        /// Adds a handler to an event.
-        /// </summary>
-        /// <param name="func">The handler to be added.</param>
-        /// <returns>The original event with handler added.</returns>
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2225:OperatorOverloadsHaveNamedAlternates")]
-        [SpecialName]
-        public object op_AdditionAssignment(object func) {
-            return InPlaceAdd(func);
+            if (binder.Operation == ExpressionType.SubtractAssign) {
+                result = InPlaceSubtract(arg);
+                return true;
+            }
+
+            result = null;
+            return false;
         }
 
         /// <summary>

@@ -62,7 +62,7 @@ namespace IronPython.Runtime.Binding {
         #region MetaObject Overrides
 
         public override DynamicMetaObject/*!*/ BindInvokeMember(InvokeMemberBinder/*!*/ action, DynamicMetaObject/*!*/[]/*!*/ args) {
-            return BindingHelpers.GenericCall(action, this, args);
+            return BindingHelpers.GenericInvokeMember(action, null, this, args);
         }
 
         public override DynamicMetaObject/*!*/ BindGetMember(GetMemberBinder/*!*/ member) {
@@ -176,8 +176,7 @@ namespace IronPython.Runtime.Binding {
                                 Ast.Assign(
                                     tmp,
                                     Ast.Dynamic(
-                                        new PythonInvokeBinder(
-                                            BinderState.GetBinderState(invoke),
+                                        BinderState.GetBinderState(invoke).Invoke(
                                             BindingHelpers.GetCallSignature(invoke)
                                         ),
                                         typeof(object),

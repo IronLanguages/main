@@ -47,11 +47,9 @@ namespace System.Dynamic {
         /// <param name="delayInvocation">true if member evaluation may be delayed.</param>
         /// <returns>true if operation was bound successfully; otherwise, false.</returns>
         public static bool TryBindGetMember(GetMemberBinder binder, DynamicMetaObject instance, out DynamicMetaObject result, bool delayInvocation) {
-            if (delayInvocation == false) {
-                return TryBindGetMember(binder, instance, out result);
-            }
             if (TryGetMetaObject(ref instance)) {
-                result = instance.BindGetMember(binder);
+                var comGetMember = new ComGetMemberBinder(binder, delayInvocation);
+                result = instance.BindGetMember(comGetMember);
                 return true;
             } else {
                 result = null;
@@ -67,15 +65,7 @@ namespace System.Dynamic {
         /// <param name="result">The new <see cref="DynamicMetaObject"/> representing the result of the binding.</param>
         /// <returns>true if operation was bound successfully; otherwise, false.</returns>
         public static bool TryBindGetMember(GetMemberBinder binder, DynamicMetaObject instance, out DynamicMetaObject result) {
-            if (TryGetMetaObject(ref instance)) {
-                // in COM x.foo is equivalent to x.foo()
-                var adaptor = new ComGetMemberAsInvokeBinder(binder);
-                result = instance.BindInvokeMember(adaptor, new DynamicMetaObject[0]);
-                return true;
-            } else {
-                result = null;
-                return false;
-            }
+            return TryBindGetMember(binder, instance, out result, false);
         }
 
         /// <summary>
@@ -212,19 +202,31 @@ namespace System.Dynamic {
         }
 
         /// <summary>
-        /// Adaptor class that allows transforming GetMember into InvokeMember when member evaluation is forced.
+        /// Special binder that indicates special semantics for COM GetMember operation.
         /// </summary>
-        private class ComGetMemberAsInvokeBinder : InvokeMemberBinder {
+        internal class ComGetMemberBinder : GetMemberBinder {
             private readonly GetMemberBinder _originalBinder;
-            internal ComGetMemberAsInvokeBinder(GetMemberBinder originalBinder) :
-                base(originalBinder.Name, originalBinder.IgnoreCase, new ArgumentInfo[0]) {
+            internal bool _CanReturnCallables;
+
+            internal ComGetMemberBinder(GetMemberBinder originalBinder, bool CanReturnCallables) :
+                base(originalBinder.Name, originalBinder.IgnoreCase) {
                 _originalBinder = originalBinder;
+                _CanReturnCallables = CanReturnCallables;
             }
-            public override DynamicMetaObject FallbackInvokeMember(DynamicMetaObject target, DynamicMetaObject[] args, DynamicMetaObject errorSuggestion) {
-                return _originalBinder.FallbackGetMember(target);
+
+            public override DynamicMetaObject FallbackGetMember(DynamicMetaObject target, DynamicMetaObject errorSuggestion) {
+                return _originalBinder.FallbackGetMember(target, errorSuggestion);
             }
-            public override DynamicMetaObject FallbackInvoke(DynamicMetaObject target, DynamicMetaObject[] args, DynamicMetaObject errorSuggestion) {
-                throw Assert.Unreachable;
+
+            public override int GetHashCode() {
+                return _originalBinder.GetHashCode() ^ (_CanReturnCallables? 1: 0);
+            }
+
+            public override bool Equals(object obj) {
+                ComGetMemberBinder other = obj as ComGetMemberBinder;
+                return other != null && 
+                    _CanReturnCallables == other._CanReturnCallables && 
+                    _originalBinder.Equals(other._originalBinder);
             }
         }
     }

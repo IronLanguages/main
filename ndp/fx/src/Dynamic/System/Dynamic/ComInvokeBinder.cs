@@ -31,6 +31,7 @@ namespace System.Dynamic {
 
         private readonly IList<ArgumentInfo> _arguments;
         private readonly DynamicMetaObject[] _args;
+        private readonly bool[] _isByRef;
         private readonly Expression _instance;
 
         private BindingRestrictions _restrictions;
@@ -49,13 +50,24 @@ namespace System.Dynamic {
         private ParameterExpression _dispIdsOfKeywordArgsPinned;
         private ParameterExpression _propertyPutDispId;
 
-        internal ComInvokeBinder(IList<ArgumentInfo> arguments, DynamicMetaObject[] args, BindingRestrictions restrictions, Expression method, Expression dispatch, ComMethodDesc methodDesc) {
-            ContractUtils.RequiresNotNull(arguments, "arguments");
-            ContractUtils.RequiresNotNull(args, "args");
-            ContractUtils.RequiresNotNull(method, "method");
-            ContractUtils.RequiresNotNull(dispatch, "dispatch");
-            ContractUtils.Requires(TypeUtils.AreReferenceAssignable(typeof(ComMethodDesc), method.Type), "method");
-            ContractUtils.Requires(TypeUtils.AreReferenceAssignable(typeof(IDispatch), dispatch.Type), "dispatch");
+        internal ComInvokeBinder(
+                IList<ArgumentInfo> arguments, 
+                DynamicMetaObject[] args,
+                bool[] isByRef,
+                BindingRestrictions restrictions, 
+                Expression method, 
+                Expression dispatch, 
+                ComMethodDesc methodDesc
+                ) {
+
+            Debug.Assert(arguments != null, "arguments");
+            Debug.Assert(args != null, "args");
+            Debug.Assert(isByRef != null, "isByRef");
+            Debug.Assert(method != null, "method");
+            Debug.Assert(dispatch != null, "dispatch");
+
+            Debug.Assert(TypeUtils.AreReferenceAssignable(typeof(ComMethodDesc), method.Type), "method");
+            Debug.Assert(TypeUtils.AreReferenceAssignable(typeof(IDispatch), dispatch.Type), "dispatch");
 
             _method = method;
             _dispatch = dispatch;
@@ -63,6 +75,7 @@ namespace System.Dynamic {
 
             _arguments = arguments;
             _args = args;
+            _isByRef = isByRef;
             _restrictions = restrictions;
 
             // Set Instance to some value so that CallBinderHelper has the right number of parameters to work with
@@ -117,12 +130,12 @@ namespace System.Dynamic {
             return var = Expression.Variable(type, name);
         }
 
-        private static Type MarshalType(DynamicMetaObject mo, ArgumentInfo ainf) {
+        private static Type MarshalType(DynamicMetaObject mo, bool isByRef) {
             Type marshalType = (mo.Value == null && mo.HasValue) ? null : mo.LimitType;
 
             // we are not checking that mo.Expression is writeable or whether evaluating it has no sideeffects
             // the assumption is that whoever matched it with ByRef arginfo took care of this.
-            if (ainf.IsByRef){
+            if (isByRef) {
                 // Null just means that null was supplied.
                 if (marshalType == null) {
                     marshalType = mo.Expression.Type;
@@ -141,9 +154,8 @@ namespace System.Dynamic {
             // We already tested the instance, so no need to test it again
             for (int i = 0; i < _args.Length; i++) {
                 DynamicMetaObject curMo = _args[i];
-                ArgumentInfo curAinf = _arguments[i];
                 _restrictions = _restrictions.Merge(ComBinderHelpers.GetTypeRestrictionForDynamicMetaObject(curMo));
-                marshalArgTypes[i] = MarshalType(curMo, curAinf);
+                marshalArgTypes[i] = MarshalType(curMo, _isByRef[i]);
             }
 
             _varEnumSelector = new VarEnumSelector(marshalArgTypes);
@@ -514,6 +526,8 @@ namespace System.Dynamic {
             if (_arguments.Count == 0) {
                 return new string[0];
             } else {
+                ComBinderHelpers.VerifyArgInfos(_arguments);
+
                 var result = new List<string>();
                 foreach (ArgumentInfo arg in _arguments) {
                     if (arg.ArgumentType == ArgumentKind.Named) {

@@ -271,10 +271,7 @@ namespace IronPython.Runtime.Operations {
 
         private static CallSite<Func<CallSite, CodeContext, object, string, object>> MakeGetAttrSite(CodeContext context) {
             return CallSite<Func<CallSite, CodeContext, object, string, object>>.Create(
-                new PythonInvokeBinder(
-                    PythonContext.GetContext(context).DefaultBinderState,
-                    new CallSignature(1)
-                )
+                PythonContext.GetContext(context).DefaultBinderState.InvokeOne
             );
         }
 

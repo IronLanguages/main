@@ -48,8 +48,8 @@ namespace System.Dynamic {
             if (target.TryGetMemberMethod(name, out method) ||
                 target.TryGetMemberMethodExplicit(name, out method)) {
 
-                ComBinderHelpers.ProcessArgumentsForCom(ref args, ref argInfos);
-                return BindComInvoke(method, args, argInfos);
+                bool[] isByRef = ComBinderHelpers.ProcessArgumentsForCom(ref args);
+                return BindComInvoke(method, args, argInfos, isByRef);
             }
             return null;
         }
@@ -64,24 +64,22 @@ namespace System.Dynamic {
             if (target.TryGetPropertySetter(name, out method, value.LimitType, holdsNull) ||
                 target.TryGetPropertySetterExplicit(name, out method, value.LimitType, holdsNull)) {
 
-                IList<ArgumentInfo> argInfos = binder.Arguments;
-                ComBinderHelpers.ProcessArgumentsForCom(ref indexes, ref argInfos);
-                // add an arginfo for the value
-                argInfos = argInfos.AddLast(Expression.PositionalArg(argInfos.Count));
-
-                return BindComInvoke(method, indexes.AddLast(value), argInfos);
+                bool[] isByRef = ComBinderHelpers.ProcessArgumentsForCom(ref indexes);
+                isByRef = isByRef.AddLast(false);
+                return BindComInvoke(method, indexes.AddLast(value), binder.Arguments, isByRef);
             }
 
             return base.BindSetIndex(binder, indexes, value);
         }
 
-        private DynamicMetaObject BindComInvoke(ComMethodDesc method, DynamicMetaObject[] indexes, IList<ArgumentInfo> argInfos) {
+        private DynamicMetaObject BindComInvoke(ComMethodDesc method, DynamicMetaObject[] indexes, IList<ArgumentInfo> argInfos, bool[] isByRef) {
             var callable = Expression;
             var dispCall = Helpers.Convert(callable, typeof(DispCallable));
 
             return new ComInvokeBinder(
                 argInfos,
                 indexes,
+                isByRef,
                 DispCallableRestrictions(),
                 Expression.Constant(method),
                 Expression.Property(

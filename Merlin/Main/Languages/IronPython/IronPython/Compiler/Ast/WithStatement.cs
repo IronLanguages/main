@@ -204,8 +204,7 @@ namespace IronPython.Compiler.Ast {
                         exc,
                         ag.AddDebugInfo(
                             Ast.Dynamic(
-                                new PythonInvokeBinder(
-                                    ag.BinderState,
+                                ag.BinderState.Invoke(
                                     new CallSignature(3)        // signature doesn't include function
                                 ),
                                 typeof(object),
