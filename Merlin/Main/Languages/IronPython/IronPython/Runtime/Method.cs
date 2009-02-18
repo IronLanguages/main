@@ -28,7 +28,7 @@ using IronPython.Runtime.Types;
 namespace IronPython.Runtime {
 
     [PythonType("instancemethod")]
-    public sealed partial class Method : PythonTypeSlot, IWeakReferenceable, IMembersList, IDynamicObject, ICodeFormattable {
+    public sealed partial class Method : PythonTypeSlot, IWeakReferenceable, IMembersList, IDynamicMetaObjectProvider, ICodeFormattable {
         private readonly object _func;
         private readonly object _inst;
         private readonly object _declaringClass;
@@ -109,10 +109,11 @@ namespace IronPython.Runtime {
             } else {
                 firstArg = PythonOps.GetPythonTypeName(got) + " instance";
             }
+            PythonType pt = im_class as PythonType;
 
             return PythonOps.TypeError("unbound method {0}() must be called with {1} instance as first argument (got {2} instead)",
                 __name__,
-                (dt != null) ? dt.__name__ : im_class,
+                (dt != null) ? dt.__name__ : (pt != null) ? pt.Name : im_class,
                 firstArg);
         }
 
@@ -261,9 +262,9 @@ namespace IronPython.Runtime {
 
         #endregion
 
-        #region IDynamicObject Members
+        #region IDynamicMetaObjectProvider Members
 
-        DynamicMetaObject/*!*/ IDynamicObject.GetMetaObject(Expression/*!*/ parameter) {
+        DynamicMetaObject/*!*/ IDynamicMetaObjectProvider.GetMetaObject(Expression/*!*/ parameter) {
             return new Binding.MetaMethod(parameter, BindingRestrictions.Empty, this);
         }
 

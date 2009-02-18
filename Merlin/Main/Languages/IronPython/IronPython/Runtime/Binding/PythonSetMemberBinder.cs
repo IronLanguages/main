@@ -30,11 +30,12 @@ namespace IronPython.Runtime.Binding {
         private readonly BinderState/*!*/ _state;
 
         public PythonSetMemberBinder(BinderState/*!*/ binder, string/*!*/ name)
-            : this(binder, name, false) {
+            : base(name, false) {
+            _state = binder;
         }
 
-        public PythonSetMemberBinder(BinderState/*!*/ binder, string/*!*/ name, bool caseInsensitive)
-            : base(name, caseInsensitive) {
+        public PythonSetMemberBinder(BinderState/*!*/ binder, string/*!*/ name, bool ignoreCase)
+            : base(name, ignoreCase) {
             _state = binder;
         }
 

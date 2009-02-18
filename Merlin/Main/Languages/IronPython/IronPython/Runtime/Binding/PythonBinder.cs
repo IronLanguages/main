@@ -41,7 +41,7 @@ namespace IronPython.Runtime.Binding {
         private SlotCache/*!*/ _typeMembers = new SlotCache();
         private SlotCache/*!*/ _resolvedMembers = new SlotCache();
         private Dictionary<Type/*!*/, IList<Type/*!*/>/*!*/>/*!*/ _dlrExtensionTypes = MakeExtensionTypes();
-        private readonly OldGetMemberAction EmptyGetMemberAction;
+        private readonly OldGetMemberAction EmptyGetMemberAction;        
 
         [MultiRuntimeAware]
         private static readonly Dictionary<Type/*!*/, ExtensionTypeInfo/*!*/>/*!*/ _sysTypes = MakeSystemTypes();
@@ -805,6 +805,12 @@ namespace IronPython.Runtime.Binding {
 
             foreach (ScriptCode sc in codes) {
                 pc.GetCompiledLoader().AddScriptCode(sc);
+            }
+        }
+
+        internal PythonContext/*!*/ Context {
+            get {
+                return _context;
             }
         }
 

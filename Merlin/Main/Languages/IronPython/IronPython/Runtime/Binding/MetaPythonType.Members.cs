@@ -401,10 +401,7 @@ namespace IronPython.Runtime.Binding {
                             tmp
                         ),
                         Ast.Dynamic(
-                            new PythonInvokeBinder(
-                                BinderState.GetBinderState(member),
-                                new CallSignature(1)
-                            ),
+                            BinderState.GetBinderState(member).InvokeOne,
                             typeof(object),
                             BinderState.GetCodeContext(member),
                             tmp,

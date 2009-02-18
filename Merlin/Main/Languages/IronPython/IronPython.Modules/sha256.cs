@@ -125,13 +125,13 @@ namespace IronPython.Modules {
 
         [Documentation("update(string) -> None (update digest with string data)")]
         public void update(object newData) {
-            update(StringOps.ToByteArray(Converter.ConvertToString(newData)));
+            update(Converter.ConvertToString(newData).MakeByteArray());
         }
 
 
         [Documentation("digest() -> int (current digest value)")]
         public string digest() {
-            return StringOps.FromByteArray(_hash);
+            return _hash.MakeString();
         }
 
         [Documentation("hexdigest() -> string (current digest as hex digits)")]

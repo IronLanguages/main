@@ -14,6 +14,7 @@
  * ***************************************************************************/
 
 using System;
+using System.Collections.Generic;
 using Microsoft.Scripting.Runtime;
 using System.Security.Cryptography;
 using System.Text;
@@ -77,7 +78,7 @@ namespace IronPython.Modules {
 
             [Documentation("update(string) -> None (update digest with string data)")]
             public void update(object newData) {
-                update(StringOps.ToByteArray(Converter.ConvertToString(newData)));
+                update(Converter.ConvertToString(newData).MakeByteArray());
             }
 
             private void update(byte[] newBytes) {
@@ -90,7 +91,7 @@ namespace IronPython.Modules {
 
             [Documentation("digest() -> int (current digest value)")]
             public string digest() {
-                return StringOps.FromByteArray(_hash);
+                return _hash.MakeString();
             }
 
             [Documentation("hexdigest() -> string (current digest as hex digits)")]

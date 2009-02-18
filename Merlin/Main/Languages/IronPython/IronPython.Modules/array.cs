@@ -485,7 +485,7 @@ namespace IronPython.Modules {
                     DynamicHelpers.GetPythonType(this),
                     PythonOps.MakeTuple(
                         typecode,
-                        StringOps.FromByteArray(ToByteArray())
+                        ToByteArray().MakeString()
                     ),
                     null
                 );

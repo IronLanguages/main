@@ -51,6 +51,8 @@ namespace IronPython.Runtime.Binding {
         #region MetaObject Overrides
 
         public override DynamicMetaObject/*!*/ BindInvokeMember(InvokeMemberBinder/*!*/ action, DynamicMetaObject/*!*/[]/*!*/ args) {
+            ValidationInfo valInfo = BindingHelpers.GetValidationInfo(this);
+
             DynamicMetaObject errorSuggestion = null;
             if (_baseMetaObject != null) {
                 errorSuggestion = _baseMetaObject.BindInvokeMember(action, args);
@@ -62,20 +64,25 @@ namespace IronPython.Runtime.Binding {
 
             if (TryGetGetAttribute(context, sdo.PythonType, out foundSlot)) {
                 // we'll always fetch the value, go ahead and invoke afterwards.
-                return BindingHelpers.GenericCall(action, this, args);
+                return BindingHelpers.GenericInvokeMember(action, valInfo, this, args);
             }
 
             bool isOldStyle;
             bool systemTypeResolution;
             foundSlot = FindSlot(context, action.Name, sdo, out isOldStyle, out systemTypeResolution);
-            if (foundSlot != null && !systemTypeResolution) {
-                // we found the member in the type dictionary, not a .NET type, go ahead and
-                // do the get & invoke.
-                return BindingHelpers.GenericCall(action, this, args);
+            if (foundSlot != null && systemTypeResolution) {
+                // it's a normal .NET member, let the calling language handle it how it usually does
+                return BindingHelpers.AddDynamicTestAndDefer(
+                    action,
+                    action.FallbackInvokeMember(this, args, errorSuggestion),
+                    args,
+                    valInfo
+                );                
             }
 
-            // it's a normal .NET member, let the calling language handle it how it usually does
-            return action.FallbackInvokeMember(this, args, errorSuggestion);
+            // we found the member in the type dictionary, not a .NET type, or the
+            // member could exist in the instance.  Get it and invoke it.
+            return BindingHelpers.GenericInvokeMember(action, valInfo, this, args);
         }
 
         public override DynamicMetaObject/*!*/ BindConvert(ConvertBinder/*!*/ conversion) {
@@ -193,10 +200,7 @@ namespace IronPython.Runtime.Binding {
                 Expression callExpr = Ast.Call(
                     PythonOps.GetConversionHelper(returner, GetResultKind(convertToAction)),
                     Ast.Dynamic(
-                        new PythonInvokeBinder(
-                            BinderState.GetBinderState(convertToAction),
-                            new CallSignature(0)
-                        ),
+                        BinderState.GetBinderState(convertToAction).InvokeNone,
                         typeof(object),
                         BinderState.GetCodeContext(convertToAction),
                         tmp
@@ -353,8 +357,7 @@ namespace IronPython.Runtime.Binding {
                 }
 
                 return _baseMetaObject.BindGetMember(
-                    new CompatibilityGetMember(
-                        BinderState.GetBinderState(action),
+                    BinderState.GetBinderState(action).CompatGetMember(
                         GetGetMemberName(action)
                     )
                 );

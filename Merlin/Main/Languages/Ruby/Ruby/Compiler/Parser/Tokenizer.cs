@@ -2006,11 +2006,9 @@ namespace IronRuby.Compiler {
                     case 'i': options |= RubyRegexOptions.IgnoreCase; break;
                     case 'x': options |= RubyRegexOptions.Extended; break;
                     case 'm': options |= RubyRegexOptions.Multiline; break;
-                    case 'o': 
-                        // TODO: Once option not implemented.
-                        break;
+                    case 'o': options |= RubyRegexOptions.Once; break;
 
-                    case 'n': encoding |= RubyRegexOptions.FIXED; break;
+                    case 'n': encoding = RubyRegexOptions.FIXED; break;
                     case 'e': encoding = RubyRegexOptions.EUC; break;
                     case 's': encoding = RubyRegexOptions.SJIS; break;
                     case 'u': encoding = RubyRegexOptions.UTF8; break;

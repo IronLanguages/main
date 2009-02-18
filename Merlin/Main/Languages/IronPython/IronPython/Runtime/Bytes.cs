@@ -45,8 +45,8 @@ namespace IronPython.Runtime {
             _bytes = bytes;
         }
 
-        public Bytes(CodeContext/*!*/ context, [NotNull]string/*!*/ unicode, [NotNull]string/*!*/ encoding) {            
-            _bytes = StringOps.ToByteArray(StringOps.encode(context, unicode, encoding, "strict"));
+        public Bytes(CodeContext/*!*/ context, [NotNull]string/*!*/ unicode, [NotNull]string/*!*/ encoding) {
+            _bytes = StringOps.encode(context, unicode, encoding, "strict").MakeByteArray();
         }
         
         #region Public Python API surface
@@ -98,7 +98,7 @@ namespace IronPython.Runtime {
         }
 
         public string decode(CodeContext/*!*/ context, [Optional]string/*!*/ encoding, [DefaultParameterValue("strict")][NotNull]string/*!*/ errors) {
-            return StringOps.decode(context, StringOps.FromByteArray(_bytes), encoding, errors);
+            return StringOps.decode(context, _bytes.MakeString(), encoding, errors);
         }
 
         public bool endswith(IList<byte>/*!*/ suffix) {

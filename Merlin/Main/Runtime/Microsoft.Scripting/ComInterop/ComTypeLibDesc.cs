@@ -25,7 +25,7 @@ using ComTypes = System.Runtime.InteropServices.ComTypes;
 
 namespace Microsoft.Scripting.ComInterop {
 
-    public sealed class ComTypeLibDesc : IDynamicObject {
+    public sealed class ComTypeLibDesc : IDynamicMetaObjectProvider {
 
         // typically typelibs contain very small number of coclasses
         // so we will just use the linked list as it performs better
@@ -51,9 +51,9 @@ namespace Microsoft.Scripting.ComInterop {
             get { return String.Empty; }
         }
 
-        #region IDynamicObject Members
+        #region IDynamicMetaObjectProvider Members
 
-        DynamicMetaObject IDynamicObject.GetMetaObject(Expression parameter) {
+        DynamicMetaObject IDynamicMetaObjectProvider.GetMetaObject(Expression parameter) {
             return new TypeLibMetaObject(parameter, this);
         }
 
@@ -62,7 +62,7 @@ namespace Microsoft.Scripting.ComInterop {
         /// <summary>
         /// Reads the latest registered type library for the corresponding GUID,
         /// reads definitions of CoClass'es and Enum's from this library
-        /// and creates a IDynamicObject that allows to instantiate coclasses
+        /// and creates a IDynamicMetaObjectProvider that allows to instantiate coclasses
         /// and get actual values for the enums.
         /// </summary>
         /// <param name="typeLibGuid">Type Library Guid</param>
@@ -80,7 +80,7 @@ namespace Microsoft.Scripting.ComInterop {
         /// <summary>
         /// Gets an ITypeLib object from OLE Automation compatible RCW ,
         /// reads definitions of CoClass'es and Enum's from this library
-        /// and creates a IDynamicObject that allows to instantiate coclasses
+        /// and creates a IDynamicMetaObjectProvider that allows to instantiate coclasses
         /// and get actual values for the enums.
         /// </summary>
         /// <param name="rcw">OLE automation compatible RCW</param>

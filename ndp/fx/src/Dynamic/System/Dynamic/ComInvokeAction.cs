@@ -22,7 +22,7 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 
 namespace System.Dynamic {
-    internal sealed class  ComInvokeAction : InvokeBinder {
+    internal sealed class ComInvokeAction : InvokeBinder {
         internal ComInvokeAction(params ArgumentInfo[] arguments)
             : base(arguments) {
         }
@@ -44,14 +44,16 @@ namespace System.Dynamic {
     internal sealed class SplatInvokeBinder : DynamicMetaObjectBinder {
 
         // SplatInvokeBinder is a singleton
-        private SplatInvokeBinder() {}
+        private SplatInvokeBinder() { }
         private static readonly SplatInvokeBinder _instance = new SplatInvokeBinder();
 
-        internal static SplatInvokeBinder Instance{
+        internal static SplatInvokeBinder Instance {
             get {
                 return _instance;
             }
         }
+
+        private static Type ByRefObjectType = typeof(object).MakeByRefType();
 
         public sealed override DynamicMetaObject Bind(DynamicMetaObject target, DynamicMetaObject[] args) {
             ContractUtils.RequiresNotNull(target, "target");
@@ -72,21 +74,33 @@ namespace System.Dynamic {
             object[] argValues = (object[])arg.Value;
             int argLen = argValues.Length;
 
+            IndexExpression[] argElements = new IndexExpression[argLen];
+            ParameterExpression[] temps = new ParameterExpression[argLen];
+
             DynamicMetaObject[] splattedArgs = new DynamicMetaObject[argLen];
             ArgumentInfo[] arginfos = new ArgumentInfo[argLen];
 
             for (int i = 0; i < argLen; i++) {
-                Expression argExpr = Expression.ArrayAccess(
+
+                // temps have Object& type here
+                // it is ok as they will be stored on a nested lambda scope which allows ref types
+                ParameterExpression temp = Expression.Parameter(ByRefObjectType, "arg" + i);
+                temps[i] = temp;
+
+                // values that we will assign to temps via Invoke.
+                argElements[i] = Expression.ArrayAccess(
                     argAsArrayExpr,
                     Expression.Constant(i)
                 );
 
+                // metaobjects for the inner bind.
                 splattedArgs[i] = new DynamicMetaObject(
-                    argExpr,
+                    temp,
                     BindingRestrictions.Empty,
                     argValues[i]
                 );
-                arginfos[i] = Expression.ByRefPositionalArgument(i);
+
+                arginfos[i] = Expression.PositionalArg(i);
             }
 
 
@@ -102,14 +116,23 @@ namespace System.Dynamic {
             ComInvokeAction invokeBinder = new ComInvokeAction(arginfos);
             DynamicMetaObject innerAction = target.BindInvoke(invokeBinder, splattedArgs);
 
+            Expression exprRestrictions = Expression.Lambda(innerAction.Restrictions.ToExpression(), temps);
+
+            // note that inner restrictions need to be added through Invoke to have correct scoping.
             BindingRestrictions restrictions =
                 target.Restrictions.
                 Merge(arg.Restrictions).
                 Merge(arrayLenRestriction).
-                Merge(innerAction.Restrictions);
+                Merge(BindingRestrictions.GetExpressionRestriction(Expression.Invoke(exprRestrictions, argElements)));
+
+            // invoke inner expression in its own scope. 
+            Expression innerExpression = Expression.Invoke(
+                Expression.Lambda(innerAction.Expression, temps),
+                argElements
+            );
 
             return new DynamicMetaObject(
-                innerAction.Expression,
+                innerExpression,
                 restrictions
             );
         }

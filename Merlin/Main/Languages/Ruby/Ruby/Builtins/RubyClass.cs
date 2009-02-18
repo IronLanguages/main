@@ -906,7 +906,7 @@ namespace IronRuby.Builtins {
                 } else {
                     constructionOverloads = type.GetConstructors();
                     if (constructionOverloads.Length == 0) {
-                        throw RubyExceptions.CreateTypeError(String.Format("allocator undefined for {0}", Name));
+                        throw RubyExceptions.CreateAllocatorUndefinedError(this);
                     }
                     callConvention = SelfCallConvention.NoSelf;
                 }
@@ -986,9 +986,9 @@ namespace IronRuby.Builtins {
  
             if ((ctor = type.GetConstructor(Type.EmptyTypes)) != null) {
                 return Ast.New(ctor);
-            } 
+            }
 
-            throw RubyExceptions.CreateTypeError(String.Format("allocator undefined for {0}", Name));
+            throw RubyExceptions.CreateAllocatorUndefinedError(this);
         }
 
         private Expression/*!*/ MakeDelegateConstructorCall(Type/*!*/ type, CallArguments/*!*/ args) {

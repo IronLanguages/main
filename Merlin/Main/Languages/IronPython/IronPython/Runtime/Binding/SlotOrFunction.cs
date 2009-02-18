@@ -159,8 +159,7 @@ namespace IronPython.Runtime.Binding {
                                 )
                             ),
                             Ast.Dynamic(
-                                new PythonInvokeBinder(
-                                    state,
+                                state.Invoke(
                                     new CallSignature(args.Length)
                                 ),
                                 typeof(object),

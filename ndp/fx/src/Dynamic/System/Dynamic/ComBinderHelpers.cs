@@ -49,35 +49,25 @@ namespace System.Dynamic {
             return pe != null && pe.IsByRef;
         }
 
-        internal static bool IsStrongBoxArg(DynamicMetaObject o, ArgumentInfo argInfo) {
-            if (argInfo.IsByRef) {
-                return false;
-            }
-
+        internal static bool IsStrongBoxArg(DynamicMetaObject o) {
             Type t = o.LimitType;
             return t.IsGenericType && t.GetGenericTypeDefinition() == typeof(StrongBox<>);
         }
 
-        // this helper checks if we have arginfos and verifies the assumptions that we make about them.
-        private static bool HasArgInfos(DynamicMetaObject[] args, IList<ArgumentInfo> argInfos) {
+        internal static void VerifyArgInfos(IList<ArgumentInfo> argInfos) {
             // We either have valid ArgInfos on the binder or the collection is empty.
             if (argInfos == null || argInfos.Count == 0) {
-                return false;
-            }
-
-            // Number of arginfos matches number of metaobject arguments.
-            if(args.Length != argInfos.Count){
-                return false;
+                return;
             }
 
             // Named arguments go after positional ones.
             bool seenNonPositional = false;
-            for (var i = 0; i < argInfos.Count; i++){
+            for (var i = 0; i < argInfos.Count; i++) {
                 ArgumentInfo curInfo = argInfos[i];
 
                 PositionalArgumentInfo positional = curInfo as PositionalArgumentInfo;
                 if (positional != null) {
-                    if (seenNonPositional){
+                    if (seenNonPositional) {
                         throw Error.NamedArgsShouldFollowPositional();
                     }
                     if (positional.Position != i) {
@@ -87,18 +77,16 @@ namespace System.Dynamic {
                     seenNonPositional = true;
                 }
             }
-            return true;
+            return;
         }
 
         // this helper prepares arguments for COM binding by transforming ByVal StongBox arguments
         // into ByRef expressions that represent the argument's Value fields.
-        internal static void ProcessArgumentsForCom(ref DynamicMetaObject[] args, ref IList<ArgumentInfo> argInfos) {
+        internal static bool[] ProcessArgumentsForCom(ref DynamicMetaObject[] args) {
             Debug.Assert(args != null);
-           
-            DynamicMetaObject[] newArgs = new DynamicMetaObject[args.Length];
-            ArgumentInfo[] newArgInfos = new ArgumentInfo[args.Length];
 
-            bool hasArgInfos = HasArgInfos(args, argInfos);
+            DynamicMetaObject[] newArgs = new DynamicMetaObject[args.Length];
+            bool[] isByRefArg = new bool[args.Length];
 
             for (int i = 0; i < args.Length; i++) {
                 DynamicMetaObject curArgument = args[i];
@@ -106,55 +94,44 @@ namespace System.Dynamic {
                 // set new arg infos to their original values or set default ones
                 // we will do this fixup early so that we can assume we always have
                 // arginfos in COM binder.
-                if (hasArgInfos) {
-                    newArgInfos[i] = argInfos[i];
-                } else {
-                    // TODO: this fixup should not be needed once refness is expressed only by argInfos
-                    if (IsByRef(curArgument)) {
-                        newArgInfos[i] = Expression.ByRefPositionalArgument(i);
-                    } else {
-                        newArgInfos[i] = Expression.PositionalArg(i);
-                    }
-                }
 
-                if (IsStrongBoxArg(curArgument, newArgInfos[i])) {
-
-
-                    var restrictions = curArgument.Restrictions.Merge(
-                        GetTypeRestrictionForDynamicMetaObject(curArgument)
-                    );
-
-                    // we have restricted this argument to LimitType so we can convert and conversion will be trivial cast.
-                    Expression boxedValueAccessor = Expression.Field(
-                        Helpers.Convert(
-                            curArgument.Expression,
-                            curArgument.LimitType
-                        ),
-                        curArgument.LimitType.GetField("Value")
-                    );
-
-                    IStrongBox value = curArgument.Value as IStrongBox;
-                    object boxedValue = value != null ? value.Value : null;
-
-                    newArgs[i] = new DynamicMetaObject(
-                        boxedValueAccessor,
-                        restrictions,
-                        boxedValue
-                    );
-
-                    NamedArgumentInfo nai = newArgInfos[i] as NamedArgumentInfo;
-                    if (nai != null) {
-                        newArgInfos[i] = Expression.ByRefNamedArgument(nai.Name);
-                    } else {
-                        newArgInfos[i] = Expression.ByRefPositionalArgument(i);
-                    }
-                } else {
+                if (IsByRef(curArgument)) {
                     newArgs[i] = curArgument;
+                    isByRefArg[i] = true;
+                } else {
+                    if (IsStrongBoxArg(curArgument)) {
+                        var restrictions = curArgument.Restrictions.Merge(
+                            GetTypeRestrictionForDynamicMetaObject(curArgument)
+                        );
+
+                        // we have restricted this argument to LimitType so we can convert and conversion will be trivial cast.
+                        Expression boxedValueAccessor = Expression.Field(
+                            Helpers.Convert(
+                                curArgument.Expression,
+                                curArgument.LimitType
+                            ),
+                            curArgument.LimitType.GetField("Value")
+                        );
+
+                        IStrongBox value = curArgument.Value as IStrongBox;
+                        object boxedValue = value != null ? value.Value : null;
+
+                        newArgs[i] = new DynamicMetaObject(
+                            boxedValueAccessor,
+                            restrictions,
+                            boxedValue
+                        );
+
+                        isByRefArg[i] = true;
+                    } else {
+                        newArgs[i] = curArgument;
+                        isByRefArg[i] = false;
+                    }
                 }
             }
 
             args = newArgs;
-            argInfos = newArgInfos;
+            return isByRefArg;
         }
 
         internal static BindingRestrictions GetTypeRestrictionForDynamicMetaObject(DynamicMetaObject obj) {

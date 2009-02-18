@@ -22,6 +22,7 @@ namespace IronRuby.Builtins {
         IgnoreCase = 1,
         Extended = 2,
         Multiline = 4,
+        Once = 8,
 
         // encoding:
         FIXED = 16,

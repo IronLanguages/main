@@ -89,7 +89,7 @@ namespace IronPython.Runtime.Operations {
             // In 1.x, we could check for certain interfaces like ICallable*, but those interfaces were deprecated
             // in favor of dynamic sites. 
             // This is difficult to infer because we'd need to simulate the entire callbinder, which can include
-            // looking for [SpecialName] call methods and checking for a rule from IDynamicObject. But even that wouldn't
+            // looking for [SpecialName] call methods and checking for a rule from IDynamicMetaObjectProvider. But even that wouldn't
             // be complete since sites require the argument list of the call, and we only have the instance here. 
             // Thus check a dedicated IsCallable operator. This lets each object describe if it's callable.
 
@@ -1023,7 +1023,7 @@ namespace IronPython.Runtime.Operations {
             }
 
             List res;
-            if (o is IDynamicObject) {
+            if (o is IDynamicMetaObjectProvider) {
                 res = new List();
 
                 PythonContext pc = PythonContext.GetContext(context);
@@ -2111,6 +2111,10 @@ namespace IronPython.Runtime.Operations {
             return throwable;
         }
 
+        public static Exception CreateThrowable(PythonType type, params object[] args) {
+            return PythonExceptions.CreateThrowable(type, args);
+        }
+
         public static void ClearDynamicStackFrames() {
             ExceptionHelpers.DynamicStackFrames = null;
         }
@@ -2897,15 +2901,13 @@ namespace IronPython.Runtime.Operations {
                 infos[count + i] = new Argument(keywords[i]);
             }
 
-            return new PythonInvokeBinder(
-                DefaultContext.DefaultPythonContext.DefaultBinderState,
+            return DefaultContext.DefaultPythonContext.DefaultBinderState.Invoke(
                 new CallSignature(infos)
             );
         }
 
         public static DynamicMetaObjectBinder MakeSimpleCallAction(int count) {
-            return new PythonInvokeBinder(
-                DefaultContext.DefaultPythonContext.DefaultBinderState,
+            return DefaultContext.DefaultPythonContext.DefaultBinderState.Invoke(
                 new CallSignature(CompilerHelpers.MakeRepeatedArray(Argument.Simple, count))
             );
         }
@@ -3216,59 +3218,59 @@ namespace IronPython.Runtime.Operations {
         }
 
         public static DynamicMetaObjectBinder MakeInvokeAction(CodeContext/*!*/ context, CallSignature signature) {
-            return new PythonInvokeBinder(GetBinderState(context), signature);
+            return GetBinderState(context).Invoke(signature);
         }
 
         public static DynamicMetaObjectBinder MakeGetAction(CodeContext/*!*/ context, string name, bool isNoThrow) {
-            return new PythonGetMemberBinder(GetBinderState(context), name, isNoThrow);
+            return GetBinderState(context).GetMember(name);
         }
 
         public static DynamicMetaObjectBinder MakeSetAction(CodeContext/*!*/ context, string name) {
-            return new PythonSetMemberBinder(GetBinderState(context), name);
+            return GetBinderState(context).SetMember(name);
         }
 
         public static DynamicMetaObjectBinder MakeDeleteAction(CodeContext/*!*/ context, string name) {
-            return new PythonDeleteMemberBinder(GetBinderState(context), name);
+            return GetBinderState(context).DeleteMember(name);
         }
 
         public static DynamicMetaObjectBinder MakeConversionAction(CodeContext/*!*/ context, Type type, ConversionResultKind kind) {
-            return new ConversionBinder(GetBinderState(context), type, kind);
+            return GetBinderState(context).Convert(type, kind);
         }
 
         public static DynamicMetaObjectBinder MakeOperationAction(CodeContext/*!*/ context, int operationName) {
-            return new PythonOperationBinder(GetBinderState(context), (PythonOperationKind)operationName);
+            return GetBinderState(context).Operation((PythonOperationKind)operationName);
         }
 
         public static DynamicMetaObjectBinder MakeUnaryOperationAction(CodeContext/*!*/ context, ExpressionType expressionType) {
-            return new PythonUnaryOperationBinder(GetBinderState(context), expressionType);
+            return GetBinderState(context).UnaryOperation(expressionType);
         }
 
         public static DynamicMetaObjectBinder MakeBinaryOperationAction(CodeContext/*!*/ context, ExpressionType expressionType) {
-            return new PythonBinaryOperationBinder(GetBinderState(context), expressionType);
+            return GetBinderState(context).BinaryOperation(expressionType);
         }
 
         public static DynamicMetaObjectBinder MakeGetIndexAction(CodeContext/*!*/ context, int argCount) {
-            return new PythonGetIndexBinder(GetBinderState(context), argCount);
+            return GetBinderState(context).GetIndex(argCount);
         }
 
         public static DynamicMetaObjectBinder MakeSetIndexAction(CodeContext/*!*/ context, int argCount) {
-            return new PythonSetIndexBinder(GetBinderState(context), argCount);
+            return GetBinderState(context).SetIndex(argCount);
         }
 
         public static DynamicMetaObjectBinder MakeDeleteIndexAction(CodeContext/*!*/ context, int argCount) {
-            return new PythonDeleteIndexBinder(GetBinderState(context), argCount);
+            return GetBinderState(context).DeleteIndex(argCount);
         }
 
         public static DynamicMetaObjectBinder MakeGetSliceBinder(CodeContext/*!*/ context) {
-            return new PythonGetSliceBinder(GetBinderState(context));
+            return GetBinderState(context).GetSlice;
         }
 
         public static DynamicMetaObjectBinder MakeSetSliceBinder(CodeContext/*!*/ context) {
-            return new PythonSetSliceBinder(GetBinderState(context));
+            return GetBinderState(context).SetSlice;
         }
 
         public static DynamicMetaObjectBinder MakeDeleteSliceBinder(CodeContext/*!*/ context) {
-            return new PythonDeleteSliceBinder(GetBinderState(context));
+            return GetBinderState(context).DeleteSlice;
         }
 
         /// <summary>
@@ -3333,6 +3335,39 @@ namespace IronPython.Runtime.Operations {
 
         public static int CompareFloats(double self, double other) {
             return DoubleOps.Compare(self, other);
+        }
+
+        public static byte[] MakeByteArray(this string s) {
+            byte[] ret = new byte[s.Length];
+            for (int i = 0; i < s.Length; i++) {
+                if (s[i] < 0x100) ret[i] = (byte)s[i];
+                else throw PythonOps.UnicodeDecodeError("'ascii' codec can't decode byte {0:X} in position {1}: ordinal not in range", (int)ret[i], i);
+            }
+            return ret;
+        }
+
+        public static string MakeString(this IList<byte> bytes) {
+            return MakeString(bytes, bytes.Count);
+        }
+
+        internal static string MakeString(this byte[] preamble, IList<byte> bytes) {
+            char[] chars = new char[preamble.Length + bytes.Count];
+            for (int i = 0; i < preamble.Length; i++) {
+                chars[i] = (char)preamble[i];
+            }
+            for (int i = 0; i < bytes.Count; i++) {
+                chars[i + preamble.Length] = (char)bytes[i];
+            }
+            return new String(chars);
+        }
+
+        internal static string MakeString(this IList<byte> bytes, int maxBytes) {
+            int bytesToCopy = Math.Min(bytes.Count, maxBytes);
+            StringBuilder b = new StringBuilder(bytesToCopy);
+            for (int i = 0; i < bytesToCopy; i++) {
+                b.Append((char)bytes[i]);
+            }
+            return b.ToString();
         }
 
         #region Exception Factories

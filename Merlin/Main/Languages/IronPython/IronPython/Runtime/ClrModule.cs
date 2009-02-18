@@ -878,7 +878,7 @@ import Namespace.")]
                     BinaryFormatter bf = new BinaryFormatter();
                     MemoryStream stream = new MemoryStream();
                     bf.Serialize(stream, self);
-                    data = StringOps.FromByteArray(stream.ToArray());
+                    data = stream.ToArray().MakeString();
                     format = null;
                     break;
             }
@@ -916,8 +916,8 @@ import Namespace.")]
             } else if (data == String.Empty) {
                 return null;
             }
-            
-            MemoryStream stream = new MemoryStream(StringOps.ToByteArray(data));
+
+            MemoryStream stream = new MemoryStream(data.MakeByteArray());
             BinaryFormatter bf = new BinaryFormatter();
             return bf.Deserialize(stream);
         }

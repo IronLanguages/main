@@ -30,7 +30,8 @@ namespace IronPython.Runtime.Binding {
         private readonly BinderState/*!*/ _state;
 
         public PythonDeleteMemberBinder(BinderState/*!*/ binder, string/*!*/ name)
-            : this(binder, name, false) {
+            : base(name, false) {
+            _state = binder;
         }
 
         public PythonDeleteMemberBinder(BinderState/*!*/ binder, string/*!*/ name, bool ignoreCase)

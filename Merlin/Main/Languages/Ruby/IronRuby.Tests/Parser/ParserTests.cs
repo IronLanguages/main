@@ -520,7 +520,7 @@ namespace IronRuby.Tests {
             t.Load("/foo/aib").Skip(2).Read(RubyRegexOptions.IgnoreCase).Expect(Errors.UnknownRegexOption, Errors.UnknownRegexOption);
             t.Load("/foo/9").Skip(2).Read(Tokens.RegexpEnd); // TODO: unexpected token 9
             t.Load("/foo/esuniiimmmxxxooo").Skip(2).
-                Read(RubyRegexOptions.IgnoreCase | RubyRegexOptions.Multiline | RubyRegexOptions.Extended | RubyRegexOptions.FIXED | RubyRegexOptions.UTF8);
+                Read(RubyRegexOptions.IgnoreCase | RubyRegexOptions.Multiline | RubyRegexOptions.Extended | RubyRegexOptions.Once | RubyRegexOptions.FIXED);
 
             t.Expect();
         }

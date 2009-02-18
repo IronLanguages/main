@@ -70,7 +70,7 @@ namespace IronPython.Runtime.Operations {
                     return value;
                 }
 
-                return ParseFloat(StringOps.FromByteArray(s));
+                return ParseFloat(s.MakeString());
             }
 
             return cls.CreateInstance(context, s);

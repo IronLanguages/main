@@ -27,7 +27,7 @@ using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace IronPython.Runtime.Binding {
     /// <summary>
-    /// Fallback action for performing a new() on a foreign IDynamicObject.  used
+    /// Fallback action for performing a new() on a foreign IDynamicMetaObjectProvider.  used
     /// when call falls back.
     /// </summary>
     class CreateFallback : CreateInstanceBinder, IPythonSite {

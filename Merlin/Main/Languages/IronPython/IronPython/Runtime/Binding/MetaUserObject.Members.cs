@@ -309,10 +309,7 @@ namespace IronPython.Runtime.Binding {
                                 Ast.Constant(null)
                             ),
                             Ast.Dynamic(
-                                new PythonInvokeBinder(
-                                    BinderState.GetBinderState(info.Action),
-                                    new CallSignature(1)
-                                ),
+                                BinderState.GetBinderState(info.Action).InvokeOne,
                                 typeof(object),
                                 Ast.Constant(BinderState.GetBinderState(info.Action).Context),
                                 tmpGetter,
@@ -397,10 +394,7 @@ namespace IronPython.Runtime.Binding {
 
         private Expression/*!*/ MakeGetAttrCall(GetBindingInfo/*!*/ info, Expression codeContext) {
             Expression call = Ast.Dynamic(
-                new PythonInvokeBinder(
-                    BinderState.GetBinderState(info.Action),
-                    new CallSignature(1)
-                ),
+                BinderState.GetBinderState(info.Action).InvokeOne,
                 typeof(object),
                 BinderState.GetCodeContext(info.Action),
                 info.Result,
@@ -441,7 +435,7 @@ namespace IronPython.Runtime.Binding {
         /// slot is the __getattribute__ method to be called.
         /// </summary>
         private DynamicMetaObject/*!*/ MakeGetAttributeRule(GetBindingInfo/*!*/ info, IPythonObject/*!*/ obj, PythonTypeSlot/*!*/ slot, Expression codeContext) {
-            // if the type implements IDynamicObject and we picked up it's __getattribute__ then we want to just 
+            // if the type implements IDynamicMetaObjectProvider and we picked up it's __getattribute__ then we want to just 
             // dispatch to the base meta object (or to the default binder). an example of this is:
             //
             // class mc(type):
@@ -455,7 +449,7 @@ namespace IronPython.Runtime.Binding {
 
             CodeContext context = BinderState.GetBinderState(info.Action).Context;
             Type finalType = PythonTypeOps.GetFinalSystemType(obj.PythonType.UnderlyingSystemType);
-            if (typeof(IDynamicObject).IsAssignableFrom(finalType)) {
+            if (typeof(IDynamicMetaObjectProvider).IsAssignableFrom(finalType)) {
                 PythonTypeSlot baseSlot;
                 if (TryGetGetAttribute(context, DynamicHelpers.GetPythonTypeFromType(finalType), out baseSlot) && baseSlot == slot) {
                     return Fallback(info.Action, codeContext);
@@ -526,8 +520,7 @@ namespace IronPython.Runtime.Binding {
                     tmp
                 ),
                 Ast.Dynamic(
-                    new PythonInvokeBinder(
-                        BinderState.GetBinderState(bindingInfo.Action),
+                    BinderState.GetBinderState(bindingInfo.Action).Invoke(
                         new CallSignature(2)
                     ),
                     typeof(object),
@@ -603,10 +596,7 @@ namespace IronPython.Runtime.Binding {
                             Ast.Block(
                                 Ast.Assign(tmp, info.Args[1].Expression),
                                 Ast.Dynamic(
-                                    new PythonInvokeBinder(
-                                        BinderState.GetBinderState(info.Action),
-                                        new CallSignature(1)
-                                    ),
+                                    BinderState.GetBinderState(info.Action).InvokeOne,
                                     typeof(void),
                                     Ast.Constant(BinderState.GetBinderState(info.Action).Context),
                                     tmpSetter,
@@ -751,10 +741,7 @@ namespace IronPython.Runtime.Binding {
                                 Ast.Constant(null)
                             ),
                             Ast.Dynamic(
-                                new PythonInvokeBinder(
-                                    BinderState.GetBinderState(info.Action),
-                                    new CallSignature(1)
-                                ),
+                                BinderState.GetBinderState(info.Action).InvokeOne,
                                 typeof(void),
                                 Ast.Constant(BinderState.GetBinderState(info.Action).Context),
                                 tmpDeleter,
@@ -803,10 +790,7 @@ namespace IronPython.Runtime.Binding {
                     tmp
                 ),
                 Ast.Dynamic(
-                    new PythonInvokeBinder(
-                        BinderState.GetBinderState(info.Action),
-                        new CallSignature(1)
-                    ),
+                    BinderState.GetBinderState(info.Action).InvokeOne,
                     typeof(object),
                     BinderState.GetCodeContext(info.Action),
                     tmp,

@@ -37,10 +37,10 @@ namespace Microsoft.Scripting.Hosting {
     /// Hosting API counterpart for <see cref="Scope"/>.
     /// </summary>
 #if SILVERLIGHT
-    public sealed class ScriptScope : IDynamicObject {
+    public sealed class ScriptScope : IDynamicMetaObjectProvider {
 #else
     [DebuggerTypeProxy(typeof(ScriptScope.DebugView))]
-    public sealed class ScriptScope : MarshalByRefObject, IDynamicObject {
+    public sealed class ScriptScope : MarshalByRefObject, IDynamicMetaObjectProvider {
 #endif
         private readonly Scope _scope;
         private readonly ScriptEngine _engine;
@@ -238,9 +238,9 @@ namespace Microsoft.Scripting.Hosting {
 #endif
         #endregion
 
-        #region IDynamicObject implementation
+        #region IDynamicMetaObjectProvider implementation
 
-        DynamicMetaObject IDynamicObject.GetMetaObject(Expression parameter) {
+        DynamicMetaObject IDynamicMetaObjectProvider.GetMetaObject(Expression parameter) {
             return new Meta(parameter, this);
         }
 

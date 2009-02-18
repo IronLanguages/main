@@ -49,7 +49,7 @@ namespace IronPython.Runtime.Types {
     /// TODO: Back BuiltinFunction's by MethodGroup's.
     /// </summary>    
     [PythonType("builtin_function_or_method")]
-    public class BuiltinFunction : PythonTypeSlot, ICodeFormattable, IDynamicObject, IDelegateConvertible {
+    public class BuiltinFunction : PythonTypeSlot, ICodeFormattable, IDynamicMetaObjectProvider, IDelegateConvertible {
         private readonly BuiltinFunctionData/*!*/ _data;            // information describing the BuiltinFunction
         private readonly object _instance;                          // the bound instance or null if unbound
         private static readonly object _noInstance = new object();  
@@ -333,9 +333,9 @@ namespace IronPython.Runtime.Types {
 
         #endregion
 
-        #region IDynamicObject Members
+        #region IDynamicMetaObjectProvider Members
 
-        DynamicMetaObject/*!*/ IDynamicObject.GetMetaObject(Expression/*!*/ parameter) {
+        DynamicMetaObject/*!*/ IDynamicMetaObjectProvider.GetMetaObject(Expression/*!*/ parameter) {
             return new Binding.MetaBuiltinFunction(parameter, BindingRestrictions.Empty, this);
         }
 

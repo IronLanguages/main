@@ -114,7 +114,7 @@ namespace IronRuby.Compiler.Generation {
 
         public void Implement(ClsTypeEmitter/*!*/ emitter) {
             // TODO: Exclude interfaces already implemented in base class feature sets
-            // TODO: Exclude IDynamicObject, IRubyObject, etc. or handle specially
+            // TODO: Exclude IDynamicMetaObjectProvider, IRubyObject, etc. or handle specially
             Dictionary<Type, bool> doneTypes = new Dictionary<Type, bool>();
             foreach (Type interfaceType in _interfaces) {
                 _tb.AddInterfaceImplementation(interfaceType);

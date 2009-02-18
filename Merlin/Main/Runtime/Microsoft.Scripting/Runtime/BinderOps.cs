@@ -57,7 +57,7 @@ namespace Microsoft.Scripting.Runtime {
                 return result;
             }
 
-            IDynamicObject dynamicObject = callableObject as IDynamicObject;
+            IDynamicMetaObjectProvider dynamicObject = callableObject as IDynamicMetaObjectProvider;
             if (dynamicObject != null) {
 
                 MethodInfo invoke;

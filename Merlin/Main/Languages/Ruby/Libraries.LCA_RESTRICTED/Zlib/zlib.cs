@@ -181,14 +181,8 @@ namespace IronRuby.StandardLibrary.Zlib {
             private HuffmanTree _dynamicLengthCodes;
             private HuffmanTree _dynamicDistanceCodes;
 
-            [RubyConstructor]
-            public static Inflate/*!*/ Create(RubyClass/*!*/ self) {
-                return new Inflate(MAX_WBITS);
-            }
-
-            [RubyConstructor]
-            public static Inflate/*!*/ Create(RubyClass/*!*/ self, int windowBits) {
-                return new Inflate(windowBits);
+            public Inflate() 
+                : this(MAX_WBITS) {
             }
 
             public Inflate(int windowBits) {
@@ -199,57 +193,16 @@ namespace IronRuby.StandardLibrary.Zlib {
                 }
             }
 
-            [RubyMethod("inflate")]
-            public static MutableString/*!*/ InflateStream(Inflate/*!*/ self, MutableString/*!*/ zstring) {
-                self._inputBuffer.AddRange(zstring.ConvertToBytes());
+            #region Private Implementation Details
 
-                if (self._rawDeflate == false) {
-                    byte compression_method_and_flags = self._inputBuffer[++(self._inPos)];
-                    byte flags = self._inputBuffer[++(self._inPos)];
-                    if (((compression_method_and_flags << (byte)0x08) + flags) % (byte)31 != 0) {
-                        throw new DataError("incorrect header check");
-                    }
+            private sealed class HuffmanTree {
+                internal readonly List<int>/*!*/ Count;
+                internal readonly List<int>/*!*/ Symbol;
 
-                    byte compression_method = (byte)(compression_method_and_flags & (byte)0x0F);
-                    if (compression_method != Z_DEFLATED) {
-                        throw new DataError("unknown compression method");
-                    }
-
-                    byte compression_info = (byte)(compression_method_and_flags >> (byte)0x04);
-                    if ((compression_info + 8) > self._wBits) {
-                        throw new DataError("invalid window size");
-                    }
-
-                    bool preset_dictionary_flag = ((flags & 0x20) >> 0x05 == 1);
-                    byte compression_level = (byte)((flags & 0xC0) >> (byte)0x06);
-
-                    //TODO: Add Preset Dictionary Support
-                    if (preset_dictionary_flag) {
-                        self._inPos += 4;
-                    }
+                internal HuffmanTree() {
+                    Count = new List<int>();
+                    Symbol = new List<int>();
                 }
-
-                bool last_block = false;
-
-                while (!last_block) {
-                    last_block = (self.GetBits(1) == 1);
-                    byte block_type = (byte)self.GetBits(2);
-                    switch (block_type) {
-                        case 0:
-                            self.NoCompression();
-                            break;
-                        case 1:
-                            self.FixedCodes();
-                            break;
-                        case 2:
-                            self.DynamicCodes();
-                            break;
-                        case 3:
-                            throw new DataError("invalid block type");
-                    }
-                }
-
-                return Inflate.Close(self);
             }
 
             private void DynamicCodes() {
@@ -332,11 +285,6 @@ namespace IronRuby.StandardLibrary.Zlib {
                 }
 
                 Codes(_dynamicLengthCodes, _dynamicDistanceCodes);
-            }
-
-            [RubyMethod("close")]
-            public static MutableString/*!*/ Close(Inflate/*!*/ self) {
-                return MutableString.CreateBinary(self._outputBuffer);
             }
 
             private void NoCompression() {
@@ -507,27 +455,73 @@ namespace IronRuby.StandardLibrary.Zlib {
                 return -9;
             }
 
-            [RubyMethod("inflate", RubyMethodAttributes.PublicSingleton)]
-            public static MutableString InflateStream(
-                CallSiteStorage<Func<CallSite, RubyContext, RubyClass, object>>/*!*/ allocateStorage,
-                CallSiteStorage<Func<CallSite, RubyContext, object, MutableString, MutableString>>/*!*/ inflateStorage,
-                RubyClass/*!*/ self, MutableString zstring) {
+            #endregion
 
-                var allocateSite = allocateStorage.GetCallSite("allocate", 0);
-                object obj = allocateSite.Target(allocateSite, self.Context, self);
+            [RubyMethod("inflate")]
+            public static MutableString/*!*/ InflateString(Inflate/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ zstring) {
+                if (zstring.IsEmpty) {
+                    throw new BufError("buffer error");
+                }
 
-                var inflateSite = inflateStorage.GetCallSite("inflate", 1);
-                return inflateSite.Target(inflateSite, self.Context, obj, zstring);
+                self._inputBuffer.AddRange(zstring.ConvertToBytes());
+
+                if (self._rawDeflate == false) {
+                    byte compression_method_and_flags = self._inputBuffer[++(self._inPos)];
+                    byte flags = self._inputBuffer[++(self._inPos)];
+                    if (((compression_method_and_flags << (byte)0x08) + flags) % (byte)31 != 0) {
+                        throw new DataError("incorrect header check");
+                    }
+
+                    byte compression_method = (byte)(compression_method_and_flags & (byte)0x0F);
+                    if (compression_method != Z_DEFLATED) {
+                        throw new DataError("unknown compression method");
+                    }
+
+                    byte compression_info = (byte)(compression_method_and_flags >> (byte)0x04);
+                    if ((compression_info + 8) > self._wBits) {
+                        throw new DataError("invalid window size");
+                    }
+
+                    bool preset_dictionary_flag = ((flags & 0x20) >> 0x05 == 1);
+                    byte compression_level = (byte)((flags & 0xC0) >> (byte)0x06);
+
+                    //TODO: Add Preset Dictionary Support
+                    if (preset_dictionary_flag) {
+                        self._inPos += 4;
+                    }
+                }
+
+                bool last_block = false;
+
+                while (!last_block) {
+                    last_block = (self.GetBits(1) == 1);
+                    byte block_type = (byte)self.GetBits(2);
+                    switch (block_type) {
+                        case 0:
+                            self.NoCompression();
+                            break;
+                        case 1:
+                            self.FixedCodes();
+                            break;
+                        case 2:
+                            self.DynamicCodes();
+                            break;
+                        case 3:
+                            throw new DataError("invalid block type");
+                    }
+                }
+
+                return Inflate.Close(self);
             }
 
-            internal class HuffmanTree {
-                internal List<int>/*!*/ Count;
-                internal List<int>/*!*/ Symbol;
+            [RubyMethod("inflate", RubyMethodAttributes.PublicSingleton)]
+            public static MutableString/*!*/ InflateString(RubyClass/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ zstring) {
+                return InflateString(new Inflate(), zstring);
+            }
 
-                internal HuffmanTree() {
-                    Count = new List<int>();
-                    Symbol = new List<int>();
-                }
+            [RubyMethod("close")]
+            public static MutableString/*!*/ Close(Inflate/*!*/ self) {
+                return MutableString.CreateBinary(self._outputBuffer);
             }
         }
 
@@ -718,7 +712,7 @@ namespace IronRuby.StandardLibrary.Zlib {
             [RubyMethod("read")]
             public static MutableString/*!*/ Read(GZipReader/*!*/ self) {
                 Inflate z = new Inflate(-MAX_WBITS);
-                return Inflate.InflateStream(z, self._contents);
+                return Inflate.InflateString(z, self._contents);
             }
 
             [RubyMethod("open", RubyMethodAttributes.PrivateInstance)]
@@ -749,16 +743,40 @@ namespace IronRuby.StandardLibrary.Zlib {
 
         #endregion
 
-        #region DataError class
+        #region Exceptions
+
+        [RubyException("Error"), Serializable]
+        public class Error : SystemException {
+            public Error() : this(null, null) { }
+            public Error(string message) : this(message, null) { }
+            public Error(string message, Exception inner) : base(message ?? "Error", inner) { }
+
+#if !SILVERLIGHT
+            protected Error(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context)
+                : base(info, context) { }
+#endif
+        }
 
         [RubyException("DataError"), Serializable]
-        public class DataError : RuntimeError {
+        public class DataError : Error {
             public DataError() : this(null, null) { }
             public DataError(string message) : this(message, null) { }
-            public DataError(string message, Exception inner) : base(message ?? "SignalException", inner) { }
+            public DataError(string message, Exception inner) : base(message ?? "DataError", inner) { }
 
 #if !SILVERLIGHT
             protected DataError(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context)
+                : base(info, context) { }
+#endif
+        }
+
+        [RubyException("BufError"), Serializable]
+        public class BufError : Error {
+            public BufError() : this(null, null) { }
+            public BufError(string message) : this(message, null) { }
+            public BufError(string message, Exception inner) : base(message ?? "BufError", inner) { }
+
+#if !SILVERLIGHT
+            protected BufError(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context)
                 : base(info, context) { }
 #endif
         }

@@ -250,8 +250,7 @@ namespace IronPython.Runtime.Binding {
                         // if(getItemRes == param1) return true
                                     Utils.If(
                                         Ast.Dynamic(
-                                            new PythonBinaryOperationBinder(
-                                                state,
+                                            state.BinaryOperation(
                                                 ExpressionType.Equal
                                             ),
                                             typeof(bool),
@@ -280,8 +279,7 @@ namespace IronPython.Runtime.Binding {
                                 typeof(PythonOps).GetMethod("ContainsFromEnumerable"),
                                 Ast.Constant(state.Context),
                                 Ast.Dynamic(
-                                    new ConversionBinder(
-                                        state,
+                                    state.Convert(
                                         typeof(IEnumerator),
                                         ConversionResultKind.ExplicitCast
                                     ),
@@ -387,8 +385,7 @@ namespace IronPython.Runtime.Binding {
 
         private static DynamicExpression/*!*/ HashConvertToInt(BinderState/*!*/ state, Expression/*!*/ expression) {
             return Ast.Dynamic(
-                new ConversionBinder(
-                    state,
+                state.Convert(
                     typeof(int),
                     ConversionResultKind.ExplicitCast
                 ),
@@ -442,8 +439,7 @@ namespace IronPython.Runtime.Binding {
                         notExpr = Ast.Equal(notExpr, Ast.Constant(0));
                     } else {
                         notExpr = Ast.Dynamic(
-                            Binders.BinaryOperationBinder(
-                                BinderState.GetBinderState(operation),
+                            BinderState.GetBinderState(operation).Operation(
                                 PythonOperationKind.Compare
                             ),
                             typeof(int),
@@ -875,8 +871,7 @@ namespace IronPython.Runtime.Binding {
                         Ast.Assign(
                             tmp,
                             Ast.Dynamic(
-                                new PythonInvokeBinder(
-                                    state,
+                                state.Invoke(
                                     new CallSignature(args.Length)
                                 ),
                                 typeof(object),
@@ -951,10 +946,7 @@ namespace IronPython.Runtime.Binding {
                     BindingHelpers.AddRecursionCheck(
                         returnTransform(
                             Ast.Dynamic(
-                                Binders.BinaryOperationBinder(
-                                    state,
-                                    op | PythonOperationKind.DisableCoerce
-                                ),
+                                state.Operation(op | PythonOperationKind.DisableCoerce),
                                 typeof(object),
                                 reverse ? CoerceTwo(coerceTuple) : CoerceOne(coerceTuple),
                                 reverse ? CoerceOne(coerceTuple) : CoerceTwo(coerceTuple)
@@ -1237,8 +1229,7 @@ namespace IronPython.Runtime.Binding {
         private static void MakeValueCheck(int val, Expression retValue, ConditionalBuilder/*!*/ bodyBuilder, Expression retCondition) {
             if (retValue.Type != typeof(bool)) {
                 retValue = Ast.Dynamic(
-                    new ConversionBinder(
-                        BinderState.GetBinderState(bodyBuilder.Action),
+                    BinderState.GetBinderState(bodyBuilder.Action).Convert(
                         typeof(bool),
                         ConversionResultKind.ExplicitCast
                     ),
@@ -1626,8 +1617,7 @@ namespace IronPython.Runtime.Binding {
                 }
 
                 Expression retVal = Ast.Dynamic(
-                    new PythonInvokeBinder(
-                        BinderState,
+                    BinderState.Invoke(
                         new CallSignature(exprArgs.Length)
                     ),
                     typeof(object),
@@ -1730,10 +1720,7 @@ namespace IronPython.Runtime.Binding {
                                     typeof(int),
                                     ConversionResultKind.ExplicitCast,
                                     Ast.Dynamic(
-                                        new PythonInvokeBinder(
-                                            binder,
-                                            new CallSignature(0)
-                                        ),
+                                        binder.InvokeNone,
                                         typeof(object),
                                         Ast.Constant(binder.Context),
                                         Binders.Get(
@@ -1826,10 +1813,7 @@ namespace IronPython.Runtime.Binding {
                     if (args[1].GetLimitType() != typeof(Slice) && GetTypeAt(1).TryResolveSlot(binder.Context, Symbols.Index, out indexSlot)) {
                         args[1] = new DynamicMetaObject(
                             Ast.Dynamic(
-                                new PythonInvokeBinder(
-                                    binder,
-                                    new CallSignature(0)
-                                ),
+                                binder.InvokeNone,
                                 typeof(int),
                                 Ast.Constant(binder.Context),
                                 Binders.Get(

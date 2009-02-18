@@ -33,7 +33,7 @@ namespace IronPython.Runtime.Binding {
     /// things such as calling __call__ to perform calls, calling __nonzero__/__len__ to convert to
     /// bool, calling __add__/__radd__ to do addition, etc...  
     /// 
-    /// This logic gets shared between both the IDynamicObject implementation for Python objects as well
+    /// This logic gets shared between both the IDynamicMetaObjectProvider implementation for Python objects as well
     /// as the Python sites.  This ensures the logic we follow for our builtin types and user defined
     /// types is identical and properly conforming to the various protocols.
     /// </summary>
@@ -95,12 +95,7 @@ namespace IronPython.Runtime.Binding {
             Expression callAsInt = call;
             if (call.Type != typeof(int)) {
                 callAsInt = Ast.Dynamic(
-                    new ConversionBinder(
-                        state,
-                        typeof(int),
-                        ConversionResultKind.ExplicitCast
-
-                    ),
+                    state.Convert(typeof(int), ConversionResultKind.ExplicitCast),
                     typeof(int),
                     call
                 );
@@ -194,8 +189,7 @@ namespace IronPython.Runtime.Binding {
                 );
 
                 body = Ast.Dynamic(
-                    new PythonInvokeBinder(
-                        BinderState.GetBinderState(call),
+                    BinderState.GetBinderState(call).Invoke(
                         BindingHelpers.GetCallSignature(call)
                     ),
                     typeof(object),

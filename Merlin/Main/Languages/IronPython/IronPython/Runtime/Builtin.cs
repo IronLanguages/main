@@ -1040,10 +1040,7 @@ namespace IronPython.Runtime {
 
         private static CallSite<Func<CallSite, CodeContext, T, T1, object>> MakeMapSite<T, T1>(CodeContext/*!*/ context) {
             return CallSite<Func<CallSite, CodeContext, T, T1, object>>.Create(
-                new PythonInvokeBinder(
-                    PythonContext.GetContext(context).DefaultBinderState,
-                    new CallSignature(1)
-                )
+                PythonContext.GetContext(context).DefaultBinderState.InvokeOne
             );
         }
 
@@ -1737,8 +1734,7 @@ namespace IronPython.Runtime {
         private static void EnsureReduceData(CodeContext context, SiteLocalStorage<CallSite<Func<CallSite, CodeContext, object, object, object, object>>> siteData) {
             if (siteData.Data == null) {
                 siteData.Data = CallSite<Func<CallSite, CodeContext, object, object, object, object>>.Create(
-                    new PythonInvokeBinder(
-                        PythonContext.GetContext(context).DefaultBinderState,
+                    PythonContext.GetContext(context).DefaultBinderState.Invoke(
                         new CallSignature(2)
                     )
                 );

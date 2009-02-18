@@ -97,7 +97,7 @@ namespace System.Dynamic {
     /// dispid.
     ///  </summary>
 
-    internal sealed class IDispatchComObject : ComObject, IDynamicObject {
+    internal sealed class IDispatchComObject : ComObject, IDynamicMetaObjectProvider {
 
         private readonly IDispatch _dispatchObject;
         private ComTypeDesc _comTypeDesc;
@@ -318,7 +318,7 @@ namespace System.Dynamic {
             }
         }
 
-        DynamicMetaObject IDynamicObject.GetMetaObject(Expression parameter) {
+        DynamicMetaObject IDynamicMetaObjectProvider.GetMetaObject(Expression parameter) {
             EnsureScanDefinedMethods();
             return new IDispatchMetaObject(parameter, this);
         }

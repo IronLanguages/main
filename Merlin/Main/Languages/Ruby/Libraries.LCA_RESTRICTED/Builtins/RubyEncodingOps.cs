@@ -26,11 +26,6 @@ using Microsoft.Scripting;
 namespace IronRuby.Builtins {
     [RubyClass("Encoding", Extends = typeof(RubyEncoding), Inherits = typeof(Object), BuildConfig = "!SILVERLIGHT")]
     public static class RubyEncodingOps {
-        [RubyConstructor]
-        public static void Error(RubyClass/*!*/ self) {
-            throw RubyExceptions.CreateTypeError(String.Format("allocator undefined for {0}", self.Name));
-        }
-
         #region Public Instance Methods
 
         [RubyMethod("_dump")]

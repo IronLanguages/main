@@ -29,7 +29,7 @@ namespace IronRuby.Builtins {
 
         [RubyConstructor]
         public static void Error(RubyClass/*!*/ self, params object[] args) {
-            throw RubyExceptions.CreateTypeError(String.Format("allocator undefined for {0}", self.Name));
+            throw RubyExceptions.CreateAllocatorUndefinedError(self);
         }
 
         #region Public Instance Methods

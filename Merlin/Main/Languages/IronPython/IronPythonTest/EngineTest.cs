@@ -33,6 +33,7 @@ using IronPython.Hosting;
 using IronPython.Runtime;
 using IronPython.Runtime.Exceptions;
 using Microsoft.Scripting.Utils;
+using System.Runtime.CompilerServices;
 
 namespace IronPythonTest {
 #if !SILVERLIGHT
@@ -318,6 +319,208 @@ namespace IronPythonTest {
             AssertExceptionThrown<ArgumentNullException>(delegate() {
                 su.Execute(null);
             });
+        }
+
+        class MyInvokeMemberBinder : InvokeMemberBinder {
+            public MyInvokeMemberBinder(string name, ArgumentInfo[] args)
+                : base(name, false, args) {
+            }
+
+            public override DynamicMetaObject FallbackInvokeMember(DynamicMetaObject target, DynamicMetaObject[] args, DynamicMetaObject errorSuggestion) {
+                return new DynamicMetaObject(
+                    Expression.Constant("FallbackInvokeMember"),
+                    BindingRestrictions.GetTypeRestriction(target.Expression, target.LimitType)
+                );
+            }
+
+            public override DynamicMetaObject FallbackInvoke(DynamicMetaObject target, DynamicMetaObject[] args, DynamicMetaObject errorSuggestion) {
+                return new DynamicMetaObject(
+                    Expression.Dynamic(new MyInvokeBinder(Arguments), typeof(object), DynamicUtils.GetExpressions(ArrayUtils.Insert(target, args))),
+                    target.Restrictions.Merge(BindingRestrictions.Combine(args))
+                );
+            }
+        }
+
+        class MyInvokeBinder : InvokeBinder {
+            public MyInvokeBinder(IEnumerable<ArgumentInfo> args)
+                : base(args) {                
+            }
+
+            public override DynamicMetaObject FallbackInvoke(DynamicMetaObject target, DynamicMetaObject[] args, DynamicMetaObject errorSuggestion) {
+                return new DynamicMetaObject(
+                    Expression.Call(
+                        typeof(String).GetMethod("Concat", new Type[] { typeof(object), typeof(object) }),
+                        Expression.Constant("FallbackInvoke"),
+                        target.Expression
+                    ),
+                    BindingRestrictions.GetTypeRestriction(target.Expression, target.LimitType)
+                );
+            }
+        }
+
+        public void ScenarioDlrInterop() {
+#if !SILVERLIGHT
+            ScriptScope scope = _env.CreateScope();
+            ScriptSource src = _pe.CreateScriptSourceFromString(@"
+from System.Collections import ArrayList
+
+class ns(object):
+    ClassVal = 'ClassVal'
+
+    def __init__(self):
+        self.InstVal = 'InstVal'
+    
+    def TestFunc(self):
+        return 'TestFunc'
+    
+class ns_getattr(object):
+    ClassVal = 'ClassVal'
+
+    def __init__(self):
+        self.InstVal = 'InstVal'
+    
+    def TestFunc(self):
+        return 'TestFunc'
+
+    def __getattr__(self, name):
+        return name
+
+class ns_getattribute(object):
+    ClassVal = 'ClassVal'
+
+    def __init__(self):
+        self.InstVal = 'InstVal'
+    
+    def TestFunc(self):
+        return 'TestFunc'
+
+    def __getattribute__(self, name):
+        return name
+
+class MyArrayList(ArrayList):
+    ClassVal = 'ClassVal'
+
+    def __init__(self):
+        self.InstVal = 'InstVal'
+    
+    def TestFunc(self):
+        return 'TestFunc'
+
+
+class MyArrayList_getattr(ArrayList):
+    ClassVal = 'ClassVal'
+
+    def __init__(self):
+        self.InstVal = 'InstVal'
+    
+    def TestFunc(self):
+        return 'TestFunc'
+
+    def __getattr__(self, name):
+        return name
+
+class MyArrayList_getattribute(ArrayList):
+    ClassVal = 'ClassVal'
+
+    def __init__(self):
+        self.InstVal = 'InstVal'
+    
+    def TestFunc(self):
+        return 'TestFunc'
+
+    def __getattribute__(self, name):
+        return name
+
+class os:
+    ClassVal = 'ClassVal'
+
+    def __init__(self):
+        self.InstVal = 'InstVal'
+    
+    def TestFunc(self):
+        return 'TestFunc'
+
+class os_getattr:
+    ClassVal = 'ClassVal'
+
+    def __init__(self):
+        self.InstVal = 'InstVal'
+
+    def __getattr__(self, name):
+        return name
+    
+    def TestFunc(self):
+        return 'TestFunc'
+
+def TestFunc():
+    return 'TestFunc'
+
+TestFunc.TestFunc = TestFunc
+TestFunc.InstVal = 'InstVal'
+TestFunc.ClassVal = 'ClassVal'  # just here to simplify tests
+
+nsinst = ns()
+alinst = MyArrayList()
+osinst = os()
+os_getattrinst = os_getattr()
+ns_getattrinst = ns_getattr()
+al_getattrinst = MyArrayList_getattr()
+
+ns_getattributeinst = ns_getattribute()
+al_getattributeinst = MyArrayList_getattribute()
+", SourceCodeKind.Statements);
+
+            src.Execute(scope);
+
+            // InvokeMember tests
+
+            var allObjects = new object[] { scope.GetVariable("nsinst"), scope.GetVariable("osinst"), scope.GetVariable("alinst"), scope.GetVariable("TestFunc") };
+            var getattrObjects = new object[] { scope.GetVariable("ns_getattrinst"), scope.GetVariable("os_getattrinst"), scope.GetVariable("al_getattrinst") };
+            var getattributeObjects = new object[] { scope.GetVariable("ns_getattributeinst"), scope.GetVariable("al_getattributeinst") };
+
+            // if it lives on a system type we should do a fallback invoke member
+            var site = CallSite<Func<CallSite, object, object>>.Create(new MyInvokeMemberBinder("Count", new ArgumentInfo[0]));
+            AreEqual(site.Target(site, scope.GetVariable("alinst")), "FallbackInvokeMember");
+
+            // invoke a function that's a member on an object
+            foreach (object inst in allObjects) {
+                site = CallSite<Func<CallSite, object, object>>.Create(new MyInvokeMemberBinder("TestFunc", new ArgumentInfo[0]));
+                AreEqual(site.Target(site, inst), "TestFunc");
+            }
+
+            // invoke a field / property that's on an object
+            foreach (object inst in allObjects) {
+                site = CallSite<Func<CallSite, object, object>>.Create(new MyInvokeMemberBinder("InstVal", new ArgumentInfo[0]));
+                AreEqual(site.Target(site, inst), "FallbackInvokeInstVal");
+
+                site = CallSite<Func<CallSite, object, object>>.Create(new MyInvokeMemberBinder("ClassVal", new ArgumentInfo[0]));
+                AreEqual(site.Target(site, inst), "FallbackInvokeClassVal");
+            }
+
+            // invoke a field / property that's not defined on objects w/ __getattr__
+            foreach (object inst in getattrObjects) {
+                site = CallSite<Func<CallSite, object, object>>.Create(new MyInvokeMemberBinder("DoesNotExist", new ArgumentInfo[0]));
+                AreEqual(site.Target(site, inst), "FallbackInvokeDoesNotExist");
+            }
+
+            // invoke a field / property that's not defined on objects w/ __getattribute__
+            foreach (object inst in getattributeObjects) {
+                site = CallSite<Func<CallSite, object, object>>.Create(new MyInvokeMemberBinder("DoesNotExist", new ArgumentInfo[0]));
+                AreEqual(site.Target(site, inst), "FallbackInvokeDoesNotExist");
+
+                site = CallSite<Func<CallSite, object, object>>.Create(new MyInvokeMemberBinder("Count", new ArgumentInfo[0]));
+                AreEqual(site.Target(site, inst), "FallbackInvokeCount");
+
+                site = CallSite<Func<CallSite, object, object>>.Create(new MyInvokeMemberBinder("TestFunc", new ArgumentInfo[0]));
+                AreEqual(site.Target(site, inst), "FallbackInvokeTestFunc");
+
+                site = CallSite<Func<CallSite, object, object>>.Create(new MyInvokeMemberBinder("InstVal", new ArgumentInfo[0]));
+                AreEqual(site.Target(site, inst), "FallbackInvokeInstVal");
+
+                site = CallSite<Func<CallSite, object, object>>.Create(new MyInvokeMemberBinder("ClassVal", new ArgumentInfo[0]));
+                AreEqual(site.Target(site, inst), "FallbackInvokeClassVal");
+            }
+#endif
         }
 
         public void ScenarioEvaluateInAnonymousEngineModule() {

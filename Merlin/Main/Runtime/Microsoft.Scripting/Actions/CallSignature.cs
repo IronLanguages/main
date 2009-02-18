@@ -117,7 +117,7 @@ namespace Microsoft.Scripting.Actions {
         [StateIndependent]
         public bool Equals(CallSignature other) {
             if (_infos == null) {
-                return other._infos == null;
+                return other._infos == null && other._argumentCount == _argumentCount;
             } else if (other._infos == null) {
                 return false;
             }

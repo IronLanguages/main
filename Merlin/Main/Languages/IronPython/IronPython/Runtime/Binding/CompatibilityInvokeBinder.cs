@@ -44,10 +44,10 @@ namespace IronPython.Runtime.Binding {
         }
 
         public override DynamicMetaObject/*!*/ FallbackInvoke(DynamicMetaObject target, DynamicMetaObject/*!*/[]/*!*/ args, DynamicMetaObject onBindingError) {
-            if (target.Value is IDynamicObject) {
+            if (target.Value is IDynamicMetaObjectProvider) {
                 // try creating an instance...
                 return target.BindCreateInstance(
-                    new CreateFallback(this, Arguments),
+                    _state.Create(this, Arguments),
                     args
                 );
             }

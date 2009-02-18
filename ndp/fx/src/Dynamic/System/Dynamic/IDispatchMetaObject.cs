@@ -37,10 +37,8 @@ namespace System.Dynamic {
             if (_self.TryGetMemberMethod(binder.Name, out method) ||
                 _self.TryGetMemberMethodExplicit(binder.Name, out method)) {
 
-                IList<ArgumentInfo> argInfos = binder.Arguments;
-                ComBinderHelpers.ProcessArgumentsForCom(ref args, ref argInfos);
-
-                return BindComInvoke(args, method, argInfos);
+                bool[] isByRef = ComBinderHelpers.ProcessArgumentsForCom(ref args);
+                return BindComInvoke(args, method, binder.Arguments, isByRef);
             }
 
             return base.BindInvokeMember(binder, args);
@@ -51,19 +49,19 @@ namespace System.Dynamic {
 
             ComMethodDesc method;
             if (_self.TryGetGetItem(out method)) {
-                IList<ArgumentInfo> argInfos = binder.Arguments;
-                ComBinderHelpers.ProcessArgumentsForCom(ref args, ref argInfos);
 
-                return BindComInvoke(args, method, argInfos);
+                bool[] isByRef = ComBinderHelpers.ProcessArgumentsForCom(ref args);
+                return BindComInvoke(args, method, binder.Arguments, isByRef);
             }
 
             return base.BindInvoke(binder, args);
         }
 
-        private DynamicMetaObject BindComInvoke(DynamicMetaObject[] args, ComMethodDesc method, IList<ArgumentInfo> arguments) {
+        private DynamicMetaObject BindComInvoke(DynamicMetaObject[] args, ComMethodDesc method, IList<ArgumentInfo> arguments, bool[] isByRef) {
             return new ComInvokeBinder(
                 arguments,
                 args,
+                isByRef,
                 IDispatchRestriction(),
                 Expression.Constant(method),
                 Expression.Property(
@@ -75,6 +73,9 @@ namespace System.Dynamic {
         }
 
         public override DynamicMetaObject BindGetMember(GetMemberBinder binder) {
+            ComBinder.ComGetMemberBinder comBinder = binder as ComBinder.ComGetMemberBinder;
+            bool canReturnCallables = comBinder == null ? false : comBinder._CanReturnCallables;
+
             ContractUtils.RequiresNotNull(binder, "binder");
 
             ComMethodDesc method;
@@ -82,7 +83,7 @@ namespace System.Dynamic {
 
             // 1. Try methods
             if (_self.TryGetMemberMethod(binder.Name, out method)) {
-                return BindGetMember(method);
+                return BindGetMember(method, canReturnCallables);
             }
 
             // 2. Try events
@@ -92,18 +93,24 @@ namespace System.Dynamic {
 
             // 3. Try methods explicitly by name
             if (_self.TryGetMemberMethodExplicit(binder.Name, out method)) {
-                return BindGetMember(method);
+                return BindGetMember(method, canReturnCallables);
+
             }
 
             // 4. Fallback
             return base.BindGetMember(binder);
         }
 
-        private DynamicMetaObject BindGetMember(ComMethodDesc method) {
+        private DynamicMetaObject BindGetMember(ComMethodDesc method, bool canReturnCallables) {
             if (method.IsDataMember) {
                 if (method.ParamCount == 0) {
-                    return BindComInvoke(DynamicMetaObject.EmptyMetaObjects, method, new ArgumentInfo[0]);
+                    return BindComInvoke(DynamicMetaObject.EmptyMetaObjects, method, new ArgumentInfo[0], new bool[] { });
                 }
+            }
+
+            // ComGetMemberBinder does not expect callables. Try to call always.
+            if (!canReturnCallables) {
+                return BindComInvoke(DynamicMetaObject.EmptyMetaObjects, method, new ArgumentInfo[0], new bool[0]);
             }
 
             return new DynamicMetaObject(
@@ -138,10 +145,9 @@ namespace System.Dynamic {
 
             ComMethodDesc getItem;
             if (_self.TryGetGetItem(out getItem)) {
-                IList<ArgumentInfo> argInfos = binder.Arguments;
-                ComBinderHelpers.ProcessArgumentsForCom(ref indexes, ref argInfos);
 
-                return BindComInvoke(indexes, getItem, argInfos);
+                bool[] isByRef = ComBinderHelpers.ProcessArgumentsForCom(ref indexes);
+                return BindComInvoke(indexes, getItem, binder.Arguments, isByRef);
             }
 
             return base.BindGetIndex(binder, indexes);
@@ -152,13 +158,11 @@ namespace System.Dynamic {
 
             ComMethodDesc setItem;
             if (_self.TryGetSetItem(out setItem)) {
-                IList<ArgumentInfo> argInfos = binder.Arguments;
-                ComBinderHelpers.ProcessArgumentsForCom(ref indexes, ref argInfos);
 
-                // add an arginfo for the value
-                argInfos = argInfos.AddLast(Expression.PositionalArg(argInfos.Count));
+                bool[] isByRef = ComBinderHelpers.ProcessArgumentsForCom(ref indexes);
+                isByRef = isByRef.AddLast(false);
 
-                return BindComInvoke(indexes.AddLast(value), setItem, argInfos);
+                return BindComInvoke(indexes.AddLast(value), setItem, binder.Arguments, isByRef);
             }
 
             return base.BindSetIndex(binder, indexes, value);
@@ -193,6 +197,7 @@ namespace System.Dynamic {
                 return new ComInvokeBinder(
                     new ArgumentInfo[] { Expression.PositionalArg(0) },
                     new[] { value },
+                    new bool[] { false },
                     restrictions,
                     Expression.Constant(method),
                     dispatch,

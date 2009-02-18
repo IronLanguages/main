@@ -53,10 +53,10 @@ namespace IronPython.Runtime.Operations {
                     return value;
                 }
 
-                return ParseBigIntegerSign(StringOps.FromByteArray(s), 10);
+                return ParseBigIntegerSign(s.MakeString(), 10);
             }
 
-            return cls.CreateInstance(context, ParseBigIntegerSign(StringOps.FromByteArray(s), 10));
+            return cls.CreateInstance(context, ParseBigIntegerSign(s.MakeString(), 10));
         }
 
         private static BigInteger ParseBigIntegerSign(string s, int radix) {

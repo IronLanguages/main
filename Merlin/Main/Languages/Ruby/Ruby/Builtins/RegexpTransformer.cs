@@ -40,6 +40,10 @@ namespace IronRuby.Builtins {
         StringBuilder/*!*/ _sb;
 
         internal static string Transform(string/*!*/ rubyPattern, RubyRegexOptions options) {
+            if (rubyPattern == "\\Af(?=[[:xdigit:]]{2}+\\z)") {
+                // pp.rb uses this pattern. The real fix requires cracking the entire regexp and so is left for later
+                return "\\Af(?=(?:[[:xdigit:]]{2})+\\z)";
+            }
             RegexpTransformer transformer = new RegexpTransformer(rubyPattern);
             return transformer.Transform();
         }
@@ -141,11 +145,37 @@ namespace IronRuby.Builtins {
             }
         }
 
+        private void OnOpenParanthesis() {
+            if (InEscapeSequence) {
+                AppendEscapedChar('(');
+            } else {
+                _sb.Append('(');
+                // Map (?imx-imx) to (?isx-isx) ie. (?m) should map to RegexOptions.SingleLine
+                if (HasMoreCharacters && NextCharacter == '?') {
+                    _index++;
+                    _sb.Append('?');
+                    while (HasMoreCharacters) {
+                        char n = NextCharacter;
+                        switch(n) {
+                            case 'm': _index++; _sb.Append('s'); break; // Map (?m) to (?s) ie. RegexOptions.SingleLine
+
+                            case 'i':
+                            case 'x':
+                            case '-': _index++; _sb.Append(n); break;
+
+                            default: return;
+                        }
+                    }
+                }
+            }
+        }
+
         private string/*!*/ Transform() {
             for (/**/; _index < _rubyPattern.Length; _index++) {
                 char c = _rubyPattern[_index];
                 switch (c) {
                     case '\\': OnBackSlash(); break;
+                    case '(': OnOpenParanthesis(); break;
                     case '[': OnOpenBracket(); break;
                     case ']': OnCloseBracket(); break;
                     default: OnChar(c); break;
@@ -230,10 +260,12 @@ namespace IronRuby.Builtins {
             switch (c) {
                 case 'c':
                     AppendEscapedChar('c');
-                    // \c# -> \cC
-                    if (HasMoreCharacters && NextCharacter == '#') {
+                    if (HasMoreCharacters && ((NextCharacter & 0x60) == 0x20)) {
+                        // Ruby maps, for example, \c), \ci and \cI to the same meaning, and \c*, \cj and \cJ similarly. ie. it masks the value with 0x9F.
+                        // CLR disallows the first form, so we map them to \cI and \cJ respectively
+                        char upperCaseControlChar = (char)(NextCharacter | 0x40);
+                        _sb.Append(upperCaseControlChar);
                         _index++;
-                        _sb.Append('C');
                     }
                     break;
 

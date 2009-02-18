@@ -26,6 +26,7 @@ using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 using Ast = System.Linq.Expressions.Expression;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
+using System.Collections.Generic;
 
 namespace IronPython.Runtime.Binding {
     
@@ -119,8 +120,7 @@ namespace IronPython.Runtime.Binding {
 
         public static Expression/*!*/ Invoke(Expression codeContext, BinderState/*!*/ binder, Type/*!*/ resultType, CallSignature signature, params Expression/*!*/[]/*!*/ args) {
             return Ast.Dynamic(
-                new PythonInvokeBinder(
-                    binder,
+                binder.Invoke(
                     signature
                 ),
                 resultType,
@@ -129,53 +129,19 @@ namespace IronPython.Runtime.Binding {
         }
 
         /// <summary>
-        /// Transforms a call into a Python GetMember/Invoke.  This isn't quite the correct semantic as
-        /// we shouldn't be returning Python members (e.g. object.__repr__) to non-Python callers.  This
-        /// can go away as soon as all of the classes implement the full fidelity of the protocol
+        /// Transforms an invoke member into a Python GetMember/Invoke.  The caller should
+        /// verify that the given attribute is not resolved against a normal .NET class
+        /// before calling this.  If it is a normal .NET member then a fallback InvokeMember
+        /// is preferred.
         /// </summary>
-        internal static DynamicMetaObject/*!*/ GenericCall(InvokeMemberBinder/*!*/ action, DynamicMetaObject/*!*/[]/*!*/ args) {
-            if (args[0].NeedsDeferral()) {
-                return action.Defer(args);
-            }
-
-            return new DynamicMetaObject(
-                Invoke(
-                    BinderState.GetCodeContext(action),
-                    BinderState.GetBinderState(action),
-                    typeof(object),
-                    GetCallSignature(action),
-                    ArrayUtils.Insert(
-                        Binders.Get(
-                            BinderState.GetCodeContext(action),
-                            BinderState.GetBinderState(action),
-                            typeof(object),
-                            action.Name,
-                            args[0].Expression
-                        ),
-                        DynamicUtils.GetExpressions(ArrayUtils.RemoveFirst(args))
-                    )
-                ),
-                BindingRestrictions.Combine(args).Merge(args[0].Restrict(args[0].GetLimitType()).Restrictions)
-            );
-        }
-
-        /// <summary>
-        /// Transforms a call into a Python GetMember/Invoke.  This isn't quite the correct semantic as
-        /// we shouldn't be returning Python members (e.g. object.__repr__) to non-Python callers.  This
-        /// can go away as soon as all of the classes implement the full fidelity of the protocol
-        /// </summary>
-        internal static DynamicMetaObject/*!*/ GenericCall(InvokeMemberBinder/*!*/ action, DynamicMetaObject target, DynamicMetaObject/*!*/[]/*!*/ args) {
+        internal static DynamicMetaObject/*!*/ GenericInvokeMember(InvokeMemberBinder/*!*/ action, ValidationInfo valInfo, DynamicMetaObject target, DynamicMetaObject/*!*/[]/*!*/ args) {
             if (target.NeedsDeferral()) {
                 return action.Defer(args);
             }
 
-            return new DynamicMetaObject(
-                Invoke(
-                    BinderState.GetCodeContext(action),
-                    BinderState.GetBinderState(action),
-                    typeof(object),
-                    GetCallSignature(action),
-                    ArrayUtils.Insert(
+            return AddDynamicTestAndDefer(action, 
+                action.FallbackInvoke(
+                    new DynamicMetaObject(
                         Binders.Get(
                             BinderState.GetCodeContext(action),
                             BinderState.GetBinderState(action),
@@ -183,10 +149,13 @@ namespace IronPython.Runtime.Binding {
                             action.Name,
                             target.Expression
                         ),
-                        DynamicUtils.GetExpressions(args)
-                    )
+                        BindingRestrictions.Empty
+                    ),
+                    args,
+                    null
                 ),
-                BindingRestrictions.Combine(args).Merge(target.Restrict(target.GetLimitType()).Restrictions)
+                args,
+                valInfo
             );
         }
 
@@ -208,7 +177,7 @@ namespace IronPython.Runtime.Binding {
             return res;
         }
 
-        internal static CallSignature ArgumentArrayToSignature(ReadOnlyCollection<ArgumentInfo/*!*/>/*!*/ args) {
+        internal static CallSignature ArgumentArrayToSignature(IList<ArgumentInfo/*!*/>/*!*/ args) {
             Argument[] ai = new Argument[args.Count];
 
             for (int i = 0; i < ai.Length; i++) {
