@@ -1564,8 +1564,8 @@ namespace IronRuby.Runtime {
         }
 
         [Emitted] // ConvertToSAction
-        public static MutableString/*!*/ ToSDefaultConversion(RubyContext/*!*/ context, object obj) {
-            return obj as MutableString ?? RubyUtils.ObjectToMutableString(context, obj);
+        public static MutableString/*!*/ ToSDefaultConversion(RubyContext/*!*/ context, object target, object converted) {
+            return converted as MutableString ?? RubyUtils.ObjectToMutableString(context, target);
         }
 
         #endregion

@@ -38,21 +38,11 @@ namespace IronRuby.Runtime {
 
     public class CallSiteStorage<TCallSiteFunc> : SiteLocalStorage<CallSite<TCallSiteFunc>> where TCallSiteFunc : class {
         public CallSite<TCallSiteFunc>/*!*/ GetCallSite(string/*!*/ methodName, int argumentCount) {
-
-            if (Data == null) {
-                Interlocked.CompareExchange(ref Data,
-                    CallSite<TCallSiteFunc>.Create(RubyCallAction.Make(methodName, RubyCallSignature.WithImplicitSelf(argumentCount))), null);
-            }
-            return Data;
+            return RubyUtils.GetCallSite(ref Data, methodName, argumentCount);
         }
 
         public CallSite<TCallSiteFunc>/*!*/ GetCallSite(string/*!*/ methodName, RubyCallSignature signature) {
-
-            if (Data == null) {
-                Interlocked.CompareExchange(ref Data,
-                    CallSite<TCallSiteFunc>.Create(RubyCallAction.Make(methodName, signature)), null);
-            }
-            return Data;
+            return RubyUtils.GetCallSite(ref Data, methodName, signature);
         }
     }
 
@@ -76,10 +66,7 @@ namespace IronRuby.Runtime {
 
     public class ConversionStorage<TResult> : CallSiteStorage<Func<CallSite, RubyContext, object, TResult>> {
         public CallSite<Func<CallSite, RubyContext, object, TResult>>/*!*/ GetSite(RubyConversionAction/*!*/ conversion) {
-            if (Data == null) {
-                Interlocked.CompareExchange(ref Data, CallSite<Func<CallSite, RubyContext, object, TResult>>.Create(conversion), null);
-            }
-            return Data;
+            return RubyUtils.GetCallSite(ref Data, conversion);
         }
     }
 
@@ -435,7 +422,7 @@ namespace IronRuby.Runtime {
             }
 
             CheckConstantName(name);
-            return RubySites.ModuleConstMissing(globalScope.Context, owner, name);
+            return owner.Context.ConstantMissing(owner, name);
         }
 
         public static void SetConstant(RubyModule/*!*/ owner, string/*!*/ name, object value) {
@@ -856,6 +843,15 @@ namespace IronRuby.Runtime {
             if (site == null) {
                 Interlocked.CompareExchange(ref site,
                     CallSite<TCallSiteFunc>.Create(RubyCallAction.Make(methodName, signature)), null);
+            }
+            return site;
+        }
+
+        public static CallSite<Func<CallSite, RubyContext, object, TResult>>/*!*/ GetCallSite<TResult>(
+            ref CallSite<Func<CallSite, RubyContext, object, TResult>>/*!*/ site, RubyConversionAction/*!*/ conversion) {
+
+            if (site == null) {
+                Interlocked.CompareExchange(ref site, CallSite<Func<CallSite, RubyContext, object, TResult>>.Create(conversion), null);
             }
             return site;
         }

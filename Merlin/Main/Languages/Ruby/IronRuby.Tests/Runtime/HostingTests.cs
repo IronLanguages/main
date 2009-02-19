@@ -264,7 +264,7 @@ end
             var foo = Engine.Operations.GetMember(obj, "foo") as RubyMethod;
             Debug.Assert(foo != null && foo.Name == "foo" && foo.Target == obj);
 
-            AssertOutput(() => Engine.Operations.Call(foo, 1, 2), "[1, 2]");
+            AssertOutput(() => Engine.Operations.Invoke(foo, 1, 2), "[1, 2]");
             AssertOutput(() => Engine.Operations.InvokeMember(obj, "foo", 1, 2), "[1, 2]");
         }
 

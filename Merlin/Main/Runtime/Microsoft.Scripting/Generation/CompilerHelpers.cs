@@ -102,6 +102,10 @@ namespace Microsoft.Scripting.Generation {
             return parameter.IsDefined(typeof(NotNullAttribute), false);
         }
 
+        public static bool ProhibitsNullItems(ParameterInfo parameter) {
+            return parameter.IsDefined(typeof(NotNullItemsAttribute), false);
+        }
+
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity")]
         public static object GetMissingValue(Type type) {
             ContractUtils.RequiresNotNull(type, "type");

@@ -25,25 +25,25 @@ namespace Microsoft.Scripting.Actions {
     /// </summary>
     public struct Argument : IEquatable<Argument> {
         private readonly ArgumentType _kind;
-        private readonly SymbolId _name;
+        private readonly string _name;
 
-        public static readonly Argument Simple = new Argument(ArgumentType.Simple, SymbolId.Empty);
+        public static readonly Argument Simple = new Argument(ArgumentType.Simple, null);
 
         public ArgumentType Kind { get { return _kind; } }
-        public SymbolId Name { get { return _name; } }
+        public string Name { get { return _name; } }
 
-        public Argument(SymbolId name) {
+        public Argument(string name) {
             _kind = ArgumentType.Named;
             _name = name;
         }
 
         public Argument(ArgumentType kind) {
             _kind = kind;
-            _name = SymbolId.Empty;
+            _name = null;
         }
 
-        public Argument(ArgumentType kind, SymbolId name) {
-            ContractUtils.Requires((kind == ArgumentType.Named) ^ (name == SymbolId.Empty), "kind");
+        public Argument(ArgumentType kind, string name) {
+            ContractUtils.Requires((kind == ArgumentType.Named) ^ (name == null), "kind");
             _kind = kind;
             _name = name;
         }
@@ -66,7 +66,7 @@ namespace Microsoft.Scripting.Actions {
         }
 
         public override int GetHashCode() {
-            return _name.GetHashCode() ^ (int)_kind;
+            return (_name != null) ? _name.GetHashCode() ^ (int)_kind : (int)_kind;
         }
 
         public bool IsSimple {
@@ -76,14 +76,14 @@ namespace Microsoft.Scripting.Actions {
         }
 
         public override string ToString() {
-            return _name == SymbolId.Empty ? _kind.ToString() : _kind.ToString() + ":" + SymbolTable.IdToString(_name);
+            return _name == null ? _kind.ToString() : _kind.ToString() + ":" + _name;
         }
 
         internal Expression CreateExpression() {
             return Expression.New(
-                typeof(Argument).GetConstructor(new Type[] { typeof(ArgumentType), typeof(SymbolId) }),
+                typeof(Argument).GetConstructor(new Type[] { typeof(ArgumentType), typeof(string) }),
                 Expression.Constant(_kind),
-                AstUtils.Constant(_name)
+                Expression.Constant(_name, typeof(string))
             );
         }
     }

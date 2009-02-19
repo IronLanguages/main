@@ -533,14 +533,16 @@ namespace IronRuby.Builtins {
         #endregion
 
         #region coerce
+
         /// <summary>
         /// Attempts to coerce other to a Float.
         /// </summary>
         /// <returns>[other, self] as Floats</returns>
         [RubyMethod("coerce")]
-        public static RubyArray Coerce(RubyContext/*!*/context, double self, object other) {
-            return RubyOps.MakeArray2(Protocols.ConvertToFloat(context, other), self);
+        public static RubyArray/*!*/ Coerce(double self, [DefaultProtocol]double other) {
+            return RubyOps.MakeArray2(other, self);
         }
+
         #endregion
 
         #region to_f

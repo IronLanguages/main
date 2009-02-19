@@ -272,8 +272,8 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("delete", RubyMethodAttributes.PublicSingleton)]
         [RubyMethod("unlink", RubyMethodAttributes.PublicSingleton)]
-        public static int Delete(RubyClass/*!*/ self, [NotNull]params object[]/*!*/ paths) {
-            foreach (MutableString path in Protocols.CastToStrings(self.Context, paths)) {
+        public static int Delete(RubyClass/*!*/ self, [DefaultProtocol, NotNull, NotNullItems]params MutableString/*!*/[]/*!*/ paths) {
+            foreach (MutableString path in paths) {
                 Delete(self, path);
             }
 
@@ -293,7 +293,9 @@ namespace IronRuby.Builtins {
                 directoryName = Path.GetDirectoryName(path.ConvertToString());
                 string fileName = Path.GetFileName(path.ConvertToString());
                 if (!String.IsNullOrEmpty(fileName)) {
-                    directoryName = StripPathCharacters(path.ConvertToString().Replace(fileName, ""));
+                    string p = path.ConvertToString();
+                    p = p.Substring(0, p.LastIndexOf(fileName));
+                    directoryName = StripPathCharacters(p);
                 }
             } else {
                 if (directoryName.Length > 1)
@@ -654,13 +656,13 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("utime", RubyMethodAttributes.PublicSingleton)]
-        public static int UpdateTimes(RubyClass/*!*/ self, object accessTime, object modifiedTime, 
-            [NotNull]params object[]/*!*/ paths) {
+        public static int UpdateTimes(RubyClass/*!*/ self, object accessTime, object modifiedTime,
+            [DefaultProtocol, NotNull, NotNullItems]params MutableString/*!*/[]/*!*/ paths) {
 
             DateTime atime = MakeTime(self.Context, accessTime);
             DateTime mtime = MakeTime(self.Context, modifiedTime);
 
-            foreach (MutableString path in Protocols.CastToStrings(self.Context, paths)) {
+            foreach (MutableString path in paths) {
                 UpdateTimes(self, atime, mtime, path);
             }
 
@@ -896,16 +898,23 @@ namespace IronRuby.Builtins {
             }
 
             [RubyMethod("inspect")]
-            public static MutableString Inspect(RubyContext/*!*/ context, FileSystemInfo/*!*/ self) {
-                string result = String.Format(
+            public static MutableString/*!*/ Inspect(RubyContext/*!*/ context, FileSystemInfo/*!*/ self) {
+               return MutableString.Create(String.Format(
                     "#<File::Stat dev={0}, ino={1}, mode={2}, nlink={3}, uid={4}, gid={5}, rdev={6}, size={7}, blksize={8}, blocks={9}, atime={10}, mtime={11}, ctime={12}",
-                    RubySites.Inspect(context, DeviceId(self)), RubySites.Inspect(context, Inode(self)), RubySites.Inspect(context, Mode(self)),
-                    RubySites.Inspect(context, NumberOfLinks(self)), RubySites.Inspect(context, UserId(self)), RubySites.Inspect(context, GroupId(self)),
-                    RubySites.Inspect(context, DeviceId(self)), RubySites.Inspect(context, Size(self)), RubySites.Inspect(context, BlockSize(self)),
-                    RubySites.Inspect(context, Blocks(self)), TimeOps.ToString(AccessTime(self)), TimeOps.ToString(ModifiedTime(self)),
-                    TimeOps.ToString(CreateTime(self))
-                );
-                return MutableString.Create(result);
+                    context.Inspect(DeviceId(self)),
+                    context.Inspect(Inode(self)),
+                    context.Inspect(Mode(self)),
+                    context.Inspect(NumberOfLinks(self)),
+                    context.Inspect(UserId(self)),
+                    context.Inspect(GroupId(self)),
+                    context.Inspect(DeviceId(self)),
+                    context.Inspect(Size(self)),
+                    context.Inspect(BlockSize(self)),
+                    context.Inspect(Blocks(self)),
+                    context.Inspect(AccessTime(self)),
+                    context.Inspect(ModifiedTime(self)),
+                    context.Inspect(CreateTime(self))
+                ));
             }
 
             [RubyMethod("mode")]

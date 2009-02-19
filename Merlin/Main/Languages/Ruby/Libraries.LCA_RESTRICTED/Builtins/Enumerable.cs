@@ -456,14 +456,14 @@ namespace IronRuby.Builtins {
         #region zip
 
         [RubyMethod("zip")]
-        public static RubyArray/*!*/ Zip(CallSiteStorage<EachSite>/*!*/ each, RubyContext/*!*/ context, BlockParam block, 
+        public static RubyArray/*!*/ Zip(CallSiteStorage<EachSite>/*!*/ each, ConversionStorage<IList>/*!*/ tryToA, RubyContext/*!*/ context, BlockParam block,
             object self, [NotNull]params object[] args) {
             RubyArray results = (block == null) ? new RubyArray() : null;
 
             // Call to_a on each argument
             IList[] otherArrays = new IList[args.Length];
             for (int i = 0; i < args.Length; i++) {
-                otherArrays[i] = Protocols.ConvertToArray(context, args[i]);
+                otherArrays[i] = Protocols.TryConvertToArray(tryToA, context, args[i]);
             }
 
             int index = 0;

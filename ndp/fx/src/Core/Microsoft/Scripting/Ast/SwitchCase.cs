@@ -43,6 +43,14 @@ namespace System.Linq.Expressions {
         public Expression Body {
             get { return _body; }
         }
+
+        /// <summary>
+        /// Returns a <see cref="String"/> that represents the current <see cref="Object"/>. 
+        /// </summary>
+        /// <returns>A <see cref="String"/> that represents the current <see cref="Object"/>. </returns>
+        public override string ToString() {
+            return ExpressionStringBuilder.SwitchCaseToString(this);
+        }
     }
 
     public partial class Expression {

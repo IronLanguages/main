@@ -85,6 +85,8 @@ namespace IronRuby.Builtins {
         private StringBuilder _buf;
 
         private readonly ConversionStorage<int> _fixnumCast;
+        private readonly ConversionStorage<double> _tofConversion;
+        private readonly UnaryOpStorage _inspectStorage;
         private readonly ConversionStorage<MutableString> _tosConversion;
         private readonly ConversionStorage<IntegerValue> _integerConversion;
 
@@ -102,15 +104,20 @@ namespace IronRuby.Builtins {
         internal StringFormatter(
             ConversionStorage<IntegerValue>/*!*/ integerConversion,
             ConversionStorage<int>/*!*/ fixnumCast,
+            ConversionStorage<double>/*!*/ tofConversion,
             ConversionStorage<MutableString>/*!*/ tosConversion,
+            UnaryOpStorage inspectStorage,
             RubyContext/*!*/ context, string/*!*/ format, IList/*!*/ data)
             : this(context, format, data) {
 
-            Assert.NotNull(integerConversion, fixnumCast, tosConversion);
+            Assert.NotNull(integerConversion, fixnumCast, tofConversion, tosConversion);
+            Assert.NotNull(inspectStorage);
 
             _fixnumCast = fixnumCast;
+            _tofConversion = tofConversion;
             _tosConversion = tosConversion;
             _integerConversion = integerConversion;
+            _inspectStorage = inspectStorage;
         }
 
         #endregion
@@ -397,7 +404,13 @@ namespace IronRuby.Builtins {
         }
 
         private void AppendFloat(char type) {
-            double v = Protocols.ConvertToFloat(_context, _opts.Value);
+            double v;
+            if (_tofConversion != null) {
+                var site = _tofConversion.GetSite(ConvertToFAction.Instance);
+                v = site.Target(site, _context, _opts.Value);
+            } else {
+                v = (double)_opts.Value;
+            }
 
             // scientific exponential format 
             Debug.Assert(type == 'E' || type == 'e' ||
@@ -893,12 +906,12 @@ namespace IronRuby.Builtins {
         }
 
         private void AppendInspect() {
-            MutableString inspect = RubySites.Inspect(_context, _opts.Value);
-            if (KernelOps.Tainted(_context, inspect)) {
+            MutableString result = _context.Inspect(_opts.Value);
+            if (KernelOps.Tainted(_context, result)) {
                 _tainted = true;
             }
 
-            AppendString(inspect);
+            AppendString(result);
         }
 
         private void AppendString() {

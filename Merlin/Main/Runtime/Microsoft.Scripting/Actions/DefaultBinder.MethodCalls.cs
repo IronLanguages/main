@@ -307,7 +307,7 @@ namespace Microsoft.Scripting.Actions {
             ContractUtils.RequiresNotNull(restrictions, "restrictions");
 
             DynamicMetaObject[] finalArgs;
-            SymbolId[] argNames;
+            string[] argNames;
 
             if (callType == CallTypes.ImplicitInstance) {
                 GetArgumentNamesAndTypes(signature, ArrayUtils.RemoveFirst(args), out argNames, out finalArgs);
@@ -468,7 +468,7 @@ namespace Microsoft.Scripting.Actions {
         /// ArgumentKind.List is unpacked in the return value. </param>
         /// <param name="args">The MetaObject array which has the arguments for the call</param>
         /// <param name="signature">The signature we're building the call for</param>
-        private static void GetArgumentNamesAndTypes(CallSignature signature, IList<DynamicMetaObject> args, out SymbolId[] argNames, out DynamicMetaObject[] resultingArgs) {
+        private static void GetArgumentNamesAndTypes(CallSignature signature, IList<DynamicMetaObject> args, out string[] argNames, out DynamicMetaObject[] resultingArgs) {
             // Get names of named arguments
             argNames = signature.GetArgumentNames();
 
@@ -532,8 +532,8 @@ namespace Microsoft.Scripting.Actions {
             return res.ToArray();
         }
 
-        private static void GetDictionaryNamesAndTypes(IList<DynamicMetaObject> args, ref SymbolId[] argNames, ref DynamicMetaObject[] argTypes) {
-            List<SymbolId> names = new List<SymbolId>(argNames);
+        private static void GetDictionaryNamesAndTypes(IList<DynamicMetaObject> args, ref string[] argNames, ref DynamicMetaObject[] argTypes) {
+            List<string> names = new List<string>(argNames);
             List<DynamicMetaObject> types = new List<DynamicMetaObject>(argTypes);
 
             IDictionary dict = (IDictionary)args[args.Count - 1].Value;
@@ -543,7 +543,7 @@ namespace Microsoft.Scripting.Actions {
                 DictionaryEntry de = dictEnum.Entry;
 
                 if (de.Key is string) {
-                    names.Add(SymbolTable.StringToId((string)de.Key));
+                    names.Add((string)de.Key);
                     types.Add(
                         new DynamicMetaObject(
                             Ast.Call(

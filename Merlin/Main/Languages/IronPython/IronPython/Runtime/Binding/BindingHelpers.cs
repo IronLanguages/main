@@ -185,7 +185,7 @@ namespace IronPython.Runtime.Binding {
                     case ArgumentKind.Named:
                         ai[i] = new Argument(
                             ArgumentType.Named,
-                            SymbolTable.StringToId(((NamedArgumentInfo)args[i]).Name)
+                            ((NamedArgumentInfo)args[i]).Name
                         );
                         break;
                     case ArgumentKind.Positional:

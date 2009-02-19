@@ -762,19 +762,6 @@ namespace System.Dynamic {
                 );
             }
 
-            public override IEnumerable<KeyValuePair<string,object>> GetDynamicDataMembers()
-            {
-                var expandoData = Value._data;
-                var klass = expandoData.Class;
-                for (int i = 0; i < klass.Keys.Length; i++) {
-                    object val = expandoData[i];
-                    // all members are data members in a class
-                    if (val != ExpandoObject.Uninitialized) {
-                        yield return new KeyValuePair<string, object>(klass.Keys[i], val);
-                    }
-                }
-            } 
-
             public override IEnumerable<string> GetDynamicMemberNames() {
                 var expandoData = Value._data;
                 var klass = expandoData.Class;

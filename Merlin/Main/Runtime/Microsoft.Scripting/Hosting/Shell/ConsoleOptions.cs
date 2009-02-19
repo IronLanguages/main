@@ -22,7 +22,8 @@ namespace Microsoft.Scripting.Hosting.Shell {
     public class ConsoleOptions {
         private string _command;
         private string _filename;
-        private bool _printVersionAndExit;
+        private bool _printVersion;
+        private bool _exit;
         private int _autoIndentSize = 4;
         private string[] _remainingArgs;
         private bool _introspection;
@@ -30,7 +31,7 @@ namespace Microsoft.Scripting.Hosting.Shell {
         private bool _handleExceptions = true;
         private bool _tabCompletion;
         private bool _colorfulConsole;
-        private bool _printUsageAndExit;
+        private bool _printUsage;
         private bool _isMta;
 #if !SILVERLIGHT // Remote console
         private string _remoteRuntimeChannel;
@@ -56,9 +57,9 @@ namespace Microsoft.Scripting.Hosting.Shell {
             set { _colorfulConsole = value; }
         }
 
-        public bool PrintUsageAndExit {
-            get { return _printUsageAndExit; }
-            set { _printUsageAndExit = value; }
+        public bool PrintUsage {
+            get { return _printUsage; }
+            set { _printUsage = value; }
         }
 
         /// <summary>
@@ -80,9 +81,14 @@ namespace Microsoft.Scripting.Hosting.Shell {
         /// <summary>
         /// Only print the version of the script interpreter and exit
         /// </summary>
-        public bool PrintVersionAndExit {
-            get { return _printVersionAndExit; }
-            set { _printVersionAndExit = value; }
+        public bool PrintVersion {
+            get { return _printVersion; }
+            set { _printVersion= value; }
+        }
+
+        public bool Exit{
+            get { return _exit; }
+            set { _exit = value; }
         }
 
         public int AutoIndentSize {
@@ -121,7 +127,8 @@ namespace Microsoft.Scripting.Hosting.Shell {
 
             _command = options._command;
             _filename = options._filename;
-            _printVersionAndExit = options._printVersionAndExit;
+            _printVersion = options._printVersion;
+            _exit = options._exit;
             _autoIndentSize = options._autoIndentSize;
             _remainingArgs = ArrayUtils.Copy(options._remainingArgs);
             _introspection = options._introspection;
@@ -129,7 +136,7 @@ namespace Microsoft.Scripting.Hosting.Shell {
             _handleExceptions = options._handleExceptions;
             _tabCompletion = options._tabCompletion;
             _colorfulConsole = options._colorfulConsole;
-            _printUsageAndExit = options._printUsageAndExit;
+            _printUsage = options._printUsage;
             _isMta = options._isMta;
 #if !SILVERLIGHT // Remote console
             _remoteRuntimeChannel = options._remoteRuntimeChannel;

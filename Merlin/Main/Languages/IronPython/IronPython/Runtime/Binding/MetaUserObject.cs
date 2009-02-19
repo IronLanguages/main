@@ -121,15 +121,6 @@ namespace IronPython.Runtime.Binding {
             );
         }
 
-        public override System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object>> GetDynamicDataMembers() {
-            foreach (string name in GetDynamicMemberNames()) {
-                object val = Value.PythonType.GetMember(Value.PythonType.PythonContext.DefaultBinderState.Context, Value, SymbolTable.StringToId(name));
-                if (BindingHelpers.IsDataMember(val)) {
-                    yield return new KeyValuePair<string, object>(name, val);
-                }
-            } 
-        }
-
         public override System.Collections.Generic.IEnumerable<string> GetDynamicMemberNames() {
             foreach (object o in Value.PythonType.GetMemberNames(Value.PythonType.PythonContext.DefaultBinderState.Context, Value)) {
                 if (o is string) {

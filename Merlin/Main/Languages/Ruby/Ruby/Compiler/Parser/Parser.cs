@@ -275,7 +275,9 @@ namespace IronRuby.Compiler {
 
         // __FILE__
         internal Expression/*!*/ GetCurrentFileExpression(SourceSpan location) {
-            if (_sourceUnit.Path == null) {
+            if (_sourceUnit.Path == null && _sourceUnit.Kind == SourceCodeKind.Statements) {
+                return new StringLiteral("-e", StringLiteralEncoding.Ascii, location);
+            } else if (_sourceUnit.Path == null) {
                 return new StringLiteral("(eval)", StringLiteralEncoding.Ascii, location);
             } else {
                 var encoding = _sourceUnit.Path.IsAscii() ? StringLiteralEncoding.Ascii : StringLiteralEncoding.Default;

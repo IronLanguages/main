@@ -127,10 +127,10 @@ namespace Microsoft.Scripting.Runtime {
             return args.ToArray();
         }
 
-        public static SymbolDictionary MakeSymbolDictionary(SymbolId[] names, object[] values) {
+        public static SymbolDictionary MakeSymbolDictionary(string[] names, object[] values) {
             SymbolDictionary res = new SymbolDictionary();
             for (int i = 0; i < names.Length; i++) {
-                ((IAttributesCollection)res)[names[i]] = values[i];
+                ((IAttributesCollection)res)[SymbolTable.StringToId(names[i])] = values[i];
             }
             return res;
         }

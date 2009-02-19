@@ -157,7 +157,7 @@ namespace Microsoft.Scripting.Runtime {
         /// Looks up the name in the provided Scope using the current language's semantics.
         /// </summary>
         public virtual bool TryLookupName(Scope scope, SymbolId name, out object value) {
-            if (scope.TryLookupName(this, name, out value) && value != Uninitialized.Instance) {
+            if (scope.TryLookupName(name, out value) && value != Uninitialized.Instance) {
                 return true;
             }
 
@@ -190,7 +190,10 @@ namespace Microsoft.Scripting.Runtime {
         /// Attempts to remove the name from the provided scope using the current language's semantics.
         /// </summary>
         public virtual bool RemoveName(Scope scope, SymbolId name) {
-            return scope.RemoveName(this, name);
+            if (!scope.TryRemoveName(name)) {
+                throw MissingName(name);
+            }
+            return true;
         }
 
         /// <summary>

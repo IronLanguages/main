@@ -93,7 +93,7 @@ namespace False { public class A { } }
 // builtin module
 namespace __builtin__ { public class A { } }
 namespace datetime { public class A { } }
-namespace collections { public class A { } }
+namespace _collections { public class A { } }
 
 // site
 namespace site { public class A { } }
@@ -117,7 +117,7 @@ namespace NSwInterestingClassName {
 
     public class __builtin__ { public static int A = 10;}
     public class datetime { public static int A = 10;}
-    public class collections { public static int A = 10;}
+    public class _collections { public static int A = 10;}
 
     public class site { public static int A = 10; }
 }

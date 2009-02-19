@@ -173,6 +173,15 @@ namespace Microsoft.Scripting.Ast {
             }
         }
 
+        public List<ParameterExpression> GetVisibleVariables() {
+            var vars = new List<ParameterExpression>(_visibleVars.Count);
+            foreach (var v in _visibleVars) {
+                if (EmitDictionary || v.Value) {
+                    vars.Add(v.Key);
+                }
+            }
+            return vars;
+        }
 
         /// <summary>
         /// Creates a parameter on the lambda with a given name and type.
@@ -554,12 +563,7 @@ namespace Microsoft.Scripting.Ast {
             // wrap a CodeContext scope if needed
             if (!_global && !DoNotAddContext) {
 
-                var vars = new List<ParameterExpression>(_visibleVars.Count);
-                foreach (var v in _visibleVars) {
-                    if (EmitDictionary || v.Value) {
-                        vars.Add(v.Key);
-                    }
-                }
+                var vars = GetVisibleVariables();
 
                 if (vars.Count > 0) {
                     body = Utils.CodeContextScope(

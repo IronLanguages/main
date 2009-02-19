@@ -50,7 +50,8 @@ namespace IronPython.Hosting {
                     break;
 
                 case "-?":
-                    ConsoleOptions.PrintUsageAndExit = true;
+                    ConsoleOptions.PrintUsage = true;
+                    ConsoleOptions.Exit = true;
                     break;
 
                 case "-i":
@@ -113,7 +114,8 @@ namespace IronPython.Hosting {
                     break;
 
                 case "-V":
-                    ConsoleOptions.PrintVersionAndExit = true;
+                    ConsoleOptions.PrintVersion = true;
+                    ConsoleOptions.Exit = true;
                     IgnoreRemainingArgs();
                     break;
 

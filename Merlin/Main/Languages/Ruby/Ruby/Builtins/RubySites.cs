@@ -25,34 +25,6 @@ namespace IronRuby.Builtins {
 
     // TODO: remove
     public static class RubySites {
-        private static readonly CallSite<Func<CallSite, RubyContext, object, MutableString>> InspectSharedSite =
-            CallSite<Func<CallSite, RubyContext, object, MutableString>>.Create(InstanceCallAction("inspect"));
-
-        public static MutableString Inspect(RubyContext/*!*/ context, object obj) {
-            return InspectSharedSite.Target(InspectSharedSite, context, obj);
-        }
-
-        private static readonly CallSite<Func<CallSite, RubyContext, object, SymbolId, object>> RespondToSharedSite =
-            CallSite<Func<CallSite, RubyContext, object, SymbolId, object>>.Create(InstanceCallAction("respond_to?", 1));
-
-        public static bool RespondTo(RubyContext/*!*/ context, object obj, string name) {
-            return RubyOps.IsTrue(RespondToSharedSite.Target(RespondToSharedSite, context, obj, SymbolTable.StringToId(name)));
-        }
-
-        private static readonly CallSite<Func<CallSite, RubyContext, object, MutableString>> ToSSharedSite = CallSite<Func<CallSite, RubyContext, object, MutableString>>.Create(
-            InstanceCallAction("to_s"));
-
-        public static MutableString ToS(RubyContext/*!*/ context, object value) {
-            return ToSSharedSite.Target(ToSSharedSite, context, value);
-        }
-
-        private static readonly CallSite<Func<CallSite, RubyContext, RubyModule, SymbolId, object>> ModuleConstMissingSharedSite = CallSite<Func<CallSite, RubyContext, RubyModule, SymbolId, object>>.Create(
-            InstanceCallAction("const_missing", 1));
-
-        public static object ModuleConstMissing(RubyContext/*!*/ context, RubyModule self, string/*!*/ name) {
-            return ModuleConstMissingSharedSite.Target(ModuleConstMissingSharedSite, context, self, SymbolTable.StringToId(name));
-        }
-
         public static RubyCallAction InstanceCallAction(string/*!*/ name) {
             return RubyCallAction.Make(name, 0);
         }

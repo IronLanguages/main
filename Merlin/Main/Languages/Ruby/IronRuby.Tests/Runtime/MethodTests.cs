@@ -306,6 +306,22 @@ f:B
 ");
         }
 
+        /// <summary>
+        /// Checks that if the same site is used twice and the first use failes on parameter conversion the second use is not affected.
+        /// </summary>
+        public void MethodCallCaching7() {
+            AssertOutput(delegate {
+                CompilerTest(@"
+'hello'.send(:slice, nil) rescue puts 'error'
+puts 'hello'.send(:slice, 1)
+");
+            }, @"
+error
+101
+");
+
+        }
+
         public void Send1() {
             AssertOutput(delegate {
                 CompilerTest(@"

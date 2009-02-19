@@ -58,5 +58,16 @@ namespace IronRuby.Runtime.Calls {
             }
             return this;
         }
+
+        // Only call on method missing:
+        internal MethodResolutionResult InvalidateSitesOnMissingMethodAddition(string/*!*/ methodName, RubyContext/*!*/ context) {
+            // mark that methodName is used in method_missing dynamic site:
+            var mmModule = (_info != null) ? _info.DeclaringModule : context.KernelModule;
+            if (mmModule.MissingMethodsCachedInSites == null) {
+                mmModule.MissingMethodsCachedInSites = new Dictionary<string, bool>();
+            }
+            mmModule.MissingMethodsCachedInSites[methodName] = true;
+            return this;
+        }
     }
 }

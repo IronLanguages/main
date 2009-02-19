@@ -2892,7 +2892,7 @@ namespace IronPython.Runtime.Operations {
             return (T)obj;
         }
 
-        public static DynamicMetaObjectBinder MakeComplexCallAction(int count, bool list, SymbolId[] keywords) {
+        public static DynamicMetaObjectBinder MakeComplexCallAction(int count, bool list, string[] keywords) {
             Argument[] infos = CompilerHelpers.MakeRepeatedArray(Argument.Simple, count + keywords.Length);
             if (list) {
                 infos[count - 1] = new Argument(ArgumentType.List);

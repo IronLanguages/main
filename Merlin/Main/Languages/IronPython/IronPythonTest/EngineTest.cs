@@ -876,38 +876,6 @@ ocinst = oc()
             AreEqualLists(ocnames, new[] { "__doc__", "__init__", "__module__", "abc", "classmethod", "foo", "staticfunc" });
             AreEqualLists(ocinstnames, new[] { "__doc__", "__init__", "__module__", "abc", "baz", "classmethod", "foo", "staticfunc" });
 
-            List<KeyValuePair<string, object>> ncmembers = new List<KeyValuePair<string, object>>(nc.GetDynamicDataMembers());
-            List<KeyValuePair<string, object>> ncinstmembers = new List<KeyValuePair<string, object>>(ncinst.GetDynamicDataMembers());
-            List<KeyValuePair<string, object>> fmembers = new List<KeyValuePair<string, object>>(f.GetDynamicDataMembers());
-            List<KeyValuePair<string, object>> ocmembers = new List<KeyValuePair<string, object>>(oc.GetDynamicDataMembers());
-            List<KeyValuePair<string, object>> ocinstmembers = new List<KeyValuePair<string, object>>(ocinst.GetDynamicDataMembers());
-
-            ncmembers.Sort((x, y) => x.Key.CompareTo(y.Key));
-            ncinstmembers.Sort((x, y) => x.Key.CompareTo(y.Key));
-            ocmembers.Sort((x, y) => x.Key.CompareTo(y.Key));
-            ocinstmembers.Sort((x, y) => x.Key.CompareTo(y.Key));
-            fmembers.Sort((x, y) => x.Key.CompareTo(y.Key));
-
-            AreEqual(ncmembers.Count, 8);
-            Assert(ncmembers[1].Value is PythonFunction); // __init__
-
-            AreEqual(ncinstmembers.Count, 6);            
-            AreEqual(ncinstmembers[4].Key, "baz");
-            AreEqual(ncinstmembers[4].Value, 5);
-
-            AreEqual(ocmembers.Count, 7);
-            Assert(ocmembers[1].Value is Method); // __init__
-
-            AreEqual(ocinstmembers.Count, 4);
-            AreEqual(ocinstmembers[2].Key, "baz");
-            AreEqual(ocinstmembers[2].Value, 5);
-
-            AreEqual(ocinstmembers[3].Key, "foo");
-            AreEqual(ocinstmembers[3].Value, 3); 
-
-            Assert(fmembers.Count == 1);
-            AreEqual(fmembers[0].Key, "foo");
-            AreEqual(fmembers[0].Value, 3);
         }
 
         private void AreEqualLists<T>(IList<T> left, IList<T> right) {

@@ -1852,15 +1852,15 @@ namespace IronPython.Runtime.Types {
                 cctor.EmitInt(nargs);
                 cctor.EmitBoolean(list);
 
-                // Emit an array of SymbolIds for the types
+                // Emit an array of keyword names:
                 cctor.EmitInt(genericArgs.Length);
-                cctor.Emit(OpCodes.Newarr, typeof(SymbolId));
+                cctor.Emit(OpCodes.Newarr, typeof(string));
                 for (int i = 0; i < genericArgs.Length; i++) {
                     cctor.Emit(OpCodes.Dup);
                     cctor.EmitInt(i);
-                    cctor.Emit(OpCodes.Ldelema, typeof(SymbolId));
-                    EmitSymbolId(cctor, genericArgs[i].Name);
-                    cctor.Emit(OpCodes.Stobj, typeof(SymbolId));
+                    cctor.Emit(OpCodes.Ldelema, typeof(string));
+                    cctor.Emit(OpCodes.Ldstr, genericArgs[i].Name);
+                    cctor.Emit(OpCodes.Stobj, typeof(string));
                 }
                 cctor.EmitCall(typeof(PythonOps).GetMethod("MakeComplexCallAction"));
             } else {

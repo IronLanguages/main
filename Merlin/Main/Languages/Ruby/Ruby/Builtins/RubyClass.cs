@@ -87,6 +87,16 @@ namespace IronRuby.Builtins {
 
         #endregion
 
+        #region Dynamic Sites
+
+        private CallSite<Func<CallSite, RubyContext, object, object>> _inspectSite;
+        private CallSite<Func<CallSite, RubyContext, object, MutableString>> _stringConversionSite;
+
+        public CallSite<Func<CallSite, RubyContext, object, object>> InspectSite { get { return RubyUtils.GetCallSite(ref _inspectSite, "inspect", 0); } }
+        public CallSite<Func<CallSite, RubyContext, object, MutableString>> StringConversionSite { get { return RubyUtils.GetCallSite(ref _stringConversionSite, ConvertToSAction.Instance); } }
+
+        #endregion
+
         internal WeakReference/*!*/ WeakSelf {
             get { return _weakSelf; }
         }
@@ -508,18 +518,11 @@ namespace IronRuby.Builtins {
 
         internal RubyMemberInfo ResolveMethodMissingForSite(string/*!*/ name, RubyMethodVisibility incompatibleVisibility) {
             Context.RequiresClassHierarchyLock();
-            
-            var methodMissing = ResolveMethodForSiteNoLock(Symbols.MethodMissing, true).Info;
+            var methodMissing = ResolveMethodForSiteNoLock(Symbols.MethodMissing, true);
             if (incompatibleVisibility != RubyMethodVisibility.Private) {
-                // mark that methodName is used in method_missing dynamic site:
-                var mmModule = (methodMissing != null) ? methodMissing.DeclaringModule : Context.KernelModule;
-                if (mmModule.MissingMethodsCachedInSites == null) {
-                    mmModule.MissingMethodsCachedInSites = new Dictionary<string, bool>();
-                }
-                mmModule.MissingMethodsCachedInSites[name] = true;
+                methodMissing.InvalidateSitesOnMissingMethodAddition(name, Context);
             }
-
-            return methodMissing;
+            return methodMissing.Info;
         }
 
         #region CLR Member Lookup

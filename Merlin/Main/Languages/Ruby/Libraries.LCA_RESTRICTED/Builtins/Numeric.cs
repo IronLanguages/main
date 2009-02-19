@@ -21,6 +21,7 @@ using IronRuby.Runtime;
 using System.Runtime.InteropServices;
 using System.Reflection;
 using System.Runtime.Serialization;
+using IronRuby.Runtime.Calls;
 
 namespace IronRuby.Builtins {
 
@@ -115,16 +116,22 @@ namespace IronRuby.Builtins {
         /// It is intended to find a compatible common type between the two operands of the operator. 
         /// </remarks>
         [RubyMethod("coerce")]
-        public static RubyArray Coerce(RubyContext/*!*/ context, object self, object other) {
+        public static RubyArray Coerce(ConversionStorage<double>/*!*/ tof1, ConversionStorage<double>/*!*/ tof2, 
+            RubyContext/*!*/ context, object self, object other) {
+
             if (context.GetClassOf(self) == context.GetClassOf(other)) {
                 return RubyOps.MakeArray2(other, self);
             }
-            return RubyOps.MakeArray2(Protocols.ConvertToFloat(context, other), Protocols.ConvertToFloat(context, self));
+
+            var site1 = tof1.GetSite(ConvertToFAction.Instance);
+            var site2 = tof2.GetSite(ConvertToFAction.Instance);
+            return RubyOps.MakeArray2(site1.Target(site1, context, other), site2.Target(site2, context, self));
         }
 
         #endregion
 
         #region div
+
         /// <summary>
         /// Dynamically invokes / operator to perform division, then converts the result to an integer.
         /// </summary>
@@ -134,14 +141,18 @@ namespace IronRuby.Builtins {
         [RubyMethod("div")]
         public static object Div(
             BinaryOpStorage/*!*/ divideStorage,
+            ConversionStorage<double>/*!*/ tofStorage,
             RubyContext/*!*/ context, object self, object other) {
 
             var divide = divideStorage.GetCallSite("/");
-            return Floor(context, divide.Target(divide, context, self, other));
+            var tof = tofStorage.GetSite(ConvertToFAction.Instance);
+            return FloatOps.Floor(tof.Target(tof, context, divide.Target(divide, context, self, other)));
         }
+
         #endregion
 
         #region divmod
+
         /// <summary>
         /// Returns an array [quotient, modulus] obtained by dividing self by other.
         /// The quotient is rounded toward -infinity.
@@ -157,15 +168,17 @@ namespace IronRuby.Builtins {
         public static RubyArray DivMod(
             BinaryOpStorage/*!*/ divideStorage,
             BinaryOpStorage/*!*/ moduloStorage,
+            ConversionStorage<double>/*!*/ tofStorage,
             RubyContext/*!*/ context, object self, object other) {
 
-            object div = Div(divideStorage, context, self, other);
+            object div = Div(divideStorage, tofStorage, context, self, other);
 
             var modulo = moduloStorage.GetCallSite("modulo");
             object mod = modulo.Target(modulo, context, self, other);
 
             return RubyOps.MakeArray2(div, mod);
         }
+
         #endregion
 
         #region eql?
@@ -192,8 +205,8 @@ namespace IronRuby.Builtins {
         /// This is achieved by converting self to a Float and directly calling Float#round.
         /// </remarks>
         [RubyMethod("round")]
-        public static object Round(RubyContext/*!*/ context, object self) {
-            return FloatOps.Round(Protocols.ConvertToFloat(context, self));
+        public static object Round([DefaultProtocol]double self) {
+            return FloatOps.Round(self);
         }
 
         /// <summary>
@@ -203,8 +216,8 @@ namespace IronRuby.Builtins {
         /// This is achieved by converting self to a Float and directly calling Float#floor. 
         /// </remarks>
         [RubyMethod("floor")]
-        public static object Floor(RubyContext/*!*/ context, object self) {
-            return FloatOps.Floor(Protocols.ConvertToFloat(context, self));
+        public static object Floor([DefaultProtocol]double self) {
+            return FloatOps.Floor(self);
         }
 
         /// <summary>
@@ -214,8 +227,8 @@ namespace IronRuby.Builtins {
         /// This is achieved by converting self to a Float then directly calling Float#ceil.
         /// </remarks>
         [RubyMethod("ceil")]
-        public static object Ceil(RubyContext/*!*/ context, object/*!*/ self) {
-            return FloatOps.Ceil(Protocols.ConvertToFloat(context, self));
+        public static object Ceil([DefaultProtocol]double self) {
+            return FloatOps.Ceil(self);
         }
 
         /// <summary>
@@ -225,8 +238,8 @@ namespace IronRuby.Builtins {
         /// This is achieved by converting self to a float and directly calling Float#truncate. 
         /// </remarks>
         [RubyMethod("truncate")]
-        public static object Truncate(RubyContext/*!*/ context, object self) {
-            return FloatOps.ToInt(Protocols.ConvertToFloat(context, self));
+        public static object Truncate([DefaultProtocol]double self) {
+            return FloatOps.ToInt(self);
         }
         
         #endregion
@@ -411,6 +424,7 @@ namespace IronRuby.Builtins {
             BinaryOpStorage/*!*/ greaterThanStorage,
             BinaryOpStorage/*!*/ lessThanStorage,
             BinaryOpStorage/*!*/ addStorage, 
+            ConversionStorage<double>/*!*/ tofStorage,
             RubyContext/*!*/ context, BlockParam block, object self, object limit, [Optional]object step) {
 
             if (step == Missing.Value) {
@@ -418,10 +432,11 @@ namespace IronRuby.Builtins {
             }
 
             if (self is double || limit is double || step is double) {
+                var site = tofStorage.GetSite(ConvertToFAction.Instance);
                 // At least one of the arguments is double so convert all to double and run the Float version of Step
-                double floatSelf = Protocols.ConvertToFloat(context, self);
-                double floatLimit = Protocols.ConvertToFloat(context, limit);
-                double floatStep = Protocols.ConvertToFloat(context, step);
+                double floatSelf = self is double ? (double)self : site.Target(site, context, self);
+                double floatLimit = limit is double ? (double)self : site.Target(site, context, limit);
+                double floatStep = step is double ? (double)self : site.Target(site, context, step);
                 return Step(context, block, floatSelf, floatLimit, floatSelf);
             } else {
                 #region The generic step algorithm:

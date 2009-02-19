@@ -233,7 +233,7 @@ namespace IronPython.Runtime.Binding {
                         restrictions = restrictions.Merge(BindingRestrictionsHelpers.GetRuntimeTypeRestriction(args[i].Expression, args[i].GetLimitType()));
                         break;
                     case ArgumentType.Named:
-                        newArgs.Add(Expression.NamedArg(SymbolTable.IdToString(ai.Name)));
+                        newArgs.Add(Expression.NamedArg(ai.Name));
                         metaArgs.Add(args[i].Expression);
                         break;
                     case ArgumentType.Simple:

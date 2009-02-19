@@ -174,7 +174,7 @@ namespace Microsoft.Scripting.Actions {
                                 Ast.Call(
                                     typeof(BinderOps).GetMethod("TypeErrorForDuplicateKeywordArgument"),
                                     Ast.Constant(target.Name, typeof(string)),
-                                    Ast.Constant(SymbolTable.IdToString(cf.KeywordArguments[0]), typeof(string))    // TODO: Report all bad arguments?
+                                    Ast.Constant(cf.KeywordArguments[0], typeof(string))    // TODO: Report all bad arguments?
                             )
                         );
                     case CallFailureReason.UnassignableKeyword:
@@ -182,7 +182,7 @@ namespace Microsoft.Scripting.Actions {
                                 Ast.Call(
                                     typeof(BinderOps).GetMethod("TypeErrorForExtraKeywordArgument"),
                                     Ast.Constant(target.Name, typeof(string)),
-                                    Ast.Constant(SymbolTable.IdToString(cf.KeywordArguments[0]), typeof(string))    // TODO: Report all bad arguments?
+                                    Ast.Constant(cf.KeywordArguments[0], typeof(string))    // TODO: Report all bad arguments?
                             )
                         );
                     default: throw new InvalidOperationException();

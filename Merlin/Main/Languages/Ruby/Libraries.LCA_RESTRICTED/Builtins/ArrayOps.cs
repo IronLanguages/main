@@ -53,39 +53,38 @@ namespace IronRuby.Builtins {
         }
 
         [RubyConstructor]
-        public static object CreateArray(ConversionStorage<int>/*!*/ conversionStorage, BlockParam block, RubyClass/*!*/ self, 
+        public static object CreateArray(ConversionStorage<Union<IList, int>>/*!*/ toAryToInt, BlockParam block, RubyClass/*!*/ self, 
             [NotNull]object/*!*/ arrayOrSize) {
 
-            IList array = Protocols.AsArray(self.Context, arrayOrSize);
-            if (array != null) {
-                // block ignored
-                return CreateArray(array); 
-            }
+            var site = toAryToInt.GetSite(CompositeConversionAction.ToAryToInt);
+            var union = site.Target(site, self.Context, arrayOrSize);
 
-            int size = Protocols.CastToFixnum(conversionStorage, self.Context, arrayOrSize);
-            if (block != null) {
-                return CreateArray(block, size);
+            if (union.First != null) {
+                // block ignored
+                return CreateArray(union.First);
+            } else if (block != null) {
+                return CreateArray(block, union.Second);
             } else {
-                return CreateArray(self, size, null);
+                return CreateArray(self, union.Second, null);
             }
         }
 
         [RubyMethod("initialize", RubyMethodAttributes.PrivateInstance)]
-        public static object Reinitialize(ConversionStorage<int>/*!*/ conversionStorage, RubyContext/*!*/ context, BlockParam block, RubyArray/*!*/ self, 
+        public static object Reinitialize(ConversionStorage<Union<IList, int>>/*!*/ toAryToInt,
+            RubyContext/*!*/ context, BlockParam block, RubyArray/*!*/ self, 
             [NotNull]object/*!*/ arrayOrSize) {
             RubyUtils.RequiresNotFrozen(context, self);
 
-            IList array = Protocols.AsArray(context, arrayOrSize);
-            if (array != null) {
+            var site = toAryToInt.GetSite(CompositeConversionAction.ToAryToInt);
+            var union = site.Target(site, context, arrayOrSize);
+            
+            if (union.First != null) {
                 // block ignored
-                return Reinitialize(self, array);
-            }
-
-            int size = Protocols.CastToFixnum(conversionStorage, context, arrayOrSize);
-            if (block != null) {
-                return Reinitialize(block, self, size);
+                return Reinitialize(self, union.First);
+            } else if (block != null) {
+                return Reinitialize(block, self, union.Second);
             } else {
-                return ReinitializeByRepeatedValue(context, self, size, null);
+                return ReinitializeByRepeatedValue(context, self, union.Second, null);
             }
         }
 

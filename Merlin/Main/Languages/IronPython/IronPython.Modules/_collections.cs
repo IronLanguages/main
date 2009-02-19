@@ -27,7 +27,7 @@ using Microsoft.Scripting.Actions;
 using Microsoft.Scripting.Runtime;
 using SpecialNameAttribute = System.Runtime.CompilerServices.SpecialNameAttribute;
 
-[assembly: PythonModule("collections", typeof(IronPython.Modules.PythonCollections))]
+[assembly: PythonModule("_collections", typeof(IronPython.Modules.PythonCollections))]
 namespace IronPython.Modules {
     [Documentation("High performance data structures\n")]
     public class PythonCollections {
@@ -787,7 +787,10 @@ namespace IronPython.Modules {
 
             public defaultdict(CodeContext/*!*/ context) {
                 _missingSite = CallSite<Func<CallSite, CodeContext, object, object>>.Create(
-                    PythonContext.GetContext(context).DefaultBinderState.InvokeNone
+                    new PythonInvokeBinder(
+                        PythonContext.GetContext(context).DefaultBinderState,
+                        new CallSignature(0)
+                    )
                 );
             }
 

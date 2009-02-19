@@ -178,7 +178,8 @@ namespace Microsoft.Scripting.Hosting.Shell {
                 case "-h":
                 case "-help":
                 case "-?":
-                    ConsoleOptions.PrintUsageAndExit = true;
+                    ConsoleOptions.PrintUsage = true;
+                    ConsoleOptions.Exit = true;
                     IgnoreRemainingArgs();
                     break;
 

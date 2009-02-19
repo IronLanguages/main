@@ -592,7 +592,7 @@ namespace IronRuby.Builtins {
                 if (pos >= 0) {
                     value.Remove(pos, value.Length - pos);
                 }
-                return Protocols.ConvertToFloat(Context, value);
+                return Protocols.ConvertStringToFloat(Context, value);
             }
 
             private MutableString/*!*/ ReadString() {

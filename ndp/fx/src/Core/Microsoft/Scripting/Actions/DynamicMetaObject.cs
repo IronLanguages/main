@@ -266,18 +266,6 @@ namespace System.Dynamic {
             return new string[0];
         }
 
-        /// <summary>
-        /// Returns the enumeration of key-value pairs of all dynamic data members. Data members include members
-        /// such as properties, fields, but not necessarily methods. The key value pair includes the member name
-        /// and the value.
-        /// </summary>
-        /// <returns>The list of key-value pairs representing data member name and its value.</returns>
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate")]
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1006:DoNotNestGenericTypesInMemberSignatures")]
-        public virtual IEnumerable<KeyValuePair<string, object>> GetDynamicDataMembers() {
-            return new KeyValuePair<string, object>[0];
-        }
-
         // Internal helpers
 
         /// <summary>

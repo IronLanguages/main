@@ -91,7 +91,7 @@ namespace Microsoft.Scripting.Actions {
 
         private void MakeMethodBaseRule(MethodBase[] targets) {
             Type[] argTypes; // will not include implicit instance argument (if any)
-            SymbolId[] argNames; // will include ArgumentKind.Dictionary keyword names
+            string[] argNames; // will include ArgumentKind.Dictionary keyword names
 
 
             GetArgumentNamesAndTypes(out argNames, out argTypes);
@@ -429,7 +429,7 @@ namespace Microsoft.Scripting.Actions {
             if (_args.Length > 1) {
                 // we do an exact type check on all of the arguments types for a failed call.
                 Expression[] argExpr = MakeArgumentExpressions();
-                SymbolId[] names;
+                string[] names;
                 Type[] vals;
                 GetArgumentNamesAndTypes(out names, out vals);
                 if (_instance != null) {
@@ -455,7 +455,7 @@ namespace Microsoft.Scripting.Actions {
         /// This is set to an array of size 0 if there are no keyword arguments</param>
         /// <param name="argTypes">Non named arguments are returned at the beginning.
         /// ArgumentKind.List is unpacked in the return value. </param>
-        protected void GetArgumentNamesAndTypes(out SymbolId[] argNames, out Type[] argTypes) {
+        protected void GetArgumentNamesAndTypes(out string[] argNames, out Type[] argTypes) {
             // Get names of named arguments
             argNames = Action.Signature.GetArgumentNames();
 
@@ -467,10 +467,10 @@ namespace Microsoft.Scripting.Actions {
             }
         }
 
-        private void GetDictionaryNamesAndTypes(ref SymbolId[] argNames, ref Type[] argTypes) {
+        private void GetDictionaryNamesAndTypes(ref string[] argNames, ref Type[] argTypes) {
             Debug.Assert(Action.Signature.GetArgumentKind(Action.Signature.ArgumentCount - 1) == ArgumentType.Dictionary);
 
-            List<SymbolId> names = new List<SymbolId>(argNames);
+            List<string> names = new List<string>(argNames);
             List<Type> types = new List<Type>(argTypes);
 
             IDictionary dict = (IDictionary)_args[_args.Length - 1];
@@ -479,7 +479,7 @@ namespace Microsoft.Scripting.Actions {
                 DictionaryEntry de = dictEnum.Entry;
 
                 if (de.Key is string) {
-                    names.Add(SymbolTable.StringToId((string)de.Key));
+                    names.Add((string)de.Key);
                     types.Add(CompilerHelpers.GetType(de.Value));
                 }
             }

@@ -117,7 +117,7 @@ error
         }
 
         public void RequireInterop1() {
-            if (_driver.PartialTrust) return;
+            if (_driver.PartialTrust || !_driver.RunPython) return;
 
             try {
                 string temp = _driver.MakeTempDir();

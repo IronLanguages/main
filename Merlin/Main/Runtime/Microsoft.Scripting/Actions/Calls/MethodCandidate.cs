@@ -149,52 +149,58 @@ namespace Microsoft.Scripting.Actions.Calls {
         /// The basic idea here is to figure out which parameters map to params or a dictionary params and
         /// fill in those spots w/ extra ParameterWrapper's.  
         /// </summary>
-        internal MethodCandidate MakeParamsExtended(ActionBinder binder, int count, SymbolId[] names) {
+        internal MethodCandidate MakeParamsExtended(ActionBinder binder, int count, string[] names) {
             Debug.Assert(BinderHelpers.IsParamsMethod(_target.Method));
 
             List<ParameterWrapper> newParameters = new List<ParameterWrapper>(count);
-            // if we don't have a param array we'll have a param dict which is type object
-            Type elementType = null;
-            int index = -1, kwIndex = -1;
-
+            
             // keep track of which kw args map to a real argument, and which ones
             // map to the params dictionary.
-            List<SymbolId> unusedNames = new List<SymbolId>(names);
+            List<string> unusedNames = new List<string>(names);
             List<int> unusedNameIndexes = new List<int>();
             for (int i = 0; i < unusedNames.Count; i++) {
                 unusedNameIndexes.Add(i);
             }
 
+            // if we don't have a param array we'll have a param dict which is type object
+            ParameterWrapper paramsArrayParameter = null, paramsDictParameter = null;
+            int paramsArrayIndex = -1, paramsDictIndex = -1;
+
             for (int i = 0; i < _parameters.Count; i++) {
-                ParameterWrapper pw = _parameters[i];
+                ParameterWrapper parameter = _parameters[i];
 
-                if (_parameters[i].IsParamsDict) {
-                    kwIndex = i;
-                } else if (_parameters[i].IsParamsArray) {
-                    elementType = pw.Type.GetElementType();
-                    index = i;
+                if (parameter.IsParamsDict) {
+                    paramsDictParameter = parameter;
+                    paramsDictIndex = i;
+                } else if (parameter.IsParamsArray) {
+                    paramsArrayParameter = parameter;
+                    paramsArrayIndex = i;
                 } else {
-                    for (int j = 0; j < unusedNames.Count; j++) {
-                        if (unusedNames[j] == _parameters[i].Name) {
-                            unusedNames.RemoveAt(j);
-                            unusedNameIndexes.RemoveAt(j);
-                            break;
-                        }
+                    int j = unusedNames.IndexOf(parameter.Name);
+                    if (j != -1) {
+                        unusedNames.RemoveAt(j);
+                        unusedNameIndexes.RemoveAt(j);
                     }
-                    newParameters.Add(pw);
+                    newParameters.Add(parameter);
                 }
             }
 
-            if (index != -1) {
+            if (paramsArrayIndex != -1) {
+                Type elementType = paramsArrayParameter.Type.GetElementType();
+                bool nonNullItems = CompilerHelpers.ProhibitsNullItems(paramsArrayParameter.ParameterInfo);
+
                 while (newParameters.Count < (count - unusedNames.Count)) {
-                    ParameterWrapper param = new ParameterWrapper(binder, elementType, SymbolId.Empty, false);
-                    newParameters.Insert(System.Math.Min(index, newParameters.Count), param);
+                    ParameterWrapper param = new ParameterWrapper(binder, paramsArrayParameter.ParameterInfo, elementType, null, nonNullItems, false, false);
+                    newParameters.Insert(System.Math.Min(paramsArrayIndex, newParameters.Count), param);
                 }
             }
 
-            if (kwIndex != -1) {
-                foreach (SymbolId si in unusedNames) {
-                    newParameters.Add(new ParameterWrapper(binder, typeof(object), si, false));
+            if (paramsDictIndex != -1) {
+                Type elementType = paramsDictParameter.Type.GetElementType();
+                bool nonNullItems = CompilerHelpers.ProhibitsNullItems(paramsDictParameter.ParameterInfo);
+                
+                foreach (string si in unusedNames) {
+                    newParameters.Add(new ParameterWrapper(binder, paramsDictParameter.ParameterInfo, typeof(object), si, nonNullItems, false, false));
                 }
             } else if (unusedNames.Count != 0) {
                 // unbound kw args and no where to put them, can't call...
@@ -239,7 +245,7 @@ namespace Microsoft.Scripting.Actions.Calls {
             return false;
         }
 
-        internal bool TryGetNormalizedArguments<T>(T[] argTypes, SymbolId[] names, out T[] args, out CallFailure failure) {
+        internal bool TryGetNormalizedArguments<T>(T[] argTypes, string[] names, out T[] args, out CallFailure failure) {
             if (names.Length == 0) {
                 // no named arguments, success!
                 args = argTypes;
@@ -249,8 +255,8 @@ namespace Microsoft.Scripting.Actions.Calls {
 
             T[] res = new T[argTypes.Length];
             Array.Copy(argTypes, res, argTypes.Length - names.Length);
-            List<SymbolId> unboundNames = null;
-            List<SymbolId> duppedNames = null;
+            List<string> unboundNames = null;
+            List<string> duppedNames = null;
 
             for (int i = 0; i < names.Length; i++) {
                 bool found = false;
@@ -259,7 +265,7 @@ namespace Microsoft.Scripting.Actions.Calls {
                         found = true;
 
                         if (res[j] != null) {
-                            if (duppedNames == null) duppedNames = new List<SymbolId>();
+                            if (duppedNames == null) duppedNames = new List<string>();
                             duppedNames.Add(names[i]);
                         } else {
                             res[j] = argTypes[i + argTypes.Length - names.Length];
@@ -269,7 +275,7 @@ namespace Microsoft.Scripting.Actions.Calls {
                 }
 
                 if (!found) {
-                    if (unboundNames == null) unboundNames = new List<SymbolId>();
+                    if (unboundNames == null) unboundNames = new List<string>();
                     unboundNames.Add(names[i]);
                 }
             }

@@ -32,9 +32,10 @@ using Microsoft.Scripting.Math;
 namespace IronRuby.StandardLibrary.Sockets {
     [RubyClass("BasicSocket", BuildConfig = "!SILVERLIGHT")]
     public abstract class RubyBasicSocket : RubyIO {
-        private static readonly MutableString BROADCAST_STRING = MutableString.Create("<broadcast>");
-        private static readonly MutableString BROADCAST_IP_STRING = MutableString.Create("255.255.255.255");
-        private static readonly MutableString ANY_IP_STRING = MutableString.Create("0.0.0.0");
+        // TODO: do these escape out of the library?
+        private static readonly MutableString BROADCAST_STRING = MutableString.Create("<broadcast>").Freeze();
+        private static readonly MutableString BROADCAST_IP_STRING = MutableString.Create("255.255.255.255").Freeze();
+        private static readonly MutableString ANY_IP_STRING = MutableString.Create("0.0.0.0").Freeze();
 
         private readonly Socket/*!*/ _socket;
 
@@ -339,19 +340,47 @@ namespace IronRuby.StandardLibrary.Sockets {
             }
         }
 
-        internal static MutableString/*!*/ GetAddressInternal(RubyContext/*!*/ context, object hostname) {
-            // Ruby raises a SocketError rather than the NullReferenceException thrown by .NET
-            if (hostname == null) {
-                throw new SocketException((int)SocketError.HostNotFound);
+        // TODO: handle other invalid addresses
+        internal static IPHostEntry/*!*/ GetHostEntry(IPAddress/*!*/ address) {
+            Assert.NotNull(address);
+            if (address.Equals(IPAddress.Any) || address.Equals(IPAddress.Loopback)) {
+                return MakeEntry(address);
+            } else {
+                return Dns.GetHostEntry(address);
             }
-            MutableString strHostname = ConvertToHostString(context, hostname);
-            // If it is an IP address already then just pass it back
+        }
+
+        // TODO: handle other invalid addresses
+        internal static IPHostEntry/*!*/ GetHostEntry(string/*!*/ hostNameOrAddress) {
+            Assert.NotNull(hostNameOrAddress);
+            if (hostNameOrAddress == IPAddress.Any.ToString()) {
+                return MakeEntry(IPAddress.Any);
+            } else if (hostNameOrAddress == IPAddress.Loopback.ToString()) {
+                return MakeEntry(IPAddress.Loopback);
+            } else {
+                return Dns.GetHostEntry(hostNameOrAddress);
+            }
+        }
+
+        internal static IPAddress/*!*/ GetHostAddress(string/*!*/ hostNameOrAddress) {
             IPAddress address;
-            if (IPAddress.TryParse(strHostname.ConvertToString(), out address)) {
-                return strHostname;
+            if (IPAddress.TryParse(hostNameOrAddress, out address)) {
+                return address;
             }
-            // Lookup the host IP address via DNS
-            return MutableString.Create(Dns.GetHostAddresses(strHostname.ConvertToString())[0].ToString());
+            // TODO: map exceptions
+            return Dns.GetHostAddresses(hostNameOrAddress)[0];
+        }
+
+        internal static IPHostEntry/*!*/ MakeEntry(IPAddress/*!*/ address) {
+            return new IPHostEntry() {
+                AddressList = new[] { address },
+                Aliases = new[] { address.ToString() },
+                HostName = address.ToString()
+            };
+        }
+
+        internal static RubyArray/*!*/ GetHostByName(string/*!*/ hostNameOrAddress, bool packIpAddresses) {
+            return CreateHostEntryArray(GetHostEntry(hostNameOrAddress), packIpAddresses);
         }
 
         internal static RubyArray/*!*/ GetAddressArray(RubyContext/*!*/ context, EndPoint endPoint) {
@@ -430,33 +459,63 @@ namespace IronRuby.StandardLibrary.Sockets {
         }
 
 
-        internal static MutableString ConvertToHostString(RubyContext/*!*/ context, object hostname) {
-            if (hostname == null) {
-                return null;
+        internal static string/*!*/ ConvertToHostString(uint address) {
+            // Ruby uses Little Endian whereas .NET uses Big Endian IP values
+            byte[] bytes = new byte[4];
+            for (int i = bytes.Length - 1; i >= 0; --i) {
+                bytes[i] = (byte)(address & 0xff);
+                address >>= 8;
             }
-            if (hostname is MutableString) {
-                MutableString strHostname = (MutableString)hostname;
-                // Special cases
-                if (strHostname.IsEmpty) {
-                    strHostname = ANY_IP_STRING;
-                } else if (strHostname.Equals(BROADCAST_STRING)) {
-                    strHostname = BROADCAST_IP_STRING;
-                }
-                return strHostname;
-            }
-            int iHostname;
-            if (IntegerAsFixnum(hostname, out iHostname)) {
-                // Ruby uses Little Endian whereas .NET uses Big Endian IP values
-                byte[] bytes = new byte[4];
-                for (int i = 3; i >= 0; --i) {
-                    bytes[i] = (byte)(iHostname & 0xff);
-                    iHostname >>= 8;
-                }
-                return MutableString.Create(new System.Net.IPAddress(bytes).ToString());
-            }
-            return Protocols.CastToString(context, hostname);
+            return new IPAddress(bytes).ToString();
         }
 
+        internal static string/*!*/ ConvertToHostString(BigInteger/*!*/ address) {
+            Assert.NotNull(address);
+            ulong u;
+            if (address.AsUInt64(out u)) {
+                if (u <= UInt32.MaxValue) {
+                    // IPv4:
+                    return ConvertToHostString((uint)u);
+                } else {
+                    // IPv6:
+                    byte[] bytes = new byte[8];
+                    for (int i = bytes.Length - 1; i >= 0; --i) {
+                        bytes[i] = (byte)(u & 0xff);
+                        u >>= 8;
+                    }
+                    return new IPAddress(bytes).ToString();
+                }
+            } else {
+                throw RubyExceptions.CreateRangeError("bignum too big to convert into `quad long'");
+            }
+        }
+
+        internal static string/*!*/ ConvertToHostString(MutableString hostName) {
+            if (hostName == null) {
+                throw new SocketException((int)SocketError.HostNotFound);
+            }
+
+            if (hostName.IsEmpty) {
+                return IPAddress.Any.ToString();
+            } else if (hostName.Equals(BROADCAST_STRING)) {
+                return IPAddress.Broadcast.ToString();
+            }
+            return hostName.ConvertToString();
+        }
+
+        internal static string/*!*/ ConvertToHostString(ConversionStorage<MutableString>/*!*/ stringCast, RubyContext/*!*/ context, object hostName) {
+            BigInteger bignum;
+            if (hostName is int) {
+                return ConvertToHostString((int)hostName);
+            } else if (!ReferenceEquals(bignum = hostName as BigInteger, null)) {
+                return ConvertToHostString(bignum);
+            } else if (hostName != null) {
+                return ConvertToHostString(Protocols.CastToString(stringCast, context, hostName));
+            } else {
+                return ConvertToHostString((MutableString)null);
+            }
+        }
+        
         /// <summary>
         /// Converts an Integer to a Fixnum.
         /// Don't call any conversion methods--just handles Fixnum & Bignum
@@ -489,6 +548,10 @@ namespace IronRuby.StandardLibrary.Sockets {
             // otherwise, convert to string & then convert the result to a Fixnum
             if (port is int) {
                 return (int)port;
+            }
+
+            if (port == null) {
+                return 0;
             }
 
             MutableString serviceName = Protocols.CastToString(stringCast, context, port);
@@ -527,18 +590,7 @@ namespace IronRuby.StandardLibrary.Sockets {
             return null;
         }
 
-        internal static RubyArray/*!*/ InternalGetHostByName(RubyClass/*!*/ klass, object hostName, bool packIpAddresses) {
-            MutableString strHostName = ConvertToHostString(klass.Context, hostName);
-
-            if (strHostName == null) {
-                throw new SocketException();
-            }
-
-            IPHostEntry hostEntry = Dns.GetHostEntry(hostName.ToString());
-            return CreateHostEntryArray(hostEntry, packIpAddresses);
-        }
-
-        internal static RubyArray/*!*/ CreateHostEntryArray(IPHostEntry hostEntry, bool packIpAddresses) {
+        internal static RubyArray/*!*/ CreateHostEntryArray(IPHostEntry/*!*/ hostEntry, bool packIpAddresses) {
             RubyArray result = new RubyArray(4);
             // Canonical Hostname
             result.Add(MutableString.Create(hostEntry.HostName));

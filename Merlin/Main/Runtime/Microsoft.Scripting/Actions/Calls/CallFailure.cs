@@ -37,7 +37,7 @@ namespace Microsoft.Scripting.Actions.Calls {
         private CallFailureReason _reason;      // the reason the call failed
         private MethodTarget _target;
         private ConversionResult[] _results;
-        private SymbolId[] _keywordArgs;
+        private string[] _keywordArgs;
 
         internal CallFailure(MethodTarget target, ConversionResult[] results) {
             _target = target;
@@ -45,7 +45,7 @@ namespace Microsoft.Scripting.Actions.Calls {
             _reason = CallFailureReason.ConversionFailure;
         }
 
-        internal CallFailure(MethodTarget target, SymbolId[] keywordArgs, bool unassignable) {
+        internal CallFailure(MethodTarget target, string[] keywordArgs, bool unassignable) {
             _reason = unassignable ? CallFailureReason.UnassignableKeyword : CallFailureReason.DuplicateKeyword;
             _target = target;
             _keywordArgs = keywordArgs;
@@ -85,7 +85,7 @@ namespace Microsoft.Scripting.Actions.Calls {
         /// Gets the list of keyword arguments that were either dupliated or
         /// unassignable.
         /// </summary>
-        public IList<SymbolId> KeywordArguments {
+        public IList<string> KeywordArguments {
             get {
                 return _keywordArgs;
             }

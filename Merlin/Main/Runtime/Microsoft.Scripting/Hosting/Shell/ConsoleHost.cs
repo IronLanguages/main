@@ -304,6 +304,21 @@ namespace Microsoft.Scripting.Hosting.Shell {
         protected virtual void ExecuteInternal() {
             Debug.Assert(_engine != null);
 
+            ConsoleOptions consoleOptions = _languageOptionsParser.CommonConsoleOptions;
+
+            if (consoleOptions.PrintVersion){
+                PrintVersion();
+            }
+
+            if (consoleOptions.PrintUsage){
+                PrintUsage();
+            }
+
+            if (consoleOptions.Exit){
+                _exitCode = 0;
+                return;
+            }
+
             switch (Options.RunAction) {
                 case ConsoleHostOptions.Action.None:
                 case ConsoleHostOptions.Action.RunConsole:
@@ -364,19 +379,6 @@ namespace Microsoft.Scripting.Hosting.Shell {
             _commandLine = CreateCommandLine();
             ConsoleOptions consoleOptions = _languageOptionsParser.CommonConsoleOptions;
 
-            if (consoleOptions.PrintVersionAndExit) {
-                Console.WriteLine("{0} {1} on .NET {2}", Engine.Setup.DisplayName, Engine.LanguageVersion, typeof(String).Assembly.GetName().Version);
-                return 0;
-            }
-
-            if (consoleOptions.PrintUsageAndExit) {
-                StringBuilder sb = new StringBuilder();
-                sb.AppendFormat("Usage: {0}.exe ", ExeName);
-                PrintLanguageHelp(sb);
-                Console.Write(sb.ToString());
-                return 0;
-            }
-
             if (_console == null) {
                 _console = CreateConsole(Engine, _commandLine, consoleOptions);
             }
@@ -406,6 +408,19 @@ namespace Microsoft.Scripting.Hosting.Shell {
             }
 
             return exitCode;
+        }
+
+        private void PrintUsage()
+        {
+            StringBuilder sb = new StringBuilder();
+            sb.AppendFormat("Usage: {0}.exe ", ExeName);
+            PrintLanguageHelp(sb);
+            Console.Write(sb.ToString());
+        }
+
+        protected  void PrintVersion()
+        {
+            Console.WriteLine("{0} {1} on .NET {2}", Engine.Setup.DisplayName, Engine.LanguageVersion, typeof(String).Assembly.GetName().Version);
         }
 
         protected virtual void UnhandledException(ScriptEngine engine, Exception e) {

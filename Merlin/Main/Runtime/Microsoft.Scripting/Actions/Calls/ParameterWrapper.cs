@@ -36,7 +36,7 @@ namespace Microsoft.Scripting.Actions.Calls {
         private readonly Type _type;
         private readonly bool _prohibitNull, _isParams, _isParamsDict;
         private readonly ActionBinder _binder;
-        private readonly SymbolId _name;
+        private readonly string _name;
 
         // Type and other properties may differ from the values on the info; info could also be unspecified.
         private readonly ParameterInfo _info;
@@ -44,11 +44,11 @@ namespace Microsoft.Scripting.Actions.Calls {
         /// <summary>
         /// ParameterInfo is not available.
         /// </summary>
-        public ParameterWrapper(ActionBinder binder, Type type, SymbolId name, bool prohibitNull)
+        public ParameterWrapper(ActionBinder binder, Type type, string name, bool prohibitNull)
             : this(binder, null, type, name, prohibitNull, false, false) {
         }
 
-        public ParameterWrapper(ActionBinder binder, ParameterInfo info, Type type, SymbolId name, bool prohibitNull, bool isParams, bool isParamsDict) {
+        public ParameterWrapper(ActionBinder binder, ParameterInfo info, Type type, string name, bool prohibitNull, bool isParams, bool isParamsDict) {
             ContractUtils.RequiresNotNull(binder, "binder");
             ContractUtils.RequiresNotNull(type, "type");
             
@@ -62,16 +62,16 @@ namespace Microsoft.Scripting.Actions.Calls {
         }
 
         public ParameterWrapper(ActionBinder binder, ParameterInfo info)
-            : this(binder, info, info.ParameterType, SymbolId.Empty, false, false, false) {
+            : this(binder, info, info.ParameterType, null, false, false, false) {
 
             _prohibitNull = CompilerHelpers.ProhibitsNull(info);
             _isParams = CompilerHelpers.IsParamArray(info);
             _isParamsDict = BinderHelpers.IsParamDictionary(info);
             if (_isParams || _isParamsDict) {
                 // params arrays & dictionaries don't allow assignment by keyword
-                _name = SymbolTable.StringToId("<unknown>");
+                _name = "<unknown>";
             } else {
-                _name = SymbolTable.StringToId(info.Name ?? "<unknown>");
+                _name = info.Name ?? "<unknown>";
             }
         }
 
@@ -233,7 +233,7 @@ namespace Microsoft.Scripting.Actions.Calls {
             return GetPreferredParameter(candidateOne, candidateTwo);
         }
 
-        public SymbolId Name {
+        public string Name {
             get {
                 return _name;
             }

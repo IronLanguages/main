@@ -113,11 +113,14 @@ namespace IronRuby.Builtins {
         /// Convert this range object to a printable form (using inspect to convert the start and end objects). 
         /// </summary>
         [RubyMethod("inspect")]
-        public static MutableString/*!*/ Inspect(RubyContext/*!*/ context, Range/*!*/ self) {
-            MutableString str = RubySites.Inspect(context, self.Begin);
-            str.Append(self.ExcludeEnd ? "..." : "..");
-            str.Append(RubySites.Inspect(context, self.End));
-            return str;
+        public static MutableString/*!*/ Inspect(UnaryOpStorage/*!*/ inspectStorage, ConversionStorage<MutableString>/*!*/ tosStorage, 
+            RubyContext/*!*/ context, Range/*!*/ self) {
+
+            var result = MutableString.CreateMutable();
+            result.Append(context.Inspect(self.Begin));
+            result.Append(self.ExcludeEnd ? "..." : "..");
+            result.Append(context.Inspect(self.End));
+            return result;
         }
 
         #endregion
