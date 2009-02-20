@@ -19,7 +19,7 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Linq.Expressions;
 using System.Reflection;
-using System.Dynamic;
+using System.Threading;
 using Microsoft.Scripting.Utils;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 using RuntimeHelpers = Microsoft.Scripting.Runtime.ScriptingRuntimeHelpers;
@@ -49,6 +49,8 @@ namespace Microsoft.Scripting.Ast {
         private bool _visible = true;
         private bool _doNotAddContext;
         private bool _completed;
+
+        private static int _lambdaId; //for generating unique lambda name
 
         internal LambdaBuilder(string name, Type returnType) {
             _name = name;
@@ -318,7 +320,7 @@ namespace Microsoft.Scripting.Ast {
             LambdaExpression lambda = Expression.Lambda(
                 lambdaType,
                 AddDefaultReturn(MakeBody()),
-                _name,
+                _name + "$" + Interlocked.Increment(ref _lambdaId),
                 new ReadOnlyCollection<ParameterExpression>(_params.ToArray())
             );
 
@@ -340,7 +342,7 @@ namespace Microsoft.Scripting.Ast {
             LambdaExpression lambda = Expression.Lambda(
                 GetLambdaType(_returnType, _params),
                 AddDefaultReturn(MakeBody()), 
-                _name,
+                _name + "$" + Interlocked.Increment(ref _lambdaId),
                 _params
             );
 
@@ -364,7 +366,7 @@ namespace Microsoft.Scripting.Ast {
                 lambdaType,
                 label,
                 MakeBody(),
-                _name, 
+                _name + "$" + Interlocked.Increment(ref _lambdaId), 
                 _params
             );
 

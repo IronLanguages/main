@@ -1,4 +1,4 @@
-﻿/* ****************************************************************************
+/* ****************************************************************************
  *
  * Copyright (c) Microsoft Corporation. 
  *
@@ -59,11 +59,11 @@ namespace System.Linq.Expressions {
         }
 
         /// <summary>
-        /// A string like  "must be &gt;= 0"
+        /// A string like  "Argument count must be greater than number of named arguments."
         /// </summary>
-        internal static string MustBePositive {
+        internal static string ArgCntMustBeGreaterThanNameCnt {
             get {
-                return "must be >= 0";
+                return "Argument count must be greater than number of named arguments.";
             }
         }
 

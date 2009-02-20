@@ -13,8 +13,6 @@
  *
  * ***************************************************************************/
 
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Dynamic.Utils;
 using System.Linq.Expressions;
 using Microsoft.Contracts;
@@ -25,29 +23,21 @@ namespace System.Dynamic {
     /// Represents the dynamic set index operation at the call site, providing the binding semantic and the details about the operation.
     /// </summary>
     public abstract class SetIndexBinder : DynamicMetaObjectBinder {
-        private readonly ReadOnlyCollection<ArgumentInfo> _arguments;
+        private readonly CallInfo _callInfo;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="SetIndexBinder" />.
         /// </summary>
-        /// <param name="arguments">The signature of the arguments at the call site.</param>
-        protected SetIndexBinder(params ArgumentInfo[] arguments)
-            : this((IEnumerable<ArgumentInfo>)arguments) {
-        }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="SetIndexBinder" />.
-        /// </summary>
-        /// <param name="arguments">The signature of the arguments at the call site.</param>
-        protected SetIndexBinder(IEnumerable<ArgumentInfo> arguments) {
-            _arguments = arguments.ToReadOnly();
+        /// <param name="callInfo">The signature of the arguments at the call site.</param>
+        protected SetIndexBinder(CallInfo callInfo) {
+            _callInfo = callInfo;
         }
 
         /// <summary>
         /// Gets the signature of the arguments at the call site.
         /// </summary>
-        public ReadOnlyCollection<ArgumentInfo> Arguments {
-            get { return _arguments; }
+        public CallInfo CallInfo {
+            get { return _callInfo; }
         }
 
         /// <summary>
@@ -58,7 +48,7 @@ namespace System.Dynamic {
         [Confined]
         public override bool Equals(object obj) {
             SetIndexBinder ia = obj as SetIndexBinder;
-            return ia != null && ia._arguments.ListEquals(_arguments);
+            return ia != null && ia.CallInfo.Equals(_callInfo);
         }
 
         /// <summary>
@@ -67,7 +57,7 @@ namespace System.Dynamic {
         /// <returns>An <see cref="Int32" /> containing the hash code for this instance.</returns>
         [Confined]
         public override int GetHashCode() {
-            return SetMemberBinderHash ^ _arguments.ListHashCode();
+            return SetMemberBinderHash ^ _callInfo.GetHashCode();
         }
 
         /// <summary>

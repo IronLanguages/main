@@ -29,8 +29,8 @@ namespace IronRuby.Runtime.Calls {
     internal sealed class RubyCreateInstanceBinder : CreateInstanceBinder {
         private readonly RubyContext/*!*/ _context;
 
-        public RubyCreateInstanceBinder(RubyContext/*!*/ context, ArgumentInfo[]/*!*/ arguments)
-            : base(arguments) {
+        public RubyCreateInstanceBinder(RubyContext/*!*/ context, CallInfo /*!*/ callInfo)
+            : base(callInfo) {
             _context = context;
         }
 

@@ -18,6 +18,7 @@ using System.Diagnostics;
 using System.Reflection;
 using System.Dynamic.Utils;
 using System.Runtime.CompilerServices;
+
 namespace System.Linq.Expressions {
     
     /// <summary>
@@ -692,13 +693,14 @@ namespace System.Linq.Expressions {
         private static bool HasReferenceConversion(Type source, Type dest) {
             Debug.Assert(source != null && dest != null);
 
-            Type nnSourceType = TypeUtils.GetNonNullableType(source);
-            Type nnDestType = TypeUtils.GetNonNullableType(dest);
-
-            //void can only be converted to void
-            if (source == typeof(void) && dest != typeof(void)) {
+            // void -> void conversion is handled elsewhere.
+            // All other void conversions are disallowed.
+            if (source == typeof(void) || dest == typeof(void)) {
                 return false;
             }
+
+            Type nnSourceType = TypeUtils.GetNonNullableType(source);
+            Type nnDestType = TypeUtils.GetNonNullableType(dest);
 
             // Down conversion
             if (nnSourceType.IsAssignableFrom(nnDestType)) {
@@ -784,20 +786,7 @@ namespace System.Linq.Expressions {
             ContractUtils.Requires(expression is LambdaExpression, Strings.QuotedExpressionMustBeLambda);
             return new UnaryExpression(ExpressionType.Quote, expression, expression.GetType(), null);
         }
-
-        /// <summary>
-        /// Converts an expression to a void type.
-        /// </summary>
-        /// <param name="expression">An <see cref="Expression"/> to convert to void. </param>
-        /// <returns>An <see cref="Expression" /> that has the <see cref="P:System.Linq.Expressions.Expression.NodeType" /> property equal to <see cref="F:System.Linq.Expressions.ExpressionType.ConvertChecked" /> and the <see cref="P:System.Linq.Expressions.UnaryExpression.Operand" /> and <see cref="P:System.Linq.Expressions.Expression.Type" /> property set to void.</returns>
-        public static Expression Void(Expression expression) {
-            RequiresCanRead(expression, "expression");
-            if (expression.Type == typeof(void)) {
-                return expression;
-            }
-            return Expression.Convert(expression, typeof(void));
-        }
-
+        
         /// <summary>
         /// Creates a <see cref="T:System.Linq.Expressions.UnaryExpression" /> that represents a rethrowing of an exception.
         /// </summary>

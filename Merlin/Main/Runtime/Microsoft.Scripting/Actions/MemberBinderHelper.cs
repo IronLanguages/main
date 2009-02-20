@@ -163,7 +163,7 @@ namespace Microsoft.Scripting.Actions {
             if (_body is DefaultExpression) {
                 _body = expression;
             } else {
-                _body = Ast.Block(_body, Expression.Void(expression));
+                _body = Ast.Block(typeof(void), _body, expression);
             }
         }
 

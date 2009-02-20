@@ -345,12 +345,12 @@ namespace System.Runtime.CompilerServices {
             if (@return.Type == typeof(void)) {
                 invokeRule = Expression.Block(
                     Expression.Invoke(ruleTarget, new TrueReadOnlyCollection<Expression>(@params)),
-                    IfThen(getMatch, Expression.Return(@return))
+                    Expression.IfThen(getMatch, Expression.Return(@return))
                 );
             } else {
                 invokeRule = Expression.Block(
                     Expression.Assign(result, Expression.Invoke(ruleTarget, new TrueReadOnlyCollection<Expression>(@params))),
-                    IfThen(getMatch, Expression.Return(@return, result))
+                    Expression.IfThen(getMatch, Expression.Return(@return, result))
                 );
             }
 
@@ -365,23 +365,18 @@ namespace System.Runtime.CompilerServices {
                 )
             );
 
-            var checkOriginalRuleOrInvoke = Expression.Condition(
+            var checkOriginalRuleOrInvoke = Expression.IfThenElse(
                 Expression.Equal(
                     Helpers.Convert(startingTarget, typeof(object)),
                     Helpers.Convert(ruleTarget, typeof(object))
                 ),
-                Expression.Void(
-                    Expression.Assign(originalRule, rule)
-                ),
-                Expression.Block(
-                    invokeRule,
-                    resetMatch
-                )
+                Expression.Assign(originalRule, rule),
+                Expression.Block(invokeRule, resetMatch)
             );
 
             var @break = Expression.Label();
 
-            var breakIfDone = IfThen(
+            var breakIfDone = Expression.IfThen(
                 Expression.Equal(index, count),
                 Expression.Break(@break)
             );
@@ -389,7 +384,7 @@ namespace System.Runtime.CompilerServices {
             var incrementIndex = Expression.PreIncrementAssign(index);
 
             body.Add(
-                IfThen(
+                Expression.IfThen(
                     Expression.NotEqual(
                         Expression.Assign(applicable, Expression.Call(typeof(CallSiteOps), "GetRules", typeArgs, @this)),
                         Expression.Constant(null, applicable.Type)
@@ -468,7 +463,7 @@ namespace System.Runtime.CompilerServices {
 
             var tryRule = Expression.TryFinally(
                 invokeRule,
-                IfThen(
+                Expression.IfThen(
                     getMatch,
                     Expression.Block(
                         Expression.Call(typeof(CallSiteOps), "AddRule", typeArgs, @this, rule),
@@ -477,7 +472,7 @@ namespace System.Runtime.CompilerServices {
                 )
             );
 
-            var checkOriginalRule = IfThen(
+            var checkOriginalRule = Expression.IfThen(
                 Expression.Equal(
                     Helpers.Convert(startingTarget, typeof(object)),
                     Helpers.Convert(ruleTarget, typeof(object))
@@ -487,7 +482,7 @@ namespace System.Runtime.CompilerServices {
 
 
             body.Add(
-                IfThen(
+                Expression.IfThen(
                     Expression.NotEqual(
                         Expression.Assign(
                             applicable,
@@ -573,7 +568,7 @@ namespace System.Runtime.CompilerServices {
 
             tryRule = Expression.TryFinally(
                 invokeRule,
-                IfThen(
+                Expression.IfThen(
                     getMatch,
                     Expression.Call(typeof(CallSiteOps), "AddRule", typeArgs, @this, rule)
                 )
@@ -596,22 +591,13 @@ namespace System.Runtime.CompilerServices {
                         new ReadOnlyCollection<Expression>(body)
                     )
                 ),
-                "_stub_",
+                "CallSite.Target",
                 new ReadOnlyCollection<ParameterExpression>(@params)
             );
 
             // Need to compile with forceDynamic because T could be invisible,
             // or one of the argument types could be invisible
             return lambda.Compile();
-        }
-
-        /// <summary>
-        /// Behaves like an "if" statement in imperative languages. The type is
-        /// always treated as void regardless of the body's type. The else
-        /// branch is empty
-        /// </summary>
-        private static ConditionalExpression IfThen(Expression test, Expression ifTrue) {
-            return Expression.Condition(test, Expression.Void(ifTrue), Expression.Empty());
         }
 
         private static Expression Convert(Expression arg, Type type) {

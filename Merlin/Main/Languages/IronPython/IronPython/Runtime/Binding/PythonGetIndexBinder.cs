@@ -29,7 +29,7 @@ namespace IronPython.Runtime.Binding {
         private readonly BinderState/*!*/ _state;
 
         public PythonGetIndexBinder(BinderState/*!*/ state, int argCount)
-            : base(BindingHelpers.GetSimpleArgumentInfos(argCount)) {
+            : base(Expression.CallInfo(argCount)) {
             _state = state;
         }
 
@@ -70,7 +70,7 @@ namespace IronPython.Runtime.Binding {
             return Ast.Call(
                 typeof(PythonOps).GetMethod("MakeGetIndexAction"),
                 BindingHelpers.CreateBinderStateExpression(),
-                Expression.Constant(Arguments.Count)
+                Expression.Constant(CallInfo.ArgumentCount)
             );
         }
 

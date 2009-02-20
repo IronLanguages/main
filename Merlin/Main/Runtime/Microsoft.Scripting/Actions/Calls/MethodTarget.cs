@@ -177,10 +177,7 @@ namespace Microsoft.Scripting.Actions.Calls {
                     ret = Ast.Block(new [] { temp }, updates.ToArray());
                 } else {
                     updates.Insert(0, ret);
-                    ret = Ast.Convert(
-                        Ast.Block(updates.ToArray()),
-                        typeof(void)
-                    );
+                    ret = Ast.Block(typeof(void), updates.ToArray());
                 }
             }
 

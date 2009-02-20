@@ -94,7 +94,7 @@ namespace IronRuby.Compiler.Ast {
         #endregion
 
         public static MSA.Expression/*!*/ Infinite(MSA.LabelTarget @break, MSA.LabelTarget @continue, params MSA.Expression[]/*!*/ body) {
-            return AstUtils.Infinite(Ast.Void(Ast.Block(body)), @break, @continue);
+            return AstUtils.Infinite(Ast.Block(body), @break, @continue);
         }
 
         public static MSA.Expression[]/*!*/ CreateExpressionArray(int count) {

@@ -95,7 +95,8 @@ namespace IronPython.Runtime.Binding {
         class SetIndexAdapter : SetIndexBinder {
             private readonly PythonOperationBinder _opBinder;
 
-            internal SetIndexAdapter(PythonOperationBinder opBinder) {
+            internal SetIndexAdapter(PythonOperationBinder opBinder)
+                : base(Expression.CallInfo(0)) {
                 _opBinder = opBinder;
             }
 
@@ -105,7 +106,7 @@ namespace IronPython.Runtime.Binding {
                 if (System.Dynamic.ComBinder.TryBindSetIndex(this, target, indexes, value, out com)) {
                     return com;
                 }
-#endif                
+#endif
                 return PythonProtocol.Operation(_opBinder, ArrayUtils.Append(ArrayUtils.Insert(target, indexes), value));
             }
 
@@ -122,7 +123,8 @@ namespace IronPython.Runtime.Binding {
         class GetIndexAdapter : GetIndexBinder {
             private readonly PythonOperationBinder _opBinder;
 
-            internal GetIndexAdapter(PythonOperationBinder opBinder) {
+            internal GetIndexAdapter(PythonOperationBinder opBinder)
+                : base(Expression.CallInfo(0)) {
                 _opBinder = opBinder;
             }
 

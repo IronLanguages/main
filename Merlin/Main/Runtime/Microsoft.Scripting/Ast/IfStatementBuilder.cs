@@ -48,17 +48,15 @@ namespace Microsoft.Scripting.Ast {
         }
 
         internal static Expression BuildConditions(IList<IfStatementTest> clauses, Expression @else) {
-            Expression result = @else != null ? Expression.Void(@else) : Expression.Empty();
+            Expression result = @else != null ? @else : Expression.Empty();
 
+            // This should probably be using SwitchExpression to avoid stack
+            // overflow if we have lots of "else" clauses.
             int index = clauses.Count;
             while (index-- > 0) {
                 IfStatementTest ist = clauses[index];
 
-                result = Expression.Condition(
-                    ist.Test,
-                    Expression.Void(ist.Body),
-                    result
-                );
+                result = Expression.IfThenElse(ist.Test, ist.Body, result);
             }
 
             return result;

@@ -102,12 +102,12 @@ namespace IronPython.Runtime.Binding {
             // DLR Invoke which has a argument array
             InvokeBinder iac = action as InvokeBinder;
             if (iac != null) {
-                return ArgumentArrayToSignature(iac.Arguments);
+                return CallInfoToSignature(iac.CallInfo);
             }
 
             InvokeMemberBinder cla = action as InvokeMemberBinder;
             if (cla != null) {
-                return ArgumentArrayToSignature(cla.Arguments);
+                return CallInfoToSignature(cla.CallInfo);
             }
             
             // DLR Create action which we hand off to our call code, also
@@ -115,7 +115,7 @@ namespace IronPython.Runtime.Binding {
             CreateInstanceBinder ca = action as CreateInstanceBinder;
             Debug.Assert(ca != null);
 
-            return ArgumentArrayToSignature(ca.Arguments);
+            return CallInfoToSignature(ca.CallInfo);
         }
 
         public static Expression/*!*/ Invoke(Expression codeContext, BinderState/*!*/ binder, Type/*!*/ resultType, CallSignature signature, params Expression/*!*/[]/*!*/ args) {
@@ -168,32 +168,21 @@ namespace IronPython.Runtime.Binding {
             return false;
         }
 
-        internal static ArgumentInfo[] GetSimpleArgumentInfos(int count) {
-            ArgumentInfo[] res = new ArgumentInfo[count];
-            for (int i = 0; i < count; i++) {
-                res[i] = Ast.PositionalArg(i);
+        internal static CallSignature CallInfoToSignature(CallInfo callInfo) {
+            Argument[] ai = new Argument[callInfo.ArgumentCount];
+            int positionalArgNum = callInfo.ArgumentCount - callInfo.ArgumentNames.Count;
+
+            int i;
+            for (i = 0; i < positionalArgNum; i++) {
+                ai[i] = new Argument(ArgumentType.Simple);
             }
 
-            return res;
-        }
-
-        internal static CallSignature ArgumentArrayToSignature(IList<ArgumentInfo/*!*/>/*!*/ args) {
-            Argument[] ai = new Argument[args.Count];
-
-            for (int i = 0; i < ai.Length; i++) {
-                switch (args[i].ArgumentType) {
-                    case ArgumentKind.Named:
-                        ai[i] = new Argument(
-                            ArgumentType.Named,
-                            ((NamedArgumentInfo)args[i]).Name
-                        );
-                        break;
-                    case ArgumentKind.Positional:
-                        ai[i] = new Argument(ArgumentType.Simple);
-                        break;
-                }
+            foreach (var name in callInfo.ArgumentNames) {
+                ai[i++] = new Argument(
+                    ArgumentType.Named,
+                    name
+                );
             }
-
             return new CallSignature(ai);
         }
 

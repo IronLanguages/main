@@ -187,10 +187,6 @@ namespace System.Dynamic.Utils {
                 return true;
             }
 
-            // Everything can be converted to void
-            if (dest == typeof(void)) {
-                return true;
-            }
             // Nullable conversions
             if (IsNullableType(source) && dest == GetNonNullableType(source)) {
                 return true;
@@ -509,10 +505,15 @@ namespace System.Dynamic.Utils {
             Type bt = type;
             do {
                 bt = bt.BaseType;
+
+                // Interfaces don't have base types, so just use the interface
+                // type.
+                if (bt == null) {
+                    return type;
+                }
             } while (!bt.IsVisible);
 
-            // If it's one of the known reflection types,
-            // return the known type.
+            // If it's one of the known reflection types, return the known type.
             if (bt == typeof(Type) ||
                 bt == typeof(ConstructorInfo) ||
                 bt == typeof(EventInfo) ||

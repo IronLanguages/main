@@ -297,7 +297,7 @@ namespace IronPython.Compiler.Ast {
 
         internal MSAst.Expression/*!*/ AddDebugInfoAndVoid(MSAst.Expression/*!*/ expression, SourceSpan location) {
             if (expression.Type != typeof(void)) {
-                expression = Ast.Void(expression);
+                expression = AstUtils.Void(expression);
             }
             return AddDebugInfo(expression, location);
         }

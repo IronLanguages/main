@@ -48,7 +48,7 @@ namespace Microsoft.Scripting.Ast {
         }
 
         public override Expression Reduce() {
-            return Expression.Void(
+            return Utils.Void(
                 Utils.Assign(
                     _variable,
                     Expression.Field(null, typeof(Uninitialized).GetField("Instance"))

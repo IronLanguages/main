@@ -254,27 +254,18 @@ namespace IronRuby.Runtime {
         }
 
         private static bool IsVisibleClrFrame(MethodBase/*!*/ method) {
+            if (Microsoft.Scripting.Actions.DynamicSiteHelpers.IsInvisibleDlrStackFrame(method)) {
+                return false;
+            }
+
             Type type = method.DeclaringType;
             if (type != null) {
-                // TODO: better filtering
-                string typeName = type.FullName;
-                if (typeName.StartsWith("System.Reflection.") ||
-                    typeName.StartsWith("System.Runtime") ||
-                    typeName.StartsWith("System.Dynamic") ||
-                    typeName.StartsWith("Microsoft.Scripting")) {
-                    return false;
-                }
-
                 if (type.Assembly == typeof(RubyOps).Assembly) {
                     return false;
                 }
-
-                // TODO: check loaded assemblies?
-                return true;
-            } else {
-                // TODO: hide dynamic methods:
-                return Methods.DefineMethod.GetType() == method.GetType();
             }
+            // TODO: check loaded assemblies?
+            return true;
         }
 
         private const string RubyMethodPrefix = "\u2111\u211c;";

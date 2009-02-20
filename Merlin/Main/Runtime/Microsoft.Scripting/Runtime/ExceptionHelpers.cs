@@ -17,8 +17,8 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
-using System.Dynamic;
 using System.Threading;
+using Microsoft.Scripting.Actions;
 
 namespace Microsoft.Scripting.Runtime {
     /// <summary>
@@ -248,15 +248,9 @@ namespace Microsoft.Scripting.Runtime {
                         dynamicFrames.RemoveAt(dynamicFrames.Count - 1);
                         continue;
                     }
-                    if (typeName.StartsWith("System.Reflection.") ||
-                        typeName.StartsWith("System.Runtime") ||
-                        typeName.StartsWith("Microsoft.Scripting") ||       // TODO: This shouldn't be here!!
-                        typeName.StartsWith("System.Dynamic")) {
-                        continue;
-                    }
                 }
-                // filter out the _stub_ methods
-                if(method.Name.StartsWith("_stub_")) {
+
+                if (DynamicSiteHelpers.IsInvisibleDlrStackFrame(method)) {
                     continue;
                 }
 

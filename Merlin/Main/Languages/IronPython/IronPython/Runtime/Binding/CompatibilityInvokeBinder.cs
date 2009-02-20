@@ -38,8 +38,8 @@ namespace IronPython.Runtime.Binding {
     class CompatibilityInvokeBinder : InvokeBinder, IPythonSite {
         private readonly BinderState/*!*/ _state;
 
-        public CompatibilityInvokeBinder(BinderState/*!*/ state, params ArgumentInfo/*!*/[]/*!*/ args)
-            : base(args) {
+        public CompatibilityInvokeBinder(BinderState/*!*/ state, CallInfo /*!*/ callInfo)
+            : base(callInfo) {
             _state = state;
         }
 
@@ -47,7 +47,7 @@ namespace IronPython.Runtime.Binding {
             if (target.Value is IDynamicMetaObjectProvider) {
                 // try creating an instance...
                 return target.BindCreateInstance(
-                    _state.Create(this, Arguments),
+                    _state.Create(this, CallInfo),
                     args
                 );
             }
@@ -58,7 +58,7 @@ namespace IronPython.Runtime.Binding {
             }
 #endif
 
-            return InvokeFallback(target, args, BindingHelpers.ArgumentArrayToSignature(Arguments));
+            return InvokeFallback(target, args, BindingHelpers.CallInfoToSignature(CallInfo));
         }
 
         internal DynamicMetaObject/*!*/ InvokeFallback(DynamicMetaObject/*!*/ target, DynamicMetaObject/*!*/[]/*!*/ args, CallSignature sig) {

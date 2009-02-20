@@ -289,14 +289,14 @@ namespace Microsoft.Scripting.Hosting {
             public override DynamicMetaObject BindDeleteMember(DeleteMemberBinder action) {
                 var fallback = action.FallbackDeleteMember(this);
                 return new DynamicMetaObject(
-                    Expression.Condition(
+                    Expression.IfThenElse(
                         Expression.Call(
                             AstUtils.Convert(Expression, typeof(ScriptScope)),
                             typeof(ScriptScope).GetMethod("RemoveVariable"),
                             Expression.Constant(action.Name)
                         ),
                         Expression.Empty(),
-                        Expression.Convert(fallback.Expression, typeof(void))
+                        fallback.Expression
                     ),
                     Restrictions.Merge(BindingRestrictionsHelpers.GetRuntimeTypeRestriction(Expression, typeof(ScriptScope))).Merge(fallback.Restrictions)
                 );

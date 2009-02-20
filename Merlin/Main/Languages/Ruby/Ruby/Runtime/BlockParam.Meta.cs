@@ -45,7 +45,7 @@ namespace IronRuby.Runtime {
 
             public override DynamicMetaObject/*!*/ BindInvoke(InvokeBinder/*!*/ action, DynamicMetaObject/*!*/[]/*!*/ args) {
                 RubyCallSignature callSignature;
-                if (RubyCallSignature.TryCreate(action.Arguments, out callSignature)) {
+                if (RubyCallSignature.TryCreate(action.CallInfo, out callSignature)) {
                     return action.FallbackInvoke(this, args);
                 }
 

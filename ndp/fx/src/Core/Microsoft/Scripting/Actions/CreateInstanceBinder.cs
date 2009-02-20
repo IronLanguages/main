@@ -13,8 +13,6 @@
  *
  * ***************************************************************************/
 
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Dynamic.Utils;
 using System.Linq.Expressions;
 using Microsoft.Contracts;
@@ -24,31 +22,21 @@ namespace System.Dynamic {
     /// Represents the create dynamic operation at the call site, providing the binding semantic and the details about the operation.
     /// </summary>
     public abstract class CreateInstanceBinder : DynamicMetaObjectBinder {
-        private readonly ReadOnlyCollection<ArgumentInfo> _arguments;
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="CreateInstanceBinder" />.
-        /// </summary>
-        /// <param name="arguments">The signature of the arguments at the call site.</param>
-        protected CreateInstanceBinder(IEnumerable<ArgumentInfo> arguments) {
-            _arguments = arguments.ToReadOnly();
-        }
+        private readonly CallInfo _callInfo;
 
         /// <summary>
         /// Initializes a new intsance of the <see cref="CreateInstanceBinder" />.
         /// </summary>
-        /// <param name="arguments">The signature of the arguments at the call site.</param>
-        protected CreateInstanceBinder(params ArgumentInfo[] arguments)
-            : this((IEnumerable<ArgumentInfo>)arguments) {
+        /// <param name="callInfo">The signature of the arguments at the call site.</param>
+        protected CreateInstanceBinder(CallInfo callInfo) {
+            _callInfo = callInfo;
         }
 
         /// <summary>
         /// Gets the signature of the arguments at the call site.
         /// </summary>
-        public ReadOnlyCollection<ArgumentInfo> Arguments {
-            get {
-                return _arguments;
-            }
+        public CallInfo CallInfo {
+            get { return _callInfo; }
         }
 
         /// <summary>
@@ -91,7 +79,7 @@ namespace System.Dynamic {
         [Confined]
         public override bool Equals(object obj) {
             CreateInstanceBinder ca = obj as CreateInstanceBinder;
-            return ca != null && ca._arguments.ListEquals(_arguments);
+            return ca != null && ca._callInfo.Equals(_callInfo);
         }
 
         /// <summary>
@@ -100,7 +88,7 @@ namespace System.Dynamic {
         /// <returns>An <see cref="Int32" /> containing the hash code for this instance.</returns>
         [Confined]
         public override int GetHashCode() {
-            return CreateInstanceBinderHash ^ _arguments.ListHashCode();
+            return CreateInstanceBinderHash ^ _callInfo.GetHashCode();
         }
     }
 }

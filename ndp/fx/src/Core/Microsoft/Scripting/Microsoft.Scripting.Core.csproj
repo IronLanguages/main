@@ -115,6 +115,7 @@
     <Compile Include="Actions\CallSite.cs" />
     <Compile Include="Actions\CallSiteBinder.cs" />
     <Compile Include="Actions\CallSiteRule.cs" />
+    <Compile Include="Actions\CallSiteHelpers.cs" />
     <Compile Include="Actions\ConvertBinder.cs" />
     <Compile Include="Actions\DeleteIndexBinder.cs" />
     <Compile Include="Actions\DynamicObject.cs" />
@@ -133,6 +134,7 @@
     <Compile Include="Actions\SetIndexBinder.cs" />
     <Compile Include="Actions\SetMemberBinder.cs" />
     <Compile Include="Actions\SmallRuleSet.cs" />
+    <Compile Include="Ast\CallInfo.cs" />
     <Compile Include="Ast\IArgumentProvider.cs" />
     <Compile Include="Ast\ListArgumentProvider.cs" />
     <Compile Include="Compiler\ArgumentPrepender.cs" />
@@ -149,7 +151,6 @@
     <Compile Include="Compiler\RuntimeVariableList.cs" />
     <Compile Include="Actions\UpdateDelegates.Generated.cs" />
     <Compile Include="Ast\DynamicExpression.cs" />
-    <Compile Include="Ast\ArgumentInfo.cs" />
     <Compile Include="Actions\AutoRuleTemplate.cs" />
     <Compile Include="Ast\BinaryExpression.cs" />
     <Compile Include="Ast\BlockExpression.cs" />
