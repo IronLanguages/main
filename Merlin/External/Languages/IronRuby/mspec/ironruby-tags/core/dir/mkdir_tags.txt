@@ -1,0 +1,3 @@
+fails:Dir.mkdir creates the named directory with the given permissions
+fails:Dir.mkdir raises a SystemCallError when lacking adequate permissions in the parent dir
+fails:Dir.mkdir raises a SystemCallError if any of the directories in the path before the last does not exist

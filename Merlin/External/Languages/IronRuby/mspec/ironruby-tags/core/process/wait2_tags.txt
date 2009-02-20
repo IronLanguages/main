@@ -1,0 +1,1 @@
+fails:Process.wait2 raises a StandardError if no child processes exist

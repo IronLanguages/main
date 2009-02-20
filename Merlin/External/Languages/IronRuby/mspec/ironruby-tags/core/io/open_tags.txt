@@ -1,0 +1,9 @@
+fails:IO.open returns a new IO object
+fails:IO.open associates new IO with the old descriptor so each IO directly affects the other
+fails:IO.open raises EBADF if the file descriptor given is not a valid and open one
+fails:IO.open raises EINVAL if mode is not compatible with the descriptor's current mode
+fails:IO.open raises IOError on closed stream
+fails:IO.open emits a warning if given a block
+fails:IO.open cannot open an IO with incompatible flags
+fails:IO.open with a block invokes close on opened IO object when exiting the block
+fails:IO.open with a block propagates non-StandardErrors produced by close

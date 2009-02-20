@@ -1,0 +1,1 @@
+fails:Digest::SHA256#update can update

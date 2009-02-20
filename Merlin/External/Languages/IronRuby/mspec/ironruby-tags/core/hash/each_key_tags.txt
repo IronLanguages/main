@@ -1,0 +1,1 @@
+fails:Hash#each_key raises a LocalJumpError when called on a non-empty hash without a block

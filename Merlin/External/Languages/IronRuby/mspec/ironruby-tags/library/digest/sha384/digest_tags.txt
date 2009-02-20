@@ -1,0 +1,1 @@
+fails:Digest::SHA384#digest returns a digest

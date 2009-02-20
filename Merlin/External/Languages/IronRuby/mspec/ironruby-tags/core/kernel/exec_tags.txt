@@ -1,0 +1,1 @@
+fails:Kernel#exec raises a SystemCallError if cmd cannot execute

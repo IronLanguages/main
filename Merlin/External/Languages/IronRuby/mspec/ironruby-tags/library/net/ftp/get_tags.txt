@@ -1,0 +1,4 @@
+critical:Net::FTP#get (binary mode)
+fails:Net::FTP#get (text mode) sends the RETR command to the server
+fails:Net::FTP#get (text mode) returns nil
+fails:Net::FTP#get (text mode) saves the contents of the passed remote file to the passed local file

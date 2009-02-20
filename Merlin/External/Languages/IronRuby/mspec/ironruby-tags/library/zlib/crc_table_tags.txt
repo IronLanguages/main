@@ -1,0 +1,1 @@
+fails:Zlib.crc_table should return the same value as zlib's get_crc_table()

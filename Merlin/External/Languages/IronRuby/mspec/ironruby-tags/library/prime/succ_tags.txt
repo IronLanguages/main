@@ -1,0 +1,1 @@
+fails:Prime#succ returns the element at the current position and moves forward

@@ -1,0 +1,1 @@
+fails:Socket::IPSocket#addr returns an array with the socket's information

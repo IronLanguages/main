@@ -1,0 +1,7 @@
+fails:IO.new returns a new IO object
+fails:IO.new associates new IO with the old descriptor so each IO directly affects the other
+fails:IO.new raises EBADF if the file descriptor given is not a valid and open one
+fails:IO.new raises EINVAL if mode is not compatible with the descriptor's current mode
+fails:IO.new raises IOError on closed stream
+fails:IO.new emits a warning if given a block
+fails:IO.new cannot open an IO with incompatible flags

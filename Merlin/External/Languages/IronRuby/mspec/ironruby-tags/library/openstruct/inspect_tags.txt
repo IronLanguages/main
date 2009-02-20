@@ -1,0 +1,1 @@
+critical:OpenStruct#inspect correctly handles self-referential OpenStructs

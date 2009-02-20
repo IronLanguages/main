@@ -1,0 +1,2 @@
+fails:Assigning multiple values calls #to_ary on rhs arg if rhs has only a single arg
+fails:Assigning multiple values allows complex parallel assignment

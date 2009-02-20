@@ -1,0 +1,9 @@
+fails:Literal Regexps throws NoMethodError on missing to_s
+fails:Literal Regexps does not treat {m,n}+ as possessive
+fails:Literal Regexps does not treat {m,n}+ as possessive
+fails:Literal Regexps does not match ^ after trailing \n
+fails:Literal Regexps does not match ^ after trailing \n
+fails:Literal Regexps supports /o
+fails:Literal Regexps supports modifier combinations
+fails:Literal Regexps supports /e
+fails:Literal Regexps supports /u

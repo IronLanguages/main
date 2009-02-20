@@ -1,0 +1,2 @@
+fails:Logger#close closes the logging device
+fails:Logger#close fails when called on a closed device

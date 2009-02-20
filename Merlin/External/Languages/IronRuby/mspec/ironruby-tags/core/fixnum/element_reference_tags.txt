@@ -1,0 +1,1 @@
+fails:Fixnum#[] coerces arguments correctly even if it is a Bignum

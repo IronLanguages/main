@@ -1,0 +1,11 @@
+fails:StringIO#sysread when passed length, buffer returns the passed buffer String
+fails:StringIO#sysread when passed length, buffer reads length bytes and writes them to the buffer String
+fails:StringIO#sysread when passed length, buffer tries to convert the passed buffer Object to a String using #to_str
+fails:StringIO#sysread when passed length, buffer raises a TypeError when the passed buffer Object can't be converted to a String
+fails:StringIO#sysread when passed length, buffer checks whether the passed buffer Object responds to #to_str
+fails:StringIO#sysread when passed length, buffer raises an error when passed a frozen String as buffer
+fails:StringIO#sysread when passed [length] raises a TypeError when the passed length is negative
+fails:StringIO#sysread when passed no arguments reads the whole content starting from the current position
+fails:StringIO#sysread when passed no arguments correctly updates the current position
+fails:StringIO#sysread when self is not readable raises an IOError
+fails:StringIO#sysread when passed [length] returns an empty String when length is 0

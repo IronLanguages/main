@@ -1,0 +1,3 @@
+fails:StringIO#read when passed [length] raises a TypeError when the passed length is negative
+fails:StringIO#read when passed no arguments reads the whole content starting from the current position
+fails:StringIO#read when self is not readable raises an IOError

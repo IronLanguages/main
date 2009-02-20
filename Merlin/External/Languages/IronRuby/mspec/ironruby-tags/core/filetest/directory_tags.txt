@@ -1,0 +1,3 @@
+fails:FileTest.directory? return true if dir is a directory, otherwise return false
+fails:FileTest.directory? raises an ArgumentError if not passed one argument
+fails:FileTest.directory? raises a TypeError if not passed a String type

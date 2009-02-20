@@ -1,0 +1,1 @@
+fails:Digest::SHA512#reset can returns digest state to initial conditions

@@ -1,0 +1,4 @@
+fails:File.basename return the last component of the filename
+fails:File.basename return the basename for unix suffix
+fails:File.basename return the basename for windows
+fails:File.basename return basename windows forward slash

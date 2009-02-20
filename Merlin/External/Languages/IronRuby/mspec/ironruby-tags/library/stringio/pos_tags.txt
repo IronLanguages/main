@@ -1,0 +1,1 @@
+fails:StringIO#pos= raises an EINVAL if given a negative argument

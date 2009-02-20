@@ -1,0 +1,1 @@
+fails:StringIO#closed_write? returns true if self is not writable

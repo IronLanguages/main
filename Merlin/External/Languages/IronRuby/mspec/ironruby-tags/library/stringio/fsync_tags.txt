@@ -1,0 +1,1 @@
+fails:StringIO#fsync returns zero

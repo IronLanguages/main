@@ -1,0 +1,4 @@
+fails:Socket::Constants defines protocol families
+fails:Socket::Constants defines address families
+fails:Socket::Constants defines multicast options
+fails:Socket::Constants defines TCP options

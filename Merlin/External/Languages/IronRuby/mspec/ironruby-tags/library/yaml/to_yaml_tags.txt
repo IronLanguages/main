@@ -1,0 +1,4 @@
+fails:Object#to_yaml returns the YAML representation of an Array object
+fails:Object#to_yaml returns the YAML representation of a Date object
+fails:Object#to_yaml returns the YAML representation of a Time object
+fails:Object#to_yaml returns the YAML representation of numeric constants

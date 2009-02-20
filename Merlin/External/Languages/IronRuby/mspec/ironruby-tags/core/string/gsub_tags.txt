@@ -1,0 +1,1 @@
+fails:String#gsub with pattern and replacement doesn't freak out when replacing ^

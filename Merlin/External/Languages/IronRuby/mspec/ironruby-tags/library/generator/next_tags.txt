@@ -1,0 +1,10 @@
+fails:Generator#next? returns false for empty generator
+fails:Generator#next? returns true for non-empty generator
+fails:Generator#next? returns true if the generator has not reached the end yet
+fails:Generator#next? returns false if the generator has reached the end
+fails:Generator#next? returns false if end? returns true
+fails:Generator#next raises an EOFError on empty generator
+fails:Generator#next raises an EOFError if no elements available
+fails:Generator#next raises an EOFError if end? returns true
+fails:Generator#next returns the element at the current position and moves forward
+fails:Generator#next subsequent calls should return all elements in proper order

@@ -1,0 +1,8 @@
+fails:StringIO#<< when passed [Object] writes the passed argument onto self
+fails:StringIO#<< when passed [Object] writes the passed argument at the current position
+fails:StringIO#<< when passed [Object] pads self with \000 when the current position is after the end
+fails:StringIO#<< when passed [Object] taints self's String when the passed argument is tainted
+fails:StringIO#<< when passed [Object] tries to convert the passed argument to a String using #to_s
+fails:StringIO#<< when self is not writable raises an IOError
+fails:StringIO#<< when in append mode appends the passed argument to the end of self, ignoring current position
+fails:StringIO#<< when in append mode correctly updates self's position

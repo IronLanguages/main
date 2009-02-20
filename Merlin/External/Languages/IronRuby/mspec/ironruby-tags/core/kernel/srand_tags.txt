@@ -1,0 +1,5 @@
+fails:Kernel.srand is a private method
+fails:Kernel.srand srand should return the previous seed value
+fails:Kernel.srand srand should seed the RNG correctly and repeatably
+fails:Kernel.srand defaults number to a random value
+fails:Kernel.srand calls #to_i on number

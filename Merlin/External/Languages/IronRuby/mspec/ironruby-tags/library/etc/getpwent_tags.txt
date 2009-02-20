@@ -1,0 +1,1 @@
+fails:Etc.getpwent returns nil
