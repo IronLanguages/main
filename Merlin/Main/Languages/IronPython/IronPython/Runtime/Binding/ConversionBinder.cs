@@ -126,7 +126,7 @@ namespace IronPython.Runtime.Binding {
             return res ?? Binder.Binder.ConvertTo(Type, ResultKind, self);
         }
 
-        private static bool IsIndexless(DynamicMetaObject/*!*/ arg) {
+        internal static bool IsIndexless(DynamicMetaObject/*!*/ arg) {
             return arg.GetLimitType() != typeof(OldInstance) &&
                 arg.GetLimitType() != typeof(BuiltinFunction) &&
                 arg.GetLimitType() != typeof(BuiltinMethodDescriptor);

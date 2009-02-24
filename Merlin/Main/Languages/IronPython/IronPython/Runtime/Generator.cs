@@ -37,7 +37,7 @@ namespace IronPython.Runtime {
         /// <summary>
         /// Code context
         /// </summary>
-        private readonly CodeContext _context;
+        private readonly PythonFunction _function;
 
         /// <summary> Flags capturing various state for the generator </summary>
         private GeneratorFlags _flags;
@@ -56,132 +56,12 @@ namespace IronPython.Runtime {
 
         private static object _notStarted = new object();
 
-        public PythonGenerator(CodeContext context) {
-            _context = context;
+        public PythonGenerator(PythonFunction function) {
+            _function = function;
             _current = _notStarted;
         }
 
-        private CodeContext Context {
-            get {
-                return _context;
-            }
-        }
-
-        internal IEnumerator Next {
-            set {
-                _next = value;
-            }
-        }
-
-        // Silverlight doesn't allow finalizers in user code.
-#if !SILVERLIGHT
-        // Pep 342 says generators now have finalizers (__del__) that call Close()
-        ~PythonGenerator() {
-            try {
-                // This may run the users generator.
-                close();
-            } catch (Exception e) {
-                // An unhandled exceptions on the finalizer could tear down the process, so catch it.
-
-                // PEP says:
-                //   If close() raises an exception, a traceback for the exception is printed to sys.stderr
-                //   and further ignored; it is not propagated back to the place that
-                //   triggered the garbage collection. 
-
-                // Sample error message from CPython 2.5 looks like:
-                //     Exception __main__.MyError: MyError() in <generator object at 0x00D7F6E8> ignored
-                try {
-                    string message = string.Format("Exception in generator {1} ignored", PythonOps.Repr(Context, this));
-
-                    PythonOps.PrintWithDest(Context, PythonContext.GetContext(Context).SystemStandardError, message);
-                    PythonOps.PrintWithDest(Context, PythonContext.GetContext(Context).SystemStandardError, Context.LanguageContext.FormatException(e));
-                } catch {
-                    // if stderr is closed then ignore any exceptions.
-                }
-            }
-        }
-#endif // !SILVERLIGHT
-
-        bool IEnumerator.MoveNext() {
-            try {
-                object res = MoveNextWorker();
-                if (res != OperationFailed.Value) {
-                    return true;
-                }
-
-                return false;
-            } catch (StopIterationException) {
-                return false;
-            }
-        }
-
-        private object MoveNextWorker() {
-            // Python's language policy on generators is that attempting to access after it's closed (returned)
-            // just continues to throw StopIteration exceptions.
-            if (Closed) {
-                throw new StopIterationException();
-            }
-
-            // Generators can not be called re-entrantly.
-            CheckSetActive();
-
-            // We need to save/restore the exception info if the generator
-            // includes exception handling blocks.
-            Exception save = SaveCurrentException();
-
-            bool ret = false;
-            object next = OperationFailed.Value;
-            try {
-                // This calls into the delegate that has the real body of the generator.
-                // The generator body here may:
-                // 1. return an item: _next() returns true and 'next' is set to the next item in the enumeration.
-                // 2. Exit normally: _next returns false.
-                // 3. Exit with a StopIteration exception: for-loops and other enumeration consumers will 
-                //    catch this and terminate the loop without propogating the exception.
-                // 4. Exit via some other unhandled exception: This will close the generator, but the exception still propogates.
-                //    _next does not return, so ret is left assigned to false (closed), which we detect in the finally.
-                if (ret = _next.MoveNext()) {
-                    next = _next.Current;
-                } else {
-                    next = OperationFailed.Value;
-                }
-            } finally {
-                // A generator restores the sys.exc_info() status after each yield point.
-                RestoreCurrentException(save);
-                Active = false;
-
-                // If _next() returned false, or did not return (thus leavintg ret assigned to its initial value of false), then 
-                // the body of the generator has exited and the generator is now closed.
-                if (!ret) {
-                    Close();
-                }
-            }
-                        
-            _current = next;
-            return next;
-        }
-
-        private void RestoreCurrentException(Exception save) {
-            if (CanSetSysExcInfo) {
-                PythonOps.RestoreCurrentException(save);
-            }
-        }
-
-        private Exception SaveCurrentException() {
-            if (CanSetSysExcInfo) {
-                return PythonOps.SaveCurrentException();
-            }
-            return null;
-        }
-
-        private void CheckSetActive() {
-            if (Active) {
-                // A generator could catch this exception and continue executing, so this does
-                // not necessarily close the generator.
-                throw PythonOps.ValueError("generator already executing");
-            }
-            Active = true;
-        }
+        #region Python Public APIs
 
         public object next() {
             object res = MoveNextWorker();
@@ -240,6 +120,7 @@ namespace IronPython.Runtime {
             if (!((IEnumerator)this).MoveNext()) {
                 throw PythonOps.StopIteration();
             }
+
             return _current;
         }
 
@@ -260,7 +141,7 @@ namespace IronPython.Runtime {
             _sendValue = value;
             return next();
         }
-        
+
         /// <summary>
         /// Close introduced in Pep 342.
         /// </summary>
@@ -285,13 +166,31 @@ namespace IronPython.Runtime {
             }
         }
 
+        public object gi_code {
+            get {
+                return _function.func_code;
+            }
+        }
+
+        public int gi_running {
+            get {
+                if (Active) {
+                    return 1;
+                }
+
+                return 0;
+            }
+        }
+
+        #endregion
+
         #region IEnumerable Members
 
         IEnumerator IEnumerable.GetEnumerator() {
             return this;
         }
 
-        #endregion      
+        #endregion
 
         #region IEnumerable<object> Members
 
@@ -302,6 +201,137 @@ namespace IronPython.Runtime {
         #endregion
 
         #region Internal implementation details
+
+        private CodeContext Context {
+            get {
+                return _function.Context;
+            }
+        }
+
+        internal IEnumerator Next {
+            set {
+                _next = value;
+            }
+        }
+
+        // Silverlight doesn't allow finalizers in user code.
+#if !SILVERLIGHT
+        // Pep 342 says generators now have finalizers (__del__) that call Close()
+        ~PythonGenerator() {
+            // if there are no except or finally blocks then closing the
+            // generator has no effect.
+            if (CanSetSysExcInfo || ContainsTryFinally) {
+                try {
+                    // This may run the users generator.
+                    close();
+                } catch (Exception e) {
+                    // An unhandled exceptions on the finalizer could tear down the process, so catch it.
+
+                    // PEP says:
+                    //   If close() raises an exception, a traceback for the exception is printed to sys.stderr
+                    //   and further ignored; it is not propagated back to the place that
+                    //   triggered the garbage collection. 
+
+                    // Sample error message from CPython 2.5 looks like:
+                    //     Exception __main__.MyError: MyError() in <generator object at 0x00D7F6E8> ignored
+                    try {
+                        string message = string.Format("Exception in generator {1} ignored", PythonOps.Repr(Context, this));
+
+                        PythonOps.PrintWithDest(Context, PythonContext.GetContext(Context).SystemStandardError, message);
+                        PythonOps.PrintWithDest(Context, PythonContext.GetContext(Context).SystemStandardError, Context.LanguageContext.FormatException(e));
+                    } catch {
+                        // if stderr is closed then ignore any exceptions.
+                    }
+                }
+            }
+        }
+#endif // !SILVERLIGHT
+
+        bool IEnumerator.MoveNext() {
+            if (Closed) {
+                // avoid exception
+                return false;
+            }
+
+            try {
+                object res = MoveNextWorker();
+                if (res != OperationFailed.Value) {
+                    return true;
+                }
+
+                return false;
+            } catch (StopIterationException) {
+                return false;
+            }
+        }
+
+        private object MoveNextWorker() {
+            // Python's language policy on generators is that attempting to access after it's closed (returned)
+            // just continues to throw StopIteration exceptions.
+            if (Closed) {
+                throw new StopIterationException();
+            }
+
+            // Generators can not be called re-entrantly.
+            CheckSetActive();
+
+            // We need to save/restore the exception info if the generator
+            // includes exception handling blocks.
+            Exception save = SaveCurrentException();
+
+            bool ret = false;
+            object next = OperationFailed.Value;
+            try {
+                // This calls into the delegate that has the real body of the generator.
+                // The generator body here may:
+                // 1. return an item: _next() returns true and 'next' is set to the next item in the enumeration.
+                // 2. Exit normally: _next returns false.
+                // 3. Exit with a StopIteration exception: for-loops and other enumeration consumers will 
+                //    catch this and terminate the loop without propogating the exception.
+                // 4. Exit via some other unhandled exception: This will close the generator, but the exception still propogates.
+                //    _next does not return, so ret is left assigned to false (closed), which we detect in the finally.
+                if (ret = _next.MoveNext()) {
+                    next = _next.Current;
+                } else {
+                    next = OperationFailed.Value;
+                }
+            } finally {
+                // A generator restores the sys.exc_info() status after each yield point.
+                RestoreCurrentException(save);
+                Active = false;
+
+                // If _next() returned false, or did not return (thus leavintg ret assigned to its initial value of false), then 
+                // the body of the generator has exited and the generator is now closed.
+                if (!ret) {
+                    Close();
+                }
+            }
+
+            _current = next;
+            return next;
+        }
+
+        private void RestoreCurrentException(Exception save) {
+            if (CanSetSysExcInfo) {
+                PythonOps.RestoreCurrentException(save);
+            }
+        }
+
+        private Exception SaveCurrentException() {
+            if (CanSetSysExcInfo) {
+                return PythonOps.SaveCurrentException();
+            }
+            return null;
+        }
+
+        private void CheckSetActive() {
+            if (Active) {
+                // A generator could catch this exception and continue executing, so this does
+                // not necessarily close the generator.
+                throw PythonOps.ValueError("generator already executing");
+            }
+            Active = true;
+        }
 
         /// <summary>
         /// Helper called from PythonOps after the yield statement
@@ -315,7 +345,7 @@ namespace IronPython.Runtime {
             // Since this method is called from the generator body's execution, the generator must be running 
             // and not closed.
             Debug.Assert(!Closed);
-            
+
             if (_sendValue != null) {
                 // Can't Send() and Throw() at the same time.
                 Debug.Assert(_excInfo == null);
@@ -380,12 +410,14 @@ namespace IronPython.Runtime {
 
         internal bool CanSetSysExcInfo {
             get {
-                return (_flags & GeneratorFlags.CanSetSysExcInfo) != 0;
+                return (_function.Flags & FunctionAttributes.CanSetSysExcInfo) != 0;
             }
-            set {
-                if (value) _flags |= GeneratorFlags.CanSetSysExcInfo;
-                else _flags &= ~GeneratorFlags.CanSetSysExcInfo;
-            }            
+        }
+
+        internal bool ContainsTryFinally {
+            get {
+                return (_function.Flags & FunctionAttributes.ContainsTryFinally) != 0;
+            }
         }
 
         #endregion

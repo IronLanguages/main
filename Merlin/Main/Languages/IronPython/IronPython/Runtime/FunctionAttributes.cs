@@ -24,5 +24,6 @@ namespace IronPython.Runtime {
         Generator = 0x20,
         FutureDivision = 0x2000,
         CanSetSysExcInfo = 0x4000,
+        ContainsTryFinally = 0x8000,
     }
 }

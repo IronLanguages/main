@@ -59,24 +59,30 @@ namespace IronRuby.Compiler.Ast {
         internal override MSA.Expression/*!*/ TransformRead(AstGenerator/*!*/ gen) {
             switch (_kind) {
                 case StringKind.Mutable:
-                    return TransformConcatentation(gen, _parts, Methods.CreateMutableString, null);
+                    return TransformConcatentation(gen, _parts, Methods.CreateMutableString);
 
                 case StringKind.Immutable:
-                    return TransformConcatentation(gen, _parts, Methods.CreateSymbol, null);
+                    return TransformConcatentation(gen, _parts, Methods.CreateSymbol);
 
                 case StringKind.Command:
                     return Ast.Dynamic(RubyCallAction.Make("`", new RubyCallSignature(1, RubyCallFlags.HasScope | RubyCallFlags.HasImplicitSelf)), typeof(object),
                         gen.CurrentScopeVariable,
                         gen.CurrentSelfVariable,
-                        TransformConcatentation(gen, _parts, Methods.CreateMutableString, null)
+                        TransformConcatentation(gen, _parts, Methods.CreateMutableString)
                     );
             }
 
             throw Assert.Unreachable;
         }
 
-        internal static MSA.Expression/*!*/ TransformConcatentation(AstGenerator/*!*/ gen, List<Expression>/*!*/ parts, 
-            Func<string, MethodInfo>/*!*/ opFactory, MSA.Expression additionalArg) {
+        internal static MSA.Expression/*!*/ TransformConcatentation(AstGenerator/*!*/ gen, List<Expression>/*!*/ parts, Func<string, MethodInfo>/*!*/ opFactory) {
+            return TransformConcatentation(gen, parts, opFactory, null, null);
+        }
+
+        internal static MSA.Expression/*!*/ TransformConcatentation(AstGenerator/*!*/ gen, List<Expression>/*!*/ parts,
+            Func<string, MethodInfo>/*!*/ opFactory, MSA.Expression regexOptions, MSA.Expression regexCache) {
+
+            ContractUtils.Requires((regexOptions == null) == (regexCache == null));
 
             var opSuffix = new StringBuilder(Math.Min(parts.Count, 4));
 
@@ -92,18 +98,21 @@ namespace IronRuby.Compiler.Ast {
                     merged.Add(Ast.Constant(RubyEncoding.GetCodePage(gen.Encoding)));
                 }
 
-                if (additionalArg != null) {
-                    merged.Add(additionalArg);
+                if (regexOptions != null) {
+                    merged.Add(regexOptions);
+                    merged.Add(regexCache);
                 }
 
                 return opFactory(opSuffix.ToString()).OpCall(merged);
             } else {
                 var paramArray = Ast.NewArrayInit(typeof(object), merged);
                 var codePage = Ast.Constant(RubyEncoding.GetCodePage(gen.Encoding));
-                
-                return (additionalArg != null) ?
-                    opFactory("N").OpCall(paramArray, codePage, additionalArg) :
-                    opFactory("N").OpCall(paramArray, codePage);
+
+                if (regexOptions == null) {
+                    return opFactory("N").OpCall(paramArray, codePage);
+                } else {
+                    return opFactory("N").OpCall(paramArray, codePage, regexOptions, regexCache);
+                }
             } 
         }
 

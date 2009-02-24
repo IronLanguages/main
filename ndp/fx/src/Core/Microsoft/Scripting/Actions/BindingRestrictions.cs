@@ -274,7 +274,7 @@ namespace System.Dynamic {
         private static Expression CreateInstanceRestriction(Expression expression, object value) {
             if (value == null) {
                 return Expression.Equal(
-                    Helpers.Convert(expression, typeof(object)),
+                    Expression.Convert(expression, typeof(object)),
                     Expression.Constant(null)
                 );
             }
@@ -301,7 +301,7 @@ namespace System.Dynamic {
                     ),
                     Expression.Equal(
                         temp,
-                        Helpers.Convert(expression, typeof(object))
+                        Expression.Convert(expression, typeof(object))
                     )
                 )
             );

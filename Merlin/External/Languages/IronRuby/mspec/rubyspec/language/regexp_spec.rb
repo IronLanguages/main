@@ -16,9 +16,17 @@ describe "Literal Regexps" do
     /Hello/.class.should == Regexp
   end
   
+  it "caches the Regexp object" do
+    rs = []
+    2.times do |i|
+      x = 1
+      rs << /foo/
+    end
+    rs[0].should equal(rs[1])
+  end
+
   it "throws SyntaxError for malformed literals" do
-    lambda { 
-    eval('/(/') }.should raise_error(SyntaxError)
+    lambda { eval('/(/') }.should raise_error(SyntaxError)
   end
 
   #############################################################################
@@ -139,6 +147,7 @@ describe "Literal Regexps" do
   
   it 'supports quoting meta-characters via escape sequence' do
     /\\/.match("\\").to_a.should == ["\\"]
+    /\//.match("/").to_a.should == ["/"]
     # parenthesis, etc
     /\(/.match("(").to_a.should == ["("]
     /\)/.match(")").to_a.should == [")"]
@@ -146,11 +155,16 @@ describe "Literal Regexps" do
     /\]/.match("]").to_a.should == ["]"]
     /\{/.match("{").to_a.should == ["{"]
     /\}/.match("}").to_a.should == ["}"]
+    # alternation separator
+    /\|/.match("|").to_a.should == ["|"]
     # quantifiers
     /\?/.match("?").to_a.should == ["?"]
     /\./.match(".").to_a.should == ["."]
     /\*/.match("*").to_a.should == ["*"]
     /\+/.match("+").to_a.should == ["+"]
+    # line anchors
+    /\^/.match("^").to_a.should == ["^"]
+    /\$/.match("$").to_a.should == ["$"]    
   end
   
   it 'allows any character to be escaped' do
@@ -616,6 +630,41 @@ describe "Literal Regexps" do
     2.times do |i|
       /#{i}/o.should == /0/
     end
+  end
+  
+  it 'invokes substitutions for /o only once' do
+    ScratchPad.record []
+    to_s_callback = Proc.new do
+      ScratchPad << :to_s_callback
+      "class_with_to_s"
+    end
+    o = LanguageSpecs::ClassWith_to_s.new(to_s_callback)
+    2.times { /#{o}/o }
+    ScratchPad.recorded.should == [:to_s_callback]
+  end
+  
+  it 'does not do thread synchronization for /o' do
+    ScratchPad.record []
+    
+    to_s_callback2 = Proc.new do
+      ScratchPad << :to_s_callback2
+      "class_with_to_s2"
+    end
+
+    to_s_callback1 = Proc.new do
+      ScratchPad << :to_s_callback1
+      t2 = Thread.new do
+        o2 = LanguageSpecs::ClassWith_to_s.new(to_s_callback2)
+        ScratchPad << LanguageSpecs.get_regexp_with_substitution(o2)
+      end
+      t2.join
+      "class_with_to_s1"
+    end
+    
+    o1 = LanguageSpecs::ClassWith_to_s.new(to_s_callback1)
+    ScratchPad << LanguageSpecs.get_regexp_with_substitution(o1)
+
+    ScratchPad.recorded.should == [:to_s_callback1, :to_s_callback2, /class_with_to_s2/, /class_with_to_s2/]
   end
   
   it 'supports modifier combinations' do

@@ -93,7 +93,8 @@ namespace IronPython.Runtime.Binding {
                 conversion,
                 TryPythonConversion(conversion, type) ?? base.BindConvert(conversion),
                 new DynamicMetaObject[] { this },
-                typeTest
+                typeTest,
+                type
             );
         }
 

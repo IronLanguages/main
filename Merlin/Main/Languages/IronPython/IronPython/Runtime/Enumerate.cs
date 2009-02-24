@@ -17,7 +17,10 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
+
 using Microsoft.Scripting.Runtime;
+
 using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
@@ -175,19 +178,14 @@ namespace IronPython.Runtime {
             if (PythonOps.TryGetBoundAttr(baseEnumerator, Symbols.Iterator, out iter)) {
                 object iterator = PythonCalls.Call(iter);
                 // don't re-wrap if we don't need to (common case is PythonGenerator).
-                IEnumerable enumerale = iterator as IEnumerable;
-                if (enumerale != null) {
-                    enumerator = enumerale.GetEnumerator();
-                } else {
-                    enumerator = new PythonEnumerator(iterator);
-                }
+                enumerator = PythonOps.MakePythonEnumerator(iterator);
                 return true;
             } else {
                 enumerator = null;
                 return false;
             }
         }
-
+       
         public static IEnumerator Create(object baseObject) {
             IEnumerator res;
             if (!TryCreate(baseObject, out res)) {
@@ -283,31 +281,13 @@ namespace IronPython.Runtime {
     [PythonType("item-enumerator")]
     public class ItemEnumerator : IEnumerator {
         private readonly object _getItemMethod;
+        private readonly CallSite<Func<CallSite, CodeContext, object, int, object>> _site;
         private object _current;
         private int _index;
 
-        internal static bool TryCreate(object baseObject, out IEnumerator enumerator) {
-            object getitem;
-
-            if (PythonOps.TryGetBoundAttr(baseObject, Symbols.GetItem, out getitem)) {
-                enumerator = new ItemEnumerator(getitem);
-                return true;
-            } else {
-                enumerator = null;
-                return false;
-            }
-        }
-
-        internal static IEnumerator Create(object baseObject) {
-            IEnumerator res;
-            if (!TryCreate(baseObject, out res)) {
-                throw PythonOps.TypeError("cannot convert {0} to IEnumerator", PythonTypeOps.GetName(baseObject));
-            }
-            return res;
-        }
-
-        internal ItemEnumerator(object getItemMethod) {
-            this._getItemMethod = getItemMethod;
+        internal ItemEnumerator(object getItemMethod, CallSite<Func<CallSite, CodeContext, object, int, object>> site) {
+            _getItemMethod = getItemMethod;
+            _site = site;
         }
 
         #region IEnumerator members
@@ -324,7 +304,7 @@ namespace IronPython.Runtime {
             }
 
             try {
-                _current = PythonCalls.Call(_getItemMethod, _index);
+                _current = _site.Target(_site, DefaultContext.Default,_getItemMethod,  _index);
                 _index++;
                 return true;
             } catch (IndexOutOfRangeException) {
@@ -348,30 +328,12 @@ namespace IronPython.Runtime {
 
     [PythonType("item-enumerable")]
     public class ItemEnumerable : IEnumerable {
-        private object _getitem;
+        private readonly object _getitem;
+        private readonly CallSite<Func<CallSite, CodeContext, object, int, object>> _site;
 
-        internal static bool TryCreate(object baseObject, out ItemEnumerable ie) {
-            object getitem;
-
-            if (PythonOps.TryGetBoundAttr(baseObject, Symbols.GetItem, out getitem)) {
-                ie = new ItemEnumerable(getitem);
-                return true;
-            } else {
-                ie = null;
-                return false;
-            }
-        }
-
-        internal static ItemEnumerable Create(object baseObject) {
-            ItemEnumerable res;
-            if (!TryCreate(baseObject, out res)) {
-                throw PythonOps.TypeError("cannot convert {0} to IEnumerable", PythonTypeOps.GetName(baseObject));
-            }
-            return res;
-        }
-
-        private ItemEnumerable(object getitem) {
-            this._getitem = getitem;
+        internal ItemEnumerable(object getitem, CallSite<Func<CallSite, CodeContext, object, int, object>> site) {
+            _getitem = getitem;
+            _site = site;
         }
 
         public IEnumerator __iter__() {
@@ -381,7 +343,7 @@ namespace IronPython.Runtime {
         #region IEnumerable Members
 
         IEnumerator IEnumerable.GetEnumerator() {
-            return new ItemEnumerator(_getitem);
+            return new ItemEnumerator(_getitem, _site);
         }
 
         #endregion

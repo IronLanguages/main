@@ -41,6 +41,7 @@ namespace IronPython.Compiler.Ast {
 
         // true if this function can set sys.exc_info(). Only functions with an except block can set that.
         private bool _canSetSysExcInfo;
+        private bool _containsTryFinally;               // true if the function contains try/finally, used for generator optimization
 
         private PythonVariable _variable;               // The variable corresponding to the function name or null for lambdas
 
@@ -93,6 +94,11 @@ namespace IronPython.Compiler.Ast {
         // An alternative technique would be to just walk the body after the parse and look for a except block.
         internal bool CanSetSysExcInfo {
             set { _canSetSysExcInfo = value; }
+        }
+
+        internal bool ContainsTryFinally {
+            get { return _containsTryFinally; }
+            set { _containsTryFinally = value; }
         }
 
         internal PythonVariable Variable {
@@ -312,6 +318,9 @@ namespace IronPython.Compiler.Ast {
             bool needsWrapperMethod = flags != FunctionAttributes.None;
             if (_canSetSysExcInfo) {
                 flags |= FunctionAttributes.CanSetSysExcInfo;
+            }
+            if (ContainsTryFinally) {
+                flags |= FunctionAttributes.ContainsTryFinally;
             }
 
             MSAst.Expression code;

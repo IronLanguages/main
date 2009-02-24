@@ -94,7 +94,7 @@ namespace System.Dynamic {
             // so it makes sense to restrict on the target's type.
             // ideally IDO's should do this, but they often miss this.
             if (args[0] as IDynamicMetaObjectProvider != null) {
-                restrictions = BindingRestrictions.GetTypeRestriction(target).Merge(restrictions);
+                restrictions = BindingRestrictions.GetTypeRestriction(parameters[0], args[0].GetType()).Merge(restrictions);
             }
 
             restrictions = AddRemoteObjectRestrictions(restrictions, args, parameters);
@@ -241,6 +241,31 @@ namespace System.Dynamic {
 
         #endregion
 
+        /// <summary>
+        /// Converts the result of a dynamic operation to the given type.
+        /// Void converts to default(T). This will not find a userdefined
+        /// conversion method, and its error is specific to converting the
+        /// result of a dynamic operation.
+        /// </summary>
+        internal static Expression Convert(Expression expression, Type type) {
+            if (expression.Type == type) {
+                return expression;
+            }
+
+            // Dynamic operations can convert void -> default(T)
+            if (expression.Type == typeof(void)) {
+                return Expression.Block(expression, Expression.Default(type));
+            }
+
+            // If we don't have a valid primtive conversion, it's an error.
+            if (!TypeUtils.HasIdentityPrimitiveOrNullableConversion(expression.Type, type) &&
+                !TypeUtils.HasReferenceConversion(expression.Type, type)) {
+                throw Error.CannotConvertDynamicResult(expression.Type, type);
+            }
+
+            return Expression.Convert(expression, type);
+        }
+
         private Expression AddReturn(Expression body, LabelTarget @return, Type toType) {
             switch (body.NodeType) {
                 case ExpressionType.Conditional:
@@ -300,7 +325,7 @@ namespace System.Dynamic {
 
             // Then add a convert to the lambda return type.
             if (@return.Type != typeof(void) && result.Type != @return.Type) {
-                result = Helpers.Convert(result, @return.Type);
+                result = Convert(result, @return.Type);
             }
 
             return Expression.Return(@return, result, body.Type);

@@ -123,7 +123,7 @@ namespace IronPython.Runtime.Types {
         }
 
         public static class _PythonGenerator {
-            public static readonly ConstructorInfo Ctor = typeof(PythonGenerator).GetConstructor(new Type[] { typeof(CodeContext) });
+            public static readonly ConstructorInfo Ctor = typeof(PythonGenerator).GetConstructor(new Type[] { typeof(PythonFunction) });
         }
 
 

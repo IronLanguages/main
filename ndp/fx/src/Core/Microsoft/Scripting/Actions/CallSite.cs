@@ -367,8 +367,8 @@ namespace System.Runtime.CompilerServices {
 
             var checkOriginalRuleOrInvoke = Expression.IfThenElse(
                 Expression.Equal(
-                    Helpers.Convert(startingTarget, typeof(object)),
-                    Helpers.Convert(ruleTarget, typeof(object))
+                    Expression.Convert(startingTarget, typeof(object)),
+                    Expression.Convert(ruleTarget, typeof(object))
                 ),
                 Expression.Assign(originalRule, rule),
                 Expression.Block(invokeRule, resetMatch)
@@ -474,8 +474,8 @@ namespace System.Runtime.CompilerServices {
 
             var checkOriginalRule = Expression.IfThen(
                 Expression.Equal(
-                    Helpers.Convert(startingTarget, typeof(object)),
-                    Helpers.Convert(ruleTarget, typeof(object))
+                    Expression.Convert(startingTarget, typeof(object)),
+                    Expression.Convert(ruleTarget, typeof(object))
                 ),
                 Expression.Assign(originalRule, rule)
             );

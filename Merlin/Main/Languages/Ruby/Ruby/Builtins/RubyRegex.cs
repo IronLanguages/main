@@ -34,18 +34,18 @@ namespace IronRuby.Builtins {
 
         public RubyRegex(MutableString/*!*/ pattern, RubyRegexOptions options) {
             ContractUtils.RequiresNotNull(pattern, "pattern");
-            _regex = pattern.ToRegularExpression(options);
+            _regex = pattern.ToRegularExpression(GetPersistedOptions(options));
         }
 
         public RubyRegex(string/*!*/ pattern, RubyRegexOptions options) {
             ContractUtils.RequiresNotNull(pattern, "pattern");
-            _regex = new StringRegex(pattern, options);
+            _regex = new StringRegex(pattern, GetPersistedOptions(options));
         }
 
         public RubyRegex(byte[]/*!*/ pattern, RubyRegexOptions options) {
             ContractUtils.RequiresNotNull(pattern, "pattern");
-            // TODO: _regex = new BinaryRegex(pattern, options);
-            _regex = new StringRegex(BinaryEncoding.Obsolete.GetString(pattern, 0, pattern.Length), options);
+            // TODO: _regex = new BinaryRegex(pattern, RubyRegex.GetPersistedOptions(options));
+            _regex = new StringRegex(BinaryEncoding.Obsolete.GetString(pattern, 0, pattern.Length), GetPersistedOptions(options));
         }
 
         public RubyRegex(Regex/*!*/ regex) {
@@ -178,6 +178,12 @@ namespace IronRuby.Builtins {
 
         public void Set(MutableString/*!*/ pattern, RubyRegexOptions options) {
             _regex = pattern.ToRegularExpression(options);
+        }
+
+        internal static RubyRegexOptions GetPersistedOptions(RubyRegexOptions options) {
+            // RubyRegexOptions.Once is only used to determine how the Regexp object should be created and cached. 
+            // It is not a property of the final object. /foo/ should compare equal with /foo/o.
+            return options & ~RubyRegexOptions.Once;
         }
 
         public static RegexOptions ToClrOptions(RubyRegexOptions options) {

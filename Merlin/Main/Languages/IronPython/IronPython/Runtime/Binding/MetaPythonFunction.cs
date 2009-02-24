@@ -839,21 +839,11 @@ namespace IronPython.Runtime.Binding {
                             pg,
                             Expression.New(
                                 TypeInfo._PythonGenerator.Ctor, 
-                                Ast.Constant(BinderState.GetBinderState(_call).Context)
+                                GetFunctionParam()
                             )
                         );
                         // $gen.Next = <call DLR generator method>($gen, ....)
                         comma[count++] = Expression.Call(typeof(PythonOps).GetMethod("InitializePythonGenerator"), pg, invoke);
-
-                        if (_func.Value.IsGeneratorWithExceptionHandling) {
-                            // function is a generator and it has try/except blocks.  We
-                            // need to save/restore exception info but want to skip it
-                            // for simple generators
-                            pg = Ast.Call(
-                                typeof(PythonOps).GetMethod("MarkGeneratorWithExceptionHandling"),
-                                pg
-                            );
-                        }
 
                         // $gen is the value
                         comma[count++] = pg;

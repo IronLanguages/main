@@ -120,6 +120,7 @@ namespace IronPython.Runtime {
         private CallSite<Func<CallSite, CodeContext, object, object, object, int>> _sharedFunctionCompareSite;
         private CallSite<Func<CallSite, CodeContext, PythonFunction, object, object, int>> _sharedPythonFunctionCompareSite;
         private CallSite<Func<CallSite, CodeContext, BuiltinFunction, object, object, int>> _sharedBuiltinFunctionCompareSite;
+        private CallSite<Func<CallSite, CodeContext, object, int, object>> _getItemCallSite;
 
         private CallSite<Func<CallSite, CodeContext, object, object, object>> _propGetSite, _propDelSite;
         private CallSite<Func<CallSite, CodeContext, object, object, object, object>> _propSetSite;
@@ -2815,6 +2816,25 @@ namespace IronPython.Runtime {
 
             return new FunctionComparer<object>(this, cmp, _sharedFunctionCompareSite);
 
+        }
+
+        internal CallSite<Func<CallSite, CodeContext, object, int, object>> GetItemCallSite {
+            get {
+                if (_getItemCallSite == null) {
+                    Interlocked.CompareExchange(
+                        ref _getItemCallSite,
+                        CallSite<Func<CallSite, CodeContext, object, int, object>>.Create(
+                            new PythonInvokeBinder(
+                                DefaultBinderState,
+                                new CallSignature(1)
+                            )
+                        ),
+                        null
+                    );
+                }
+
+                return _getItemCallSite;
+            }
         }
 
         internal CallSite<Func<CallSite, object, object, bool>> GetEqualSite(Type/*!*/ type) {

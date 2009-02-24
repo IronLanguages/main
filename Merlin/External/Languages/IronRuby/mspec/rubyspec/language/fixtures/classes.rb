@@ -1,7 +1,15 @@
 module LanguageSpecs
   class ClassWith_to_s
+    def initialize(to_s_callback = nil)
+      @to_s_callback = to_s_callback
+    end
+    
     def to_s
-      "class_with_to_s"
+      if @to_s_callback then
+        @to_s_callback.call()
+      else
+        "class_with_to_s"
+      end
     end
   end
 
@@ -39,5 +47,9 @@ module LanguageSpecs
   
   def self.punctuations
     ",.?" # TODO - Need to fill in the full list
+  end
+  
+  def self.get_regexp_with_substitution o
+    /#{o}/o
   end
 end

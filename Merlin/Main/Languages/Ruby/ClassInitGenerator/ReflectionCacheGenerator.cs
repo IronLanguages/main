@@ -15,6 +15,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Text;
 using IronRuby.Runtime;
 using System.CodeDom.Compiler;
@@ -63,11 +64,14 @@ internal sealed class ReflectionCacheGenerator : Generator {
 
         return gen;
     }
-    
+
     public void Generate() {
         _anyError = false;
 
-        var methods = ReflectMethods(typeof(RubyOps)).Values;
+        var unsortedMethods = ReflectMethods(typeof(RubyOps)).Values;
+        List<MethodInfo> methods = new List<MethodInfo>();
+        methods.AddRange(unsortedMethods);
+        methods.Sort((m1, m2) => m1.Name.CompareTo(m2.Name));
 
         if (_anyError) {
             Environment.ExitCode = 1;
@@ -81,6 +85,7 @@ internal sealed class ReflectionCacheGenerator : Generator {
             WriteLicenseStatement(writer);
 
             _output.WriteLine("using System.Reflection;");
+            _output.WriteLine("using System.Diagnostics;");
             _output.WriteLine("using IronRuby.Runtime;");
             _output.WriteLine("using Microsoft.Scripting.Utils;");
 
@@ -107,6 +112,8 @@ internal sealed class ReflectionCacheGenerator : Generator {
 
             _output.Indent--;
             _output.WriteLine("}");
+
+            Debug.Assert(_output.Indent == 0);
         }
     }
 
@@ -159,6 +166,8 @@ internal sealed class ReflectionCacheGenerator : Generator {
     private void GenerateStringFactoryOps(string/*!*/ baseName) {
         _output.WriteLine("public static MethodInfo/*!*/ {0}(string/*!*/ suffix) {{", baseName);
         _output.Indent++;
+
+        _output.WriteLine("Debug.Assert(suffix.Length <= RubyOps.MakeStringParamCount);");
 
         _output.WriteLine("switch (suffix) {");
         _output.Indent++;

@@ -601,7 +601,7 @@ namespace IronPython.Runtime.Types {
         private void StoreOverriddenMethod(MethodInfo mi, string newName) {
             MemberInfo[] members = _baseType.GetMember(newName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static | BindingFlags.FlattenHierarchy);
             Debug.Assert(members.Length > 0, String.Format("{0} from {1}", newName, _baseType.Name));
-            Type declType = members[0].DeclaringType;
+            Type declType = ((MethodInfo)members[0]).GetBaseDefinition().DeclaringType;
 
             string pythonName = newName;
             switch (newName) {

@@ -206,6 +206,38 @@ namespace System.Dynamic.Utils {
             return false;
         }
 
+        internal static bool HasReferenceConversion(Type source, Type dest) {
+            Debug.Assert(source != null && dest != null);
+
+            // void -> void conversion is handled elsewhere
+            // (it's an identity conversion)
+            // All other void conversions are disallowed.
+            if (source == typeof(void) || dest == typeof(void)) {
+                return false;
+            }
+
+            Type nnSourceType = TypeUtils.GetNonNullableType(source);
+            Type nnDestType = TypeUtils.GetNonNullableType(dest);
+
+            // Down conversion
+            if (nnSourceType.IsAssignableFrom(nnDestType)) {
+                return true;
+            }
+            // Up conversion
+            if (nnDestType.IsAssignableFrom(nnSourceType)) {
+                return true;
+            }
+            // Interface conversion
+            if (source.IsInterface || dest.IsInterface) {
+                return true;
+            }
+            // Object conversion
+            if (source == typeof(object) || dest == typeof(object)) {
+                return true;
+            }
+            return false;
+        }
+
         internal static bool IsConvertible(Type type) {
             type = GetNonNullableType(type);
             if (type.IsEnum) {

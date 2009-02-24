@@ -909,13 +909,23 @@ namespace System.Linq.Expressions {
         }
 
         protected internal override Expression VisitExtension(Expression node) {
-            Out("extension", Flow.Space);
+            // Prefer an overriden ToString, if available.
+            var flags = BindingFlags.Public | BindingFlags.Instance | BindingFlags.ExactBinding;
+            var toString = node.GetType().GetMethod("ToString", flags, null, Type.EmptyTypes, null);
+            if (toString.DeclaringType != typeof(Expression)) {
+                Out(node.ToString());
+                return node;
+            }
 
-            Out(node.GetType().Name, Flow.Space);
-            Out("(");
-            // walk it
-            base.VisitExtension(node);
-            Out(")");
+            Out("[");
+            // For 3.5 subclasses, print the NodeType.
+            // For Extension nodes, print the class name.
+            if (node.NodeType == ExpressionType.Extension) {
+                Out(node.GetType().FullName);
+            } else {
+                Out(node.NodeType.ToString());
+            }
+            Out("]");
             return node;
         }
 

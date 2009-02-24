@@ -14,6 +14,7 @@
  * ***************************************************************************/
 
 using System.Collections.Generic;
+using System.Dynamic.Utils;
 using System.Collections.ObjectModel;
 using System.Dynamic;
 using System.Linq.Expressions;
@@ -59,11 +60,14 @@ namespace System.Runtime.CompilerServices {
         /// </summary>
         internal Dictionary<Type, object> Cache;
 
+        // keep alive primary binder.
+        private CallSiteBinder theBinder;
+
         internal RuleCache<T> GetRuleCache<T>() where T : class {
             // make sure we have cache.
             if (Cache == null) {
                 // to improve rule sharing try to get the primary binder and share with it.
-                CallSiteBinder theBinder = GetPrimaryBinderInstance();
+                theBinder = GetPrimaryBinderInstance();
 
                 // primary binder must have cache.
                 if (theBinder.Cache == null) {
@@ -94,33 +98,9 @@ namespace System.Runtime.CompilerServices {
         /// <summary>
         /// Trivial binder atomizer.
         /// </summary>
-        private static Dictionary<CallSiteBinder, CallSiteBinder> _binders = new Dictionary<CallSiteBinder, CallSiteBinder>(new BinderComparer());
+        private static WeakUniqueSet<CallSiteBinder> _binders = new WeakUniqueSet<CallSiteBinder>();
         private CallSiteBinder GetPrimaryBinderInstance() {
-            CallSiteBinder binder;
-            lock (_binders) {
-                if (!_binders.TryGetValue(this, out binder)) {
-                    _binders[this] = binder = this;
-                }
-            }
-            return binder;
-        }
-
-        private class BinderComparer : IEqualityComparer<CallSiteBinder> {
-            int IEqualityComparer<CallSiteBinder>.GetHashCode(CallSiteBinder obj) {
-                return obj.GetType().GetHashCode() ^ obj.GetHashCode();
-            }
-
-            bool IEqualityComparer<CallSiteBinder>.Equals(CallSiteBinder x, CallSiteBinder y) {
-                //trivial cases first.
-                if ((object)x == (object)y) {
-                    return true;
-                }
-                if (x == null || y == null) {
-                    return false;
-                }
-
-                return x.GetType() == y.GetType() && x.Equals(y);
-            }
+            return _binders.GetUniqueFor(this);
         }
     }
 }

@@ -133,7 +133,7 @@ namespace System.Dynamic {
                     statements.Add(
                         Expression.Assign(
                             local,
-                            Helpers.Convert(
+                            Expression.Convert(
                                 Expression.ArrayAccess(constsArg, Expression.Constant(i)),
                                 curConstType
                             )

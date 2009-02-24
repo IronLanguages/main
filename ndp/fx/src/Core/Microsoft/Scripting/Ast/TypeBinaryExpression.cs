@@ -16,6 +16,7 @@
 using System.Collections.Generic;
 using System.Dynamic.Utils;
 using System.Text;
+using System.Reflection;
 
 namespace System.Linq.Expressions {
     /// <summary>
@@ -26,7 +27,7 @@ namespace System.Linq.Expressions {
         private readonly Type _typeOperand;
         private readonly ExpressionType _nodeKind;
 
-        internal TypeBinaryExpression(Expression expression, Type typeOperand, ExpressionType nodeKind){
+        internal TypeBinaryExpression(Expression expression, Type typeOperand, ExpressionType nodeKind) {
             _expression = expression;
             _typeOperand = typeOperand;
             _nodeKind = nodeKind;
@@ -67,7 +68,7 @@ namespace System.Linq.Expressions {
 
         internal Expression ReduceTypeEqual() {
             Type cType = Expression.Type;
-            
+
             // For value types (including Void, but not nullables), we can
             // determine the result now
             if (cType.IsValueType && !cType.IsNullableType()) {
@@ -93,17 +94,30 @@ namespace System.Linq.Expressions {
 
             // Create a temp so we only evaluate the left side once
             parameter = Parameter(typeof(object), null);
+
+            // Convert to object if necessary
+            var expression = Expression;
+            if (!TypeUtils.AreReferenceAssignable(typeof(object), expression.Type)) {
+                expression = Expression.Convert(expression, typeof(object));
+            }
+
             return Expression.Block(
                 new[] { parameter },
-                Expression.Assign(parameter, Helpers.Convert(Expression, typeof(object))),
+                Expression.Assign(parameter, expression),
                 ByValParameterTypeEqual(parameter)
             );
         }
 
         // helper that is used when re-eval of LHS is safe.
         private Expression ByValParameterTypeEqual(ParameterExpression value) {
+            //when comparing the value with null, we don't want to invoke the
+            //user overloaded operator if there is one. Instead, we want to do
+            //reference equality comparison by converting the value to System.Object.
             return Expression.AndAlso(
-                Expression.NotEqual(value, Expression.Constant(null)),
+                //TODO: If we can generate more optimal IL for reference equality comparison
+                //by using conversion, we can replace the following line with 
+                //Expression.NotEqual(Expression.Convert(value, typeof(object))
+                new LogicalBinaryExpression(ExpressionType.NotEqual, value, Expression.Constant(null)),
                 Expression.Equal(
                     Expression.Call(
                         value,

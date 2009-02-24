@@ -13,10 +13,9 @@
  *
  * ***************************************************************************/
 
-using System.Collections.ObjectModel;
 using System.Diagnostics;
-using System.Reflection;
 using System.Dynamic.Utils;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 
 namespace System.Linq.Expressions {
@@ -682,43 +681,12 @@ namespace System.Linq.Expressions {
             if (method == null) {
                 ContractUtils.RequiresNotNull(type, "type");
                 if (TypeUtils.HasIdentityPrimitiveOrNullableConversion(expression.Type, type) ||
-                    HasReferenceConversion(expression.Type, type)) {
+                    TypeUtils.HasReferenceConversion(expression.Type, type)) {
                     return new UnaryExpression(ExpressionType.Convert, expression, type, null);
                 }
                 return GetUserDefinedCoercionOrThrow(ExpressionType.Convert, expression, type);
             }
             return GetMethodBasedCoercionOperator(ExpressionType.Convert, expression, type, method);
-        }
-
-        private static bool HasReferenceConversion(Type source, Type dest) {
-            Debug.Assert(source != null && dest != null);
-
-            // void -> void conversion is handled elsewhere.
-            // All other void conversions are disallowed.
-            if (source == typeof(void) || dest == typeof(void)) {
-                return false;
-            }
-
-            Type nnSourceType = TypeUtils.GetNonNullableType(source);
-            Type nnDestType = TypeUtils.GetNonNullableType(dest);
-
-            // Down conversion
-            if (nnSourceType.IsAssignableFrom(nnDestType)) {
-                return true;
-            }
-            // Up conversion
-            if (nnDestType.IsAssignableFrom(nnSourceType)) {
-                return true;
-            }
-            // Interface conversion
-            if (source.IsInterface || dest.IsInterface) {
-                return true;
-            }
-            // Object conversion
-            if (source == typeof(object) || dest == typeof(object)) {
-                return true;
-            }
-            return false;
         }
 
         ///<summary>Creates a <see cref="T:System.Linq.Expressions.UnaryExpression" /> that represents a conversion operation that throws an exception if the target type is overflowed.</summary>
@@ -750,7 +718,7 @@ namespace System.Linq.Expressions {
                 if (TypeUtils.HasIdentityPrimitiveOrNullableConversion(expression.Type, type)) {
                     return new UnaryExpression(ExpressionType.ConvertChecked, expression, type, null);
                 }
-                if (HasReferenceConversion(expression.Type, type)) {
+                if (TypeUtils.HasReferenceConversion(expression.Type, type)) {
                     return new UnaryExpression(ExpressionType.Convert, expression, type, null);
                 }
                 return GetUserDefinedCoercionOrThrow(ExpressionType.ConvertChecked, expression, type);
