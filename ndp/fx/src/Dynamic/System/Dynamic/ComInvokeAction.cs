@@ -23,8 +23,8 @@ using System.Diagnostics;
 
 namespace System.Dynamic {
     internal sealed class ComInvokeAction : InvokeBinder {
-        internal ComInvokeAction(params ArgumentInfo[] arguments)
-            : base(arguments) {
+        internal ComInvokeAction(CallInfo callInfo)
+            : base(callInfo) {
         }
 
         public override int GetHashCode() {
@@ -78,7 +78,6 @@ namespace System.Dynamic {
             ParameterExpression[] temps = new ParameterExpression[argLen];
 
             DynamicMetaObject[] splattedArgs = new DynamicMetaObject[argLen];
-            ArgumentInfo[] arginfos = new ArgumentInfo[argLen];
 
             for (int i = 0; i < argLen; i++) {
 
@@ -99,8 +98,6 @@ namespace System.Dynamic {
                     BindingRestrictions.Empty,
                     argValues[i]
                 );
-
-                arginfos[i] = Expression.PositionalArg(i);
             }
 
 
@@ -113,7 +110,7 @@ namespace System.Dynamic {
                 )
             );
 
-            ComInvokeAction invokeBinder = new ComInvokeAction(arginfos);
+            ComInvokeAction invokeBinder = new ComInvokeAction(Expression.CallInfo(argLen));
             DynamicMetaObject innerAction = target.BindInvoke(invokeBinder, splattedArgs);
 
             Expression exprRestrictions = Expression.Lambda(innerAction.Restrictions.ToExpression(), temps);

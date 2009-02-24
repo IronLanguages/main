@@ -46,17 +46,21 @@ namespace IronRuby.Builtins {
 
         // thread-safe:
         [RubyMethod("public", RubyMethodAttributes.PublicInstance)]
-        public static RubyModule/*!*/ SetPublicVisibility(RubyScope/*!*/ scope, object/*!*/ self, [NotNull]params object[]/*!*/ methodNames) {
+        public static RubyModule/*!*/ SetPublicVisibility(RubyScope/*!*/ scope, object/*!*/ self,
+            [DefaultProtocol, NotNull, NotNullItems]params string/*!*/[]/*!*/ methodNames) {
+
             return SetVisibility(scope, self, methodNames, RubyMethodAttributes.PublicInstance);
         }
 
         // thread-safe:
         [RubyMethod("private", RubyMethodAttributes.PublicInstance)]
-        public static RubyModule/*!*/ SetPrivateVisibility(RubyScope/*!*/ scope, object/*!*/ self, [NotNull]params object[]/*!*/ methodNames) {
+        public static RubyModule/*!*/ SetPrivateVisibility(RubyScope/*!*/ scope, object/*!*/ self,
+            [DefaultProtocol, NotNull, NotNullItems]params string/*!*/[]/*!*/ methodNames) {
+
             return SetVisibility(scope, self, methodNames, RubyMethodAttributes.PrivateInstance);
         }
 
-        private static RubyModule/*!*/ SetVisibility(RubyScope/*!*/ scope, object/*!*/ self, object[]/*!*/ methodNames, RubyMethodAttributes attributes) {
+        private static RubyModule/*!*/ SetVisibility(RubyScope/*!*/ scope, object/*!*/ self, string/*!*/[]/*!*/ methodNames, RubyMethodAttributes attributes) {
             Assert.NotNull(scope, self, methodNames);
             RubyClass cls = scope.RubyContext.GetClassOf(self);
             ModuleOps.SetMethodAttributes(scope, cls, methodNames, attributes);

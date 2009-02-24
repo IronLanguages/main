@@ -84,7 +84,8 @@ namespace IronRuby.Hosting {
 
             switch (optionName) {
                 case "-v":
-                    // TODO: print version
+                    CommonConsoleOptions.PrintVersion = true;
+                    CommonConsoleOptions.Exit = true;
                     goto case "-W2";
 
                 case "-W0":
@@ -109,6 +110,14 @@ namespace IronRuby.Hosting {
                     LanguageSetup.Options["RequiredLibraries"] = libPath;
                     break;
 
+                case "-e":
+                    if (CommonConsoleOptions.Command == null) {
+                        CommonConsoleOptions.Command = String.Empty;
+                    } else {
+                        CommonConsoleOptions.Command += "\n";
+                    }
+                    CommonConsoleOptions.Command += PopNextArg();
+                    break;
 
 #if DEBUG && !SILVERLIGHT
                 case "-DT*":
@@ -172,6 +181,7 @@ namespace IronRuby.Hosting {
                     if (ConsoleOptions.FileName != null) {
                         LanguageSetup.Options["MainFile"] = ConsoleOptions.FileName;
                         LanguageSetup.Options["Arguments"] = PopRemainingArgs();
+                        CommonConsoleOptions.Exit = false;
                     } 
                     break;
             }

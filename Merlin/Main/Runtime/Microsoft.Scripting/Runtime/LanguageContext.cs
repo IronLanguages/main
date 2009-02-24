@@ -157,7 +157,7 @@ namespace Microsoft.Scripting.Runtime {
         /// Looks up the name in the provided Scope using the current language's semantics.
         /// </summary>
         public virtual bool TryLookupName(Scope scope, SymbolId name, out object value) {
-            if (scope.TryLookupName(this, name, out value) && value != Uninitialized.Instance) {
+            if (scope.TryLookupName(name, out value) && value != Uninitialized.Instance) {
                 return true;
             }
 
@@ -190,7 +190,10 @@ namespace Microsoft.Scripting.Runtime {
         /// Attempts to remove the name from the provided scope using the current language's semantics.
         /// </summary>
         public virtual bool RemoveName(Scope scope, SymbolId name) {
-            return scope.RemoveName(this, name);
+            if (!scope.TryRemoveName(name)) {
+                throw MissingName(name);
+            }
+            return true;
         }
 
         /// <summary>
@@ -508,8 +511,8 @@ namespace Microsoft.Scripting.Runtime {
         private class DefaultCallAction : InvokeMemberBinder {
             private LanguageContext _context;
 
-            internal DefaultCallAction(LanguageContext context, string name, bool ignoreCase, params ArgumentInfo[] arguments)
-                : base(name, ignoreCase, arguments) {
+            internal DefaultCallAction(LanguageContext context, string name, bool ignoreCase, CallInfo callInfo)
+                : base(name, ignoreCase, callInfo) {
                 _context = context;
             }
 
@@ -531,7 +534,7 @@ namespace Microsoft.Scripting.Runtime {
                 target.Restrictions.Merge(BindingRestrictions.Combine(args));
                 return new DynamicMetaObject(
                     Expression.Dynamic(
-                        _context.CreateInvokeBinder(Arguments.ToArray()),
+                        _context.CreateInvokeBinder(CallInfo),
                         typeof(object),
                         GetArgs(target, args)
                     ),
@@ -540,13 +543,13 @@ namespace Microsoft.Scripting.Runtime {
             }
         }
 
-        public virtual InvokeMemberBinder CreateCallBinder(string name, bool ignoreCase, params ArgumentInfo[] arguments) {
-            return new DefaultCallAction(this, name, ignoreCase, arguments);
+        public virtual InvokeMemberBinder CreateCallBinder(string name, bool ignoreCase, CallInfo callInfo) {
+            return new DefaultCallAction(this, name, ignoreCase, callInfo);
         }
 
         private class DefaultInvokeAction : InvokeBinder {
-            internal DefaultInvokeAction(params ArgumentInfo[] arguments)
-                : base(arguments) {
+            internal DefaultInvokeAction(CallInfo callInfo)
+                : base(callInfo) {
             }
 
             public override DynamicMetaObject FallbackInvoke(DynamicMetaObject target, DynamicMetaObject[] args, DynamicMetaObject onBindingError) {
@@ -554,13 +557,13 @@ namespace Microsoft.Scripting.Runtime {
             }
         }
 
-        public virtual InvokeBinder CreateInvokeBinder(params ArgumentInfo[] arguments) {
-            return new DefaultInvokeAction(arguments);
+        public virtual InvokeBinder CreateInvokeBinder(CallInfo callInfo) {
+            return new DefaultInvokeAction(callInfo);
         }
 
         private class DefaultCreateAction : CreateInstanceBinder {
-            internal DefaultCreateAction(params ArgumentInfo[] arguments)
-                : base(arguments) {
+            internal DefaultCreateAction(CallInfo callInfo)
+                : base(callInfo) {
             }
 
             public override DynamicMetaObject FallbackCreateInstance(DynamicMetaObject target, DynamicMetaObject[] args, DynamicMetaObject onBindingError) {
@@ -568,9 +571,9 @@ namespace Microsoft.Scripting.Runtime {
             }
         }
 
-        public virtual CreateInstanceBinder CreateCreateBinder(params ArgumentInfo[] arguments) {
-            return new DefaultCreateAction(arguments);
-        }
+        public virtual CreateInstanceBinder CreateCreateBinder(CallInfo callInfo) {
+            return new DefaultCreateAction(callInfo);
+        }      
 
         #endregion
 

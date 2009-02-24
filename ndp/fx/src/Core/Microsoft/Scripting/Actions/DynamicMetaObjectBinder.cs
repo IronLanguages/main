@@ -18,6 +18,7 @@ using System.Dynamic.Utils;
 using System.Linq.Expressions;
 using System.Linq.Expressions.Compiler;
 using System.Runtime.CompilerServices;
+using System.Runtime.Remoting;
 
 namespace System.Dynamic {
     /// <summary>
@@ -77,6 +78,39 @@ namespace System.Dynamic {
                 throw new InvalidOperationException();
             }
 
+            DynamicMetaObject target = ObjectToMetaObject(args[0], parameters[0]);
+            DynamicMetaObject[] metaArgs = CreateArgumentMetaObjects(args, parameters);
+
+            DynamicMetaObject binding = Bind(target, metaArgs);
+
+            if (binding == null) {
+                throw Error.BindingCannotBeNull();
+            }
+
+            Expression body = binding.Expression;
+            BindingRestrictions restrictions = binding.Restrictions;
+
+            // if target is an IDO we may have a target-specific binding. 
+            // so it makes sense to restrict on the target's type.
+            // ideally IDO's should do this, but they often miss this.
+            if (args[0] as IDynamicMetaObjectProvider != null) {
+                restrictions = BindingRestrictions.GetTypeRestriction(parameters[0], args[0].GetType()).Merge(restrictions);
+            }
+
+            restrictions = AddRemoteObjectRestrictions(restrictions, args, parameters);
+
+            // Add the return label
+            body = AddReturn(body, returnLabel, body.Type);
+
+            // Finally, add restrictions
+            if (restrictions != BindingRestrictions.Empty) {
+                body = Expression.IfThen(restrictions.ToExpression(), body);
+            }
+
+            return body;
+        }
+
+        private static DynamicMetaObject[] CreateArgumentMetaObjects(object[] args, ReadOnlyCollection<ParameterExpression> parameters) {
             DynamicMetaObject[] mos;
             if (args.Length != 1) {
                 mos = new DynamicMetaObject[args.Length - 1];
@@ -86,29 +120,10 @@ namespace System.Dynamic {
             } else {
                 mos = DynamicMetaObject.EmptyMetaObjects;
             }
+            return mos;
+        }
 
-            DynamicMetaObject target = ObjectToMetaObject(args[0], parameters[0]);
-
-            DynamicMetaObject binding = Bind(
-                target,
-                mos
-            );
-
-            if (binding == null) {
-                throw Error.BindingCannotBeNull();
-            }
-
-            Expression bindingExpression = binding.Expression;
-            BindingRestrictions bindingRestrictions = binding.Restrictions;
-
-            // if target is an IDO we may have a target-specific binding. 
-            // so it makes sense to restrict on the target's type.
-            // ideally IDO's should do this, but they often miss this.
-            if (args[0] as IDynamicMetaObjectProvider != null) {
-                BindingRestrictions idoRestriction = BindingRestrictions.GetTypeRestriction(target);
-                bindingRestrictions = idoRestriction.Merge(bindingRestrictions);
-            }
-
+        private static BindingRestrictions AddRemoteObjectRestrictions(BindingRestrictions restrictions, object[] args, ReadOnlyCollection<ParameterExpression> parameters) {
 #if !SILVERLIGHT
 
             for (int i = 0; i < parameters.Count; i++) {
@@ -120,12 +135,12 @@ namespace System.Dynamic {
                 // so bindings created for local and remote objects should not be mixed.
                 if (value != null && !IsComObject(value)) {
                     BindingRestrictions remotedRestriction;
-                    if (System.Runtime.Remoting.RemotingServices.IsObjectOutOfAppDomain(value)) {
+                    if (RemotingServices.IsObjectOutOfAppDomain(value)) {
                         remotedRestriction = BindingRestrictions.GetExpressionRestriction(
                             Expression.AndAlso(
                                 Expression.NotEqual(expr, Expression.Constant(null)),
                                 Expression.Call(
-                                    typeof(System.Runtime.Remoting.RemotingServices).GetMethod("IsObjectOutOfAppDomain"),
+                                    typeof(RemotingServices).GetMethod("IsObjectOutOfAppDomain"),
                                     expr
                                 )
                             )
@@ -136,25 +151,25 @@ namespace System.Dynamic {
                                 Expression.NotEqual(expr, Expression.Constant(null)),
                                 Expression.Not(
                                     Expression.Call(
-                                        typeof(System.Runtime.Remoting.RemotingServices).GetMethod("IsObjectOutOfAppDomain"),
+                                        typeof(RemotingServices).GetMethod("IsObjectOutOfAppDomain"),
                                         expr
                                     )
                                 )
                             )
                         );
                     }
-                    bindingRestrictions = bindingRestrictions.Merge(remotedRestriction);
+                    restrictions = restrictions.Merge(remotedRestriction);
                 }
             }
 
 #endif
-            return GetMetaObjectRule(bindingExpression, bindingRestrictions, returnLabel);
+            return restrictions;
         }
 
         private static DynamicMetaObject ObjectToMetaObject(object argValue, Expression parameterExpression) {
             IDynamicMetaObjectProvider ido = argValue as IDynamicMetaObjectProvider;
 #if !SILVERLIGHT
-            if (ido != null && !System.Runtime.Remoting.RemotingServices.IsObjectOutOfAppDomain(argValue)) {
+            if (ido != null && !RemotingServices.IsObjectOutOfAppDomain(argValue)) {
 #else
             if (ido != null) {
 #endif
@@ -226,34 +241,63 @@ namespace System.Dynamic {
 
         #endregion
 
-        private Expression AddReturn(Expression body, LabelTarget @return) {
+        /// <summary>
+        /// Converts the result of a dynamic operation to the given type.
+        /// Void converts to default(T). This will not find a userdefined
+        /// conversion method, and its error is specific to converting the
+        /// result of a dynamic operation.
+        /// </summary>
+        internal static Expression Convert(Expression expression, Type type) {
+            if (expression.Type == type) {
+                return expression;
+            }
+
+            // Dynamic operations can convert void -> default(T)
+            if (expression.Type == typeof(void)) {
+                return Expression.Block(expression, Expression.Default(type));
+            }
+
+            // If we don't have a valid primtive conversion, it's an error.
+            if (!TypeUtils.HasIdentityPrimitiveOrNullableConversion(expression.Type, type) &&
+                !TypeUtils.HasReferenceConversion(expression.Type, type)) {
+                throw Error.CannotConvertDynamicResult(expression.Type, type);
+            }
+
+            return Expression.Convert(expression, type);
+        }
+
+        private Expression AddReturn(Expression body, LabelTarget @return, Type toType) {
             switch (body.NodeType) {
                 case ExpressionType.Conditional:
-                    ConditionalExpression conditional = (ConditionalExpression)body;
+                    var conditional = (ConditionalExpression)body;
+
+                    // We can only look for defer expression as one of the
+                    // branches of a conditional. Otherwise we confuse actual
+                    // "defers" with "my dynamic test failed".
                     if (IsDeferExpression(conditional.IfTrue)) {
                         return Expression.Condition(
                             Expression.Not(conditional.Test),
-                            Expression.Return(@return, Helpers.Convert(conditional.IfFalse, @return.Type)),
-                            Expression.Empty()
+                            ConvertAndReturn(conditional.IfFalse, @return, toType),
+                            Expression.Default(conditional.Type),
+                            conditional.Type
                         );
-                    } else if (IsDeferExpression(conditional.IfFalse)) {
+                    }
+                    if (IsDeferExpression(conditional.IfFalse)) {
                         return Expression.Condition(
                             conditional.Test,
-                            Expression.Return(@return, Helpers.Convert(conditional.IfTrue, @return.Type)),
-                            Expression.Empty()
+                            ConvertAndReturn(conditional.IfTrue, @return, toType),
+                            Expression.Default(conditional.Type),
+                            conditional.Type
                         );
                     }
                     return Expression.Condition(
                         conditional.Test,
-                        AddReturn(conditional.IfTrue, @return),
-                        AddReturn(conditional.IfFalse, @return)
+                        AddReturn(conditional.IfTrue, @return, toType),
+                        AddReturn(conditional.IfFalse, @return, toType),
+                        conditional.Type
                     );
-                case ExpressionType.Throw:
-                    return body;
                 case ExpressionType.Block:
-                    // block could have a throw which we need to run through to avoid 
-                    // trying to convert it
-                    BlockExpression block = (BlockExpression)body;
+                    var block = (BlockExpression)body;
 
                     int count = block.ExpressionCount;
                     Expression[] nodes = new Expression[count];
@@ -261,39 +305,61 @@ namespace System.Dynamic {
                     for (int i = 0; i < nodes.Length - 1; i++) {
                         nodes[i] = block.GetExpression(i);
                     }
-                    nodes[nodes.Length - 1] = AddReturn(block.GetExpression(count - 1), @return);
+                    nodes[nodes.Length - 1] = AddReturn(block.GetExpression(count - 1), @return, toType);
 
-                    return Expression.Block(block.Variables, nodes);
+                    return block.Rewrite(block.Variables, nodes);
                 default:
-                    return Expression.Return(@return, Helpers.Convert(body, @return.Type));
+                    return ConvertAndReturn(body, @return, toType);
             }
         }
 
-        private bool IsDeferExpression(Expression e) {
-            if (e.NodeType == ExpressionType.Dynamic) {
-                return ((DynamicExpression)e).Binder == this;
+        // We need this instead of folding it into AddReturn because Python
+        // generates trees that won't work unless we stop at the first "defer"
+        // that we see.
+        private static Expression ConvertAndReturn(Expression body, LabelTarget @return, Type toType) {
+            // Coerce the body to the rule's result type.
+            Expression result = body;
+            if (toType != result.Type) {
+                result = Expression.Block(toType, result);
             }
 
-            if (e.NodeType == ExpressionType.Convert) {
-                return IsDeferExpression(((UnaryExpression)e).Operand);
+            // Then add a convert to the lambda return type.
+            if (@return.Type != typeof(void) && result.Type != @return.Type) {
+                result = Convert(result, @return.Type);
+            }
+
+            return Expression.Return(@return, result, body.Type);
+        }
+
+        // The presence of a call to our own binder actually means:
+        // "this rule failed, please try to bind again". To make it work
+        // we need to remove the body so we'll fall through and report that
+        // it failed to match, otherwise we stack overflow.
+        private bool IsDeferExpression(Expression node) {
+            var dynamic = node as DynamicExpression;
+            if (dynamic != null) {
+                if (dynamic.Binder != this) {
+                    return false;
+                }
+
+                // We should be making sure that all of the arguments match,
+                // but we can't yet, because Python sometimes drops one of the
+                // arguments but they don't really mean to.
+                return true;
+            }
+
+            if (node.NodeType == ExpressionType.Convert) {
+                return IsDeferExpression(((UnaryExpression)node).Operand);
+            }
+
+            // Simple reference conversions or void conversion might look like
+            // a block with one expression.
+            var block = node as BlockExpression;
+            if (block != null && block.ExpressionCount == 1) {
+                return IsDeferExpression(block.GetExpression(0));
             }
 
             return false;
-        }
-
-        private Expression GetMetaObjectRule(Expression bindingExpression, BindingRestrictions bindingRestrictions, LabelTarget @return) {
-            Expression body = AddReturn(bindingExpression, @return);
-
-            if (bindingRestrictions != BindingRestrictions.Empty) {
-                // add the test only if we have one
-                body = Expression.Condition(
-                    bindingRestrictions.ToExpression(),
-                    body,
-                    Expression.Empty()
-                );
-            }
-
-            return body;
         }
 
 #if !SILVERLIGHT

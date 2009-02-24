@@ -1,0 +1,3 @@
+fails:FileTest.size? returns nil if the file has zero size
+fails:FileTest.size? returns the size of the file if it exists and is not empty
+fails:FileTest.size? returns nil if file_name doesn't exist

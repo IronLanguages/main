@@ -103,9 +103,10 @@ namespace IronPython.Compiler.Ast {
             MSAst.Expression init = ag.AddDebugInfo(
                 AstUtils.Assign(
                     enumerator, 
-                    Ast.Call(
-                        AstGenerator.GetHelperMethod("GetEnumeratorForIteration"),
-                        AstUtils.CodeContext(),
+                    Binders.Operation(
+                        ag.BinderState,
+                        typeof(IEnumerator),
+                        PythonOperationKind.GetEnumeratorForIteration,
                         ag.TransformAsObject(list)
                     )
                 ),

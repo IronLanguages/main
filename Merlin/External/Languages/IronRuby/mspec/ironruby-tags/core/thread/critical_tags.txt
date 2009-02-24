@@ -1,0 +1,5 @@
+critical:Thread.critical= can be mismatched
+critical:Thread.critical= schedules other threads on Thread.pass
+critical:Thread.critical= schedules other threads on Thread.stop
+critical:Thread.critical= defers exit
+critical:Thread.critical= defers exit until Thread.pass

@@ -28,6 +28,7 @@ namespace IronRuby.Runtime {
         public TFirst First { get { return _first; } }
         public TSecond Second { get { return _second; } }
 
+        [Emitted]
         public Union(TFirst first, TSecond second) {
             _first = first;
             _second = second;

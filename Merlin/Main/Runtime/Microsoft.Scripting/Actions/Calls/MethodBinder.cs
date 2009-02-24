@@ -68,18 +68,18 @@ namespace Microsoft.Scripting.Actions.Calls {
     public sealed class MethodBinder {
         private readonly string _name;                           // the name of the method (possibly language specific name which isn't the same as the method base)
         private readonly Dictionary<int, TargetSet> _targetSets; // the methods as they map from # of arguments -> the possible TargetSet's.
-        private readonly SymbolId[] _kwArgs;                     // the names of the keyword arguments being provided
+        private readonly string[] _kwArgs;                     // the names of the keyword arguments being provided
         private readonly NarrowingLevel _minLevel, _maxLevel;         // specifies the minimum and maximum narrowing levels for conversions during binding
         internal readonly DefaultBinder _binder;                      // the ActionBinder which is being used for conversions
         private List<MethodCandidate> _paramsCandidates;              // the methods which are params methods which need special treatment because they don't have fixed # of args
 
         #region Constructors
 
-        private MethodBinder(ActionBinder binder, string name, IList<MethodBase> methods, SymbolId[] kwArgs, NarrowingLevel minLevel, NarrowingLevel maxLevel) {
+        private MethodBinder(ActionBinder binder, string name, IList<MethodBase> methods, string[] kwArgs, NarrowingLevel minLevel, NarrowingLevel maxLevel) {
             ContractUtils.RequiresNotNull(binder, "binder");
             ContractUtils.RequiresNotNull(name, "name");
             ContractUtils.RequiresNotNullItems(methods, "methods");
-            ContractUtils.RequiresNotNull(kwArgs, "kwArgs");
+            ContractUtils.RequiresNotNullItems(kwArgs, "kwArgs");
 
             _binder = binder as DefaultBinder;
             if (_binder == null) {
@@ -120,7 +120,7 @@ namespace Microsoft.Scripting.Actions.Calls {
         /// The provided ActionBinder is used for determining overload resolution.
         /// </summary>
         public static MethodBinder MakeBinder(ActionBinder binder, string name, IList<MethodBase> mis) {
-            return new MethodBinder(binder, name, mis, SymbolId.EmptySymbols, NarrowingLevel.None, NarrowingLevel.All);
+            return new MethodBinder(binder, name, mis, ArrayUtils.EmptyStrings, NarrowingLevel.None, NarrowingLevel.All);
         }
 
         /// <summary>
@@ -129,7 +129,7 @@ namespace Microsoft.Scripting.Actions.Calls {
         /// 
         /// The provided ActionBinder is used for determining overload resolution.
         /// </summary>
-        public static MethodBinder MakeBinder(ActionBinder binder, string name, IList<MethodBase> mis, SymbolId[] keywordArgs) {
+        public static MethodBinder MakeBinder(ActionBinder binder, string name, IList<MethodBase> mis, string[] keywordArgs) {
             return new MethodBinder(binder, name, mis, keywordArgs, NarrowingLevel.None, NarrowingLevel.All);
         }
 
@@ -140,7 +140,7 @@ namespace Microsoft.Scripting.Actions.Calls {
         /// The provided ActionBinder is used for determining overload resolution.
         /// </summary>
         public static MethodBinder MakeBinder(ActionBinder binder, string name, IList<MethodBase> mis, NarrowingLevel minLevel, NarrowingLevel maxLevel) {
-            return new MethodBinder(binder, name, mis, SymbolId.EmptySymbols, minLevel, maxLevel);
+            return new MethodBinder(binder, name, mis, ArrayUtils.EmptyStrings, minLevel, maxLevel);
         }
 
         /// <summary>
@@ -149,7 +149,7 @@ namespace Microsoft.Scripting.Actions.Calls {
         /// 
         /// The provided ActionBinder is used for determining overload resolution.
         /// </summary>
-        public static MethodBinder MakeBinder(ActionBinder binder, string name, IList<MethodBase> mis, SymbolId[] keywordArgs, NarrowingLevel minLevel, NarrowingLevel maxLevel) {
+        public static MethodBinder MakeBinder(ActionBinder binder, string name, IList<MethodBase> mis, string[] keywordArgs, NarrowingLevel minLevel, NarrowingLevel maxLevel) {
             return new MethodBinder(binder, name, mis, keywordArgs, minLevel, maxLevel);
         }
 
@@ -337,7 +337,7 @@ namespace Microsoft.Scripting.Actions.Calls {
 
         private static ArgBuilder MakeInstanceBuilder(ActionBinder binder, MethodBase method, List<ParameterWrapper> parameters, ref int argIndex) {
             if (!CompilerHelpers.IsStatic(method)) {
-                parameters.Add(new ParameterWrapper(binder, method.DeclaringType, SymbolId.Empty, true));
+                parameters.Add(new ParameterWrapper(binder, method.DeclaringType, null, true));
                 return new SimpleArgBuilder(method.DeclaringType, argIndex++, false, false);
             } else {
                 return new NullArgBuilder();
@@ -401,7 +401,7 @@ namespace Microsoft.Scripting.Actions.Calls {
                 if (pi.ParameterType.IsByRef) {
                     hasByRefOrOut = true;
                     Type refType = typeof(StrongBox<>).MakeGenericType(pi.ParameterType.GetElementType());
-                    var param = new ParameterWrapper(_binder, pi, refType, SymbolTable.StringToId(pi.Name), true, false, false);
+                    var param = new ParameterWrapper(_binder, pi, refType, pi.Name, true, false, false);
                     parameters.Add(param);
                     ab = new ReferenceArgBuilder(pi, refType, indexForArgBuilder);
                 } else {
@@ -520,7 +520,7 @@ namespace Microsoft.Scripting.Actions.Calls {
                     if ((pi.Attributes & (ParameterAttributes.In | ParameterAttributes.Out)) != ParameterAttributes.In) {
                         returnArgs.Add(arguments.Count);
                     }
-                    ParameterWrapper param = new ParameterWrapper(_binder, pi, pi.ParameterType.GetElementType(), SymbolTable.StringToId(pi.Name), false, false, false);
+                    ParameterWrapper param = new ParameterWrapper(_binder, pi, pi.ParameterType.GetElementType(), pi.Name, false, false, false);
                     parameters.Add(param);
                     ab = new ReturnReferenceArgBuilder(pi, indexForArgBuilder);
                 } else {
@@ -569,7 +569,7 @@ namespace Microsoft.Scripting.Actions.Calls {
 
         private ReturnBuilder MakeKeywordReturnBuilder(ReturnBuilder returnBuilder, ParameterInfo[] methodParams, List<ParameterWrapper> parameters, bool isConstructor) {
             if (isConstructor) {
-                List<SymbolId> unusedNames = GetUnusedKeywordParameters(methodParams);
+                List<string> unusedNames = GetUnusedKeywordParameters(methodParams);
                 List<MemberInfo> bindableMembers = GetBindableMembers(returnBuilder, unusedNames);
                 List<int> kwArgIndexs = new List<int>();
                 if (unusedNames.Count == bindableMembers.Count) {
@@ -580,7 +580,7 @@ namespace Microsoft.Scripting.Actions.Calls {
                             mi.MemberType == MemberTypes.Property ? 
                                 ((PropertyInfo)mi).PropertyType :
                                 ((FieldInfo)mi).FieldType,
-                            SymbolTable.StringToId(mi.Name),
+                            mi.Name,
                             false);
 
                         parameters.Add(pw);
@@ -600,17 +600,15 @@ namespace Microsoft.Scripting.Actions.Calls {
             return returnBuilder;
         }
 
-        private static List<MemberInfo> GetBindableMembers(ReturnBuilder returnBuilder, List<SymbolId> unusedNames) {
+        private static List<MemberInfo> GetBindableMembers(ReturnBuilder returnBuilder, List<string> unusedNames) {
             List<MemberInfo> bindableMembers = new List<MemberInfo>();
 
-            foreach (SymbolId si in unusedNames) {
-                string strName = SymbolTable.IdToString(si);
-
+            foreach (string name in unusedNames) {
                 Type curType = returnBuilder.ReturnType;
-                MemberInfo[] mis = curType.GetMember(strName);
+                MemberInfo[] mis = curType.GetMember(name);
                 while (mis.Length != 1 && curType != null) {
                     // see if we have a single member defined as the closest level
-                    mis = curType.GetMember(strName, BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.SetField | BindingFlags.SetProperty | BindingFlags.Instance);
+                    mis = curType.GetMember(name, BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.SetField | BindingFlags.SetProperty | BindingFlags.Instance);
 
                     if (mis.Length > 1) {
                         break;
@@ -631,19 +629,18 @@ namespace Microsoft.Scripting.Actions.Calls {
             return bindableMembers;
         }
 
-        private List<SymbolId> GetUnusedKeywordParameters(ParameterInfo[] methodParams) {
-            List<SymbolId> unusedNames = new List<SymbolId>();
-            foreach (SymbolId si in _kwArgs) {
-                string strName = SymbolTable.IdToString(si);
+        private List<string> GetUnusedKeywordParameters(ParameterInfo[] methodParams) {
+            List<string> unusedNames = new List<string>();
+            foreach (string name in _kwArgs) {
                 bool found = false;
                 foreach (ParameterInfo pi in methodParams) {
-                    if (pi.Name == strName) {
+                    if (pi.Name == name) {
                         found = true;
                         break;
                     }
                 }
                 if (!found) {
-                    unusedNames.Add(si);
+                    unusedNames.Add(name);
                 }
             }
             return unusedNames;
@@ -659,7 +656,7 @@ namespace Microsoft.Scripting.Actions.Calls {
 
         private int GetKeywordIndex(string kwName) {
             for (int i = 0; i < _kwArgs.Length; i++) {
-                if (kwName == SymbolTable.IdToString(_kwArgs[i])) {
+                if (kwName == _kwArgs[i]) {
                     return i;
                 }
             }
@@ -695,7 +692,7 @@ namespace Microsoft.Scripting.Actions.Calls {
                 return true;
             }
 
-            internal BindingTarget MakeBindingTarget(CallTypes callType, Type[] types, SymbolId[] names, NarrowingLevel minLevel, NarrowingLevel maxLevel) {
+            internal BindingTarget MakeBindingTarget(CallTypes callType, Type[] types, string[] names, NarrowingLevel minLevel, NarrowingLevel maxLevel) {
                 List<ConversionResult> lastFail = new List<ConversionResult>();
                 List<CallFailure> failures = null;
 
@@ -748,7 +745,7 @@ namespace Microsoft.Scripting.Actions.Calls {
                 return new BindingTarget(_binder.Name, callType == CallTypes.None ? types.Length : types.Length - 1, failures.ToArray());
             }
 
-            internal BindingTarget MakeBindingTarget(CallTypes callType, DynamicMetaObject[] metaObjects, SymbolId[] names, NarrowingLevel minLevel, NarrowingLevel maxLevel) {
+            internal BindingTarget MakeBindingTarget(CallTypes callType, DynamicMetaObject[] metaObjects, string[] names, NarrowingLevel minLevel, NarrowingLevel maxLevel) {
                 List<ConversionResult> lastFail = new List<ConversionResult>();
                 List<CallFailure> failures = null;
 

@@ -1,0 +1,2 @@
+fails:StringScanner#peep raises a RangeError when the passed argument is a Bignum
+fails:StringScanner#peep warns in verbose mode that the method is obsolete

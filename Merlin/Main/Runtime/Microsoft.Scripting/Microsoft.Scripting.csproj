@@ -138,6 +138,7 @@
     <Compile Include="Actions\OperationMetaObject.cs" />
     <Compile Include="ArgumentTypeException.cs" />
     <Compile Include="Ast\ActionExpression.cs" />
+    <Compile Include="Ast\CodeContextExpression.cs" />
     <Compile Include="Ast\FinallyFlowControlExpression.cs" />
     <Compile Include="Ast\FlowControlRewriter.cs" />
     <Compile Include="Ast\SourceFileInformation.cs" />
@@ -391,7 +392,6 @@
     <Compile Include="Actions\TrackerTypes.cs" />
     <Compile Include="Actions\TypeGroup.cs" />
     <Compile Include="Actions\TypeTracker.cs" />
-    <Compile Include="Ast\CodeContextExpression.cs" />
     <Compile Include="Ast\DebugStatement.cs" />
     <Compile Include="Ast\GlobalVariableExpression.cs" />
     <Compile Include="Ast\IfStatementBuilder.cs" />
@@ -441,7 +441,6 @@
     <Compile Include="Runtime\ScriptingRuntimeHelpers.cs" />
     <Compile Include="Runtime\Scope.cs" />
     <Compile Include="Runtime\ScopeExtension.cs" />
-    <Compile Include="Runtime\ScopeMemberAttributes.cs" />
     <Compile Include="Runtime\ScriptCode.cs" />
     <Compile Include="Runtime\ScriptDomainManager.cs" />
     <Compile Include="Runtime\DlrConfiguration.cs" />

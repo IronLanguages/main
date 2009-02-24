@@ -80,9 +80,9 @@ namespace System.Linq.Expressions.Compiler {
             Type[] parameterTypes = GetParameterTypes(lambda).AddFirst(typeof(Closure));
 
 #if SILVERLIGHT
-            var method = new DynamicMethod(GetGeneratedName(lambda.Name), lambda.ReturnType, parameterTypes);
+            var method = new DynamicMethod(lambda.Name ?? "lambda_method", lambda.ReturnType, parameterTypes);
 #else
-            var method = new DynamicMethod(GetGeneratedName(lambda.Name), lambda.ReturnType, parameterTypes, true);
+            var method = new DynamicMethod(lambda.Name ?? "lambda_method", lambda.ReturnType, parameterTypes, true);
 #endif
 
             _tree = tree;

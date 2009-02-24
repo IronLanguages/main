@@ -1,0 +1,2 @@
+fails:Time#strftime supports mm/dd/yy formatting with %D
+fails:Time#strftime supports HH:MM:SS formatting with %T

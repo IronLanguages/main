@@ -1,0 +1,2 @@
+fails:StringIO#sync returns true
+fails:StringIO#sync= does not change 'sync' status

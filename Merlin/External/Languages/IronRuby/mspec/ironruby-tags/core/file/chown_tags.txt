@@ -1,0 +1,5 @@
+fails:File.chown does not modify the owner id of the file
+fails:File.chown does not modify the group id of the file
+fails:File#chown does not modify the owner id of the file
+fails:File#chown does not modify the group id of the file
+fails:File#chown returns 0

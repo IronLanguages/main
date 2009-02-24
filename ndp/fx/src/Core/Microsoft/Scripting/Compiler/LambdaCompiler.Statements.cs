@@ -581,13 +581,13 @@ namespace System.Linq.Expressions.Compiler {
             var reduced = Expression.Block(
                 new[] { switchIndex, switchValue },
                 Expression.Assign(switchValue, node.SwitchValue),
-                Expression.Condition(
+                Expression.IfThenElse(
                     Expression.Equal(switchValue, Expression.Constant(null, typeof(string))),
-                    Expression.Void(Expression.Assign(switchIndex, Expression.Constant(nullCase))),
-                    Expression.Condition(
+                    Expression.Assign(switchIndex, Expression.Constant(nullCase)),
+                    Expression.IfThenElse(
                         Expression.Call(dictInit, "TryGetValue", null, switchValue, switchIndex),
                         Expression.Empty(),
-                        Expression.Void(Expression.Assign(switchIndex, Expression.Constant(-1)))
+                        Expression.Assign(switchIndex, Expression.Constant(-1))
                     )
                 ),
                 Expression.Switch(node.Type, switchIndex, node.DefaultBody, null, cases)

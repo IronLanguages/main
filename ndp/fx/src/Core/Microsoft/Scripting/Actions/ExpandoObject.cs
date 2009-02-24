@@ -650,7 +650,7 @@ namespace System.Dynamic {
                     Expression.Condition(
                         Expression.IsTrue(tryGetValue),
                         value,
-                        Helpers.Convert(fallback.Expression, typeof(object))
+                        DynamicMetaObjectBinder.Convert(fallback.Expression, typeof(object))
                     )
                 );
 
@@ -710,16 +710,13 @@ namespace System.Dynamic {
                     klass,
                     originalClass,
                     new DynamicMetaObject(
-                        Helpers.Convert(
+                        DynamicMetaObjectBinder.Convert(
                             Expression.Call(
                                 typeof(RuntimeOps).GetMethod(methodName),
                                 GetLimitedSelf(),
                                 Expression.Constant(klass),
                                 Expression.Constant(index),
-                                Helpers.Convert(
-                                    value.Expression,
-                                    typeof(object)
-                                ),
+                                Expression.Convert(value.Expression, typeof(object)),
                                 Expression.Constant(binder.Name)
                             ),
                             typeof(object)
@@ -747,8 +744,8 @@ namespace System.Dynamic {
                 DynamicMetaObject target = new DynamicMetaObject(
                     Expression.Condition(
                         Expression.IsFalse(tryDelete),
-                        Helpers.Convert(fallback.Expression, typeof(object)), //if fail to delete, fall back
-                        Helpers.Convert(Expression.Constant(true), typeof(object))
+                        DynamicMetaObjectBinder.Convert(fallback.Expression, typeof(object)), //if fail to delete, fall back
+                        Expression.Convert(Expression.Constant(true), typeof(object))
                     ),
                     fallback.Restrictions
                 );
@@ -761,19 +758,6 @@ namespace System.Dynamic {
                     target
                 );
             }
-
-            public override IEnumerable<KeyValuePair<string,object>> GetDynamicDataMembers()
-            {
-                var expandoData = Value._data;
-                var klass = expandoData.Class;
-                for (int i = 0; i < klass.Keys.Length; i++) {
-                    object val = expandoData[i];
-                    // all members are data members in a class
-                    if (val != ExpandoObject.Uninitialized) {
-                        yield return new KeyValuePair<string, object>(klass.Keys[i], val);
-                    }
-                }
-            } 
 
             public override IEnumerable<string> GetDynamicMemberNames() {
                 var expandoData = Value._data;
@@ -805,18 +789,15 @@ namespace System.Dynamic {
                     // class to discover the name.
                     Debug.Assert(originalClass != klass);
 
-                    ifTestSucceeds = Helpers.Convert(
-                        Expression.Block(
-                            Expression.Call(
-                                null,
-                                typeof(RuntimeOps).GetMethod("ExpandoPromoteClass"),
-                                GetLimitedSelf(),
-                                Expression.Constant(originalClass),
-                                Expression.Constant(klass)
-                            ),
-                            succeeds.Expression
+                    ifTestSucceeds = Expression.Block(
+                        Expression.Call(
+                            null,
+                            typeof(RuntimeOps).GetMethod("ExpandoPromoteClass"),
+                            GetLimitedSelf(),
+                            Expression.Constant(originalClass),
+                            Expression.Constant(klass)
                         ),
-                        typeof(object)
+                        succeeds.Expression
                     );
                 }
 
@@ -828,8 +809,8 @@ namespace System.Dynamic {
                             GetLimitedSelf(),
                             Expression.Constant(originalClass ?? klass)
                         ),
-                        Helpers.Convert(ifTestSucceeds, typeof(object)),
-                        Helpers.Convert(binder.Defer(args).Expression, typeof(object))
+                        DynamicMetaObjectBinder.Convert(ifTestSucceeds, typeof(object)),
+                        DynamicMetaObjectBinder.Convert(binder.Defer(args).Expression, typeof(object))
                     ),
                     GetRestrictions().Merge(succeeds.Restrictions)
                 );
@@ -867,10 +848,10 @@ namespace System.Dynamic {
             /// Returns our Expression converted to our known LimitType
             /// </summary>
             private Expression GetLimitedSelf() {
-                return Helpers.Convert(
-                    Expression,
-                    LimitType
-                );
+                if (Expression.Type == LimitType) {
+                    return Expression;
+                }
+                return Expression.Convert(Expression, LimitType);
             }
 
             /// <summary>

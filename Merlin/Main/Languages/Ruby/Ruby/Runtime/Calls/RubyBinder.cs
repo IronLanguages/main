@@ -178,7 +178,7 @@ namespace IronRuby.Runtime.Calls {
             //
             if (i >= parameterInfos.Length || parameterInfos[i].ParameterType != typeof(BlockParam)) {
                 arguments.Add(new MissingBlockArgBuilder(index++));
-                parameters.Add(new ParameterWrapper(this, typeof(MissingBlockParam), SymbolId.Empty, false));
+                parameters.Add(new ParameterWrapper(this, typeof(MissingBlockParam), null, false));
             }
 
             return i;
@@ -378,9 +378,11 @@ namespace IronRuby.Runtime.Calls {
             }
 
             // protocol conversions:
-            if (toParameter.ParameterInfo != null && toParameter.ParameterInfo.IsDefined(typeof(DefaultProtocolAttribute), false)) {
-                // any type is potentially convertible, except for nil if [NotNull] is used:
-                return fromType != typeof(DynamicNull) || !toParameter.ProhibitNull;
+            if (toParameter.ParameterInfo != null && toParameter.ParameterInfo.IsDefined(typeof(DefaultProtocolAttribute), false) && 
+                !toParameter.IsParamsArray && !toParameter.IsParamsDict) {
+
+                // any type is potentially convertible, except for nil if [NotNull] is used or the target type is a value type:
+                return fromType != typeof(DynamicNull) || !(toParameter.ProhibitNull || toType.IsValueType);
             }
 
             return false;

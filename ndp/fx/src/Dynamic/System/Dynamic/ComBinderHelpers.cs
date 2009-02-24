@@ -54,32 +54,6 @@ namespace System.Dynamic {
             return t.IsGenericType && t.GetGenericTypeDefinition() == typeof(StrongBox<>);
         }
 
-        internal static void VerifyArgInfos(IList<ArgumentInfo> argInfos) {
-            // We either have valid ArgInfos on the binder or the collection is empty.
-            if (argInfos == null || argInfos.Count == 0) {
-                return;
-            }
-
-            // Named arguments go after positional ones.
-            bool seenNonPositional = false;
-            for (var i = 0; i < argInfos.Count; i++) {
-                ArgumentInfo curInfo = argInfos[i];
-
-                PositionalArgumentInfo positional = curInfo as PositionalArgumentInfo;
-                if (positional != null) {
-                    if (seenNonPositional) {
-                        throw Error.NamedArgsShouldFollowPositional();
-                    }
-                    if (positional.Position != i) {
-                        throw new InvalidOperationException();
-                    }
-                } else {
-                    seenNonPositional = true;
-                }
-            }
-            return;
-        }
-
         // this helper prepares arguments for COM binding by transforming ByVal StongBox arguments
         // into ByRef expressions that represent the argument's Value fields.
         internal static bool[] ProcessArgumentsForCom(ref DynamicMetaObject[] args) {

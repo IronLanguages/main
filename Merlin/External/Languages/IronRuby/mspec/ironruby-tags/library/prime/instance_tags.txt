@@ -1,0 +1,4 @@
+fails:Prime.instance returns a object representing the set of prime numbers
+fails:Prime.instance returns a object with no obsolete features
+fails:Prime.instance does not complain anything
+fails:Prime.instance raises a ArgumentError when is called with some arguments

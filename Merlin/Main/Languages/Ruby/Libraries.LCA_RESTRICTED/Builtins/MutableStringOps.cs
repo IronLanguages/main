@@ -332,12 +332,18 @@ namespace IronRuby.Builtins {
         [RubyMethod("%")]
         public static MutableString/*!*/ Format(
             ConversionStorage<IntegerValue>/*!*/ integerCast,
-            ConversionStorage<int>/*!*/ fixnumCast, 
-            ConversionStorage<MutableString>/*!*/ tosConversion, 
+            ConversionStorage<int>/*!*/ fixnumCast,
+            ConversionStorage<double>/*!*/ tofConversion, 
+            ConversionStorage<MutableString>/*!*/ tosConversion,
+            UnaryOpStorage/*!*/ inspectStorage,
             RubyContext/*!*/ context, MutableString/*!*/ self, object arg) {
 
             IList args = arg as IList ?? new object[] { arg };
-            StringFormatter formatter = new StringFormatter(integerCast, fixnumCast, tosConversion, context, self.ConvertToString(), args);
+
+            StringFormatter formatter = new StringFormatter(integerCast, fixnumCast, tofConversion, tosConversion, inspectStorage, context, 
+                self.ConvertToString(), args
+            );
+
             return formatter.Format().TaintBy(self);
         }
 
@@ -1772,19 +1778,21 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("delete")]
-        public static MutableString/*!*/ Delete(RubyContext/*!*/ context, MutableString/*!*/ self, [NotNull]params object[] str) {
-            if (str.Length == 0) {
+        public static MutableString/*!*/ Delete(RubyContext/*!*/ context, MutableString/*!*/ self, 
+            [DefaultProtocol, NotNull, NotNullItems]params MutableString/*!*/[]/*!*/ strs) {
+            if (strs.Length == 0) {
                 throw RubyExceptions.CreateArgumentError("wrong number of arguments");
             }
-            return InternalDelete(self, Protocols.CastToStrings(context, str));
+            return InternalDelete(self, strs);
         }
 
         [RubyMethod("delete!")]
-        public static MutableString/*!*/ DeleteInPlace(RubyContext/*!*/ context, MutableString/*!*/ self, [NotNull]params object[] str) {
-            if (str.Length == 0) {
+        public static MutableString/*!*/ DeleteInPlace(RubyContext/*!*/ context, MutableString/*!*/ self,
+            [DefaultProtocol, NotNull, NotNullItems]params MutableString/*!*/[]/*!*/ strs) {
+            if (strs.Length == 0) {
                 throw RubyExceptions.CreateArgumentError("wrong number of arguments");
             }
-            return InternalDeleteInPlace(self, Protocols.CastToStrings(context, str));
+            return InternalDeleteInPlace(self, strs);
         }
 
         #endregion
@@ -1802,11 +1810,12 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("count")]
-        public static object Count(RubyContext/*!*/ context, MutableString/*!*/ self, [NotNull]params object[] str) {
-            if (str.Length == 0) {
+        public static object Count(RubyContext/*!*/ context, MutableString/*!*/ self, 
+            [DefaultProtocol, NotNull, NotNullItems]params MutableString/*!*/[]/*!*/ strs) {
+            if (strs.Length == 0) {
                 throw RubyExceptions.CreateArgumentError("wrong number of arguments");
             }
-            return InternalCount(self, Protocols.CastToStrings(context, str));
+            return InternalCount(self, strs);
         }
 
         #endregion
@@ -2284,15 +2293,17 @@ namespace IronRuby.Builtins {
         #region squeeze
 
         [RubyMethod("squeeze")]
-        public static MutableString/*!*/ Squeeze(RubyContext/*!*/ context, MutableString/*!*/ self, [NotNull]params object[] args) {
+        public static MutableString/*!*/ Squeeze(RubyContext/*!*/ context, MutableString/*!*/ self, 
+            [DefaultProtocol, NotNull, NotNullItems]params MutableString/*!*/[]/*!*/ args) {
             MutableString result = self.Clone();
-            SqueezeMutableString(result, Protocols.CastToStrings(context, args));
+            SqueezeMutableString(result, args);
             return result;
         }
 
         [RubyMethod("squeeze!")]
-        public static MutableString/*!*/ SqueezeInPlace(RubyContext/*!*/ context, MutableString/*!*/ self, [NotNull]params object[] args) {
-            return SqueezeMutableString(self, Protocols.CastToStrings(context, args));
+        public static MutableString/*!*/ SqueezeInPlace(RubyContext/*!*/ context, MutableString/*!*/ self,
+            [DefaultProtocol, NotNull, NotNullItems]params MutableString/*!*/[]/*!*/ args) {
+            return SqueezeMutableString(self, args);
         }
 
         private static MutableString SqueezeMutableString(MutableString/*!*/ str, MutableString[]/*!*/ ranges) {

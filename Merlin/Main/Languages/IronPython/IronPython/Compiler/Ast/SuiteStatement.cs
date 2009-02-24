@@ -16,6 +16,7 @@
 using System.Collections.ObjectModel;
 using Microsoft.Scripting.Utils;
 using MSAst = System.Linq.Expressions;
+using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace IronPython.Compiler.Ast {
     using Ast = System.Linq.Expressions.Expression;
@@ -49,7 +50,7 @@ namespace IronPython.Compiler.Ast {
                     return null;
                 }
             }
-            return Ast.Void(Ast.Block(new ReadOnlyCollection<MSAst.Expression>(stmts)));
+            return AstUtils.Void(Ast.Block(new ReadOnlyCollection<MSAst.Expression>(stmts)));
         }
        
         public override void Walk(PythonWalker walker) {

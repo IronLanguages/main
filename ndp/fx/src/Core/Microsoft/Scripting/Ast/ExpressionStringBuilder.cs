@@ -15,13 +15,12 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Reflection;
 using System.Dynamic;
 using System.Dynamic.Utils;
-using System.CodeDom.Compiler;
-using System.Text;
 using System.Globalization;
+using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Text;
 
 namespace System.Linq.Expressions {
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1506:AvoidExcessiveClassCoupling")]
@@ -49,8 +48,12 @@ namespace System.Linq.Expressions {
         //The label is displayed as Label_#.
         private Dictionary<object, int> _ids;
 
-        private ExpressionStringBuilder(StringBuilder sb) {
-            _out = sb;
+        private ExpressionStringBuilder() {
+            _out = new StringBuilder();
+        }
+
+        public override string ToString() {
+            return _out.ToString();
         }
 
         private void AddLabel(LabelTarget label) {
@@ -191,8 +194,23 @@ namespace System.Linq.Expressions {
         /// </summary>
         internal static string ExpressionToString(Expression node) {
             Debug.Assert(node != null);
-            ExpressionStringBuilder esb = new ExpressionStringBuilder(new StringBuilder());
-            return esb.OutputExpressionToString(node);
+            ExpressionStringBuilder esb = new ExpressionStringBuilder();
+            esb.Visit(node);
+            return esb.ToString();
+        }
+
+        internal static string CatchBlockToString(CatchBlock node) {
+            Debug.Assert(node != null);
+            ExpressionStringBuilder esb = new ExpressionStringBuilder();
+            esb.VisitCatchBlock(node);
+            return esb.ToString();
+        }
+
+        internal static string SwitchCaseToString(SwitchCase node) {
+            Debug.Assert(node != null);
+            ExpressionStringBuilder esb = new ExpressionStringBuilder();
+            esb.VisitSwitchCase(node);
+            return esb.ToString();
         }
 
         /// <summary>
@@ -200,8 +218,9 @@ namespace System.Linq.Expressions {
         /// </summary>
         internal static string MemberBindingToString(MemberBinding node) {
             Debug.Assert(node != null);
-            ExpressionStringBuilder esb = new ExpressionStringBuilder(new StringBuilder());
-            return esb.OutputMemberBindingToString(node);
+            ExpressionStringBuilder esb = new ExpressionStringBuilder();
+            esb.VisitMemberBinding(node);
+            return esb.ToString();
         }
 
         /// <summary>
@@ -209,23 +228,9 @@ namespace System.Linq.Expressions {
         /// </summary>
         internal static string ElementInitBindingToString(ElementInit node) {
             Debug.Assert(node != null);
-            ExpressionStringBuilder esb = new ExpressionStringBuilder(new StringBuilder());
-            return esb.OutputElementInitToString(node);
-        }
-
-        private string OutputExpressionToString(Expression node) {
-            Visit(node);
-            return _out.ToString();
-        }
-
-        private string OutputMemberBindingToString(MemberBinding node) {
-            VisitMemberBinding(node);
-            return _out.ToString();
-        }
-
-        private string OutputElementInitToString(ElementInit node) {
-            VisitElementInit(node);
-            return _out.ToString();
+            ExpressionStringBuilder esb = new ExpressionStringBuilder();
+            esb.VisitElementInit(node);
+            return esb.ToString();
         }
 
         // More proper would be to make this a virtual method on Action
@@ -848,7 +853,7 @@ namespace System.Linq.Expressions {
         }
 
         protected override CatchBlock VisitCatchBlock(CatchBlock node) {
-            Out(Flow.NewLine, "} catch (" + node.Test.Name);
+            Out("catch (" + node.Test.Name);
             if (node.Variable != null) {
                 Out(Flow.Space, node.Variable.Name ?? "");
             }
@@ -860,6 +865,7 @@ namespace System.Linq.Expressions {
             Indent();
             Visit(node.Body);
             Dedent();
+            Out(Flow.NewLine, "} ");
             return node;
         }
 
@@ -869,15 +875,17 @@ namespace System.Linq.Expressions {
             }
             Out(Flow.NewLine, "try {", Flow.NewLine);
             Visit(node.Body);
+            Out(Flow.NewLine, "} ");
             Visit(node.Handlers, VisitCatchBlock);
             if (node.Finally != null) {
-                Out(Flow.NewLine, "} finally {", Flow.NewLine);
+                Out("finally {", Flow.NewLine);
                 Visit(node.Finally);
+                Out(Flow.NewLine, "}");
             } else if (node.Fault != null) {
-                Out(Flow.NewLine, "} fault {", Flow.NewLine);
+                Out(Flow.NewLine, "fault {", Flow.NewLine);
                 Visit(node.Fault);
+                Out(Flow.NewLine, "}");
             }
-            Out(Flow.NewLine, "}");
             if (!_inBlock) {
                 Dedent();
             }
@@ -901,19 +909,33 @@ namespace System.Linq.Expressions {
         }
 
         protected internal override Expression VisitExtension(Expression node) {
-            Out("extension", Flow.Space);
+            // Prefer an overriden ToString, if available.
+            var flags = BindingFlags.Public | BindingFlags.Instance | BindingFlags.ExactBinding;
+            var toString = node.GetType().GetMethod("ToString", flags, null, Type.EmptyTypes, null);
+            if (toString.DeclaringType != typeof(Expression)) {
+                Out(node.ToString());
+                return node;
+            }
 
-            Out(node.GetType().Name, Flow.Space);
-            Out("(");
-            // walk it
-            base.VisitExtension(node);
-            Out(")");
+            Out("[");
+            // For 3.5 subclasses, print the NodeType.
+            // For Extension nodes, print the class name.
+            if (node.NodeType == ExpressionType.Extension) {
+                Out(node.GetType().FullName);
+            } else {
+                Out(node.NodeType.ToString());
+            }
+            Out("]");
             return node;
         }
 
         private void DumpLabel(LabelTarget target) {
-            int labelId = GetLabelId(target);
-            Out("Label_" + labelId);
+            if (!String.IsNullOrEmpty(target.Name)) {
+                Out(target.Name);
+            } else {
+                int labelId = GetLabelId(target);
+                Out("UnamedLabel_" + labelId);
+            }
         }
         #endregion
     }

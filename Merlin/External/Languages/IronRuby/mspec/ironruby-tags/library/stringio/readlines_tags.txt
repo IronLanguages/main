@@ -1,0 +1,2 @@
+fails:StringIO#readlines when passed [seperator] returns an Array containing all paragraphs when the passed seperator is an empty String
+fails:StringIO#readlines when in write-only mode raises an IOError

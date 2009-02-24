@@ -1,0 +1,5 @@
+fails:IO#sysread on a file reads the specified number of bytes from the file to the buffer
+fails:IO#sysread on a file coerces the second argument to string and uses it as a buffer
+fails:IO#sysread on a file throws IOError when called immediately after a buffered IO#read
+fails:IO#sysread on a file does not raise error if called after IO#read followed by IO#syswrite
+fails:IO#sysread on a file raises IOError on closed stream

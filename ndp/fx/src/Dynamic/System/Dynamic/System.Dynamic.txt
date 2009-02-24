@@ -65,9 +65,6 @@ GetIDsOfNamesInvalid=IDispatch::GetIDsOfNames behaved unexpectedly for {0}.
 ## ExceptionType=InvalidOperationException
 UnsupportedEnumType=Attempting to wrap an unsupported enum type.
 
-## ExceptionType=InvalidOperationException
-NamedArgsShouldFollowPositional=Named arguments should follow positional ones when calling COM methods.
-
 ## ExceptionType=MissingMemberException
 CouldNotGetDispId=Could not get dispatch ID for {0} (error: {1}).
 

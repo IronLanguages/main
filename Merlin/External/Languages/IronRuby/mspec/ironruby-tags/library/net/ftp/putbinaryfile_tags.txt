@@ -1,0 +1,3 @@
+fails:Net::FTP#putbinaryfile sends the STOR command to the server
+fails:Net::FTP#putbinaryfile sends the contents of the passed local_file, without modifications
+fails:Net::FTP#putbinaryfile returns nil

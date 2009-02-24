@@ -1,0 +1,2 @@
+fails:File.grpowned? return false if the file exist
+fails:File.grpowned? returns false if file the does not exist

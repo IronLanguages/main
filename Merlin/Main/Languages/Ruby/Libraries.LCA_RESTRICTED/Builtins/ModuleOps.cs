@@ -183,7 +183,9 @@ namespace IronRuby.Builtins {
 
         // thread-safe:
         [RubyMethod("private", RubyMethodAttributes.PrivateInstance)]
-        public static RubyModule/*!*/ SetPrivateVisibility(RubyScope/*!*/ scope, RubyModule/*!*/ self, [NotNull]params object[]/*!*/ methodNames) {
+        public static RubyModule/*!*/ SetPrivateVisibility(RubyScope/*!*/ scope, RubyModule/*!*/ self, 
+            [DefaultProtocol, NotNull, NotNullItems]params string[]/*!*/ methodNames) {
+
             // overwrites methods to instance:
             SetMethodAttributes(scope, self, methodNames, RubyMethodAttributes.PrivateInstance);
             return self;
@@ -191,7 +193,8 @@ namespace IronRuby.Builtins {
 
         // thread-safe:
         [RubyMethod("protected", RubyMethodAttributes.PrivateInstance)]
-        public static RubyModule/*!*/ SetProtectedVisibility(RubyScope/*!*/ scope, RubyModule/*!*/ self, [NotNull]params object[]/*!*/ methodNames) {
+        public static RubyModule/*!*/ SetProtectedVisibility(RubyScope/*!*/ scope, RubyModule/*!*/ self,
+            [DefaultProtocol, NotNull, NotNullItems]params string[]/*!*/ methodNames) {
             // overwrites methods to instance:
             SetMethodAttributes(scope, self, methodNames, RubyMethodAttributes.ProtectedInstance);
             return self;
@@ -199,7 +202,8 @@ namespace IronRuby.Builtins {
 
         // thread-safe:
         [RubyMethod("public", RubyMethodAttributes.PrivateInstance)]
-        public static RubyModule/*!*/ SetPublicVisibility(RubyScope/*!*/ scope, RubyModule/*!*/ self, [NotNull]params object[]/*!*/ methodNames) {
+        public static RubyModule/*!*/ SetPublicVisibility(RubyScope/*!*/ scope, RubyModule/*!*/ self,
+            [DefaultProtocol, NotNull, NotNullItems]params string/*!*/[]/*!*/ methodNames) {
             // overwrites methods to instance:
             SetMethodAttributes(scope, self, methodNames, RubyMethodAttributes.PublicInstance);
             return self;
@@ -207,21 +211,25 @@ namespace IronRuby.Builtins {
 
         // thread-safe:
         [RubyMethodAttribute("private_class_method")]
-        public static RubyModule/*!*/ MakeClassMethodsPrivate(RubyModule/*!*/ self, [NotNull]params object[]/*!*/ methodNames) {
+        public static RubyModule/*!*/ MakeClassMethodsPrivate(RubyModule/*!*/ self,
+            [DefaultProtocol, NotNull, NotNullItems]params string/*!*/[]/*!*/ methodNames) {
             SetMethodAttributes(self.SingletonClass, methodNames, RubyMethodAttributes.Private);
             return self;
         }
 
         // thread-safe:
         [RubyMethodAttribute("public_class_method")]
-        public static RubyModule/*!*/ MakeClassMethodsPublic(RubyModule/*!*/ self, [NotNull]params object[]/*!*/ methodNames) {
+        public static RubyModule/*!*/ MakeClassMethodsPublic(RubyModule/*!*/ self,
+            [DefaultProtocol, NotNull, NotNullItems]params string/*!*/[]/*!*/ methodNames) {
             SetMethodAttributes(self.SingletonClass, methodNames, RubyMethodAttributes.Public);
             return self;
         }
 
         // thread-safe:
         [RubyMethod("module_function", RubyMethodAttributes.PrivateInstance)]
-        public static RubyModule/*!*/ CopyMethodsToModuleSingleton(RubyScope/*!*/ scope, RubyModule/*!*/ self, [NotNull]params object[]/*!*/ methodNames) {
+        public static RubyModule/*!*/ CopyMethodsToModuleSingleton(RubyScope/*!*/ scope, RubyModule/*!*/ self,
+            [DefaultProtocol, NotNull, NotNullItems]params string/*!*/[]/*!*/ methodNames) {
+
             // This is an important restriction for correct super calls in module functions (see RubyOps.DefineMethod). 
             // MRI has it wrong. It checks just here and not in method definition.
             if (self.IsClass) {
@@ -233,7 +241,7 @@ namespace IronRuby.Builtins {
             return self;
         }
 
-        internal static void SetMethodAttributes(RubyScope/*!*/ scope, RubyModule/*!*/ module, object[]/*!*/ methodNames, RubyMethodAttributes attributes) {
+        internal static void SetMethodAttributes(RubyScope/*!*/ scope, RubyModule/*!*/ module, string/*!*/[]/*!*/ methodNames, RubyMethodAttributes attributes) {
             if (methodNames.Length == 0) {
                 scope.GetMethodAttributesDefinitionScope().MethodAttributes = attributes;
             } else {
@@ -241,14 +249,14 @@ namespace IronRuby.Builtins {
             }
         }
 
-        internal static void SetMethodAttributes(RubyModule/*!*/ module, object[]/*!*/ methodNames, RubyMethodAttributes attributes) {
+        internal static void SetMethodAttributes(RubyModule/*!*/ module, string/*!*/[]/*!*/ methodNames, RubyMethodAttributes attributes) {
             var context = module.Context;
 
             bool isModuleFunction = (attributes & RubyMethodAttributes.ModuleFunction) == RubyMethodAttributes.ModuleFunction;
             var instanceVisibility = isModuleFunction ? RubyMethodVisibility.Private : 
                 (RubyMethodVisibility)(attributes & RubyMethodAttributes.VisibilityMask);
 
-            foreach (string methodName in Protocols.CastToSymbols(context, methodNames)) {
+            foreach (string methodName in methodNames) {
                 RubyMemberInfo method;
 
                 // we need to define new methods one by one since the method_added events can define a new method that might be used here:
@@ -396,8 +404,8 @@ namespace IronRuby.Builtins {
 
         // thread-safe:
         [RubyMethod("attr_accessor", RubyMethodAttributes.PrivateInstance)]
-        public static void AttrAccessor(RubyScope/*!*/ scope, RubyModule/*!*/ self, [NotNull]params object[] names) {
-            foreach (string name in Protocols.CastToSymbols(scope.RubyContext, names)) {
+        public static void AttrAccessor(RubyScope/*!*/ scope, RubyModule/*!*/ self, [DefaultProtocol, NotNull, NotNullItems]params string/*!*/[]/*!*/ names) {
+            foreach (string name in names) {
                 DefineAccessor(scope, self, name, true, true);
             }
         }
@@ -410,8 +418,8 @@ namespace IronRuby.Builtins {
 
         // thread-safe:
         [RubyMethod("attr_reader", RubyMethodAttributes.PrivateInstance)]
-        public static void AttrReader(RubyScope/*!*/ scope, RubyModule/*!*/ self, [NotNull]params object[] names) {
-            foreach (string name in Protocols.CastToSymbols(scope.RubyContext, names)) {
+        public static void AttrReader(RubyScope/*!*/ scope, RubyModule/*!*/ self, [DefaultProtocol, NotNull, NotNullItems]params string/*!*/[]/*!*/ names) {
+            foreach (string name in names) {
                 DefineAccessor(scope, self, name, true, false);
             }
         }
@@ -424,8 +432,8 @@ namespace IronRuby.Builtins {
 
         // thread-safe:
         [RubyMethod("attr_writer", RubyMethodAttributes.PrivateInstance)]
-        public static void AttrWriter(RubyScope/*!*/ scope, RubyModule/*!*/ self, [NotNull]params object[] names) {
-            foreach (string name in Protocols.CastToSymbols(scope.RubyContext, names)) {
+        public static void AttrWriter(RubyScope/*!*/ scope, RubyModule/*!*/ self, [DefaultProtocol, NotNull, NotNullItems]params string/*!*/[]/*!*/ names) {
+            foreach (string name in names) {
                 DefineAccessor(scope, self, name, false, true);
             }
         }

@@ -1,0 +1,2 @@
+fails:Generator.new creates a new generator from an Enumerable object
+fails:Generator.new creates a new generator from a block

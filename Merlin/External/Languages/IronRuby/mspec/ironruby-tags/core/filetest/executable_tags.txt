@@ -1,0 +1,3 @@
+fails:FileTest.executable? raises an ArgumentError if not passed one argument
+fails:FileTest.executable? raises a TypeError if not passed a String type
+fails:FileTest.executable? returns false if the file does not exist

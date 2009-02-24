@@ -1,0 +1,2 @@
+fails:ARGF.close closes the current open stream
+fails:ARGF.close returns self

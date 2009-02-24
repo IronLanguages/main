@@ -96,6 +96,11 @@ namespace IronPython.Runtime.Binding {
         /// </summary>
         Not,
 
+        /// <summary>
+        /// Get enumerator for iteration binder
+        /// </summary>
+        GetEnumeratorForIteration,
+
         ///<summary>Operator for performing add</summary>
         Add,
         ///<summary>Operator for performing sub</summary>

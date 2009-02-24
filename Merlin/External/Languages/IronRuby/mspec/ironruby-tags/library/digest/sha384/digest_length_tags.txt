@@ -1,0 +1,1 @@
+fails:Digest::SHA384#digest_length returns the length of computed digests

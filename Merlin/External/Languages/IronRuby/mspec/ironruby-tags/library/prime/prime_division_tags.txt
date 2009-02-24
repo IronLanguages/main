@@ -1,0 +1,4 @@
+fails:Prime.prime_division returns an array of a prime factor and a corresponding exponent
+fails:Prime.prime_division returns an empty array for 1
+fails:Prime.prime_division returns an empty array for -1
+fails:Prime.prime_division raises ZeroDivisionError for 0

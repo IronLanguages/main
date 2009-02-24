@@ -1,0 +1,2 @@
+fails:IO#pos= can handle any numerical argument without breaking
+fails:IO#pos= raises IOError on closed stream

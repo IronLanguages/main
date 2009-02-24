@@ -119,7 +119,4 @@
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" Condition=" '$(SilverlightTreeBuild)' != 'true' " />
-  <PropertyGroup>
-    <PostBuildEvent>copy /y "$(TargetPath)" "$(ProjectDir)..\tests\"</PostBuildEvent>
-  </PropertyGroup>
 </Project>

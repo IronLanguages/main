@@ -64,7 +64,7 @@ namespace Microsoft.Scripting.Runtime {
                 object value;
                 // HACK: Shouldn't look in the GlobalScope here, but need to until JSGlobalObject
                 // unifies w/ module dictionary.
-                if (_context.GlobalScope.TryGetName(_context.LanguageContext, _name, out value)) {
+                if (_context.GlobalScope.TryGetName(_name, out value)) {
                     return value;
                 }
 

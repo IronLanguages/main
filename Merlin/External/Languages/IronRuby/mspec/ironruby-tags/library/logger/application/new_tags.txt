@@ -1,0 +1,3 @@
+fails:Logger::Application.new starts the logger on a new application
+fails:Logger::Application.new defaults application name to ''
+fails:Logger::Application.new defaults logs to STDERR

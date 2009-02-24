@@ -584,12 +584,12 @@ namespace IronPython.Runtime {
         IEnumerator IEnumerable.GetEnumerator() {
             int count = this._items.Count;
 
-            foreach (KeyValuePair<object, object> o in _items.GetItems()) {
+            foreach (object o in _items.GetKeys()) {
                 if (count != this._items.Count) {
                     throw PythonOps.RuntimeError("set changed during iteration");
                 }
 
-                yield return o.Key;
+                yield return o;
             }
         }
 

@@ -1,0 +1,1 @@
+fails:CGI#header when passed Hash returns a HTML header based on the Hash's key/value pairs

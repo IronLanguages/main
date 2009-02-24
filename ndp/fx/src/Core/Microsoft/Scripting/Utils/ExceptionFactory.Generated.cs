@@ -59,11 +59,11 @@ namespace System.Linq.Expressions {
         }
 
         /// <summary>
-        /// A string like  "must be &gt;= 0"
+        /// A string like  "Argument count must be greater than number of named arguments."
         /// </summary>
-        internal static string MustBePositive {
+        internal static string ArgCntMustBeGreaterThanNameCnt {
             get {
-                return "must be >= 0";
+                return "Argument count must be greater than number of named arguments.";
             }
         }
 
@@ -458,6 +458,13 @@ namespace System.Linq.Expressions {
         /// </summary>
         internal static string CoercionOperatorNotDefined(object p0, object p1) {
             return FormatString("No coercion operator is defined between types '{0}' and '{1}'.", p0, p1);
+        }
+
+        /// <summary>
+        /// A string like  "Cannot convert the result type '{0}' of the dynamic binding to the result type '{1}' expected by the call site."
+        /// </summary>
+        internal static string CannotConvertDynamicResult(object p0, object p1) {
+            return FormatString("Cannot convert the result type '{0}' of the dynamic binding to the result type '{1}' expected by the call site.", p0, p1);
         }
 
         /// <summary>
@@ -858,6 +865,20 @@ namespace System.Linq.Expressions {
         /// </summary>
         internal static string InstancePropertyNotDefinedForType(object p0, object p1) {
             return FormatString("Instance property '{0}' is not defined for type '{1}'", p0, p1);
+        }
+
+        /// <summary>
+        /// A string like  "Instance property '{0}' that takes no argument is not defined for type '{1}'"
+        /// </summary>
+        internal static string InstancePropertyWithoutParameterNotDefinedForType(object p0, object p1) {
+            return FormatString("Instance property '{0}' that takes no argument is not defined for type '{1}'", p0, p1);
+        }
+
+        /// <summary>
+        /// A string like  "Instance property '{0}{1}' is not defined for type '{2}'"
+        /// </summary>
+        internal static string InstancePropertyWithSpecifiedParametersNotDefinedForType(object p0, object p1, object p2) {
+            return FormatString("Instance property '{0}{1}' is not defined for type '{2}'", p0, p1, p2);
         }
 
         /// <summary>
@@ -1485,6 +1506,13 @@ namespace System.Linq.Expressions {
         }
 
         /// <summary>
+        /// InvalidCastException with message like "Cannot convert the result type '{0}' of the dynamic binding to the result type '{1}' expected by the call site."
+        /// </summary>
+        internal static Exception CannotConvertDynamicResult(object p0, object p1) {
+            return new InvalidCastException(Strings.CannotConvertDynamicResult(p0, p1));
+        }
+
+        /// <summary>
         /// InvalidOperationException with message like "The unary operator {0} is not defined for the type '{1}'."
         /// </summary>
         internal static Exception UnaryOperatorNotDefined(object p0, object p1) {
@@ -1846,6 +1874,20 @@ namespace System.Linq.Expressions {
         /// </summary>
         internal static Exception InstancePropertyNotDefinedForType(object p0, object p1) {
             return new ArgumentException(Strings.InstancePropertyNotDefinedForType(p0, p1));
+        }
+
+        /// <summary>
+        /// ArgumentException with message like "Instance property '{0}' that takes no argument is not defined for type '{1}'"
+        /// </summary>
+        internal static Exception InstancePropertyWithoutParameterNotDefinedForType(object p0, object p1) {
+            return new ArgumentException(Strings.InstancePropertyWithoutParameterNotDefinedForType(p0, p1));
+        }
+
+        /// <summary>
+        /// ArgumentException with message like "Instance property '{0}{1}' is not defined for type '{2}'"
+        /// </summary>
+        internal static Exception InstancePropertyWithSpecifiedParametersNotDefinedForType(object p0, object p1, object p2) {
+            return new ArgumentException(Strings.InstancePropertyWithSpecifiedParametersNotDefinedForType(p0, p1, p2));
         }
 
         /// <summary>

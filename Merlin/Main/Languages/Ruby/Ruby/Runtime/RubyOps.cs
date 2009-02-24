@@ -950,80 +950,121 @@ namespace IronRuby.Runtime {
 
         #endregion
 
-        public const int MakeStringParamCount = 2;
-        public const char SuffixEncoded = 'E';
-        public const char SuffixBinary = 'B';
-        public const char SuffixMutable = 'M';
-        public const char SuffixUTF8 = 'U';
+        /// <summary>
+        /// Each string part type will be specified using one of the following suffices
+        /// </summary>
+        public const char SuffixEncoded = 'E'; // Use encoding codepage System.String
+        public const char SuffixBinary = 'B'; // Binary (ASCII) System.String
+        public const char SuffixUTF8 = 'U'; // UTF8 encoded System.String
+        public const char SuffixMutable = 'M'; // String part is a Ruby string variable - because of variable substitution using "#{var}"
 
-        // TODO: encodings
+        /// <summary>
+        /// Specialized signatures exist for upto the following number of string parts
+        /// </summary>
+        public const int MakeStringParamCount = 2;
+
         #region CreateRegex
 
-        [Emitted]
-        public static RubyRegex/*!*/ CreateRegexB(string/*!*/ str1, RubyRegexOptions options) {
+        private static RubyRegex/*!*/ CreateRegexWorker(
+            RubyRegexOptions options, 
+            StrongBox<RubyRegex> regexpCache, 
+            bool isLiteralWithoutSubstitutions,
+            Func<RubyRegex> createRegex) {
+
             try {
-                return new RubyRegex(str1, options);
+                bool once = ((options & RubyRegexOptions.Once) == RubyRegexOptions.Once) || isLiteralWithoutSubstitutions;
+                if (once) {
+                    // Note that the user is responsible for thread synchronization
+                    if (regexpCache.Value == null) {
+                        regexpCache.Value = createRegex();
+                    }
+                    return regexpCache.Value;
+                } else {
+                    // In the future, we can consider caching the last Regexp. For some regexp literals 
+                    // with substitution, the substition will be the same most of the time
+                    return createRegex();
+                }
             } catch (RegexpError e) {
-                // Ideally, this should be thrown during parsing of the source.
-                // Note that since the argument is a System.String, we know that this is a regexp literal,
-                // and not a literal with embedded variable interpolation/substitution (eg. /#{var}/)
-                throw new SyntaxError(e.Message);
+                if (isLiteralWithoutSubstitutions) {
+                    // Ideally, this should be thrown during parsing of the source, even if the 
+                    // expression happens to be unreachable at runtime.
+                    throw new SyntaxError(e.Message);
+                } else {
+                    throw;
+                }
             }
         }
 
         [Emitted]
-        public static RubyRegex/*!*/ CreateRegexU(string/*!*/ str1, RubyRegexOptions options) {
-            return new RubyRegex(str1, options);
+        public static RubyRegex/*!*/ CreateRegexB(string/*!*/ str1, RubyRegexOptions options, StrongBox<RubyRegex> regexpCache) {
+            Func<RubyRegex> createRegex = delegate { return new RubyRegex(str1, options); };
+            return CreateRegexWorker(options, regexpCache, true, createRegex);
         }
 
         [Emitted]
-        public static RubyRegex/*!*/ CreateRegexE(string/*!*/ str1, int codepage, RubyRegexOptions options) {
-            return new RubyRegex(str1, options);
+        public static RubyRegex/*!*/ CreateRegexU(string/*!*/ str1, RubyRegexOptions options, StrongBox<RubyRegex> regexpCache) {
+            Func<RubyRegex> createRegex = delegate { return new RubyRegex(CreateMutableStringU(str1), options); };
+            return CreateRegexWorker(options, regexpCache, true, createRegex);
+        }
+
+        [Emitted]
+        public static RubyRegex/*!*/ CreateRegexE(string/*!*/ str1, int codepage, RubyRegexOptions options, StrongBox<RubyRegex> regexpCache) {
+            Func<RubyRegex> createRegex = delegate { return new RubyRegex(CreateMutableStringE(str1, codepage), options); };
+            return CreateRegexWorker(options, regexpCache, true, createRegex);
         }
         
         [Emitted]
-        public static RubyRegex/*!*/ CreateRegexM(MutableString str1, RubyRegexOptions options) {
-            return new RubyRegex(MutableString.CreateInternal(str1), options);
+        public static RubyRegex/*!*/ CreateRegexM(MutableString str1, RubyRegexOptions options, StrongBox<RubyRegex> regexpCache) {
+            Func<RubyRegex> createRegex = delegate { return new RubyRegex(CreateMutableStringM(str1), options); };
+            return CreateRegexWorker(options, regexpCache, false, createRegex);
         }
 
         [Emitted]
-        public static RubyRegex/*!*/ CreateRegexBM(string/*!*/ str1, MutableString str2, RubyRegexOptions options) {
-            return new RubyRegex(MutableString.Create(str1).Append(str2), options);
+        public static RubyRegex/*!*/ CreateRegexBM(string/*!*/ str1, MutableString str2, RubyRegexOptions options, StrongBox<RubyRegex> regexpCache) {
+            Func<RubyRegex> createRegex = delegate { return new RubyRegex(CreateMutableStringBM(str1, str2), options); };
+            return CreateRegexWorker(options, regexpCache, false, createRegex);
         }
 
         [Emitted]
-        public static RubyRegex/*!*/ CreateRegexUM(string/*!*/ str1, MutableString str2, RubyRegexOptions options) {
-            return new RubyRegex(MutableString.Create(str1).Append(str2), options);
+        public static RubyRegex/*!*/ CreateRegexUM(string/*!*/ str1, MutableString str2, RubyRegexOptions options, StrongBox<RubyRegex> regexpCache) {
+            Func<RubyRegex> createRegex = delegate { return new RubyRegex(CreateMutableStringUM(str1, str2), options); };
+            return CreateRegexWorker(options, regexpCache, false, createRegex);
         }
 
         [Emitted]
-        public static RubyRegex/*!*/ CreateRegexEM(string/*!*/ str1, MutableString str2, int codepage, RubyRegexOptions options) {
-            return new RubyRegex(MutableString.Create(str1).Append(str2), options);
+        public static RubyRegex/*!*/ CreateRegexEM(string/*!*/ str1, MutableString str2, int codepage, RubyRegexOptions options, StrongBox<RubyRegex> regexpCache) {
+            Func<RubyRegex> createRegex = delegate { return new RubyRegex(CreateMutableStringEM(str1, str2, codepage), options); };
+            return CreateRegexWorker(options, regexpCache, false, createRegex);
         }
 
         [Emitted]
-        public static RubyRegex/*!*/ CreateRegexMB(MutableString str1, string/*!*/ str2, RubyRegexOptions options) {
-            return new RubyRegex(MutableString.CreateInternal(str1).Append(str2), options);
+        public static RubyRegex/*!*/ CreateRegexMB(MutableString str1, string/*!*/ str2, RubyRegexOptions options, StrongBox<RubyRegex> regexpCache) {
+            Func<RubyRegex> createRegex = delegate { return new RubyRegex(CreateMutableStringMB(str1, str2), options); };
+            return CreateRegexWorker(options, regexpCache, false, createRegex);
         }
 
         [Emitted]
-        public static RubyRegex/*!*/ CreateRegexMU(MutableString str1, string/*!*/ str2, RubyRegexOptions options) {
-            return new RubyRegex(MutableString.CreateInternal(str1).Append(str2), options);
+        public static RubyRegex/*!*/ CreateRegexMU(MutableString str1, string/*!*/ str2, RubyRegexOptions options, StrongBox<RubyRegex> regexpCache) {
+            Func<RubyRegex> createRegex = delegate { return new RubyRegex(CreateMutableStringMU(str1, str2), options); };
+            return CreateRegexWorker(options, regexpCache, false, createRegex);
         }
 
         [Emitted]
-        public static RubyRegex/*!*/ CreateRegexME(MutableString str1, string/*!*/ str2, int codepage, RubyRegexOptions options) {
-            return new RubyRegex(MutableString.CreateInternal(str1).Append(str2), options);
+        public static RubyRegex/*!*/ CreateRegexME(MutableString str1, string/*!*/ str2, int codepage, RubyRegexOptions options, StrongBox<RubyRegex> regexpCache) {
+            Func<RubyRegex> createRegex = delegate { return new RubyRegex(CreateMutableStringME(str1, str2, codepage), options); };
+            return CreateRegexWorker(options, regexpCache, false, createRegex);
         }
 
         [Emitted]
-        public static RubyRegex/*!*/ CreateRegexMM(MutableString str1, MutableString str2, RubyRegexOptions options) {
-            return new RubyRegex(MutableString.CreateInternal(str1).Append(str2), options);
+        public static RubyRegex/*!*/ CreateRegexMM(MutableString str1, MutableString str2, RubyRegexOptions options, StrongBox<RubyRegex> regexpCache) {
+            Func<RubyRegex> createRegex = delegate { return new RubyRegex(CreateMutableStringMM(str1, str2), options); };
+            return CreateRegexWorker(options, regexpCache, false, createRegex);
         }
 
         [Emitted]
-        public static RubyRegex/*!*/ CreateRegexN(object[]/*!*/ strings, int codepage, RubyRegexOptions options) {
-            return new RubyRegex(ConcatenateStrings(strings), options);
+        public static RubyRegex/*!*/ CreateRegexN(object[]/*!*/ strings, int codepage, RubyRegexOptions options, StrongBox<RubyRegex> regexpCache) {
+            Func<RubyRegex> createRegex = delegate { return new RubyRegex(CreateMutableStringN(strings, codepage), options); };
+            return CreateRegexWorker(options, regexpCache, false, createRegex);
         }
 
         #endregion
@@ -1564,8 +1605,8 @@ namespace IronRuby.Runtime {
         }
 
         [Emitted] // ConvertToSAction
-        public static MutableString/*!*/ ToSDefaultConversion(RubyContext/*!*/ context, object obj) {
-            return obj as MutableString ?? RubyUtils.ObjectToMutableString(context, obj);
+        public static MutableString/*!*/ ToSDefaultConversion(RubyContext/*!*/ context, object target, object converted) {
+            return converted as MutableString ?? RubyUtils.ObjectToMutableString(context, target);
         }
 
         #endregion

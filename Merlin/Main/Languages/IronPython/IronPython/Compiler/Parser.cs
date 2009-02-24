@@ -1719,6 +1719,8 @@ namespace IronPython.Compiler {
             Statement ret;
 
             if (MaybeEat(TokenKind.KeywordFinally)) {
+                MarkFunctionContainsFinally();
+
                 finallySuite = ParseSuite();
                 TryStatement tfs = new TryStatement(body, null, elseSuite, finallySuite);
                 tfs.Header = mid;
@@ -1743,6 +1745,9 @@ namespace IronPython.Compiler {
                 }
 
                 if (MaybeEat(TokenKind.KeywordFinally)) {
+                    // If this function has an except block, then it can set the current exception.
+                    MarkFunctionContainsFinally();
+
                     finallySuite = ParseSuite();
                 }
 
@@ -1752,6 +1757,13 @@ namespace IronPython.Compiler {
             }
             ret.SetLoc(start, GetEnd());
             return ret;
+        }
+
+        private void MarkFunctionContainsFinally() {
+            FunctionDefinition current = CurrentFunction;
+            if (current != null) {
+                current.ContainsTryFinally = true;
+            }
         }
 
         //except_clause: 'except' [expression [',' expression]]
@@ -2317,20 +2329,20 @@ namespace IronPython.Compiler {
             NameExpression n = t as NameExpression;
             if (n == null) {
                 ReportSyntaxError(IronPython.Resources.ExpectedName);
-                Arg arg = new Arg(SymbolId.Empty, t);
+                Arg arg = new Arg(null, t);
                 arg.SetLoc(t.Start, t.End);
                 return arg;
             } else {
                 Expression val = ParseExpression();
-                Arg arg = new Arg(n.Name, val);
+                Arg arg = new Arg(SymbolTable.IdToString(n.Name), val);
                 arg.SetLoc(n.Start, val.End);
                 return arg;
             }
         }
 
-        private void CheckUniqueArgument(Dictionary<SymbolId, SymbolId> names, Arg arg) {
-            if (arg != null && arg.Name != SymbolId.Empty) {
-                SymbolId name = arg.Name;
+        private void CheckUniqueArgument(Dictionary<string, string> names, Arg arg) {
+            if (arg != null && arg.Name != null) {
+                string name = arg.Name;
                 if (names.ContainsKey(name)) {
                     ReportSyntaxError(IronPython.Resources.DuplicateKeywordArg);
                 }
@@ -2343,7 +2355,7 @@ namespace IronPython.Compiler {
         private Arg[] FinishArgumentList(Arg first) {
             const TokenKind terminator = TokenKind.RightParenthesis;
             List<Arg> l = new List<Arg>();
-            Dictionary<SymbolId, SymbolId> names = new Dictionary<SymbolId, SymbolId>();
+            Dictionary<string, string> names = new Dictionary<string, string>();
 
             if (first != null) {
                 l.Add(first);
@@ -2359,10 +2371,10 @@ namespace IronPython.Compiler {
                 Arg a;
                 if (MaybeEat(TokenKind.Multiply)) {
                     Expression t = ParseExpression();
-                    a = new Arg(Symbols.Star, t);
+                    a = new Arg("*", t);
                 } else if (MaybeEat(TokenKind.Power)) {
                     Expression t = ParseExpression();
-                    a = new Arg(Symbols.StarStar, t);
+                    a = new Arg("**", t);
                 } else {
                     Expression e = ParseExpression();
                     if (MaybeEat(TokenKind.Assign)) {
@@ -2891,16 +2903,16 @@ namespace IronPython.Compiler {
             int extraArgs = 0;
 
             foreach (Arg arg in args) {
-                if (arg.Name == SymbolId.Empty) {
+                if (arg.Name == null) {
                     if (hasArgsTuple || hasKeywordDict || keywordCount > 0) {
                         ReportSyntaxError(IronPython.Resources.NonKeywordAfterKeywordArg);
                     }
-                } else if (arg.Name == Symbols.Star) {
+                } else if (arg.Name == "*") {
                     if (hasArgsTuple || hasKeywordDict) {
                         ReportSyntaxError(IronPython.Resources.OneListArgOnly);
                     }
                     hasArgsTuple = true; extraArgs++;
-                } else if (arg.Name == Symbols.StarStar) {
+                } else if (arg.Name == "**") {
                     if (hasKeywordDict) {
                         ReportSyntaxError(IronPython.Resources.OneKeywordArgOnly);
                     }

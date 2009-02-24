@@ -19,7 +19,7 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Linq.Expressions;
 using System.Reflection;
-using System.Dynamic;
+using System.Threading;
 using Microsoft.Scripting.Utils;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 using RuntimeHelpers = Microsoft.Scripting.Runtime.ScriptingRuntimeHelpers;
@@ -49,6 +49,8 @@ namespace Microsoft.Scripting.Ast {
         private bool _visible = true;
         private bool _doNotAddContext;
         private bool _completed;
+
+        private static int _lambdaId; //for generating unique lambda name
 
         internal LambdaBuilder(string name, Type returnType) {
             _name = name;
@@ -173,6 +175,15 @@ namespace Microsoft.Scripting.Ast {
             }
         }
 
+        public List<ParameterExpression> GetVisibleVariables() {
+            var vars = new List<ParameterExpression>(_visibleVars.Count);
+            foreach (var v in _visibleVars) {
+                if (EmitDictionary || v.Value) {
+                    vars.Add(v.Key);
+                }
+            }
+            return vars;
+        }
 
         /// <summary>
         /// Creates a parameter on the lambda with a given name and type.
@@ -309,7 +320,7 @@ namespace Microsoft.Scripting.Ast {
             LambdaExpression lambda = Expression.Lambda(
                 lambdaType,
                 AddDefaultReturn(MakeBody()),
-                _name,
+                _name + "$" + Interlocked.Increment(ref _lambdaId),
                 new ReadOnlyCollection<ParameterExpression>(_params.ToArray())
             );
 
@@ -331,7 +342,7 @@ namespace Microsoft.Scripting.Ast {
             LambdaExpression lambda = Expression.Lambda(
                 GetLambdaType(_returnType, _params),
                 AddDefaultReturn(MakeBody()), 
-                _name,
+                _name + "$" + Interlocked.Increment(ref _lambdaId),
                 _params
             );
 
@@ -355,7 +366,7 @@ namespace Microsoft.Scripting.Ast {
                 lambdaType,
                 label,
                 MakeBody(),
-                _name, 
+                _name + "$" + Interlocked.Increment(ref _lambdaId), 
                 _params
             );
 
@@ -554,12 +565,7 @@ namespace Microsoft.Scripting.Ast {
             // wrap a CodeContext scope if needed
             if (!_global && !DoNotAddContext) {
 
-                var vars = new List<ParameterExpression>(_visibleVars.Count);
-                foreach (var v in _visibleVars) {
-                    if (EmitDictionary || v.Value) {
-                        vars.Add(v.Key);
-                    }
-                }
+                var vars = GetVisibleVariables();
 
                 if (vars.Count > 0) {
                     body = Utils.CodeContextScope(

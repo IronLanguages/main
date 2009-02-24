@@ -105,9 +105,9 @@ namespace IronRuby.StandardLibrary.Yaml {
                 MutableString result = MutableString.CreateMutable("#<YAML::Stream:");
                 RubyUtils.AppendFormatHexObjectId(result, RubyUtils.GetObjectId(context, self))
                 .Append(" @documents=")
-                .Append(RubySites.Inspect(context, self._documents))
+                .Append(context.Inspect(self._documents))
                 .Append(", options=")
-                .Append(RubySites.Inspect(context, self._options))
+                .Append(context.Inspect(self._options))
                 .Append('>');
                 return result;
             }

@@ -61,6 +61,10 @@ namespace IronPythonTest {
         public static LanguageContext GetContext(CodeContext context) {
             return context.LanguageContext;
         }
+
+        public static int HashObject(object o) {
+            return o.GetHashCode();
+        }
     }
 
     public delegate int IntIntDelegate(int arg);
@@ -322,8 +326,8 @@ namespace IronPythonTest {
         }
 
         class MyInvokeMemberBinder : InvokeMemberBinder {
-            public MyInvokeMemberBinder(string name, ArgumentInfo[] args)
-                : base(name, false, args) {
+            public MyInvokeMemberBinder(string name, CallInfo callInfo)
+                : base(name, false, callInfo) {
             }
 
             public override DynamicMetaObject FallbackInvokeMember(DynamicMetaObject target, DynamicMetaObject[] args, DynamicMetaObject errorSuggestion) {
@@ -335,15 +339,15 @@ namespace IronPythonTest {
 
             public override DynamicMetaObject FallbackInvoke(DynamicMetaObject target, DynamicMetaObject[] args, DynamicMetaObject errorSuggestion) {
                 return new DynamicMetaObject(
-                    Expression.Dynamic(new MyInvokeBinder(Arguments), typeof(object), DynamicUtils.GetExpressions(ArrayUtils.Insert(target, args))),
+                    Expression.Dynamic(new MyInvokeBinder(CallInfo), typeof(object), DynamicUtils.GetExpressions(ArrayUtils.Insert(target, args))),
                     target.Restrictions.Merge(BindingRestrictions.Combine(args))
                 );
             }
         }
 
         class MyInvokeBinder : InvokeBinder {
-            public MyInvokeBinder(IEnumerable<ArgumentInfo> args)
-                : base(args) {                
+            public MyInvokeBinder(CallInfo callInfo)
+                : base(callInfo) {                
             }
 
             public override DynamicMetaObject FallbackInvoke(DynamicMetaObject target, DynamicMetaObject[] args, DynamicMetaObject errorSuggestion) {
@@ -479,45 +483,45 @@ al_getattributeinst = MyArrayList_getattribute()
             var getattributeObjects = new object[] { scope.GetVariable("ns_getattributeinst"), scope.GetVariable("al_getattributeinst") };
 
             // if it lives on a system type we should do a fallback invoke member
-            var site = CallSite<Func<CallSite, object, object>>.Create(new MyInvokeMemberBinder("Count", new ArgumentInfo[0]));
+            var site = CallSite<Func<CallSite, object, object>>.Create(new MyInvokeMemberBinder("Count", Expression.CallInfo(0)));
             AreEqual(site.Target(site, scope.GetVariable("alinst")), "FallbackInvokeMember");
 
             // invoke a function that's a member on an object
             foreach (object inst in allObjects) {
-                site = CallSite<Func<CallSite, object, object>>.Create(new MyInvokeMemberBinder("TestFunc", new ArgumentInfo[0]));
+                site = CallSite<Func<CallSite, object, object>>.Create(new MyInvokeMemberBinder("TestFunc", Expression.CallInfo(0)));
                 AreEqual(site.Target(site, inst), "TestFunc");
             }
 
             // invoke a field / property that's on an object
             foreach (object inst in allObjects) {
-                site = CallSite<Func<CallSite, object, object>>.Create(new MyInvokeMemberBinder("InstVal", new ArgumentInfo[0]));
+                site = CallSite<Func<CallSite, object, object>>.Create(new MyInvokeMemberBinder("InstVal", Expression.CallInfo(0)));
                 AreEqual(site.Target(site, inst), "FallbackInvokeInstVal");
 
-                site = CallSite<Func<CallSite, object, object>>.Create(new MyInvokeMemberBinder("ClassVal", new ArgumentInfo[0]));
+                site = CallSite<Func<CallSite, object, object>>.Create(new MyInvokeMemberBinder("ClassVal", Expression.CallInfo(0)));
                 AreEqual(site.Target(site, inst), "FallbackInvokeClassVal");
             }
 
             // invoke a field / property that's not defined on objects w/ __getattr__
             foreach (object inst in getattrObjects) {
-                site = CallSite<Func<CallSite, object, object>>.Create(new MyInvokeMemberBinder("DoesNotExist", new ArgumentInfo[0]));
+                site = CallSite<Func<CallSite, object, object>>.Create(new MyInvokeMemberBinder("DoesNotExist", Expression.CallInfo(0)));
                 AreEqual(site.Target(site, inst), "FallbackInvokeDoesNotExist");
             }
 
             // invoke a field / property that's not defined on objects w/ __getattribute__
             foreach (object inst in getattributeObjects) {
-                site = CallSite<Func<CallSite, object, object>>.Create(new MyInvokeMemberBinder("DoesNotExist", new ArgumentInfo[0]));
+                site = CallSite<Func<CallSite, object, object>>.Create(new MyInvokeMemberBinder("DoesNotExist", Expression.CallInfo(0)));
                 AreEqual(site.Target(site, inst), "FallbackInvokeDoesNotExist");
 
-                site = CallSite<Func<CallSite, object, object>>.Create(new MyInvokeMemberBinder("Count", new ArgumentInfo[0]));
+                site = CallSite<Func<CallSite, object, object>>.Create(new MyInvokeMemberBinder("Count", Expression.CallInfo(0)));
                 AreEqual(site.Target(site, inst), "FallbackInvokeCount");
 
-                site = CallSite<Func<CallSite, object, object>>.Create(new MyInvokeMemberBinder("TestFunc", new ArgumentInfo[0]));
+                site = CallSite<Func<CallSite, object, object>>.Create(new MyInvokeMemberBinder("TestFunc", Expression.CallInfo(0)));
                 AreEqual(site.Target(site, inst), "FallbackInvokeTestFunc");
 
-                site = CallSite<Func<CallSite, object, object>>.Create(new MyInvokeMemberBinder("InstVal", new ArgumentInfo[0]));
+                site = CallSite<Func<CallSite, object, object>>.Create(new MyInvokeMemberBinder("InstVal", Expression.CallInfo(0)));
                 AreEqual(site.Target(site, inst), "FallbackInvokeInstVal");
 
-                site = CallSite<Func<CallSite, object, object>>.Create(new MyInvokeMemberBinder("ClassVal", new ArgumentInfo[0]));
+                site = CallSite<Func<CallSite, object, object>>.Create(new MyInvokeMemberBinder("ClassVal", Expression.CallInfo(0)));
                 AreEqual(site.Target(site, inst), "FallbackInvokeClassVal");
             }
 #endif
@@ -876,38 +880,6 @@ ocinst = oc()
             AreEqualLists(ocnames, new[] { "__doc__", "__init__", "__module__", "abc", "classmethod", "foo", "staticfunc" });
             AreEqualLists(ocinstnames, new[] { "__doc__", "__init__", "__module__", "abc", "baz", "classmethod", "foo", "staticfunc" });
 
-            List<KeyValuePair<string, object>> ncmembers = new List<KeyValuePair<string, object>>(nc.GetDynamicDataMembers());
-            List<KeyValuePair<string, object>> ncinstmembers = new List<KeyValuePair<string, object>>(ncinst.GetDynamicDataMembers());
-            List<KeyValuePair<string, object>> fmembers = new List<KeyValuePair<string, object>>(f.GetDynamicDataMembers());
-            List<KeyValuePair<string, object>> ocmembers = new List<KeyValuePair<string, object>>(oc.GetDynamicDataMembers());
-            List<KeyValuePair<string, object>> ocinstmembers = new List<KeyValuePair<string, object>>(ocinst.GetDynamicDataMembers());
-
-            ncmembers.Sort((x, y) => x.Key.CompareTo(y.Key));
-            ncinstmembers.Sort((x, y) => x.Key.CompareTo(y.Key));
-            ocmembers.Sort((x, y) => x.Key.CompareTo(y.Key));
-            ocinstmembers.Sort((x, y) => x.Key.CompareTo(y.Key));
-            fmembers.Sort((x, y) => x.Key.CompareTo(y.Key));
-
-            AreEqual(ncmembers.Count, 8);
-            Assert(ncmembers[1].Value is PythonFunction); // __init__
-
-            AreEqual(ncinstmembers.Count, 6);            
-            AreEqual(ncinstmembers[4].Key, "baz");
-            AreEqual(ncinstmembers[4].Value, 5);
-
-            AreEqual(ocmembers.Count, 7);
-            Assert(ocmembers[1].Value is Method); // __init__
-
-            AreEqual(ocinstmembers.Count, 4);
-            AreEqual(ocinstmembers[2].Key, "baz");
-            AreEqual(ocinstmembers[2].Value, 5);
-
-            AreEqual(ocinstmembers[3].Key, "foo");
-            AreEqual(ocinstmembers[3].Value, 3); 
-
-            Assert(fmembers.Count == 1);
-            AreEqual(fmembers[0].Key, "foo");
-            AreEqual(fmembers[0].Value, 3);
         }
 
         private void AreEqualLists<T>(IList<T> left, IList<T> right) {

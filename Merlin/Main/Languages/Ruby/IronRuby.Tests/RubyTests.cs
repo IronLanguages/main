@@ -112,6 +112,8 @@ namespace IronRuby.Tests {
                 Scenario_RubyScopes6,
 
                 Send1,
+                Send2,
+                MethodCallCaching7,
                 
                 AttributeAccessors1,
                 AttributeAccessors2,
@@ -453,6 +455,10 @@ namespace IronRuby.Tests {
                 Methods1, 
                 ToIntegerConversion1,
                 ToIntToStrConversion1,
+                ProtocolCaching1,
+                ProtocolCaching2,
+                ProtocolCaching3,
+                ProtocolCaching4,
                 MethodAliasExpression,
                 ClassDuplication1,
                 ClassDuplication2,

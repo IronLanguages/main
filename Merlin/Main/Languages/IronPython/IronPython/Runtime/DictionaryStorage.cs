@@ -77,6 +77,13 @@ namespace IronPython.Runtime {
         }
 
         public abstract List<KeyValuePair<object, object>> GetItems();
+
+        public virtual IEnumerable<object>/*!*/ GetKeys() {
+            foreach (var o in GetItems()) {
+                yield return o.Key;
+            }
+        }
+
         public virtual DictionaryStorage Clone() {
             CommonDictionaryStorage storage = new CommonDictionaryStorage();
             foreach (KeyValuePair<object, object> kvp in GetItems()) {

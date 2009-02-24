@@ -206,13 +206,13 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("*")]
-        public static object Repetition(ConversionStorage<int>/*!*/ fixnumCast, UnaryOpStorage/*!*/ tosStorage, RubyContext/*!*/ context, 
-            IList/*!*/ self, object repeat) {
-            MutableString str = Protocols.AsString(context, repeat);
-            if (str != null) {
-                return Repetition(tosStorage, context, self, str);
+        public static object Repetition(UnaryOpStorage/*!*/ tosStorage, RubyContext/*!*/ context, 
+            IList/*!*/ self, [DefaultProtocol]Union<MutableString, int> repeat) {
+
+            if (repeat.IsFixnum()) {
+                return Repetition(self, repeat.Fixnum());
             } else {
-                return Repetition(self, Protocols.CastToFixnum(fixnumCast, context, repeat));
+                return Repetition(tosStorage, context, self, repeat.String());
             }
         }
 
@@ -902,7 +902,9 @@ namespace IronRuby.Builtins {
         [MultiRuntimeAware]
         private static RubyUtils.RecursionTracker _infiniteFlattenTracker = new RubyUtils.RecursionTracker();
 
-        public static bool TryFlattenArray(CallSiteStorage<Func<CallSite, RubyContext, IList, object>>/*!*/ flattenStorage, 
+        public static bool TryFlattenArray(
+            CallSiteStorage<Func<CallSite, RubyContext, IList, object>>/*!*/ flattenStorage, 
+            ConversionStorage<IList>/*!*/ tryToAry, 
             RubyContext/*!*/ context, IList list, out IList/*!*/ result) {
             // TODO: create correct subclass of RubyArray rather than RubyArray directly
             result = new RubyArray();
@@ -912,14 +914,14 @@ namespace IronRuby.Builtins {
                     throw RubyExceptions.CreateArgumentError("tried to flatten recursive array");
                 }
                 bool flattened = false;
-                for (int i = 0; i < list.Count; ++i) {
-                    IList item = Protocols.AsArray(context, list[i]);
+                for (int i = 0; i < list.Count; i++) {
+                    IList item = Protocols.TryCastToArray(tryToAry, context, list[i]);
                     if (item != null) {
                         flattened = true;
                         var flatten = flattenStorage.GetCallSite("flatten", 0);
 
                         object flattenedItem = flatten.Target(flatten, context, item);
-                        IList flattenedList = Protocols.AsArray(context, flattenedItem);
+                        IList flattenedList = Protocols.TryCastToArray(tryToAry, context, flattenedItem);
                         if (flattenedList != null) {
                             AddRange(result, flattenedList);
                         } else {
@@ -934,18 +936,22 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("flatten")]
-        public static IList/*!*/ Flatten(CallSiteStorage<Func<CallSite, RubyContext, IList, object>>/*!*/ flattenStorage, 
+        public static IList/*!*/ Flatten(
+            CallSiteStorage<Func<CallSite, RubyContext, IList, object>>/*!*/ flattenStorage, 
+            ConversionStorage<IList>/*!*/ tryToAry, 
             RubyContext/*!*/ context, IList/*!*/ self) {
             IList result;
-            TryFlattenArray(flattenStorage, context, self, out result);
+            TryFlattenArray(flattenStorage, tryToAry, context, self, out result);
             return result;
         }
 
         [RubyMethod("flatten!")]
-        public static IList FlattenInPlace(CallSiteStorage<Func<CallSite, RubyContext, IList, object>>/*!*/ flattenStorage, 
+        public static IList FlattenInPlace(
+            CallSiteStorage<Func<CallSite, RubyContext, IList, object>>/*!*/ flattenStorage, 
+            ConversionStorage<IList>/*!*/ tryToAry, 
             RubyContext/*!*/ context, IList/*!*/ self) {
             IList result;
-            if (!TryFlattenArray(flattenStorage, context, self, out result)) {
+            if (!TryFlattenArray(flattenStorage, tryToAry, context, self, out result)) {
                 return null;
             }
 
@@ -1093,6 +1099,7 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("inspect")]
         public static MutableString/*!*/ Inspect(RubyContext/*!*/ context, IList/*!*/ self) {
+
             using (IDisposable handle = RubyUtils.InfiniteInspectTracker.TrackObject(self)) {
                 if (handle == null) {
                     return MutableString.Create("[...]");
@@ -1106,7 +1113,7 @@ namespace IronRuby.Builtins {
                     } else {
                         str.Append(", ");
                     }
-                    str.Append(RubySites.Inspect(context, obj));
+                    str.Append(context.Inspect(obj));
                 }
                 str.Append(']');
                 return str;
@@ -1324,12 +1331,12 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("transpose")]
-        public static RubyArray/*!*/ Transpose(RubyContext/*!*/ context, IList/*!*/ self) {
+        public static RubyArray/*!*/ Transpose(ConversionStorage<IList>/*!*/ arrayCast, RubyContext/*!*/ context, IList/*!*/ self) {
             // Get the arrays. Note we need to check length as we go, so we call to_ary on all the
             // arrays we encounter before the error (if any).
             RubyArray result = new RubyArray();
             for (int i = 0; i < self.Count; i++) {
-                IList list = Protocols.CastToArray(context, self[i]);
+                IList list = Protocols.CastToArray(arrayCast, context, self[i]);
 
                 if (i == 0) {
                     // initialize the result

@@ -1,0 +1,4 @@
+fails:Logger::LogDevice#new creates a new log device
+fails:Logger::LogDevice#new receives an IO object to log there as first argument
+fails:Logger::LogDevice#new creates a File if the IO object does not exist
+fails:Logger::LogDevice#new receives options via a hash as second argument

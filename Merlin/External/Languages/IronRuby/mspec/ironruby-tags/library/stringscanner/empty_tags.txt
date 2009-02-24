@@ -1,0 +1,1 @@
+fails:StringScanner#empty? warns in verbose mode that the method is obsolete

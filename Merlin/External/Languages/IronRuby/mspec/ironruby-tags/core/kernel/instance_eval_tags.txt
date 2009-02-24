@@ -1,0 +1,1 @@
+fails:Kernel#instance_eval takes no arguments with a block

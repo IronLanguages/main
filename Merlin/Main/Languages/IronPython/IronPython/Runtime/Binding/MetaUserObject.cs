@@ -93,7 +93,8 @@ namespace IronPython.Runtime.Binding {
                 conversion,
                 TryPythonConversion(conversion, type) ?? base.BindConvert(conversion),
                 new DynamicMetaObject[] { this },
-                typeTest
+                typeTest,
+                type
             );
         }
 
@@ -119,15 +120,6 @@ namespace IronPython.Runtime.Binding {
                 context, 
                 args
             );
-        }
-
-        public override System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object>> GetDynamicDataMembers() {
-            foreach (string name in GetDynamicMemberNames()) {
-                object val = Value.PythonType.GetMember(Value.PythonType.PythonContext.DefaultBinderState.Context, Value, SymbolTable.StringToId(name));
-                if (BindingHelpers.IsDataMember(val)) {
-                    yield return new KeyValuePair<string, object>(name, val);
-                }
-            } 
         }
 
         public override System.Collections.Generic.IEnumerable<string> GetDynamicMemberNames() {

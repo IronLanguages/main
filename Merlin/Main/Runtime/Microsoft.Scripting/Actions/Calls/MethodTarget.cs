@@ -177,10 +177,7 @@ namespace Microsoft.Scripting.Actions.Calls {
                     ret = Ast.Block(new [] { temp }, updates.ToArray());
                 } else {
                     updates.Insert(0, ret);
-                    ret = Ast.Convert(
-                        Ast.Block(updates.ToArray()),
-                        typeof(void)
-                    );
+                    ret = Ast.Block(typeof(void), updates.ToArray());
                 }
             }
 
@@ -332,7 +329,7 @@ namespace Microsoft.Scripting.Actions.Calls {
             else return 0;
         }
 
-        internal MethodTarget MakeParamsExtended(int argCount, SymbolId[] names, int[] nameIndexes) {
+        internal MethodTarget MakeParamsExtended(int argCount, string[] names, int[] nameIndexes) {
             Debug.Assert(BinderHelpers.IsParamsMethod(Method));
 
             List<ArgBuilder> newArgBuilders = new List<ArgBuilder>(_argBuilders.Count);

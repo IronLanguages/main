@@ -1,0 +1,38 @@
+fails:StringIO#reopen when passed [Object, Integer] reopens self with the passed Object in the passed mode
+fails:StringIO#reopen when passed [Object, Integer] does not taint self when the passed Object was tainted
+fails:StringIO#reopen when passed [Object, Integer] tries to convert the passed Object to a String using #to_str
+fails:StringIO#reopen when passed [Object, Integer] raises a TypeError when the passed Object can't be converted to a String
+fails:StringIO#reopen when passed [Object, Integer] checks whether the passed Object responds to #to_str
+fails:StringIO#reopen when passed [Object, Integer] raises an Errno::EACCES when trying to reopen self with a frozen String in write-mode
+fails:StringIO#reopen when passed [Object, Integer] raises a TypeError when trying to reopen self with a frozen String in truncate-mode
+fails:StringIO#reopen when passed [Object, Integer] does not raise IOError when passed a frozen String in read-mode
+fails:StringIO#reopen when passed [Object, Object] reopens self with the passed Object in the passed mode
+fails:StringIO#reopen when passed [Object, Object] truncates the passed String when opened in truncate mode
+fails:StringIO#reopen when passed [Object, Object] does not taint self when the passed Object was tainted
+fails:StringIO#reopen when passed [Object, Object] tries to convert the passed Object to a String using #to_str
+fails:StringIO#reopen when passed [Object, Object] raises a TypeError when the passed Object can't be converted to a String using #to_str
+fails:StringIO#reopen when passed [Object, Object] checks whether the passed Object responds to #to_str
+fails:StringIO#reopen when passed [Object, Object] resets self's position to 0
+fails:StringIO#reopen when passed [Object, Object] resets self's line number to 0
+fails:StringIO#reopen when passed [Object, Object] tries to convert the passed mode Object to an Integer using #to_str
+fails:StringIO#reopen when passed [Object, Object] checks whether the passed mode-Object responds to #to_str
+fails:StringIO#reopen when passed [Object, Object] raises an Errno::EACCES error when trying to reopen self with a frozen String in write-mode
+fails:StringIO#reopen when passed [Object, Object] does not raise IOError if a frozen string is passed in read mode
+fails:StringIO#reopen when passed [String] reopens self with the passed String in read-write mode
+fails:StringIO#reopen when passed [String] does not taint self when the passed Object was tainted
+fails:StringIO#reopen when passed [String] resets self's position to 0
+fails:StringIO#reopen when passed [String] resets self's line number to 0
+fails:StringIO#reopen when passed [Object] raises a TypeError when passed an Object that can't be converted to a StringIO
+fails:StringIO#reopen when passed [Object] does not try to convert the passed Object to a String using #to_str
+fails:StringIO#reopen when passed [Object] tries to convert the passed Object to a StringIO using #to_strio
+fails:StringIO#reopen when passed [Object] taints self when the passed Object was tainted
+fails:StringIO#reopen when passed [Object] checks whether the passed Object responds to #to_strio
+fails:StringIO#reopen when passed no arguments resets self's mode to read-write
+fails:StringIO#reopen when passed no arguments resets self's position to 0
+fails:StringIO#reopen when passed no arguments resets self's line number to 0
+fails:StringIO#reopen reopens a stream when given a String argument
+fails:StringIO#reopen reopens a stream in append mode when flagged as such
+fails:StringIO#reopen reopens and truncate when reopened in write mode
+fails:StringIO#reopen truncates the given string, not a copy
+fails:StringIO#reopen taints self if the provided StringIO argument is tainted
+fails:StringIO#reopen does not truncate the content even when the StringIO argument is in the truncate mode

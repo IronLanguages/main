@@ -20,10 +20,10 @@ using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
 
 using Microsoft.Scripting;
+using Microsoft.Scripting.Generation;
 
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
-using Microsoft.Scripting.Generation;
 
 namespace IronPython.Runtime {
     /// <summary>
@@ -457,6 +457,25 @@ namespace IronPython.Runtime {
                         }
                     }
                 }
+                return res;
+            }
+        }
+
+        public override IEnumerable<object>/*!*/ GetKeys() {
+            Bucket[] buckets = _buckets;
+            lock (this) {
+                object[] res = new object[Count];
+                int index = 0;
+                if (buckets != null) {
+                    for (int i = 0; i < buckets.Length; i++) {
+                        Bucket curBucket = buckets[i];
+                        while (curBucket != null) {
+                            res[index++] = curBucket.Key;
+                            curBucket = curBucket.Next;
+                        }
+                    }
+                }
+
                 return res;
             }
         }

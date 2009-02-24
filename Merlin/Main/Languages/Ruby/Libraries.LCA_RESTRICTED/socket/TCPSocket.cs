@@ -28,8 +28,8 @@ namespace IronRuby.StandardLibrary.Sockets {
         }
 
         [RubyMethod("gethostbyname", RubyMethodAttributes.PublicSingleton)]
-        public static RubyArray/*!*/ GetHostByName(RubyClass/*!*/ self, object hostName) {
-            return InternalGetHostByName(self, hostName, false);
+        public static RubyArray/*!*/ GetHostByName(ConversionStorage<MutableString>/*!*/ stringCast, RubyClass/*!*/ self, object hostNameOrAddress) {
+            return GetHostByName(ConvertToHostString(stringCast, self.Context, hostNameOrAddress), false);
         }
 
         [RubyConstructor]

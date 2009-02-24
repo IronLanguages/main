@@ -103,7 +103,8 @@ namespace System.Linq.Expressions.Compiler {
 
                 // We need to copy back value types
                 if (memberTemp.Type.IsValueType) {
-                    block[_bindings.Count + 1] = Expression.Void(
+                    block[_bindings.Count + 1] = Expression.Block(
+                        typeof(void),
                         Expression.Assign(Expression.MakeMemberAccess(target, _binding.Member), memberTemp)
                     );
                 } else {
@@ -173,7 +174,8 @@ namespace System.Linq.Expressions.Compiler {
 
                 // We need to copy back value types
                 if (memberTemp.Type.IsValueType) {
-                    block[_inits.Count + 1] = Expression.Void(
+                    block[_inits.Count + 1] = Expression.Block(
+                        typeof(void),
                         Expression.Assign(Expression.MakeMemberAccess(target, _binding.Member), memberTemp)
                     );
                 } else {

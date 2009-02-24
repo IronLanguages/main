@@ -235,7 +235,7 @@ namespace IronRuby.Runtime {
         }
     
         private object RequireWriteProtocol(RubyContext/*!*/ context, object value, string/*!*/ variableName) {
-            if (!RubySites.RespondTo(context, value, "write")) {
+            if (!context.RespondTo(value, "write")) {
                 throw RubyExceptions.CreateTypeError(String.Format("${0} must have write method, {1} given", variableName, RubyUtils.GetClassName(context, value)));
             }
 

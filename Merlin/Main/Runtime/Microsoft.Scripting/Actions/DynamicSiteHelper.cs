@@ -212,5 +212,25 @@ namespace Microsoft.Scripting.Actions {
             builder.DefineMethod("Invoke", InvokeAttributes, returnType, parameters).SetImplementationFlags(ImplAttributes);
             return builder.CreateType();
         }
+
+        /// <summary>
+        /// Returns true if the method should not be displayed in the stack frame.
+        /// </summary>
+        public static bool IsInvisibleDlrStackFrame(MethodBase mb) {
+            //This method name is used for the dynamic method created for a delegate type signature.
+            if (mb.Name == "_Scripting_") {
+                return true;
+            }
+
+            //Filters out methods in Microsoft.Scripting namespaces.
+            if (mb.DeclaringType != null && 
+                mb.DeclaringType.Namespace != null &&
+                mb.DeclaringType.Namespace.StartsWith("Microsoft.Scripting", StringComparison.Ordinal)) {
+                return true;
+            }
+
+            //Filters out all the methods generated for DLR rules or used in DLR rules.
+            return CallSiteHelpers.IsInternalFrame(mb);
+        }
     }
 }

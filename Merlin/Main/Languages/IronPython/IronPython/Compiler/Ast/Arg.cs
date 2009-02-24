@@ -20,17 +20,17 @@ using MSAst = System.Linq.Expressions;
 
 namespace IronPython.Compiler.Ast {
     public class Arg : Node {
-        private readonly SymbolId _name;
+        private readonly string _name;
         private readonly Expression _expression;
 
-        public Arg(Expression expression) : this(SymbolId.Empty, expression) { }
+        public Arg(Expression expression) : this(null, expression) { }
 
-        public Arg(SymbolId name, Expression expression) {
+        public Arg(string name, Expression expression) {
             _name = name;
             _expression = expression;
         }
 
-        public SymbolId Name {
+        public string Name {
             get { return _name; }
         }
 
@@ -39,17 +39,17 @@ namespace IronPython.Compiler.Ast {
         } 
 
         public override string ToString() {
-            return base.ToString() + ":" + SymbolTable.IdToString(_name);
+            return base.ToString() + ":" + _name;
         }
 
         internal Argument Transform(AstGenerator ag, out MSAst.Expression expression) {
             expression = ag.Transform(_expression);
 
-            if (_name == SymbolId.Empty) {
+            if (_name == null) {
                 return Argument.Simple;
-            } else if (_name == Symbols.Star) {
+            } else if (_name == "*") {
                 return new Argument(ArgumentType.List);
-            } else if (_name == Symbols.StarStar) {
+            } else if (_name == "**") {
                 return new Argument(ArgumentType.Dictionary);
             } else {
                 return new Argument(_name);

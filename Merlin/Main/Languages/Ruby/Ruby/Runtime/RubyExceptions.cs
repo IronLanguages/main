@@ -113,7 +113,7 @@ namespace IronRuby.Runtime {
         }
 
         public static Exception/*!*/ InvalidValueForType(RubyContext/*!*/ context, object obj, string type) {
-            return CreateArgumentError(String.Format("invalid value for {0}: {1}", type, RubySites.Inspect(context, obj).ConvertToString()));
+            return CreateArgumentError(String.Format("invalid value for {0}: {1}", type, context.Inspect(obj)));
         }
 
         public static Exception/*!*/ CreateUndefinedMethodError(RubyModule/*!*/ module, string/*!*/ methodName) {

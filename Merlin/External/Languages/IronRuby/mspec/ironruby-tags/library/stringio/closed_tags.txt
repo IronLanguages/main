@@ -1,0 +1,1 @@
+fails:StringIO#closed? returns true if self is completely closed

@@ -1,0 +1,1 @@
+fails:Kernel.throw raises NameError if there is no catch block for the symbol

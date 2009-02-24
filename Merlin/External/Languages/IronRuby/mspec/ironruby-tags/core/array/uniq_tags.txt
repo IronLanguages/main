@@ -1,0 +1,3 @@
+critical:Array#uniq properly handles recursive arrays
+critical:Array#uniq! properly handles recursive arrays
+fails:Array#uniq! raises a TypeError on a frozen array if modification would take place

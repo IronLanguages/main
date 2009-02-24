@@ -146,11 +146,11 @@ namespace IronPython.Runtime.Binding {
         /// </summary>
         protected DynamicMetaObject InvokeForeignObject(DynamicMetaObject target, DynamicMetaObject[] args) {
             // need to unpack any dict / list arguments...
-            List<ArgumentInfo> newArgs;
+            CallInfo callInfo;
             List<Expression> metaArgs;
             Expression test;
             BindingRestrictions restrictions;
-            TranslateArguments(target, args, out newArgs, out metaArgs, out test, out restrictions);
+            TranslateArguments(target, args, out callInfo, out metaArgs, out test, out restrictions);
 
             Debug.Assert(metaArgs.Count > 0);
 
@@ -158,7 +158,7 @@ namespace IronPython.Runtime.Binding {
                 this,
                 new DynamicMetaObject(
                     Expression.Dynamic(
-                        _state.CompatInvoke(newArgs.ToArray()),
+                        _state.CompatInvoke(callInfo),
                         typeof(object),
                         metaArgs.ToArray()
                     ),
@@ -173,10 +173,10 @@ namespace IronPython.Runtime.Binding {
         /// Translates our CallSignature into a DLR Argument list and gives the simple MetaObject's which are extracted
         /// from the tuple or dictionary parameters being splatted.
         /// </summary>
-        private void TranslateArguments(DynamicMetaObject target, DynamicMetaObject/*!*/[]/*!*/ args, out List<ArgumentInfo/*!*/>/*!*/ newArgs, out List<Expression/*!*/>/*!*/ metaArgs, out Expression test, out BindingRestrictions restrictions) {
+        private void TranslateArguments(DynamicMetaObject target, DynamicMetaObject/*!*/[]/*!*/ args, out CallInfo /*!*/ callInfo, out List<Expression/*!*/>/*!*/ metaArgs, out Expression test, out BindingRestrictions restrictions) {
             Argument[] argInfo = _signature.GetArgumentInfos();
 
-            newArgs = new List<ArgumentInfo>();
+            List<string> namedArgNames = new List<string>();
             metaArgs = new List<Expression>();
             metaArgs.Add(target.Expression);
             Expression splatArgTest = null;
@@ -193,7 +193,7 @@ namespace IronPython.Runtime.Binding {
 
                         foreach (KeyValuePair<object, object> kvp in iac) {
                             string key = (string)kvp.Key;
-                            newArgs.Add(Expression.NamedArg(key));
+                            namedArgNames.Add(key);
                             argNames.Add(key);
 
                             metaArgs.Add(
@@ -220,7 +220,6 @@ namespace IronPython.Runtime.Binding {
                         );
 
                         for (int splattedArg = 0; splattedArg < splattedArgs.Count; splattedArg++) {
-                            newArgs.Add(Expression.PositionalArg(splattedArg + i));
                             metaArgs.Add(
                                 Expression.Call(
                                     AstUtils.Convert(args[i].Expression, typeof(IList<object>)),
@@ -233,17 +232,18 @@ namespace IronPython.Runtime.Binding {
                         restrictions = restrictions.Merge(BindingRestrictionsHelpers.GetRuntimeTypeRestriction(args[i].Expression, args[i].GetLimitType()));
                         break;
                     case ArgumentType.Named:
-                        newArgs.Add(Expression.NamedArg(SymbolTable.IdToString(ai.Name)));
+                        namedArgNames.Add(ai.Name);
                         metaArgs.Add(args[i].Expression);
                         break;
                     case ArgumentType.Simple:
-                        newArgs.Add(Expression.PositionalArg(i));
                         metaArgs.Add(args[i].Expression);
                         break;
                     default:
                         throw new InvalidOperationException();
                 }
             }
+            
+            callInfo = Expression.CallInfo(metaArgs.Count, namedArgNames.ToArray());
 
             test = splatArgTest;
             if (splatKwArgTest != null) {

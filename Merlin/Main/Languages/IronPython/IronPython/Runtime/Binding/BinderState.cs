@@ -96,7 +96,7 @@ namespace IronPython.Runtime.Binding {
 
         #region Binder Factories
 
-        internal CompatibilityInvokeBinder/*!*/ CompatInvoke(params ArgumentInfo/*!*/[]/*!*/ args) {
+        internal CompatibilityInvokeBinder/*!*/ CompatInvoke(CallInfo /*!*/ callInfo) {
             if (_compatInvokeBinders == null) {
                 Interlocked.CompareExchange(
                     ref _compatInvokeBinders,
@@ -106,10 +106,10 @@ namespace IronPython.Runtime.Binding {
             }
 
             lock (_compatInvokeBinders) {
-                CallSignature sig = BindingHelpers.ArgumentArrayToSignature(args);
+                CallSignature sig = BindingHelpers.CallInfoToSignature(callInfo);
                 CompatibilityInvokeBinder res;
                 if (!_compatInvokeBinders.TryGetValue(sig, out res)) {
-                    _compatInvokeBinders[sig] = res = new CompatibilityInvokeBinder(this, args);
+                    _compatInvokeBinders[sig] = res = new CompatibilityInvokeBinder(this, callInfo);
                 }
 
                 return res;
@@ -144,7 +144,7 @@ namespace IronPython.Runtime.Binding {
             }
         }
 
-        internal CreateFallback/*!*/ Create(CompatibilityInvokeBinder/*!*/ realFallback, IList<ArgumentInfo/*!*/>/*!*/ arguments) {
+        internal CreateFallback/*!*/ Create(CompatibilityInvokeBinder/*!*/ realFallback, CallInfo /*!*/ callInfo) {
             if (_createBinders == null) {
                 Interlocked.CompareExchange(
                     ref _createBinders,
@@ -154,10 +154,10 @@ namespace IronPython.Runtime.Binding {
             }
 
             lock (_createBinders) {
-                CallSignature sig = BindingHelpers.ArgumentArrayToSignature(arguments);
+                CallSignature sig = BindingHelpers.CallInfoToSignature(callInfo);
                 CreateFallback res;
                 if (!_createBinders.TryGetValue(sig, out res)) {
-                    _createBinders[sig] = res = new CreateFallback(realFallback, arguments);
+                    _createBinders[sig] = res = new CreateFallback(realFallback, callInfo);
                 }
 
                 return res;

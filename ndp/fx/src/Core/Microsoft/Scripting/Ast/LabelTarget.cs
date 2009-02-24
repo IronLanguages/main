@@ -45,6 +45,14 @@ namespace System.Linq.Expressions {
         public Type Type {
             get { return _type; }
         }
+
+        /// <summary>
+        /// Returns a <see cref="String"/> that represents the current <see cref="Object"/>. 
+        /// </summary>
+        /// <returns>A <see cref="String"/> that represents the current <see cref="Object"/>. </returns>
+        public override string ToString() {
+            return String.IsNullOrEmpty(this.Name) ? "UnamedLabel" : this.Name;
+        }
     }
 
     public partial class Expression {

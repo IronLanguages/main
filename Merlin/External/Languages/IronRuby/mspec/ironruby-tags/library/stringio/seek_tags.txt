@@ -1,0 +1,2 @@
+fails:StringIO#seek raises an Errno::EINVAL error on negative amounts when whence is IO::SEEK_SET
+fails:StringIO#seek when self is closed does not raise an IOError

@@ -180,6 +180,8 @@ namespace IronPython.Runtime.Binding {
                     return MakeUnaryOperation(operation, args[0], Symbols.AbsoluteValue);
                 case PythonOperationKind.Compare:
                     return MakeSortComparisonRule(args, operation, operation.Operation);
+                case PythonOperationKind.GetEnumeratorForIteration:
+                    return MakeEnumeratorOperation(operation, args[0]);
                 default:
                     return MakeBinaryOperation(operation, args, operation.Operation);
             }
@@ -405,6 +407,84 @@ namespace IronPython.Runtime.Binding {
             }
 
             return func.Target;
+        }
+
+        private static DynamicMetaObject MakeEnumeratorOperation(PythonOperationBinder operation, DynamicMetaObject self) {
+            if (self.GetLimitType() == typeof(string)) {
+                self = self.Restrict(self.GetLimitType());
+
+                return new DynamicMetaObject(
+                    Expression.Call(
+                        typeof(PythonOps).GetMethod("StringEnumerator"),
+                        self.Expression
+                    ),
+                    self.Restrictions
+                );
+            } else if (self.GetLimitType() == typeof(PythonDictionary)) {
+                self = self.Restrict(self.GetLimitType());
+
+                return new DynamicMetaObject(
+                    Expression.Call(
+                        typeof(PythonOps).GetMethod("MakeDictionaryKeyEnumerator"),
+                        self.Expression
+                    ),
+                    self.Restrictions
+                );
+            } else if (self.Value is IEnumerable ||
+                       typeof(IEnumerable).IsAssignableFrom(self.GetLimitType())) {
+                self = self.Restrict(self.GetLimitType());
+
+                return new DynamicMetaObject(
+                    Expression.Call(
+                        Expression.Convert(
+                            self.Expression,
+                            typeof(IEnumerable)
+                        ),
+                        typeof(IEnumerable).GetMethod("GetEnumerator")
+                    ),
+                    self.Restrictions
+                );
+
+            } else if (self.Value is IEnumerator ||                                 // check for COM object (and fast check when we have values)
+                       typeof(IEnumerator).IsAssignableFrom(self.GetLimitType())) { // check if we don't have a value
+                DynamicMetaObject ieres = self.Restrict(self.GetLimitType());
+
+#if !SILVERLIGHT
+                if (ComOps.IsComObject(self.Value)) {
+                    ieres = new DynamicMetaObject(
+                         self.Expression,
+                         ieres.Restrictions.Merge(
+                            BindingRestrictions.GetExpressionRestriction(
+                                Ast.TypeIs(self.Expression, typeof(IEnumerator))
+                            )
+                        )
+                    );
+                }
+#endif
+
+                return ieres;
+            }
+
+            ParameterExpression tmp = Ast.Parameter(typeof(IEnumerator), "enum");
+            DynamicMetaObject res = self.BindConvert(new ConversionBinder(BinderState.GetBinderState(operation), typeof(IEnumerator), ConversionResultKind.ExplicitTry));
+            return new DynamicMetaObject(                
+                Expression.Block(
+                    new[] { tmp },
+                    Ast.Condition(
+                        Ast.NotEqual(
+                            Ast.Assign(tmp, res.Expression),
+                            Ast.Constant(null)
+                        ),
+                        tmp,
+                        Ast.Call(
+                            typeof(PythonOps).GetMethod("ThrowTypeErrorForBadIteration"),
+                            BinderState.GetCodeContext(operation),
+                            self.Expression
+                        )
+                    )
+                ),
+                res.Restrictions
+            );
         }
 
         private static DynamicMetaObject/*!*/ MakeUnaryNotOperation(DynamicMetaObjectBinder/*!*/ operation, DynamicMetaObject/*!*/ self) {

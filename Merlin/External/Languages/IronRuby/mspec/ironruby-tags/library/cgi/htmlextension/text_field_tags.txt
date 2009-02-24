@@ -1,0 +1,4 @@
+fails:CGI::HtmlExtension#text_field when passed no arguments returns an text-'input'-element without a name
+fails:CGI::HtmlExtension#text_field when passed no arguments ignores a passed block
+fails:CGI::HtmlExtension#text_field when passed name returns an text-'input'-element with the passed name
+fails:CGI::HtmlExtension#text_field when passed name ignores a passed block

@@ -1,0 +1,5 @@
+fails:Logger#new creates a new logger object
+fails:Logger#new receives a logging device as first argument
+fails:Logger#new receives a frequency rotation as second argument
+fails:Logger#new also receives a number of log files to keep as second argument
+fails:Logger#new receivs a maximum logfile size as third argument

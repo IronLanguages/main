@@ -1,0 +1,9 @@
+fails:Time.utc creates a time based on given values, interpreted as UTC (GMT)
+fails:Time.utc creates a time based on given C-style gmtime arguments, interpreted as UTC (GMT)
+fails:Time.utc handles string-like second argument
+fails:Time.utc handles string arguments
+fails:Time.utc handles float arguments
+fails:Time.utc should accept various year ranges
+fails:Time.utc throws ArgumentError for out of range values
+fails:Time.utc throws ArgumentError for invalid number of arguments
+fails:Time#utc returns the utc representation of time

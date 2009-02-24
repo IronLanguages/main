@@ -50,12 +50,12 @@ namespace IronPython.Compiler.Ast {
                 if (nameExpr.Name == Symbols.Dir) return true;
                 return false;
             } else if (_args.Length == 1 && (nameExpr.Name == Symbols.Dir || nameExpr.Name == Symbols.Vars)) {
-                if (_args[0].Name == Symbols.Star || _args[0].Name == Symbols.StarStar) {
+                if (_args[0].Name == "*" || _args[0].Name == "**") {
                     // could be splatting empty list or dict resulting in 0-param call which needs context
                     return true;
                 }
             } else if (_args.Length == 2 && (nameExpr.Name == Symbols.Dir || nameExpr.Name == Symbols.Vars)) {
-                if (_args[0].Name == Symbols.Star && _args[1].Name == Symbols.StarStar) {
+                if (_args[0].Name == "*" && _args[1].Name == "**") {
                     // could be splatting empty list and dict resulting in 0-param call which needs context
                     return true;
                 }

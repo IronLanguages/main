@@ -98,7 +98,7 @@ namespace Microsoft.Scripting.Hosting {
         /// </summary>
         /// <exception cref="ArgumentNullException"><paramref name="name"/> is a <c>null</c> reference.</exception>
         public bool TryGetVariable(string name, out object value) {
-            return _scope.TryGetName(_engine.LanguageContext, SymbolTable.StringToId(name), out value);
+            return _scope.TryGetName(SymbolTable.StringToId(name), out value);
         }
 
         /// <summary>
@@ -109,7 +109,7 @@ namespace Microsoft.Scripting.Hosting {
         /// <exception cref="ArgumentNullException"><paramref name="name"/> is a <c>null</c> reference.</exception>
         public bool TryGetVariable<T>(string name, out T value) {
             object result;
-            if (_scope.TryGetName(_engine.LanguageContext, SymbolTable.StringToId(name), out result)) {
+            if (_scope.TryGetName(SymbolTable.StringToId(name), out result)) {
                 value = _engine.Operations.ConvertTo<T>(result);
                 return true;
             }
@@ -169,7 +169,7 @@ namespace Microsoft.Scripting.Hosting {
         /// </summary>
         /// <exception cref="ArgumentNullException"><paramref name="name"/> is a <c>null</c> reference.</exception>
         public bool ContainsVariable(string name) {
-            return _scope.ContainsName(_engine.LanguageContext, SymbolTable.StringToId(name));
+            return _scope.ContainsName(SymbolTable.StringToId(name));
         }
 
         /// <summary>
@@ -178,7 +178,7 @@ namespace Microsoft.Scripting.Hosting {
         /// <returns><c>true</c> if the value existed in the scope before it has been removed.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="name"/> is a <c>null</c> reference.</exception>
         public bool RemoveVariable(string name) {
-            return _scope.TryRemoveName(_engine.LanguageContext, SymbolTable.StringToId(name));
+            return _scope.TryRemoveName(SymbolTable.StringToId(name));
         }
 
         /// <summary>
@@ -289,14 +289,14 @@ namespace Microsoft.Scripting.Hosting {
             public override DynamicMetaObject BindDeleteMember(DeleteMemberBinder action) {
                 var fallback = action.FallbackDeleteMember(this);
                 return new DynamicMetaObject(
-                    Expression.Condition(
+                    Expression.IfThenElse(
                         Expression.Call(
                             AstUtils.Convert(Expression, typeof(ScriptScope)),
                             typeof(ScriptScope).GetMethod("RemoveVariable"),
                             Expression.Constant(action.Name)
                         ),
                         Expression.Empty(),
-                        Expression.Convert(fallback.Expression, typeof(void))
+                        fallback.Expression
                     ),
                     Restrictions.Merge(BindingRestrictionsHelpers.GetRuntimeTypeRestriction(Expression, typeof(ScriptScope))).Merge(fallback.Restrictions)
                 );
@@ -325,10 +325,6 @@ namespace Microsoft.Scripting.Hosting {
                     ),
                     BindingRestrictions.Combine(args).Merge(BindingRestrictionsHelpers.GetRuntimeTypeRestriction(Expression, typeof(ScriptScope))).Merge(fallback.Restrictions)
                 );
-            }
-
-            public override IEnumerable<KeyValuePair<string, object>> GetDynamicDataMembers() {
-                return ((ScriptScope)Value).GetItems();
             }
 
             public override IEnumerable<string> GetDynamicMemberNames() {

@@ -1,0 +1,2 @@
+fails:Kernel#load produces __FILE__ as the given filename and __LINE__ as the source line number
+fails:Kernel#load only accepts strings as the filename argument

@@ -37,6 +37,7 @@ namespace IronRuby.Compiler {
         public static readonly string ToProc = "to_proc";
         public static readonly string ToS = "to_s";
         public static readonly string ToStr = "to_str";
+        public static readonly string ToA = "to_a";
         public static readonly string ToAry = "to_ary";
         public static readonly string ToHash = "to_hash";
         public static readonly string ToInt = "to_int";

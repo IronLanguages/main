@@ -53,12 +53,7 @@ namespace Microsoft.Scripting.Runtime {
                 _convert = _context.CreateConvertBinder(_returnType, true);
             }
             
-            ArgumentInfo[] args = new ArgumentInfo[_parameters.Length];
-            for (int i = 0; i < args.Length; i++) {
-                args[i] = Expression.PositionalArg(i);
-            }
-
-            _invoke = _context.CreateInvokeBinder(args);
+            _invoke = _context.CreateInvokeBinder(Expression.CallInfo(_parameters.Length));
         }
 
         [Confined]
@@ -113,8 +108,8 @@ namespace Microsoft.Scripting.Runtime {
                 delegateParams[i] = _parameters[i].ParameterType;
             }
 
-            // Create the method
-            DynamicILGen cg = Snippets.Shared.CreateDynamicMethod(ToString(), _returnType, ArrayUtils.Insert(typeof(object[]), delegateParams), false);
+            // Create the method with a special name so the langauge compiler knows that method's stack frame is not visible
+            DynamicILGen cg = Snippets.Shared.CreateDynamicMethod("_Scripting_", _returnType, ArrayUtils.Insert(typeof(object[]), delegateParams), false);
 
             // Emit the stub
             object[] constants = EmitClrCallStub(cg);

@@ -33,8 +33,8 @@ namespace IronPython.Runtime.Binding {
     class CreateFallback : CreateInstanceBinder, IPythonSite {
         private readonly CompatibilityInvokeBinder/*!*/ _fallback;
 
-        public CreateFallback(CompatibilityInvokeBinder/*!*/ realFallback, IEnumerable<ArgumentInfo/*!*/>/*!*/ arguments)
-            : base(arguments) {
+        public CreateFallback(CompatibilityInvokeBinder/*!*/ realFallback, CallInfo /*!*/ callInfo)
+            : base(callInfo) {
             _fallback = realFallback;
         }
 

@@ -33,6 +33,12 @@ namespace System.Dynamic {
             return res;
         }
 
+        internal static T[] ToArray<T>(this IList<T> list) {
+            T[] res = new T[list.Count];
+            list.CopyTo(res, 0);
+            return res;
+        }
+
         internal static T[] AddLast<T>(this IList<T> list, T item) {
             T[] res = new T[list.Count + 1];
             list.CopyTo(res, 0);

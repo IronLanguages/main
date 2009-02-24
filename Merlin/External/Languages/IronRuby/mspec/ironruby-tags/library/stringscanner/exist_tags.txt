@@ -1,0 +1,1 @@
+fails:StringScanner#exist? returns the index of the first occurrence of the given pattern

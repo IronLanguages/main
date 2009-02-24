@@ -34,6 +34,8 @@ namespace Microsoft.Scripting.Generation {
         public static readonly MethodAttributes PublicStatic = MethodAttributes.Public | MethodAttributes.Static;
         private static readonly MethodInfo _CreateInstanceMethod = typeof(ScriptingRuntimeHelpers).GetMethod("CreateInstance");
 
+        private static int _Counter; // for generating unique names for lambda methods
+
         public static string[] GetArgumentNames(ParameterInfo[] parameterInfos) {
             string[] ret = new string[parameterInfos.Length];
             for (int i = 0; i < parameterInfos.Length; i++) ret[i] = parameterInfos[i].Name;
@@ -100,6 +102,10 @@ namespace Microsoft.Scripting.Generation {
 
         public static bool ProhibitsNull(ParameterInfo parameter) {
             return parameter.IsDefined(typeof(NotNullAttribute), false);
+        }
+
+        public static bool ProhibitsNullItems(ParameterInfo parameter) {
+            return parameter.IsDefined(typeof(NotNullItemsAttribute), false);
         }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity")]
@@ -708,7 +714,9 @@ namespace Microsoft.Scripting.Generation {
             var rewriter = new BoundConstantsRewriter(type);
             lambda = (Expression<T>)rewriter.Visit(lambda);
 
-            var method = type.DefineMethod(lambda.Name, CompilerHelpers.PublicStatic);
+            //Create a unique method name when the lambda doesn't have a name or the name is empty.
+            string methodName = String.IsNullOrEmpty(lambda.Name) ? GetUniqueMethodName() : lambda.Name;
+            var method = type.DefineMethod(methodName, CompilerHelpers.PublicStatic);
             lambda.CompileToMethod(method, emitDebugSymbols);
 
             var finished = type.CreateType();
@@ -716,6 +724,10 @@ namespace Microsoft.Scripting.Generation {
             rewriter.InitializeFields(finished);
 
             return (T)(object)Delegate.CreateDelegate(lambda.Type, finished.GetMethod(method.Name));
+        }
+
+        public static string GetUniqueMethodName() {
+            return "lambda_method" + "$" + System.Threading.Interlocked.Increment(ref _Counter);
         }
 
         // Matches ILGen.TryEmitConstant

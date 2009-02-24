@@ -37,7 +37,7 @@ namespace IronRuby.Runtime {
             CallSite<Func<CallSite, RubyContext, object, long>>.Create(RubySites.InstanceCallAction("tell"));
 
         private readonly RubyContext/*!*/ _context;
-        private readonly object/*!*/ _obj;
+        private readonly object _obj;
         private readonly bool _canRead;
         private readonly bool _canWrite;
         private readonly bool _canSeek;
@@ -48,8 +48,8 @@ namespace IronRuby.Runtime {
 
         private const int _bufferSize = 0x1000;
 
-        public IOWrapper(RubyContext/*!*/ context, object/*!*/ io, bool canRead, bool canWrite, bool canSeek) {
-            Assert.NotNull(context, io);
+        public IOWrapper(RubyContext/*!*/ context, object io, bool canRead, bool canWrite, bool canSeek) {
+            Assert.NotNull(context);
 
             _context = context;
             _obj = io;

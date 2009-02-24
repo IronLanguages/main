@@ -30,11 +30,11 @@ namespace Microsoft.Scripting.Actions.Calls {
     /// pairs provided to the function into a SymbolDictionary which is passed to the function.
     /// </summary>
     internal sealed class ParamsDictArgBuilder : ArgBuilder {
-        private readonly SymbolId[] _names;
+        private readonly string[] _names;
         private readonly int[] _nameIndexes;
         private readonly int _argIndex;
 
-        public ParamsDictArgBuilder(ParameterInfo info, int argIndex, SymbolId[] names, int[] nameIndexes) 
+        public ParamsDictArgBuilder(ParameterInfo info, int argIndex, string[] names, int[] nameIndexes) 
             : base(info) {
             Assert.NotNull(names, nameIndexes);
 
@@ -50,7 +50,7 @@ namespace Microsoft.Scripting.Actions.Calls {
         internal protected override Expression ToExpression(ParameterBinder parameterBinder, IList<Expression> parameters, bool[] hasBeenUsed) {
             Expression res = Ast.Call(
                 typeof(BinderOps).GetMethod("MakeSymbolDictionary"),
-                Ast.NewArrayInit(typeof(SymbolId), ConstantNames()),
+                Ast.NewArrayInit(typeof(string), ConstantNames()),
                 AstUtils.NewArrayHelper(typeof(object), GetParameters(parameters, hasBeenUsed))
             );
 

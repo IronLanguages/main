@@ -1,0 +1,4 @@
+fails:Prime.new returns a new object representing the set of prime numbers
+fails:Prime.new returns a object with obsolete featrues
+fails:Prime.new complains that the method is obsolete
+fails:Prime.new raises a ArgumentError when is called with some arguments

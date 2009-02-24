@@ -203,7 +203,7 @@ namespace IronRuby.Runtime.Calls {
         internal static BindingTarget/*!*/ ResolveOverload(string/*!*/ name, IList<MethodBase>/*!*/ overloads, CallArguments/*!*/ args, 
             SelfCallConvention callConvention) {
 
-            var methodBinder = MethodBinder.MakeBinder(args.RubyContext.Binder, name, overloads, SymbolId.EmptySymbols, NarrowingLevel.None, NarrowingLevel.All);
+            var methodBinder = MethodBinder.MakeBinder(args.RubyContext.Binder, name, overloads, ArrayUtils.EmptyStrings, NarrowingLevel.None, NarrowingLevel.All);
             var argTypes = GetSignatureToMatch(args, callConvention);
             return methodBinder.MakeBindingTarget(CallTypes.None, argTypes);
         }
@@ -222,25 +222,24 @@ namespace IronRuby.Runtime.Calls {
             IList<MethodBase>/*!*/ overloads, SelfCallConvention callConvention) {
 
             var bindingTarget = ResolveOverload(name, overloads, args, callConvention);
-            if (bindingTarget.Success) {
-                bool calleeHasBlockParam = HasBlockParameter(bindingTarget.Method);
+            bool calleeHasBlockParam = bindingTarget.Success && HasBlockParameter(bindingTarget.Method);
 
-                // Allocates a variable holding BlockParam. At runtime the BlockParam is created with a new RFC instance that
-                // identifies the library method frame as a proc-converter target of a method unwinder triggered by break from a block.
-                //
-                // NOTE: We check for null block here -> test for that fact is added in MakeActualArgs
-                if (args.Signature.HasBlock && args.GetBlock() != null && calleeHasBlockParam) {
-                    if (metaBuilder.BfcVariable == null) {
-                        metaBuilder.BfcVariable = metaBuilder.GetTemporary(typeof(BlockParam), "#bfc");
-                    }
-                    metaBuilder.ControlFlowBuilder = RuleControlFlowBuilder;
+            // Allocates a variable holding BlockParam. At runtime the BlockParam is created with a new RFC instance that
+            // identifies the library method frame as a proc-converter target of a method unwinder triggered by break from a block.
+            //
+            // NOTE: We check for null block here -> test for that fact is added in MakeActualArgs
+            if (args.Signature.HasBlock && args.GetBlock() != null && calleeHasBlockParam) {
+                if (metaBuilder.BfcVariable == null) {
+                    metaBuilder.BfcVariable = metaBuilder.GetTemporary(typeof(BlockParam), "#bfc");
                 }
+                metaBuilder.ControlFlowBuilder = RuleControlFlowBuilder;
+            }
 
-                var actualArgs = MakeActualArgs(metaBuilder, args, callConvention, calleeHasBlockParam, true);
+            var actualArgs = MakeActualArgs(metaBuilder, args, callConvention, calleeHasBlockParam, true);
+
+            if (bindingTarget.Success) {
                 var parameterBinder = new RubyParameterBinder(args.RubyContext.Binder, args.MetaContext.Expression, args.Signature.HasScope);
-                var targetExpression = bindingTarget.MakeExpression(parameterBinder, actualArgs);
-
-                metaBuilder.Result = targetExpression;
+                metaBuilder.Result = bindingTarget.MakeExpression(parameterBinder, actualArgs);
             } else {
                 metaBuilder.SetError(args.RubyContext.RubyBinder.MakeInvalidParametersError(bindingTarget).Expression);
             }

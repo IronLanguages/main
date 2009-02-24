@@ -248,8 +248,8 @@ namespace IronRuby.StandardLibrary.Yaml {
         }
 
         [RubyMethod("tagurize", RubyMethodAttributes.PublicSingleton)]
-        public static object Tagurize(RubyContext/*!*/ context, RubyModule/*!*/ self, object arg) {
-            var str = Protocols.AsString(context, arg);
+        public static object Tagurize(ConversionStorage<MutableString>/*!*/ stringTryCast, RubyContext/*!*/ context, RubyModule/*!*/ self, object arg) {
+            var str = Protocols.TryCastToString(stringTryCast, context, arg);
             return (str != null) ? MutableString.Create("tag:yaml.org,2002:").Append(str) : arg;
         }
 

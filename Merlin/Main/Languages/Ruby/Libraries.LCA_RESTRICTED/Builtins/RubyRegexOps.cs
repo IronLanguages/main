@@ -305,18 +305,14 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("===")]
-        public static bool CaseCompare(RubyScope/*!*/ scope, RubyRegex/*!*/ self, [NotNull]MutableString/*!*/ str) {
+        public static bool CaseCompare(ConversionStorage<MutableString>/*!*/ stringTryCast, RubyScope/*!*/ scope, RubyRegex/*!*/ self, object obj) {
+            MutableString str = Protocols.TryCastToString(stringTryCast, scope.RubyContext, obj);
+            if (str == null) {
+                return false;
+            } 
+            
             MatchData match = Match(scope, self, str);
             return (match != null && match.Success) ? true : false;
-        }
-
-        [RubyMethod("===")]
-        public static bool CaseCompare(RubyContext/*!*/ context, RubyRegex/*!*/ self, object str) {
-            MutableString asString = Protocols.AsString(context, str);
-            if (asString == null) {
-                return false;
-            }
-            return CaseCompare(context, self, asString);
         }
 
         [RubyMethod("~")]

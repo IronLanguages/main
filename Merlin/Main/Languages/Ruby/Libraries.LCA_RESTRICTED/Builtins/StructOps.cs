@@ -39,44 +39,42 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("new", RubyMethodAttributes.PublicSingleton)]
         public static object NewAnonymousStruct(BlockParam block, RubyClass/*!*/ self, int className,
-            [NotNull]params object[]/*!*/ attributeNames) {
+            [DefaultProtocol, NotNull, NotNullItems]params string/*!*/[]/*!*/ attributeNames) {
 
             return CreateAnonymousWithFirstAttribute(block, self, RubyOps.ConvertFixnumToSymbol(self.Context, className), attributeNames);
         }
 
         [RubyMethod("new", RubyMethodAttributes.PublicSingleton)]
         public static object NewAnonymousStruct(BlockParam block, RubyClass/*!*/ self, SymbolId className,
-            [NotNull]params object[]/*!*/ attributeNames) {
+            [DefaultProtocol, NotNull, NotNullItems]params string/*!*/[]/*!*/ attributeNames) {
 
             return CreateAnonymousWithFirstAttribute(block, self, RubyOps.ConvertSymbolIdToSymbol(className), attributeNames);
         }
 
         [RubyMethod("new", RubyMethodAttributes.PublicSingleton)]
         public static object NewAnonymousStruct(BlockParam block, RubyClass/*!*/ self, [NotNull]string/*!*/ className,
-            [NotNull]params object[]/*!*/ attributeNames) {
+            [DefaultProtocol, NotNull, NotNullItems]params string/*!*/[]/*!*/ attributeNames) {
 
             return CreateAnonymousWithFirstAttribute(block, self, className, attributeNames);
         }
 
         [RubyMethod("new", RubyMethodAttributes.PublicSingleton)]
         public static object NewStruct(BlockParam block, RubyClass/*!*/ self, [DefaultProtocol, Optional]MutableString className,
-            [NotNull]params object[]/*!*/ attributeNames) {
-
-            string[] symbols = Protocols.CastToSymbols(self.Context, attributeNames);
+            [DefaultProtocol, NotNull, NotNullItems]params string/*!*/[]/*!*/ attributeNames) {
 
             if (className == null) {
-                return Create(block, self, null, symbols);
+                return Create(block, self, null, attributeNames);
             }
 
             string strName = className.ConvertToString();
             RubyUtils.CheckConstantName(strName);
-            return Create(block, self, strName, symbols);
+            return Create(block, self, strName, attributeNames);
         }
 
         public static object CreateAnonymousWithFirstAttribute(BlockParam block, RubyClass/*!*/ self,
-            string/*!*/ firstAttribute, object[]/*!*/ attributeNames) {
+            string/*!*/ firstAttribute, string/*!*/[]/*!*/ attributeNames) {
 
-            return Create(block, self, null, ArrayUtils.Insert(firstAttribute, Protocols.CastToSymbols(self.Context, attributeNames)));
+            return Create(block, self, null, ArrayUtils.Insert(firstAttribute, attributeNames));
         }
 
         /// <summary>
@@ -237,26 +235,27 @@ namespace IronRuby.Builtins {
 
             using (IDisposable handle = RubyUtils.InfiniteInspectTracker.TrackObject(self)) {
                 // #<struct Struct::Foo name=nil, val=nil>
-                MutableString str = MutableString.Create("#<struct ");
-                str.Append(RubySites.Inspect(context, context.GetClassOf(self)));
+                var result = MutableString.CreateMutable();
+                result.Append("#<struct ");
+                result.Append(context.Inspect(context.GetClassOf(self)));
 
                 if (handle == null) {
-                    return str.Append(":...>");
+                    return result.Append(":...>");
                 }
-                str.Append(' ');
+                result.Append(' ');
 
                 object[] data = self.Values;
                 var members = self.GetNames();
                 for (int i = 0; i < data.Length; i++) {
                     if (i != 0) {
-                        str.Append(", ");
+                        result.Append(", ");
                     }
-                    str.Append(members[i]);
-                    str.Append("=");
-                    str.Append(RubySites.Inspect(context, data[i]));
+                    result.Append(members[i]);
+                    result.Append("=");
+                    result.Append(context.Inspect(data[i]));
                 }
-                str.Append('>');
-                return str;
+                result.Append('>');
+                return result;
             }
         }
 

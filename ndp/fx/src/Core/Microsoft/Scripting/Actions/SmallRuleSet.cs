@@ -113,7 +113,7 @@ namespace System.Dynamic {
 
             Expression Update = Expression.Invoke(
                 Expression.Property(
-                    Helpers.Convert(site, siteType),
+                    Expression.Convert(site, siteType),
                     typeof(CallSite<T>).GetProperty("Update")
                 ),
                 new TrueReadOnlyCollection<Expression>(@params)
@@ -131,9 +131,8 @@ namespace System.Dynamic {
                 )
             );
 
-
             return new Expression<T>(
-                "_stub_",
+                "CallSite.Target",
                 Expression.Block(body),
                 new ReadOnlyCollection<ParameterExpression>(@params)
             );

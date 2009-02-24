@@ -1,0 +1,1 @@
+fails:File.chmod changes the mode to 1st arg for files in 2nd arg

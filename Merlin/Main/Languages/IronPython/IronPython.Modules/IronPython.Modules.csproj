@@ -87,7 +87,7 @@
     <Compile Include="binascii.cs" />
     <Compile Include="cmath.cs" />
     <Compile Include="codecs.cs" />
-    <Compile Include="collections.cs" />
+    <Compile Include="_collections.cs" />
     <Compile Include="copy_reg.cs" />
     <Compile Include="cPickle.cs" />
     <Compile Include="cStringIO.cs" />

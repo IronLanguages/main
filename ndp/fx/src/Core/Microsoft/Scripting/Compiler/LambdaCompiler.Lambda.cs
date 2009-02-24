@@ -110,8 +110,9 @@ namespace System.Linq.Expressions.Compiler {
             if (_method is DynamicMethod) {
                 impl = new LambdaCompiler(_tree, lambda);
             } else {
-                //The lambda must be a nested one, we generate a private method for it.
-                MethodBuilder mb = _typeBuilder.DefineMethod(GetGeneratedName(lambda.Name), MethodAttributes.Private | MethodAttributes.Static);
+                //When the lambda does not have a name or the name is empty, generate a unique name for it.
+                string name = String.IsNullOrEmpty(lambda.Name) ? GetUniqueMethodName() : lambda.Name;
+                MethodBuilder mb = _typeBuilder.DefineMethod(name, MethodAttributes.Private | MethodAttributes.Static);
                 impl = new LambdaCompiler(_tree, lambda, mb, _emitDebugSymbols);
             }
 
@@ -126,8 +127,8 @@ namespace System.Linq.Expressions.Compiler {
             return lambda.Parameters.Map(p => p.IsByRef ? p.Type.MakeByRefType() : p.Type);
         }
 
-        private static string GetGeneratedName(string prefix) {
-            return (prefix ?? "") + "$" + Interlocked.Increment(ref _Counter);
+        private static string GetUniqueMethodName() {
+            return "<ExpressionCompilerImplementationDetails>{" + Interlocked.Increment(ref _Counter) + "}lambda_method";
         }
 
         private void EmitLambdaBody() {

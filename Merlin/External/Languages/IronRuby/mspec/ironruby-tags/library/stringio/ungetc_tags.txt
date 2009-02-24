@@ -1,0 +1,9 @@
+fails:StringIO#ungetc when passed [char] writes the passed char before the current position
+fails:StringIO#ungetc when passed [char] returns nil
+fails:StringIO#ungetc when passed [char] decreases the current position by one
+fails:StringIO#ungetc when passed [char] pads with \000 when the current position is after the end
+fails:StringIO#ungetc when passed [char] does nothing when at the beginning of self
+fails:StringIO#ungetc when passed [char] tries to convert the passed length to an Integer using #to_int
+fails:StringIO#ungetc when passed [char] raises a TypeError when the passed length can't be converted to an Integer
+fails:StringIO#ungetc when passed [char] checks whether the passed length responds to #to_int
+fails:StringIO#ungetc when self is not readable raises an IOError

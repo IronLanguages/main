@@ -1,0 +1,3 @@
+fails:Net::FTP#puttextfile sends the STOR command to the server
+fails:Net::FTP#puttextfile sends the contents of the passed local_file, using \r\n as the newline seperator
+fails:Net::FTP#puttextfile returns nil

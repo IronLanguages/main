@@ -160,22 +160,24 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("inspect")]
         public static MutableString/*!*/ Inspect(RubyContext/*!*/ context, Hash/*!*/ self) {
+
             using (IDisposable handle = RubyUtils.InfiniteInspectTracker.TrackObject(self)) {
                 if (handle == null) {
                     return MutableString.Create("{...}");
                 }
 
-                MutableString str = MutableString.Create("{");
+                MutableString str = MutableString.CreateMutable();
+                str.Append('{');
                 bool first = true;
-                foreach (KeyValuePair<object, object> pair in self) {
+                foreach (var entry in self) {
                     if (first) {
                         first = false;
                     } else {
                         str.Append(", ");
                     }
-                    str.Append(RubySites.Inspect(context, BaseSymbolDictionary.ObjToNull(pair.Key)));
+                    str.Append(context.Inspect(BaseSymbolDictionary.ObjToNull(entry.Key)));
                     str.Append("=>");
-                    str.Append(RubySites.Inspect(context, pair.Value));
+                    str.Append(context.Inspect(entry.Value));
                 }
                 str.Append('}');
                 return str;

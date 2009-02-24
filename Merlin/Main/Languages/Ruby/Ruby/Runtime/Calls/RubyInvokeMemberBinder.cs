@@ -29,8 +29,8 @@ namespace IronRuby.Runtime.Calls {
     internal sealed class RubyInvokeMemberBinder : InvokeMemberBinder {
         private readonly RubyContext/*!*/ _context;
 
-        public RubyInvokeMemberBinder(RubyContext/*!*/ context, string/*!*/ name, ArgumentInfo[]/*!*/ arguments)
-            : base(name, false, arguments) {
+        public RubyInvokeMemberBinder(RubyContext/*!*/ context, string/*!*/ name, CallInfo /*!*/ callInfo)
+            : base(name, false, callInfo) {
             _context = context;
         }
 
@@ -64,7 +64,7 @@ namespace IronRuby.Runtime.Calls {
                     new DynamicMetaObject(Ast.Constant(context), BindingRestrictions.Empty, context),
                     target, 
                     args, 
-                    RubyCallSignature.Simple(binder.Arguments.Count)
+                    RubyCallSignature.Simple(binder.CallInfo.ArgumentCount)
                 )
             );
 

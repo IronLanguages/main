@@ -1256,6 +1256,20 @@ namespace IronRuby.Runtime {
 
         #endregion
 
+        #region Dynamic Object Operations (thread-safe)
+
+        /// <summary>
+        /// Calls "inspect" and converts its result to a string using "to_s" protocol (<see cref="ConvertToSAction"/>).
+        /// </summary>
+        public MutableString/*!*/ Inspect(object obj) {
+            RubyClass cls = GetClassOf(obj);
+            var inspect = cls.InspectSite;
+            var toS = cls.StringConversionSite;
+            return toS.Target(toS, this, inspect.Target(inspect, this, obj));
+        }
+
+        #endregion
+
         #region Global Variables: General access (thread-safe)
 
         public object GetGlobalVariable(string/*!*/ name) {
@@ -2044,23 +2058,23 @@ namespace IronRuby.Runtime {
             return new RubyGetMemberBinder(this, name);
         }
 
-        public override InvokeMemberBinder/*!*/ CreateCallBinder(string name, bool ignoreCase, params ArgumentInfo[] arguments) {
-            if (RubyCallSignature.HasNamedArgument(arguments)) {
-                return base.CreateCallBinder(name, ignoreCase, arguments);
+        public override InvokeMemberBinder/*!*/ CreateCallBinder(string name, bool ignoreCase, CallInfo callInfo) {
+            if (callInfo.ArgumentNames.Count != 0) {
+                return base.CreateCallBinder(name, ignoreCase, callInfo);
             }
             // TODO:
             if (ignoreCase) {
                 throw new NotSupportedException("Ignore-case lookup not supported");
             }
-            return new RubyInvokeMemberBinder(this, name, arguments);
+            return new RubyInvokeMemberBinder(this, name, callInfo);
         }
 
-        public override CreateInstanceBinder/*!*/ CreateCreateBinder(params ArgumentInfo[]/*!*/ arguments) {
-            if (RubyCallSignature.HasNamedArgument(arguments)) {
-                return base.CreateCreateBinder(arguments);
+        public override CreateInstanceBinder/*!*/ CreateCreateBinder(CallInfo /*!*/ callInfo) {
+            if (callInfo.ArgumentNames.Count != 0) {
+                return base.CreateCreateBinder(callInfo);
             }
 
-            return new RubyCreateInstanceBinder(this, arguments);
+            return new RubyCreateInstanceBinder(this, callInfo);
         }
 
         #endregion
@@ -2091,40 +2105,28 @@ namespace IronRuby.Runtime {
 
         #region Ruby Events
 
+        private CallSite<Func<CallSite, RubyContext, RubyModule, SymbolId, object>> _constantMissingCallbackSite;
         private CallSite<Func<CallSite, RubyContext, RubyModule, SymbolId, object>> _methodAddedCallbackSite;
         private CallSite<Func<CallSite, RubyContext, RubyModule, SymbolId, object>> _methodRemovedCallbackSite;
         private CallSite<Func<CallSite, RubyContext, RubyModule, SymbolId, object>> _methodUndefinedCallbackSite;
         private CallSite<Func<CallSite, RubyContext, object, SymbolId, object>> _singletonMethodAddedCallbackSite;
         private CallSite<Func<CallSite, RubyContext, object, SymbolId, object>> _singletonMethodRemovedCallbackSite;
         private CallSite<Func<CallSite, RubyContext, object, SymbolId, object>> _singletonMethodUndefinedCallbackSite;
+        private CallSite<Func<CallSite, RubyContext, object, SymbolId, object>> _respondTo;
         private CallSite<Func<CallSite, RubyContext, RubyClass, RubyClass, object>> _classInheritedCallbackSite;
-
-        private void MethodEvent(ref CallSite<Func<CallSite, RubyContext, RubyModule, SymbolId, object>> site, string/*!*/ eventName,
-            RubyContext/*!*/ context, RubyModule/*!*/ module, string/*!*/ methodName) {
-
-            if (site == null) {
-                Interlocked.CompareExchange(
-                    ref site,
-                    CallSite<Func<CallSite, RubyContext, RubyModule, SymbolId, object>>.Create(RubyCallAction.Make(eventName, RubyCallSignature.WithImplicitSelf(1))),
-                    null
-                );
-            }
-
-            site.Target(site, context, module, SymbolTable.StringToId(methodName));
-        }
-
-        private void SingletonMethodEvent(ref CallSite<Func<CallSite, RubyContext, object, SymbolId, object>> site, string/*!*/ eventName,
-            RubyContext/*!*/ context, object obj, string/*!*/ methodName) {
+        
+        private object Send<TReceiver>(ref CallSite<Func<CallSite, RubyContext, TReceiver, SymbolId, object>> site, string/*!*/ eventName,
+            TReceiver target, string/*!*/ memberName) {
 
             if (site == null) {
                 Interlocked.CompareExchange(
                     ref site,
-                    CallSite<Func<CallSite, RubyContext, object, SymbolId, object>>.Create(RubyCallAction.Make(eventName, RubyCallSignature.WithImplicitSelf(1))),
+                    CallSite<Func<CallSite, RubyContext, TReceiver, SymbolId, object>>.Create(RubyCallAction.Make(eventName, RubyCallSignature.WithImplicitSelf(1))),
                     null
                 );
             }
 
-            site.Target(site, context, obj, SymbolTable.StringToId(methodName));
+            return site.Target(site, this, target, SymbolTable.StringToId(memberName));
         }
 
         private void ClassInheritedEvent(RubyClass/*!*/ superClass, RubyClass/*!*/ subClass) {
@@ -2140,6 +2142,14 @@ namespace IronRuby.Runtime {
             _classInheritedCallbackSite.Target(_classInheritedCallbackSite, this, superClass, subClass);
         }
 
+        internal object ConstantMissing(RubyModule/*!*/ module, string/*!*/ name) {
+            return Send(ref _constantMissingCallbackSite, "const_missing", module, name);
+        }
+
+        public bool RespondTo(object target, string/*!*/ methodName) {
+            return RubyOps.IsTrue(Send(ref _respondTo, "respond_to?", target, methodName));
+        }
+
         // Ruby 1.8: called after method is added, except for alias_method which calls it before
         // Ruby 1.9: called before method is added
         public void MethodAdded(RubyModule/*!*/ module, string/*!*/ name) {
@@ -2147,11 +2157,11 @@ namespace IronRuby.Runtime {
 
             // not called on singleton classes:
             if (!module.IsSingletonClass) {
-                MethodEvent(ref _methodAddedCallbackSite, Symbols.MethodAdded,
-                    this, module, name);
+                Send(ref _methodAddedCallbackSite, Symbols.MethodAdded,
+                    module, name);
             } else {
-                SingletonMethodEvent(ref _singletonMethodAddedCallbackSite, Symbols.SingletonMethodAdded,
-                    this, ((RubyClass)module).SingletonClassOf, name);
+                Send(ref _singletonMethodAddedCallbackSite, Symbols.SingletonMethodAdded,
+                    ((RubyClass)module).SingletonClassOf, name);
             }
         }
 
@@ -2160,11 +2170,11 @@ namespace IronRuby.Runtime {
 
             // not called on singleton classes:
             if (!module.IsSingletonClass) {
-                MethodEvent(ref _methodRemovedCallbackSite, Symbols.MethodRemoved,
-                    this, module, name);
+                Send(ref _methodRemovedCallbackSite, Symbols.MethodRemoved,
+                    module, name);
             } else {
-                SingletonMethodEvent(ref _singletonMethodRemovedCallbackSite, Symbols.SingletonMethodRemoved,
-                    this, ((RubyClass)module).SingletonClassOf, name);
+                Send(ref _singletonMethodRemovedCallbackSite, Symbols.SingletonMethodRemoved,
+                    ((RubyClass)module).SingletonClassOf, name);
             }
         }
 
@@ -2173,11 +2183,11 @@ namespace IronRuby.Runtime {
 
             // not called on singleton classes:
             if (!module.IsSingletonClass) {
-                MethodEvent(ref _methodUndefinedCallbackSite, Symbols.MethodUndefined,
-                    this, module, name);
+                Send(ref _methodUndefinedCallbackSite, Symbols.MethodUndefined,
+                    module, name);
             } else {
-                SingletonMethodEvent(ref _singletonMethodUndefinedCallbackSite, Symbols.SingletonMethodUndefined,
-                    this, ((RubyClass)module).SingletonClassOf, name);
+                Send(ref _singletonMethodUndefinedCallbackSite, Symbols.SingletonMethodUndefined,
+                    ((RubyClass)module).SingletonClassOf, name);
             }
         }
 

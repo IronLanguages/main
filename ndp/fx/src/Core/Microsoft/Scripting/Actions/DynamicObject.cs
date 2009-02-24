@@ -48,7 +48,8 @@ namespace System.Dynamic {
         /// <returns>true if the operation is complete, false if the call site should determine behavior.</returns>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1007:UseGenericsWhereAppropriate")]
         public virtual bool TryGetMember(GetMemberBinder binder, out object result) {
-            throw new NotSupportedException();
+            result = null;
+            return false;
         }
 
         /// <summary>
@@ -60,7 +61,7 @@ namespace System.Dynamic {
         /// <param name="value">The value to set.</param>
         /// <returns>true if the operation is complete, false if the call site should determine behavior.</returns>
         public virtual bool TrySetMember(SetMemberBinder binder, object value) {
-            throw new NotSupportedException();
+            return false;
         }
 
         /// <summary>
@@ -71,7 +72,7 @@ namespace System.Dynamic {
         /// <param name="binder">The binder provided by the call site.</param>
         /// <returns>true if the operation is complete, false if the call site should determine behavior.</returns>
         public virtual bool TryDeleteMember(DeleteMemberBinder binder) {
-            throw new NotSupportedException();
+            return false;
         }
 
         /// <summary>
@@ -85,7 +86,8 @@ namespace System.Dynamic {
         /// <returns>true if the operation is complete, false if the call site should determine behavior.</returns>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1007:UseGenericsWhereAppropriate")]
         public virtual bool TryInvokeMember(InvokeMemberBinder binder, object[] args, out object result) {
-            throw new NotSupportedException();
+            result = null;
+            return false;
         }
 
         /// <summary>
@@ -98,7 +100,8 @@ namespace System.Dynamic {
         /// <returns>true if the operation is complete, false if the call site should determine behavior.</returns>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1007:UseGenericsWhereAppropriate")]
         public virtual bool TryConvert(ConvertBinder binder, out object result) {
-            throw new NotSupportedException();
+            result = null;
+            return false;
         }
 
         /// <summary>
@@ -112,7 +115,8 @@ namespace System.Dynamic {
         /// <returns>true if the operation is complete, false if the call site should determine behavior.</returns>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1007:UseGenericsWhereAppropriate")]
         public virtual bool TryCreateInstance(CreateInstanceBinder binder, object[] args, out object result) {
-            throw new NotSupportedException();
+            result = null;
+            return false;
         }
 
         /// <summary>
@@ -126,7 +130,8 @@ namespace System.Dynamic {
         /// <returns>true if the operation is complete, false if the call site should determine behavior.</returns>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1007:UseGenericsWhereAppropriate")]
         public virtual bool TryInvoke(InvokeBinder binder, object[] args, out object result) {
-            throw new NotSupportedException();
+            result = null;
+            return false;
         }
 
         /// <summary>
@@ -140,7 +145,8 @@ namespace System.Dynamic {
         /// <returns>true if the operation is complete, false if the call site should determine behavior.</returns>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1007:UseGenericsWhereAppropriate")]
         public virtual bool TryBinaryOperation(BinaryOperationBinder binder, object arg, out object result) {
-            throw new NotSupportedException();
+            result = null;
+            return false;
         }
 
         /// <summary>
@@ -153,7 +159,8 @@ namespace System.Dynamic {
         /// <returns>true if the operation is complete, false if the call site should determine behavior.</returns>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1007:UseGenericsWhereAppropriate")]
         public virtual bool TryUnaryOperation(UnaryOperationBinder binder, out object result) {
-            throw new NotSupportedException();
+            result = null;
+            return false;
         }
 
         /// <summary>
@@ -167,7 +174,8 @@ namespace System.Dynamic {
         /// <returns>true if the operation is complete, false if the call site should determine behavior.</returns>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1007:UseGenericsWhereAppropriate")]
         public virtual bool TryGetIndex(GetIndexBinder binder, object[] indexes, out object result) {
-            throw new NotSupportedException();
+            result = null;
+            return false;
         }
 
         /// <summary>
@@ -181,7 +189,7 @@ namespace System.Dynamic {
         /// <returns>true if the operation is complete, false if the call site should determine behavior.</returns>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1007:UseGenericsWhereAppropriate")]
         public virtual bool TrySetIndex(SetIndexBinder binder, object[] indexes, object value) {
-            throw new NotSupportedException();
+            return false;
         }
 
         /// <summary>
@@ -193,7 +201,7 @@ namespace System.Dynamic {
         /// <param name="indexes">The indexes to be deleted.</param>
         /// <returns>true if the operation is complete, false if the call site should determine behavior.</returns>
         public virtual bool TryDeleteIndex(DeleteIndexBinder binder, object[] indexes) {
-            throw new NotSupportedException();
+            return false;
         }
 
         /// <summary>
@@ -341,7 +349,7 @@ namespace System.Dynamic {
                 Expression[] paramArgs = DynamicMetaObject.GetExpressions(args);
 
                 for (int i = 0; i < paramArgs.Length; i++) {
-                    paramArgs[i] = Helpers.Convert(args[i].Expression, typeof(object));
+                    paramArgs[i] = Expression.Convert(args[i].Expression, typeof(object));
                 }
 
                 return paramArgs;
@@ -352,9 +360,9 @@ namespace System.Dynamic {
             }
 
             private static Expression[] GetArgArray(DynamicMetaObject[] args, DynamicMetaObject value) {
-                return new[] {
+                return new Expression[] {
                     Expression.NewArrayInit(typeof(object), GetArgs(args)),
-                    Helpers.Convert(value.Expression, typeof(object))
+                    Expression.Convert(value.Expression, typeof(object))
                 };
             }
 
@@ -414,7 +422,7 @@ namespace System.Dynamic {
                                 callArgs
                             ),
                             resultMO.Expression,
-                            Helpers.Convert(fallbackResult.Expression, typeof(object))
+                            DynamicMetaObjectBinder.Convert(fallbackResult.Expression, typeof(object))
                         )
                     ),
                     GetRestrictions().Merge(resultMO.Restrictions).Merge(fallbackResult.Restrictions)
@@ -466,7 +474,7 @@ namespace System.Dynamic {
                                 callArgs
                             ),
                             result,
-                            Helpers.Convert(fallbackResult.Expression, typeof(object))
+                            DynamicMetaObjectBinder.Convert(fallbackResult.Expression, typeof(object))
                         )
                     ),
                     GetRestrictions().Merge(fallbackResult.Restrictions)
@@ -508,7 +516,7 @@ namespace System.Dynamic {
                             args.AddFirst(Constant(binder))
                         ),
                         Expression.Constant(null),
-                        Helpers.Convert(fallbackResult.Expression, typeof(object))
+                        DynamicMetaObjectBinder.Convert(fallbackResult.Expression, typeof(object))
                     ),
                     GetRestrictions().Merge(fallbackResult.Restrictions)
                 );
@@ -555,10 +563,10 @@ namespace System.Dynamic {
             /// Returns our Expression converted to our known LimitType
             /// </summary>
             private Expression GetLimitedSelf() {
-                return Helpers.Convert(
-                    Expression,
-                    LimitType
-                );
+                if (Expression.Type == LimitType) {
+                    return Expression;
+                }
+                return Expression.Convert(Expression, LimitType);
             }
 
             private new DynamicObject Value {

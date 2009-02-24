@@ -21,16 +21,6 @@ namespace System.Dynamic.Utils {
     // Miscellaneous helpers that don't belong anywhere else
     internal static class Helpers {
 
-        internal static Expression Convert(Expression expression, Type type) {
-            if (expression.Type == type) {
-                return expression;
-            }
-            if (expression.Type == typeof(void)) {
-                return Expression.Block(expression, Expression.Default(type));
-            }
-            return Expression.Convert(expression, type);
-        }
-
         internal static T CommonNode<T>(T first, T second, Func<T, T> parent) where T : class {
             var cmp = EqualityComparer<T>.Default;
             if (cmp.Equals(first, second)) {

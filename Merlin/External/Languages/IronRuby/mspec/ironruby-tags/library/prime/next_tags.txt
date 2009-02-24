@@ -1,0 +1,1 @@
+fails:Prime#next returns the element at the current position and moves forward

@@ -161,5 +161,137 @@ to_int
 can't convert E into Fixnum
 ");
         }
+
+        /// <summary>
+        /// Kernel#Array first tries to_ary and then to_a. We need to invalidate the cache when to_ary is added.
+        /// </summary>
+        public void ProtocolCaching1() {
+            AssertOutput(delegate() {
+                CompilerTest(@"
+class C
+  def to_a
+    puts 'to_a'
+    [1]
+  end
+end
+
+obj = C.new
+Array(obj)
+
+class C
+  def to_ary
+    puts 'to_ary'
+    [2]
+  end
+end
+
+Array(obj)
+");
+            }, @"
+to_a
+to_ary
+");
+        }
+
+        /// <summary>
+        /// We need to invalidate the cache when respond_to? is added.
+        /// </summary>
+        public void ProtocolCaching2() {
+            AssertOutput(delegate() {
+                CompilerTest(@"
+class C
+  def to_f
+    puts 'C:to_f'
+    1.0
+  end
+end
+
+obj = C.new
+Float(obj)
+
+class C
+  def respond_to? name
+    puts name
+    false
+  end
+end
+
+Float(obj) rescue puts 'error'
+");
+            }, @"
+C:to_f
+to_f
+error
+");
+
+        }
+
+        /// <summary>
+        /// We need to invalidate the cache when to_xxx is removed.
+        /// </summary>
+        public void ProtocolCaching3() {
+            AssertOutput(delegate() {
+                CompilerTest(@"
+class C
+  def to_f
+    puts 'C:to_f'
+    1.0
+  end
+end
+
+obj = C.new
+Float(obj)
+
+class C
+  remove_method(:to_f)
+end
+
+Float(obj) rescue puts 'error'
+");
+            }, @"
+C:to_f
+error
+");
+
+        }
+
+        /// <summary>
+        /// Caching of to_s conversion.
+        /// </summary>
+        public void ProtocolCaching4() {
+            AssertOutput(delegate() {
+                CompilerTest(@"
+class C; end
+c = C.new
+
+puts ""(#{c})""
+
+module Kernel
+  remove_method :to_s
+  
+  def method_missing name
+    'mm:to_s'
+  end
+end
+
+puts ""(#{c})""
+
+class C; def to_s; 'C:to_s'; end; end
+
+puts ""(#{c})""
+
+class Array; def to_s; 'Array:to_s'; end; end
+class C; def to_s; [1,2]; end; end
+
+puts ""(#{c})""
+");
+            }, @"
+(#<C:0x*>)
+(mm:to_s)
+(C:to_s)
+(#<C:0x*>)
+", OutputFlags.Match);
+
+        }
     }
 }

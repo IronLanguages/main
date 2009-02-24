@@ -21,6 +21,7 @@ using Microsoft.Scripting.Runtime;
 using IronRuby.Builtins;
 using IronRuby.Runtime;
 using System.Runtime.InteropServices;
+using Microsoft.Scripting.Math;
 
 namespace IronRuby.StandardLibrary.Sockets {
     [RubyClass("IPSocket", BuildConfig = "!SILVERLIGHT")]
@@ -31,8 +32,8 @@ namespace IronRuby.StandardLibrary.Sockets {
         }
         
         [RubyMethod("getaddress", RubyMethodAttributes.PublicSingleton)]
-        public static MutableString/*!*/ GetAddress(RubyClass/*!*/ self, object hostname) {
-            return GetAddressInternal(self.Context, hostname);
+        public static MutableString/*!*/ GetAddress(ConversionStorage<MutableString>/*!*/ stringCast, RubyClass/*!*/ self, object hostNameOrAddress) {
+            return MutableString.Create(GetHostAddress(ConvertToHostString(stringCast, self.Context, hostNameOrAddress)).ToString());
         }
 
         #region Public Instance Methods

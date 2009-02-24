@@ -187,10 +187,6 @@ namespace System.Dynamic.Utils {
                 return true;
             }
 
-            // Everything can be converted to void
-            if (dest == typeof(void)) {
-                return true;
-            }
             // Nullable conversions
             if (IsNullableType(source) && dest == GetNonNullableType(source)) {
                 return true;
@@ -205,6 +201,38 @@ namespace System.Dynamic.Utils {
             // Since we have already covered bool==>bool, bool==>bool?, etc, above,
             // we can just disallow having a bool or bool? destination type here.
             if (IsConvertible(source) && IsConvertible(dest) && GetNonNullableType(dest) != typeof(bool)) {
+                return true;
+            }
+            return false;
+        }
+
+        internal static bool HasReferenceConversion(Type source, Type dest) {
+            Debug.Assert(source != null && dest != null);
+
+            // void -> void conversion is handled elsewhere
+            // (it's an identity conversion)
+            // All other void conversions are disallowed.
+            if (source == typeof(void) || dest == typeof(void)) {
+                return false;
+            }
+
+            Type nnSourceType = TypeUtils.GetNonNullableType(source);
+            Type nnDestType = TypeUtils.GetNonNullableType(dest);
+
+            // Down conversion
+            if (nnSourceType.IsAssignableFrom(nnDestType)) {
+                return true;
+            }
+            // Up conversion
+            if (nnDestType.IsAssignableFrom(nnSourceType)) {
+                return true;
+            }
+            // Interface conversion
+            if (source.IsInterface || dest.IsInterface) {
+                return true;
+            }
+            // Object conversion
+            if (source == typeof(object) || dest == typeof(object)) {
                 return true;
             }
             return false;
@@ -509,10 +537,15 @@ namespace System.Dynamic.Utils {
             Type bt = type;
             do {
                 bt = bt.BaseType;
+
+                // Interfaces don't have base types, so just use the interface
+                // type.
+                if (bt == null) {
+                    return type;
+                }
             } while (!bt.IsVisible);
 
-            // If it's one of the known reflection types,
-            // return the known type.
+            // If it's one of the known reflection types, return the known type.
             if (bt == typeof(Type) ||
                 bt == typeof(ConstructorInfo) ||
                 bt == typeof(EventInfo) ||

@@ -1,0 +1,6 @@
+fails:Net::FTP#put (binary mode) sends the STOR command to the server
+fails:Net::FTP#put (binary mode) sends the contents of the passed local_file, without modifications
+fails:Net::FTP#put (binary mode) returns nil
+fails:Net::FTP#put (text mode) sends the STOR command to the server
+fails:Net::FTP#put (text mode) sends the contents of the passed local_file, using \r\n as the newline seperator
+fails:Net::FTP#put (text mode) returns nil

@@ -151,7 +151,7 @@ namespace IronRuby.Compiler.Ast {
 
         private MSA.Expression/*!*/ TransformSplatType(AstGenerator/*!*/ gen) {
             return Ast.Dynamic(
-                TryConvertToArrayAction.Instance,
+                ConvertToArraySplatAction.Instance,
                 typeof(object),
                 Methods.GetContextFromScope.OpCall(gen.CurrentScopeVariable),
                 _splatType.TransformRead(gen)

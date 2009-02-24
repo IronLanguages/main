@@ -1,0 +1,4 @@
+fails:StringIO#each when passed a separator returns self
+fails:StringIO#each when passed a separator yields each paragraph when passed an empty String as seperator
+fails:StringIO#each when passed no arguments returns self
+fails:StringIO#each when self is not readable raises an IOError

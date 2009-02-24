@@ -1,0 +1,1 @@
+fails:The 'case'-construct raises a SyntaxError when 'else' is used when no 'when' is given

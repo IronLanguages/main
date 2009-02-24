@@ -50,6 +50,7 @@ namespace IronRuby.Builtins {
         }
 
         protected GenericRegex(RubyRegexOptions options) {
+            ContractUtils.Requires(RubyRegex.GetPersistedOptions(options) == options);
             _options = options;
         }
     }

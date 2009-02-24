@@ -1,0 +1,2 @@
+fails:Logger::Application#start starts the application logging start/end messages
+fails:Logger::Application#start returns the status code

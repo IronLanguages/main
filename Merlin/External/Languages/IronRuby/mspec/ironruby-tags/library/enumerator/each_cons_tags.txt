@@ -1,0 +1,1 @@
+fails:Enumerator#each_cons iterates the block for each array of n consecutive elements

@@ -98,19 +98,9 @@ namespace IronRuby.Runtime.Calls {
             _countAndFlags = countAndFlags;
         }
 
-        internal static bool TryCreate(IList<ArgumentInfo>/*!*/ action, out RubyCallSignature callSignature) {
-            callSignature = Simple(action.Count);
-            return HasNamedArgument(action);
-        }
-
-        internal static bool HasNamedArgument(IList<ArgumentInfo>/*!*/ arguments) {
-            for (int i = 0; i < arguments.Count; i++) {
-                if (arguments[i].ArgumentType == ArgumentKind.Named) {
-                    return true;
-                }
-            }
-
-            return false;
+        internal static bool TryCreate(CallInfo callInfo, out RubyCallSignature callSignature) {
+            callSignature = Simple(callInfo.ArgumentCount);
+            return callInfo.ArgumentNames.Count != 0;
         }
 
         public static RubyCallSignature WithImplicitSelf(int argumentCount) {

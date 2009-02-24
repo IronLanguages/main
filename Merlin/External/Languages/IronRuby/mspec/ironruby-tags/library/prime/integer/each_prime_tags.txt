@@ -1,0 +1,1 @@
+fails:Integer.each_prime is transferred to Prime.each

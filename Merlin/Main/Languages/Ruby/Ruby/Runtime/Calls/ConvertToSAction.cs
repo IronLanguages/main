@@ -24,6 +24,7 @@ using AstFactory = IronRuby.Compiler.Ast.AstFactory;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace IronRuby.Runtime.Calls {
+
     // 1) implicit conversion to MutableString
     // 2) calls to_s
     // 3) default conversion if (2) returns a non-string
@@ -57,12 +58,17 @@ namespace IronRuby.Runtime.Calls {
                 return;
             }
 
-            RubyMemberInfo conversionMethod;
+            RubyMemberInfo conversionMethod, methodMissing = null;
 
             RubyClass targetClass = args.RubyContext.GetImmediateClassOf(args.Target);
             using (targetClass.Context.ClassHierarchyLocker()) {
                 metaBuilder.AddTargetTypeTest(args.Target, targetClass, args.TargetExpression, args.RubyContext, args.ContextExpression);
-                conversionMethod = targetClass.ResolveMethodForSiteNoLock(ToS, false).Info;
+                conversionMethod = targetClass.ResolveMethodForSiteNoLock(ToS, true).Info;
+
+                // find method_missing - we need to add "to_xxx" methods to the missing methods table:
+                if (conversionMethod == null) {
+                    methodMissing = targetClass.ResolveMethodMissingForSite(ToS, RubyMethodVisibility.None);
+                }
             }
             
             // invoke target.to_s and if successful convert the result to string unless it is already:
@@ -73,10 +79,12 @@ namespace IronRuby.Runtime.Calls {
                     return;
                 }
             } else {
-                metaBuilder.Result = args.TargetExpression;
+                args.InsertMethodName(ToS);
+                RubyCallAction.BindToMethodMissing(metaBuilder, args, ToS, methodMissing, RubyMethodVisibility.None, false);
             }
 
-            metaBuilder.Result = Methods.ToSDefaultConversion.OpCall(args.ContextExpression, metaBuilder.Result);
+            metaBuilder.Result = Methods.ToSDefaultConversion.OpCall(args.ContextExpression, AstFactory.Box(args.TargetExpression), AstFactory.Box(metaBuilder.Result));
         }
     }
+
 }

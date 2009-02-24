@@ -72,29 +72,34 @@ namespace IronRuby.Builtins {
 
         #region Private Instance & Singleton Methods
 
-        // TODO: 1.8/1.9
         [RubyMethod("Array", RubyMethodAttributes.PrivateInstance)]
         [RubyMethod("Array", RubyMethodAttributes.PublicSingleton)]
-        public static IList/*!*/ ToArray(RubyContext/*!*/ context, object self, object obj) {
-            IList result = Protocols.AsArray(context, obj);
+        public static IList/*!*/ ToArray(ConversionStorage<IList>/*!*/ tryToAry, ConversionStorage<IList>/*!*/ tryToA, 
+            RubyContext/*!*/ context, object self, object obj) {
+            IList result = Protocols.TryCastToArray(tryToAry, context, obj);
             if (result != null) {
                 return result;
             }
 
-            result = Protocols.TryConvertToArray(context, obj);
+            // MRI 1.9 calls to_a (MRI 1.8 doesn't):
+            //if (context.RubyOptions.Compatibility > RubyCompatibility.Ruby18) {
+            result = Protocols.TryConvertToArray(tryToA, context, obj);
             if (result != null) {
                 return result;
             }
+            //}
 
             result = new RubyArray();
-            result.Add(obj);
+            if (obj != null) {
+                result.Add(obj);
+            }
             return result;
         }
 
         [RubyMethod("Float", RubyMethodAttributes.PrivateInstance)]
         [RubyMethod("Float", RubyMethodAttributes.PublicSingleton)]
-        public static double ToFloat(RubyContext/*!*/ context, object self, object obj) {
-            return Protocols.ConvertToFloat(context, obj);
+        public static double ToFloat(object self, [DefaultProtocol]double value) {
+            return value;
         }
 
         [RubyMethod("Integer", RubyMethodAttributes.PrivateInstance)]
@@ -213,8 +218,9 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("exec", RubyMethodAttributes.PrivateInstance, BuildConfig = "!SILVERLIGHT")]
         [RubyMethod("exec", RubyMethodAttributes.PublicSingleton, BuildConfig = "!SILVERLIGHT")]
-        public static void Execute(RubyContext/*!*/ context, object self, [DefaultProtocol, NotNull]MutableString/*!*/ command, [NotNull]params object[]/*!*/ args) {
-            Process p = ExecuteCommand(command, Protocols.CastToStrings(context, args));
+        public static void Execute(RubyContext/*!*/ context, object self, [DefaultProtocol, NotNull]MutableString/*!*/ command,
+            [DefaultProtocol, NotNull, NotNullItems]params MutableString[]/*!*/ args) {
+            Process p = ExecuteCommand(command, args);
             context.ChildProcessExitStatus = p.ExitCode;
             Exit(self, p.ExitCode);
         }
@@ -229,8 +235,9 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("system", RubyMethodAttributes.PrivateInstance, BuildConfig = "!SILVERLIGHT")]
         [RubyMethod("system", RubyMethodAttributes.PublicSingleton, BuildConfig = "!SILVERLIGHT")]
-        public static bool System(RubyContext/*!*/ context, object self, [DefaultProtocol, NotNull]MutableString/*!*/ command, [NotNull]params object[]/*!*/ args) {
-            Process p = ExecuteCommand(command, Protocols.CastToStrings(context, args));
+        public static bool System(RubyContext/*!*/ context, object self, [DefaultProtocol, NotNull]MutableString/*!*/ command,
+            [DefaultProtocol, NotNull, NotNullItems]params MutableString/*!*/[]/*!*/ args) {
+            Process p = ExecuteCommand(command, args);
             context.ChildProcessExitStatus = p.ExitCode;
             return p.ExitCode == 0;
         }
@@ -445,6 +452,8 @@ namespace IronRuby.Builtins {
 
         #region open
 
+        // TODO: should call File#initialize
+
         private static object OpenWithBlock(BlockParam/*!*/ block, RubyIO file) {
             try {
                 object result;
@@ -457,7 +466,9 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("open", RubyMethodAttributes.PrivateInstance)]
         [RubyMethod("open", RubyMethodAttributes.PublicSingleton)]
-        public static RubyIO/*!*/ Open(RubyContext/*!*/ context, object self, [NotNull]MutableString/*!*/ path, MutableString mode) {
+        public static RubyIO/*!*/ Open(RubyContext/*!*/ context, object self, 
+            [DefaultProtocol, NotNull]MutableString/*!*/ path, [DefaultProtocol, Optional]MutableString mode) {
+
             string fileName = path.ConvertToString();
             if (fileName.Length > 0 && fileName[0] == '|') {
                 throw new NotImplementedError();
@@ -467,14 +478,18 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("open", RubyMethodAttributes.PrivateInstance)]
         [RubyMethod("open", RubyMethodAttributes.PublicSingleton)]
-        public static object Open(RubyContext/*!*/ context, [NotNull]BlockParam/*!*/ block, object self, [NotNull]MutableString/*!*/ path, MutableString mode) {
+        public static object Open(RubyContext/*!*/ context, [NotNull]BlockParam/*!*/ block, object self, 
+            [DefaultProtocol, NotNull]MutableString/*!*/ path, [DefaultProtocol, Optional]MutableString mode) {
+
             RubyIO file = Open(context, self, path, mode);
             return OpenWithBlock(block, file);
         }
 
         [RubyMethod("open", RubyMethodAttributes.PrivateInstance)]
         [RubyMethod("open", RubyMethodAttributes.PublicSingleton)]
-        public static RubyIO/*!*/ Open(RubyContext/*!*/ context, object self, [NotNull]MutableString/*!*/ path, int mode) {
+        public static RubyIO/*!*/ Open(RubyContext/*!*/ context, object self, 
+            [DefaultProtocol, NotNull]MutableString/*!*/ path, int mode) {
+
             string fileName = path.ConvertToString();
             if (fileName.Length > 0 && fileName[0] == '|') {
                 throw new NotImplementedError();
@@ -484,45 +499,11 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("open", RubyMethodAttributes.PrivateInstance)]
         [RubyMethod("open", RubyMethodAttributes.PublicSingleton)]
-        public static object Open(RubyContext/*!*/ context, [NotNull]BlockParam/*!*/ block, object self, [NotNull]MutableString/*!*/ path, int mode) {
+        public static object Open(RubyContext/*!*/ context, [NotNull]BlockParam/*!*/ block, object self, 
+            [DefaultProtocol, NotNull]MutableString/*!*/ path, int mode) {
+
             RubyIO file = Open(context, self, path, mode);
             return OpenWithBlock(block, file);
-        }
-
-        [RubyMethod("open", RubyMethodAttributes.PrivateInstance)]
-        [RubyMethod("open", RubyMethodAttributes.PublicSingleton)]
-        public static RubyIO/*!*/ Open(RubyContext/*!*/ context, object self, [NotNull]MutableString/*!*/ path) {
-            return Open(context, self, path, MutableString.Create("r"));
-        }
-
-        [RubyMethod("open", RubyMethodAttributes.PrivateInstance)]
-        [RubyMethod("open", RubyMethodAttributes.PublicSingleton)]
-        public static object Open(RubyContext/*!*/ context, [NotNull]BlockParam/*!*/ block, object self, [NotNull]MutableString/*!*/ path) {
-            return Open(context, block, self, path, MutableString.Create("r"));
-        }
-
-        [RubyMethod("open", RubyMethodAttributes.PrivateInstance)]
-        [RubyMethod("open", RubyMethodAttributes.PublicSingleton)]
-        public static RubyIO/*!*/ Open(RubyContext/*!*/ context, object self, object path) {
-            return Open(context, self, Protocols.CastToString(context, path), null);
-        }
-
-        [RubyMethod("open", RubyMethodAttributes.PrivateInstance)]
-        [RubyMethod("open", RubyMethodAttributes.PublicSingleton)]
-        public static object Open(RubyContext/*!*/ context, [NotNull]BlockParam/*!*/ block, object self, object path) {
-            return Open(context, block, self, Protocols.CastToString(context, path), null);
-        }
-
-        [RubyMethod("open", RubyMethodAttributes.PrivateInstance)]
-        [RubyMethod("open", RubyMethodAttributes.PublicSingleton)]
-        public static RubyIO/*!*/ Open(RubyContext/*!*/ context, object self, object path, [NotNull]object mode) {
-            return Open(context, self, Protocols.CastToString(context, path), Protocols.CastToString(context, mode));
-        }
-
-        [RubyMethod("open", RubyMethodAttributes.PrivateInstance)]
-        [RubyMethod("open", RubyMethodAttributes.PublicSingleton)]
-        public static object Open(RubyContext/*!*/ context, [NotNull]BlockParam/*!*/ block, object self, object path, [NotNull]object mode) {
-            return Open(context, block, self, Protocols.CastToString(context, path), Protocols.CastToString(context, mode));
         }
 
         #endregion
@@ -531,9 +512,12 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("p", RubyMethodAttributes.PrivateInstance)]
         [RubyMethod("p", RubyMethodAttributes.PublicSingleton)]
-        public static void PrintInspect(UnaryOpStorage/*!*/ tosStorage, RubyContext/*!*/ context, object self, [NotNull]params object[]/*!*/ args) {
+        public static void PrintInspect(UnaryOpStorage/*!*/ inspectStorage, UnaryOpStorage/*!*/ tosStorage, RubyContext/*!*/ context, 
+            object self, [NotNull]params object[]/*!*/ args) {
+
+            var inspect = inspectStorage.GetCallSite("inspect");
             for (int i = 0; i < args.Length; i++) {
-                args[i] = RubySites.Inspect(context, args[i]);
+                args[i] = inspect.Target(inspect, context, args[i]);
             }
             
             // no dynamic dispatch to "puts":
@@ -566,23 +550,29 @@ namespace IronRuby.Builtins {
         [RubyMethod("printf", RubyMethodAttributes.PublicSingleton)]
         public static void PrintFormatted(
             ConversionStorage<IntegerValue>/*!*/ integerConversion,
-            ConversionStorage<int>/*!*/ fixnumCast, 
+            ConversionStorage<int>/*!*/ fixnumCast,
+            ConversionStorage<double>/*!*/ tofConversion, 
             ConversionStorage<MutableString>/*!*/ tosConversion,
             ConversionStorage<MutableString>/*!*/ stringCast, 
-            BinaryOpStorage/*!*/ writeStorage, 
+            BinaryOpStorage/*!*/ writeStorage,
+            UnaryOpStorage/*!*/ inspectStorage,
             RubyContext/*!*/ context, object self, [NotNull]MutableString/*!*/ format, [NotNull]params object[]/*!*/ args) {
 
-            PrintFormatted(integerConversion, fixnumCast, tosConversion, stringCast, writeStorage, context, self, context.StandardOutput, format, args);
+            PrintFormatted(integerConversion, fixnumCast, tofConversion, tosConversion, stringCast, writeStorage, inspectStorage, context, 
+                self, context.StandardOutput, format, args
+            );
         }
 
         [RubyMethod("printf", RubyMethodAttributes.PrivateInstance)]
         [RubyMethod("printf", RubyMethodAttributes.PublicSingleton)]
         public static void PrintFormatted(
             ConversionStorage<IntegerValue>/*!*/ integerConversion, 
-            ConversionStorage<int>/*!*/ fixnumCast, 
+            ConversionStorage<int>/*!*/ fixnumCast,
+            ConversionStorage<double>/*!*/ tofConversion, 
             ConversionStorage<MutableString>/*!*/ tosConversion,
             ConversionStorage<MutableString>/*!*/ stringCast, 
             BinaryOpStorage/*!*/ writeStorage,
+            UnaryOpStorage/*!*/ inspectStorage,
             RubyContext/*!*/ context, object self, object io, [NotNull]object/*!*/ format, [NotNull]params object[]/*!*/ args) {
 
             Debug.Assert(!(io is MutableString));
@@ -591,7 +581,9 @@ namespace IronRuby.Builtins {
             // format cannot be strongly typed to MutableString due to ambiguity between signatures (MS, object) vs (object, MS)
             var site = writeStorage.GetCallSite("write");
             site.Target(site, context, io,
-                Sprintf(integerConversion, fixnumCast, tosConversion, context, self, Protocols.CastToString(stringCast, context, format), args)
+                Sprintf(integerConversion, fixnumCast, tofConversion, tosConversion, inspectStorage, context, self, 
+                    Protocols.CastToString(stringCast, context, format), 
+                args)
             );
         }
 
@@ -868,11 +860,13 @@ namespace IronRuby.Builtins {
         [RubyMethod("format", RubyMethodAttributes.PublicSingleton)]
         [RubyMethod("sprintf", RubyMethodAttributes.PrivateInstance)]
         [RubyMethod("sprintf", RubyMethodAttributes.PublicSingleton)]
-        public static MutableString/*!*/ Sprintf(ConversionStorage<IntegerValue>/*!*/ integerCast, ConversionStorage<int>/*!*/ fixnumCast, 
-            ConversionStorage<MutableString>/*!*/ tosConversion,
+        public static MutableString/*!*/ Sprintf(ConversionStorage<IntegerValue>/*!*/ integerCast, ConversionStorage<int>/*!*/ fixnumCast,
+            ConversionStorage<double>/*!*/ tofConversion, ConversionStorage<MutableString>/*!*/ tosConversion, UnaryOpStorage/*!*/ inspectStorage,
             RubyContext/*!*/ context, object self, [DefaultProtocol, NotNull]MutableString/*!*/ format, [NotNull]params object[] args) {
 
-            return new StringFormatter(integerCast, fixnumCast, tosConversion, context, format.ConvertToString(), args).Format();
+            return new StringFormatter(integerCast, fixnumCast, tofConversion, tosConversion, inspectStorage, context, 
+                format.ConvertToString(), args
+            ).Format();
         }
 
         //srand

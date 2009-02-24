@@ -1,0 +1,9 @@
+fails:File#chmod returns 0 if successful
+fails:File#chmod always succeeds with any numeric values
+fails:File#chmod invokes to_int on non-integer argument
+fails:File#chmod with '0444' makes file readable and executable but not writable
+fails:File#chmod with '0644' makes file readable and writable and also executable
+fails:File.chmod returns the number of files modified
+fails:File.chmod invokes to_int on non-integer argument
+fails:File.chmod with '0444' makes file readable and executable but not writable
+fails:File.chmod with '0644' makes file readable and writable and also executable

@@ -259,7 +259,7 @@ namespace System.Linq.Expressions {
         /// <param name="parameters">An <see cref="IEnumerable{T}"/> that contains <see cref="ParameterExpression"/> objects to use to populate the <see cref="P:Parameters"/> collection. </param>
         /// <returns>An <see cref="Expression{TDelegate}"/> that has the <see cref="P:NodeType"/> property equal to <see cref="P:Lambda"/> and the <see cref="P:Body"/> and <see cref="P:Parameters"/> properties set to the specified values.</returns>
         public static Expression<TDelegate> Lambda<TDelegate>(Expression body, IEnumerable<ParameterExpression> parameters) {
-            return Lambda<TDelegate>(body, "lambda_method", parameters);
+            return Lambda<TDelegate>(body, null, parameters);
         }
 
         /// <summary>
@@ -293,7 +293,7 @@ namespace System.Linq.Expressions {
         /// <param name="parameters">An <see cref="IEnumerable{T}"/> that contains <see cref="ParameterExpression"/> objects to use to populate the <see cref="P:Parameters"/> collection. </param>
         /// <returns>A <see cref="LambdaExpression"/> that has the <see cref="P:NodeType"/> property equal to Lambda and the <see cref="P:Body"/> and <see cref="P:Parameters"/> properties set to the specified values.</returns>
         public static LambdaExpression Lambda(Expression body, IEnumerable<ParameterExpression> parameters) {
-            return Lambda(body, "lambda_method", parameters);
+            return Lambda(body, null, parameters);
         }
 
         /// <summary>
@@ -304,7 +304,7 @@ namespace System.Linq.Expressions {
         /// <param name="delegateType">A <see cref="Type"/> representing the delegate signature for the lambda.</param>
         /// <returns>A <see cref="LambdaExpression"/> that has the <see cref="P:NodeType"/> property equal to Lambda and the <see cref="P:Body"/> and <see cref="P:Parameters"/> properties set to the specified values.</returns>
         public static LambdaExpression Lambda(Type delegateType, Expression body, params ParameterExpression[] parameters) {
-            return Lambda(delegateType, body, "lambda_method", parameters);
+            return Lambda(delegateType, body, null, parameters);
         }
 
         /// <summary>
@@ -315,7 +315,7 @@ namespace System.Linq.Expressions {
         /// <param name="delegateType">A <see cref="Type"/> representing the delegate signature for the lambda.</param>
         /// <returns>A <see cref="LambdaExpression"/> that has the <see cref="P:NodeType"/> property equal to Lambda and the <see cref="P:Body"/> and <see cref="P:Parameters"/> properties set to the specified values.</returns>
         public static LambdaExpression Lambda(Type delegateType, Expression body, IEnumerable<ParameterExpression> parameters) {
-            return Lambda(delegateType, body, "lambda_method", parameters);
+            return Lambda(delegateType, body, null, parameters);
         }
 
         /// <summary>
@@ -326,7 +326,6 @@ namespace System.Linq.Expressions {
         /// <param name="name">The name for the lambda. Used for emitting debug information.</param>
         /// <returns>A <see cref="LambdaExpression"/> that has the <see cref="P:NodeType"/> property equal to Lambda and the <see cref="P:Body"/> and <see cref="P:Parameters"/> properties set to the specified values.</returns>
         public static LambdaExpression Lambda(Expression body, string name, IEnumerable<ParameterExpression> parameters) {
-            ContractUtils.RequiresNotNull(name, "name");
             ContractUtils.RequiresNotNull(body, "body");
 
             var parameterList = parameters.ToReadOnly();
@@ -415,7 +414,8 @@ namespace System.Linq.Expressions {
         }
 
         /// <summary>
-        /// Creates a Type object that represents a generic System.Func delegate type that has specific type arguments. 
+        /// Creates a <see cref="Type"/> object that represents a generic System.Func delegate type that has specific type arguments.
+        /// The last type argument specifies the return type of the created delegate.
         /// </summary>
         /// <param name="typeArgs">An array of Type objects that specify the type arguments for the System.Func delegate type.</param>
         /// <returns>The type of a System.Func delegate that has the specified type arguments.</returns>
@@ -430,7 +430,8 @@ namespace System.Linq.Expressions {
         }
 
         /// <summary>
-        /// Creates a type object that represents a generic System.Func delegate type that has specific type arguments.
+        /// Creates a <see cref="Type"/> object that represents a generic System.Func delegate type that has specific type arguments.
+        /// The last type argument specifies the return type of the created delegate.
         /// </summary>
         /// <param name="typeArgs">An array of Type objects that specify the type arguments for the System.Func delegate type.</param>
         /// <param name="funcType">When this method returns, contains the generic System.Func delegate type that has specific type arguments. Contains null if there is no generic System.Func delegate that matches the <paramref name="typeArgs"/>.This parameter is passed uninitialized.</param>
@@ -444,7 +445,7 @@ namespace System.Linq.Expressions {
         }
 
         /// <summary>
-        /// Creates a Type object that represents a generic System.Action delegate type that has specific type arguments. 
+        /// Creates a <see cref="Type"/> object that represents a generic System.Action delegate type that has specific type arguments. 
         /// </summary>
         /// <param name="typeArgs">An array of Type objects that specify the type arguments for the System.Action delegate type.</param>
         /// <returns>The type of a System.Action delegate that has the specified type arguments.</returns>
@@ -459,7 +460,7 @@ namespace System.Linq.Expressions {
         }
 
         /// <summary>
-        /// Creates a type object that represents a generic System.Action delegate type that has specific type arguments.
+        /// Creates a <see cref="Type"/> object that represents a generic System.Action delegate type that has specific type arguments.
         /// </summary>
         /// <param name="typeArgs">An array of Type objects that specify the type arguments for the System.Action delegate type.</param>
         /// <param name="actionType">When this method returns, contains the generic System.Action delegate type that has specific type arguments. Contains null if there is no generic System.Action delegate that matches the <paramref name="typeArgs"/>.This parameter is passed uninitialized.</param>
@@ -473,8 +474,8 @@ namespace System.Linq.Expressions {
         }
 
         /// <summary>
-        /// Gets a Func or Action corresponding to the given type arguments. If
-        /// no Func or Action is large enough, it will generate a custom
+        /// Gets a <see cref="Type"/> object that represents a generic System.Func or System.Action delegate type that has specific type arguments.
+        /// The last type argument determines the return type of the delegate. If no Func or Action is large enough, it will generate a custom
         /// delegate type.
         /// </summary>
         /// <param name="typeArgs">The type arguments of the delegate.</param>

@@ -1,0 +1,5 @@
+fails:IO#seek moves the read position relative to the current position with SEEK_CUR
+fails:IO#seek moves the read position relative to the start with SEEK_SET
+fails:IO#seek moves the read position relative to the end with SEEK_END
+fails:IO#seek can handle any numerical argument without breaking
+fails:IO#seek raises IOError on closed stream

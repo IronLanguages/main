@@ -388,7 +388,7 @@ namespace IronPython.Runtime {
                 if (ic != null) {
                     pyDict = new PythonDictionary(new CommonDictionaryStorage(ic.Count));
                 } else if ((str = o as string) != null) {
-                    pyDict = PythonDictionary.MakeSymbolDictionary(str.Length);
+                    pyDict = new PythonDictionary(str.Length);
                 } else {
                     pyDict = new PythonDictionary();
                 }
@@ -840,27 +840,23 @@ namespace IronPython.Runtime {
     [PythonType("dictionary-keyiterator")]
     public sealed class DictionaryKeyEnumerator : IEnumerator, IEnumerator<object> {
         private readonly int _size;
-        DictionaryStorage _dict;
-        private readonly object[] _keys;
+        private readonly DictionaryStorage _dict;
+        private readonly IEnumerator<object> _keys;
         private int _pos;
 
         internal DictionaryKeyEnumerator(DictionaryStorage dict) {
             _dict = dict;
             _size = dict.Count;
-            _keys = new object[_size];
-            int i = 0;
-            foreach (KeyValuePair<object, object> kvp in dict.GetItems()) {
-                _keys[i++] = kvp.Key;
-            }
+            _keys = dict.GetKeys().GetEnumerator();
             _pos = -1;
         }
 
-        public bool MoveNext() {
+        bool IEnumerator.MoveNext() {
             if (_size != _dict.Count) {
                 _pos = _size - 1; // make the length 0
                 throw PythonOps.RuntimeError("dictionary changed size during iteration");
             }
-            if (_pos + 1 < _size) {
+            if (_keys.MoveNext()) {
                 _pos++;
                 return true;
             } else {
@@ -868,24 +864,31 @@ namespace IronPython.Runtime {
             }
         }
 
-        public void Reset() {
+        void IEnumerator.Reset() {
+            _keys.Reset();
             _pos = -1;
         }
 
-        public object Current {
+        object IEnumerator.Current {
             get {
-                return _keys[_pos];
+                return _keys.Current;
             }
         }
 
-        public void Dispose() {
+        object IEnumerator<object>.Current {
+            get {
+                return _keys.Current;
+            }
+        }
+
+        void IDisposable.Dispose() {
         }
 
         public object __iter__() {
             return this;
         }
 
-        public int __len__() {
+        public int __length_hint__() {
             return _size - _pos - 1;
         }
     }

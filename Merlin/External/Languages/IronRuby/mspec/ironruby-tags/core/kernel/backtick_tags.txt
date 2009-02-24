@@ -1,0 +1,3 @@
+fails:Kernel#` returns the standard output of the executed sub-process
+fails:Kernel#` tries to convert the given argument to String using #to_str
+fails:Kernel#` checks whether the passed argument responds to #to_str

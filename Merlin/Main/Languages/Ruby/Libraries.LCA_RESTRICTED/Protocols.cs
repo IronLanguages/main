@@ -37,16 +37,6 @@ namespace IronRuby.Runtime {
     /// </summary>
     public static class Protocols {
 
-        #region dynamic sites
-
-        private static readonly CallSite<Func<CallSite, RubyContext, object, object>>/*!*/
-            _ToF = CallSite<Func<CallSite, RubyContext, object, object>>.Create(RubySites.InstanceCallAction("to_f")),
-            _ToStr = CallSite<Func<CallSite, RubyContext, object, object>>.Create(RubySites.InstanceCallAction("to_str")),
-            _ToA = CallSite<Func<CallSite, RubyContext, object, object>>.Create(RubySites.InstanceCallAction("to_a")),
-            _ToAry = CallSite<Func<CallSite, RubyContext, object, object>>.Create(RubySites.InstanceCallAction("to_ary"));
-
-        #endregion
-
         #region Bignum/Fixnum Normalization
 
         /// <summary>
@@ -85,7 +75,7 @@ namespace IronRuby.Runtime {
 
         #endregion
 
-        #region CastToString, AsString, TryConvertToString, ObjectToString
+        #region CastToString, TryCastToString, ConvertToString, Inspect
 
         /// <summary>
         /// Converts an object to string using to_str protocol (<see cref="ConvertToStrAction"/>).
@@ -95,46 +85,12 @@ namespace IronRuby.Runtime {
             return site.Target(site, context, obj);
         }
 
-        // TODO: remove
-        public static MutableString/*!*/ CastToString(RubyContext/*!*/ context, object obj) {
-            MutableString str = AsString(context, obj);
-            if (str != null) {
-                return str;
-            }
-            throw RubyExceptions.CannotConvertTypeToTargetType(context, obj, "String");
-        }
-
-        // TODO: remove
-        public static MutableString[]/*!*/ CastToStrings(RubyContext/*!*/ context, object[]/*!*/ objs) {
-            var result = new MutableString[objs.Length];
-            for (int i = 0; i < objs.Length; i++) {
-                result[i] = Protocols.CastToString(context, objs[i]);
-            }
-            return result;
-        }
-
-        // TODO: remove
         /// <summary>
-        /// Standard way to convert to a Ruby String, using to_str
-        /// 
-        /// Checks if it's already a string, and if so returns it.
-        /// Then calls to_str if it exists, otherwise returns null
+        /// Converts an object to string using try-to_str protocol (<see cref="TryConvertToStrAction"/>).
         /// </summary>
-        public static MutableString AsString(RubyContext/*!*/ context, object obj) {
-            MutableString str = obj as MutableString;
-            if (str != null) {
-                return str;
-            }
-            if (RubySites.RespondTo(context, obj, "to_str")) {
-                str = _ToStr.Target(_ToStr, context, obj) as MutableString;
-                if (str != null) {
-                    return str;
-                }
-
-                throw RubyExceptions.MethodShouldReturnType(context, obj, "to_str", "String");
-            }
-
-            return null;
+        public static MutableString TryCastToString(ConversionStorage<MutableString>/*!*/ stringTryCast, RubyContext/*!*/ context, object obj) {
+            var site = stringTryCast.GetSite(TryConvertToStrAction.Instance);
+            return site.Target(site, context, obj);
         }
 
         /// <summary>
@@ -147,40 +103,26 @@ namespace IronRuby.Runtime {
 
         #endregion
 
-        #region ConvertToFloat
+        #region CastToArray, TryCastToArray, TryConvertToArray
 
-        /// <summary>
-        /// Convert to a Float, using to_f
-        /// Throws if conversion fails
-        /// </summary>
-        public static double ConvertToFloat(RubyContext/*!*/ context, object value) {
-            if (value is double) {
-                return (double)value;
-            }
-            if (value is int) {
-                return (double)(int)value;
-            }
-            if (value is BigInteger) {
-                return ((BigInteger)value).ToFloat64();
-            }
-            if (value is MutableString) {
-                return ConvertStringToFloat(context, (MutableString)value);
-            }
-
-            if (value == null) {
-                throw RubyExceptions.CreateTypeError("can't convert nil into Float");
-            }
-            
-            if (RubySites.RespondTo(context, value, "to_f")) {
-                object obj = _ToF.Target(_ToF, context, value);
-                if (!(obj is double)) {
-                    throw RubyExceptions.MethodShouldReturnType(context, value, "to_f", "Float");
-                }
-                return (double)obj;
-            }
-
-            throw RubyExceptions.CannotConvertTypeToTargetType(context, value, "Float");
+        public static IList/*!*/ CastToArray(ConversionStorage<IList>/*!*/ arrayCast, RubyContext/*!*/ context, object obj) {
+            var site = arrayCast.GetSite(ConvertToArrayAction.Instance);
+            return site.Target(site, context, obj);
         }
+
+        public static IList TryCastToArray(ConversionStorage<IList>/*!*/ arrayTryCast, RubyContext/*!*/ context, object obj) {
+            var site = arrayTryCast.GetSite(TryConvertToArrayAction.Instance);
+            return site.Target(site, context, obj);
+        }
+
+        public static IList TryConvertToArray(ConversionStorage<IList>/*!*/ tryToA, RubyContext/*!*/ context, object obj) {
+            var site = tryToA.GetSite(TryConvertToAAction.Instance);
+            return site.Target(site, context, obj);
+        }
+
+        #endregion
+
+        #region ConvertStringToFloat, ConvertToInteger, CastToInteger, CastToFixnum, CastToUInt32Unchecked, CastToUInt64Unchecked
 
         public static double ConvertStringToFloat(RubyContext/*!*/ context, MutableString/*!*/ value) {
             double result;
@@ -189,13 +131,8 @@ namespace IronRuby.Runtime {
                 return result;
             }
 
-            MutableString valueString = RubySites.Inspect(context, value);
-            throw RubyExceptions.CreateArgumentError(String.Format("invalid value for Float(): {0}", valueString.ConvertToString()));
+            throw RubyExceptions.InvalidValueForType(context, value, "Float");
         }
-
-        #endregion
-
-        #region ConvertToInteger, CastToInteger, CastToFixnum, CastToUInt32Unchecked, CastToUInt64Unchecked
 
         public static IntegerValue ConvertToInteger(ConversionStorage<IntegerValue>/*!*/ integerConversion, RubyContext/*!*/ context, object value) {
             var site = integerConversion.GetSite(CompositeConversionAction.ToIntToI);
@@ -254,122 +191,6 @@ namespace IronRuby.Runtime {
 
         #endregion
 
-        #region TryConvertToArray, ConvertToArray, AsArray, CastToArray
-
-        /// <summary>
-        /// Try to convert obj to an Array using #to_a
-        /// 1. If obj is an Array (or a subtype), returns it
-        /// 2. Calls to_a if it exists, possibly throwing if to_a doesn't return an Array
-        /// 3. else returns null
-        /// </summary>
-        public static IList TryConvertToArray(RubyContext/*!*/ context, object obj) {
-            // Don't call to_a on types derived from Array
-            IList ary = obj as IList;
-            if (ary != null) {
-                return ary;
-            }
-
-            if (RubySites.RespondTo(context, obj, "to_a")) {
-                object result = _ToA.Target(_ToA, context, obj);
-                ary = result as List<object>;
-                if (ary != null) {
-                    return ary;
-                }
-
-                throw RubyExceptions.MethodShouldReturnType(context, obj, "to_a", "Array");
-            }
-
-            return null;
-        }
-
-        /// <summary>
-        /// Works like TryConvertToArray, but throws a type error if the conversion fails
-        /// </summary>
-        public static IList/*!*/ ConvertToArray(RubyContext/*!*/ context, object obj) {
-            IList ary = TryConvertToArray(context, obj);
-            if (ary != null) {
-                return ary;
-            }
-
-            throw RubyExceptions.CannotConvertTypeToTargetType(context, obj, "Array");
-        }
-
-        /// <summary>
-        /// Try to convert obj to an Array using #to_ary
-        /// 1. If obj is an Array (or a subtype), returns it
-        /// 2. Calls to_ary if it exists, possibly throwing if to_ary doesn't return an Array
-        /// 3. else returns null
-        /// </summary>
-        public static IList AsArray(RubyContext/*!*/ context, object obj) {
-            // Don't call to_a on types derived from Array
-            IList ary = obj as IList;
-            if (ary != null) {
-                return ary;
-            }
-
-            if (RubySites.RespondTo(context, obj, "to_ary")) {
-                object result = _ToAry.Target(_ToAry, context, obj);
-                ary = result as IList;
-                if (ary != null) {
-                    return ary;
-                }
-
-                throw RubyExceptions.MethodShouldReturnType(context, obj, "to_ary", "Array");
-            }
-
-            return null;
-        }
-
-        /// <summary>
-        /// Works like AsArray, but throws a type error if the conversion fails
-        /// </summary>
-        public static IList/*!*/ CastToArray(RubyContext/*!*/ context, object obj) {
-            IList ary = AsArray(context, obj);
-            if (ary != null) {
-                return ary;
-            }
-
-            throw RubyExceptions.CannotConvertTypeToTargetType(context, obj, "Array");
-        }
-        #endregion
-
-        #region CastToSymbol
-
-        /// <summary>
-        /// Casts to symbol. Note that this doesn't actually use to_sym -- it uses to_str.
-        /// That's just how Ruby does it.
-        /// 
-        /// Another fun detail: you can pass Fixnums as Symbols. If you pass a Fixnum that
-        /// doesn't map to a Symbol (i.e. Fixnum#to_sym returns nil), you get an ArgumentError
-        /// instead of a TypeError. At least it produces a warning about using Fixnums as Symbols
-        /// </summary>
-        public static string/*!*/ CastToSymbol(RubyContext/*!*/ context, object obj) {
-            if (obj is SymbolId) {
-                return SymbolTable.IdToString((SymbolId)obj);
-            }
-
-            if (obj is int) {
-                return RubyOps.ConvertFixnumToSymbol(context, (int)obj);
-            } else {
-                MutableString str = AsString(context, obj);
-                if (str != null) {
-                    return RubyOps.ConvertMutableStringToSymbol(str);
-                }
-            }
-
-            throw RubyExceptions.CreateTypeError(String.Format("{0} is not a symbol", RubySites.Inspect(context, obj)));
-        }
-
-        public static string[]/*!*/ CastToSymbols(RubyContext/*!*/ context, object[]/*!*/ objects) {
-            string[] result = new string[objects.Length];
-            for (int i = 0; i < objects.Length; i++) {
-                result[i] = Protocols.CastToSymbol(context, objects[i]);
-            }
-            return result;
-        }
-
-        #endregion
-
         #region Compare (<=>), ConvertCompareResult
 
         /// <summary>
@@ -413,6 +234,8 @@ namespace IronRuby.Runtime {
 
         #endregion
 
+        #region IsTrue, IsEqual, RespondTo
+
         /// <summary>
         /// Protocol for determining truth in Ruby (not null and not false)
         /// </summary>
@@ -432,6 +255,8 @@ namespace IronRuby.Runtime {
             var site = respondToStorage.GetCallSite();
             return IsTrue(site.Target(site, context, target, SymbolTable.StringToId(methodName)));
         }
+
+        #endregion
 
         #region Coercion
 

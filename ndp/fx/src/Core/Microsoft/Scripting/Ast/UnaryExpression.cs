@@ -13,11 +13,11 @@
  *
  * ***************************************************************************/
 
-using System.Collections.ObjectModel;
 using System.Diagnostics;
-using System.Reflection;
 using System.Dynamic.Utils;
+using System.Reflection;
 using System.Runtime.CompilerServices;
+
 namespace System.Linq.Expressions {
     
     /// <summary>
@@ -681,42 +681,12 @@ namespace System.Linq.Expressions {
             if (method == null) {
                 ContractUtils.RequiresNotNull(type, "type");
                 if (TypeUtils.HasIdentityPrimitiveOrNullableConversion(expression.Type, type) ||
-                    HasReferenceConversion(expression.Type, type)) {
+                    TypeUtils.HasReferenceConversion(expression.Type, type)) {
                     return new UnaryExpression(ExpressionType.Convert, expression, type, null);
                 }
                 return GetUserDefinedCoercionOrThrow(ExpressionType.Convert, expression, type);
             }
             return GetMethodBasedCoercionOperator(ExpressionType.Convert, expression, type, method);
-        }
-
-        private static bool HasReferenceConversion(Type source, Type dest) {
-            Debug.Assert(source != null && dest != null);
-
-            Type nnSourceType = TypeUtils.GetNonNullableType(source);
-            Type nnDestType = TypeUtils.GetNonNullableType(dest);
-
-            //void can only be converted to void
-            if (source == typeof(void) && dest != typeof(void)) {
-                return false;
-            }
-
-            // Down conversion
-            if (nnSourceType.IsAssignableFrom(nnDestType)) {
-                return true;
-            }
-            // Up conversion
-            if (nnDestType.IsAssignableFrom(nnSourceType)) {
-                return true;
-            }
-            // Interface conversion
-            if (source.IsInterface || dest.IsInterface) {
-                return true;
-            }
-            // Object conversion
-            if (source == typeof(object) || dest == typeof(object)) {
-                return true;
-            }
-            return false;
         }
 
         ///<summary>Creates a <see cref="T:System.Linq.Expressions.UnaryExpression" /> that represents a conversion operation that throws an exception if the target type is overflowed.</summary>
@@ -748,7 +718,7 @@ namespace System.Linq.Expressions {
                 if (TypeUtils.HasIdentityPrimitiveOrNullableConversion(expression.Type, type)) {
                     return new UnaryExpression(ExpressionType.ConvertChecked, expression, type, null);
                 }
-                if (HasReferenceConversion(expression.Type, type)) {
+                if (TypeUtils.HasReferenceConversion(expression.Type, type)) {
                     return new UnaryExpression(ExpressionType.Convert, expression, type, null);
                 }
                 return GetUserDefinedCoercionOrThrow(ExpressionType.ConvertChecked, expression, type);
@@ -784,20 +754,7 @@ namespace System.Linq.Expressions {
             ContractUtils.Requires(expression is LambdaExpression, Strings.QuotedExpressionMustBeLambda);
             return new UnaryExpression(ExpressionType.Quote, expression, expression.GetType(), null);
         }
-
-        /// <summary>
-        /// Converts an expression to a void type.
-        /// </summary>
-        /// <param name="expression">An <see cref="Expression"/> to convert to void. </param>
-        /// <returns>An <see cref="Expression" /> that has the <see cref="P:System.Linq.Expressions.Expression.NodeType" /> property equal to <see cref="F:System.Linq.Expressions.ExpressionType.ConvertChecked" /> and the <see cref="P:System.Linq.Expressions.UnaryExpression.Operand" /> and <see cref="P:System.Linq.Expressions.Expression.Type" /> property set to void.</returns>
-        public static Expression Void(Expression expression) {
-            RequiresCanRead(expression, "expression");
-            if (expression.Type == typeof(void)) {
-                return expression;
-            }
-            return Expression.Convert(expression, typeof(void));
-        }
-
+        
         /// <summary>
         /// Creates a <see cref="T:System.Linq.Expressions.UnaryExpression" /> that represents a rethrowing of an exception.
         /// </summary>
