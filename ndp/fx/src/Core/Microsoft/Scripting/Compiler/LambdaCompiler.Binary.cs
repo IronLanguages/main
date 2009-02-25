@@ -51,11 +51,16 @@ namespace System.Linq.Expressions.Compiler {
                     EmitNullEquality(b.NodeType, b.Left, b.IsLiftedToNull);
                     return;
                 }
-            }
 
-            // Otherwise generate it normally.
-            EmitExpression(b.Left);
-            EmitExpression(b.Right);
+                // For EQ and NE, we can avoid some conversions if we're
+                // ultimately just comparing two managed pointers.
+                EmitExpression(GetEqualityOperand(b.Left));
+                EmitExpression(GetEqualityOperand(b.Right));
+            } else {
+                // Otherwise generate it normally
+                EmitExpression(b.Left);
+                EmitExpression(b.Right);
+            }
 
             EmitBinaryOperator(b.NodeType, b.Left.Type, b.Right.Type, b.Type, b.IsLiftedToNull);
         }

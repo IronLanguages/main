@@ -481,7 +481,7 @@ namespace System.Linq.Expressions.Compiler {
                     _ilg.EmitHasValue(node.Right.Type);
                 } else {
                     Debug.Assert(!node.Right.Type.IsValueType);
-                    EmitExpression(node.Right);
+                    EmitExpression(GetEqualityOperand(node.Right));
                 }
                 EmitBranchOp(!branchWhenEqual, label);
             } else if (ConstantCheck.IsNull(node.Right)) {
@@ -490,7 +490,7 @@ namespace System.Linq.Expressions.Compiler {
                     _ilg.EmitHasValue(node.Left.Type);
                 } else {
                     Debug.Assert(!node.Left.Type.IsValueType);
-                    EmitExpression(node.Left);
+                    EmitExpression(GetEqualityOperand(node.Left));
                 }
                 EmitBranchOp(!branchWhenEqual, label);
             } else if (TypeUtils.IsNullableType(node.Left.Type) || TypeUtils.IsNullableType(node.Right.Type)) {
@@ -499,8 +499,8 @@ namespace System.Linq.Expressions.Compiler {
                 // node kind, so use the original branch value
                 EmitBranchOp(branch, label);
             } else {
-                EmitExpression(node.Left);
-                EmitExpression(node.Right);
+                EmitExpression(GetEqualityOperand(node.Left));
+                EmitExpression(GetEqualityOperand(node.Right));
                 if (branchWhenEqual) {
                     _ilg.Emit(OpCodes.Beq, label);
                 } else {
@@ -508,6 +508,20 @@ namespace System.Linq.Expressions.Compiler {
                     _ilg.Emit(OpCodes.Brfalse, label);
                 }
             }
+        }
+
+        // For optimized Equal/NotEqual, we can eliminate reference 
+        // conversions. IL allows comparing managed pointers regardless of
+        // type. See ECMA-335 "Binary Comparison or Branch Operations", in
+        // Partition III, Section 1.5 Table 4.
+        private static Expression GetEqualityOperand(Expression expression) {
+            if (expression.NodeType == ExpressionType.Convert) {
+                var convert = (UnaryExpression)expression;
+                if (TypeUtils.AreReferenceAssignable(convert.Type, convert.Operand.Type)) {
+                    return convert.Operand;
+                }
+            }
+            return expression;
         }
 
         private void EmitBranchLogical(bool branch, BinaryExpression node, Label label) {
