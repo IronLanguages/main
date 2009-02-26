@@ -134,6 +134,7 @@ namespace System.Dynamic {
             return new Expression<T>(
                 "CallSite.Target",
                 Expression.Block(body),
+                true, // always compile the rules with tail call optimization
                 new ReadOnlyCollection<ParameterExpression>(@params)
             );
         }

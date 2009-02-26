@@ -1430,7 +1430,9 @@ namespace IronPython.Runtime.Binding {
             // make the Callable object which does the actual call to the function or slot
             Callable callable = Callable.MakeCallable(state, op, itemFunc, itemSlot);
             if (callable == null) {
-                return TypeError(operation, "'{0}' object is unsubscriptable", indexedType);
+                DynamicMetaObject[] newTypes = (DynamicMetaObject[])types.Clone();
+                newTypes[0] = indexedType;
+                return TypeError(operation, "'{0}' object is unsubscriptable", newTypes);
             }
 
             // prepare the arguments and make the builder which will

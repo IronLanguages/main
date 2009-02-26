@@ -262,6 +262,22 @@ namespace System.Dynamic.Utils {
             }
         }
 
+        internal static bool HasReferenceEquality(Type left, Type right) {
+            if (left.IsValueType || right.IsValueType) {
+                return false;
+            }
+
+            // If we have an interface and a reference type then we can do 
+            // reference equality.
+
+            // If we have two reference types and one is assignable to the
+            // other then we can do reference equality.
+
+            return left.IsInterface || right.IsInterface ||
+                AreReferenceAssignable(left, right) ||
+                AreReferenceAssignable(right, left);
+        }
+
         internal static bool HasBuiltInEqualityOperator(Type left, Type right) {
             // If we have an interface and a reference type then we can do 
             // reference equality.

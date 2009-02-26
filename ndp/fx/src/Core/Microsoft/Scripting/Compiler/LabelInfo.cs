@@ -72,6 +72,10 @@ namespace System.Linq.Expressions.Compiler {
             _canReturn = canReturn;
         }
 
+        internal bool CanReturn {
+            get { return _canReturn; }
+        }
+
         /// <summary>
         /// Indicates if it is legal to emit a "branch" instruction based on
         /// currently available information. Call the Reference method before 

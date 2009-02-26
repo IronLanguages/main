@@ -139,7 +139,7 @@ namespace IronPython.Runtime.Binding {
                     return BindingHelpers.AddDynamicTestAndDefer(
                         member,
                         new DynamicMetaObject(
-                            MakeMetaTypeRule(member, GetMemberFallback(member, codeContext).Expression),
+                            MakeMetaTypeRule(member, GetMemberFallback(this, member, codeContext).Expression),
                             self.Restrictions
                         ),
                         new DynamicMetaObject[] { this },

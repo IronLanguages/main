@@ -243,7 +243,7 @@ namespace IronPython.Runtime.Binding {
                 }
             }
             
-            callInfo = Expression.CallInfo(metaArgs.Count, namedArgNames.ToArray());
+            callInfo = new CallInfo(metaArgs.Count, namedArgNames.ToArray());
 
             test = splatArgTest;
             if (splatKwArgTest != null) {

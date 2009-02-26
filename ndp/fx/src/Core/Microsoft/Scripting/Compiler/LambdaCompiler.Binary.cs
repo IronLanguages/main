@@ -22,14 +22,17 @@ using System.Reflection.Emit;
 namespace System.Linq.Expressions.Compiler {
     partial class LambdaCompiler {
 
-
         private void EmitBinaryExpression(Expression expr) {
+            EmitBinaryExpression(expr, CompilationFlags.EmitAsNoTail);
+        }
+
+        private void EmitBinaryExpression(Expression expr, CompilationFlags flags) {
             BinaryExpression b = (BinaryExpression)expr;
 
             Debug.Assert(b.NodeType != ExpressionType.AndAlso && b.NodeType != ExpressionType.OrElse && b.NodeType != ExpressionType.Coalesce);
 
             if (b.Method != null) {
-                EmitBinaryMethod(b);
+                EmitBinaryMethod(b, flags);
                 return;
             }
 
@@ -85,7 +88,7 @@ namespace System.Linq.Expressions.Compiler {
         }
 
 
-        private void EmitBinaryMethod(BinaryExpression b) {
+        private void EmitBinaryMethod(BinaryExpression b, CompilationFlags flags) {
             if (b.IsLifted) {
                 ParameterExpression p1 = Expression.Variable(TypeUtils.GetNonNullableType(b.Left.Type), null);
                 ParameterExpression p2 = Expression.Variable(TypeUtils.GetNonNullableType(b.Right.Type), null);
@@ -116,7 +119,7 @@ namespace System.Linq.Expressions.Compiler {
                 ValidateLift(variables, arguments);
                 EmitLift(b.NodeType, resultType, mc, variables, arguments);
             } else {
-                EmitMethodCallExpression(Expression.Call(null, b.Method, b.Left, b.Right));
+                EmitMethodCallExpression(Expression.Call(null, b.Method, b.Left, b.Right), flags);
             }
         }
 

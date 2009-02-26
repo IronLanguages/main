@@ -220,7 +220,7 @@ namespace IronPython.Compiler.Ast {
 
             string doc = ag.GetDocumentation(_body);
 
-            if (_isModule && doc != null) {
+            if (_isModule) {
                 block.Add(AstUtils.Assign(
                     _docVariable.Variable,
                     Ast.Constant(doc)

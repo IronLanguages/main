@@ -138,21 +138,26 @@ namespace IronPython.Runtime.Binding {
             );
         }
 
-        protected DynamicMetaObject GetMemberFallback(DynamicMetaObjectBinder member, Expression codeContext) {
+        protected static DynamicMetaObject GetMemberFallback(DynamicMetaObject self, DynamicMetaObjectBinder member, Expression codeContext) {
             PythonGetMemberBinder gmb = member as PythonGetMemberBinder;
             if (gmb != null) {
-                return gmb.Fallback(this, codeContext);
+                return gmb.Fallback(self, codeContext);
             }
 
             GetMemberBinder gma = (GetMemberBinder)member;
 
-            return gma.FallbackGetMember(this);
+            return gma.FallbackGetMember(self);
         }
 
-        protected string GetGetMemberName(DynamicMetaObjectBinder member) {
+        protected static string GetGetMemberName(DynamicMetaObjectBinder member) {
             PythonGetMemberBinder gmb = member as PythonGetMemberBinder;
             if (gmb != null) {
                 return gmb.Name;
+            }
+
+            InvokeMemberBinder invoke = member as InvokeMemberBinder;
+            if (invoke != null) {
+                return invoke.Name;
             }
 
             GetMemberBinder gma = (GetMemberBinder)member;

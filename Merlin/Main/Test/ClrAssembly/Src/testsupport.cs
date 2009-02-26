@@ -25,10 +25,10 @@ namespace Merlin.Testing {
     }
 
     public class Flag {
-        private static int _value;
+        public static int Value;
 
         public static void SetOnly(int value) {
-            _value = value;
+            Value = value;
         }
         public static void Set(int value) {
             Reset();
@@ -36,8 +36,8 @@ namespace Merlin.Testing {
         }
 
         public static void CheckOnly(int expected) {
-            if (_value != expected) {
-                throw new Exception(string.Format("expected: {0}, actual: {1}", expected, _value));
+            if (Value != expected) {
+                throw new Exception(string.Format("expected: {0}, actual: {1}", expected, Value));
             }
         }
 
@@ -46,11 +46,11 @@ namespace Merlin.Testing {
             Reset();
         }
         public static void Reset() {
-            _value = 999;
+            Value = 999;
         }
 
         public static void Add(int value) {
-            _value += value;
+            Value += value;
         }
     }
 

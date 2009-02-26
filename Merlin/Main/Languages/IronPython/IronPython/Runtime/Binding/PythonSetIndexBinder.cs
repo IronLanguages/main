@@ -29,7 +29,7 @@ namespace IronPython.Runtime.Binding {
         private readonly BinderState/*!*/ _state;
 
         public PythonSetIndexBinder(BinderState/*!*/ state, int argCount)
-            : base(Expression.CallInfo(argCount)) {
+            : base(new CallInfo(argCount)) {
             _state = state;
         }
 

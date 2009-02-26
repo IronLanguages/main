@@ -293,7 +293,7 @@ namespace IronPython.Runtime.Binding {
                                 ),
                                 tmp,
                                 AstUtils.Convert(
-                                    GetMemberFallback(member, codeContext).Expression,
+                                    GetMemberFallback(this, member, codeContext).Expression,
                                     typeof(object)
                                 )
                             )

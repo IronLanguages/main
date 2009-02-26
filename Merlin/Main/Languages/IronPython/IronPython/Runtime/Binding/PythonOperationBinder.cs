@@ -96,7 +96,7 @@ namespace IronPython.Runtime.Binding {
             private readonly PythonOperationBinder _opBinder;
 
             internal SetIndexAdapter(PythonOperationBinder opBinder)
-                : base(Expression.CallInfo(0)) {
+                : base(new CallInfo(0)) {
                 _opBinder = opBinder;
             }
 
@@ -124,7 +124,7 @@ namespace IronPython.Runtime.Binding {
             private readonly PythonOperationBinder _opBinder;
 
             internal GetIndexAdapter(PythonOperationBinder opBinder)
-                : base(Expression.CallInfo(0)) {
+                : base(new CallInfo(0)) {
                 _opBinder = opBinder;
             }
 

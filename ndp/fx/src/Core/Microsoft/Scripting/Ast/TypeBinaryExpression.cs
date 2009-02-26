@@ -114,10 +114,7 @@ namespace System.Linq.Expressions {
             //user overloaded operator if there is one. Instead, we want to do
             //reference equality comparison by converting the value to System.Object.
             return Expression.AndAlso(
-                //TODO: If we can generate more optimal IL for reference equality comparison
-                //by using conversion, we can replace the following line with 
-                //Expression.NotEqual(Expression.Convert(value, typeof(object))
-                new LogicalBinaryExpression(ExpressionType.NotEqual, value, Expression.Constant(null)),
+                Expression.ReferenceNotEqual(value, Expression.Constant(null)),
                 Expression.Equal(
                     Expression.Call(
                         value,
