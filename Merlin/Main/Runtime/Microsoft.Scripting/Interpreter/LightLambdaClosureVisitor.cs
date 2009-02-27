@@ -23,6 +23,7 @@ using Microsoft.Scripting.Utils;
 using Microsoft.Scripting.Generation;
 using Microsoft.Scripting.Runtime;
 using System.Reflection;
+using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace Microsoft.Scripting.Interpreter {
 
@@ -134,7 +135,7 @@ namespace Microsoft.Scripting.Interpreter {
                                 null, 
                                 e,
                                 Expression.Call(typeof(MethodBase), "GetCurrentMethod", null),
-                                Expression.Constant(methodName),
+                                AstUtils.Constant(methodName),
                                 _fileName,
                                 _lineNumber
                             ),
@@ -169,17 +170,17 @@ namespace Microsoft.Scripting.Interpreter {
 
                 _lastLineNumber = node.StartLine;
                 return Expression.Block(
-                    Expression.Assign(_lineNumber, Expression.Constant(_lastLineNumber)),
-                    Expression.Empty()
+                    Expression.Assign(_lineNumber, AstUtils.Constant(_lastLineNumber)),
+                    AstUtils.Empty()
                 );
             }
 
             _lastDocument = node.Document;
             _lastLineNumber = node.StartLine;
             return Expression.Block(
-                Expression.Assign(_fileName, Expression.Constant(_lastDocument.FileName)),
-                Expression.Assign(_lineNumber, Expression.Constant(_lastLineNumber)),
-                Expression.Empty()
+                Expression.Assign(_fileName, AstUtils.Constant(_lastDocument.FileName)),
+                Expression.Assign(_lineNumber, AstUtils.Constant(_lastLineNumber)),
+                AstUtils.Empty()
             );
         }
 
@@ -260,7 +261,7 @@ namespace Microsoft.Scripting.Interpreter {
 
             // Otherwise, we need to return an object that merges them
             Func<IList<IStrongBox>, IList<IStrongBox>, int[], IList<IStrongBox>> helper = MergedRuntimeVariables.Create;
-            return Expression.Invoke(Expression.Constant(helper), Expression.RuntimeVariables(vars), boxesArray, Expression.Constant(indexes));
+            return Expression.Invoke(AstUtils.Constant(helper), Expression.RuntimeVariables(vars), boxesArray, AstUtils.Constant(indexes));
         }
 
         protected override Expression VisitParameter(ParameterExpression node) {
@@ -301,7 +302,7 @@ namespace Microsoft.Scripting.Interpreter {
 
             int index;
             if (_closureVars.TryGetValue(variable, out index)) {
-                return Expression.ArrayAccess(_closureArray, Expression.Constant(index));
+                return Expression.ArrayAccess(_closureArray, AstUtils.Constant(index));
             }
 
             throw new InvalidOperationException("unbound variable: " + variable);

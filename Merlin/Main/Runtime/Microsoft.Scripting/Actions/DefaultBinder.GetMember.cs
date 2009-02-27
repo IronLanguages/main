@@ -39,7 +39,7 @@ namespace Microsoft.Scripting.Actions {
         /// The MetaObject from which the member is retrieved.
         /// </param>
         public DynamicMetaObject GetMember(string name, DynamicMetaObject target) {
-            return GetMember(name, target, Ast.Constant(null, typeof(CodeContext)));
+            return GetMember(name, target, AstUtils.Constant(null, typeof(CodeContext)));
         }
 
         /// <summary>
@@ -282,7 +282,7 @@ namespace Microsoft.Scripting.Actions {
                                 getMemInfo.CodeContext,
                                 getMem,
                                 AstUtils.Convert(instance, type),
-                                Ast.Constant(getMemInfo.Name)
+                                AstUtils.Constant(getMemInfo.Name)
                             )
                         ),
                         Ast.Field(null, typeof(OperationFailed).GetField("Value"))

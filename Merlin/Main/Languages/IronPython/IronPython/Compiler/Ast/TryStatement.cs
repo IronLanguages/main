@@ -125,23 +125,23 @@ namespace IronPython.Compiler.Ast {
                 //  }
                 result =
                     Ast.Block(
-                        Ast.Assign(runElse, Ast.Constant(true)),
+                        Ast.Assign(runElse, AstUtils.Constant(true)),
                         // save existing line updated, we could choose to do this only for nested exception handlers.
                         ag.PushLineUpdated(false, lineUpdated),
                         AstUtils.Try(
-                            ag.AddDebugInfo(Ast.Empty(), new SourceSpan(Span.Start, _header)),
+                            ag.AddDebugInfo(AstUtils.Empty(), new SourceSpan(Span.Start, _header)),
                             body
                         ).Catch(exception,
-                            Ast.Assign(runElse, Ast.Constant(false)),
+                            Ast.Assign(runElse, AstUtils.Constant(false)),
                             @catch,
                             // restore existing line updated after exception handler completes
                             ag.PopLineUpdated(lineUpdated),
-                            Ast.Default(body.Type)
+                            AstUtils.Default(body.Type)
                         ),
                         AstUtils.IfThen(runElse,
                             @else
                         ),
-                        Ast.Empty()
+                        AstUtils.Empty()
                     );
 
             } else if (@catch != null) {        // no "else" clause
@@ -152,7 +152,7 @@ namespace IronPython.Compiler.Ast {
                 //  }
                 //
                 result = AstUtils.Try(
-                        ag.AddDebugInfo(Ast.Empty(), new SourceSpan(Span.Start, _header)),
+                        ag.AddDebugInfo(AstUtils.Empty(), new SourceSpan(Span.Start, _header)),
                         // save existing line updated
                         ag.PushLineUpdated(false, lineUpdated),
                         body
@@ -160,7 +160,7 @@ namespace IronPython.Compiler.Ast {
                         @catch,
                         // restore existing line updated after exception handler completes
                         ag.PopLineUpdated(lineUpdated),
-                        Ast.Default(body.Type)
+                        AstUtils.Default(body.Type)
                     );
             } else {
                 result = body;
@@ -205,17 +205,17 @@ namespace IronPython.Compiler.Ast {
                     body = AstUtils.Try(// we use a filter to know when we have an exception and when control leaves normally (via
                         // either a return or the body completing successfully).
                         AstUtils.Try(
-                            ag.AddDebugInfo(Ast.Empty(), new SourceSpan(Span.Start, _header)),
-                            Ast.Assign(noNestedException, Ast.Constant(true)),
+                            ag.AddDebugInfo(AstUtils.Empty(), new SourceSpan(Span.Start, _header)),
+                            Ast.Assign(noNestedException, AstUtils.Constant(true)),
                             body
                         ).Filter(
                             typeof(Exception),
                         // condition is never true, just note the exception and let it propagate
                             Ast.Equal(
-                                Ast.Assign(noNestedException, Ast.Constant(false)),
-                                Ast.Constant(true)
+                                Ast.Assign(noNestedException, AstUtils.Constant(false)),
+                                AstUtils.Constant(true)
                             ),
-                            Ast.Default(body.Type)
+                            AstUtils.Default(body.Type)
                         )
                     ).Finally(
                         // if we had an exception save the line # that was last executing during the try
@@ -325,7 +325,7 @@ namespace IronPython.Compiler.Ast {
                         ist = AstUtils.IfCondition(
                             Ast.NotEqual(
                                 Ast.Assign(converted, test),
-                                Ast.Constant(null)
+                                AstUtils.Constant(null)
                             ),
                             Ast.Block(
                                 tsh.Target.TransformSet(ag, SourceSpan.None, converted, PythonOperationKind.None),
@@ -335,7 +335,7 @@ namespace IronPython.Compiler.Ast {
                                     exception,
                                     ag.Transform(tsh.Body)
                                 ),
-                                Ast.Empty()
+                                AstUtils.Empty()
                             )
                         );
                     } else {
@@ -350,7 +350,7 @@ namespace IronPython.Compiler.Ast {
                         ist = AstUtils.IfCondition(
                             Ast.NotEqual(
                                 test,
-                                Ast.Constant(null)
+                                AstUtils.Constant(null)
                             ),
                             GetTracebackHeader(
                                 new SourceSpan(tsh.Start, tsh.Header),
@@ -416,7 +416,7 @@ namespace IronPython.Compiler.Ast {
                     )
                 ),
                 body,
-                Ast.Empty()
+                AstUtils.Empty()
             );
         }
 
@@ -431,14 +431,14 @@ namespace IronPython.Compiler.Ast {
             return ag.AddDebugInfo(
                 Ast.Block(
                     // pass false so if we take another exception we'll add it to the frame list
-                    ag.TrackLines ? ag.GetLineNumberUpdateExpression(false) : MSAst.Expression.Empty(),    
+                    ag.TrackLines ? ag.GetLineNumberUpdateExpression(false) : AstUtils.Empty(),    
                     Ast.Call(
                         AstGenerator.GetHelperMethod("BuildExceptionInfo"),
                         AstUtils.CodeContext(),
                         exception
                     ),
                     body,
-                    Ast.Empty()
+                    AstUtils.Empty()
                 ),
                 span
             );

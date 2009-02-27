@@ -390,7 +390,7 @@ namespace Microsoft.Scripting.Actions {
                             Ast.Convert(listArg, typeof(IList<object>)),
                             typeof(ICollection<object>).GetProperty("Count")
                         ),
-                        Ast.Constant(coll.Count)
+                        AstUtils.Constant(coll.Count)
                     )
                 )
             );
@@ -405,7 +405,7 @@ namespace Microsoft.Scripting.Actions {
                                     typeof(IList<object>)
                                 ),
                                 typeof(IList<object>).GetMethod("get_Item"),
-                                Ast.Constant(i)
+                                AstUtils.Constant(i)
                             ),
                             CompilerHelpers.GetType(coll[i])
                         )
@@ -447,8 +447,8 @@ namespace Microsoft.Scripting.Actions {
                     Ast.Call(
                         typeof(BinderOps).GetMethod("CheckDictionaryMembers"),
                         Ast.Convert(args[args.Count - 1].Expression, typeof(IDictionary)),
-                        Ast.Constant(names),
-                        testTypes ? Ast.Constant(types) : Ast.Constant(null, typeof(Type[]))
+                        AstUtils.Constant(names),
+                        testTypes ? AstUtils.Constant(types) : AstUtils.Constant(null, typeof(Type[]))
                     )
                 )
             );
@@ -509,7 +509,7 @@ namespace Microsoft.Scripting.Actions {
                                                 typeof(IList<object>)
                                             ),
                                             typeof(IList<object>).GetMethod("get_Item"),
-                                            Ast.Constant(j)
+                                            AstUtils.Constant(j)
                                         ),
                                         args[i].Restrictions,
                                         list[j]
@@ -549,7 +549,7 @@ namespace Microsoft.Scripting.Actions {
                             Ast.Call(
                                 AstUtils.Convert(dictMo.Expression, typeof(IDictionary)),
                                 typeof(IDictionary).GetMethod("get_Item"),
-                                Ast.Constant(de.Key as string)
+                                AstUtils.Constant(de.Key as string)
                             ),
                             dictMo.Restrictions,
                             de.Value

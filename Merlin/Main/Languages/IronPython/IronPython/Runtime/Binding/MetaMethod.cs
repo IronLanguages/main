@@ -79,7 +79,7 @@ namespace IronPython.Runtime.Binding {
                     BindingRestrictions.GetExpressionRestriction(
                         Ast.Equal(
                             GetSelfExpression(self),
-                            Ast.Constant(null)
+                            AstUtils.Constant(null)
                         )
                     )
                 );
@@ -90,7 +90,7 @@ namespace IronPython.Runtime.Binding {
                         Ast.Call(
                             typeof(PythonOps).GetMethod("MethodCheckSelf"),
                             self.Expression,
-                            Ast.Constant(null)
+                            AstUtils.Constant(null)
                         ),
                         restrictions
                     );
@@ -128,7 +128,7 @@ namespace IronPython.Runtime.Binding {
                     BindingRestrictions.GetExpressionRestriction(
                         Ast.NotEqual(
                             GetSelfExpression(self),
-                            Ast.Constant(null)
+                            AstUtils.Constant(null)
                         )
                     )
                 );
@@ -239,7 +239,7 @@ namespace IronPython.Runtime.Binding {
             if (firstArgKind == ArgumentType.Simple || firstArgKind == ArgumentType.Instance) {
                 res = CheckSelf(AstUtils.Convert(Expression, typeof(Method)), args[0].Expression);
             } else if (firstArgKind != ArgumentType.List) {
-                res = CheckSelf(AstUtils.Convert(Expression, typeof(Method)), Ast.Constant(null));
+                res = CheckSelf(AstUtils.Convert(Expression, typeof(Method)), AstUtils.Constant(null));
             } else {
                 // list, check arg[0] and then return original list.  If not a list,
                 // or we have no items, then check against null & throw.
@@ -253,15 +253,15 @@ namespace IronPython.Runtime.Binding {
                                     Ast.Convert(args[0].Expression, typeof(ICollection)),
                                     typeof(ICollection).GetProperty("Count")
                                 ),
-                                Ast.Constant(0)
+                                AstUtils.Constant(0)
                             )
                         ),
                         Ast.Call(
                             Ast.Convert(args[0].Expression, typeof(IList<object>)),
                             typeof(IList<object>).GetMethod("get_Item"),
-                            Ast.Constant(0)
+                            AstUtils.Constant(0)
                         ),
-                        Ast.Constant(null)
+                        AstUtils.Constant(null)
                     )
                 );
             }

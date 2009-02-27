@@ -140,7 +140,7 @@ namespace IronRuby.Compiler.Ast {
                 Ast.Assign(blockArgVariable, Ast.Convert(transformedBlock, blockArgVariable.Type)),
                 AstFactory.Infinite(label, null,
                     (!isBlockDefinition) ?
-                        (MSA.Expression)Ast.Empty() : 
+                        (MSA.Expression)AstUtils.Empty() : 
                         (MSA.Expression)Methods.InitializeBlock.OpCall(blockArgVariable),
 
                     AstUtils.Try(
@@ -156,7 +156,7 @@ namespace IronRuby.Compiler.Ast {
                     AstUtils.Unless(Methods.IsRetrySingleton.OpCall(AstFactory.Box(resultVariable)), Ast.Break(label)),
 
                     // if blockParam == #block then retry end
-                    (gen.CurrentMethod.IsTopLevelCode) ? Ast.Empty() :
+                    (gen.CurrentMethod.IsTopLevelCode) ? AstUtils.Empty() :
                         AstUtils.IfThen(Ast.Equal(gen.MakeMethodBlockParameterRead(), blockArgVariable), RetryStatement.TransformRetry(gen))
                 
                 ),
@@ -170,7 +170,7 @@ namespace IronRuby.Compiler.Ast {
                     Methods.IsDefinedMethod.OpCall(
                         AstFactory.Box(_target.TransformRead(gen)), gen.CurrentScopeVariable, AstUtils.Constant(_methodName)
                     ),
-                    Ast.Constant(false)
+                    AstUtils.Constant(false)
                 );
             } else {
                 return Methods.IsDefinedMethod.OpCall(gen.CurrentSelfVariable, gen.CurrentScopeVariable, AstUtils.Constant(_methodName));

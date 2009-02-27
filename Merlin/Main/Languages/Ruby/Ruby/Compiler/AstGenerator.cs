@@ -618,7 +618,7 @@ namespace IronRuby.Compiler.Ast {
             if (CurrentMethod.BlockVariable != null) {
                 return CurrentMethod.BlockVariable;
             } else {
-                return Ast.Constant(null, typeof(Proc));
+                return AstUtils.Constant(null, typeof(Proc));
             }
         }
 
@@ -656,11 +656,11 @@ namespace IronRuby.Compiler.Ast {
             if (count == 0) {
 
                 if (resultOperation.IsIgnore) {
-                    return Ast.Empty();
+                    return AstUtils.Empty();
                 } else if (resultOperation.Variable != null) {
-                    return Ast.Assign(resultOperation.Variable, Ast.Constant(null, resultOperation.Variable.Type));
+                    return Ast.Assign(resultOperation.Variable, AstUtils.Constant(null, resultOperation.Variable.Type));
                 } else {
-                    return Ast.Return(CurrentFrame.ReturnLabel, Ast.Constant(null));
+                    return Ast.Return(CurrentFrame.ReturnLabel, AstUtils.Constant(null));
                 }
 
             } else if (count == 1) {
@@ -703,7 +703,7 @@ namespace IronRuby.Compiler.Ast {
                     result[resultIndex++] = epilogue;
                 }
 
-                result[resultIndex++] = MSA.Expression.Empty();
+                result[resultIndex++] = AstUtils.Empty();
                 Debug.Assert(resultIndex == result.Length);
 
                 return Ast.Block(new ReadOnlyCollection<MSA.Expression>(result));
@@ -712,7 +712,7 @@ namespace IronRuby.Compiler.Ast {
 
         internal MSA.Expression/*!*/ TransformStatementsToExpression(Statements statements) {
             if (statements == null || statements.Count == 0) {
-                return Ast.Constant(null);
+                return AstUtils.Constant(null);
             }
 
             if (statements.Count == 1) {
@@ -769,7 +769,7 @@ namespace IronRuby.Compiler.Ast {
         internal MSA.Expression/*!*/ Return(MSA.Expression/*!*/ expression) {
             MSA.LabelTarget returnLabel = ReturnLabel;
             if (returnLabel.Type != typeof(void) && expression.Type == typeof(void)) {
-                expression = Ast.Block(expression, Ast.Constant(null, typeof(object)));
+                expression = Ast.Block(expression, AstUtils.Constant(null, typeof(object)));
             } else if (returnLabel.Type != expression.Type) {
                 if (!CanAssign(returnLabel.Type, expression.Type)) {
                     // Add conversion step to the AST
@@ -784,11 +784,11 @@ namespace IronRuby.Compiler.Ast {
         }
 
         internal MSA.Expression/*!*/ DebugMarker(string/*!*/ marker) {
-            return _debugCompiler ? Methods.X.OpCall(Ast.Constant(marker)) : (MSA.Expression)Ast.Empty();
+            return _debugCompiler ? Methods.X.OpCall(AstUtils.Constant(marker)) : (MSA.Expression)AstUtils.Empty();
         }
 
         internal MSA.Expression/*!*/ DebugMark(MSA.Expression/*!*/ expression, string/*!*/ marker) {
-            return _debugCompiler ? AstFactory.Block(Methods.X.OpCall(Ast.Constant(marker)), expression) : expression;
+            return _debugCompiler ? AstFactory.Block(Methods.X.OpCall(AstUtils.Constant(marker)), expression) : expression;
         }
 
         internal virtual void TraceCallSite(Expression/*!*/ expression, MSA.DynamicExpression/*!*/ callSite) {

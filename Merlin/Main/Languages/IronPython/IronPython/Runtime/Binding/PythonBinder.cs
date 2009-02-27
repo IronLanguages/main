@@ -168,7 +168,7 @@ namespace IronPython.Runtime.Binding {
             return ErrorInfo.FromException(
                 Ast.Call(
                     typeof(PythonOps).GetMethod("TypeErrorForTypeMismatch"),
-                    Ast.Constant(DynamicHelpers.GetPythonTypeFromType(toType).Name),
+                    AstUtils.Constant(DynamicHelpers.GetPythonTypeFromType(toType).Name),
                     AstUtils.Convert(value, typeof(object))
                )
             );
@@ -197,8 +197,8 @@ namespace IronPython.Runtime.Binding {
                 return ErrorInfo.FromException(
                     Ast.Call(
                         typeof(PythonOps).GetMethod("StaticAssignmentFromInstanceError"),
-                        Ast.Constant(tracker),
-                        Ast.Constant(isAssignment)
+                        AstUtils.Constant(tracker),
+                        AstUtils.Constant(isAssignment)
                     )
                 );
             }
@@ -239,9 +239,9 @@ namespace IronPython.Runtime.Binding {
                Ast.Call(
                    typeof(PythonOps).GetMethod("SlotTrySetValue"),
                    codeContext,
-                   Ast.Constant(PythonTypeOps.GetReflectedEvent(ev)),
-                   eventObject != null ? AstUtils.Convert(eventObject, typeof(object)) : Ast.Constant(null),
-                   Ast.Constant(null, typeof(PythonType)),
+                   AstUtils.Constant(PythonTypeOps.GetReflectedEvent(ev)),
+                   eventObject != null ? AstUtils.Convert(eventObject, typeof(object)) : AstUtils.Constant(null),
+                   AstUtils.Constant(null, typeof(PythonType)),
                    AstUtils.Convert(value, typeof(object))
                )
             );
@@ -254,9 +254,9 @@ namespace IronPython.Runtime.Binding {
                Ast.Call(
                    typeof(PythonOps).GetMethod("SlotTrySetValue"),
                    rule.Context,
-                   Ast.Constant(PythonTypeOps.GetReflectedEvent(ev)),
+                   AstUtils.Constant(PythonTypeOps.GetReflectedEvent(ev)),
                    AstUtils.Convert(rule.Parameters[0], typeof(object)),
-                   Ast.Constant(null, typeof(PythonType)),
+                   AstUtils.Constant(null, typeof(PythonType)),
                    AstUtils.Convert(rule.Parameters[1], typeof(object))
                )
             );
@@ -273,7 +273,7 @@ namespace IronPython.Runtime.Binding {
             return ErrorInfo.FromException(
                 Ast.New(
                     typeof(MissingMemberException).GetConstructor(new Type[] { typeof(string) }),
-                    Ast.Constant(String.Format("'{0}' object has no attribute '{1}'", typeName, name))
+                    AstUtils.Constant(String.Format("'{0}' object has no attribute '{1}'", typeName, name))
                 )
             );
         }
@@ -286,7 +286,7 @@ namespace IronPython.Runtime.Binding {
             return ErrorInfo.FromException(
                 Ast.New(
                     typeof(MissingMemberException).GetConstructor(new Type[] { typeof(string) }),
-                    Ast.Constant(
+                    AstUtils.Constant(
                         String.Format("attribute '{0}' of '{1}' object is read-only",
                             name,
                             NameConverter.GetTypeName(type)
@@ -304,7 +304,7 @@ namespace IronPython.Runtime.Binding {
             return ErrorInfo.FromException(
                 Ast.New(
                     typeof(MissingMemberException).GetConstructor(new Type[] { typeof(string) }),
-                    Ast.Constant(
+                    AstUtils.Constant(
                         String.Format("cannot delete attribute '{0}' of builtin type '{1}'",
                             name,
                             NameConverter.GetTypeName(type)
@@ -377,7 +377,7 @@ namespace IronPython.Runtime.Binding {
         private static Expression ReturnMemberTracker(Type type, MemberTracker memberTracker, bool privateBinding) {
             switch (memberTracker.MemberType) {
                 case TrackerTypes.TypeGroup:
-                    return Ast.Constant(memberTracker);
+                    return AstUtils.Constant(memberTracker);
                 case TrackerTypes.Type:
                     return ReturnTypeTracker((TypeTracker)memberTracker);
                 case TrackerTypes.Bound:
@@ -387,9 +387,9 @@ namespace IronPython.Runtime.Binding {
                 case TrackerTypes.Event:
                     return Ast.Call(
                         typeof(PythonOps).GetMethod("MakeBoundEvent"),
-                        Ast.Constant(PythonTypeOps.GetReflectedEvent((EventTracker)memberTracker)),
-                        Ast.Constant(null),
-                        Ast.Constant(type)
+                        AstUtils.Constant(PythonTypeOps.GetReflectedEvent((EventTracker)memberTracker)),
+                        AstUtils.Constant(null),
+                        AstUtils.Constant(type)
                     );
                 case TrackerTypes.Field:
                     return ReturnFieldTracker((FieldTracker)memberTracker);
@@ -408,9 +408,9 @@ namespace IronPython.Runtime.Binding {
                         val = PythonTypeOps.GetConstructor(type, InstanceOps.NonDefaultNewInst, ctors);
                     }
 
-                    return Ast.Constant(val);
+                    return AstUtils.Constant(val);
                 case TrackerTypes.Custom:
-                    return Ast.Constant(((PythonCustomTracker)memberTracker).GetSlot(), typeof(PythonTypeSlot));
+                    return AstUtils.Constant(((PythonCustomTracker)memberTracker).GetSlot(), typeof(PythonTypeSlot));
             }
             return null;
         }
@@ -567,11 +567,11 @@ namespace IronPython.Runtime.Binding {
         }
 
         private static Expression ReturnFieldTracker(FieldTracker fieldTracker) {
-            return Ast.Constant(PythonTypeOps.GetReflectedField(fieldTracker.Field));
+            return AstUtils.Constant(PythonTypeOps.GetReflectedField(fieldTracker.Field));
         }
 
         private static Expression ReturnMethodGroup(MethodGroup methodGroup) {
-            return Ast.Constant(PythonTypeOps.GetFinalSlotForFunction(GetBuiltinFunction(methodGroup)));
+            return AstUtils.Constant(PythonTypeOps.GetFinalSlotForFunction(GetBuiltinFunction(methodGroup)));
         }
 
         private static Expression ReturnBoundTracker(BoundMemberTracker boundMemberTracker, bool privateBinding) {
@@ -582,20 +582,20 @@ namespace IronPython.Runtime.Binding {
                     Debug.Assert(pt.GetIndexParameters().Length > 0);
                     return Ast.New(
                         typeof(ReflectedIndexer).GetConstructor(new Type[] { typeof(ReflectedIndexer), typeof(object) }),
-                        Ast.Constant(new ReflectedIndexer(((ReflectedPropertyTracker)pt).Property, NameType.Property, privateBinding)),
+                        AstUtils.Constant(new ReflectedIndexer(((ReflectedPropertyTracker)pt).Property, NameType.Property, privateBinding)),
                         boundMemberTracker.Instance
                     );
                 case TrackerTypes.Event:
                     return Ast.Call(
                         typeof(PythonOps).GetMethod("MakeBoundEvent"),
-                        Ast.Constant(PythonTypeOps.GetReflectedEvent((EventTracker)boundMemberTracker.BoundTo)),
+                        AstUtils.Constant(PythonTypeOps.GetReflectedEvent((EventTracker)boundMemberTracker.BoundTo)),
                         boundMemberTracker.Instance,
-                        Ast.Constant(boundMemberTracker.DeclaringType)
+                        AstUtils.Constant(boundMemberTracker.DeclaringType)
                     );
                 case TrackerTypes.MethodGroup:
                     return Ast.Call(
                         typeof(PythonOps).GetMethod("MakeBoundBuiltinFunction"),
-                        Ast.Constant(GetBuiltinFunction((MethodGroup)boundTo)),
+                        AstUtils.Constant(GetBuiltinFunction((MethodGroup)boundTo)),
                         AstUtils.Convert(
                             boundMemberTracker.Instance,
                             typeof(object)
@@ -621,12 +621,12 @@ namespace IronPython.Runtime.Binding {
         }
 
         private static Expression ReturnPropertyTracker(PropertyTracker propertyTracker, bool privateBinding) {
-            return Ast.Constant(PythonTypeOps.GetReflectedProperty(propertyTracker, null, privateBinding));
+            return AstUtils.Constant(PythonTypeOps.GetReflectedProperty(propertyTracker, null, privateBinding));
         }
 
         private static Expression ReturnTypeTracker(TypeTracker memberTracker) {
             // all non-group types get exposed as PythonType's
-            return Ast.Constant(DynamicHelpers.GetPythonTypeFromType(memberTracker.Type));
+            return AstUtils.Constant(DynamicHelpers.GetPythonTypeFromType(memberTracker.Type));
         }
 
         protected override bool AllowKeywordArgumentSetting(MethodBase method) {

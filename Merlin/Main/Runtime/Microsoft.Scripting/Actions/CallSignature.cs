@@ -21,6 +21,7 @@ using Microsoft.Scripting.Utils;
 using System.Text;
 using Microsoft.Contracts;
 using Microsoft.Scripting.Generation;
+using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace Microsoft.Scripting.Actions {
     /// <summary>
@@ -305,7 +306,7 @@ namespace Microsoft.Scripting.Actions {
             if (_infos == null) {
                 return Expression.New(
                     typeof(CallSignature).GetConstructor(new Type[] { typeof(int) }),
-                    Expression.Constant(ArgumentCount)
+                    AstUtils.Constant(ArgumentCount)
                 );
             } else {
                 Expression[] args = new Expression[_infos.Length];

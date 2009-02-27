@@ -20,6 +20,7 @@ using Microsoft.Scripting.Actions;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 using IronRuby.Compiler;
+using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace IronRuby.Runtime.Calls {
     using IronRuby.Builtins;
@@ -40,13 +41,13 @@ namespace IronRuby.Runtime.Calls {
             }
 
             // TODO: remove CodeContext
-            return ((DefaultBinder)_context.Binder).GetMember(Name, self, Ast.Constant(null, typeof(CodeContext)), true);
+            return ((DefaultBinder)_context.Binder).GetMember(Name, self, AstUtils.Constant(null, typeof(CodeContext)), true);
         }
 
         public static DynamicMetaObject TryBind(RubyContext/*!*/ context, GetMemberBinder/*!*/ binder, DynamicMetaObject/*!*/ target) {
             Assert.NotNull(context, target);
             var metaBuilder = new MetaObjectBuilder();
-            var contextExpression = Ast.Constant(context);
+            var contextExpression = AstUtils.Constant(context);
 
             RubyClass targetClass = context.GetImmediateClassOf(target.Value);
             MethodResolutionResult method;
@@ -55,15 +56,15 @@ namespace IronRuby.Runtime.Calls {
             using (targetClass.Context.ClassHierarchyLocker()) {
                 metaBuilder.AddTargetTypeTest(target.Value, targetClass, target.Expression, context, contextExpression);
 
-                method = targetClass.ResolveMethodForSiteNoLock(binder.Name, false);
+                method = targetClass.ResolveMethodForSiteNoLock(binder.Name, RubyClass.IgnoreVisibility);
                 if (method.Found) {
-                    methodMissing = targetClass.ResolveMethodForSiteNoLock(Symbols.MethodMissing, true).Info;
+                    methodMissing = targetClass.ResolveMethodForSiteNoLock(Symbols.MethodMissing, RubyClass.IgnoreVisibility).Info;
                 }
             }
             
             if (method.Found) {
                 // we need to create a bound member:
-                metaBuilder.Result = Ast.Constant(new RubyMethod(target.Value, method.Info, binder.Name));
+                metaBuilder.Result = AstUtils.Constant(new RubyMethod(target.Value, method.Info, binder.Name));
             } else {
                 // TODO:
                 // We need to throw an exception if we don't find method_missing so that our version update optimization works: 
@@ -88,7 +89,7 @@ namespace IronRuby.Runtime.Calls {
                         new DynamicMetaObject(contextExpression, BindingRestrictions.Empty, context),
                         new[] { 
                             target,
-                            new DynamicMetaObject(Ast.Constant(symbol), BindingRestrictions.Empty, symbol) 
+                            new DynamicMetaObject(AstUtils.Constant(symbol), BindingRestrictions.Empty, symbol) 
                         },
                         RubyCallSignature.Simple(1)
                     ),

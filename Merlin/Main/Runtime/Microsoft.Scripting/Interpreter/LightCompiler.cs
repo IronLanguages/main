@@ -20,6 +20,7 @@ using System.Diagnostics;
 using System.Linq.Expressions;
 using System.Reflection;
 using Microsoft.Scripting.Utils;
+using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace Microsoft.Scripting.Interpreter {
 
@@ -588,7 +589,7 @@ namespace Microsoft.Scripting.Interpreter {
             var node = (ConditionalExpression)expr;
             this.Compile(node.Test);
 
-            if (node.IfTrue == Expression.Empty()) {
+            if (node.IfTrue == AstUtils.Empty()) {
                 var endOfFalse = MakeLabel();
                 AddBranch(new BranchTrueInstruction(), endOfFalse);
                 this.Compile(node.IfFalse);
@@ -598,7 +599,7 @@ namespace Microsoft.Scripting.Interpreter {
                 AddBranch(new BranchFalseInstruction(), endOfTrue);
                 this.Compile(node.IfTrue);
 
-                if (node.IfFalse != Expression.Empty()) {
+                if (node.IfFalse != AstUtils.Empty()) {
                     var endOfFalse = MakeLabel();
                     AddBranch(endOfFalse);
                     endOfTrue.Mark();

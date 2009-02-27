@@ -22,6 +22,7 @@ using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Types;
 
 using Microsoft.Scripting.Utils;
+using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace IronPython.Runtime.Binding {
     /// <summary>
@@ -72,7 +73,7 @@ namespace IronPython.Runtime.Binding {
                                 ),
                                 typeof(Thread).GetMethod("GetApartmentState")
                             ),
-                            Expression.Constant(ApartmentState.STA)
+                            AstUtils.Constant(ApartmentState.STA)
                         )
                     );
 

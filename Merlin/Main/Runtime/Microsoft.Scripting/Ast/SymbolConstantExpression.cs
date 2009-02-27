@@ -16,6 +16,7 @@
 using System;
 using System.Linq.Expressions;
 using System.Reflection;
+using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace Microsoft.Scripting.Ast {
 
@@ -26,6 +27,8 @@ namespace Microsoft.Scripting.Ast {
     /// TODO: this node exists so GlobalOptimizedRewriter can recognize and
     /// rewrite a strongly typed node. Once that functionality is gone it
     /// should go away.
+    /// When this type goes away, change the return type of 
+    /// Microsoft.Scripting.Ast.Utils.Constant(object) from Expression to ConstantExpression.
     /// </summary>
     internal sealed class SymbolConstantExpression : Expression {
         private readonly SymbolId _value;
@@ -65,7 +68,7 @@ namespace Microsoft.Scripting.Ast {
             } else if (value == SymbolId.Invalid) {
                 return _SymbolIdInvalid;
             } else {
-                return Expression.New(_SymbolIdCtor, Expression.Constant(value.Id));
+                return Expression.New(_SymbolIdCtor, AstUtils.Constant(value.Id));
             }
         }
 

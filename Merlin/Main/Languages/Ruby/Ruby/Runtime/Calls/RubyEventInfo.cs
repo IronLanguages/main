@@ -22,6 +22,7 @@ using Microsoft.Scripting.Utils;
 using Microsoft.Scripting.Actions;
 using IronRuby.Compiler;
 using IronRuby.Builtins;
+using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace IronRuby.Runtime.Calls {
     using Ast = System.Linq.Expressions.Expression;
@@ -50,7 +51,7 @@ namespace IronRuby.Runtime.Calls {
         internal override void BuildCallNoFlow(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args, string/*!*/ name) {
             if (args.Signature.HasBlock) {
                 metaBuilder.Result = Methods.HookupEvent.OpCall(
-                    Ast.Convert(Ast.Constant(_eventInfo), typeof(EventInfo)),
+                    Ast.Convert(AstUtils.Constant(_eventInfo), typeof(EventInfo)),
                     args.TargetExpression,
                     Ast.Convert(args.GetBlockExpression(), typeof(Proc))
                 );

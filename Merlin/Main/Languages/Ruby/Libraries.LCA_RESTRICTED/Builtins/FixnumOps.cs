@@ -232,7 +232,7 @@ namespace IronRuby.Builtins {
         /// Performs bitwise AND on self and other, where other is Fixnum
         /// </summary>
         [RubyMethod("&")]
-        public static object BitwiseAnd(int self, int other) {
+        public static int BitwiseAnd(int self, int other) {
             return self & other;
         }
 
@@ -241,7 +241,13 @@ namespace IronRuby.Builtins {
         /// </summary>
         [RubyMethod("&")]
         public static object BitwiseAnd(int self, [NotNull]BigInteger/*!*/ other) {
-            return other & self;
+            BigInteger result = other & self;
+            int ret;
+            if (result.AsInt32(out ret)) {
+                return ret;
+            } else {
+                return result;
+            }
         }
 
         /// <summary>
@@ -260,7 +266,7 @@ namespace IronRuby.Builtins {
         /// Performs bitwise OR on self and other
         /// </summary>
         [RubyMethod("|")]
-        public static object BitwiseOr(int self, int other) {
+        public static int BitwiseOr(int self, int other) {
             return self | other;
         }
 
@@ -269,7 +275,13 @@ namespace IronRuby.Builtins {
         /// </summary>
         [RubyMethod("|")]
         public static object BitwiseOr(int self, [NotNull]BigInteger/*!*/ other) {
-            return other | self;
+            BigInteger result = other | self;
+            int ret;
+            if (result.AsInt32(out ret)) {
+                return ret;
+            } else {
+                return result;
+            }
         }
 
         /// <summary>
@@ -460,6 +472,11 @@ namespace IronRuby.Builtins {
             return (double)self + other;
         }
 
+        [RubyMethod("+")]
+        public static BigInteger Add(int self, BigInteger other) {
+            return (BigInteger)self + other;
+        }
+
         /// <summary>
         /// Returns self added to other.
         /// </summary>
@@ -502,6 +519,11 @@ namespace IronRuby.Builtins {
         [RubyMethod("-")]
         public static double Subtract(int self, double other) {
             return (double)self - other;
+        }
+
+        [RubyMethod("-")]
+        public static BigInteger Subtract(int self, BigInteger other) {
+            return (BigInteger)self - other;
         }
 
         /// <summary>

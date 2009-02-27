@@ -393,8 +393,8 @@ namespace IronRuby.Builtins {
 
                         // TODO: replace with a table-driven implementation
                         // TODO: visibility?
-                        bool implementsDump = _context.ResolveMethod(obj, "_dump", true).Found;
-                        bool implementsMarshalDump = _context.ResolveMethod(obj, "marshal_dump", true).Found;
+                        bool implementsDump = _context.ResolveMethod(obj, "_dump", RubyClass.IgnoreVisibility).Found;
+                        bool implementsMarshalDump = _context.ResolveMethod(obj, "marshal_dump", RubyClass.IgnoreVisibility).Found;
 
                         bool writeInstanceData = false;
                         string[] instanceNames = null;

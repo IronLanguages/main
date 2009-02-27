@@ -175,20 +175,20 @@ namespace IronPython.Compiler.Ast {
                 Ast.Call(
                     AstGenerator.GetHelperMethod("ModuleStarted"),
                     AstUtils.CodeContext(),
-                    Ast.Constant(ag.BinderState, typeof(object)),
-                    Ast.Constant(_languageFeatures)
+                    AstUtils.Constant(ag.BinderState, typeof(object)),
+                    AstUtils.Constant(_languageFeatures)
                 ),
                 ag.UpdateLineNumber(0),
                 ag.UpdateLineUpdated(false),
                 ag.WrapScopeStatements(Transform(ag)),   // new ComboActionRewriter().VisitNode(Transform(ag))
-                Ast.Empty()
+                AstUtils.Empty()
             );
             if (_isModule) {
                 Debug.Assert(pco.ModuleName != null);
 
                 ag.Block.Body = Ast.Block(
-                    AstUtils.Assign(_fileVariable.Variable, Ast.Constant(name)),
-                    AstUtils.Assign(_nameVariable.Variable, Ast.Constant(pco.ModuleName)),
+                    AstUtils.Assign(_fileVariable.Variable, AstUtils.Constant(name)),
+                    AstUtils.Assign(_nameVariable.Variable, AstUtils.Constant(pco.ModuleName)),
                     ag.Block.Body // already typed to void
                 );
 
@@ -196,11 +196,11 @@ namespace IronPython.Compiler.Ast {
                     MSAst.Expression tmp = ag.Block.HiddenVariable(typeof(object), "$originalModule");
                     // TODO: Should be try/fault
                     ag.Block.Body = AstUtils.Try(
-                        Ast.Assign(tmp, Ast.Call(AstGenerator.GetHelperMethod("PublishModule"), AstUtils.CodeContext(), Ast.Constant(pco.ModuleName))),
+                        Ast.Assign(tmp, Ast.Call(AstGenerator.GetHelperMethod("PublishModule"), AstUtils.CodeContext(), AstUtils.Constant(pco.ModuleName))),
                         ag.Block.Body
                     ).Catch(
                         typeof(Exception),
-                        Ast.Call(AstGenerator.GetHelperMethod("RemoveModule"), AstUtils.CodeContext(), Ast.Constant(pco.ModuleName), tmp),
+                        Ast.Call(AstGenerator.GetHelperMethod("RemoveModule"), AstUtils.CodeContext(), AstUtils.Constant(pco.ModuleName), tmp),
                         Ast.Rethrow(ag.Block.Body.Type)
                     );
                 }
@@ -223,13 +223,13 @@ namespace IronPython.Compiler.Ast {
             if (_isModule) {
                 block.Add(AstUtils.Assign(
                     _docVariable.Variable,
-                    Ast.Constant(doc)
+                    AstUtils.Constant(doc)
                 ));
             }
             if (bodyStmt != null) {
                 block.Add(bodyStmt); //  bodyStmt could be null if we have an error - e.g. a top level break
             }
-            block.Add(Ast.Empty());
+            block.Add(AstUtils.Empty());
 
             return Ast.Block(block);
         }

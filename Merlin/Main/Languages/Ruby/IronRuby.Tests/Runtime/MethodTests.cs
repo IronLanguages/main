@@ -580,6 +580,64 @@ B::foo
 ");
         }
 
+        /// <summary>
+        /// Protected visibility and singletons.
+        /// </summary>
+        public void Visibility3() {
+            AssertOutput(() => CompilerTest(@"
+c = class C; new; end
+
+class << c
+  protected
+  def foo; end
+end
+
+c.foo rescue p $!
+"), @"
+#<NoMethodError: protected method `foo' called for #<C:*>>
+", OutputFlags.Match);
+        }
+
+        /// <summary>
+        /// Protected visibility + caching.
+        /// </summary>
+        public void Visibility4() {
+            AssertOutput(() => CompilerTest(@"
+class C
+  protected
+  def foo
+    puts 'foo'
+  end
+end
+
+class D < C
+  def method_missing name
+    puts 'mm'
+  end
+end
+
+class X; end
+
+c,d,x = C.new,D.new,X.new
+
+# test visibility caching:
+2.times do
+  [[d,c], [c,d], [x,c], [x,d]].each do |s,r| 
+    s.instance_eval { r.foo } rescue p $! 
+  end
+end
+"), @"
+foo
+foo
+#<NoMethodError: protected method `foo' called for #<C:*>>
+mm
+foo
+foo
+#<NoMethodError: protected method `foo' called for #<C:*>>
+mm
+", OutputFlags.Match);
+        }
+
         public void ModuleFunctionVisibility1() {
             AssertOutput(delegate {
                 CompilerTest(@"

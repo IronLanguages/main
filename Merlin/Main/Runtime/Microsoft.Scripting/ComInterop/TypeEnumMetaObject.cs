@@ -36,7 +36,7 @@ namespace Microsoft.Scripting.ComInterop {
             if (_desc.HasMember(binder.Name)) {
                 return new DynamicMetaObject(
                     // return (.bound $arg0).GetValue("<name>")
-                    Expression.Constant(((ComTypeEnumDesc)Value).GetValue(binder.Name)),
+                    AstUtils.Constant(((ComTypeEnumDesc)Value).GetValue(binder.Name)),
                     EnumRestrictions()
                 );
             }
@@ -60,7 +60,7 @@ namespace Microsoft.Scripting.ComInterop {
                                 AstUtils.Convert(Expression, typeof(ComTypeEnumDesc)),
                                 typeof(ComTypeDesc).GetProperty("TypeLib")),
                             typeof(ComTypeLibDesc).GetProperty("Guid")),
-                        Expression.Constant(_desc.TypeLib.Guid)
+                        AstUtils.Constant(_desc.TypeLib.Guid)
                     )
                 )
             ).Merge(
@@ -70,7 +70,7 @@ namespace Microsoft.Scripting.ComInterop {
                             AstUtils.Convert(Expression, typeof(ComTypeEnumDesc)),
                             typeof(ComTypeEnumDesc).GetProperty("TypeName")
                         ),
-                        Expression.Constant(_desc.TypeName)
+                        AstUtils.Constant(_desc.TypeName)
                     )
                 )
             );

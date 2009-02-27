@@ -218,11 +218,11 @@ namespace IronPython.Runtime.Binding {
                                 tmp,
                                 Ast.Call(
                                     typeof(PythonOps).GetMethod("OldInstanceConvertToIEnumerableNonThrowing"),
-                                    Ast.Constant(BinderState.GetBinderState(conversion).Context),
+                                    AstUtils.Constant(BinderState.GetBinderState(conversion).Context),
                                     self.Expression
                                 )
                             ),
-                            Ast.Constant(null)
+                            AstUtils.Constant(null)
                         ),
                         tmp,
                         AstUtils.Convert(
@@ -251,11 +251,11 @@ namespace IronPython.Runtime.Binding {
                                 tmp,
                                 Ast.Call(
                                     typeof(PythonOps).GetMethod("OldInstanceConvertToIEnumeratorNonThrowing"),
-                                    Ast.Constant(BinderState.GetBinderState(conversion).Context),
+                                    AstUtils.Constant(BinderState.GetBinderState(conversion).Context),
                                     self.Expression
                                 )
                             ),
-                            Ast.Constant(null)
+                            AstUtils.Constant(null)
                         ),
                         tmp,
                         AstUtils.Convert(
@@ -284,11 +284,11 @@ namespace IronPython.Runtime.Binding {
                                 tmp,
                                 Ast.Call(
                                     typeof(PythonOps).GetMethod("OldInstanceConvertToIEnumerableOfTNonThrowing").MakeGenericMethod(genericType),
-                                    Ast.Constant(BinderState.GetBinderState(conversion).Context),
-                                    self.Expression
+                                    AstUtils.Constant(BinderState.GetBinderState(conversion).Context),
+                                    self.Expression                                   
                                 )
                             ),
-                            Ast.Constant(null)
+                            AstUtils.Constant(null)
                         ),
                         tmp,
                         AstUtils.Convert(
@@ -329,12 +329,12 @@ namespace IronPython.Runtime.Binding {
                     tmp,
                     Ast.Call(
                         typeof(PythonOps).GetMethod("OldInstanceConvertNonThrowing"),
-                        Ast.Constant(BinderState.GetBinderState(conversion).Context),
+                        AstUtils.Constant(BinderState.GetBinderState(conversion).Context),
                         self.Expression,
                         AstUtils.Constant(symbolId)
                     )
                 ),
-                Ast.Constant(null)
+                AstUtils.Constant(null)
             );
         }
         
@@ -354,11 +354,11 @@ namespace IronPython.Runtime.Binding {
                                 tmp,
                                 Ast.Call(
                                     typeof(PythonOps).GetMethod("OldInstanceConvertToBoolNonThrowing"),
-                                    Ast.Constant(BinderState.GetBinderState(conversion).Context),
+                                    AstUtils.Constant(BinderState.GetBinderState(conversion).Context),
                                     self.Expression
                                 )
                             ),
-                            Ast.Constant(null)
+                            AstUtils.Constant(null)
                         ),
                         AstUtils.Convert(tmp, resType),
                         AstUtils.Convert(fallback.Expression, resType)
@@ -391,10 +391,10 @@ namespace IronPython.Runtime.Binding {
                         Ast.Call(
                             typeof(PythonOps).GetMethod("OldInstanceGetOptimizedDictionary"),
                             self.Expression,
-                            Ast.Constant(dict.KeyVersion)
+                            AstUtils.Constant(dict.KeyVersion)
                         )
                     ), 
-                    Ast.Constant(null)
+                    AstUtils.Constant(null)
                 ),
                 null
             );
@@ -429,7 +429,7 @@ namespace IronPython.Runtime.Binding {
                     target = Ast.Call(
                         typeof(PythonOps).GetMethod("OldInstanceDictionaryGetValueHelper"),
                         tmp,
-                        Ast.Constant(key),
+                        AstUtils.Constant(key),
                         AstUtils.Convert(Expression, typeof(object))
                     );
                     break;
@@ -437,14 +437,14 @@ namespace IronPython.Runtime.Binding {
                     target = Ast.Call(
                         typeof(PythonOps).GetMethod("OldInstanceDictionarySetExtraValue"),
                         tmp,
-                        Ast.Constant(key),
+                        AstUtils.Constant(key),
                         AstUtils.Convert(args[1].Expression, typeof(object))
                     );
                     break;
                 case MemberAccess.Delete:
                     target = Ast.Call(
                         typeof(PythonOps).GetMethod("OldInstanceDeleteCustomMember"),
-                        Ast.Constant(BinderState.GetBinderState(member).Context),
+                        AstUtils.Constant(BinderState.GetBinderState(member).Context),
                         AstUtils.Convert(Expression, typeof(OldInstance)),
                         AstUtils.Constant(SymbolTable.StringToId(name))
                     );
@@ -515,7 +515,7 @@ namespace IronPython.Runtime.Binding {
                         Ast.Condition(
                             Ast.Call(
                                 typeof(PythonOps).GetMethod("OldInstanceTryGetBoundCustomMember"),
-                                Ast.Constant(BinderState.GetBinderState(member).Context),
+                                AstUtils.Constant(BinderState.GetBinderState(member).Context),
                                 self.Expression,
                                 AstUtils.Constant(symName),
                                 tmp
@@ -531,7 +531,7 @@ namespace IronPython.Runtime.Binding {
                 case MemberAccess.Set:
                     target = Ast.Call(
                         typeof(PythonOps).GetMethod("OldInstanceSetCustomMember"),
-                        Ast.Constant(BinderState.GetBinderState(member).Context),
+                        AstUtils.Constant(BinderState.GetBinderState(member).Context),
                         self.Expression,
                         AstUtils.Constant(symName),
                         AstUtils.Convert(args[1].Expression, typeof(object))
@@ -540,7 +540,7 @@ namespace IronPython.Runtime.Binding {
                 case MemberAccess.Delete:
                     target = Ast.Call(
                         typeof(PythonOps).GetMethod("OldInstanceDeleteCustomMember"),
-                        Ast.Constant(BinderState.GetBinderState(member).Context),
+                        AstUtils.Constant(BinderState.GetBinderState(member).Context),
                         self.Expression,
                         AstUtils.Constant(symName)
                     );
@@ -561,7 +561,7 @@ namespace IronPython.Runtime.Binding {
                 return sa.FallbackGetMember(args[0]).Expression;
             }
 
-            return ((PythonGetMemberBinder)member).Fallback(args[0], Ast.Constant(BinderState.GetBinderState(member).Context)).Expression;
+            return ((PythonGetMemberBinder)member).Fallback(args[0], AstUtils.Constant(BinderState.GetBinderState(member).Context)).Expression;
         }
 
         #endregion
@@ -592,7 +592,7 @@ namespace IronPython.Runtime.Binding {
             return new DynamicMetaObject(
                 Ast.Call(
                     typeof(PythonOps).GetMethod("OldInstanceIsCallable"),
-                    Ast.Constant(BinderState.GetBinderState(operation).Context),
+                    AstUtils.Constant(BinderState.GetBinderState(operation).Context),
                     self.Expression
                 ),
                 self.Restrictions

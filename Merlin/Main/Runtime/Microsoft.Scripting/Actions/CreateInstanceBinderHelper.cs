@@ -18,6 +18,7 @@ using System.Linq.Expressions;
 using System.Reflection;
 using Microsoft.Scripting.Generation;
 using Microsoft.Scripting.Runtime;
+using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace Microsoft.Scripting.Actions {
     using Ast = System.Linq.Expressions.Expression;
@@ -57,7 +58,7 @@ namespace Microsoft.Scripting.Actions {
             Type t = GetTargetType(target);
 
             if (t != null) {
-                Test = Ast.AndAlso(Test, Ast.Equal(Rule.Parameters[0], Ast.Constant(target)));
+                Test = Ast.AndAlso(Test, Ast.Equal(Rule.Parameters[0], AstUtils.Constant(target)));
 
                 return CompilerHelpers.GetConstructors(t, Binder.PrivateBinding);
             }
@@ -82,7 +83,7 @@ namespace Microsoft.Scripting.Actions {
                 Rule.MakeError(
                     Ast.New(
                         typeof(ArgumentTypeException).GetConstructor(new Type[] { typeof(string) }),
-                        Ast.Constant("Cannot create instances of " + name)
+                        AstUtils.Constant("Cannot create instances of " + name)
                     )
                 );
         }

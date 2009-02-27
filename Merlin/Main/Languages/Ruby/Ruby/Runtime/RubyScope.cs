@@ -48,6 +48,10 @@ namespace IronRuby.Runtime {
         private readonly RubyScope _parent;
 
         private object _selfObject;
+
+        // cached ImmediateClassOf(_selfObject):
+        private RubyClass _selfImmediateClass;
+
         private RuntimeFlowControl/*!*/ _runtimeFlowControl; // TODO: merge?
 
         // set by private/public/protected/module_function
@@ -63,6 +67,16 @@ namespace IronRuby.Runtime {
         public object SelfObject {
             get { return _selfObject; }
             internal set { _selfObject = value; }
+        }
+
+        internal RubyClass/*!*/ SelfImmediateClass {
+            get {
+                if (_selfImmediateClass == null) {
+                    // thread-safe, since all threads will calculate the same result:
+                    _selfImmediateClass = RubyContext.GetImmediateClassOf(_selfObject);
+                }
+                return _selfImmediateClass; 
+            }
         }
 
         public RubyMethodVisibility Visibility {
@@ -164,16 +178,31 @@ namespace IronRuby.Runtime {
             }
         }
 
-        internal object ResolveLocalVariable(string/*!*/ name) {
+        internal object ResolveLocalVariable(SymbolId name) {
             RubyScope scope = this;
             while (true) {
-                object result;
-                if (scope.Frame.TryGetValue(SymbolTable.StringToId(name), out result)) {
-                    return result;
+                object value;
+                if (scope.Frame.TryGetValue(name, out value)) {
+                    return value;
                 }
 
                 if (!scope.InheritsLocalVariables) {
                     return null;
+                }
+
+                scope = (RubyScope)scope.Parent;
+            }
+        }
+
+        internal object ResolveAndSetLocalVariable(SymbolId name, object value) {
+            RubyScope scope = this;
+            while (true) {
+                if (scope.Frame.ContainsKey(name)) {
+                    return scope.Frame[name] = value;
+                }
+
+                if (!scope.InheritsLocalVariables) {
+                    return this.Frame[name] = value;
                 }
 
                 scope = (RubyScope)scope.Parent;

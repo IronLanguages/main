@@ -23,6 +23,7 @@ using Microsoft.Scripting.Utils;
 using IronRuby.Runtime.Calls;
 using Ast = System.Linq.Expressions.Expression;
 using System.Dynamic;
+using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace IronRuby.Builtins {
     
@@ -64,10 +65,10 @@ namespace IronRuby.Builtins {
 
             // TODO: we could compare infos here:
             // first argument must be this method:
-            metaBuilder.AddRestriction(Ast.Equal(args.TargetExpression, Ast.Constant(this)));
+            metaBuilder.AddRestriction(Ast.Equal(args.TargetExpression, AstUtils.Constant(this)));
 
             // set the target (becomes self in the called method):
-            args.SetTarget(Ast.Constant(_target), _target);
+            args.SetTarget(AstUtils.Constant(_target), _target);
 
             _info.BuildCall(metaBuilder, args, _name);
         }

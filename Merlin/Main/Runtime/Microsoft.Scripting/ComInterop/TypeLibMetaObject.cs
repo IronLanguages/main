@@ -44,13 +44,13 @@ namespace Microsoft.Scripting.ComInterop {
                                     ),
                                     typeof(ComTypeLibDesc).GetProperty("Guid")
                                 ),
-                                Expression.Constant(_lib.Guid)
+                                AstUtils.Constant(_lib.Guid)
                             )
                         )
                     );
 
                 return new DynamicMetaObject(
-                    Expression.Constant(
+                    AstUtils.Constant(
                         ((ComTypeLibDesc)Value).GetTypeLibObjectDesc(binder.Name)
                     ),
                     restrictions

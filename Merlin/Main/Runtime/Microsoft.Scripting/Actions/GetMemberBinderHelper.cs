@@ -60,11 +60,11 @@ namespace Microsoft.Scripting.Actions {
             if (typeof(TypeTracker).IsAssignableFrom(type)) {
                 type = ((TypeTracker)Target).Type;
                 _isStatic = true;
-                Rule.AddTest(Ast.Equal(Rule.Parameters[0], Ast.Constant(Arguments[0])));
+                Rule.AddTest(Ast.Equal(Rule.Parameters[0], AstUtils.Constant(Arguments[0])));
             }
 
             if (typeof(NamespaceTracker).IsAssignableFrom(type)) {
-                Rule.AddTest(Ast.Equal(Rule.Parameters[0], Ast.Constant(Arguments[0])));
+                Rule.AddTest(Ast.Equal(Rule.Parameters[0], AstUtils.Constant(Arguments[0])));
             }
 
             MemberGroup members = Binder.GetMember(Action, type, StringName);
@@ -162,7 +162,7 @@ namespace Microsoft.Scripting.Actions {
                         Ast.NotEqual(
                             Ast.Assign(
                                 tmp,
-                                Binder.MakeCallExpression(Rule.Context, getMem, Instance, Ast.Constant(StringName))
+                                Binder.MakeCallExpression(Rule.Context, getMem, Instance, AstUtils.Constant(StringName))
                             ),
                             Ast.Field(null, typeof(OperationFailed).GetField("Value"))
                         ),

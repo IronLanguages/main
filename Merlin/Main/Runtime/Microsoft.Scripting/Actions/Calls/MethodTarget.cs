@@ -134,19 +134,19 @@ namespace Microsoft.Scripting.Actions.Calls {
             } else {
                 // Private binding, invoke via reflection
                 if (mi != null) {
-                    Expression instance = mi.IsStatic ? Ast.Constant(null) : _instanceBuilder.ToExpression(parameterBinder, parameters, usageMarkers);
+                    Expression instance = mi.IsStatic ? AstUtils.Constant(null) : _instanceBuilder.ToExpression(parameterBinder, parameters, usageMarkers);
                     Debug.Assert(instance != null, "Can't skip instance expression");
 
                     call = Ast.Call(
                         typeof(BinderOps).GetMethod("InvokeMethod"),
-                        Ast.Constant(mi),
+                        AstUtils.Constant(mi),
                         AstUtils.Convert(instance, typeof(object)),
                         AstUtils.NewArrayHelper(typeof(object), args)
                     );
                 } else {
                     call = Ast.Call(
                         typeof(BinderOps).GetMethod("InvokeConstructor"),
-                        Ast.Constant(ci),
+                        AstUtils.Constant(ci),
                         AstUtils.NewArrayHelper(typeof(object), args)
                     );
                 }

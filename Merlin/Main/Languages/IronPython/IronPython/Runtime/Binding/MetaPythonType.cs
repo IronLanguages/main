@@ -20,6 +20,7 @@ using System.Dynamic;
 
 using Microsoft.Scripting;
 using Microsoft.Scripting.Utils;
+using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 using IronPython.Runtime.Types;
     
@@ -33,7 +34,7 @@ namespace IronPython.Runtime.Binding {
         }
 
         public override DynamicMetaObject BindCreateInstance(CreateInstanceBinder create, params DynamicMetaObject[] args) {
-            return InvokeWorker(create, args, Ast.Constant(BinderState.GetBinderState(create).Context));
+            return InvokeWorker(create, args, AstUtils.Constant(BinderState.GetBinderState(create).Context));
         }
 
         public override DynamicMetaObject BindConvert(ConvertBinder/*!*/ conversion) {

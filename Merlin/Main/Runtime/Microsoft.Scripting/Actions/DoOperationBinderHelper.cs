@@ -121,12 +121,12 @@ namespace Microsoft.Scripting.Actions {
                 if (target.Success) {
                     Expression call = Ast.Convert(target.MakeExpression(_rule, _rule.Parameters), typeof(int));
                     switch (info.Operator) {
-                        case ExpressionType.GreaterThan: call = Ast.GreaterThan(call, Ast.Constant(0)); break;
-                        case ExpressionType.LessThan: call = Ast.LessThan(call, Ast.Constant(0)); break;
-                        case ExpressionType.GreaterThanOrEqual: call = Ast.GreaterThanOrEqual(call, Ast.Constant(0)); break;
-                        case ExpressionType.LessThanOrEqual: call = Ast.LessThanOrEqual(call, Ast.Constant(0)); break;
-                        case ExpressionType.Equal: call = Ast.Equal(call, Ast.Constant(0)); break;
-                        case ExpressionType.NotEqual: call = Ast.NotEqual(call, Ast.Constant(0)); break;
+                        case ExpressionType.GreaterThan: call = Ast.GreaterThan(call, AstUtils.Constant(0)); break;
+                        case ExpressionType.LessThan: call = Ast.LessThan(call, AstUtils.Constant(0)); break;
+                        case ExpressionType.GreaterThanOrEqual: call = Ast.GreaterThanOrEqual(call, AstUtils.Constant(0)); break;
+                        case ExpressionType.LessThanOrEqual: call = Ast.LessThanOrEqual(call, AstUtils.Constant(0)); break;
+                        case ExpressionType.Equal: call = Ast.Equal(call, AstUtils.Constant(0)); break;
+                        case ExpressionType.NotEqual: call = Ast.NotEqual(call, AstUtils.Constant(0)); break;
                     }
                     _rule.Target = _rule.MakeReturn(Binder, call);
                     return true;
@@ -161,7 +161,7 @@ namespace Microsoft.Scripting.Actions {
         private bool TryMakeNullComparisonRule() {
             if (_types[0] == typeof(DynamicNull)) {
                 if (!_types[1].IsValueType) {
-                    _rule.Target = _rule.MakeReturn(Binder, Ast.Equal(_rule.Parameters[1], Ast.Constant(null)));
+                    _rule.Target = _rule.MakeReturn(Binder, Ast.Equal(_rule.Parameters[1], AstUtils.Constant(null)));
                 } else if (_types[1].GetGenericTypeDefinition() == typeof(Nullable<>)) {
                     _rule.Target = _rule.MakeReturn(Binder, Ast.Property(Param1, _types[1].GetProperty("HasValue")));
                 } else {
@@ -170,7 +170,7 @@ namespace Microsoft.Scripting.Actions {
                 return true;
             } else if (_types[1] == typeof(DynamicNull)) {
                 if (!_types[0].IsValueType) {
-                    _rule.Target = _rule.MakeReturn(Binder, Ast.Equal(_rule.Parameters[0], Ast.Constant(null)));
+                    _rule.Target = _rule.MakeReturn(Binder, Ast.Equal(_rule.Parameters[0], AstUtils.Constant(null)));
                 } else if (_types[0].GetGenericTypeDefinition() == typeof(Nullable<>)) {
                     _rule.Target = _rule.MakeReturn(Binder, Ast.Property(Param0, _types[1].GetProperty("HasValue")));
                 } else {
@@ -283,7 +283,7 @@ namespace Microsoft.Scripting.Actions {
                 arrres.Add(res.ToString());
             }
 
-            _rule.Target = _rule.MakeReturn(Binder, Ast.Constant(arrres.ToArray()));
+            _rule.Target = _rule.MakeReturn(Binder, AstUtils.Constant(arrres.ToArray()));
         }
 
         #endregion
@@ -452,7 +452,7 @@ namespace Microsoft.Scripting.Actions {
                 _rule.MakeError(
                     AstUtils.ComplexCallHelper(
                         typeof(BinderOps).GetMethod("BadArgumentsForOperation"),
-                        ArrayUtils.Insert((Expression)Ast.Constant(info.Operator), _rule.Parameters)
+                        ArrayUtils.Insert((Expression)AstUtils.Constant(info.Operator), _rule.Parameters)
                     )
                 );
         }
@@ -489,7 +489,7 @@ namespace Microsoft.Scripting.Actions {
                                 typeof(EventTracker).GetProperty("Event")
                             )
                         ),
-                        Ast.Constant(et.Event.EventHandlerType)
+                        AstUtils.Constant(et.Event.EventHandlerType)
                     )
                 );
             } else if( t == typeof(BoundMemberTracker)){
@@ -515,7 +515,7 @@ namespace Microsoft.Scripting.Actions {
                                 typeof(EventTracker).GetProperty("Event")
                             )
                         ),
-                        Ast.Constant(et.Event.EventHandlerType)
+                        AstUtils.Constant(et.Event.EventHandlerType)
                     )
                 );
             }

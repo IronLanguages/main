@@ -21,6 +21,7 @@ using IronRuby.Runtime.Calls;
 using Microsoft.Scripting;
 using Microsoft.Scripting.Utils;
 using MSA = System.Linq.Expressions;
+using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace IronRuby.Compiler.Ast {
     using Ast = System.Linq.Expressions.Expression;
@@ -166,16 +167,16 @@ namespace IronRuby.Compiler.Ast {
                 if (optimizeReads) {
                     if (i < rightValues.Count) {
                         // unchecked get item:
-                        rvalue = Ast.Call(result, itemGetter, Ast.Constant(i));
+                        rvalue = Ast.Call(result, itemGetter, AstUtils.Constant(i));
                     } else if (splattedValue != null) {
                         // checked get item:
-                        rvalue = Methods.GetArrayItem.OpCall(result, Ast.Constant(i));
+                        rvalue = Methods.GetArrayItem.OpCall(result, AstUtils.Constant(i));
                     } else {
                         // missing item:
-                        rvalue = Ast.Constant(null);
+                        rvalue = AstUtils.Constant(null);
                     }
                 } else {
-                    rvalue = Methods.GetArrayItem.OpCall(result, Ast.Constant(i));
+                    rvalue = Methods.GetArrayItem.OpCall(result, AstUtils.Constant(i));
                 }
 
                 writes[writeIndex++] = _leftValues[i].TransformWrite(gen, rvalue);
@@ -185,7 +186,7 @@ namespace IronRuby.Compiler.Ast {
             if (_unsplattedValue != null) {
                 // copies the rest of resulting array to the *LHS;
                 // the resulting array contains splatted *RHS - no need for additional appending:
-                MSA.Expression array = Methods.GetArraySuffix.OpCall(result, Ast.Constant(_leftValues.Count));
+                MSA.Expression array = Methods.GetArraySuffix.OpCall(result, AstUtils.Constant(_leftValues.Count));
 
                 // assign the array (possibly empty) to *LHS:
                 writes[writeIndex++] = _unsplattedValue.TransformWrite(gen, array);

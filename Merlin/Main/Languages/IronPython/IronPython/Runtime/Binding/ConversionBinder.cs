@@ -110,9 +110,9 @@ namespace IronPython.Runtime.Binding {
                     Ast.Condition(
                         Ast.Equal(
                             AstUtils.Convert(self.Expression, Enum.GetUnderlyingType(type)),
-                            Ast.Constant(Activator.CreateInstance(self.GetLimitType()))
+                            AstUtils.Constant(Activator.CreateInstance(self.GetLimitType()))
                         ),
-                        Ast.Constant(value),
+                        AstUtils.Constant(value),
                         Ast.Call(
                             typeof(PythonOps).GetMethod("TypeErrorForBadEnumConversion").MakeGenericMethod(type),
                             AstUtils.Convert(self.Expression, typeof(object))
@@ -224,20 +224,20 @@ namespace IronPython.Runtime.Binding {
                         Ast.Call(
                             AstUtils.Convert(strExpr, typeof(string)),
                             typeof(string).GetMethod("get_Chars"),
-                            Ast.Constant(0)
+                            AstUtils.Constant(0)
                         ),
-                        self.Restrictions.Merge(BindingRestrictions.GetExpressionRestriction(Ast.Equal(getLen, Ast.Constant(1))))
+                        self.Restrictions.Merge(BindingRestrictions.GetExpressionRestriction(Ast.Equal(getLen, AstUtils.Constant(1))))
                     );
                 } else {
                     res = new DynamicMetaObject(
                         Ast.Throw(
                             Ast.Call(
                                 typeof(PythonOps).GetMethod("TypeError"),
-                                Ast.Constant("expected string of length 1 when converting to char, got '{0}'"),
+                                AstUtils.Constant("expected string of length 1 when converting to char, got '{0}'"),
                                 Ast.NewArrayInit(typeof(object), self.Expression)
                             )
                         ),
-                        self.Restrictions.Merge(BindingRestrictions.GetExpressionRestriction(Ast.NotEqual(getLen, Ast.Constant(1))))
+                        self.Restrictions.Merge(BindingRestrictions.GetExpressionRestriction(Ast.NotEqual(getLen, AstUtils.Constant(1))))
                     );
                 }
             } else {
@@ -286,7 +286,7 @@ namespace IronPython.Runtime.Binding {
                     return
                         PythonProtocol.ConvertToBool(this, self) ??
                         new DynamicMetaObject(
-                            Ast.Constant(true),
+                            AstUtils.Constant(true),
                             self.Restrictions
                         );
                 }
@@ -298,7 +298,7 @@ namespace IronPython.Runtime.Binding {
         private static DynamicMetaObject/*!*/ MakeNoneToBoolConversion(DynamicMetaObject/*!*/ self) {
             // null is never true
             return new DynamicMetaObject(
-                Ast.Constant(false),
+                AstUtils.Constant(false),
                 self.Restrictions
             );
         }
@@ -308,7 +308,7 @@ namespace IronPython.Runtime.Binding {
 
             return new DynamicMetaObject(
                 Ast.NotEqual(
-                    Ast.Constant(zeroVal),
+                    AstUtils.Constant(zeroVal),
                     self.Expression
                 ),
                 self.Restrictions
@@ -320,7 +320,7 @@ namespace IronPython.Runtime.Binding {
                 Ast.Throw(
                     Ast.Call(
                         typeof(ScriptingRuntimeHelpers).GetMethod("SimpleTypeError"),
-                        Ast.Constant("Can't convert a Reference<> instance to a bool")
+                        AstUtils.Constant("Can't convert a Reference<> instance to a bool")
                     )
                 ),
                 self.Restrictions
@@ -339,8 +339,8 @@ namespace IronPython.Runtime.Binding {
             return Ast.Call(
                 typeof(PythonOps).GetMethod("MakeConversionAction"),
                 BindingHelpers.CreateBinderStateExpression(),
-                Ast.Constant(Type),
-                Ast.Constant(ResultKind)
+                AstUtils.Constant(Type),
+                AstUtils.Constant(ResultKind)
             );
         }
 

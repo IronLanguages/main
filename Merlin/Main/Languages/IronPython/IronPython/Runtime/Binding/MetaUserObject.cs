@@ -217,7 +217,7 @@ namespace IronPython.Runtime.Binding {
                                     typeof(object)
                                 )
                             ),
-                            convertToAction.Defer(this).Expression
+                            convertToAction.GetUpdateExpression(typeof(object))
                         )
                     ),
                     self.Restrict(self.GetRuntimeType()).Restrictions
@@ -270,7 +270,7 @@ namespace IronPython.Runtime.Binding {
                 return GetConversionFailedReturnValue(cb, this);
             }
 
-            return convertToAction.Defer(this).Expression;
+            return convertToAction.GetUpdateExpression(typeof(object));
         }
 
         private static bool IsBuiltinConversion(CodeContext/*!*/ context, PythonTypeSlot/*!*/ pts, SymbolId name, PythonType/*!*/ selfType) {

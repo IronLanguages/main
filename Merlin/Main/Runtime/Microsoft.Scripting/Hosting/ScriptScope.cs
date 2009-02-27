@@ -261,7 +261,7 @@ namespace Microsoft.Scripting.Hosting {
                             Expression.Call(
                                 AstUtils.Convert(Expression, typeof(ScriptScope)),
                                 typeof(ScriptScope).GetMethod("TryGetVariable", new[] { typeof(string), typeof(object).MakeByRefType() }),
-                                Expression.Constant(action.Name),
+                                AstUtils.Constant(action.Name),
                                 result
                             ),
                             result,
@@ -278,7 +278,7 @@ namespace Microsoft.Scripting.Hosting {
                     Expression.Call(
                         AstUtils.Convert(Expression, typeof(ScriptScope)),
                         typeof(ScriptScope).GetMethod("SetVariable", new[] { typeof(string), typeof(object) }),
-                        Expression.Constant(action.Name),
+                        AstUtils.Constant(action.Name),
                         AstUtils.Convert(value.Expression, typeof(object))
                     ),
                     Restrictions.Merge(value.Restrictions).Merge(BindingRestrictionsHelpers.GetRuntimeTypeRestriction(Expression, typeof(ScriptScope)))
@@ -293,9 +293,9 @@ namespace Microsoft.Scripting.Hosting {
                         Expression.Call(
                             AstUtils.Convert(Expression, typeof(ScriptScope)),
                             typeof(ScriptScope).GetMethod("RemoveVariable"),
-                            Expression.Constant(action.Name)
+                            AstUtils.Constant(action.Name)
                         ),
-                        Expression.Empty(),
+                        AstUtils.Empty(),
                         fallback.Expression
                     ),
                     Restrictions.Merge(BindingRestrictionsHelpers.GetRuntimeTypeRestriction(Expression, typeof(ScriptScope))).Merge(fallback.Restrictions)
@@ -316,7 +316,7 @@ namespace Microsoft.Scripting.Hosting {
                             Expression.Call(
                                 AstUtils.Convert(Expression, typeof(ScriptScope)),
                                 typeof(ScriptScope).GetMethod("TryGetVariable", new[] { typeof(string), typeof(object).MakeByRefType() }),
-                                Expression.Constant(action.Name),
+                                AstUtils.Constant(action.Name),
                                 result
                             ),
                             AstUtils.Convert(fallbackInvoke.Expression, typeof(object)),

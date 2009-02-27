@@ -31,7 +31,7 @@ namespace Microsoft.Scripting.Actions {
 
     public partial class DefaultBinder : ActionBinder {
         public DynamicMetaObject DoOperation(string operation, params DynamicMetaObject[] args) {
-            return DoOperation(operation, Ast.Constant(null, typeof(CodeContext)), args);
+            return DoOperation(operation, AstUtils.Constant(null, typeof(CodeContext)), args);
         }
 
         public DynamicMetaObject DoOperation(string operation, Expression codeContext, params DynamicMetaObject[] args) {
@@ -82,7 +82,7 @@ namespace Microsoft.Scripting.Actions {
             }
 
             return new DynamicMetaObject(
-                Ast.Constant(documentation),
+                AstUtils.Constant(documentation),
                 restrictions
             );
         }
@@ -104,7 +104,7 @@ namespace Microsoft.Scripting.Actions {
             mems.Keys.CopyTo(res, 0);
 
             return new DynamicMetaObject(
-                Ast.Constant(res),
+                AstUtils.Constant(res),
                 restrictions
             );
         }
@@ -128,7 +128,7 @@ namespace Microsoft.Scripting.Actions {
             }
 
             return new DynamicMetaObject(
-                Ast.Constant(callable),
+                AstUtils.Constant(callable),
                 restrictions
             );
         }
@@ -179,7 +179,7 @@ namespace Microsoft.Scripting.Actions {
                 Ast.Throw(
                     AstUtils.ComplexCallHelper(
                         typeof(BinderOps).GetMethod("BadArgumentsForOperation"),
-                        ArrayUtils.Insert((Expression)Ast.Constant(info.Operator), DynamicUtils.GetExpressions(args))
+                        ArrayUtils.Insert((Expression)AstUtils.Constant(info.Operator), DynamicUtils.GetExpressions(args))
                     )
                 ),
                 BindingRestrictions.Combine(args)
@@ -200,12 +200,12 @@ namespace Microsoft.Scripting.Actions {
                 if (target.Success) {
                     Expression call = AstUtils.Convert(target.MakeExpression(), typeof(int));
                     switch (info.Operator) {
-                        case ExpressionType.GreaterThan: call = Ast.GreaterThan(call, Ast.Constant(0)); break;
-                        case ExpressionType.LessThan: call = Ast.LessThan(call, Ast.Constant(0)); break;
-                        case ExpressionType.GreaterThanOrEqual: call = Ast.GreaterThanOrEqual(call, Ast.Constant(0)); break;
-                        case ExpressionType.LessThanOrEqual: call = Ast.LessThanOrEqual(call, Ast.Constant(0)); break;
-                        case ExpressionType.Equal: call = Ast.Equal(call, Ast.Constant(0)); break;
-                        case ExpressionType.NotEqual: call = Ast.NotEqual(call, Ast.Constant(0)); break;
+                        case ExpressionType.GreaterThan: call = Ast.GreaterThan(call, AstUtils.Constant(0)); break;
+                        case ExpressionType.LessThan: call = Ast.LessThan(call, AstUtils.Constant(0)); break;
+                        case ExpressionType.GreaterThanOrEqual: call = Ast.GreaterThanOrEqual(call, AstUtils.Constant(0)); break;
+                        case ExpressionType.LessThanOrEqual: call = Ast.LessThanOrEqual(call, AstUtils.Constant(0)); break;
+                        case ExpressionType.Equal: call = Ast.Equal(call, AstUtils.Constant(0)); break;
+                        case ExpressionType.NotEqual: call = Ast.NotEqual(call, AstUtils.Constant(0)); break;
                     }
 
                     return new DynamicMetaObject(
@@ -243,7 +243,7 @@ namespace Microsoft.Scripting.Actions {
             if (args[0].GetLimitType() == typeof(DynamicNull)) {
                 if (!otherType.IsValueType) {
                     return new DynamicMetaObject(
-                        Ast.Equal(args[0].Expression, Ast.Constant(null)),
+                        Ast.Equal(args[0].Expression, AstUtils.Constant(null)),
                         restrictions
                     );
                 } else if (otherType.GetGenericTypeDefinition() == typeof(Nullable<>)) {
@@ -255,7 +255,7 @@ namespace Microsoft.Scripting.Actions {
             } else if (otherType == typeof(DynamicNull)) {
                 if (!args[0].GetLimitType().IsValueType) {
                     return new DynamicMetaObject(
-                        Ast.Equal(args[0].Expression, Ast.Constant(null)),
+                        Ast.Equal(args[0].Expression, AstUtils.Constant(null)),
                         restrictions
                     );
                 } else if (args[0].GetLimitType().GetGenericTypeDefinition() == typeof(Nullable<>)) {
@@ -429,7 +429,7 @@ namespace Microsoft.Scripting.Actions {
             }
 
             return new DynamicMetaObject(
-                Ast.Constant(arrres.ToArray()),
+                AstUtils.Constant(arrres.ToArray()),
                 BindingRestrictionsHelpers.GetRuntimeTypeRestriction(target.Expression, target.GetLimitType()).Merge(target.Restrictions)
             );
         }
@@ -609,7 +609,7 @@ namespace Microsoft.Scripting.Actions {
             Assert.NotNull(expression, type);
 
             if (expression.Type != type) {
-                return ConvertExpression(expression, type, ConversionResultKind.ExplicitCast, Ast.Constant(null, typeof(CodeContext)));
+                return ConvertExpression(expression, type, ConversionResultKind.ExplicitCast, AstUtils.Constant(null, typeof(CodeContext)));
             }
             return expression;
         }
@@ -646,7 +646,7 @@ namespace Microsoft.Scripting.Actions {
                                 typeof(EventTracker).GetProperty("Event")
                             )
                         ),
-                        Ast.Constant(et.Event.EventHandlerType)
+                        AstUtils.Constant(et.Event.EventHandlerType)
                     )
                 );
             } else if (t == typeof(BoundMemberTracker)) {
@@ -672,7 +672,7 @@ namespace Microsoft.Scripting.Actions {
                                 typeof(EventTracker).GetProperty("Event")
                             )
                         ),
-                        Ast.Constant(et.Event.EventHandlerType)
+                        AstUtils.Constant(et.Event.EventHandlerType)
                     )
                 );
             }

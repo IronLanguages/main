@@ -72,7 +72,7 @@ def log_critical(msg):
 
 
 #------------------------------------------------------------------------------
-def run_test_pkg(pkg_name):
+def run_test_pkg(pkg_name, do_not_run=[]):
     log_info("--%s package----------------------------------------" % pkg_name)
     
     #Determine where the test package is and ensure it exists
@@ -96,6 +96,9 @@ def run_test_pkg(pkg_name):
     #Import all tests
     for test_module in module_list:
         test_module = pkg_name + "." + test_module.split(".py", 1)[0]
+        if test_module in do_not_run:
+            log_info("--Testing of %s has been disabled!" % test_module)
+            continue
         log_info("--Testing %s..." % test_module)
         try:
             __import__(test_module)

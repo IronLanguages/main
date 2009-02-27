@@ -72,11 +72,11 @@ namespace IronRuby.Compiler.Ast {
         internal MSA.Expression/*!*/ TransformOptionalsInitialization(AstGenerator/*!*/ gen) {
             Assert.NotNull(gen);
 
-            if (_optional == null) return Ast.Empty();
+            if (_optional == null) return AstUtils.Empty();
 
             MSA.Expression singleton = gen.CurrentScope.DefineHiddenVariable("#default", typeof(object));
 
-            MSA.Expression result = Ast.Empty();
+            MSA.Expression result = AstUtils.Empty();
             for (int i = 0; i < _optional.Count; i++) {
                 result = AstUtils.IfThen(Ast.Equal(_optional[i].Left.TransformRead(gen), singleton),
                     result,
@@ -87,7 +87,7 @@ namespace IronRuby.Compiler.Ast {
             return Ast.Block(
                 Ast.Assign(singleton, Ast.Field(null, Fields.RubyOps_DefaultArgumentField)),
                 result,
-                Ast.Empty()
+                AstUtils.Empty()
             );
         }
     }

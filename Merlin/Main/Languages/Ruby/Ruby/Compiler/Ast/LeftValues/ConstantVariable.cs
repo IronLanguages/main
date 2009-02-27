@@ -17,6 +17,7 @@ using System.Diagnostics;
 using System.Dynamic;
 using Microsoft.Scripting;
 using Microsoft.Scripting.Utils;
+using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace IronRuby.Compiler.Ast {
     using MSA = System.Linq.Expressions;
@@ -117,7 +118,7 @@ namespace IronRuby.Compiler.Ast {
                     } else {
                         return gen.TryCatchAny(
                             Methods.IsDefinedQualifiedConstant.OpCall(AstFactory.Box(transformedQualifier), gen.CurrentScopeVariable, transformedName), 
-                            Ast.Constant(false)
+                            AstUtils.Constant(false)
                         );
                     }
             }

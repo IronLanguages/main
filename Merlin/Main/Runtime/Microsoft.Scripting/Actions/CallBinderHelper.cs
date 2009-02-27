@@ -209,7 +209,7 @@ namespace Microsoft.Scripting.Actions {
                                         typeof(IList<object>)
                                     ),
                                     typeof(IList<object>).GetMethod("get_Item"),
-                                    Ast.Constant(j)
+                                    AstUtils.Constant(j)
                                 )
                             );
                         }
@@ -230,7 +230,7 @@ namespace Microsoft.Scripting.Actions {
                                 Ast.Call(
                                     AstUtils.Convert(dictExpr, typeof(IDictionary)),
                                     typeof(IDictionary).GetMethod("get_Item"),
-                                    Ast.Constant(strKey)
+                                    AstUtils.Constant(strKey)
                                 )
                             );
                         }
@@ -265,7 +265,7 @@ namespace Microsoft.Scripting.Actions {
                 }
                 targets = foundTargets.ToArray();
             } else if ((mthgrp = target as MethodGroup) != null) {
-                _test = Ast.AndAlso(_test, Ast.Equal(AstUtils.Convert(Rule.Parameters[0], typeof(object)), Ast.Constant(target)));
+                _test = Ast.AndAlso(_test, Ast.Equal(AstUtils.Convert(Rule.Parameters[0], typeof(object)), AstUtils.Constant(target)));
 
                 List<MethodBase> foundTargets = new List<MethodBase>();
                 foreach (MethodTracker mt in mthgrp.Methods) {
@@ -300,7 +300,7 @@ namespace Microsoft.Scripting.Actions {
                         Ast.Convert(Rule.Parameters[0], typeof(BoundMemberTracker)),
                         typeof(BoundMemberTracker).GetProperty("BoundTo")
                     ),
-                    Ast.Constant(bmt.BoundTo)
+                    AstUtils.Constant(bmt.BoundTo)
                 )
             );
             _test = Ast.AndAlso(
@@ -403,7 +403,7 @@ namespace Microsoft.Scripting.Actions {
                     Ast.Call(
                         typeof(ScriptingRuntimeHelpers).GetMethod("CheckDictionaryMembers"),
                         Ast.Convert(_rule.Parameters[_rule.Parameters.Count - 1], typeof(IDictionary)),
-                        Ast.Constant(names)
+                        AstUtils.Constant(names)
                     )
                 )
             );
@@ -418,7 +418,7 @@ namespace Microsoft.Scripting.Actions {
                 _rule.MakeError(
                     Ast.New(
                         typeof(ArgumentTypeException).GetConstructor(new Type[] { typeof(string) }),
-                        Ast.Constant(type.Name + " is not callable")
+                        AstUtils.Constant(type.Name + " is not callable")
                     )
                 );
         }

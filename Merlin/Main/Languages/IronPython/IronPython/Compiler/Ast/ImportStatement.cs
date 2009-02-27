@@ -61,8 +61,8 @@ namespace IronPython.Compiler.Ast {
                                     _asNames[i] == SymbolId.Empty ? "ImportTop" : "ImportBottom"
                                 ),
                                 AstUtils.CodeContext(),                                 // 1st arg - code context
-                                Ast.Constant(_names[i].MakeString()),                   // 2nd arg - module name
-                                Ast.Constant(_forceAbsolute ? 0 : -1)                   // 3rd arg - absolute or relative imports
+                                AstUtils.Constant(_names[i].MakeString()),                   // 2nd arg - module name
+                                AstUtils.Constant(_forceAbsolute ? 0 : -1)                   // 3rd arg - absolute or relative imports
                             )
                         ),
                         _names[i].Span
@@ -70,7 +70,7 @@ namespace IronPython.Compiler.Ast {
                 );
             }
 
-            statements.Add(Ast.Empty());
+            statements.Add(AstUtils.Empty());
             return ag.AddDebugInfo(Ast.Block(statements.ToArray()), Span);
         }
 

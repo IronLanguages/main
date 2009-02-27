@@ -128,7 +128,7 @@ namespace IronPython.Compiler.Ast {
             MSAst.ParameterExpression exc = ag.GetTemporary("with_exc", typeof(bool));
             statements[3] = ag.MakeAssignment(
                 exc,
-                Ast.Constant(true)
+                AstUtils.Constant(true)
             );
 
             //******************************************************************
@@ -161,7 +161,7 @@ namespace IronPython.Compiler.Ast {
                                 _var.TransformSet(ag, SourceSpan.None, value, PythonOperationKind.None),
                 // BLOCK
                                 ag.Transform(_body),
-                                Ast.Empty()
+                                AstUtils.Empty()
                             ),
                             _body.Span
                         ) :
@@ -176,7 +176,7 @@ namespace IronPython.Compiler.Ast {
                 // exc = False
                         ag.MakeAssignment(
                             exc,
-                            Ast.Constant(false)
+                            AstUtils.Constant(false)
                         ),
                 //  if not exit(*sys.exc_info()):
                 //      raise
@@ -194,7 +194,7 @@ namespace IronPython.Compiler.Ast {
                             ),
                             Ast.Rethrow()
                         ),
-                        Ast.Empty()
+                        AstUtils.Empty()
                     )
                 // finally:
                 ).Finally(
@@ -211,9 +211,9 @@ namespace IronPython.Compiler.Ast {
                                 new MSAst.Expression[] {
                                     AstUtils.CodeContext(),
                                     exit,
-                                    Ast.Constant(null),
-                                    Ast.Constant(null),
-                                    Ast.Constant(null)
+                                    AstUtils.Constant(null),
+                                    AstUtils.Constant(null),
+                                    AstUtils.Constant(null)
                                 }
                             ),
                             _contextManager.Span
@@ -222,7 +222,7 @@ namespace IronPython.Compiler.Ast {
                 );
             statements[4] = ag.AddDebugInfo(statements[4], Span);
 
-            statements[5] = Ast.Empty();
+            statements[5] = AstUtils.Empty();
             return ag.AddDebugInfo(Ast.Block(statements), _body.Span);
         }
 

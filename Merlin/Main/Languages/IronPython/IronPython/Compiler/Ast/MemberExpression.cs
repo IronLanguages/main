@@ -72,7 +72,7 @@ namespace IronPython.Compiler.Ast {
                     Ast.Block(
                         Ast.Assign(temp, ag.Transform(_target)),
                         SetMemberOperator(ag, right, op, temp),
-                        Ast.Empty()
+                        AstUtils.Empty()
                     ),
                     Span.Start,
                     span.End

@@ -173,7 +173,7 @@ namespace IronPython.Compiler.Ast {
                         Ast.Call(
                             AstGenerator.GetHelperMethod("WarnDivision"),
                             AstUtils.CodeContext(),
-                            Ast.Constant(ag.DivisionOptions),
+                            AstUtils.Constant(ag.DivisionOptions),
                             AstUtils.Convert(
                                 Ast.Assign(tempLeft, left),
                                 typeof(object)

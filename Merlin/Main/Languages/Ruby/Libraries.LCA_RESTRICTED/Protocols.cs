@@ -314,6 +314,30 @@ namespace IronRuby.Runtime {
             throw RubyExceptions.MakeCoercionError(context, other, self);
         }
 
+        /// <summary>
+        /// Applies given operator on coerced values and returns the result.
+        /// </summary>
+        /// <exception cref="TypeError">
+        /// "coerce" method is not defined, throws a subclass of SystemException, or returns something other than a pair of objects.
+        /// </exception>
+        public static object TryCoerceAndApply(
+            BinaryOpStorage/*!*/ coercionStorage,
+            BinaryOpStorage/*!*/ binaryOpStorage, string/*!*/ binaryOp,
+            RubyContext/*!*/ context, object self, object other) {
+
+            if (other == null) {
+                return null;
+            }
+
+            object result;
+            if (TryCoerceAndApply(coercionStorage, binaryOpStorage, binaryOp, context, self, other, out result)) {
+                if (result != null) {
+                    return RubyOps.IsTrue(result);
+                }
+            }
+            return null;
+        }
+
         private static bool TryCoerceAndApply(
             BinaryOpStorage/*!*/ coercionStorage,
             BinaryOpStorage/*!*/ binaryOpStorage, string/*!*/ binaryOp,

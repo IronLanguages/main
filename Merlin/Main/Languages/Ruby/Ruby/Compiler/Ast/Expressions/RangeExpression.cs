@@ -19,6 +19,7 @@ using Microsoft.Scripting.Generation;
 using System.Runtime.CompilerServices;
 using System;
 using IronRuby.Runtime;
+using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace IronRuby.Compiler.Ast {
     using MSA = System.Linq.Expressions;
@@ -78,14 +79,14 @@ namespace IronRuby.Compiler.Ast {
                 return TransformReadCondition(gen);
             } else if (IsIntegerRange(out intBegin, out intEnd)) {
                 return (_isExclusive ? Methods.CreateExclusiveIntegerRange : Methods.CreateInclusiveIntegerRange).OpCall(
-                    Ast.Constant(intBegin), Ast.Constant(intEnd)
+                    AstUtils.Constant(intBegin), AstUtils.Constant(intEnd)
                 );
             } else {
                 return (_isExclusive ? Methods.CreateExclusiveRange : Methods.CreateInclusiveRange).OpCall(
                     AstFactory.Box(_begin.TransformRead(gen)), 
                     AstFactory.Box(_end.TransformRead(gen)), 
                     gen.CurrentScopeVariable, 
-                    Ast.Constant(new BinaryOpStorage())
+                    AstUtils.Constant(new BinaryOpStorage())
                 );
             }
         }
@@ -117,14 +118,14 @@ namespace IronRuby.Compiler.Ast {
             if (_isExclusive) {
                 return Ast.Condition(
                     stateVariable,
-                    Ast.Block(Ast.Assign(stateVariable, Methods.IsFalse.OpCall(end)), Ast.Constant(true)),
+                    Ast.Block(Ast.Assign(stateVariable, Methods.IsFalse.OpCall(end)), AstUtils.Constant(true)),
                     Ast.Assign(stateVariable, Methods.IsTrue.OpCall(begin))
                 );  
             } else {
                 return Ast.Condition(
                     Ast.OrElse(stateVariable, Methods.IsTrue.OpCall(begin)),
-                    Ast.Block(Ast.Assign(stateVariable, Methods.IsFalse.OpCall(end)), Ast.Constant(true)),
-                    Ast.Constant(false)
+                    Ast.Block(Ast.Assign(stateVariable, Methods.IsFalse.OpCall(end)), AstUtils.Constant(true)),
+                    AstUtils.Constant(false)
                 );
                                   
             }

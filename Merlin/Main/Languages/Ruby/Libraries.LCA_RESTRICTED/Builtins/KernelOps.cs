@@ -1365,7 +1365,7 @@ namespace IronRuby.Builtins {
         // thread-safe:
         [RubyMethod("method")]
         public static RubyMethod/*!*/ GetMethod(RubyContext/*!*/ context, object self, [DefaultProtocol]string/*!*/ name) {
-            RubyMemberInfo info = context.ResolveMethod(self, name, true).Info;
+            RubyMemberInfo info = context.ResolveMethod(self, name, RubyClass.IgnoreVisibility).Info;
             if (info == null) {
                 throw RubyExceptions.CreateUndefinedMethodError(context.GetClassOf(self), name);
             }

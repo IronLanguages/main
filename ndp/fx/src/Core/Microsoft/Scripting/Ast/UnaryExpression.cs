@@ -782,21 +782,17 @@ namespace System.Linq.Expressions {
         }
 
         /// <summary>
-        /// Creates a <see cref="T:System.Linq.Expressions.UnaryExpression" /> that represents a throwing of an exception with a given type.
+        /// Creates a <see cref="T:System.Linq.Expressions.UnaryExpression" /> that represents a throwing of a value with a given type.
         /// </summary>
         /// <param name="value">An <see cref="T:System.Linq.Expressions.Expression" />.</param>
-        ///<param name="type">The new <see cref="T:System.Type" /> of the expression.</param>
+        /// <param name="type">The new <see cref="T:System.Type" /> of the expression.</param>
         /// <returns>A <see cref="T:System.Linq.Expressions.UnaryExpression"/> that represents the exception.</returns>
         public static UnaryExpression Throw(Expression value, Type type) {
             ContractUtils.RequiresNotNull(type, "type");
 
             if (value != null) {
                 RequiresCanRead(value, "value");
-                ContractUtils.Requires(
-                    TypeUtils.AreReferenceAssignable(typeof(Exception), value.Type),
-                    "value",
-                    Strings.ArgumentMustBeException
-                );
+                ContractUtils.Requires(!value.Type.IsValueType, "value", Strings.ArgumentMustNotHaveValueType);
             }
             return new UnaryExpression(ExpressionType.Throw, value, type, null);
         }

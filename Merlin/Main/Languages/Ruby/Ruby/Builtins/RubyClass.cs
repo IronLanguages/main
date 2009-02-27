@@ -37,6 +37,11 @@ using System.Runtime.CompilerServices;
 namespace IronRuby.Builtins {
 
     public sealed partial class RubyClass : RubyModule, IDuplicable {
+        /// <summary>
+        /// Visibility context within which all methods are visible.
+        /// </summary>
+        public const RubyClass IgnoreVisibility = null;
+
         public const string/*!*/ ClassSingletonName = "__ClassSingleton";
         public const string/*!*/ ClassSingletonSingletonName = "__ClassSingletonSingleton";
         public const string/*!*/ MainSingletonName = "__MainSingleton";
@@ -511,15 +516,15 @@ namespace IronRuby.Builtins {
             return result;
         }
 
-        public override MethodResolutionResult ResolveMethodFallbackToObjectNoLock(string/*!*/ name, bool includeMethod) {
+        public override MethodResolutionResult ResolveMethodFallbackToObjectNoLock(string/*!*/ name, RubyClass visibilityContext) {
             // Note: all classes include Object in ancestors, so we don't need to search there.
-            return ResolveMethodNoLock(name, includeMethod);
+            return ResolveMethodNoLock(name, visibilityContext);
         }
 
         internal RubyMemberInfo ResolveMethodMissingForSite(string/*!*/ name, RubyMethodVisibility incompatibleVisibility) {
             Context.RequiresClassHierarchyLock();
-            var methodMissing = ResolveMethodForSiteNoLock(Symbols.MethodMissing, true);
-            if (incompatibleVisibility != RubyMethodVisibility.Private) {
+            var methodMissing = ResolveMethodForSiteNoLock(Symbols.MethodMissing, null);
+            if (incompatibleVisibility == RubyMethodVisibility.None) {
                 methodMissing.InvalidateSitesOnMissingMethodAddition(name, Context);
             }
             return methodMissing.Info;
@@ -859,7 +864,7 @@ namespace IronRuby.Builtins {
             argsBuilder.AddCallArguments(metaBuilder, args);
 
             if (!metaBuilder.Error) {
-                metaBuilder.Result = MakeAllocatorCall(args, () => Ast.Constant(Name));
+                metaBuilder.Result = MakeAllocatorCall(args, () => AstUtils.Constant(Name));
             }
         }
         
@@ -880,7 +885,7 @@ namespace IronRuby.Builtins {
             using (Context.ClassHierarchyLocker()) {
                 metaBuilder.AddVersionTest(this);
 
-                initializer = ResolveMethodForSiteNoLock(Symbols.Initialize, true).Info;
+                initializer = ResolveMethodForSiteNoLock(Symbols.Initialize, IgnoreVisibility).Info;
             }
 
             RubyMethodInfo overriddenInitializer = initializer as RubyMethodInfo;
@@ -889,7 +894,7 @@ namespace IronRuby.Builtins {
             // Is user class (defined in Ruby code) => construct it as if it had initializer that calls super immediately
             // (we need to "inherit" factories/constructors from the base class (e.g. class S < String; self; end.new('foo')).
             if (overriddenInitializer != null || (_isRubyClass && _structInfo == null)) {
-                metaBuilder.Result = MakeAllocatorCall(args, () => Ast.Constant(Name));
+                metaBuilder.Result = MakeAllocatorCall(args, () => AstUtils.Constant(Name));
 
                 if (overriddenInitializer != null || (_isRubyClass && initializer != null && !initializer.IsEmpty)) {
                     BuildOverriddenInitializerCall(metaBuilder, args, initializer);
@@ -975,7 +980,7 @@ namespace IronRuby.Builtins {
                 if ((ctor = type.GetConstructor(new[] { typeof(string) })) != null) {
                     return Ast.New(ctor, defaultExceptionMessage());
                 } else if ((ctor = type.GetConstructor(new[] { typeof(string), typeof(Exception) })) != null) {
-                    return Ast.New(ctor, defaultExceptionMessage(), Ast.Constant(null));
+                    return Ast.New(ctor, defaultExceptionMessage(), AstUtils.Constant(null));
                 }
             }
 
@@ -997,7 +1002,7 @@ namespace IronRuby.Builtins {
         private Expression/*!*/ MakeDelegateConstructorCall(Type/*!*/ type, CallArguments/*!*/ args) {
             if (args.Signature.HasBlock) {
                 return Methods.CreateDelegateFromProc.OpCall(
-                    Ast.Constant(type),
+                    AstUtils.Constant(type),
                     AstUtils.Convert(args.GetBlockExpression(), typeof(Proc))
                 );
             } else {

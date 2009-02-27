@@ -83,16 +83,16 @@ namespace Microsoft.Scripting.Ast {
                     test != null
                         ? (Expression)Expression.Condition(
                             test,
-                            Expression.Empty(),
+                            Utils.Empty(),
                             Expression.Block(
-                                @else != null ? @else : Expression.Empty(),
+                                @else != null ? @else : Utils.Empty(),
                                 Expression.Break(@break)
                             )
                         )
-                        : Expression.Empty(),
+                        : Utils.Empty(),
                     body,
-                    @continue != null ? (Expression)Expression.Label(@continue) : Expression.Empty(),
-                    increment != null ? increment : Expression.Empty()
+                    @continue != null ? (Expression)Expression.Label(@continue) : Utils.Empty(),
+                    increment != null ? increment : Utils.Empty()
                 ),
                 @break,
                 null

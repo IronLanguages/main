@@ -209,14 +209,14 @@ namespace IronPython.Runtime.Binding {
                         splatKwArgTest = Expression.Call(
                             typeof(PythonOps).GetMethod("CheckDictionaryMembers"),
                             AstUtils.Convert(args[i].Expression, typeof(IAttributesCollection)),
-                            Expression.Constant(argNames.ToArray())
+                            AstUtils.Constant(argNames.ToArray())
                         );
                         break;
                     case ArgumentType.List:
                         IList<object> splattedArgs = (IList<object>)args[i].Value;
                         splatArgTest = Expression.Equal(
                             Expression.Property(AstUtils.Convert(args[i].Expression, args[i].GetLimitType()), typeof(ICollection<object>).GetProperty("Count")),
-                            Expression.Constant(splattedArgs.Count)
+                            AstUtils.Constant(splattedArgs.Count)
                         );
 
                         for (int splattedArg = 0; splattedArg < splattedArgs.Count; splattedArg++) {
@@ -224,7 +224,7 @@ namespace IronPython.Runtime.Binding {
                                 Expression.Call(
                                     AstUtils.Convert(args[i].Expression, typeof(IList<object>)),
                                     typeof(IList<object>).GetMethod("get_Item"),
-                                    Expression.Constant(splattedArg)
+                                    AstUtils.Constant(splattedArg)
                                 )
                             );
                         }

@@ -54,7 +54,7 @@ namespace IronPython.Runtime.Binding {
         internal static MethodCallExpression MakeTryGetTypeMember(BinderState/*!*/ binderState, PythonTypeSlot dts, ParameterExpression tmp, Expression instance, Expression pythonType) {
             return Ast.Call(
                 TypeInfo._PythonOps.SlotTryGetBoundValue,
-                Ast.Constant(binderState.Context),
+                AstUtils.Constant(binderState.Context),
                 AstUtils.Convert(Utils.WeakConstant(dts), typeof(PythonTypeSlot)),
                 AstUtils.Convert(instance, typeof(object)),
                 AstUtils.Convert(
@@ -130,9 +130,9 @@ namespace IronPython.Runtime.Binding {
             return new DynamicMetaObject(
                 Ast.Call(
                     typeof(PythonOps).GetMethod("GetDelegate"),
-                    Ast.Constant(context),
+                    AstUtils.Constant(context),
                     arg.Expression,
-                    Ast.Constant(toType)
+                    AstUtils.Constant(toType)
                 ),
                 arg.Restrictions
             );

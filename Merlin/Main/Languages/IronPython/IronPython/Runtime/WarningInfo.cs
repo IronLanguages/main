@@ -18,6 +18,7 @@ using System.Linq.Expressions;
 using System.Dynamic;
 
 using Microsoft.Scripting.Utils;
+using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
@@ -43,13 +44,13 @@ namespace IronPython.Runtime.Binding {
             Expression warn = Expression.Call(
                 typeof(PythonOps).GetMethod("Warn"),
                 codeContext,
-                Expression.Constant(_type),
-                Expression.Constant(_message),
-                Expression.Constant(ArrayUtils.EmptyObjects)
+                AstUtils.Constant(_type),
+                AstUtils.Constant(_message),
+                AstUtils.Constant(ArrayUtils.EmptyObjects)
             );
 
             if (_condition != null) {
-                warn = Expression.Condition(_condition, warn, Expression.Empty());
+                warn = Expression.Condition(_condition, warn, AstUtils.Empty());
             }
 
             return new DynamicMetaObject(

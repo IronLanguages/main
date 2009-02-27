@@ -206,7 +206,7 @@ namespace Microsoft.Scripting.Generation {
             // rewrite the node...
             return Visit(
                 AstUtils.Convert(
-                    Expression.ArrayAccess(_constantPool, Expression.Constant(_constants.Count - 1)),
+                    Expression.ArrayAccess(_constantPool, AstUtils.Constant(_constants.Count - 1)),
                     siteType
                 )
             );

@@ -62,7 +62,7 @@ namespace IronPython.Runtime.Binding {
         }
 
         internal DynamicMetaObject/*!*/ InvokeFallback(DynamicMetaObject/*!*/ target, DynamicMetaObject/*!*/[]/*!*/ args, CallSignature sig) {
-            var parameterBinder = new ParameterBinderWithCodeContext(Binder.Binder, Expression.Constant(_state.Context));
+            var parameterBinder = new ParameterBinderWithCodeContext(Binder.Binder, AstUtils.Constant(_state.Context));
             return PythonProtocol.Call(this, target, args) ??
                Binder.Binder.Create(sig, parameterBinder, target, args) ??
                Binder.Binder.Call(sig, parameterBinder, target, args);

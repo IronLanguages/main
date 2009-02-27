@@ -143,10 +143,10 @@ namespace IronRuby.Compiler.Ast {
 
                 loop = Ast.TryFinally(
                     Ast.Block(
-                        Methods.TraceBlockCall.OpCall(scopeVariable, blockParameter, Ast.Convert(Ast.Constant(gen.SourceUnit.Path), typeof(string)), Ast.Constant(firstStatementLine)),
+                        Methods.TraceBlockCall.OpCall(scopeVariable, blockParameter, Ast.Convert(AstUtils.Constant(gen.SourceUnit.Path), typeof(string)), AstUtils.Constant(firstStatementLine)),
                         loop
                     ), 
-                    Methods.TraceBlockReturn.OpCall(scopeVariable, blockParameter, Ast.Convert(Ast.Constant(gen.SourceUnit.Path), typeof(string)), Ast.Constant(lastStatementLine))
+                    Methods.TraceBlockReturn.OpCall(scopeVariable, blockParameter, Ast.Convert(AstUtils.Constant(gen.SourceUnit.Path), typeof(string)), AstUtils.Constant(lastStatementLine))
                 );
             }
 			
@@ -159,7 +159,7 @@ namespace IronRuby.Compiler.Ast {
 				
 				loop,
 
-                Ast.Empty()
+                AstUtils.Empty()
             );
 
             body = gen.AddReturnTarget(scope.CreateScope(body));
@@ -179,8 +179,8 @@ namespace IronRuby.Compiler.Ast {
                     RubyExceptionData.EncodeMethodName(gen.SourceUnit, gen.CurrentMethod.MethodName, Location), 
                     new ReadOnlyCollection<MSA.ParameterExpression>(parameters)
                 ),
-                Ast.Constant(parameterCount),
-                Ast.Constant(attributes)
+                AstUtils.Constant(parameterCount),
+                AstUtils.Constant(attributes)
             );
         }
 
@@ -199,7 +199,7 @@ namespace IronRuby.Compiler.Ast {
             bool paramsInArray = HasFormalParametersInArray;
             for (int i = 0; i < _parameters.LeftValues.Count; i++) {
                 var parameter = paramsInArray ?
-                    Ast.ArrayAccess(parameters[HiddenParameterCount], Ast.Constant(i)) :
+                    Ast.ArrayAccess(parameters[HiddenParameterCount], AstUtils.Constant(i)) :
                     parameters[HiddenParameterCount + i];
 
                 result[resultIndex++] = _parameters.LeftValues[i].TransformWrite(gen, parameter);
@@ -211,7 +211,7 @@ namespace IronRuby.Compiler.Ast {
                 result[resultIndex++] = _parameters.UnsplattedValue.TransformWrite(gen, parameter);
             }
 
-            result[resultIndex++] = Ast.Empty();
+            result[resultIndex++] = AstUtils.Empty();
             Debug.Assert(resultIndex == result.Length);
             return AstFactory.Block(result);
         }

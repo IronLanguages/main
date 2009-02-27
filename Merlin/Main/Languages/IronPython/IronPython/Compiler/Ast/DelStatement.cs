@@ -39,7 +39,7 @@ namespace IronPython.Compiler.Ast {
                     throw PythonOps.SyntaxError(string.Format("can't delete {0}", _expressions[i].NodeName), ag.Context.SourceUnit, _expressions[i].Span, 1);
                 }
             }
-            statements[_expressions.Length] = MSAst.Expression.Empty();
+            statements[_expressions.Length] = AstUtils.Empty();
             return ag.AddDebugInfo(MSAst.Expression.Block(statements), Span);
         }
 

@@ -69,8 +69,8 @@ namespace Microsoft.Scripting.Actions.Calls {
                                 Ast.Convert(
                                     Ast.Call(
                                         typeof(ScriptingRuntimeHelpers).GetMethod("ReadOnlyAssignError"),
-                                        Ast.Constant(true),
-                                        Ast.Constant(fi.Name)
+                                        AstUtils.Constant(true),
+                                        AstUtils.Constant(fi.Name)
                                     ),
                                     fi.FieldType
                                 )
@@ -93,8 +93,8 @@ namespace Microsoft.Scripting.Actions.Calls {
                                 Ast.Convert(
                                     Ast.Call(
                                         typeof(ScriptingRuntimeHelpers).GetMethod("ReadOnlyAssignError"),
-                                        Ast.Constant(false),
-                                        Ast.Constant(pi.Name)
+                                        AstUtils.Constant(false),
+                                        AstUtils.Constant(pi.Name)
                                     ),
                                     pi.PropertyType
                                 )

@@ -36,13 +36,13 @@ namespace IronRuby.Compiler.Ast {
 
         internal override MSA.Expression/*!*/ TransformRead(AstGenerator/*!*/ gen) {
 #if SILVERLIGHT
-            return Ast.Constant(null, typeof(Encoding));
+            return AstUtils.Constant(null, typeof(Encoding));
 #else
             if (gen.Encoding == null) {
-                return Ast.Constant(null, typeof(Encoding));
+                return AstUtils.Constant(null, typeof(Encoding));
             }
 
-            return Methods.CreateEncoding.OpCall(Ast.Constant(RubyEncoding.GetCodePage(gen.Encoding)));
+            return Methods.CreateEncoding.OpCall(AstUtils.Constant(RubyEncoding.GetCodePage(gen.Encoding)));
 #endif
         }
 

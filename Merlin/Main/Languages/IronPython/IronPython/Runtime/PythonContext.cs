@@ -1597,7 +1597,7 @@ namespace IronPython.Runtime {
         internal void SetHostVariables(IAttributesCollection dict) {
             dict[SymbolTable.StringToId("executable")] = _initialExecutable;
             dict[SymbolTable.StringToId("exec_prefix")] = SystemState.Dict[SymbolTable.StringToId("prefix")] = _initialPrefix;
-            SetVersionVariables(dict, 2, 5, 0, "release", _initialVersionString);
+            SetVersionVariables(dict, 2, 6, 0, "release", _initialVersionString);
         }
 
         private void SetVersionVariables(IAttributesCollection dict, byte major, byte minor, byte build, string level, string versionString) {

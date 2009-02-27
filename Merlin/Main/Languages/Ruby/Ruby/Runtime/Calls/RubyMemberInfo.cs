@@ -46,6 +46,18 @@ namespace IronRuby.Runtime.Calls {
             get { return (RubyMethodVisibility)(_flags & RubyMemberFlags.VisibilityMask); }
         }
 
+        public bool IsProtected {
+            get { return (_flags & RubyMemberFlags.Protected) != 0; }
+        }
+
+        public bool IsPrivate {
+            get { return (_flags & RubyMemberFlags.Private) != 0; }
+        }
+
+        public bool IsPublic {
+            get { return (_flags & RubyMemberFlags.Public) != 0; }
+        }
+        
         internal bool IsModuleFunction {
             get { return (_flags & RubyMemberFlags.ModuleFunction) != 0; }
         }

@@ -229,10 +229,7 @@ namespace IronPython.Runtime.Binding {
             if (typeTest != null) {
                 if (typeTest.Test != null) {
                     // add the test and a validator if persent
-                    Expression defer = operation.Defer(args).Expression;
-                    if (deferType != null) {
-                        defer = AstUtils.Convert(defer, deferType);
-                    }
+                    Expression defer = operation.GetUpdateExpression(deferType ?? typeof(object));
 
                     Type bestType = BindingHelpers.GetCompatibleType(defer.Type, res.Expression.Type);
 
@@ -289,7 +286,7 @@ namespace IronPython.Runtime.Binding {
             return Ast.Call(
                 typeof(PythonOps).GetMethod("CheckTypeVersion"),
                 AstUtils.Convert(tested, typeof(object)),
-                Ast.Constant(version)
+                AstUtils.Constant(version)
             );
         }
 
@@ -300,7 +297,7 @@ namespace IronPython.Runtime.Binding {
                 Ast.Call(
                     typeof(PythonOps).GetMethod("CheckTypeVersion"),
                     AstUtils.Convert(tested, typeof(object)),
-                    Ast.Constant(version)
+                    AstUtils.Constant(version)
                 ),
                 new PythonTypeValidator(type, version).Validate
             );
@@ -428,8 +425,8 @@ namespace IronPython.Runtime.Binding {
             return Ast.Throw(
                 Ast.Call(
                     typeof(PythonOps).GetMethod("TypeErrorForProtectedMember"),
-                    Ast.Constant(type),
-                    Ast.Constant(name)
+                    AstUtils.Constant(type),
+                    AstUtils.Constant(name)
                 )
             );
         }
@@ -439,8 +436,8 @@ namespace IronPython.Runtime.Binding {
                 Ast.Throw(
                     Ast.Call(
                         typeof(PythonOps).GetMethod("TypeErrorForGenericMethod"),
-                        Ast.Constant(type),
-                        Ast.Constant(name)
+                        AstUtils.Constant(type),
+                        AstUtils.Constant(name)
                     )
                 ),
                 restrictions

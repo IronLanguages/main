@@ -18,6 +18,7 @@ using System.Dynamic;
 using System.Linq.Expressions;
 
 using Microsoft.Scripting.Runtime;
+using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 using IronPython.Runtime.Operations;
 
@@ -78,7 +79,7 @@ namespace IronPython.Runtime.Binding {
             return Ast.Call(
                 typeof(PythonOps).GetMethod("MakeSetIndexAction"),
                 BindingHelpers.CreateBinderStateExpression(),
-                Expression.Constant(CallInfo.ArgumentCount)
+                AstUtils.Constant(CallInfo.ArgumentCount)
             );
         }
 

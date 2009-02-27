@@ -182,7 +182,7 @@ namespace IronPython.Runtime {
 
         // version and version_info are set by PythonContext
 
-        public const string winver = "2.5";
+        public const string winver = "2.6";
 
         #region Special types
 

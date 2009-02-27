@@ -21,6 +21,7 @@ using Microsoft.Scripting.Actions;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 using IronRuby.Builtins;
+using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace IronRuby.Runtime.Calls {
     using Ast = System.Linq.Expressions.Expression;
@@ -66,9 +67,9 @@ namespace IronRuby.Runtime.Calls {
 
             Proc.SetProcCallRule(
                 metaBuilder,
-                Ast.Constant(_lambda),            // proc object
+                AstUtils.Constant(_lambda),            // proc object
                 args.TargetExpression,            // self
-                Ast.Constant(this),               // this method for super and class_eval
+                AstUtils.Constant(this),               // this method for super and class_eval
                 args
             );
         }

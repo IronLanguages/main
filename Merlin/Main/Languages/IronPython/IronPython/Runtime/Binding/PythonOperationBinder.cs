@@ -20,6 +20,7 @@ using System.Linq.Expressions;
 using Microsoft.Scripting.Actions;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
+using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 using IronPython.Runtime.Binding;
 using IronPython.Runtime.Operations;
@@ -83,7 +84,7 @@ namespace IronPython.Runtime.Binding {
             return Ast.Call(
                 typeof(PythonOps).GetMethod("MakeOperationAction"),
                 BindingHelpers.CreateBinderStateExpression(),
-                Expression.Constant((int)Operation)
+                AstUtils.Constant((int)Operation)
             );
         }
 

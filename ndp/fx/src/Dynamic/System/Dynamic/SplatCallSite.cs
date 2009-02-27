@@ -15,15 +15,18 @@
 
 using System.Diagnostics;
 using System.Linq.Expressions;
+using System.Runtime.CompilerServices;
 
 namespace System.Dynamic {
 
     internal sealed class SplatCallSite {
-        // stored callable. also used as identity of the handler.
+        // Stored callable Delegate or IDynamicMetaObjectProvider.
         internal readonly object _callable;
 
-        // lambda that contains callsite expr.
-        private Func<object, object[], object> _caller = null;
+        // Can the number of arguments to a given event change each call?
+        // If not, we don't need this level of indirection--we could cache a
+        // delegate that does the splatting.
+        internal CallSite<Func<CallSite, object, object[], object>> _site;
 
         internal SplatCallSite(object callable) {
             Debug.Assert(callable != null);
@@ -32,46 +35,19 @@ namespace System.Dynamic {
 
         internal object Invoke(object[] args) {
             Debug.Assert(args != null);
-            
-            if (_caller == null) {
-                if (_callable as Delegate != null) {
-                    _caller = MakeDelegateCaller();
-                } else {
-                    _caller = MakeSplatCaller();
-                }
+
+            // If it is a delegate, just let DynamicInvoke do the binding.
+            var d = _callable as Delegate;
+            if (d != null) {
+                return d.DynamicInvoke(args);
             }
 
-            return _caller(_callable, args);
-        }
+            // Otherwise, create a CallSite and invoke it.
+            if (_site == null) {
+                _site = CallSite<Func<CallSite, object, object[], object>>.Create(SplatInvokeBinder.Instance);
+            }
 
-        private static Func<object, object[], object> MakeDelegateCaller() {
-            return (object del, object[] args) => ((Delegate)del).DynamicInvoke(args);
-        }
-
-
-        /// <summary>
-        /// creates a lambda that represent dynamic operation bound by SplatInvokeBinder
-        ///   (target, args) => SplatInvoke(target, args) 
-        /// </summary>
-        /// <returns></returns>
-        private static Func<object, object[], object> MakeSplatCaller() {
-            ParameterExpression target = Expression.Parameter(typeof(object), "target");
-            ParameterExpression args = Expression.Parameter(typeof(object[]), "args");
-
-            DynamicExpression de = Expression.Dynamic(
-                SplatInvokeBinder.Instance,
-                typeof(object),
-                target,
-                args
-            );
-
-            var caller = Expression.Lambda<Func<object, object[], object>>(
-                de,
-                target,
-                args
-            );
-
-            return caller.Compile();
+            return _site.Target(_site, _callable, args);
         }
     }
 }
