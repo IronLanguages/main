@@ -98,7 +98,7 @@ namespace IronPython.Compiler.Ast {
                     statements.Add(mce);
                 }
 
-                statements.Add(Ast.Empty());
+                statements.Add(AstUtils.Empty());
                 return ag.AddDebugInfo(Ast.Block(statements.ToArray()), Span);
             }
         }

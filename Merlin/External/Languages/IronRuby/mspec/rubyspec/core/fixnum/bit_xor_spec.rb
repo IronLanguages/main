@@ -4,11 +4,11 @@ describe "Fixnum#^" do
   it "returns self bitwise EXCLUSIVE OR other" do
     (3 ^ 5).should == 6
     (-2 ^ -255).should == 255
-    (5 ^ bignum_value + 0xffff_ffff).should == 0x8000_0000_ffff_fffa
+    (5 ^ bignum_value + 0xffff_ffff).should eql(0x8000_0000_ffff_fffa)
   end
   
   it "should be able to AND a bignum with a fixnum" do
-    (-1 ^ 2**64).should == -18446744073709551617
+    (-1 ^ 2**64).should eql(-18446744073709551617)
   end
   
   ruby_version_is "" ... "1.9" do
@@ -41,7 +41,7 @@ describe "Fixnum#^" do
   ruby_bug "#", "1.8.6" do # Fixed at MRI 1.8.7
     it "coerces arguments correctly even if it is a Bignum" do
       (obj = mock('large value')).should_receive(:to_int).and_return(8000_0000_0000_0000_0000)
-      (3 ^ obj).should == 80000000000000000003
+      (3 ^ obj).should eql(80000000000000000003)
     end
   end
 end

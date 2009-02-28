@@ -235,12 +235,17 @@ namespace IronRuby.Runtime {
 
         [Emitted]
         public static object GetLocalVariable(RubyScope/*!*/ scope, string/*!*/ name) {
-            return scope.ResolveLocalVariable(name);
+            return scope.ResolveLocalVariable(SymbolTable.StringToId(name));
         }
 
         [Emitted]
         public static object SetLocalVariable(object value, RubyScope/*!*/ scope, string/*!*/ name) {
-            return scope.Frame[SymbolTable.StringToId(name)] = value;
+            return scope.ResolveAndSetLocalVariable(SymbolTable.StringToId(name), value);
+        }
+
+        [Emitted]
+        public static StrongBox<int>/*!*/ GetSelfClassVersionHandle(RubyScope/*!*/ scope) {
+            return scope.SelfImmediateClass.Version;
         }
 
         #endregion
@@ -595,7 +600,7 @@ namespace IronRuby.Runtime {
         public static void UndefineMethod(RubyScope/*!*/ scope, string/*!*/ name) {
             RubyModule owner = scope.GetInnerMostModule();
 
-            if (!owner.ResolveMethod(name, true).Found) {
+            if (!owner.ResolveMethod(name, RubyClass.IgnoreVisibility).Found) {
                 throw RubyExceptions.CreateUndefinedMethodError(owner, name);
             }
             owner.UndefineMethod(name);
@@ -605,7 +610,7 @@ namespace IronRuby.Runtime {
         public static bool IsDefinedMethod(object self, RubyScope/*!*/ scope, string/*!*/ name) {
             // MRI: this is different from UndefineMethod, it behaves like Kernel#method (i.e. doesn't use lexical scope):
             // TODO: visibility
-            return scope.RubyContext.ResolveMethod(self, name, true).Found;
+            return scope.RubyContext.ResolveMethod(self, name, RubyClass.IgnoreVisibility).Found;
         }
 
         #endregion
@@ -1398,6 +1403,11 @@ namespace IronRuby.Runtime {
         [Emitted]
         public static Exception/*!*/ MakePrivateMethodCalledError(RubyContext/*!*/ context, object target, string/*!*/ methodName) {
             return RubyExceptions.CreatePrivateMethodCalled(context, target, methodName);
+        }
+
+        [Emitted]
+        public static Exception/*!*/ MakeProtectedMethodCalledError(RubyContext/*!*/ context, object target, string/*!*/ methodName) {
+            return RubyExceptions.CreateProtectedMethodCalled(context, target, methodName);
         }
 
         #endregion

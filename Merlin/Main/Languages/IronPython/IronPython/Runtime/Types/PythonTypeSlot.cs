@@ -83,7 +83,7 @@ namespace IronPython.Runtime.Types {
                  typeof(PythonOps).GetMethod("SlotTryGetValue"),
                  codeContext,
                  AstUtils.Convert(AstUtils.WeakConstant(this), typeof(PythonTypeSlot)),
-                 instance ?? Ast.Constant(null),
+                 instance ?? AstUtils.Constant(null),
                  owner,
                  tmp
             );

@@ -20,6 +20,12 @@ using Microsoft.Scripting.Math;
 namespace Microsoft.Scripting.Ast {
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1724:TypeNamesShouldNotMatchNamespaces")]
     public static partial class Utils {
+        private static readonly ConstantExpression TrueLiteral = Expression.Constant(true, typeof(bool));
+        private static readonly ConstantExpression FalseLiteral = Expression.Constant(false, typeof(bool));
+        private static readonly ConstantExpression NullLiteral = Expression.Constant(null, typeof(object));
+        private static readonly ConstantExpression EmptyStringLiteral = Expression.Constant(String.Empty, typeof(string));
+        private static readonly ConstantExpression[] IntCache = new ConstantExpression[100];
+
         /// <summary>
         /// Wraps the given value in a WeakReference and returns a tree that will retrieve
         /// the value from the WeakReference.
@@ -27,12 +33,20 @@ namespace Microsoft.Scripting.Ast {
         public static MemberExpression WeakConstant(object value) {
             System.Diagnostics.Debug.Assert(!(value is Expression));
             return Expression.Property(
-                Expression.Constant(new WeakReference(value)),
+                Constant(new WeakReference(value)),
                 typeof(WeakReference).GetProperty("Target")
             );
         }
 
+        public static ConstantExpression Constant(object value, Type type) {
+            return Expression.Constant(value, type);
+        }
+
+        // The helper API should return ConstantExpression after SymbolConstantExpression goes away
         public static Expression Constant(object value) {
+            if (value == null) {
+                return NullLiteral;
+            }
             if (value is SymbolId) {
                 return new SymbolConstantExpression((SymbolId)value);
             }
@@ -42,6 +56,29 @@ namespace Microsoft.Scripting.Ast {
             } else if (value is Complex64) {
                 return ComplexConstant((Complex64)value);
             } else {
+                Type t = value.GetType();
+                if (!t.IsEnum) {
+                    switch (Type.GetTypeCode(t)) {
+                        case TypeCode.Boolean:
+                            return (bool)value ? TrueLiteral : FalseLiteral;
+                        case TypeCode.Int32:
+                            int x = (int)value;
+                            int cacheIndex = x + 2;
+                            if (cacheIndex >= 0 && cacheIndex < IntCache.Length) {
+                                ConstantExpression res;
+                                if ((res = IntCache[cacheIndex]) == null) {
+                                    IntCache[cacheIndex] = res = Constant(x, typeof(int));
+                                }
+                                return res;
+                            }
+                            break;
+                        case TypeCode.String:
+                            if (String.IsNullOrEmpty((string)value)) {
+                                return EmptyStringLiteral;
+                            }
+                            break;
+                    }
+                }
                 return Expression.Constant(value);
             }
         }
@@ -51,7 +88,7 @@ namespace Microsoft.Scripting.Ast {
             if (value.AsInt32(out ival)) {
                 return Expression.Call(
                     typeof(BigInteger).GetMethod("Create", new Type[] { typeof(int) }),
-                    Expression.Constant(ival)
+                    Constant(ival)
                 );
             }
 
@@ -59,13 +96,13 @@ namespace Microsoft.Scripting.Ast {
             if (value.AsInt64(out lval)) {
                 return Expression.Call(
                     typeof(BigInteger).GetMethod("Create", new Type[] { typeof(long) }),
-                    Expression.Constant(lval)
+                    Constant(lval)
                 );
             }
 
             return Expression.New(
                 typeof(BigInteger).GetConstructor(new Type[] { typeof(int), typeof(uint[]) }),
-                Expression.Constant((int)value.Sign),
+                Constant((int)value.Sign),
                 CreateUIntArray(value.GetBits())
             );
         }
@@ -73,7 +110,7 @@ namespace Microsoft.Scripting.Ast {
         private static Expression CreateUIntArray(uint[] array) {
             Expression[] init = new Expression[array.Length];
             for (int i = 0; i < init.Length; i++) {
-                init[i] = Expression.Constant(array[i]);
+                init[i] = Constant(array[i]);
             }
             return Expression.NewArrayInit(typeof(uint), init);
         }
@@ -83,19 +120,19 @@ namespace Microsoft.Scripting.Ast {
                 if (value.Imag != 0.0) {
                     return Expression.Call(
                         typeof(Complex64).GetMethod("Make"),
-                        Expression.Constant(value.Real),
-                        Expression.Constant(value.Imag)
+                        Constant(value.Real),
+                        Constant(value.Imag)
                     );
                 } else {
                     return Expression.Call(
                         typeof(Complex64).GetMethod("MakeReal"),
-                        Expression.Constant(value.Real)
+                        Constant(value.Real)
                     );
                 }
             } else {
                 return Expression.Call(
                     typeof(Complex64).GetMethod("MakeImaginary"),
-                    Expression.Constant(value.Imag)
+                    Constant(value.Imag)
                 );
             }
         }

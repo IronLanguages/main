@@ -190,7 +190,13 @@ class MSpecScript
     $VERBOSE = nil unless ENV['OUTPUT_WARNINGS']
     script = new
     script.load_default
-    script.load '~/.mspecrc'
+    begin
+      script.load '~/.mspecrc' 
+    rescue ArgumentError => e
+      unless e.message.include?("HOME")
+        puts e.message
+      end
+    end
     script.options
     script.signals
     script.register

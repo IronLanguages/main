@@ -169,5 +169,9 @@ namespace IronRuby.Runtime {
         public static Exception/*!*/ CreatePrivateMethodCalled(RubyContext/*!*/ context, object self, string/*!*/ name) {
             return new MissingMethodException(FormatMethodMissingMessage(context, self, name, "private method `{0}' called for {1}"));
         }
+
+        public static Exception/*!*/ CreateProtectedMethodCalled(RubyContext/*!*/ context, object self, string/*!*/ name) {
+            return new MissingMethodException(FormatMethodMissingMessage(context, self, name, "protected method `{0}' called for {1}"));
+        }
     }
 }

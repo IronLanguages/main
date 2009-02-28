@@ -20,8 +20,6 @@ namespace System.Linq.Expressions {
     /// Represents the default value of a type or an empty expression.
     /// </summary>
     public sealed class DefaultExpression : Expression {
-        internal static readonly DefaultExpression VoidInstance = new DefaultExpression(typeof(void));
-
         private readonly Type _type;
 
         internal DefaultExpression(Type type) {
@@ -59,7 +57,7 @@ namespace System.Linq.Expressions {
         /// <see cref="F:ExpressionType.Default"/> and the <see cref="P:Expression.Type"/> property set to <see cref="System.Void"/>.
         /// </returns>
         public static DefaultExpression Empty() {
-            return DefaultExpression.VoidInstance;
+            return new DefaultExpression(typeof(void));
         }
 
         /// <summary>

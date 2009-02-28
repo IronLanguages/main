@@ -279,7 +279,7 @@ namespace IronPython.Compiler.Ast {
             if (ag.DebugMode) {
                 // add beginning and ending break points for the function.
                 if (GetExpressionEnd(statements[statements.Count - 1]) != Body.End) {
-                    statements.Add(ag.AddDebugInfo(Ast.Empty(), new SourceSpan(Body.End, Body.End)));
+                    statements.Add(ag.AddDebugInfo(AstUtils.Empty(), new SourceSpan(Body.End, Body.End)));
                 }
             }
 
@@ -337,18 +337,18 @@ namespace IronPython.Compiler.Ast {
                 new ReadOnlyCollection<MSAst.Expression>(
                     new [] {
                         AstUtils.CodeContext(),                                                         // 1. Emit CodeContext
-                        Ast.Constant(name),                                                             // 2. FunctionName
+                        AstUtils.Constant(name),                                                             // 2. FunctionName
                         code,                                                                           // 3. delegate
                         names.Count == 0 ?                                                              // 4. parameter names
-                            Ast.Constant(null, typeof(string[])) :
+                            AstUtils.Constant(null, typeof(string[])) :
                             (MSAst.Expression)Ast.NewArrayInit(typeof(string), names),
                         defaults.Count == 0 ?                                                           // 5. default values
-                            Ast.Constant(null, typeof(object[])) :
+                            AstUtils.Constant(null, typeof(object[])) :
                             (MSAst.Expression)Ast.NewArrayInit(typeof(object), defaults),                                   
-                        Ast.Constant(flags),                                                            // 6. flags
-                        Ast.Constant(ag.GetDocumentation(_body), typeof(string)),                       // 7. doc string or null
-                        Ast.Constant(this.Start.Line),                                                  // 8. line number
-                        Ast.Constant(_sourceUnit.Path, typeof(string))                                  // 9. filename
+                        AstUtils.Constant(flags),                                                            // 6. flags
+                        AstUtils.Constant(ag.GetDocumentation(_body), typeof(string)),                       // 7. doc string or null
+                        AstUtils.Constant(this.Start.Line),                                                  // 8. line number
+                        AstUtils.Constant(_sourceUnit.Path, typeof(string))                                  // 9. filename
                     }
                 )
             );
@@ -380,7 +380,7 @@ namespace IronPython.Compiler.Ast {
                 }
 
                 names.Add(
-                    Ast.Constant(
+                    AstUtils.Constant(
                         SymbolTable.IdToString(p.Name)
                     )
                 );

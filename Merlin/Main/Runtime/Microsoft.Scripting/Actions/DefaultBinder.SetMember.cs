@@ -42,7 +42,7 @@ namespace Microsoft.Scripting.Actions {
         /// The value being assigned to the target member.
         /// </param>
         public DynamicMetaObject SetMember(string name, DynamicMetaObject target, DynamicMetaObject value) {
-            return SetMember(name, target, value, Ast.Constant(null, typeof(CodeContext)));
+            return SetMember(name, target, value, AstUtils.Constant(null, typeof(CodeContext)));
         }
 
         /// <summary>
@@ -242,9 +242,9 @@ namespace Microsoft.Scripting.Actions {
                     memInfo.Body.FinishCondition(
                         MakeReturnValue(
                             Ast.Call(
-                                Ast.Constant(((ReflectedPropertyTracker)info).Property), // TODO: Private binding on extension properties
+                                AstUtils.Constant(((ReflectedPropertyTracker)info).Property), // TODO: Private binding on extension properties
                                 typeof(PropertyInfo).GetMethod("SetValue", new Type[] { typeof(object), typeof(object), typeof(object[]) }),
-                                instance == null ? Ast.Constant(null) : AstUtils.Convert(instance, typeof(object)),
+                                instance == null ? AstUtils.Constant(null) : AstUtils.Convert(instance, typeof(object)),
                                 AstUtils.Convert(target.Expression, typeof(object)),
                                 Ast.NewArrayInit(typeof(object))
                             ),
@@ -297,7 +297,7 @@ namespace Microsoft.Scripting.Actions {
                     Ast.Throw(
                         Ast.New(
                             typeof(ArgumentException).GetConstructor(new Type[] { typeof(string) }),
-                            Ast.Constant("cannot assign to value types")
+                            AstUtils.Constant("cannot assign to value types")
                         )
                     )
                 );
@@ -320,10 +320,10 @@ namespace Microsoft.Scripting.Actions {
                 memInfo.Body.FinishCondition(
                     MakeReturnValue(
                         Ast.Call(
-                            AstUtils.Convert(Ast.Constant(field.Field), typeof(FieldInfo)),
+                            AstUtils.Convert(AstUtils.Constant(field.Field), typeof(FieldInfo)),
                             typeof(FieldInfo).GetMethod("SetValue", new Type[] { typeof(object), typeof(object) }),
                             field.IsStatic ?
-                                Ast.Constant(null) :
+                                AstUtils.Constant(null) :
                                 (Expression)AstUtils.Convert(instance, typeof(object)),
                             AstUtils.Convert(target.Expression, typeof(object))
                         ),
@@ -348,7 +348,7 @@ namespace Microsoft.Scripting.Actions {
                     ParameterExpression tmp = Ast.Variable(target.Expression.Type, "setValue");
                     memInfo.Body.AddVariable(tmp);
 
-                    Expression call = MakeCallExpression(memInfo.CodeContext, setMem, AstUtils.Convert(self, type), Ast.Constant(memInfo.Name), tmp);
+                    Expression call = MakeCallExpression(memInfo.CodeContext, setMem, AstUtils.Convert(self, type), AstUtils.Constant(memInfo.Name), tmp);
 
                     call = Ast.Block(Ast.Assign(tmp, target.Expression), call);
 
@@ -371,7 +371,7 @@ namespace Microsoft.Scripting.Actions {
         private static Expression MakeGenericPropertyExpression(SetOrDeleteMemberInfo memInfo) {
             return Ast.New(
                 typeof(MemberAccessException).GetConstructor(new Type[] { typeof(string) }),
-                Ast.Constant(memInfo.Name)
+                AstUtils.Constant(memInfo.Name)
             );
         }
     }

@@ -93,7 +93,7 @@ namespace IronRuby.Builtins {
         [RubyMethodAttribute("atanh", RubyMethodAttributes.PublicSingleton)]
         public static double Atanh(object self, [DefaultProtocol]double x) {
             //(1/2) * ln((1+x)/(1-x))
-            return DomainCheck((1 / 2) * SM.Log((1 + x) / (1 - x)), "atanh");
+            return DomainCheck(0.5 * SM.Log((1 + x) / (1 - x)), "atanh");
         }
         
         [RubyMethodAttribute("cos", RubyMethodAttributes.PrivateInstance)]

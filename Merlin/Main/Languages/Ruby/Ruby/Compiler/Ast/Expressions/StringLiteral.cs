@@ -65,12 +65,12 @@ namespace IronRuby.Compiler.Ast {
 
         internal override MSA.Expression/*!*/ TransformRead(AstGenerator/*!*/ gen) {
             if (IsAscii || gen.Encoding == BinaryEncoding.Instance) {
-                return Methods.CreateMutableStringB.OpCall(Ast.Constant(_value));
+                return Methods.CreateMutableStringB.OpCall(AstUtils.Constant(_value));
             } else if (IsUTF8 || gen.Encoding == BinaryEncoding.UTF8) {
-                return Methods.CreateMutableStringU.OpCall(Ast.Constant(_value));
+                return Methods.CreateMutableStringU.OpCall(AstUtils.Constant(_value));
             } else {
                 return Methods.CreateMutableStringE.OpCall(
-                    Ast.Constant(_value), Ast.Constant(RubyEncoding.GetCodePage(gen.Encoding))
+                    AstUtils.Constant(_value), AstUtils.Constant(RubyEncoding.GetCodePage(gen.Encoding))
                 );
             }
         }

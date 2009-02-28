@@ -40,7 +40,7 @@ namespace IronPython.Compiler.Ast {
 
             MSAst.Expression[] stmts = ag.Transform(_statements);
             if (stmts.Length == 0) {
-                return Ast.Empty();
+                return AstUtils.Empty();
             }
 
             foreach (MSAst.Expression stmt in stmts) {

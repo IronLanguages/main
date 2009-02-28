@@ -19,6 +19,7 @@ using Microsoft.Scripting;
 using Microsoft.Scripting.Actions;
 using Microsoft.Scripting.Utils;
 using IronRuby.Runtime;
+using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace IronRuby.Compiler.Ast {
     using Ast = System.Linq.Expressions.Expression;
@@ -179,7 +180,7 @@ namespace IronRuby.Compiler.Ast {
         }
 
         internal static MSA.Expression/*!*/ TransformToReturnValue(AstGenerator/*!*/ gen, Arguments arguments) {
-            return (arguments != null) ? arguments.TransformToReturnValue(gen) : Ast.Constant(null);
+            return (arguments != null) ? arguments.TransformToReturnValue(gen) : AstUtils.Constant(null);
         }
 
         #endregion

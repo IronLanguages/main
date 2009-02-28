@@ -71,8 +71,8 @@ namespace IronPython.Compiler.Ast {
                     Ast.Call(
                         AstGenerator.GetHelperMethod("ImportStar"), 
                         AstUtils.CodeContext(), 
-                        Ast.Constant(_root.MakeString()), 
-                        Ast.Constant(GetLevel())
+                        AstUtils.Constant(_root.MakeString()), 
+                        AstUtils.Constant(GetLevel())
                     ),
                     Span
                 );
@@ -83,9 +83,9 @@ namespace IronPython.Compiler.Ast {
                 MSAst.ParameterExpression module = ag.GetTemporary("module");
 
                 // Create initializer of the array of names being passed to ImportWithNames
-                MSAst.ConstantExpression[] names = new MSAst.ConstantExpression[_names.Length];
+                MSAst.Expression[] names = new MSAst.Expression[_names.Length];
                 for (int i = 0; i < names.Length; i++) {
-                    names[i] = Ast.Constant(SymbolTable.IdToString(_names[i]));
+                    names[i] = AstUtils.Constant(SymbolTable.IdToString(_names[i]));
                 }
 
                 // module = PythonOps.ImportWithNames(<context>, _root, make_array(_names))
@@ -96,9 +96,9 @@ namespace IronPython.Compiler.Ast {
                             Ast.Call(
                                 AstGenerator.GetHelperMethod("ImportWithNames"),
                                 AstUtils.CodeContext(),
-                                Ast.Constant(_root.MakeString()),
+                                AstUtils.Constant(_root.MakeString()),
                                 Ast.NewArrayInit(typeof(string), names),
-                                Ast.Constant(GetLevel())
+                                AstUtils.Constant(GetLevel())
                             )
                         ),
                         _root.Span
@@ -123,7 +123,7 @@ namespace IronPython.Compiler.Ast {
                     );
                 }
 
-                statements.Add(Ast.Empty());
+                statements.Add(AstUtils.Empty());
                 return ag.AddDebugInfo(Ast.Block(statements.ToArray()), Span);
             }
         }

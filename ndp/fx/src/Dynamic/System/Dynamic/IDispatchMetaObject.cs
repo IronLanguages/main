@@ -104,13 +104,13 @@ namespace System.Dynamic {
         private DynamicMetaObject BindGetMember(ComMethodDesc method, bool canReturnCallables) {
             if (method.IsDataMember) {
                 if (method.ParamCount == 0) {
-                    return BindComInvoke(DynamicMetaObject.EmptyMetaObjects, method, Expression.CallInfo(0) , new bool[]{});
+                    return BindComInvoke(DynamicMetaObject.EmptyMetaObjects, method, new CallInfo(0) , new bool[]{});
                 }
             }
 
             // ComGetMemberBinder does not expect callables. Try to call always.
             if (!canReturnCallables) {
-                return BindComInvoke(DynamicMetaObject.EmptyMetaObjects, method, Expression.CallInfo(0), new bool[0]);
+                return BindComInvoke(DynamicMetaObject.EmptyMetaObjects, method, new CallInfo(0), new bool[0]);
             }
 
             return new DynamicMetaObject(
@@ -195,7 +195,7 @@ namespace System.Dynamic {
                     );
 
                 return new ComInvokeBinder(
-                    Expression.CallInfo(1),
+                    new CallInfo(1),
                     new[] { value },
                     new bool[] { false },
                     restrictions,

@@ -246,7 +246,7 @@ namespace IronRuby.Runtime.Calls {
         internal void InsertMethodName(string/*!*/ methodName) {
             // insert the method name argument into the args
             object symbol = SymbolTable.StringToId(methodName);
-            InsertSimple(0, new DynamicMetaObject(Ast.Constant(symbol), BindingRestrictions.Empty, symbol));
+            InsertSimple(0, new DynamicMetaObject(AstUtils.Constant(symbol), BindingRestrictions.Empty, symbol));
         }
 
         public void SetSimpleArgument(int index, DynamicMetaObject/*!*/ arg) {

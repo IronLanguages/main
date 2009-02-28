@@ -87,7 +87,7 @@ namespace IronRuby.Runtime.Calls {
         Expression/*!*/ IExpressionSerializable.CreateExpression() {
             return Expression.Call(
                 Methods.GetMethod(typeof(RubyCallAction), "Make", typeof(string), typeof(RubyCallSignature)),
-                Expression.Constant(_methodName),
+                AstUtils.Constant(_methodName),
                 _signature.CreateExpression()
             );
         }
@@ -109,16 +109,28 @@ namespace IronRuby.Runtime.Calls {
             using (targetClass.Context.ClassHierarchyLocker()) {
                 metaBuilder.AddTargetTypeTest(args.Target, targetClass, args.TargetExpression, args.RubyContext, args.ContextExpression);
 
-                method = targetClass.ResolveMethodForSiteNoLock(methodName, args.Signature.HasImplicitSelf);
+                // TODO: HasScope
+                var visibilityContext = args.Signature.HasImplicitSelf || !args.Signature.HasScope ? RubyClass.IgnoreVisibility : args.Scope.SelfImmediateClass;
+                method = targetClass.ResolveMethodForSiteNoLock(methodName, visibilityContext);
                 if (!method.Found) {
                     if (args.Signature.IsTryCall) {
                         // TODO: this shouldn't throw. We need to fix caching of non-existing methods.
                         throw new MissingMethodException();
-                        // metaBuilder.Result = Ast.Constant(Fields.RubyOps_MethodNotFound);
+                        // metaBuilder.Result = AstUtils.Constant(Fields.RubyOps_MethodNotFound);
                     } else {
                         methodMissing = targetClass.ResolveMethodMissingForSite(methodName, method.IncompatibleVisibility);
                     }
                 }
+            }
+
+            // Whenever the current self's class changes we need to invalidate the rule, if a protected method is being called.
+            if (method.Info != null && method.Info.IsProtected && !args.Signature.HasImplicitSelf) {
+                // We don't need to compare versions, just the class objects (super-class relationship cannot be changed).
+                // Since we don't want to hold on a class object (to make it collectible) we compare references to the version boxes.
+                metaBuilder.AddCondition(Ast.Equal(
+                    Methods.GetSelfClassVersionHandle.OpCall(args.ScopeExpression), 
+                    Ast.Constant(args.Scope.SelfImmediateClass.Version)
+                ));
             }
 
             if (method.Found) {
@@ -138,9 +150,11 @@ namespace IronRuby.Runtime.Calls {
                 methodMissing.DeclaringModule == methodMissing.Context.KernelModule && methodMissing is RubyLibraryMethodInfo) {
 
                 if (isSuperCall) {
-                    metaBuilder.SetError(Methods.MakeMissingSuperException.OpCall(Ast.Constant(methodName)));
+                    metaBuilder.SetError(Methods.MakeMissingSuperException.OpCall(AstUtils.Constant(methodName)));
                 } else if (incompatibleVisibility == RubyMethodVisibility.Private) {
-                    metaBuilder.SetError(Methods.MakePrivateMethodCalledError.OpCall(args.ContextExpression, args.TargetExpression, Ast.Constant(methodName)));
+                    metaBuilder.SetError(Methods.MakePrivateMethodCalledError.OpCall(args.ContextExpression, args.TargetExpression, AstUtils.Constant(methodName)));
+                } else if (incompatibleVisibility == RubyMethodVisibility.Protected) {
+                    metaBuilder.SetError(Methods.MakeProtectedMethodCalledError.OpCall(args.ContextExpression, args.TargetExpression, AstUtils.Constant(methodName)));
                 } else {
                     // TODO: fallback
                     methodMissing.BuildCall(metaBuilder, args, methodName);

@@ -111,7 +111,7 @@ namespace IronPython.Compiler.Ast {
                     del = Ast.Block(
                         Transform(ag, variable.Type),
                         del,
-                        Ast.Empty()
+                        AstUtils.Empty()
                     );
                 }
                 return del;

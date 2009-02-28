@@ -95,6 +95,28 @@ END
             AssertOutput(() => CompilerTest(body), output, OutputFlags.Match);
         }
 
+        /// <summary>
+        /// Assigning to a variable defined in an outer scope shouldn't define a new variable in the currenct scope.
+        /// </summary>
+        public void Eval4() {
+            AssertOutput(delegate() {
+                CompilerTest(@"
+1.times {
+  x = nil
+  1.times {
+    eval('1.times { x = 2 }')
+  } 
+  
+  module M
+    eval('x = 3')
+  end
+
+  puts x
+}
+");
+            }, "2");
+        }
+
         public void EvalReturn1() {
             AssertOutput(delegate() {
                 CompilerTest(@"

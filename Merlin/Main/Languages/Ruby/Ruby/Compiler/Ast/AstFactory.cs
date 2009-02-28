@@ -39,9 +39,9 @@ namespace IronRuby.Compiler.Ast {
 
         public static readonly MSA.Expression[] EmptyExpressions = new MSA.Expression[0];
         public static readonly MSA.ParameterExpression[] EmptyParameters = new MSA.ParameterExpression[0];
-        public static readonly MSA.Expression NullOfMutableString = Ast.Constant(null, typeof(MutableString));
-        public static readonly MSA.Expression NullOfProc = Ast.Constant(null, typeof(Proc));
-        internal static readonly MSA.Expression BlockReturnReasonBreak = Ast.Constant(BlockReturnReason.Break);
+        public static readonly MSA.Expression NullOfMutableString = AstUtils.Constant(null, typeof(MutableString));
+        public static readonly MSA.Expression NullOfProc = AstUtils.Constant(null, typeof(Proc));
+        internal static readonly MSA.Expression BlockReturnReasonBreak = AstUtils.Constant(BlockReturnReason.Break);
 
         #region Control Flow
 
@@ -65,9 +65,9 @@ namespace IronRuby.Compiler.Ast {
             MSA.Expression profileStart, profileEnd;
             if (stampVariable != null) {
                 profileStart = Ast.Assign(stampVariable, Methods.Stopwatch_GetTimestamp.OpCall());
-                profileEnd = Methods.UpdateProfileTicks.OpCall(Ast.Constant(profileTickIndex), stampVariable);
+                profileEnd = Methods.UpdateProfileTicks.OpCall(AstUtils.Constant(profileTickIndex), stampVariable);
             } else {
-                profileStart = profileEnd = Ast.Empty();
+                profileStart = profileEnd = AstUtils.Empty();
             }
 
             return AstUtils.Try(
@@ -81,13 +81,13 @@ namespace IronRuby.Compiler.Ast {
                 resultExpression
 
             ).Finally(
-                Ast.Assign(Ast.Field(rfcVariable, RuntimeFlowControl.IsActiveMethodField), Ast.Constant(false)),
+                Ast.Assign(Ast.Field(rfcVariable, RuntimeFlowControl.IsActiveMethodField), AstUtils.Constant(false)),
                 profileEnd,
                 gen != null && gen.TraceEnabled ? Methods.TraceMethodReturn.OpCall(
                     gen.CurrentScopeVariable, 
-                    Ast.Convert(Ast.Constant(gen.SourceUnit.Path), typeof(string)),
-                    Ast.Constant(lastLine)
-                ) : Ast.Empty()
+                    Ast.Convert(AstUtils.Constant(gen.SourceUnit.Path), typeof(string)),
+                    AstUtils.Constant(lastLine)
+                ) : AstUtils.Empty()
             );
         }
 
@@ -103,7 +103,7 @@ namespace IronRuby.Compiler.Ast {
 
         public static MSA.Expression/*!*/ Block(params MSA.Expression/*!*/[]/*!*/ expressions) {
             switch (expressions.Length) {
-                case 0: return Ast.Empty();
+                case 0: return AstUtils.Empty();
                 case 1: return expressions[0];
                 default: return Ast.Block(new ReadOnlyCollection<MSA.Expression>(expressions));
             }
@@ -111,7 +111,7 @@ namespace IronRuby.Compiler.Ast {
 
         public static MSA.Expression/*!*/ Block(List<MSA.Expression/*!*/>/*!*/ expressions) {
             switch (expressions.Count) {
-                case 0: return Ast.Empty();
+                case 0: return AstUtils.Empty();
                 case 1: return expressions[0];
                 default: return Ast.Block(new ReadOnlyCollection<MSA.Expression>(expressions.ToArray()));
             }
@@ -169,14 +169,14 @@ namespace IronRuby.Compiler.Ast {
             // exclude DynamicMethods since Delegate.Method returns a dummy MethodInfo, and we cannot emit a call to it.
             if (method.Method.DeclaringType == null || !method.Method.DeclaringType.IsPublic || !method.Method.IsPublic) {
                 // do not inline:
-                return Ast.Call(Ast.Constant(method), method.GetType().GetMethod("Invoke"), arguments);
+                return Ast.Call(AstUtils.Constant(method), method.GetType().GetMethod("Invoke"), arguments);
             } else if (method.Target != null) {
                 if (method.Method.IsStatic) {
                     // inline a closed static delegate:
-                    return Ast.Call(null, method.Method, ArrayUtils.Insert(Ast.Constant(method.Target), arguments));
+                    return Ast.Call(null, method.Method, ArrayUtils.Insert(AstUtils.Constant(method.Target), arguments));
                 } else {
                     // inline a closed instance delegate:
-                    return Ast.Call(Ast.Constant(method.Target), method.Method, arguments);
+                    return Ast.Call(AstUtils.Constant(method.Target), method.Method, arguments);
                 }
             } else if (method.Method.IsStatic) {
                 // inline an open static delegate:

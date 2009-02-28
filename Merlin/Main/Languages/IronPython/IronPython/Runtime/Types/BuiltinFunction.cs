@@ -293,7 +293,7 @@ namespace IronPython.Runtime.Types {
             return Ast.Call(
                 typeof(PythonOps).GetMethod("TestBoundBuiltinFunction"),
                 functionTarget,
-                Ast.Constant(_data, typeof(object))
+                AstUtils.Constant(_data, typeof(object))
             );
         }
         
@@ -313,7 +313,7 @@ namespace IronPython.Runtime.Types {
         }
 
         internal override Expression/*!*/ MakeGetExpression(PythonBinder/*!*/ binder, Expression/*!*/ codeContext, Expression instance, Expression/*!*/ owner, Expression/*!*/ error) {
-            return Ast.Constant(this);
+            return AstUtils.Constant(this);
         }
 
         #endregion                
@@ -402,7 +402,7 @@ namespace IronPython.Runtime.Types {
                            typeof(PythonOps).GetMethod("UserMappingToPythonDictionary"),
                            codeContext,
                            args[index].Expression,
-                           Ast.Constant(Name)
+                           AstUtils.Constant(Name)
                         ),
                         BindingRestrictionsHelpers.GetRuntimeTypeRestriction(dict.Expression, dict.GetLimitType()),
                         PythonOps.UserMappingToPythonDictionary(BinderState.GetBinderState(call).Context, dict.Value, Name)

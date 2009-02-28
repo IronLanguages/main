@@ -13,20 +13,17 @@
  *
  * ***************************************************************************/
 
-using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
-using System.Text;
+using System.Runtime.InteropServices;
 
 using Microsoft.Scripting;
+using Microsoft.Scripting.Math;
 using Microsoft.Scripting.Runtime;
-using Microsoft.Scripting.Utils;
 
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
-using System.Runtime.InteropServices;
-using System.Diagnostics;
 
 namespace IronPython.Runtime {
     [PythonType("bytearray")]
@@ -45,12 +42,27 @@ namespace IronPython.Runtime {
             _bytes = new List<byte>();
         }
 
-        public void __init__(IList<byte>/*!*/ bytes) {
-            _bytes = new List<byte>(bytes);
+        public void __init__(List/*!*/ source) {
+            _bytes = ByteOps.GetBytes(source);
         }
 
-        public void __init__(CodeContext/*!*/ context, string unicode, string encoding) {
-            _bytes = new List<byte>(StringOps.encode(context, unicode, encoding, "strict").MakeByteArray());
+        public void __init__(int source) {
+            _bytes = new List<byte>(source);
+            for (int i = 0; i < source; i++) {
+                _bytes.Add(0);
+            }
+        }
+
+        public void __init__(double source) {
+            throw PythonOps.TypeError("'float' object is not iterable");
+        }
+
+        public void __init__(IList<byte>/*!*/ source) {            
+            _bytes = new List<byte>(source);
+        }
+
+        public void __init__(CodeContext/*!*/ context, string source, string encoding, [DefaultParameterValue("strict")]string errors) {
+            _bytes = new List<byte>(StringOps.encode(context, source, encoding, errors).MakeByteArray());
         }
 
         #region Public Mutable Sequence API
@@ -113,6 +125,15 @@ namespace IronPython.Runtime {
             }
         }
 
+        public void remove(object value) {
+            lock (this) {
+                if (value is ByteArray) {
+                    throw PythonOps.TypeError("an integer or string of size 1 is required");
+                }
+                _bytes.RemoveAt(_bytes.IndexOfByte(ByteOps.GetByteListOk(value), 0, _bytes.Count));
+            }
+        }
+        
         public void reverse() {
             lock (this) {
                 List<byte> reversed = new List<byte>();
@@ -124,18 +145,26 @@ namespace IronPython.Runtime {
         }
 
         [SpecialName]
-        public static ByteArray InPlaceAdd(ByteArray self, ByteArray other) {
-            using (new OrderedLocker(self, other)) {
-                self._bytes.AddRange(other._bytes);
-                return self;
+        public ByteArray InPlaceAdd(ByteArray other) {
+            using (new OrderedLocker(this, other)) {
+                _bytes.AddRange(other._bytes);
+                return this;
             }
         }
 
         [SpecialName]
-        public static ByteArray InPlaceMultiply(ByteArray self, int len) {
-            lock (self) {
-                self._bytes = (self * len)._bytes;
-                return self;
+        public ByteArray InPlaceAdd(Bytes other) {
+            lock (this) {
+                _bytes.AddRange(other);
+                return this;
+            }
+        }
+
+        [SpecialName]
+        public ByteArray InPlaceMultiply(int len) {
+            lock (this) {
+                _bytes = (this * len)._bytes;
+                return this;
             }
         }
 
@@ -275,7 +304,12 @@ namespace IronPython.Runtime {
 
         public int index(IList<byte>/*!*/ item, int start, int stop) {
             lock (this) {
-                return _bytes.IndexOfByte(item.ToByte("index", 1), start, stop);
+                int res = find(item, start, stop);
+                if (res == -1) {
+                    throw PythonOps.ValueError("bytearray.index(item): item not in bytearray");
+                }
+
+                return res;
             }
         }
 
@@ -451,7 +485,7 @@ namespace IronPython.Runtime {
                 throw PythonOps.TypeError("expected bytes or bytearray, got NoneType");
             }
 
-            return replace(old, new_, old.Count + 1);
+            return replace(old, new_, _bytes.Count);
         }
 
         public ByteArray/*!*/ replace(IList<byte>/*!*/ old, IList<byte>/*!*/ new_, int maxsplit) {
@@ -542,7 +576,7 @@ namespace IronPython.Runtime {
                         obj[2] = this;
                     } else {
                         obj[0] = new ByteArray(_bytes.Substring(0, index));
-                        obj[1] = sep;
+                        obj[1] = new ByteArray(new List<byte>(sep));
                         obj[2] = new ByteArray(_bytes.Substring(index + sep.Count, Count - index - sep.Count));
                     }
                 }
@@ -564,9 +598,20 @@ namespace IronPython.Runtime {
             return _bytes.RightSplit(sep, maxsplit, x => new ByteArray(new List<byte>(x)));
         }
 
-        public ByteArray rstrip() {
+        public ByteArray/*!*/ rstrip() {
             lock (this) {
                 List<byte> res = _bytes.RightStrip();
+                if (res == null) {
+                    return CopyThis();
+                }
+
+                return new ByteArray(res);
+            }
+        }
+
+        public ByteArray/*!*/  rstrip(IList<byte> bytes) {
+            lock (this) {
+                List<byte> res = _bytes.RightStrip(bytes);
                 if (res == null) {
                     return CopyThis();
                 }
@@ -655,6 +700,17 @@ namespace IronPython.Runtime {
             }
         }
 
+        public ByteArray/*!*/ strip(IList<byte> chars) {
+            lock (this) {
+                List<byte> res = _bytes.Strip(chars);
+                if (res == null) {
+                    return CopyThis();
+                }
+
+                return new ByteArray(res);
+            }
+        }
+
         public ByteArray/*!*/ swapcase() {
             lock (this) {
                 return new ByteArray(_bytes.SwapCase());
@@ -716,6 +772,33 @@ namespace IronPython.Runtime {
 
                 return new ByteArray(_bytes.ZeroFill(width, spaces));
             }
+        }
+
+        public int __alloc__() {
+            if (_bytes.Count == 0) {
+                return 0;
+            }
+
+            return _bytes.Count + 1;
+        }
+
+        public bool __contains__(IList<byte> bytes) {
+            return this.IndexOf(bytes, 0) != -1;
+        }
+
+        public bool __contains__(int value) {
+            return IndexOf(value.ToByteChecked()) != -1;
+        }
+
+        public PythonTuple __reduce__(CodeContext/*!*/ context) {
+            return PythonTuple.MakeTuple(
+                DynamicHelpers.GetPythonType(this), 
+                PythonTuple.MakeTuple(
+                    PythonOps.MakeString(this),
+                    "latin-1"
+                ),
+                GetType() == typeof(ByteArray) ? null : ObjectOps.ReduceProtocol0(context, this)[2]
+            );
         }
 
         public virtual string/*!*/ __repr__(CodeContext/*!*/ context) {
@@ -841,20 +924,20 @@ namespace IronPython.Runtime {
             }
         }
 
-        public int this[int index] {
+        public object this[int index] {
             get {
                 lock (this) {
-                    return (int)_bytes[index];
+                    return ScriptingRuntimeHelpers.Int32ToObject((int)_bytes[PythonOps.FixIndex(index, _bytes.Count)]);
                 }
             }
             set {
                 lock (this) {
-                    _bytes[index] = value.ToByteChecked();
+                    _bytes[PythonOps.FixIndex(index, _bytes.Count)] = ByteOps.GetByteListOk(value);
                 }
             }
         }
 
-        public IList<byte> this[Slice/*!*/ slice] {
+        public object this[Slice/*!*/ slice] {
             get {
                 lock (this) {
                     List<byte> res = _bytes.Slice(slice);
@@ -869,13 +952,47 @@ namespace IronPython.Runtime {
                 if (slice == null) {
                     throw PythonOps.TypeError("bytearray indices must be integer or slice, not None");
                 }
+                
+                // get a list of the bytes we're going to assign into the slice.  We accept:
+                //      integers, longs, etc... - fill in an array of 0 bytes
+                //      list of bytes, indexables, etc...
+
+                IList<byte> list = value as IList<byte>;
+                if (list == null) {
+                    int? iVal = null;
+                    if (value is int) {
+                        iVal = (int)value;
+                    } else if (value is Extensible<int>) {
+                        iVal = ((Extensible<int>)value).Value;
+                    } else if (value is BigInteger) {
+                        int intval;
+                        if (((BigInteger)value).AsInt32(out intval)) {
+                            iVal = intval;
+                        }
+                    }
+
+                    if (iVal != null) {
+                        List<byte> newlist = new List<byte>();
+                        newlist.Capacity = iVal.Value;
+                        for (int i = 0; i < iVal; i++) {
+                            newlist.Add(0);
+                        }
+                        list = newlist;
+                    } else {
+                        IEnumerator ie = PythonOps.GetEnumerator(value);
+                        list = new List<byte>();
+                        while (ie.MoveNext()) {
+                            list.Add(ByteOps.GetByteListOk(ie.Current));
+                        }
+                    }
+                }
 
                 lock (this) {
                     if (slice.step != null) {
                         // try to assign back to self: make a copy first
-                        if (this == value) {
+                        if (this == list) {
                             value = CopyThis();
-                        } else if (value.Count == 0) {
+                        } else if (list.Count == 0) {
                             DeleteItem(slice);
                             return;
                         }
@@ -889,7 +1006,7 @@ namespace IronPython.Runtime {
                         
                         // we don't use slice.Assign* helpers here because bytearray has different assignment semantics.
 
-                        if (value.Count < n) {
+                        if (list.Count < n) {
                             throw PythonOps.ValueError("too few items in the enumerator. need {0} have {1}", n, castedVal.Count);
                         }
 
@@ -907,16 +1024,8 @@ namespace IronPython.Runtime {
                     } else {
                         int start, stop, step;
                         slice.indices(_bytes.Count, out start, out stop, out step);
-                        if (start > stop) {
-                            return;
-                        }
-
-                        ByteArray lstVal = value as ByteArray;
-                        if (lstVal != null) {
-                            SliceNoStep(start, stop, lstVal);
-                        } else {
-                            SliceNoStep(start, stop, value);
-                        }
+                        
+                        SliceNoStep(start, stop, list);
                     }
                 }
             }
@@ -1015,58 +1124,31 @@ namespace IronPython.Runtime {
             return (int)value;
         }
 
-        private void SliceNoStep(int start, int stop, ByteArray/*!*/ other) {
-            Debug.Assert(other != null);
-
-            // We don't lock other here - instead we read it's object array
-            // and size therefore having a stable view even if it resizes.
-            // This means if we had a multithreaded app like:
-            // 
-            //  T1                   T2                     T3
-            //  l1[:] = [1] * 100    l1[:] = [2] * 100      l3[:] = l1[:]
-            //
-            // we can end up with both 1s and 2s in the array.  This is the
-            // same as if our set was implemented on top of get/set item where
-            // we'd take and release the locks repeatedly.
-            int otherSize = other._bytes.Count;
-            List<byte> otherData = other._bytes;
-
-            lock (this) {
-                if ((stop - start) == otherSize) {
-                    // we are simply replacing values, this is fast...
-                    for (int i = 0; i < otherSize; i++) {
-                        _bytes[i + start] = otherData[i];
-                    }
-                } else {
-                    // we are resizing the array (either bigger or smaller), we 
-                    // will copy the data array and replace it all at once.
-                    int newSize = Count - (stop - start) + otherSize;
-
-                    List<byte> newData = new List<byte>();
-                    for (int i = 0; i < start; i++) {
-                        newData.Add(_bytes[i]);
-                    }
-
-                    for (int i = 0; i < otherSize; i++) {
-                        newData.Add(otherData[i]);
-                    }
-
-                    for (int i = stop; i < Count; i++) {
-                        newData.Add(_bytes[i]);
-                    }
-
-                    _bytes = newData;
-                }
-            }
-        }
-
-        private void SliceNoStep(int start, int stop, object/*!*/ value) {
+        private void SliceNoStep(int start, int stop, IList<byte>/*!*/ value) {
             // always copy from a List object, even if it's a copy of some user defined enumerator.  This
             // makes it easy to hold the lock for the duration fo the copy.
             IList<byte> other = GetBytes(value);
 
             lock (this) {
-                if ((stop - start) == other.Count) {
+                if (start > stop) {
+                    int newSize = Count + other.Count;
+
+                    List<byte> newData = new List<byte>(newSize);
+                    int reading = 0;
+                    for (reading = 0; reading < start; reading++) {
+                        newData.Add(_bytes[reading]);
+                    }
+
+                    for (int i = 0; i < other.Count; i++) {
+                        newData.Add(other[i]);
+                    }
+
+                    for (; reading < Count; reading++) {
+                        newData.Add(_bytes[reading]);
+                    }
+
+                    _bytes = newData;
+                } else if ((stop - start) == other.Count) {
                     // we are simply replacing values, this is fast...
                     for (int i = 0; i < other.Count; i++) {
                         _bytes[i + start] = other[i];
@@ -1103,7 +1185,7 @@ namespace IronPython.Runtime {
             List<byte> ret = new List<byte>();
             IEnumerator ie = PythonOps.GetEnumerator(value);
             while (ie.MoveNext()) {
-                ret.Add(GetIntValue(ie.Current).ToByteChecked());
+                ret.Add(ByteOps.GetByteListOk(ie.Current));
             }
             return ret;
         }

@@ -23,6 +23,7 @@ using Microsoft.Scripting;
 using Microsoft.Scripting.Generation;
 using Microsoft.Scripting.Runtime;
 using Ast = System.Linq.Expressions.Expression;
+using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace IronPython.Runtime.Types {
 
@@ -54,12 +55,12 @@ namespace IronPython.Runtime.Types {
             if (instance != null) {
                 return Ast.Call(
                     typeof(PythonOps).GetMethod("MakeBoundBuiltinFunction"),
-                    Ast.Constant(_template),
+                    AstUtils.Constant(_template),
                     instance
                 );
             }
 
-            return Ast.Constant(this);
+            return AstUtils.Constant(this);
         }
 
         internal override bool GetAlwaysSucceeds {

@@ -18,6 +18,7 @@ using System.Collections.Generic;
 using System.Linq.Expressions;
 using Microsoft.Scripting.Utils;
 using System.Reflection;
+using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace Microsoft.Scripting.Actions.Calls {
     public sealed class SiteLocalStorageBuilder : ArgBuilder {
@@ -30,7 +31,7 @@ namespace Microsoft.Scripting.Actions.Calls {
         }
 
         internal protected override Expression ToExpression(ParameterBinder parameterBinder, IList<Expression> parameters, bool[] hasBeenUsed) {
-            return Expression.Constant(Activator.CreateInstance(ParameterInfo.ParameterType));
+            return AstUtils.Constant(Activator.CreateInstance(ParameterInfo.ParameterType));
         }
     }
 }

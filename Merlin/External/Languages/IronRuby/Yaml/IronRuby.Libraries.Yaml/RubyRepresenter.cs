@@ -34,7 +34,7 @@ namespace IronRuby.StandardLibrary.Yaml {
         public RubyRepresenter(RubyContext/*!*/ context, ISerializer/*!*/ serializer, YamlOptions/*!*/ opts)
             : base(serializer, opts) {
             _context = context;
-            _objectToYamlMethod = context.GetClass(typeof(object)).ResolveMethod("to_yaml", false).Info;
+            _objectToYamlMethod = context.GetClass(typeof(object)).ResolveMethod("to_yaml", RubyClass.IgnoreVisibility).Info;
         }
 
         #region dynamic sites
@@ -60,7 +60,7 @@ namespace IronRuby.StandardLibrary.Yaml {
         #endregion
 
         protected override Node CreateNode(object data) {
-            RubyMemberInfo method = _context.GetImmediateClassOf(data).ResolveMethodForSite("to_yaml", false).Info;
+            RubyMemberInfo method = _context.GetImmediateClassOf(data).ResolveMethodForSite("to_yaml", RubyClass.IgnoreVisibility).Info;
 
             if (method == _objectToYamlMethod) {
                 return _ToYamlNode.Target(_ToYamlNode, _context, data, this);

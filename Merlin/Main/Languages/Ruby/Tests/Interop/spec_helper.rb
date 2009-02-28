@@ -47,6 +47,5 @@ unless MSpec::VERSION >= minimum_version
 end
 
 $VERBOSE = nil unless ENV['OUTPUT_WARNINGS']
-require 'matchers'
-
+require File.dirname(__FILE__) + '/matchers'
 $: << (ENV["MERLIN_ROOT"] + "\\Bin\\Debug")

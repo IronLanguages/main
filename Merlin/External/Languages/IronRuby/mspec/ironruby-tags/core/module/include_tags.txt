@@ -1,1 +1,0 @@
-fails:Module#include? raises a TypeError when no module was given

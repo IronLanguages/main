@@ -1036,7 +1036,13 @@ namespace IronRuby.Runtime {
 
         // thread-safe:
         public MethodResolutionResult ResolveMethod(object target, string/*!*/ name, bool includePrivate) {
-            return GetImmediateClassOf(target).ResolveMethod(name, includePrivate);
+            var owner = GetImmediateClassOf(target);
+            return owner.ResolveMethod(name, includePrivate ? RubyClass.IgnoreVisibility : owner);
+        }
+
+        // thread-safe:
+        public MethodResolutionResult ResolveMethod(object target, string/*!*/ name, RubyClass visibilityContext) {
+            return GetImmediateClassOf(target).ResolveMethod(name, visibilityContext);
         }
 
         // thread-safe:

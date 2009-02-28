@@ -82,8 +82,8 @@ namespace Microsoft.Scripting.Actions {
         internal Expression CreateExpression() {
             return Expression.New(
                 typeof(Argument).GetConstructor(new Type[] { typeof(ArgumentType), typeof(string) }),
-                Expression.Constant(_kind),
-                Expression.Constant(_name, typeof(string))
+                AstUtils.Constant(_kind),
+                AstUtils.Constant(_name, typeof(string))
             );
         }
     }

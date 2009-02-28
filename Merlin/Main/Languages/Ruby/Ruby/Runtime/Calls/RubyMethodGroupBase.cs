@@ -265,7 +265,7 @@ namespace IronRuby.Runtime.Calls {
             if (resultType != typeof(void)) {
                 resultVariable = metaBuilder.GetTemporary(resultType, "#result");
             } else {
-                resultVariable = Expression.Empty();
+                resultVariable = AstUtils.Empty();
             }
 
             if (expression.Type != typeof(void)) {
@@ -282,7 +282,7 @@ namespace IronRuby.Runtime.Calls {
                         expression
                     ).Filter(methodUnwinder, Methods.IsProcConverterTarget.OpCall(bfcVariable, methodUnwinder),
                         Ast.Assign(resultVariable, Ast.Field(methodUnwinder, MethodUnwinder.ReturnValueField)),
-                        Expression.Default(expression.Type)
+                        AstUtils.Default(expression.Type)
                     ).Finally(
                         Methods.LeaveProcConverter.OpCall(bfcVariable)
                     ),
@@ -324,10 +324,10 @@ namespace IronRuby.Runtime.Calls {
                 blockExpression = args.GetBlockExpression();
 
                 if (block == null) {
-                    metaBuilder.AddRestriction(Ast.Equal(blockExpression, Ast.Constant(null)));
+                    metaBuilder.AddRestriction(Ast.Equal(blockExpression, AstUtils.Constant(null)));
                 } else {
                     // don't need to test the exact type of the Proc since the code is subclass agnostic:
-                    metaBuilder.AddRestriction(Ast.NotEqual(blockExpression, Ast.Constant(null)));
+                    metaBuilder.AddRestriction(Ast.NotEqual(blockExpression, AstUtils.Constant(null)));
                 }
             }
 
@@ -336,7 +336,7 @@ namespace IronRuby.Runtime.Calls {
                 if (args.Signature.HasBlock) {
                     if (block == null) {
                         // the user explicitly passed nil as a block arg:
-                        actualArgs.Add(Ast.Constant(null));
+                        actualArgs.Add(AstUtils.Constant(null));
                     } else {
                         // pass BlockParam:
                         Debug.Assert(metaBuilder.BfcVariable != null);
@@ -344,11 +344,11 @@ namespace IronRuby.Runtime.Calls {
                     }
                 } else {
                     // no block passed into a method with a BlockParam:
-                    actualArgs.Add(Ast.Constant(null));
+                    actualArgs.Add(AstUtils.Constant(null));
                 }
             } else if (injectMissingBlockParam) {
                 // no block passed into a method w/o a BlockParam (we still need to fill the missing block argument):
-                actualArgs.Add(Ast.Constant(null));
+                actualArgs.Add(AstUtils.Constant(null));
             }
 
             // self (non-instance):
@@ -381,7 +381,7 @@ namespace IronRuby.Runtime.Calls {
                     // get arguments, add tests
                     for (int j = 0; j < listLength; j++) {
                         var value = list[j];
-                        var expr = Ast.Call(listVariable, typeof(List<object>).GetMethod("get_Item"), Ast.Constant(j));
+                        var expr = Ast.Call(listVariable, typeof(List<object>).GetMethod("get_Item"), AstUtils.Constant(j));
 
                         metaBuilder.AddObjectTypeCondition(value, expr);
                         AddArgument(actualArgs, value, expr);
@@ -407,7 +407,7 @@ namespace IronRuby.Runtime.Calls {
 
         private static void AddArgument(List<Expression>/*!*/ actualArgs, object arg, Expression/*!*/ expr) {
             if (arg == null) {
-                actualArgs.Add(Ast.Constant(null));
+                actualArgs.Add(AstUtils.Constant(null));
             } else {
                 var type = CompilerHelpers.GetVisibleType(arg);
                 if (type.IsValueType) {

@@ -16,6 +16,7 @@
 using System.Collections.Generic;
 using System.Linq.Expressions;
 using System.Reflection;
+using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace Microsoft.Scripting.Actions.Calls {
     using Ast = System.Linq.Expressions.Expression;
@@ -33,7 +34,7 @@ namespace Microsoft.Scripting.Actions.Calls {
         }
 
         internal protected override Expression ToExpression(ParameterBinder parameterBinder, IList<Expression> parameters, bool[] hasBeenUsed) {
-            return Ast.Constant(null);
+            return AstUtils.Constant(null);
         }
     }
 }

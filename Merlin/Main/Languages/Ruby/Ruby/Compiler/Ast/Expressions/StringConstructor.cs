@@ -22,6 +22,7 @@ using IronRuby.Runtime;
 using IronRuby.Runtime.Calls;
 using Microsoft.Scripting;
 using Microsoft.Scripting.Utils;
+using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace IronRuby.Compiler.Ast {
     using Ast = System.Linq.Expressions.Expression;
@@ -90,12 +91,12 @@ namespace IronRuby.Compiler.Ast {
 
             if (merged.Count <= RubyOps.MakeStringParamCount) {
                 if (merged.Count == 0) {
-                    merged.Add(Ast.Constant(String.Empty));
+                    merged.Add(AstUtils.Constant(String.Empty));
                     opSuffix.Append(RubyOps.SuffixBinary);
                 }
 
                 if (opSuffix.IndexOf(RubyOps.SuffixEncoded) != -1) {
-                    merged.Add(Ast.Constant(RubyEncoding.GetCodePage(gen.Encoding)));
+                    merged.Add(AstUtils.Constant(RubyEncoding.GetCodePage(gen.Encoding)));
                 }
 
                 if (regexOptions != null) {
@@ -106,7 +107,7 @@ namespace IronRuby.Compiler.Ast {
                 return opFactory(opSuffix.ToString()).OpCall(merged);
             } else {
                 var paramArray = Ast.NewArrayInit(typeof(object), merged);
-                var codePage = Ast.Constant(RubyEncoding.GetCodePage(gen.Encoding));
+                var codePage = AstUtils.Constant(RubyEncoding.GetCodePage(gen.Encoding));
 
                 if (regexOptions == null) {
                     return opFactory("N").OpCall(paramArray, codePage);
@@ -125,7 +126,7 @@ namespace IronRuby.Compiler.Ast {
 
             // finish trailing literals:
             if (literals.Count > 0) {
-                result.Add(Ast.Constant(Concat(literals, concatLength)));
+                result.Add(AstUtils.Constant(Concat(literals, concatLength)));
                 opName.Append(OpSuffix(gen, concatEncoding));
             }
 
@@ -159,7 +160,7 @@ namespace IronRuby.Compiler.Ast {
                     ConcatLiteralsAndTransformRecursive(gen, ctor.Parts, literals, ref concatLength, ref concatEncoding, result, opName);
                 } else {
                     if (literals.Count > 0) {
-                        result.Add(Ast.Constant(Concat(literals, concatLength)));
+                        result.Add(AstUtils.Constant(Concat(literals, concatLength)));
                         opName.Append(OpSuffix(gen, concatEncoding));
                         concatLength = 0;
                         concatEncoding = StringLiteralEncoding.Ascii;

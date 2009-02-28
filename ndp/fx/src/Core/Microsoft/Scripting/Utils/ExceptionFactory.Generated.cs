@@ -1,4 +1,4 @@
-﻿/* ****************************************************************************
+/* ****************************************************************************
  *
  * Copyright (c) Microsoft Corporation. 
  *
@@ -275,11 +275,11 @@ namespace System.Linq.Expressions {
         }
 
         /// <summary>
-        /// A string like  "Argument must be exception"
+        /// A string like  "Argument must not have a value type."
         /// </summary>
-        internal static string ArgumentMustBeException {
+        internal static string ArgumentMustNotHaveValueType {
             get {
-                return "Argument must be exception";
+                return "Argument must not have a value type.";
             }
         }
 
@@ -479,6 +479,13 @@ namespace System.Linq.Expressions {
         /// </summary>
         internal static string BinaryOperatorNotDefined(object p0, object p1, object p2) {
             return FormatString("The binary operator {0} is not defined for the types '{1}' and '{2}'.", p0, p1, p2);
+        }
+
+        /// <summary>
+        /// A string like  "Reference equality is not defined for the types '{0}' and '{1}'."
+        /// </summary>
+        internal static string ReferenceEqualityNotDefined(object p0, object p1) {
+            return FormatString("Reference equality is not defined for the types '{0}' and '{1}'.", p0, p1);
         }
 
         /// <summary>
@@ -1368,10 +1375,24 @@ namespace System.Linq.Expressions {
         }
 
         /// <summary>
-        /// A string like  "When called from '{0}', rewriting a node of type '{1}' should return a non-null value of the same type. Alternatively, override '{2}' and change it to not visit children of this type."
+        /// A string like  "When called from '{0}', rewriting a node of type '{1}' must return a non-null value of the same type. Alternatively, override '{2}' and change it to not visit children of this type."
         /// </summary>
-        internal static string MustRewriteToSameType(object p0, object p1, object p2) {
-            return FormatString("When called from '{0}', rewriting a node of type '{1}' should return a non-null value of the same type. Alternatively, override '{2}' and change it to not visit children of this type.", p0, p1, p2);
+        internal static string MustRewriteToSameNode(object p0, object p1, object p2) {
+            return FormatString("When called from '{0}', rewriting a node of type '{1}' must return a non-null value of the same type. Alternatively, override '{2}' and change it to not visit children of this type.", p0, p1, p2);
+        }
+
+        /// <summary>
+        /// A string like  "Rewriting child expression from type '{0}' to type '{1}' is not allowed, because it would change the meaning of the operation. If this is intentional, override '{2}' and change it to allow this rewrite."
+        /// </summary>
+        internal static string MustRewriteChildToSameType(object p0, object p1, object p2) {
+            return FormatString("Rewriting child expression from type '{0}' to type '{1}' is not allowed, because it would change the meaning of the operation. If this is intentional, override '{2}' and change it to allow this rewrite.", p0, p1, p2);
+        }
+
+        /// <summary>
+        /// A string like  "Rewritten expression calls operator method '{0}', but the original node had no operator method. If this is is intentional, override '{1}' and change it to allow this rewrite."
+        /// </summary>
+        internal static string MustRewriteWithoutMethod(object p0, object p1) {
+            return FormatString("Rewritten expression calls operator method '{0}', but the original node had no operator method. If this is is intentional, override '{1}' and change it to allow this rewrite.", p0, p1);
         }
 
         /// <summary>
@@ -1524,6 +1545,13 @@ namespace System.Linq.Expressions {
         /// </summary>
         internal static Exception BinaryOperatorNotDefined(object p0, object p1, object p2) {
             return new InvalidOperationException(Strings.BinaryOperatorNotDefined(p0, p1, p2));
+        }
+
+        /// <summary>
+        /// InvalidOperationException with message like "Reference equality is not defined for the types '{0}' and '{1}'."
+        /// </summary>
+        internal static Exception ReferenceEqualityNotDefined(object p0, object p1) {
+            return new InvalidOperationException(Strings.ReferenceEqualityNotDefined(p0, p1));
         }
 
         /// <summary>
@@ -2325,10 +2353,24 @@ namespace System.Linq.Expressions {
         }
 
         /// <summary>
-        /// InvalidOperationException with message like "When called from '{0}', rewriting a node of type '{1}' should return a non-null value of the same type. Alternatively, override '{2}' and change it to not visit children of this type."
+        /// InvalidOperationException with message like "When called from '{0}', rewriting a node of type '{1}' must return a non-null value of the same type. Alternatively, override '{2}' and change it to not visit children of this type."
         /// </summary>
-        internal static Exception MustRewriteToSameType(object p0, object p1, object p2) {
-            return new InvalidOperationException(Strings.MustRewriteToSameType(p0, p1, p2));
+        internal static Exception MustRewriteToSameNode(object p0, object p1, object p2) {
+            return new InvalidOperationException(Strings.MustRewriteToSameNode(p0, p1, p2));
+        }
+
+        /// <summary>
+        /// InvalidOperationException with message like "Rewriting child expression from type '{0}' to type '{1}' is not allowed, because it would change the meaning of the operation. If this is intentional, override '{2}' and change it to allow this rewrite."
+        /// </summary>
+        internal static Exception MustRewriteChildToSameType(object p0, object p1, object p2) {
+            return new InvalidOperationException(Strings.MustRewriteChildToSameType(p0, p1, p2));
+        }
+
+        /// <summary>
+        /// InvalidOperationException with message like "Rewritten expression calls operator method '{0}', but the original node had no operator method. If this is is intentional, override '{1}' and change it to allow this rewrite."
+        /// </summary>
+        internal static Exception MustRewriteWithoutMethod(object p0, object p1) {
+            return new InvalidOperationException(Strings.MustRewriteWithoutMethod(p0, p1));
         }
 
         /// <summary>

@@ -51,6 +51,9 @@ class MSpecScript
   set :lang, [
     "language"
     ]
+  set :cli, [
+    "command_line"
+    ]
   set :lib1, [
     "library\\abbrev",
     "library\\base64",
@@ -137,6 +140,7 @@ class MSpecScript
   # into a tag filename.
   set :tags_patterns, [
                         [%r(rubyspec/), 'ironruby-tags/'],
+                        [/interop\//i, 'interop/tags/'],
                         [/_spec.rb$/, '_tags.txt']
                       ]
   # The default implementation to run the specs.

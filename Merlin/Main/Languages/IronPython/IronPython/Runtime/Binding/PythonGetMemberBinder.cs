@@ -139,11 +139,11 @@ namespace IronPython.Runtime.Binding {
                         Ast.Throw(
                             Ast.Call(
                                 typeof(PythonOps).GetMethod("AttributeError"),
-                                Ast.Constant("{0} instance has no attribute '{1}'"),
+                                AstUtils.Constant("{0} instance has no attribute '{1}'"),
                                 Ast.NewArrayInit(
                                     typeof(object),
-                                    Ast.Constant(((OldInstance)self.Value)._class._name),
-                                    Ast.Constant(name)
+                                    AstUtils.Constant(((OldInstance)self.Value)._class._name),
+                                    AstUtils.Constant(name)
                                 )
                             )
                         ),
@@ -220,8 +220,8 @@ namespace IronPython.Runtime.Binding {
             return Ast.Call(
                 typeof(PythonOps).GetMethod("MakeGetAction"),
                 BindingHelpers.CreateBinderStateExpression(),
-                Ast.Constant(Name),
-                Ast.Constant(IsNoThrow)
+                AstUtils.Constant(Name),
+                AstUtils.Constant(IsNoThrow)
             );
         }
 

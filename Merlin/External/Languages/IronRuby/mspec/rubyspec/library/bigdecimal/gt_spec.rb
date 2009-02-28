@@ -72,7 +72,10 @@ describe "BigDecimal#>" do
       (@nan > val).should == nil
     }
 
-    lambda { 10 > @nan }.should raise_error(ArgumentError)
+    not_compliant_on(:ironruby) do
+      # Ruby treats "Fixnum > BigDecimalNan" different than "Fixnum > FloatNan", whereas IronRuby does not
+      lambda { 10 > @nan }.should raise_error(ArgumentError)
+    end
     (10.5 > @nan).should == false
 
     (@infinity > @nan).should == nil

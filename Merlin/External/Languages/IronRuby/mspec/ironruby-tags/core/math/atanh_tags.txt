@@ -1,4 +1,0 @@
-fails:Math.atanh returns the inverse hyperbolic tangent of the argument
-fails:Math.atanh raises a TypeError if the argument is nil
-fails:Math.atanh accepts any argument that can be coerced with Float()
-fails:Math#atanh is accessible as a private instance method

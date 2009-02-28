@@ -23,6 +23,7 @@ using Ast = System.Linq.Expressions.Expression;
 using System.Diagnostics;
 using IronRuby.Compiler.Generation;
 using IronRuby.Compiler;
+using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace IronRuby.Runtime.Calls {
     public enum RubyCallFlags {
@@ -140,7 +141,7 @@ namespace IronRuby.Runtime.Calls {
         }
 
         internal Expression/*!*/ CreateExpression() {
-            return Ast.New(Methods.RubyCallSignatureCtor, Ast.Constant(_countAndFlags));
+            return Ast.New(Methods.RubyCallSignatureCtor, AstUtils.Constant(_countAndFlags));
         }
 
         public bool Equals(RubyCallSignature other) {

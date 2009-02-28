@@ -416,9 +416,7 @@ namespace IronPython.Compiler.Ast {
             if (node.Module) {
                 node.NameVariable = DefineName(Symbols.Name);
                 node.FileVariable = DefineName(Symbols.File);
-                if (node.Body.Documentation != null) {
-                    node.DocVariable = DefineName(Symbols.Doc);
-                }
+                node.DocVariable = DefineName(Symbols.Doc);
             }
             return true;
         }

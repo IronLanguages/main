@@ -19,6 +19,7 @@ using System.Linq.Expressions;
 using Microsoft.Contracts;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
+using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace Microsoft.Scripting.Actions {
 
@@ -70,8 +71,8 @@ namespace Microsoft.Scripting.Actions {
             return Expression.Call(
                 typeof(OldConvertToAction).GetMethod("Make", new Type[] { typeof(ActionBinder), typeof(Type), typeof(ConversionResultKind) }),
                 CreateActionBinderReadExpression(),
-                Expression.Constant(_type),
-                Expression.Constant(_resultKind)
+                AstUtils.Constant(_type),
+                AstUtils.Constant(_resultKind)
             );
         }
 

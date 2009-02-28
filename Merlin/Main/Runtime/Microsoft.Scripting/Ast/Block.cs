@@ -50,14 +50,14 @@ namespace Microsoft.Scripting.Ast {
 
         internal static BlockExpression BlockVoid(Expression[] expressions) {
             if (expressions.Length == 0 || expressions[expressions.Length - 1].Type != typeof(void)) {
-                expressions = expressions.AddLast(Expression.Empty());
+                expressions = expressions.AddLast(Utils.Empty());
             }
             return Expression.Block(expressions);
         }
 
         internal static BlockExpression Block(Expression[] expressions) {
             if (expressions.Length == 0) {
-                expressions = expressions.AddLast(Expression.Empty());
+                expressions = expressions.AddLast(Utils.Empty());
             }
             return Expression.Block(expressions);
         }

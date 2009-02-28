@@ -114,11 +114,11 @@ namespace IronRuby.Compiler.Ast {
                     AstUtils.IfThen(
                         Ast.AndAlso(
                             exceptionRethrowVariable,
-                            Ast.NotEqual(oldExceptionVariable, Ast.Constant(null))
+                            Ast.NotEqual(oldExceptionVariable, AstUtils.Constant(null))
                         ),
                         Ast.Throw(oldExceptionVariable)
                     ),
-                    Ast.Empty()
+                    AstUtils.Empty()
                 );
             } else {
                 // rethrow:
@@ -127,7 +127,7 @@ namespace IronRuby.Compiler.Ast {
                         exceptionRethrowVariable,
                         Ast.NotEqual(
                             Ast.Assign(oldExceptionVariable, Methods.GetCurrentException.OpCall(gen.CurrentScopeVariable)),
-                            Ast.Constant(null, typeof(Exception)))
+                            AstUtils.Constant(null, typeof(Exception)))
                         ),
                     Ast.Throw(oldExceptionVariable)
                 );
@@ -136,7 +136,7 @@ namespace IronRuby.Compiler.Ast {
             if (_elseStatements != null) {
                 transformedElse = gen.TransformStatements(_elseStatements, resultOperation);
             } else {
-                transformedElse = Ast.Empty();
+                transformedElse = AstUtils.Empty();
             }
 
             // body should do return, but else-clause is present => we cannot do return from the guarded statements: 
@@ -152,10 +152,10 @@ namespace IronRuby.Compiler.Ast {
             if (_rescueClauses != null) {
                 // outer-most EH blocks sets and clears runtime flag RuntimeFlowControl.InTryRescue:
                 if (gen.CurrentRescue == null) {
-                    setInRescueFlag = Ast.Assign(Ast.Field(gen.CurrentRfcVariable, RuntimeFlowControl.InRescueField), Ast.Constant(true));
-                    clearInRescueFlag = Ast.Assign(Ast.Field(gen.CurrentRfcVariable, RuntimeFlowControl.InRescueField), Ast.Constant(false));
+                    setInRescueFlag = Ast.Assign(Ast.Field(gen.CurrentRfcVariable, RuntimeFlowControl.InRescueField), AstUtils.Constant(true));
+                    clearInRescueFlag = Ast.Assign(Ast.Field(gen.CurrentRfcVariable, RuntimeFlowControl.InRescueField), AstUtils.Constant(false));
                 } else {
-                    setInRescueFlag = clearInRescueFlag = Ast.Empty();
+                    setInRescueFlag = clearInRescueFlag = AstUtils.Empty();
                 }
 
                 gen.EnterRescueClause(retryingVariable, breakLabel, continueLabel);
@@ -168,12 +168,12 @@ namespace IronRuby.Compiler.Ast {
                 transformedRescue = Ast.Block(
                     setInRescueFlag,
                     AstUtils.Try(
-                        AstUtils.If(handlers, Ast.Assign(exceptionRethrowVariable, Ast.Constant(true)))
-                    ).Filter(evalUnwinder, Ast.Equal(Ast.Field(evalUnwinder, EvalUnwinder.ReasonField), Ast.Constant(BlockReturnReason.Retry)),
+                        AstUtils.If(handlers, Ast.Assign(exceptionRethrowVariable, AstUtils.Constant(true)))
+                    ).Filter(evalUnwinder, Ast.Equal(Ast.Field(evalUnwinder, EvalUnwinder.ReasonField), AstUtils.Constant(BlockReturnReason.Retry)),
                         Ast.Block(
-                            Ast.Assign(retryingVariable, Ast.Constant(true)),
+                            Ast.Assign(retryingVariable, AstUtils.Constant(true)),
                             Ast.Continue(continueLabel),
-                            Ast.Empty()
+                            AstUtils.Empty()
                         )
                     )
                 );
@@ -181,7 +181,7 @@ namespace IronRuby.Compiler.Ast {
                 gen.LeaveRescueClause();
 
             } else {
-                transformedRescue = Ast.Assign(exceptionRethrowVariable, Ast.Constant(true));
+                transformedRescue = Ast.Assign(exceptionRethrowVariable, AstUtils.Constant(true));
             }
 
             if (_elseStatements != null) {
@@ -189,23 +189,23 @@ namespace IronRuby.Compiler.Ast {
             }
 
             var result = AstFactory.Infinite(breakLabel, continueLabel,
-                Ast.Assign(exceptionThrownVariable, Ast.Constant(false)),
-                Ast.Assign(exceptionRethrowVariable, Ast.Constant(false)),
-                Ast.Assign(retryingVariable, Ast.Constant(false)),
+                Ast.Assign(exceptionThrownVariable, AstUtils.Constant(false)),
+                Ast.Assign(exceptionRethrowVariable, AstUtils.Constant(false)),
+                Ast.Assign(retryingVariable, AstUtils.Constant(false)),
 
                 AstUtils.Try(
                     // save exception (old_$! is not used unless there is a rescue clause):
                     Ast.Block(
-                        (_rescueClauses == null) ? (MSA.Expression)Ast.Empty() :
+                        (_rescueClauses == null) ? (MSA.Expression)AstUtils.Empty() :
                             Ast.Assign(oldExceptionVariable, Methods.GetCurrentException.OpCall(gen.CurrentScopeVariable)),
 
                         AstUtils.Try(
-                            Ast.Block(transformedBody, Ast.Empty())
+                            Ast.Block(transformedBody, AstUtils.Empty())
                         ).Filter(exceptionVariable, Methods.CanRescue.OpCall(gen.CurrentRfcVariable, exceptionVariable),
-                            Ast.Assign(exceptionThrownVariable, Ast.Constant(true)),
+                            Ast.Assign(exceptionThrownVariable, AstUtils.Constant(true)),
                             Methods.SetCurrentExceptionAndStackTrace.OpCall(gen.CurrentScopeVariable, exceptionVariable),
                             transformedRescue,
-                            Ast.Empty()
+                            AstUtils.Empty()
                         ).FinallyIf((_rescueClauses != null), 
                             // restore previous exception if the current one has been handled:
                             AstUtils.Unless(exceptionRethrowVariable,
@@ -216,14 +216,14 @@ namespace IronRuby.Compiler.Ast {
 
                         // unless (exception_thrown) do <else-statements> end
                         transformedElse,
-                        Ast.Empty()
+                        AstUtils.Empty()
                     )
                 ).FilterIf((_rescueClauses != null || _elseStatements != null),
                     exceptionVariable, Methods.CanRescue.OpCall(gen.CurrentRfcVariable, exceptionVariable),
                     Ast.Block(
                         Methods.SetCurrentExceptionAndStackTrace.OpCall(gen.CurrentScopeVariable, exceptionVariable),
-                        Ast.Assign(exceptionRethrowVariable, Ast.Constant(true)),
-                        Ast.Empty()
+                        Ast.Assign(exceptionRethrowVariable, AstUtils.Constant(true)),
+                        AstUtils.Empty()
                     )
                 ).Finally(
                     AstUtils.Unless(retryingVariable, transformedEnsure)

@@ -26,6 +26,7 @@ using Microsoft.Scripting.Ast;
 using Microsoft.Scripting.Generation;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
+using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 [assembly: System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1020:AvoidNamespacesWithFewTypes", Scope = "namespace", Target = "Microsoft.Scripting.Interpretation")]
 
@@ -807,27 +808,34 @@ namespace Microsoft.Scripting.Interpretation {
                 for (int i = 0; i < args.Length; i++) {
                     args[i] = DynamicUtils.ObjectToMetaObject(
                         argValues[i + 1],
-                        Expression.Constant(argValues[i + 1])
+                        AstUtils.Constant(argValues[i + 1])
                     );
                 }
             }
 
-            DynamicMetaObject binding = action.Bind(
-                DynamicUtils.ObjectToMetaObject(
-                    argValues[0],
-                    Expression.Constant(argValues[0])
-                ),
-                args
-            );
+            object result;
+            ControlFlow flow;
+            do {
+                DynamicMetaObject binding = action.Bind(
+                    DynamicUtils.ObjectToMetaObject(
+                        argValues[0],
+                        AstUtils.Constant(argValues[0])
+                    ),
+                    args
+                );
 
-            if (binding == null) {
-                throw new InvalidOperationException("Bind cannot return null.");
-            }
+                if (binding == null) {
+                    throw new InvalidOperationException("Bind cannot return null.");
+                }
 
-            // restrictions ignored, they should be valid:
-            AssertTrueRestrictions(state, binding);
+                // restrictions ignored, they should be valid:
+                AssertTrueRestrictions(state, binding);
 
-            var result = Interpret(state, binding.Expression);
+                result = Interpret(state, binding.Expression);
+                flow = result as ControlFlow;
+
+            } while (flow != null && flow.Kind == ControlFlowKind.Goto && flow.Label == CallSiteBinder.UpdateLabel);
+            
             return result;
         }
 

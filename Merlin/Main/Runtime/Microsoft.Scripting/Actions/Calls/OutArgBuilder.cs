@@ -17,6 +17,7 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Linq.Expressions;
+using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace Microsoft.Scripting.Actions.Calls {
     using Ast = System.Linq.Expressions.Expression;
@@ -67,9 +68,9 @@ namespace Microsoft.Scripting.Actions.Calls {
         private Expression GetDefaultValue() {
             if (_parameterType.IsValueType) {
                 // default(T)                
-                return Ast.Constant(Activator.CreateInstance(_parameterType));
+                return AstUtils.Constant(Activator.CreateInstance(_parameterType));
             }
-            return Ast.Constant(null);
+            return AstUtils.Constant(null);
         }
     }
 }

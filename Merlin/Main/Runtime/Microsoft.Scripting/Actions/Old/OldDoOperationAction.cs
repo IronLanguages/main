@@ -20,6 +20,7 @@ using Microsoft.Contracts;
 using Microsoft.Scripting.Generation;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
+using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace Microsoft.Scripting.Actions {
 
@@ -113,7 +114,7 @@ namespace Microsoft.Scripting.Actions {
             return Expression.Call(
                typeof(OldDoOperationAction).GetMethod("Make", new Type[] { typeof(ActionBinder), typeof(Operators) }),
                CreateActionBinderReadExpression(),
-               Expression.Constant(_operation)
+               AstUtils.Constant(_operation)
             );
         }
 

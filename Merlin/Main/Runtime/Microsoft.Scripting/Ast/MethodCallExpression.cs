@@ -20,6 +20,7 @@ using System.Linq.Expressions;
 using System.Reflection;
 using System.Dynamic;
 using Microsoft.Scripting.Utils;
+using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace Microsoft.Scripting.Ast {
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1506:AvoidExcessiveClassCoupling")]
@@ -222,7 +223,7 @@ namespace Microsoft.Scripting.Ast {
 
         private static Expression CreateDefaultValueExpression(ParameterInfo parameter) {
             if (parameter.HasDefaultValue()) {
-                return Expression.Constant(parameter.DefaultValue, parameter.ParameterType);
+                return AstUtils.Constant(parameter.DefaultValue, parameter.ParameterType);
             } else {
                 throw new NotSupportedException("missing parameter value not supported");
             }

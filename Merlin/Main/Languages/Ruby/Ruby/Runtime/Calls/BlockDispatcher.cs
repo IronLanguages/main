@@ -232,7 +232,7 @@ namespace IronRuby.Runtime.Calls {
                     rvalue = args.Expressions[parameterIndex];
                 } else if (rightNoneNone) {
                     // nil assignment
-                    rvalue = AddWarning(codeContextExpression, Ast.Constant(null));
+                    rvalue = AddWarning(codeContextExpression, AstUtils.Constant(null));
                 } else if (rightNoneSplat) {
                     // Splat(RHS[*]):
                     rvalue = MakeArgumentSplatWithWarning(rule, args.Values[parameterIndex], args.Expressions[parameterIndex], codeContextExpression);
@@ -272,7 +272,7 @@ namespace IronRuby.Runtime.Calls {
                 actualArgs.AddRange(arguments);
             }
 
-            actualArgs.AddForEachMissingArgument(delegate() { return Ast.Constant(null); });
+            actualArgs.AddForEachMissingArgument(delegate() { return AstUtils.Constant(null); });
 
             if (HasParamsArray) {
                 actualArgs.AddParamsArray();
@@ -293,13 +293,13 @@ namespace IronRuby.Runtime.Calls {
             if (ArgsBuilder.AddTestForListArg(rule, arg, parameter, out listLength, out listVariable)) {
                 if (listLength == 0) {
                     // return nil argument + Warning
-                    return AddWarning(codeContextExpression, Ast.Constant(null));
+                    return AddWarning(codeContextExpression, AstUtils.Constant(null));
                 } else if (listLength == 1) {
                     // return the only item of the array:
                     return Ast.Call(
                         listVariable,
                         typeof(List<object>).GetMethod("get_Item"),
-                        Ast.Constant(0)
+                        AstUtils.Constant(0)
                     );
                 } else {
                     // return the array itself + Warning:

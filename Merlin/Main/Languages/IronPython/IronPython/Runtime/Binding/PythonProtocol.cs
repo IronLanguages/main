@@ -103,7 +103,7 @@ namespace IronPython.Runtime.Binding {
                 );
             }
 
-            return Ast.NotEqual(callAsInt, Ast.Constant(0));
+            return Ast.NotEqual(callAsInt, AstUtils.Constant(0));
         }
 
         internal static DynamicMetaObject ConvertToIEnumerable(ConvertBinder/*!*/ conversion, DynamicMetaObject/*!*/ metaUserObject) {
@@ -149,7 +149,7 @@ namespace IronPython.Runtime.Binding {
                                         new CallSignature(0)
                                     ),
                                     typeof(object),
-                                    Ast.Constant(context),
+                                    AstUtils.Constant(context),
                                     tmp
                                 )
                             )
@@ -187,7 +187,7 @@ namespace IronPython.Runtime.Binding {
                             ),
                             tmp
                         ),
-                        Ast.Constant(
+                        AstUtils.Constant(
                             CallSite<Func<CallSite, CodeContext, object, int, object>>.Create(
                                 new PythonInvokeBinder(state, new CallSignature(1))
                             )
@@ -278,7 +278,7 @@ namespace IronPython.Runtime.Binding {
 
             PythonType pt = DynamicHelpers.GetPythonType(self.Value);
             if (pt.IsSystemType) {
-                return Ast.Constant(pt);
+                return AstUtils.Constant(pt);
             }
 
             return Ast.Property(

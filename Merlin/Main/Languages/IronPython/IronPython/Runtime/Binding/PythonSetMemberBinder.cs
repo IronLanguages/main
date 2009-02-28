@@ -18,6 +18,7 @@ using System.Dynamic;
 using System.Linq.Expressions;
 using Microsoft.Scripting;
 using Microsoft.Scripting.Runtime;
+using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 using IronPython.Runtime.Binding;
 using IronPython.Runtime.Operations;
@@ -49,7 +50,7 @@ namespace IronPython.Runtime.Binding {
                 return com;
             }
 #endif
-            return Binder.Binder.SetMember(Name, self, value, Ast.Constant(Binder.Context));
+            return Binder.Binder.SetMember(Name, self, value, AstUtils.Constant(Binder.Context));
         }
 
         public BinderState/*!*/ Binder {
@@ -81,7 +82,7 @@ namespace IronPython.Runtime.Binding {
             return Ast.Call(
                 typeof(PythonOps).GetMethod("MakeSetAction"),
                 BindingHelpers.CreateBinderStateExpression(),
-                Ast.Constant(Name)
+                AstUtils.Constant(Name)
             );
         }
 

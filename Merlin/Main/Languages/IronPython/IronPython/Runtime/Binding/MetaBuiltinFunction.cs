@@ -97,7 +97,7 @@ namespace IronPython.Runtime.Binding {
             // just check if it's the same built-in function.  Because built-in fucntions are
             // immutable the identity check will suffice.  Because built-in functions are uncollectible
             // anyway we don't use the typical InstanceRestriction.
-            BindingRestrictions selfRestrict = BindingRestrictions.GetExpressionRestriction(Ast.Equal(Expression, Ast.Constant(Value))).Merge(Restrictions);
+            BindingRestrictions selfRestrict = BindingRestrictions.GetExpressionRestriction(Ast.Equal(Expression, AstUtils.Constant(Value))).Merge(Restrictions);
 
             return Value.MakeBuiltinFunctionCall(
                 call,

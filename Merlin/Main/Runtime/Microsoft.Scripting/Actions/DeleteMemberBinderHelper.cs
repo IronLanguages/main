@@ -41,7 +41,7 @@ namespace Microsoft.Scripting.Actions {
             if (typeof(TypeTracker).IsAssignableFrom(type)) {
                 type = ((TypeTracker)Target).Type;
                 _isStatic = true;
-                Rule.AddTest(Ast.Equal(Rule.Parameters[0], Ast.Constant(Arguments[0])));
+                Rule.AddTest(Ast.Equal(Rule.Parameters[0], AstUtils.Constant(Arguments[0])));
             } 
 
             if (_isStatic || !MakeOperatorGetMemberBody(type, "DeleteMember")) {
@@ -87,11 +87,11 @@ namespace Microsoft.Scripting.Actions {
         private bool MakeOperatorGetMemberBody(Type type, string name) {
             MethodInfo delMem = GetMethod(type, name);
             if (delMem != null && delMem.IsSpecialName) {
-                Expression call = Binder.MakeCallExpression(Rule.Context, delMem, Rule.Parameters[0], Ast.Constant(StringName));
+                Expression call = Binder.MakeCallExpression(Rule.Context, delMem, Rule.Parameters[0], AstUtils.Constant(StringName));
                 Expression ret;
 
                 if (delMem.ReturnType == typeof(bool)) {
-                    ret = AstUtils.If(call, Rule.MakeReturn(Binder, Ast.Constant(null)));
+                    ret = AstUtils.If(call, Rule.MakeReturn(Binder, AstUtils.Constant(null)));
                 } else {
                     ret = Rule.MakeReturn(Binder, call);
                 }

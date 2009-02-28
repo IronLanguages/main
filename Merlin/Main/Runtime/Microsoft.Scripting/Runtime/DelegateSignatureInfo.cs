@@ -53,7 +53,7 @@ namespace Microsoft.Scripting.Runtime {
                 _convert = _context.CreateConvertBinder(_returnType, true);
             }
             
-            _invoke = _context.CreateInvokeBinder(Expression.CallInfo(_parameters.Length));
+            _invoke = _context.CreateInvokeBinder(new CallInfo(_parameters.Length));
         }
 
         [Confined]

@@ -41,7 +41,7 @@ namespace Microsoft.Scripting.Ast {
             }
 
             if (expression.Type == typeof(void)) {
-                return Expression.Block(expression, Expression.Default(type));
+                return Expression.Block(expression, Utils.Default(type));
             }
 
             if (type == typeof(void)) {

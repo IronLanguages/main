@@ -21,6 +21,7 @@ using Microsoft.Scripting.Actions;
 using Microsoft.Scripting.Actions.Calls;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
+using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
@@ -107,7 +108,7 @@ namespace IronPython.Runtime.Binding {
         internal Expression MakeFunctionTest(Expression functionTarget) {
             return Ast.Equal(
                 functionTarget,
-                Ast.Constant(Value.Template)
+                AstUtils.Constant(Value.Template)
             );
         }
 

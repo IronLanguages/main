@@ -75,16 +75,16 @@ namespace IronRuby.Builtins {
                 new System.Action<IronRuby.Builtins.RubyClass, System.Object[]>(IronRuby.Builtins.RubyStructOps.AllocatorUndefined)
             );
             ExtendModule(typeof(System.Collections.Generic.IDictionary<System.Object, System.Object>), LoadSystem__Collections__Generic__IDictionary_Instance, null, null, def21);
-            IronRuby.Builtins.RubyModule def36 = ExtendModule(typeof(System.Collections.IEnumerable), LoadSystem__Collections__IEnumerable_Instance, null, null, def21);
+            IronRuby.Builtins.RubyModule def35 = ExtendModule(typeof(System.Collections.IEnumerable), LoadSystem__Collections__IEnumerable_Instance, null, null, def21);
             ExtendModule(typeof(System.Collections.IList), LoadSystem__Collections__IList_Instance, null, null, def21);
-            IronRuby.Builtins.RubyModule def35 = ExtendModule(typeof(System.IComparable), LoadSystem__IComparable_Instance, null, null, def30);
+            ExtendModule(typeof(System.IComparable), LoadSystem__IComparable_Instance, null, null, def30);
             DefineGlobalClass("Array", typeof(IronRuby.Builtins.RubyArray), false, Context.ObjectClass, LoadArray_Instance, LoadArray_Class, null, new IronRuby.Builtins.RubyModule[] {def21}, 
                 new System.Func<IronRuby.Builtins.RubyClass, IronRuby.Builtins.RubyArray>(IronRuby.Builtins.ArrayOps.CreateArray), 
                 new System.Func<IronRuby.Runtime.ConversionStorage<IronRuby.Runtime.Union<System.Collections.IList, System.Int32>>, IronRuby.Runtime.BlockParam, IronRuby.Builtins.RubyClass, System.Object, System.Object>(IronRuby.Builtins.ArrayOps.CreateArray), 
                 new System.Func<IronRuby.Builtins.RubyClass, System.Int32, System.Object, IronRuby.Builtins.RubyArray>(IronRuby.Builtins.ArrayOps.CreateArray)
             );
             DefineGlobalClass("Binding", typeof(IronRuby.Builtins.Binding), false, Context.ObjectClass, null, null, null, IronRuby.Builtins.RubyModule.EmptyArray);
-            DefineGlobalClass("ClrString", typeof(System.String), false, Context.ObjectClass, LoadClrString_Instance, null, null, new IronRuby.Builtins.RubyModule[] {def35, def36});
+            DefineGlobalClass("ClrString", typeof(System.String), false, Context.ObjectClass, LoadClrString_Instance, null, null, new IronRuby.Builtins.RubyModule[] {def35});
             DefineGlobalClass("Dir", typeof(IronRuby.Builtins.RubyDir), true, Context.ObjectClass, LoadDir_Instance, LoadDir_Class, null, new IronRuby.Builtins.RubyModule[] {def21});
             #if !SILVERLIGHT
             DefineGlobalClass("Encoding", typeof(IronRuby.Builtins.RubyEncoding), false, Context.ObjectClass, LoadEncoding_Instance, LoadEncoding_Class, null, IronRuby.Builtins.RubyModule.EmptyArray);
@@ -1487,6 +1487,7 @@ namespace IronRuby.Builtins {
             module.DefineLibraryMethod("-", 0x51, 
                 new System.Func<System.Int32, System.Int32, System.Object>(IronRuby.Builtins.FixnumOps.Subtract), 
                 new System.Func<System.Int32, System.Double, System.Double>(IronRuby.Builtins.FixnumOps.Subtract), 
+                new System.Func<System.Int32, Microsoft.Scripting.Math.BigInteger, Microsoft.Scripting.Math.BigInteger>(IronRuby.Builtins.FixnumOps.Subtract), 
                 new System.Func<IronRuby.Runtime.BinaryOpStorage, IronRuby.Runtime.BinaryOpStorage, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>(IronRuby.Builtins.FixnumOps.Subtract)
             );
             
@@ -1496,7 +1497,7 @@ namespace IronRuby.Builtins {
             );
             
             module.DefineLibraryMethod("&", 0x51, 
-                new System.Func<System.Int32, System.Int32, System.Object>(IronRuby.Builtins.FixnumOps.BitwiseAnd), 
+                new System.Func<System.Int32, System.Int32, System.Int32>(IronRuby.Builtins.FixnumOps.BitwiseAnd), 
                 new System.Func<System.Int32, Microsoft.Scripting.Math.BigInteger, System.Object>(IronRuby.Builtins.FixnumOps.BitwiseAnd), 
                 new System.Func<IronRuby.Runtime.RubyContext, System.Int32, IronRuby.Runtime.IntegerValue, System.Object>(IronRuby.Builtins.FixnumOps.BitwiseAnd)
             );
@@ -1535,7 +1536,7 @@ namespace IronRuby.Builtins {
             );
             
             module.DefineLibraryMethod("|", 0x51, 
-                new System.Func<System.Int32, System.Int32, System.Object>(IronRuby.Builtins.FixnumOps.BitwiseOr), 
+                new System.Func<System.Int32, System.Int32, System.Int32>(IronRuby.Builtins.FixnumOps.BitwiseOr), 
                 new System.Func<System.Int32, Microsoft.Scripting.Math.BigInteger, System.Object>(IronRuby.Builtins.FixnumOps.BitwiseOr), 
                 new System.Func<IronRuby.Runtime.RubyContext, System.Int32, IronRuby.Runtime.IntegerValue, System.Object>(IronRuby.Builtins.FixnumOps.BitwiseOr)
             );
@@ -1547,6 +1548,7 @@ namespace IronRuby.Builtins {
             module.DefineLibraryMethod("+", 0x51, 
                 new System.Func<System.Int32, System.Int32, System.Object>(IronRuby.Builtins.FixnumOps.Add), 
                 new System.Func<System.Int32, System.Double, System.Double>(IronRuby.Builtins.FixnumOps.Add), 
+                new System.Func<System.Int32, Microsoft.Scripting.Math.BigInteger, Microsoft.Scripting.Math.BigInteger>(IronRuby.Builtins.FixnumOps.Add), 
                 new System.Func<IronRuby.Runtime.BinaryOpStorage, IronRuby.Runtime.BinaryOpStorage, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>(IronRuby.Builtins.FixnumOps.Add)
             );
             

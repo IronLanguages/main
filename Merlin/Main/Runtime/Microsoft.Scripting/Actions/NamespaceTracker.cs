@@ -23,6 +23,7 @@ using Microsoft.Scripting.Utils;
 using System.Threading;
 using Microsoft.Contracts;
 using Microsoft.Scripting.Runtime;
+using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace Microsoft.Scripting.Actions {
     public class AssemblyLoadedEventArgs : EventArgs {
@@ -561,7 +562,7 @@ namespace Microsoft.Scripting.Actions {
                             Expression.Convert(rule.Parameters[0], typeof(NamespaceTracker)),
                             typeof(NamespaceTracker).GetProperty("Id")
                         ),
-                        Expression.Constant(Id)
+                        AstUtils.Constant(Id)
                     )
                 );
 

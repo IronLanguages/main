@@ -17,6 +17,8 @@ using System;
 using System.Collections.Generic;
 
 using IronPython.Runtime.Types;
+using Microsoft.Scripting.Runtime;
+using Microsoft.Scripting.Math;
 
 namespace IronPython.Runtime.Operations {
     public static partial class ByteOps {
@@ -87,6 +89,53 @@ namespace IronPython.Runtime.Operations {
             } else {
                 throw PythonOps.TypeError("sequence item {0}: expected bytes or byte array, {1} found", index.ToString(), PythonOps.GetPythonTypeName(value));
             }
+        }
+
+        internal static List<byte> GetBytes(List bytes) {
+            List<byte> res = new List<byte>(bytes.Count);
+            foreach (object o in bytes) {
+                res.Add(GetByte(o));
+            }
+            return res;
+        }
+
+        
+        internal static byte GetByteListOk(object o) {
+            IList<byte> lbval = o as IList<byte>;
+            if (lbval != null) {
+                if (lbval.Count != 1) {
+                    throw PythonOps.ValueError("string must be of size 1");
+                }
+                return lbval[0];
+            }
+
+            return GetByte(o);
+        }
+
+        internal static byte GetByte(object o) {
+            byte b;
+            Extensible<int> ei;
+            BigInteger bi;
+            int i;
+            if (o is int) {
+                b = ((int)o).ToByteChecked();
+            } else if ((ei = o as Extensible<int>) != null) {
+                b = ei.Value.ToByteChecked();
+            } else if (!Object.ReferenceEquals(bi = o as BigInteger, null)) {
+                int val;
+                if (bi.AsInt32(out val)) {
+                    b = ToByteChecked(val);
+                } else {
+                    // force error
+                    ToByteChecked(257);
+                    b = 0;
+                }
+            } else if(Converter.TryConvertToIndex(o, out i)) {
+                b = i.ToByteChecked();
+            } else{                
+                throw PythonOps.TypeError("an integer or string of size 1 is required");
+            }
+            return b;
         }
     }
 }

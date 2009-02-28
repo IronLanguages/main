@@ -21,12 +21,6 @@ namespace System.Linq.Expressions {
     /// Represents an expression that has a constant value.
     /// </summary>
     public class ConstantExpression : Expression {
-        internal static readonly ConstantExpression TrueLiteral = ConstantExpression.Make(true, typeof(bool));
-        internal static readonly ConstantExpression FalseLiteral = ConstantExpression.Make(false, typeof(bool));
-        internal static readonly ConstantExpression NullLiteral = ConstantExpression.Make(null, typeof(object));
-        internal static readonly ConstantExpression EmptyStringLiteral = ConstantExpression.Make(String.Empty, typeof(string));
-        internal static readonly ConstantExpression[] IntCache = new ConstantExpression[100];
-
         // Possible optimization: we could have a Constant<T> subclass that
         // stores the unboxed value.
         private readonly object _value;
@@ -89,19 +83,6 @@ namespace System.Linq.Expressions {
 
     public partial class Expression {
         /// <summary>
-        /// Creates a <see cref="ConstantExpression"/> that has the <see cref="P:ConstantExpression.Value"/> property set to the specified boolean value. .
-        /// </summary>
-        /// <param name="value">An <see cref="System.Boolean"/> to set the <see cref="P:ConstantExpression.Value"/> property equal to.</param>
-        /// <returns>
-        /// A <see cref="ConstantExpression"/> that has the <see cref="P:Expression.NodeType"/> property equal to 
-        /// <see cref="F:ExpressionType.Constant"/> and the <see cref="P:ConstantExpression.Value"/> property set to the specified value.
-        /// </returns>
-        internal static ConstantExpression Constant(bool value) {
-             return value ? ConstantExpression.TrueLiteral : ConstantExpression.FalseLiteral;
-        }
-        
-
-        /// <summary>
         /// Creates a <see cref="ConstantExpression"/> that has the <see cref="P:ConstantExpression.Value"/> property set to the specified value. .
         /// </summary>
         /// <param name="value">An <see cref="System.Object"/> to set the <see cref="P:ConstantExpression.Value"/> property equal to.</param>
@@ -110,34 +91,6 @@ namespace System.Linq.Expressions {
         /// <see cref="F:ExpressionType.Constant"/> and the <see cref="P:Expression.Value"/> property set to the specified value.
         /// </returns>
         public static ConstantExpression Constant(object value) {
-            if (value == null) {
-                return ConstantExpression.NullLiteral;
-            }
-
-            Type t = value.GetType();
-            if (!t.IsEnum) {
-                switch (Type.GetTypeCode(t)) {
-                    case TypeCode.Boolean:
-                        return Constant((bool)value);
-                    case TypeCode.Int32:
-                        int x = (int)value;
-                        int cacheIndex = x + 2;
-                        if (cacheIndex >= 0 && cacheIndex < ConstantExpression.IntCache.Length) {
-                            ConstantExpression res;
-                            if ((res = ConstantExpression.IntCache[cacheIndex]) == null) {
-                                ConstantExpression.IntCache[cacheIndex] = res = ConstantExpression.Make(x, typeof(int));
-                            }
-                            return res;
-                        }
-                        break;
-                    case TypeCode.String:
-                        if (String.IsNullOrEmpty((string)value)) {
-                            return ConstantExpression.EmptyStringLiteral;
-                        }
-                        break;
-                }
-            }
-
             return ConstantExpression.Make(value, value == null ? typeof(object) : value.GetType());
         }
 

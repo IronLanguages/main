@@ -59,11 +59,11 @@ namespace IronRuby.Runtime.Calls {
             // block:
             if (fromType == typeof(MissingBlockParam)) {
                 Debug.Assert(toType == typeof(BlockParam) || toType == typeof(MissingBlockParam));
-                return Ast.Constant(null);
+                return AstUtils.Constant(null);
             }
 
             if (fromType == typeof(BlockParam) && toType == typeof(MissingBlockParam)) {
-                return Ast.Constant(null);
+                return AstUtils.Constant(null);
             }
 
             // protocol conversions:

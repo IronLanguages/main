@@ -15,6 +15,7 @@
 
 using Microsoft.Scripting;
 using MSA = System.Linq.Expressions;
+using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace IronRuby.Compiler.Ast {
     using Ast = System.Linq.Expressions.Expression;
@@ -39,7 +40,7 @@ namespace IronRuby.Compiler.Ast {
                 return Ast.Block(
                     transformedReturnValue, // evaluate for side-effects
                     Ast.Continue(gen.CurrentLoop.ContinueLabel),
-                    Ast.Empty()
+                    AstUtils.Empty()
                 );
             }
 

@@ -1413,26 +1413,33 @@ namespace IronPython.Runtime {
         }
 
         public static int ord(object value) {
-            char ch;
-
             if (value is char) {
-                ch = (char)value;
-            } else {
-                string stringValue = value as string;
-                if (stringValue == null) {
-                    ExtensibleString es = value as ExtensibleString;
-                    if (es != null) stringValue = es.Value;
-                }
-                if (stringValue != null) {
-                    if (stringValue.Length != 1) {
-                        throw PythonOps.TypeError("expected a character, but string of length {0} found", stringValue.Length);
-                    }
-                    ch = stringValue[0];
-                } else {
-                    throw PythonOps.TypeError("expected a character, but {0} found", DynamicHelpers.GetPythonType(value));
-                }
+                return (char)value;
+            } 
+
+            string stringValue = value as string;
+            if (stringValue == null) {
+                ExtensibleString es = value as ExtensibleString;
+                if (es != null) stringValue = es.Value;
             }
-            return (int)ch;
+            
+            if (stringValue != null) {
+                if (stringValue.Length != 1) {
+                    throw PythonOps.TypeError("expected a character, but string of length {0} found", stringValue.Length);
+                }
+                return stringValue[0];
+            }
+
+            IList<byte> bytes = value as IList<byte>;
+            if (bytes != null) {
+                if (bytes.Count != 1) {
+                    throw PythonOps.TypeError("expected a character, but string of length {0} found", bytes.Count);
+                }
+
+                return bytes[0];
+            }
+                
+            throw PythonOps.TypeError("expected a character, but {0} found", DynamicHelpers.GetPythonType(value));
         }
 
         public static object pow(CodeContext/*!*/ context, object x, object y) {

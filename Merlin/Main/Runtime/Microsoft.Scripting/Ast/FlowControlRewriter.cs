@@ -19,6 +19,7 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Linq.Expressions;
 using Microsoft.Scripting.Utils;
+using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace Microsoft.Scripting.Ast {
 
@@ -228,16 +229,16 @@ namespace Microsoft.Scripting.Ast {
                         all,
                         Expression.Block(
                             Expression.Assign(saved, all),
-                            Expression.Default(node.Type)
+                            Utils.Default(node.Type)
                         )
                     )
                 };
                 @finally = Expression.Block(
                     @finally,
                     Expression.Condition(
-                        Expression.NotEqual(saved, Expression.Constant(null, saved.Type)),
+                        Expression.NotEqual(saved, AstUtils.Constant(null, saved.Type)),
                         Expression.Throw(saved),
-                        Expression.Empty()
+                        Utils.Empty()
                     )
                 );
 
@@ -266,7 +267,7 @@ namespace Microsoft.Scripting.Ast {
 
         private Expression MakeFlowControlSwitch(BlockInfo block) {
             var cases = block.NeedFlowLabels.Map(
-                target => Expression.SwitchCase(MakeFlowJump(target), Expression.Constant(_labels[target].FlowState))
+                target => Expression.SwitchCase(MakeFlowJump(target), AstUtils.Constant(_labels[target].FlowState))
             );
             return Expression.Switch(_flowVariable, null, null, new ReadOnlyCollection<SwitchCase>(cases));
         }
@@ -289,7 +290,7 @@ namespace Microsoft.Scripting.Ast {
             }
             // Got here without needing flow, reset the flag and emit the real goto
             return Expression.Block(
-                Expression.Assign(_flowVariable, Expression.Constant(0)),
+                Expression.Assign(_flowVariable, AstUtils.Constant(0)),
                 Expression.Goto(target, _labels[target].Variable)
             );
         }
@@ -304,11 +305,11 @@ namespace Microsoft.Scripting.Ast {
                     block.NeedFlowLabels.Add(node.Target);
                     LabelInfo info = EnsureLabelInfo(node.Target);
 
-                    var assignFlow = Expression.Assign(_flowVariable, Expression.Constant(info.FlowState));
+                    var assignFlow = Expression.Assign(_flowVariable, AstUtils.Constant(info.FlowState));
                     var gotoFlow = Expression.Goto(block.FlowLabel);
                     Expression value;
                     if (info.Variable == null) {
-                        value = node.Value ?? Expression.Empty();
+                        value = node.Value ?? Utils.Empty();
                     } else {
                         value = Expression.Assign(info.Variable, node.Value);
                     }

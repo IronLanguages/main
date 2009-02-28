@@ -89,7 +89,7 @@ namespace Microsoft.Scripting.Actions {
 
         public override Expression GetValue(Expression context, ActionBinder binder, Type type) {
             if (Field.IsLiteral) {
-                return Ast.Constant(Field.GetValue(null));
+                return AstUtils.Constant(Field.GetValue(null));
             }
 
             if (!IsStatic) {
@@ -106,9 +106,9 @@ namespace Microsoft.Scripting.Actions {
             }
 
             return Ast.Call(
-                AstUtils.Convert(Ast.Constant(Field), typeof(FieldInfo)),
+                AstUtils.Convert(AstUtils.Constant(Field), typeof(FieldInfo)),
                 typeof(FieldInfo).GetMethod("GetValue"),
-                Ast.Constant(null)
+                AstUtils.Constant(null)
             );
         }
 

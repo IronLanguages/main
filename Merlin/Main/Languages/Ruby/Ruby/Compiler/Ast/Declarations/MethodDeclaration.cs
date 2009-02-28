@@ -122,9 +122,9 @@ namespace IronRuby.Compiler.Ast {
                     ),
                 
                     _parameters.TransformOptionalsInitialization(gen),
-                    gen.TraceEnabled ? Methods.TraceMethodCall.OpCall(scopeVariable, Ast.Convert(Ast.Constant(gen.SourceUnit.Path), typeof(string)), Ast.Constant(Location.Start.Line)) : Ast.Empty(),
+                    gen.TraceEnabled ? Methods.TraceMethodCall.OpCall(scopeVariable, Ast.Convert(AstUtils.Constant(gen.SourceUnit.Path), typeof(string)), AstUtils.Constant(Location.Start.Line)) : AstUtils.Empty(),
                     Body.TransformResult(gen, ResultOperation.Return),
-                    Ast.Empty()
+                    AstUtils.Empty()
                 ),
                 ResultOperation.Return,
                 (gen.Profiler != null) ? gen.Profiler.GetTickIndex(encodedName) : -1,
@@ -152,7 +152,7 @@ namespace IronRuby.Compiler.Ast {
 
                 var bodyWithParamInit = new MSA.Expression[parameters.Length + 1];
                 for (int i = 0; i < parameters.Length; i++) {
-                    bodyWithParamInit[i] = Ast.Assign(parameters[i], Ast.ArrayIndex(array, Ast.Constant(i)));
+                    bodyWithParamInit[i] = Ast.Assign(parameters[i], Ast.ArrayIndex(array, AstUtils.Constant(i)));
                 }
                 bodyWithParamInit[parameters.Length] = body;
 
@@ -184,14 +184,14 @@ namespace IronRuby.Compiler.Ast {
                 Ast.Assign(methodDefinitionVariable,
                     Methods.DefineMethod.OpCall(
                         (_target != null) ? _target.TransformRead(gen) : gen.CurrentSelfVariable,  // target
-                        Ast.Constant((gen.SavingToDisk) ? (object)new Serializable(this) : this), 
+                        AstUtils.Constant((gen.SavingToDisk) ? (object)new Serializable(this) : this), 
                         gen.CurrentScopeVariable,
-                        Ast.Constant(_target != null),                                // isSingleton?
+                        AstUtils.Constant(_target != null),                                // isSingleton?
                         AstUtils.Constant(_name),
                         TransformBody(gen, methodDefinitionVariable),
-                        Ast.Constant(_parameters.MandatoryCount),
-                        Ast.Constant(_parameters.OptionalCount),
-                        Ast.Constant(_parameters.Array != null)                       // hasUnsplatParameter
+                        AstUtils.Constant(_parameters.MandatoryCount),
+                        AstUtils.Constant(_parameters.OptionalCount),
+                        AstUtils.Constant(_parameters.Array != null)                       // hasUnsplatParameter
                     )
                 )
             );
@@ -210,7 +210,7 @@ namespace IronRuby.Compiler.Ast {
 
             public MSA.Expression/*!*/ CreateExpression() {
                 // TODO: serialize source code:
-                return Ast.Constant(null);       
+                return AstUtils.Constant(null);       
             }
         }
     }

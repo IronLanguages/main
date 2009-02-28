@@ -406,7 +406,7 @@ namespace Microsoft.Scripting.Actions {
             // ConvertSelfToT -> Nullable<T>
             if (kind == ConversionResultKind.ExplicitCast) {
                 // if the conversion to T fails we just throw
-                Expression conversion = ConvertExpression(arg.Expression, valueType, kind, Ast.Constant(null, typeof(CodeContext)));
+                Expression conversion = ConvertExpression(arg.Expression, valueType, kind, AstUtils.Constant(null, typeof(CodeContext)));
 
                 return new DynamicMetaObject(
                     Ast.New(
@@ -416,7 +416,7 @@ namespace Microsoft.Scripting.Actions {
                     restrictions
                 );
             } else {
-                Expression conversion = ConvertExpression(arg.Expression, valueType, kind, Ast.Constant(null, typeof(CodeContext)));
+                Expression conversion = ConvertExpression(arg.Expression, valueType, kind, AstUtils.Constant(null, typeof(CodeContext)));
 
                 // if the conversion to T succeeds then produce the nullable<T>, otherwise return default(retType)
                 ParameterExpression tmp = Ast.Variable(typeof(object), "tmp");
@@ -426,7 +426,7 @@ namespace Microsoft.Scripting.Actions {
                         Ast.Condition(
                             Ast.NotEqual(
                                 Ast.Assign(tmp, conversion),
-                                Ast.Constant(null)
+                                AstUtils.Constant(null)
                             ),
                             Ast.New(
                                 toType.GetConstructor(new Type[] { valueType }),
@@ -450,9 +450,9 @@ namespace Microsoft.Scripting.Actions {
         public static Expression GetTryConvertReturnValue(Type type) {
             Expression res;
             if (type.IsInterface || type.IsClass) {
-                res = Ast.Constant(null, type);
+                res = AstUtils.Constant(null, type);
             } else {
-                res = Ast.Constant(null);
+                res = AstUtils.Constant(null);
             }
 
             return res;
@@ -494,7 +494,7 @@ namespace Microsoft.Scripting.Actions {
         /// </summary>
         private static DynamicMetaObject MakeNullTarget(Type toType, BindingRestrictions restrictions) {
             return new DynamicMetaObject(
-                Ast.Constant(null, toType),
+                AstUtils.Constant(null, toType),
                 restrictions
             );
         }

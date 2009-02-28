@@ -74,7 +74,7 @@ namespace IronRuby.Compiler.Ast {
 
         internal override MSA.Expression TransformDefinedCondition(AstGenerator/*!*/ gen) {
             // block_given semantics:
-            return Ast.NotEqual(gen.MakeMethodBlockParameterRead(), Ast.Constant(null));
+            return Ast.NotEqual(gen.MakeMethodBlockParameterRead(), AstUtils.Constant(null));
         }
 
     }

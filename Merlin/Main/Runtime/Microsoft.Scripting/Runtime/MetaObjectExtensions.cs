@@ -57,7 +57,7 @@ namespace Microsoft.Scripting.Runtime {
 
             if (type == typeof(DynamicNull)) {
                 return new DynamicMetaObject(
-                    Expression.Constant(null),
+                    AstUtils.Constant(null),
                     self.Restrictions.Merge(BindingRestrictions.GetInstanceRestriction(self.Expression, null)),
                     self.Value
                 );

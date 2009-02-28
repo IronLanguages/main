@@ -146,7 +146,7 @@ namespace Microsoft.Scripting.Interpreter {
         }
 
         public override Expression Reduce() {
-            return Expression.Property(Expression.Constant(_global), _CurrentValueProperty);
+            return Expression.Property(AstUtils.Constant(_global), _CurrentValueProperty);
         }
 
 
@@ -210,7 +210,7 @@ namespace Microsoft.Scripting.Interpreter {
                 //return new CodeContext(scope, context);
 
                 _codeContext = new CodeContext(this.Scope, languageContext);
-                _context = Expression.Constant(_codeContext);
+                _context = AstUtils.Constant(_codeContext);
 
 
                 var ret = (LambdaExpression)Visit(lambda); //???

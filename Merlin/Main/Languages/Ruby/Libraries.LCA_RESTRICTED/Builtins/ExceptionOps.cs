@@ -127,7 +127,7 @@ namespace IronRuby.Builtins {
                         metaBuilder.Result = args.TargetExpression;
                     } else {
                         RubyClass cls = args.RubyContext.GetClassOf(args.Target);
-                        var classExpression = Ast.Constant(cls);
+                        var classExpression = AstUtils.Constant(cls);
                         args.SetTarget(classExpression, cls);
 
                         ParameterExpression messageVariable = null;

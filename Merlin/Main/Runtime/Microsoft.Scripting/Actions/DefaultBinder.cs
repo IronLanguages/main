@@ -115,13 +115,13 @@ namespace Microsoft.Scripting.Actions {
                     typeof(BinderOps).GetMethod("TypeErrorForIncorrectArgumentCount", new Type[] {
                                 typeof(string), typeof(int), typeof(int) , typeof(int), typeof(int), typeof(bool), typeof(bool)
                             }),
-                    Ast.Constant(target.Name, typeof(string)),  // name
-                    Ast.Constant(minArgs),                      // min formal normal arg cnt
-                    Ast.Constant(maxArgs),                      // max formal normal arg cnt
-                    Ast.Constant(0),                            // default cnt
-                    Ast.Constant(target.ActualArgumentCount),   // args provided
-                    Ast.Constant(false),                        // hasArgList
-                    Ast.Constant(false)                         // kwargs provided
+                    AstUtils.Constant(target.Name, typeof(string)),  // name
+                    AstUtils.Constant(minArgs),                      // min formal normal arg cnt
+                    AstUtils.Constant(maxArgs),                      // max formal normal arg cnt
+                    AstUtils.Constant(0),                            // default cnt
+                    AstUtils.Constant(target.ActualArgumentCount),   // args provided
+                    AstUtils.Constant(false),                        // hasArgList
+                    AstUtils.Constant(false)                         // kwargs provided
                 )
             );
         }
@@ -149,7 +149,7 @@ namespace Microsoft.Scripting.Actions {
             return ErrorInfo.FromException(
                 Ast.Call(
                     typeof(BinderOps).GetMethod("SimpleTypeError"),
-                    Ast.Constant(sb.ToString(), typeof(string))
+                    AstUtils.Constant(sb.ToString(), typeof(string))
                 )
             );
         }
@@ -163,7 +163,7 @@ namespace Microsoft.Scripting.Actions {
                                 return ErrorInfo.FromException(
                                     Ast.Call(
                                         typeof(BinderOps).GetMethod("SimpleTypeError"),
-                                        Ast.Constant(String.Format("expected {0}, got {1}", GetTypeName(cr.To), GetTypeName(cr.From)))
+                                        AstUtils.Constant(String.Format("expected {0}, got {1}", GetTypeName(cr.To), GetTypeName(cr.From)))
                                     )
                                 );
                             }
@@ -173,16 +173,16 @@ namespace Microsoft.Scripting.Actions {
                         return ErrorInfo.FromException(
                                 Ast.Call(
                                     typeof(BinderOps).GetMethod("TypeErrorForDuplicateKeywordArgument"),
-                                    Ast.Constant(target.Name, typeof(string)),
-                                    Ast.Constant(cf.KeywordArguments[0], typeof(string))    // TODO: Report all bad arguments?
+                                    AstUtils.Constant(target.Name, typeof(string)),
+                                    AstUtils.Constant(cf.KeywordArguments[0], typeof(string))    // TODO: Report all bad arguments?
                             )
                         );
                     case CallFailureReason.UnassignableKeyword:
                         return ErrorInfo.FromException(
                                 Ast.Call(
                                     typeof(BinderOps).GetMethod("TypeErrorForExtraKeywordArgument"),
-                                    Ast.Constant(target.Name, typeof(string)),
-                                    Ast.Constant(cf.KeywordArguments[0], typeof(string))    // TODO: Report all bad arguments?
+                                    AstUtils.Constant(target.Name, typeof(string)),
+                                    AstUtils.Constant(cf.KeywordArguments[0], typeof(string))    // TODO: Report all bad arguments?
                             )
                         );
                     default: throw new InvalidOperationException();
@@ -211,7 +211,7 @@ namespace Microsoft.Scripting.Actions {
 
                     return ErrorInfo.FromValueNoError(
                         Ast.Call(
-                            AstUtils.Convert(Ast.Constant(ft.Field), typeof(FieldInfo)),
+                            AstUtils.Convert(AstUtils.Constant(ft.Field), typeof(FieldInfo)),
                             typeof(FieldInfo).GetMethod("GetValue"),
                             AstUtils.Convert(instance, typeof(object))
                         )
@@ -235,7 +235,7 @@ namespace Microsoft.Scripting.Actions {
             return ErrorInfo.FromException(
                 Expression.New(
                     typeof(MissingMemberException).GetConstructor(new Type[] { typeof(string) }),
-                    Expression.Constant(name)
+                    AstUtils.Constant(name)
                 )
             );
         }
@@ -247,7 +247,7 @@ namespace Microsoft.Scripting.Actions {
             return ErrorInfo.FromValueNoError(
                 Expression.Call(
                     typeof(BinderOps).GetMethod("SetEvent"),
-                    Expression.Constant(ev),
+                    AstUtils.Constant(ev),
                     value
                 )
             );
@@ -307,7 +307,7 @@ namespace Microsoft.Scripting.Actions {
             return Ast.Throw(
                 Ast.New(
                     typeof(AmbiguousMatchException).GetConstructor(new Type[] { typeof(string) }),
-                    Ast.Constant(sb.ToString())
+                    AstUtils.Constant(sb.ToString())
                 )
             );
         }

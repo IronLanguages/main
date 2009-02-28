@@ -934,7 +934,7 @@ namespace IronRuby.Builtins {
 
             RubyMemberInfo method;
             using (Context.ClassHierarchyLocker()) {
-                method = ResolveMethodFallbackToObjectNoLock(oldName, true).Info;
+                method = ResolveMethodFallbackToObjectNoLock(oldName, RubyClass.IgnoreVisibility).Info;
                 if (method == null) {
                     throw RubyExceptions.CreateUndefinedMethodError(this, oldName);
                 }
@@ -1182,24 +1182,24 @@ namespace IronRuby.Builtins {
         }
 
         // thread-safe:
-        public MethodResolutionResult ResolveMethodForSite(string/*!*/ name, bool includePrivate) {
+        public MethodResolutionResult ResolveMethodForSite(string/*!*/ name, RubyClass visibilityContext) {
             using (Context.ClassHierarchyLocker()) {
-                return ResolveMethodForSiteNoLock(name, includePrivate);
+                return ResolveMethodForSiteNoLock(name, visibilityContext);
             }
         }
 
         // thread-safe:
-        public MethodResolutionResult ResolveMethod(string/*!*/ name, bool includePrivate) {
+        public MethodResolutionResult ResolveMethod(string/*!*/ name, RubyClass visibilityContext) {
             using (Context.ClassHierarchyLocker()) {
-                return ResolveMethodNoLock(name, includePrivate);
+                return ResolveMethodNoLock(name, visibilityContext);
             }
         }
 
-        public MethodResolutionResult ResolveMethodForSiteNoLock(string/*!*/ name, bool includePrivate) {
-            return ResolveMethodNoLock(name, includePrivate).InvalidateSitesOnOverride();
+        public MethodResolutionResult ResolveMethodForSiteNoLock(string/*!*/ name, RubyClass visibilityContext) {
+            return ResolveMethodNoLock(name, visibilityContext).InvalidateSitesOnOverride();
         }
 
-        public MethodResolutionResult ResolveMethodNoLock(string/*!*/ name, bool includePrivate) {
+        public MethodResolutionResult ResolveMethodNoLock(string/*!*/ name, RubyClass visibilityContext) {
             Context.RequiresClassHierarchyLock();
             Assert.NotNull(name);
 
@@ -1207,11 +1207,16 @@ namespace IronRuby.Builtins {
             RubyMemberInfo info = null;
             RubyModule owner = null;
             bool skipHidden = false;
+            bool foundCallerSelf = false;
 
-            if (ForEachAncestor((module) => (owner = module).TryGetMethod(name, ref skipHidden, out info))) {
+            if (ForEachAncestor((module) => {
+                owner = module;
+                foundCallerSelf |= module == visibilityContext;
+                return module.TryGetMethod(name, ref skipHidden, out info);
+            })) {
                 if (info == null || info.IsUndefined) {
                     return MethodResolutionResult.NotFound;
-                } else if (!IsMethodVisible(info, includePrivate)) {
+                } else if (!IsMethodVisible(info, owner, visibilityContext, foundCallerSelf)) {
                     return new MethodResolutionResult(info, owner, false);
                 } else if (info.IsSuperForwarder) {
                     // start again with owner's super ancestor and ignore visibility:
@@ -1224,22 +1229,32 @@ namespace IronRuby.Builtins {
             return MethodResolutionResult.NotFound;
         }
 
-        private static bool IsMethodVisible(RubyMemberInfo/*!*/ method, bool includePrivate) {
-            return (
-                method.Visibility == RubyMethodVisibility.Public ||
-                method.Visibility == RubyMethodVisibility.Protected ||
-                method.Visibility == RubyMethodVisibility.Private && includePrivate
-            );
-            // TODO: protected
+        private bool IsMethodVisible(RubyMemberInfo/*!*/ method, RubyModule/*!*/ owner, RubyClass visibilityContext, bool foundCallerSelf) {
+            // call with implicit self => all methods are visible
+            if (visibilityContext == RubyClass.IgnoreVisibility) {
+                return true;
+            } 
+            
+            if (method.Visibility == RubyMethodVisibility.Protected) {
+                // A protected method is visible if the caller's self immediate class is a descendant of the method owner.
+                if (foundCallerSelf) {
+                    return true;
+                }
+                // walk ancestors from caller's self class (visibilityContext)
+                // until the method owner is found or this module is found (this module is a descendant of the owner):
+                return visibilityContext.ForEachAncestor((module) => module == owner || module == this);
+            } 
+
+            return method.Visibility == RubyMethodVisibility.Public;
         }
 
         /// <summary>
         /// Resolve method and if it is not found in this module's ancestors, resolve in Object.
         /// </summary>
-        public virtual MethodResolutionResult ResolveMethodFallbackToObjectNoLock(string/*!*/ name, bool includePrivate) {
+        public virtual MethodResolutionResult ResolveMethodFallbackToObjectNoLock(string/*!*/ name, RubyClass visibilityContext) {
             Context.RequiresClassHierarchyLock();
-            var result = ResolveMethodNoLock(name, includePrivate);
-            return result.Found ? result : _context.ObjectClass.ResolveMethodNoLock(name, includePrivate);
+            var result = ResolveMethodNoLock(name, visibilityContext);
+            return result.Found ? result : _context.ObjectClass.ResolveMethodNoLock(name, visibilityContext);
         }
 
         // skip one method in the method resolution order (MRO)

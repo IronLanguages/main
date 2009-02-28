@@ -19,6 +19,7 @@ using System.Reflection;
 using System.Linq.Expressions;
 using Microsoft.Scripting.Utils;
 using Microsoft.Scripting.Generation;
+using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace Microsoft.Scripting.Actions.Calls {
     using Ast = System.Linq.Expressions.Expression;
@@ -42,10 +43,10 @@ namespace Microsoft.Scripting.Actions.Calls {
             }
 
             if (ParameterInfo.ParameterType.IsByRef) {
-                return Ast.Constant(val, ParameterInfo.ParameterType.GetElementType());
+                return AstUtils.Constant(val, ParameterInfo.ParameterType.GetElementType());
             }
 
-            return parameterBinder.ConvertExpression(Ast.Constant(val), ParameterInfo, ParameterInfo.ParameterType);            
+            return parameterBinder.ConvertExpression(AstUtils.Constant(val), ParameterInfo, ParameterInfo.ParameterType);            
         }
     }
 }

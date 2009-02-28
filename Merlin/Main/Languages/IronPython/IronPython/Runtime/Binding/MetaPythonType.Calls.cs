@@ -95,7 +95,7 @@ namespace IronPython.Runtime.Binding {
                    Ast.Throw(
                        Ast.New(
                            typeof(ArgumentTypeException).GetConstructor(new Type[] { typeof(string) }),
-                           Ast.Constant("Cannot create instances of " + Value.Name)
+                           AstUtils.Constant("Cannot create instances of " + Value.Name)
                        )
                    ),
                    Restrictions.Merge(BindingRestrictions.GetInstanceRestriction(Expression, Value))
@@ -323,7 +323,7 @@ namespace IronPython.Runtime.Binding {
                         typeof(PythonOps).GetMethod("PythonTypeGetMember"),
                         CodeContext,
                         AstUtils.Convert(Arguments.Self.Expression, typeof(PythonType)),
-                        Ast.Constant(null),
+                        AstUtils.Constant(null),
                         AstUtils.Constant(Symbols.NewInst)
                     )
                 );
@@ -466,7 +466,7 @@ namespace IronPython.Runtime.Binding {
                         typeof(PythonOps).GetMethod("GetMixedMember"),
                         CodeContext,
                         Arguments.Self.Expression,
-                        Ast.Constant(null),
+                        AstUtils.Constant(null),
                         AstUtils.Constant(Symbols.NewInst)
                     )
                 );
@@ -604,7 +604,7 @@ namespace IronPython.Runtime.Binding {
                     Ast.Throw(
                         Ast.New(
                             typeof(ArgumentTypeException).GetConstructor(new Type[] { typeof(string) }),
-                            Ast.Constant(message)
+                            AstUtils.Constant(message)
                         )
                     ),
                     GetErrorRestrictions(ai)
@@ -634,7 +634,7 @@ namespace IronPython.Runtime.Binding {
         private Expression/*!*/ GetFinalizerInitialization(DynamicMetaObjectBinder/*!*/ action, ParameterExpression/*!*/ variable) {
             return Ast.Call(
                 typeof(PythonOps).GetMethod("InitializeForFinalization"),
-                Ast.Constant(BinderState.GetBinderState(action).Context),
+                AstUtils.Constant(BinderState.GetBinderState(action).Context),
                 AstUtils.Convert(variable, typeof(object))
             );
         }
@@ -720,7 +720,7 @@ namespace IronPython.Runtime.Binding {
                         typeof(PythonOps).GetMethod("GetTypeVersion"),
                         Ast.Convert(Expression, typeof(PythonType))
                     ),
-                    Ast.Constant(version)
+                    AstUtils.Constant(version)
                 ),
                 new BindingHelpers.PythonTypeValidator(Value, version).Validate
             );

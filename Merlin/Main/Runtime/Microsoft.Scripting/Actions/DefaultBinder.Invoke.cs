@@ -185,7 +185,7 @@ namespace Microsoft.Scripting.Actions {
                             Ast.Convert(self.Expression, typeof(BoundMemberTracker)),
                             typeof(BoundMemberTracker).GetProperty("BoundTo")
                         ),
-                        Ast.Constant(bmt.BoundTo)
+                        AstUtils.Constant(bmt.BoundTo)
                     )
                 );
 
@@ -253,7 +253,7 @@ namespace Microsoft.Scripting.Actions {
                 ErrorInfo.FromException(
                     Ast.New(
                         typeof(ArgumentTypeException).GetConstructor(new Type[] { typeof(string) }),
-                        Ast.Constant(type.Name + " is not callable")
+                        AstUtils.Constant(type.Name + " is not callable")
                     )
                 ),
                 self.Restrictions.Merge(BindingRestrictionsHelpers.GetRuntimeTypeRestriction(self.Expression, type))

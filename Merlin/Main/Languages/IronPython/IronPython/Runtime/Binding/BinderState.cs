@@ -91,7 +91,7 @@ namespace IronPython.Runtime.Binding {
         }
 
         public static Expression/*!*/ GetCodeContext(DynamicMetaObjectBinder/*!*/ action) {
-            return Ast.Constant(BinderState.GetBinderState(action).Context);
+            return AstUtils.Constant(BinderState.GetBinderState(action).Context);
         }
 
         #region Binder Factories

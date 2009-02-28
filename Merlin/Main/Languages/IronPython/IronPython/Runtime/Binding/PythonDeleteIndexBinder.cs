@@ -19,6 +19,7 @@ using System.Linq.Expressions;
 
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
+using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 using IronPython.Runtime.Operations;
 
@@ -29,7 +30,7 @@ namespace IronPython.Runtime.Binding {
         private readonly BinderState/*!*/ _state;
 
         public PythonDeleteIndexBinder(BinderState/*!*/ state, int argCount)
-            : base(Expression.CallInfo(argCount)) {
+            : base(new CallInfo(argCount)) {
             _state = state;
         }
 
@@ -64,7 +65,7 @@ namespace IronPython.Runtime.Binding {
             return Ast.Call(
                 typeof(PythonOps).GetMethod("MakeDeleteIndexAction"),
                 BindingHelpers.CreateBinderStateExpression(),
-                Expression.Constant(CallInfo.ArgumentCount)
+                AstUtils.Constant(CallInfo.ArgumentCount)
             );
         }
 

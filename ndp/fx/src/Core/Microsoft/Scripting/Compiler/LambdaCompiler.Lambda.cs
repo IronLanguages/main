@@ -110,14 +110,15 @@ namespace System.Linq.Expressions.Compiler {
             if (_method is DynamicMethod) {
                 impl = new LambdaCompiler(_tree, lambda);
             } else {
-                //When the lambda does not have a name or the name is empty, generate a unique name for it.
+                // When the lambda does not have a name or the name is empty, generate a unique name for it.
                 string name = String.IsNullOrEmpty(lambda.Name) ? GetUniqueMethodName() : lambda.Name;
                 MethodBuilder mb = _typeBuilder.DefineMethod(name, MethodAttributes.Private | MethodAttributes.Static);
                 impl = new LambdaCompiler(_tree, lambda, mb, _emitDebugSymbols);
             }
 
             // 2. emit the lambda
-            impl.EmitLambdaBody(_scope, false);
+            // Since additional ILs are always emitted after the lambda's body, should not emit with tail call optimization.
+            impl.EmitLambdaBody(_scope, false, CompilationFlags.EmitAsNoTail);
 
             // 3. emit the delegate creation in the outer lambda
             EmitDelegateConstruction(impl);
@@ -132,7 +133,9 @@ namespace System.Linq.Expressions.Compiler {
         }
 
         private void EmitLambdaBody() {
-            EmitLambdaBody(null, false);
+            // The lambda body is the "last" expression of the lambda
+            CompilationFlags tailCallFlag = _lambda.TailCall ? CompilationFlags.EmitAsTail : CompilationFlags.EmitAsNoTail;
+            EmitLambdaBody(null, false, tailCallFlag);
         }
 
         /// <summary>
@@ -141,7 +144,10 @@ namespace System.Linq.Expressions.Compiler {
         /// </summary>
         /// <param name="parent">The parent scope.</param>
         /// <param name="inlined">true if the lambda is inlined; false otherwise.</param>
-        private void EmitLambdaBody(CompilerScope parent, bool inlined) {
+        /// <param name="flags">
+        /// The emum to specify if the lambda is compiled with the tail call optimization. 
+        /// </param>
+        private void EmitLambdaBody(CompilerScope parent, bool inlined, CompilationFlags flags) {
             _scope.Enter(this, parent);
 
             if (inlined) {
@@ -155,10 +161,12 @@ namespace System.Linq.Expressions.Compiler {
                 }
             }
 
+            // Need to emit the expression start for the lambda body
+            flags = UpdateEmitExpressionStartFlag(flags, CompilationFlags.EmitExpressionStart);
             if (_lambda.ReturnType == typeof(void)) {
-                EmitExpressionAsVoid(_lambda.Body);
+                EmitExpressionAsVoid(_lambda.Body, flags);
             } else {
-                EmitExpression(_lambda.Body);
+                EmitExpression(_lambda.Body, flags);
             }
 
             // Return must be the last instruction in a CLI method.

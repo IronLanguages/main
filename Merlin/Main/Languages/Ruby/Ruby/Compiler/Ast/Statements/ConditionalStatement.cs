@@ -65,7 +65,7 @@ namespace IronRuby.Compiler.Ast {
 
         internal override MSA.Expression/*!*/ Transform(AstGenerator/*!*/ gen) {
             return AstUtils.IfThenElse(TransformCondition(gen), _body.Transform(gen),
-                _elseStatement != null ? _elseStatement.Transform(gen) : Ast.Empty()
+                _elseStatement != null ? _elseStatement.Transform(gen) : AstUtils.Empty()
             );
         }
 
@@ -73,7 +73,7 @@ namespace IronRuby.Compiler.Ast {
             return Ast.Condition(
                 TransformCondition(gen), 
                 AstFactory.Box(_body.TransformRead(gen)),
-                (_elseStatement != null) ? AstFactory.Box(_elseStatement.TransformRead(gen)) : (MSA.Expression)Ast.Constant(null)
+                (_elseStatement != null) ? AstFactory.Box(_elseStatement.TransformRead(gen)) : (MSA.Expression)AstUtils.Constant(null)
             );
         }
     }
