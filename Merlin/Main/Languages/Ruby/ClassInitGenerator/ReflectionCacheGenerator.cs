@@ -137,29 +137,10 @@ internal sealed class ReflectionCacheGenerator : Generator {
     }
 
     private void GenerateOps(ICollection<MethodInfo>/*!*/ methods) {
-        _output.Write("private static MethodInfo ");
-        int count = 0;
-        foreach (var method in methods) {
-            if (count > 0) {
-                _output.Write(", ");
-            }
-
-            count++;
-
-            if (count % 20 == 0) {
-                _output.WriteLine();
-            }
-
-            _output.Write("_");
-            _output.Write(method.Name);
-        }
-        _output.WriteLine(";");
-
-        _output.WriteLine();
-
         foreach (var method in methods) {
             _output.WriteLine("public static MethodInfo/*!*/ {0} {{ get {{ return _{0} ?? (_{0} = GetMethod(typeof(RubyOps), \"{0}\")); }} }}",
                 method.Name);
+            _output.WriteLine("private static MethodInfo _{0};", method.Name);
         }
     }
 

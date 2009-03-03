@@ -54,13 +54,13 @@ namespace IronPython.Compiler.Ast {
                 statements.Add(
                     // _references[i] = PythonOps.Import(<code context>, _names[i])
                     ag.AddDebugInfo(
-                        AstUtils.Assign(
-                            _variables[i].Variable, 
+                        ag.Globals.Assign(
+                            ag.Globals.GetVariable(_variables[i]), 
                             Ast.Call(
                                 AstGenerator.GetHelperMethod(                           // helper
                                     _asNames[i] == SymbolId.Empty ? "ImportTop" : "ImportBottom"
                                 ),
-                                AstUtils.CodeContext(),                                 // 1st arg - code context
+                                ag.LocalContext,                                        // 1st arg - code context
                                 AstUtils.Constant(_names[i].MakeString()),                   // 2nd arg - module name
                                 AstUtils.Constant(_forceAbsolute ? 0 : -1)                   // 3rd arg - absolute or relative imports
                             )

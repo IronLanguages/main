@@ -96,6 +96,19 @@ namespace System.Runtime.CompilerServices {
         }
 
         /// <summary>
+        /// Updates rules in the cache.
+        /// </summary>
+        /// <typeparam name="T">The type of the delegate of the <see cref="CallSite"/>.</typeparam>
+        /// <param name="this">An instance of the dynamic call site.</param>
+        /// <param name="matched">The matched rule index.</param>
+        [Obsolete("do not use this method", true)]
+        public static void UpdateRules<T>(CallSite<T> @this, int matched) where T : class {
+            if (matched > 1) {
+                @this.Rules.MoveRule(matched);
+            }
+        }
+        
+        /// <summary>
         /// Gets the dynamic binding rules from the call site.
         /// </summary>
         /// <typeparam name="T">The type of the delegate of the <see cref="CallSite"/>.</typeparam>
@@ -124,9 +137,12 @@ namespace System.Runtime.CompilerServices {
         /// <typeparam name="T">The type of the delegate of the <see cref="CallSite"/>.</typeparam>
         /// <param name="cache">Cache.</param>
         /// <param name="rule">An instance of the call site rule.</param>
+        /// <param name="i">An index of the call site rule.</param>
         [Obsolete("do not use this method", true)]
-        public static void MoveRule<T>(RuleCache<T> cache, CallSiteRule<T> rule) where T : class {
-            cache.MoveRule(rule);
+        public static void MoveRule<T>(RuleCache<T> cache, CallSiteRule<T> rule, int i) where T : class {
+            if (i > 1) {
+                cache.MoveRule(rule, i);
+            }
         }
 
         /// <summary>
@@ -137,7 +153,7 @@ namespace System.Runtime.CompilerServices {
         /// <returns>The array of applicable rules.</returns>
         [Obsolete("do not use this method", true)]
         public static CallSiteRule<T>[] FindApplicableRules<T>(RuleCache<T> cache) where T : class {
-            return cache.FindApplicableRules();
+            return cache.GetRules();
         }
 
         /// <summary>
@@ -152,14 +168,6 @@ namespace System.Runtime.CompilerServices {
         /// <returns>The new cal site rule.</returns>
         [Obsolete("do not use this method", true)]
         public static CallSiteRule<T> CreateNewRule<T>(RuleCache<T> cache, CallSite<T> site, CallSiteRule<T> oldRule, CallSiteRule<T> originalRule, object[] args) where T : class {
-            if (oldRule != null) {
-                //
-                // The rule didn't work and since we optimistically added it into the
-                // level 2 cache. Remove it now since the rule is no good.
-                //
-                cache.RemoveRule(oldRule);
-            }
-
             Expression binding = site.Binder.Bind(args, CallSiteRule<T>.Parameters, CallSiteRule<T>.ReturnLabel);
 
             //
@@ -169,21 +177,29 @@ namespace System.Runtime.CompilerServices {
                 throw Error.NoOrInvalidRuleProduced();
             }
 
-            var rule = new CallSiteRule<T>(binding);
+            var newRule = new CallSiteRule<T>(binding);
 
             if (originalRule != null) {
                 // compare our new rule and our original monomorphic rule.  If they only differ from constants
                 // then we'll want to re-use the code gen if possible.
-                rule = AutoRuleTemplate.CopyOrCreateTemplatedRule(originalRule, rule);
+                newRule = AutoRuleTemplate.CopyOrCreateTemplatedRule(originalRule, newRule);
             }
 
             //
             // Add the rule to the level 2 cache. This is an optimistic add so that cache miss
             // on another site can find this existing rule rather than building a new one.
             //
-            cache.AddRule(rule);
+            if (oldRule != null) {
+                //
+                // The rule didn't work and since we optimistically added it into the
+                // level 2 cache. Remove it now since the rule is no good.
+                //
+                cache.ReplaceRule(oldRule, newRule);
+            } else {
+                cache.AddRule(newRule);
+            }
 
-            return rule;
+            return newRule;
         }
     }
 }

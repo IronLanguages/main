@@ -411,7 +411,7 @@ namespace IronPython.Compiler.Ast {
                     extracted,
                     Ast.Call(
                         AstGenerator.GetHelperMethod("SetCurrentException"),
-                        AstUtils.CodeContext(),
+                        ag.LocalContext,
                         exception
                     )
                 ),
@@ -434,7 +434,7 @@ namespace IronPython.Compiler.Ast {
                     ag.TrackLines ? ag.GetLineNumberUpdateExpression(false) : AstUtils.Empty(),    
                     Ast.Call(
                         AstGenerator.GetHelperMethod("BuildExceptionInfo"),
-                        AstUtils.CodeContext(),
+                        ag.LocalContext,
                         exception
                     ),
                     body,

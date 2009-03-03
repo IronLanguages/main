@@ -101,8 +101,6 @@ namespace IronPython.Runtime.Types {
                     return GetTypeMaker(bases, typeInfo).CreateNewType();
                 });
             
-            OptimizedScriptCode.InitializeFields(ret, true);
-
             return ret;
         }
 

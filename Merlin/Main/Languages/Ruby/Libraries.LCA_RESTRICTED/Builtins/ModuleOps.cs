@@ -46,7 +46,7 @@ namespace IronRuby.Builtins {
 
         // not thread-safe:
         [RubyMethod("class_variable_get", RubyMethodAttributes.PrivateInstance)]
-        public static object GetClassVariable(RubyModule/*!*/ self, [DefaultProtocol]string/*!*/ variableName) {
+        public static object GetClassVariable(RubyModule/*!*/ self, [DefaultProtocol, NotNull]string/*!*/ variableName) {
             object value;
             if (self.TryResolveClassVariable(variableName, out value) == null) {
                 RubyUtils.CheckClassVariableName(variableName);
@@ -57,7 +57,7 @@ namespace IronRuby.Builtins {
 
         // not thread-safe:
         [RubyMethod("class_variable_set", RubyMethodAttributes.PrivateInstance)]
-        public static object ClassVariableSet(RubyModule/*!*/ self, [DefaultProtocol]string/*!*/ variableName, object value) {
+        public static object ClassVariableSet(RubyModule/*!*/ self, [DefaultProtocol, NotNull]string/*!*/ variableName, object value) {
             RubyUtils.CheckClassVariableName(variableName);
             self.SetClassVariable(variableName, value);
             return value;
@@ -65,7 +65,7 @@ namespace IronRuby.Builtins {
 
         // not thread-safe:
         [RubyMethod("remove_class_variable", RubyMethodAttributes.PrivateInstance)]
-        public static object RemoveClassVariable(RubyModule/*!*/ self, [DefaultProtocol]string/*!*/ variableName) {
+        public static object RemoveClassVariable(RubyModule/*!*/ self, [DefaultProtocol, NotNull]string/*!*/ variableName) {
             object value;
             if (!self.TryGetClassVariable(variableName, out value)) {
                 RubyUtils.CheckClassVariableName(variableName);
@@ -77,7 +77,7 @@ namespace IronRuby.Builtins {
 
         // thread-safe:
         [RubyMethod("remove_const", RubyMethodAttributes.PrivateInstance)]
-        public static object RemoveConstant(RubyModule/*!*/ self, [DefaultProtocol]string/*!*/ constantName) {
+        public static object RemoveConstant(RubyModule/*!*/ self, [DefaultProtocol, NotNull]string/*!*/ constantName) {
             object value;
             if (!self.TryGetConstantNoAutoload(constantName, out value)) {
                 RubyUtils.CheckConstantName(constantName);
@@ -293,7 +293,7 @@ namespace IronRuby.Builtins {
         // thread-safe:
         [RubyMethod("define_method", RubyMethodAttributes.PrivateInstance)]
         public static RubyMethod/*!*/ DefineMethod(RubyScope/*!*/ scope, RubyModule/*!*/ self, 
-            [DefaultProtocol]string/*!*/ methodName, [NotNull]RubyMethod/*!*/ method) {
+            [DefaultProtocol, NotNull]string/*!*/ methodName, [NotNull]RubyMethod/*!*/ method) {
 
             DefineMethod(scope, self, methodName, method.Info,  method.GetTargetClass());
             return method;
@@ -302,7 +302,7 @@ namespace IronRuby.Builtins {
         // thread-safe:
         [RubyMethod("define_method", RubyMethodAttributes.PrivateInstance)]
         public static UnboundMethod/*!*/ DefineMethod(RubyScope/*!*/ scope, RubyModule/*!*/ self, 
-            [DefaultProtocol]string/*!*/ methodName, [NotNull]UnboundMethod/*!*/ method) {
+            [DefaultProtocol, NotNull]string/*!*/ methodName, [NotNull]UnboundMethod/*!*/ method) {
 
             DefineMethod(scope, self, methodName, method.Info, method.TargetConstraint);
             return method;
@@ -333,7 +333,7 @@ namespace IronRuby.Builtins {
         // thread-safe:
         [RubyMethod("define_method", RubyMethodAttributes.PrivateInstance)]
         public static Proc/*!*/ DefineMethod(RubyScope/*!*/ scope, [NotNull]BlockParam/*!*/ block, 
-            RubyModule/*!*/ self, [DefaultProtocol]string/*!*/ methodName) {
+            RubyModule/*!*/ self, [DefaultProtocol, NotNull]string/*!*/ methodName) {
 
             return DefineMethod(scope, self, methodName, block.Proc);
         }
@@ -341,7 +341,7 @@ namespace IronRuby.Builtins {
         // thread-safe:
         [RubyMethod("define_method", RubyMethodAttributes.PrivateInstance)]
         public static Proc/*!*/ DefineMethod(RubyScope/*!*/ scope, RubyModule/*!*/ self, 
-            [DefaultProtocol]string/*!*/ methodName, [NotNull]Proc/*!*/ method) {
+            [DefaultProtocol, NotNull]string/*!*/ methodName, [NotNull]Proc/*!*/ method) {
 
             // MRI: ignores ModuleFunction scope flag (doesn't create singleton method).
             // MRI 1.8: uses private visibility if module_function is applied (bug).
@@ -392,13 +392,13 @@ namespace IronRuby.Builtins {
 
         // thread-safe:
         [RubyMethod("attr", RubyMethodAttributes.PrivateInstance)]
-        public static void Attr(RubyScope/*!*/ scope, RubyModule/*!*/ self, [DefaultProtocol]string/*!*/ name, [Optional]bool writable) {
+        public static void Attr(RubyScope/*!*/ scope, RubyModule/*!*/ self, [DefaultProtocol, NotNull]string/*!*/ name, [Optional]bool writable) {
             DefineAccessor(scope, self, name, true, writable);
         }
 
         // thread-safe:
         [RubyMethod("attr_accessor", RubyMethodAttributes.PrivateInstance)]
-        public static void AttrAccessor(RubyScope/*!*/ scope, RubyModule/*!*/ self, [DefaultProtocol]string/*!*/ name) {
+        public static void AttrAccessor(RubyScope/*!*/ scope, RubyModule/*!*/ self, [DefaultProtocol, NotNull]string/*!*/ name) {
             DefineAccessor(scope, self, name, true, true);
         }
 
@@ -412,7 +412,7 @@ namespace IronRuby.Builtins {
 
         // thread-safe:
         [RubyMethod("attr_reader", RubyMethodAttributes.PrivateInstance)]
-        public static void AttrReader(RubyScope/*!*/ scope, RubyModule/*!*/ self, [DefaultProtocol]string/*!*/ name) {
+        public static void AttrReader(RubyScope/*!*/ scope, RubyModule/*!*/ self, [DefaultProtocol, NotNull]string/*!*/ name) {
             DefineAccessor(scope, self, name, true, false);
         }
 
@@ -426,7 +426,7 @@ namespace IronRuby.Builtins {
 
         // thread-safe:
         [RubyMethod("attr_writer", RubyMethodAttributes.PrivateInstance)]
-        public static void AttrWriter(RubyScope/*!*/ scope, RubyModule/*!*/ self, [DefaultProtocol]string/*!*/ name) {
+        public static void AttrWriter(RubyScope/*!*/ scope, RubyModule/*!*/ self, [DefaultProtocol, NotNull]string/*!*/ name) {
             DefineAccessor(scope, self, name, false, true);
         }
 
@@ -445,7 +445,7 @@ namespace IronRuby.Builtins {
         // thread-safe:
         [RubyMethod("alias_method", RubyMethodAttributes.PrivateInstance)]
         public static RubyModule/*!*/ AliasMethod(RubyContext/*!*/ context, RubyModule/*!*/ self,
-            [DefaultProtocol]string/*!*/ newName, [DefaultProtocol]string/*!*/ oldName) {
+            [DefaultProtocol, NotNull]string/*!*/ newName, [DefaultProtocol, NotNull]string/*!*/ oldName) {
 
             self.AddMethodAlias(newName, oldName);
             return self;
@@ -453,7 +453,7 @@ namespace IronRuby.Builtins {
 
         // thread-safe:
         [RubyMethod("remove_method", RubyMethodAttributes.PrivateInstance)]
-        public static RubyModule/*!*/ RemoveMethod(RubyModule/*!*/ self, [DefaultProtocol]string/*!*/ methodName) {
+        public static RubyModule/*!*/ RemoveMethod(RubyModule/*!*/ self, [DefaultProtocol, NotNull]string/*!*/ methodName) {
             if (!self.RemoveMethod(methodName)) {
                 throw RubyExceptions.CreateUndefinedMethodError(self, methodName);
             }
@@ -462,7 +462,7 @@ namespace IronRuby.Builtins {
 
         // thread-safe:
         [RubyMethod("undef_method", RubyMethodAttributes.PrivateInstance)]
-        public static RubyModule/*!*/ UndefineMethod(RubyModule/*!*/ self, [DefaultProtocol]string/*!*/ methodName) {
+        public static RubyModule/*!*/ UndefineMethod(RubyModule/*!*/ self, [DefaultProtocol, NotNull]string/*!*/ methodName) {
             if (!self.ResolveMethod(methodName, RubyClass.IgnoreVisibility).Found) {
                 throw RubyExceptions.CreateUndefinedMethodError(self, methodName);
             }
@@ -663,7 +663,7 @@ namespace IronRuby.Builtins {
 
         // not thread-safe
         [RubyMethod("class_variable_defined?", RubyMethodAttributes.PublicInstance)]
-        public static bool ClassVariableDefined(RubyModule/*!*/ self, [DefaultProtocol]string/*!*/ variableName) {
+        public static bool ClassVariableDefined(RubyModule/*!*/ self, [DefaultProtocol, NotNull]string/*!*/ variableName) {
             RubyUtils.CheckClassVariableName(variableName);
             object value;
             return self.TryResolveClassVariable(variableName, out value) != null;
@@ -675,7 +675,7 @@ namespace IronRuby.Builtins {
 
         // thread-safe:
         [RubyMethod("const_defined?")]
-        public static bool IsConstantDefined(RubyModule/*!*/ self, [DefaultProtocol]string/*!*/ constantName) {
+        public static bool IsConstantDefined(RubyModule/*!*/ self, [DefaultProtocol, NotNull]string/*!*/ constantName) {
             RubyUtils.CheckConstantName(constantName);
             object constant;
 
@@ -685,13 +685,13 @@ namespace IronRuby.Builtins {
 
         // thread-safe:
         [RubyMethod("const_get")]
-        public static object GetConstantValue(RubyScope/*!*/ scope, RubyModule/*!*/ self, [DefaultProtocol]string/*!*/ constantName) {
+        public static object GetConstantValue(RubyScope/*!*/ scope, RubyModule/*!*/ self, [DefaultProtocol, NotNull]string/*!*/ constantName) {
             return RubyUtils.GetConstant(scope.GlobalScope, self, constantName, true);
         }
 
         // thread-safe:
         [RubyMethod("const_set")]
-        public static object SetConstantValue(RubyModule/*!*/ self, [DefaultProtocol]string/*!*/ constantName, object value) {
+        public static object SetConstantValue(RubyModule/*!*/ self, [DefaultProtocol, NotNull]string/*!*/ constantName, object value) {
             RubyUtils.CheckConstantName(constantName);
             RubyUtils.SetConstant(self, constantName, value);
             return value;
@@ -724,7 +724,7 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("const_missing")]
-        public static void ConstantMissing(RubyModule/*!*/ self, [DefaultProtocol]string/*!*/ name) {
+        public static void ConstantMissing(RubyModule/*!*/ self, [DefaultProtocol, NotNull]string/*!*/ name) {
             throw RubyExceptions.CreateNameError(String.Format("uninitialized constant {0}::{1}", self.Name, name));
         }
 
@@ -802,28 +802,28 @@ namespace IronRuby.Builtins {
 
         // thread-safe:
         [RubyMethod("method_defined?")]
-        public static bool MethodDefined(RubyModule/*!*/ self, [DefaultProtocol]string/*!*/ methodName) {
+        public static bool MethodDefined(RubyModule/*!*/ self, [DefaultProtocol, NotNull]string/*!*/ methodName) {
             RubyMemberInfo method = self.ResolveMethod(methodName, RubyClass.IgnoreVisibility).Info;
             return method != null && method.Visibility != RubyMethodVisibility.Private;
         }
 
         // thread-safe:
         [RubyMethod("private_method_defined?")]
-        public static bool PrivateMethodDefined(RubyModule/*!*/ self, [DefaultProtocol]string/*!*/ methodName) {
+        public static bool PrivateMethodDefined(RubyModule/*!*/ self, [DefaultProtocol, NotNull]string/*!*/ methodName) {
             RubyMemberInfo method = self.ResolveMethod(methodName, RubyClass.IgnoreVisibility).Info;
             return method != null && method.Visibility == RubyMethodVisibility.Private;
         }
 
         // thread-safe:
         [RubyMethod("protected_method_defined?")]
-        public static bool ProtectedMethodDefined(RubyModule/*!*/ self, [DefaultProtocol]string/*!*/ methodName) {
+        public static bool ProtectedMethodDefined(RubyModule/*!*/ self, [DefaultProtocol, NotNull]string/*!*/ methodName) {
             RubyMemberInfo method = self.ResolveMethod(methodName, RubyClass.IgnoreVisibility).Info;
             return method != null && method.Visibility == RubyMethodVisibility.Protected;
         }
 
         // thread-safe:
         [RubyMethod("public_method_defined?")]
-        public static bool PublicMethodDefined(RubyModule/*!*/ self, [DefaultProtocol]string/*!*/ methodName) {
+        public static bool PublicMethodDefined(RubyModule/*!*/ self, [DefaultProtocol, NotNull]string/*!*/ methodName) {
             RubyMemberInfo method = self.ResolveMethod(methodName, RubyClass.IgnoreVisibility).Info;
             return method != null && method.Visibility == RubyMethodVisibility.Public;
         }
@@ -834,7 +834,7 @@ namespace IronRuby.Builtins {
 
         // thread-safe:
         [RubyMethod("instance_method")]
-        public static UnboundMethod/*!*/ GetInstanceMethod(RubyModule/*!*/ self, [DefaultProtocol]string/*!*/ methodName) {
+        public static UnboundMethod/*!*/ GetInstanceMethod(RubyModule/*!*/ self, [DefaultProtocol, NotNull]string/*!*/ methodName) {
             RubyMemberInfo method = self.ResolveMethod(methodName, RubyClass.IgnoreVisibility).Info;
             if (method == null) {
                 throw RubyExceptions.CreateUndefinedMethodError(self, methodName);
@@ -856,7 +856,7 @@ namespace IronRuby.Builtins {
         // thread-safe:
         [RubyMethod("autoload")]
         public static void SetAutoloadedConstant(RubyModule/*!*/ self,
-            [DefaultProtocol]string/*!*/ constantName, [DefaultProtocol, NotNull]MutableString/*!*/ path) {
+            [DefaultProtocol, NotNull]string/*!*/ constantName, [DefaultProtocol, NotNull]MutableString/*!*/ path) {
 
             RubyUtils.CheckConstantName(constantName);
             if (path.IsEmpty) {
@@ -868,7 +868,7 @@ namespace IronRuby.Builtins {
 
         // thread-safe:
         [RubyMethod("autoload?")]
-        public static MutableString GetAutoloadedConstantPath(RubyModule/*!*/ self, [DefaultProtocol]string/*!*/ constantName) {
+        public static MutableString GetAutoloadedConstantPath(RubyModule/*!*/ self, [DefaultProtocol, NotNull]string/*!*/ constantName) {
             return self.GetAutoloadedConstantPath(constantName);
         }
 

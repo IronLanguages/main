@@ -33,9 +33,5 @@ namespace IronPython.Compiler.Ast {
             get { return _variable; }
             set { _variable = value; }
         }
-
-        internal MSAst.Expression Variable {
-            get { return _variable != null ? _variable.Variable : null; }
-        }
     }
 }

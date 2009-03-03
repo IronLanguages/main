@@ -24,24 +24,14 @@ using Microsoft.Scripting.Generation;
 using Microsoft.Scripting.Runtime;
 using IronRuby.Runtime.Calls;
 
-using Enumerator = IronRuby.StandardLibrary.Enumerator.Enumerable.Enumerator;
 using EachSite = System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, object, IronRuby.Builtins.Proc, object>;
 
 namespace IronRuby.Builtins {
-
-    // TODO: All of these methods use RubySites.Each, which is not ideal (shared DynamicSite).
-    //       We could have one DynamicSite per method, but what we really want is for the 
-    //       "each" site to be merged into the calling site (e.g. maybe use ActionOnCallable)
     [RubyModule("Enumerable")]
     public static class Enumerable {
-        private static object Each(CallSiteStorage<EachSite>/*!*/ each, RubyContext/*!*/ context, object self, Proc/*!*/ block) {
-            var enumerator = self as Enumerator;
-            if (enumerator != null) {
-                return enumerator.Each(context, block);
-            } else {
-                var site = each.GetCallSite("each", RubyCallSignature.WithBlock(0));
-                return site.Target(site, context, self, block);
-            }
+        internal static object Each(CallSiteStorage<EachSite>/*!*/ each, RubyContext/*!*/ context, object self, Proc/*!*/ block) {
+            var site = each.GetCallSite("each", new RubyCallSignature(0, RubyCallFlags.HasImplicitSelf | RubyCallFlags.HasBlock));
+            return site.Target(site, context, self, block);
         }
 
         #region all?, any?
@@ -496,5 +486,14 @@ namespace IronRuby.Builtins {
         }
 
         #endregion
+
+        #region TODO: count, none?, one?, first (1.9)
+
+        #endregion
+
+        #region TODO: cycle, drop, drop_while, find_index, group_by, max_by, min_by, minmax, minmax_by, reduce, take_take_while (1.9)
+
+        #endregion
+
     }
 }

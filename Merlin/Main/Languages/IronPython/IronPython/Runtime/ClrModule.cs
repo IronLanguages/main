@@ -26,6 +26,7 @@ using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 using Microsoft.Scripting.Generation;
 
+using IronPython.Compiler.Ast;
 using IronPython.Runtime;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
@@ -714,7 +715,7 @@ import Namespace.")]
                     SourceCodeKind.File
                 );
 
-                sc = PythonContext.GetContext(context).GetScriptCode(su, modName, ModuleOptions.Initialize);
+                sc = PythonContext.GetContext(context).GetScriptCode(su, modName, ModuleOptions.Initialize, CompilationMode.ToDisk);
 
                 code.Add(sc);
             }
@@ -728,7 +729,7 @@ import Namespace.")]
                     }
                     
                     SourceUnit su = pc.CreateFileUnit(strModule, pc.DefaultEncoding, SourceCodeKind.File);
-                    code.Add(PythonContext.GetContext(context).GetScriptCode(su, "__main__", ModuleOptions.Initialize));
+                    code.Add(PythonContext.GetContext(context).GetScriptCode(su, "__main__", ModuleOptions.Initialize, CompilationMode.ToDisk));
                 }
             }
 

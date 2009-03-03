@@ -27,30 +27,55 @@ using Microsoft.Scripting.Generation;
 
 namespace IronRuby.StandardLibrary.Yaml {
 
-    public class RubyConstructor : Constructor {
-        private readonly static Dictionary<string, YamlConstructor> _yamlConstructors = new Dictionary<string, YamlConstructor>();
-        private readonly static Dictionary<string, YamlMultiConstructor> _yamlMultiConstructors = new Dictionary<string, YamlMultiConstructor>();
+    public delegate object RubyYamlConstructor(RubyConstructor self, Node node);
+    public delegate object RubyYamlMultiConstructor(RubyConstructor self, string pref, Node node);
+
+    public class RubyConstructor : BaseConstructor {
+        private readonly static Dictionary<string, RubyYamlConstructor> _yamlConstructors = new Dictionary<string, RubyYamlConstructor>();
+        private readonly static Dictionary<string, RubyYamlMultiConstructor> _yamlMultiConstructors = new Dictionary<string, RubyYamlMultiConstructor>();
         private readonly static Dictionary<string, Regex> _yamlMultiRegexps = new Dictionary<string, Regex>();                
         private readonly static Regex _regexPattern = new Regex("^/(?<expr>.+)/(?<opts>[eimnosux]*)$", RegexOptions.Compiled);
 
-        private static readonly CallSite<Func<CallSite, RubyContext, RubyModule, object, object, object, object>> _New =
-            CallSite<Func<CallSite, RubyContext, RubyModule, object, object, object, object>>.Create(LibrarySites.InstanceCallAction("new", 3));
+        private readonly CallSite<Func<CallSite, RubyContext, RubyModule, object, object, object, object>> _New =
+            CallSite<Func<CallSite, RubyContext, RubyModule, object, object, object, object>>.Create(
+            RubyCallAction.Make("new", RubyCallSignature.WithImplicitSelf(3))
+        );
 
-        private static readonly CallSite<Func<CallSite, RubyContext, object, object, Hash, object>> _YamlInitialize =
-            CallSite<Func<CallSite, RubyContext, object, object, Hash, object>>.Create(LibrarySites.InstanceCallAction("yaml_initialize", 3));
+        private readonly CallSite<Func<CallSite, RubyContext, object, object, Hash, object>> _YamlInitialize =
+            CallSite<Func<CallSite, RubyContext, object, object, Hash, object>>.Create(
+            RubyCallAction.Make("yaml_initialize", RubyCallSignature.WithImplicitSelf(3))
+        );
+        
+        public RubyConstructor(RubyGlobalScope/*!*/ scope, NodeProvider/*!*/ nodeProvider)
+            : base(nodeProvider, scope) {
+        }
+
+        static RubyConstructor() {
+            AddConstructor("tag:yaml.org,2002:str", ConstructRubyScalar);
+            AddConstructor("tag:ruby.yaml.org,2002:range", ConstructRubyRange);
+            AddConstructor("tag:ruby.yaml.org,2002:regexp", ConstructRubyRegexp);
+            AddMultiConstructor("tag:ruby.yaml.org,2002:object:", ConstructPrivateObject);
+            AddMultiConstructor("tag:ruby.yaml.org,2002:struct:", ConstructRubyStruct);
+            AddConstructor("tag:yaml.org,2002:binary", ConstructRubyBinary);
+            AddConstructor("tag:yaml.org,2002:timestamp#ymd", ConstructRubyTimestampYMD);
+
+            //AddConstructor("tag:yaml.org,2002:omap", ConstructRubyOmap);
+            //AddMultiConstructor("tag:yaml.org,2002:seq:", ConstructSpecializedRubySequence);
+            //AddMultiConstructor("tag:yaml.org,2002:map:", ConstructSpecializedRubyMap);
+        }
 
         public override YamlConstructor GetYamlConstructor(string key) {
-            YamlConstructor result;
+            RubyYamlConstructor result;
             if (_yamlConstructors.TryGetValue(key, out result)) {
-                return result;
+                return (self, node) => result(this, node);
             }
             return base.GetYamlConstructor(key);
         }
 
         public override YamlMultiConstructor GetYamlMultiConstructor(string key) {
-            YamlMultiConstructor result;
+            RubyYamlMultiConstructor result;
             if (_yamlMultiConstructors.TryGetValue(key, out result)) {
-                return result;
+                return (self, pref, node) => result(this, pref, node);
             }
             return base.GetYamlMultiConstructor(key);
         }
@@ -67,13 +92,13 @@ namespace IronRuby.StandardLibrary.Yaml {
             return _yamlMultiRegexps.Keys;
         }
 
-        public new static void AddConstructor(string tag, YamlConstructor ctor) {
+        public static void AddConstructor(string tag, RubyYamlConstructor ctor) {
             if (!_yamlConstructors.ContainsKey(tag)) {
                 _yamlConstructors.Add(tag, ctor);
             }
         }
 
-        public new static void AddMultiConstructor(string tagPrefix, YamlMultiConstructor ctor) {
+        public static void AddMultiConstructor(string tagPrefix, RubyYamlMultiConstructor ctor) {
             if (!_yamlMultiConstructors.ContainsKey(tagPrefix)) {
                 _yamlMultiConstructors.Add(tagPrefix, ctor);
                 _yamlMultiRegexps.Add(tagPrefix, new Regex("^" + tagPrefix, RegexOptions.Compiled));
@@ -87,13 +112,13 @@ namespace IronRuby.StandardLibrary.Yaml {
                 _block = block;
             }
 
-            public object Construct(IConstructor ctor, string tag, Node node) {                
+            public object Construct(BaseConstructor ctor, string tag, Node node) {                
                 object result;
                 _block.Yield(MutableString.Create(tag), ctor.ConstructPrimitive(node), out result);
                 return result;                
             }
 
-            public object Construct(IConstructor ctor, Node node) {
+            public object Construct(BaseConstructor ctor, Node node) {
                 return Construct(ctor, node.Tag, node);
             }
         }
@@ -111,11 +136,7 @@ namespace IronRuby.StandardLibrary.Yaml {
             }
         }
 
-        public static object ConstructRubyOmap(IConstructor ctor, Node node) {
-            return ctor.ConstructPairs(node);
-        }
-
-        public static object ConstructRubyScalar(IConstructor ctor, Node node) {
+        private static object ConstructRubyScalar(RubyConstructor/*!*/ ctor, Node node) {
             object value = ctor.ConstructScalar(node);
             if (value == null) {
                 return value;
@@ -127,7 +148,7 @@ namespace IronRuby.StandardLibrary.Yaml {
             return value;
         }
 
-        private static object ParseObject(IConstructor ctor, string value) {
+        private static object ParseObject(RubyConstructor/*!*/ ctor, string value) {
             Composer composer = RubyYaml.MakeComposer(new StringReader(value));
             if (composer.CheckNode()) {
                 return ctor.ConstructObject(composer.GetNode());
@@ -136,7 +157,7 @@ namespace IronRuby.StandardLibrary.Yaml {
             }
         }
 
-        public static Range ConstructRubyRange(IConstructor/*!*/ ctor, Node node) {
+        private static Range ConstructRubyRange(RubyConstructor/*!*/ ctor, Node node) {
             object begin = null;
             object end = null;
             bool excludeEnd = false;
@@ -181,7 +202,7 @@ namespace IronRuby.StandardLibrary.Yaml {
             return new Range(comparisonStorage, ctor.GlobalScope.Context, begin, end, excludeEnd);            
         }
 
-        public static RubyRegex ConstructRubyRegexp(IConstructor ctor, Node node) {
+        private static RubyRegex ConstructRubyRegexp(RubyConstructor/*!*/ ctor, Node node) {
             ScalarNode scalar = node as ScalarNode;
             if (node == null) {
                 throw RubyExceptions.CreateTypeError("Can only create regex from scalar node");
@@ -207,8 +228,8 @@ namespace IronRuby.StandardLibrary.Yaml {
             }            
             return new RubyRegex(match.Groups["expr"].Value, options);            
         }
-        
-        public static object ConstructPrivateObject(IConstructor ctor, string className, Node node) {
+
+        private static object ConstructPrivateObject(RubyConstructor/*!*/ ctor, string className, Node node) {
             MappingNode mapping = node as MappingNode;
             if (mapping == null) {
                 throw new ConstructorException("can only construct private type from mapping node");
@@ -223,7 +244,7 @@ namespace IronRuby.StandardLibrary.Yaml {
                 RubyMethodInfo method = module.GetMethod("yaml_initialize") as RubyMethodInfo;
                 if (method != null) {
                     object result = RubyUtils.CreateObject((RubyClass)module);
-                    _YamlInitialize.Target(_YamlInitialize, globalScope.Context, result, className, values);
+                    ctor._YamlInitialize.Target(ctor._YamlInitialize, globalScope.Context, result, className, values);
                     return result;
                 } else {
                     return RubyUtils.CreateObject((RubyClass)module, values, true);
@@ -234,7 +255,7 @@ namespace IronRuby.StandardLibrary.Yaml {
             }
         }
 
-        public static object ConstructRubyStruct(IConstructor ctor, string className, Node node) {
+        private static object ConstructRubyStruct(RubyConstructor/*!*/ ctor, string className, Node node) {
             MappingNode mapping = node as MappingNode;
             if (mapping == null) {
                 throw new ConstructorException("can only construct struct from mapping node");
@@ -263,17 +284,17 @@ namespace IronRuby.StandardLibrary.Yaml {
             return newStruct;
         }
 
-        public static MutableString ConstructRubyBinary(IConstructor ctor, Node node) {
-            return MutableString.CreateBinary(SafeConstructor.ConstructYamlBinary(ctor, node));
+        private static MutableString ConstructRubyBinary(RubyConstructor/*!*/ ctor, Node node) {
+            return MutableString.CreateBinary(BaseConstructor.ConstructYamlBinary(ctor, node));
         }
 
-        public static object ConstructRubyTimestampYMD(IConstructor ctor, Node node) {
+        private static object ConstructRubyTimestampYMD(RubyConstructor/*!*/ ctor, Node node) {
             ScalarNode scalar = node as ScalarNode;
             if (scalar == null) {
                 throw new ConstructorException("Can only contruct timestamp from scalar node.");
             }
 
-            Match match = SafeConstructor.YMD_REGEXP.Match(scalar.Value);
+            Match match = BaseConstructor.YMD_REGEXP.Match(scalar.Value);
             if (match.Success) {
                 int year_ymd = int.Parse(match.Groups[1].Value);
                 int month_ymd = int.Parse(match.Groups[2].Value);
@@ -281,27 +302,12 @@ namespace IronRuby.StandardLibrary.Yaml {
 
                 RubyModule module;
                 if (ctor.GlobalScope.Context.TryGetModule(ctor.GlobalScope, "Date", out module)) {
-                    return _New.Target(_New, ctor.GlobalScope.Context, module, year_ymd, month_ymd, day_ymd);
+                    return ctor._New.Target(ctor._New, ctor.GlobalScope.Context, module, year_ymd, month_ymd, day_ymd);
                 } else {
                     throw new ConstructorException("Date class not found.");
                 }
             }
             throw new ConstructorException("Invalid tag:yaml.org,2002:timestamp#ymd value.");
-        }
-
-        public RubyConstructor(RubyGlobalScope/*!*/ scope, NodeProvider/*!*/ nodeProvider)
-            : base(nodeProvider, scope) {            
-            AddConstructor("tag:yaml.org,2002:str", ConstructRubyScalar);
-            AddConstructor("tag:ruby.yaml.org,2002:range", ConstructRubyRange);
-            AddConstructor("tag:ruby.yaml.org,2002:regexp", ConstructRubyRegexp);
-            AddMultiConstructor("tag:ruby.yaml.org,2002:object:", ConstructPrivateObject);            
-            AddMultiConstructor("tag:ruby.yaml.org,2002:struct:", ConstructRubyStruct);
-            AddConstructor("tag:yaml.org,2002:binary", ConstructRubyBinary);
-            AddConstructor("tag:yaml.org,2002:timestamp#ymd", ConstructRubyTimestampYMD);
-
-            //AddConstructor("tag:yaml.org,2002:omap", ConstructRubyOmap);
-            //AddMultiConstructor("tag:yaml.org,2002:seq:", ConstructSpecializedRubySequence);
-            //AddMultiConstructor("tag:yaml.org,2002:map:", ConstructSpecializedRubyMap);
         }
     }
 }

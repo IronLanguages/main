@@ -843,7 +843,7 @@ namespace IronRuby.Builtins {
 
             EventInfo eventInfo = type.GetEvent(name, bindingFlags);
             if (eventInfo != null) {
-                method = new RubyEventInfo(eventInfo, RubyMemberFlags.Public, this);
+                method = new RubyEventInfo((EventTracker)MemberTracker.FromMemberInfo(eventInfo), RubyMemberFlags.Public, this);
                 return true;
             }
 

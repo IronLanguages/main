@@ -20,21 +20,30 @@ using IronRuby.Builtins;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Generation;
 using Microsoft.Scripting.Utils;
+using IronRuby.Runtime.Calls;
 
 namespace IronRuby.Runtime {
 
     public class IOWrapper : Stream {
         private static readonly CallSite<Func<CallSite, RubyContext, object, MutableString, object>> _writeSite =
-            CallSite<Func<CallSite, RubyContext, object, MutableString, object>>.Create(RubySites.InstanceCallAction("write", 1));
+            CallSite<Func<CallSite, RubyContext, object, MutableString, object>>.Create(
+                RubyCallAction.Make("write", RubyCallSignature.WithImplicitSelf(1))
+            );
 
         private static readonly CallSite<Func<CallSite, RubyContext, object, int, MutableString>> _readSite =
-            CallSite<Func<CallSite, RubyContext, object, int, MutableString>>.Create(RubySites.InstanceCallAction("read", 1));
+            CallSite<Func<CallSite, RubyContext, object, int, MutableString>>.Create(
+                RubyCallAction.Make("read", RubyCallSignature.WithImplicitSelf(1))
+            );
 
         private static readonly CallSite<Func<CallSite, RubyContext, object, long, int, object>> _seekSite =
-            CallSite<Func<CallSite, RubyContext, object, long, int, object>>.Create(RubySites.InstanceCallAction("seek", 2));
+            CallSite<Func<CallSite, RubyContext, object, long, int, object>>.Create(
+                RubyCallAction.Make("seek", RubyCallSignature.WithImplicitSelf(2))
+            );
 
         private static readonly CallSite<Func<CallSite, RubyContext, object, long>> _tellSite =
-            CallSite<Func<CallSite, RubyContext, object, long>>.Create(RubySites.InstanceCallAction("tell"));
+            CallSite<Func<CallSite, RubyContext, object, long>>.Create(
+                RubyCallAction.Make("tell", RubyCallSignature.WithImplicitSelf(0))
+            );
 
         private readonly RubyContext/*!*/ _context;
         private readonly object _obj;

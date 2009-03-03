@@ -93,9 +93,11 @@
     </Compile>
     <Compile Include="Compiler\Ast\AndExpression.cs" />
     <Compile Include="Compiler\Ast\Arg.cs" />
+    <Compile Include="Compiler\ArrayGlobalAllocator.cs" />
     <Compile Include="Compiler\Ast\AssertStatement.cs" />
     <Compile Include="Compiler\Ast\AssignmentStatement.cs" />
     <Compile Include="Compiler\Ast\AstGenerator.cs" />
+    <Compile Include="Compiler\GlobalAllocator.cs" />
     <Compile Include="Compiler\Ast\AugmentedAssignStatement.cs" />
     <Compile Include="Compiler\Ast\BackQuoteExpression.cs" />
     <Compile Include="Compiler\Ast\BinaryExpression.cs" />
@@ -128,10 +130,13 @@
     <Compile Include="Compiler\Ast\ListComprehensionFor.cs" />
     <Compile Include="Compiler\Ast\ListComprehensionIf.cs" />
     <Compile Include="Compiler\Ast\ListExpression.cs" />
+    <Compile Include="Compiler\DictionaryGlobalAllocator.cs" />
     <Compile Include="Compiler\Ast\MemberExpression.cs" />
     <Compile Include="Compiler\Ast\ModuleName.cs" />
     <Compile Include="Compiler\Ast\NameExpression.cs" />
     <Compile Include="Compiler\Ast\Node.cs" />
+    <Compile Include="Compiler\SavableScriptCode.cs" />
+    <Compile Include="Compiler\StaticGlobalAllocator.cs" />
     <Compile Include="Compiler\Ast\OrExpression.cs" />
     <Compile Include="Compiler\Ast\Parameter.cs" />
     <Compile Include="Compiler\Ast\ParenthesisExpression.cs" />
@@ -157,7 +162,16 @@
     <Compile Include="Compiler\Ast\WhileStatement.cs" />
     <Compile Include="Compiler\Ast\WithStatement.cs" />
     <Compile Include="Compiler\Ast\YieldExpression.cs" />
+    <Compile Include="Compiler\FieldBuilderExpression.cs" />
     <Compile Include="Compiler\OnDiskScriptCode.cs" />
+    <Compile Include="Runtime\BuiltinsDictionaryStorage.cs" />
+    <Compile Include="Runtime\CustomDictionaryStorage.cs" />
+    <Compile Include="Runtime\GlobalDictionaryStorage.cs" />
+    <Compile Include="Compiler\SavableGlobalAllocator.cs" />
+    <Compile Include="Compiler\PythonGlobal.cs" />
+    <Compile Include="Compiler\PythonGlobalVariableExpression.cs" />
+    <Compile Include="Compiler\PythonScriptCode.cs" />
+    <Compile Include="Compiler\RuntimeScriptCode.cs" />
     <Compile Include="Hosting\PythonService.cs" />
     <Compile Include="MaybeNotImplementedAttribute.cs" />
     <Compile Include="Runtime\BindingWarnings.cs" />
@@ -208,6 +222,7 @@
     <Compile Include="Runtime\PythonHiddenAttribute.cs" />
     <Compile Include="Runtime\PythonModuleAttribute.cs" />
     <Compile Include="Runtime\PythonTypeAttribute.cs" />
+    <Compile Include="Runtime\RuntimeVariablesDictionaryStorage.cs" />
     <Compile Include="Runtime\StringFormatSpec.cs" />
     <Compile Include="Runtime\Types\DynamicBaseTypeAttribute.cs" />
     <Compile Include="Runtime\Types\InstanceCreator.cs" />

@@ -22,60 +22,11 @@ using System.Diagnostics;
 using System.IO;
 using System.Text;
 using System.Text.RegularExpressions;
+using Microsoft.Scripting.Utils;
 
 namespace IronRuby.StandardLibrary.Yaml {
 
-    public interface IEmitter {
-        void Emit(YamlEvent @event);
-    }
-
-    public class Emitter : IEmitter {
-        enum EmitterState {
-            STREAM_START = 0,
-            FIRST_DOCUMENT_START,
-            DOCUMENT_ROOT,
-            NOTHING,
-            DOCUMENT_START,
-            DOCUMENT_END,
-            FIRST_FLOW_SEQUENCE_ITEM,
-            FLOW_SEQUENCE_ITEM,
-            FIRST_FLOW_MAPPING_KEY,
-            FLOW_MAPPING_SIMPLE_VALUE,
-            FLOW_MAPPING_VALUE,
-            FLOW_MAPPING_KEY,
-            BLOCK_SEQUENCE_ITEM,
-            FIRST_BLOCK_MAPPING_KEY,
-            BLOCK_MAPPING_SIMPLE_VALUE,
-            BLOCK_MAPPING_VALUE,
-            BLOCK_MAPPING_KEY,
-            FIRST_BLOCK_SEQUENCE_ITEM,
-        }
-
-        private class ScalarAnalysis {
-            internal string Scalar;
-            internal bool Empty;
-            internal bool Multiline;
-            internal bool AllowFlowPlain;
-            internal bool AllowBlockPlain;
-            internal bool AllowSingleQuoted;
-            internal bool AllowDoubleQuoted;
-            internal bool AllowBlock;
-            internal bool SpecialCharacters;
-            internal ScalarAnalysis(string scalar, bool empty, bool multiline, bool allowFlowPlain, bool allowBlockPlain, bool allowSingleQuoted, bool allowDoubleQuoted, bool allowBlock, bool specialCharacters) {
-                Scalar = scalar;
-                Empty = empty;
-                Multiline = multiline;
-                AllowFlowPlain = allowFlowPlain;
-                AllowBlockPlain = allowBlockPlain;
-                AllowSingleQuoted = allowSingleQuoted;
-                AllowDoubleQuoted = allowDoubleQuoted;
-                AllowBlock = allowBlock;
-                SpecialCharacters = specialCharacters;
-            }
-        }
-        
-        #region private instance fields
-
+    public sealed class Emitter {
         private readonly TextWriter _stream;
         private readonly YamlOptions _options;
 
@@ -112,9 +63,9 @@ namespace IronRuby.StandardLibrary.Yaml {
 
         private bool _isVersion10;
 
-        #endregion
+        public Emitter(TextWriter/*!*/ stream, YamlOptions opts) {
+            ContractUtils.RequiresNotNull(stream, "stream");
 
-        public Emitter(TextWriter stream, YamlOptions opts) {
             _stream = stream;
             _options = opts;
             canonical = _options.Canonical;
@@ -128,7 +79,7 @@ namespace IronRuby.StandardLibrary.Yaml {
             }
         }
 
-        public void Emit(YamlEvent @event) {
+        public void Emit(YamlEvent/*!*/ @event) {
             _events.Enqueue(@event);
             while (!needMoreEvents()) {
                 _event = _events.Dequeue();
@@ -195,6 +146,50 @@ namespace IronRuby.StandardLibrary.Yaml {
             }
         }
 
+        private enum EmitterState {
+            STREAM_START = 0,
+            FIRST_DOCUMENT_START,
+            DOCUMENT_ROOT,
+            NOTHING,
+            DOCUMENT_START,
+            DOCUMENT_END,
+            FIRST_FLOW_SEQUENCE_ITEM,
+            FLOW_SEQUENCE_ITEM,
+            FIRST_FLOW_MAPPING_KEY,
+            FLOW_MAPPING_SIMPLE_VALUE,
+            FLOW_MAPPING_VALUE,
+            FLOW_MAPPING_KEY,
+            BLOCK_SEQUENCE_ITEM,
+            FIRST_BLOCK_MAPPING_KEY,
+            BLOCK_MAPPING_SIMPLE_VALUE,
+            BLOCK_MAPPING_VALUE,
+            BLOCK_MAPPING_KEY,
+            FIRST_BLOCK_SEQUENCE_ITEM,
+        }
+
+        private class ScalarAnalysis {
+            internal string Scalar;
+            internal bool Empty;
+            internal bool Multiline;
+            internal bool AllowFlowPlain;
+            internal bool AllowBlockPlain;
+            internal bool AllowSingleQuoted;
+            internal bool AllowDoubleQuoted;
+            internal bool AllowBlock;
+            internal bool SpecialCharacters;
+            internal ScalarAnalysis(string scalar, bool empty, bool multiline, bool allowFlowPlain, bool allowBlockPlain, bool allowSingleQuoted, bool allowDoubleQuoted, bool allowBlock, bool specialCharacters) {
+                Scalar = scalar;
+                Empty = empty;
+                Multiline = multiline;
+                AllowFlowPlain = allowFlowPlain;
+                AllowBlockPlain = allowBlockPlain;
+                AllowSingleQuoted = allowSingleQuoted;
+                AllowDoubleQuoted = allowDoubleQuoted;
+                AllowBlock = allowBlock;
+                SpecialCharacters = specialCharacters;
+            }
+        }
+        
         void writeStreamStart() {
         }
 

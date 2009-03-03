@@ -29,6 +29,7 @@ namespace Microsoft.Scripting.Interpretation {
     public class InterpretedScriptCode : ScriptCode {
         // call sites allocated for the tree:
         private Dictionary<Expression, CallSiteInfo> _callSites;
+        private readonly LambdaExpression _code;
 
         internal Dictionary<Expression, CallSiteInfo> CallSites {
             get {
@@ -40,19 +41,28 @@ namespace Microsoft.Scripting.Interpretation {
             }
         }
 
+        public override object Run() {
+            return InvokeTarget(_code, CreateScope());
+        }
+
+        public override object Run(Scope scope) {
+            return InvokeTarget(_code, scope);
+        }
+
         internal bool HasCallSites {
             get { return _callSites != null; }
         }
 
         public InterpretedScriptCode(LambdaExpression code, SourceUnit sourceUnit)
-            : base(code, sourceUnit) {
+            : base(sourceUnit) {
+            _code = code;
         }
 
-        public override void EnsureCompiled() {
-            // nop
+        public LambdaExpression Code {
+            get { return _code; }
         }
 
-        protected override object InvokeTarget(LambdaExpression code, Scope scope) {
+        protected object InvokeTarget(LambdaExpression code, Scope scope) {
             return Interpreter.TopLevelExecute(this, scope, LanguageContext);
         }
     }

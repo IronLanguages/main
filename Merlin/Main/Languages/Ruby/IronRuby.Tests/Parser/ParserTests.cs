@@ -839,7 +839,7 @@ add 'foo', 'bar'
             const int Id = 0x12345678;
 
             var lambda = CallSiteTracer.Transform<DlrMainCallTarget>(ast, sourceUnit, options, Id);
-            var code = new ScriptCode(lambda, sourceUnit);
+            var code = new LegacyScriptCode(lambda, sourceUnit);
 
             var locations = new List<int>();
             CallSiteTracer.Register((context, args, result, id, location) => {

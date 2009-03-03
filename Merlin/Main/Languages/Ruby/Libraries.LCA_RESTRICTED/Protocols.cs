@@ -75,7 +75,7 @@ namespace IronRuby.Runtime {
 
         #endregion
 
-        #region CastToString, TryCastToString, ConvertToString, Inspect
+        #region CastToString, TryCastToString, ConvertToString
 
         /// <summary>
         /// Converts an object to string using to_str protocol (<see cref="ConvertToStrAction"/>).
@@ -234,7 +234,7 @@ namespace IronRuby.Runtime {
 
         #endregion
 
-        #region IsTrue, IsEqual, RespondTo
+        #region IsTrue, IsEqual, RespondTo, Write
 
         /// <summary>
         /// Protocol for determining truth in Ruby (not null and not false)
@@ -254,6 +254,11 @@ namespace IronRuby.Runtime {
         public static bool RespondTo(RespondToStorage/*!*/ respondToStorage, RubyContext/*!*/ context, object target, string/*!*/ methodName) {
             var site = respondToStorage.GetCallSite();
             return IsTrue(site.Target(site, context, target, SymbolTable.StringToId(methodName)));
+        }
+
+        public static void Write(BinaryOpStorage/*!*/ writeStorage, RubyContext/*!*/ context, object target, object value) {
+            var site = writeStorage.GetCallSite("write");
+            site.Target(site, context, target, value);
         }
 
         #endregion

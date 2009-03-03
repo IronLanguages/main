@@ -43,8 +43,7 @@ namespace IronPython.Compiler.Ast {
         }
 
         internal override MSAst.Expression Transform(AstGenerator ag, Type type) {
-            return Binders.Operation(
-                ag.BinderState,
+            return ag.Operation(
                 type,
                 PythonOperatorToOperatorString(_op),
                 ag.Transform(_expression)

@@ -20,18 +20,21 @@ using IronRuby.Runtime;
 using IronRuby.Runtime.Calls;
 using Microsoft.Scripting;
 using Microsoft.Scripting.Runtime;
+using System.Collections;
+using System.Collections.Generic;
 
 namespace IronRuby.StandardLibrary.Yaml {
 
     public class RubyRepresenter : Representer {
         private readonly RubyContext/*!*/ _context;
+
         private RubyMemberInfo _objectToYamlMethod;
 
         public RubyContext/*!*/ Context {
             get { return _context; }
         }
 
-        public RubyRepresenter(RubyContext/*!*/ context, ISerializer/*!*/ serializer, YamlOptions/*!*/ opts)
+        public RubyRepresenter(RubyContext/*!*/ context, Serializer/*!*/ serializer, YamlOptions/*!*/ opts)
             : base(serializer, opts) {
             _context = context;
             _objectToYamlMethod = context.GetClass(typeof(object)).ResolveMethod("to_yaml", RubyClass.IgnoreVisibility).Info;
@@ -39,22 +42,41 @@ namespace IronRuby.StandardLibrary.Yaml {
 
         #region dynamic sites
 
-        private static readonly CallSite<Func<CallSite, RubyContext, object, MutableString>> _TagUri = CallSite<Func<CallSite, RubyContext, object, MutableString>>.Create(LibrarySites.InstanceCallAction("taguri"));
-        private static readonly CallSite<Func<CallSite, RubyContext, object, object>> _ToYamlStyle = CallSite<Func<CallSite, RubyContext, object, object>>.Create(LibrarySites.InstanceCallAction("to_yaml_style"));
-        private static readonly CallSite<Func<CallSite, RubyContext, object, RubyRepresenter, Node>> _ToYamlNode = CallSite<Func<CallSite, RubyContext, object, RubyRepresenter, Node>>.Create(LibrarySites.InstanceCallAction("to_yaml_node", 1));
-        private static readonly CallSite<Func<CallSite, RubyContext, object, RubyRepresenter, Node>> _ToYaml = CallSite<Func<CallSite, RubyContext, object, RubyRepresenter, Node>>.Create(LibrarySites.InstanceCallAction("to_yaml", 1));
-        private static CallSite<Func<CallSite, RubyContext, object, RubyArray>> _ToYamlProperties = CallSite<Func<CallSite, RubyContext, object, RubyArray>>.Create(LibrarySites.InstanceCallAction("to_yaml_properties"));
+        private readonly CallSite<Func<CallSite, RubyContext, object, MutableString>> _TagUri = 
+            CallSite<Func<CallSite, RubyContext, object, MutableString>>.Create(
+            RubyCallAction.Make("taguri", RubyCallSignature.WithImplicitSelf(0))
+        );
 
-        internal static object ToYamlStyle(RubyContext/*!*/ context, object self) {
-            return _ToYamlStyle.Target(_ToYamlStyle, context, self);
+        private readonly CallSite<Func<CallSite, RubyContext, object, MutableString>> _ToYamlStyle =
+            CallSite<Func<CallSite, RubyContext, object, MutableString>>.Create(
+            RubyCallAction.Make("to_yaml_style", RubyCallSignature.WithImplicitSelf(0))
+        );
+
+        private readonly CallSite<Func<CallSite, RubyContext, object, RubyRepresenter, Node>> _ToYamlNode = 
+            CallSite<Func<CallSite, RubyContext, object, RubyRepresenter, Node>>.Create(
+            RubyCallAction.Make("to_yaml_node", RubyCallSignature.WithImplicitSelf(1))
+        );
+
+        private readonly CallSite<Func<CallSite, RubyContext, object, RubyRepresenter, Node>> _ToYaml =
+            CallSite<Func<CallSite, RubyContext, object, RubyRepresenter, Node>>.Create(
+            RubyCallAction.Make("to_yaml", RubyCallSignature.WithImplicitSelf(0))
+        );
+
+        private CallSite<Func<CallSite, RubyContext, object, RubyArray>> _ToYamlProperties = 
+            CallSite<Func<CallSite, RubyContext, object, RubyArray>>.Create(
+            RubyCallAction.Make("to_yaml_properties", RubyCallSignature.WithImplicitSelf(0))
+        );
+
+        internal MutableString GetTagUri(object obj) {
+            return _TagUri.Target(_TagUri, _context, obj);
         }
 
-        internal static RubyArray ToYamlProperties(RubyContext/*!*/ context, object self) {
-            return _ToYamlProperties.Target(_ToYamlProperties, context, self);
+        internal MutableString ToYamlStyle(object obj) {
+            return _ToYamlStyle.Target(_ToYamlStyle, _context, obj);
         }
 
-        internal static MutableString TagUri(RubyContext/*!*/ context, object self) {
-            return _TagUri.Target(_TagUri, context, self);
+        internal RubyArray ToYamlProperties(object obj) {
+            return _ToYamlProperties.Target(_ToYamlProperties, _context, obj);
         }
 
         #endregion
@@ -65,8 +87,7 @@ namespace IronRuby.StandardLibrary.Yaml {
             if (method == _objectToYamlMethod) {
                 return _ToYamlNode.Target(_ToYamlNode, _context, data, this);
             } else {
-                // TODO: this doesn't seem right
-                // (we're passing the extra argument, but the callee might not take it?)
+                // TODO: this is not correct:
                 return _ToYaml.Target(_ToYaml, _context, data, this);
             }
         }
@@ -86,8 +107,8 @@ namespace IronRuby.StandardLibrary.Yaml {
         }
 
         internal Node Scalar(object self, MutableString value) {
-            MutableString taguri = _TagUri.Target(_TagUri, _context, self);
-            MutableString styleStr = ToYamlStyle(_context, self) as MutableString;
+            MutableString taguri = GetTagUri(self);
+            MutableString styleStr = ToYamlStyle(self);
 
             char style = '\0';
             if (!MutableString.IsNullOrEmpty(styleStr)) {
@@ -101,9 +122,9 @@ namespace IronRuby.StandardLibrary.Yaml {
             );
         }
 
-        internal Node Map(object self, Hash map) {
-            MutableString taguri = _TagUri.Target(_TagUri, _context, self);
-            object style = _ToYamlStyle.Target(_ToYamlStyle, _context, self);
+        internal Node/*!*/ Map(object self, IDictionary/*!*/ map) {
+            MutableString taguri = GetTagUri(self);
+            object style = ToYamlStyle(self);
 
             return Map(
                 taguri != null ? taguri.ConvertToString() : "",
@@ -113,30 +134,25 @@ namespace IronRuby.StandardLibrary.Yaml {
         }
 
         internal Node Sequence(object self, RubyArray seq) {
-            MutableString taguri = _TagUri.Target(_TagUri, _context, self);
-            object style = _ToYamlStyle.Target(_ToYamlStyle, _context, self);
+            MutableString taguri = GetTagUri(self);
+            MutableString style = ToYamlStyle(self);
 
             return Sequence(
                 taguri != null ? taguri.ConvertToString() : "",
                 seq,
-                RubyOps.IsTrue(style)
+                style != null
             );
         }
 
 
-        internal static void AddYamlProperties(RubyContext/*!*/ context, object self, Hash map) {
-            AddYamlProperties(context, self, map, ToYamlProperties(context, self));
+        internal void AddYamlProperties(object self, Dictionary<MutableString, object>/*!*/ map) {
+            AddYamlProperties(self, map, ToYamlProperties(self));
         }
 
-        internal static void AddYamlProperties(RubyContext/*!*/ context, object self, Hash map, RubyArray props) {
+        internal void AddYamlProperties(object self, Dictionary<MutableString, object>/*!*/ map, RubyArray/*!*/ props) {
             foreach (object prop in props) {
                 string p = prop.ToString();
-                IDictionaryOps.SetElement(
-                    context, 
-                    map, 
-                    MutableString.Create(p.Substring(1)),
-                    KernelOps.InstanceVariableGet(context, self, p)
-                );
+                map[MutableString.Create(p.Substring(1))] = KernelOps.InstanceVariableGet(_context, self, p);
             }
         }
     }

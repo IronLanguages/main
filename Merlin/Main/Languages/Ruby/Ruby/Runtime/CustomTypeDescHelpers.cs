@@ -247,8 +247,13 @@ namespace IronRuby.Runtime {
                 _name = name;
                 _componentType = componentType;
 
-                _getterSite = CallSite<Func<CallSite, RubyContext, object, object>>.Create(RubySites.InstanceCallAction(_name));
-                _setterSite = CallSite<Func<CallSite, RubyContext, object, object, object>>.Create(RubySites.InstanceCallAction(_name + "="));
+                _getterSite = CallSite<Func<CallSite, RubyContext, object, object>>.Create(
+                    RubyCallAction.Make(_name, RubyCallSignature.WithImplicitSelf(0))
+                );
+
+                _setterSite = CallSite<Func<CallSite, RubyContext, object, object, object>>.Create(
+                    RubyCallAction.Make(_name + "=", RubyCallSignature.WithImplicitSelf(0))
+                );
 
                 try {
                     _propertyType = GetValue(testObject).GetType();

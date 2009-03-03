@@ -513,29 +513,22 @@ namespace IronRuby.Runtime.Calls {
         }
     }
 
-    public sealed class ConvertToSymbolAction : ProtocolConversionAction<ConvertToSymbolAction> {
+    public sealed class ConvertToSymbolAction : ConvertToReferenceTypeAction<ConvertToSymbolAction, string> {
         protected override string/*!*/ ToMethodName { get { return Symbols.ToStr; } }
         protected override string/*!*/ TargetTypeName { get { return "Symbol"; } }
         protected override MethodInfo ConversionResultValidator { get { return Methods.ToSymbolValidator; } }
 
         protected override bool TryImplicitConversion(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args) {
+            if (base.TryImplicitConversion(metaBuilder, args)) {
+                return true;
+            }
+
             object target = args.Target;
             var targetExpression = args.TargetExpression;
             
-            if (args.Target == null) {
-                metaBuilder.SetError(Methods.CreateTypeConversionError.OpCall(AstUtils.Constant("nil"), AstUtils.Constant(TargetTypeName)));
-                return true;
-            }
-
             var str = target as MutableString;
             if (str != null) {
                 metaBuilder.Result = Methods.ConvertMutableStringToSymbol.OpCall(AstUtils.Convert(targetExpression, typeof(MutableString)));
-                return true;
-            }
-
-            var sym = target as string;
-            if (sym != null) {
-                metaBuilder.Result = AstUtils.Convert(targetExpression, typeof(string));
                 return true;
             }
 

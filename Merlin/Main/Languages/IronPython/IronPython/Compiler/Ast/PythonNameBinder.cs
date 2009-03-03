@@ -395,7 +395,7 @@ namespace IronPython.Compiler.Ast {
 
 
                 // Create the variable in the global context and mark it as global
-                PythonVariable variable = _globalScope.EnsureVariable(n);
+                PythonVariable variable = _globalScope.EnsureGlobalVariable(n);
                 variable.Kind = VariableKind.Global;
 
                 if (conflict == null) {

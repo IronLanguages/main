@@ -35,7 +35,7 @@ namespace IronRuby.StandardLibrary.ParseTree {
 
             [RubyMethod("parse_tree_for_meth")]
             public static RubyArray/*!*/ CreateParseTreeForMethod(object self,
-                [NotNull]RubyModule/*!*/ module, [DefaultProtocol]string/*!*/ methodName, bool isClassMethod) {
+                [NotNull]RubyModule/*!*/ module, [DefaultProtocol, NotNull]string/*!*/ methodName, bool isClassMethod) {
 
                 bool includeNewLines = IncludeNewLines(module.Context, self);
 

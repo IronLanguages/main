@@ -78,7 +78,7 @@ namespace IronPython.Runtime.Binding {
         }
 
         public override DynamicMetaObject/*!*/ BindBinaryOperation(BinaryOperationBinder/*!*/ binder, DynamicMetaObject/*!*/ arg) {
-            return PythonProtocol.Operation(binder, this, arg);
+            return PythonProtocol.Operation(binder, this, arg, null);
         }
 
         public override DynamicMetaObject/*!*/ BindUnaryOperation(UnaryOperationBinder/*!*/ binder) {

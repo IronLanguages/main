@@ -1,8 +1,0 @@
-fails:Enumerator#each_slice iterates the block for each slice of n elements
-fails:Enumerator#each_slice iterates over last tail slice
-fails:Enumerator#each_slice stops iteration on exception
-fails:Enumerator#each_slice walks Enumerable elements strictly in forward direction, in parallel with iteration
-fails:Enumerator#each_slice allows Enumerable to change during the iteration
-fails:Enumerator#each_slice raises LocalJumpError if no block is given
-fails:Enumerator#each_slice raises ArgumentError for n <= 0
-fails:Enumerator#each_slice raises RangeError for Bignum parameter

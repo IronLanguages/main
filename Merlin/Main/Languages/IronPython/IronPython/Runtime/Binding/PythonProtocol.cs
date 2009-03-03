@@ -48,7 +48,7 @@ namespace IronPython.Runtime.Binding {
         /// protocol methods.  This code is shared between both our fallback for a site and our MetaObject
         /// for user defined objects.
         /// </summary>
-        internal static DynamicMetaObject ConvertToBool(ConvertBinder/*!*/ conversion, DynamicMetaObject/*!*/ self) {
+        internal static DynamicMetaObject ConvertToBool(DynamicMetaObjectBinder/*!*/ conversion, DynamicMetaObject/*!*/ self) {
             Assert.NotNull(conversion, self);
 
             SlotOrFunction sf = SlotOrFunction.GetSlotOrFunction(

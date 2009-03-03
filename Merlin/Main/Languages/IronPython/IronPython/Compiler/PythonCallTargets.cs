@@ -77,6 +77,7 @@ namespace IronPython.Compiler {
     public delegate IEnumerator GeneratorTargetN(PythonGenerator generator, params object[] args);
 
     internal static class PythonCallTargets {
+        public const int MaxArgs = 16;
         internal static Type GetPythonTargetType(bool wrapper, int parameters) {
             if (!wrapper) {
                 switch (parameters) {

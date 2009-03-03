@@ -18,15 +18,12 @@
 
 using System;
 using System.Collections.Generic;
+using Microsoft.Scripting.Utils;
 
 namespace IronRuby.StandardLibrary.Yaml {
 
-    public interface ISerializer {
-        void Serialize(Node node);
-    }
-
-    public class Serializer : ISerializer, IDisposable {
-        private readonly IEmitter _emitter;
+    public class Serializer : IDisposable {
+        private readonly Emitter/*!*/ _emitter;
         private readonly bool _useExplicitStart;
         private readonly bool _useExplicitEnd;
         private readonly bool _explicitTypes;
@@ -34,12 +31,14 @@ namespace IronRuby.StandardLibrary.Yaml {
         private readonly bool _useTags;
         private readonly string _anchorTemplate;
 
-        private readonly Dictionary<Node, object> _serializedNodes = new Dictionary<Node, object>(ReferenceEqualityComparer<Node>.Instance);
-        private readonly Dictionary<Node, string> _anchors = new Dictionary<Node, string>(ReferenceEqualityComparer<Node>.Instance);
+        private readonly Dictionary<Node, object>/*!*/ _serializedNodes = new Dictionary<Node, object>(ReferenceEqualityComparer<Node>.Instance);
+        private readonly Dictionary<Node, string>/*!*/ _anchors = new Dictionary<Node, string>(ReferenceEqualityComparer<Node>.Instance);
         private int _lastAnchorId;
         private bool _closed;
 
-        public Serializer(IEmitter emitter, YamlOptions opts) {
+        public Serializer(Emitter/*!*/ emitter, YamlOptions opts) {
+            ContractUtils.RequiresNotNull(emitter, "emitter");
+
             _emitter = emitter;
             _useExplicitStart = opts.ExplicitStart;
             _useExplicitEnd = opts.ExplicitEnd;

@@ -127,10 +127,9 @@ namespace IronPython.Compiler.Ast {
                     i++;
                     fa |= FunctionAttributes.KeywordDictionary;
                 }
+                
                 // All parameters must now be exhausted
-                if (i < parameters.Length) {
-                    throw new ArgumentException(IronPython.Resources.InvalidParameters, "parameters");
-                }
+                Debug.Assert(i == parameters.Length);
             }
             return fa;
         }
@@ -224,7 +223,7 @@ namespace IronPython.Compiler.Ast {
 
             ag.DisableInterpreter = true;
             MSAst.Expression function = TransformToFunctionExpression(ag);
-            return ag.AddDebugInfo(AstUtils.Assign(_variable.Variable, function), new SourceSpan(Start, Header));
+            return ag.AddDebugInfo(ag.Globals.Assign(ag.Globals.GetVariable(_variable), function), new SourceSpan(Start, Header));
         }
 
         private static int _lambdaId;
@@ -240,13 +239,21 @@ namespace IronPython.Compiler.Ast {
 
             // Create AST generator to generate the body with
             AstGenerator bodyGen = new AstGenerator(ag, name, IsGenerator, false);
-            bodyGen.DisableInterpreter = true;
+            if (NeedsLocalsDictionary || ContainsNestedFreeVariables) {
+                bodyGen.CreateNestedContext();
+            }
 
+            FunctionAttributes flags = ComputeFlags(_parameters);
+            bool needsWrapperMethod = flags != FunctionAttributes.None || _parameters.Length > PythonCallTargets.MaxArgs;
+            
             // Transform the parameters.
             // Populate the list of the parameter names and defaults.
             List<MSAst.Expression> defaults = new List<MSAst.Expression>(0);
             List<MSAst.Expression> names = new List<MSAst.Expression>();
-            TransformParameters(ag, bodyGen, defaults, names);
+
+            TransformParameters(ag, bodyGen, defaults, names, needsWrapperMethod);
+        
+            bodyGen.DisableInterpreter = true;
 
             List<MSAst.Expression> statements = new List<MSAst.Expression>();
 
@@ -256,7 +263,7 @@ namespace IronPython.Compiler.Ast {
 
             // Initialize parameters - unpack tuples.
             // Since tuples unpack into locals, this must be done after locals have been created.
-            InitializeParameters(bodyGen, statements);
+            InitializeParameters(bodyGen, statements, needsWrapperMethod);
 
             // For generators, we need to do a check before the first statement for Generator.Throw() / Generator.Close().
             // The exception traceback needs to come from the generator's method body, and so we must do the check and throw
@@ -265,7 +272,7 @@ namespace IronPython.Compiler.Ast {
                 MSAst.Expression s1 = YieldExpression.CreateCheckThrowExpression(bodyGen, SourceSpan.None);
                 statements.Add(s1);
             }
-            
+
             MSAst.ParameterExpression extracted = null;
             if (!IsGenerator && _canSetSysExcInfo) {
                 // need to allocate the exception here so we don't share w/ exceptions made & freed
@@ -312,23 +319,33 @@ namespace IronPython.Compiler.Ast {
             }
 
             body = bodyGen.WrapScopeStatements(body);
-            bodyGen.Block.Body = bodyGen.AddReturnTarget(body);
+            body = bodyGen.AddReturnTarget(body);
 
-            FunctionAttributes flags = ComputeFlags(_parameters);
-            bool needsWrapperMethod = flags != FunctionAttributes.None;
             if (_canSetSysExcInfo) {
                 flags |= FunctionAttributes.CanSetSysExcInfo;
             }
+            MSAst.Expression bodyStmt = bodyGen.MakeBody(body, NeedsLocalsDictionary, true);
             if (ContainsTryFinally) {
                 flags |= FunctionAttributes.ContainsTryFinally;
             }
 
             MSAst.Expression code;
             if (IsGenerator) {
-                code = bodyGen.Block.MakeGenerator(bodyGen.GeneratorLabel, GetGeneratorDelegateType(_parameters, needsWrapperMethod));
+                code = AstUtils.GeneratorLambda(
+                    GetGeneratorDelegateType(_parameters, needsWrapperMethod),
+                    bodyGen.GeneratorLabel,
+                    bodyStmt,
+                    bodyGen.Name + "$" + _lambdaId++,
+                    bodyGen.Parameters
+                );
                 flags |= FunctionAttributes.Generator;
             } else {
-                code = bodyGen.Block.MakeLambda(GetDelegateType(_parameters, needsWrapperMethod));
+                code = Ast.Lambda(
+                    GetDelegateType(_parameters, needsWrapperMethod),
+                    AstGenerator.AddDefaultReturn(bodyStmt, typeof(object)),
+                    bodyGen.Name + "$" + _lambdaId++,
+                    bodyGen.Parameters
+                );
             }
 
             MSAst.Expression ret = Ast.Call(
@@ -336,7 +353,7 @@ namespace IronPython.Compiler.Ast {
                 typeof(PythonOps).GetMethod("MakeFunction"),                                            // method
                 new ReadOnlyCollection<MSAst.Expression>(
                     new [] {
-                        AstUtils.CodeContext(),                                                         // 1. Emit CodeContext
+                        ag.LocalContext,                                                                // 1. Emit CodeContext
                         AstUtils.Constant(name),                                                             // 2. FunctionName
                         code,                                                                           // 3. delegate
                         names.Count == 0 ?                                                              // 4. parameter names
@@ -362,15 +379,20 @@ namespace IronPython.Compiler.Ast {
             return SourceLocation.None;
         }
 
-        private void TransformParameters(AstGenerator outer, AstGenerator inner, List<MSAst.Expression> defaults, List<MSAst.Expression> names) {
+        private void TransformParameters(AstGenerator outer, AstGenerator inner, List<MSAst.Expression> defaults, List<MSAst.Expression> names, bool needsWrapperMethod) {
             if (inner.IsGenerator) {
                 inner.CreateGeneratorParameter();
+            }
+
+            if (needsWrapperMethod) {
+                // define a single parameter which takes all arguments
+                inner.Parameter(typeof(object[]), "allArgs");
             }
 
             for (int i = 0; i < _parameters.Length; i++) {
                 // Create the parameter in the inner code block
                 Parameter p = _parameters[i];
-                p.Transform(inner);
+                p.Transform(inner, needsWrapperMethod);
 
                 // Transform the default value
                 if (p.DefaultValue != null) {
@@ -387,8 +409,23 @@ namespace IronPython.Compiler.Ast {
             }
         }
 
-        private void InitializeParameters(AstGenerator ag, List<MSAst.Expression> init) {
-            foreach (Parameter p in _parameters) {
+        private void InitializeParameters(AstGenerator ag, List<MSAst.Expression> init, bool needsWrapperMethod) {
+            for (int i = 0; i < _parameters.Length; i++) {
+                Parameter p = _parameters[i];
+                if (needsWrapperMethod) {
+                    // if our method signature is object[] we need to first unpack the argument
+                    // from the incoming array.
+                    init.Add(
+                        Ast.Assign(
+                            ag.Globals.GetVariable(p.Variable),
+                            Ast.ArrayIndex(
+                                IsGenerator ? ag.Parameters[1] : ag.Parameters[0],
+                                Ast.Constant(i)
+                            )
+                        )
+                    );
+                }
+
                 p.Init(ag, init);
             }
         }

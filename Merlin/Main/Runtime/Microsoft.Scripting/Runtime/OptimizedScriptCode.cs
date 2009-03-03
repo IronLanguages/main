@@ -26,18 +26,20 @@ using Microsoft.Scripting.Generation;
 using Microsoft.Scripting.Utils;
 
 namespace Microsoft.Scripting.Runtime {
-
+    [Obsolete]
     public class OptimizedScriptCode : ScriptCode {
         private Scope _optimizedScope;
+        private readonly LambdaExpression _code;
         private DlrMainCallTarget _optimizedTarget, _unoptimizedTarget;
 
         public OptimizedScriptCode(LambdaExpression code, SourceUnit sourceUnit)
-            : base(code, null, sourceUnit) {
+            : base(sourceUnit) {
             Debug.Assert(code.Parameters.Count == 0, "GlobalRewritter shouldn't have been applied yet");
+            _code = code;
         }
 
         public OptimizedScriptCode(Scope optimizedScope, DlrMainCallTarget optimizedTarget, SourceUnit sourceUnit)
-            : base(null, optimizedTarget, sourceUnit) {
+            : base(sourceUnit) {
             ContractUtils.RequiresNotNull(optimizedScope, "optimizedScope");
 
             _optimizedScope = optimizedScope;
@@ -46,10 +48,6 @@ namespace Microsoft.Scripting.Runtime {
 
         public override Scope CreateScope() {
             return MakeOptimizedScope();
-        }
-
-        public override void EnsureCompiled() {
-            MakeOptimizedScope();
         }
 
         private Scope MakeOptimizedScope() {
@@ -62,7 +60,15 @@ namespace Microsoft.Scripting.Runtime {
             return CompileOptimizedScope();
         }
 
-        protected override object InvokeTarget(LambdaExpression code, Scope scope) {
+        public override object Run() {
+            return InvokeTarget(_code, CreateScope());
+        }
+
+        public override object Run(Scope scope) {
+            return InvokeTarget(_code, scope);
+        }
+
+        protected object InvokeTarget(LambdaExpression code, Scope scope) {
             if (scope == _optimizedScope) {
                 return _optimizedTarget(scope, LanguageContext);
             } 
@@ -123,6 +129,10 @@ namespace Microsoft.Scripting.Runtime {
 #endif
                 return false;
             }
+        }
+
+        public LambdaExpression Code {
+            get { return _code; }
         }
 
         private void CompileWithArrayGlobals(out DlrMainCallTarget target, out IAttributesCollection globals) {
@@ -187,7 +197,7 @@ namespace Microsoft.Scripting.Runtime {
             }
         }
 
-        protected override MethodBuilder CompileForSave(TypeGen typeGen, Dictionary<SymbolId, FieldBuilder> symbolDict) {
+        protected override KeyValuePair<MethodBuilder, Type> CompileForSave(TypeGen typeGen, Dictionary<SymbolId, FieldBuilder> symbolDict) {
             // first, serialize constants and dynamic sites:
             ToDiskRewriter diskRewriter = new ToDiskRewriter(typeGen);
             LambdaExpression lambda = diskRewriter.RewriteLambda(Code);
@@ -204,7 +214,7 @@ namespace Microsoft.Scripting.Runtime {
                 new object[] { ArrayUtils.ToArray(globalRewriter.Names) }
             ));
 
-            return builder;
+            return new KeyValuePair<MethodBuilder, Type>(builder, typeof(DlrMainCallTarget));
         }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic")]

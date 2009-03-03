@@ -23,34 +23,24 @@ using MSAst = System.Linq.Expressions;
 namespace IronPython.Compiler.Ast {
     internal class PythonVariable {
         private readonly SymbolId _name;
-        private readonly Type/*!*/ _type;
         private readonly ScopeStatement/*!*/ _scope;
+        private VariableKind _kind;    // the type of variable, 
 
-        private bool _deleted;              // del x
-        private bool _readBeforeInitialized;
-        private bool _accessedInNestedScope;
+        // variables used during the flow analysis to determine required initialization & checks
+        private bool _deleted;                  // del x, the variable gets deleted at some point
+        private bool _readBeforeInitialized;    // the variable is read before it's initialized and therefore needs an init check
+        private bool _accessedInNestedScope;    // the variable is accessed in a nested scope and therefore needs to be a closure var
+        private int _index;                     // Index used for tracking in the flow checker
 
-        private bool _fallback;             // If uninitialized, lookup in builtins
-
-        private int _index;                 // Index for flow checker
-
-        private VariableKind _kind;
-        private MSAst.Expression _variable;
-
-        public PythonVariable(SymbolId name, Type/*!*/ type, VariableKind kind, ScopeStatement/*!*/ scope) {
-            Assert.NotNull(type, scope);
+        public PythonVariable(SymbolId name, VariableKind kind, ScopeStatement/*!*/ scope) {
+            Assert.NotNull(scope);
             _name = name;
-            _type = type;
             _kind = kind;
             _scope = scope;
         }
 
         public SymbolId Name {
             get { return _name; }
-        }
-
-        public Type Type {
-            get { return _type; }
         }
 
         public ScopeStatement Scope {
@@ -86,48 +76,6 @@ namespace IronPython.Compiler.Ast {
         public bool AccessedInNestedScope {
             get { return _accessedInNestedScope; }
             set { _accessedInNestedScope = value; }
-        }
-
-        internal bool Fallback {
-            get { return _fallback; }
-            set { _fallback = value; }
-        }
-
-        public MSAst.Expression Variable {
-            get {
-                Debug.Assert(_variable != null);
-                return _variable;
-            }
-        }
-
-        internal void SetParameter(MSAst.ParameterExpression parameter) {
-            Debug.Assert(_variable == null);
-            _variable = parameter;
-        }
-
-        internal MSAst.Expression Transform(AstGenerator ag) {
-            Debug.Assert(_kind != VariableKind.Parameter);
-
-            string name = SymbolTable.IdToString(_name);
-            switch (_kind) {
-                case VariableKind.Global:
-                case VariableKind.GlobalLocal:
-                    return _variable = Utils.GlobalVariable(_type, name);
-
-                case VariableKind.Local:
-                case VariableKind.HiddenLocal:
-                    if (_accessedInNestedScope) {
-                        return _variable = ag.Block.ClosedOverVariable(_type, name);
-                    } else {
-                        return _variable = ag.Block.Variable(_type, name);
-                    }
-
-                case VariableKind.Temporary:
-                    return _variable = ag.Block.HiddenVariable(_type, name);
-
-                default: 
-                    throw Assert.Unreachable;
-            }
         }
     }
 }

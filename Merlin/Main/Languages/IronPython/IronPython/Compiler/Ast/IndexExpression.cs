@@ -44,9 +44,9 @@ namespace IronPython.Compiler.Ast {
 
         internal override MSAst.Expression Transform(AstGenerator ag, Type type) {
             if (IsSlice) {
-                return Binders.GetSlice(ag.BinderState, type, GetActionArgumentsForGetOrDelete(ag));
+                return ag.GetSlice(type, GetActionArgumentsForGetOrDelete(ag));
             }
-            return Binders.GetIndex(ag.BinderState, type, GetActionArgumentsForGetOrDelete(ag));
+            return ag.GetIndex(type, GetActionArgumentsForGetOrDelete(ag));
         }
 
         private MSAst.Expression[] GetActionArgumentsForGetOrDelete(AstGenerator ag) {
@@ -90,8 +90,7 @@ namespace IronPython.Compiler.Ast {
 
         internal override MSAst.Expression TransformSet(AstGenerator ag, SourceSpan span, MSAst.Expression right, PythonOperationKind op) {
             if (op != PythonOperationKind.None) {
-                right = Binders.Operation(
-                    ag.BinderState,
+                right = ag.Operation(
                     typeof(object),
                     op,
                     Transform(ag, typeof(object)),
@@ -101,9 +100,9 @@ namespace IronPython.Compiler.Ast {
 
             MSAst.Expression index;
             if (IsSlice) {
-                index = Binders.SetSlice(ag.BinderState, typeof(object), GetActionArgumentsForSet(ag, right));
+                index = ag.SetSlice(typeof(object), GetActionArgumentsForSet(ag, right));
             } else {
-                index = Binders.SetIndex(ag.BinderState, typeof(object), GetActionArgumentsForSet(ag, right));
+                index = ag.SetIndex(typeof(object), GetActionArgumentsForSet(ag, right));
             }
             
             return ag.AddDebugInfoAndVoid(index, Span);
@@ -112,9 +111,9 @@ namespace IronPython.Compiler.Ast {
         internal override MSAst.Expression TransformDelete(AstGenerator ag) {
             MSAst.Expression index;
             if (IsSlice) {
-                index = Binders.DeleteSlice(ag.BinderState, typeof(object), GetActionArgumentsForGetOrDelete(ag));
+                index = ag.DeleteSlice(typeof(object), GetActionArgumentsForGetOrDelete(ag));
             } else {
-                index = Binders.DeleteIndex(ag.BinderState, typeof(object), GetActionArgumentsForGetOrDelete(ag));
+                index = ag.DeleteIndex(typeof(object), GetActionArgumentsForGetOrDelete(ag));
             }
 
             return ag.AddDebugInfoAndVoid(index, Span);

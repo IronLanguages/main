@@ -24,6 +24,7 @@ using Microsoft.Scripting;
 using Microsoft.Scripting.Generation;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
+using Microsoft.Scripting.Actions;
 
 namespace IronPython.Runtime.Types {
 
@@ -33,15 +34,13 @@ namespace IronPython.Runtime.Types {
     [PythonType("event#")]
     public sealed class ReflectedEvent : PythonTypeSlot, ICodeFormattable {
         private readonly bool _clsOnly;
-        private readonly EventInfo/*!*/ _eventInfo;
-        private WeakDictionary<object, NormalHandlerList/*!*/> _handlerLists;
-        private static readonly object _staticTarget = new object();
+        private readonly EventTracker/*!*/ _tracker;
 
-        internal ReflectedEvent(EventInfo/*!*/ eventInfo, bool clsOnly) {
-            Assert.NotNull(eventInfo);
+        internal ReflectedEvent(EventTracker/*!*/ tracker, bool clsOnly) {
+            Assert.NotNull(tracker);
 
             _clsOnly = clsOnly;
-            _eventInfo = eventInfo;
+            _tracker = tracker;
         }
 
         #region Internal APIs
@@ -70,9 +69,9 @@ namespace IronPython.Runtime.Types {
                     PythonType dt = bea.Owner as PythonType;
                     if (dt != null) {
                         if (bea.Instance == null) {
-                            throw new MissingMemberException(String.Format("attribute '{1}' of '{0}' object is read-only", dt.Name, SymbolTable.StringToId(_eventInfo.Name)));
+                            throw new MissingMemberException(String.Format("attribute '{1}' of '{0}' object is read-only", dt.Name, SymbolTable.StringToId(_tracker.Name)));
                         } else {
-                            throw new MissingMemberException(String.Format("'{0}' object has no attribute '{1}'", dt.Name, SymbolTable.StringToId(_eventInfo.Name)));
+                            throw new MissingMemberException(String.Format("'{0}' object has no attribute '{1}'", dt.Name, SymbolTable.StringToId(_tracker.Name)));
                         }
                     }
                 }
@@ -114,60 +113,6 @@ namespace IronPython.Runtime.Types {
             }
         }
 
-        private HandlerList/*!*/ GetStubList(object instance) {
-#if !SILVERLIGHT
-            if (instance != null && ComOps.IsComObject(instance)) {
-                return GetComStubList(instance);
-            }
-#endif
-
-            if (_handlerLists == null) {
-                System.Threading.Interlocked.CompareExchange(ref _handlerLists, new WeakDictionary<object, NormalHandlerList>(), null);
-            }
-
-            if (instance == null) {
-                // targetting a static method, we'll use a random object
-                // as our place holder here...
-                instance = _staticTarget;
-            }
-
-            lock (_handlerLists) {
-                NormalHandlerList result;
-                if (_handlerLists.TryGetValue(instance, out result)) {
-                    return result;
-                }
-
-                result = new NormalHandlerList();
-                _handlerLists[instance] = result;
-                return result;
-            }
-        }
-
-#if !SILVERLIGHT
-        /// <summary>
-        /// Gets the stub list for a COM Object.  For COM objects we store the stub list
-        /// directly on the object using the Marshal APIs.  This allows us to not have
-        /// any circular references to deal with via weak references which are challenging
-        /// in the face of COM.
-        /// </summary>
-        private HandlerList/*!*/ GetComStubList(object/*!*/ instance) {
-            HandlerList hl = (HandlerList)Marshal.GetComObjectData(instance, this);
-            if (hl == null) {
-                lock (_staticTarget) {
-                    hl = (HandlerList)Marshal.GetComObjectData(instance, this);
-                    if (hl == null) {
-                        hl = new ComHandlerList();
-                        if (!Marshal.SetComObjectData(instance, this, hl)) {
-                            throw new COMException("Failed to set COM Object Data");
-                        }
-                    }
-                }
-            }
-
-            return hl;
-        }
-#endif
-
         #endregion
 
         #region Public Python APIs
@@ -175,7 +120,14 @@ namespace IronPython.Runtime.Types {
         public EventInfo/*!*/ Info {
             [PythonHidden]
             get {
-                return _eventInfo;
+                return _tracker.Event;
+            }
+        }
+
+        public EventTracker/*!*/ Tracker {
+            [PythonHidden]
+            get {
+                return _tracker;
             }
         }
 
@@ -217,43 +169,18 @@ namespace IronPython.Runtime.Types {
                     throw PythonOps.TypeError("event addition expected callable object, got None");
                 }
 
-                MethodInfo add = _event.Info.GetAddMethod(true);
-                if (add.IsStatic) {
-                    if (_ownerType != DynamicHelpers.GetPythonTypeFromType(_event.Info.DeclaringType)) {
+                if (_event.Tracker.IsStatic) {
+                    if (_ownerType != DynamicHelpers.GetPythonTypeFromType(_event.Tracker.DeclaringType)) {
                         // mutating static event, only allow this from the type we're mutating, not sub-types
                         return new BadEventChange(_ownerType, _instance);
                     }
                 }
 
-                Delegate handler;
-                HandlerList stubs;
-
-                // we can add event directly (signature does match):
-                if (_event.Info.EventHandlerType.IsAssignableFrom(func.GetType())) {
-                    handler = (Delegate)func;
-                    stubs = null;
+                MethodInfo add = _event.Tracker.GetCallableAddMethod();
+                if (CompilerHelpers.IsVisible(add) || context.LanguageContext.DomainManager.Configuration.PrivateBinding) {
+                    _event.Tracker.AddHandler(_instance, func, context.LanguageContext);
                 } else {
-                    // create signature converting stub:
-                    handler = BinderOps.GetDelegate(context.LanguageContext, func, _event.Info.EventHandlerType);
-                    stubs = _event.GetStubList(_instance);
-                }
-
-                bool privateBinding = context.LanguageContext.DomainManager.Configuration.PrivateBinding;
-
-                // wire the handler up:
-                if (!add.DeclaringType.IsPublic) {
-                    add = CompilerHelpers.GetCallableMethod(add, privateBinding);
-                }
-
-                if ((add.IsPublic && add.DeclaringType.IsPublic) || privateBinding) {
-                    add.Invoke(_instance, new object[] { handler });
-                } else {
-                    throw new ArgumentTypeException("cannot add to private event");
-                }
-
-                if (stubs != null) {
-                    // remember the stub so that we could search for it on removal:
-                    stubs.AddHandler(func, handler);
+                    throw new ArgumentTypeException("Cannot add handler to a private event.");
                 }
 
                 return this;
@@ -266,38 +193,19 @@ namespace IronPython.Runtime.Types {
                     throw PythonOps.TypeError("event subtraction expected callable object, got None");
                 }
 
-                MethodInfo remove = _event.Info.GetRemoveMethod(true);
-                if (remove.IsStatic) {
-                    if (_ownerType != DynamicHelpers.GetPythonTypeFromType(_event.Info.DeclaringType)) {
+                if (_event.Tracker.IsStatic) {
+                    if (_ownerType != DynamicHelpers.GetPythonTypeFromType(_event.Tracker.DeclaringType)) {
                         // mutating static event, only allow this from the type we're mutating, not sub-types
                         return new BadEventChange(_ownerType, _instance);
                     }
                 }
 
-                bool privateBinding = context.LanguageContext.DomainManager.Configuration.PrivateBinding;
-
-                if (!remove.DeclaringType.IsPublic) {
-                    remove = CompilerHelpers.GetCallableMethod(remove, privateBinding);
-                }
-
-                bool isRemovePublic = remove.IsPublic && remove.DeclaringType.IsPublic;
-                if (isRemovePublic || privateBinding) {
-
-                    Delegate handler;
-
-                    if (_event.Info.EventHandlerType.IsAssignableFrom(func.GetType())) {
-                        handler = (Delegate)func;
-                    } else {
-                        handler = _event.GetStubList(_instance).RemoveHandler(context, func);
-                    }
-
-                    if (handler != null) {
-                        remove.Invoke(_instance, new object[] { handler });
-                    }
+                MethodInfo remove = _event.Tracker.GetCallableRemoveMethod();
+                if (CompilerHelpers.IsVisible(remove) || context.LanguageContext.DomainManager.Configuration.PrivateBinding) {
+                    _event.Tracker.RemoveHandler(_instance, func, PythonContext.GetContext(context).EqualityComparer);
                 } else {
-                    throw new ArgumentTypeException("cannot subtract from private event");
+                    throw new ArgumentTypeException("Cannot add handler to a private event.");
                 }
-
                 return this;
             }
         }
@@ -336,92 +244,9 @@ namespace IronPython.Runtime.Types {
             }
         }
 
-        /// <summary>
-        /// Holds on a list of delegates hooked to the event. 
-        /// We need the list because we cannot enumerate the delegates hooked to CLR event and we need to do so in 
-        /// handler removal (we need to do custom delegate comparison there). If BCL enables the enumeration we could remove this.
-        /// </summary>
-        private abstract class HandlerList {
-            public abstract void AddHandler(object callableObject, Delegate/*!*/ handler);
-            public abstract Delegate RemoveHandler(CodeContext/*!*/ context, object callableObject);
-        }
-
-#if !SILVERLIGHT
-        private sealed class ComHandlerList : HandlerList {
-            /// <summary>
-            /// Storage for the handlers - a key value pair of the callable object and the delegate handler.
-            /// 
-            /// The delegate handler is closed over the callable object.  Therefore as long as the object is alive the
-            /// delegate will stay alive and so will the callable object.  That means it's fine to have a weak reference
-            /// to both of these objects.
-            /// </summary>
-            private readonly CopyOnWriteList<KeyValuePair<object, object>> _handlers = new CopyOnWriteList<KeyValuePair<object, object>>();
-
-            public override void AddHandler(object callableObject, Delegate/*!*/ handler) {
-                Assert.NotNull(handler);
-                _handlers.Add(new KeyValuePair<object, object>(callableObject, handler));
-            }
-
-            public override Delegate RemoveHandler(CodeContext context, object callableObject) {
-                Assert.NotNull(context);
-
-                List<KeyValuePair<object, object>> copyOfHandlers = _handlers.GetCopyForRead();
-                for (int i = copyOfHandlers.Count - 1; i >= 0; i--) {
-                    object key = copyOfHandlers[i].Key;
-                    object value = copyOfHandlers[i].Value;
-
-                    if (PythonOps.EqualRetBool(context, key, callableObject)) {
-                        Delegate handler = (Delegate)value;
-                        _handlers.RemoveAt(i);
-                        return handler;
-                    }
-                }
-
-                return null;
-            }
-        }
-#endif
-
-        private sealed class NormalHandlerList : HandlerList {
-            /// <summary>
-            /// Storage for the handlers - a key value pair of the callable object and the delegate handler.
-            /// 
-            /// The delegate handler is closed over the callable object.  Therefore as long as the object is alive the
-            /// delegate will stay alive and so will the callable object.  That means it's fine to have a weak reference
-            /// to both of these objects.
-            /// </summary>
-            private readonly CopyOnWriteList<KeyValuePair<WeakReference/*!*/, WeakReference/*!*/>> _handlers = new CopyOnWriteList<KeyValuePair<WeakReference/*!*/, WeakReference/*!*/>>();
-
-            public NormalHandlerList() {
-            }
-
-            public override void AddHandler(object callableObject, Delegate/*!*/ handler) {
-                Assert.NotNull(handler);
-                _handlers.Add(new KeyValuePair<WeakReference/*!*/, WeakReference/*!*/>(new WeakReference(callableObject), new WeakReference(handler)));
-            }
-
-            public override Delegate RemoveHandler(CodeContext/*!*/ context, object callableObject) {
-                Assert.NotNull(context);
-
-                List<KeyValuePair<WeakReference, WeakReference>> copyOfHandlers = _handlers.GetCopyForRead();
-                for (int i = copyOfHandlers.Count - 1; i >= 0; i--) {
-                    object key = copyOfHandlers[i].Key.Target;
-                    object value = copyOfHandlers[i].Value.Target;
-
-                    if (key != null && value != null && PythonOps.EqualRetBool(context, key, callableObject)) {
-                        Delegate handler = (Delegate)value;
-                        _handlers.RemoveAt(i);
-                        return handler;
-                    }
-                }
-
-                return null;
-            }
-        }
-
         private MissingMemberException/*!*/ ReadOnlyException(PythonType/*!*/ dt) {
             Assert.NotNull(dt);
-            return new MissingMemberException(String.Format("attribute '{1}' of '{0}' object is read-only", dt.Name, SymbolTable.StringToId(_eventInfo.Name)));
+            return new MissingMemberException(String.Format("attribute '{1}' of '{0}' object is read-only", dt.Name, SymbolTable.StringToId(_tracker.Name)));
         }
 
         #endregion

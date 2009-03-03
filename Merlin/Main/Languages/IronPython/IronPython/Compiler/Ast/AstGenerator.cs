@@ -15,10 +15,10 @@
 
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Linq.Expressions;
 using System.Reflection;
-using System.Dynamic;
 
 using Microsoft.Scripting;
 using Microsoft.Scripting.Actions;
@@ -37,10 +37,10 @@ namespace IronPython.Compiler.Ast {
     using Ast = System.Linq.Expressions.Expression;
 
     internal class AstGenerator {
-        private readonly LambdaBuilder/*!*/ _block;                     // the DLR lambda that we are building
         private readonly CompilerContext/*!*/ _context;                 // compiler context (source unit, etc...) that we are compiling against
         private readonly bool _print;                                   // true if we should print expression statements
         private readonly LabelTarget _generatorLabel;                   // the label, if we're transforming for a generator function
+        private readonly string _name;                                  // the name of the method, module, etc...
         private int? _curLine;                                          // tracks what the current line we've emitted at code-gen time
         private MSAst.ParameterExpression _lineNoVar, _lineNoUpdated;   // the variable used for storing current line # and if we need to store to it
         private List<MSAst.ParameterExpression/*!*/> _temps;            // temporary variables allocated against the lambda so we can re-use them
@@ -52,6 +52,12 @@ namespace IronPython.Compiler.Ast {
         private LabelTarget _continueLabel;                             // the current label for continue, if we're in a loop
         private LabelTarget _returnLabel;                               // the label for the end of the current method, if "return" was used
         private readonly MSAst.SymbolDocumentInfo _document;            // if set, used to wrap expressions with debug information
+        private readonly GlobalAllocator/*!*/ _globals;                 // helper class for generating globals code gen
+        private readonly List<ParameterExpression> _locals;             // local variables allocated during the transformation of the code
+        private readonly List<ParameterExpression> _params;             // parameters allocated during the transformation of the code
+        private readonly List<VariableInfo> _visibleVars;               // list of all variables and which ones are closed over.
+        private MSAst.ParameterExpression _localCodeContext;            // the current context if it's different from the global context.
+        private readonly AstGenerator/*!*/ _parent;                     // the parent generator
 
         private static readonly Dictionary<string, MethodInfo> _HelperMethods = new Dictionary<string, MethodInfo>(); // cache of helper methods
         private static readonly MethodInfo _UpdateStackTrace = typeof(ExceptionHelpers).GetMethod("UpdateStackTrace");
@@ -63,7 +69,10 @@ namespace IronPython.Compiler.Ast {
             _print = print;
             _generatorLabel = generator ? Ast.Label(typeof(object)) : null;
 
-            _block = AstUtils.Lambda(typeof(object), name);
+            _name = name;
+            _locals = new List<ParameterExpression>();
+            _visibleVars = new List<VariableInfo>();
+            _params = new List<ParameterExpression>();
         }
 
         internal AstGenerator(AstGenerator/*!*/ parent, string name, bool generator, bool print)
@@ -71,15 +80,26 @@ namespace IronPython.Compiler.Ast {
             Assert.NotNull(parent);
             _context = parent.Context;
             _binderState = parent.BinderState;
+            _parent = parent;
             _document = _context.SourceUnit.Document;
+
+            _globals = parent._globals;
         }
 
-        internal AstGenerator(CompilerContext/*!*/ context, SourceSpan span, string name, bool generator, bool print)
+        internal AstGenerator(CompilationMode mode, CompilerContext/*!*/ context, SourceSpan span, string name, bool generator, bool print)
             : this(name, generator, print) {
             Assert.NotNull(context);
             _context = context;
             _binderState = new BinderState(Binder);
             _document = _context.SourceUnit.Document;
+
+            LanguageContext pc = context.SourceUnit.LanguageContext;
+            switch (mode) {
+                case CompilationMode.Collectable: _globals = new ArrayGlobalAllocator(pc); break;
+                case CompilationMode.Loookup: _globals = new DictionaryGlobalAllocator(); break;
+                case CompilationMode.ToDisk: _globals = new SavableGlobalAllocator(pc); break;
+                case CompilationMode.Uncollectable: _globals = new StaticGlobalAllocator(pc, name); break;
+            }
         }
 
         // We don't need to insert code to track lines in adaptive mode as the interpreter does that for us.
@@ -97,6 +117,24 @@ namespace IronPython.Compiler.Ast {
 
         public bool DebugMode {
             get { return _context.SourceUnit.LanguageContext.DomainManager.Configuration.DebugMode; }
+        }
+
+        public bool IsGlobal {
+            get {
+                return _parent == null;
+            }
+        }
+
+        public MSAst.Expression/*!*/ LocalContext {
+            get {
+                return _localCodeContext ?? Globals.GlobalContext;
+            }
+        }
+
+        public GlobalAllocator/*!*/ Globals {
+            get {
+                return _globals;
+            }
         }
 
         public PythonDivisionOptions DivisionOptions {
@@ -118,10 +156,6 @@ namespace IronPython.Compiler.Ast {
             get {
                 return ((PythonContext)_context.SourceUnit.LanguageContext);
             }
-        }
-
-        public LambdaBuilder/*!*/ Block {
-            get { return _block; }
         }
 
         public CompilerContext/*!*/ Context {
@@ -200,7 +234,108 @@ namespace IronPython.Compiler.Ast {
                     }
                 }
             }
-            return _block.HiddenVariable(type, name);
+            return HiddenVariable(type, name);
+        }
+
+        internal void AddHiddenVariable(ParameterExpression tmp) {
+            _locals.Add(tmp);
+        }
+
+        internal MSAst.ParameterExpression/*!*/ HiddenVariable(Type/*!*/ type, string name) {
+            MSAst.ParameterExpression var = Ast.Parameter(type, name);
+            _locals.Add(var);
+            return var;
+        }
+
+        internal MSAst.ParameterExpression/*!*/ Variable(Type/*!*/ type, string name) {
+            ParameterExpression result = Ast.Variable(type, name);
+            _locals.Add(result);
+            _visibleVars.Add(new VariableInfo(result, false));
+            return result;
+        }
+
+        internal MSAst.ParameterExpression/*!*/ ClosedOverVariable(Type/*!*/ type, string name) {
+            ParameterExpression result = Ast.Variable(type, name);
+            _locals.Add(result);
+            _visibleVars.Add(new VariableInfo(result, true));
+            return result;
+        }
+
+        internal MSAst.ParameterExpression/*!*/ ClosedOverParameter(Type/*!*/ type, string name) {
+            ParameterExpression result = Ast.Variable(type, name);
+            _params.Add(result);
+            _visibleVars.Add(new VariableInfo(result, true));
+            return result;
+        }
+
+        internal MSAst.ParameterExpression/*!*/ Parameter(Type/*!*/ type, string name) {
+            ParameterExpression result = Ast.Variable(type, name);
+            _params.Add(result);
+            _visibleVars.Add(new VariableInfo(result, false));
+            return result;
+        }
+
+        internal void CreateNestedContext() {
+            _localCodeContext = Ast.Parameter(typeof(CodeContext), "$localContext");
+        }
+
+        internal MSAst.Expression/*!*/ MakeBody(MSAst.Expression/*!*/ body, bool emitDictionary, bool isVisible) {
+            // wrap a CodeContext scope if needed
+            Debug.Assert(!IsGlobal);
+
+            var vars = new List<ParameterExpression>(_visibleVars.Count);
+            var varNames = new List<SymbolId>();
+            foreach (var v in _visibleVars) {
+                if (emitDictionary || v.IsClosedOver) {
+                    vars.Add(v.Variable);
+                    varNames.Add(SymbolTable.StringToId(v.Variable.Name));
+                }
+            }
+
+            if (_localCodeContext != null) {
+                if (vars.Count > 0) {
+                    body = Ast.Block(
+                        new[] { _localCodeContext },
+                        Ast.Assign(
+                            _localCodeContext,
+                            Ast.Call(
+                                typeof(ScriptingRuntimeHelpers).GetMethod("CreateNestedCodeContext"),
+#if FALSE
+                                Ast.Call(
+                                    typeof(PythonOps).GetMethod("CreateLocalsDictionary"),
+                                    Ast.RuntimeVariables(vars),
+                                    Ast.Constant(varNames.ToArray())
+                                ),
+#else
+                                Utils.VariableDictionary(vars),
+#endif
+                                _parent.LocalContext,
+                                Ast.Constant(isVisible)
+                            )
+                        ),
+                        body
+                    );
+                } else {
+                    body = Ast.Block(
+                        new[] { _localCodeContext },
+                        Ast.Assign(_localCodeContext, Globals.GlobalContext),
+                        body
+                    );
+                }
+            } 
+
+            // wrap a scope if needed
+            if (_locals != null && _locals.Count > 0) {
+                body = Ast.Block(new ReadOnlyCollection<ParameterExpression>(_locals.ToArray()), body);
+            }
+
+            return body;
+        }
+
+        internal MSAst.ParameterExpression/*!*/ CreateHiddenParameter(Type/*!*/ type, string name) {
+            ParameterExpression result = Ast.Variable(type, name);
+            _params.Add(result);
+            return result;
         }
 
         public void FreeTemp(MSAst.ParameterExpression/*!*/ temp) {
@@ -215,7 +350,7 @@ namespace IronPython.Compiler.Ast {
         }
 
         internal MSAst.Expression/*!*/ MakeAssignment(MSAst.ParameterExpression/*!*/ variable, MSAst.Expression/*!*/ right) {
-            return AstUtils.Assign(variable, AstUtils.Convert(right, variable.Type));
+            return Ast.Assign(variable, AstUtils.Convert(right, variable.Type));
         }
 
         internal MSAst.Expression/*!*/ MakeAssignment(MSAst.ParameterExpression/*!*/ variable, MSAst.Expression/*!*/ right, SourceSpan span) {
@@ -264,8 +399,7 @@ namespace IronPython.Compiler.Ast {
                         ae.Arguments
                     );
                 } else*/ {
-                    expression = Binders.Convert(
-                        BinderState,
+                    expression = Convert(
                         type,
                         ConversionResultKind.ExplicitCast,
                         expression
@@ -318,7 +452,7 @@ namespace IronPython.Compiler.Ast {
         private MSAst.ParameterExpression/*!*/ LineNumberExpression {
             get {
                 if (_lineNoVar == null) {
-                    _lineNoVar = _block.HiddenVariable(typeof(int), "$lineNo");
+                    _lineNoVar = HiddenVariable(typeof(int), "$lineNo");
                 }
 
                 return _lineNoVar;
@@ -344,7 +478,7 @@ namespace IronPython.Compiler.Ast {
         private MSAst.ParameterExpression/*!*/ LineNumberUpdated {
             get {
                 if (_lineNoUpdated == null) {
-                    _lineNoUpdated = _block.HiddenVariable(typeof(bool), "$lineUpdated");
+                    _lineNoUpdated = HiddenVariable(typeof(bool), "$lineUpdated");
                 }
 
                 return _lineNoUpdated;
@@ -376,9 +510,9 @@ namespace IronPython.Compiler.Ast {
             if (_lineNoUpdated == null) {
                 return Ast.Call(
                     _UpdateStackTrace,
-                    AstUtils.CodeContext(),
+                    LocalContext,
                     Ast.Call(_GetCurrentMethod),
-                    AstUtils.Constant(_block.Name),
+                    AstUtils.Constant(Name),
                     AstUtils.Constant(Context.SourceUnit.Path ?? "<string>"),
                     LineNumberExpression
                 );
@@ -398,14 +532,14 @@ namespace IronPython.Compiler.Ast {
                     ),
                     Ast.Call(
                         typeof(ExceptionHelpers).GetMethod("UpdateStackTrace"),
-                        AstUtils.CodeContext(),
+                        LocalContext,
                         Ast.Call(typeof(MethodBase).GetMethod("GetCurrentMethod")),
-                        AstUtils.Constant(_block.Name),
+                        AstUtils.Constant(Name),
                         AstUtils.Constant(Context.SourceUnit.Path ?? "<string>"),
                         LineNumberExpression
                     )
                 ),
-                AstUtils.Assign(
+                Ast.Assign(
                     LineNumberUpdated,
                     AstUtils.Constant(preventAdditionalAdds)
                 ),
@@ -627,7 +761,7 @@ namespace IronPython.Compiler.Ast {
         internal void CreateGeneratorParameter() {
             Debug.Assert(IsGenerator);
             Debug.Assert(_generatorParameter == null);
-            _generatorParameter = Block.CreateHiddenParameter("$generator", typeof(PythonGenerator));
+            _generatorParameter = CreateHiddenParameter(typeof(PythonGenerator), "$generator");
         }
 
         internal MSAst.Expression AddDecorators(MSAst.Expression ret, IList<Expression> decorators) {
@@ -635,8 +769,7 @@ namespace IronPython.Compiler.Ast {
             if (decorators != null) {
                 for (int i = decorators.Count - 1; i >= 0; i--) {
                     Expression decorator = decorators[i];
-                    ret = Binders.Invoke(
-                        BinderState,
+                    ret = Invoke(
                         typeof(object),
                         new CallSignature(1),
                         Transform(decorator),
@@ -647,5 +780,183 @@ namespace IronPython.Compiler.Ast {
             return ret;
         }
 
+        internal static MSAst.Expression/*!*/ AddDefaultReturn(MSAst.Expression/*!*/ body, Type returnType) {
+            if (body.Type == typeof(void) && returnType != typeof(void)) {
+                body = Ast.Block(body, Ast.Default(returnType));
+            }
+            return body;
+        }
+
+        public IList<MSAst.ParameterExpression> Parameters {
+            get {
+                return _params;
+            }
+        }
+
+        public string Name {
+            get {
+                return _name;
+            }
+        }
+
+        internal ScriptCode MakeScriptCode(MSAst.Expression/*!*/ body, CompilerContext/*!*/ context, PythonAst/*!*/ ast) {
+            return Globals.MakeScriptCode(Ast.Block(_locals, body), context, ast);
+        }
+
+        #region Binder Factories
+
+        public MSAst.Expression/*!*/ Invoke(Type/*!*/ resultType, CallSignature signature, params MSAst.Expression/*!*/[]/*!*/ args) {
+            PythonInvokeBinder invoke = BinderState.Invoke(signature);
+            switch (args.Length) {
+                case 0: return Globals.Dynamic(invoke, resultType, LocalContext);
+                case 1: return Globals.Dynamic(invoke, resultType, LocalContext, args[0]);
+                case 2: return Globals.Dynamic(invoke, resultType, LocalContext, args[0], args[1]);
+                case 3: return Globals.Dynamic(invoke, resultType, LocalContext, args[0], args[1], args[2]);
+                default:
+                    return Globals.Dynamic(
+                        invoke,
+                        resultType,
+                        ArrayUtils.Insert(LocalContext, args)
+                    );
+            }
+
+        }
+
+        public MSAst.Expression/*!*/ Convert(Type/*!*/ type, ConversionResultKind resultKind, MSAst.Expression/*!*/ target) {
+            return Globals.Dynamic(
+                BinderState.Convert(
+                    type,
+                    resultKind
+                ),
+                type,
+                target
+            );
+        }
+
+        public MSAst.Expression/*!*/ Operation(Type/*!*/ resultType, PythonOperationKind operation, MSAst.Expression arg0) {
+            return Globals.Dynamic(
+                Binders.UnaryOperationBinder(
+                    BinderState,
+                    operation
+                ),
+                resultType,
+                arg0
+            );
+        }
+
+        public MSAst.Expression/*!*/ Operation(Type/*!*/ resultType, PythonOperationKind operation, MSAst.Expression arg0, MSAst.Expression arg1) {
+            return Globals.Dynamic(
+                Binders.BinaryOperationBinder(
+                    BinderState,
+                    operation
+                ),
+                resultType,
+                arg0,
+                arg1
+            );
+        }
+
+        public MSAst.Expression/*!*/ Set(Type/*!*/ resultType, string/*!*/ name, MSAst.Expression/*!*/ target, MSAst.Expression/*!*/ value) {
+            return Globals.Dynamic(
+                BinderState.SetMember(
+                    name
+                ),
+                resultType,
+                target,
+                value
+            );
+        }
+
+        public MSAst.Expression/*!*/ Get(Type/*!*/ resultType, string/*!*/ name, MSAst.Expression/*!*/ target) {
+            return Binders.Get(LocalContext, BinderState, resultType, name, target);
+        }
+
+        public MSAst.Expression/*!*/ TryGet(Type/*!*/ resultType, string/*!*/ name, MSAst.Expression/*!*/ target) {
+            return Binders.TryGet(LocalContext, BinderState, resultType, name, target);
+        }
+
+        public MSAst.Expression/*!*/ Delete(Type/*!*/ resultType, string/*!*/ name, MSAst.Expression/*!*/ target) {
+            return Globals.Dynamic(
+                BinderState.DeleteMember(
+                    name
+                ),
+                resultType,
+                target
+            );
+        }
+
+        internal MSAst.Expression/*!*/ GetIndex(Type/*!*/ type, MSAst.Expression/*!*/[]/*!*/ expression) {
+            return Globals.Dynamic(
+                BinderState.GetIndex(
+                    expression.Length
+                ),
+                type,
+                expression
+            );
+        }
+
+        internal MSAst.Expression/*!*/ GetSlice(Type/*!*/ type, MSAst.Expression/*!*/[]/*!*/ expression) {
+            return Globals.Dynamic(
+                BinderState.GetSlice,
+                type,
+                expression
+            );
+        }
+
+        internal MSAst.Expression/*!*/ SetIndex(Type/*!*/ type, MSAst.Expression/*!*/[]/*!*/ expression) {
+            return Globals.Dynamic(
+                BinderState.SetIndex(
+                    expression.Length - 1
+                ),
+                type,
+                expression
+            );
+        }
+
+        internal MSAst.Expression/*!*/ SetSlice(Type/*!*/ type, MSAst.Expression/*!*/[]/*!*/ expression) {
+            return Globals.Dynamic(
+                BinderState.SetSlice,
+                type,
+                expression
+            );
+        }
+
+        internal MSAst.Expression/*!*/ DeleteIndex(Type/*!*/ type, MSAst.Expression/*!*/[]/*!*/ expression) {
+            return Globals.Dynamic(
+                BinderState.DeleteIndex(
+                    expression.Length
+                ),
+                type,
+                expression
+            );
+        }
+
+        internal MSAst.Expression/*!*/ DeleteSlice(Type/*!*/ type, MSAst.Expression/*!*/[]/*!*/ expression) {
+            return Globals.Dynamic(
+                BinderState.DeleteSlice,
+                type,
+                expression
+            );
+        }
+
+        #endregion
+
+        struct VariableInfo {
+            public readonly ParameterExpression Variable;
+            public readonly bool IsClosedOver;
+
+            public VariableInfo(ParameterExpression/*!*/ variable, bool isClosedOver) {
+                Variable = variable;
+                IsClosedOver = isClosedOver;
+            }
+        }
+    }
+
+    enum CompilationMode {
+        None,
+        ToDisk,
+        Uncollectable,
+        Collectable,
+        Loookup
     }
 }

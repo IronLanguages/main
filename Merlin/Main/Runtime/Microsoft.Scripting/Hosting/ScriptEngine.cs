@@ -30,7 +30,7 @@ namespace Microsoft.Scripting.Hosting {
     /// Represents a language in Hosting API. 
     /// Hosting API counterpart for <see cref="LanguageContext"/>.
     /// </summary>
-    [DebuggerDisplay("{Configuration.DisplayName}")]
+    [DebuggerDisplay("{Setup.DisplayName}")]
     public sealed class ScriptEngine
 #if !SILVERLIGHT
  : MarshalByRefObject

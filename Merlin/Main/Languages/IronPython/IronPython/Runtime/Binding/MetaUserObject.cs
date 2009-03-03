@@ -68,7 +68,7 @@ namespace IronPython.Runtime.Binding {
         }
 
         public override DynamicMetaObject/*!*/ BindBinaryOperation(BinaryOperationBinder/*!*/ binder, DynamicMetaObject/*!*/ arg) {
-            return PythonProtocol.Operation(binder, this, arg);
+            return PythonProtocol.Operation(binder, this, arg, null);
         }
 
         public override DynamicMetaObject/*!*/ BindUnaryOperation(UnaryOperationBinder/*!*/ binder) {
@@ -239,10 +239,13 @@ namespace IronPython.Runtime.Binding {
                             AstUtils.Convert(self.Expression, self.GetLimitType()),
                             self.GetLimitType().GetProperty("Value")
                         ),
-                        Binders.Convert(
-                            BinderState.GetBinderState(convertToAction),
+                        Ast.Dynamic(
+                            new ConversionBinder(
+                                BinderState.GetBinderState(convertToAction),
+                                convertToAction.Type,
+                                ConversionResultKind.ExplicitCast
+                            ),
                             convertToAction.Type,
-                            ConversionResultKind.ExplicitCast,
                             tmp
                         )
                     )

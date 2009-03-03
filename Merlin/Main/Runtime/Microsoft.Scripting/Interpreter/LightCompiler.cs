@@ -316,6 +316,8 @@ namespace Microsoft.Scripting.Interpreter {
             }
 
             if (!_closureVariables.Contains(expr)) {
+                Debug.Assert(_parent != null);
+
                 _parent.EnsureAvailableForClosure(expr);
                 _closureVariables.Add(expr);
             }
@@ -413,13 +415,18 @@ namespace Microsoft.Scripting.Interpreter {
 
             PropertyInfo pi = member.Member as PropertyInfo;
             if (pi != null) {
-                var method = pi.GetSetMethod();
-                this.Compile(member.Expression);
-                if (!asVoid) {
-                    // need to dup node.Right correctly with a temp
+                if (!pi.GetSetMethod().IsStatic) {
                     throw new NotImplementedException();
                 }
+                var method = pi.GetSetMethod();
+                this.Compile(member.Expression);
                 this.Compile(node.Right);
+                
+                if (!asVoid) {
+                    // need to dup node.Right correctly with a temp
+                    AddInstruction(DupInstruction.Instance);
+                }
+
                 AddInstruction(new CallInstruction(method));
                 return;
             }
@@ -505,7 +512,8 @@ namespace Microsoft.Scripting.Interpreter {
 
 
         private void CompileArrayIndex(Expression array, Expression index) {
-            if (array.Type == typeof(object[]) && index.Type == typeof(int)) {
+            Type elemType = array.Type.GetElementType();
+            if ((elemType.IsClass || elemType.IsInterface) && index.Type == typeof(int)) {
                 this.Compile(array);
                 this.Compile(index);
                 AddInstruction(ArrayIndexInstruction<object>.Instance);
@@ -958,11 +966,20 @@ namespace Microsoft.Scripting.Interpreter {
             var member = node.Member;
             FieldInfo fi = member as FieldInfo;
             if (fi != null) {
-                if (fi.IsInitOnly && fi.IsStatic) {
-                    object value = fi.GetValue(null);
-                    PushConstant(value);
-                    return;
+                if (fi.IsLiteral) {
+                    PushConstant(fi.GetRawConstantValue());
+                } else if (fi.IsStatic) {
+                    if (fi.IsInitOnly) {
+                        object value = fi.GetValue(null);
+                        PushConstant(value);
+                    } else {
+                        AddInstruction(new StaticFieldAccessInstruction(fi));
+                    }
+                } else {
+                    Compile(node.Expression);
+                    AddInstruction(new FieldAccessInstruction(fi));
                 }
+                return;
             }
 
             PropertyInfo pi = member as PropertyInfo;
@@ -1009,10 +1026,34 @@ namespace Microsoft.Scripting.Interpreter {
             throw new System.NotImplementedException();
         }
 
+        class ParameterVisitor : ExpressionVisitor {
+            private readonly LightCompiler _compiler;
+
+            public ParameterVisitor(LightCompiler compiler) {
+                _compiler = compiler;
+            }
+
+            protected override Expression VisitParameter(ParameterExpression node) {
+                _compiler.GetVariable(node);
+                return node;
+            }
+
+            protected override Expression VisitLambda<T>(Expression<T> node) {
+                return node;
+            }
+        }
+
         private void CompileExtensionExpression(Expression expr) {
             var instructionProvider = expr as IInstructionProvider;
             if (instructionProvider != null) {
                 AddInstruction(instructionProvider.GetInstruction(this));
+                
+                // we need to walk the reduced expression in case it has any closure 
+                // variables that we'd need to track when we actually turn around and 
+                // compile it
+                if (expr.CanReduce) {
+                    new ParameterVisitor(this).Visit(expr.Reduce());
+                }
                 return;
             }
 
@@ -1132,7 +1173,7 @@ namespace Microsoft.Scripting.Interpreter {
 
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity")]
-        internal void Compile(Expression expr) {
+        public void Compile(Expression expr) {
             int startingStackDepth = this._currentStackDepth;
             switch (expr.NodeType) {
                 case ExpressionType.Add: CompileBinaryExpression(expr); break;

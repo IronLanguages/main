@@ -146,8 +146,8 @@ namespace Microsoft.Scripting.Runtime {
         /// <remarks>Could also set the code properties and line/file mappings on the source unit.</remarks>
         internal protected abstract ScriptCode CompileSourceCode(SourceUnit sourceUnit, CompilerOptions options, ErrorSink errorSink);
 
-        internal protected virtual ScriptCode LoadCompiledCode(DlrMainCallTarget method, string path) {
-            return ScriptCode.Load(method, this, path);
+        internal protected virtual ScriptCode LoadCompiledCode(Delegate method, string path) {
+            return LegacyScriptCode.Load((DlrMainCallTarget)method, this, path);
         }
 
         #endregion
