@@ -14,43 +14,16 @@
  * ***************************************************************************/
 
 using System;
-using System.Collections.ObjectModel;
-using System.Linq.Expressions;
 using System.Dynamic;
+using System.Linq.Expressions;
+
 using Microsoft.Scripting.Actions;
-using Microsoft.Scripting.Utils;
+
 using Ast = System.Linq.Expressions.Expression;
-using AstUtils = Microsoft.Scripting.Ast.Utils;
-using Microsoft.Scripting.Runtime;
 
 namespace IronPython.Runtime.Binding {
 
     static class Binders {
-        public static Expression/*!*/ Invoke(BinderState/*!*/ binder, Type/*!*/ resultType, CallSignature signature, params Expression/*!*/[]/*!*/ args) {
-            PythonInvokeBinder invoke = binder.Invoke(signature);
-            switch(args.Length) {
-                case 0: return Ast.Dynamic(invoke, resultType, AstUtils.CodeContext());
-                case 1: return Ast.Dynamic(invoke, resultType, AstUtils.CodeContext(), args[0]);
-                case 2: return Ast.Dynamic(invoke, resultType, AstUtils.CodeContext(), args[0], args[1]);
-                case 3: return Ast.Dynamic(invoke, resultType, AstUtils.CodeContext(), args[0], args[1], args[2]);
-                default:
-                    return Ast.Dynamic(
-                        invoke,
-                        resultType,
-                        new ReadOnlyCollection<Expression>(ArrayUtils.Insert(AstUtils.CodeContext(), args))
-                    );
-            }
-
-        }
-
-        public static Expression/*!*/ Convert(BinderState/*!*/ binder, Type/*!*/ type, ConversionResultKind resultKind, Expression/*!*/ target) {
-            return Ast.Dynamic(
-                binder.Convert(type, resultKind),
-                type,
-                target
-            );
-        }
-
         /// <summary>
         /// Backwards compatible Convert for the old sites that need to flow CodeContext
         /// </summary>
@@ -62,48 +35,6 @@ namespace IronPython.Runtime.Binding {
             );
         }
 
-        public static Expression/*!*/ Operation(BinderState/*!*/ binder, Type/*!*/ resultType, PythonOperationKind operation, Expression arg0) {
-            return Ast.Dynamic(
-                UnaryOperationBinder(binder, operation),
-                resultType,
-                arg0
-            );
-        }
-
-        public static Expression/*!*/ Operation(BinderState/*!*/ binder, Type/*!*/ resultType, PythonOperationKind operation, Expression arg0, Expression arg1) {
-            return Ast.Dynamic(
-                BinaryOperationBinder(binder, operation),
-                resultType,
-                arg0,
-                arg1
-            );
-        }
-
-        public static Expression/*!*/ Operation(BinderState/*!*/ binder, Type/*!*/ resultType, PythonOperationKind operation, params Expression[] args) {
-            if (args.Length == 1) {
-                return Operation(binder, resultType, operation, args[0]);
-            } else if (args.Length == 2) {
-                return Operation(binder, resultType, operation, args[0], args[1]);
-            }
-            return Ast.Dynamic(
-                binder.Operation(operation),
-                resultType,
-                args
-            );
-        }
-
-        public static Expression/*!*/ Set(BinderState/*!*/ binder, Type/*!*/ resultType, string/*!*/ name, Expression/*!*/ target, Expression/*!*/ value) {
-            return Ast.Dynamic(
-                binder.SetMember(name),
-                resultType,
-                target,
-                value
-            );
-        }
-
-        public static Expression/*!*/ Get(BinderState/*!*/ binder, Type/*!*/ resultType, string/*!*/ name, Expression/*!*/ target) {
-            return Get(AstUtils.CodeContext(), binder, resultType, name, target);
-        }
 
         public static Expression/*!*/ Get(Expression/*!*/ codeContext, BinderState/*!*/ binder, Type/*!*/ resultType, string/*!*/ name, Expression/*!*/ target) {
             return Ast.Dynamic(
@@ -123,18 +54,6 @@ namespace IronPython.Runtime.Binding {
                 resultType,
                 target,
                 codeContext
-            );
-        }
-
-        public static Expression/*!*/ TryGet(BinderState/*!*/ binder, Type/*!*/ resultType, string/*!*/ name, Expression/*!*/ target) {
-            return TryGet(AstUtils.CodeContext(), binder, resultType, name, target);
-        }
-
-        public static Expression/*!*/ Delete(BinderState/*!*/ binder, Type/*!*/ resultType, string/*!*/ name, Expression/*!*/ target) {        
-            return Ast.Dynamic(
-                binder.DeleteMember(name),
-                resultType,
-                target
             );
         }
 
@@ -271,59 +190,6 @@ namespace IronPython.Runtime.Binding {
             );
         }
 
-        internal static Expression GetIndex(BinderState binderState, Type type, Expression[] expression) {
-            return Ast.Dynamic(
-                binderState.GetIndex(
-                    expression.Length
-                ),
-                type,
-                expression
-            );
-        }
-
-        internal static Expression GetSlice(BinderState binderState, Type type, Expression[] expression) {
-            return Ast.Dynamic(
-                binderState.GetSlice,
-                type,
-                expression
-            );
-        }
-
-        internal static Expression SetIndex(BinderState binderState, Type type, Expression[] expression) {
-            return Ast.Dynamic(
-                binderState.SetIndex(
-                    expression.Length - 1
-                ),
-                type,
-                expression
-            );
-        }
-
-        internal static Expression SetSlice(BinderState binderState, Type type, Expression[] expression) {
-            return Ast.Dynamic(
-                binderState.SetSlice,
-                type,
-                expression
-            );
-        }
-
-        internal static Expression DeleteIndex(BinderState binderState, Type type, Expression[] expression) {
-            return Ast.Dynamic(
-                binderState.DeleteIndex(
-                    expression.Length
-                ),
-                type,
-                expression
-            );
-        }
-
-        internal static Expression DeleteSlice(BinderState binderState, Type type, Expression[] expression) {
-            return Ast.Dynamic(
-                binderState.DeleteSlice,
-                type,
-                expression
-            );
-        }
 
     }
 }

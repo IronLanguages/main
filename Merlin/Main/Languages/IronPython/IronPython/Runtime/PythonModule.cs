@@ -37,6 +37,7 @@ namespace IronPython.Runtime {
         ExecOrEvalCode  = 0x0100,
         SkipFirstLine   = 0x0200,
         PrintFunction   = 0x0400,
+        Interpret       = 0x1000,
     }
 
     public class PythonModule : ScopeExtension {
@@ -164,22 +165,6 @@ namespace IronPython.Runtime {
             object result;
             Scope.TryLookupName(Symbols.File, out result);
             return result;
-        }
-
-        /// <summary>
-        /// Event fired when a module changes.
-        /// </summary>
-        public event EventHandler<ModuleChangeEventArgs> ModuleChanged;
-
-        /// <summary>
-        /// Called by the base class to fire the module change event when the
-        /// module has been modified.
-        /// </summary>
-        internal void OnModuleChange(ModuleChangeEventArgs e) {
-            EventHandler<ModuleChangeEventArgs> handler = ModuleChanged;
-            if (handler != null) {
-                handler(this, e);
-            }
         }
     }
 }

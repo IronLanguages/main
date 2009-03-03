@@ -51,8 +51,7 @@ namespace IronPython.Compiler.Ast {
             MSAst.ParameterExpression tmp = ag.GetTemporary("__all__", t);
                         
             return Ast.Condition(
-                Binders.Convert(
-                    ag.BinderState,
+                ag.Convert(
                     typeof(bool),
                     ConversionResultKind.ExplicitCast,
                     Ast.Assign(

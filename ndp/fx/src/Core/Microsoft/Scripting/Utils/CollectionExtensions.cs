@@ -147,6 +147,12 @@ namespace System.Dynamic.Utils {
             return res;
         }
 
+        internal static T[] AddLast<T>(this IList<T> list, T item) {
+            T[] res = new T[list.Count + 1];
+            list.CopyTo(res, 0);
+            res[list.Count] = item;
+            return res;
+        }
 
         internal static T First<T>(this IEnumerable<T> source) {
             var list = source as IList<T>;

@@ -17,6 +17,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Dynamic.Utils;
+using System.Threading;
 
 namespace System.Dynamic {
     /// <summary>
@@ -25,76 +26,82 @@ namespace System.Dynamic {
     /// </summary>
     /// <typeparam name="T">The delegate type.</typeparam>
     public class RuleCache<T> where T : class {
-        private readonly LinkedList<CallSiteRule<T>> _list = new LinkedList<CallSiteRule<T>>();
-        private const int MaxRulesPerSignaturePerCallSiteBinder = 100;
+        private CallSiteRule<T>[] _rules = new CallSiteRule<T>[0];
+        private readonly Object cacheLock = new Object();
 
-        internal RuleCache() {
+        private const int MaxRules = 128;
+
+        internal RuleCache() { }
+
+        internal CallSiteRule<T>[] GetRules() {
+            return _rules;
         }
 
-        /// <summary>
-        /// Looks through the rule list, and returns rules that apply
-        /// </summary>
-        internal CallSiteRule<T>[] FindApplicableRules() {
-            lock (_list) {
-                //
-                // Clone the list for execution
-                //
-                int live = _list.Count;
-                CallSiteRule<T>[] rules = null;
+        // move the rule +2 up.
+        // this is called on every successful rule.
+        internal void MoveRule(CallSiteRule<T> rule, int i) {
+            // limit search to MaxSearch elements. 
+            // Rule should not get too far unless it has been already moved up.
+            const int MaxSearch = 8;
+            int count = _rules.Length - i;
+            if (count > MaxSearch) {
+                count = MaxSearch;
+            }
 
-                if (live > 0) {
-                    rules = new CallSiteRule<T>[live];
-                    int index = 0;
-
-                    LinkedListNode<CallSiteRule<T>> node = _list.First;
-                    while (node != null) {
-                        rules[index++] = node.Value;
-                        node = node.Next;
-                    }
-                    Debug.Assert(index == live);
+            // need a lock to make sure we are moving the right rule and not loosing any.
+            lock (cacheLock) {
+                i = Array.IndexOf(_rules, rule, i, count);
+                if (i < 0) {
+                    return;
                 }
-                //
-                // End of lock
-                //
-
-                return rules;
+                _rules[i] = _rules[i - 1];
+                _rules[i - 1] = _rules[i - 2];
+                _rules[i - 2] = rule;
             }
         }
 
-        internal void AddRule(CallSiteRule<T> rule) {
-            lock (_list) {
-                _list.AddFirst(rule);
-                if (_list.Count > MaxRulesPerSignaturePerCallSiteBinder) {
-                    _list.RemoveLast();
+        private const int insPosition = MaxRules / 2;
+        internal void AddRule(CallSiteRule<T> newRule) {
+            // need a lock to make sure we are not loosing rules.
+            lock (cacheLock) {
+                if (_rules.Length < insPosition) {
+                    _rules = _rules.AddLast(newRule);
+                } else {
+                    _rules = Insert(_rules, newRule);
                 }
             }
         }
-
-        internal void RemoveRule(CallSiteRule<T> rule) {
-            lock (_list) {
-                LinkedListNode<CallSiteRule<T>> node = _list.First;
-                while (node != null) {
-                    if (node.Value == rule) {
-                        _list.Remove(node);
-                        break;
-                    }
-                    node = node.Next;
+        
+        internal void ReplaceRule(CallSiteRule<T> oldRule, CallSiteRule<T> newRule) {
+            // need a lock to make sure we are replacing the right rule
+            lock (cacheLock) {
+                int i = Array.IndexOf(_rules, oldRule);
+                if (i >= 0) {
+                    _rules[i] = newRule;
+                    return; // DONE
                 }
             }
+            // could not find it.
+            AddRule(newRule);
         }
+               
+        
+        //inserts items at insPosition
+        private static CallSiteRule<T>[] Insert(CallSiteRule<T>[] rules, CallSiteRule<T> item) {
+            CallSiteRule<T>[] newRules;
 
-        internal void MoveRule(CallSiteRule<T> rule) {
-            lock (_list) {
-                LinkedListNode<CallSiteRule<T>> node = _list.First;
-                while (node != null) {
-                    if (node.Value == rule) {
-                        _list.Remove(node);
-                        _list.AddFirst(node);
-                        break;
-                    }
-                    node = node.Next;
-                }
+            int newLength = rules.Length + 1;
+            if (newLength > MaxRules) {
+                newLength = MaxRules;
+                newRules = rules;
+            } else {
+                newRules = new CallSiteRule<T>[newLength];
             }
+
+            Array.Copy(rules, 0, newRules, 0, insPosition);
+            newRules[insPosition] = item;
+            Array.Copy(rules, insPosition, newRules, insPosition + 1, newLength - insPosition - 1);
+            return newRules;
         }
     }
 }

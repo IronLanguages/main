@@ -113,6 +113,12 @@ namespace IronRuby.Runtime {
             _loadPaths = MakeLoadPaths(context.RubyOptions);
             _loadedFiles = new RubyArray();
             _unfinishedFiles = new Stack<string>();
+
+#if !SILVERLIGHT
+            if (!context.RubyOptions.NoAssemblyResolveHook) {
+                new AssemblyResolveHolder(this).HookAssemblyResolve();
+            }
+#endif
         }
 
         private RubyArray/*!*/ MakeLoadPaths(RubyOptions/*!*/ options) {
@@ -250,6 +256,8 @@ namespace IronRuby.Runtime {
             return LoadFromPath(globalScope, self, strPath, flags);
         }
 
+        #region Assemblies
+
         public bool LoadAssembly(string/*!*/ assemblyName, string typeName, bool throwOnError) {
             Utils.Log(String.Format("Loading assembly '{0}' and type '{1}'", assemblyName, typeName), "LOADER");
             
@@ -317,6 +325,60 @@ namespace IronRuby.Runtime {
             return false;
         }
 
+#if !SILVERLIGHT
+        private sealed class AssemblyResolveHolder {
+            private readonly WeakReference _loader;
+
+            public AssemblyResolveHolder(Loader/*!*/ loader) {
+                _loader = new WeakReference(loader);
+            }
+
+            internal void HookAssemblyResolve() {
+                try {
+                    AppDomain.CurrentDomain.AssemblyResolve += AssemblyResolveEvent;
+                } catch (System.Security.SecurityException) {
+                    // We may not have SecurityPermissionFlag.ControlAppDomain. 
+                }
+            }
+
+            private Assembly AssemblyResolveEvent(object sender, ResolveEventArgs args) {
+                Loader loader = (Loader)_loader.Target;
+                if (loader != null) {
+                    return loader.ResolveAssembly(args.Name);
+                } else {
+                    AppDomain.CurrentDomain.AssemblyResolve -= AssemblyResolveEvent;
+                    return null;
+                }
+            }
+        }
+
+        internal Assembly ResolveAssembly(string/*!*/ fullName) {
+            Utils.Log(String.Format("Resolving assembly: '{0}'", fullName), "RESOLVE_ASSEMBLY");
+            
+            AssemblyName assemblyName = new AssemblyName(fullName);
+            ResolvedFile file = FindFile(assemblyName.Name, true, ArrayUtils.EmptyStrings);
+            if (file == null || file.SourceUnit != null) {
+                return null;
+            }
+
+            Utils.Log(String.Format("Assembly '{0}' resolved: found in '{1}'", fullName, file.Path), "RESOLVE_ASSEMBLY");
+            try {
+                Assembly assembly = Platform.LoadAssemblyFromPath(Platform.GetFullPath(file.Path));
+                if (AssemblyName.ReferenceMatchesDefinition(assemblyName, assembly.GetName())) {
+                    Utils.Log(String.Format("Assembly '{0}' loaded for '{1}'", assembly.GetName(), fullName), "RESOLVE_ASSEMBLY");
+                    DomainManager.LoadAssembly(assembly);
+                    return assembly;
+                }
+            } catch (Exception e) {
+                throw new LoadError(e.Message, e);
+            }
+
+            return null;
+        }
+
+#endif
+        #endregion
+
         private class ResolvedFile {
             public readonly SourceUnit SourceUnit;
             public readonly string/*!*/ Path;
@@ -338,7 +400,8 @@ namespace IronRuby.Runtime {
         private bool LoadFromPath(Scope globalScope, object self, string/*!*/ path, LoadFlags flags) {
             Assert.NotNull(path);
 
-            ResolvedFile file = FindFile(path, (flags & LoadFlags.AppendExtensions) != 0);
+            string[] sourceFileExtensions = DomainManager.Configuration.GetFileExtensions();
+            ResolvedFile file = FindFile(path, (flags & LoadFlags.AppendExtensions) != 0, sourceFileExtensions);
             if (file == null) {
                 throw new LoadError(String.Format("no such file to load -- {0}", path));
             }
@@ -415,14 +478,16 @@ namespace IronRuby.Runtime {
 
         internal object CompileAndRun(Scope globalScope, ScriptCode/*!*/ code, bool tryEvaluate) {
             long ts1 = Stopwatch.GetTimestamp();
-            code.EnsureCompiled();
+            if (code is LegacyScriptCode) {
+                ((LegacyScriptCode)code).EnsureCompiled();
+            }
             long ts2 = Stopwatch.GetTimestamp();
             Interlocked.Add(ref _ILGenerationTimeTicks, ts2 - ts1);
 
             return globalScope != null ? code.Run(globalScope) : code.Run();
         }
 
-        private ResolvedFile FindFile(string/*!*/ path, bool appendExtensions) {
+        private ResolvedFile FindFile(string/*!*/ path, bool appendExtensions, string[] sourceFileExtensions) {
             Assert.NotNull(path);
             bool isAbsolutePath;
             string extension;
@@ -453,12 +518,9 @@ namespace IronRuby.Runtime {
                 throw new LoadError(e.Message, e);
             }
 
-            string[] knownExtensions = DomainManager.Configuration.GetFileExtensions();
-            Array.Sort(knownExtensions, DlrConfiguration.FileExtensionComparer);
-
             // Absolute path -> load paths not consulted.
             if (isAbsolutePath) {
-                return ResolveFile(path, extension, appendExtensions, knownExtensions);
+                return ResolveFile(path, extension, appendExtensions, sourceFileExtensions);
             }
 
             string[] loadPaths = GetLoadPathStrings();
@@ -469,12 +531,12 @@ namespace IronRuby.Runtime {
 
             // If load paths are non-empty and the path starts with .\ or ..\ then MRI also ignores the load paths.
             if (path.StartsWith("./") || path.StartsWith("../") || path.StartsWith(".\\") || path.StartsWith("..\\")) {
-                return ResolveFile(path, extension, appendExtensions, knownExtensions);
+                return ResolveFile(path, extension, appendExtensions, sourceFileExtensions);
             }
 
             foreach (var dir in loadPaths) {
                 try {
-                    ResolvedFile result = ResolveFile(Path.Combine(dir, path), extension, appendExtensions, knownExtensions);
+                    ResolvedFile result = ResolveFile(Path.Combine(dir, path), extension, appendExtensions, sourceFileExtensions);
                     if (result != null) {
                         return result;
                     }
@@ -538,7 +600,7 @@ namespace IronRuby.Runtime {
         private static readonly string[] _LibraryExtensions = new string[] { ".dll", ".so", ".exe" };
 
         private static bool IsKnownExtension(string/*!*/ extension, string[]/*!*/ knownExtensions) {
-            return extension.Length > 0 && Array.BinarySearch(knownExtensions, extension, DlrConfiguration.FileExtensionComparer) >= 0;
+            return extension.Length > 0 && knownExtensions.IndexOf(extension, DlrConfiguration.FileExtensionComparer) >= 0;
         }
 
         private ResolvedFile GetSourceUnit(string/*!*/ path, string/*!*/ extension, bool extensionAppended) {

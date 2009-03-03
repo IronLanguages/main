@@ -69,8 +69,8 @@ namespace IronPython.Compiler.Ast {
                 // from a[.b] import *
                 return ag.AddDebugInfo(
                     Ast.Call(
-                        AstGenerator.GetHelperMethod("ImportStar"), 
-                        AstUtils.CodeContext(), 
+                        AstGenerator.GetHelperMethod("ImportStar"),
+                        ag.LocalContext, 
                         AstUtils.Constant(_root.MakeString()), 
                         AstUtils.Constant(GetLevel())
                     ),
@@ -91,11 +91,11 @@ namespace IronPython.Compiler.Ast {
                 // module = PythonOps.ImportWithNames(<context>, _root, make_array(_names))
                 statements.Add(
                     ag.AddDebugInfo(
-                        AstUtils.Assign(
+                        ag.Globals.Assign(
                             module, 
                             Ast.Call(
                                 AstGenerator.GetHelperMethod("ImportWithNames"),
-                                AstUtils.CodeContext(),
+                                ag.LocalContext,
                                 AstUtils.Constant(_root.MakeString()),
                                 Ast.NewArrayInit(typeof(string), names),
                                 AstUtils.Constant(GetLevel())
@@ -109,11 +109,11 @@ namespace IronPython.Compiler.Ast {
                 for (int i = 0; i < names.Length; i++) {
                     statements.Add(
                         ag.AddDebugInfo(
-                            AstUtils.Assign(
-                                _variables[i].Variable, 
+                            ag.Globals.Assign(
+                                ag.Globals.GetVariable(_variables[i]), 
                                 Ast.Call(
                                     AstGenerator.GetHelperMethod("ImportFrom"),
-                                    AstUtils.CodeContext(),
+                                    ag.LocalContext,
                                     module,
                                     names[i]
                                 )

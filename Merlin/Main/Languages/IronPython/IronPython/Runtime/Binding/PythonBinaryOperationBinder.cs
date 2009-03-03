@@ -37,7 +37,7 @@ namespace IronPython.Runtime.Binding {
         }
 
         public override DynamicMetaObject FallbackBinaryOperation(DynamicMetaObject target, DynamicMetaObject arg, DynamicMetaObject errorSuggestion) {
-            return PythonProtocol.Operation(this, target, arg);
+            return PythonProtocol.Operation(this, target, arg, errorSuggestion);
         }
 
         public override int GetHashCode() {

@@ -21,25 +21,33 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
 using Microsoft.Scripting.Runtime;
+using Microsoft.Scripting.Utils;
 
 namespace IronRuby.StandardLibrary.Yaml {
 
     public class Representer {
-        private readonly ISerializer _serializer;
+        private readonly Serializer/*!*/ _serializer;
         private readonly char _defaultStyle;
-        private readonly Dictionary<object, Node> _representedObjects = new Dictionary<object, Node>(ReferenceEqualityComparer<object>.Instance);
-        private readonly Dictionary<object, List<LinkNode>> _links = new Dictionary<object, List<LinkNode>>(ReferenceEqualityComparer<object>.Instance);
+        private readonly Dictionary<object, Node>/*!*/ _representedObjects = new Dictionary<object, Node>(ReferenceEqualityComparer<object>.Instance);
+        private readonly Dictionary<object, List<LinkNode>>/*!*/ _links = new Dictionary<object, List<LinkNode>>(ReferenceEqualityComparer<object>.Instance);
         private readonly static object _NullKey = new object();
 
-        public Representer(ISerializer serializer, YamlOptions opts)
+        public Representer(Serializer/*!*/ serializer, YamlOptions opts)
             : this(serializer, opts.UseDouble ? '"' : (opts.UseSingle ? '\'' : '\0')) {
         }
-        public Representer(ISerializer serializer, char defaultStyle) {
-            _serializer = serializer;
+
+        public Representer(Serializer/*!*/ serializer, char defaultStyle) {
+            ContractUtils.RequiresNotNull(serializer, "serializer");
             if (defaultStyle != '"' && defaultStyle != '\'' && defaultStyle != '\0') {
                 throw new ArgumentException("must be single quote, double quote, or zero", "defaultStyle");
             }
+
+            _serializer = serializer;
             _defaultStyle = defaultStyle;
+        }
+
+        public Serializer/*!*/ Serializer {
+            get { return _serializer; }
         }
 
         private Node RepresentData(object data) {
@@ -93,11 +101,10 @@ namespace IronRuby.StandardLibrary.Yaml {
             return new SequenceNode(tag, value, flowStyle);
         }
 
-        public Node Map(string tag, IDictionary mapping, bool flowStyle) {
+        public Node/*!*/ Map(string tag, IDictionary/*!*/ mapping, bool flowStyle) {
             Dictionary<Node, Node> value = new Dictionary<Node, Node>(mapping.Count);
-            foreach (DictionaryEntry e in mapping) {
-                object key = BaseSymbolDictionary.ObjToNull(e.Key);                
-                value.Add(RepresentData(key), RepresentData(e.Value));
+            foreach (DictionaryEntry entry in mapping) {
+                value.Add(RepresentData(entry.Key), RepresentData(entry.Value));
             }
             return new MappingNode(tag, value, flowStyle);
         }

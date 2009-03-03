@@ -352,8 +352,8 @@ namespace IronRuby.Builtins {
         #region Public instance methods
 
         [RubyMethod("<<")]
-        public static RubyIO Output(RubyContext/*!*/ context, RubyIO/*!*/ self, object/*!*/ str) {
-            _WriteSite.Target(_WriteSite, context, self, str);
+        public static RubyIO Output(BinaryOpStorage/*!*/ writeStorage, RubyContext/*!*/ context, RubyIO/*!*/ self, object value) {
+            Protocols.Write(writeStorage, context, self, value);
             return self;
         }
 
@@ -568,50 +568,47 @@ namespace IronRuby.Builtins {
 
         #region print, puts, putc
 
-        private static CallSite<Func<CallSite, RubyContext, object, object, object>> _WriteSite = CallSite<Func<CallSite, RubyContext, object, object, object>>.
-            Create(RubyCallAction.Make("write", 1));
-
         // print, puts accept an arbitrary self object (it is called from Kernel#print, puts).
         
         [RubyMethod("print")]
-        public static void Print(RubyScope/*!*/ scope, object self) {
-            Print(scope.RubyContext, self, scope.GetInnerMostClosureScope().LastInputLine);
+        public static void Print(BinaryOpStorage/*!*/ writeStorage, RubyScope/*!*/ scope, object self) {
+            Print(writeStorage, scope.RubyContext, self, scope.GetInnerMostClosureScope().LastInputLine);
         }
 
         [RubyMethod("print")]
-        public static void Print(RubyContext/*!*/ context, object self, object val) {
-            _WriteSite.Target(_WriteSite, context, self, val);
+        public static void Print(BinaryOpStorage/*!*/ writeStorage, RubyContext/*!*/ context, object self, object value) {
+            Protocols.Write(writeStorage, context, self, value);
         }
 
         [RubyMethod("print")]
-        public static void Print(UnaryOpStorage/*!*/ tosStorage, RubyContext/*!*/ context, object self, [NotNull]params object[]/*!*/ args) {
+        public static void Print(BinaryOpStorage/*!*/ writeStorage, UnaryOpStorage/*!*/ tosStorage, RubyContext/*!*/ context, object self, 
+            [NotNull]params object[]/*!*/ args) {
             MutableString delimiter = context.OutputSeparator;
             for (int i = 0; i < args.Length; i++) {
                 MutableString str = ToPrintedString(tosStorage, context, args[i]);
                 if (delimiter != null) {
                     str.Append(delimiter);
                 }
-                Print(context, self, str);
+                Print(writeStorage, context, self, str);
             }
         }
 
         [RubyMethod("putc")]
-        public static MutableString/*!*/ Putc(RubyContext/*!*/ context, object self, [NotNull]MutableString/*!*/ val) {
+        public static MutableString/*!*/ Putc(BinaryOpStorage/*!*/ writeStorage, RubyContext/*!*/ context, object self, [NotNull]MutableString/*!*/ val) {
             if (val.IsEmpty) {
                 throw RubyExceptions.CreateTypeError("can't convert String into Integer");
             }
 
             // writes a single byte into the output stream:
             var c = MutableString.CreateBinary(val.GetBinarySlice(0, 1));
-            _WriteSite.Target(_WriteSite, context, self, c);
-
+            Protocols.Write(writeStorage, context, self, c);
             return val;
         }
 
         [RubyMethod("putc")]
-        public static int Putc(RubyContext/*!*/ context, object self, [DefaultProtocol]int c) {
+        public static int Putc(BinaryOpStorage/*!*/ writeStorage, RubyContext/*!*/ context, object self, [DefaultProtocol]int c) {
             MutableString str = MutableString.CreateBinary(1).Append(unchecked((byte)c));
-            _WriteSite.Target(_WriteSite, context, self, str);
+            Protocols.Write(writeStorage, context, self, str);
             return c;
         }
 
@@ -644,28 +641,28 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("puts")]
-        public static void PutsEmptyLine(RubyContext/*!*/ context, object self) {
-            _WriteSite.Target(_WriteSite, context, self, MutableString.CreateMutable("\n"));
+        public static void PutsEmptyLine(BinaryOpStorage/*!*/ writeStorage, RubyContext/*!*/ context, object self) {
+            Protocols.Write(writeStorage, context, self, MutableString.CreateMutable("\n"));
         }
 
         [RubyMethod("puts")]
-        public static void Puts(RubyContext/*!*/ context, object self, [NotNull]MutableString/*!*/ str) {
-            _WriteSite.Target(_WriteSite, context, self, str);
+        public static void Puts(BinaryOpStorage/*!*/ writeStorage, RubyContext/*!*/ context, object self, [NotNull]MutableString/*!*/ str) {
+            Protocols.Write(writeStorage, context, self, str);
 
             if (!str.EndsWith('\n')) {
-                PutsEmptyLine(context, self);
+                PutsEmptyLine(writeStorage, context, self);
             }
         }
 
         [RubyMethod("puts")]
-        public static void Puts(UnaryOpStorage/*!*/ tosStorage, RubyContext/*!*/ context, object self, [NotNull]object/*!*/ val) {
-            Puts(context, self, ToPrintedString(tosStorage, context, val));
+        public static void Puts(BinaryOpStorage/*!*/ writeStorage, UnaryOpStorage/*!*/ tosStorage, RubyContext/*!*/ context, object self, [NotNull]object/*!*/ val) {
+            Puts(writeStorage, context, self, ToPrintedString(tosStorage, context, val));
         }
 
         [RubyMethod("puts")]
-        public static void Puts(UnaryOpStorage/*!*/ tosStorage, RubyContext/*!*/ context, object self, [NotNull]params object[]/*!*/ vals) {
+        public static void Puts(BinaryOpStorage/*!*/ writeStorage, UnaryOpStorage/*!*/ tosStorage, RubyContext/*!*/ context, object self, [NotNull]params object[]/*!*/ vals) {
             for (int i = 0; i < vals.Length; i++) {
-                Puts(tosStorage, context, self, vals[i]);
+                Puts(writeStorage, tosStorage, context, self, vals[i]);
             }
         }
 
@@ -982,7 +979,7 @@ namespace IronRuby.Builtins {
 
         #endregion
 
-        internal static IOWrapper/*!*/ CreateIOWrapper(RespondToStorage/*!*/ respondToStorage, 
+        public static IOWrapper/*!*/ CreateIOWrapper(RespondToStorage/*!*/ respondToStorage, 
             RubyContext/*!*/ context, object io, FileAccess access) {
 
             bool canRead, canWrite, canSeek;

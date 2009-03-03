@@ -258,21 +258,9 @@ namespace IronPython.Runtime.Binding {
         }
 
         private DynamicMetaObject/*!*/ GetFallbackGet(DynamicMetaObjectBinder/*!*/ member, BinderState/*!*/ state, Expression codeContext) {
-            MemberTracker tt = MemberTracker.FromMemberInfo(Value.UnderlyingSystemType);
-
             string memberName = GetGetMemberName(member);
             DynamicMetaObject res = new DynamicMetaObject(
-                state.Binder.GetMember(
-                    memberName,
-                    new DynamicMetaObject(
-                        AstUtils.Constant(tt),
-                        BindingRestrictions.Empty,
-                        tt
-                    ),
-                    AstUtils.Constant(state.Context),
-                    BindingHelpers.IsNoThrow(member)
-
-                ).Expression,
+                FallbackGetMember(member, state).Expression,
                 BindingRestrictions.GetInstanceRestriction(Expression, Value).Merge(Restrictions)
             );
 
@@ -292,6 +280,29 @@ namespace IronPython.Runtime.Binding {
             }
 
             return res;
+        }
+
+        private DynamicMetaObject/*!*/ FallbackGetMember(DynamicMetaObjectBinder member, BinderState state) {
+            MemberTracker tt = MemberTracker.FromMemberInfo(Value.UnderlyingSystemType);
+
+            if (member is IPythonSite) {
+                // bind the .NET members
+                string memberName = GetGetMemberName(member);
+                return state.Binder.GetMember(
+                    memberName,
+                    new DynamicMetaObject(
+                        Ast.Constant(tt),
+                        BindingRestrictions.Empty,
+                        tt
+                    ),
+                    Ast.Constant(state.Context),
+                    BindingHelpers.IsNoThrow(member)
+
+                );
+            }
+
+            // let the calling language bind the .NET members
+            return GetMemberFallback(this, member, BinderState.GetCodeContext(member));
         }
 
         private Expression MakeSystemTypeGetExpression(PythonType/*!*/ pt, DynamicMetaObjectBinder/*!*/ member, Expression/*!*/ error) {

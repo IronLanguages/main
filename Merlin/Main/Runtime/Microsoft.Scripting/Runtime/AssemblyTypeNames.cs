@@ -90,7 +90,8 @@ namespace Microsoft.Scripting.Runtime {
             }
         }
 
-        static Type[] GetAllTypesFromAssembly(Assembly asm) {
+        // Note that the result can contain null references.
+        private static Type[] GetAllTypesFromAssembly(Assembly asm) {
 #if SILVERLIGHT // ReflectionTypeLoadException
             try {
                 return asm.GetTypes();
@@ -107,13 +108,15 @@ namespace Microsoft.Scripting.Runtime {
         }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
-        public static Type[] LoadTypesFromAssembly(Assembly asm, bool includePrivateTypes) {
+        public static Type[] LoadTypesFromAssembly(Assembly assembly, bool includePrivateTypes) {
+            ContractUtils.RequiresNotNull(assembly, "assembly");
+
             if (includePrivateTypes) {
-                return GetAllTypesFromAssembly(asm);
+                return ArrayUtils.FindAll(GetAllTypesFromAssembly(assembly), (type) => type != null);
             }
 
             try {
-                return asm.GetExportedTypes();
+                return assembly.GetExportedTypes();
             } catch (NotSupportedException) {
                 // GetExportedTypes does not work with dynamic assemblies
             } catch (Exception) {
@@ -121,14 +124,11 @@ namespace Microsoft.Scripting.Runtime {
                 // for just the list of types that we successfully loaded.
             }
 
-            Type[] allTypes = GetAllTypesFromAssembly(asm);
-
-            Predicate<Type> isPublicTypeDelegate = delegate(Type t) { return t != null && t.IsPublic; };
-            return ArrayUtils.FindAll(allTypes, isPublicTypeDelegate);
+            return ArrayUtils.FindAll(GetAllTypesFromAssembly(assembly), (type) => type != null && type.IsPublic);
         }
 
 #if !SILVERLIGHT
-        static IEnumerable<TypeName> GetTypeNames(string [] namespaces, string [][] types, TypeName [] orcasTypes) {
+        static IEnumerable<TypeName> GetTypeNames(string[] namespaces, string[][] types, TypeName[] orcasTypes) {
             Debug.Assert(namespaces.Length == types.Length);
 
             for (int i = 0; i < namespaces.Length; i++) {

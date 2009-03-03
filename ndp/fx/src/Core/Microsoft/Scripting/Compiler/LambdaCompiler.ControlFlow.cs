@@ -14,7 +14,6 @@
  * ***************************************************************************/
 
 using System.Diagnostics;
-using System.Reflection.Emit;
 
 namespace System.Linq.Expressions.Compiler {
 
@@ -116,6 +115,18 @@ namespace System.Linq.Expressions.Compiler {
             }
 
             labelInfo.EmitJump();
+
+            EmitUnreachable(node, flags);
+        }
+
+        // We need to push default(T), unless we're emitting ourselves as
+        // void. Even though the code is unreachable, we still have to
+        // generate correct IL. We can get rid of this once we have better
+        // reachability analysis.
+        private void EmitUnreachable(Expression node, CompilationFlags flags) {
+            if (node.Type != typeof(void) && (flags & CompilationFlags.EmitAsVoidType) == 0) {
+                _ilg.EmitDefault(node.Type);
+            }
         }
 
         private bool TryPushLabelBlock(Expression node) {

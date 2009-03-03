@@ -86,7 +86,7 @@ namespace IronPython.Compiler.Ast {
                     // in the dictionary also that were used for name binding lookups
                     // Do not publish parameters, they will get created separately.
                     if (pv.Scope == this && pv.Kind != VariableKind.Parameter) {
-                        MSAst.Expression var = pv.Transform(ag);
+                        MSAst.Expression var = ag.Globals.CreateVariable(ag, pv);
 
                         //
                         // Initializes variable to Uninitialized.Instance:
@@ -116,7 +116,7 @@ namespace IronPython.Compiler.Ast {
                             Debug.Assert(pv.Kind != VariableKind.HiddenLocal || pv.ReadBeforeInitialized, "Hidden variable is always uninitialized");
 
                             init.Add(
-                                AstUtils.Assign(
+                                ag.Globals.Assign(
                                     var,
                                     MSAst.Expression.Field(null, typeof(Uninitialized).GetField("Instance"))
                                 )
@@ -124,11 +124,6 @@ namespace IronPython.Compiler.Ast {
                         }
                     }
                 }
-            }
-
-            // Require the context emits local dictionary
-            if (NeedsLocalsDictionary) {
-                ag.Block.Dictionary = true;
             }
         }
 
@@ -214,7 +209,7 @@ namespace IronPython.Compiler.Ast {
             EnsureVariables();
             Debug.Assert(!_variables.ContainsKey(name));
             PythonVariable variable;
-            _variables[name] = variable = new PythonVariable(name, typeof(object), kind, this);
+            _variables[name] = variable = new PythonVariable(name, kind, this);
             return variable;
         }
 
@@ -222,6 +217,14 @@ namespace IronPython.Compiler.Ast {
             PythonVariable variable;
             if (!TryGetVariable(name, out variable)) {
                 return CreateVariable(name, VariableKind.Local);
+            }
+            return variable;
+        }
+
+        internal PythonVariable EnsureGlobalVariable(SymbolId name) {
+            PythonVariable variable;
+            if (!TryGetVariable(name, out variable)) {
+                return CreateVariable(name, VariableKind.Global);
             }
             return variable;
         }

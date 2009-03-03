@@ -103,6 +103,18 @@ describe "Loading of custom assembly outside of the load path" do
   end
 end
 
+=begin
+describe "Static dependency loading" do
+  it "loads a dependent assembly from load paths" do
+    ruby_exe("dependencies1/test1.rb", :dir => File.dirname(__FILE__)).chomp.should == "1"
+  end
+  
+  it "does propagate load exceptions" do
+    ruby_exe("dependencies1/test2.rb", :dir => File.dirname(__FILE__)).chomp.should == "true"
+  end
+end
+=end
+
 
 describe "Modifying and reloading custom assembly" do 
   before :each do

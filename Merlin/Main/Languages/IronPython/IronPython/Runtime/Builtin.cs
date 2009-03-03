@@ -269,7 +269,7 @@ namespace IronPython.Runtime {
 
             bool inheritContext = GetCompilerInheritance(dontInherit);
             CompileFlags cflags = GetCompilerFlags(flags);
-            PythonCompilerOptions opts = GetDefaultCompilerOptions(context, inheritContext, cflags);
+            PythonCompilerOptions opts = GetRuntimeGeneratedCodeCompilerOptions(context, inheritContext, cflags);
             if ((cflags & CompileFlags.CO_DONT_IMPLY_DEDENT) != 0) {
                 opts.DontImplyDedent = true;
             }
@@ -287,7 +287,6 @@ namespace IronPython.Runtime {
             }
 
             ScriptCode compiledCode = sourceUnit.Compile(opts, ThrowingErrorSink.Default);
-            compiledCode.EnsureCompiled();
 
             FunctionCode res = new FunctionCode(compiledCode, cflags);
             res.SetFilename(filename);
@@ -464,8 +463,8 @@ namespace IronPython.Runtime {
 
             // TODO: remove TrimStart
             var sourceUnit = pythonContext.CreateSnippet(expression.TrimStart(' ', '\t'), SourceCodeKind.Expression);
-            var compilerOptions = GetDefaultCompilerOptions(context, true, 0);
-            var scriptCode = pythonContext.CompileSourceCode(sourceUnit, compilerOptions, ThrowingErrorSink.Default, true); // interpret
+            var compilerOptions = GetRuntimeGeneratedCodeCompilerOptions(context, true, 0);
+            var scriptCode = pythonContext.CompilePythonCode(Compiler.Ast.CompilationMode.Loookup, sourceUnit, compilerOptions, ThrowingErrorSink.Default);
 
             return scriptCode.Run(scope);
         }
@@ -507,7 +506,7 @@ namespace IronPython.Runtime {
             SourceUnit sourceUnit = pc.CreateFileUnit(path, pc.DefaultEncoding, SourceCodeKind.Statements);
             ScriptCode code;
 
-            var options = GetDefaultCompilerOptions(context, true, 0);
+            var options = GetRuntimeGeneratedCodeCompilerOptions(context, true, 0);
             //always generate an unoptimized module since we run these against a dictionary namespace
             options.Module &= ~ModuleOptions.Optimized;
 
@@ -629,6 +628,10 @@ namespace IronPython.Runtime {
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1062:ValidateArgumentsOfPublicMethods")]
         public static IAttributesCollection globals(CodeContext/*!*/ context) {
+            Scope scope = context.GlobalScope;
+            if (scope.Dict is PythonDictionary) {
+                return scope.Dict;
+            }
             return new PythonDictionary(new GlobalScopeDictionaryStorage(context.Scope));
         }
 
@@ -1940,9 +1943,9 @@ namespace IronPython.Runtime {
         }
 
         /// <summary>
-        /// Gets the appropriate LanguageContext to be used for code compiled with Python's compile built-in
+        /// Gets the appropriate LanguageContext to be used for code compiled with Python's compile, eval, execfile, etc...
         /// </summary>
-        internal static PythonCompilerOptions GetDefaultCompilerOptions(CodeContext/*!*/ context, bool inheritContext, CompileFlags cflags) {
+        internal static PythonCompilerOptions GetRuntimeGeneratedCodeCompilerOptions(CodeContext/*!*/ context, bool inheritContext, CompileFlags cflags) {
             PythonCompilerOptions pco;
             if (inheritContext) {
                 PythonModule pm = (PythonModule)context.GlobalScope.GetExtension(context.LanguageContext.ContextId);
@@ -1970,6 +1973,7 @@ namespace IronPython.Runtime {
             // The options created this way never creates
             // optimized module (exec, compile)
             pco.Module &= ~ModuleOptions.Optimized;
+            pco.Module |= ModuleOptions.Interpret;
             return pco;
         }
 

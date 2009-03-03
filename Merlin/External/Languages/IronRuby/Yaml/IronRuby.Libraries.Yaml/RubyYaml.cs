@@ -27,10 +27,6 @@ namespace IronRuby.StandardLibrary.Yaml {
 
     [RubyModule("YAML")]    
     public static partial class RubyYaml {
-        private static readonly CallSite<Func<CallSite, RubyContext, RubyModule, object, object>> _New = CallSite<Func<CallSite, RubyContext, RubyModule, object, object>>.Create(LibrarySites.InstanceCallAction("new", 1));
-        private static readonly CallSite<Func<CallSite, RubyContext, object, object, object>> _Add = CallSite<Func<CallSite, RubyContext, object, object, object>>.Create(LibrarySites.InstanceCallAction("add", 1));
-        private static readonly CallSite<Func<CallSite, RubyContext, object, object>> _Emit = CallSite<Func<CallSite, RubyContext, object, object>>.Create(LibrarySites.InstanceCallAction("emit"));
-        private const string _Stream = "Stream";
         private const string _TaggedClasses = "tagged_classes";
 
         // TODO: missing public singleton methods:
@@ -164,14 +160,29 @@ namespace IronRuby.StandardLibrary.Yaml {
         }
 
         [RubyMethod("load_stream", RubyMethodAttributes.PublicSingleton)]
-        public static object LoadStream(RubyScope/*!*/ scope, RubyModule/*!*/ self, object io) {
+        public static object LoadStream(UnaryOpStorage/*!*/ newStorage, BinaryOpStorage/*!*/ addStorage, RubyScope/*!*/ scope, 
+            RubyModule/*!*/ self, object io) {
+            
             RubyConstructor rc = MakeConstructor(scope.GlobalScope, CheckYamlPort(io));
-            object streamClass = RubyUtils.GetConstant(scope.GlobalScope, self, _Stream, false);
-            object stream = _New.Target(_New, scope.RubyContext, streamClass as RubyModule, null);
-            foreach (object doc in rc) {
-                _Add.Target(_Add, scope.RubyContext, stream, doc);
+
+            // TODO: only if io was converted to a string:
+            io = CreateDefaultStream(newStorage, scope, self);
+
+            AddDocumentsToStream(addStorage, scope.RubyContext, rc, io);
+            return io;
+        }
+
+        private static object CreateDefaultStream(UnaryOpStorage/*!*/ newStorage, RubyScope/*!*/ scope, RubyModule/*!*/ yamlModule) {
+            object streamClass = RubyUtils.GetConstant(scope.GlobalScope, yamlModule, "Stream", false);
+            var newSite = newStorage.GetCallSite("new");
+            return newSite.Target(newSite, scope.RubyContext, streamClass);
+        }
+
+        private static void AddDocumentsToStream(BinaryOpStorage/*!*/ addStorage, RubyContext/*!*/ context, IEnumerable/*!*/ documents, object io) {
+            var addSite = addStorage.GetCallSite("add");
+            foreach (object doc in documents) {
+                addSite.Target(addSite, context, io, doc);
             }
-            return stream;
         }
 
         [RubyMethod("parse", RubyMethodAttributes.PublicSingleton)]
@@ -211,13 +222,14 @@ namespace IronRuby.StandardLibrary.Yaml {
         }
 
         [RubyMethod("dump_stream", RubyMethodAttributes.PublicSingleton)]
-        public static object DumpStream(RubyScope/*!*/ scope, RubyModule/*!*/ self, [NotNull]params object[] args) {
-            object streamClass = RubyUtils.GetConstant(scope.GlobalScope, self, _Stream, false);
-            object stream = _New.Target(_New, scope.RubyContext, streamClass as RubyModule, null);
-            foreach (object arg in args) {
-                _Add.Target(_Add, scope.RubyContext, stream, arg);
-            }
-            return _Emit.Target(_Emit, scope.RubyContext, stream);
+        public static object DumpStream(UnaryOpStorage/*!*/ newStorage, BinaryOpStorage/*!*/ addStorage, UnaryOpStorage/*!*/ emitStorage,
+            RubyScope/*!*/ scope, RubyModule/*!*/ self, [NotNull]params object[] args) {
+
+            object io = CreateDefaultStream(newStorage, scope, self);
+            AddDocumentsToStream(addStorage, scope.RubyContext, args, io);
+
+            var emitSite = emitStorage.GetCallSite("emit");
+            return emitSite.Target(emitSite, scope.RubyContext, io);
         }
 
         [RubyMethod("quick_emit_node", RubyMethodAttributes.PublicSingleton)]
@@ -288,6 +300,8 @@ namespace IronRuby.StandardLibrary.Yaml {
         }
 
         private static TextReader CheckYamlPort(object port) {
+            // TODO: should do try-to_str conversion and create IOWrapper if not convertible to string
+
             MutableString ms = port as MutableString;
             if (ms != null) {
                 return new MutableStringReader(ms);

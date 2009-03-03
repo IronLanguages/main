@@ -340,6 +340,7 @@ namespace Microsoft.Scripting.Actions {
             );
         }
 
+
         #endregion
 
         #region Deprecated Error production
@@ -414,10 +415,13 @@ namespace Microsoft.Scripting.Actions {
 
             foreach (Type ext in extTypes) {
                 foreach (MemberInfo mi in ext.GetMember(name, BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static)) {
-                    if (ext != declaringType) {
-                        members.Add(MemberTracker.FromMemberInfo(mi, declaringType));
-                    } else {
-                        members.Add(MemberTracker.FromMemberInfo(mi));
+                    MemberInfo newMember = mi;
+                    if (PrivateBinding || (newMember = CompilerHelpers.TryGetVisibleMember(mi)) != null) {
+                        if (ext != declaringType) {
+                            members.Add(MemberTracker.FromMemberInfo(newMember, declaringType));
+                        } else {
+                            members.Add(MemberTracker.FromMemberInfo(newMember));
+                        }
                     }
                 }
 

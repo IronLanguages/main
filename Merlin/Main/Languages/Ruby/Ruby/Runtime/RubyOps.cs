@@ -1313,17 +1313,15 @@ namespace IronRuby.Runtime {
             scope.RubyContext.CurrentException = exception;
         }
 
-        private static readonly CallSite<Func<CallSite, RubyContext, object, object, bool>>/*!*/ _compareExceptionSite = CallSite<Func<CallSite, RubyContext, object, object, bool>>.Create(
-            RubySites.InstanceCallAction("===", 1));
-
         [Emitted] //RescueClause:
-        public static bool CompareException(RubyScope/*!*/ scope, object classObject) {            
+        public static bool CompareException(BinaryOpStorage/*!*/ comparisonStorage, RubyScope/*!*/ scope, object classObject) {            
             // throw the same exception when classObject is nil
             if (!(classObject is RubyModule)) {
                 throw RubyExceptions.CreateTypeError("class or module required for rescue clause");
             }
-            
-            bool result = _compareExceptionSite.Target(_compareExceptionSite, scope.RubyContext, classObject, scope.RubyContext.CurrentException);
+
+            var site = comparisonStorage.GetCallSite("===");
+            bool result = IsTrue(site.Target(site, scope.RubyContext, classObject, scope.RubyContext.CurrentException));
             if (result) {
                 RubyExceptionData.ActiveExceptionHandled(scope.RubyContext.CurrentException);
             }
@@ -1331,17 +1329,17 @@ namespace IronRuby.Runtime {
         }
 
         [Emitted] //RescueClause:
-        public static bool CompareSplattedExceptions(RubyScope/*!*/ scope, object classObjects) {
+        public static bool CompareSplattedExceptions(BinaryOpStorage/*!*/ comparisonStorage, RubyScope/*!*/ scope, object classObjects) {
             var list = classObjects as IList;
             if (list != null) {
                 for (int i = 0; i < list.Count; i++) {
-                    if (CompareException(scope, list[i])) {
+                    if (CompareException(comparisonStorage, scope, list[i])) {
                         return true;
                     }
                 }
                 return false;
             } else {
-                return CompareException(scope, classObjects);
+                return CompareException(comparisonStorage, scope, classObjects);
             }
         }
 
@@ -1790,16 +1788,14 @@ namespace IronRuby.Runtime {
         /// EventInfo is passed in as object since it is an internal type.
         /// </summary>
         [Emitted]
-        public static object HookupEvent(EventInfo/*!*/ eventInfo, object target, Proc/*!*/ proc) {
-            Assert.NotNull(eventInfo, proc);
+        public static Proc/*!*/ HookupEvent(RubyEventInfo/*!*/ eventInfo, object/*!*/ target, Proc/*!*/ proc) {
+            eventInfo.Tracker.AddHandler(target, proc, eventInfo.Context);
+            return proc;
+        }
 
-            BlockParam bp = CreateBfcForProcCall(proc);
-            Delegate eh = BinderOps.GetDelegate(proc.LocalScope.RubyContext, bp, eventInfo.EventHandlerType);
-            MethodInfo mi = eventInfo.GetAddMethod();
-
-            mi.Invoke(target, new object[] { eh });
-
-            return null;
+        [Emitted]
+        public static RubyEvent/*!*/ CreateEvent(RubyEventInfo/*!*/ eventInfo, object/*!*/ target, string/*!*/ name) {
+            return new RubyEvent(target, eventInfo, name);
         }
 
         [Emitted]

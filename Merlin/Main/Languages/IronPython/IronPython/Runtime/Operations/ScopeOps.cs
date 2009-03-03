@@ -143,29 +143,13 @@ namespace IronPython.Runtime.Types {
             if (name == "__dict__") {
                 Set__dict__(scope, value);
             } else {
-                PythonContext pc = (PythonContext)context.LanguageContext;
-                PythonModule pm = pc.GetPythonModule(scope);
-                if (pm != null) {
-                    pm.OnModuleChange(new ModuleChangeEventArgs(SymbolTable.StringToId(name), ModuleChangeType.Set, value));
-                }
-
                 scope.SetName(SymbolTable.StringToId(name), value);
             }
         }
 
         [SpecialName]
         public static bool DeleteMember(CodeContext/*!*/ context, Scope/*!*/ scope, string name) {
-            if (scope.TryRemoveName(SymbolTable.StringToId(name))) {
-                PythonContext pc = (PythonContext)context.LanguageContext;
-                PythonModule pm = pc.GetPythonModule(scope);
-                if (pm != null) {
-                    pm.OnModuleChange(new ModuleChangeEventArgs(SymbolTable.StringToId(name), ModuleChangeType.Delete));
-                }
-
-                return true;
-            }
-
-            return false;
+            return scope.TryRemoveName(SymbolTable.StringToId(name));
         }
     }
 }

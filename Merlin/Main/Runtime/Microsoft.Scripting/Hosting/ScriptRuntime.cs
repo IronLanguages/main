@@ -71,6 +71,12 @@ namespace Microsoft.Scripting.Hosting {
             // runtime needs to be all set at this point, host code is called
 
             _host.SetRuntime(this);
+
+            object noDefaultRefs;
+            if (!setup.Options.TryGetValue("NoDefaultReferences", out noDefaultRefs) || Convert.ToBoolean(noDefaultRefs) == false) {
+                LoadAssembly(typeof(string).Assembly);
+                LoadAssembly(typeof(System.Diagnostics.Debug).Assembly);
+            }
         }
 
         internal ScriptDomainManager Manager {

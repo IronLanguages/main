@@ -104,13 +104,15 @@ namespace Microsoft.Scripting.Actions {
                 return binder.ReturnMemberTracker(type, BindToInstance(instance));
             }
 
-            MethodInfo getter = ResolveGetter(binder.PrivateBinding);
+            MethodInfo getter = GetGetMethod(true);
             if (getter == null || getter.ContainsGenericParameters) {
                 // no usable getter
                 return null;
             }
 
-            if (getter.IsPublic && getter.DeclaringType.IsVisible) {
+            getter = CompilerHelpers.TryGetCallableMethod(getter);
+
+            if (binder.PrivateBinding || CompilerHelpers.IsVisible(getter)) {
                 return binder.MakeCallExpression(context, getter, instance);
             }
 
@@ -146,16 +148,13 @@ namespace Microsoft.Scripting.Actions {
 
         private MethodInfo ResolveGetter(bool privateBinding) {
             MethodInfo getter = GetGetMethod(true);
-
-            if (getter == null) return null;
-
-            // Allow access to protected getters TODO: this should go, it supports IronPython semantics.
-            if (!getter.IsPublic && !(getter.IsFamily || getter.IsFamilyOrAssembly)) {
-                if (!privateBinding) {
-                    getter = null;
+            if (getter != null) {
+                getter = CompilerHelpers.TryGetCallableMethod(getter);
+                if (privateBinding || CompilerHelpers.IsVisible(getter)) {
+                    return getter;
                 }
             }
-            return CompilerHelpers.GetCallableMethod(getter, privateBinding);
+            return null;
         }
 
         #endregion

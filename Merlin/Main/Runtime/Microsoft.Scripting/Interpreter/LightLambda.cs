@@ -85,16 +85,18 @@ namespace Microsoft.Scripting.Interpreter {
             if (method.ReturnType == typeof(void) && paramTypes.Length == 2 && 
                 paramInfos[0].ParameterType.IsByRef && paramInfos[1].ParameterType.IsByRef)
             {
-                runMethod = typeof(LightLambda).GetMethod("RunVoidRef2");
+                runMethod = typeof(LightLambda).GetMethod("RunVoidRef2", BindingFlags.NonPublic | BindingFlags.Instance);
                 paramTypes[0] = paramInfos[0].ParameterType.GetElementType();
                 paramTypes[1] = paramInfos[1].ParameterType.GetElementType();
+            } else if(method.ReturnType == typeof(void) && paramTypes.Length == 0) {
+                return typeof(LightLambda).GetMethod("RunVoid0", BindingFlags.NonPublic | BindingFlags.Instance);
             } else if (paramInfos.Length < LightLambda.MaxParameters) {
                 for (int i = 0; i < paramInfos.Length; i++) {
                     paramTypes[i] = paramInfos[i].ParameterType;
                     if (paramTypes[i].IsByRef) return null;
                 }
 
-                runMethod = typeof(LightLambda).GetMethod(name + paramInfos.Length);
+                runMethod = typeof(LightLambda).GetMethod(name + paramInfos.Length, BindingFlags.NonPublic | BindingFlags.Instance);
             } else {
                 return null;
             }
@@ -127,7 +129,7 @@ namespace Microsoft.Scripting.Interpreter {
             return Delegate.CreateDelegate(delegateType, this, method);
         }
 
-        public void RunVoidRef2<T0, T1>(ref T0 arg0, ref T1 arg1) {
+        internal void RunVoidRef2<T0, T1>(ref T0 arg0, ref T1 arg1) {
             if (_compiled != null) {
                 ((ActionRef<T0, T1>)_compiled)(ref arg0, ref arg1);
                 return;

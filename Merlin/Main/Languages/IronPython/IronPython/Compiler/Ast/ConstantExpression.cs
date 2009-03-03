@@ -47,7 +47,7 @@ namespace IronPython.Compiler.Ast {
                 );
             }
 
-            return AstUtils.Constant(_value);
+            return ag.Globals.GetConstant(_value);
         }
 
         internal override MSAst.Expression TransformSet(AstGenerator ag, SourceSpan span, MSAst.Expression right, PythonOperationKind op) {

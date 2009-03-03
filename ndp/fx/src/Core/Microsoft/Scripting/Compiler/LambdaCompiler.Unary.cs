@@ -58,10 +58,8 @@ namespace System.Linq.Expressions.Compiler {
                 EmitExpression(expr.Operand);
                 _ilg.Emit(OpCodes.Throw);
             }
-            var emitAs = flags & CompilationFlags.EmitAsTypeMask;
-            if (emitAs != CompilationFlags.EmitAsVoidType && expr.Type != typeof(void)) {
-                _ilg.EmitDefault(expr.Type);
-            }
+
+            EmitUnreachable(expr, flags);
         }
 
         private void EmitUnaryExpression(Expression expr, CompilationFlags flags) {

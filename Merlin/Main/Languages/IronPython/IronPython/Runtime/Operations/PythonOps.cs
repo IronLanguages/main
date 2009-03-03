@@ -513,6 +513,8 @@ namespace IronPython.Runtime.Operations {
         }
 
         public static bool EqualRetBool(CodeContext/*!*/ context, object x, object y) {
+            // TODO: use context
+
             //TODO just can't seem to shake these fast paths
             if (x is int && y is int) { return ((int)x) == ((int)y); }
             if (x is string && y is string) { return ((string)x).Equals((string)y); }
@@ -1791,10 +1793,10 @@ namespace IronPython.Runtime.Operations {
                     source = pythonContext.CreateSnippet(strCode, SourceCodeKind.Statements);
                 }
 
-                PythonCompilerOptions compilerOptions = Builtin.GetDefaultCompilerOptions(context, true, 0);
+                PythonCompilerOptions compilerOptions = Builtin.GetRuntimeGeneratedCodeCompilerOptions(context, true, 0);
 
                 // do interpretation only on strings -- not on files, streams, or code objects
-                code = new FunctionCode(pythonContext.CompileSourceCode(source, compilerOptions, ThrowingErrorSink.Default, true));
+                code = new FunctionCode(pythonContext.CompilePythonCode(Compiler.Ast.CompilationMode.Loookup, source, compilerOptions, ThrowingErrorSink.Default));
             }
 
             FunctionCode fc = code as FunctionCode;
@@ -3315,9 +3317,6 @@ namespace IronPython.Runtime.Operations {
 
             var pythonEngine = Python.CreateEngine();
             
-            pythonEngine.Runtime.LoadAssembly(typeof(string).Assembly);
-            pythonEngine.Runtime.LoadAssembly(typeof(System.Diagnostics.Debug).Assembly);
-
             var pythonContext = (PythonContext)HostingHelpers.GetLanguageContext(pythonEngine);
 
             foreach (var scriptCode in ScriptCode.LoadFromAssembly(pythonContext.DomainManager, precompiled)) {
@@ -3393,6 +3392,75 @@ namespace IronPython.Runtime.Operations {
             }
             return b.ToString();
         }
+
+        #region Global Access
+
+        public static PythonDictionary/*!*/ CreateLocalsDictionary(IList<IStrongBox> boxes, SymbolId[] args) {
+            return new PythonDictionary(new RuntimeVariablesDictionaryStorage(boxes, args));
+        }
+
+        public static object GetGlobal(Scope scope, SymbolId name) {
+            return GetLocal(scope.ModuleScope, name);
+        }
+
+        public static object GetLocal(Scope scope, SymbolId name) {
+            object res;
+            if (scope.TryLookupName(name, out res)) {
+                return res;            
+            }
+
+            object builtins;
+            if (scope.ModuleScope.TryGetName(Symbols.Builtins, out builtins)) {
+                Scope builtinsScope = builtins as Scope;
+                if (builtinsScope != null && builtinsScope.TryGetName(name, out res)) {
+                    return res;
+                }
+
+                IAttributesCollection dict = builtins as IAttributesCollection;
+                if (dict != null && dict.TryGetValue(name, out res)) {
+                    return res;
+                }
+            }
+
+            throw NameError(name);
+            
+        }
+
+        public static void SetGlobal(Scope scope, SymbolId name, object value) {
+            scope.ModuleScope.Dict[name] = value;
+        }
+
+        public static void SetLocal(Scope scope, SymbolId name, object value) {
+            scope.Dict[name] = value;
+        }
+
+        public static void DeleteGlobal(Scope scope, SymbolId name) {
+            if (scope.ModuleScope.Dict.Remove(name)) {
+                return;
+            }
+
+            throw NameError(name);
+
+        }
+
+        public static void DeleteLocal(Scope scope, SymbolId name) {
+            if (scope.Dict.Remove(name)) {
+                return;
+            }
+
+            throw NameError(name);
+
+        }
+        public static CodeContext/*!*/ CreateTopLevelCodeContext(Scope/*!*/ scope, LanguageContext/*!*/ context) {
+            context.EnsureScopeExtension(scope.ModuleScope);
+            return new CodeContext(scope, context);
+        }
+
+        public static PythonGlobal[] GetGlobalArray(Scope scope) {
+            return ((GlobalDictionaryStorage)((PythonDictionary)scope.Dict)._storage).Data;
+        }
+
+        #endregion
 
         #region Exception Factories
 

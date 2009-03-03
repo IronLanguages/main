@@ -30,7 +30,7 @@ namespace IronRuby.StandardLibrary.Digest {
         #region Module Methods
 
         [RubyMethod("const_missing", RubyMethodAttributes.PublicSingleton)]
-        public static object ConstantMissing(RubyModule/*!*/ self, [DefaultProtocol]string/*!*/ name) {
+        public static object ConstantMissing(RubyModule/*!*/ self, [DefaultProtocol, NotNull]string/*!*/ name) {
             // TODO:
             throw new NotImplementedException();
         }

@@ -85,7 +85,7 @@ namespace IronPython.Compiler.Ast {
             MSAst.Expression enumeratorValues = Ast.Call(
                 AstGenerator.GetHelperMethod("GetEnumeratorValues"),    // method
                 // arguments
-                AstUtils.CodeContext(),
+                ag.LocalContext,
                 right_temp,
                 AstUtils.Constant(_items.Length)
             );

@@ -67,10 +67,17 @@ namespace IronPython.Hosting {
         }
 
         private static string GetVersionString() {
-            return String.Format("{0} ({1}) on .NET {2}",
+
+            return String.Format("{0}{3} ({1}) on .NET {2}",
                                 PythonContext.IronPythonDisplayName,
                                 PythonContext.GetPythonVersion().ToString(),
-                                Environment.Version);
+                                Environment.Version,
+#if DEBUG
+                                " DEBUG"
+#else
+                                ""
+#endif
+                                );
         }
 
         private int GetEffectiveExitCode(SystemExitException/*!*/ e) {
@@ -460,7 +467,12 @@ namespace IronPython.Hosting {
                 modOpt |= ModuleOptions.SkipFirstLine;
 
             }
-            PythonModule module = PythonContext.CompileModule(fileName, "__main__", modOpt, out compiledCode);
+            PythonModule module = PythonContext.CompileModule(
+                fileName, 
+                "__main__",
+                PythonContext.CreateFileUnit(String.IsNullOrEmpty(fileName) ? null : fileName, PythonContext.DefaultEncoding),
+                modOpt, 
+                out compiledCode);
             PythonContext.PublishModule("__main__", module);
             Scope = module.Scope;
 

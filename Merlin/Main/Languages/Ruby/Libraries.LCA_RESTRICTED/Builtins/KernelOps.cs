@@ -260,13 +260,13 @@ namespace IronRuby.Builtins {
         [RubyMethod("autoload", RubyMethodAttributes.PrivateInstance)]
         [RubyMethod("autoload", RubyMethodAttributes.PublicSingleton)]
         public static void SetAutoloadedConstant(RubyScope/*!*/ scope, object self,
-            [DefaultProtocol]string/*!*/ constantName, [DefaultProtocol, NotNull]MutableString/*!*/ path) {
+            [DefaultProtocol, NotNull]string/*!*/ constantName, [DefaultProtocol, NotNull]MutableString/*!*/ path) {
             ModuleOps.SetAutoloadedConstant(scope.GetInnerMostModule(), constantName, path);
         }
 
         [RubyMethod("autoload?", RubyMethodAttributes.PrivateInstance)]
         [RubyMethod("autoload?", RubyMethodAttributes.PublicSingleton)]
-        public static MutableString GetAutoloadedConstantPath(RubyScope/*!*/ scope, object self, [DefaultProtocol]string/*!*/ constantName) {
+        public static MutableString GetAutoloadedConstantPath(RubyScope/*!*/ scope, object self, [DefaultProtocol, NotNull]string/*!*/ constantName) {
             return ModuleOps.GetAutoloadedConstantPath(scope.GetInnerMostModule(), constantName);
         }
 
@@ -512,8 +512,8 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("p", RubyMethodAttributes.PrivateInstance)]
         [RubyMethod("p", RubyMethodAttributes.PublicSingleton)]
-        public static void PrintInspect(UnaryOpStorage/*!*/ inspectStorage, UnaryOpStorage/*!*/ tosStorage, RubyContext/*!*/ context, 
-            object self, [NotNull]params object[]/*!*/ args) {
+        public static void PrintInspect(BinaryOpStorage/*!*/ writeStorage, UnaryOpStorage/*!*/ inspectStorage, UnaryOpStorage/*!*/ tosStorage, 
+            RubyContext/*!*/ context, object self, [NotNull]params object[]/*!*/ args) {
 
             var inspect = inspectStorage.GetCallSite("inspect");
             for (int i = 0; i < args.Length; i++) {
@@ -521,28 +521,28 @@ namespace IronRuby.Builtins {
             }
             
             // no dynamic dispatch to "puts":
-            RubyIOOps.Puts(tosStorage, context, context.StandardOutput, args);
+            RubyIOOps.Puts(writeStorage, tosStorage, context, context.StandardOutput, args);
         }
 
         [RubyMethod("print", RubyMethodAttributes.PrivateInstance)]
         [RubyMethod("print", RubyMethodAttributes.PublicSingleton)]
-        public static void Print(RubyScope/*!*/ scope, object self) {
+        public static void Print(BinaryOpStorage/*!*/ writeStorage, RubyScope/*!*/ scope, object self) {
             // no dynamic dispatch to "print":
-            RubyIOOps.Print(scope, scope.RubyContext.StandardOutput);
+            RubyIOOps.Print(writeStorage, scope, scope.RubyContext.StandardOutput);
         }
 
         [RubyMethod("print", RubyMethodAttributes.PrivateInstance)]
         [RubyMethod("print", RubyMethodAttributes.PublicSingleton)]
-        public static void Print(RubyContext/*!*/ context, object self, object val) {
+        public static void Print(BinaryOpStorage/*!*/ writeStorage, RubyContext/*!*/ context, object self, object val) {
             // no dynamic dispatch to "print":
-            RubyIOOps.Print(context, context.StandardOutput, val);
+            RubyIOOps.Print(writeStorage, context, context.StandardOutput, val);
         }
 
         [RubyMethod("print", RubyMethodAttributes.PrivateInstance)]
         [RubyMethod("print", RubyMethodAttributes.PublicSingleton)]
-        public static void Print(UnaryOpStorage/*!*/ tosStorage, RubyContext/*!*/ context, object self, [NotNull]params object[]/*!*/ args) {
+        public static void Print(BinaryOpStorage/*!*/ writeStorage, UnaryOpStorage/*!*/ tosStorage, RubyContext/*!*/ context, object self, [NotNull]params object[]/*!*/ args) {
             // no dynamic dispatch to "print":
-            RubyIOOps.Print(tosStorage, context, context.StandardOutput, args);
+            RubyIOOps.Print(writeStorage, tosStorage, context, context.StandardOutput, args);
         }
 
         // this overload is called only if the first parameter is string:
@@ -579,8 +579,7 @@ namespace IronRuby.Builtins {
             
             // TODO: BindAsObject attribute on format?
             // format cannot be strongly typed to MutableString due to ambiguity between signatures (MS, object) vs (object, MS)
-            var site = writeStorage.GetCallSite("write");
-            site.Target(site, context, io,
+            Protocols.Write(writeStorage, context, io, 
                 Sprintf(integerConversion, fixnumCast, tofConversion, tosConversion, inspectStorage, context, self, 
                     Protocols.CastToString(stringCast, context, format), 
                 args)
@@ -589,56 +588,56 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("putc", RubyMethodAttributes.PrivateInstance)]
         [RubyMethod("putc", RubyMethodAttributes.PublicSingleton)]
-        public static MutableString/*!*/ Putc(RubyContext/*!*/ context, object self, [NotNull]MutableString/*!*/ arg) {
+        public static MutableString/*!*/ Putc(BinaryOpStorage/*!*/ writeStorage, RubyContext/*!*/ context, object self, [NotNull]MutableString/*!*/ arg) {
             // no dynamic dispatch:
-            return RubyIOOps.Putc(context, context.StandardOutput, arg);
+            return RubyIOOps.Putc(writeStorage, context, context.StandardOutput, arg);
         }
 
         [RubyMethod("putc", RubyMethodAttributes.PrivateInstance)]
         [RubyMethod("putc", RubyMethodAttributes.PublicSingleton)]
-        public static int Putc(RubyContext/*!*/ context, object self, [DefaultProtocol]int arg) {
+        public static int Putc(BinaryOpStorage/*!*/ writeStorage, RubyContext/*!*/ context, object self, [DefaultProtocol]int arg) {
             // no dynamic dispatch:
-            return RubyIOOps.Putc(context, context.StandardOutput, arg);
+            return RubyIOOps.Putc(writeStorage, context, context.StandardOutput, arg);
         }
 
         [RubyMethod("puts", RubyMethodAttributes.PrivateInstance)]
         [RubyMethod("puts", RubyMethodAttributes.PublicSingleton)]
-        public static void PutsEmptyLine(RubyContext/*!*/ context, object self) {
+        public static void PutsEmptyLine(BinaryOpStorage/*!*/ writeStorage, RubyContext/*!*/ context, object self) {
             // call directly, no dynamic dispatch to "self":
-            RubyIOOps.PutsEmptyLine(context, context.StandardOutput);
+            RubyIOOps.PutsEmptyLine(writeStorage, context, context.StandardOutput);
         }
 
         [RubyMethod("puts", RubyMethodAttributes.PrivateInstance)]
         [RubyMethod("puts", RubyMethodAttributes.PublicSingleton)]
-        public static void PutString(UnaryOpStorage/*!*/ tosStorage, RubyContext/*!*/ context, object self, object arg) {
+        public static void PutString(BinaryOpStorage/*!*/ writeStorage, UnaryOpStorage/*!*/ tosStorage, RubyContext/*!*/ context, object self, object arg) {
             // call directly, no dynamic dispatch to "self":
-            RubyIOOps.Puts(tosStorage, context, context.StandardOutput, arg);
+            RubyIOOps.Puts(writeStorage, tosStorage, context, context.StandardOutput, arg);
         }
 
         [RubyMethod("puts", RubyMethodAttributes.PrivateInstance)]
         [RubyMethod("puts", RubyMethodAttributes.PublicSingleton)]
-        public static void PutString(RubyContext/*!*/ context, object self, [NotNull]MutableString/*!*/ arg) {
+        public static void PutString(BinaryOpStorage/*!*/ writeStorage, RubyContext/*!*/ context, object self, [NotNull]MutableString/*!*/ arg) {
             // call directly, no dynamic dispatch to "self":
-            RubyIOOps.Puts(context, context.StandardOutput, arg);
+            RubyIOOps.Puts(writeStorage, context, context.StandardOutput, arg);
         }
 
         [RubyMethod("puts", RubyMethodAttributes.PrivateInstance)]
         [RubyMethod("puts", RubyMethodAttributes.PublicSingleton)]
-        public static void PutString(UnaryOpStorage/*!*/ tosStorage, RubyContext/*!*/ context, object self, [NotNull]params object[]/*!*/ args) {
+        public static void PutString(BinaryOpStorage/*!*/ writeStorage, UnaryOpStorage/*!*/ tosStorage, RubyContext/*!*/ context, object self, [NotNull]params object[]/*!*/ args) {
             // call directly, no dynamic dispatch to "self":
-            RubyIOOps.Puts(tosStorage, context, context.StandardOutput, args);
+            RubyIOOps.Puts(writeStorage, tosStorage, context, context.StandardOutput, args);
         }
 
         [RubyMethod("warn", RubyMethodAttributes.PrivateInstance)]
         [RubyMethod("warn", RubyMethodAttributes.PublicSingleton)]
-        public static void ReportWarning(UnaryOpStorage/*!*/ tosStorage, BinaryOpStorage/*!*/ writeStorage,
-            RubyContext/*!*/ context, object self, object message) {
+        public static void ReportWarning(BinaryOpStorage/*!*/ writeStorage, UnaryOpStorage/*!*/ tosStorage, RubyContext/*!*/ context, 
+            object self, object message) {
 
             if (context.Verbose != null) {
                 // MRI: unlike Kernel#puts this outputs \n even if the message ends with \n:
                 var site = writeStorage.GetCallSite("write", 1);
                 site.Target(site, context, context.StandardErrorOutput, RubyIOOps.ToPrintedString(tosStorage, context, message));
-                RubyIOOps.PutsEmptyLine(context, context.StandardErrorOutput);
+                RubyIOOps.PutsEmptyLine(writeStorage, context, context.StandardErrorOutput);
             }
         }
 
@@ -910,7 +909,7 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("catch", RubyMethodAttributes.PrivateInstance)]
         [RubyMethod("catch", RubyMethodAttributes.PublicSingleton)]
-        public static object Catch(BlockParam/*!*/ block, object self, [DefaultProtocol]string/*!*/ label) {
+        public static object Catch(BlockParam/*!*/ block, object self, [DefaultProtocol, NotNull]string/*!*/ label) {
             if (block == null) {
                 throw RubyExceptions.NoBlockGiven();
             }
@@ -939,7 +938,7 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("throw", RubyMethodAttributes.PrivateInstance)]
         [RubyMethod("throw", RubyMethodAttributes.PublicSingleton)]
-        public static void Throw(object self, [DefaultProtocol]string/*!*/ label, [DefaultParameterValue(null)]object returnValue) {
+        public static void Throw(object self, [DefaultProtocol, NotNull]string/*!*/ label, [DefaultParameterValue(null)]object returnValue) {
             if (_catchSymbols == null || !_catchSymbols.Contains(label)) {
                 throw RubyExceptions.CreateNameError(String.Format("uncaught throw `{0}'", label));
             }
@@ -1189,7 +1188,7 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("instance_variable_get")]
-        public static object InstanceVariableGet(RubyContext/*!*/ context, object self, [DefaultProtocol]string/*!*/ name) {
+        public static object InstanceVariableGet(RubyContext/*!*/ context, object self, [DefaultProtocol, NotNull]string/*!*/ name) {
             object value;
             if (!context.TryGetInstanceVariable(self, name, out value)) {
                 // We didn't find it, check if the name is valid
@@ -1200,14 +1199,14 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("instance_variable_set")]
-        public static object InstanceVariableSet(RubyContext/*!*/ context, object self, [DefaultProtocol]string/*!*/ name, object value) {
+        public static object InstanceVariableSet(RubyContext/*!*/ context, object self, [DefaultProtocol, NotNull]string/*!*/ name, object value) {
             RubyUtils.CheckInstanceVariableName(name);
             context.SetInstanceVariable(self, name, value);
             return value;
         }
 
         [RubyMethod("instance_variable_defined?")]
-        public static bool InstanceVariableDefined(RubyContext/*!*/ context, object self, [DefaultProtocol]string/*!*/ name) {
+        public static bool InstanceVariableDefined(RubyContext/*!*/ context, object self, [DefaultProtocol, NotNull]string/*!*/ name) {
             object value;
             if (!context.TryGetInstanceVariable(self, name, out value)) {
                 // We didn't find it, check if the name is valid
@@ -1219,7 +1218,7 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("remove_instance_variable", RubyMethodAttributes.PrivateInstance)]
-        public static object RemoveInstanceVariable(RubyContext/*!*/ context, object/*!*/ self, [DefaultProtocol]string/*!*/ name) {
+        public static object RemoveInstanceVariable(RubyContext/*!*/ context, object/*!*/ self, [DefaultProtocol, NotNull]string/*!*/ name) {
             object value;
             if (!context.TryRemoveInstanceVariable(self, name, out value)) {
                 // We didn't find it, check if the name is valid
@@ -1235,7 +1234,7 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("respond_to?")]
         public static bool RespondTo(RubyContext/*!*/ context, object self, 
-            [DefaultProtocol]string/*!*/ methodName, [DefaultParameterValue(null)]object includePrivate) {
+            [DefaultProtocol, NotNull]string/*!*/ methodName, [DefaultParameterValue(null)]object includePrivate) {
 
             return context.ResolveMethod(self, methodName, Protocols.IsTrue(includePrivate)).Found;
         }
@@ -1249,7 +1248,7 @@ namespace IronRuby.Builtins {
         
         // ARGS: 0
         [RubyMethod("send"), RubyMethod("__send__")]
-        public static object SendMessage(RubyScope/*!*/ scope, object self, [DefaultProtocol]string/*!*/ methodName) {
+        public static object SendMessage(RubyScope/*!*/ scope, object self, [DefaultProtocol, NotNull]string/*!*/ methodName) {
             var site = scope.RubyContext.GetOrCreateSendSite<Func<CallSite, RubyScope, object, object>>(
                 methodName, new RubyCallSignature(0, RubyCallFlags.HasScope | RubyCallFlags.HasImplicitSelf)
             );
@@ -1258,7 +1257,7 @@ namespace IronRuby.Builtins {
 
         // ARGS: 0&
         [RubyMethod("send"), RubyMethod("__send__")]
-        public static object SendMessage(RubyScope/*!*/ scope, BlockParam block, object self, [DefaultProtocol]string/*!*/ methodName) {
+        public static object SendMessage(RubyScope/*!*/ scope, BlockParam block, object self, [DefaultProtocol, NotNull]string/*!*/ methodName) {
             var site = scope.RubyContext.GetOrCreateSendSite<Func<CallSite, RubyScope, object, Proc, object>>(
                 methodName, new RubyCallSignature(0, RubyCallFlags.HasScope | RubyCallFlags.HasImplicitSelf | RubyCallFlags.HasBlock)
             );
@@ -1267,7 +1266,7 @@ namespace IronRuby.Builtins {
 
         // ARGS: 1
         [RubyMethod("send"), RubyMethod("__send__")]
-        public static object SendMessage(RubyScope/*!*/ scope, object self, [DefaultProtocol]string/*!*/ methodName,
+        public static object SendMessage(RubyScope/*!*/ scope, object self, [DefaultProtocol, NotNull]string/*!*/ methodName,
             object arg1) {
 
             var site = scope.RubyContext.GetOrCreateSendSite<Func<CallSite, RubyScope, object, object, object>>(
@@ -1279,7 +1278,7 @@ namespace IronRuby.Builtins {
 
         // ARGS: 1&
         [RubyMethod("send"), RubyMethod("__send__")]
-        public static object SendMessage(RubyScope/*!*/ scope, BlockParam block, object self, [DefaultProtocol]string/*!*/ methodName,
+        public static object SendMessage(RubyScope/*!*/ scope, BlockParam block, object self, [DefaultProtocol, NotNull]string/*!*/ methodName,
             object arg1) {
 
             var site = scope.RubyContext.GetOrCreateSendSite<Func<CallSite, RubyScope, object, Proc, object, object>>(
@@ -1290,7 +1289,7 @@ namespace IronRuby.Builtins {
 
         // ARGS: 2
         [RubyMethod("send"), RubyMethod("__send__")]
-        public static object SendMessage(RubyScope/*!*/ scope, object self, [DefaultProtocol]string/*!*/ methodName,
+        public static object SendMessage(RubyScope/*!*/ scope, object self, [DefaultProtocol, NotNull]string/*!*/ methodName,
             object arg1, object arg2) {
 
             var site = scope.RubyContext.GetOrCreateSendSite<Func<CallSite, RubyScope, object, object, object, object>>(
@@ -1302,7 +1301,7 @@ namespace IronRuby.Builtins {
 
         // ARGS: 2&
         [RubyMethod("send"), RubyMethod("__send__")]
-        public static object SendMessage(RubyScope/*!*/ scope, BlockParam block, object self, [DefaultProtocol]string/*!*/ methodName,
+        public static object SendMessage(RubyScope/*!*/ scope, BlockParam block, object self, [DefaultProtocol, NotNull]string/*!*/ methodName,
             object arg1, object arg2) {
 
             var site = scope.RubyContext.GetOrCreateSendSite<Func<CallSite, RubyScope, object, Proc, object, object, object>>(
@@ -1313,7 +1312,7 @@ namespace IronRuby.Builtins {
 
         // ARGS: 3
         [RubyMethod("send"), RubyMethod("__send__")]
-        public static object SendMessage(RubyScope/*!*/ scope, object self, [DefaultProtocol]string/*!*/ methodName,
+        public static object SendMessage(RubyScope/*!*/ scope, object self, [DefaultProtocol, NotNull]string/*!*/ methodName,
             object arg1, object arg2, object arg3) {
 
             var site = scope.RubyContext.GetOrCreateSendSite<Func<CallSite, RubyScope, object, object, object, object, object>>(
@@ -1325,7 +1324,7 @@ namespace IronRuby.Builtins {
 
         // ARGS: 3&
         [RubyMethod("send"), RubyMethod("__send__")]
-        public static object SendMessage(RubyScope/*!*/ scope, BlockParam block, object self, [DefaultProtocol]string/*!*/ methodName,
+        public static object SendMessage(RubyScope/*!*/ scope, BlockParam block, object self, [DefaultProtocol, NotNull]string/*!*/ methodName,
             object arg1, object arg2, object arg3) {
 
             var site = scope.RubyContext.GetOrCreateSendSite<Func<CallSite, RubyScope, object, Proc, object, object, object, object>>(
@@ -1336,7 +1335,7 @@ namespace IronRuby.Builtins {
 
         // ARGS: N
         [RubyMethod("send"), RubyMethod("__send__")]
-        public static object SendMessage(RubyScope/*!*/ scope, object self, [DefaultProtocol]string/*!*/ methodName,
+        public static object SendMessage(RubyScope/*!*/ scope, object self, [DefaultProtocol, NotNull]string/*!*/ methodName,
             [NotNull]params object[] args) {
 
             var site = scope.RubyContext.GetOrCreateSendSite<Func<CallSite, RubyScope, object, RubyArray, object>>(
@@ -1348,7 +1347,7 @@ namespace IronRuby.Builtins {
 
         // ARGS: N&
         [RubyMethod("send"), RubyMethod("__send__")]
-        public static object SendMessage(RubyScope/*!*/ scope, BlockParam block, object self, [DefaultProtocol]string/*!*/ methodName,
+        public static object SendMessage(RubyScope/*!*/ scope, BlockParam block, object self, [DefaultProtocol, NotNull]string/*!*/ methodName,
             [NotNull]params object[] args) {
 
             var site = scope.RubyContext.GetOrCreateSendSite<Func<CallSite, RubyScope, object, Proc, RubyArray, object>>(
@@ -1358,13 +1357,23 @@ namespace IronRuby.Builtins {
             return site.Target(site, scope, self, block != null ? block.Proc : null, RubyOps.MakeArrayN(args));
         }
 
+        internal static object SendMessageOpt(RubyScope/*!*/ scope, BlockParam block, object self, string/*!*/ methodName, object[] args) {
+            switch ((args != null ? args.Length : 0)) {
+                case 0: return SendMessage(scope, block, self, methodName);
+                case 1: return SendMessage(scope, block, self, methodName, args[0]);
+                case 2: return SendMessage(scope, block, self, methodName, args[0], args[1]);
+                case 3: return SendMessage(scope, block, self, methodName, args[0], args[1], args[2]);
+                default: return SendMessage(scope, block, self, methodName, args);
+            }
+        }
+
         #endregion
 
         #region method, methods, (private|protected|public|singleton)_methods (thread-safe)
 
         // thread-safe:
         [RubyMethod("method")]
-        public static RubyMethod/*!*/ GetMethod(RubyContext/*!*/ context, object self, [DefaultProtocol]string/*!*/ name) {
+        public static RubyMethod/*!*/ GetMethod(RubyContext/*!*/ context, object self, [DefaultProtocol, NotNull]string/*!*/ name) {
             RubyMemberInfo info = context.ResolveMethod(self, name, RubyClass.IgnoreVisibility).Info;
             if (info == null) {
                 throw RubyExceptions.CreateUndefinedMethodError(context.GetClassOf(self), name);

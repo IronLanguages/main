@@ -101,10 +101,9 @@ namespace IronPython.Compiler.Ast {
                                                     MSAst.LabelTarget breakLabel, MSAst.LabelTarget continueLabel) {
             // enumerator = PythonOps.GetEnumeratorForIteration(list)
             MSAst.Expression init = ag.AddDebugInfo(
-                AstUtils.Assign(
+                Ast.Assign(
                     enumerator, 
-                    Binders.Operation(
-                        ag.BinderState,
+                    ag.Operation(
                         typeof(IEnumerator),
                         PythonOperationKind.GetEnumeratorForIteration,
                         ag.TransformAsObject(list)

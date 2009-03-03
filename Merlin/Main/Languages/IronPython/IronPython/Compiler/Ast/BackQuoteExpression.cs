@@ -33,7 +33,7 @@ namespace IronPython.Compiler.Ast {
         internal override MSAst.Expression Transform(AstGenerator ag, Type type) {
             return Ast.Call(
                 AstGenerator.GetHelperMethod("Repr"),   // method
-                Microsoft.Scripting.Ast.Utils.CodeContext(),
+                ag.LocalContext,
                 ag.TransformAsObject(_expression)       // args
             );                                  
         }

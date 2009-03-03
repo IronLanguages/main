@@ -13,19 +13,20 @@
  *
  * ***************************************************************************/
 
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq.Expressions;
 using System.Dynamic;
-using System;
+using System.Linq.Expressions;
+using System.Threading;
+
 using Microsoft.Scripting.Actions;
-using IronPython.Runtime.Operations;
 using Microsoft.Scripting.Runtime;
-using AstUtils = Microsoft.Scripting.Ast.Utils;
+
+using IronPython.Runtime.Operations;
 
 namespace IronPython.Runtime.Binding {
     using Ast = System.Linq.Expressions.Expression;
-    using System.Threading;
 
     class BinderState : IExpressionSerializable {
         private readonly PythonBinder/*!*/ _binder;
@@ -91,7 +92,7 @@ namespace IronPython.Runtime.Binding {
         }
 
         public static Expression/*!*/ GetCodeContext(DynamicMetaObjectBinder/*!*/ action) {
-            return AstUtils.Constant(BinderState.GetBinderState(action).Context);
+            return Microsoft.Scripting.Ast.Utils.Constant(BinderState.GetBinderState(action).Context);
         }
 
         #region Binder Factories
@@ -447,7 +448,7 @@ namespace IronPython.Runtime.Binding {
         public Expression CreateExpression() {
             return Expression.Call(
                 typeof(PythonOps).GetMethod("GetInitialBinderState"),
-                AstUtils.CodeContext()
+                Compiler.Ast.ArrayGlobalAllocator._globalContext
             );
         }
 

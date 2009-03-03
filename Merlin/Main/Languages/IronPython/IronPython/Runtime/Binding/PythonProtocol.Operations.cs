@@ -41,7 +41,7 @@ namespace IronPython.Runtime.Binding {
     static partial class PythonProtocol {
         private const string DisallowCoerce = "DisallowCoerce";
 
-        public static DynamicMetaObject/*!*/ Operation(BinaryOperationBinder/*!*/ operation, DynamicMetaObject target, DynamicMetaObject arg) {
+        public static DynamicMetaObject/*!*/ Operation(BinaryOperationBinder/*!*/ operation, DynamicMetaObject target, DynamicMetaObject arg, DynamicMetaObject errorSuggestion) {
             DynamicMetaObject[] args = new[] { target, arg };
             if (BindingHelpers.NeedsDeferral(args)) {
                 return operation.Defer(target, arg);
@@ -85,7 +85,7 @@ namespace IronPython.Runtime.Binding {
             
             DynamicMetaObject res = null;
             if (opString != null) {
-                res = MakeBinaryOperation(operation, args, opString.Value);
+                res = MakeBinaryOperation(operation, args, opString.Value, errorSuggestion);
             } else {
                 res = operation.FallbackBinaryOperation(target, arg);
             }
@@ -115,6 +115,9 @@ namespace IronPython.Runtime.Binding {
                     break;
                 case ExpressionType.IsFalse:
                     res = MakeUnaryNotOperation(operation, arg);
+                    break;
+                case ExpressionType.IsTrue:
+                    res = PythonProtocol.ConvertToBool(operation, arg);
                     break;
                 default:
                     res = TypeError(operation, "unknown operation: " + operation.ToString(), args);
@@ -183,16 +186,16 @@ namespace IronPython.Runtime.Binding {
                 case PythonOperationKind.GetEnumeratorForIteration:
                     return MakeEnumeratorOperation(operation, args[0]);
                 default:
-                    return MakeBinaryOperation(operation, args, operation.Operation);
+                    return MakeBinaryOperation(operation, args, operation.Operation, null);
             }
         }
 
-        private static DynamicMetaObject MakeBinaryOperation(DynamicMetaObjectBinder operation, DynamicMetaObject/*!*/[] args, PythonOperationKind opStr) {
+        private static DynamicMetaObject MakeBinaryOperation(DynamicMetaObjectBinder operation, DynamicMetaObject/*!*/[] args, PythonOperationKind opStr, DynamicMetaObject errorSuggestion) {
             if (IsComparision(opStr)) {
                 return MakeComparisonOperation(args, operation, opStr);
             }
 
-            return MakeSimpleOperation(args, operation, opStr);
+            return MakeSimpleOperation(args, operation, opStr, errorSuggestion);
         }
 
         #region Unary Operations
@@ -315,10 +318,12 @@ namespace IronPython.Runtime.Binding {
 
             if (res.GetLimitType() != typeof(bool) && res.GetLimitType() != typeof(void)) {
                 res = new DynamicMetaObject(
-                    Binders.Convert(
-                        state,
+                    Ast.Dynamic(
+                        state.Convert(
+                            typeof(bool),
+                            ConversionResultKind.ExplicitCast
+                        ),
                         typeof(bool),
-                        ConversionResultKind.ExplicitCast,
                         res.Expression
                     ),
                     res.Restrictions
@@ -670,7 +675,7 @@ namespace IronPython.Runtime.Binding {
 
         #region Common Binary Operations
 
-        private static DynamicMetaObject/*!*/ MakeSimpleOperation(DynamicMetaObject/*!*/[]/*!*/ types, DynamicMetaObjectBinder/*!*/ binder, PythonOperationKind operation) {
+        private static DynamicMetaObject/*!*/ MakeSimpleOperation(DynamicMetaObject/*!*/[]/*!*/ types, DynamicMetaObjectBinder/*!*/ binder, PythonOperationKind operation, DynamicMetaObject errorSuggestion) {
             RestrictTypes(types);
 
             SlotOrFunction fbinder;
@@ -679,7 +684,7 @@ namespace IronPython.Runtime.Binding {
             PythonTypeSlot rSlot;
             GetOpreatorMethods(types, operation, BinderState.GetBinderState(binder), out fbinder, out rbinder, out fSlot, out rSlot);
 
-            return MakeBinaryOperatorResult(types, binder, operation, fbinder, rbinder, fSlot, rSlot);
+            return MakeBinaryOperatorResult(types, binder, operation, fbinder, rbinder, fSlot, rSlot, errorSuggestion);
         }
 
         private static void GetOpreatorMethods(DynamicMetaObject/*!*/[]/*!*/ types, PythonOperationKind oper, BinderState state, out SlotOrFunction fbinder, out SlotOrFunction rbinder, out PythonTypeSlot fSlot, out PythonTypeSlot rSlot) {
@@ -775,7 +780,7 @@ namespace IronPython.Runtime.Binding {
             return false;
         }
 
-        private static DynamicMetaObject/*!*/ MakeBinaryOperatorResult(DynamicMetaObject/*!*/[]/*!*/ types, DynamicMetaObjectBinder/*!*/ operation, PythonOperationKind op, SlotOrFunction/*!*/ fCand, SlotOrFunction/*!*/ rCand, PythonTypeSlot fSlot, PythonTypeSlot rSlot) {
+        private static DynamicMetaObject/*!*/ MakeBinaryOperatorResult(DynamicMetaObject/*!*/[]/*!*/ types, DynamicMetaObjectBinder/*!*/ operation, PythonOperationKind op, SlotOrFunction/*!*/ fCand, SlotOrFunction/*!*/ rCand, PythonTypeSlot fSlot, PythonTypeSlot rSlot, DynamicMetaObject errorSuggestion) {
             Assert.NotNull(operation, fCand, rCand);
 
             SlotOrFunction fTarget, rTarget;
@@ -800,7 +805,7 @@ namespace IronPython.Runtime.Binding {
                 !ShouldCoerce(state, op, types[0], types[1], false) &&
                 !ShouldCoerce(state, op, types[1], types[0], false) &&
                 bodyBuilder.NoConditions) {
-                return MakeRuleForNoMatch(operation, op, types);
+                return MakeRuleForNoMatch(operation, op, errorSuggestion, types);
             }
 
             if (ShouldCoerce(state, op, types[0], types[1], false) && 
@@ -1800,10 +1805,12 @@ namespace IronPython.Runtime.Binding {
                         // this type defines __index__, otherwise we'd have an ItemBuilder constructing a slice
                         args[i] = MakeIntTest(args[0],
                             new DynamicMetaObject(
-                                Binders.Convert(
-                                    binder,
+                                Ast.Dynamic(
+                                    binder.Convert(
+                                        typeof(int),
+                                        ConversionResultKind.ExplicitCast
+                                    ),
                                     typeof(int),
-                                    ConversionResultKind.ExplicitCast,
                                     Ast.Dynamic(
                                         binder.InvokeNone,
                                         typeof(object),
@@ -1816,7 +1823,7 @@ namespace IronPython.Runtime.Binding {
                                             args[i].Expression
                                         )
                                     )
-                                ),
+                                ),                               
                                 args[i].Restrictions
                             )
                         );
@@ -2196,9 +2203,9 @@ namespace IronPython.Runtime.Binding {
             );
         }
         
-        private static DynamicMetaObject/*!*/ MakeRuleForNoMatch(DynamicMetaObjectBinder/*!*/ operation, PythonOperationKind op, params DynamicMetaObject/*!*/[]/*!*/ types) {
+        private static DynamicMetaObject/*!*/ MakeRuleForNoMatch(DynamicMetaObjectBinder/*!*/ operation, PythonOperationKind op, DynamicMetaObject errorSuggestion, params DynamicMetaObject/*!*/[]/*!*/ types) {
             // we get the error message w/ {0}, {1} so that TypeError formats it correctly
-            return TypeError(
+            return errorSuggestion ?? TypeError(
                    operation,
                    MakeBinaryOpErrorMessage(op, "{0}", "{1}"),
                    types);

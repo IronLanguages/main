@@ -114,16 +114,13 @@ namespace Microsoft.Scripting.Actions.Calls {
             MethodBase mb = Method;
             MethodInfo mi = mb as MethodInfo;
             Expression ret, call;
-            if (!mb.IsPublic || (mb.DeclaringType != null && !mb.DeclaringType.IsVisible)) {
-                if (mi != null) {
-                    mi = CompilerHelpers.GetCallableMethod(mi, _binder._binder.PrivateBinding);
-                    if (mi != null) mb = mi;
-                }
+            if (mi != null) {
+                mb = CompilerHelpers.GetCallableMethod(mi, _binder._binder.PrivateBinding);
             }
 
             ConstructorInfo ci = mb as ConstructorInfo;
             Debug.Assert(mi != null || ci != null);
-            if (mb.IsPublic && (mb.DeclaringType == null || mb.DeclaringType.IsVisible)) {
+            if (CompilerHelpers.IsVisible(mb)) {
                 // public method
                 if (mi != null) {
                     Expression instance = mi.IsStatic ? null : _instanceBuilder.ToExpression(parameterBinder, parameters, usageMarkers);

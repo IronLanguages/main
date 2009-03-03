@@ -634,7 +634,6 @@ M2(Fixnum)
         
         public void ClrOverloadSelection1() {
             Context.ObjectClass.SetConstant("OM", Context.GetClass(typeof(OverloadedMethods)));
-            Runtime.LoadAssembly(typeof(object).Assembly);
 
             AssertOutput(() => CompilerTest(@"
 m = OM.method(:M1)
@@ -981,6 +980,80 @@ f.BackColor = System::Drawing::Color.Green
 System::Windows::Forms::Application.run f
 ");
             }, "outer var");
+        }
+
+        public class ClassWithEvents {
+            public event Action<string, string> OnFoo;
+
+            public bool Foo() {
+                if (OnFoo != null) {
+                    OnFoo("hello", "world");
+                    return true;
+                } else {
+                    return false;
+                }
+            }
+        }
+
+        // TODO: method comparison
+        public void ClrEvents2() {
+            Context.DefineGlobalVariable("e", new ClassWithEvents());
+            AssertOutput(() => CompilerTest(@"
+def handler a,b
+  puts ""handler: #{a} #{b}""
+end
+
+h = method(:handler)
+
+$e.on_foo.add(h)
+puts $e.foo
+$e.on_foo.remove(h)
+puts $e.foo
+"), @"
+handler: hello world
+true
+false
+");
+        }
+
+        public void ClrEvents3() {
+            Context.DefineGlobalVariable("e", new ClassWithEvents());
+            AssertOutput(() => CompilerTest(@"
+h = $e.on_foo do |a,b|
+  puts ""handler: #{a} #{b}""
+end
+
+p h.class
+
+puts $e.foo
+$e.on_foo.remove(h)
+puts $e.foo
+"), @"
+Proc
+handler: hello world
+true
+false
+");
+        }
+
+        public void ClrEvents4() {
+            Context.DefineGlobalVariable("e", new ClassWithEvents());
+            AssertOutput(() => CompilerTest(@"
+handler = lambda do |a,b|
+  puts ""handler: #{a} #{b}""
+end
+
+p $e.on_foo(&handler) == handler
+
+puts $e.foo
+$e.on_foo.remove(handler)
+puts $e.foo
+"), @"
+true
+handler: hello world
+true
+false
+");
         }
 
         public class ClassWithVirtuals {

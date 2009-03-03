@@ -121,7 +121,7 @@ namespace Microsoft.Scripting.Actions {
                 MethodInfo targetMethod = target as MethodInfo;
 
                 if (targetMethod != null) {
-                    target = CompilerHelpers.GetCallableMethod(targetMethod, Binder.PrivateBinding);
+                    target = CompilerHelpers.TryGetCallableMethod(targetMethod);
                 }
 
                 Expression[] exprargs = FinishTestForCandidate(bt.ArgumentTests, argTypes);

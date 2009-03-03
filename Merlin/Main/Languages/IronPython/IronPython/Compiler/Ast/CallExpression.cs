@@ -70,15 +70,14 @@ namespace IronPython.Compiler.Ast {
             MSAst.Expression[] values = new MSAst.Expression[_args.Length + 2];
             Argument[] kinds = new Argument[_args.Length];
 
-            values[0] = AstUtils.CodeContext();
+            values[0] = ag.LocalContext;
             values[1] = ag.Transform(_target);
 
             for (int i = 0; i < _args.Length; i++) {
                 kinds[i] = _args[i].Transform(ag, out values[i + 2]);
             }
 
-            return Binders.Invoke(
-                ag.BinderState,
+            return ag.Invoke(
                 type,
                 new CallSignature(kinds),
                 ArrayUtils.RemoveFirst(values)

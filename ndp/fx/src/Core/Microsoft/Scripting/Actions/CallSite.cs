@@ -322,6 +322,7 @@ namespace System.Runtime.CompilerServices {
             //        } else {
             //            %(setResult)s ruleTarget(site, %(args)s);
             //            if (CallSiteOps.GetMatch(site)) {
+            //                CallSiteOps.UpdateRules(@this, i);
             //                %(returnResult)s;
             //            }
             //
@@ -342,15 +343,29 @@ namespace System.Runtime.CompilerServices {
                 site
             );
 
+            var onMatch = Expression.Call(
+                typeof(CallSiteOps),
+                "UpdateRules",
+                typeArgs,
+                @this,
+                index
+            );
+
             if (@return.Type == typeof(void)) {
                 invokeRule = Expression.Block(
                     Expression.Invoke(ruleTarget, new TrueReadOnlyCollection<Expression>(@params)),
-                    Expression.IfThen(getMatch, Expression.Return(@return))
+                    Expression.IfThen(
+                        getMatch,
+                        Expression.Block(onMatch, Expression.Return(@return))
+                    )
                 );
             } else {
                 invokeRule = Expression.Block(
                     Expression.Assign(result, Expression.Invoke(ruleTarget, new TrueReadOnlyCollection<Expression>(@params))),
-                    Expression.IfThen(getMatch, Expression.Return(@return, result))
+                    Expression.IfThen(
+                        getMatch,
+                        Expression.Block(onMatch, Expression.Return(@return, result))
+                    )
                 );
             }
 
@@ -411,11 +426,34 @@ namespace System.Runtime.CompilerServices {
             ////
             //var cache = @this.Binder.GetRuleCache<%(funcType)s>();
 
+            var cache = Expression.Variable(typeof(RuleCache<T>), "cache");
+            vars.Add(cache);
+
+            body.Add(
+                Expression.Assign(
+                    cache,
+                    Expression.Call(typeof(CallSiteOps), "GetRuleCache", typeArgs, @this)
+                )
+            );
+
             ////
             //// Any applicable rules in level 2 cache?
             ////
-            //if ((applicable = CallSiteOps.FindApplicableRules(@this)) != null) {
+            //    applicable = CallSiteOps.FindApplicableRules(@this);
             //    count = applicable.Length;
+
+            body.Add(
+                Expression.Assign(
+                    applicable,
+                    Expression.Call(typeof(CallSiteOps), "FindApplicableRules", typeArgs, cache)
+                )
+            );
+
+            body.Add(
+                Expression.Assign(count, Expression.ArrayLength(applicable))
+            );
+
+
             //    for (index = 0; index < count; index++) {
             //        rule = applicable[index];
             //
@@ -437,7 +475,7 @@ namespace System.Runtime.CompilerServices {
             //
             //                CallSiteOps.AddRule(@this, rule);
             //                // and then move it to the front of the L2 cache
-            //                @this.RuleCache.MoveRule(rule);
+            //                @this.RuleCache.MoveRule(rule, index);
             //            }
             //        }
             //
@@ -449,17 +487,27 @@ namespace System.Runtime.CompilerServices {
             //        // Rule didn't match, try the next one
             //        CallSiteOps.ClearMatch(site);
             //    }
-            //}
+            //
 
-            var cache = Expression.Variable(typeof(RuleCache<T>), "cache");
-            vars.Add(cache);
 
-            body.Add(
-                Expression.Assign(
-                    cache,
-                    Expression.Call(typeof(CallSiteOps), "GetRuleCache", typeArgs, @this)
-                )
-            );
+            // L2 invokeRule is different (no onMatch)
+            if (@return.Type == typeof(void)) {
+                invokeRule = Expression.Block(
+                    Expression.Invoke(ruleTarget, new TrueReadOnlyCollection<Expression>(@params)),
+                    Expression.IfThen(
+                        getMatch,
+                        Expression.Return(@return)
+                    )
+                );
+            } else {
+                invokeRule = Expression.Block(
+                    Expression.Assign(result, Expression.Invoke(ruleTarget, new TrueReadOnlyCollection<Expression>(@params))),
+                    Expression.IfThen(
+                        getMatch,
+                        Expression.Return(@return, result)
+                    )
+                );
+            }
 
             var tryRule = Expression.TryFinally(
                 invokeRule,
@@ -467,7 +515,7 @@ namespace System.Runtime.CompilerServices {
                     getMatch,
                     Expression.Block(
                         Expression.Call(typeof(CallSiteOps), "AddRule", typeArgs, @this, rule),
-                        Expression.Call(typeof(CallSiteOps), "MoveRule", typeArgs, cache, rule)
+                        Expression.Call(typeof(CallSiteOps), "MoveRule", typeArgs, cache, rule, index)
                     )
                 )
             );
@@ -480,32 +528,22 @@ namespace System.Runtime.CompilerServices {
                 Expression.Assign(originalRule, rule)
             );
 
+            body.Add(
+                Expression.Assign(index, Expression.Constant(0))
+            );
 
             body.Add(
-                Expression.IfThen(
-                    Expression.NotEqual(
-                        Expression.Assign(
-                            applicable,
-                            Expression.Call(typeof(CallSiteOps), "FindApplicableRules", typeArgs, cache)
-                        ),
-                        Expression.Constant(null, applicable.Type)
-                    ),
+                Expression.Loop(
                     Expression.Block(
-                        Expression.Assign(count, Expression.ArrayLength(applicable)),
-                        Expression.Assign(index, Expression.Constant(0)),
-                        Expression.Loop(
-                            Expression.Block(
-                                breakIfDone,
-                                getRule,
-                                tryRule,
-                                checkOriginalRule,
-                                resetMatch,
-                                incrementIndex
-                            ),
-                            @break,
-                            null
-                        )
-                    )
+                        breakIfDone,
+                        getRule,
+                        tryRule,
+                        checkOriginalRule,
+                        resetMatch,
+                        incrementIndex
+                    ),
+                    @break,
+                    null
                 )
             );
 

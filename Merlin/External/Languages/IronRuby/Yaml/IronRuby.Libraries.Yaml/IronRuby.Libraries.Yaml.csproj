@@ -3,7 +3,7 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProductVersion>9.0.30718</ProductVersion>
+    <ProductVersion>9.0.21022</ProductVersion>
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>{AA18A245-E342-4368-A474-83178311A742}</ProjectGuid>
     <OutputType>Library</OutputType>
@@ -53,7 +53,6 @@
     <Compile Include="MutableStringWriter.cs" />
     <Compile Include="Engine\BaseConstructor.cs" />
     <Compile Include="Engine\Composer.cs" />
-    <Compile Include="Engine\Constructor.cs" />
     <Compile Include="Engine\Emitter.cs" />
     <Compile Include="Engine\Events.cs" />
     <Compile Include="Engine\Exceptions.cs" />
@@ -65,7 +64,6 @@
     <Compile Include="Engine\Representer.cs" />
     <Compile Include="Engine\Resolver.cs" />
     <Compile Include="Engine\ResolverScanner.cs" />
-    <Compile Include="Engine\SafeConstructor.cs" />
     <Compile Include="Engine\Scanner.cs" />
     <Compile Include="Engine\Serializer.cs" />
     <Compile Include="Engine\Tokens.cs" />

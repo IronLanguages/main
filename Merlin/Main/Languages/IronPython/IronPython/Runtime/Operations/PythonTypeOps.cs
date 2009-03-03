@@ -370,9 +370,9 @@ namespace IronPython.Runtime.Operations {
             lock (_eventCache) {
                 if (!_eventCache.TryGetValue(tracker, out res)) {
                     if (PythonBinder.IsExtendedType(tracker.DeclaringType)) {
-                        _eventCache[tracker] = res = new ReflectedEvent(tracker.Event, true);
+                        _eventCache[tracker] = res = new ReflectedEvent(tracker, true);
                     } else {
-                        _eventCache[tracker] = res = new ReflectedEvent(tracker.Event, false);
+                        _eventCache[tracker] = res = new ReflectedEvent(tracker, false);
                     }
                 }
             }

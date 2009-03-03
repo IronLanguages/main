@@ -81,15 +81,23 @@ namespace IronPython.Compiler.Ast {
             set { _variable = value; }
         }
 
-        internal MSAst.Expression Transform(AstGenerator inner) {
+        internal MSAst.Expression Transform(AstGenerator inner, bool needsWrapperMethod) {
             MSAst.ParameterExpression parameter;
             string name = SymbolTable.IdToString(Name);
             if (_variable.AccessedInNestedScope) {
-                parameter = inner.Block.ClosedOverParameter(typeof(object), name);
+                if (needsWrapperMethod) {
+                    parameter = inner.ClosedOverVariable(typeof(object), name);
+                } else {
+                    parameter = inner.ClosedOverParameter(typeof(object), name);
+                }
             } else {
-                parameter = inner.Block.Parameter(typeof(object), name);
+                if (needsWrapperMethod) {
+                    parameter = inner.Variable(typeof(object), name);
+                } else {
+                    parameter = inner.Parameter(typeof(object), name);
+                }
             }
-            _variable.SetParameter(parameter);
+            inner.Globals.SetParameter(_variable, parameter);
             return parameter;
         }
 
@@ -123,7 +131,7 @@ namespace IronPython.Compiler.Ast {
             MSAst.Expression stmt = _tuple.TransformSet(
                 inner,
                 Span,
-                Variable.Variable,
+                inner.Globals.GetVariable(Variable),
                 PythonOperationKind.None
             );
 

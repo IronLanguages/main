@@ -216,7 +216,7 @@ namespace Microsoft.Scripting.Generation {
             return RawCreateDynamicMethod(uniqueName, returnType, parameterTypes);
         }
 
-        internal TypeBuilder DefineDelegateType(string name) {
+        public TypeBuilder DefineDelegateType(string name) {
             AssemblyGen assembly = GetAssembly(false);
             return assembly.DefineType(
                 name,

@@ -33,8 +33,6 @@ namespace IronPythonTest.Stress {
             // Load a script with all the utility functions that are required
             // pe.ExecuteFile(InputTestDirectory + "\\EngineTests.py");
             _env = Python.CreateRuntime();
-            _env.LoadAssembly(typeof(string).Assembly);
-            _env.LoadAssembly(typeof(Debug).Assembly);
             _pe = _env.GetEngine("py");
         }
 

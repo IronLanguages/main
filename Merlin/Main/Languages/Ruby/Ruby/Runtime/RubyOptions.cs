@@ -32,7 +32,9 @@ namespace IronRuby {
         private readonly bool _loadFromDisk;
         private readonly bool _profile;
         private readonly bool _hasSearchPaths;
+        private readonly bool _noAssemblyResolveHook;
         private readonly RubyCompatibility _compatibility;
+
 #if DEBUG
         private static bool _UseThreadAbortForSyncRaise;
         private static bool _CompileRegexps;
@@ -64,6 +66,10 @@ namespace IronRuby {
 
         public bool Profile {
             get { return _profile; }
+        }
+
+        public bool NoAssemblyResolveHook {
+            get { return _noAssemblyResolveHook; }
         }
 
         public ReadOnlyCollection<string>/*!*/ LibraryPaths {
@@ -98,6 +104,7 @@ namespace IronRuby {
             _savePath = GetOption(options, "SavePath", (string)null);
             _loadFromDisk = GetOption(options, "LoadFromDisk", false);
             _profile = GetOption(options, "Profile", false);
+            _noAssemblyResolveHook = GetOption(options, "NoAssemblyResolveHook", false);
             _libraryPaths = GetStringCollectionOption(options, "LibraryPaths", ';', ',') ?? new ReadOnlyCollection<string>(new[] { "." });
             _hasSearchPaths = GetOption<object>(options, "SearchPaths", null) != null;
             _compatibility = GetCompatibility(options, "Compatibility", RubyCompatibility.Default);

@@ -324,12 +324,16 @@ namespace Microsoft.Scripting.Generation {
         /// Returns the original method if the method if a public version cannot be found.
         /// </summary>
         public static MethodInfo TryGetCallableMethod(MethodInfo method) {
-            if (method.DeclaringType.IsVisible) return method;
+            if (method.DeclaringType == null || method.DeclaringType.IsVisible) {
+                return method;
+            }
+
             // first try and get it from the base type we're overriding...
             method = method.GetBaseDefinition();
 
             if (method.DeclaringType.IsVisible) return method;
             if (method.DeclaringType.IsInterface) return method;
+
             // maybe we can get it from an interface...
             Type[] interfaces = method.DeclaringType.GetInterfaces();
             foreach (Type iface in interfaces) {
@@ -354,39 +358,10 @@ namespace Microsoft.Scripting.Generation {
             if (!type.IsVisible && foundMembers.Length > 0) {
                 // need to remove any members that we can't get through other means
                 List<MemberInfo> foundVisible = null;
-                MemberInfo visible;
-                MethodInfo mi;
                 for (int i = 0; i < foundMembers.Length; i++) {
-                    visible = null;
-                    switch (foundMembers[i].MemberType) {
-                        case MemberTypes.Method:
-                            visible = TryGetCallableMethod((MethodInfo)foundMembers[i]);
-                            if (!visible.DeclaringType.IsVisible) {
-                                visible = null;
-                            }
-                            break;
-                        case MemberTypes.Property:
-                            PropertyInfo pi = (PropertyInfo)foundMembers[i];
-                            mi = pi.GetGetMethod() ?? pi.GetSetMethod();
-                            visible = TryGetCallableMethod(mi);
-                            if (visible.DeclaringType.IsVisible) {
-                                visible = visible.DeclaringType.GetProperty(pi.Name);
-                            } else {
-                                visible = null;
-                            }
-                            break;
-                        case MemberTypes.Event:
-                            EventInfo ei = (EventInfo)foundMembers[i];
-                            mi = ei.GetAddMethod() ?? ei.GetRemoveMethod() ?? ei.GetRaiseMethod();
-                            visible = TryGetCallableMethod(mi);
-                            if (visible.DeclaringType.IsVisible) {
-                                visible = visible.DeclaringType.GetEvent(ei.Name);
-                            } else {
-                                visible = null;
-                            }
-                            break;
-                        // all others can't be exposed out this way
-                    }
+                    MemberInfo curMember = foundMembers[i];
+
+                    MemberInfo visible = TryGetVisibleMember(curMember);
                     if (visible != null) {
                         if (foundVisible == null) {
                             foundVisible = new List<MemberInfo>();
@@ -404,6 +379,38 @@ namespace Microsoft.Scripting.Generation {
             return foundMembers;
         }
 
+        public static MemberInfo TryGetVisibleMember(MemberInfo curMember) {
+            MethodInfo mi;
+            MemberInfo visible = null;
+            switch (curMember.MemberType) {
+                case MemberTypes.Method:
+                    mi = TryGetCallableMethod((MethodInfo)curMember);
+                    if (CompilerHelpers.IsVisible(mi)) {
+                        visible = mi;
+                    }
+                    break;
+
+                case MemberTypes.Property:
+                    PropertyInfo pi = (PropertyInfo)curMember;
+                    mi = TryGetCallableMethod(pi.GetGetMethod() ?? pi.GetSetMethod());
+                    if (CompilerHelpers.IsVisible(mi)) {
+                        visible = mi.DeclaringType.GetProperty(pi.Name);
+                    }
+                    break;
+
+                case MemberTypes.Event:
+                    EventInfo ei = (EventInfo)curMember;
+                    mi = TryGetCallableMethod(ei.GetAddMethod() ?? ei.GetRemoveMethod() ?? ei.GetRaiseMethod());
+                    if (CompilerHelpers.IsVisible(mi)) {
+                        visible = mi.DeclaringType.GetEvent(ei.Name);
+                    }
+                    break;
+
+                // all others can't be exposed out this way
+            }
+            return visible;
+        }
+
         /// <summary>
         /// Given a MethodInfo which may be declared on a non-public type this attempts to
         /// return a MethodInfo which will dispatch to the original MethodInfo but is declared
@@ -412,17 +419,19 @@ namespace Microsoft.Scripting.Generation {
         /// Throws InvalidOperationException if the method cannot be obtained.
         /// </summary>
         public static MethodInfo GetCallableMethod(MethodInfo method, bool privateBinding) {
-            MethodInfo mi = TryGetCallableMethod(method);
-            if (mi == null) {
-                if (!privateBinding) {
-                    throw Error.NoCallableMethods(method.DeclaringType, method.Name);
-                }
+            MethodInfo callable = TryGetCallableMethod(method);
+            if (privateBinding || IsVisible(callable)) {
+                return callable;
             }
-            return mi;
+            throw Error.NoCallableMethods(method.DeclaringType, method.Name);
         }
 
-        public static bool CanOptimizeField(FieldInfo fi) {
-            return fi.IsPublic && fi.DeclaringType.IsVisible;
+        public static bool IsVisible(MethodBase info) {
+            return info.IsPublic && (info.DeclaringType == null || info.DeclaringType.IsVisible);
+        }
+
+        public static bool IsVisible(FieldInfo info) {
+            return info.IsPublic && (info.DeclaringType == null || info.DeclaringType.IsVisible);
         }
 
         public static Type GetVisibleType(object value) {
@@ -732,7 +741,7 @@ namespace Microsoft.Scripting.Generation {
         }
 
         // Matches ILGen.TryEmitConstant
-        internal static bool CanEmitConstant(object value, Type type) {
+        public static bool CanEmitConstant(object value, Type type) {
             if (value == null || CanEmitILConstant(type)) {
                 return true;
             }

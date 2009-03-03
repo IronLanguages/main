@@ -167,6 +167,10 @@ namespace IronPython.Compiler {
         }
 
         public void Initialize(object state, TextReader reader, SourceUnit sourceUnit, SourceLocation initialLocation, int bufferCapacity) {
+            Initialize(state, reader, sourceUnit, initialLocation, bufferCapacity, null);
+        }
+
+        public void Initialize(object state, TextReader reader, SourceUnit sourceUnit, SourceLocation initialLocation, int bufferCapacity, PythonCompilerOptions compilerOptions) {
             ContractUtils.RequiresNotNull(reader, "reader");
 
             if (state != null) {
@@ -174,6 +178,10 @@ namespace IronPython.Compiler {
                 _state = new State((State)state);
             } else {
                 _state = new State(null);
+            }
+
+            if (compilerOptions != null && compilerOptions.InitialIndent != null) {
+                _state.Indent = (int[])compilerOptions.InitialIndent.Clone();
             }
 
             _sourceUnit = sourceUnit;
