@@ -128,13 +128,13 @@ namespace IronPython.Runtime.Types {
 
         private void EnsureGetter(SlotValue value) {
             if (value.Getter == null) {
-                value.Getter = (object instance) => ((IObjectWithSlots)instance).GetSlots()[_index];
+                value.Getter = (object instance) => ((IPythonObject)instance).GetSlots()[_index];
             }
         }
 
         private void EnsureSetter(SlotValue value) {
             if (value.Setter == null) {
-                value.Setter = (object instance, object setvalue) => ((IObjectWithSlots)instance).GetSlots()[_index] = setvalue;
+                value.Setter = (object instance, object setvalue) => ((IPythonObject)instance).GetSlots()[_index] = setvalue;
             }
         }
 

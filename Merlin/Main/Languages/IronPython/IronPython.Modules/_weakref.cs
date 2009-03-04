@@ -316,12 +316,6 @@ namespace IronPython.Modules {
                 }
             }
 
-            bool IPythonObject.HasDictionary {
-                get {
-                    return (GetObject() as IPythonObject).HasDictionary;
-                }
-            }
-
             IAttributesCollection IPythonObject.SetDict(IAttributesCollection dict) {
                 return (GetObject() as IPythonObject).SetDict(dict);
             }
@@ -340,6 +334,9 @@ namespace IronPython.Modules {
                 }
             }
 
+            object[] IPythonObject.GetSlots() { return null; }
+            object[] IPythonObject.GetSlotsCreate() { return null; }
+            
             #endregion
 
             #region object overloads
@@ -528,12 +525,6 @@ namespace IronPython.Modules {
                 }
             }
 
-            bool IPythonObject.HasDictionary {
-                get {
-                    return (GetObject() as IPythonObject).HasDictionary;
-                }
-            }
-
             IAttributesCollection IPythonObject.SetDict(IAttributesCollection dict) {
                 return (GetObject() as IPythonObject).SetDict(dict);
             }
@@ -552,6 +543,9 @@ namespace IronPython.Modules {
                 }
             }
 
+            object[] IPythonObject.GetSlots() { return null; }
+            object[] IPythonObject.GetSlotsCreate() { return null; }
+            
             #endregion
 
             #region object overloads

@@ -44,7 +44,7 @@ namespace IronPython.Runtime.Types {
             }
 
             IPythonObject sdo = instance as IPythonObject;
-            if (sdo != null) {
+            if (sdo != null && sdo.PythonType.HasDictionary) {
                 IAttributesCollection res = sdo.Dict;
                 if (res != null || (res = sdo.SetDict(PythonDictionary.MakeSymbolDictionary())) != null) {
                     value = res;
@@ -62,7 +62,12 @@ namespace IronPython.Runtime.Types {
                 if (!(value is IAttributesCollection))
                     throw PythonOps.TypeError("__dict__ must be set to a dictionary, not '{0}'", owner.Name);
 
-                return sdo.ReplaceDict((IAttributesCollection)value);
+                if (!sdo.PythonType.HasDictionary) {
+                    return false;
+                }
+
+                sdo.ReplaceDict((IAttributesCollection)value);
+                return true;
             }
 
             if (instance == null) throw PythonOps.AttributeError("'__dict__' of '{0}' objects is not writable", owner.Name);
@@ -76,7 +81,12 @@ namespace IronPython.Runtime.Types {
         internal override bool TryDeleteValue(CodeContext context, object instance, PythonType owner) {
             IPythonObject sdo = instance as IPythonObject;
             if (sdo != null) {
-                return sdo.ReplaceDict(null);
+                if(!sdo.PythonType.HasDictionary) {
+                    return false;
+                }
+
+                sdo.ReplaceDict(null);
+                return true;
             }
 
             if (instance == null) throw PythonOps.TypeError("'__dict__' of '{0}' objects is not writable", owner.Name);

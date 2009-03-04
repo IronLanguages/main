@@ -296,23 +296,28 @@ namespace IronPython.Compiler.Ast {
                 if (vars.Count > 0) {
                     body = Ast.Block(
                         new[] { _localCodeContext },
+#if FALSE
+                        Ast.Assign(
+                            _localCodeContext,
+                            Ast.Call(
+                                typeof(PythonOps).GetMethod("CreateLocalContext"),
+                                _parent.LocalContext,
+                                Ast.RuntimeVariables(vars),
+                                Ast.Constant(varNames.ToArray()),
+                                Ast.Constant(isVisible)
+                            )
+                        ),
+#else                        
                         Ast.Assign(
                             _localCodeContext,
                             Ast.Call(
                                 typeof(ScriptingRuntimeHelpers).GetMethod("CreateNestedCodeContext"),
-#if FALSE
-                                Ast.Call(
-                                    typeof(PythonOps).GetMethod("CreateLocalsDictionary"),
-                                    Ast.RuntimeVariables(vars),
-                                    Ast.Constant(varNames.ToArray())
-                                ),
-#else
                                 Utils.VariableDictionary(vars),
-#endif
                                 _parent.LocalContext,
                                 Ast.Constant(isVisible)
                             )
                         ),
+#endif
                         body
                     );
                 } else {
@@ -437,8 +442,11 @@ namespace IronPython.Compiler.Ast {
         }
 
         internal MSAst.Expression/*!*/ AddReturnTarget(MSAst.Expression/*!*/ expression) {
+            return AddReturnTarget(expression, typeof(object));
+        }
+        internal MSAst.Expression/*!*/ AddReturnTarget(MSAst.Expression/*!*/ expression, Type type) {
             if (_returnLabel != null) {
-                expression = Ast.Label(_returnLabel, AstUtils.Convert(expression, typeof(object)));
+                expression = Ast.Label(_returnLabel, AstUtils.Convert(expression, type));
                 _returnLabel = null;
             }
             return expression;

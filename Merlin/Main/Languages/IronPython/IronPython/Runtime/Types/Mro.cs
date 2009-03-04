@@ -16,6 +16,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using IronPython.Runtime.Operations;
+using System;
 
 namespace IronPython.Runtime.Types {
     /// <summary>
@@ -97,11 +98,12 @@ namespace IronPython.Runtime.Types {
                 for (; ; ) {
                     bool removed = false, sawNonZero = false;
                     // now that we have our list, look for good heads
+                    PythonType lastHead = null;
                     for (int i = 0; i < mroList.Count; i++) {
                         if (mroList[i].Count == 0) continue;    // we've removed everything from this list.
 
                         sawNonZero = true;
-                        PythonType head = mroList[i][0];
+                        PythonType head = lastHead = mroList[i][0];
                         // see if we're in the tail of any other lists...
                         bool inTail = false;
                         for (int j = 0; j < mroList.Count; j++) {
@@ -131,9 +133,17 @@ namespace IronPython.Runtime.Types {
 
                     if (!removed) {
                         // we've iterated through the list once w/o removing anything
-                        throw PythonOps.TypeError("invalid order for base classes: {0}, {1}",
-                            mroList[0][0].Name,
-                            mroList[1][0].Name);
+                        PythonType other = null;
+                        string error = String.Format("Cannot create a consistent method resolution\norder (MRO) for bases {0}", lastHead.Name);
+
+                        for (int i = 0; i < mroList.Count; i++) {
+                            if (mroList[i].Count != 0 && !mroList[i][0].Equals(lastHead)) {
+                                other = mroList[i][0];
+                                error += ", ";
+                                error += other.Name;
+                            }
+                        }
+                        throw PythonOps.TypeError(error);
                     }
                 }
             }

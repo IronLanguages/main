@@ -1262,12 +1262,8 @@ namespace IronPython.Runtime.Operations {
             return TypeCache.OldInstance;
         }
 
-        public static object MakeClass(CodeContext/*!*/ context, string name, object[] bases, string selfNames, CallTarget0 body) {
-            CodeContext bodyContext = (CodeContext)body();
-
-            IAttributesCollection vars = bodyContext.Scope.Dict;
-
-            return MakeClass(context, name, bases, selfNames, vars);
+        public static object MakeClass(Func<CodeContext> body, CodeContext/*!*/ context, string name, object[] bases, string selfNames) {
+            return MakeClass(context, name, bases, selfNames, body().Scope.Dict);
         }
 
         internal static object MakeClass(CodeContext context, string name, object[] bases, string selfNames, IAttributesCollection vars) {
@@ -1293,8 +1289,11 @@ namespace IronPython.Runtime.Operations {
             PythonTuple tupleBases = PythonTuple.MakeTuple(bases);
 
             object metaclass = FindMetaclass(context, tupleBases, vars);
-            if (metaclass == TypeCache.OldInstance)
+            if (metaclass == TypeCache.OldInstance) {
                 return new OldClass(name, tupleBases, vars, selfNames);
+            } else if (metaclass == TypeCache.PythonType) {
+                return PythonType.__new__(context, TypeCache.PythonType, name, tupleBases, vars);
+            }
 
             // eg:
             // def foo(*args): print args            
@@ -2363,9 +2362,15 @@ namespace IronPython.Runtime.Operations {
         /// is large enough to hold for all of the slots allocated for the type and
         /// its sub types.
         /// </summary>
-        public static object[]/*!*/ InitializeUserTypeSlots(PythonType/*!*/ type) {
-            object[] res = new object[type.SlotCount];
-            for (int i = 0; i < res.Length; i++) {
+        public static object[] InitializeUserTypeSlots(PythonType/*!*/ type) {
+            if (type.SlotCount == 0) {
+                // if we later set the weak reference obj we'll create the array
+                return null;
+            }
+
+            // weak reference is stored at end of slots
+            object[] res = new object[type.SlotCount + 1];  
+            for (int i = 0; i < res.Length - 1; i++) {
                 res[i] = Uninitialized.Instance;
             }
             return res;
@@ -3394,10 +3399,21 @@ namespace IronPython.Runtime.Operations {
         }
 
         #region Global Access
-
-        public static PythonDictionary/*!*/ CreateLocalsDictionary(IList<IStrongBox> boxes, SymbolId[] args) {
-            return new PythonDictionary(new RuntimeVariablesDictionaryStorage(boxes, args));
+#if FALSE
+        public static CodeContext/*!*/ CreateLocalContext(CodeContext/*!*/ outerContext, IList<IStrongBox> boxes, SymbolId[] args, bool isVisible) {
+            return new CodeContext(
+                new Scope(
+                    outerContext.Scope,
+                    new PythonDictionary(
+                        new RuntimeVariablesDictionaryStorage(boxes, args)
+                    ),
+                    isVisible
+                ), 
+                outerContext.LanguageContext, 
+                outerContext
+            );
         }
+#endif
 
         public static object GetGlobal(Scope scope, SymbolId name) {
             return GetLocal(scope.ModuleScope, name);

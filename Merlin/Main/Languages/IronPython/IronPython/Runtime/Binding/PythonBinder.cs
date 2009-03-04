@@ -798,6 +798,8 @@ namespace IronPython.Runtime.Binding {
             // load any Python modules
             _context.LoadBuiltins(_context.Builtins, asm);
 
+            // load any cached new types
+            NewTypeMaker.LoadNewTypes(asm);
         }
 
         private static void LoadScriptCode(PythonContext/*!*/ pc, Assembly/*!*/ asm) {

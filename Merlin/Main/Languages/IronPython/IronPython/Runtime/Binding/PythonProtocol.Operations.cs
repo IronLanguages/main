@@ -47,7 +47,7 @@ namespace IronPython.Runtime.Binding {
                 return operation.Defer(target, arg);
             }
 
-            ValidationInfo valInfo = BindingHelpers.GetValidationInfo(null, args);
+            ValidationInfo valInfo = BindingHelpers.GetValidationInfo(args);
 
             PythonOperationKind? opString = null;
             switch (operation.Operation) {
@@ -99,7 +99,7 @@ namespace IronPython.Runtime.Binding {
                 return operation.Defer(arg);
             }
 
-            ValidationInfo valInfo = BindingHelpers.GetValidationInfo(null, args);
+            ValidationInfo valInfo = BindingHelpers.GetValidationInfo(args);
 
             DynamicMetaObject res = null;
 
@@ -133,9 +133,9 @@ namespace IronPython.Runtime.Binding {
                 return operation.Defer(args);
             }
 
-            ValidationInfo valInfo = BindingHelpers.GetValidationInfo(null, args);
+            ValidationInfo valInfo = BindingHelpers.GetValidationInfo(args[0]);
 
-            DynamicMetaObject res = AddPythonBoxing(MakeIndexerOperation(operation, index, args));
+            DynamicMetaObject res = AddPythonBoxing(MakeIndexerOperation(operation, index, args));            
 
             return BindingHelpers.AddDynamicTestAndDefer(operation, res, args, valInfo);
         }
@@ -145,7 +145,7 @@ namespace IronPython.Runtime.Binding {
                 return operation.Defer(args);
             }
 
-            ValidationInfo valInfo = BindingHelpers.GetValidationInfo(null, args);
+            ValidationInfo valInfo = BindingHelpers.GetValidationInfo(args);
 
             DynamicMetaObject res = AddPythonBoxing(MakeOperationRule(operation, args));
 

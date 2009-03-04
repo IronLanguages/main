@@ -76,7 +76,7 @@ namespace IronPython.Compiler.Ast {
             get { return false; }
         }
 
-        protected abstract bool ExposesLocalVariables { get; }
+        internal abstract bool ExposesLocalVariable(PythonVariable variable);
 
         internal virtual void CreateVariables(AstGenerator ag, List<MSAst.Expression> init) {
             if (_variables != null) {
@@ -109,7 +109,7 @@ namespace IronPython.Compiler.Ast {
                         //    - initialize them to skip the local slot while looking up the name in scope chain
                         //      TODO: this is hacky as well
                         //
-                        if (pv.Kind == VariableKind.Local && !IsGlobal && (pv.ReadBeforeInitialized || pv.AccessedInNestedScope || ExposesLocalVariables) ||
+                        if (pv.Kind == VariableKind.Local && !IsGlobal && (pv.ReadBeforeInitialized || pv.AccessedInNestedScope || ExposesLocalVariable(pv)) ||
                             pv.Kind == VariableKind.GlobalLocal && pv.ReadBeforeInitialized ||
                             pv.Kind == VariableKind.HiddenLocal) {
 

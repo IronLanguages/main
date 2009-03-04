@@ -232,7 +232,7 @@ namespace IronPython.Runtime.Binding {
 
             DynamicMetaObject self = target.Restrict(target.GetLimitType());
 
-            ValidationInfo valInfo = BindingHelpers.GetValidationInfo(null, target);
+            ValidationInfo valInfo = BindingHelpers.GetValidationInfo(target);
             PythonType pt = DynamicHelpers.GetPythonType(target.Value);
             Expression body = GetCallError(self);
             BinderState state = BinderState.GetBinderState(call);

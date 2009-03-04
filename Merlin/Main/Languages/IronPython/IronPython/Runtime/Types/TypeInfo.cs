@@ -832,7 +832,7 @@ namespace IronPython.Runtime.Types {
 
             internal override bool TrySetValue(CodeContext context, object instance, PythonType owner, object value) {
                 IPythonObject obj = instance as IPythonObject;
-                if (obj == null || !obj.HasDictionary) {
+                if (obj == null || !obj.PythonType.HasDictionary) {
                     string name = owner.Name;
                     if (obj != null) {
                         name = obj.PythonType.Name;

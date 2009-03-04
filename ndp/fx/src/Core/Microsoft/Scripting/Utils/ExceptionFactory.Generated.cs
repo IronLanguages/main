@@ -1078,6 +1078,13 @@ namespace System.Linq.Expressions {
         }
 
         /// <summary>
+        /// A string like  "No generic method '{0}' on type '{1}' is compatible with the supplied type arguments and arguments. No type arguments should be provided if the method is non-generic. "
+        /// </summary>
+        internal static string GenericMethodWithArgsDoesNotExistOnType(object p0, object p1) {
+            return FormatString("No generic method '{0}' on type '{1}' is compatible with the supplied type arguments and arguments. No type arguments should be provided if the method is non-generic. ", p0, p1);
+        }
+
+        /// <summary>
         /// A string like  "More than one method '{0}' on type '{1}' is compatible with the supplied arguments."
         /// </summary>
         internal static string MethodWithMoreThanOneMatch(object p0, object p1) {
@@ -2091,6 +2098,13 @@ namespace System.Linq.Expressions {
         /// </summary>
         internal static Exception MethodWithArgsDoesNotExistOnType(object p0, object p1) {
             return new InvalidOperationException(Strings.MethodWithArgsDoesNotExistOnType(p0, p1));
+        }
+
+        /// <summary>
+        /// InvalidOperationException with message like "No generic method '{0}' on type '{1}' is compatible with the supplied type arguments and arguments. No type arguments should be provided if the method is non-generic. "
+        /// </summary>
+        internal static Exception GenericMethodWithArgsDoesNotExistOnType(object p0, object p1) {
+            return new InvalidOperationException(Strings.GenericMethodWithArgsDoesNotExistOnType(p0, p1));
         }
 
         /// <summary>

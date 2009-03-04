@@ -108,8 +108,8 @@ namespace IronPython.Compiler.Ast {
             }
         }
 
-        protected override bool ExposesLocalVariables {
-            get { return true; }
+        internal override bool ExposesLocalVariable(PythonVariable variable) {
+            return true;
         }
 
         internal PythonVariable EnsureGlobalVariable(PythonNameBinder binder, SymbolId name) {

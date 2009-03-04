@@ -15,15 +15,19 @@
 
 using System;
 using System.Diagnostics;
-using System.Linq.Expressions;
-using System.Runtime.CompilerServices;
 using System.Dynamic;
-using IronPython.Runtime.Operations;
-using IronPython.Runtime.Types;
+using System.Linq.Expressions;
+using System.Reflection;
+using System.Runtime.CompilerServices;
+
 using Microsoft.Scripting;
 using Microsoft.Scripting.Actions;
 using Microsoft.Scripting.Generation;
 using Microsoft.Scripting.Runtime;
+
+using IronPython.Runtime.Operations;
+using IronPython.Runtime.Types;
+
 using Ast = System.Linq.Expressions.Expression;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 
@@ -52,7 +56,7 @@ namespace IronPython.Runtime.Binding {
                 action,
                 new DynamicMetaObject[] { this, value },
                 new ConditionalBuilder(action),
-                BindingHelpers.GetValidationInfo(self.Expression, sdo.PythonType)
+                BindingHelpers.GetValidationInfo(this, sdo.PythonType)
             );
 
             DynamicMetaObject res = null;
@@ -87,7 +91,7 @@ namespace IronPython.Runtime.Binding {
 
             if (res == null) {
                 // finally if we have a dictionary set the value there.
-                if (sdo.HasDictionary) {
+                if (sdo.PythonType.HasDictionary) {
                     MakeDictionarySetTarget(bindingInfo);
                 } else {
                     bindingInfo.Body.FinishCondition(
@@ -117,7 +121,7 @@ namespace IronPython.Runtime.Binding {
                     action,
                     new DynamicMetaObject[] { this },
                     new ConditionalBuilder(action),
-                    BindingHelpers.GetValidationInfo(Expression, PythonType)
+                    BindingHelpers.GetValidationInfo(this, PythonType)
                 )
             );
         }
@@ -145,7 +149,7 @@ namespace IronPython.Runtime.Binding {
                     Ast.Variable(Expression.Type, "self"),
                     Ast.Variable(typeof(object), "lookupRes"),
                     new ConditionalBuilder(Binder),
-                    BindingHelpers.GetValidationInfo(self.Expression, sdo.PythonType)
+                    BindingHelpers.GetValidationInfo(self, sdo.PythonType)
                 );
 
                 PythonTypeSlot foundSlot;
@@ -171,7 +175,7 @@ namespace IronPython.Runtime.Binding {
                 foundSlot = FindSlot(context, GetGetMemberName(Binder), sdo, out isOldStyle, out systemTypeResolution);
 
                 if (!isOldStyle || foundSlot is ReflectedSlotProperty) {
-                    if (sdo.HasDictionary && (foundSlot == null || !foundSlot.IsSetDescriptor(context, sdo.PythonType))) {
+                    if (sdo.PythonType.HasDictionary && (foundSlot == null || !foundSlot.IsSetDescriptor(context, sdo.PythonType))) {
                         MakeDictionaryAccess(bindingInfo);
                     }
 
@@ -321,10 +325,7 @@ namespace IronPython.Runtime.Binding {
                             Ast.Assign(
                                 info.Result,
                                 Ast.ArrayAccess(
-                                    Ast.Call(
-                                        Ast.Convert(info.Self, typeof(IObjectWithSlots)),
-                                        typeof(IObjectWithSlots).GetMethod("GetSlots")
-                                    ),
+                                    GetSlots(_target),
                                     Ast.Constant(rsp.Index)
                                 )
                             ),
@@ -413,20 +414,28 @@ namespace IronPython.Runtime.Binding {
             }
 
             private void MakeDictionaryAccess(GetBindingInfo/*!*/ info) {
+                FieldInfo fi = _target.LimitType.GetField(NewTypeMaker.DictFieldName);
+                Expression dict;
+                if (fi != null) {
+                    dict = Ast.Field(
+                        Ast.Convert(info.Self, _target.LimitType),
+                        fi
+                    );
+                } else {
+                    dict = Ast.Property(
+                        Ast.Convert(info.Self, typeof(IPythonObject)),
+                        TypeInfo._IPythonObject.Dict
+                    );
+                }
+                
                 info.Body.AddCondition(
                     Ast.AndAlso(
                         Ast.NotEqual(
-                            Ast.Property(
-                                Ast.Convert(info.Self, typeof(IPythonObject)),
-                                TypeInfo._IPythonObject.Dict
-                            ),
+                            dict,
                             Ast.Constant(null)
                         ),
                         Ast.Call(
-                            Ast.Property(
-                                Ast.Convert(info.Self, typeof(IPythonObject)),
-                                TypeInfo._IPythonObject.Dict
-                            ),
+                            dict,
                             TypeInfo._IAttributesCollection.TryGetvalue,
                             AstUtils.Constant(SymbolTable.StringToId(GetGetMemberName(info.Action))),
                             info.Result
@@ -654,10 +663,7 @@ namespace IronPython.Runtime.Binding {
                         Ast.Convert(
                             Ast.Assign(
                                 Ast.ArrayAccess(
-                                    Ast.Call(
-                                        Ast.Convert(info.Args[0].Expression, typeof(IObjectWithSlots)),
-                                        typeof(IObjectWithSlots).GetMethod("GetSlots")
-                                    ),
+                                    GetSlots(info.Args[0]),
                                     AstUtils.Constant(rsp.Index)
                                 ),
                                 AstUtils.Convert(value, typeof(object))
@@ -743,15 +749,31 @@ namespace IronPython.Runtime.Binding {
         }
 
         private static void MakeDictionarySetTarget(SetBindingInfo/*!*/ info) {
-            // return UserTypeOps.SetDictionaryValue(rule.Parameters[0], name, value);
-            info.Body.FinishCondition(
-                Ast.Call(
-                    typeof(UserTypeOps).GetMethod("SetDictionaryValue"),
-                    Ast.Convert(info.Args[0].Expression, typeof(IPythonObject)),
-                    AstUtils.Constant(SymbolTable.StringToId(info.Action.Name)),
-                    AstUtils.Convert(info.Args[1].Expression, typeof(object))
-                )
-            );
+            FieldInfo fi = info.Args[0].LimitType.GetField(NewTypeMaker.DictFieldName);
+            if (fi != null) {
+                // return UserTypeOps.FastSetDictionaryValue(ref this._dict, name, value);
+                info.Body.FinishCondition(
+                    Ast.Call(
+                        typeof(UserTypeOps).GetMethod("FastSetDictionaryValue"),
+                        Ast.Field(
+                            Ast.Convert(info.Args[0].Expression, info.Args[0].LimitType), 
+                            fi
+                        ),
+                        AstUtils.Constant(SymbolTable.StringToId(info.Action.Name)),
+                        AstUtils.Convert(info.Args[1].Expression, typeof(object))
+                    )
+                );
+            } else {
+                // return UserTypeOps.SetDictionaryValue(rule.Parameters[0], name, value);
+                info.Body.FinishCondition(
+                    Ast.Call(
+                        typeof(UserTypeOps).GetMethod("SetDictionaryValue"),
+                        Ast.Convert(info.Args[0].Expression, typeof(IPythonObject)),
+                        AstUtils.Constant(SymbolTable.StringToId(info.Action.Name)),
+                        AstUtils.Convert(info.Args[1].Expression, typeof(object))
+                    )
+                );
+            }
         }
 
         #endregion
@@ -792,7 +814,7 @@ namespace IronPython.Runtime.Binding {
                 MakeSlotDelete(info, dts);
             }
 
-            if (!info.Body.IsFinal && sdo.HasDictionary) {
+            if (!info.Body.IsFinal && sdo.PythonType.HasDictionary) {
                 // finally if we have a dictionary set the value there.
                 MakeDictionaryDeleteTarget(info);
             }
@@ -1051,5 +1073,20 @@ namespace IronPython.Runtime.Binding {
         }
 
         #endregion
+
+        private static Expression/*!*/ GetSlots(DynamicMetaObject/*!*/ self) {
+            FieldInfo fi = self.LimitType.GetField(NewTypeMaker.SlotsAndWeakRefFieldName);
+            if (fi != null) {
+                return Ast.Field(
+                    Ast.Convert(self.Expression, self.LimitType),
+                    fi
+                );
+            }
+            return Ast.Call(
+                Ast.Convert(self.Expression, typeof(IPythonObject)),
+                typeof(IPythonObject).GetMethod("GetSlots")
+            );
+        }
+
     }
 }
