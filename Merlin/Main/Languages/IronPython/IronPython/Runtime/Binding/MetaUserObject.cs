@@ -56,7 +56,7 @@ namespace IronPython.Runtime.Binding {
 
         public override DynamicMetaObject/*!*/ BindConvert(ConvertBinder/*!*/ conversion) {
             Type type = conversion.Type;
-            ValidationInfo typeTest = BindingHelpers.GetValidationInfo(Expression, Value.PythonType);
+            ValidationInfo typeTest = BindingHelpers.GetValidationInfo(this, Value.PythonType);
 
             return BindingHelpers.AddDynamicTestAndDefer(
                 conversion,
@@ -116,7 +116,7 @@ namespace IronPython.Runtime.Binding {
         #region Invoke Implementation
 
         private DynamicMetaObject/*!*/ InvokeWorker(DynamicMetaObjectBinder/*!*/ action, Expression/*!*/ codeContext, DynamicMetaObject/*!*/[] args) {
-            ValidationInfo typeTest = BindingHelpers.GetValidationInfo(Expression, Value.PythonType);
+            ValidationInfo typeTest = BindingHelpers.GetValidationInfo(this, Value.PythonType);
 
             return BindingHelpers.AddDynamicTestAndDefer(
                 action,
@@ -171,6 +171,7 @@ namespace IronPython.Runtime.Binding {
             PythonType pt = ((IPythonObject)self.Value).PythonType;
             PythonTypeSlot pts;
             CodeContext context = BinderState.GetBinderState(convertToAction).Context;
+            ValidationInfo valInfo = BindingHelpers.GetValidationInfo(this, pt);
 
             if (pt.TryResolveSlot(context, symbolId, out pts) && !IsBuiltinConversion(context, pts, symbolId, pt)) {
                 ParameterExpression tmp = Ast.Variable(typeof(object), "func");
@@ -196,31 +197,27 @@ namespace IronPython.Runtime.Binding {
                     callExpr = AstUtils.Convert(AddExtensibleSelfCheck(convertToAction, self, callExpr), typeof(object));
                 }
 
-                return new DynamicMetaObject(
-                    Ast.Block(
-                        new ParameterExpression[] { tmp },
+                return BindingHelpers.AddDynamicTestAndDefer(
+                    convertToAction,
+                    new DynamicMetaObject(
                         Ast.Condition(
-                            BindingHelpers.CheckTypeVersion(
+                            MakeTryGetTypeMember(
+                                BinderState.GetBinderState(convertToAction),
+                                pts,
                                 self.Expression,
-                                pt.Version
+                                tmp
                             ),
-                            Ast.Condition(
-                                MakeTryGetTypeMember(
-                                    BinderState.GetBinderState(convertToAction),
-                                    pts,
-                                    self.Expression,
-                                    tmp
-                                ),
-                                callExpr,
-                                AstUtils.Convert(
-                                    ConversionFallback(convertToAction),
-                                    typeof(object)
-                                )
-                            ),
-                            convertToAction.GetUpdateExpression(typeof(object))
-                        )
+                            callExpr,
+                            AstUtils.Convert(
+                                ConversionFallback(convertToAction),
+                                typeof(object)
+                            )
+                        ),
+                        self.Restrict(self.GetRuntimeType()).Restrictions
                     ),
-                    self.Restrict(self.GetRuntimeType()).Restrictions
+                    new DynamicMetaObject[] { this },
+                    valInfo,
+                    tmp
                 );
             }
 

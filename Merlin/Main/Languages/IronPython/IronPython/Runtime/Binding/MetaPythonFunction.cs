@@ -168,7 +168,7 @@ namespace IronPython.Runtime.Binding {
                     _call, 
                     res, 
                     deferArgs, 
-                    new ValidationInfo(_deferTest, null),
+                    new ValidationInfo(_deferTest),
                     res.Expression.Type     // force defer to our return type, our restrictions guarantee this to be true (only defaults can change, and we restrict to the delegate type)
                 );
             }

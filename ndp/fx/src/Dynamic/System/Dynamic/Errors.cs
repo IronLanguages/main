@@ -61,15 +61,6 @@ namespace System.Dynamic {
         }
 
         /// <summary>
-        /// A string like  "Removing an event handler that is not registered."
-        /// </summary>
-        internal static string RemovingUnregisteredEvent {
-            get {
-                return "Removing an event handler that is not registered.";
-            }
-        }
-
-        /// <summary>
         /// A string like  "COM object does not support events."
         /// </summary>
         internal static string COMObjectDoesNotSupportEvents {
@@ -84,15 +75,6 @@ namespace System.Dynamic {
         internal static string COMObjectDoesNotSupportSourceInterface {
             get {
                 return "COM object does not support specified source interface.";
-            }
-        }
-
-        /// <summary>
-        /// A string like  "Removing not registered handler."
-        /// </summary>
-        internal static string RemovingUnregisteredHandler {
-            get {
-                return "Removing not registered handler.";
             }
         }
 
@@ -216,13 +198,6 @@ namespace System.Dynamic {
 
     internal static partial class Error {
         /// <summary>
-        /// InvalidOperationException with message like "Removing an event handler that is not registered."
-        /// </summary>
-        internal static Exception RemovingUnregisteredEvent() {
-            return new InvalidOperationException(Strings.RemovingUnregisteredEvent);
-        }
-
-        /// <summary>
         /// ArgumentException with message like "COM object does not support events."
         /// </summary>
         internal static Exception COMObjectDoesNotSupportEvents() {
@@ -234,13 +209,6 @@ namespace System.Dynamic {
         /// </summary>
         internal static Exception COMObjectDoesNotSupportSourceInterface() {
             return new ArgumentException(Strings.COMObjectDoesNotSupportSourceInterface);
-        }
-
-        /// <summary>
-        /// InvalidOperationException with message like "Removing not registered handler."
-        /// </summary>
-        internal static Exception RemovingUnregisteredHandler() {
-            return new InvalidOperationException(Strings.RemovingUnregisteredHandler);
         }
 
         /// <summary>

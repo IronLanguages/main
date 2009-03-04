@@ -83,33 +83,6 @@ namespace IronPython.Runtime.Binding {
             return DynamicHelpers.GetPythonTypeFromType(value.GetLimitType());
         }
 
-        public static Expression MakeTypeTests(DynamicMetaObject metaSelf, params DynamicMetaObject/*!*/[] args) {
-            Expression typeTest = null;
-            if (metaSelf != null) {
-                IPythonObject self = metaSelf.Value as IPythonObject;
-                if (self != null) {
-                    typeTest = BindingHelpers.CheckTypeVersion(metaSelf.Expression, self.PythonType.Version);
-                }
-            }
-
-            for (int i = 0; i < args.Length; i++) {
-                if (args[i].HasValue) {
-                    IPythonObject val = args[i].Value as IPythonObject;
-                    if (val != null) {
-                        Expression test = BindingHelpers.CheckTypeVersion(args[i].Expression, val.PythonType.Version);
-
-                        if (typeTest != null) {
-                            typeTest = Ast.AndAlso(typeTest, test);
-                        } else {
-                            typeTest = test;
-                        }
-                    }
-                }
-            }
-
-            return typeTest;
-        }
-
         /// <summary>
         /// Creates a target which creates a new dynamic method which contains a single
         /// dynamic site that invokes the callable object.

@@ -165,7 +165,7 @@ namespace IronPython.Runtime.Binding {
                     restrictions.Merge(BindingRestrictionsHelpers.GetRuntimeTypeRestriction(target.Expression, target.GetLimitType()))
                 ),
                 args,
-                new ValidationInfo(test, null)
+                new ValidationInfo(test)
             );
         }
 

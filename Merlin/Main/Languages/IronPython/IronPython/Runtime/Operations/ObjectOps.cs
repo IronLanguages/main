@@ -236,7 +236,7 @@ namespace IronPython.Runtime.Operations {
             object slotValue;
             foreach (object type in mro) {
                 if (PythonOps.TryGetBoundAttr(type, Symbols.Slots, out slots)) {
-                    List<string> slotNames = NewTypeMaker.SlotsToList(slots);
+                    List<string> slotNames = PythonType.SlotsToList(slots);
                     foreach (string slotName in slotNames) {
                         if (slotName == "__dict__") continue;
                         // don't reassign same-named slots from types earlier in the MRO

@@ -65,11 +65,10 @@ namespace System.Dynamic {
         [SpecialName]
         public object InPlaceSubtract(object func) {
             ComEventSink comEventSink = ComEventSink.FromRuntimeCallableWrapper(_rcw, _sourceIid, false);
-            if (comEventSink == null) {
-                throw Error.RemovingUnregisteredEvent();
+            if (comEventSink != null) {
+                comEventSink.RemoveHandler(_dispid, func);
             }
 
-            comEventSink.RemoveHandler(_dispid, func);
             return this;
         }
     }

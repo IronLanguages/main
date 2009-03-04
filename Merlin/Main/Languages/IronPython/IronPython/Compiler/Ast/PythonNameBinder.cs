@@ -238,7 +238,9 @@ namespace IronPython.Compiler.Ast {
             node.ModuleNameVariable = _globalScope.EnsureGlobalVariable(this, Symbols.Name);
 
             // define the __doc__ and the __module__
-            node.DocVariable = DefineName(Symbols.Doc);
+            if (node.Body.Documentation != null) {
+                node.DocVariable = DefineName(Symbols.Doc);
+            }
             node.ModVariable = DefineName(Symbols.Module);
 
             // Walk the body

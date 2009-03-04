@@ -299,10 +299,6 @@ namespace IronPython.Runtime.Exceptions {
                 get { return _dict; }
             }
 
-            bool IPythonObject.HasDictionary {
-                get { return true; }
-            }
-
             IAttributesCollection IPythonObject.SetDict(IAttributesCollection dict) {
                 Interlocked.CompareExchange<IAttributesCollection>(ref _dict, dict, null);
                 return _dict;
@@ -323,6 +319,9 @@ namespace IronPython.Runtime.Exceptions {
 
                 _type = newType;
             }
+
+            object[] IPythonObject.GetSlots() { return null; }
+            object[] IPythonObject.GetSlotsCreate() { return null; }
 
             #endregion
 
@@ -807,6 +806,7 @@ namespace IronPython.Runtime.Exceptions {
 
             myType.ResolutionOrder = Mro.Calculate(myType, new PythonType[] { baseType });
             myType.BaseTypes = new PythonType[] { baseType };
+            myType.HasDictionary = true;
 
             return myType;
         }

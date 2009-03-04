@@ -106,8 +106,8 @@ namespace IronPython.Compiler.Ast {
             set { _variable = value; }
         }
 
-        protected override bool ExposesLocalVariables {
-            get { return NeedsLocalsDictionary; }
+        internal override bool ExposesLocalVariable(PythonVariable variable) {
+            return NeedsLocalsDictionary; 
         }
 
         private static FunctionAttributes ComputeFlags(Parameter[] parameters) {

@@ -60,6 +60,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
 
         // fields that frequently remain null
         private WeakRefTracker _weakrefTracker;             // storage for Python style weak references
+        private string[] _slots;                            // the slots when the class was created
         private OldClass _oldClass;                         // the associated OldClass or null for new-style types  
         private int _originalSlotCount;                     // the number of slots when the type was created
         private InstanceCreator _instanceCtor;              // creates instances
@@ -118,6 +119,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
             Name = name;
             _bases = new PythonType[] { baseType };
             ResolutionOrder = Mro.Calculate(this, _bases);
+            _attrs |= PythonTypeAttributes.HasDictionary;
         }
 
         /// <summary>
@@ -135,6 +137,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
             IsSystemType = false;
             IsPythonType = false;
             _pythonContext = context;
+            _attrs |= PythonTypeAttributes.HasDictionary;
         }
 
         /// <summary>
@@ -290,7 +293,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
             }
 
             // Ensure that we are not switching the CLI type
-            Type newType = NewTypeMaker.GetNewType(type.Name, t, type.GetMemberDictionary(DefaultContext.Default));
+            Type newType = NewTypeMaker.GetNewType(type.Name, t);
             if (type.UnderlyingSystemType != newType)
                 throw PythonOps.TypeErrorForIncompatibleObjectLayout("__bases__ assignment", type, newType);
 
@@ -902,6 +905,22 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
             }
         }
 
+        internal bool IsWeakReferencable {
+            get {
+                return (_attrs & PythonTypeAttributes.WeakReferencable) != 0;
+            }
+        }
+
+        internal bool HasDictionary {
+            get {
+                return (_attrs & PythonTypeAttributes.HasDictionary) != 0;
+            }
+            set {
+                if (value) _attrs |= PythonTypeAttributes.HasDictionary;
+                else _attrs &= (~PythonTypeAttributes.HasDictionary);
+            }
+        }        
+
         internal void SetConstructor(BuiltinFunction ctor) {
             _ctor = ctor;
         }
@@ -1371,7 +1390,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
             IPythonObject sdo = instance as IPythonObject;
             if (sdo != null) {
                 IAttributesCollection iac = sdo.Dict;
-                if (iac == null) {
+                if (iac == null && sdo.PythonType.HasDictionary) {
                     iac = PythonDictionary.MakeSymbolDictionary();
 
                     if ((iac = sdo.SetDict(iac)) == null) {
@@ -1412,7 +1431,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
             IPythonObject sdo = instance as IPythonObject;
             if (sdo != null) {
                 IAttributesCollection iac = sdo.Dict;
-                if (iac == null) {
+                if (iac == null && sdo.PythonType.HasDictionary) {
                     iac = PythonDictionary.MakeSymbolDictionary();
 
                     if ((iac = sdo.SetDict(iac)) == null) {
@@ -1586,16 +1605,36 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
             _pythonContext = PythonContext.GetContext(context);
             _resolutionOrder = CalculateMro(this, _bases);
 
+            bool hasSlots = false;
             foreach (PythonType pt in _bases) {
+                // if we directly inherit from 2 types with slots then the indexes would
+                // conflict so inheritance isn't allowed.
+                int slotCount = pt.GetUsedSlotCount();
+                
+                if (slotCount != 0) {
+                    if (hasSlots) {
+                        throw PythonOps.TypeError("multiple bases have instance lay-out conflict");
+                    }
+                    hasSlots = true;
+                }
+                
                 pt.AddSubType(this);
-                _originalSlotCount += pt.SlotCount;
             }
 
-            BuildUserTypeDictionary(context, vars);
-            InitializeSlots(name, bases, vars);
+            foreach (PythonType pt in _resolutionOrder) {
+                // we need to calculate the number of slots from resolution
+                // order to deal with multiple bases having __slots__ that
+                // directly inherit from each other.
+                _originalSlotCount += pt.GetUsedSlotCount();
+            }
+
+
+            EnsureDict();
+
+            PopulateDictionary(context, name, bases, vars);
 
             // calculate the .NET type once so it can be used for things like super calls
-            _underlyingSystemType = NewTypeMaker.GetNewType(name, bases, vars);
+            _underlyingSystemType = NewTypeMaker.GetNewType(name, bases);
 
             // then let the user intercept and rewrite the type - the user can't create
             // instances of this type yet.
@@ -1605,19 +1644,76 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
             _ctor = BuiltinFunction.MakeMethod(Name, _underlyingSystemType.GetConstructors(), _underlyingSystemType, FunctionType.Function);
         }
 
-        private void InitializeSlots(string name, PythonTuple bases, IAttributesCollection vars) {
-            List<string> slots = NewTypeMaker.GetSlots(vars);
+        internal static List<string> GetSlots(IAttributesCollection dict) {
+            List<string> res = null;
+            object slots;
+            if (dict != null && dict.TryGetValue(Symbols.Slots, out slots)) {
+                res = SlotsToList(slots);
+            }
 
-            if (slots != null) {
-                int index = 0;
-                foreach (object o in bases) {
-                    PythonType pt = o as PythonType;
-                    if (pt == null) {
-                        continue;
-                    }
+            return res;
+        }
 
-                    index += pt.SlotCount;
+        internal static List<string> SlotsToList(object slots) {
+            List<string> res = new List<string>();
+            ISequence seq = slots as ISequence;
+            if (seq != null && !(seq is ExtensibleString)) {
+                res = new List<string>(seq.__len__());
+                for (int i = 0; i < seq.__len__(); i++) {
+                    res.Add(GetSlotName(seq[i]));
                 }
+
+                res.Sort();
+            } else {
+                res = new List<string>(1);
+                res.Add(GetSlotName(slots));
+            }
+            return res;
+        }
+
+
+        private static string GetSlotName(object o) {
+            string value;
+            if (!Converter.TryConvertToString(o, out value) || String.IsNullOrEmpty(value))
+                throw PythonOps.TypeError("slots must be one string or a list of strings");
+
+            for (int i = 0; i < value.Length; i++) {
+                if ((value[i] >= 'a' && value[i] <= 'z') ||
+                    (value[i] >= 'A' && value[i] <= 'Z') ||
+                    (i != 0 && value[i] >= '0' && value[i] <= '9') ||
+                    value[i] == '_') {
+                    continue;
+                }
+                throw PythonOps.TypeError("__slots__ must be valid identifiers");
+            }
+
+            return value;
+        }
+
+        private int GetUsedSlotCount() {
+            int slotCount = 0;
+            if (_slots != null) {
+                slotCount = _slots.Length;
+
+                if (Array.IndexOf(_slots, "__weakref__") != -1) {
+                    slotCount--;
+                }
+
+                if (Array.IndexOf(_slots, "__dict__") != -1) {
+                    slotCount--;
+                }
+            }
+            return slotCount;
+        }
+
+        private void PopulateDictionary(CodeContext/*!*/ context, string name, PythonTuple bases, IAttributesCollection vars) {
+            PopulateSlot(Symbols.Doc, null);
+
+            List<string> slots = GetSlots(vars);
+            if (slots != null) {
+                _slots = slots.ToArray();
+                
+                int index = _originalSlotCount;
 
                 for (int i = 0; i < slots.Count; i++) {
                     string slotName = slots[i];
@@ -1627,75 +1723,66 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
 
                     SymbolId id = SymbolTable.StringToId(slotName);
 
-                    // don't replace existing values, they'll just be read-only.  For example
-                    // class foo(object):
-                    //     __slots__ = ['__init__']
-                    //     def __init__(self): pass
-                    //
-                    object dummy;
-                    if (vars.TryGetValue(id, out dummy) ||
-                        id == Symbols.Dict ||
-                        id == Symbols.WeakRef) {
-                        continue;
-                    }
-
                     AddSlot(id, new ReflectedSlotProperty(slotName, name, i + index));
                 }
+
+                _originalSlotCount += slots.Count;
             }
+
+            // check the slots to see if we're weak refable
+            if (CheckForSlotWithDefault(context, bases, slots, "__weakref__", Symbols.WeakRef)) {
+                _attrs |= PythonTypeAttributes.WeakReferencable;
+                AddSlot(Symbols.WeakRef, new PythonTypeWeakRefSlot(this));
+            }
+
+            if (CheckForSlotWithDefault(context, bases, slots, "__dict__", Symbols.Dict)) {
+                _attrs |= PythonTypeAttributes.HasDictionary;
+                AddSlot(Symbols.Dict, new PythonTypeDictSlot(this));
+            }
+
+            object modName;
+            if (context.Scope.TryLookupName(Symbols.Name, out modName)) {
+                PopulateSlot(Symbols.Module, modName);
+            }
+
+            foreach (KeyValuePair<SymbolId, object> kvp in vars.SymbolAttributes) {
+                PopulateSlot(kvp.Key, kvp.Value);
+            }
+
+            PythonTypeSlot val;
+            if (_dict.TryGetValue(Symbols.NewInst, out val) && val is PythonFunction) {
+                AddSlot(Symbols.NewInst, new staticmethod(val));
+            }
+        }
+
+        private static bool CheckForSlotWithDefault(CodeContext context, PythonTuple bases, List<string> slots, string name, SymbolId siName) {
+            bool hasSlot = true;
+            if (slots != null && !slots.Contains(name)) {
+                hasSlot = false;
+                foreach (object pt in bases) {
+                    PythonType dt = pt as PythonType;
+                    PythonTypeSlot dummy;
+                    if (dt != null && dt.TryLookupSlot(context, siName, out dummy)) {
+                        hasSlot = true;
+                    }
+                }
+            } else if (slots != null) {
+                // check and see if we have 2
+                if(bases.Count > 0) {
+                    PythonType dt = bases[0] as PythonType;
+                    PythonTypeSlot dummy;
+                    if (dt != null && dt.TryLookupSlot(context, siName, out dummy)) {
+                        throw PythonOps.TypeError(name + " slot disallowed: we already got one");
+                    }
+                }
+            }
+            return hasSlot;
         }
 
         public virtual Type __clrtype__() {
             return _underlyingSystemType;
         }
 
-        private void BuildUserTypeDictionary(CodeContext context, IAttributesCollection vars) {
-            bool hasDictionary = false, hasWeakRef = false;
-
-            if (vars.ContainsKey(Symbols.Slots)) {
-                List<string> slots = NewTypeMaker.SlotsToList(vars[Symbols.Slots]);
-                _originalSlotCount += slots.Count;
-                if (slots.Contains("__dict__")) hasDictionary = true;
-                if (slots.Contains("__weakref__")) hasWeakRef = true;
-            } else {
-                hasDictionary = true;
-                hasWeakRef = true;
-            }
-
-            EnsureDict();
-
-            if (hasWeakRef && !vars.ContainsKey(Symbols.WeakRef)) {
-                AddSlot(Symbols.WeakRef, new PythonTypeWeakRefSlot(this));
-            }
-
-            if (!vars.ContainsKey(Symbols.Dict) && hasDictionary) {
-                AddSlot(Symbols.Dict, new PythonTypeDictSlot(this));
-            }
-
-            PopulateSlots(context, vars);
-        }
-
-        private void PopulateSlots(CodeContext context, IAttributesCollection vars) {
-            foreach (KeyValuePair<SymbolId, object> kvp in vars.SymbolAttributes) {
-                PopulateSlot(kvp.Key, kvp.Value);
-            }
-            
-            PythonTypeSlot val;
-            if (!_dict.TryGetValue(Symbols.Module, out val)) {
-                object modName;
-                if (context.Scope.TryLookupName(Symbols.Name, out modName)) {
-                    PopulateSlot(Symbols.Module, modName);
-                }
-            }
-            
-            if (!_dict.TryGetValue(Symbols.Doc, out val)) {
-                PopulateSlot(Symbols.Doc, null);
-            }
-            
-            if (_dict.TryGetValue(Symbols.NewInst, out val) && val is PythonFunction) {
-                AddSlot(Symbols.NewInst, new staticmethod(val));
-            }
-        }
-        
         private void PopulateSlot(SymbolId key, object value) {
             PythonTypeSlot pts = value as PythonTypeSlot;
             if (pts == null) {
@@ -2010,8 +2097,8 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
             Immutable = 0x01,
             SystemType = 0x02,
             IsPythonType = 0x04,
-            Initializing = 0x10000000,
-            Initialized = 0x20000000,
+            WeakReferencable = 0x08,
+            HasDictionary = 0x10,
         }
 
         #endregion

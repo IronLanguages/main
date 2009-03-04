@@ -224,10 +224,10 @@
     <Compile Include="Runtime\PythonTypeAttribute.cs" />
     <Compile Include="Runtime\RuntimeVariablesDictionaryStorage.cs" />
     <Compile Include="Runtime\StringFormatSpec.cs" />
+    <Compile Include="Runtime\Types\CachedNewTypeInfo.cs" />
     <Compile Include="Runtime\Types\DynamicBaseTypeAttribute.cs" />
     <Compile Include="Runtime\Types\InstanceCreator.cs" />
     <Compile Include="Runtime\Types\NameConverter.cs" />
-    <Compile Include="Runtime\Types\NewSubtypeMaker.cs" />
     <Compile Include="Runtime\Types\NewTypeInfo.cs" />
     <Compile Include="Runtime\Types\NewTypeMaker.cs" />
     <Compile Include="Hosting\PythonCodeDomCodeGen.cs" />

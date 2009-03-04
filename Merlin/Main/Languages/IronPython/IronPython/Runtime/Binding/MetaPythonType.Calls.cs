@@ -721,8 +721,7 @@ namespace IronPython.Runtime.Binding {
                         Ast.Convert(Expression, typeof(PythonType))
                     ),
                     AstUtils.Constant(version)
-                ),
-                new BindingHelpers.PythonTypeValidator(Value, version).Validate
+                )
             );
         }
 
