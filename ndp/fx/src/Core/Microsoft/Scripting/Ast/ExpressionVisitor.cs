@@ -590,7 +590,10 @@ namespace System.Linq.Expressions {
             if (e == node.Expression) {
                 return node;
             }
-            return Expression.TypeIs(e, node.TypeOperand);
+            if (node.NodeType == ExpressionType.TypeIs) {
+                return Expression.TypeIs(e, node.TypeOperand);
+            }
+            return Expression.TypeEqual(e, node.TypeOperand);
         }
 
         /// <summary>

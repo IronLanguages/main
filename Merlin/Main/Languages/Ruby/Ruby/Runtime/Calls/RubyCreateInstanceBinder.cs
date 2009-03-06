@@ -61,7 +61,7 @@ namespace IronRuby.Runtime.Calls {
             );
 
             // TODO: we should return null if we fail, we need to throw exception due to version update optimization:
-            return metaBuilder.CreateMetaObject(binder, DynamicMetaObject.EmptyMetaObjects);
+            return metaBuilder.CreateMetaObject(binder);
         }
     }
 }

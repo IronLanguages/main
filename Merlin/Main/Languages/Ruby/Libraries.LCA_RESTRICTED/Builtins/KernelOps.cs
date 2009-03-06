@@ -21,15 +21,13 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
+using IronRuby.Compiler;
 using IronRuby.Runtime;
 using IronRuby.Runtime.Calls;
 using Microsoft.Scripting;
 using Microsoft.Scripting.Math;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
-using Microsoft.Scripting.Generation;
-using IronRuby.Compiler;
-using System.IO;
 
 namespace IronRuby.Builtins {
 
@@ -711,10 +709,10 @@ namespace IronRuby.Builtins {
         [RubyMethod("fail", RubyMethodAttributes.PrivateInstance)]
         [RubyMethod("fail", RubyMethodAttributes.PublicSingleton)]
         [RubyStackTraceHidden]
-        public static void RaiseException(RespondToStorage/*!*/ respondToStorage, UnaryOpStorage/*!*/ storage0, BinaryOpStorage/*!*/ storage1, 
+        public static void RaiseException(RespondToStorage/*!*/ respondToStorage, UnaryOpStorage/*!*/ storage0, BinaryOpStorage/*!*/ storage1, SetBacktraceStorage/*!*/ setBackTraceStorage, 
             RubyContext/*!*/ context, object self, object/*!*/ obj, [Optional]object arg, [Optional]RubyArray backtrace) {
 
-            Exception exception = CreateExceptionToRaise(respondToStorage, storage0, storage1, context, obj, arg, backtrace);
+            Exception exception = CreateExceptionToRaise(respondToStorage, storage0, storage1, setBackTraceStorage, context, obj, arg, backtrace);
 #if DEBUG && !SILVERLIGHT
             if (RubyOptions.UseThreadAbortForSyncRaise) {
                 RubyUtils.RaiseAsyncException(Thread.CurrentThread, exception);
@@ -724,7 +722,7 @@ namespace IronRuby.Builtins {
             throw exception;
         }
 
-        internal static Exception CreateExceptionToRaise(RespondToStorage/*!*/ respondToStorage, UnaryOpStorage/*!*/ storage0, BinaryOpStorage/*!*/ storage1,
+        internal static Exception CreateExceptionToRaise(RespondToStorage/*!*/ respondToStorage, UnaryOpStorage/*!*/ storage0, BinaryOpStorage/*!*/ storage1, SetBacktraceStorage/*!*/ setBackTraceStorage, 
             RubyContext/*!*/ context, object/*!*/ obj, object arg, RubyArray backtrace) {
 
             if (Protocols.RespondTo(respondToStorage, context, obj, "exception")) {
@@ -739,7 +737,7 @@ namespace IronRuby.Builtins {
 
                 if (e != null) {
                     if (backtrace != null) {
-                        ExceptionOps.SetBacktrace(e, backtrace);
+                        RubyExceptionData.GetInstance(e).SetBacktrace(setBackTraceStorage.GetCallSite(), context, backtrace);
                     }
                     return e;
                 }

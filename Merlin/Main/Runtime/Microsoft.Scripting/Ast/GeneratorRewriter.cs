@@ -758,11 +758,15 @@ namespace Microsoft.Scripting.Ast {
                 return node;
             }
             if (yields == _yields.Count) {
-                return Expression.TypeIs(e, node.TypeOperand);
+                return (node.NodeType == ExpressionType.TypeIs)
+                    ? Expression.TypeIs(e, node.TypeOperand)
+                    : Expression.TypeEqual(e, node.TypeOperand);
             }
             return Expression.Block(
                 ToTemp(ref e),
-                Expression.TypeIs(e, node.TypeOperand)
+                (node.NodeType == ExpressionType.TypeIs)
+                    ? Expression.TypeIs(e, node.TypeOperand)
+                    : Expression.TypeEqual(e, node.TypeOperand)
             );
         }
 

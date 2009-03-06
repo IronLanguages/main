@@ -13,6 +13,8 @@
  *
  * ***************************************************************************/
 
+using System.ComponentModel;
+using System.Diagnostics;
 using System.Dynamic;
 using System.Linq.Expressions;
 
@@ -24,6 +26,7 @@ namespace System.Runtime.CompilerServices {
     /// <summary>
     /// This API supports the .NET Framework infrastructure and is not intended to be used directly from your code.
     /// </summary>
+    [EditorBrowsable(EditorBrowsableState.Never), DebuggerStepThrough]
     public static class CallSiteOps {
 
         /// <summary>
@@ -33,7 +36,7 @@ namespace System.Runtime.CompilerServices {
         /// <param name="site">An instance of the dynamic call site.</param>
         /// <param name="rule">An instance of the call site rule.</param>
         /// <returns>A delegate representing the call site rule.</returns>
-        [Obsolete("do not use this method", true)]
+        [Obsolete("do not use this method", true), EditorBrowsable(EditorBrowsableState.Never)]
         public static T SetTarget<T>(CallSite<T> site, CallSiteRule<T> rule) where T : class {
             return site.Target = rule.RuleSet.GetTarget();
         }
@@ -42,7 +45,7 @@ namespace System.Runtime.CompilerServices {
         /// Creates an instance of a dynamic call site used for cache lookup.
         /// </summary>
         /// <returns>The new call site.</returns>
-        [Obsolete("do not use this method", true)]
+        [Obsolete("do not use this method", true), EditorBrowsable(EditorBrowsableState.Never)]
         public static CallSite CreateMatchmaker() {
             var mm = new CallSite(null);
             CallSiteOps.ClearMatch(mm);
@@ -54,7 +57,7 @@ namespace System.Runtime.CompilerServices {
         /// </summary>
         /// <param name="site">An instance of the dynamic call site.</param>
         /// <returns>true if rule needs updating, false otherwise.</returns>
-        [Obsolete("do not use this method", true)]
+        [Obsolete("do not use this method", true), EditorBrowsable(EditorBrowsableState.Never)]
         public static bool NeedsUpdate(CallSite site) {
             var res = site._match;
             site._match = false;  //avoid branch here to make sure the method is inlined
@@ -66,7 +69,7 @@ namespace System.Runtime.CompilerServices {
         /// </summary>
         /// <param name="site">An instance of the dynamic call site.</param>
         /// <returns>true if rule matched, false otherwise.</returns>
-        [Obsolete("do not use this method", true)]
+        [Obsolete("do not use this method", true), EditorBrowsable(EditorBrowsableState.Never)]
         public static bool GetMatch(CallSite site) {
             return site._match;
         }
@@ -75,7 +78,7 @@ namespace System.Runtime.CompilerServices {
         /// Clears the match flag on the matchmaker call site.
         /// </summary>
         /// <param name="site">An instance of the dynamic call site.</param>
-        [Obsolete("do not use this method", true)]
+        [Obsolete("do not use this method", true), EditorBrowsable(EditorBrowsableState.Never)]
         public static void ClearMatch(CallSite site) {
             site._match = true;
         }
@@ -86,7 +89,7 @@ namespace System.Runtime.CompilerServices {
         /// <typeparam name="T">The type of the delegate of the <see cref="CallSite"/>.</typeparam>
         /// <param name="site">An instance of the dynamic call site.</param>
         /// <param name="rule">An instance of the call site rule.</param>
-        [Obsolete("do not use this method", true)]
+        [Obsolete("do not use this method", true), EditorBrowsable(EditorBrowsableState.Never)]
         public static void AddRule<T>(CallSite<T> site, CallSiteRule<T> rule) where T : class {
             if (site.Rules == null) {
                 site.Rules = rule.RuleSet;
@@ -101,7 +104,7 @@ namespace System.Runtime.CompilerServices {
         /// <typeparam name="T">The type of the delegate of the <see cref="CallSite"/>.</typeparam>
         /// <param name="this">An instance of the dynamic call site.</param>
         /// <param name="matched">The matched rule index.</param>
-        [Obsolete("do not use this method", true)]
+        [Obsolete("do not use this method", true), EditorBrowsable(EditorBrowsableState.Never)]
         public static void UpdateRules<T>(CallSite<T> @this, int matched) where T : class {
             if (matched > 1) {
                 @this.Rules.MoveRule(matched);
@@ -114,7 +117,7 @@ namespace System.Runtime.CompilerServices {
         /// <typeparam name="T">The type of the delegate of the <see cref="CallSite"/>.</typeparam>
         /// <param name="site">An instance of the dynamic call site.</param>
         /// <returns>An array of dynamic binding rules.</returns>
-        [Obsolete("do not use this method", true)]
+        [Obsolete("do not use this method", true), EditorBrowsable(EditorBrowsableState.Never)]
         public static CallSiteRule<T>[] GetRules<T>(CallSite<T> site) where T : class {
             return (site.Rules == null) ? null : site.Rules.GetRules();
         }
@@ -126,7 +129,7 @@ namespace System.Runtime.CompilerServices {
         /// <typeparam name="T">The type of the delegate of the <see cref="CallSite"/>.</typeparam>
         /// <param name="site">An instance of the dynamic call site.</param>
         /// <returns>The cache.</returns>
-        [Obsolete("do not use this method", true)]
+        [Obsolete("do not use this method", true), EditorBrowsable(EditorBrowsableState.Never)]
         public static RuleCache<T> GetRuleCache<T>(CallSite<T> site) where T : class {
             return site.Binder.GetRuleCache<T>();
         }
@@ -138,7 +141,7 @@ namespace System.Runtime.CompilerServices {
         /// <param name="cache">Cache.</param>
         /// <param name="rule">An instance of the call site rule.</param>
         /// <param name="i">An index of the call site rule.</param>
-        [Obsolete("do not use this method", true)]
+        [Obsolete("do not use this method", true), EditorBrowsable(EditorBrowsableState.Never)]
         public static void MoveRule<T>(RuleCache<T> cache, CallSiteRule<T> rule, int i) where T : class {
             if (i > 1) {
                 cache.MoveRule(rule, i);
@@ -151,7 +154,7 @@ namespace System.Runtime.CompilerServices {
         /// <typeparam name="T">The type of the delegate of the <see cref="CallSite"/>.</typeparam>
         /// <param name="cache">The cache.</param>
         /// <returns>The array of applicable rules.</returns>
-        [Obsolete("do not use this method", true)]
+        [Obsolete("do not use this method", true), EditorBrowsable(EditorBrowsableState.Never)]
         public static CallSiteRule<T>[] FindApplicableRules<T>(RuleCache<T> cache) where T : class {
             return cache.GetRules();
         }
@@ -166,7 +169,7 @@ namespace System.Runtime.CompilerServices {
         /// <param name="originalRule">A binding rule originally found on the dynamic call site.</param>
         /// <param name="args">An array of runtime values for the dynamic binding.</param>
         /// <returns>The new cal site rule.</returns>
-        [Obsolete("do not use this method", true)]
+        [Obsolete("do not use this method", true), EditorBrowsable(EditorBrowsableState.Never)]
         public static CallSiteRule<T> CreateNewRule<T>(RuleCache<T> cache, CallSite<T> site, CallSiteRule<T> oldRule, CallSiteRule<T> originalRule, object[] args) where T : class {
             Expression binding = site.Binder.Bind(args, CallSiteRule<T>.Parameters, CallSiteRule<T>.ReturnLabel);
 

@@ -474,7 +474,7 @@ namespace IronRuby.StandardLibrary.StringScanner {
                     sb.Append("...");
                 }
                 for (int i = CurrentPosition - len; i < CurrentPosition; i++) {
-                    MutableStringOps.AppendStringRepresentationOfChar(sb, scanstr[i], -1, true);
+                    MutableStringOps.AppendStringRepresentationOfChar(sb, scanstr[i], -1);
                 }
                 sb.Append('"');
             }
@@ -488,7 +488,7 @@ namespace IronRuby.StandardLibrary.StringScanner {
                 }
                 sb.Append('"');
                 for (int i = CurrentPosition; i < CurrentPosition + len; i++) {
-                    MutableStringOps.AppendStringRepresentationOfChar(sb, scanstr[i], -1, true);
+                    MutableStringOps.AppendStringRepresentationOfChar(sb, scanstr[i], -1);
                 }
                 if (ellipsis) {
                     sb.Append("...");

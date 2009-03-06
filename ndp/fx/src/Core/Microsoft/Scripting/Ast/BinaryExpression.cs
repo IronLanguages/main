@@ -659,7 +659,7 @@ namespace System.Linq.Expressions {
         }
 
 
-        private static bool ParameterIsAssignable(ParameterInfo pi, Type argType) {
+        internal static bool ParameterIsAssignable(ParameterInfo pi, Type argType) {
             Type pType = pi.ParameterType;
             if (pType.IsByRef)
                 pType = pType.GetElementType();

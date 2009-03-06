@@ -83,6 +83,8 @@ namespace IronRuby.Hosting {
             }
 
             switch (optionName) {
+                #region Ruby options
+
                 case "-v":
                     CommonConsoleOptions.PrintVersion = true;
                     CommonConsoleOptions.Exit = true;
@@ -119,6 +121,12 @@ namespace IronRuby.Hosting {
                     CommonConsoleOptions.Command += PopNextArg();
                     break;
 
+                case "-I":
+                    _loadPaths.AddRange(PopNextArg().Split(Path.PathSeparator));
+                    break;
+
+                #endregion
+
 #if DEBUG && !SILVERLIGHT
                 case "-DT*":
                     SetTraceFilter(String.Empty, false);
@@ -152,10 +160,6 @@ namespace IronRuby.Hosting {
                     LanguageSetup.Options["CompileRegexps"] = true;
                     break;
 #endif
-                case "-I":
-                    _loadPaths.AddRange(PopNextArg().Split(Path.PathSeparator));
-                    break;
-
                 case "-trace":
                     LanguageSetup.Options["EnableTracing"] = ScriptingRuntimeHelpers.True;
                     break;
@@ -204,11 +208,43 @@ namespace IronRuby.Hosting {
             base.GetHelp(out commandLine, out standardOptions, out environmentVariables, out comments);
 
             string [,] rubyOptions = new string[,] {
-                { "-opt", "dummy" }, 
+             // { "-0[octal]",       "specify record separator (\0, if no argument)" },
+             // { "-a",              "autosplit mode with -n or -p (splits $_ into $F)" },
+             // { "-c",              "check syntax only" },
+             // { "-Cdirectory",     "cd to directory, before executing your script" },
+                { "-d",              "set debugging flags (set $DEBUG to true)" },
+                { "-e 'command'",    "one line of script. Several -e's allowed. Omit [programfile]" },
+             // { "-Fpattern",       "split() pattern for autosplit (-a)" },
+             // { "-i[extension]",   "edit ARGV files in place (make backup if extension supplied)" },
+                { "-Idirectory",     "specify $LOAD_PATH directory (may be used more than once)" },
+             // { "-Kkcode",         "specifies KANJI (Japanese) code-set" },
+             // { "-l",              "enable line ending processing" },
+             // { "-n",              "assume 'while gets(); ... end' loop around your script" },
+             // { "-p",              "assume loop like -n but print line also like sed" },
+                { "-rlibrary",       "require the library, before executing your script" },
+             // { "-s",              "enable some switch parsing for switches after script name" },
+             // { "-S",              "look for the script using PATH environment variable" },
+             // { "-T[level]",       "turn on tainting checks" },
+                { "-v",              "print version number, then turn on verbose mode" },
+                { "-w",              "turn warnings on for your script" },
+                { "-W[level]",       "set warning level; 0=silence, 1=medium, 2=verbose (default)" },
+             // { "-x[directory]",   "strip off text before #!ruby line and perhaps cd to directory" },
 #if DEBUG
+                { "-opt",           "dummy" }, 
+                { "-DT",            "" },
+                { "-DT*",           "" },
+                { "-ET",            "" },
+                { "-ET*",           "" },
+                { "-save [path]",   "Save generated code to given path" },
+                { "-load",          "Load pre-compiled code" },
                 { "-useThreadAbortForSyncRaise", "For testing purposes" },
                 { "-compileRegexps", "Faster throughput, slower startup" },
 #endif
+                { "-trace",         "Enable support for set_trace_func" },
+                { "-profile",       "Enable support Clr.profile" },
+                { "-18",            "Ruby 1.8 mode" },
+                { "-19",            "Ruby 1.9 mode" },
+                { "-20",            "Ruby 2.0 mode" },
             };
 
             // Append the Ruby-specific options and the standard options

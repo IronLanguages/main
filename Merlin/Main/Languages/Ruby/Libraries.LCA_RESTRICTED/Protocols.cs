@@ -247,6 +247,10 @@ namespace IronRuby.Runtime {
         /// Protocol for determining value equality in Ruby (uses IsTrue protocol on result of == call)
         /// </summary>
         public static bool IsEqual(BinaryOpStorage/*!*/ equals, RubyContext/*!*/ context, object lhs, object rhs) {
+            // check reference equality first:
+            if (lhs == rhs) {
+                return true;
+            }
             var site = equals.GetCallSite("==");
             return IsTrue(site.Target(site, context, lhs, rhs));
         }

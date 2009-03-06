@@ -148,13 +148,26 @@ namespace IronRuby.Runtime.Calls {
             return _signature.HasBlock ? _args[GetBlockIndex()].Expression : null;
         }
 
+        public DynamicMetaObject GetMetaBlock() {
+            return _signature.HasBlock ? _args[GetBlockIndex()] : null;
+        }
+
+        public DynamicMetaObject GetSplattedMetaArgument() {
+            return _signature.HasSplattedArgument ? _args[GetSplattedArgumentIndex()] : null;
+        }
+
         public Expression GetSplattedArgumentExpression() {
             return _signature.HasSplattedArgument ? _args[GetSplattedArgumentIndex()].Expression : null;
+        }
+
+        public DynamicMetaObject GetRhsMetaArgument() {
+            return _signature.HasRhsArgument ? _args[GetRhsArgumentIndex()] : null;
         }
 
         public Expression GetRhsArgumentExpression() {
             return _signature.HasRhsArgument ? _args[GetRhsArgumentIndex()].Expression : null;
         }
+
 
         public Expression[]/*!*/ GetSimpleArgumentExpressions() {
             var result = new Expression[SimpleArgumentCount];
@@ -185,11 +198,15 @@ namespace IronRuby.Runtime.Calls {
         }
 
         internal object GetSimpleArgument(int i) {
-            return _args[GetSimpleArgumentsIndex(i)].Value;
+            return GetSimpleMetaArgument(i).Value;
         }
 
         internal Expression/*!*/ GetSimpleArgumentExpression(int i) {
-            return _args[GetSimpleArgumentsIndex(i)].Expression;
+            return GetSimpleMetaArgument(i).Expression;
+        }
+
+        internal DynamicMetaObject/*!*/ GetSimpleMetaArgument(int i) {
+            return _args[GetSimpleArgumentsIndex(i)];
         }
         
         internal int GetBlockIndex() {

@@ -45,7 +45,7 @@ namespace IronRuby.Runtime.Calls {
         public override DynamicMetaObject/*!*/ Bind(DynamicMetaObject/*!*/ context, DynamicMetaObject/*!*/[]/*!*/ args) {
             var mo = new MetaObjectBuilder();
             BuildConversion(mo, new CallArguments(context, args, Signature));
-            return mo.CreateMetaObject(this, context, args);
+            return mo.CreateMetaObject(this);
         }
 
         protected abstract void BuildConversion(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args);

@@ -139,12 +139,11 @@ namespace IronRuby.Runtime.Calls {
         }
 
         public void AddSplatted(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args) {
-            var arg = args.GetSplattedArgument();
-            var parameter = args.GetSplattedArgumentExpression();
+            var arg = args.GetSplattedMetaArgument();
 
             int listLength;
             ParameterExpression listVariable;
-            if (metaBuilder.AddSplattedArgumentTest(arg, parameter, out listLength, out listVariable)) {
+            if (metaBuilder.AddSplattedArgumentTest(arg.Value, arg.Expression, out listLength, out listVariable)) {
                 if (listLength > 0) {
                     for (int i = 0; i < listLength; i++) {
                         Add(
@@ -158,7 +157,7 @@ namespace IronRuby.Runtime.Calls {
                 }
             } else {
                 // argument is not an array => add the argument itself:
-                Add(parameter);
+                Add(arg.Expression);
             }
         }
 

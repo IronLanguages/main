@@ -35,12 +35,13 @@ namespace IronRuby.Builtins {
         [RubyMethod("inspect", RubyMethodAttributes.PublicInstance)]
         public static MutableString/*!*/ Inspect(string/*!*/ self) {
             StringBuilder result = new StringBuilder();
-            result.Append('"');
+            result.Append('\'');
             for (int i = 0; i < self.Length; i++) {
-                MutableStringOps.AppendStringRepresentationOfChar(result, self[i], i + 1 < self.Length ? self[i + 1] : -1, false);
+                MutableStringOps.AppendStringRepresentationOfChar(result, self[i], i + 1 < self.Length ? self[i + 1] : -1,
+                   MutableStringOps.CharacterEscaping.EscapeSingleQuote | MutableStringOps.CharacterEscaping.UseUnicodeEscapes);
             }
 
-            result.Append('"');
+            result.Append('\'');
             return MutableString.Create(result.ToString());
         }
 

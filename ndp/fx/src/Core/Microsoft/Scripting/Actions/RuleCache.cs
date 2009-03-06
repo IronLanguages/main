@@ -13,11 +13,10 @@
  *
  * ***************************************************************************/
 
-using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
-using System.Runtime.CompilerServices;
 using System.Dynamic.Utils;
-using System.Threading;
+using System.Runtime.CompilerServices;
 
 namespace System.Dynamic {
     /// <summary>
@@ -25,6 +24,7 @@ namespace System.Dynamic {
     /// Represents a cache of runtime binding rules.
     /// </summary>
     /// <typeparam name="T">The delegate type.</typeparam>
+    [EditorBrowsable(EditorBrowsableState.Never), DebuggerStepThrough]
     public class RuleCache<T> where T : class {
         private CallSiteRule<T>[] _rules = new CallSiteRule<T>[0];
         private readonly Object cacheLock = new Object();

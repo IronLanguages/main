@@ -25,6 +25,7 @@ using System.Threading;
 using IronRuby.Runtime;
 using System.Text;
 using System.Runtime.InteropServices;
+using System.Runtime.CompilerServices;
 
 namespace IronRuby.Builtins {
     /// <summary>
@@ -442,18 +443,18 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("raise")]
         [RubyStackTraceHidden]
-        public static void RaiseException(RespondToStorage/*!*/ respondToStorage, UnaryOpStorage/*!*/ storage0, BinaryOpStorage/*!*/ storage1,
+        public static void RaiseException(RespondToStorage/*!*/ respondToStorage, UnaryOpStorage/*!*/ storage0, BinaryOpStorage/*!*/ storage1, SetBacktraceStorage/*!*/ setBackTraceStorage, 
             RubyContext/*!*/ context, Thread/*!*/ self, object/*!*/ obj, [Optional]object arg, [Optional]RubyArray backtrace) {
 
             if (self == Thread.CurrentThread) {
-                KernelOps.RaiseException(respondToStorage, storage0, storage1, context, self, obj, arg, backtrace);
+                KernelOps.RaiseException(respondToStorage, storage0, storage1, setBackTraceStorage, context, self, obj, arg, backtrace);
                 return;
             }
 
 #if SILVERLIGHT
             throw new NotImplementedError("Thread#raise is not implemented on Silverlight");
 #else
-            Exception e = KernelOps.CreateExceptionToRaise(respondToStorage, storage0, storage1, context, obj, arg, backtrace);
+            Exception e = KernelOps.CreateExceptionToRaise(respondToStorage, storage0, storage1, setBackTraceStorage, context, obj, arg, backtrace);
             RaiseAsyncException(self, e);
 #endif
         }
@@ -654,7 +655,7 @@ namespace IronRuby.Builtins {
                     trace.AppendLine();
                     trace.AppendLine();
                     RubyExceptionData data = RubyExceptionData.GetInstance(e);
-                    if (data.Backtrace != null) { // ReinitializeException sets Backtrace to null
+                    if (data.Backtrace != null) {
                         foreach (var frame in data.Backtrace) {
                             trace.Append(frame.ToString());
                         }

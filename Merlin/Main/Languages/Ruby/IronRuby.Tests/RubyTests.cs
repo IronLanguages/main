@@ -293,6 +293,7 @@ namespace IronRuby.Tests {
                 Scenario_UninitializedVars2,
                 InstanceVariables1,
                 InstanceVariables2,
+                RubyHosting_DelegateConversions,
                 RubyHosting1A,
                 RubyHosting1B,
                 RubyHosting1C,

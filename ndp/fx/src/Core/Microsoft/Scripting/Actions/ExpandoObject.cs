@@ -14,7 +14,7 @@
  * ***************************************************************************/
 
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Dynamic;
 using System.Dynamic.Utils;
@@ -970,7 +970,7 @@ namespace System.Runtime.CompilerServices {
         /// <param name="name">The name of the member.</param>
         /// <param name="value">The out parameter containing the value of the member.</param>
         /// <returns>True if the member exists in the expando object, otherwise false.</returns>
-        [Obsolete("used by generated code", true)]
+        [Obsolete("do not use this method", true), EditorBrowsable(EditorBrowsableState.Never)]
         public static bool ExpandoTryGetValue(ExpandoObject expando, object indexClass, int index, string name, out object value) {
             ContractUtils.RequiresNotNull(expando, "expando");
             return expando.TryGetValue((ExpandoClass)indexClass, index, false, name, out value) >= 0;
@@ -985,7 +985,7 @@ namespace System.Runtime.CompilerServices {
         /// <param name="name">The name of the member.</param>
         /// <param name="value">The out parameter containing the value of the member.</param>
         /// <returns>True if the member exists in the expando object, otherwise false.</returns>
-        [Obsolete("used by generated code", true)]
+        [Obsolete("do not use this method", true), EditorBrowsable(EditorBrowsableState.Never)]
         public static bool ExpandoTryGetValueIgnoreCase(ExpandoObject expando, object indexClass, int index, string name, out object value) {
             ContractUtils.RequiresNotNull(expando, "expando");
             int result = expando.TryGetValue((ExpandoClass)indexClass, index, true, name, out value);
@@ -1007,7 +1007,7 @@ namespace System.Runtime.CompilerServices {
         /// <returns>
         /// Returns the index for the set member.
         /// </returns>
-        [Obsolete("used by generated code", true)]
+        [Obsolete("do not use this method", true), EditorBrowsable(EditorBrowsableState.Never)]
         public static void ExpandoTrySetValue(ExpandoObject expando, object indexClass, int index, object value, string name) {
             ContractUtils.RequiresNotNull(expando, "expando");
             expando.TrySetValue((ExpandoClass)indexClass, index, value, false, name);
@@ -1025,7 +1025,7 @@ namespace System.Runtime.CompilerServices {
         /// If there is ambiguous case-insensitive match, returns -2.
         /// Otherwise returns the index for the set member.
         /// </returns>
-        [Obsolete("used by generated code", true)]
+        [Obsolete("do not use this method", true), EditorBrowsable(EditorBrowsableState.Never)]
         public static void ExpandoTrySetValueIgnoreCase(ExpandoObject expando, object indexClass, int index, object value, string name) {
             ContractUtils.RequiresNotNull(expando, "expando");
             int result = expando.TrySetValue((ExpandoClass)indexClass, index, value, true, name);
@@ -1042,7 +1042,7 @@ namespace System.Runtime.CompilerServices {
         /// <param name="index">The index of the member.</param>
         /// <param name="name">The name of the member.</param>
         /// <returns>true if the item was successfully removed; otherwise, false.</returns>
-        [Obsolete("used by generated code", true)]
+        [Obsolete("do not use this method", true), EditorBrowsable(EditorBrowsableState.Never)]
         public static bool ExpandoTryDeleteValue(ExpandoObject expando, object indexClass, int index, string name) {
             ContractUtils.RequiresNotNull(expando, "expando");
             return expando.TryDeleteValue((ExpandoClass)indexClass, index, false, name) >= 0;
@@ -1056,7 +1056,7 @@ namespace System.Runtime.CompilerServices {
         /// <param name="index">The index of the member.</param>
         /// <param name="name">The name of the member.</param>
         /// <returns>true if the item was successfully removed; otherwise, false.</returns>
-        [Obsolete("used by generated code", true)]
+        [Obsolete("do not use this method", true), EditorBrowsable(EditorBrowsableState.Never)]
         public static bool ExpandoTryDeleteValueIgnoreCase(ExpandoObject expando, object indexClass, int index, string name) {
             ContractUtils.RequiresNotNull(expando, "expando");
             int result = expando.TryDeleteValue((ExpandoClass)indexClass, index, true, name);
@@ -1073,7 +1073,7 @@ namespace System.Runtime.CompilerServices {
         /// <param name="expando">The expando object.</param>
         /// <param name="version">The version to check.</param>
         /// <returns>true if the version is equal; otherwise, false.</returns>
-        [Obsolete("used by generated code", true)]
+        [Obsolete("do not use this method", true), EditorBrowsable(EditorBrowsableState.Never)]
         public static bool ExpandoCheckVersion(ExpandoObject expando, object version) {
             ContractUtils.RequiresNotNull(expando, "expando");
             return expando.Class == version;
@@ -1085,7 +1085,7 @@ namespace System.Runtime.CompilerServices {
         /// <param name="expando">The expando object.</param>
         /// <param name="oldClass">The old class of the expando object.</param>
         /// <param name="newClass">The new class of the expando object.</param>
-        [Obsolete("used by generated code", true)]
+        [Obsolete("do not use this method", true), EditorBrowsable(EditorBrowsableState.Never)]
         public static void ExpandoPromoteClass(ExpandoObject expando, object oldClass, object newClass) {
             ContractUtils.RequiresNotNull(expando, "expando");
             expando.PromoteClass((ExpandoClass)oldClass, (ExpandoClass)newClass);

@@ -23,6 +23,7 @@ using Microsoft.Scripting.Utils;
 using System.Dynamic;
 using System.Diagnostics;
 using System.Reflection;
+using IronRuby.Compiler;
 using IronRuby.Compiler.Generation;
 
 using Ast = System.Linq.Expressions.Expression;
@@ -71,17 +72,12 @@ namespace IronRuby.Builtins {
             return RubyExceptionData.GetClrMessage(message, exceptionClass.Name);
         }
 
-        [Emitted]
-        public static Exception/*!*/ ReinitializeException(Exception/*!*/ self, object/*!*/ message) {
-            var instance = RubyExceptionData.GetInstance(self);
-            instance.Backtrace = null;
-            instance.Message = message;
-            return self;
-        }
-        
         [RubyMethod("initialize", RubyMethodAttributes.PrivateInstance)]
         public static Exception/*!*/ ReinitializeException(RubyContext/*!*/ context, Exception/*!*/ self, [DefaultParameterValue(null)]object message) {
-            return ReinitializeException(self, message ?? context.GetClassOf(self).Name);
+            var instance = RubyExceptionData.GetInstance(self);
+            instance.Backtrace = null;
+            instance.Message = message ?? MutableString.Create(context.GetClassOf(self).Name);
+            return self;
         }
 
         [RubyMethod("exception", RubyMethodAttributes.PublicSingleton)]
@@ -112,7 +108,8 @@ namespace IronRuby.Builtins {
             return RubyExceptionData.GetInstance(self).Backtrace = backtrace;
         }
 
-        // signature: (Exception! self, [Optional]object exceptionArg) : Exception!
+        // signature: (Exception! self, [Optional]object arg) : Exception!
+        // arg is a message
         [RubyMethod("exception", RubyMethodAttributes.PublicInstance)]
         public static RuleGenerator/*!*/ GetException() {
             return new RuleGenerator((metaBuilder, args, name) => {
@@ -132,16 +129,22 @@ namespace IronRuby.Builtins {
 
                         ParameterExpression messageVariable = null;
 
-                        // ReinitializeException(new <exception-type>(GetClrMessage(<class>, #message = <message>)), #message)
-                        metaBuilder.Result = Ast.Call(null, new Func<Exception, object, Exception>(ReinitializeException).Method, 
-                            cls.MakeAllocatorCall(args, () => 
-                                Ast.Call(null, new Func<RubyClass, object, string>(GetClrMessage).Method, 
-                                    classExpression, 
-                                    Ast.Assign(messageVariable = metaBuilder.GetTemporary(typeof(object), "#message"), AstFactory.Box(argsBuilder[0]))
-                                )
-                            ),
-                            messageVariable ?? AstFactory.Box(argsBuilder[0])
+                        // new <exception-type>(GetClrMessage(<class>, #message = <message>))
+                        cls.BuildAllocatorCall(metaBuilder, args, () =>
+                            Ast.Call(null, new Func<RubyClass, object, string>(GetClrMessage).Method,
+                                classExpression,
+                                Ast.Assign(messageVariable = metaBuilder.GetTemporary(typeof(object), "#message"), AstFactory.Box(argsBuilder[0]))
+                            )
                         );
+
+                        if (!metaBuilder.Error) {
+                            // ReinitializeException(<result>, #message)
+                            metaBuilder.Result = Ast.Call(null, new Func<RubyContext, Exception, object, Exception>(ReinitializeException).Method,
+                                args.ContextExpression,
+                                metaBuilder.Result,
+                                messageVariable ?? AstFactory.Box(argsBuilder[0])
+                            );
+                        }
                     }
                 }
             });
