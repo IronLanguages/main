@@ -85,6 +85,16 @@ module ClassSpecs
   class L; end
 
   class M < L; end
+  
+  class Undef_to_s
+    undef to_s
+  end
+  
+  class InitializeMethod
+    def initialize
+      ScratchPad.record :initialize_method
+    end
+  end
 end
 
 class Class

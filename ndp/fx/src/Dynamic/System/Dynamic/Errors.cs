@@ -171,6 +171,15 @@ namespace System.Dynamic {
         }
 
         /// <summary>
+        /// A string like  "Attempting to pass an event handler of an unsupported type."
+        /// </summary>
+        internal static string UnsupportedHandlerType {
+            get {
+                return "Attempting to pass an event handler of an unsupported type.";
+            }
+        }
+
+        /// <summary>
         /// A string like  "Could not get dispatch ID for {0} (error: {1})."
         /// </summary>
         internal static string CouldNotGetDispId(object p0, object p1) {
@@ -293,6 +302,13 @@ namespace System.Dynamic {
         /// </summary>
         internal static Exception UnsupportedEnumType() {
             return new InvalidOperationException(Strings.UnsupportedEnumType);
+        }
+
+        /// <summary>
+        /// InvalidOperationException with message like "Attempting to pass an event handler of an unsupported type."
+        /// </summary>
+        internal static Exception UnsupportedHandlerType() {
+            return new InvalidOperationException(Strings.UnsupportedHandlerType);
         }
 
         /// <summary>

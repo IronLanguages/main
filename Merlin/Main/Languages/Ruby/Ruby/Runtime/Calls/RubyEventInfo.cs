@@ -51,6 +51,7 @@ namespace IronRuby.Runtime.Calls {
         }
 
         internal override void BuildCallNoFlow(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args, string/*!*/ name) {
+            // TODO: splat, rhs, ...
             if (args.Signature.ArgumentCount == 0) {
                 if (args.Signature.HasBlock) {
                     metaBuilder.Result = Methods.HookupEvent.OpCall(

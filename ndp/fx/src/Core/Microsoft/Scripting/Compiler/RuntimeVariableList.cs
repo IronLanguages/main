@@ -14,6 +14,7 @@
  * ***************************************************************************/
 
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Dynamic.Utils;
 using System.Linq.Expressions;
@@ -25,6 +26,7 @@ namespace System.Runtime.CompilerServices {
     /// This API supports the .NET Framework infrastructure and is not intended to be used directly from your code.
     /// Contains helper methods called from dynamically generated methods.
     /// </summary>
+    [EditorBrowsable(EditorBrowsableState.Never), DebuggerStepThrough]
     public static partial class RuntimeOps {
         /// <summary>
         /// Creates an interface that can be used to modify closed over variables at runtime.
@@ -32,7 +34,7 @@ namespace System.Runtime.CompilerServices {
         /// <param name="data">The closure array.</param>
         /// <param name="indexes">An array of indicies into the closure array where variables are found.</param>
         /// <returns>An interface to access variables.</returns>
-        [Obsolete("do not call this method", true)]
+        [Obsolete("do not use this method", true), EditorBrowsable(EditorBrowsableState.Never)]
         public static IList<IStrongBox> CreateRuntimeVariables(object[] data, long[] indexes) {
             return new RuntimeVariableList(data, indexes);
         }
@@ -41,7 +43,7 @@ namespace System.Runtime.CompilerServices {
         /// Creates an interface that can be used to modify closed over variables at runtime.
         /// </summary>
         /// <returns>An interface to access variables.</returns>
-        [Obsolete("do not call this method", true)]
+        [Obsolete("do not use this method", true), EditorBrowsable(EditorBrowsableState.Never)]
         public static IList<IStrongBox> CreateRuntimeVariables() {
             return EmptyReadOnlyCollection<IStrongBox>.Instance;
         }

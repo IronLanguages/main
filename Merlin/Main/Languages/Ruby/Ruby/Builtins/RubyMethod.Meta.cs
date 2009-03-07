@@ -18,35 +18,39 @@ using System.Diagnostics;
 using System.Dynamic;
 using System.Dynamic.Utils;
 using System.Linq.Expressions;
+using System.Reflection;
 using Microsoft.Scripting.Utils;
 using Microsoft.Scripting.Runtime;
 using IronRuby.Runtime;
 using IronRuby.Runtime.Calls;
+using IronRuby.Compiler;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace IronRuby.Builtins {
     using Ast = System.Linq.Expressions.Expression;
-    using IronRuby.Compiler;
     
     public partial class RubyMethod : IDynamicMetaObjectProvider {
         public DynamicMetaObject/*!*/ GetMetaObject(Expression/*!*/ parameter) {
             return new Meta(parameter, BindingRestrictions.Empty, this);
         }
 
-        internal sealed class Meta : DynamicMetaObject {
-            public RubyMethod/*!*/ Method {
-                get { return (RubyMethod)Value; }
+        internal sealed class Meta : RubyMetaObject<RubyMethod> {
+            public override RubyContext/*!*/ Context {
+                get { return Value.Info.Context; }
+            }
+
+            protected override MethodInfo/*!*/ ContextConverter {
+                get { return Methods.GetContextFromMethod; }
             }
 
             public Meta(Expression/*!*/ expression, BindingRestrictions/*!*/ restrictions, RubyMethod/*!*/ value)
                 : base(expression, restrictions, value) {
-                ContractUtils.RequiresNotNull(value, "value");
             }
 
-            public override DynamicMetaObject/*!*/ BindInvoke(InvokeBinder/*!*/ action, DynamicMetaObject/*!*/[]/*!*/ args) {
+            public override DynamicMetaObject/*!*/ BindInvoke(InvokeBinder/*!*/ binder, DynamicMetaObject/*!*/[]/*!*/ args) {
                 RubyCallSignature callSignature;
-                if (RubyCallSignature.TryCreate(action.CallInfo, out callSignature)) {
-                    return action.FallbackInvoke(this, args);
+                if (RubyCallSignature.TryCreate(binder.CallInfo, out callSignature)) {
+                    return binder.FallbackInvoke(this, args);
                 }
 
                 var self = (RubyMethod)Value;
@@ -58,17 +62,13 @@ namespace IronRuby.Builtins {
                 );
 
                 var metaBuilder = new MetaObjectBuilder();
-                Method.SetRuleForCall(metaBuilder, new CallArguments(context, this, args, callSignature));
-                return metaBuilder.CreateMetaObject(action, args);
+                Value.SetRuleForCall(metaBuilder, new CallArguments(context, this, args, callSignature));
+                return metaBuilder.CreateMetaObject(binder);
             }
 
-            public override DynamicMetaObject/*!*/ BindConvert(ConvertBinder/*!*/ action) {
-                var result = RubyBinder.TryBindCovertToDelegate(action, this);
-                if (result != null) {
-                    return result;
-                }
-
-                return base.BindConvert(action);
+            public override DynamicMetaObject/*!*/ BindConvert(ConvertBinder/*!*/ binder) {
+                return RubyBinder.TryBindCovertToDelegate(this, binder, Methods.CreateDelegateFromMethod) 
+                    ?? base.BindConvert(binder);
             }
         }
     }

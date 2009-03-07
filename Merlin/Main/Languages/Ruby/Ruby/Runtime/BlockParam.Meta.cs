@@ -58,7 +58,7 @@ namespace IronRuby.Runtime {
                 );
 
                 BlockParam.SetCallActionRule(metaBuilder, new CallArguments(context, this, args, callSignature));
-                return metaBuilder.CreateMetaObject(action, args);
+                return metaBuilder.CreateMetaObject(action);
             }
         }
     }

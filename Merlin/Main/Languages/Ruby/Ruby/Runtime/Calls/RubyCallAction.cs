@@ -97,7 +97,7 @@ namespace IronRuby.Runtime.Calls {
         public override DynamicMetaObject/*!*/ Bind(DynamicMetaObject/*!*/ context, DynamicMetaObject/*!*/[]/*!*/ args) {
             var mo = new MetaObjectBuilder();
             Bind(mo, _methodName, new CallArguments(context, args, _signature));
-            return mo.CreateMetaObject(this, context, args);
+            return mo.CreateMetaObject(this);
         }
 
         /// <exception cref="MissingMethodException">The resolved method is Kernel#method_missing.</exception>

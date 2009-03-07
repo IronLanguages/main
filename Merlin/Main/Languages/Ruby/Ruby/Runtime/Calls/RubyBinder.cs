@@ -502,17 +502,21 @@ namespace IronRuby.Runtime.Calls {
             return result;
         }
 
-        internal static DynamicMetaObject TryBindCovertToDelegate(ConvertBinder/*!*/ action, DynamicMetaObject/*!*/ target) {
-            if (typeof(Delegate).IsAssignableFrom(action.Type)) {
-                return new DynamicMetaObject(
-                    Methods.CreateDelegateFromMethod.OpCall(
-                        AstUtils.Constant(action.Type),
-                        AstUtils.Convert(target.Expression, typeof(RubyMethod))
-                    ),
-                    target.Restrictions.Merge(BindingRestrictionsHelpers.GetRuntimeTypeRestriction(target.Expression, target.Value.GetType()))
-                );
+        internal static DynamicMetaObject TryBindCovertToDelegate(RubyMetaObject/*!*/ metaTarget, ConvertBinder/*!*/ binder, MethodInfo/*!*/ delegateFactory) {
+            var metaBuilder = new MetaObjectBuilder();
+            return TryBuildConversionToDelegate(metaBuilder, metaTarget, binder.Type, delegateFactory) ? metaBuilder.CreateMetaObject(binder) : null;
+        }
+
+        internal static bool TryBuildConversionToDelegate(MetaObjectBuilder/*!*/ metaBuilder, RubyMetaObject/*!*/ metaTarget, Type/*!*/ delegateType, MethodInfo/*!*/ delegateFactory) {
+            MethodInfo invoke;
+            if (!typeof(Delegate).IsAssignableFrom(delegateType) || (invoke = delegateType.GetMethod("Invoke")) == null) {
+                return false;
             }
-            return null;
+
+            var type = metaTarget.Value.GetType();
+            metaBuilder.AddTypeRestriction(type, metaTarget.Expression);
+            metaBuilder.Result = delegateFactory.OpCall(AstUtils.Constant(delegateType), Ast.Convert(metaTarget.Expression, type));
+            return true;
         }
 
         #endregion

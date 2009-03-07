@@ -32,14 +32,6 @@ namespace IronRuby.Builtins {
     /// </summary>
     [RubyClass("Fixnum", Extends = typeof(int), Inherits = typeof(Integer))]
     public static class FixnumOps {
-
-        #region Useful Constants
-        const int FixnumSize = 4;
-        const int FixnumBits = 32;
-        const int FixnumMax = Int32.MaxValue;
-        const int FixnumMin = Int32.MinValue;
-        #endregion
-
         #region induced_from
 
         /// <summary>
@@ -67,13 +59,15 @@ namespace IronRuby.Builtins {
         #endregion
 
         #region size
+
         /// <summary>
         /// Returns the number of bytes in the machine representation of a Fixnum. 
         /// </summary>
         [RubyMethod("size")]
         public static int Size(int self) {
-            return FixnumSize;
+            return 4;
         }
+
         #endregion
 
         #region Bitwise Operators
@@ -88,16 +82,22 @@ namespace IronRuby.Builtins {
         /// <remarks>Converts to Bignum if the result cannot fit into Fixnum</remarks>
         [RubyMethod("<<")]
         public static object LeftShift(int self, int other) {
-            if (other < 0) {
-                // Negative shift
-                return RightShift(self, -other);
-            } else if (other > FixnumBits || self >> (FixnumSize - other) > 0) {
-                // Shift overflows Int32
-                return BigInteger.LeftShift(self, other);
-            } else {
-                return self << other;
+            if (self == 0) {
+                return 0;
             }
+
+            if (other < 0) {
+                return RightShift(self, -other);
+            } 
+                
+            // If 'self' has more than '31 - other' significant digits it will overflow:
+            if (other >= 31 || (self & ~((1 << (31 - other)) - 1)) != 0) {
+                return BigInteger.LeftShift(self, other);
+            } 
+
+            return self << other;
         }
+
         /// <summary>
         /// Returns the value after shifting to the left (right if count is negative) the value in self by other bits.
         /// (where other is not Fixnum)
@@ -126,7 +126,7 @@ namespace IronRuby.Builtins {
                 return LeftShift(self, -other);
             } else if (other == 0) {
                 return self;
-            } else if (other > FixnumBits) {
+            } else if (other >= 32) {
                 return self < 0 ? -1 : 0;
             } else {
                 return self >> other;
@@ -170,7 +170,7 @@ namespace IronRuby.Builtins {
             if (index < 0) {
                 return 0;
             }
-            if (index > FixnumBits) {
+            if (index > 32) {
                 return self < 0 ? 1 : 0;
             }
             return (self & (1 << index)) != 0 ? 1 : 0;

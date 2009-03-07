@@ -15,6 +15,7 @@
 
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.Dynamic.Utils;
 using System.Reflection;
 
@@ -164,16 +165,53 @@ namespace System.Linq.Expressions {
             ContractUtils.RequiresNotNullItems(caseList, "cases");
 
             Type switchType = caseList[0].Body.Type;
-            Type testValueType = caseList[0].TestValues[0].Type;
 
-            foreach (var c in caseList) {
-                ContractUtils.RequiresNotNull(c, "cases");
-                if (type != null) {
-                    ContractUtils.Requires(TypeUtils.AreReferenceAssignable(type, c.Body.Type), "cases", Strings.ArgumentTypesMustMatch);
-                } else {
-                    ContractUtils.Requires(switchType == c.Body.Type, "cases", Strings.AllCaseBodiesMustHaveSameType);
+            if (comparison != null) {
+                var pms = comparison.GetParametersCached();
+                if (pms.Length != 2) {
+                    throw Error.IncorrectNumberOfMethodCallArguments(comparison);
                 }
-                ContractUtils.Requires(testValueType == c.TestValues[0].Type, "cases", Strings.AllTestValuesMustHaveSameType);
+                // Validate that the switch value's type matches the comparison method's 
+                // left hand side parameter type.
+                var lhsParam = pms[0];
+                if (!ParameterIsAssignable(lhsParam, switchValue.Type)) {
+                    throw Error.SwitchValueTypeDoesNotMatchComparisonMethodParameter(switchValue.Type, lhsParam.ParameterType);
+                }
+
+                var rhsParam = pms[1];
+                foreach (var c in caseList) {
+                    ContractUtils.RequiresNotNull(c, "cases");
+                    ValidateSwitchCaseType(c, type, switchType, "cases");
+                    for (int i = 0; i < c.TestValues.Count; i++) {
+                        // When a comparison method is provided, test values can have different type but have to
+                        // be reference assignable to the right hand side parameter of the method.
+                        if (!ParameterIsAssignable(rhsParam, c.TestValues[i].Type)) {
+                            throw Error.TestValueTypeDoesNotMatchComparisonMethodParameter(c.TestValues[i].Type, rhsParam.ParameterType);
+                        }
+                    }
+                }
+            } else {
+                // When comparison method is not present, all the test values must have
+                // the same type. Use the first test value's type as the baseline.
+                var firstTestValue = caseList[0].TestValues[0];
+                foreach (var c in caseList) {
+                    ContractUtils.RequiresNotNull(c, "cases");
+                    ValidateSwitchCaseType(c, type, switchType, "cases");
+                    // When no comparison method is provided, require all test values to have the same type.
+                    for (int i = 0; i < c.TestValues.Count; i++) {
+                        if (firstTestValue.Type != c.TestValues[i].Type) {
+                            throw new ArgumentException(Strings.AllTestValuesMustHaveSameType, "cases");
+                        }
+                    }
+                }
+
+                // Now we need to validate that switchValue.Type and testValueType
+                // make sense in an Equal node. Fortunately, Equal throws a
+                // reasonable error, so just call it.
+                var equal = Equal(switchValue, firstTestValue, false, comparison);
+
+                // Get the comparison function from equals node.
+                comparison = equal.Method;
             }
 
             if (defaultBody == null) {
@@ -184,26 +222,35 @@ namespace System.Linq.Expressions {
                 }
             } else {
                 if (type != null) {
-                    ContractUtils.Requires(TypeUtils.AreReferenceAssignable(type, defaultBody.Type), "cases", Strings.ArgumentTypesMustMatch);
+                    ContractUtils.Requires(TypeUtils.AreReferenceAssignable(type, defaultBody.Type), "defaultBody", Strings.ArgumentTypesMustMatch);
                 } else {
                     ContractUtils.Requires(switchType == defaultBody.Type, "cases", Strings.AllCaseBodiesMustHaveSameType);
                 }
             }
 
-            // Now we need to validate that switchValue.Type and testValueType
-            // make sense in an Equal node. Fortunately, Equal throws a
-            // reasonable error, so just call it.
-            var equal = Equal(switchValue, caseList[0].TestValues[0], false, comparison);
-
-            // Get the comparison function from equals node.
-            comparison = equal.Method;
-
-            // if we found a non-boolean userdefined equals, we don't want it.
+            // if we have a non-boolean userdefined equals, we don't want it.
             if (comparison != null && comparison.ReturnType != typeof(bool)) {
                 throw Error.EqualityMustReturnBoolean(comparison);
             }
 
             return new SwitchExpression(type ?? switchType, switchValue, defaultBody, comparison, caseList);
+        }
+
+
+        /// <summary>
+        /// When nodeType is not null, validate that the type of the switch case's body is reference assignable to
+        /// the nodeType. Otherwise, validate the type of the switch case's body is the same as switchType.
+        /// </summary>
+        private static void ValidateSwitchCaseType(SwitchCase switchCase, Type nodeType, Type switchType, string casesParamName) {
+            if (nodeType != null) {
+                if (!TypeUtils.AreReferenceAssignable(nodeType, switchCase.Body.Type)) {
+                    throw new ArgumentException(Strings.ArgumentTypesMustMatch, casesParamName);
+                }
+            } else {
+                if (switchType != switchCase.Body.Type) {
+                    throw new ArgumentException(Strings.AllCaseBodiesMustHaveSameType, casesParamName);
+                }
+            }
         }
     }
 }

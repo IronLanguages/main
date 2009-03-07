@@ -296,6 +296,8 @@ namespace IronRuby.Compiler {
         private static MethodInfo _IsTrue;
         public static MethodInfo/*!*/ LeaveProcConverter { get { return _LeaveProcConverter ?? (_LeaveProcConverter = GetMethod(typeof(RubyOps), "LeaveProcConverter")); } }
         private static MethodInfo _LeaveProcConverter;
+        public static MethodInfo/*!*/ MakeAllocatorUndefinedError { get { return _MakeAllocatorUndefinedError ?? (_MakeAllocatorUndefinedError = GetMethod(typeof(RubyOps), "MakeAllocatorUndefinedError")); } }
+        private static MethodInfo _MakeAllocatorUndefinedError;
         public static MethodInfo/*!*/ MakeAmbiguousMatchError { get { return _MakeAmbiguousMatchError ?? (_MakeAmbiguousMatchError = GetMethod(typeof(RubyOps), "MakeAmbiguousMatchError")); } }
         private static MethodInfo _MakeAmbiguousMatchError;
         public static MethodInfo/*!*/ MakeArray0 { get { return _MakeArray0 ?? (_MakeArray0 = GetMethod(typeof(RubyOps), "MakeArray0")); } }

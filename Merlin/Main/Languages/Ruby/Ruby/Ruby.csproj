@@ -145,6 +145,7 @@
     <Compile Include="Runtime\Calls\ConvertToSAction.cs" />
     <Compile Include="Runtime\Calls\MethodResolutionResult.cs" />
     <Compile Include="Runtime\Calls\RubyLibraryMethodInfo.cs" />
+    <Compile Include="Runtime\Calls\RubyMetaObject.cs" />
     <Compile Include="Runtime\Calls\RubyMethodGroupBase.cs" />
     <Compile Include="Runtime\CheckedMonitor.cs" />
     <Compile Include="Runtime\CustomTypeDescHelpers.cs" />

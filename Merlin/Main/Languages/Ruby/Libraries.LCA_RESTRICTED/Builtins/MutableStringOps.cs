@@ -1068,7 +1068,19 @@ namespace IronRuby.Builtins {
 
         #region dump, inspect
 
-        public static void AppendStringRepresentationOfChar(StringBuilder/*!*/ result, int c, int nextc, bool octals) {
+        [Flags]
+        public enum CharacterEscaping {
+            UseOctalEscapes = 1,
+            UseUnicodeEscapes = 2,
+            EscapeDoubleQuote = 4,
+            EscapeSingleQuote = 8
+        }
+
+        public static void AppendStringRepresentationOfChar(StringBuilder/*!*/ result, int c, int nextc) {
+            AppendStringRepresentationOfChar(result, c, nextc, CharacterEscaping.UseOctalEscapes | CharacterEscaping.EscapeDoubleQuote);
+        }
+
+        public static void AppendStringRepresentationOfChar(StringBuilder/*!*/ result, int c, int nextc, CharacterEscaping escaping) {
             switch (c) {
                 case '\a': result.Append("\\a"); break;
                 case '\b': result.Append("\\b"); break;
@@ -1078,7 +1090,8 @@ namespace IronRuby.Builtins {
                 case '\f': result.Append("\\f"); break;
                 case '\r': result.Append("\\r"); break;
                 case 27: result.Append("\\e"); break;
-                case '"': result.Append("\\\""); break;
+                case '"': if ((escaping & CharacterEscaping.EscapeDoubleQuote) != 0) result.Append("\\\""); else result.Append('"'); break;
+                case '\'': if ((escaping & CharacterEscaping.EscapeSingleQuote) != 0) result.Append("\\'"); else result.Append('\''); break;
                 case '\\': result.Append("\\\\"); break;
 
                 case '#':
@@ -1093,11 +1106,20 @@ namespace IronRuby.Builtins {
                     break;
 
                 default:
-                    if (octals && c < 32 || c > 126) {
-                        result.Append('\\');
-                        result.Append(System.Convert.ToString(c, 8).PadLeft(3, '0'));
-                    } else {
-                        result.Append((char)c);
+                    if ((escaping & CharacterEscaping.UseOctalEscapes) != 0) {
+                        if (c < 32 || c > 126) {
+                            result.Append('\\');
+                            result.Append(System.Convert.ToString(c, 8).PadLeft(3, '0'));
+                        } else {
+                            result.Append((char)c);
+                        }
+                    } else if ((escaping & CharacterEscaping.UseUnicodeEscapes) != 0) {
+                        if (Char.IsControl((char)c)) {
+                            result.Append("\\u");
+                            result.Append(System.Convert.ToString(c, 16).PadLeft(4, '0'));
+                        } else {
+                            result.Append((char)c);
+                        }
                     }
                     break;
             }
@@ -1109,7 +1131,7 @@ namespace IronRuby.Builtins {
 
             byte[] bytes = self.ToByteArray();
             for (int i = 0; i < bytes.Length; i++) {
-                AppendStringRepresentationOfChar(result, bytes[i], i + 1 < bytes.Length ? bytes[i + 1] : -1, true);
+                AppendStringRepresentationOfChar(result, bytes[i], i + 1 < bytes.Length ? bytes[i + 1] : -1);
             }
 
             result.Append('"');
@@ -2715,8 +2737,11 @@ namespace IronRuby.Builtins {
                         case 'L':
                             count = CalculateCounts(stream, directive.Count, sizeof(uint), out nilCount);
                             for (int j = 0; j < count; j++) {
-                                unchecked {
-                                    result.Add((int)reader.ReadUInt32());
+                                uint value = reader.ReadUInt32();
+                                if (value <= Int32.MaxValue) {
+                                    result.Add((int)value);
+                                } else {
+                                    result.Add((BigInteger)value);
                                 }
                             }
                             break;

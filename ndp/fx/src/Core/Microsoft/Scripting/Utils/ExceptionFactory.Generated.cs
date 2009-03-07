@@ -1457,6 +1457,20 @@ namespace System.Linq.Expressions {
             }
         }
 
+        /// <summary>
+        /// A string like  "Test value of type '{0}' cannot be used for the comparison method parameter of type '{1}'"
+        /// </summary>
+        internal static string TestValueTypeDoesNotMatchComparisonMethodParameter(object p0, object p1) {
+            return FormatString("Test value of type '{0}' cannot be used for the comparison method parameter of type '{1}'", p0, p1);
+        }
+
+        /// <summary>
+        /// A string like  "Switch value of type '{0}' cannot be used for the comparison method parameter of type '{1}'"
+        /// </summary>
+        internal static string SwitchValueTypeDoesNotMatchComparisonMethodParameter(object p0, object p1) {
+            return FormatString("Switch value of type '{0}' cannot be used for the comparison method parameter of type '{1}'", p0, p1);
+        }
+
     }
     /// <summary>
     ///    Strongly-typed and parameterized exception factory.
@@ -2434,6 +2448,20 @@ namespace System.Linq.Expressions {
         /// </summary>
         internal static Exception HomogenousAppDomainRequired() {
             return new InvalidOperationException(Strings.HomogenousAppDomainRequired);
+        }
+
+        /// <summary>
+        /// ArgumentException with message like "Test value of type '{0}' cannot be used for the comparison method parameter of type '{1}'"
+        /// </summary>
+        internal static Exception TestValueTypeDoesNotMatchComparisonMethodParameter(object p0, object p1) {
+            return new ArgumentException(Strings.TestValueTypeDoesNotMatchComparisonMethodParameter(p0, p1));
+        }
+
+        /// <summary>
+        /// ArgumentException with message like "Switch value of type '{0}' cannot be used for the comparison method parameter of type '{1}'"
+        /// </summary>
+        internal static Exception SwitchValueTypeDoesNotMatchComparisonMethodParameter(object p0, object p1) {
+            return new ArgumentException(Strings.SwitchValueTypeDoesNotMatchComparisonMethodParameter(p0, p1));
         }
 
     }

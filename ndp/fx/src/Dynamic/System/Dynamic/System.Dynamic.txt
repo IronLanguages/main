@@ -59,6 +59,9 @@ GetIDsOfNamesInvalid=IDispatch::GetIDsOfNames behaved unexpectedly for {0}.
 ## ExceptionType=InvalidOperationException
 UnsupportedEnumType=Attempting to wrap an unsupported enum type.
 
+## ExceptionType=InvalidOperationException
+UnsupportedHandlerType=Attempting to pass an event handler of an unsupported type.
+
 ## ExceptionType=MissingMemberException
 CouldNotGetDispId=Could not get dispatch ID for {0} (error: {1}).
 

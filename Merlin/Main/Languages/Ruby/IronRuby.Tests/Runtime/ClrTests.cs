@@ -414,8 +414,8 @@ class B; def f; 'f:B'; end; end                                  # hides A::f1
 
 p D.instance_method(:f).clr_members.collect { |x| x.to_string }  # only one overload should be present in the group
 "), @"
-[""System.String f(Int32)"", ""System.String f(Int32, Int32)""]
-[""System.String f(Int32, Int32)""]
+['System.String f(Int32)', 'System.String f(Int32, Int32)']
+['System.String f(Int32, Int32)']
 ");
         }
         

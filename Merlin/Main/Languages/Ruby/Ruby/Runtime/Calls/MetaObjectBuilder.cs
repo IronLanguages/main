@@ -63,11 +63,7 @@ namespace IronRuby.Runtime.Calls {
             set { _treatRestrictionsAsConditions = value; }
         }
 
-        internal DynamicMetaObject/*!*/ CreateMetaObject(DynamicMetaObjectBinder/*!*/ action, DynamicMetaObject/*!*/ context, DynamicMetaObject/*!*/[]/*!*/ args) {
-            return CreateMetaObject(action, ArrayUtils.Insert(context, args));
-        }
-
-        internal DynamicMetaObject/*!*/ CreateMetaObject(DynamicMetaObjectBinder/*!*/ action, DynamicMetaObject/*!*/[]/*!*/ siteArgs) {
+        internal DynamicMetaObject/*!*/ CreateMetaObject(DynamicMetaObjectBinder/*!*/ action) {
             Debug.Assert(ControlFlowBuilder == null, "Control flow required but not built");
 
             var expr = _error ? Ast.Throw(_result) : _result;
@@ -126,6 +122,8 @@ namespace IronRuby.Runtime.Calls {
         }
 
         public void AddTypeRestriction(Type/*!*/ type, Expression/*!*/ expression) {
+            // TODO: assertion failure in DLR:
+            // AddRestriction(Ast.TypeEqual(expression, type));
             AddRestriction(RuleBuilder.MakeTypeTestExpression(type, expression));
         }
 

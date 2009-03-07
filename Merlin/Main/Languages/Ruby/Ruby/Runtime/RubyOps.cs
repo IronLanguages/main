@@ -1303,7 +1303,7 @@ namespace IronRuby.Runtime {
         [Emitted] //Body:
         public static void SetCurrentExceptionAndStackTrace(RubyScope/*!*/ scope, Exception/*!*/ exception) {
             if (RubyExceptionData.TryGetInstance(exception) == null) {
-                RubyExceptionData.AssociateInstance(exception).SetCompiledTrace();
+                RubyExceptionData.AssociateInstance(exception).SetCompiledTrace(scope.RubyContext);
             }
             scope.RubyContext.CurrentException = exception;
         }
@@ -1396,6 +1396,11 @@ namespace IronRuby.Runtime {
         public static Exception/*!*/ MakeAmbiguousMatchError(string/*!*/ message) {
             // TODO:
             return new AmbiguousMatchException(message);
+        }
+
+        [Emitted]
+        public static Exception/*!*/ MakeAllocatorUndefinedError(RubyClass/*!*/ classObj) {
+            return RubyExceptions.CreateAllocatorUndefinedError(classObj);
         }
 
         [Emitted]
