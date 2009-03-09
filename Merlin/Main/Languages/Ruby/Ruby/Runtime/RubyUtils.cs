@@ -58,6 +58,18 @@ namespace IronRuby.Runtime {
         }
     }
 
+    public class CallWith1ArgumentStorage : CallSiteStorage<Action<CallSite, RubyContext, object, object>> {
+        public CallSite<Action<CallSite, RubyContext, object, object>>/*!*/ GetCallSite(string/*!*/ methodName) {
+            return GetCallSite(methodName, 1);
+        }
+    }
+
+    public class CallWithoutArgsStorage : CallSiteStorage<Action<CallSite, RubyContext, object>> {
+        public CallSite<Action<CallSite, RubyContext, object>>/*!*/ GetCallSite(string/*!*/ methodName) {
+            return GetCallSite(methodName, 0);
+        }
+    }
+
     public class RespondToStorage : CallSiteStorage<Func<CallSite, RubyContext, object, SymbolId, object>> {
         public CallSite<Func<CallSite, RubyContext, object, SymbolId, object>>/*!*/ GetCallSite() {
             return GetCallSite("respond_to?", 1);
