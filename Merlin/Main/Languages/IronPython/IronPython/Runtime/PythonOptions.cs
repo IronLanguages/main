@@ -49,6 +49,7 @@ namespace IronPython {
         private readonly bool _ignoreEnvironment;
         private readonly bool _verbose;
         private readonly Version _version;
+        private readonly bool _adaptiveCompilation;
 
         public ReadOnlyCollection<string>/*!*/ Arguments {
             get { return _arguments; }
@@ -125,6 +126,14 @@ namespace IronPython {
             get { return _division; }
         }
 
+        /// <summary>
+        /// Dynamically choose between interpreting, simple compilation and compilation
+        /// that takes advantage of runtime history.
+        /// </summary>
+        public bool AdaptiveCompilation {
+            get { return _adaptiveCompilation; }
+        }
+
         public PythonOptions() 
             : this(null) {
         }
@@ -154,9 +163,9 @@ namespace IronPython {
             _division = GetOption(options, "DivisionOptions", PythonDivisionOptions.Old);
             _recursionLimit = GetOption(options, "RecursionLimit", Int32.MaxValue);
             _indentationInconsistencySeverity = GetOption(options, "IndentationInconsistencySeverity", Severity.Ignore);
-            object value;
+            _adaptiveCompilation = GetOption(options, "AdaptiveCompilation", true);
 
-            
+            object value;
             if (options != null && options.TryGetValue("PythonVersion", out value)) {
                 if (value is Version) {
                     _version = (Version)value;

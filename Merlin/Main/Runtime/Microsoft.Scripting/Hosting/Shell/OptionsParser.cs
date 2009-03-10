@@ -220,7 +220,15 @@ namespace Microsoft.Scripting.Hosting.Shell {
                     LanguageSetup.Options["InterpretedMode"] = ScriptingRuntimeHelpers.True;
                     break;
 
+                // Depending on the language, it can either be on or off by default.
                 case "-X:AdaptiveCompilation":                
+                    LanguageSetup.Options["AdaptiveCompilation"] = true;
+                    break;
+                
+                case "-X:NoAdaptiveCompilation":
+                    LanguageSetup.Options["AdaptiveCompilation"] = false;
+                    break;
+
                 case "-X:ExceptionDetail":
                 case "-X:ShowClrExceptions":
                 case "-X:PerfStats":

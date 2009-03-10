@@ -126,7 +126,6 @@ namespace IronPython.Compiler.Ast {
         }
         
         internal override MSAst.Expression Transform(AstGenerator ag) {
-            ag.DisableInterpreter = true;
             AstGenerator builder = new AstGenerator(ag, SymbolTable.IdToString(_name), false, false);
 
             // we always need to create a nested context for class defs

@@ -78,7 +78,7 @@ namespace System.Dynamic {
                 throw new InvalidOperationException();
             }
 
-            DynamicMetaObject target = ObjectToMetaObject(args[0], parameters[0]);
+            DynamicMetaObject target = DynamicMetaObject.Create(args[0], parameters[0]);
             DynamicMetaObject[] metaArgs = CreateArgumentMetaObjects(args, parameters);
 
             DynamicMetaObject binding = Bind(target, metaArgs);
@@ -117,7 +117,7 @@ namespace System.Dynamic {
             if (args.Length != 1) {
                 mos = new DynamicMetaObject[args.Length - 1];
                 for (int i = 1; i < args.Length; i++) {
-                    mos[i - 1] = ObjectToMetaObject(args[i], parameters[i]);
+                    mos[i - 1] = DynamicMetaObject.Create(args[i], parameters[i]);
                 }
             } else {
                 mos = DynamicMetaObject.EmptyMetaObjects;
@@ -166,19 +166,6 @@ namespace System.Dynamic {
 
 #endif
             return restrictions;
-        }
-
-        private static DynamicMetaObject ObjectToMetaObject(object argValue, Expression parameterExpression) {
-            IDynamicMetaObjectProvider ido = argValue as IDynamicMetaObjectProvider;
-#if !SILVERLIGHT
-            if (ido != null && !RemotingServices.IsObjectOutOfAppDomain(argValue)) {
-#else
-            if (ido != null) {
-#endif
-                return ido.GetMetaObject(parameterExpression);
-            } else {
-                return new DynamicMetaObject(parameterExpression, BindingRestrictions.Empty, argValue);
-            }
         }
 
         /// <summary>

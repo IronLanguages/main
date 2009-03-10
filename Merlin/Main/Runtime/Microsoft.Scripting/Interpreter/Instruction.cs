@@ -540,10 +540,10 @@ namespace Microsoft.Scripting.Interpreter {
         }
     }
 
-    public class NewArrayInstruction : Instruction {
+    public class NewArrayInitInstruction : Instruction {
         private Type _elementType;
         private int _elementCount;
-        public NewArrayInstruction(Type elementType, int elementCount) {
+        public NewArrayInitInstruction(Type elementType, int elementCount) {
             this._elementType = elementType;
             this._elementCount = elementCount;
         }
@@ -555,6 +555,44 @@ namespace Microsoft.Scripting.Interpreter {
             for (int i = _elementCount - 1; i >= 0; i--) {
                 array.SetValue(frame.Pop(), i);
             }
+            frame.Push(array);
+            return +1;
+        }
+    }
+
+    public class NewArrayBoundsInstruction1 : Instruction {
+        private Type _elementType;
+
+        public NewArrayBoundsInstruction1(Type elementType) {
+            this._elementType = elementType;
+        }
+
+        public override int ConsumedStack { get { return 1; } }
+        public override int ProducedStack { get { return 1; } }
+        public override int Run(StackFrame frame) {
+            int length = (int)frame.Pop();
+            var array = Array.CreateInstance(_elementType, length);
+            frame.Push(array);
+            return +1;
+        }
+    }
+
+    public class NewArrayBoundsInstructionN : Instruction {
+        private Type _elementType;
+        private int _boundsCount;
+        public NewArrayBoundsInstructionN(Type elementType, int boundsCount) {
+            this._elementType = elementType;
+            this._boundsCount = boundsCount;
+        }
+
+        public override int ConsumedStack { get { return _boundsCount; } }
+        public override int ProducedStack { get { return 1; } }
+        public override int Run(StackFrame frame) {
+            var bounds = new int[_boundsCount];
+            for (int i = _boundsCount - 1; i >= 0; i--) {
+                bounds[i] = (int)frame.Pop();
+            }
+            var array = Array.CreateInstance(_elementType, bounds);
             frame.Push(array);
             return +1;
         }

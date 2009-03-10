@@ -52,9 +52,9 @@ namespace Microsoft.Scripting.Ast {
             // be pushed into languages if they really want this behavior.
             if (type == typeof(object)) {
                 if (expression.Type == typeof(int)) {
-                    return Expression.Convert(expression, typeof(object), typeof(ScriptingRuntimeHelpers).GetMethod("Int32ToObject"));
+                    return Expression.Convert(expression, typeof(object), ScriptingRuntimeHelpers.Int32ToObjectMethod);
                 } else if (expression.Type == typeof(bool)) {
-                    return Expression.Convert(expression, typeof(object), typeof(ScriptingRuntimeHelpers).GetMethod("BooleanToObject"));
+                    return Expression.Convert(expression, typeof(object), ScriptingRuntimeHelpers.BooleanToObjectMethod);
                 }
             }
 
