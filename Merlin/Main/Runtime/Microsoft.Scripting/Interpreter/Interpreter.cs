@@ -129,7 +129,14 @@ namespace Microsoft.Scripting.Interpreter {
         private void UpdateStackTrace(StackFrame frame) {
             DebugInfo info = DebugInfo.GetMatchingDebugInfo(_debugInfos, frame.InstructionIndex);
             if (info != null && !info.IsClear) {
-                ExceptionHelpers.UpdateStackTrace(null, _runMethod, _lambda.Name, info.FileName, info.StartLine);
+                string name = _lambda.Name;
+                if (name != null) {
+                    int index = name.LastIndexOf('$');
+                    if (index >= 0) {
+                        name = name.Substring(0, index);
+                    }
+                }
+                ExceptionHelpers.UpdateStackTrace(null, _runMethod, name, info.FileName, info.StartLine);
             }
         }
 
@@ -203,7 +210,9 @@ namespace Microsoft.Scripting.Interpreter {
                 RunInstructions(_instructions, frame, handler.EndHandlerIndex);
             } finally {
                 // This assumes that finally faults are propogated always
-                frame.InstructionIndex = handler.EndHandlerIndex;
+                //
+                // Go back one so we are scoped correctly
+                frame.InstructionIndex = handler.EndHandlerIndex - 1;
                 HandleFault(frame);
             }
         }

@@ -511,7 +511,11 @@ namespace System.Linq.Expressions.Compiler {
             // The expression is emitted on top of current stack
             Result expression = RewriteExpression(node.Expression, stack);
             if (expression.Action != RewriteAction.None) {
-                expr = Expression.TypeIs(expression.Node, node.TypeOperand);
+                if (node.NodeType == ExpressionType.TypeIs) {
+                    expr = Expression.TypeIs(expression.Node, node.TypeOperand);
+                } else {
+                    expr = Expression.TypeEqual(expression.Node, node.TypeOperand);
+                }
             }
             return new Result(expression.Action, expr);
         }

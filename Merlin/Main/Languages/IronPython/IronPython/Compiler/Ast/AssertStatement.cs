@@ -46,12 +46,15 @@ namespace IronPython.Compiler.Ast {
             // } else {
             //     RaiseAssertionError(_message);
             // }
-            return AstUtils.Unless(                                 // if
-                ag.TransformAndDynamicConvert(_test, typeof(bool)), // _test
-                Ast.Call(                                           // else branch
-                    AstGenerator.GetHelperMethod("RaiseAssertionError"),
-                    ag.TransformOrConstantNull(_message, typeof(object))
-                )
+            return ag.AddDebugInfo(
+                AstUtils.Unless(                                 // if
+                    ag.TransformAndDynamicConvert(_test, typeof(bool)), // _test
+                    Ast.Call(                                           // else branch
+                        AstGenerator.GetHelperMethod("RaiseAssertionError"),
+                        ag.TransformOrConstantNull(_message, typeof(object))
+                    )
+                ),
+                Span
             );
         }
 

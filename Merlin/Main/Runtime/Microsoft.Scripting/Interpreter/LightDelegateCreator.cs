@@ -105,6 +105,9 @@ namespace Microsoft.Scripting.Interpreter {
         internal void Compile(object state) {
             _compiled = LightLambdaClosureVisitor.BindLambda(_lambda, _closureVariables, out _delegateTypesMatch);
 
+            // TODO: we can simplify this, and remove the weak references if we
+            // have LightLambda.Run get the compiled delegate when it runs.
+
             // Get the list and replace it with null to free it.
             WeakCollection<LightLambda> list = _lightLambdas;
             lock (this) {

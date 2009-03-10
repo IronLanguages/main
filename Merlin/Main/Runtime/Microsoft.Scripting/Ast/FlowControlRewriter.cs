@@ -67,7 +67,6 @@ namespace Microsoft.Scripting.Ast {
     ///       }
     ///       ...
     /// 
-    /// TODO: the compiler could optimize the switch/goto pattern, but it doesn't yet
     /// </summary>
     internal sealed class FlowControlRewriter : ExpressionVisitor {
 

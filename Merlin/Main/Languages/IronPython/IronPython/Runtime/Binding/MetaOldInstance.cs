@@ -395,8 +395,7 @@ namespace IronPython.Runtime.Binding {
                         )
                     ), 
                     AstUtils.Constant(null)
-                ),
-                null
+                )
             );
 
             switch (access) {

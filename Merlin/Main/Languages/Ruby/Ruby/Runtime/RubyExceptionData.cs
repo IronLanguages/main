@@ -28,6 +28,8 @@ using System.Threading;
 using System.IO;
 using Microsoft.Scripting;
 using IronRuby.Compiler;
+using IronRuby.Runtime.Calls;
+using System.Runtime.CompilerServices;
 
 namespace IronRuby.Runtime {
     /// <summary>
@@ -55,15 +57,9 @@ namespace IronRuby.Runtime {
         
         // can be set explicitly by the user (even to nil):
         private RubyArray _backtrace;
+        private bool _backtraceInitialized;
 
-        // false if _backtrace needs to be initialized.
-        private bool _backtraceInitialized; 
-
-        // Compiled trace: contains frames above and including the first Ruby filter/catch site that the exception was caught by:
-        private StackTrace _catchSiteTrace;
-
-        // Compiled trace: contains frames starting with the throw site up to the first filter/catch that the exception was caught by:
-        private StackTrace _throwSiteTrace; 
+        private CallSite<Action<CallSite, RubyContext, Exception, RubyArray>>/*!*/ _setBacktraceCallSite = CallSite<Action<CallSite, RubyContext, Exception, RubyArray>>.Create(RubyCallAction.Make("set_backtrace", 1));
 
         private RubyExceptionData(Exception/*!*/ exception) {
             _exception = exception;
@@ -71,28 +67,26 @@ namespace IronRuby.Runtime {
             _throwingThread = Thread.CurrentThread;
         }
 
-        // Called lazily to create a Ruby backtrace.
-        private void CreateBacktrace() {
+        private void CreateBacktrace(RubyContext context, StackTrace catchSiteTrace) {
             int skipFrames = 0;
             bool hasFileAccessPermissions = DetectFileAccessPermissions();
 
             var result = new RubyArray();
-            if (_throwSiteTrace == null) {
-                SetCompiledTrace();
-            }
+            // Compiled trace: contains frames starting with the throw site up to the first filter/catch that the exception was caught by:
+            StackTrace throwSiteTrace = DebugInfoAvailable ? new StackTrace(_exception, true) : new StackTrace(_exception);
+            AddBacktrace(result, throwSiteTrace.GetFrames(), hasFileAccessPermissions, skipFrames, false);
 
-            AddBacktrace(result, _throwSiteTrace.GetFrames(), hasFileAccessPermissions, skipFrames, false);
-
-            if (_catchSiteTrace != null) {
+            if (catchSiteTrace != null) {
                 // skip one frame - the catch-site frame is already included
-                AddBacktrace(result, _catchSiteTrace.GetFrames(), hasFileAccessPermissions, 1, false);
+                AddBacktrace(result, catchSiteTrace.GetFrames(), hasFileAccessPermissions, 1, false);
             }
 
             _backtrace = result;
             _backtraceInitialized = true;
+            SetBacktrace(_setBacktraceCallSite, context, _backtrace);
         }
 
-        internal void SetCompiledTrace() {
+        internal void SetCompiledTrace(RubyContext/*!*/ context) {
             if (_exception != _visibleException) {
                 // Thread#raise uses Thread.Abort to raise an async exception. In such cases, a different instance of 
                 // ThreadAbortException is thrown at the end of every catch block (as long as Thread.ResetAbort is not called). 
@@ -105,8 +99,10 @@ namespace IronRuby.Runtime {
 
             Debug.Assert(!_backtraceInitialized);
 
-            _catchSiteTrace = DebugInfoAvailable ? new StackTrace(true) : new StackTrace();
-            _throwSiteTrace = DebugInfoAvailable ? new StackTrace(_exception, true) : new StackTrace(_exception);
+            // Compiled trace: contains frames above and including the first Ruby filter/catch site that the exception was caught by:
+            StackTrace catchSiteTrace = DebugInfoAvailable ? new StackTrace(true) : new StackTrace();
+
+            CreateBacktrace(context, catchSiteTrace);
         }
 
         internal void SetInterpretedTrace(InterpreterState/*!*/ state) {
@@ -124,7 +120,19 @@ namespace IronRuby.Runtime {
 
             // we need to copy the trace since the source locations in frames above catch site could be altered by further interpretation:
             _backtrace = AddBacktrace(new RubyArray(), state, 0);
+            SetBacktrace(_setBacktraceCallSite, state.ScriptCode.LanguageContext as RubyContext, _backtrace);
+        }
+
+        public void SetBacktrace(CallSite<Action<CallSite, RubyContext, Exception, RubyArray>> setBacktraceCallSite, RubyContext context, RubyArray backtrace) {
             _backtraceInitialized = true;
+
+            if (context == null) {
+                // TODO: If we do not have a RubyContext, we cannot dispatch to the overriden Exception#set_backtrace method.
+                // We need to ensure that we have a non-null RubyContext.
+                Backtrace = backtrace;
+            } else {
+                setBacktraceCallSite.Target(setBacktraceCallSite, context, _exception, backtrace);
+            }
         }
 
         internal static RubyArray/*!*/ CreateBacktrace(RubyContext/*!*/ context, IEnumerable<StackFrame>/*!*/ stackTrace, int skipFrames) {
@@ -362,27 +370,18 @@ namespace IronRuby.Runtime {
         public RubyArray Backtrace {
             get {
                 if (!_backtraceInitialized) {
-                    CreateBacktrace();
+                    // This path is rarely executed - if $! is accessed from a ensure clause without a rescue clause.
+                    // Ast.Body.TransformExceptionHandling should be updated such that SetCompiledTrace is always called,
+                    // which will guarantee that the backtrace is created after every exception before any Ruby code
+                    // is executed.
+                    CreateBacktrace(null, null);
                 }
+
                 return _backtrace;
             }
             set {
                 _backtraceInitialized = true;
                 _backtrace = value;
-            }
-        }
-
-        /// <summary>
-        /// Called from Kernel#raise, when throwing a user created Exception objects
-        /// Clears out any backtrace set by the user
-        /// This causes the new one to be lazily created the next time it is accessed
-        /// </summary>
-        public static void ClearBacktrace(Exception e) {
-            RubyExceptionData result = TryGetInstance(e);
-            if (result != null) {
-                result._backtraceInitialized = false;
-                result._backtrace = null;
-                result._catchSiteTrace = null;
             }
         }
 

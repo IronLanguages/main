@@ -82,6 +82,11 @@ namespace IronRuby.Runtime {
         }
     }
 
+    public class SetBacktraceStorage : CallSiteStorage<Action<CallSite, RubyContext, Exception, RubyArray>> {
+        public CallSite<Action<CallSite, RubyContext, Exception, RubyArray>>/*!*/ GetCallSite() {
+            return GetCallSite("set_backtrace", 1);
+        }
+    }
 
     public static class RubyUtils {
         #region Objects

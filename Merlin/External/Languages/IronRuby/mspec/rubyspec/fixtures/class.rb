@@ -112,6 +112,14 @@ module ClassSpecs
   
   class StubReaderWithClose < StubReader    
     def close *args
+  
+  class Undef_to_s
+    undef to_s
+  end
+  
+  class InitializeMethod
+    def initialize
+      ScratchPad.record :initialize_method
     end
   end
 end

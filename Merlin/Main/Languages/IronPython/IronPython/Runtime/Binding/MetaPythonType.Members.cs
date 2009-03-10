@@ -49,8 +49,7 @@ namespace IronPython.Runtime.Binding {
                     typeof(PythonOps).GetMethod("CheckSpecificTypeVersion"),
                     AstUtils.Convert(Expression, typeof(PythonType)),
                     AstUtils.Constant(version)
-                ),
-                new BindingHelpers.PythonTypeValidator(Value, version).Validate
+                )
             );
         }
 
@@ -172,8 +171,7 @@ namespace IronPython.Runtime.Binding {
                         typeof(PythonOps).GetMethod("CheckTypeVersion"),
                         self,
                         AstUtils.Constant(version)
-                    ),
-                    new BindingHelpers.PythonTypeValidator(metaType, version).Validate
+                    )
                 );
             }
 
@@ -627,8 +625,7 @@ namespace IronPython.Runtime.Binding {
                             typeof(PythonType)
                         )
                     )
-                ),
-                null
+                )
             );
         }
 

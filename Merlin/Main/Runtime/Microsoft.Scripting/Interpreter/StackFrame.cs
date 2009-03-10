@@ -17,7 +17,7 @@ using System.Runtime.CompilerServices;
 
 namespace Microsoft.Scripting.Interpreter {
     public class StackFrame {
-        public object[] Data;
+        public readonly object[] Data;
         public StrongBox<object>[] Closure;
         public int StackIndex;
         public StackFrame Parent;

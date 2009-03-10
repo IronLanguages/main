@@ -16,13 +16,12 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Diagnostics;
 using System.Linq.Expressions;
+using System.Reflection;
 using System.Runtime.CompilerServices;
-using Microsoft.Scripting.Utils;
 using Microsoft.Scripting.Generation;
 using Microsoft.Scripting.Runtime;
-using System.Reflection;
+using Microsoft.Scripting.Utils;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace Microsoft.Scripting.Interpreter {
@@ -53,12 +52,6 @@ namespace Microsoft.Scripting.Interpreter {
         /// one of our variable instances.
         /// </summary>
         private readonly Stack<Set<ParameterExpression>> _shadowedVars = new Stack<Set<ParameterExpression>>();
-
-        // variables for tracking exception information:
-        private ParameterExpression _fileName;
-        private ParameterExpression _lineNumber;
-        private SymbolDocumentInfo _lastDocument;
-        private int _lastLineNumber;
 
         private LightLambdaClosureVisitor(IList<ParameterExpression> closureVars, ParameterExpression closureArray) {
             _closureArray = closureArray;
@@ -95,11 +88,8 @@ namespace Microsoft.Scripting.Interpreter {
             // Action<...> to be called from the generated Run methods.
             Type delegateType = GetDelegateType(lambda);
 
-            // 3. Add top level exception handling
-            Expression body = AddExceptionHandling(lambda.Body, lambda.Name);
-
             // 4. Return the lambda with the handling and the (possibly new) delegate type
-            return Expression.Lambda(delegateType, body, lambda.Name, lambda.Parameters);
+            return Expression.Lambda(delegateType, lambda.Body, lambda.Name, lambda.Parameters);
         }
 
         private static Type GetDelegateType(LambdaExpression lambda) {
@@ -113,78 +103,6 @@ namespace Microsoft.Scripting.Interpreter {
             }
             return delegateType;
         }
-
-        #region debugging
-
-        private Expression AddExceptionHandling(Expression body, string methodName) {
-            if (_fileName == null) {
-                return body;
-            }
-
-            var e = Expression.Variable(typeof(Exception), "e");
-            return Expression.Block(
-                new[] { _fileName, _lineNumber },
-                Expression.TryCatch(
-                    body,
-                    Expression.Catch(
-                        e,
-                        Expression.Block(
-                            Expression.Call(
-                                typeof(ExceptionHelpers),
-                                "UpdateStackTraceForRethrow",
-                                null, 
-                                e,
-                                Expression.Call(typeof(MethodBase), "GetCurrentMethod", null),
-                                AstUtils.Constant(methodName),
-                                _fileName,
-                                _lineNumber
-                            ),
-                            Expression.Rethrow(body.Type)
-                        )
-                    )
-                )
-            );
-        }
-
-        protected override Expression VisitDebugInfo(DebugInfoExpression node) {
-            // We're not going to clear the debug info, as that requires a
-            // try-finally for every debug info. Also we'll just use the
-            // start line.
-            // TODO: under the new design, we may be able to do the clearance correctly.
-            if (node.IsClear) {
-                return node;
-            }
-
-            if (_fileName == null) {
-                _fileName = Expression.Variable(typeof(string), "file");
-                _lineNumber = Expression.Variable(typeof(int), "line");
-            }
-
-            if (node.Document == _lastDocument) {
-                if (node.StartLine == _lastLineNumber) {
-                    // Just return the node so we don't have to rewrite.
-                    // The compiler will ignore it if compiling into a
-                    // DynamicMethod.
-                    return base.VisitDebugInfo(node);
-                }
-
-                _lastLineNumber = node.StartLine;
-                return Expression.Block(
-                    Expression.Assign(_lineNumber, AstUtils.Constant(_lastLineNumber)),
-                    AstUtils.Empty()
-                );
-            }
-
-            _lastDocument = node.Document;
-            _lastLineNumber = node.StartLine;
-            return Expression.Block(
-                Expression.Assign(_fileName, AstUtils.Constant(_lastDocument.FileName)),
-                Expression.Assign(_lineNumber, AstUtils.Constant(_lastLineNumber)),
-                AstUtils.Empty()
-            );
-        }
-
-        #endregion
 
         #region closures
 

@@ -25,6 +25,46 @@ using IronRuby.Runtime.Calls;
 
 namespace IronRuby.Tests {
     public partial class Tests {
+        public void RubyHosting_DelegateConversions() {
+            var lambda = Engine.Execute(@"lambda { |a| a + 1 }");
+            var result = Engine.Operations.Invoke(lambda, 5);
+            Debug.Assert((int)result == 6);
+
+            var func = Engine.Operations.ConvertTo<Func<int, int>>(lambda);
+            Debug.Assert(func(10) == 11);
+
+            var method = Engine.Execute(@"def foo(a,b); a + b; end; method(:foo)");
+            var func2 = Engine.Operations.ConvertTo<Func<int, int, int>>(method);
+            Debug.Assert(func2(1, 2) == 3);
+
+            Engine.Runtime.Globals.SetVariable("F1", typeof(Func<int, int>));
+            var func3 = (Func<int, int>)Engine.Execute(@"F1.to_class.new { |a| a + 3 }");
+            Debug.Assert(func3(1) == 4);
+
+            // TODO:
+#if TODO
+            var func4 = (Func<int, int>)Engine.Execute(@"F1.to_class.new lambda { |a| a + 4 }");
+            Debug.Assert(func4(1) == 5);
+
+            var func5 = (Func<int, int>)Engine.Execute(@"F1.to_class.new(*[lambda { |a| a + 5 }])");
+            Debug.Assert(func5(1) == 6);
+
+            if (_driver.RunPython) {
+                var py = Runtime.GetEngine("python");
+
+                Engine.Runtime.Globals.SetVariable("F2", typeof(Func<string[], string[], string[]>));
+                var pyAdd = py.Execute(@"
+def py_add(a, b): 
+  return a + b
+py_add
+");
+                Engine.Runtime.Globals.SetVariable("PyAdd", pyAdd);
+                var pyFunc = (Func<string[], string[], string[]>)Engine.Execute(@"F2.to_class.new PyAdd");
+                Debug.Assert(String.Join(";", pyFunc(new[] { "x" }, new[] { "y" })) == "x;y");
+            }
+#endif
+        }
+
         public void RubyHosting1A() {
             ScriptScope scope = Engine.Runtime.CreateScope();
             scope.SetVariable("x", 1);

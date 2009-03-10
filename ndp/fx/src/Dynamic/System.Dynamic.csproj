@@ -4,7 +4,6 @@
     <AssemblyName>System.Dynamic</AssemblyName>
     <OutputType>Library</OutputType>
     <CreateMetaAssembly>true</CreateMetaAssembly>
-    <AssemblyKeyType>ECMA</AssemblyKeyType>
     <GenerateAssemblyRefs>true</GenerateAssemblyRefs>
     <AllowPartialTrustedCalls>true</AllowPartialTrustedCalls>
     <PublishMetaAssemblyToSDK>true</PublishMetaAssemblyToSDK>

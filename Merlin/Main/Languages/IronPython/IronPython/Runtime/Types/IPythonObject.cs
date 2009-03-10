@@ -13,18 +13,16 @@
  *
  * ***************************************************************************/
 
+using System;
 using Microsoft.Scripting;
 
 namespace IronPython.Runtime.Types {
     /// <summary>
-    /// TODO: Move back to IronPython?
+    /// This interface is used for implementing parts of the IronPython type system.  It
+    /// is not intended for consumption from user programs.
     /// </summary>
     public interface IPythonObject {
         IAttributesCollection Dict {
-            get;
-        }
-
-        bool HasDictionary {
             get;
         }
 
@@ -46,10 +44,9 @@ namespace IronPython.Runtime.Types {
             get;
         }
 
-        void SetPythonType(PythonType newType);  
-    }
+        void SetPythonType(PythonType newType);
 
-    public interface IObjectWithSlots {
         object[] GetSlots();
+        object[] GetSlotsCreate();
     }
 }

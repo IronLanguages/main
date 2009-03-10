@@ -474,10 +474,20 @@ namespace Microsoft.Scripting.Ast {
                 return VisitYield(yield);
             }
 
-            // We need to reduce here, otherwise we can't guarentee proper
-            // stack spilling of the resulting expression.
-            // In effect, generators are one of the last rewrites that should
-            // happen
+            var ffc = node as FinallyFlowControlExpression;
+            if (ffc != null) {
+                return Visit(node.ReduceExtensions());
+            }
+
+            // Visit the child expression. It may not contain a yield, in which
+            // case we can just return the (possibly rewritten) node.
+            int yields = _yields.Count;
+            Expression result = base.VisitExtension(node);
+            if (yields == _yields.Count) {
+                return result;
+            }
+
+            // Otherwise, we have to reduce to ensure proper stack spilling.
             return Visit(node.ReduceExtensions());
         }
 
@@ -529,7 +539,7 @@ namespace Microsoft.Scripting.Ast {
 
             // Return a new block expression with the rewritten body except for that
             // all the variables are removed.
-            return Expression.Block(b);
+            return Expression.Block(node.Type, b);
         }
 
         protected override Expression VisitLambda<T>(Expression<T> node) {
@@ -758,11 +768,15 @@ namespace Microsoft.Scripting.Ast {
                 return node;
             }
             if (yields == _yields.Count) {
-                return Expression.TypeIs(e, node.TypeOperand);
+                return (node.NodeType == ExpressionType.TypeIs)
+                    ? Expression.TypeIs(e, node.TypeOperand)
+                    : Expression.TypeEqual(e, node.TypeOperand);
             }
             return Expression.Block(
                 ToTemp(ref e),
-                Expression.TypeIs(e, node.TypeOperand)
+                (node.NodeType == ExpressionType.TypeIs)
+                    ? Expression.TypeIs(e, node.TypeOperand)
+                    : Expression.TypeEqual(e, node.TypeOperand)
             );
         }
 

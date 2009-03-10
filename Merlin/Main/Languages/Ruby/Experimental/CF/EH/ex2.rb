@@ -1,30 +1,34 @@
-class Ary
-  def to_ary
-    ['x','y']
-  end
-end
+e = Exception.new("msg")
+e.set_backtrace ['a', 'b']
+e.send(:initialize)
+p e.message
+p e.backtrace
 
+
+=begin
 class E < Exception
-end
-
-class C
-  def exception *a
-    puts "exception #{a.inspect}"
-    E.new *a
+  def backtrace
+    puts 'backtrace'
+    super
   end
   
   def set_backtrace *a
-    puts "set_backtrace #{a.inspect}"
+    puts 'set_backtrace'
+    super
   end
 end
 
-x = C.new
+e = E.new("msg")
+e.set_backtrace ['a', 'b']
+e.send(:initialize, 'msg2')
+p e.message
+p e.backtrace
 
-begin
-  raise x, "msg", ['x','y']
-rescue Exception
-  p $!
-  p $@
-end
+puts '---'
+e = E.new("msg")
+e.set_backtrace ['a', 'b']
+e.send(:initialize)
+p e.message
+p e.backtrace
 
-
+=end

@@ -737,6 +737,84 @@ import Namespace.")]
         }
 
         /// <summary>
+        /// clr.CompileSubclassTypes(assemblyName, *typeDescription)
+        /// 
+        /// Provides a helper for creating an assembly which contains pre-generated .NET 
+        /// base types for new-style types.
+        /// 
+        /// This assembly can then be AddReferenced or put sys.prefix\DLLs and the cached 
+        /// types will be used instead of generating the types at runtime.
+        /// 
+        /// This function takes the name of the assembly to save to and then an arbitrary 
+        /// number of parameters describing the types to be created.  Each of those
+        /// parameter can either be a plain type or a sequence of base types.
+        /// 
+        /// clr.CompileSubclassTypes(object) -> create a base type for object
+        /// clr.CompileSubclassTypes(object, str, System.Collections.ArrayList) -> create 
+        ///     base  types for both object and ArrayList.
+        ///     
+        /// clr.CompileSubclassTypes(object, (object, IComparable)) -> create base types for 
+        ///     object and an object which implements IComparable.
+        /// 
+        /// </summary>
+        public static void CompileSubclassTypes(string/*!*/ assemblyName, params object[] newTypes) {
+            if (assemblyName == null) {
+                throw PythonOps.TypeError("CompileTypes expected str for assemblyName, got NoneType");
+            }
+
+            var typesToCreate = new List<PythonTuple>();
+            foreach (object o in newTypes) {
+                if (o is PythonType) {
+                    typesToCreate.Add(PythonTuple.MakeTuple(o));
+                } else {
+                    typesToCreate.Add(PythonTuple.Make(o));
+                }
+            }
+
+            NewTypeMaker.SaveNewTypes(assemblyName, typesToCreate);
+        }
+
+        /// <summary>
+        /// clr.GetSubclassedTypes() -> tuple
+        /// 
+        /// Returns a tuple of information about the types which have been subclassed. 
+        /// 
+        /// This tuple can be passed to clr.CompileSubclassTypes to cache these
+        /// types on disk such as:
+        /// 
+        /// clr.CompileSubclassTypes('assembly', *clr.GetSubclassedTypes())
+        /// </summary>
+        public static PythonTuple GetSubclassedTypes() {
+            List<object> res = new List<object>();
+            
+            foreach (NewTypeInfo info in NewTypeMaker._newTypes.Keys) {
+                Type clrBaseType = info.BaseType;
+                Type tempType = clrBaseType;
+                while (tempType != null) {
+                    if (tempType.IsGenericType && tempType.GetGenericTypeDefinition() == typeof(Extensible<>)) {
+                        clrBaseType = tempType.GetGenericArguments()[0];
+                        break;
+                    }
+                    tempType = tempType.BaseType;
+                }
+
+                PythonType baseType = DynamicHelpers.GetPythonTypeFromType(clrBaseType);
+                if (info.InterfaceTypes.Count == 0) {
+                    res.Add(baseType);
+                } else if (info.InterfaceTypes.Count > 0) {
+                    PythonType[] types = new PythonType[info.InterfaceTypes.Count + 1];
+                    types[0] = baseType;
+                    for (int i = 0; i < info.InterfaceTypes.Count; i++) {
+                        types[i + 1] = DynamicHelpers.GetPythonTypeFromType(info.InterfaceTypes[i]);
+                    }
+                    res.Add(PythonTuple.MakeTuple(types));
+                }
+            }
+
+            return PythonTuple.MakeTuple(res.ToArray());
+        }
+
+        /// <summary>
         /// Provides a StreamContentProvider for a stream of content backed by a file on disk.
         /// </summary>
         [Serializable]

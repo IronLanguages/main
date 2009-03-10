@@ -61,15 +61,6 @@ namespace System.Dynamic {
         }
 
         /// <summary>
-        /// A string like  "Removing an event handler that is not registered."
-        /// </summary>
-        internal static string RemovingUnregisteredEvent {
-            get {
-                return "Removing an event handler that is not registered.";
-            }
-        }
-
-        /// <summary>
         /// A string like  "COM object does not support events."
         /// </summary>
         internal static string COMObjectDoesNotSupportEvents {
@@ -84,15 +75,6 @@ namespace System.Dynamic {
         internal static string COMObjectDoesNotSupportSourceInterface {
             get {
                 return "COM object does not support specified source interface.";
-            }
-        }
-
-        /// <summary>
-        /// A string like  "Removing not registered handler."
-        /// </summary>
-        internal static string RemovingUnregisteredHandler {
-            get {
-                return "Removing not registered handler.";
             }
         }
 
@@ -189,6 +171,15 @@ namespace System.Dynamic {
         }
 
         /// <summary>
+        /// A string like  "Attempting to pass an event handler of an unsupported type."
+        /// </summary>
+        internal static string UnsupportedHandlerType {
+            get {
+                return "Attempting to pass an event handler of an unsupported type.";
+            }
+        }
+
+        /// <summary>
         /// A string like  "Could not get dispatch ID for {0} (error: {1})."
         /// </summary>
         internal static string CouldNotGetDispId(object p0, object p1) {
@@ -216,13 +207,6 @@ namespace System.Dynamic {
 
     internal static partial class Error {
         /// <summary>
-        /// InvalidOperationException with message like "Removing an event handler that is not registered."
-        /// </summary>
-        internal static Exception RemovingUnregisteredEvent() {
-            return new InvalidOperationException(Strings.RemovingUnregisteredEvent);
-        }
-
-        /// <summary>
         /// ArgumentException with message like "COM object does not support events."
         /// </summary>
         internal static Exception COMObjectDoesNotSupportEvents() {
@@ -234,13 +218,6 @@ namespace System.Dynamic {
         /// </summary>
         internal static Exception COMObjectDoesNotSupportSourceInterface() {
             return new ArgumentException(Strings.COMObjectDoesNotSupportSourceInterface);
-        }
-
-        /// <summary>
-        /// InvalidOperationException with message like "Removing not registered handler."
-        /// </summary>
-        internal static Exception RemovingUnregisteredHandler() {
-            return new InvalidOperationException(Strings.RemovingUnregisteredHandler);
         }
 
         /// <summary>
@@ -325,6 +302,13 @@ namespace System.Dynamic {
         /// </summary>
         internal static Exception UnsupportedEnumType() {
             return new InvalidOperationException(Strings.UnsupportedEnumType);
+        }
+
+        /// <summary>
+        /// InvalidOperationException with message like "Attempting to pass an event handler of an unsupported type."
+        /// </summary>
+        internal static Exception UnsupportedHandlerType() {
+            return new InvalidOperationException(Strings.UnsupportedHandlerType);
         }
 
         /// <summary>

@@ -19,6 +19,7 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Linq.Expressions;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using Microsoft.Scripting.Utils;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
@@ -321,7 +322,7 @@ namespace Microsoft.Scripting.Ast {
                 lambdaType,
                 AddDefaultReturn(MakeBody()),
                 _name + "$" + Interlocked.Increment(ref _lambdaId),
-                new ReadOnlyCollection<ParameterExpression>(_params.ToArray())
+                new ReadOnlyCollectionBuilder<ParameterExpression>(_params)
             );
 
             // The builder is now completed

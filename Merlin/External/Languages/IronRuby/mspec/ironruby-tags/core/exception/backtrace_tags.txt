@@ -1,0 +1,1 @@
+fails:Exception#backtrace is set for exceptions in an ensure block

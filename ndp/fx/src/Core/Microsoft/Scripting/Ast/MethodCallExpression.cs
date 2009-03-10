@@ -483,7 +483,7 @@ namespace System.Linq.Expressions {
 
         #region Call
 
-        ///<summary>Creates a <see cref="T:System.Linq.Expressions.MethodCallExpression" /> that represents a call to a method that takes no arguments.</summary>
+        ///<summary>Creates a <see cref="T:System.Linq.Expressions.MethodCallExpression" /> that represents a call to a static method that takes one argument.</summary>
         ///<returns>A <see cref="T:System.Linq.Expressions.MethodCallExpression" /> that has the <see cref="P:System.Linq.Expressions.Expression.NodeType" /> property equal to <see cref="F:System.Linq.Expressions.ExpressionType.Call" /> and the <see cref="P:System.Linq.Expressions.MethodCallExpression.Object" /> and <see cref="P:System.Linq.Expressions.MethodCallExpression.Method" /> properties set to the specified values.</returns>
         ///<param name="method">A <see cref="T:System.Reflection.MethodInfo" /> to set the <see cref="P:System.Linq.Expressions.MethodCallExpression.Method" /> property equal to.</param>
         ///<param name="arg0">The <see cref="Expression" /> that represents the first argument.</param>
@@ -502,7 +502,7 @@ namespace System.Linq.Expressions {
             return new MethodCallExpression1(method, arg0); 
         }
 
-        ///<summary>Creates a <see cref="T:System.Linq.Expressions.MethodCallExpression" /> that represents a call to a method that takes no arguments.</summary>
+        ///<summary>Creates a <see cref="T:System.Linq.Expressions.MethodCallExpression" /> that represents a call to a static method that takes two arguments.</summary>
         ///<returns>A <see cref="T:System.Linq.Expressions.MethodCallExpression" /> that has the <see cref="P:System.Linq.Expressions.Expression.NodeType" /> property equal to <see cref="F:System.Linq.Expressions.ExpressionType.Call" /> and the <see cref="P:System.Linq.Expressions.MethodCallExpression.Object" /> and <see cref="P:System.Linq.Expressions.MethodCallExpression.Method" /> properties set to the specified values.</returns>
         ///<param name="method">A <see cref="T:System.Reflection.MethodInfo" /> to set the <see cref="P:System.Linq.Expressions.MethodCallExpression.Method" /> property equal to.</param>
         ///<param name="arg0">The <see cref="Expression" /> that represents the first argument.</param>
@@ -524,7 +524,7 @@ namespace System.Linq.Expressions {
             return new MethodCallExpression2(method, arg0, arg1);
         }
 
-        ///<summary>Creates a <see cref="T:System.Linq.Expressions.MethodCallExpression" /> that represents a call to a method that takes no arguments.</summary>
+        ///<summary>Creates a <see cref="T:System.Linq.Expressions.MethodCallExpression" /> that represents a call to a static method that takes three arguments.</summary>
         ///<returns>A <see cref="T:System.Linq.Expressions.MethodCallExpression" /> that has the <see cref="P:System.Linq.Expressions.Expression.NodeType" /> property equal to <see cref="F:System.Linq.Expressions.ExpressionType.Call" /> and the <see cref="P:System.Linq.Expressions.MethodCallExpression.Object" /> and <see cref="P:System.Linq.Expressions.MethodCallExpression.Method" /> properties set to the specified values.</returns>
         ///<param name="method">A <see cref="T:System.Reflection.MethodInfo" /> to set the <see cref="P:System.Linq.Expressions.MethodCallExpression.Method" /> property equal to.</param>
         ///<param name="arg0">The <see cref="Expression" /> that represents the first argument.</param>
@@ -549,7 +549,7 @@ namespace System.Linq.Expressions {
             return new MethodCallExpression3(method, arg0, arg1, arg2);
         }
 
-        ///<summary>Creates a <see cref="T:System.Linq.Expressions.MethodCallExpression" /> that represents a call to a method that takes no arguments.</summary>
+        ///<summary>Creates a <see cref="T:System.Linq.Expressions.MethodCallExpression" /> that represents a call to a static method that takes four arguments.</summary>
         ///<returns>A <see cref="T:System.Linq.Expressions.MethodCallExpression" /> that has the <see cref="P:System.Linq.Expressions.Expression.NodeType" /> property equal to <see cref="F:System.Linq.Expressions.ExpressionType.Call" /> and the <see cref="P:System.Linq.Expressions.MethodCallExpression.Object" /> and <see cref="P:System.Linq.Expressions.MethodCallExpression.Method" /> properties set to the specified values.</returns>
         ///<param name="method">A <see cref="T:System.Reflection.MethodInfo" /> to set the <see cref="P:System.Linq.Expressions.MethodCallExpression.Method" /> property equal to.</param>
         ///<param name="arg0">The <see cref="Expression" /> that represents the first argument.</param>
@@ -577,14 +577,14 @@ namespace System.Linq.Expressions {
             return new MethodCallExpression4(method, arg0, arg1, arg2, arg3);
         }
 
-        ///<summary>Creates a <see cref="T:System.Linq.Expressions.MethodCallExpression" /> that represents a call to a method that takes no arguments.</summary>
+        ///<summary>Creates a <see cref="T:System.Linq.Expressions.MethodCallExpression" /> that represents a call to a static method that takes five arguments.</summary>
         ///<returns>A <see cref="T:System.Linq.Expressions.MethodCallExpression" /> that has the <see cref="P:System.Linq.Expressions.Expression.NodeType" /> property equal to <see cref="F:System.Linq.Expressions.ExpressionType.Call" /> and the <see cref="P:System.Linq.Expressions.MethodCallExpression.Object" /> and <see cref="P:System.Linq.Expressions.MethodCallExpression.Method" /> properties set to the specified values.</returns>
         ///<param name="method">A <see cref="T:System.Reflection.MethodInfo" /> to set the <see cref="P:System.Linq.Expressions.MethodCallExpression.Method" /> property equal to.</param>
         ///<param name="arg0">The <see cref="Expression" /> that represents the first argument.</param>
         ///<param name="arg1">The <see cref="Expression" /> that represents the second argument.</param>
         ///<param name="arg2">The <see cref="Expression" /> that represents the third argument.</param>
         ///<param name="arg3">The <see cref="Expression" /> that represents the fourth argument.</param>
-        ///<param name="arg4">The <see cref="Expression" /> that represents the five argument.</param>
+        ///<param name="arg4">The <see cref="Expression" /> that represents the fifth argument.</param>
         ///<exception cref="T:System.ArgumentNullException">
         ///<paramref name="method" /> is null.</exception>
         ///<returns>A <see cref="T:System.Linq.Expressions.MethodCallExpression" /> that has the <see cref="P:System.Linq.Expressions.Expression.NodeType" /> property equal to <see cref="F:System.Linq.Expressions.ExpressionType.Call" /> and the <see cref="P:System.Linq.Expressions.MethodCallExpression.Object" /> and <see cref="P:System.Linq.Expressions.MethodCallExpression.Method" /> properties set to the specified values.</returns>
@@ -640,7 +640,7 @@ namespace System.Linq.Expressions {
         }
 
         /// <summary>
-        /// Creates a <see cref="MethodCallExpression" /> that represents a call to a method that takes no arguments.
+        /// Creates a <see cref="MethodCallExpression" /> that represents a method call.
         /// </summary>
         /// <param name="instance">An <see cref="Expression" /> that specifies the instance for an instance call. (pass null for a static (Shared in Visual Basic) method).</param>
         /// <param name="method">The <see cref="MethodInfo" /> that represents the target method.</param>
@@ -651,7 +651,7 @@ namespace System.Linq.Expressions {
         }
 
         /// <summary>
-        /// Creates a <see cref="MethodCallExpression" /> that represents a call to a method that takes no arguments.
+        /// Creates a <see cref="MethodCallExpression" /> that represents a call to a method that takes two arguments.
         /// </summary>
         /// <param name="instance">An <see cref="Expression" /> that specifies the instance for an instance call. (pass null for a static (Shared in Visual Basic) method).</param>
         /// <param name="method">The <see cref="MethodInfo" /> that represents the target method.</param>
@@ -678,7 +678,7 @@ namespace System.Linq.Expressions {
         }
 
         /// <summary>
-        /// Creates a <see cref="MethodCallExpression" /> that represents a call to a method that takes no arguments.
+        /// Creates a <see cref="MethodCallExpression" /> that represents a call to a method that takes three arguments.
         /// </summary>
         /// <param name="instance">An <see cref="Expression" /> that specifies the instance for an instance call. (pass null for a static (Shared in Visual Basic) method).</param>
         /// <param name="method">The <see cref="MethodInfo" /> that represents the target method.</param>
@@ -710,7 +710,10 @@ namespace System.Linq.Expressions {
         ///<returns>A <see cref="T:System.Linq.Expressions.MethodCallExpression" /> that has the <see cref="P:System.Linq.Expressions.Expression.NodeType" /> property equal to <see cref="F:System.Linq.Expressions.ExpressionType.Call" />, the <see cref="P:System.Linq.Expressions.MethodCallExpression.Object" /> property equal to <paramref name="instance" />, <see cref="P:System.Linq.Expressions.MethodCallExpression.Method" /> set to the <see cref="T:System.Reflection.MethodInfo" /> that represents the specified instance method, and <see cref="P:System.Linq.Expressions.MethodCallExpression.Arguments" /> set to the specified arguments.</returns>
         ///<param name="instance">An <see cref="T:System.Linq.Expressions.Expression" /> whose <see cref="P:System.Linq.Expressions.Expression.Type" /> property value will be searched for a specific method.</param>
         ///<param name="methodName">The name of the method.</param>
-        ///<param name="typeArguments">An array of <see cref="T:System.Type" /> objects that specify the type parameters of the method.</param>
+        ///<param name="typeArguments">
+        ///An array of <see cref="T:System.Type" /> objects that specify the type parameters of the generic method.
+        ///This argument should be null when <paramref name="methodName" /> specifies a non-generic method.
+        ///</param>
         ///<param name="arguments">An array of <see cref="T:System.Linq.Expressions.Expression" /> objects that represents the arguments to the method.</param>
         ///<exception cref="T:System.ArgumentNullException">
         ///<paramref name="instance" /> or <paramref name="methodName" /> is null.</exception>
@@ -730,7 +733,10 @@ namespace System.Linq.Expressions {
         ///<returns>A <see cref="T:System.Linq.Expressions.MethodCallExpression" /> that has the <see cref="P:System.Linq.Expressions.Expression.NodeType" /> property equal to <see cref="F:System.Linq.Expressions.ExpressionType.Call" />, the <see cref="P:System.Linq.Expressions.MethodCallExpression.Method" /> property set to the <see cref="T:System.Reflection.MethodInfo" /> that represents the specified static (Shared in Visual Basic) method, and the <see cref="P:System.Linq.Expressions.MethodCallExpression.Arguments" /> property set to the specified arguments.</returns>
         ///<param name="type">The <see cref="T:System.Type" /> that specifies the type that contains the specified static (Shared in Visual Basic) method.</param>
         ///<param name="methodName">The name of the method.</param>
-        ///<param name="typeArguments">An array of <see cref="T:System.Type" /> objects that specify the type parameters of the method.</param>
+        ///<param name="typeArguments">
+        ///An array of <see cref="T:System.Type" /> objects that specify the type parameters of the generic method.
+        ///This argument should be null when <paramref name="methodName" /> specifies a non-generic method.
+        ///</param>
         ///<param name="arguments">An array of <see cref="T:System.Linq.Expressions.Expression" /> objects that represent the arguments to the method.</param>
         ///<exception cref="T:System.ArgumentNullException">
         ///<paramref name="type" /> or <paramref name="methodName" /> is null.</exception>
@@ -744,7 +750,7 @@ namespace System.Linq.Expressions {
             return Expression.Call(null, FindMethod(type, methodName, typeArguments, arguments, flags), arguments);
         }
 
-        ///<summary>Creates a <see cref="T:System.Linq.Expressions.MethodCallExpression" /> that represents a call to a method that takes arguments.</summary>
+        ///<summary>Creates a <see cref="T:System.Linq.Expressions.MethodCallExpression" /> that represents a method call.</summary>
         ///<returns>A <see cref="T:System.Linq.Expressions.MethodCallExpression" /> that has the <see cref="P:System.Linq.Expressions.Expression.NodeType" /> property equal to <see cref="F:System.Linq.Expressions.ExpressionType.Call" /> and the <see cref="P:System.Linq.Expressions.MethodCallExpression.Object" />, <see cref="P:System.Linq.Expressions.MethodCallExpression.Method" />, and <see cref="P:System.Linq.Expressions.MethodCallExpression.Arguments" /> properties set to the specified values.</returns>
         ///<param name="instance">An <see cref="T:System.Linq.Expressions.Expression" /> to set the <see cref="P:System.Linq.Expressions.MethodCallExpression.Object" /> property equal to (pass null for a static (Shared in Visual Basic) method).</param>
         ///<param name="method">A <see cref="T:System.Reflection.MethodInfo" /> to set the <see cref="P:System.Linq.Expressions.MethodCallExpression.Method" /> property equal to.</param>
@@ -884,8 +890,13 @@ namespace System.Linq.Expressions {
             var methodInfos = members.Map(t => (MethodInfo)t);
             int count = FindBestMethod(methodInfos, typeArgs, args, out method);
 
-            if (count == 0)
-                throw Error.MethodWithArgsDoesNotExistOnType(methodName, type);
+            if (count == 0) {
+                if (typeArgs != null && typeArgs.Length > 0) {
+                    throw Error.GenericMethodWithArgsDoesNotExistOnType(methodName, type);
+                } else {
+                    throw Error.MethodWithArgsDoesNotExistOnType(methodName, type);
+                }
+            }
             if (count > 1)
                 throw Error.MethodWithMoreThanOneMatch(methodName, type);
             return method;

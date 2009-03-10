@@ -76,13 +76,6 @@ namespace System.Linq.Expressions {
             var values = testValues.ToReadOnly();
             RequiresCanRead(values, "testValues");
             ContractUtils.RequiresNotEmpty(values, "testValues");
-            if (values.Count > 1) {
-                // All test values must have the same type.
-                var type = values[0].Type;
-                for (int i = 1, n = values.Count; i < n; i++) {
-                    ContractUtils.Requires(type == values[i].Type, "testValues", Strings.AllTestValuesMustHaveSameType);
-                }
-            }
 
             return new SwitchCase(body, values);
         }

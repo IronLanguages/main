@@ -17,6 +17,7 @@ using System.Collections.Generic;
 using System.Dynamic.Utils;
 using System.Linq.Expressions;
 using System.Reflection;
+using System.Runtime.Remoting;
 
 namespace System.Dynamic {
     /// <summary>
@@ -266,8 +267,6 @@ namespace System.Dynamic {
             return new string[0];
         }
 
-        // Internal helpers
-
         /// <summary>
         /// Returns the list of expressions represented by the <see cref="DynamicMetaObject"/> instances.
         /// </summary>
@@ -286,6 +285,31 @@ namespace System.Dynamic {
             }
 
             return res;
+        }
+
+        /// <summary>
+        /// Creates a meta-object for the specified object. 
+        /// </summary>
+        /// <param name="value">The object to get a meta-object for.</param>
+        /// <param name="expression">The expression representing this <see cref="DynamicMetaObject"/> during the dynamic binding process.</param>
+        /// <returns>
+        /// If the given object implements <see cref="IDynamicMetaObjectProvider"/> and is not a remote object from outside the current AppDomain,
+        /// returns the object's specific meta-object returned by <see cref="IDynamicMetaObjectProvider.GetMetaObject"/>. Otherwise a plain new meta-object 
+        /// with no restrictions is created and returned.
+        /// </returns>
+        public static DynamicMetaObject Create(object value, Expression expression) {
+            ContractUtils.RequiresNotNull(expression, "expression");
+
+            IDynamicMetaObjectProvider ido = value as IDynamicMetaObjectProvider;
+#if !SILVERLIGHT
+            if (ido != null && !RemotingServices.IsObjectOutOfAppDomain(value)) {
+#else
+            if (ido != null) {
+#endif
+                return ido.GetMetaObject(expression);
+            } else {
+                return new DynamicMetaObject(expression, BindingRestrictions.Empty, value);
+            }
         }
 
         /// <summary>

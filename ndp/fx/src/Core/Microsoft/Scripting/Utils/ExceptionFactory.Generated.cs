@@ -1078,6 +1078,13 @@ namespace System.Linq.Expressions {
         }
 
         /// <summary>
+        /// A string like  "No generic method '{0}' on type '{1}' is compatible with the supplied type arguments and arguments. No type arguments should be provided if the method is non-generic. "
+        /// </summary>
+        internal static string GenericMethodWithArgsDoesNotExistOnType(object p0, object p1) {
+            return FormatString("No generic method '{0}' on type '{1}' is compatible with the supplied type arguments and arguments. No type arguments should be provided if the method is non-generic. ", p0, p1);
+        }
+
+        /// <summary>
         /// A string like  "More than one method '{0}' on type '{1}' is compatible with the supplied arguments."
         /// </summary>
         internal static string MethodWithMoreThanOneMatch(object p0, object p1) {
@@ -1448,6 +1455,20 @@ namespace System.Linq.Expressions {
             get {
                 return "The operation cannot be performed in heterogeneous app domain.";
             }
+        }
+
+        /// <summary>
+        /// A string like  "Test value of type '{0}' cannot be used for the comparison method parameter of type '{1}'"
+        /// </summary>
+        internal static string TestValueTypeDoesNotMatchComparisonMethodParameter(object p0, object p1) {
+            return FormatString("Test value of type '{0}' cannot be used for the comparison method parameter of type '{1}'", p0, p1);
+        }
+
+        /// <summary>
+        /// A string like  "Switch value of type '{0}' cannot be used for the comparison method parameter of type '{1}'"
+        /// </summary>
+        internal static string SwitchValueTypeDoesNotMatchComparisonMethodParameter(object p0, object p1) {
+            return FormatString("Switch value of type '{0}' cannot be used for the comparison method parameter of type '{1}'", p0, p1);
         }
 
     }
@@ -2094,6 +2115,13 @@ namespace System.Linq.Expressions {
         }
 
         /// <summary>
+        /// InvalidOperationException with message like "No generic method '{0}' on type '{1}' is compatible with the supplied type arguments and arguments. No type arguments should be provided if the method is non-generic. "
+        /// </summary>
+        internal static Exception GenericMethodWithArgsDoesNotExistOnType(object p0, object p1) {
+            return new InvalidOperationException(Strings.GenericMethodWithArgsDoesNotExistOnType(p0, p1));
+        }
+
+        /// <summary>
         /// InvalidOperationException with message like "More than one method '{0}' on type '{1}' is compatible with the supplied arguments."
         /// </summary>
         internal static Exception MethodWithMoreThanOneMatch(object p0, object p1) {
@@ -2420,6 +2448,20 @@ namespace System.Linq.Expressions {
         /// </summary>
         internal static Exception HomogenousAppDomainRequired() {
             return new InvalidOperationException(Strings.HomogenousAppDomainRequired);
+        }
+
+        /// <summary>
+        /// ArgumentException with message like "Test value of type '{0}' cannot be used for the comparison method parameter of type '{1}'"
+        /// </summary>
+        internal static Exception TestValueTypeDoesNotMatchComparisonMethodParameter(object p0, object p1) {
+            return new ArgumentException(Strings.TestValueTypeDoesNotMatchComparisonMethodParameter(p0, p1));
+        }
+
+        /// <summary>
+        /// ArgumentException with message like "Switch value of type '{0}' cannot be used for the comparison method parameter of type '{1}'"
+        /// </summary>
+        internal static Exception SwitchValueTypeDoesNotMatchComparisonMethodParameter(object p0, object p1) {
+            return new ArgumentException(Strings.SwitchValueTypeDoesNotMatchComparisonMethodParameter(p0, p1));
         }
 
     }

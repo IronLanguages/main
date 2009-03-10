@@ -1,5 +1,6 @@
 require File.dirname(__FILE__) + '/../spec_helper'
 require File.dirname(__FILE__) + '/fixtures/classes'
+require File.dirname(__FILE__) + '/../fixtures/class'
 
 describe "Literal Regexps" do
   it "matches against $_ (last input) in a conditional if no explicit matchee provided" do
@@ -95,7 +96,7 @@ describe "Literal Regexps" do
   end
   
   it "throws NoMethodError on missing to_s" do
-    o = LanguageSpecs::ClassWithout_to_s.new
+    o = ClassSpecs::Undef_to_s.new
     lambda { /#{o}/ }.should raise_error(NoMethodError)
   end
   

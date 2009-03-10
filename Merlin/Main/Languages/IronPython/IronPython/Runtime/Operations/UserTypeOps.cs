@@ -14,16 +14,16 @@
  * ***************************************************************************/
 
 using System;
+using System.Dynamic;
 using System.Linq.Expressions;
 using System.Runtime.CompilerServices;
-using System.Dynamic;
 using System.Threading;
-using IronPython.Runtime.Binding;
-using IronPython.Runtime.Types;
+
 using Microsoft.Scripting;
-using Microsoft.Scripting.Actions;
 using Microsoft.Scripting.Generation;
 using Microsoft.Scripting.Runtime;
+
+using IronPython.Runtime.Types;
 
 namespace IronPython.Runtime.Operations {
     
@@ -62,17 +62,50 @@ namespace IronPython.Runtime.Operations {
             desc.TrySetValue(DefaultContext.Default, instance, DynamicHelpers.GetPythonType(instance), newValue);
         }
 
-        public static void SetFinalizerWorker(ref WeakRefTracker tracker, WeakRefTracker newVal) {
-            if (Interlocked.CompareExchange(ref tracker, newVal, null) != null) {
-                GC.SuppressFinalize(newVal);
+        public static bool SetWeakRefHelper(IPythonObject obj, WeakRefTracker value) {
+            if (!obj.PythonType.IsWeakReferencable) {
+                return false;
+            }
+
+            object[] slots = obj.GetSlotsCreate();
+            slots[slots.Length - 1] = value;
+            return true;            
+        }
+
+        public static WeakRefTracker GetWeakRefHelper(IPythonObject obj) {
+            object[] slots = obj.GetSlots();
+            if (slots == null) {
+                return null;
+            }
+
+            return (WeakRefTracker)slots[slots.Length - 1];
+        }
+
+        public static void SetFinalizerHelper(IPythonObject obj, WeakRefTracker value) {
+            object[] slots = obj.GetSlotsCreate();
+            if (Interlocked.CompareExchange(ref slots[slots.Length - 1], value, null) != null) {
+                GC.SuppressFinalize(value);
             }
         }
 
-        public static void AddRemoveEventHelper(object method, object instance, PythonType dt, object eventValue, SymbolId name) {
+        public static object[] GetSlotsCreate(IPythonObject obj, ref object[] slots) {
+            if (slots != null) {
+                return slots;
+            }
+
+            Interlocked.CompareExchange(
+                ref slots,
+                new object[obj.PythonType.SlotCount + 1],   // weakref is stored at the end
+                null);
+
+            return slots;
+        }
+
+        public static void AddRemoveEventHelper(object method, IPythonObject instance, object eventValue, SymbolId name) {
             object callable = method;
 
             // TODO: dt gives us a PythonContext which we should use
-
+            PythonType dt = instance.PythonType;
             PythonTypeSlot dts = method as PythonTypeSlot;
             if (dts != null) {
                 if (!dts.TryGetValue(DefaultContext.Default, instance, dt, out callable))
@@ -128,6 +161,14 @@ namespace IronPython.Runtime.Operations {
             return dict[name] = value;
         }
 
+        public static object FastSetDictionaryValue(ref IAttributesCollection dict, SymbolId name, object value) {
+            if (dict == null) {
+                Interlocked.CompareExchange(ref dict, PythonDictionary.MakeSymbolDictionary(), null);
+            }
+
+            return dict[name] = value;
+        }
+
         public static void RemoveDictionaryValue(IPythonObject self, SymbolId name) {
             IAttributesCollection dict = self.Dict;
             if (dict != null) {
@@ -141,7 +182,7 @@ namespace IronPython.Runtime.Operations {
 
         internal static IAttributesCollection GetDictionary(IPythonObject self) {
             IAttributesCollection dict = self.Dict;
-            if (dict == null) {
+            if (dict == null && self.PythonType.HasDictionary) {
                 dict = self.SetDict(PythonDictionary.MakeSymbolDictionary());
             }
             return dict;
@@ -188,7 +229,8 @@ namespace IronPython.Runtime.Operations {
             return false;
         }
 
-        public static bool TryGetNonInheritedValueHelper(PythonType dt, object instance, SymbolId name, out object callTarget) {
+        public static bool TryGetNonInheritedValueHelper(IPythonObject instance, SymbolId name, out object callTarget) {
+            PythonType dt = instance.PythonType;
             PythonTypeSlot dts;
             // search MRO for other user-types in the chain that are overriding the method
             foreach (PythonType type in dt.ResolutionOrder) {

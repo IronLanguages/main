@@ -185,7 +185,7 @@ namespace IronRuby.Runtime {
             string savePath = _context.RubyOptions.SavePath;
             if (savePath != null) {
                 lock (_compiledFileMutex) {
-                    var assemblyPath = Path.Combine(savePath, Path.GetFileName(_context.RubyOptions.MainFile) + ".dll");
+                    var assemblyPath = Path.Combine(savePath, (Path.GetFileName(_context.RubyOptions.MainFile) ?? "snippets") + ".dll");
 
                     Utils.Log(String.Format("SAVING to {0}", Path.GetFullPath(assemblyPath)), "LOADER");
 
