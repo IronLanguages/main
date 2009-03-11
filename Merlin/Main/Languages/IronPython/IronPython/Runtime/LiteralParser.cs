@@ -494,12 +494,26 @@ namespace IronPython.Runtime {
                 }
                 return ParseFloatNoCatch(text);
             } catch (OverflowException) {
-                return Double.PositiveInfinity;
+                return text.lstrip().StartsWith("-") ? Double.NegativeInfinity : Double.PositiveInfinity;
             }
         }
 
         private static double ParseFloatNoCatch(string text) {
-            return double.Parse(ReplaceUnicodeDigits(text), System.Globalization.CultureInfo.InvariantCulture);
+            string s = ReplaceUnicodeDigits(text);
+            switch (s.lower().lstrip()) {
+                case "nan":
+                case "+nan":
+                case "-nan":
+                    return double.NaN;
+                case "inf":
+                case "+inf":
+                    return double.PositiveInfinity;
+                case "-inf":
+                    return double.NegativeInfinity;
+                default:
+                    double res = double.Parse(s, System.Globalization.CultureInfo.InvariantCulture);
+                    return (res == 0.0 && text.lstrip().StartsWith("-")) ? DoubleOps.NegativeZero : res;
+            }
         }
 
         private static string ReplaceUnicodeDigits(string text) {

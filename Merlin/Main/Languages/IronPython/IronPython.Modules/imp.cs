@@ -237,6 +237,10 @@ namespace IronPython.Modules {
             return LoadPythonSource(PythonContext.GetContext(context), name, file, pathname);
         }
 
+        public static object reload(CodeContext/*!*/ context, Scope scope) {
+            return Builtin.reload(context, scope);
+        }
+
         public static PythonType NullImporter {
             get {
                 return DynamicHelpers.GetPythonTypeFromType(typeof(NullImporter));

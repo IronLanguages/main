@@ -66,11 +66,30 @@ namespace IronPython.Runtime.Operations {
                 }
             }
 
-            Complex64 c = real2 + imag2 * Complex64.MakeImaginary(1);
+            double real3 = real2.Real - imag2.Imag;
+            double imag3 = real2.Imag + imag2.Real;
             if (cls == TypeCache.Complex64) {
-                return new Complex64(c.Real, c.Imag);
+                return new Complex64(real3, imag3);
             } else {
-                return cls.CreateInstance(context, c.Real, c.Imag);
+                return cls.CreateInstance(context, real3, imag3);
+            }
+        }
+        
+        [StaticExtensionMethod]
+        public static object __new__(CodeContext context, PythonType cls, double real) {
+            if (cls == TypeCache.Complex64) {
+                return new Complex64(real, 0.0);
+            } else {
+                return cls.CreateInstance(context, real, 0.0);
+            }
+        }
+
+        [StaticExtensionMethod]
+        public static object __new__(CodeContext context, PythonType cls, double real, double imag) {
+            if (cls == TypeCache.Complex64) {
+                return new Complex64(real, imag);
+            } else {
+                return cls.CreateInstance(context, real, imag);
             }
         }
 
@@ -168,17 +187,18 @@ namespace IronPython.Runtime.Operations {
             return NotImplementedType.Value;
         }
 
-        public static string __repr__(CodeContext/*!*/ context, Complex64 x) {            
-            if (x.Real != 0) {
-                if (x.Imag >= 0) {
+        public static string __repr__(CodeContext/*!*/ context, Complex64 x) {
+            string j = (double.IsInfinity(x.Imag) || double.IsNaN(x.Imag)) ? "*j" : "j";
 
-                    return "(" + FormatComplexValue(context, x.Real) + "+" + FormatComplexValue(context, x.Imag) + "j)";
-                } else {
-                    return "(" + FormatComplexValue(context, x.Real) + FormatComplexValue(context, x.Imag) + "j)";
+            if (x.Real != 0) {
+                if (x.Imag < 0 || DoubleOps.IsNegativeZero(x.Imag)) {
+                    return "(" + FormatComplexValue(context, x.Real) + FormatComplexValue(context, x.Imag) + j + ")";
+                } else /* x.Imag is NaN or >= +0.0 */ {
+                    return "(" + FormatComplexValue(context, x.Real) + "+" + FormatComplexValue(context, x.Imag) + j + ")";
                 }
             }
 
-            return FormatComplexValue(context, x.Imag) + "j";
+            return FormatComplexValue(context, x.Imag) + j;
         }
 
         // report the same errors as CPython for these invalid conversions
@@ -202,7 +222,13 @@ namespace IronPython.Runtime.Operations {
         // Unary Operations
         [SpecialName]
         public static double Abs(Complex64 x) {
-            return x.Abs();
+            double res = x.Abs();
+
+            if (double.IsInfinity(res) && !double.IsInfinity(x.Real) && !double.IsInfinity(x.Imag)) {
+                throw PythonOps.OverflowError("absolute value too large");
+            }
+
+            return res;
         }
 
         // Binary Operations - Comparisons (eq & ne defined on Complex64 type as operators)

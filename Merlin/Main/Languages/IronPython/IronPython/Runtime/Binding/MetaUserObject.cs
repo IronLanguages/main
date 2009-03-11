@@ -135,8 +135,11 @@ namespace IronPython.Runtime.Binding {
                 switch (Type.GetTypeCode(type)) {
                     case TypeCode.Object:
                         if (type == typeof(Complex64)) {
-                            // TODO: Fallback to Float
-                            return MakeConvertRuleForCall(conversion, this, Symbols.ConvertToComplex, "ConvertToComplex");
+                            return MakeConvertRuleForCall(conversion, this, Symbols.ConvertToComplex, "ConvertToComplex",
+                                (() => MakeConvertRuleForCall(conversion, this, Symbols.ConvertToFloat, "ConvertToFloat",
+                                    (() => conversion.FallbackConvert(this)),
+                                    (x) => Ast.Call(null, typeof(PythonOps).GetMethod("ConvertFloatToComplex"), x))),
+                                (x) => x);
                         } else if (type == typeof(BigInteger)) {
                             return MakeConvertRuleForCall(conversion, this, Symbols.ConvertToLong, "ConvertToLong");
                         } else if (type == typeof(IEnumerable)) {
@@ -167,7 +170,7 @@ namespace IronPython.Runtime.Binding {
             return null;
         }
 
-        private DynamicMetaObject/*!*/ MakeConvertRuleForCall(ConvertBinder/*!*/ convertToAction, DynamicMetaObject/*!*/ self, SymbolId symbolId, string returner) {
+        private DynamicMetaObject/*!*/ MakeConvertRuleForCall(ConvertBinder/*!*/ convertToAction, DynamicMetaObject/*!*/ self, SymbolId symbolId, string returner, Func<DynamicMetaObject> fallback, Func<Expression, Expression> resultConverter) {
             PythonType pt = ((IPythonObject)self.Value).PythonType;
             PythonTypeSlot pts;
             CodeContext context = BinderState.GetBinderState(convertToAction).Context;
@@ -176,13 +179,15 @@ namespace IronPython.Runtime.Binding {
             if (pt.TryResolveSlot(context, symbolId, out pts) && !IsBuiltinConversion(context, pts, symbolId, pt)) {
                 ParameterExpression tmp = Ast.Variable(typeof(object), "func");
 
-                Expression callExpr = Ast.Call(
-                    PythonOps.GetConversionHelper(returner, GetResultKind(convertToAction)),
-                    Ast.Dynamic(
-                        BinderState.GetBinderState(convertToAction).InvokeNone,
-                        typeof(object),
-                        BinderState.GetCodeContext(convertToAction),
-                        tmp
+                Expression callExpr = resultConverter(
+                    Ast.Call(
+                        PythonOps.GetConversionHelper(returner, GetResultKind(convertToAction)),
+                        Ast.Dynamic(
+                            BinderState.GetBinderState(convertToAction).InvokeNone,
+                            typeof(object),
+                            BinderState.GetCodeContext(convertToAction),
+                            tmp
+                        )
                     )
                 );
 
@@ -221,7 +226,11 @@ namespace IronPython.Runtime.Binding {
                 );
             }
 
-            return convertToAction.FallbackConvert(this);
+            return fallback();
+        }
+
+        private DynamicMetaObject/*!*/ MakeConvertRuleForCall(ConvertBinder/*!*/ convertToAction, DynamicMetaObject/*!*/ self, SymbolId symbolId, string returner) {
+            return MakeConvertRuleForCall(convertToAction, self, symbolId, returner, () => convertToAction.FallbackConvert(this), (x) => x);
         }
 
         private static Expression/*!*/ AddExtensibleSelfCheck(ConvertBinder/*!*/ convertToAction, DynamicMetaObject/*!*/ self, Expression/*!*/ callExpr) {

@@ -1212,10 +1212,10 @@ namespace IronPython.Runtime.Operations {
                 if (ostop < 0) {
                     ostop += length;
                     if (ostop < 0) {
-                        ostop = Math.Min(length, -1);
+                        ostop = ostep > 0 ? Math.Min(length, 0) : Math.Min(length - 1, -1);
                     }
-                } else if (ostop > length) {
-                    ostop = length;
+                } else if (ostop >= length) {
+                    ostop = ostep > 0 ? length : length - 1;
                 }
             }
 
@@ -2665,6 +2665,15 @@ namespace IronPython.Runtime.Operations {
             }
 
             return null;
+        }
+
+        public static object ConvertFloatToComplex(object value) {
+            if (value == null) {
+                return null;
+            }
+
+            double d = (double)value;
+            return new Complex64(d, 0.0);
         }
 
         internal static bool CheckingConvertToInt(object value) {
