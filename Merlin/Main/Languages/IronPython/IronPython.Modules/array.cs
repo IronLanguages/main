@@ -625,6 +625,31 @@ namespace IronPython.Modules {
                 }
             }
 
+            // a version of FromStream that overwrites starting at 'index'
+            internal void FromStream(int index, Stream ms) {
+                BinaryReader br = new BinaryReader(ms);
+
+                for (int i = index; i < ms.Length / itemsize + index; i++) {
+                    object value;
+                    switch (_typeCode) {
+                        case 'c': value = (char)br.ReadByte(); break;
+                        case 'b': value = (sbyte)br.ReadByte(); break;
+                        case 'B': value = br.ReadByte(); break;
+                        case 'u': value = br.ReadChar(); break;
+                        case 'h': value = br.ReadInt16(); break;
+                        case 'H': value = br.ReadUInt16(); break;
+                        case 'i': value = br.ReadInt32(); break;
+                        case 'I': value = br.ReadUInt32(); break;
+                        case 'l': value = br.ReadInt32(); break;
+                        case 'L': value = br.ReadUInt32(); break;
+                        case 'f': value = br.ReadSingle(); break;
+                        case 'd': value = br.ReadDouble(); break;
+                        default: throw new InvalidOperationException(); // should never happen
+                    }
+                    _data.SetData(i, value);
+                }
+            }
+
             private class ArrayData<T> : ArrayData {
                 List<T> data;
 

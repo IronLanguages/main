@@ -57,7 +57,6 @@ namespace IronPython.Compiler.Ast {
         internal override MSAst.Expression Transform(AstGenerator ag) {
             // Only the body is "in the loop" for the purposes of break/continue
             // The "else" clause is outside
-            ag.DisableInterpreter = true;
             MSAst.LabelTarget breakLabel, continueLabel;
             MSAst.Expression body = ag.TransformLoopBody(_body, out breakLabel, out continueLabel);
             return AstUtils.While(

@@ -35,6 +35,9 @@ using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
 using Microsoft.Scripting;
 using Microsoft.Scripting.Runtime;
+
+using BaseException = IronPython.Runtime.Exceptions.PythonExceptions.BaseException;
+using PythonArray = IronPython.Modules.ArrayModule.PythonArray;
 using SpecialNameAttribute = System.Runtime.CompilerServices.SpecialNameAttribute;
 
 [assembly: PythonModule("socket", typeof(IronPython.Modules.PythonSocket))]
@@ -336,6 +339,24 @@ namespace IronPython.Modules {
                 }
             }
 
+            [Documentation("ioctl(cmd, option) -> long\n\n"
+                + "Control the socket with WSAIoctl syscall. Currently only socket.SIO_RCVALL\n"
+                + "is supported as control. Options must be one of the socket.RCVALL_*\n"
+                + "constants."
+                )]
+            public static BigInteger ioctl(socket s, object cmd, object option) {
+                return s.ioctl(cmd, option);
+            }
+
+            [Documentation("ioctl(cmd, option) -> long\n\n"
+            + "Control the socket with WSAIoctl syscall. Currently only socket.SIO_RCVALL\n"
+            + "is supported as control. Options must be one of the socket.RCVALL_*\n"
+            + "constants."
+            )]
+            public BigInteger ioctl(object cmd, object option) {
+                throw PythonOps.NotImplementedError("ioctl(): not implemented");
+            }
+
             [Documentation("listen(backlog) -> None\n\n"
                 + "Listen for connections on the socket. Backlog is the maximum length of the\n"
                 + "pending connections queue. The maximum value is system-dependent."
@@ -376,12 +397,59 @@ namespace IronPython.Modules {
                 return PythonOps.MakeString(buffer, bytesRead);
             }
 
+            [Documentation("recv_into(buffer, [nbytes[, flags]]) -> nbytes_read\n\n"
+                + "A version of recv() that stores its data into a buffer rather than creating\n"
+                + "a new string.  Receive up to buffersize bytes from the socket.  If buffersize\n"
+                + "is not specified (or 0), receive up to the size available in the given buffer.\n\n"
+                + "See recv() for documentation about the flags.\n"
+                )]
+            public int recv_into(PythonBuffer buffer, [DefaultParameterValue(0)]int nbytes, [DefaultParameterValue(0)]int flags) {
+                if (nbytes < 0) {
+                    throw PythonOps.ValueError("negative buffersize in recv_into");
+                }
+                throw PythonOps.TypeError("buffer is read-only");
+            }
+
+            [Documentation("recv_into(buffer, [nbytes[, flags]]) -> nbytes_read\n\n"
+                + "A version of recv() that stores its data into a buffer rather than creating\n"
+                + "a new string.  Receive up to buffersize bytes from the socket.  If buffersize\n"
+                + "is not specified (or 0), receive up to the size available in the given buffer.\n\n"
+                + "See recv() for documentation about the flags.\n"
+                )]
+            public int recv_into(string buffer, [DefaultParameterValue(0)]int nbytes, [DefaultParameterValue(0)]int flags) {
+                throw PythonOps.TypeError("Cannot use string as modifiable buffer");
+            }
+
+            [Documentation("recv_into(buffer, [nbytes[, flags]]) -> nbytes_read\n\n"
+                + "A version of recv() that stores its data into a buffer rather than creating\n"
+                + "a new string.  Receive up to buffersize bytes from the socket.  If buffersize\n"
+                + "is not specified (or 0), receive up to the size available in the given buffer.\n\n"
+                + "See recv() for documentation about the flags.\n"
+                )]
+            public int recv_into(PythonArray buffer, [DefaultParameterValue(0)]int nbytes, [DefaultParameterValue(0)]int flags) {
+                int bytesRead;
+                byte[] byteBuffer = new byte[byteBufferSize("recv_into", nbytes, buffer.__len__(), buffer.itemsize)];
+                
+                try {
+                    bytesRead = _socket.Receive(byteBuffer, (SocketFlags)flags);
+                } catch (Exception e) {
+                    throw MakeException(_context, e);
+                }
+
+                buffer.FromStream(0, new MemoryStream(byteBuffer));
+                return bytesRead;
+            }
+
             [Documentation("recvfrom(bufsize[, flags]) -> (string, address)\n\n"
                 + "Receive data from the socket, up to bufsize bytes. string is the data\n"
                 + "received, and address (whose format is protocol-dependent) is the address of\n"
                 + "the socket from which the data was received."
                 )]
             public PythonTuple recvfrom(int maxBytes, [DefaultParameterValue(0)] int flags) {
+                if (maxBytes < 0) {
+                    throw PythonOps.ValueError("negative buffersize in recvfrom");
+                }
+
                 int bytesRead;
                 byte[] buffer = new byte[maxBytes];
                 IPEndPoint remoteIPEP = new IPEndPoint(IPAddress.Any, 0);
@@ -391,9 +459,59 @@ namespace IronPython.Modules {
                 } catch (Exception e) {
                     throw MakeException(_context, e);
                 }
+
                 string data = PythonOps.MakeString(buffer, bytesRead);
                 PythonTuple remoteAddress = EndPointToTuple((IPEndPoint)remoteEP);
                 return PythonTuple.MakeTuple(data, remoteAddress);
+            }
+
+            [Documentation("recvfrom_into(buffer[, nbytes[, flags]]) -> (nbytes, address info)\n\n"
+                + "Like recv_into(buffer[, nbytes[, flags]]) but also return the sender's address info.\n"
+                )]
+            public PythonTuple recvfrom_into(PythonBuffer buffer, [DefaultParameterValue(0)]int nbytes, [DefaultParameterValue(0)]int flags) {
+                if (nbytes < 0) {
+                    throw PythonOps.ValueError("negative buffersize in recvfrom_into");
+                }
+                throw PythonOps.TypeError("buffer is read-only");
+            }
+
+            [Documentation("recvfrom_into(buffer[, nbytes[, flags]]) -> (nbytes, address info)\n\n"
+                + "Like recv_into(buffer[, nbytes[, flags]]) but also return the sender's address info.\n"
+                )]
+            public PythonTuple recvfrom_into(string buffer, [DefaultParameterValue(0)]int nbytes, [DefaultParameterValue(0)]int flags) {
+                throw PythonOps.TypeError("Cannot use string as modifiable buffer");
+            }
+
+            [Documentation("recvfrom_into(buffer[, nbytes[, flags]]) -> (nbytes, address info)\n\n"
+                + "Like recv_into(buffer[, nbytes[, flags]]) but also return the sender's address info.\n"
+                )]
+            public PythonTuple recvfrom_into(PythonArray buffer, [DefaultParameterValue(0)]int nbytes, [DefaultParameterValue(0)]int flags) {
+                int bytesRead;
+                byte[] byteBuffer = new byte[byteBufferSize("recvfrom_into", nbytes, buffer.__len__(), buffer.itemsize)];
+                IPEndPoint remoteIPEP = new IPEndPoint(IPAddress.Any, 0);
+                EndPoint remoteEP = remoteIPEP;
+                
+                try {
+                    bytesRead = _socket.ReceiveFrom(byteBuffer, (SocketFlags)flags, ref remoteEP);
+                } catch (Exception e) {
+                    throw MakeException(_context, e);
+                }
+
+                buffer.FromStream(0, new MemoryStream(byteBuffer));
+                PythonTuple remoteAddress = EndPointToTuple((IPEndPoint)remoteEP);
+                return PythonTuple.MakeTuple(bytesRead, remoteAddress);
+            }
+
+            private static int byteBufferSize(string funcName, int nbytes, int bufLength, int itemSize) {
+                if (nbytes < 0) {
+                    throw PythonOps.ValueError("negative buffersize in " + funcName);
+                } else if (nbytes == 0) {
+                    return bufLength * itemSize;
+                } else {
+                    int remainder = nbytes % itemSize;
+                    return Math.Min(remainder == 0 ? nbytes : nbytes + itemSize - remainder,
+                        bufLength * itemSize);
+                }
             }
 
             [Documentation("send(string[, flags]) -> bytes_sent\n\n"
@@ -413,6 +531,30 @@ namespace IronPython.Modules {
                 )]
             public int send(string data, [DefaultParameterValue(0)] int flags) {
                 byte[] buffer = data.MakeByteArray();
+                try {
+                    return _socket.Send(buffer, (SocketFlags)flags);
+                } catch (Exception e) {
+                    throw MakeException(_context, e);
+                }
+            }
+
+            [Documentation("send(string[, flags]) -> bytes_sent\n\n"
+                + "Send data to the remote socket. The socket must be connected to a remote\n"
+                + "socket (by calling either connect() or accept(). Returns the number of bytes\n"
+                + "sent to the remote socket.\n"
+                + "\n"
+                + "Note that the successful completion of a send() call does not mean that all of\n"
+                + "the data was sent. The caller must keep track of the number of bytes sent and\n"
+                + "retry the operation until all of the data has been sent.\n"
+                + "\n"
+                + "Also note that there is no guarantee that the data you send will appear on the\n"
+                + "network immediately. To increase network efficiency, the underlying system may\n"
+                + "delay transmission until a significant amount of outgoing data is collected. A\n"
+                + "successful completion of the Send method means that the underlying system has\n"
+                + "had room to buffer your data for a network send"
+                )]
+            public int send(PythonBuffer data, [DefaultParameterValue(0)] int flags) {
+                byte[] buffer = data.ToString().MakeByteArray();
                 try {
                     return _socket.Send(buffer, (SocketFlags)flags);
                 } catch (Exception e) {
@@ -442,6 +584,39 @@ namespace IronPython.Modules {
                 )]
             public void sendall(string data, [DefaultParameterValue(0)] int flags) {
                 byte[] buffer = data.MakeByteArray();
+                try {
+                    int bytesTotal = buffer.Length;
+                    int bytesRemaining = bytesTotal;
+                    while (bytesRemaining > 0) {
+                        bytesRemaining -= _socket.Send(buffer, bytesTotal - bytesRemaining, bytesRemaining, (SocketFlags)flags);
+                    }
+                } catch (Exception e) {
+                    throw MakeException(_context, e);
+                }
+            }
+
+            [Documentation("sendall(string[, flags]) -> None\n\n"
+                + "Send data to the remote socket. The socket must be connected to a remote\n"
+                + "socket (by calling either connect() or accept().\n"
+                + "\n"
+                + "Unlike send(), sendall() blocks until all of the data has been sent or until a\n"
+                + "timeout or an error occurs. None is returned on success. If an error occurs,\n"
+                + "there is no way to tell how much data, if any, was sent.\n"
+                + "\n"
+                + "Difference from CPython: timeouts do not function as you would expect. The\n"
+                + "function is implemented using multiple calls to send(), so the timeout timer\n"
+                + "is reset after each of those calls. That means that the upper bound on the\n"
+                + "time that it will take for sendall() to return is the number of bytes in\n"
+                + "string times the timeout interval.\n"
+                + "\n"
+                + "Also note that there is no guarantee that the data you send will appear on the\n"
+                + "network immediately. To increase network efficiency, the underlying system may\n"
+                + "delay transmission until a significant amount of outgoing data is collected. A\n"
+                + "successful completion of the Send method means that the underlying system has\n"
+                + "had room to buffer your data for a network send"
+                )]
+            public void sendall(PythonBuffer data, [DefaultParameterValue(0)] int flags) {
+                byte[] buffer = data.ToString().MakeByteArray();
                 try {
                     int bytesTotal = buffer.Length;
                     int bytesRemaining = bytesTotal;
@@ -709,6 +884,63 @@ namespace IronPython.Modules {
         #endregion
 
         #region Public API
+
+        public static object _GLOBAL_DEFAULT_TIMEOUT = new object();
+
+        [Documentation("Connect to *address* and return the socket object.\n\n"
+            + "Convenience function.  Connect to *address* (a 2-tuple ``(host,\n"
+            + "port)``) and return the socket object.  Passing the optional\n"
+            + "*timeout* parameter will set the timeout on the socket instance\n"
+            + "before attempting to connect.  If no *timeout* is supplied, the\n"
+            + "global default timeout setting returned by :func:`getdefaulttimeout`\n"
+            + "is used.\n"
+            )]
+        public static socket create_connection(CodeContext/*!*/ context, PythonTuple address) {
+            return create_connection(context, address, _GLOBAL_DEFAULT_TIMEOUT);
+        }
+
+        [Documentation("Connect to *address* and return the socket object.\n\n"
+            + "Convenience function.  Connect to *address* (a 2-tuple ``(host,\n"
+            + "port)``) and return the socket object.  Passing the optional\n"
+            + "*timeout* parameter will set the timeout on the socket instance\n"
+            + "before attempting to connect.  If no *timeout* is supplied, the\n"
+            + "global default timeout setting returned by :func:`getdefaulttimeout`\n"
+            + "is used.\n"
+            )]
+        public static socket create_connection(CodeContext/*!*/ context, PythonTuple address, object timeout) {
+            string msg = "getaddrinfo returns an empty list";
+            string host = Converter.ConvertToString(address[0]);
+            object port = address[1];
+
+            IEnumerator en = getaddrinfo(context, host, port, 0, SOCK_STREAM, (int)ProtocolType.IP, (int)SocketFlags.None).GetEnumerator();
+            while (en.MoveNext()) {
+                PythonTuple current = (PythonTuple)en.Current;
+                int family = Converter.ConvertToInt32(current[0]);
+                int socktype = Converter.ConvertToInt32(current[1]);
+                int proto = Converter.ConvertToInt32(current[2]);
+                string name = Converter.ConvertToString(current[3]);
+                PythonTuple sockaddress = (PythonTuple)current[4];
+                socket socket = null;
+                try {
+                    socket = new socket(context, family, socktype, proto);
+                    if (timeout != _GLOBAL_DEFAULT_TIMEOUT) {
+                        socket.settimeout(timeout);
+                    }
+                    socket.connect(sockaddress);
+                    return socket;
+                } catch (Exception ex) {
+                    if (PythonOps.CheckException(ex, error(context)) == null) {
+                        continue;
+                    }
+                    if (socket != null) {
+                        socket.close();
+                    }
+                    msg = ex.Message;
+                }
+            }
+
+            throw PythonExceptions.CreateThrowableForRaise(context, error(context), msg);
+        }
 
         [Documentation("")]
         public static List getaddrinfo(
@@ -1040,18 +1272,35 @@ namespace IronPython.Modules {
         }
 
         [Documentation("ntohl(x) -> integer\n\nConvert a 32-bit integer from network byte order to host byte order.")]
-        public static int ntohl(object x) {
-            return IPAddress.NetworkToHostOrder(SignInsenstitiveToInt32(x));
+        public static object ntohl(object x) {
+            int res = IPAddress.NetworkToHostOrder(SignInsensitiveToInt32(x));
+            
+            if (res < 0) {
+                return (BigInteger)(uint)res;
+            } else {
+                return res;
+            }
         }
 
         [Documentation("ntohs(x) -> integer\n\nConvert a 16-bit integer from network byte order to host byte order.")]
-        public static short ntohs(object x) {
-            return IPAddress.NetworkToHostOrder(SignInsenstitiveToInt16(x));
+        public static int ntohs(object x) {
+            return (int)(ushort)IPAddress.NetworkToHostOrder(SignInsensitiveToInt16(x));
         }
 
         [Documentation("htonl(x) -> integer\n\nConvert a 32bit integer from host byte order to network byte order.")]
-        public static int htonl(object x) {
-            return IPAddress.HostToNetworkOrder(SignInsenstitiveToInt32(x));
+        public static object htonl(object x) {
+            int res = IPAddress.HostToNetworkOrder(SignInsensitiveToInt32(x));
+
+            if (res < 0) {
+                return (BigInteger)(uint)res;
+            } else {
+                return res;
+            }
+        }
+
+        [Documentation("htons(x) -> integer\n\nConvert a 16-bit integer from host byte order to network byte order.")]
+        public static int htons(object x) {
+            return (int)(ushort)IPAddress.HostToNetworkOrder(SignInsensitiveToInt16(x));
         }
 
         /// <summary>
@@ -1061,11 +1310,14 @@ namespace IronPython.Modules {
         ///   2. Overflow exceptions are thrown. Converter.ToInt32 throws TypeError if x is
         ///      an integer, but is bigger than 32 bits. Instead, we throw OverflowException.
         /// </summary>
-        private static int SignInsenstitiveToInt32(object x) {
+        private static int SignInsensitiveToInt32(object x) {
             BigInteger bigValue = Converter.ConvertToBigInteger(x);
-            try {
+            
+            if (bigValue < 0) {
+                throw PythonOps.OverflowError("can't convert negative number to unsigned long");
+            } else if (bigValue <= int.MaxValue) {
                 return bigValue.ToInt32(null);
-            } catch (OverflowException) {
+            } else {
                 return (int)bigValue.ToUInt32(null);
             }
         }
@@ -1077,18 +1329,15 @@ namespace IronPython.Modules {
         ///   2. Overflow exceptions are thrown. Converter.ToInt16 throws TypeError if x is
         ///      an integer, but is bigger than 16 bits. Instead, we throw OverflowException.
         /// </summary>
-        private static short SignInsenstitiveToInt16(object x) {
+        private static short SignInsensitiveToInt16(object x) {
             BigInteger bigValue = Converter.ConvertToBigInteger(x);
-            try {
+            if (bigValue < 0) {
+                throw PythonOps.OverflowError("can't convert negative number to unsigned long");
+            } else if (bigValue <= int.MinValue) {
                 return bigValue.ToInt16(null);
-            } catch (OverflowException) {
+            } else {
                 return (short)bigValue.ToUInt16(null);
             }
-        }
-
-        [Documentation("htons(x) -> integer\n\nConvert a 16-bit integer from host byte order to network byte order.")]
-        public static short htons(object x) {
-            return IPAddress.HostToNetworkOrder(SignInsenstitiveToInt16(x));
         }
 
         [Documentation("inet_pton(addr_family, ip_string) -> packed_ip\n\n"

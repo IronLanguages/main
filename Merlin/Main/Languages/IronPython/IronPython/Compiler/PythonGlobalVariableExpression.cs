@@ -93,6 +93,14 @@ namespace IronPython.Compiler {
             );
         }
 
+        protected override Expression VisitChildren(ExpressionVisitor visitor) {
+            Expression v = visitor.Visit(_variable);
+            if (v == _variable) {
+                return this;
+            }
+            return new PythonGlobalVariableExpression(v, _global);
+        }
+
         #region IInstructionProvider Members
 
         public Instruction GetInstruction(LightCompiler compiler) {
@@ -150,6 +158,16 @@ namespace IronPython.Compiler {
                 ),
                 Utils.Convert(_value, typeof(object))
             );
+        }
+
+
+        protected override Expression VisitChildren(ExpressionVisitor visitor) {
+            var g = (PythonGlobalVariableExpression)visitor.Visit(_global);
+            var v = visitor.Visit(_value);
+            if (g == _global && v == _value) {
+                return this;
+            }
+            return new PythonSetGlobalVariableExpression(g, v);
         }
 
         #region IInstructionProvider Members

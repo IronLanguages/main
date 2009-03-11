@@ -47,7 +47,6 @@ namespace IronPython.Compiler.Ast {
         private MSAst.ParameterExpression _generatorParameter;          // the extra parameter receiving the instance of PythonGenerator
         private readonly BinderState/*!*/ _binderState;                 // the state stored for the binder
         private bool _inFinally;                                        // true if we are currently in a finally (coordinated with our loop state)
-        private bool _disableInterpreter;                               // true if we generated loops, functions, etc... that shouldn't be interpreted        
         private LabelTarget _breakLabel;                                // the current label for break, if we're in a loop
         private LabelTarget _continueLabel;                             // the current label for continue, if we're in a loop
         private LabelTarget _returnLabel;                               // the label for the end of the current method, if "return" was used
@@ -102,11 +101,6 @@ namespace IronPython.Compiler.Ast {
             }
         }
 
-        // We don't need to insert code to track lines in adaptive mode as the interpreter does that for us.
-        public bool TrackLines {
-            get { return !PythonContext.PythonOptions.AdaptiveCompilation; }
-        }
-
         public bool Optimize {
             get { return PythonContext.PythonOptions.Optimize; }
         }
@@ -140,15 +134,6 @@ namespace IronPython.Compiler.Ast {
         public PythonDivisionOptions DivisionOptions {
             get {
                 return PythonContext.PythonOptions.DivisionOptions;
-            }
-        }
-
-        internal bool DisableInterpreter {
-            get {
-                return _disableInterpreter;
-            }
-            set {
-                _disableInterpreter = value;
             }
         }
 
@@ -516,13 +501,15 @@ namespace IronPython.Compiler.Ast {
         /// </summary>
         internal MSAst.Expression GetUpdateTrackbackExpression() {
             if (_lineNoUpdated == null) {
-                return Ast.Call(
-                    _UpdateStackTrace,
-                    LocalContext,
-                    Ast.Call(_GetCurrentMethod),
-                    AstUtils.Constant(Name),
-                    AstUtils.Constant(Context.SourceUnit.Path ?? "<string>"),
-                    LineNumberExpression
+                return AstUtils.SkipInterpret(
+                    Ast.Call(
+                        _UpdateStackTrace,
+                        LocalContext,
+                        Ast.Call(_GetCurrentMethod),
+                        AstUtils.Constant(Name),
+                        AstUtils.Constant(Context.SourceUnit.Path ?? "<string>"),
+                        LineNumberExpression
+                    )
                 );
             }
 
@@ -533,25 +520,27 @@ namespace IronPython.Compiler.Ast {
         /// Gets the expression for the actual updating of the line number for stack traces to be available
         /// </summary>
         internal MSAst.Expression GetLineNumberUpdateExpression(bool preventAdditionalAdds) {
-            return Ast.Block(
-                AstUtils.If(
-                    Ast.Not(
-                        LineNumberUpdated
+            return AstUtils.SkipInterpret(
+                Ast.Block(
+                    AstUtils.If(
+                        Ast.Not(
+                            LineNumberUpdated
+                        ),
+                        Ast.Call(
+                            typeof(ExceptionHelpers).GetMethod("UpdateStackTrace"),
+                            LocalContext,
+                            Ast.Call(typeof(MethodBase).GetMethod("GetCurrentMethod")),
+                            AstUtils.Constant(Name),
+                            AstUtils.Constant(Context.SourceUnit.Path ?? "<string>"),
+                            LineNumberExpression
+                        )
                     ),
-                    Ast.Call(
-                        typeof(ExceptionHelpers).GetMethod("UpdateStackTrace"),
-                        LocalContext,
-                        Ast.Call(typeof(MethodBase).GetMethod("GetCurrentMethod")),
-                        AstUtils.Constant(Name),
-                        AstUtils.Constant(Context.SourceUnit.Path ?? "<string>"),
-                        LineNumberExpression
-                    )
-                ),
-                Ast.Assign(
-                    LineNumberUpdated,
-                    AstUtils.Constant(preventAdditionalAdds)
-                ),
-                AstUtils.Empty()
+                    Ast.Assign(
+                        LineNumberUpdated,
+                        AstUtils.Constant(preventAdditionalAdds)
+                    ),
+                    AstUtils.Empty()
+                )
             );
         }
 
@@ -650,7 +639,7 @@ namespace IronPython.Compiler.Ast {
             // from updating the line info first.
             bool updateLine = false;
 
-            if (TrackLines && fromStmt.CanThrow &&        // don't need to update line tracking for statements that can't throw
+            if (fromStmt.CanThrow &&        // don't need to update line tracking for statements that can't throw
                 ((_curLine.HasValue && fromStmt.Start.IsValid && _curLine.Value != fromStmt.Start.Line) ||  // don't need to update unless line has changed
                 (!_curLine.HasValue && fromStmt.Start.IsValid))) {  // do need to update if we don't yet have a valid line
 
@@ -663,8 +652,7 @@ namespace IronPython.Compiler.Ast {
             if (toExpr != null && updateLine) {
                 toExpr = Ast.Block(
                     UpdateLineNumber(fromStmt.Start.Line),
-                    toExpr,
-                    AstUtils.Empty()
+                    toExpr
                 );
             }
 
@@ -672,38 +660,30 @@ namespace IronPython.Compiler.Ast {
         }
 
         internal MSAst.Expression PushLineUpdated(bool updated, ParameterExpression saveCurrent) {
-            if (TrackLines) {
-                return MSAst.Expression.Block(
-                        Ast.Assign(saveCurrent, LineNumberUpdated),
-                        Ast.Assign(LineNumberUpdated, AstUtils.Constant(updated))
-                    );
-            } else {
-                return AstUtils.Empty();
-            }
+            return AstUtils.SkipInterpret(
+                MSAst.Expression.Block(
+                    Ast.Assign(saveCurrent, LineNumberUpdated),
+                    Ast.Assign(LineNumberUpdated, AstUtils.Constant(updated))
+                )
+            );
         }
 
         internal MSAst.Expression PopLineUpdated(ParameterExpression saveCurrent) {
-            if (TrackLines) {
-                return Ast.Assign(LineNumberUpdated, saveCurrent);
-            } else {
-                return AstUtils.Empty();
-            }
+            return AstUtils.SkipInterpret(
+                Ast.Assign(LineNumberUpdated, saveCurrent)
+            );
         }
 
         internal MSAst.Expression UpdateLineUpdated(bool updated) {
-            if (TrackLines) {
-                return Ast.Assign(LineNumberUpdated, AstUtils.Constant(updated));
-            } else {
-                return AstUtils.Empty();
-            }
+            return AstUtils.SkipInterpret(
+                Ast.Assign(LineNumberUpdated, AstUtils.Constant(updated))
+            );
         }
 
         internal MSAst.Expression UpdateLineNumber(int line) {
-            if (TrackLines) {
-                return Ast.Assign(LineNumberExpression, AstUtils.Constant(line));
-            } else {
-                return AstUtils.Empty();
-            }
+            return AstUtils.SkipInterpret(
+                Ast.Assign(LineNumberExpression, AstUtils.Constant(line))
+            );
         }
 
         internal MSAst.Expression TransformLoopBody(Statement body, out LabelTarget breakLabel, out LabelTarget continueLabel) {

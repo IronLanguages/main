@@ -96,7 +96,7 @@ namespace Microsoft.Scripting.Interpreter {
             object arg0 = frame.Pop();
             frame.Push(_site.Target(
                 _site,
-                arg0 != null ? (T0)arg0 : default(T0)));
+                (T0)arg0));
             return +1;
         }
         public override string ToString() {
@@ -118,8 +118,8 @@ namespace Microsoft.Scripting.Interpreter {
             object arg0 = frame.Pop();
             frame.Push(_site.Target(
                 _site,
-                arg0 != null ? (T0)arg0 : default(T0),
-                arg1 != null ? (T1)arg1 : default(T1)));
+                (T0)arg0,
+                (T1)arg1));
             return +1;
         }
         public override string ToString() {
@@ -142,9 +142,9 @@ namespace Microsoft.Scripting.Interpreter {
             object arg0 = frame.Pop();
             frame.Push(_site.Target(
                 _site,
-                arg0 != null ? (T0)arg0 : default(T0),
-                arg1 != null ? (T1)arg1 : default(T1),
-                arg2 != null ? (T2)arg2 : default(T2)));
+                (T0)arg0,
+                (T1)arg1,
+                (T2)arg2));
             return +1;
         }
         public override string ToString() {
@@ -168,10 +168,10 @@ namespace Microsoft.Scripting.Interpreter {
             object arg0 = frame.Pop();
             frame.Push(_site.Target(
                 _site,
-                arg0 != null ? (T0)arg0 : default(T0),
-                arg1 != null ? (T1)arg1 : default(T1),
-                arg2 != null ? (T2)arg2 : default(T2),
-                arg3 != null ? (T3)arg3 : default(T3)));
+                (T0)arg0,
+                (T1)arg1,
+                (T2)arg2,
+                (T3)arg3));
             return +1;
         }
         public override string ToString() {
@@ -196,11 +196,11 @@ namespace Microsoft.Scripting.Interpreter {
             object arg0 = frame.Pop();
             frame.Push(_site.Target(
                 _site,
-                arg0 != null ? (T0)arg0 : default(T0),
-                arg1 != null ? (T1)arg1 : default(T1),
-                arg2 != null ? (T2)arg2 : default(T2),
-                arg3 != null ? (T3)arg3 : default(T3),
-                arg4 != null ? (T4)arg4 : default(T4)));
+                (T0)arg0,
+                (T1)arg1,
+                (T2)arg2,
+                (T3)arg3,
+                (T4)arg4));
             return +1;
         }
         public override string ToString() {
@@ -226,12 +226,12 @@ namespace Microsoft.Scripting.Interpreter {
             object arg0 = frame.Pop();
             frame.Push(_site.Target(
                 _site,
-                arg0 != null ? (T0)arg0 : default(T0),
-                arg1 != null ? (T1)arg1 : default(T1),
-                arg2 != null ? (T2)arg2 : default(T2),
-                arg3 != null ? (T3)arg3 : default(T3),
-                arg4 != null ? (T4)arg4 : default(T4),
-                arg5 != null ? (T5)arg5 : default(T5)));
+                (T0)arg0,
+                (T1)arg1,
+                (T2)arg2,
+                (T3)arg3,
+                (T4)arg4,
+                (T5)arg5));
             return +1;
         }
         public override string ToString() {
@@ -258,13 +258,13 @@ namespace Microsoft.Scripting.Interpreter {
             object arg0 = frame.Pop();
             frame.Push(_site.Target(
                 _site,
-                arg0 != null ? (T0)arg0 : default(T0),
-                arg1 != null ? (T1)arg1 : default(T1),
-                arg2 != null ? (T2)arg2 : default(T2),
-                arg3 != null ? (T3)arg3 : default(T3),
-                arg4 != null ? (T4)arg4 : default(T4),
-                arg5 != null ? (T5)arg5 : default(T5),
-                arg6 != null ? (T6)arg6 : default(T6)));
+                (T0)arg0,
+                (T1)arg1,
+                (T2)arg2,
+                (T3)arg3,
+                (T4)arg4,
+                (T5)arg5,
+                (T6)arg6));
             return +1;
         }
         public override string ToString() {
@@ -292,14 +292,14 @@ namespace Microsoft.Scripting.Interpreter {
             object arg0 = frame.Pop();
             frame.Push(_site.Target(
                 _site,
-                arg0 != null ? (T0)arg0 : default(T0),
-                arg1 != null ? (T1)arg1 : default(T1),
-                arg2 != null ? (T2)arg2 : default(T2),
-                arg3 != null ? (T3)arg3 : default(T3),
-                arg4 != null ? (T4)arg4 : default(T4),
-                arg5 != null ? (T5)arg5 : default(T5),
-                arg6 != null ? (T6)arg6 : default(T6),
-                arg7 != null ? (T7)arg7 : default(T7)));
+                (T0)arg0,
+                (T1)arg1,
+                (T2)arg2,
+                (T3)arg3,
+                (T4)arg4,
+                (T5)arg5,
+                (T6)arg6,
+                (T7)arg7));
             return +1;
         }
         public override string ToString() {
@@ -328,15 +328,15 @@ namespace Microsoft.Scripting.Interpreter {
             object arg0 = frame.Pop();
             frame.Push(_site.Target(
                 _site,
-                arg0 != null ? (T0)arg0 : default(T0),
-                arg1 != null ? (T1)arg1 : default(T1),
-                arg2 != null ? (T2)arg2 : default(T2),
-                arg3 != null ? (T3)arg3 : default(T3),
-                arg4 != null ? (T4)arg4 : default(T4),
-                arg5 != null ? (T5)arg5 : default(T5),
-                arg6 != null ? (T6)arg6 : default(T6),
-                arg7 != null ? (T7)arg7 : default(T7),
-                arg8 != null ? (T8)arg8 : default(T8)));
+                (T0)arg0,
+                (T1)arg1,
+                (T2)arg2,
+                (T3)arg3,
+                (T4)arg4,
+                (T5)arg5,
+                (T6)arg6,
+                (T7)arg7,
+                (T8)arg8));
             return +1;
         }
         public override string ToString() {
@@ -366,16 +366,16 @@ namespace Microsoft.Scripting.Interpreter {
             object arg0 = frame.Pop();
             frame.Push(_site.Target(
                 _site,
-                arg0 != null ? (T0)arg0 : default(T0),
-                arg1 != null ? (T1)arg1 : default(T1),
-                arg2 != null ? (T2)arg2 : default(T2),
-                arg3 != null ? (T3)arg3 : default(T3),
-                arg4 != null ? (T4)arg4 : default(T4),
-                arg5 != null ? (T5)arg5 : default(T5),
-                arg6 != null ? (T6)arg6 : default(T6),
-                arg7 != null ? (T7)arg7 : default(T7),
-                arg8 != null ? (T8)arg8 : default(T8),
-                arg9 != null ? (T9)arg9 : default(T9)));
+                (T0)arg0,
+                (T1)arg1,
+                (T2)arg2,
+                (T3)arg3,
+                (T4)arg4,
+                (T5)arg5,
+                (T6)arg6,
+                (T7)arg7,
+                (T8)arg8,
+                (T9)arg9));
             return +1;
         }
         public override string ToString() {
@@ -406,17 +406,17 @@ namespace Microsoft.Scripting.Interpreter {
             object arg0 = frame.Pop();
             frame.Push(_site.Target(
                 _site,
-                arg0 != null ? (T0)arg0 : default(T0),
-                arg1 != null ? (T1)arg1 : default(T1),
-                arg2 != null ? (T2)arg2 : default(T2),
-                arg3 != null ? (T3)arg3 : default(T3),
-                arg4 != null ? (T4)arg4 : default(T4),
-                arg5 != null ? (T5)arg5 : default(T5),
-                arg6 != null ? (T6)arg6 : default(T6),
-                arg7 != null ? (T7)arg7 : default(T7),
-                arg8 != null ? (T8)arg8 : default(T8),
-                arg9 != null ? (T9)arg9 : default(T9),
-                arg10 != null ? (T10)arg10 : default(T10)));
+                (T0)arg0,
+                (T1)arg1,
+                (T2)arg2,
+                (T3)arg3,
+                (T4)arg4,
+                (T5)arg5,
+                (T6)arg6,
+                (T7)arg7,
+                (T8)arg8,
+                (T9)arg9,
+                (T10)arg10));
             return +1;
         }
         public override string ToString() {
@@ -448,18 +448,18 @@ namespace Microsoft.Scripting.Interpreter {
             object arg0 = frame.Pop();
             frame.Push(_site.Target(
                 _site,
-                arg0 != null ? (T0)arg0 : default(T0),
-                arg1 != null ? (T1)arg1 : default(T1),
-                arg2 != null ? (T2)arg2 : default(T2),
-                arg3 != null ? (T3)arg3 : default(T3),
-                arg4 != null ? (T4)arg4 : default(T4),
-                arg5 != null ? (T5)arg5 : default(T5),
-                arg6 != null ? (T6)arg6 : default(T6),
-                arg7 != null ? (T7)arg7 : default(T7),
-                arg8 != null ? (T8)arg8 : default(T8),
-                arg9 != null ? (T9)arg9 : default(T9),
-                arg10 != null ? (T10)arg10 : default(T10),
-                arg11 != null ? (T11)arg11 : default(T11)));
+                (T0)arg0,
+                (T1)arg1,
+                (T2)arg2,
+                (T3)arg3,
+                (T4)arg4,
+                (T5)arg5,
+                (T6)arg6,
+                (T7)arg7,
+                (T8)arg8,
+                (T9)arg9,
+                (T10)arg10,
+                (T11)arg11));
             return +1;
         }
         public override string ToString() {
@@ -492,19 +492,19 @@ namespace Microsoft.Scripting.Interpreter {
             object arg0 = frame.Pop();
             frame.Push(_site.Target(
                 _site,
-                arg0 != null ? (T0)arg0 : default(T0),
-                arg1 != null ? (T1)arg1 : default(T1),
-                arg2 != null ? (T2)arg2 : default(T2),
-                arg3 != null ? (T3)arg3 : default(T3),
-                arg4 != null ? (T4)arg4 : default(T4),
-                arg5 != null ? (T5)arg5 : default(T5),
-                arg6 != null ? (T6)arg6 : default(T6),
-                arg7 != null ? (T7)arg7 : default(T7),
-                arg8 != null ? (T8)arg8 : default(T8),
-                arg9 != null ? (T9)arg9 : default(T9),
-                arg10 != null ? (T10)arg10 : default(T10),
-                arg11 != null ? (T11)arg11 : default(T11),
-                arg12 != null ? (T12)arg12 : default(T12)));
+                (T0)arg0,
+                (T1)arg1,
+                (T2)arg2,
+                (T3)arg3,
+                (T4)arg4,
+                (T5)arg5,
+                (T6)arg6,
+                (T7)arg7,
+                (T8)arg8,
+                (T9)arg9,
+                (T10)arg10,
+                (T11)arg11,
+                (T12)arg12));
             return +1;
         }
         public override string ToString() {
@@ -538,20 +538,20 @@ namespace Microsoft.Scripting.Interpreter {
             object arg0 = frame.Pop();
             frame.Push(_site.Target(
                 _site,
-                arg0 != null ? (T0)arg0 : default(T0),
-                arg1 != null ? (T1)arg1 : default(T1),
-                arg2 != null ? (T2)arg2 : default(T2),
-                arg3 != null ? (T3)arg3 : default(T3),
-                arg4 != null ? (T4)arg4 : default(T4),
-                arg5 != null ? (T5)arg5 : default(T5),
-                arg6 != null ? (T6)arg6 : default(T6),
-                arg7 != null ? (T7)arg7 : default(T7),
-                arg8 != null ? (T8)arg8 : default(T8),
-                arg9 != null ? (T9)arg9 : default(T9),
-                arg10 != null ? (T10)arg10 : default(T10),
-                arg11 != null ? (T11)arg11 : default(T11),
-                arg12 != null ? (T12)arg12 : default(T12),
-                arg13 != null ? (T13)arg13 : default(T13)));
+                (T0)arg0,
+                (T1)arg1,
+                (T2)arg2,
+                (T3)arg3,
+                (T4)arg4,
+                (T5)arg5,
+                (T6)arg6,
+                (T7)arg7,
+                (T8)arg8,
+                (T9)arg9,
+                (T10)arg10,
+                (T11)arg11,
+                (T12)arg12,
+                (T13)arg13));
             return +1;
         }
         public override string ToString() {
@@ -586,21 +586,21 @@ namespace Microsoft.Scripting.Interpreter {
             object arg0 = frame.Pop();
             frame.Push(_site.Target(
                 _site,
-                arg0 != null ? (T0)arg0 : default(T0),
-                arg1 != null ? (T1)arg1 : default(T1),
-                arg2 != null ? (T2)arg2 : default(T2),
-                arg3 != null ? (T3)arg3 : default(T3),
-                arg4 != null ? (T4)arg4 : default(T4),
-                arg5 != null ? (T5)arg5 : default(T5),
-                arg6 != null ? (T6)arg6 : default(T6),
-                arg7 != null ? (T7)arg7 : default(T7),
-                arg8 != null ? (T8)arg8 : default(T8),
-                arg9 != null ? (T9)arg9 : default(T9),
-                arg10 != null ? (T10)arg10 : default(T10),
-                arg11 != null ? (T11)arg11 : default(T11),
-                arg12 != null ? (T12)arg12 : default(T12),
-                arg13 != null ? (T13)arg13 : default(T13),
-                arg14 != null ? (T14)arg14 : default(T14)));
+                (T0)arg0,
+                (T1)arg1,
+                (T2)arg2,
+                (T3)arg3,
+                (T4)arg4,
+                (T5)arg5,
+                (T6)arg6,
+                (T7)arg7,
+                (T8)arg8,
+                (T9)arg9,
+                (T10)arg10,
+                (T11)arg11,
+                (T12)arg12,
+                (T13)arg13,
+                (T14)arg14));
             return +1;
         }
         public override string ToString() {

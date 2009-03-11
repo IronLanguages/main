@@ -65,7 +65,6 @@ namespace IronPython.Compiler.Ast {
             // Temporary variable for the IEnumerator object
             MSAst.ParameterExpression enumerator = ag.GetTemporary("foreach_enumerator", typeof(IEnumerator));
 
-            ag.DisableInterpreter = true;
             // Only the body is "in the loop" for the purposes of break/continue
             // The "else" clause is outside
             MSAst.LabelTarget breakLabel, continueLabel;

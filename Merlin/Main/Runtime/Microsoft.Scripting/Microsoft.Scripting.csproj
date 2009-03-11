@@ -142,6 +142,7 @@
     <Compile Include="Ast\FinallyFlowControlExpression.cs" />
     <Compile Include="Ast\FlowControlRewriter.cs" />
     <Compile Include="Ast\SourceFileInformation.cs" />
+    <Compile Include="Ast\SkipInterpretExpression.cs" />
     <Compile Include="Ast\VariableDictionaryExpression.cs" />
     <Compile Include="Ast\NewArrayExpression.cs" />
     <Compile Include="Ast\NewExpression.cs" />

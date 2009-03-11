@@ -164,9 +164,10 @@ namespace System.Linq.Expressions.Compiler {
             //
 
             var switchValue = Expression.Parameter(node.SwitchValue.Type, "switchValue");
-            var testValue = Expression.Parameter(node.Cases[0].TestValues[0].Type, "testValue");
+            var testValue = Expression.Parameter(GetTestValueType(node), "testValue");
             _scope.AddLocal(this, switchValue);
             _scope.AddLocal(this, testValue);
+
             EmitExpression(node.SwitchValue);
             _scope.EmitSet(switchValue);
 
@@ -180,6 +181,7 @@ namespace System.Linq.Expressions.Compiler {
                     // stack as the switch. This simplifies spilling.
                     EmitExpression(test);
                     _scope.EmitSet(testValue);
+                    Debug.Assert(TypeUtils.AreReferenceAssignable(testValue.Type, test.Type));
                     EmitExpressionAndBranch(true, Expression.Equal(switchValue, testValue, false, node.Comparison), labels[i]);
                 }
             }
@@ -190,6 +192,27 @@ namespace System.Linq.Expressions.Compiler {
 
             // Emit the case and default bodies
             EmitSwitchCases(node, labels, isGoto, @default, end, flags);
+        }
+
+        /// <summary>
+        /// Gets the common test test value type of the SwitchExpression.
+        /// </summary>
+        private static Type GetTestValueType(SwitchExpression node) {
+            if (node.Comparison == null) {
+                // If we have no comparison or the switch type is nullable, all
+                // right side types must be the same.
+                return node.Cases[0].TestValues[0].Type;
+            }
+
+            // Otherwise, get the type from the method.
+            // We don't support a lifted call in switch (where the method's args
+            // are not nullable but the expression passed are nullable) so we
+            // don't have to worry about that here.
+            Type result = node.Comparison.GetParametersCached()[1].ParameterType;
+            if (result.IsByRef) {
+                result = result.GetElementType();
+            }
+            return result;
         }
 
         private sealed class SwitchLabel {
@@ -621,8 +644,6 @@ namespace System.Linq.Expressions.Compiler {
                 Expression.Switch(node.Type, switchIndex, node.DefaultBody, null, cases)
             );
 
-            // Emit it normally, need to emit the expression start
-            flags = UpdateEmitExpressionStartFlag(flags, CompilationFlags.EmitExpressionStart);
             EmitExpression(reduced, flags);
             return true;
         }

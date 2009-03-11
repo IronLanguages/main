@@ -50,14 +50,14 @@ namespace IronPython.Runtime {
         [ThreadStatic]
         private static NumberFormatInfo NumberFormatInfoForThread;
  
-        private static NumberFormatInfo nfi {
+        internal static NumberFormatInfo nfi {
             get {
                 if (NumberFormatInfoForThread == null) {
                     NumberFormatInfo numberFormatInfo = new CultureInfo("en-US").NumberFormat;
                     // The CLI formats as "Infinity", but CPython formats differently
-                    numberFormatInfo.PositiveInfinitySymbol = "1.#INF";
-                    numberFormatInfo.NegativeInfinitySymbol = "-1.#INF";
-                    numberFormatInfo.NaNSymbol = "-1.#IND";
+                    numberFormatInfo.PositiveInfinitySymbol = "inf";
+                    numberFormatInfo.NegativeInfinitySymbol = "-inf";
+                    numberFormatInfo.NaNSymbol = "nan";
 
                     NumberFormatInfoForThread = numberFormatInfo;
                 }
@@ -496,13 +496,13 @@ namespace IronPython.Runtime {
 
             // then append
             if (_opts.LeftAdj) {
-                AppendLeftAdj(v, v >= 0, type);
+                AppendLeftAdj(v, DoubleOps.Sign(v) >= 0, type);
             } else if (_opts.ZeroPad) {
                 AppendZeroPadFloat(v, type);
             } else {
-                AppendNumeric(v, v >= 0, type);
+                AppendNumeric(v, DoubleOps.Sign(v) >= 0, type);
             }
-            if (v < 0 && v > -1 && _buf[0] != '-') {
+            if (DoubleOps.Sign(v) < 0 && v > -1 && _buf[0] != '-') {
                 FixupFloatMinus();
             }
 
@@ -618,17 +618,23 @@ namespace IronPython.Runtime {
         }
 
         private void AppendNumeric(object val, bool fPos, char format) {
+            bool isE = format == 'e' || format == 'E';
             if (fPos && (_opts.SignChar || _opts.Space)) {
-                string strval = (_opts.SignChar ? "+" : " ") + String.Format(nfi, "{0:" + format.ToString() + "}", val);
+                string strval = (_opts.SignChar ? "+" : " ") + String.Format(nfi, "{0:" + format + "}", val);
                 if (strval.Length < _opts.FieldWidth) {
                     _buf.Append(' ', _opts.FieldWidth - strval.Length);
                 }
                 _buf.Append(strval);
             } else if (_opts.Precision == UnspecifiedPrecision) {
-                _buf.AppendFormat(nfi, "{0," + _opts.FieldWidth.ToString() + ":" + format + "}", val);
+                _buf.AppendFormat(nfi, "{0," + _opts.FieldWidth + ":" + format + "}", val);
             } else if (_opts.Precision < 100) {
                 //CLR formatting has a maximum precision of 100.
-                _buf.AppendFormat(nfi, "{0," + _opts.FieldWidth.ToString() + ":" + format + _opts.Precision.ToString() + "}", val);
+                string num = String.Format(nfi, "{0," + _opts.FieldWidth + ":" + format + _opts.Precision + "}", val);
+                if (isE) {
+                    _buf.Append(removeExponentePaddingZero(num));
+                } else {
+                    _buf.Append(num);
+                }
             } else {
                 StringBuilder res = new StringBuilder();
                 res.AppendFormat("{0:" + format + "}", val);
@@ -646,6 +652,23 @@ namespace IronPython.Runtime {
             // decorative ".0". ie. to display "123.0"
             if (_TrailingZeroAfterWholeFloat && (format == 'f' || format == 'F') && _opts.Precision == 0)
                 _buf.Append(".0");
+        }
+
+        // A strange string formatting bug requires that we format then strip the extra zero from the
+        // exponent, rather than simply passing a format string of the form "0.0...0e+00"
+        // Example: 9.3126672485384569e+23, precision=16
+        //  format string "e16" ==> "2.9522485325887698e+023", but we want "e+23", not "e+023"
+        //  format string "0.0000000000000000e+00" ==> "9.3126672485384600e+23", which is a precision error
+        //  so, we have to format with "e16" and strip the zero manually
+        private string removeExponentePaddingZero(string val) {
+            if (val[val.Length - 3] == '0' && (
+                (val[val.Length - 5] == 'e' || val[val.Length - 5] == 'E') &&
+                (val[val.Length - 4] == '+' || val[val.Length - 4] == '-') ||
+                (val[val.Length - 4] == 'e' || val[val.Length - 4] == 'E'))) {
+                return val.Substring(0, val.Length - 3) + val.Substring(val.Length - 2, 2);
+            } else {
+                return val;
+            }
         }
 
         private void AppendLeftAdj(object val, bool fPos, char type) {

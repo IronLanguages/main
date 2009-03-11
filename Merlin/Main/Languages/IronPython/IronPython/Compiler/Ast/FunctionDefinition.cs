@@ -221,7 +221,6 @@ namespace IronPython.Compiler.Ast {
         internal override MSAst.Expression Transform(AstGenerator ag) {
             Debug.Assert(_variable != null, "Shouldn't be called by lamda expression");
 
-            ag.DisableInterpreter = true;
             MSAst.Expression function = TransformToFunctionExpression(ag);
             return ag.AddDebugInfo(ag.Globals.Assign(ag.Globals.GetVariable(_variable), function), new SourceSpan(Start, Header));
         }
@@ -253,8 +252,6 @@ namespace IronPython.Compiler.Ast {
 
             TransformParameters(ag, bodyGen, defaults, names, needsWrapperMethod);
         
-            bodyGen.DisableInterpreter = true;
-
             List<MSAst.Expression> statements = new List<MSAst.Expression>();
 
             // Create variables and references. Since references refer to

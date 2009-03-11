@@ -49,6 +49,9 @@ namespace Microsoft.Scripting.Runtime {
         /// </summary>
         public static readonly object False = false;
 
+        internal static readonly MethodInfo BooleanToObjectMethod = typeof(ScriptingRuntimeHelpers).GetMethod("BooleanToObject");
+        internal static readonly MethodInfo Int32ToObjectMethod = typeof(ScriptingRuntimeHelpers).GetMethod("Int32ToObject");
+
         private static object[] MakeCache() {
             object[] result = new object[MAX_CACHE - MIN_CACHE];
 

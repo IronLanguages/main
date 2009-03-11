@@ -531,6 +531,10 @@ namespace IronPython.Runtime.Operations {
             return self.IndexOf(sub, start, end - start);
         }
 
+        public static int find(this string self, string sub, object start, [DefaultParameterValue(null)]object end) {
+            return find(self, sub, CheckIndex(start, 0), CheckIndex(end, self.Length));
+        }
+
         public static int index(this string self, string sub) {
             if (sub == null) throw PythonOps.TypeError("expected string, got NoneType");
             return index(self, sub, 0, self.Length);
@@ -546,6 +550,10 @@ namespace IronPython.Runtime.Operations {
             int ret = find(self, sub, start, end);
             if (ret == -1) throw PythonOps.ValueError("substring {0} not found in {1}", sub, self);
             return ret;
+        }
+
+        public static int index(this string self, string sub, object start, [DefaultParameterValue(null)]object end) {
+            return index(self, sub, CheckIndex(start, 0), CheckIndex(end, self.Length));
         }
 
         public static bool isalnum(this string self) {
@@ -820,6 +828,10 @@ namespace IronPython.Runtime.Operations {
             return self.LastIndexOf(sub, end - 1, end - start);
         }
 
+        public static int rfind(this string self, string sub, object start, [DefaultParameterValue(null)]object end) {
+            return rfind(self, sub, CheckIndex(start, 0), CheckIndex(end, self.Length));
+        }
+
         public static int rindex(this string self, string sub) {
             return rindex(self, sub, 0, self.Length);
         }
@@ -832,6 +844,10 @@ namespace IronPython.Runtime.Operations {
             int ret = rfind(self, sub, start, end);
             if (ret == -1) throw PythonOps.ValueError("substring {0} not found in {1}", sub, self);
             return ret;
+        }
+
+        public static int rindex(this string self, string sub, object start, [DefaultParameterValue(null)]object end) {
+            return rindex(self, sub, CheckIndex(start, 0), CheckIndex(end, self.Length));
         }
 
         public static string rjust(this string self, int width) {
@@ -1363,6 +1379,18 @@ namespace IronPython.Runtime.Operations {
         #endregion
 
         #region Private implementation details
+
+        private static int CheckIndex(object index, int defaultValue) {
+            int res;
+
+            if (index == null) {
+                res = defaultValue;
+            } else if (!Converter.TryConvertToIndex(index, out res)) {
+                throw PythonOps.TypeError("slice indices must be integers or None or have an __index__ method");
+            }
+
+            return res;
+        }
 
         private static void AppendJoin(object value, int index, StringBuilder sb) {
             string strVal;

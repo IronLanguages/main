@@ -546,8 +546,9 @@ namespace IronPython.Runtime {
         }
 
 
-        private Compiler.Ast.CompilationMode GetCompilationMode(PythonCompilerOptions options) {
-            if (options.Interpreted || Options.AdaptiveCompilation) {
+        private Compiler.Ast.CompilationMode GetCompilationMode(PythonCompilerOptions options, SourceUnit source) {
+
+            if (ShouldInterpret(options, source)) {
                 // force collectible code for the adaptive compiler.  Technically these should
                 // be orthogonal but 
                 return Compiler.Ast.CompilationMode.Collectable;
@@ -556,6 +557,14 @@ namespace IronPython.Runtime {
             return (_options.Optimize || options.Optimized) ? 
                 Compiler.Ast.CompilationMode.Uncollectable : 
                 Compiler.Ast.CompilationMode.Collectable;
+        }
+
+        internal bool ShouldInterpret(PythonCompilerOptions options, SourceUnit source) {
+            // We have to turn off adaptive compilation in debug mode to
+            // support mangaged debuggers. Also turn off in optimized mode.
+            bool adaptiveCompilation = _options.AdaptiveCompilation && !source.EmitDebugSymbols && !_options.Optimize;
+
+            return options.Interpreted || adaptiveCompilation;
         }
 
         private static PyAst.PythonAst ParseAndBindAst(CompilerContext context) {
@@ -624,7 +633,7 @@ namespace IronPython.Runtime {
                 return null;
             }
 
-            return ast.TransformToAst(compilationMode ?? GetCompilationMode(pythonOptions), context);
+            return ast.TransformToAst(compilationMode ?? GetCompilationMode(pythonOptions, sourceUnit), context);
         }
 
         protected override ScriptCode CompileSourceCode(SourceUnit/*!*/ sourceUnit, CompilerOptions/*!*/ options, ErrorSink/*!*/ errorSink) {

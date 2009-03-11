@@ -22,6 +22,7 @@ using Microsoft.Scripting.Interpreter;
 using Microsoft.Scripting.Runtime;
 
 using IronPython.Compiler.Ast;
+using IronPython.Runtime;
 
 using MSAst = System.Linq.Expressions;
 
@@ -87,9 +88,10 @@ namespace IronPython.Compiler {
         }
 
         private Func<object>/*!*/ Compile() {
-            PythonCompilerOptions pco = ((PythonCompilerOptions)_context.Options);
+            var pco = (PythonCompilerOptions)_context.Options;
+            var pc = (PythonContext)SourceUnit.LanguageContext;
             
-            if (pco.Interpreted || SourceUnit.LanguageContext.Options.AdaptiveCompilation) {
+            if (pc.ShouldInterpret(pco, SourceUnit)) {
                 return CompilerHelpers.LightCompile(_code);
             } else {
                 return _code.Compile(SourceUnit.EmitDebugSymbols);

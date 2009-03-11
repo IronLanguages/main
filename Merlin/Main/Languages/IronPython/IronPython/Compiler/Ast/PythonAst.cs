@@ -36,7 +36,6 @@ namespace IronPython.Compiler.Ast {
         private readonly bool _printExpressions;        
         private readonly PythonLanguageFeatures _languageFeatures;
         private PythonVariable _docVariable, _nameVariable, _fileVariable;
-        private bool _disableInterpreter;
 
         public PythonAst(Statement body, bool isModule, PythonLanguageFeatures languageFeatures, bool printExpressions) {
             ContractUtils.RequiresNotNull(body, "body");
@@ -97,15 +96,6 @@ namespace IronPython.Compiler.Ast {
         
         internal override bool IsGlobal {
             get { return true; }
-        }
-
-        internal bool DisableInterpreter {
-            get {
-                return _disableInterpreter;
-            }
-            set {
-                _disableInterpreter = value;
-            }
         }
 
         internal override bool ExposesLocalVariable(PythonVariable variable) {

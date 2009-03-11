@@ -1985,42 +1985,6 @@ namespace IronPython.Runtime.Operations {
     }
 
     public static partial class SingleOps {
-        [StaticExtensionMethod]
-        public static object __new__(PythonType cls) {
-            return __new__(cls, default(Single));
-        }
-
-        [StaticExtensionMethod]
-        public static object __new__(PythonType cls, object value) {
-            if (cls != DynamicHelpers.GetPythonTypeFromType(typeof(Single))) {
-                throw PythonOps.TypeError("Single.__new__: first argument must be Single type.");
-            }
-            IConvertible valueConvertible;
-            if ((valueConvertible = value as IConvertible) != null) {
-                switch (valueConvertible.GetTypeCode()) {
-                    case TypeCode.Byte: return (Single)(Byte)value;
-                    case TypeCode.SByte: return (Single)(SByte)value;
-                    case TypeCode.Int16: return (Single)(Int16)value;
-                    case TypeCode.UInt16: return (Single)(UInt16)value;
-                    case TypeCode.Int32: return (Single)(Int32)value;
-                    case TypeCode.UInt32: return (Single)(UInt32)value;
-                    case TypeCode.Int64: return (Single)(Int64)value;
-                    case TypeCode.UInt64: return (Single)(UInt64)value;
-                    case TypeCode.Single: return (Single)(Single)value;
-                    case TypeCode.Double: return (Single)(Double)value;
-                }
-            }
-            if (value is String) {
-                return Single.Parse((String)value);
-            } else if (value is BigInteger) {
-                return (Single)(BigInteger)value;
-            } else if (value is Extensible<BigInteger>) {
-                return (Single)((Extensible<BigInteger>)value).Value;
-            } else if (value is Extensible<double>) {
-                return (Single)((Extensible<double>)value).Value;
-            }
-            throw PythonOps.ValueError("invalid value for Single.__new__");
-        }
         // Unary Operations
         [SpecialName]
         public static Single Plus(Single x) {
