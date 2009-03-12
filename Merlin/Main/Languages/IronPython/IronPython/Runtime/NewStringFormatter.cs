@@ -46,7 +46,7 @@ namespace IronPython.Runtime {
         #region Public APIs
 
         /// <summary>
-        /// Runs the formatting operation on the given format & keyword arguments
+        /// Runs the formatting operation on the given format and keyword arguments
         /// </summary>
         public static string/*!*/ FormatString(PythonContext/*!*/ context, string/*!*/ format, PythonTuple/*!*/ args, IAttributesCollection/*!*/ kwArgs) {
             ContractUtils.RequiresNotNull(context, "context");

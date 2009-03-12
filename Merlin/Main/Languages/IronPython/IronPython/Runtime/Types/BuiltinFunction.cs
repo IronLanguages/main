@@ -364,6 +364,9 @@ namespace IronPython.Runtime.Types {
         /// </summary>
         /// <param name="call">The call binder we're doing the call for</param>
         /// <param name="codeContext">An expression which points to the code context</param>
+        /// <param name="function">the meta object for the built in function</param>
+        /// <param name="enforceProtected">true if we should enforce protected method calls, passing true is bad</param>
+        /// <param name="hasSelf">true if we're calling with an instance</param>
         /// <param name="args">The arguments being passed to the function</param>
         /// <param name="functionRestriction">A restriction for the built-in function, method desc, etc...</param>
         /// <param name="bind">A delegate to perform the actual call to the method.</param>

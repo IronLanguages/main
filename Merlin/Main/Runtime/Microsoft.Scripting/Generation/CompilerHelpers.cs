@@ -329,15 +329,16 @@ namespace Microsoft.Scripting.Generation {
             }
 
             // first try and get it from the base type we're overriding...
-            method = method.GetBaseDefinition();
+            MethodInfo baseMethod = method.GetBaseDefinition();
 
-            if (method.DeclaringType.IsVisible) return method;
-            if (method.DeclaringType.IsInterface) return method;
+            if (baseMethod.DeclaringType.IsVisible) return baseMethod;
+            if (baseMethod.DeclaringType.IsInterface) return baseMethod;
 
-            // maybe we can get it from an interface...
-            Type[] interfaces = method.DeclaringType.GetInterfaces();
+            // maybe we can get it from an interface on the type this
+            // method came from...
+            Type[] interfaces = method.ReflectedType.GetInterfaces();
             foreach (Type iface in interfaces) {
-                InterfaceMapping mapping = method.DeclaringType.GetInterfaceMap(iface);
+                InterfaceMapping mapping = method.ReflectedType.GetInterfaceMap(iface);
                 for (int i = 0; i < mapping.TargetMethods.Length; i++) {
                     if (mapping.TargetMethods[i] == method) {
                         return mapping.InterfaceMethods[i];
@@ -345,7 +346,7 @@ namespace Microsoft.Scripting.Generation {
                 }
             }
 
-            return method;
+            return baseMethod;
         }
 
         /// <summary>

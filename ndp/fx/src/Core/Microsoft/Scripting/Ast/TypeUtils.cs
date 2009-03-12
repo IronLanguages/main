@@ -594,5 +594,9 @@ namespace System.Dynamic.Utils {
             } while (type != null);
             return null;
         }
+
+        internal static Type GetNonRefType(this Type type) {
+            return type.IsByRef ? type.GetElementType() : type;
+        }
     }
 }

@@ -401,7 +401,6 @@ namespace IronPython.Runtime {
         /// <summary>
         /// Appends one or more IEnumerables to an existing set
         /// </summary>
-        /// <param name="s"></param>
         public void update([NotNull] params object[] ss) {
             foreach (object s in ss) {
                 update(s);
