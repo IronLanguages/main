@@ -1409,6 +1409,7 @@ namespace IronPython.Runtime.Binding {
         /// 
         /// So our job here is to first determine if we're to call a __*slice__ method or
         /// a __*item__ method.  
+        /// </summary>
         private static DynamicMetaObject/*!*/ MakeIndexerOperation(DynamicMetaObjectBinder/*!*/ operation, PythonIndexType op, DynamicMetaObject/*!*/[]/*!*/ types) {
             SymbolId item, slice;
             DynamicMetaObject indexedType = types[0].Restrict(types[0].GetLimitType());
@@ -1512,7 +1513,7 @@ namespace IronPython.Runtime.Binding {
         }
 
         /// <summary>
-        /// Base class for calling indexers.  We have two subclasses that target built-in functions & user defined callable objects.
+        /// Base class for calling indexers.  We have two subclasses that target built-in functions and user defined callable objects.
         /// 
         /// The Callable objects get handed off to ItemBuilder's which then call them with the appropriate arguments.
         /// </summary>

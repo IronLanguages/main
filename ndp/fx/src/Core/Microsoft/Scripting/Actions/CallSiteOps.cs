@@ -17,6 +17,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Dynamic;
 using System.Linq.Expressions;
+using System.Collections.Generic;
 
 namespace System.Runtime.CompilerServices {
 
@@ -30,24 +31,13 @@ namespace System.Runtime.CompilerServices {
     public static class CallSiteOps {
 
         /// <summary>
-        /// Sets the target of the dynamic call site to the given call site rule.
-        /// </summary>
-        /// <typeparam name="T">The type of the delegate of the <see cref="CallSite"/>.</typeparam>
-        /// <param name="site">An instance of the dynamic call site.</param>
-        /// <param name="rule">An instance of the call site rule.</param>
-        /// <returns>A delegate representing the call site rule.</returns>
-        [Obsolete("do not use this method", true), EditorBrowsable(EditorBrowsableState.Never)]
-        public static T SetTarget<T>(CallSite<T> site, CallSiteRule<T> rule) where T : class {
-            return site.Target = rule.RuleSet.GetTarget();
-        }
-
-        /// <summary>
         /// Creates an instance of a dynamic call site used for cache lookup.
         /// </summary>
+        /// <typeparam name="T">The type of the delegate of the <see cref="CallSite"/>.</typeparam>
         /// <returns>The new call site.</returns>
         [Obsolete("do not use this method", true), EditorBrowsable(EditorBrowsableState.Never)]
-        public static CallSite CreateMatchmaker() {
-            var mm = new CallSite(null);
+        public static CallSite<T> CreateMatchmaker<T>(CallSite<T> site) where T : class {
+            var mm = site.CreateMatchMaker();
             CallSiteOps.ClearMatch(mm);
             return mm;
         }
@@ -56,9 +46,9 @@ namespace System.Runtime.CompilerServices {
         /// Checks if a dynamic site requires an update.
         /// </summary>
         /// <param name="site">An instance of the dynamic call site.</param>
-        /// <returns>true if rule needs updating, false otherwise.</returns>
+        /// <returns>true if rule does not need updating, false otherwise.</returns>
         [Obsolete("do not use this method", true), EditorBrowsable(EditorBrowsableState.Never)]
-        public static bool NeedsUpdate(CallSite site) {
+        public static bool SetNotMatched(CallSite site) {
             var res = site._match;
             site._match = false;  //avoid branch here to make sure the method is inlined
             return res;
@@ -90,9 +80,9 @@ namespace System.Runtime.CompilerServices {
         /// <param name="site">An instance of the dynamic call site.</param>
         /// <param name="rule">An instance of the call site rule.</param>
         [Obsolete("do not use this method", true), EditorBrowsable(EditorBrowsableState.Never)]
-        public static void AddRule<T>(CallSite<T> site, CallSiteRule<T> rule) where T : class {
+        public static void AddRule<T>(CallSite<T> site, T rule) where T : class {
             if (site.Rules == null) {
-                site.Rules = rule.RuleSet;
+                site.Rules = new SmallRuleSet<T>(new[] { rule });
             } else {
                 site.Rules = site.Rules.AddRule(rule);
             }
@@ -110,7 +100,7 @@ namespace System.Runtime.CompilerServices {
                 @this.Rules.MoveRule(matched);
             }
         }
-        
+
         /// <summary>
         /// Gets the dynamic binding rules from the call site.
         /// </summary>
@@ -118,7 +108,7 @@ namespace System.Runtime.CompilerServices {
         /// <param name="site">An instance of the dynamic call site.</param>
         /// <returns>An array of dynamic binding rules.</returns>
         [Obsolete("do not use this method", true), EditorBrowsable(EditorBrowsableState.Never)]
-        public static CallSiteRule<T>[] GetRules<T>(CallSite<T> site) where T : class {
+        public static T[] GetRules<T>(CallSite<T> site) where T : class {
             return (site.Rules == null) ? null : site.Rules.GetRules();
         }
 
@@ -134,15 +124,16 @@ namespace System.Runtime.CompilerServices {
             return site.Binder.GetRuleCache<T>();
         }
 
+
         /// <summary>
         /// Moves the binding rule within the cache.
         /// </summary>
         /// <typeparam name="T">The type of the delegate of the <see cref="CallSite"/>.</typeparam>
-        /// <param name="cache">Cache.</param>
+        /// <param name="cache">The call site rule cache.</param>
         /// <param name="rule">An instance of the call site rule.</param>
         /// <param name="i">An index of the call site rule.</param>
         [Obsolete("do not use this method", true), EditorBrowsable(EditorBrowsableState.Never)]
-        public static void MoveRule<T>(RuleCache<T> cache, CallSiteRule<T> rule, int i) where T : class {
+        public static void MoveRule<T>(RuleCache<T> cache, T rule, int i) where T : class {
             if (i > 1) {
                 cache.MoveRule(rule, i);
             }
@@ -153,56 +144,12 @@ namespace System.Runtime.CompilerServices {
         /// </summary>
         /// <typeparam name="T">The type of the delegate of the <see cref="CallSite"/>.</typeparam>
         /// <param name="cache">The cache.</param>
-        /// <returns>The array of applicable rules.</returns>
+        /// <returns>The collection of applicable rules.</returns>
         [Obsolete("do not use this method", true), EditorBrowsable(EditorBrowsableState.Never)]
-        public static CallSiteRule<T>[] FindApplicableRules<T>(RuleCache<T> cache) where T : class {
-            return cache.GetRules();
-        }
-
-        /// <summary>
-        /// Creates a new call site rule for the dynamic operation by calling the <see cref="CallSiteBinder.Bind"/> on the call site's binder.
-        /// </summary>
-        /// <typeparam name="T">The type of the delegate of the <see cref="CallSite"/>.</typeparam>
-        /// <param name="cache">Cache.</param>
-        /// <param name="site">An instance of the dynamic call site.</param>
-        /// <param name="oldRule">A binding rule to be removed from the cache.</param>
-        /// <param name="originalRule">A binding rule originally found on the dynamic call site.</param>
-        /// <param name="args">An array of runtime values for the dynamic binding.</param>
-        /// <returns>The new cal site rule.</returns>
-        [Obsolete("do not use this method", true), EditorBrowsable(EditorBrowsableState.Never)]
-        public static CallSiteRule<T> CreateNewRule<T>(RuleCache<T> cache, CallSite<T> site, CallSiteRule<T> oldRule, CallSiteRule<T> originalRule, object[] args) where T : class {
-            Expression binding = site.Binder.Bind(args, CallSiteRule<T>.Parameters, CallSiteRule<T>.ReturnLabel);
-
-            //
-            // Check the produced rule
-            //
-            if (binding == null) {
-                throw Error.NoOrInvalidRuleProduced();
+        public static IEnumerable<T> GetCachedRules<T>(RuleCache<T> cache) where T : class {
+            foreach (CallSiteRule<T> rule in cache.GetRules()) {
+                yield return rule.Target;
             }
-
-            var newRule = new CallSiteRule<T>(binding);
-
-            if (originalRule != null) {
-                // compare our new rule and our original monomorphic rule.  If they only differ from constants
-                // then we'll want to re-use the code gen if possible.
-                newRule = AutoRuleTemplate.CopyOrCreateTemplatedRule(originalRule, newRule);
-            }
-
-            //
-            // Add the rule to the level 2 cache. This is an optimistic add so that cache miss
-            // on another site can find this existing rule rather than building a new one.
-            //
-            if (oldRule != null) {
-                //
-                // The rule didn't work and since we optimistically added it into the
-                // level 2 cache. Remove it now since the rule is no good.
-                //
-                cache.ReplaceRule(oldRule, newRule);
-            } else {
-                cache.AddRule(newRule);
-            }
-
-            return newRule;
         }
     }
 }

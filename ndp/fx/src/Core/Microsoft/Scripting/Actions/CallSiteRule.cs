@@ -28,8 +28,7 @@ namespace System.Runtime.CompilerServices {
     /// Represents a runtime binding at a call site.
     /// </summary>
     /// <typeparam name="T">The delegate type.</typeparam>
-    [EditorBrowsable(EditorBrowsableState.Never), DebuggerStepThrough]
-    public sealed class CallSiteRule<T> where T : class {
+    internal sealed class CallSiteRule<T> where T : class {
 
         internal static readonly ReadOnlyCollection<ParameterExpression> Parameters;
         internal static readonly LabelTarget ReturnLabel;
@@ -60,7 +59,7 @@ namespace System.Runtime.CompilerServices {
         /// <summary>
         /// The rule set that includes only this rule.
         /// </summary>
-        internal readonly SmallRuleSet<T> RuleSet;
+        internal readonly T Target;
 
         /// <summary>
         /// The binding expression tree
@@ -74,15 +73,15 @@ namespace System.Runtime.CompilerServices {
         /// </summary>
         private readonly TemplateData<T> _template;
 
-        internal CallSiteRule(Expression binding) {
+        internal CallSiteRule(Expression binding, T target) {
             _binding = binding;
-            RuleSet = new SmallRuleSet<T>(new[] { this });
+            Target = target;
         }
 
         internal CallSiteRule(Expression binding, T target, TemplateData<T> template) {
             _binding = binding;
-            RuleSet = new SmallRuleSet<T>(target, new CallSiteRule<T>[] { this });
             _template = template;
+            Target = target;
         }
 
         /// <summary>

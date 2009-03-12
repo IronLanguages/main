@@ -88,7 +88,6 @@ namespace IronPython.Runtime.Binding {
         /// this (e.g. we have a splatted params list, kw-dict, and defaults) we call a helper which extracts them
         /// in the proper order (first try the list, then the dict, then the defaults).
         /// </summary>
-        /// <typeparam name="T"></typeparam>
         class FunctionBinderHelper {
             private readonly MetaPythonFunction/*!*/ _func;         // the meta object for the function we're calling
             private readonly DynamicMetaObject/*!*/[]/*!*/ _args;          // the arguments for the function

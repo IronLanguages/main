@@ -57,14 +57,131 @@ namespace System.Runtime.CompilerServices {
         /// </returns>
         public abstract Expression Bind(object[] args, ReadOnlyCollection<ParameterExpression> parameters, LabelTarget returnLabel);
 
+        /// <summary>
+        /// Provides low-level runtime binding support.  Classes can override this and provide a direct
+        /// delegate for the implementation of rule.  This can enable saving rules to disk, having
+        /// specialized rules available at runtime, or providing a different caching policy.
+        /// </summary>
+        /// <typeparam name="T">The target type of the CallSite.</typeparam>
+        /// <param name="site">The CallSite the bind is being performed for.</param>
+        /// <param name="args">The arguments for the binder.</param>
+        /// <returns>A new delegate which replaces the CallSite Target.</returns>
+        public virtual T BindDelegate<T>(CallSite<T> site, object[] args) where T : class {
+            //
+            // Get the Expression for the binding
+            //
+            Expression binding = Bind(args, CallSiteRule<T>.Parameters, CallSiteRule<T>.ReturnLabel);
+
+            //
+            // Check the produced rule
+            //
+            if (binding == null) {
+                throw Error.NoOrInvalidRuleProduced();
+            }
+            
+            //
+            // see if we have an old rule to template off
+            //
+            T oldTarget = site.Target;
+
+            RuleCache<T> cache = GetRuleCache<T>();
+            CallSiteRule<T> newRule = null;
+            foreach (CallSiteRule<T> cachedRule in cache.GetRules()) {
+                if ((object)cachedRule.Target == (object)oldTarget) {
+                    newRule = AutoRuleTemplate.CopyOrCreateTemplatedRule(cachedRule, binding);
+                    break;
+                }
+            }
+
+            //
+            // finally produce the new rule if we need to
+            //
+            if (newRule == null) {
+#if !MICROSOFT_SCRIPTING_CORE
+                // We cannot compile rules in the heterogeneous app domains since they
+                // may come from less trusted sources
+                if (!AppDomain.CurrentDomain.IsHomogenous) {
+                    throw Error.HomogenousAppDomainRequired();
+                }
+#endif
+                Expression<T> e = Stitch<T>(binding);
+                newRule = new CallSiteRule<T>(binding, e.Compile());
+            }
+
+            cache.AddRule(newRule);
+
+            return newRule.Target;
+        }
+
+        /// <summary>
+        /// Adds a target to the cache of known targets.  The cached targets will
+        /// be scanned before calling BindDelegate to produce the new rule.
+        /// </summary>
+        /// <typeparam name="T">The type of target being added.</typeparam>
+        /// <param name="target">The target delegate to be added to the cache.</param>
+        protected void CacheTarget<T>(T target) where T : class {
+            GetRuleCache<T>().AddRule(new CallSiteRule<T>(null, target));
+        }
+
+        internal static Expression<T> Stitch<T>(Expression binding) where T : class {
+            Type targetType = typeof(T);
+            Type siteType = typeof(CallSite<T>);
+
+            var body = new ReadOnlyCollectionBuilder<Expression>(3);
+            body.Add(binding);
+
+            var site = Expression.Parameter(typeof(CallSite), "$site");
+            var @params = CallSiteRule<T>.Parameters.AddFirst(site);
+
+            Expression updLabel = Expression.Label(CallSiteBinder.UpdateLabel);
+
+#if DEBUG
+            // put the AST into the constant pool for debugging purposes
+            updLabel = Expression.Block(
+                Expression.Constant(binding),
+                updLabel
+            );
+#endif
+
+            
+            body.Add(updLabel);
+            body.Add(
+                Expression.Label(
+                    CallSiteRule<T>.ReturnLabel,
+                    Expression.Condition(
+                        Expression.Call(
+                            typeof(CallSiteOps).GetMethod("SetNotMatched"),
+                            @params.First()
+                        ),
+                        Expression.Default(CallSiteRule<T>.ReturnLabel.Type),
+                        Expression.Invoke(
+                            Expression.Property(
+                                Expression.Convert(site, siteType),
+                                typeof(CallSite<T>).GetProperty("Update")
+                            ),
+                            new TrueReadOnlyCollection<Expression>(@params)
+                        )
+                    )
+                )
+            );
+
+            return new Expression<T>(
+                "CallSite.Target",
+                Expression.Block(body),
+                true, // always compile the rules with tail call optimization
+                new TrueReadOnlyCollection<ParameterExpression>(@params)
+            );
+        }
+
 
         /// <summary>
         /// The Level 2 cache - all rules produced for the same binder.
         /// </summary>
         internal Dictionary<Type, object> Cache;
-
+        
         // keep alive primary binder.
         private CallSiteBinder theBinder;
+
 
         internal RuleCache<T> GetRuleCache<T>() where T : class {
             // make sure we have cache.

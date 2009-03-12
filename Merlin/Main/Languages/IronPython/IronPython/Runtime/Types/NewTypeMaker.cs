@@ -719,8 +719,6 @@ namespace IronPython.Runtime.Types {
         /// have Helper appended to them to get the name for UserType.  The 
         /// UserType version should take 1 extra parameter (self).
         /// </summary>
-        /// <param name="intf"></param>
-        /// <param name="fExplicit"></param>
         private void DefineHelperInterface(Type intf) {
             ImplementInterface(intf);
             MethodInfo[] mis = intf.GetMethods();

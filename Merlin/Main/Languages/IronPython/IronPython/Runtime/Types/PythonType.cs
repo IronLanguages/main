@@ -1054,7 +1054,6 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
         /// </summary>
         /// <param name="name"></param>
         /// <param name="slot"></param>
-        /// <param name="context">the context the slot is added for</param>
         internal void AddSlot(SymbolId name, PythonTypeSlot slot) {
             Debug.Assert(!IsSystemType);
 
