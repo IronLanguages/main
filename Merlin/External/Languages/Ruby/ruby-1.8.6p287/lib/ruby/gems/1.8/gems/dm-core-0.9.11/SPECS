@@ -1,0 +1,62 @@
+Reading Specs
+=============
+
+  Blah blah blah...
+
+Writing Specs
+=============
+
+  Here are some general dos and don'ts
+
+  = DO:
+
+  * Write more specs for error conditions than clean conditions.
+  * Write specs with readability in mind. Somebody knew to DataMapper should be
+    able to read specs to learn how something works.
+  * Use existing models that are part of a metaphor.
+  * Nest describe blocks (2 or 3 levels deep is probably fine).
+  * Limit a describe block to 10 - 15 examples.
+  * Group specs by method being tested. (See the 'Ordering Specs' section)
+  * Use custom matchers.
+
+  = DON'T:
+
+  * Spec more than one unit of functionality in an example. An example should be
+    as short as possible (while still remaining readable).
+  * Spec implementation. Refactoring code should not break specs.
+  * Declare models in the spec file.
+
+  And a final do: Do go against the guidelines if your best judgement tells you
+  to. These are just guidelines and are obviously not fast rules.
+
+Models
+======
+
+  Models are declared in separate files as opposed to individual spec files for
+  two reasons. The first is to improve readability. By creating as few models
+  as possible and sharing these models throughout the specs, a reader can
+  become familiar with the models being used quicker. Models also follow a
+  few simple metaphors, such as a zoo, a blog implementation, etc... Following
+  metaphors makes it easier for a reader to guess what is going on with respect
+  to the models.
+
+  The second reason is to allow the spec environment to be as pristine as
+  possible going into an example. Models being loaded from the model directory
+  are tracked and reloaded before each example. Any changes that might be made
+  to the model are reset at the end.
+
+Mocks and Stubs
+===============
+
+  Obviously, mocks and stubs are a powerful feature when it comes to BDD;
+  however, remember that you are writing specs for behavior and NOT
+  implementation.
+
+Ordering Specs
+==============
+
+  Specs aren't much use if nobody can find where anything is, so keeping specs
+  well organized is critical. Currently, we are trying out the following
+  structure:
+
+    * List guidelines here...

@@ -1,0 +1,22 @@
+
+<html>
+<head><title>new (Log4r::LogServer)</title>
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+<style>
+  .kw { color: #3333FF; font-weight: bold }
+  .cmt { color: green; font-style: italic }
+  .str { color: #662222; font-style: italic }
+  .re  { color: #662222; }
+</style>
+</head>
+<body bgcolor="white">
+<pre><span class="cmt"># File log4r/logserver.rb, line 12</span>
+    <span class="kw">def</span> initialize(_fullname, _uri, _level=<span class="kw">nil</span>, 
+                   _additive=<span class="kw">true</span>, _trace=<span class="kw">false</span>, &amp;accept)
+      <span class="kw">super</span>(_fullname, _level, _additive, _trace)
+      @uri = _uri
+      start_server(_uri, accept)
+      Logger.log_internal {&quot;LogServer started at #{@uri}&quot;}
+    <span class="kw">end</span></pre>
+</body>
+</html>

@@ -1,0 +1,20 @@
+
+<html>
+<head><title>[] (Log4r::Logger)</title>
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+<style>
+  .kw { color: #3333FF; font-weight: bold }
+  .cmt { color: green; font-style: italic }
+  .str { color: #662222; font-style: italic }
+  .re  { color: #662222; }
+</style>
+</head>
+<body bgcolor="white">
+<pre><span class="cmt"># File log4r/staticlogger.rb, line 12</span>
+    <span class="kw">def</span> <span class="kw">self</span>.[](_fullname)
+      <span class="cmt"># forces creation of RootLogger if it doesn't exist yet.</span>
+      <span class="kw">return</span> RootLogger.instance <span class="kw">if</span> _fullname==<span class="str">'root'</span> <span class="kw">or</span> _fullname==<span class="str">'global'</span>
+      Repository[_fullname]
+    <span class="kw">end</span></pre>
+</body>
+</html>

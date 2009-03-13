@@ -1,0 +1,229 @@
+
+<html><head>
+  <title>Class: Log4r::Outputter</title>
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <link rel=StyleSheet href="../.././rdoc-style.css" type="text/css" media=screen>
+  <script type="text/javascript" language="JavaScript">
+  <!--
+  function popCode(url) {
+    parent.frames.source.location = url
+  }
+  //-->
+  </script>
+</head>
+<body bgcolor="white">
+
+
+<table width="100%" border=0 cellspacing=0>
+ <tr class="title-row">
+ <td class="big-title-font">
+   <font size=-3><B>Class</B><BR></font>Log4r::Outputter
+ </td>
+ <td align="right">
+   <table cellspacing=0 cellpadding=2>
+     <tr valign="top">
+      <td class="small-title-font">In:</td>
+      <td class="small-title-font">
+log4r/outputter/staticoutputter.rb
+log4r/outputter/outputterfactory.rb
+<a href="../../files/log4r/outputter/outputter_rb.html">log4r/outputter/outputter.rb</a>
+      </td>
+     </tr>
+     <tr>
+      <td class="small-title-font">Parent:</td>
+      <td class="small-title-font">
+Object
+      </td>
+     </tr>
+   </table>
+  </td>
+  </tr>
+</table><br>
+  <!-- banner header -->
+
+
+
+</div>
+
+<table cellpadding=5 width="100%">
+<tr><td class="tablesubtitle">Methods</td></tr>
+</table><br>
+<div class="name-list">
+<a href="#M000015">[]</a>,
+<a href="#M000018">[]=</a>,
+<a href="#M000019">each</a>,
+<a href="#M000020">each_outputter</a>,
+<a href="#M000025">flush</a>,
+<a href="#M000024">formatter=</a>,
+<a href="#M000022">level=</a>,
+<a href="#M000021">new</a>,
+<a href="#M000023">only_at</a>,
+<a href="#M000017">stderr</a>,
+<a href="#M000016">stdout</a>,
+</div>
+
+<table cellpadding=5 width="100%">
+<tr><td class="tablesubtitle">Attributes</td></tr>
+</table><br>
+<table cellspacing=5>
+     <tr valign="top">
+       <td align="center" class="attr-rw">&nbsp;[R]&nbsp;</td>
+       <td class="attr-name">formatter</td>
+       <td></td>
+     </tr>
+     <tr valign="top">
+       <td align="center" class="attr-rw">&nbsp;[R]&nbsp;</td>
+       <td class="attr-name">level</td>
+       <td></td>
+     </tr>
+     <tr valign="top">
+       <td align="center" class="attr-rw">&nbsp;[R]&nbsp;</td>
+       <td class="attr-name">name</td>
+       <td></td>
+     </tr>
+</table>
+
+
+  
+
+<table cellpadding=5 width="100%">
+<tr><td class="tablesubtitle">Public Class methods</td></tr>
+</table>
+<table width="100%" cellspacing = 0 cellpadding=5 border=0>
+<tr><td class="methodtitle">
+<a name="M000015">
+<b>[]</b>(name) 
+<a href="Outputter.src/M000015.html" target="source" class="srclink">src</a>
+</a></td></tr>
+</table>
+<div class="description">
+<p>
+Retrieve an outputter.
+</p>
+</div>
+<table width="100%" cellspacing = 0 cellpadding=5 border=0>
+<tr><td class="methodtitle">
+<a name="M000016">
+<b>stdout</b>() 
+<a href="Outputter.src/M000016.html" target="source" class="srclink">src</a>
+</a></td></tr>
+</table>
+<table width="100%" cellspacing = 0 cellpadding=5 border=0>
+<tr><td class="methodtitle">
+<a name="M000017">
+<b>stderr</b>() 
+<a href="Outputter.src/M000017.html" target="source" class="srclink">src</a>
+</a></td></tr>
+</table>
+<table width="100%" cellspacing = 0 cellpadding=5 border=0>
+<tr><td class="methodtitle">
+<a name="M000018">
+<b>[]=</b>(name, outputter) 
+<a href="Outputter.src/M000018.html" target="source" class="srclink">src</a>
+</a></td></tr>
+</table>
+<div class="description">
+<p>
+Set an outputter.
+</p>
+</div>
+<table width="100%" cellspacing = 0 cellpadding=5 border=0>
+<tr><td class="methodtitle">
+<a name="M000019">
+<b>each</b>() {|name, outputter}| ...} 
+<a href="Outputter.src/M000019.html" target="source" class="srclink">src</a>
+</a></td></tr>
+</table>
+<div class="description">
+<p>
+Yields each outputter&#8217;s name and reference.
+</p>
+</div>
+<table width="100%" cellspacing = 0 cellpadding=5 border=0>
+<tr><td class="methodtitle">
+<a name="M000020">
+<b>each_outputter</b>() {|outputter}| ...} 
+<a href="Outputter.src/M000020.html" target="source" class="srclink">src</a>
+</a></td></tr>
+</table>
+<table width="100%" cellspacing = 0 cellpadding=5 border=0>
+<tr><td class="methodtitle">
+<a name="M000021">
+<b>new</b>(_name, hash={}) 
+<a href="Outputter.src/M000021.html" target="source" class="srclink">src</a>
+</a></td></tr>
+</table>
+<div class="description">
+<p>
+An <a href="Outputter.html">Outputter</a> needs a name. <a
+href="RootLogger.html">RootLogger</a> will be loaded if not already done.
+The hash arguments are as follows:
+</p>
+<dl>
+<dt><tt>:level</tt></dt><dd><a href="Logger.html">Logger</a> level. Optional, defaults to root level
+
+</dd>
+<dt><tt>:formatter</tt></dt><dd>A <a href="Formatter.html">Formatter</a>. Defaults to <a
+href="DefaultFormatter.html">DefaultFormatter</a>
+
+</dd>
+</dl>
+</div>
+<table cellpadding=5 width="100%">
+<tr><td class="tablesubtitle">Public Instance methods</td></tr>
+</table>
+<table width="100%" cellspacing = 0 cellpadding=5 border=0>
+<tr><td class="methodtitle">
+<a name="M000022">
+<b>level=</b>(_level) 
+<a href="Outputter.src/M000022.html" target="source" class="srclink">src</a>
+</a></td></tr>
+</table>
+<div class="description">
+<p>
+dynamically change the level
+</p>
+</div>
+<table width="100%" cellspacing = 0 cellpadding=5 border=0>
+<tr><td class="methodtitle">
+<a name="M000023">
+<b>only_at</b>(*levels) 
+<a href="Outputter.src/M000023.html" target="source" class="srclink">src</a>
+</a></td></tr>
+</table>
+<div class="description">
+<p>
+Set the levels to log. All others will be ignored
+</p>
+</div>
+<table width="100%" cellspacing = 0 cellpadding=5 border=0>
+<tr><td class="methodtitle">
+<a name="M000024">
+<b>formatter=</b>(_formatter) 
+<a href="Outputter.src/M000024.html" target="source" class="srclink">src</a>
+</a></td></tr>
+</table>
+<div class="description">
+<p>
+Dynamically change the formatter. You can just specify a Class object and
+the formatter will invoke <tt>new</tt> or <tt>instance</tt> on it as
+appropriate.
+</p>
+</div>
+<table width="100%" cellspacing = 0 cellpadding=5 border=0>
+<tr><td class="methodtitle">
+<a name="M000025">
+<b>flush</b>() 
+<a href="Outputter.src/M000025.html" target="source" class="srclink">src</a>
+</a></td></tr>
+</table>
+<div class="description">
+<p>
+Call flush to force an outputter to write out any buffered log events.
+Similar to IO#flush, so use in a similar fashion.
+</p>
+</div>
+  <!-- method descriptions -->
+
+</body>
+</html>

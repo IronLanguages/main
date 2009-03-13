@@ -1,0 +1,2 @@
+class BoundOptionTagSpecs < SpecController
+end

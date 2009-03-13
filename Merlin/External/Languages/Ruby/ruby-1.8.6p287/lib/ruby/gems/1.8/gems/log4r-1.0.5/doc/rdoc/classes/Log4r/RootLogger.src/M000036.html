@@ -1,0 +1,23 @@
+
+<html>
+<head><title>new (Log4r::RootLogger)</title>
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+<style>
+  .kw { color: #3333FF; font-weight: bold }
+  .cmt { color: green; font-style: italic }
+  .str { color: #662222; font-style: italic }
+  .re  { color: #662222; }
+</style>
+</head>
+<body bgcolor="white">
+<pre><span class="cmt"># File log4r/logger.rb, line 167</span>
+    <span class="kw">def</span> initialize
+      Log4r.define_levels(*Log4rConfig::LogLevels) <span class="cmt"># ensure levels are loaded</span>
+      @level = ALL
+      @outputters = []
+      Repository[<span class="str">'root'</span>] = <span class="kw">self</span>
+      Repository[<span class="str">'global'</span>] = <span class="kw">self</span>
+      LoggerFactory.undefine_methods(<span class="kw">self</span>)
+    <span class="kw">end</span></pre>
+</body>
+</html>

@@ -1,0 +1,92 @@
+:include:QUICKLINKS
+
+= FAQ
+
+=== So where's my :id column?
+
+DataMapper will NOT create an auto-incrementing <tt>:id</tt> key for you 
+automatically, so you'll need to either explicitly create one with
+
+  property :id, Serial
+
+You can choose to use a natural key by doing
+
+  property :slug, String, :key => true
+
+Remember, DataMapper supports multiple keys ("composite keys"), so if your
+model has two or more keys, no big deal
+
+  property :store_id, 	Integer, :key => true
+  property :invoice_id, Integer, :key => true
+
+=== How do I make a model paranoid?
+
+Create a property and make it a ParanoidDateTime or ParanoidBoolean type.
+
+  property :deleted_at, ParanoidDateTime
+  property :deleted, ParanoidBoolean
+
+All of your calls to <tt>##all()</tt>, <tt>##first()</tt> will be scoped 
+with <tt>:deleted_at => nil</tt> or <tt>:deleted => false</tt>. Plus, 
+you won't see deleted objects in your associations.
+
+=== Does DataMapper do Single Table Inheritance?
+
+This is what the Discriminator data-type is for:
+
+  class Person
+    include DataMapper::Resource
+    property :id, Serial
+    property :type, Discriminator ## other shared properties here
+  end
+
+  class Salesperson < Person; end
+
+You can claim a column to have the type <tt>Discriminator</tt> and DataMapper will
+automatically drop the class name of the inherited classes into that field of
+the data-store.
+
+=== How do I run my own commands?
+
+  repository.adapter.query("select * from users where clue > 0")
+  repository(:integration).adapter.query("select * from users where clue > 0")
+
+This does not return any Users (har har), but rather Struct's that will quack
+like Users. They'll be read-only as well.
+
+<tt>repository.adapter.query</tt> shouldn't be used if you aren't expecting a result set
+back.  If you want to just execute something against the database, use
+<tt>repository.adapter.execute</tt> instead.
+
+
+=== Can I get an query log of what DataMapper is issuing?
+
+An example of how to modify an existing logger:
+
+  DataMapper.logger.set_log(STDOUT, :debug)
+
+An example of how to create new logger:
+
+  DataMapper::Logger.new(STDOUT, :info)
+
+To send a message to the DataMapper logger:
+
+  DataMapper.logger.debug("something")
+  DataMapper.logger.info ("something")
+  DataMapper.logger.warn ("something")
+  DataMapper.logger.error("something")
+  DataMapper.logger.fatal("something")
+
+
+=== I want to run the specs, but I have a custom database setup
+
+For example, if you installed MySQL using MacPorts, your socket may be located
+at /opt/local/var/run/mysql5/mysqld.sock instead of /tmp/mysql.sock
+
+In that case, setup an environment variable in your shell before running the
+specs:
+  export MYSQL_SPEC_URI="mysql://localhost/dm_core_test?socket=/opt/local/var/run/mysql5/mysqld.sock"
+  rake spec
+
+Using another kind of database? Note that spec_helper.rb will also look for
+SQLITE3_SPEC_URI AND POSTGRES_SPEC_URI.

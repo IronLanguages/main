@@ -1,0 +1,2 @@
+class BoundFileFieldSpecs < SpecController
+end

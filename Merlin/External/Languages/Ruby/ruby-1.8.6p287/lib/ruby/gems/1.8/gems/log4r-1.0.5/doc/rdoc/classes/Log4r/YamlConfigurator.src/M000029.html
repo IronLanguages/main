@@ -1,0 +1,25 @@
+
+<html>
+<head><title>custom_levels (Log4r::YamlConfigurator)</title>
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+<style>
+  .kw { color: #3333FF; font-weight: bold }
+  .cmt { color: green; font-style: italic }
+  .str { color: #662222; font-style: italic }
+  .re  { color: #662222; }
+</style>
+</head>
+<body bgcolor="white">
+<pre><span class="cmt"># File log4r/yamlconfigurator.rb, line 29</span>
+    <span class="kw">def</span> <span class="kw">self</span>.custom_levels( levels)
+      <span class="kw">return</span> Logger.root <span class="kw">if</span> levels.size == 0
+      <span class="kw">for</span> i <span class="kw">in</span> 0...levels.size
+        name = levels[i].to_s
+        <span class="kw">if</span> name =~ <span class="re">/\s/</span> <span class="kw">or</span> name !~ <span class="re">/^[A-Z]/</span>
+          raise TypeError, &quot;#{name} is not a valid Ruby Constant name&quot;, caller
+        <span class="kw">end</span>
+      <span class="kw">end</span>
+      Log4r.define_levels *levels
+    <span class="kw">end</span></pre>
+</body>
+</html>

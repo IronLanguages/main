@@ -1,0 +1,11 @@
+* CHANGES
+* README
+* MANIFEST
+* Rakefile
+* win32-process.gemspec
+* examples/test_create.rb
+* examples/test_fork_wait.rb
+* examples/test_fork_waitpid.rb
+* examples/test_kill.rb
+* lib/win32/process.rb
+* test/tc_process.rb

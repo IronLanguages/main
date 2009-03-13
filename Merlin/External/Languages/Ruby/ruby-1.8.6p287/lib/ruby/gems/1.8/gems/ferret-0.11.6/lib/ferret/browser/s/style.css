@@ -1,0 +1,148 @@
+body {
+  padding: 10px 30px;
+}
+ul#top-menu {
+  margin: 0;
+  padding: 0;
+  padding-left: 20px;
+  border-bottom: 1px solid #000099;
+}
+ul#top-menu li {
+  display: inline;
+  padding: 0px;
+}
+ul#top-menu li a, ul#top-menu li a:visited {
+  background-color: #cce6ff;
+  padding: 0px 5px;
+  border: 1px solid #000099;
+  text-decoration: none;
+  color: #000099;
+  font-weight: bold;
+}
+body#home ul#top-menu li.home a,
+body#document ul#top-menu li.document a,
+body#term ul#top-menu li.term a,
+body#term-vector ul#top-menu li.term-vector a,
+body#help ul#top-menu li.help a {
+  background-color: #f0f8ff;
+  border-bottom: 1px solid #f0f8ff;
+}
+div#content {
+  padding: 10px;
+  margin: 0;
+  background-color: #f0f8ff;
+}
+div.display {background-color:#fff;padding:0 5px;}
+dl {
+  width: 51.1em;
+  margin: 0;
+  padding: 0;
+}
+dl dt {
+  width: 15em;
+  float: left;
+  margin: 0;
+  padding: .5em;
+  border-top: 1px solid #999;
+  font-weight: bold;
+  color: #cc9900;
+}
+/* commented backslash hack for mac-ie5 \*/
+dt { clear: both; }
+/* end hack */
+dl dd {
+  float: left;
+  width: 34em;
+  margin: 0 0 0 0;
+  padding: .5em;
+  border-top: 1px solid #999;
+}
+hr {clear:both;border:0;}
+h1, h2, h3, h4, h5, h6 {color:#cc0033;}
+th {
+  font-weight: bold;
+  background-color: #cc9900;
+  color: white;
+  padding: 3px;
+  font-size: 12px;
+}
+th.small, td.small {font-size:11px;}
+th, td {
+  border-top: 1px solid #994400;
+  border-left: 1px solid #994400;
+}
+table {
+  border-bottom: 1px solid #994400;
+  border-right: 1px solid #994400;
+}
+table.left-headed th {width:80px;text-align:left;}
+table.left-headed td {background-color: white;text-align:right;width:120px;}
+td {padding:2px 6px;color:#555;}
+tr.even {background-color:#cce6ff;}
+tr.odd {background-color:white;}
+td.center {text-align:center}
+td.right {text-align:right}
+
+label.check {width:150px;float:left;}
+pre	{
+  border-left: solid 1px #cccccc;
+  border-top: solid 1px #cccccc;
+  border-bottom: solid 1px #cccccc;
+  border-right: dashed 2px #cccccc;
+  margin: 1em;
+  padding: 0.7em;
+  display: block;
+  overflow: hidden;
+  color: white;
+  background-color: black;
+}
+pre:hover {
+  overflow: visible;
+  border-right: solid 1px #cccccc;
+  width: 1000px;
+}
+div.nav {color:#007777;font-size:11px;}
+div.nav a, div.nav a:visited {
+  background-color: white;
+  color: #007777;
+  padding: 2px 4px;
+  border: 1px solid #bbd8ef;
+  margin-right: 1px;
+  text-decoration: none;
+  font-size: 11px;
+}
+div.nav a.deleted {
+  background-color: #fee;
+}
+div.nav a.deleted:hover {
+  background-color: #077;
+  color: #fee;
+}
+div.nav a.disabled, div.nav a.disabled:hover {
+  cursor: default;
+  color: #ccc;
+  border: 1px solid #ccc;
+  background-color: white;
+}
+div.nav a:hover {
+  background-color: #007777;
+  color: white;
+}
+/* Auto Suggest */
+div.suggestions {
+  -moz-box-sizing: border-box;
+  box-sizing: border-box;
+  border: 1px solid black;
+  position: absolute;
+}
+div.suggestions div {
+  cursor: default;
+  padding: 0px 3px;
+  background-color: white;
+  opacity: 0.80;
+  filter:alpha(opacity=80);
+}
+div.suggestions div.current {
+  background-color: #3366cc;
+  color: white;
+}

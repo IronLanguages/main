@@ -1,0 +1,2 @@
+class RadioButtonSpecs < SpecController
+end

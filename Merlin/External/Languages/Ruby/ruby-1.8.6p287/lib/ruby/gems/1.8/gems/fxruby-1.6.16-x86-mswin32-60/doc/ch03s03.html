@@ -1,0 +1,52 @@
+<html><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+   <title>Messages</title><link rel="stylesheet" href="style.css" type="text/css"><meta name="generator" content="DocBook v5 XSL Stylesheets V1.72.0"><link rel="start" href="book.html" title="Developing Graphical User Interfaces with FXRuby"><link rel="up" href="tutorial1.html" title="Chapter&nbsp;3.&nbsp;Hello, World!"><link rel="prev" href="ch03s02.html" title="Better living through buttons"><link rel="next" href="ch03s04.html" title="Adding a tool tip"></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="3" align="center">Messages</th></tr><tr><td width="20%" align="left"><a accesskey="p" href="ch03s02.html">Prev</a>&nbsp;</td><th width="60%" align="center">Chapter&nbsp;3.&nbsp;Hello, World!</th><td width="20%" align="right">&nbsp;<a accesskey="n" href="ch03s04.html">Next</a></td></tr></table><hr></div><div class="section" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="d0e772"></a>Messages</h2></div></div></div><p>Now we're cookin' with Crisco, but let's press on and see what other
+    things we can do to improve this. You may have noticed by now that the
+    only way to quit the program is to close the window using the window
+    manager's "close window" option, or to just kill the program outright. We
+    can do better than that. Let's add a message handler for the
+    <code class="classname">FXButton</code> such that when you click the button, it
+    causes the program to exit:</p><pre class="programlisting">require 'fox16'
+
+include Fox
+
+theApp = FXApp.new
+
+theMainWindow = FXMainWindow.new(theApp, "Hello")
+theButton = FXButton.new(theMainWindow, "Hello, World!")
+<span class="bold"><strong>theButton.connect(SEL_COMMAND) do |sender, selector, data|
+  exit
+end</strong></span>
+theApp.create
+
+theMainWindow.show
+
+theApp.run</pre><p>Most FOX objects send out messages (also known as
+    <span class="emphasis"><em>events</em></span>) when something interesting happens. FOX
+    messages have four important elements:</p><div class="orderedlist"><ol type="1"><li><p>The message <span class="emphasis"><em>sender</em></span> is the object that sends
+        the message. In this case, the <code class="classname">FXButton</code>
+        instance is the sender.</p></li><li><p>The message <span class="emphasis"><em>type</em></span> is a predefined integer
+        constant that indicates what kind of event has occurred (i.e. why this
+        message is being sent). In this case, the message type is
+        <code class="constant">SEL_COMMAND</code>, which indicates that the command
+        associated with this widget should be invoked.</p></li><li><p>The message <span class="emphasis"><em>identifier</em></span> is another integer
+        constant that is used to distinguish between different messages of the
+        same type. For example, the message that tells a FOX window to make
+        itself visible is a <code class="constant">SEL_COMMAND</code> message with the
+        identifier <code class="constant">FXWindow::ID_SHOW</code> (where
+        <code class="constant">ID_SHOW</code> is a constant defined in the
+        <code class="classname">FXWindow</code> class). A different message
+        identifier, <code class="constant">FXWindow::ID_HIDE</code>, tells an
+        <code class="classname">FXWindow</code> instance to make itself
+        invisible.</p></li><li><p>The message <span class="emphasis"><em>data</em></span> is an object containing
+        message-specific information. For this case (the
+        <code class="classname">FXButton</code>'s <code class="constant">SEL_COMMAND</code>
+        message, there is no interesting message data, but we'll see other
+        kinds of messages where the message data is useful.</p></li></ol></div><p>For historical reasons, the message type and identifier are usually
+    packed into a single 32-bit unsigned integer known as the
+    <span class="emphasis"><em>selector</em></span>, and this is the value that is passed into
+    the message handler block. Since we don't actually need to use the
+    <em class="parameter"><code>sender</code></em>, <em class="parameter"><code>selector</code></em> or
+    <em class="parameter"><code>data</code></em> arguments for this particular message handler,
+    we can just ignore them and shorten the code to:</p><pre class="programlisting">theButton.connect(SEL_COMMAND) { exit }</pre><p>Re-run the program and push the button to convince yourself that it
+    works.</p></div><div class="navfooter"><hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="ch03s02.html">Prev</a>&nbsp;</td><td width="20%" align="center"><a accesskey="u" href="tutorial1.html">Up</a></td><td width="40%" align="right">&nbsp;<a accesskey="n" href="ch03s04.html">Next</a></td></tr><tr><td width="40%" align="left" valign="top">Better living through buttons&nbsp;</td><td width="20%" align="center"><a accesskey="h" href="book.html">Home</a></td><td width="40%" align="right" valign="top">&nbsp;Adding a tool tip</td></tr></table></div></body></html>

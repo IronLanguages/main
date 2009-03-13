@@ -1,0 +1,175 @@
+= Loggers
+
+Loggers provide the interface for logging in Log4r. To create a logger,
+first come up with a name for it. Good choices include the name of the
+class using it, a service name, or the name of the file. 
+
+To create a logger named 'mylog':
+
+  Logger.new('mylog')
+
+After creating a logger, it is stashed in a repository. The logger may
+be retrieved at any time:
+
+  Logger['mylog']              # get mylog back
+
+It will return nil if the logger is not found. Alternatively, if an
+Exception is desired when a nonexistant logger is referenced, the Logger#get
+command can be used:
+
+  Logger.get('boguslog')       # raises NameError if it doesn't exist
+
+== Manipulating a Logger's Outputters
+
+Loggers start out with no outputters. They can be added using the
+Logger#add method or set directly by modifying the Loggers#outputters array:
+
+  mylog = Logger['mylog']
+
+  # assume we've created Outputters out1 through out4
+  mylog.outputters = out1, out2 
+  mylog.add(out3, out4)
+  mylog.each_outputter {|o| o.flush}
+  
+  # assume out5 through out7 have names 'out5' through 'out7' resp.
+  mylog.outputters = 'out5', 'out6'
+  mylog.add('out7')
+  mylog.remove('out5','out7')
+
+Please see log4r/outputter/outputter.rb and Log4r::Outputter for more about
+outputters.
+
+== Logging Methods
+
+To log something at a certain priority, use the logging method named
+after the lowercased priority level name:
+
+  mylog.warn "This is a message with priority WARN"
+  mylog.fatal "A FATAL message"
+
+Blocks can also be logged:
+
+  mylog.warn {"This is also a message with priority WARN"}
+  mylog.debug do
+    # some complicated string magic
+    return result
+  end
+
+The primary difference is that the block doesn't get called unless
+the Logger can log at that level. It is useful for doing computationaly
+expensive things at a log event.
+
+== Query Methods
+
+To ask Log4r whether it is capable of logging a certain level:
+
+  mylog.warn?   # are we logging WARN?
+  mylog.fatal?  # how about FATAL?
+
+Query methods and blocks accomplish the same thing:
+
+  mylog.warn "don't evaluate unless WARN is on" if mylog.warn?
+  mylog.warn {"don't evaluate unless WARN is on"}
+
+== What About the Special Levels?
+
+<tt>ALL</tt> and <tt>OFF</tt> can be querried, but not logged:
+
+  log.off?                    # true iff level is OFF
+  log.all?                    # true iff level is ALL
+  log.all "Try to log"        => Method not defined. (NameError)
+
+== Custom Levels and Method Names
+
+Suppose we've set up Log4r with the custom levels:
+
+  Foo < Bar < Baz
+
+As one might expect, the logging methods are named after them:
+
+  log.bar "something"        # log at custom level Bar
+  log.bar?                   # are we logging at level Bar?
+
+= Logger Inheritance
+
+Normally, when a logger is created, its parent is set to RootLogger.
+If a Logger's level isn't specified at creation, it will inherit the level 
+of its parent.
+
+To specify an ancestors of a logger besides RootLogger, include the names 
+of the ancestors in order of ancestry and delimited by 
+Log4r::Log4rConfig::LoggerPathDelimiter. For example, if the 
+delimiter is the default <tt>::</tt>, our logger is 'me' 
+and its ancestors are 'cain', 'grandpa', and 'pa', we create the logger 
+like so:
+
+  Logger.new('cain::grandpa::pa::me')
+
+This string is split into three compontents which can be used
+by a Formatter to avoid parsing the name:
+
+Logger#fullname::   The whole enchilada: 'cain::grandpa::pa::me'
+Logger#name::       Just 'me'
+
+To get this logger back from the repository,
+
+  Logger['cain::grandpa::pa::me']
+
+= Outputter Additivity
+
+By default, Logger Outputters are <b>additive</b>. This means that
+a log event will also be sent to all of a logger's ancestors. To 
+stop this behavior, set a logger's +additive+ to false.
+
+  Logger['foo'].additive = false
+
+A Logger's level, additivity and trace can be changed dynamically,
+but this is an expensive operation as the logging methods have to be
+redefined.
+
+= RootLogger
+
+Log4r::RootLogger is the ancestor of all loggers. Its level defines the global
+logging threshold. Any loggers created <b>after</b> RootLogger's level is
+set will not log below that level. By default, RootLogger's level is set
+to <tt>ALL</tt>
+
+RootLogger is a singleton which gets created automaticallay. It can be
+retrieved at any time with Logger.root, Logger.global,
+Logger['root'] or Logger['global'].
+
+== Global Level
+
+Suppose we want _everything_ to ignore events less than FATAL. We can
+accomplish this easily:
+
+  Logger.global.level = FATAL
+
+Just be sure to set this before any other Loggers or Outputters are defined.
+
+== RootLogger Does Nothing
+
+RootLogger itself behaves as if its level were permanently set to 
+<tt>OFF</tt>, thus making it a sort of null object.
+
+= XML Configuration
+
+Please see log4r/configurator.rb for an overview of XML configuratoin.
+
+It's easy to configure a Logger in XML. The following example should be
+sufficient:
+
+    ...
+    <logger name="papa::mylog" level="DEBUG" trace="true">
+      <additive>false</additive>
+      <outputter>stdout</outputter>
+      <outputters>stderr, dancer, doner, blitzen</outputters>
+    </logger>
+    <logger name="papa" outputters="stderr, stdout"/>
+    ...
+
+The element +outputter+ can occur multiple times, but cannot be an attribute 
+of +logger+. That is, it is not an <i>XML directive</i>. However, the element 
++outputters+ is an <i>XML directive</i>, as are all the others.
+
+For more examples, check the <tt>examples</tt> directory in the Log4r package.

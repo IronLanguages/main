@@ -1,0 +1,40 @@
+#!/usr/bin/env ruby -w
+
+require 'multiruby'
+
+root_dir = Multiruby.root_dir
+versions = Multiruby.build_and_install
+versions = ENV['VERSIONS'].split(/:/) if ENV.has_key? 'VERSIONS'
+
+if ENV.has_key? 'EXCLUDED_VERSIONS' then
+  excludes = Regexp.union(*ENV['EXCLUDED_VERSIONS'].split(/:/))
+  versions = versions.delete_if { |v| v =~ excludes }
+end
+
+results = {}
+versions.each do |version|
+  ruby = "#{root_dir}/install/#{version}/bin/ruby"
+
+  ruby.sub!(/bin.ruby/, 'bin/rbx') if version =~ /rubinius/
+
+  puts
+  puts "VERSION = #{version}"
+  cmd = [ruby, ARGV].flatten.map { |s| s =~ /\"/ ? "'#{s}'" : s }.join(' ')
+  cmd.sub!(/#{ENV['HOME']}/, '~')
+  puts "CMD     = #{cmd}"
+  puts
+  system ruby, *ARGV
+  puts
+  puts "RESULT = #{$?}"
+  results[version] = $?
+end
+
+passed, failed = results.keys.partition { |v| results[v] == 0 }
+
+puts
+puts "TOTAL RESULT = #{failed.size} failures out of #{results.size}"
+puts
+puts "Passed: #{passed.join(", ")}"
+puts "Failed: #{failed.join(", ")}"
+
+exit failed.size

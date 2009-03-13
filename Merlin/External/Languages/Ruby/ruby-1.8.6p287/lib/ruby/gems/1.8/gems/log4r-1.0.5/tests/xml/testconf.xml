@@ -1,0 +1,37 @@
+<test>
+<log4r_config>
+
+  <pre_config>
+    <custom_levels>Foo, Bar,Baz, Bing</custom_levels>
+    <global level="Foo"/>
+    <parameters>
+      <mypattern>[%l] %d %t - %m</mypattern>
+    </parameters>
+    <parameter name="datem" value="usec"/>
+  </pre_config>
+
+  <!-- level and formatter are optional, -->
+  <outputter name="SO" type="StdoutOutputter">
+    <level>Foo</level>
+    <formatter type="Log4r::PatternFormatter">
+      <pattern>%d %c %l&gt; %m</pattern>
+      <date_method>#{datem}</date_method>
+    </formatter>
+  </outputter>
+  <outputter name="SE" type="StderrOutputter" level="Baz">
+    <formatter type="PatternFormatter" pattern="#{mypattern}">
+      <date_pattern>%H:%S</date_pattern>
+    </formatter>
+  </outputter>
+  <outputter name="F" type="FileOutputter">
+    <filename>#{logpath}/junk/foo.log</filename>
+    <trunc>true</trunc>
+    <only_at>Foo, Bar, Bing</only_at>
+  </outputter>
+  <!-- optional level, additive and outputters -->
+  <logger name="first::second" level="Bar" additive="false">
+    <trace>true</trace>
+    <outputters>SO, SE, F, stdout, stderr</outputters>
+  </logger>
+</log4r_config>
+</test>

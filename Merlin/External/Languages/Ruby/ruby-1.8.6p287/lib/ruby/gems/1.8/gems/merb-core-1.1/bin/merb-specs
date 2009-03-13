@@ -1,0 +1,5 @@
+#!/usr/bin/env ruby
+
+require File.join(File.dirname(__FILE__),"..","lib","merb-core","test","run_specs")
+
+run_specs ARGV

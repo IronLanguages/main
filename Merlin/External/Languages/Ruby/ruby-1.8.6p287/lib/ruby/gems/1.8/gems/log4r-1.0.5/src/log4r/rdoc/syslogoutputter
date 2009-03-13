@@ -1,0 +1,29 @@
+= SyslogOutputter
+
+A SyslogOutputter transforms a Log4r::LogEvent into a call to syslog().
+Since syslog has its own formatting system, log4r formatters are ignored. 
+
+== Usage
+
+To use, 
+
+  <tt>require 'log4r/outputter/syslogoutputter'</tt>
+
+An example,
+
+  require 'log4r'
+  require 'log4r/outputter/syslogoutputter'
+
+  syslog = Log4r::SyslogOutputter.new("name", 'logopt'=>#, 'facility'=>#)
+  syslog.err("this is an ERR message")
+
+The output in <tt>/var/logs/syslog</tt> (Debian) is,
+
+  Sep  3 11:43:06 tiphares sys[1603]: this is an ERR message
+
+The hash arguments +logoptions+ and +facility+ are passed to 
+<tt>Syslog.open</tt>. The
+defaults are <tt>LOG_PID | LOG_CONS</tt> and <tt>LOG_USER</tt> respectively.
+
+This is a first try implementation. It works well. Please report 
+any bugs and fixes.

@@ -1,0 +1,32 @@
+
+<html>
+<head><title>new (Log4r::EmailOutputter)</title>
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+<style>
+  .kw { color: #3333FF; font-weight: bold }
+  .cmt { color: green; font-style: italic }
+  .str { color: #662222; font-style: italic }
+  .re  { color: #662222; }
+</style>
+</head>
+<body bgcolor="white">
+<pre><span class="cmt"># File log4r/outputter/emailoutputter.rb, line 12</span>
+    <span class="kw">def</span> initialize(_name, hash={})
+      <span class="kw">super</span>(_name, hash)
+      validate(hash)
+      @buff = []
+      <span class="kw">begin</span> 
+        @smtp = Net::SMTP.start(*@params)
+        Logger.log_internal {
+          &quot;EmailOutputter '#{@name}' running SMTP client on #{@server}:#{@port}&quot;
+        }
+      <span class="kw">rescue</span> Exception =&gt; e
+        Logger.log_internal(-2) {
+          &quot;EmailOutputter '#{@name}' failed to start SMTP client!&quot;
+        }
+        Logger.log_internal {e}
+        <span class="kw">self</span>.level = OFF
+      <span class="kw">end</span>
+    <span class="kw">end</span></pre>
+</body>
+</html>

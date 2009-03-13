@@ -1,0 +1,68 @@
+require 'rake'
+require 'rake/testtask'
+require 'rbconfig'
+include Config
+
+task :clean do 
+   rm 'sometestfile.txt' if File.exists? 'sometestfile.txt'
+end
+
+desc 'Install the win32-file package (non-gem)'
+task :install do
+   sitelibdir = CONFIG['sitelibdir']
+   installdir = File.join(sitelibdir, 'win32')
+   file = 'lib\win32\file.rb'
+
+   Dir.mkdir(installdir) unless File.exists?(installdir)
+   FileUtils.cp(file, installdir, :verbose => true)
+end
+
+desc 'Install the win32-file package as a gem'
+task :install_gem => [:clean] do
+   ruby 'win32-file.gemspec'
+   file = Dir['win32-file*.gem'].first
+   sh "gem install #{file}"
+end
+
+Rake::TestTask.new("test") do |t|
+   t.libs << 'test'
+   t.verbose = true
+   t.warning = true
+   t.test_files = FileList['test/tc*']
+end
+
+Rake::TestTask.new("test_attributes") do |t|
+   t.verbose = true
+   t.warning = true
+   t.test_files = FileList['test/tc_file_attributes.rb']
+end
+
+Rake::TestTask.new("test_constants") do |t|
+   t.verbose = true
+   t.warning = true
+   t.test_files = FileList['test/tc_file_constants.rb']
+end
+
+Rake::TestTask.new("test_encryption") do |t|
+   t.verbose = true
+   t.warning = true
+   t.test_files = FileList['test/tc_file_encryption.rb']
+end
+
+Rake::TestTask.new("test_path") do |t|
+   t.verbose = true
+   t.warning = true
+   t.test_files = FileList['test/tc_file_path.rb']
+end
+
+Rake::TestTask.new("test_security") do |t|
+   t.verbose = true
+   t.warning = true
+   t.test_files = FileList['test/tc_file_security.rb']
+end
+
+Rake::TestTask.new("test_stat") do |t|
+   t.verbose = true
+   t.warning = true
+   t.test_files = FileList['test/tc_file_stat.rb']
+end

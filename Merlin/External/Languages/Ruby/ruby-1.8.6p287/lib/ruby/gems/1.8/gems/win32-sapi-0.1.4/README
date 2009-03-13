@@ -1,0 +1,69 @@
+== Description
+   This is a Ruby interface to the Microsoft Speech API, 5.1
+	
+== Prerequisites
+   The Microsoft Speech API 5.1. It can be downloaded for free from 
+   http://www.microsoft.com/speech.
+   
+   Ruby 1.8.2 or later.
+   
+== Installation
+   rake test (optional)
+   rake install (non-gem) or rake install_gem (gem)
+	
+== Synopsis
+   require 'win32/sapi5'
+   include Win32
+	
+   v = SpVoice.new
+   v.Speak("Shall we play a game?")
+	
+== Constants
+SAPI5::VERSION
+	The current version of this package.
+	
+== Notes
+   This module is a simple interface to the Microsoft Speech API 5.1.  There
+   are interfaces to all of the Automation classes that this API consists of.
+   Each class is a subclass of the SAPI5 class, which is in turn a subclass
+   of WIN32OLE. With your object you can then call the available methods for
+   that particular Automation class.
+
+   This documentation won't offer the complete documentation for every method.
+   Instead, download the Microsoft Speech API 5.1 documentation (a .chm file)
+   and read the part that covers 'Automation'.
+	
+== Known Bugs
+   None known. Any bugs should be reported on the project page at
+   http://rubyforge.org/projects/win32utils.
+	
+== Acknowledgements
+   Thanks go to Jouke Visser for his Win32::SAPI5 Perl module, on which this
+   library is based.
+	
+== Support
+   The Microsoft SAPI 5.1 SDK is supported on news://microsoft.public.speech_tech.sdk
+	
+== Future Plans
+   Suggestions welcome.
+	
+== License
+   Ruby's
+	
+== Copyright
+   (C) 2003-2007 Daniel J. Berger
+   All Rights Reserved	
+	
+== Warranty
+   This package is provided "as is" and without any express or
+   implied warranties, including, without limitation, the implied
+   warranties of merchantability and fitness for a particular purpose.
+	
+== Author(s)
+   Daniel J. Berger
+   djberg96 at gmail dot com
+   imperator on IRC (irc.freenode.net)
+	
+   Park Heesob
+   phasis at nownuri dot net
+   phasis68 on IRC (irc.freenode.net)

@@ -1,0 +1,2 @@
+class HiddenFieldSpecs < SpecController
+end

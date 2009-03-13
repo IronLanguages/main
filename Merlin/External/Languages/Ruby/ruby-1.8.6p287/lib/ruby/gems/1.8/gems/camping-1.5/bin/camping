@@ -1,0 +1,279 @@
+#!/usr/bin/env ruby
+
+require 'delegate'
+require 'optparse'
+require 'ostruct'
+
+require 'stringio'
+require 'camping'
+require 'camping/reloader'
+require 'yaml'
+
+conf = OpenStruct.new(:host => '0.0.0.0', :port => 3301)
+
+# Setup paths
+if home = ENV['HOME'] # POSIX
+  conf.db = File.join(home, '.camping.db')
+  conf.rc = File.join(home, '.campingrc')
+elsif home = ENV['APPDATA'] # MSWIN
+  conf.db = File.join(home, 'Camping.db')
+  conf.rc = File.join(home, 'Campingrc')
+end
+
+# Load configuration if any
+if conf.rc and File.exists?( conf.rc )
+  YAML.load_file(conf.rc).each do |k,v|
+    conf.send("#{k}=", v)
+  end 
+end
+
+# Parse options
+opts = OptionParser.new do |opts|
+    opts.banner = "Usage: camping app1.rb, app2.rb..."
+    opts.define_head "#{File.basename($0)}, the microframework ON-button for ruby #{RUBY_VERSION} (#{RUBY_RELEASE_DATE}) [#{RUBY_PLATFORM}]"
+    opts.separator ""
+    opts.separator "Specific options:"
+
+    opts.on("-h", "--host HOSTNAME", "Host for web server to bind to (default is all IPs)") { |conf.host| }
+    opts.on("-p", "--port NUM", "Port for web server (defaults to #{conf.port})") { |conf.port| }
+    opts.on("-d", "--database FILE", "Database file (defaults to #{conf.db})") { |conf.db| }
+    opts.on("-l", "--log FILE", "Start a database log ('-' for STDOUT)") { |conf.log| }
+    opts.on("-C", "--console", "Run in console mode with IRB") { conf.server = :console }
+    opts.on("-s", "--server NAME", "Server to force (mongrel, webrick, console)") { |s| conf.server = s.to_sym }
+
+    opts.separator ""
+    opts.separator "Common options:"
+  
+    # No argument, shows at tail.  This will print an options summary.
+    # Try it and see!
+    opts.on_tail("-?", "--help", "Show this message") do
+        puts opts
+        exit
+    end
+  
+    # Another typical switch to print the version.
+    opts.on_tail("-v", "--version", "Show version") do
+        class << Gem; attr_accessor :loaded_specs; end
+        puts Gem.loaded_specs['camping'].version
+        exit
+    end
+end
+
+opts.parse! ARGV
+if ARGV.length < 1
+    puts opts
+    exit
+end
+
+# Default database
+unless conf.database
+  unless conf.db
+    puts "!! No home directory found.  Please specify a database file, see --help."; exit
+  end
+  conf.database = {:adapter => 'sqlite3', :database => conf.db}
+end
+
+# Load apps
+PATHS = ARGV.dup
+apps = PATHS.inject([]) do |apps, script|
+    if File.directory? script
+        apps.push(*Dir[File.join(script, '*.rb')])
+    else
+        apps << script
+    end
+end
+
+Camping::Reloader.database = conf.database
+Camping::Reloader.log = conf.log
+apps.map! { |script| Camping::Reloader.new(script) }
+abort("** No apps successfully loaded") unless apps.detect { |app| app.klass }
+
+def apps.find_new_scripts
+    each { |app| app.reload_app }
+    PATHS.each do |path|
+        Dir[File.join(path, '*.rb')].each do |script|
+            smount = File.basename(script, '.rb')
+            next if detect { |x| x.mount == smount }
+
+            puts "** Discovered new #{script}"
+            app = Camping::Reloader.new(script)
+            next unless app
+
+            yield app
+            self << app
+        end
+    end
+    self.sort! { |x, y| x.mount <=> y.mount }
+end
+
+def apps.index_page
+    welcome = "You are Camping"
+    apps = self
+    b = Markaby::Builder.new({}, {})
+    b = b.instance_eval do
+        html do
+            head do
+                title welcome
+                style <<-END, :type => 'text/css'
+                    body { 
+                        font-family: verdana, arial, sans-serif; 
+                        padding: 10px 40px; 
+                        margin: 0; 
+                    }
+                    h1, h2, h3, h4, h5, h6 {
+                        font-family: utopia, georgia, serif;
+                    }
+                END
+            end
+            body do
+                h1 welcome
+                p %{Good day.  These are the Camping apps you've mounted.}
+                ul do
+                    apps.each do |app|
+                        next unless app.klass
+                        li do
+                            h3(:style => "display: inline") { a app.klass.name, :href => "/#{app.mount}" }
+                            small { text " / " ; a "View Source", :href => "/code/#{app.mount}" }
+                        end
+                    end
+                end
+            end
+        end
+    end
+    b.to_s
+end
+
+# Check that mongrel exists 
+unless conf.server 
+    begin
+        require 'mongrel'
+        require 'mongrel/camping'
+        conf.server = :mongrel
+    rescue LoadError 
+        conf.server = :webrick 
+    end
+end
+
+# Running the selected server
+case conf.server.to_s
+when 'mongrel'
+    require 'mongrel'
+    require 'mongrel/camping'
+
+    class IndexHandler < Mongrel::HttpHandler
+        def initialize(apps, server)
+            @apps = apps
+            @server = server
+        end
+        def process(req, res)
+            res.start(200) do |head, out|
+                @apps.find_new_scripts do |app|
+                    @server.register "/#{app.mount}", Mongrel::Camping::CampingHandler.new(app)
+                    @server.register "/code/#{app.mount}", ViewSource.new(app)
+                end
+                out << @apps.index_page
+            end
+        end
+    end
+    class ViewSource < Mongrel::HttpHandler
+        def initialize(app)
+            @app = app
+        end
+        def process(req, res)
+            res.start(200) do |head, out|
+                head['Content-Type'] = 'text/plain'
+                out << @app.view_source
+            end
+        end
+    end
+    begin
+        config = Mongrel::Configurator.new :host => conf.host do
+            listener :port => conf.port do
+                if apps.length > 1
+                    apps.each do |app|
+                        uri "/#{app.mount}", :handler => Mongrel::Camping::CampingHandler.new(app)
+                        uri "/code/#{app.mount}", :handler => ViewSource.new(app)
+                    end
+                    uri "/", :handler => IndexHandler.new(apps, @listener)
+                else
+                    uri "/", :handler => Mongrel::Camping::CampingHandler.new(apps.first)
+                end
+                uri "/favicon.ico", :handler => Mongrel::Error404Handler.new("")
+                trap("INT") { stop }
+                run
+            end
+        end 
+
+        puts "** Camping running on #{conf.host}:#{conf.port}."
+        config.join
+    rescue Errno::EADDRINUSE
+        puts "** ERROR : address #{conf.host}:#{conf.port} already in use."
+    end
+when 'webrick'
+    require 'webrick/httpserver'
+    require 'camping/webrick'
+
+    # Mount the root
+    s = WEBrick::HTTPServer.new(:BindAddress => conf.host, :Port => conf.port)
+    if apps.length > 1
+        apps.each do |app|
+            s.mount "/#{app.mount}", WEBrick::CampingHandler, app
+            s.mount_proc("/code/#{app.mount}") do |req, resp|
+                resp['Content-Type'] = 'text/plain'
+                resp.body = app.view_source
+            end
+        end
+        s.mount_proc("/") do |req, resp|
+            apps.find_new_scripts do |app|
+                s.mount "/#{app.mount}", WEBrick::CampingHandler, app
+                s.mount_proc("/code/#{app.mount}") do |req, resp|
+                    resp['Content-Type'] = 'text/plain'
+                    resp.body = app.view_source
+                end
+            end
+            resp.body = apps.index_page
+        end
+    else
+        s.mount "/", WEBrick::CampingHandler, apps.first
+    end
+
+    # Server up
+    trap(:INT) do
+        s.shutdown
+    end
+    s.start
+when 'lighttpd'
+    require 'rbconfig'
+    ruby = File.join(Config::CONFIG['bindir'], Config::CONFIG['RUBY_INSTALL_NAME'])
+    dispatcher =<<SCRIPT
+#!#{ruby}
+require 'rubygems'
+require 'camping/fastcgi'
+Camping::Models::Base.establish_connection(Marshal.load(#{Marshal.dump(conf.database).dump})) 
+Camping::FastCGI.serve("")
+SCRIPT
+    lighttpd_conf =<<CONF
+server.port                 = #{conf.port}
+server.bind                 = "#{conf.host}"
+server.modules              = ( "mod_fastcgi" )
+server.document-root        = "/dont/need/one" 
+
+#### fastcgi module
+fastcgi.server = ( "/" => ( 
+  "localhost" => ( 
+    "socket" => "/tmp/camping-blog.socket",
+    "bin-path" => "#{conf.dispatcher}",
+    "check-local" => "disable",
+    "max-procs" => 1 ) ) )
+CONF
+ 
+when 'console'
+    ARGV.clear # Avoid passing args to IRB 
+
+    require 'irb' 
+    require 'irb/completion' 
+    if File.exists? ".irbrc"
+        ENV['IRBRC'] = ".irbrc"
+    end
+    IRB.start 
+end

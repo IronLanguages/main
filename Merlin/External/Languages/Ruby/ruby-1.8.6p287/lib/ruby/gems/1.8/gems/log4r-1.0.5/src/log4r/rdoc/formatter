@@ -1,0 +1,39 @@
+= Formatters
+
+Formatters are responsible for formatting LogEvent data.
+An Outputter owning a Formatter will invoke the 
+Log4r::Formatter#format method prior to writing.
+
+== Available Formatters
+
+* Log4r::BasicFormatter -  default
+* Log4r::PatternFormatter - most flexible. See log4r/formatter/patternformatter.rb
+* Log4r::SimpleFormatter - like BasicFormatter for Strings only (low noise)
+* Log4r::ObjectFormatter - for inspecting objects
+* Log4r::NullFormatter - twirls on its feet and does nothing
+
+= XML Configuration
+
+Specify the Formatter and its class (as +type+) under an 
+<tt><outputter></tt> directive:
+
+  <outputter name="someout" type="sometype">
+    <formatter type="Log4r::BasicFormatter"/>
+  </outputter>
+
+As explained in log4r/configurator.rb, the hash arguments you would normally
+pass to +new+ are specified as <i>XML parameters</i>. Only PatternFormatter
+has any of these.
+
+= Custom Formatting
+
+Building a custom Formatter is extremely easy. Just define a class
+that extends Formatter and override the Formatter#format method.
+Then give it to any interested Outputters. 
+
+If you're interested in setting up your custom formatters in XML,
+please take a look at log4r/configurator.rb.
+
+== Data Available
+
+See Log4r::LogEvent

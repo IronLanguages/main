@@ -1,0 +1,7 @@
+* CHANGES
+* MANIFEST
+* README
+* Rakefile
+* windows-api.gemspec
+* lib/windows/api.rb
+* test/test_windows_api.rb

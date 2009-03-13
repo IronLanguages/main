@@ -1,0 +1,67 @@
+<html><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+   <title>Chapter&nbsp;4.&nbsp;Working With the Clipboard</title><link rel="stylesheet" href="style.css" type="text/css"><meta name="generator" content="DocBook v5 XSL Stylesheets V1.72.0"><link rel="start" href="book.html" title="Developing Graphical User Interfaces with FXRuby"><link rel="up" href="pt01.html" title="Part&nbsp;I.&nbsp;The Basics"><link rel="prev" href="ch03s05.html" title="Adding an icon"><link rel="next" href="ch04s02.html" title="Acquiring the Clipboard"></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="3" align="center">Chapter&nbsp;4.&nbsp;Working With the Clipboard</th></tr><tr><td width="20%" align="left"><a accesskey="p" href="ch03s05.html">Prev</a>&nbsp;</td><th width="60%" align="center">Part&nbsp;I.&nbsp;The Basics</th><td width="20%" align="right">&nbsp;<a accesskey="n" href="ch04s02.html">Next</a></td></tr></table><hr></div><div class="chapter" lang="en"><div class="titlepage"><div><div><h2 class="title"><a name="clipboardtut"></a>Chapter&nbsp;4.&nbsp;Working With the Clipboard</h2></div></div></div><div class="toc"><p><b>Table of Contents</b></p><dl><dt><span class="section"><a href="clipboardtut.html#d0e1003">Basic Application</a></span></dt><dt><span class="section"><a href="ch04s02.html">Acquiring the Clipboard</a></span></dt><dt><span class="section"><a href="ch04s03.html">Sending Data to the Clipboard</a></span></dt><dt><span class="section"><a href="ch04s04.html">Pasting Data from the Clipboard</a></span></dt></dl></div><p>Two of the standard FOX widgets, <code class="classname">FXText</code> and
+  <code class="classname">FXTextField</code>, provide clipboard support out of the
+  box. For example, you can select some text in an
+  <code class="classname">FXTextField</code> and then press Ctrl+C to copy that text
+  to the system clipboard. You can also press Ctrl+X to "cut" the selected
+  text to the clipboard, or Ctrl+V to paste text from the clipboard into an
+  <code class="classname">FXText</code> or <code class="classname">FXTextField</code> widget.
+  The purpose of this tutorial is to demonstrate how to interact with the
+  clipboard programmatically, so that you can integrate additional clipboard
+  support into your FXRuby applications.</p><div class="section" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="d0e1003"></a>Basic Application</h2></div></div></div><p>In order to illustrate how to integrate cut and paste operations
+    into your application, we'll start from a simple FXRuby application that
+    doesn't yet provide any clipboard support. This application simply
+    presents a list of customers (from some external source).</p><pre class="programlisting">require 'fox16'
+require 'customer'
+
+include Fox
+
+class ClipMainWindow &lt; FXMainWindow
+  def initialize(anApp)
+    # Initialize base class first
+    super(anApp, "Clipboard Example", :opts =&gt; DECOR_ALL, :width =&gt; 400, :height =&gt; 300)
+
+    # Place the list in a sunken frame
+    sunkenFrame = FXVerticalFrame.new(self,
+			LAYOUT_FILL_X|LAYOUT_FILL_Y|FRAME_SUNKEN|FRAME_THICK, :padding =&gt; 0)
+    
+    # Customer list
+    customerList = FXList.new(sunkenFrame, :opts =&gt; LIST_BROWSESELECT|LAYOUT_FILL_X|LAYOUT_FILL_Y)
+    $customers.each do |customer|
+      customerList.appendItem(customer.name, nil, customer)
+    end
+  end
+  
+  def create
+    super
+    show(PLACEMENT_SCREEN)
+  end
+end
+
+if __FILE__ == $0
+  FXApp.new("ClipboardExample", "FXRuby") do |theApp|
+    ClipMainWindow.new(theApp)
+    theApp.create
+    theApp.run
+  end
+end
+</pre><p>We're assuming that the "customer" module defines a
+    <code class="classname">Customer</code> class and a global array
+    <code class="varname">$customers</code> that contains the list of customers. For a
+    real world application, you might access this information from a database
+    or some other source, but for this example we'll just use a hard-coded
+    array:</p><pre class="programlisting"># customer.rb
+
+Customer = Struct.new("Customer", :name, :address, :zip)
+
+$customers = []
+$customers &lt;&lt; Customer.new("Reed Richards", "123 Maple, Central City, NY", 010111)
+$customers &lt;&lt; Customer.new("Sue Storm", "123 Maple, Anytown, NC", 12345)
+$customers &lt;&lt; Customer.new("Benjamin J. Grimm", "123 Maple, Anytown, NC", 12345)
+$customers &lt;&lt; Customer.new("Johnny Storm", "123 Maple, Anytown, NC", 12345)
+</pre><p>The goals for the next few sections are to extend this application
+    so that users can select a customer from the list and copy that customer's
+    information to the clipboard, and subsequently paste that information into
+    another copy of the program (or some other clipboard-aware
+    application).</p></div></div><div class="navfooter"><hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="ch03s05.html">Prev</a>&nbsp;</td><td width="20%" align="center"><a accesskey="u" href="pt01.html">Up</a></td><td width="40%" align="right">&nbsp;<a accesskey="n" href="ch04s02.html">Next</a></td></tr><tr><td width="40%" align="left" valign="top">Adding an icon&nbsp;</td><td width="20%" align="center"><a accesskey="h" href="book.html">Home</a></td><td width="40%" align="right" valign="top">&nbsp;Acquiring the Clipboard</td></tr></table></div></body></html>

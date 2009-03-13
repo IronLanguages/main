@@ -1,0 +1,2 @@
+class BoundTextAreaSpecs < SpecController
+end

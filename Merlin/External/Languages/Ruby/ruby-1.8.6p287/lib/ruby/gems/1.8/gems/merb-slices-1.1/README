@@ -1,0 +1,102 @@
+Merb-Slices
+===========
+
+Merb-Slices is a Merb plugin for using and creating application 'slices' which
+help you modularize your application. Usually these are reusable extractions
+from your main app. In effect, a Slice is just like a regular Merb MVC
+application, both in functionality as well as in structure.
+
+When you generate a Slice stub structure, a module is setup to serve as a
+namespace for your controller, models, helpers etc. This ensures maximum
+encapsulation. You could say a Slice is a mixture between a Merb plugin (a
+Gem) and a Merb application, reaping the benefits of both.
+
+A host application can 'mount' a Slice inside the router, which means you have
+full over control how it integrates. By default a Slice's routes are prefixed
+by its name (a router :namespace), but you can easily provide your own prefix
+or leave it out, mounting it at the root of your url-schema. You can even
+mount a Slice multiple times and give extra parameters to customize an
+instance's behaviour.
+
+A Slice's Application controller uses controller_for_slice to setup slice
+specific behaviour, which mainly affects cascaded view handling. Additionally,
+this method is available to any kind of controller, so it can be used for
+Merb Mailer too for example.
+
+There are many ways which let you customize a Slice's functionality and
+appearance without ever touching the Gem-level code itself. It's not only easy
+to add template/layout overrides, you can also add/modify controllers, models
+and other runtime code from within the host application.
+
+To create your own Slice run this (somewhere outside of your merb app):
+
+$ merb-gen slice <your-lowercase-slice-name>
+
+------------------------------------------------------------------------------
+
+Instructions for installation of an imaginary 'BlogSlice' slice:
+
+file: config/init.rb
+
+# add the slice as a regular dependency
+
+dependency 'blog-slice'
+
+# if needed, configure which slices to load and in which order
+
+Merb::Plugins.config[:merb_slices] = { :queue => ["BlogSlice", ...] }
+
+# optionally configure the plugins in a before_app_loads callback
+
+Merb::BootLoader.before_app_loads do
+  
+  Merb::Slices::config[:blog_slice] = { ... }
+  
+end
+
+file: config/router.rb
+
+# example: /blog-slice/:controller/:action/:id
+
+add_slice(:BlogSlice)
+
+# example: /foo/:controller/:action/:id
+
+add_slice(:BlogSlice, 'foo') # same as :path => 'foo'
+
+# example: /:lang/:controller/:action/:id
+
+add_slice(:BlogSlice, :path => ':lang')
+
+# example: /:controller/:action/:id
+
+slice(:BlogSlice)
+
+Normally you should also run the following rake task:
+
+rake slices:blog_slice:install
+
+------------------------------------------------------------------------------
+
+You can put your application-level overrides in:
+
+host-app/slices/blog-slice/app - controllers, models, views ...
+
+Templates are located in this order:
+
+1. host-app/slices/blog-slice/app/views/*
+2. gems/blog-slice/app/views/*
+3. host-app/app/views/*
+
+You can use the host application's layout by configuring the
+blog-slice slice in a before_app_loads block:
+
+Merb::Slices.config[:blog_slice] = { :layout => :application }
+
+By default :blog_slice is used. If you need to override
+stylesheets or javascripts, just specify your own files in your layout
+instead/in addition to the ones supplied (if any) in 
+host-app/public/slices/blog-slice.
+
+In any case don't edit those files directly as they may be clobbered any time
+rake blog_slice:install is run.

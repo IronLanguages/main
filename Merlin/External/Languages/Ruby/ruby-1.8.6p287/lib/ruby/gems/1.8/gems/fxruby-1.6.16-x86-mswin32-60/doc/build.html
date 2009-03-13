@@ -1,0 +1,132 @@
+<html><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+   <title>Chapter&nbsp;1.&nbsp;Building from Source Code</title><link rel="stylesheet" href="style.css" type="text/css"><meta name="generator" content="DocBook v5 XSL Stylesheets V1.72.0"><link rel="start" href="book.html" title="Developing Graphical User Interfaces with FXRuby"><link rel="up" href="pt01.html" title="Part&nbsp;I.&nbsp;The Basics"><link rel="prev" href="goals.html" title="History and Goals"><link rel="next" href="gems.html" title="Chapter&nbsp;2.&nbsp;Installing from Gems"></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="3" align="center">Chapter&nbsp;1.&nbsp;Building from Source Code</th></tr><tr><td width="20%" align="left"><a accesskey="p" href="goals.html">Prev</a>&nbsp;</td><th width="60%" align="center">Part&nbsp;I.&nbsp;The Basics</th><td width="20%" align="right">&nbsp;<a accesskey="n" href="gems.html">Next</a></td></tr></table><hr></div><div class="chapter" lang="en"><div class="titlepage"><div><div><h2 class="title"><a name="build"></a>Chapter&nbsp;1.&nbsp;Building from Source Code</h2></div></div></div><p>This chapter provides instructions for building and installing FXRuby
+  directly from source, and not using some more direct means (such as
+  installing a gem, or via some package manager).</p><div class="itemizedlist"><ul type="disc"><li><p>If you're planning to use FXRuby on Windows, with the standard
+      <a xmlns:xlink="http://www.w3.org/1999/xlink" href="http://rubyinstaller.rubyforge.org" target="_top">Ruby Installer for
+      Windows</a>, you may wish to just download the pre-compiled binaries
+      from the <a xmlns:xlink="http://www.w3.org/1999/xlink" href="http://rubyforge.org/projects/fxruby" target="_top">RubyForge
+      project page</a> for FXRuby.</p></li><li><p>If you're already using the <a xmlns:xlink="http://www.w3.org/1999/xlink" href="http://www.macports.org/" target="_top">MacPorts</a> version of ruby, you may
+      wish to just install the <code class="filename">rb-fxruby</code> port.</p></li></ul></div><div class="simplesect" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="d0e109"></a>Building From Source on Unix/Linux</h2></div></div></div><p>These instructions assume that you've already downloaded, compiled
+    and installed FOX. Next, you'll need to download the FXRuby source code
+    tarball and unpack it by typing:</p><pre class="screen">$ <span><strong class="command">tar xzf FXRuby-1.6.13.tar.gz</strong></span></pre><p>This will create a new directory called <code class="filename">FXRuby-1.6.13</code>. Change to the top-level
+    directory and configure the build by typing:</p><pre class="screen">$ <span><strong class="command">ruby install.rb config</strong></span></pre><p>By default, the <code class="filename">install.rb</code> script will look for
+    the FOX include files and library in the standard <code class="filename">/usr/local/include/fox-1.6</code> and <code class="filename">/usr/local/lib</code> directories, respectively. You
+    can override these locations by passing a few additional arguments to
+    <code class="filename">install.rb</code> during this step, e.g.</p><pre class="screen">$ <span><strong class="command">ruby install.rb config -- \
+    --with-fox-include=/home/lyle/fox-1.6.32/include \
+    --with-fox-lib=/home/lyle/fox-1.6.32/src/.libs</strong></span></pre><p>Once the build has been configured, you can start the build by
+    typing:</p><pre class="screen">$ <span><strong class="command">ruby install.rb setup</strong></span></pre><p>It will take quite awhile to build FXRuby, even on a fast machine,
+    so this might be a good time to take a coffee break. If you run into
+    problems during the compilation, please check the <a href="build.html#tragedies" title="Things That Can Go Wrong">list of things that can go wrong</a> for
+    workarounds for those problems.</p><p>Once it's finished compiling, install FXRuby by typing:</p><pre class="screen">$ <span><strong class="command">ruby install.rb install</strong></span></pre><p>As a quick sanity check, to make sure that all is well, you should
+    probably fire up <code class="filename">irb</code> and try to import FXRuby:</p><pre class="screen">$ <span><strong class="command">irb</strong></span>
+irb(main):001:0&gt; <strong class="userinput"><code>require 'fox16'</code></strong>
+true
+irb(main):002:0&gt;</pre><p>If the import failed (usually with a message along the lines of
+    "Cannot load library"), check the <a href="build.html#tragedies" title="Things That Can Go Wrong">list of things
+    that can go wrong</a> for known problems. If that still doesn't solve
+    your problem, drop me an e-mail or ask around on the Ruby newsgroup or
+    mailing list; it's quite likely that someone else has run into this
+    problem too. Once you do have a working FXRuby installation, you're ready
+    to check out the example programs.</p></div><div class="simplesect" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="d0e180"></a>Building From Source on Windows (Using Visual C++)</h2></div></div></div><p>This section describes how to compile FXRuby using Microsoft Visual
+    C++, for use with a Ruby that was also compiled using Visual C++.</p><p>This discussion assumes that you've built Ruby using the
+    instructions and build files distributed with the standard Ruby source
+    code. To review, you should have started by unpacking the source code
+    tarball, changing into the top-level source code directory (e.g. <code class="filename">C:\ruby-1.8.6</code>) and then typing:</p><pre class="screen">C:\ruby-1.8.6&gt;<span><strong class="command">win32\configure</strong></span>
+type 'nmake' to make ruby for mswin32.
+C:\ruby-1.8.6&gt;<span><strong class="command">nmake</strong></span></pre><p>After the compilation finished, you installed Ruby somewhere by
+    typing, e.g.,</p><pre class="screen">C:\ruby-1.8.6&gt;<span><strong class="command">nmake DESTDIR=C:\ruby install</strong></span></pre><p>Similarly, I'm assuming that you built the FOX library using the
+    Developer Studio project files distributed with the standard FOX source
+    code distribution.</p><p>Now you can configure the FXRuby build by typing:</p><pre class="screen">C:\FXRuby-1.6.13&gt;<span><strong class="command">ruby install.rb config --make-prog=nmake -- \
+    --with-fox-include=C:\fox-1.6.32\include \
+    --with-fox-lib=C:\fox-1.6.32\lib</strong></span></pre><p>Once the build has been configured, you can start the build by
+    typing:</p><pre class="screen">C:\FXRuby-1.6.13&gt; <span><strong class="command">ruby install.rb setup</strong></span></pre><p>It will take quite awhile to build FXRuby, even on a fast machine,
+    so this might be a good time to take a coffee break. Because Visual C++ is
+    such a strict compiler (usually a good thing), you will probably run into
+    a few problems with non-ANSI declarations in the Ruby header files. If you
+    do run into problems during the compilation, just check the next section
+    for a list of things that could go wrong, and workarounds for those
+    problems. None of them are showstoppers and none require you to restart
+    the compile from scratch (just type <span><strong class="command">ruby install.rb
+    setup</strong></span> to pick up where you left off).</p><p>Once it's finished compiling, install FXRuby by typing:</p><pre class="screen">C:\FXRuby-1.6.13&gt; <span><strong class="command">ruby install.rb install</strong></span></pre><p>As a quick sanity check, to make sure that all is well, you should
+    probably fire up <code class="filename">irb</code> and try to import FXRuby:</p><pre class="screen">C:\FXRuby-1.6.13&gt; <span><strong class="command">irb</strong></span>
+irb(main):001:0&gt; <strong class="userinput"><code>require 'fox16'</code></strong>
+true
+irb(main):002:0&gt;</pre><p>If the import failed (usually with a message along the lines of
+    "Cannot load library"), check the list of things that can go wrong for
+    known problems. If that still doesn't solve your problem, drop me an
+    e-mail or ask around on the Ruby newsgroup or mailing list; it's quite
+    likely that someone else has run into this problem too. Once you do have a
+    working FXRuby installation, you're ready to check out the example
+    programs.</p></div><div class="simplesect" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="tragedies"></a>Things That Can Go Wrong</h2></div></div></div><p><span class="emphasis"><em>"Too many arguments to function..."</em></span></p><p>The include files for Ruby versions 1.6.7 and earlier still have
+    several function prototypes in the older "K &amp; R" C style, where the
+    function's argument list is not included; for example, the function
+    <code class="function">rb_thread_wait_for()</code> takes a single argument of type
+    <span class="type">struct timeval</span>, but its prototype in
+    <code class="filename">intern.h</code> is:</p><pre class="programlisting">void rb_thread_wait_for();</pre><p>Because FXRuby is written in C++, and C++ requires strict ANSI
+    C-style function prototypes, code that attempts to call one of these
+    functions will fail to compile under some compilers. For example, the
+    error message from gcc will look something like this:</p><pre class="screen">FXRbApp.cpp: In method `long int FXRbApp::onChoreThreads (FXObject *, unsigned int, void *)':
+/usr/local/lib/ruby/1.8/i686-linux/intern.h:172: too many arguments to function `void rb_thread_wait_for ()'
+FXRbApp.cpp:100: at this point in file
+make: *** [FXRbApp.o] Error 1</pre><p>while the error message from Microsoft's Visual C++ compiler looks
+    something like this:</p><pre class="screen">FXRbApp.cpp(109): error C2660: 'rb_thread_wait_for' : function does not take 1 parameters
+NMAKE : fatal error U1077: 'cl' : return code '0x2'
+Stop.</pre><p>This problem with the Ruby header files has been corrected for Ruby
+    versions 1.6.8 (and later), but if you're building for an older version of
+    Ruby you can do one of two things to work around the problem:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>If you're using gcc version 2.95 or earlier, try modifying the
+        compiler flags (<code class="constant">CFLAGS</code>) in the FXRuby
+        <code class="filename">Makefile</code> to include the
+        <code class="option">-fno-strict-prototype</code> option; this should instruct
+        the compiler to allow these kinds of discrepancies. Unfortunately,
+        this flag is not supported in more recent versions of gcc.</p></li><li style="list-style-type: disc"><p>A more direct approach is to just fix the offending declarations
+        in the Ruby include file(s), i.e. change the declaration for
+        <code class="function">rb_thread_wait_for()</code> in
+        <code class="filename">intern.h</code> to read:</p><pre class="programlisting">void rb_thread_wait_for(struct timeval);</pre><p>and change the declaration for <code class="function">rb_gc_mark()</code>
+        in <code class="filename">intern.h</code> to read:</p><pre class="programlisting">void rb_gc_mark(VALUE);</pre></li></ul></div><p><span class="emphasis"><em>"Virtual Memory Exhausted"</em></span></p><p>For FXRuby releases earlier than version 0.99.173 it was common for
+    the compiler to run out of memory trying to compile
+    <code class="filename">core_wrap.cpp</code>, with an error message like:</p><pre class="screen">core_wrap.cpp: In function 'void Init_core()':
+core_wrap.cpp:108596: virtual memory exhausted</pre><p>This failure was due to the use of optimizations by the compiler;
+    the FXRuby source code makes heavy use of C++ templates and some versions
+    of gcc require a lot of memory to process these. Starting with FXRuby
+    version 0.99.173, the <code class="filename">extconf.rb</code> script
+    <span class="emphasis"><em>should</em></span> disable compiler optimizations when it
+    generates the FXRuby <code class="filename">Makefile</code>. If you suspect that
+    it's not disabling optimizations (or can see this by watching the compile
+    command lines), try modifying the compiler flags
+    (<code class="constant">CFLAGS</code>) in the <code class="filename">Makefile</code> by hand
+    to do so.</p><p><span class="emphasis"><em>"Cannot load library"</em></span></p><p>On Linux and other Unix systems that support shared libraries, FOX
+    is typically installed as a shared library named
+    <code class="filename">libFOX-1.6.so</code>. After all of the source files for
+    FXRuby are compiled, the last step is to link all of the FXRuby object
+    files together with the FOX library (and possibly other system libraries)
+    to produce a new shared library, named <code class="filename">fox16.so</code>, that
+    Ruby can import as an extension module.</p><p>There are a few things that can go wrong when you try to import this
+    extension into Ruby. A common problem is that the operating system cannot
+    locate the FOX shared library (<code class="filename">libFOX-1.6.so</code>) when it
+    tries to dynamically load the FXRuby extension module; when this happens,
+    the error message will look something like:</p><pre class="screen">$ <span><strong class="command">irb</strong></span>
+irb(main):001:0&gt; <strong class="userinput"><code>require 'fox16'</code></strong>
+LoadError: libFOX-1.6.so: cannot open shared object file: No such file or directory - /usr/local/lib/ruby/1.8/i686-linux/fox16.so
+        from (irb):1:in 'require'
+        from (irb):1
+    </pre><p>One workaround for this problem is to modify the
+    <code class="constant">LD_LIBRARY_PATH</code> environment variable to include the
+    directory where <code class="filename">libFOX-1.6.so</code> is installed. For
+    example, if <code class="filename">libFOX-1.6.so</code> is installed in <code class="filename">/usr/local/lib</code>, try setting:</p><pre class="screen">$ <span><strong class="command">export LD_LIBRARY_PATH=/usr/local/lib</strong></span>
+$ <span><strong class="command">irb</strong></span>
+irb(main):001:0&gt; <strong class="userinput"><code>require 'fox16'</code></strong>
+</pre><p>If this works, you can of course permanently add the
+    <code class="constant">LD_LIBRARY_PATH</code> setting to your login file(s) so that
+    you don't have to remember to type it each time. Another approach that
+    should work for Linux is to modify your
+    <code class="filename">/etc/ld.so.conf</code> file to include the installation
+    directory (e.g. <code class="filename">/usr/local/lib</code>). If you'd like to do
+    this instead, you'll need to (as root):</p><div class="orderedlist"><ol type="1" compact><li><p>Edit your <code class="filename">/etc/ld.so.conf</code> file and add the
+        directory where <code class="filename">libFOX-1.6.so</code> is installed;
+        and,</p></li><li><p>At the shell prompt, type <span><strong class="command">ldconfig</strong></span> to reload
+        the linker configuration.</p></li></ol></div><p><span class="emphasis"><em>"Undefined symbol..."</em></span></p><p>Another problem that has been reported by users of both Debian
+    GNU/Linux and NetBSD 1.5 is an error message along the lines of:</p><pre class="screen">/usr/lib/libstdc++.so.2: Undefined symbol "__vt_9exception"...</pre><p>The fix for this problem is reported to be to modify the FXRuby
+    <code class="filename">Makefile</code> and add <code class="option">-lgcc</code> to the
+    <code class="constant">LIBS</code> line.</p></div></div><div class="navfooter"><hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="goals.html">Prev</a>&nbsp;</td><td width="20%" align="center"><a accesskey="u" href="pt01.html">Up</a></td><td width="40%" align="right">&nbsp;<a accesskey="n" href="gems.html">Next</a></td></tr><tr><td width="40%" align="left" valign="top">History and Goals&nbsp;</td><td width="20%" align="center"><a accesskey="h" href="book.html">Home</a></td><td width="40%" align="right" valign="top">&nbsp;Chapter&nbsp;2.&nbsp;Installing from Gems</td></tr></table></div></body></html>

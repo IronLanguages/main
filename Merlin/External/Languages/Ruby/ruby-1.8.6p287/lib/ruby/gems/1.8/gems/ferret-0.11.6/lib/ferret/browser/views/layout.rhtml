@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd" >
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <title>Ferret-Browser:: <%= @path %></title>
+    <link rel="shortcut icon" type="image/x-icon" href="/s/i/favicon.ico" />
+    <link rel="stylesheet" type="text/css" href="/s/style.css" />
+    <script type="text/javascript" src="/s/global.js"></script>
+  </head>
+  <body id="<%= options[:controller] %>">
+    <ul id="top-menu">
+      <li class="home"><a href="/">Home</a></li>
+      <li class="document"><a href="/document">Documents</a></li>
+      <li class="term"><a href="/term">Terms</a></li>
+      <li class="term-vector"><a href="/term-vector">Term Vectors</a></li>
+      <li class="help"><a href="/help">Help</a></li>
+    </ul>
+    <div id="content">
+      <%= content %>
+    </div>
+  </body>
+</html>

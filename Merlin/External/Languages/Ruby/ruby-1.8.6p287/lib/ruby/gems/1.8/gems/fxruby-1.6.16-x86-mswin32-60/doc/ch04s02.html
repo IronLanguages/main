@@ -1,0 +1,71 @@
+<html><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+   <title>Acquiring the Clipboard</title><link rel="stylesheet" href="style.css" type="text/css"><meta name="generator" content="DocBook v5 XSL Stylesheets V1.72.0"><link rel="start" href="book.html" title="Developing Graphical User Interfaces with FXRuby"><link rel="up" href="clipboardtut.html" title="Chapter&nbsp;4.&nbsp;Working With the Clipboard"><link rel="prev" href="clipboardtut.html" title="Chapter&nbsp;4.&nbsp;Working With the Clipboard"><link rel="next" href="ch04s03.html" title="Sending Data to the Clipboard"></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="3" align="center">Acquiring the Clipboard</th></tr><tr><td width="20%" align="left"><a accesskey="p" href="clipboardtut.html">Prev</a>&nbsp;</td><th width="60%" align="center">Chapter&nbsp;4.&nbsp;Working With the Clipboard</th><td width="20%" align="right">&nbsp;<a accesskey="n" href="ch04s03.html">Next</a></td></tr></table><hr></div><div class="section" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="d0e1022"></a>Acquiring the Clipboard</h2></div></div></div><p>Let's begin by augmenting the GUI to include a row of buttons along
+    the bottom of the main window for copying and pasting:</p><pre class="programlisting">require 'fox16'
+require 'customer'
+
+include Fox
+
+class ClipMainWindow &lt; FXMainWindow
+  def initialize(anApp)
+    # Initialize base class first
+    super(anApp, "Clipboard Example", :opts =&gt; DECOR_ALL, :width =&gt; 400, :height =&gt; 300)
+<span class="bold"><strong>
+    # Horizontal frame contains buttons
+    buttons = FXHorizontalFrame.new(self, LAYOUT_SIDE_BOTTOM|LAYOUT_FILL_X|PACK_UNIFORM_WIDTH)
+</strong></span><span class="bold"><strong>
+    # Cut and paste buttons
+    copyButton  = FXButton.new(buttons, "Copy")
+    pasteButton = FXButton.new(buttons, "Paste")
+</strong></span>
+    # Place the list in a sunken frame
+    sunkenFrame = FXVerticalFrame.new(self,
+			LAYOUT_FILL_X|LAYOUT_FILL_Y|FRAME_SUNKEN|FRAME_THICK, :padding =&gt; 0)
+    
+    # Customer list
+    customerList = FXList.new(sunkenFrame, :opts =&gt; LIST_BROWSESELECT|LAYOUT_FILL_X|LAYOUT_FILL_Y)
+    $customers.each do |customer|
+      customerList.appendItem(customer.name, nil, customer)
+    end
+  end
+  
+  def create
+    super
+    show(PLACEMENT_SCREEN)
+  end
+end
+
+if __FILE__ == $0
+  FXApp.new("ClipboardExample", "FXRuby") do |theApp|
+    ClipMainWindow.new(theApp)
+    theApp.create
+    theApp.run
+  end
+end
+</pre><p>Note that the lines which appear in bold face are those which have
+    been added (or changed) since the previous source code listing.</p><p>The clipboard is a kind of shared resource in the operating system.
+    Copying (or cutting) data to the clipboard begins with some window in your
+    application requesting "ownership" of the clipboard by calling the
+    <code class="methodname">acquireClipboard()</code> instance method. Let's add a
+    handler for the "Copy" button press which does just that:</p><pre class="programlisting"># User clicks Copy
+copyButton.connect(SEL_COMMAND) do
+  customer = customerList.getItemData(customerList.currentItem)
+  types = [ FXWindow.stringType ]
+  if acquireClipboard(types)
+    @clippedCustomer = customer
+  end
+end
+</pre><p>The <code class="methodname">acquireClipboard()</code> method takes as its
+    input an array of drag types. A <span class="emphasis"><em>drag type</em></span> is just a
+    unique value, assigned by the window system, that identifies a particular
+    kind of data. In this case, we're using one of FOX's pre-registered drag
+    types (<code class="constant">stringType</code>) to indicate that we have some
+    string data to place on the clipboard. Later, we'll see how to register
+    customized, application-specific drag types as well.</p><p>The <code class="methodname">acquireClipboard()</code> method returns
+    <code class="constant">true</code> on success; since we called
+    <code class="methodname">acquireClipboard()</code> on the main window, this means
+    that the main window is now the clipboard owner. At this time, we want to
+    save a reference to the currently selected customer in the
+    <code class="varname">@clippedCustomer</code> instance variable so that if its value
+    is requested later, we'll be able to return the
+    <span class="emphasis"><em>correct</em></span> customer's information.</p></div><div class="navfooter"><hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="clipboardtut.html">Prev</a>&nbsp;</td><td width="20%" align="center"><a accesskey="u" href="clipboardtut.html">Up</a></td><td width="40%" align="right">&nbsp;<a accesskey="n" href="ch04s03.html">Next</a></td></tr><tr><td width="40%" align="left" valign="top">Chapter&nbsp;4.&nbsp;Working With the Clipboard&nbsp;</td><td width="20%" align="center"><a accesskey="h" href="book.html">Home</a></td><td width="40%" align="right" valign="top">&nbsp;Sending Data to the Clipboard</td></tr></table></div></body></html>

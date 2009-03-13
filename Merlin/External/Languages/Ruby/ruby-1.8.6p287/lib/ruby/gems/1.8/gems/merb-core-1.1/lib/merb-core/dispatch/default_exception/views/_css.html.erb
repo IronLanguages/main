@@ -1,0 +1,200 @@
+<% if Merb.env != "test" %>
+<style type="text/css" media="screen">
+  body {
+    font-family:arial;
+    font-size:11px;
+  }
+  p.options {
+    text-align: right;
+  }
+    p.options label {
+      margin-left: 10px;
+    }
+    p.options span.all {
+      padding: 5px;
+      border: 1px solid #000;
+      background-color: #fff;
+    }
+    p.options input {
+      position: relative;
+    }
+  h1 {
+    font-size:48px;
+    letter-spacing:-4px;
+    margin:0 0 20px 0;
+    line-height:36px;
+    color:#333;
+  }
+    h1 sup {
+      font-size: 0.5em;
+    }
+    h1 sup.error_500, h1 sup.error_400 {
+      color:#990E05;
+    }
+    h1 sup.error_100, h1 sup.error_200 {
+      color:#00BF10;
+    }
+    h1 sup.error_300 {
+      /* pretty sure you cant 'see' status 300 
+      errors but if you could I think they 
+      would be blue */
+      color:#1B2099;
+    }
+  h2 {
+    font-size:24px;
+    letter-spacing:-1px;
+    margin:0;
+    line-height:28px;
+    color:#444;
+  }
+  h3 {
+    cursor: pointer;
+    color: #006;
+    text-decoration: underline;
+  }
+  a, a:visited {
+    color:#00BF10;
+  }
+  .internalError {
+    width:800px;
+    margin:50px auto;
+  }
+  .header {
+    border-bottom:10px solid #333;
+    margin-bottom:1px;
+    background-image: url("data:image/gif;base64,R0lGODlhAwADAIAAAP///8zMzCH5BAAAAAAALAAAAAADAAMAAAIEBHIJBQA7");
+    padding:20px;
+  }
+    .header ul {
+      padding: 5px;
+      background-color: white;
+    }
+      .header ul li {
+        list-style-type: none;
+        font-size: 16px;
+        margin-bottom: 6px;
+      }
+  
+  table.listing {
+    border-collapse: collapse;
+    font-size: 12px;
+    width: 100%;
+  }
+  
+  table.listing th {
+    background-color: #000;
+    color: #fff;
+  }
+  
+  table.listing td, table.listing th {
+    padding: 5px;
+    text-align: left;
+    vertical-align: top;
+  }
+  
+  table.listing tr.odd {
+    background-color: #ccc;
+  }
+  
+  table.listing tr.even {
+    background-color: #aaa;
+  }
+  
+  table.listing td[colspan=2] {
+    text-align: center;
+  }
+  
+  table.trace {
+    width:100%;
+    font-family:courier, monospace;
+    letter-spacing:-1px;
+    border-collapse: collapse;
+    border-spacing:0;
+  }
+  table.trace tr td{
+    padding:0;
+    height:26px;
+    font-size:13px;
+    vertical-align:middle;
+  }
+  table.trace tr.file{
+    border-top:2px solid #fff;
+    background-color:#F3F3F3;
+  }
+  table.trace tr.source {
+    background-color:#F8F8F8;
+    display:none;
+  }
+  table.trace .open tr.source {
+    display:table-row;
+  }
+    table.trace tr.file td.expand {
+      width:23px;
+      background-image: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABcAAAAXCAIAAABvSEP3AAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAdVJREFUeNqMVL+TwUAYxaRIOlEhlZHGDAUzzOQ61+AqXMV1lJSU7q/QRqm8KFUcJTNn5qJkaPyoKKVz7y4mF8na5Kt29tt9+/Z97/u81+vVQ4r9frdarS6Xi7ETDIZisRjxMGPfmk4niNPpZE+xLAugbPaZ53nzvtfMBe/3+/3dbuehBrAKhZdUKkVAWa9Xsiybv0CPZDJZLr/qa5/BwgwRjYqOKIvFYjQa/aNommZh0Ww2K5UqzwfoQOPxaLPZ3FAmk0+7lplMpt1u53J5OpBOR0eZEE9wHJfP5zud93g88QhluwWbjW+5VOmKBgKBer3eaDTDYeGBQF8+x7rqIYoiPgixWJazpA6HA+MSxRArkUgMh0M409g8Ho8+9wYxxCqVSq1W26EDHGM2m4HOHQrEc38f/Yn7cLmlIRhBENzcx8cVRZnPZ/YUep2BWkjTIfA+PKVpZAXR5QxsjiqCKvGEqqp443w+0dvy17swqD0HB3S73V5PpkNg1qBqt8kwGCjmPkinM0QJbIoEa7U6UG6ToVgs4V9G2g0ESoP5Aoi7KYX5oCgf8IKbkvn9/mr1LRQKESamzgJy0g0tSZIuB3nuGqRU9Vv9C4sKkUhEkp4soxvxI8AAhWrrtXa3X8EAAAAASUVORK5CYII=);
+      background-position:top left;
+      background-repeat:no-repeat;
+    }
+    table.trace tr.file td.expand div {
+      width:23px;
+    }
+    table.trace .open tr.file td.expand {
+      width:23px;
+      background-image: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABcAAAB1CAIAAAAqdO2mAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAXZJREFUeNrslK1ywkAUhcMOBomEOiSdqLxEBJX0NaijOsjyHGGmCGyQQYaiiiw4gktkcOmZbpsuuzQ/M5XnqJ2d3S/n3nM3rTzPLUP7/Tt0+pLcGQwG3W53OLyHzPMtjYL7q9UqSRLrD4E1Gj1orCvKYuFHUWTVkOM44/HjDcp8/lL4r6NerzeZPMm1KFw0QkDn83m5fP2lHA4fNQvRtNvtjsfDd0WzmSfb2e/fdTqdOvdh/HLJZLOn0+d2HJ+KRGzbdl23EpFlmed5cp2maRzHQq1lvQ5KMi6EUZBGfup6E1pTfd+vrGW7jbQ2C9hTt9BpqNyIWaAwAy6xg2eBz5iRC/NomiZhGN5sqmnkauo0BUGgVQoBjQ80oCACgNQdZHfTYBkF2mxCtWWAqunWpahxIDUt3QYUxIFQpJHyIWpXjinabKbbwItMHT+NyjchrP8QKaSQQgoppJBCCimkkEIKKaSQQgoppJBCCimkkEIKKaSo+hRgAEFD17X08O2NAAAAAElFTkSuQmCC);
+      background-position:top left;
+      background-repeat:no-repeat;        
+    }
+    table.trace .open tr.file td.expand div {
+      width:23px;
+    }
+    table.trace tr.source td.collapse {
+      width:23px;
+      background-image: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABcAAAB1CAIAAAAqdO2mAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAVxJREFUeNrs0zFygkAUBmBlUkgJHdABlQwVkVJKKUxBYWbkALTxMJwhltyDFkss03IF8pudIcwaDaDl/6pd2P327b7d+eHwMXs4lNkzggoVKlSoUKFChQoVKlSoUKFChQoVKlSoUKFChQqVEYqm6ft9+qiSJEkYho7jTlcw2fd9NOI4nq4gEdFwXXe1Cqco63VkWVbXRTqLhTpOwQRpF7quR1E0TgGhqvLKUFCyoQqG/rks3O6kZKW/eRFpevOCoGTXVTcMQ5EyxyDEkML1c5RzuZOICIyXqn7JBVez6282MWrx731HOv2qB8Hri2lamNk0DfpVVdV1Peodappmmua8bdvzuc7zfNprzrLMth1FnGh/X8MjCAIQv/cFz/+65PcDh7rbvYv2ZUfdj+PxsyzLgVl0hKwgTqeqKApx2LeOc7t98zyv/1FWOgvx9RPii23bmL9cetJ8Ed8CDAC6aFW8bCzFhwAAAABJRU5ErkJggg==);
+      background-position:bottom left;
+      background-repeat:no-repeat;  
+      background-color:#6F706F;     
+    }
+    table.trace tr td.path {
+      padding-left:10px;
+    }
+    table.trace tbody.app td.path {
+      color: #900;
+    }
+    table.trace tbody.framework td.path {
+      color: #009;
+    }
+    table.trace tbody.gem td.path {
+      color: #090;
+    }
+    table.trace tr td.code {
+      padding: 10px 0 10px 20px;
+      white-space: pre;
+    }
+      table.trace tr td.code div {
+        width: 700px;
+        overflow-x: auto;
+        overflow-y: hidden;
+      }
+      table.trace tr td.code em {
+        font-weight:bold;
+        color:#00BF10;
+      }
+      table.trace tr td.code a {
+        width: 20px;
+        float: left;
+      }
+      table.trace tr td.code .more {
+        color:#666;
+      }
+    table.trace tr td.line {
+      width:30px;
+      text-align:right;
+      padding-right:4px;
+    }
+  .footer {
+    margin-top:5px;
+    font-size:11px;
+    color:#444;
+    text-align:right;
+  }
+</style>
+<% end %>

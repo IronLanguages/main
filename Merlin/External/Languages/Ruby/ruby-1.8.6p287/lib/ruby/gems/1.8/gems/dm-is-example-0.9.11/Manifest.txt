@@ -1,0 +1,12 @@
+History.txt
+LICENSE
+Manifest.txt
+README.txt
+Rakefile
+TODO
+lib/dm-is-example.rb
+lib/dm-is-example/is/example.rb
+lib/dm-is-example/is/version.rb
+spec/integration/example_spec.rb
+spec/spec.opts
+spec/spec_helper.rb

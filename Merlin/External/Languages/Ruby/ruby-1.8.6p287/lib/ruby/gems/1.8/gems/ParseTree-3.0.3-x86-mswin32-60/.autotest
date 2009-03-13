@@ -1,0 +1,15 @@
+# -*- ruby -*-
+
+require 'autotest/restart'
+
+Autotest.add_hook :initialize do |at|
+  at.libs << ":../../sexp_processor/dev/lib"
+  at.extra_files << "test/pt_testcase.rb"
+
+  at.extra_class_map["TestRawParseTree"] = "test/test_parse_tree.rb"
+  at.extra_class_map["R2RTestCase"] = "test/test_parse_tree_extensions.rb"
+
+  at.add_mapping(/pt_testcase/) do |f, _|
+    at.files_matching(/test_.*rb$/)
+  end
+end

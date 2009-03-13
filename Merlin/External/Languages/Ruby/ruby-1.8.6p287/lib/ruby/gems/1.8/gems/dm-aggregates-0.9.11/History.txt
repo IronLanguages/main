@@ -1,0 +1,21 @@
+=== 0.9.11 / not released
+
+  * No changes this version
+
+=== 0.9.10 / 2009-01-19
+
+  * No changes this version
+
+=== 0.9.9 / 2009-01-04
+
+* 2 bug fixes:
+
+  * Removed count optimization for Model#size
+  * Removed count optimization for Collection#size
+
+=== 0.9.8 / 2008-12-07
+
+* 2 minor enhancements:
+
+  * Collection#size now uses #count if unloaded
+  * Added Model#size, which defers to #count
