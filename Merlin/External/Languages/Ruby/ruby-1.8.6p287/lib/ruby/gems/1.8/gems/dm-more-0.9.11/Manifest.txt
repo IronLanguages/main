@@ -1,0 +1,11 @@
+.gitignore
+History.txt
+MIT-LICENSE
+Manifest.txt
+README.textile
+README.txt
+Rakefile
+TODO
+lib/dm-more.rb
+lib/dm-more/version.rb
+tasks/hoe.rb

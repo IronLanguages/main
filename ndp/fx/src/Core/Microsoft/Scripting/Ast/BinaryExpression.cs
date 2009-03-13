@@ -271,7 +271,7 @@ namespace System.Linq.Expressions {
                 }
                 if (TypeUtils.IsNullableType(_left.Type)) {
                     MethodInfo method = GetMethod();
-                    return method == null || method.GetParametersCached()[0].ParameterType != _left.Type;
+                    return method == null || method.GetParametersCached()[0].ParameterType.GetNonRefType() != _left.Type;
                 }
                 return false;
             }

@@ -1,0 +1,15 @@
+History.txt
+LICENSE
+Manifest.txt
+README.txt
+Rakefile
+TODO
+bin/.irbrc
+bin/dm
+lib/dm-cli.rb
+lib/dm-cli/cli.rb
+lib/dm-cli/version.rb
+spec/spec.opts
+spec/unit/cli_spec.rb
+tasks/install.rb
+tasks/spec.rb

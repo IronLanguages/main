@@ -1,0 +1,199 @@
+<h3>Terms</h3>
+<form action="" method="get">
+  <label for="field">Choose a field: 
+    <select id="field" name="field" onchange="location.href='/term/show/' + this.value;">
+      <option value="">--</option>
+      <% @reader.field_infos.each do |fi| next unless fi.indexed? %>
+      <option value="<%=fi.name%>" <%= 'selected="selected"' if @field == fi.name %>><%=fi.name%></option>
+      <% end %>
+    </select>
+  </label>
+</form>
+<hr/>
+<% if @terms %>
+<div style="float:left; padding-right:30px;">
+  <h4>Field: <%= @field %></h4>
+  <form action="" onsubmit="return findTerm(document.getElementById('choose-term').value);">
+    <input id="choose-term" type="text"/></form>
+  <hr/>
+  <div id="terms">
+  </div>
+  <hr/>
+  <form action="">
+    <input type="submit" value="Previous" onclick="return prevTerm();"/>
+    <input type="submit" value="Next" onclick="return nextTerm();"/><br/>
+  </form>
+</div>
+<div style="float:left; padding-right:30px;">
+  <h4>Documents
+  <input name="show-documents" type="checkbox" id="show-documents" onchange="displayDoc();"/></h4>
+  <div id="doc-display">
+    <form action="" onsubmit="return findDoc(document.getElementById('choose-doc').value);">
+      <input id="choose-doc" type="text"/></form>
+    <hr/>
+    <div id="documents">
+    </div>
+    <hr/>
+    <form action="">
+      <input type="submit" value="Previous" onclick="return prevDoc();"/>
+      <input type="submit" value="Next" onclick="return nextDoc();"/><br/>
+    </form>
+  </div>
+</div>
+<script type="text/javascript"><!--
+  function createSideHeaderedTable(content) {
+    var table = document.createElement("table");
+    table.setAttribute('cellpadding', "0");
+    table.setAttribute('cellspacing', "0");
+    table.className = "left-headed";
+    for (var i = 0; i < content.length; i++) {
+      var tr = document.createElement("tr");
+      var th = document.createElement("th");
+      th.appendChild(document.createTextNode(content[i][0]));
+      tr.appendChild(th);
+      var td = document.createElement("td");
+      var c = content[i][1];
+      td.appendChild(c instanceof Object ? c : document.createTextNode(c));
+      tr.appendChild(td);
+      table.appendChild(tr);
+    }
+    return table;
+  }
+
+  var terms = <%= @terms %>;
+  var numTerms = terms.length;
+  var termI = 0;
+  var termDiv = document.getElementById("terms");
+  var termChooserTxt = document.getElementById('choose-term');
+
+  var docs = null;
+  var numDocs = 0;
+  var docI = 0;
+  var docDiv = document.getElementById("documents");
+  var showDocs = document.getElementById("show-documents");
+  var docChooserTxt = document.getElementById('choose-doc');
+  var docDisplayDiv = document.getElementById('doc-display');
+
+  function getDocs() {
+    var req = new XMLHttpRequest();
+    req.open('GET', '/term/termdocs/<%=@field%>/' + terms[termI][0], true);
+    req.onreadystatechange = function() {
+      if (req.readyState == 4) {
+        docs = eval(req.responseText);
+        numDocs = docs.length;
+        docI = 0;
+        displayDoc();
+      }
+    };
+    req.send(/*no params*/null);
+    return false;
+  }
+  function displayDoc() {
+    if (showDocs.checked) {
+      docDisplayDiv.style.display = 'block';
+      if (docs == null) {
+        getDocs();
+      } else {
+        docChooserTxt.value = docs[docI][0];
+        var docLink = document.createElement('a');
+        docLink.setAttribute('href', "/document/show/" + docs[docI][0]);
+        docLink.appendChild(document.createTextNode(docs[docI][0]));
+        var table = createSideHeaderedTable([
+          ['index', '' + (docI + 1) + ' of ' + numDocs],
+          ['document', docLink],
+          ['number of occurrences', docs[docI][1]],
+          ['positions', docs[docI][2].join(',')]
+        ]);
+        if (docDiv.firstChild) docDiv.replaceChild(table, docDiv.firstChild);
+        else docDiv.appendChild(table);
+      }
+    } else {
+      docDiv.innerHTML = '';
+      docDisplayDiv.style.display = 'none';
+    }
+    return false;
+  }
+  function nextDoc() {
+    if (docI < numDocs - 1) {
+      docI++;
+      displayDoc();
+    } else alert('No more docs. Already at the end.');
+    return false;
+  }
+  function prevDoc() {
+    if (docI > 0) {
+      docI -= 1;
+      displayDoc();
+    } else alert('No more docs. Already at the start.');
+    return false;
+  }
+  function findDoc(doc) {
+    if (docs && docs.length > 0) {
+      docI = bsearch(docs, doc, function(a, b) {return a[0] < b});
+      if (docI >= docs.length) docI -= 1;
+      displayDoc();
+    }
+    return false;
+  }
+  function displayTerm() {
+    docs = null;
+    termChooserTxt.value = terms[termI][0];
+    var table = createSideHeaderedTable([
+      ['index', '' + (termI + 1) + ' of ' + numTerms],
+      ['term', terms[termI][0]],
+      ['number of documents', terms[termI][1]],
+    ]);
+    termDiv.replaceChild(table, termDiv.firstChild);
+    displayDoc();
+  }
+  function nextTerm() {
+    if (termI < numTerms - 1) {
+      termI++;
+      displayTerm();
+    } else alert('No more terms. Already at the end.');
+    return false;
+  }
+  function prevTerm() {
+    if (termI > 0) {
+      termI -= 1;
+      displayTerm();
+    } else alert('No more terms. Already at the start.');
+    return false;
+  }
+  function findTerm(term) {
+    if (terms && terms.length > 0) {
+      termI = bsearch(terms, term, function(a, b) {return a[0] < b});
+      var match = (terms[termI]||[])[0];
+      if (term != match) {
+        alert('Term <%=@field%>:' + term + ' not found in index');
+      } else {
+        displayTerm();
+      }
+    }
+    return false;
+  }
+  
+  function TermSuggestionProvider() {
+  }
+  TermSuggestionProvider.prototype.requestSuggestions = function(oAutoSuggestControl, bTypeAhead) {
+    var aSuggestions = new Array();
+    var sTextboxValue = oAutoSuggestControl.textbox.value;
+
+    if (sTextboxValue.length > 0) {
+      start = bsearch(terms, sTextboxValue, function(a, b) {return a[0] < b});
+      for (var i = start; i < terms.length
+          && terms[i][0].indexOf(sTextboxValue) == 0
+          && aSuggestions.length < 10; i++) {
+        aSuggestions.push(terms[i][0]);
+      }
+      oAutoSuggestControl.autosuggest(aSuggestions, bTypeAhead);
+    }
+  };
+  window.onload = function() {
+    var oTermTextbox = new AutoSuggestControl(termChooserTxt, new TermSuggestionProvider());
+  }
+  displayTerm();
+  //-->
+</script>
+<% end %>
+<hr/>

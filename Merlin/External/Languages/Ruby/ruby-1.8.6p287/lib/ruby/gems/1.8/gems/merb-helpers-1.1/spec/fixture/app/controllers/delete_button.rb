@@ -1,0 +1,2 @@
+class DeleteButtonSpecs < SpecController
+end

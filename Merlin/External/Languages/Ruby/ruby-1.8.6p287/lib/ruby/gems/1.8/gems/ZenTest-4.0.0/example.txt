@@ -1,0 +1,42 @@
+
+
+
+What do we do to get people writing tests?
+What do we do to get people writing tests first?
+
+I didn't know it's name, but apparently it's the Lettuce Principal,
+(see http://blog.toolshed.com/2003/03/the_lettuce_pri.html).
+
+	We NEED to make testing as easy as possible to get them testing.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Class Under Test			Test Class
+######################################################################
+
+module Something			module TestSomething
+  class Thingy				  class TestThingy
+    def do_something			    def test_do_something_normal
+      # ...				      thingy = Thingy.new
+    end					      result = thingy.do_something
+  end					      assert(result.blahblah)
+end					    end
+					    def test_do_something_edgecase
+					      thingy = Thingy.new
+					      result = thingy.do_something
+					      assert(result.blahblah)
+					    end
+					  end
+					end

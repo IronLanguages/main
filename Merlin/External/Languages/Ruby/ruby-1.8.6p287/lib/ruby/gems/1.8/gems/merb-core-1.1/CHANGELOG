@@ -1,0 +1,1126 @@
+== 0.9.8 "Time Machine" 2008-06-10
+
+* Pre-release contributors file update.
+* Nillify Merb.logger first.
+* Legacy Merb apps log again. And Merb tells you where it logs on boot unless you are testing.
+* Fixes up RSpec matcher for request helper
+* remove vestigal  @_template_stack variable.
+* remove rogure require no longer needed
+* compile templates with preambles to assign locals, support recompiling partial templates if previously unseen locals are provided
+* Add a note on Dictionary and inflection code to public changelog.
+* Nuke files that are already part of Extlib.
+* Update public changelog.
+* Fixed Merb::BootLoader::Router issue
+* -core now depends on most recent Extlib
+* Revert "Added MinimalPrivilege to merb.thor. Thanks namelessjon."
+* Fixed stats.rake to check if directory exists
+* Move inflection code and Dictionary to extlib.
+* Rakefiles should be empty by default (so RSpec is not pushed down test unit users' throat).
+* Added MinimalPrivilege to merb.thor. Thanks namelessjon.
+* Added Merb::BootLoader::Router
+* Improve public specs for logger. Use Mash for log levels.
+* Untabify logger.rb.
+* Allow Merb.disable(:signals) to keep Merb from installing any signal handlers.
+* Added the ability to specify resource actions in the block
+* Fixed bug where subgems (of meta-gems) weren't reinstalled each time
+* Added process title reporting as per: LH #517
+* Making the :key a synonym to :keys for Behavior#resource
+* Fixing the rspec error when running rake tasks
+* Cleaned up the specs. Removed any stray pending specs.
+* Added stacking and redirecting deferred routing blocks.
+* Removed private/dispatch/route_params_spec.rb
+* New spec helpers ported over. Old #request helper becomes #mock_request, which uses some mocking and stubbing to set up the request. The new #request API uses no mocking, and has the following API changes:
+* Removed spec/private/config
+* Added dependency 'foo', :immediate => true for loading dependencies immediately
+* call to_s in the csrf middlewre
+* make StreamWrapper more duck typed to the old body string.
+* If --log-level or --log is explicitly given, never log to STDOUT, alsways to file
+* If Merb.env?(:test) we don't need ugly  = true spread all over the place
+* use Proc === @body instead
+* Bring the console adapter's #url back into action
+* update specs for new rack stream_wrapper
+* Updating streaming methods to work on *all* rack adapters.
+* Make Merb::Config[]= work without calling setup 1st
+* Default to  = 'UTF8' - you can just set this in init.rb if needed
+* Colorful GemManagement
+* Removed unused directory under spec.
+* Reorganized URL generation methods across Controller classes
+* Added a :singular option to resource route building
+* merb -k works right
+* Fixes stupid issue in spec loader
+* Route matching handles slashes according to the RFC
+* Added the #resource controller helper for URL generation.
+* Fixes #503; raise InternalServerError works now.
+* We shouldn't use minigems explicitly in our code (yet)
+* Add missing pieces of forking awesomeness.
+* Executable wrappers use /usr/bin/env again - run them with /path/to/ruby -S if you need a specific Ruby version
+* Merge in forking branch.
+* Use trenary operator here.
+* capture returns return value of passed in block if it is not a template block
+* Updated PUBLIC_CHANGELOG regarding Merb::RakeHelper
+* reverts URI generation on requests
+* Updates full_uri for the changes to the Request#protocol
+* Reorganized merb-core/tasks/merb to require merb-core/tasks/merb_rake_helper (see merb-gen too)
+* Cleanup of tasks/merb_rake_helper.rb
+* Added :gemspec task to Rakefile
+* Fixed executable wrapper code (for loading local gems)
+* Added Merb::RakeHelper.install_package method to install packages directly
+* Merb::RakeHelper now handles local ./bin and GEM_DIR installs correctly
+* Rakefile now uses Merb::RakeHelper.install
+* Added GemManagement module - working towards new install/uninstall rake tasks
+* Removed Merb::BootLoader::ReloadTemplates; Merb::Config[:reload_templates] needs to be set explicitly
+* Marked Kernel#track_dependency as @api private - updated specs to reflect this
+* Added warning when specs are run without memcached being available
+* Refactored Kernel#dependency and #load_dependency to work with Gem::Dependency
+* Include request uri in routing exception raised by request helpers.
+* Added require 'thread' explicitly for Mutex to be available
+* Revert "Initial support for fast redeploys and code reloading via forks."
+* Revert "Split out the code transaction into a method and do some experimentation with cluster forking."
+* Revert "Better exit message"
+* Revert "Initial experiments are a success. TODO: Move the logic out of mongrel and make a proper clustering instead of hardcoding to 4"
+* Fixes issue people were having
+* Initial experiments are a success. TODO: Move the logic out of mongrel and make a proper clustering instead of hardcoding to 4
+* Split out the code transaction into a method and do some experimentation with cluster forking.
+* Better exit message
+* Initial support for fast redeploys and code reloading via forks.
+* Fixed that YAML plugin configuratator wasn't requiring YAML.
+* Reindent core_ext/kernel.rb.
+* Register dependencies even after the BootLoader has finished
+* Fixes Merb::Request#protocol to remove the ://.  May Break things in apps if you're checking protocol directly.
+* Moves actual url generation methods onto the request object from the controller.
+  Also updates the Merb::Request#redirect method to be usable just like the controller version.
+* Throw the correct error when generating a non existent route.
+* Modify throw_content to not append. Add append_content for that purpose.
+* Significant router refactoring and feature development
+* Run specs in groups
+* Added more discriptive message when a class fails to load
+* Optimized Merb::Request.query_parse - fixed silly spec
+* Update Rack application spec to reflect current affairs.
+* Document template_for.
+* Make merb fast again. Also make rake install work from any Ruby via -S
+* ControllerMixin#html_escape => #escape_html (bring it in line with #escape_xml).
+* Protected makes no sense for class methods.
+* Remove dead code from responder.
+* Adds abstract! and abstract? for controller classes for your inheritance pleasure
+* Server#add_irb_trap should play nice with ruby-debugger.
+* Reworked the Server#add_irb_trap to suppress the warnings.
+* added flag for an IRB trap
+* Add links to nginx_send_file examples: gist and app at GitHub.
+* Untabify fixture controller for streaming.
+* Make Merb::Controller#nginx_send_file more user friendly.
+* More fine-grained check to see if a local ./bin executable should have been used
+* Ignore products RDoc generates.
+* Include RDoc in the gem.
+* Ignore RDoc template cache.
+* Remove RDoc template cache from version control.
+* Session cookies now expire at the end of a browser session again (instead of 2 weeks)
+* Second attempt: fixed load_dependency (hopefully)
+* Fixed failing spec regarding 'dependency' change
+* Make flat! more useful
+* This rescue is obsolete and is obscuring useful failing information, as well as loading
+  from the system even when you require a specific version that isn't available in the bundled gems.
+* Clean before installation. Remove *.so and *.log under spec.
+* Make gem 3 times lighter.
+* Merb::Release is gone.
+* Bump up version
+* Set @_content_type before running transform blocks
+* sneaky merge failure piece that shouldn't be here
+* Revert "Add specs for action-level only_provides"
+* Revert "add specs for does_not_provide"
+* add specs for does_not_provide
+* Add specs for action-level only_provides
+* Make controller.route work
+
+
+== 0.9.7 "Universe In A Bundle" 2008-13-09
+
+* Made the post body available to the routing when testing a request.
+* Better local gems dir detection and end-user feedback
+* Updated PUBLIC_CHANGELOG regarding gem management and merb.thor
+* Fixed compatibility with the *new* bundle logic
+* Made request('/path', {}, {:post_body => 'some XML'}) not setting the post body to nil.
+* Added two specs for setting request.raw_post. Passes for #dispatch_to, fails for #request.
+* You can now use request_to with a post body:
+* It's official: Thor is now a dependency
+* Removed MerbScriptHelper - simplified loading bundled gems - see merb.thor
+* Bug Fix: Cookie headers not being formatted correctly
+* Added request.session.clear! method to clear and destroy the session (including the _session_id cookie itself)
+* Both memcache-client and memcached gems are supported by the session store
+* Added better query param parsing (naive but adequate) for nested params
+* Added specs to make sure blank cookie options aren't used for Set-Cookie
+* Fixed cookie issues in WebKit/Safari browsers
+* Log ControllerExceptions with error level and only ServerErrors with info.
+* Modified absolute_url to handle an object as well as a Hash
+* Touches to new sessions: doc and minor code improvements.
+* More meaningful exception message when no session container is configured.
+* Make it clear how session mixin makes it's way into controller.
+* Leave a note where new sessions doc needs to be improved.
+* Fix smart formatting.
+* Give smart people proper credit when you use their work.
+* Loosen extlib dependency a bit.
+* Meaningful message when Memcached session store can't be loaded because of load error.
+* Remove libxml-ruby and memcache-client dev dependencies.
+* Require memcached gem where memcached session store is defined (it's lazy loaded).
+* Meaninful message when have_xpath matcher is used but libxml-ruby fails to load.
+* Don't blow up when there are no system paths.
+
+== 0.9.6 "Therapy session" 2008-08-09
+
+* Merge in simple conditional get support at controller level.
+* Merged in new bundling (aka freezer) branch
+* Merged in new-sessions branch
+* Simplify one more clever line.
+* Trenary operator is always hard to read.
+* Added PUBLIC_CHANGELOG note on Language::English::Inflector => English::Inflect
+* Filters with procs created via class methods have identical signatures regardless if they handle content differently or not. So modified add_filter to just append procs to the filter list.
+* Consolidating raw Rakefile commands to merb-core/tasks/merb_rake_helper.rb
+* Update contributors list.
+* Ticket #461 - This simply adds output for what host and port the adapter has started on.
+* More Language::English::Inflect to English::Inflect changes - getting ready for Extlib move soon
+* Language::English::Inflect => English::Inflect name changes
+* Use frozen strings where possible.
+* First pass at adding in CSRF protection in to Rack middleware.
+* Query string of the format "foo=bar&foo=baz" should return params {"foo" => "baz"}
+* Fixed multiple select not honored in params bug
+* Public specs for 'fragment' changes in url.
+* AbstractController now uniformly uses instance_eval for Procs where previously
+* Renamed anchor to fragment along with some minor tweeks to follow rfc2396 better.
+* Add support for :anchor when generating url's. Ex. url(:root, :anchor => :lower_half).
+* Revert "Make Merb::Request#protocol return valid protocol names (http, not http://)."
+* Adds specs for previous commit
+* Fixes display @object, :template => "path/to/foo"
+* Clean up Rakefile.
+* Remove a line of extra code
+* Set cookie expires to nil when session_expiry is set to 0.
+* ConditionalGet refactoring.
+* Fix: ConditionalGet should not return the message body when the status code is 304.
+* Rescue Exception subclasses, not only StandardError subclasses.
+* Make Merb::Request#protocol return valid protocol names (http, not http://).
+* Add :protocol and :host options to absolute_url
+* extends basic authentication a bit to allow usage outside of before filters
+
+== 0.9.5 "Knife and Spoons" 2008-26-08
+* Add Hpricot to dependencies: provided RSpec matchers depend on it.
+* Documentation fixes
+* Make Rack application set Date header as required by RFC2616.
+* Port Django's conditional GET middleware to Rack.
+* Fix passenger issue
+* Make Autotest consume less CPU by adding excludes.
+* Add extract! experimentally
+* Adds dev deps on rake install
+* Add necessary dev dependencies
+* Make route_to(...).with matcher work properly with empty hashes
+* Make Merb::Request#query_parse a bit faster.
+* Speed up dispatcher specs by using libxml
+* throw :halt, nil spec
+* More rigid specs
+* merb-core really cannot use >= with extlib 0.9.3 at this point, so update gemspec
+* Use Logger from Extlib
+* Fix issue with Safari having weird ordering by fixing the issue in general.
+* Fixes up a bunch of specs
+* Add ContentLength middleware.
+* Rename Rack middleware spec file
+* Add Tracer middleware.
+* Improve the documentation of AbstractController.
+* Move Merb::Rack::Middleware#deferred\? to Merb::Rack::Application.
+* No longer use Pathname for Merb.root and friends.
+* fixed merb_erb bug
+* readded _generator_scope methods with deprecation warnings
+* added use_template_engine method and removed generator_scope code that is no longer needed
+* Add clear_content to renderer
+
+== 0.9.4 "Leave No Broken Windows" 2008-12-08
+* Update required Ruby version to 1.8.6.
+* Make dispatch_to set params[:controller] and params[:action].
+* Update RedirectTo matcher documentation.
+* redirect_to matcher now has :message option
+* Adds some detail to the public changelog
+* Fix rakefile
+* Make history Rake tasks work again.
+* Add contributors file.
+* Add Rake tasks that list and update contributors file.
+* A bit more readable spec example titles. Follow one assertion per test rule.
+* Make Merb::Controller#send_file set header with respect to Rack specification.
+* Removed TODO in Dispatcher#handle.
+* More updates to Merb::Request methods documentation.
+* Document Router#route_for(request).
+* Document some new Request methods.
+* Doc correction: Request#params returns instance of Mash.
+* Doc correction: Request#body_and_query_params returns instance of Mash.
+* ! for methods that change the receiver
+* Remove old code
+* Moves session fixation into request
+* re-add permanent redirects
+* Don't need this spec anymore.
+* More work on the dispatcher.
+* Documentation improvement + improvement in division of responsibilities.
+* Before moving stuff into the Rack adapter.
+* Additional refactor of the default Exceptions to use an actual Merb controller. Almost ready for a merge. Yeehaw!
+* Even more awesome dispatcher improvements.
+* Fixes an issue with status symbols
+* Class extensions spec moved to Extlib.
+* Move all accessors in AbstractController to the top so one can see them easily.
+* We don't need this anymore
+* Continues dispatch refactor. Exceptions now maintain a stack that is reported in the case of exceptions that, themselves, throw exceptions.
+* Document :with option of filters.
+* Fixed a typo in AbstractController documentation.
+* Extra specs and love to Merb::Controller._session_*
+* Added fixture config/init.rb
+* Resolved conflict after cherry-pick of 9d1a11ff.
+* Fixtures and pending specs for controller/cookie store integration.
+* Re-set session cookie expiry and friends once init file/configuration is loaded.
+* Two more specs for class_inheritable_accessor.
+* Make spec for #342 do correct assertions.
+* Fixed a bug where changes to inherited controller filters would bleed acrosss siblings
+* the dispatcher specs
+* Add more edge-case specs to Dispatcher and make sure they pass.
+* Make Cookie#set_cookie handle more options. Improve spec coverage.
+* Refactor Dispatcher.handle to reduce complexity
+* Fix some ruby warnings
+* Added flog tasks to rake
+* add in stats task
+* Forgotten changes to Rakefile.
+* resource urls with additional params
+* Remove double-start in Thin adapter.
+* Merb::SimpleSet => Extlib::SimpleSet
+* merb-extlib => extlib
+* add spec for empty raw_post on xml content type
+* make sure to resuce JSON parse errors and return {}
+* Use Pathname in some more places, fix breakages.
+* Added more documentation for some of the extra options available to #partial
+* Temp commit.
+* Relative :template paths can be extensionless again.
+* Oops - forgot some files...
+* Fixed nasty bugs in controller/mixins/responder and its specs.
+* Reworded the documentation for #partial a little bit
+* Added some documentation for the new partial collection counter
+* Slight refactoring of the partial method
+* Adding views for the new partial collection counter specs
+* Adding the current index and collection size for partials rendered with a collection
+* Use gem release task that's in Extlib now.
+* If someone can figure out why this is already defined, please let me know
+* Yeah... not a good idea
+* ADd push_paths to the load path.
+* another tiny tweak
+* Fixes open IO issue
+* Switch to merged extlib.
+* Use Pathname in some more places, fix breakages.
+* Move to merb-extlib is almost there.
+* Output a warning about merb-extlib if it can't be loaded.
+* Applying patch to allow use of thin_turbo adapter. Thanks dkubb!
+* Did I really commit that?
+* Use :info as default log level for now: people wonder "where the output is gone".
+* Make sure default config has log level of error so template inlining bootloader won't dump everything to the tty.
+* Do not reference to old merb.yml in doc.
+* whoops... dup
+* Add support for argument capture and fix $DEBUG bootloader stuff [#390 state:resolved]
+* Ignore temp Emacs files.
+* Generate tags only for lib.
+* Adds Rake tasks to generate Emacs tags.
+* Touch RDoc of LoadClasses bootloder.
+* LoadClasses#remove_file => LoadClasses#remove_classes_in_file.
+* Output extra information on boot when verbose config option is given from
+* Make Logger bootloader print meaningful warning when RubyGems is outdated.
+* capture_erb correctly passes arguments to the block again
+* Let world know what this delete vs. destroy thing is all about.
+* Add support for OPTIONS
+* display doesn't throw an error if a layout is not found, even if one is specified (because of class-wide layout options)
+* throw_content now concatenates, not replaces, content
+* Added view for throw_content spec
+* Clean up resource regexps after ; separator is gone.
+* @@parent_resources, not @@parent_resource
+* Semicolon as action separator for resources is no longer supported: breaks basic http auth in Safari.
+* Small doc update.  Thanx jackdempsey
+* Adds message support (like flash in Rails but with somewhat different semantics)
+* Add .tmproj to the list of ignores
+* Fix bug with :status
+* Spec for :status in display
+* display handles :status and :location
+* Improved RDoc of Merb#load_dependencies.
+* script/frozen-merb => merb-freezer in RDoc
+* Adjusted logging message for thin sockets vs ports.
+* Added socket option to thin.rb and to the command line options.
+* send_file opens files in 'rb' binary mode so windows doesn't shit itself
+* added add_generators, which allows plugins to load their own generator in the same way as rakefiles
+* fix nginx_send_file
+* Spec for previously applied patch to Behavior#defer_to.
+* use Route#register in defer_to so that deferred routes get an index
+* Make Autotest ignore doc/ as well.
+* Ensure Autotest ignores changes in log directory.
+* Add helpers directory to load path
+* Modules don't get duped right.
+* Redo Merb's inheritable_accessors so that they have correct semantics, then redo everything that uses inheritable_accessors so they don't have to hack around the bad semantics.
+* Added spec for the route matcher testing regexp routes. [#386]
+* Add Merb.started? alias for Merb.started reader.
+* Add reader for @started flag which shows when Merb environment is started.
+* Update memory session storage documentation.
+* Use warn logger level instead of debug, if session persisting fails.
+* FileUtils#touch only added mtime option in ruby 1.8.6. let's use File#utime instead
+* better log message
+* rescue excpetions in Worker thread, log them and then restart the work queue
+* Router now can do r.match("/this/old/url").redirect("/where/this/resides/now").
+* Refactor Merb::Test::RequestHelper and introduce build_request helper.
+* spoke too soon.
+* we actually don't need to log this at all as its logged latert in the _benchmarks
+* Update link to wiki page on Rack in exception.
+* Add link to Rack page at wiki to Controller not found exception. This confuses people a lot.
+* Log namespaced controller name when it's class is not found.
+* I will test first next time, I promise.
+* Tell what's actually started when Dispatcher begins to handle request.
+* Fixed typo in yet another exception message.
+* Log an info message when route fixation actually happens. Those heavily using Flash will find it helpful.
+* Log a warning if controller class cannot be found.
+* A bit more verbose exception message when route does not specify a controller.
+* Documentation: add deprecation warning to AbstractController. Manually applied patch from dstar.
+* Increase header level on sub-headers of Filters in AbstractController
+* Fixes request helper bug [#378: resolved]
+* Fixes case of :format being ignored.
+* If the spec.opts file exists, use it.
+* use Thread.pass to avoid running newly queued item before the action's thread finishes
+* Added Merb::Worker. You can now add a block to be run in a separate thread
+* Let's try again, this time with <% end =%>
+* Try #concat to resolve some issues.
+* One more time.
+* Should handle denormalized multiline blocks now.
+* wycats needs to learn to escape pipes.
+* Make Merb::Plugins.config[:foo] default to {}
+* Long lines make wycats' eyes' bleed. Plus, why do all those .joins twice?
+* jackdempsey's inflector improvements (backported from wycats' patch to Rails)
+* Fixes typo.
+* <%= now takes a block in Erubis. Erubis buffer now an ivar (@_erb_buf) so eval is no longer required for capture. Helpers that take a block should now return a string.
+* Fixes the after filters
+* Reorganize experimental stuff.
+* Additional slight efficiency and readability improvement.
+* Improve speed of content-type=. 5% speed on hello world requests.
+* Improve the speed of _perform_content_negotiation (and got 10% better speed on requests)
+* Old stuff that should be committed.
+* Speed up synonym lookup by order of magnitude :(
+* add Merb::Rack::Profiler middleware. to use add the following to your config/rack.rb file:
+* update license
+* Missing require
+* require 'stringio'
+* Add support for non-standard template reloading. Plugin authors need to override load_template_io to handle special reloading logic.
+* Add support for IO templates instead of just paths. See PLUGIN_API_CHANGELOG for details.
+* add swiftiplied mongrel rack adapter.
+* Swapped the order of helper and controller in the default_framework
+* Why should capture be private?
+* Merb::Config[:framework] now needs absolute paths to work (breaks BC)
+* Merb::Config[:framework] paths now pickup files using glob **/*.rb unless specified otherwise
+* Don't automatically use Facebook signature
+* Fixes failing spec.
+* make the default rake task 'specs' so running rake in merb-core just runs the specs
+* Rename @status to @_status
+* Avoid adding nil values in place of missing keys for Hash#only
+* Fix issue with null segments
+* Fixed session cookie expires value [#366 state:resolved]
+* Made HTTP method override proc-based and pluggable. [#364]
+* siiiiiigh.
+* Revert partial counter and yielding.
+* Remove some duplication
+* For crying out loud.
+* Refactor display. WARNING: This commit might not be stable. I need to add a bunch more specs for display before I feel confident.
+* Make the TemplateNotFound error read better. Slight refactor of _get_layout.
+* Fix _template_for so it's actually readable
+* uhhhhhhhh...
+* Added Merb::Router.reset! and Merb::Router.capture
+* Speedup Route URL generation
+* Start work on fixing contaminated cousins bug.
+* Changed controller inheritance of _template_root
+* Added the ability to use full/absolute template paths for render, display and partial views
+* This cannot be tested this way. It needs to be tested as a public spec (testing it privately here was a cop-out and fails when I fixed up the way dependency works).
+* Allows passage of query string via env["QUERY_STRING"] in tests. [#358 state:resolved]
+* Handles use of dependency after BootLoading. [#360 state:resolved]
+* properly set the session_id_key
+* added 2 specs for multipart formdata: (1) for checking request with IO, (2) for testing GET with content_type not erroring on multipart/form-data absence; fixed error with multipart/form-data absence.
+* Made Class a lot more sane.
+* Fix README for merb-gen app foo
+* Do not duplicate work Merb::Template.template_extensions does in Templates bootloader.
+* Make exception message when Merb cannot find template explain what it was
+* Fixed 2 problems with multipart form upload after application is deployed to Tomcat via warble: (1) The @body object in this environment is an IO object, not a StringIO, so doesn't have a size method, and (2) 'tempfile' needs to be explicitly required.
+* made only and except uglier and faster
+* Preserve order parse query, respect query string override in test request
+* Added partial counter and yielding for collections
+* Remove occasionly committed *.rbc files.
+* Ignore *.rbc created by Rubinius compiler.
+* Send the route into the controller
+* Add Merb::Request.browser_method_workarounds
+* Revert ca92bdfc89afda04cbb4fd3d3e5848648cc0b326
+* Refactored Merb::BootLoader::LoadClasses.reload into an additional remove_file method for other usage
+* Fixed some failing specs
+* Added rake :audit namespace to list routes, controllers and actions
+* Remove occasionly committed *.rbc files.
+* Ignore *.rbc created by Rubinius compiler.
+* Make obj.full_const_get more robust
+* forgot to comment out the text
+* added DHH copyright notice to conre_ext/class.rb
+* Better usage of merb_rake_helper.rb
+* Added tasks/merb_rake_helper.rb - removed it from merb-more
+* Refactored Merb::Controller.callable_actions
+* Fixing bug in the rspec route matcher.
+* More useful error for display errors
+* Make load_paths a dictionary so models load first.
+* Added Merb::Template.template_extensions as a semi-public method for getting known template extensions
+* Prevent anonymous controller classes from making a Helper module
+* We've Been Dup'd! - fixed nasty bug concerning class inheritable attrs
+* Added Object.full_const_set
+* Add helper for full_uri
+* Adds a timestamp to a requests output
+* Fixed documentation examples for dispatch spec helpers
+* Added public method Merb::BootLoader::LoadClasses.load_classes(*paths)
+* Only do the rubygems hack if it's needed and deal with cases where people are using the Gem cache library without using the commands.
+* Updated docs on Merb#merge_env
+* Merb Personalized Environments; Completed Merb#merge_env method, now accepts boolean parameter to optionally use the merged environments database connection
+* fix typo in spec
+* Check to see if the session responds to :data
+* make nice for windows - remove app level loading (is handled in rakefile in merb-more now
+* Typos
+* YARD conversion of set.rb and time.rb
+* YARD conversion of rubygems.rb
+* YARD conversion of object_space.rb
+* YARD conversion of object.rb
+* YARD conversion of mash.rb
+* YARD conversion of kernel.rb
+* YARD conversion for hash.rb
+* Convert class.rb over to YARD.
+* Convert string.rb over to YARD format.
+* Patch for missing inner_content method bug in HasTag
+* Correct lable and line number in Router#compile
+* Make merb.show_routes show named routes a bit more verbose.
+* Make merb.show_routes a bit more verbose.
+* Use single symbol instead of Array for ORM/test framework generator scopes.
+* Add links to source at GitHub to boot diagram
+* Merb core boot diagram is done and prettified
+* Add support for a :session_cookie_domain config option to allow for setting the session cookie's domain.
+* Add more advanced nested routes examples to Merb::Router::Behavior#match documentation.
+* Add a bunch of pretty advanced spec examples for nested matches in routes.
+* Code clean-up behavior.rb
+* Created Documentation for new #match functionality
+* Changes to behavior.rb to allow for :controller, :actions and :params options to be passed in
+* Implemented Merb::Router::Behavior#match! that is a shortcut for match(...).to({}).
+* Improve Merb boot diagram.
+* Make each subsequent call to use_orm just replace effect of previos.
+* Remove WIP spec for Merb::Router::Behavior#redirect.
+* fix typo in request_spec.rb
+* Needs to raise here since if the generator scope has more than one ORM the geneartors will not work.
+* Log instead of raising when dependencies mechanism this ORM required twice.
+* Get rid of Kernel#registered_orm?, it is no longer in use.
+* Make Kernel#registred_orm? use simple include lookup.
+* Fix spec and Kernel#registred_orm? conditions bug.
+* Fix a typo.
+* Fixed erronous documentation in Merb::Router::Behavior
+* Working on Behaviour#redirect feature: stashing changes.
+* update callable_actions to exclude any methods beggining with an _underscope
+* Adds template-checking code to branch where :with option is specified in partials.
+* Add two notes on layout method versus :layout option of render method.
+* Forget to add template for added spec example.
+* Add spec example for render :layout => false that overrides layout.
+* More sweet empty lines management in controller fixtures.
+* Clean up empty lines in fixture controller.
+* Fix _template_for documentation: content type does not default to nil.
+* Update render method documentation, we support :layout => false.
+* JSON objects that do not inflate to hashes should populate params[:inflated_object] (Ticket #316)
+* update new rack middleware machinery to be more merb style in the bootloader
+* Changed MerbDispatch to MerbApplication. Fixed error in deferred? call chain.
+* More flexible composition of merb application
+* Start implementing Merb::Router::Behavior#redirect.
+* A note on condition block and deferred routes.
+* Note on thread safety of routes compilation.
+* Explain what Merb::Router does and what routes compilation is.
+* Explain how "form used by Merb::Router" is often referred.
+* Be explicit on what Merb::Router::Route#if_condition actually does and how it is used.
+* Add a note that Merb::Router::Route#generate uses #to_param on parameters.
+* Be explicit on what Merb::Router::Route#generate actually does.
+* Add a note to Merb::Router::Route#name documentation.
+* Add note on string representation of routes.
+* More explicit documentation for Merb::Router::Router#register.
+* Add section on fixation of routes.
+* Another take on better Merb::Router::Route documentation.
+* New Merb::Router::Route documentation probably got a bit better.
+* Something that looks like detailed Merb::Router::Route but needs a lot of work.
+* Add first naive spec examples for Merb::Router::Route#compile.
+* Use .prepare when we do not really need .prepend
+* Made sure default format response_header can set explicit Content-Type header
+* Default format response_headers cannot overwrite runtime-set (controller) headers
+* Mirror plural spec from singular. Fix a couple of revealed failures.
+* Actually implemented Merb.add_mime_type's new_response_headers
+* Add cases that were failing in pluralization specs to singularization spec.
+* Fix failures in pluralization specs. Add more cases.
+* spec/private/vendor/inflector => spec/private/vendor/facets
+* Pluralization spec examples.
+* Move singularization specs to separate file.
+* More spec examples for inflector.
+* Improve spec coverage of inflector.
+* Improve inflector spec coverage: separate cases into groups.
+* Fix a typo exposed by spec suite.
+* Initial set of spec examples for inflector.
+* Changed vague :request_headers term into :accepts (meaning HTTP Accept header)
+* Sweet empty lines management in spec helper.
+* Increase sleep time reloader spec.
+* Unwanted change to autotest slipped in, must get better at git
+* More reliable reloader test with fewer sleeps
+* remove :nodoc: from merb-core DO NOT USE :nodoc: EVAR!!
+* More lower-level spec examples for Merb::Router::Route.
+* More lower-level specs for Merb::Routing::Route.
+* Initial set of lower-level specs for Merb::Router::Route methods.
+* Rename file with extra unit specs for Merb::Router
+* Removed extra comment.
+* Finished Merb::Router unit-ish spec.
+* Initial lower-level specs for router.
+* Fix for users with spaces in gem path
+* Add missing specs for route fixation.
+* Add matched_route_for spec helper to get raw Route instance.
+* Exclude unwanted files from rcov analysis.
+* Make Rakefile respect GEM_HOME. Thanks Corey Jewett.
+* Add extra output lines to Merb::Server methods if verbose mode is on.
+* Add -V/--verbose options.
+* Improve documentation of session persist/finalize exception callbacks.
+* Initial specs for Merb::SessionMixin
+* Tiny documentation touchups
+* Require RubyGems first before spec to satisfy Autotest.
+* Exception handler callbacks for finalize_session and persist
+* Update Merb core boot diagram a bit.
+* Documentation for Merb::BootLoader::DropPid bootloader.
+* add in string so that @element.contains? will work when @element is a string and not just Hpricot::Elem
+* remove hpricot as a merb-core dependency since it is never loaded at runtime.
+* Merb::BootLoader::Templates now uses _template_roots not just _template_root
+* add in support for core tasks, and first core task -- routes
+* Fix Webrick support by preferring REQUEST_PATH over REQUEST_URI
+* Changed Merb::BootLoader::BeforeAppRuns into Merb::BootLoader::BeforeAppLoads which matches Merb::BootLoader::AfterAppLoads
+* Added option to Controller#redirect(url, permanent) so 301 responses can be returned as well
+* Bump version in core to 0.9.4.
+* Pump version to 0.9.4.
+* throw argument error when filter receives an invalid option
+* spec for ticket 307
+* Update GitHub gemspec.
+* fixed description of daemonize spec in Merb::Config
+* Trick Git: change SHA1 of tree to push recent binary files changes.
+* Add PNG version of call stack diagram
+* Add call stack diagram source file, in Mind Manager format.
+* Add expanded call stack diagram: probably Git does not work perfectly with binary diffs.
+* Temporarily wipe out call stack diagram
+* Expand all nodes on call stack diagram.
+* Add Merb core call stack (yet to be finished).
+* Fixed cruddy doc comments.
+* Remove nil items from params when generating routes
+* Fixed typo in resource rdoc
+* cleaned up a bit. removed dependency on to_params value in controller test.
+* added ability to set the Location header with display and render
+* remove useless complexity from the logger.
+* 0.9.3 changelog
+* Remove special case for dm-core in use_orm
+* removing __app_file_trace__  since it doesn't work.
+* Add Emacs TAGS to ignore
+* Explain Merb application layouts in documentation.
+* Benchmarks
+* Allow http status to be a symbol - refactored String snake_case method
+* Explain how to set up /lib autoload in documentation.
+* Make change_priveledge actually work
+* bump merb-core version to 0.9.3 in prep for release.
+* Add new -R/--rackup option to the full(-ish) list of options.
+* Provide opts for alternate rackup config path. This is consistent with --rackup option for thin and gives a little more freedom to specify the rackup config (instead of being forced to rack.rb).
+* Testing Merb::Test::RequestHelper#request method to properly handle namespaced routes
+* test request helpers support namespaced routes
+* Added parentheses to be_kind_of to get rid of warnings when running application_spec.rb
+* Fixing pidfiles glob on cluster and pidfile argument
+* replaced nested 'if' with an 'elseif'
+* params array serialization
+* Added handling of INT signal for Merb server in foreground mode
+* Remove redundant unescape for cookie string
+* Ensure that Merb::Logger doesn't try to close terminal streams.
+* Ensure that Merb::Logger doesn't try to close terminal streams.
+* Added support for multiple keys to designate a resource. For use with Datamapper composite keys support http://www.datamapper.org/articles/spotlight_on_cpk.html
+* Make Provide controller matcher doc conform to Merb standards.
+* Whoops. Had target and expected backwards.
+* Added Provide matcher class, so you can do "controller.should provide( :xml )" in your specs.
+* completed spec to Merb::Logger#new
+* Adding missing info about ebb adapter.
+* Show merb usage if first argument is not a switch
+* Fix a spelling error and properly RDoc'ify a method name
+* Fix bug in --very-flat (allow direct inheritance from Merb::Controller)
+* Changed copyright date in footer of HTML pages from 2007 to 2008
+* Append the content_type to the given :template option for render()
+* Replaced remaining ::STATUS constant references to .status method calls
+* Refactored Exception status handling/inheritance (it actually works now!)
+* Make Inflector#plural and Inflector#singular conform to Merb doc standard.
+* Update inflector documentation.
+* Tiny docs update to Merb::Server.
+* Example (from merb_sequel) and corrections to the way Merb finds out plugins Rakefiles.
+* Docs updates for lib/merb-core.rb.
+* Reasonable doc examples for Merb.push_path and Merb.remove_paths.
+* Fix for kill so that cli options are read and handled before kill is actually called. Need this to handle kill under custom pid file scenario.
+* Updating pidfile cluster fix to handle any extension.
+* Adding support for pidfile setting with cluster nodes setting. Moving pid file path lookup to separate method.
+* Correction to Merb::GlobalHelper.log_path docs.
+* Use Notes instead of Note in docs.
+* Use Notes instead of Note everywhere in docs.
+* Add reference to Merb configuration options list to #config method docs.
+* Wording (Merb::GlobalHelpers.testing? docs).
+* Better docs for configuration parameters.
+* Document Merb configuration options in one place.
+* Another note on framework freezing in docs.
+* Add explaination of freezing to the documentation
+* Add a note on supported session types.
+* Insert line for viewing convenience.
+* Make Merb::GlobalHelpers.deferrable_actions conform to Merb documentation standard.
+* Missing documentation for Merb::GlobarHelpers.deferred_actions
+* Update Kernel#__profile__ documentation.
+* make in? splat args
+* Add Object#in? for checking array inclusion
+* Removed dependency on memcache-client 'memcache_util.rb' which was dependent on ActiveRecord::Base for logging exceptions.
+* Update documentation to reflect changes in the way #display handles custom options.
+* Make #display method pass all 'unknown' options to serialization method.
+* Adds the github gemspec file
+* Adds Code for generating a gemspec for github
+* Adds a question method to determine environment.  eg Merb.env?(:production)
+* Give useful information when no template is found for a partial
+* Really resolve merge conflicts.
+* Provide hook for param filtering
+* hopefully the last fix for session fixation, woot woot
+* Be clear about what is the default init file Merb uses in RDoc.
+* A bit clearer --init-file option description.
+* Fix header shown in help: Merb is not longer 'Mongrel + Erb, a lightweight replacement for ActionPack' but a framework on it's own.
+* Correct doc in Merb::Controller: it uses SimpleSet for callable actions at the moment.
+* Document Merb::SimpleSet
+* Remove InvalidPathConversion exception: it is used nowhere in the core.
+* Update homepage in gem specification.
+* Clean up String extensions spec.
+* Remove it, hopefully no one seen it.
+* Add a note on drawbacks of usage of ObjectSpace.
+* Use a constant for reload spec instead of hardcoding time in 5 places or so.
+* Revert "Refactor ToHashParser#from_xml a bit to be able to use parser faster than REXML. It is planned to support Hpricot and fall back to REXML."
+* Use @ in publicity markers in RDoc.
+* Use a constant for sleep time in reloading specs
+* Refactor ToHashParser#from_xml a bit to be able to use parser faster than REXML. It is planned to support Hpricot and fall back to REXML.
+* Empty lines management, how cool is that?
+* Missing specs and improved documentation for Hash#to_mash.
+* Tiny improvement to Object extensions documentation. More empty line management.
+* One more example for Object#full_const_get; new spec group for Object#make_module.
+* Missing specs for Object#full_const_path.
+* Sweet empty lines management, what a wonderful way to apply yourself to.
+* Kick off Class extensions spec-ing.
+* Document inheritable attributes Class extension the Merb way, not ActiveSupport way with :nodoc:
+* Remove Emacs-generated cruft from specs directory.
+* Add missing specs for Class#reset_inheritable_attributes.
+* Split Kernel#use_test into smaller methos. Document them. Add specs for them beforehand.
+* Empty lines management, wonderful way to waste priceless time.
+* Kernel#already_registred_orm? is a sucky name. Make it Kernel#registred_orm?. Yay.
+* Split Kernel#use_orm guts into a bunch of smaller methods. Document those.
+* Add missing specs for Kernel#dependencies and Kernel#load_dependencies.
+* Pretty naive spec examples for Kernel#load_dependency.
+* Add missing specs for Kernel#dependency
+* Split 'misc' examples group in Kernel extensions spec: each method should have a separate group, ever.
+* Clean up empty lines in Kernel extensions.
+* Documentation for String#relative_path_from
+* Add missing specs for String extensions.
+* Remove helper that duplicated String#camel_case functionality, update the rest of spec suite.
+* Fix a nasty String#camel_case bug revealed but new shiny spec for String extensions.
+* Better formatting of spec suite run benchmark with good old sprintf.
+* Use RSPEC_OPTS environment variable to override default spec run options.
+* Report total spec suite run time.
+* Add spec command run options to run_specs. Add tasks for profiled spec run.
+* Unify &block documentation across Merb::Test::RequestHelper
+* Fix example in Merb::Test::RequestHelper#request documentation.
+* If deferred_actions are empty? we want a regex that will never match.
+* More polish for deferred_actions support. Thin, Ebb and EMongrel adapters
+* deferred?(env) now works with thin and ebb.
+* Fixed some its vs. it's issues. (Learning git :)
+* added delete action to docs
+* Added error message for when a content_type is requested but not provided
+* Syncronized code with rails branch. Delete call is required, because user cookie must be cleaned when TamperedWithCookie is raised.
+* Specs using a method that called must_support_streaming! weren't recognizing the custom NotImplemented error. This change fixes this issue by specifying the entire object chain for its usage within the method.
+* Fix number of examples in HTTP authentication spec.
+* first step to adding deferred?(env) support for ebb and thin
+* Use a dictionary instead of a Hash.
+* Changed the display method to handle options properly, so that passing :layout => :false works.  Added specs.
+* Added \- to String.unescape_regexp
+* added HasContent matcher
+* Standardises the call to set_cookie to use the set_cookie method in cookies.rb by default
+* Fix cookie sessions bug where you could not properly delete a cookie
+* should not delete the key
+* pass arguments to filters
+* Added thrown_content? predicate method for use in templates.
+* Added ability to specify :format in url() for named routes
+* modified specs to test a route restriction based on the type of request (POST, GET, UPDATE, DELETE)
+* Added 'use_orm :dm_core' option to use datamapper 0.9.0 with the dm-merb gem from dm-more
+* fixed example for dispatch_with_basic_authentication_to
+* Fixed typo
+* reverted mistakenly introduced change in abstract controller
+* added documentation
+* slight fix to basic auth spec
+* added support and specs for http basic authorization
+* added dispatch helper for http basic authentication
+* HTTP Basic authentication based on Rack
+* Fixed lurking infinite loop with not so common formats and ExceptionController
+* Refactored Merb::AbstractController.layout class method
+* _dispatch returns @body
+* really truly(?) fix stream_file ?
+* really make sure stream_file works
+* redo stream_file to (hopefully) work
+* Added Time#to_json to Core Extensions, making the default JSON formatted output for Time objects ISO 8601 compatible.
+* Added + unescape to String#unescape_regexp
+* Added String#unescape_regexp for usage in Router::Route#generate
+* BootLoader::LoadClasses now logs the actual exceptions
+* add mutex around compiled statement generation in the router so reloading doesn't step
+* Revert ExampleGroup changes as they were causing failing specs
+* Added render(template_path) feature to view specs.
+* RSpec ExampleGroups for Merb controllers, views, helpers, models and routes.
+* Prep 0.9.2
+* Resolves #209
+* * removed Merb.logger calls due to the fact the bootloader did not ran by now and it is not initialized.
+* use __send__ rather than send
+* Fixed exception setting route when route_index is nil
+* memoize the raw_post body after its called once
+* fix Request#raw_post to respect bodies with no rewind method
+* remove Kernel#requires it wasn't being used.
+* Move fixation to post initialize
+* typo
+* add specs for does_not_provide
+* Add specs for action-level only_provides
+* Make controller.route work
+* Update Ebb adapter to work with latest Ebb 0.1.0 [Ry Dahl]
+* fix PATH_INFO bug for fcgi
+* Rename url_with_host to absolute_url
+* Add url_with_host() and allow params to be pushed into FCGI adapter
+* More correct to_json of dictionary.
+* Modify dispatcher to be sane to XHRs; add to_json to dictionaries.
+* Added html_escape around the exception.message in the show details section.
+* Fixed bug not allowing have_tag to be called without a attribute hash, even when one is not desired
+* fix typo
+* refactor and clean up Merb::BootLoader::Dependencies [James Herdman]
+* ticket 202
+* This keeps erroring out, i hope it didnt commit multiple times:
+* Merb::BootLoader::LoadClasses should keep unique list of classes
+* Logger now works as expected, fixed ReloadClasses bootloader
+* Fixes cookie sessions when the session is blanked out.
+* catch_content should default to :for_layout
+* Added --sandbox (-S) option for IRB console
+* Fixes the dispatch_to request helper to conver the action name to a string.
+* Added Merb.testing? method
+* Fixed critical bug in LoadClasses BootLoader concerning reloading
+* Important changes to the BootLoader process
+* Added Kernel.load_dependencies method; better docs/comments.
+* Bugfixes concerning BootLoader and load order in general
+* fully qualify fcgi rack handler
+* Set mongrel as default adapter unless other alternative options are specified
+* Fix configuring session_id_key so that it works
+* url(:foo, 3) should notice 3 is a Fixnum, and use it instead of 3.id
+
+== 0.9.3 "We Sold Our Soul for Rock 'n' Roll" 2008-05-03
+* Added render(template_path) feature to view specs.
+* add mutex around compiled statement generation in the router so reloading doesn't step
+* BootLoader::LoadClasses now logs the actual exceptions
+* Added String#unescape_regexp for usage in Router::Route#generate
+* Added Time#to_json to Core Extensions so JSON formatted output for Time is ISO 8601 compatible
+* redo stream_file to (hopefully) work
+* _dispatch returns @body
+* Refactored Merb::AbstractController.layout class method
+* Fixed lurking infinite loop with not so common formats and ExceptionController
+* HTTP Basic authentication based on Rack
+* added dispatch helper for http basic authentication
+* added support and specs for http basic authorization
+* modified specs to test a route restriction based on the request method
+* Added ability to specify :format in url() for named routes
+* Added thrown_content? predicate method for use in templates.
+* pass arguments to filters
+* Fix cookie sessions bug where you could not properly delete a cookie
+* Standardises the call to set_cookie to use the set_cookie method in cookies.rb by default
+* added HasContent matcher
+* Added \- to String.unescape_regexp
+* Changed the display method to handle options properly, so that passing :layout => :false works.
+* Added error message for when a content_type is requested but not provided
+* added delete action to docs
+* deferred?(env) now works with thin and ebb.
+* If deferred_actions are empty? we want a regex that will never match.
+* Fix example in Merb::Test::RequestHelper#request documentation.
+* Unify &block documentation across Merb::Test::RequestHelper
+* Add spec command run options to run_specs. Add tasks for profiled spec run.
+* Report total spec suite run time.
+* Use RSPEC_OPTS environment variable to override default spec run options.
+* Better formatting of spec suite run benchmark with good old sprintf.
+* Fix a nasty String#camel_case bug revealed but new shiny spec for String extensions.
+* Remove helper that duplicated String#camel_case functionality, update the rest of spec suite.
+* Split 'misc' examples group in Kernel extensions spec: each method should have a separate group
+* Split Kernel#use_orm guts into a bunch of smaller methods. Document those.
+* Kernel#already_registred_orm? is a sucky name. Make it Kernel#registred_orm?. Yay.
+* Split Kernel#use_test into smaller methos. Document them. Add specs for them beforehand.
+* Use a constant for sleep time in reloading specs
+* Use @ in publicity markers in RDoc.
+* Remove InvalidPathConversion exception: it is used nowhere in the core.
+* A bit clearer --init-file option description.
+* Be clear about what is the default init file Merb uses in RDoc.
+* hopefully the last fix for session fixation, woot woot
+* Provide hook for param filtering
+* Give useful information when no template is found for a partial
+* Adds a question method to determine environment.  eg Merb.env?(:production)
+* Make #display method pass all 'unknown' options to serialization method.
+* Add Object#in? for checking array inclusion
+* Update Kernel#__profile__ documentation.
+* Adding support for pidfile setting with cluster nodes setting.
+* Updating pidfile cluster fix to handle any extension.
+* Fix for kill so that cli options are read and handled before kill is actually called.
+* Refactored Exception status handling/inheritance (it actually works now!)
+* Replaced remaining ::STATUS constant references to .status method calls
+* Append the content_type to the given :template option for render()
+* Fix bug in --very-flat (allow direct inheritance from Merb::Controller)
+* Show merb usage if first argument is not a switch
+* Adding missing info about ebb adapter.
+* completed spec to Merb::Logger#new
+* Added Provide matcher class, so you can do "controller.should provide( :xml )" in your specs.
+* Added support for multiple keys to designate a resource. For use with Datamapper composite keys
+* Ensure that Merb::Logger doesn't try to close terminal streams.
+* Remove redundant unescape for cookie string
+* Added handling of INT signal for Merb server in foreground mode
+* params array serialization
+* Fixing pidfiles glob on cluster and pidfile argument
+* test request helpers support namespaced routes
+* Testing Merb::Test::RequestHelper#request method to properly handle namespaced routes
+* Provide opts for alternate rackup config path.
+* Add new -R/--rackup option to the full(-ish) list of options.
+* Make change_priveledge actually work
+* Allow http status to be a symbol - refactored String snake_case method
+* removing __app_file_trace__  since it doesn't work.
+
+== 0.9.2 "appropriate response to reality" 2008-03-24
+* removed Merb.logger calls due to the fact the bootloader did not ran by now and it is not initialized.
+* use __send__ rather than send
+* Fixed exception setting route when route_index is nil
+* memoize the raw_post body after it's called once
+* fix Request#raw_post to respect bodies with no rewind method
+* remove Kernel#requires it wasn't being used.
+* Move fixation to post initialize
+* add specs for does_not_provide
+* Add specs for action-level only_provides
+* Make controller.route work
+* Update Ebb adapter to work with latest Ebb 0.1.0 [Ry Dahl]
+* fix PATH_INFO bug for fcgi
+* Rename url_with_host to absolute_url
+* Add url_with_host() and allow params to be pushed into FCGI adapter
+* More correct to_json of dictionary.
+* Modify dispatcher to be sane to XHRs; add to_json to dictionaries.
+* Added html_escape around the exception.message in the show details section.
+* Fixed bug not allowing have_tag to be called without a attribute hash, even when one is not desired
+* refactor and clean up Merb::BootLoader::Dependencies [James Herdman]
+* Merb::BootLoader::LoadClasses should keep unique list of classes
+* Logger now works as expected, fixed ReloadClasses bootloader
+* Fixes cookie sessions when the session is blanked out.
+* catch_content should default to :for_layout
+* Added --sandbox (-S) option for IRB console
+* Added Merb.testing? method
+* Fixes the dispatch_to request helper to conver the action name to a string.
+* Added Merb.testing? method
+* Fixed critical bug in LoadClasses BootLoader concerning reloading
+* Important changes to the BootLoader process
+* Added Kernel.load_dependencies method; better docs/comments.
+* Bugfixes concerning BootLoader and load order in general
+* fully qualify fcgi rack handler
+* Set mongrel as default adapter unless other alternative options are specified
+* Fix configuring session_id_key so that it works
+* url(:foo, 3) should notice 3 is a Fixnum, and use it instead of 3.id
+* make load order of core_ext explicit
+* Modifies before/after in BootLoader to actually work.
+* ix not-available vs. not-provided bug in content negotiation
+* Fixed display bug which caused default error exception pages to improperly display drop-down twirly if the path name exceeded the line length.
+* remove symbolize_keys! as we don't use it anywhere. by now..
+* Rework bootloader to make more sense for flat apps (specifically framework load)
+* More fixes to the flat autoloader
+* remove custom_* resource route, use :member or :collection instead
+* fix logger specs
+* Fixes bug with framework not being defined.
+* make sure logger bang! methods do not flush unless the proper log level is used.
+* Updates the request spec to account for the new from_xml behaviour
+* Adds specs and changes for compatibility with ActiveSupport.  There is one caveat.  It will not change YAML generated Hash keys to strings if they are defined as symbols as is currently the behaviour of ActiveSupport.
+* update the logger. no longer accept an optional block to call.
+* remove some vestigal config defaults
+* Add rack adapter for Ebb, damn it's fast!
+* coerce the port to an integer when starting mongrel (jruby compat)
+* remove specs for dependency as they were broittle and not testing the right thing.
+* Fixes #155 (_perform_content_negotiation doesn't find */* if it comes last in the accept header order, and nothing else matches)
+* Changes use_test to wrap only the call to dependencies in the check for Merb.environment == "test"
+
+== 0.9.1 "Some are half-wild, and some are just outlaws." 2008-02-29
+
+* Put spec tasks into namespaces and method for specifying pnly a certain model/controller/view to run against
+* As a last resort, look for */* in the formats before throwing NotAcceptable (TODO: Clean this up)
+* Fix perform_content_negotiation to correctly handle :format in params. Fix render_* to correctly return the correct content_type.
+* remove hooks.rb, they were premature and only used in one place
+* fix evented mongrel to not go crazy
+* Calling /foo.pdf should throw a 406 if :pdf is not a registered mime.
+* touch up dispatcher a bit, remove some un-needed code from the hot path
+* fix dispatcher to not parse the params twice, still supports request_params
+* fix Exception in exception.html.erb
+* moved rspec rake tasks into core.  Added Merb.rakefiles, which is now used by Merb::Plugins.rakefiles.  Changed Kernel#use_test to only load dependency arguments when Merb.env is nil or test.
+* do not load test framework unless Merb.env == 'test'
+* Use new Object.make_module to create the module instead of old hackish solution.
+* Don't clear our mimes previously defined.
+* Fixed clean task deleting everything in the lib folder
+* Kernel#dependency requires gems/files in a before_app_loads block.
+* Move dependency loading after framework and look for framework.rb
+* Creates helper stub modules for controllers.
+* fix blank path error.
+* Cooler errors
+* add named routes to error page
+* updates to nested resources
+* get autotest working for merb-core
+* Symbolize params in route generation, to accomodate Mashes
+* Fixes :status not working on strings.
+* update thin adapter to newest way of silencing the log
+* :format => :html possible in partials
+* print request URI when "No routes match the request" error thrown
+* fix merb -i
+* Make Merb.start default to the runner adapter
+* It's now possible to send binary data using the send_data method
+  and to specify the disposition, filename and type of the data being sent.
+* Fix memcached session writes
+* allow the setting of a custom session key
+* Changed TemplateNotFound to stop so much confusion about incorrect
+  template locations because it doesn't include .*
+* fix dropping of pid files in cluster and daemon mode
+* Nested partials don't blow away locals.
+* Better loading of classes
+* Support concat and test capture/concat
+* Added single key assignment to Merb.config
+* Move url method from ControllerMixin to AbstractController for use in
+  Mailers and Parts etc.
+* Merb.config now returns Merb::Config instead of the current
+  configuration hash.
+* Added Merb.reload which reloads the framework classes.
+* Adding Merb.env shorthand for Merb.environment
+* Added a quaint Merb Configurator
+* With bootloader order changes, environment was not getting loaded
+* Fix cookie parsing from localhost, add spec
+* Add support for multiple template roots
+* Allow override of router.rb file in config
+* Modify behavior of 'namespace' in the router
+* Fix content negotiation for IE and its stupid accept header.
+* Only serve static files when the HTTP method is GET or HEAD. Other
+  requests should still be handled by Merb.
+* Add path_prefix support.
+* Changes dispatch_to spec helper to yield the controller
+* redo of load_dependency, after_app_loads callback, and Kernel changes
+* Added Merb.logger.auto_flush
+* Fix nested resource routing
+* Do not drop PID file is not running as daemon or cluster
+* Fixed problem with resources inside a namespace block
+* Added support for dynamic layouts.
+* adding conditional behaviour to filters :if and :unless
+* Use the escape_xml from Erubis rather than rolling our own
+* Add a merb.reload! command to the merb -i console.
+* Get rid of StringScanner dependency.
+* Fix render_then_call to support new streaming tech.
+* Fix filter specs to respect append order of filters.
+* check for empty string before calling to_sym on the format parameter
+* fake requests are incorrectly loading controller classes with namespaces
+* Fix the RubyGems monkeypatch by testing for Merb.root instead of looking in $"
+* fix core spec dependency on merb_rspec
+* Replace calls to puts with Merb.logger
+* Fix problem with static files, use Proc === body
+* Added file and line information for evals in router.rb.
+
+== 0.9.0 "All you need, none you don't" 2008-02-13
+* Developer Only Release
+* Split merb into merb-core and merb-more
+
+== 0.5.3 "Inexperienced With Girls" 2008-01-28
+* Improved handling of models/controllers with dependencies
+* Improved cluster starting/stopping
+* Frozen script/merb should really work now
+* Merb::Cookies is used for cookie jar purposes
+* test_helper no longer assumes rspec mocking framework
+* asset bundler handles strings and symbols
+* render() now has an option for explicitly rendering an object
+* Fixed annoying bug in exception rendering for 500 internal_server_error
+* testing request helper accepts an option hash
+
+== 0.5.2 "Great White North" 2008-01-14
+* Make Merb.load_paths accessible for modification
+* Fix issues with running frozen apps
+
+== 0.5.1 "Electic Boogaloo" 2008-01-10
+* Fix 0.5.0
+
+== 0.5.0 "Thanks Zed" 2008-01-09
+* Added asset bundling for Javascript and stylesheet files
+
+== 0.4.2 "Surf's up." 2007-12-14
+* Super-huge speed boost for rendering Erubis templates with partials
+* Windows-specific fixes to Merb's Rakefile
+* Blocking write is called when in development, test, Windows and jRuby environments and platforms.
+* merb_helpers: form field labels are now explicit, huge documentation update, added select, fieldset, more helpers
+* Fixed merb.show_routes within merb -i
+* Fixed image_tag, css_include_tag, and js_include_tag to work with path_prefix
+* Adds spec helper methods with_route and dispatch_to
+* fix rakefile cfor cygwin
+* add count with collection to partial()
+* Form control mixin is deprecated Use merb_helpers plugin.
+* add redirect matcher to rspec test helpers
+* allow r.resource(:foo, :myparam => 42) resource routes pass on params to underlying match() call
+* spit out error and help message if you call merb with no args
+* get rid of dependency on mongrel for escape and unescape
+* make sure not to use write_nonblock when logging to STDOUT
+* Fixed image_tag, css_include_tag, and js_include_tag to work with path_prefix
+* fix set_status to actually work, add docs,
+* config/merb.yml is now correctly loaded from Rake and test environment - using Merb::Server.load_config
+* added config option to disable loading of the JSON gem - still enabled by default 
+* don't raise if names local on a partial is nil
+* Use svn export instead of checkout upon merb:freeze_from_svn
+* Extracted url and other general methods out of ControllerMixin into GeneralControllerMixin
+* fix caching of @_buffer in render, form_for
+* Seperates spec helpers into the Merb::Test namespace to prevent spec methods leaking into specs
+* Changes the spec url helper method to the same used in the controller
+* Made Request#parse_multipart return an empty hash instead of nil if the request is not multipart
+* Changes throw_content so that it can be called without a block
+* Added :namespace option to routes.
+
+== 0.4.1 "Faster Partials or Partially Faster?" 2007-11-12
+* Fixed pluralization issues with generators
+* Resource generators are much improved
+* url() helper now supports nested resources
+* url(:post, @post) observers @post.new_record? and adjusts accordingly
+* Fixed bug with empty Accept headers
+* Added config/boot.rb to load framework from gems or framework/ dir
+* New partial() is much faster (and less buggy)
+* render :partial no longer supported
+* Add a buffered logger
+* Fixes bug with parameterized actions on some platforms
+* partial can now be called on collections:
+*  partial("widget", :with => @new_widgets, :as => "widget")
+* SMTP mailer now supports non-AUTH setups
+* set_status() can take symbolic codes like :not_found
+* JRuby compat fixes
+* Speed boost, esp. with rendering
+* Fix spec_helper running against development database
+* Fix major bug with sessions not working
+
+== 0.4.0 "This ain't yo mommas merb" 2007-11-06
+
+== 0.3.7 "Out of the basement" 2007-08-05
+
+== 0.3.4 "Route fixer" 2007-05-31
+
+== 0.3.3 "Hey buddy can you spare a route generator?" 2007-05-31
+
+== 0.3.1 "The Fixed and the Furious" 2007-04-30
+
+== 0.3.0 "The Fast and the Furious" 2007-04-28
+
+== 0.2.0 "Accept your fate and respond_to change" 2007-03-18
+
+== 0.1.0 "Generation Herb" 2007-01-18
+
+== 0.0.9 "merb is the new black" 2007-01-14
+
+== 0.0.8 "Merbivore" 2006-12-17
+
+== 0.0.7 "Lean and mean merbing machine" 2006-11-29
+
+== 0.0.6 "The Black Belt Release" 2006-11-09
+
+== 0.0.5 "The getting real release" 2006-11-01
+
+== 0.0.4 "The toddler phase" 2006-10-26
+
+== 0.0.3 "the switchblade suicide release" 2006-10-17
+
+== 0.0.2 "the quicksliver release" 2006-10-16
+
+== 0.0.1 "The pocket rocket release" 2006-10-15

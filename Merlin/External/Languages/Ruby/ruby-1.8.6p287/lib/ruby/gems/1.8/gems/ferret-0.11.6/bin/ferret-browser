@@ -1,0 +1,79 @@
+#!/usr/bin/env ruby
+
+$: << File.expand_path(File.join(File.basename(__FILE__), '../lib'))
+require 'ferret'
+require 'ferret/browser'
+
+require 'optparse'
+require 'ostruct'
+
+SERVER_OPTIONS = ['webrick']
+conf = OpenStruct.new(:host => '0.0.0.0', :port => 3301)
+
+opts = OptionParser.new do |opts|
+  opts.banner = "Usage: #{File.basename($0)} /path/to/index"
+  opts.separator ""
+  opts.separator "Specific Options:"
+
+  opts.on("-h", "--host HOSTNAME",
+          "Host for web server to bind to (default is all IPs)") { |conf.host| }
+  opts.on("-p", "--port NUM",
+          "Port for web server (defaults to #{conf.port})") { |conf.port| }
+  opts.on("-s", "--server NAME",
+          "Server to force (#{SERVER_OPTIONS.join(', ')}).") { |s| conf.server = s.to_sym }
+
+  opts.separator ""
+  opts.separator "Common options:"
+  
+  opts.on_tail("-?", "--help", "Show this message") do
+    puts opts
+    exit
+  end
+  
+  opts.on_tail("-v", "--version", "Show version") do
+    puts Ferret::VERSION
+    exit
+  end
+end
+
+opts.parse! ARGV
+if ARGV.length != 1
+  puts opts
+  exit
+end
+@path = ARGV[0]
+
+# Load the Ferret index
+begin
+  @reader = Ferret::Index::IndexReader.new(@path)
+rescue Ferret::FileNotFoundError => e
+  puts "\033[31mCannot start Ferret. No index exists at \"\033[m" + 
+    "\033[33m#{@path}\033[m\033[31m\".\033[m"
+  exit
+rescue Exception => e
+  puts "\033[31mCannot start Ferret.\n\033[m\033[33m#{e.to_s}\031[m"
+  exit
+end
+
+unless conf.server 
+  conf.server = :webrick 
+end
+
+case conf.server.to_s
+when 'webrick'
+  require 'webrick/httpserver'
+  require 'ferret/browser/webrick'
+
+  # Mount the root
+  s = WEBrick::HTTPServer.new(:BindAddress => conf.host, :Port => conf.port)
+  s.mount "/s", WEBrick::HTTPServlet::FileHandler, Ferret::Browser::Controller::STATIC_DIR, true
+  s.mount "/", WEBrick::FerretBrowserHandler, @reader, @path
+
+  # Server up
+  trap(:INT) do
+    s.shutdown
+  end
+  s.start
+else
+  raise "server #{conf.server} not known. Must be one of [#{SERVER_OPTIONS.join(', ')}]"
+end

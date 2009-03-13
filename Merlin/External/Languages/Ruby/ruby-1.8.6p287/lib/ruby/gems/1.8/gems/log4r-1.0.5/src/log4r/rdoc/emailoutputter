@@ -1,0 +1,103 @@
+= EmailOutputter
+
+This is an experimental class that sends a number of formatted log events as 
+an RFC 822 email. It should work fine if Net:SMTP doesn't cause any 
+problems. Just in case, create a logger named 'log4r' and give it an 
+outputter to see the logging statements made by this class. If it fails to 
+send email, it will set itself to OFF and stop logging.
+
+In order to use it,
+
+  require 'log4r/outputter/emailoutputter'
+
+== SMTP Configuration
+
+All arguments to Net::SMTP.start are supported. Pass them as hash
+parameters to +new+. The to field is specified as a comma-delimited 
+list of emails (padded with \s* if desired).
+
+An example:
+
+  email_out = EmailOutputter.new 'email_out',
+                     :server=>'localhost',
+                     :port=>25,
+                     :domain=>'somewhere.com',
+                     :from=>'me@foo.bar',
+                     :to=>'them@foo.bar, me@foo.bar, bozo@clown.net',
+                     :subject=>'Log Report'
+
+== LogEvent Buffer
+
+EmailOutputter stores log messages in a buffer. When the buffer reaches a 
+certain number, the <tt>buffsize</tt>, it will send an email containing the 
+contents of the buffer. The default +buffsize+ is 100. To set +buffsize+,
+
+  email_out.buffsize = 1000   # set the buffsize to 1000
+
+== Flush To Send Email
+
+Flushing an EmailOutputter will mail out all the remaining LogEvents.
+This is convenient for systems that encapsulate the shutdown process. It's a 
+good idea to do this for all outputters,
+
+  Outputter.each_outputter {|o| o.flush}
+
+Alternatively, one can invoke flush on the outputter directly,
+  
+  email_out.flush
+
+It's also a good idea to notify the recepient of the email that
+the system is shutting down. Before flushing, log a message
+to the owner of this outputter,
+
+  log_with_email_out.info "The system is shutting down at #{Time.now}"
+
+== Format When?
+
+LogEvents may either be formatted as they come in or as the
+email is being composed. To do the former, specify a value of +true+
+to the hash parameter +formatfirst+. The default is to format 
+during email composition.
+
+  email_out.formatfirst = true     # format as soon as LogEvents are received
+
+== Immediate Notification
+
+EmailOutputter can be configured to flush and send the email whenever the
+logger sees a certain log priority. Use the +immediate_at+ hash parameter
+and specify the levels as a comma-delimited list (like an XML element).
+To trigger an email on FATAL and ERROR,
+
+  email_out.immediate_at = "FATAL, ERROR"   
+
+== Example
+
+A security logger sends email to several folks, buffering up to 25
+log events and sending immediates on CRIT and WARN
+
+  EmailOutputter.new 'security', 
+                     :to => 'bob@secure.net, frank@secure.net',
+                     :buffsize => 25,
+                     :immediate_at => 'WARN, CRIT'
+                     
+== XML Configuration
+
+See log4r/configurator.rb for details. Here's an example:
+
+  <outputter name="security" type="EmailOutputter"
+             buffsize="25" level="ALL">
+    <immediate_at>WARN, CRIT</immediate_at>
+    <server>localhost</server>
+    <from>me@secure.net</from>
+    <to>
+      bob@secure.net, frank@secure.net
+    </to>
+    ...
+  </outputter>
+
+== To Do
+
+This class could use some sophistication, in particular a means to compress
+the logs, a way to set the subject dynamically (probably via a block method),
+and a time trigger. When the time trigger is introduced, a +buffsize+
+of 0 should mean ignore +buffsize+ to determine when to send the email.

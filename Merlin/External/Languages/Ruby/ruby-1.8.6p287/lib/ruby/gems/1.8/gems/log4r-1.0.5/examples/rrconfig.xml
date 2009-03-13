@@ -1,0 +1,63 @@
+<!-- This is a real config file used by a game that I'm working on 
+     The Ruby file that loads this is rrsetup.rb -->
+<log4r_config>
+  <pre_config>
+    <!-- I like having a ton of levels. There are three extra for component
+         data, comp1..3 and one level for object dumps (DATA) -->
+    <custom_levels>
+      COMP3, COMP2, COMP1, DATA, DEBUG, INFO, WARN, ERROR, FATAL
+    </custom_levels>
+    <!-- change to ERROR when the game goes to production -->
+    <global level="ALL"/>
+  </pre_config>
+
+  <!-- Outputters -->
+
+  <!-- game.log records DEBUG and higher, so no game component data -->
+  <outputter name="gameout" type="FileOutputter" level="DEBUG">
+    <!-- I set the logpath from within the game. -->
+    <filename>#{logpath}/game.log</filename>
+  </outputter>
+  <!-- DATA level goes to its own special file. These log events are
+       too noisy for game.log and are not game components. Useful
+       for dumping lots of objects during development. -->
+  <outputter name="gamedata" type="FileOutputter" only_at="DATA">
+    <filename>#{logpath}/data.log</filename>
+    <!-- low-noise custom formatter for objects -->
+    <formatter type="CompFormatter"/>
+  </outputter>
+  <!-- Spit any errors to the console. They merit special attention -->
+  <outputter name="console" type="StderrOutputter" level="ERROR"/>
+  <!-- A separate log file for tracking game components, 
+       used for development. It logs ALL-->
+  <outputter name="componentout" type="FileOutputter">
+    <filename>#{logpath}/component.log</filename>
+    <formatter type="CompFormatter"/>
+  </outputter>
+
+  <!-- Loggers -->
+
+  <!-- 'game' is the main logger for the client-server framework -->
+  <logger name="game" level="DATA" additive="false" trace="true">
+    <outputters>gameout, gamedata, console</outputters>
+  </logger>
+  <!-- Notice how we have fine control over how each element logs.
+       The gui and controller are stable while the rest are being debugged. -->
+  <logger name="game::gui" level="ERROR" additive="true" trace="true"/>
+  <logger name="game::boardgui" level="DEBUG" additive="true" trace="false"/>
+  <logger name="game::server" level="DEBUG" additive="true" trace="true"/>
+  <logger name="game::client" level="DEBUG" additive="true" trace="true"/>
+  <logger name="game::controller" level="ERROR" additive="true" trace="false"/>
+
+  <!-- 'component' is the main logger for game objects. It's used in
+       development to track how the objects change with time. -->
+  <logger name="component" level="ALL" additive="false" trace="false">
+    <outputter>componentout</outputter>
+    <outputter>console</outputter>
+  </logger>
+  <logger name="component::board"/>
+  <logger name="component::tile"/>
+  <logger name="component::player"/>
+  <logger name="component::player::robot"/>
+ 
+</log4r_config>

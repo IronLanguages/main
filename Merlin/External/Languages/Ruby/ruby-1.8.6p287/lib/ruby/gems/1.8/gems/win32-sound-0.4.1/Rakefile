@@ -1,0 +1,22 @@
+require 'rake'
+require 'rake/testtask'
+
+desc "Install the win32-sound package (non-gem)"
+task :install do
+   dest = File.join(Config::CONFIG['sitelibdir'], 'win32')
+   Dir.mkdir(dest) unless File.exists? dest
+   cp 'lib/win32/sound.rb', dest, :verbose => true
+end
+
+desc "Install the win32-sound package as a gem"
+task :install_gem do
+   ruby 'win32-sound.gemspec'
+   file = Dir["*.gem"].first
+   sh "gem install #{file}"
+end
+
+Rake::TestTask.new do |t|
+   t.libs << 'lib'
+   t.warning = true
+   t.test_files = FileList['test/tc*']
+end

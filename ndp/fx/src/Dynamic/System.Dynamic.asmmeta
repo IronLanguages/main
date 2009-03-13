@@ -66,6 +66,11 @@
 			ret
 		}
 		.method public static hidebysig 
+			bool TryConvert(class [System.Core]System.Dynamic.ConvertBinder binder, class [System.Core]System.Dynamic.DynamicMetaObject 'instance', [out] class [System.Core]System.Dynamic.DynamicMetaObject& result)
+		{
+			ret
+		}
+		.method public static hidebysig 
 			class [mscorlib]'System.Collections.Generic.IEnumerable`1'<string> GetDynamicMemberNames(object 'value')
 		{
 			ret

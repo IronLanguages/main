@@ -112,6 +112,9 @@ namespace IronPython.Modules {
             }
 
             public static PythonArray operator *(PythonArray array, int value) {
+                if ((BigInteger)value * array.__len__() * array.itemsize > SysModule.maxsize) {
+                    throw PythonOps.MemoryError("");
+                }
                 PythonArray data = new PythonArray(array.typecode, Type.Missing);
                 for (int i = 0; i < value; i++) {
                     data.extend(array);
@@ -120,6 +123,9 @@ namespace IronPython.Modules {
             }
 
             public static PythonArray operator *(PythonArray array, BigInteger value) {
+                if (value * array.__len__() * array.itemsize > SysModule.maxsize) {
+                    throw PythonOps.MemoryError("");
+                }
                 int intValue;
                 if (!value.AsInt32(out intValue)) {
                     throw PythonOps.OverflowError("cannot fit 'long' into an index-sized integer");
@@ -128,6 +134,9 @@ namespace IronPython.Modules {
             }
 
             public static PythonArray operator *(int value, PythonArray array) {
+                if ((BigInteger)value * array.__len__() * array.itemsize > SysModule.maxsize) {
+                    throw PythonOps.MemoryError("");
+                }
                 PythonArray data = new PythonArray(array.typecode, Type.Missing);
                 for (int i = 0; i < value; i++) {
                     data.extend(array);
@@ -136,6 +145,9 @@ namespace IronPython.Modules {
             }
 
             public static PythonArray operator *(BigInteger value, PythonArray array) {
+                if (value * array.__len__() * array.itemsize > SysModule.maxsize) {
+                    throw PythonOps.MemoryError("");
+                }
                 int intValue;
                 if (!value.AsInt32(out intValue)) {
                     throw PythonOps.OverflowError("cannot fit 'long' into an index-sized integer");
@@ -622,6 +634,31 @@ namespace IronPython.Modules {
                         default: throw new InvalidOperationException(); // should never happen
                     }
                     _data.Append(value);
+                }
+            }
+
+            // a version of FromStream that overwrites starting at 'index'
+            internal void FromStream(int index, Stream ms) {
+                BinaryReader br = new BinaryReader(ms);
+
+                for (int i = index; i < ms.Length / itemsize + index; i++) {
+                    object value;
+                    switch (_typeCode) {
+                        case 'c': value = (char)br.ReadByte(); break;
+                        case 'b': value = (sbyte)br.ReadByte(); break;
+                        case 'B': value = br.ReadByte(); break;
+                        case 'u': value = br.ReadChar(); break;
+                        case 'h': value = br.ReadInt16(); break;
+                        case 'H': value = br.ReadUInt16(); break;
+                        case 'i': value = br.ReadInt32(); break;
+                        case 'I': value = br.ReadUInt32(); break;
+                        case 'l': value = br.ReadInt32(); break;
+                        case 'L': value = br.ReadUInt32(); break;
+                        case 'f': value = br.ReadSingle(); break;
+                        case 'd': value = br.ReadDouble(); break;
+                        default: throw new InvalidOperationException(); // should never happen
+                    }
+                    _data.SetData(i, value);
                 }
             }
 

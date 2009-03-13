@@ -1,0 +1,60 @@
+<html><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+   <title>Adding an icon</title><link rel="stylesheet" href="style.css" type="text/css"><meta name="generator" content="DocBook v5 XSL Stylesheets V1.72.0"><link rel="start" href="book.html" title="Developing Graphical User Interfaces with FXRuby"><link rel="up" href="tutorial1.html" title="Chapter&nbsp;3.&nbsp;Hello, World!"><link rel="prev" href="ch03s04.html" title="Adding a tool tip"><link rel="next" href="clipboardtut.html" title="Chapter&nbsp;4.&nbsp;Working With the Clipboard"></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="3" align="center">Adding an icon</th></tr><tr><td width="20%" align="left"><a accesskey="p" href="ch03s04.html">Prev</a>&nbsp;</td><th width="60%" align="center">Chapter&nbsp;3.&nbsp;Hello, World!</th><td width="20%" align="right">&nbsp;<a accesskey="n" href="clipboardtut.html">Next</a></td></tr></table><hr></div><div class="section" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="d0e900"></a>Adding an icon</h2></div></div></div><p>The final change is to add an icon to the button to make things a
+    little more festive. FOX supports all of the popular image file formats
+    (e.g. BMP, GIF, JPEG, PNG and TIFF) and you can use any of them as icons
+    on buttons and labels. For this example, we'll use the one of the "Powered
+    By Ruby" images created by Hal Fulton (and posted at the <a xmlns:xlink="http://www.w3.org/1999/xlink" href="http://www.rubygarden.org/ruby?PoweredByRubyButtons" target="_top">Ruby Garden
+    Wiki</a>):</p><pre class="programlisting">require 'fox16'
+
+include Fox
+
+theApp = FXApp.new
+
+theMainWindow = FXMainWindow.new(theApp, "Hello")
+
+theButton = FXButton.new(theMainWindow, "Hello, World!")
+theButton.tipText = "Push Me!"
+<span class="bold"><strong>iconFile = File.open("pbr.jpg", "rb")
+theButton.icon = FXJPGIcon.new(theApp, iconFile.read)
+iconFile.close</strong></span>
+theButton.connect(SEL_COMMAND) { exit }
+
+FXToolTip.new(theApp)
+
+theApp.create
+
+theMainWindow.show
+
+theApp.run</pre><p>Here, <code class="filename">pbr.jpg</code> is the file name of the JPEG
+    image file. You want to be sure to open the file in
+    <span class="emphasis"><em>binary</em></span> mode (i.e. including the "b" mode flag),
+    because there is a difference on the Windows platform. Since it's a JPEG
+    image, we need to use the <code class="classname">FXJPGIcon</code> class to
+    instantiate this icon. The first argument to
+    <code class="methodname">FXJPGIcon.new</code> is just a reference to the
+    <code class="classname">FXApp</code> instance, and the second argument is the
+    contents of the image file. We associate this icon object with our button
+    using the button's <code class="methodname">icon</code> accessor method. If you
+    run this example, you should see:</p><div class="screenshot"><div class="mediaobject" align="center"><img src="images/hello-with-icon-1.png" align="middle"></div></div><p>When you have both text and an icon displayed on a button (or its
+    superclass, <code class="classname">FXLabel</code>) the default positioning is to
+    display the icon to the left of the text. For this particular example,
+    however, it would probably be more appropriate to display the icon
+    <span class="emphasis"><em>above</em></span> the text. We can achieve this using the
+    button's <code class="methodname">iconPosition</code> accessor method:</p><pre class="programlisting">theButton.iconPosition = ICON_ABOVE_TEXT</pre><p>If you re-run the program after adding this line, you should
+    see:</p><div class="screenshot"><div class="mediaobject" align="center"><img src="images/hello-with-icon-2.png" align="middle"></div></div><p>The last change we're going to make is to make the icon transparent.
+    FOX allows you to specify that some regions of an icon should be treated
+    as "transparent", meaning that whatever's underneath them shows through.
+    FOX distinguishes those transparent regions from the non-transparent ones
+    using a transparency color, and any pixels in the original image that have
+    that color become transparent. In most cases, FOX can determine this
+    transparency color automatically (indeed, for image file formats like GIF
+    it's part of the image information). You can also specify the transparency
+    color explicitly if you like.</p><p>For the icon we've chosen, it's pretty obvious that the transparency
+    color is white, but let's let FOX figure that out for us. We want to
+    activate two options for the icon:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>the <code class="constant">IMAGE_ALPHACOLOR</code> option, which tells
+        FOX that some regions of this image should be treated as transparent;
+        and,</p></li><li style="list-style-type: disc"><p>the <code class="constant">IMAGE_ALPHAGUESS</code> option, which tells
+        FOX to guess the appropriate transparency color using the colors used
+        in the four corners of the image.</p></li></ul></div><p>To set these options, add this line to the program:</p><pre class="programlisting">theButton.icon.options = IMAGE_ALPHACOLOR | IMAGE_ALPHAGUESS</pre><p>and then re-run the program after making this change to see the
+    final result:</p><div class="screenshot"><div class="mediaobject" align="center"><img src="images/hello-with-icon-3.png" align="middle"></div></div></div><div class="navfooter"><hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="ch03s04.html">Prev</a>&nbsp;</td><td width="20%" align="center"><a accesskey="u" href="tutorial1.html">Up</a></td><td width="40%" align="right">&nbsp;<a accesskey="n" href="clipboardtut.html">Next</a></td></tr><tr><td width="40%" align="left" valign="top">Adding a tool tip&nbsp;</td><td width="20%" align="center"><a accesskey="h" href="book.html">Home</a></td><td width="40%" align="right" valign="top">&nbsp;Chapter&nbsp;4.&nbsp;Working With the Clipboard</td></tr></table></div></body></html>

@@ -1,0 +1,104 @@
+<html><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+   <title>Chapter&nbsp;7.&nbsp;Examples</title><link rel="stylesheet" href="style.css" type="text/css"><meta name="generator" content="DocBook v5 XSL Stylesheets V1.72.0"><link rel="start" href="book.html" title="Developing Graphical User Interfaces with FXRuby"><link rel="up" href="pt01.html" title="Part&nbsp;I.&nbsp;The Basics"><link rel="prev" href="unicode.html" title="Chapter&nbsp;6.&nbsp;Unicode and FXRuby"><link rel="next" href="events.html" title="Chapter&nbsp;8.&nbsp;FXRuby's Message-Target System"></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="3" align="center">Chapter&nbsp;7.&nbsp;Examples</th></tr><tr><td width="20%" align="left"><a accesskey="p" href="unicode.html">Prev</a>&nbsp;</td><th width="60%" align="center">Part&nbsp;I.&nbsp;The Basics</th><td width="20%" align="right">&nbsp;<a accesskey="n" href="events.html">Next</a></td></tr></table><hr></div><div class="chapter" lang="en"><div class="titlepage"><div><div><h2 class="title"><a name="examples"></a>Chapter&nbsp;7.&nbsp;Examples</h2></div></div></div><div class="simplesect" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="d0e1668"></a>hello</h2></div></div></div><p>The <a xmlns:xlink="http://www.w3.org/1999/xlink" href="../examples/hello.rb" target="_top"><code class="filename">hello.rb</code></a>
+    example program is about as short as it gets for a working FXRuby program.
+    Use this as a starting point for understanding the basic elements of an
+    FXRuby program, especially if you're new to GUI programming in
+    general.</p><div class="screenshot"><div class="mediaobject" align="center"><img src="images/hello.png" align="middle"></div></div></div><div class="simplesect" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="d0e1681"></a>hello2</h2></div></div></div><p>The <a xmlns:xlink="http://www.w3.org/1999/xlink" href="../examples/hello2.rb" target="_top"><code class="filename">hello2.rb</code></a>
+    example kicks it up a notch by adding an icon and tooltip to the button
+    from the <code class="filename">hello.rb</code> example.</p><div class="screenshot"><div class="mediaobject" align="center"><img src="images/hello2.png" align="middle"></div></div></div><div class="simplesect" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="d0e1697"></a>scribble</h2></div></div></div><p>The <a xmlns:xlink="http://www.w3.org/1999/xlink" href="../examples/scribble.rb" target="_top"><code class="filename">scribble.rb</code></a>
+    example is a good demonstration of how to obtain a device context for a
+    window (in this case, an <code class="classname">FXCanvas</code>) and draw into
+    that window. It also provides a basic demonstration of how FOX's GUI
+    updating mechanism can be used to automatically update the state of
+    widgets based on the application's state. Observe the "Clear"
+    button becoming enabled and disabled (greyed-out) depending on whether the
+    canvas is currently "dirty" or "clean", and then see how
+    this updating is actually handled in the code.</p><div class="screenshot"><div class="mediaobject" align="center"><img src="images/scribble.png" align="middle"></div></div></div><div class="simplesect" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="d0e1713"></a>button</h2></div></div></div><p>The <a xmlns:xlink="http://www.w3.org/1999/xlink" href="../examples/button.rb" target="_top"><code class="filename">button.rb</code></a>
+    example program shows off the various options (or button styles) for
+    <code class="classname">FXButton</code> widgets.</p><div class="screenshot"><div class="mediaobject" align="center"><img src="images/button.png" align="middle"></div></div></div><div class="simplesect" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="d0e1729"></a>datatarget</h2></div></div></div><p>The <a xmlns:xlink="http://www.w3.org/1999/xlink" href="../examples/datatarget.rb" target="_top"><code class="filename">datatarget.rb</code></a>
+    example program demonstrates most or all of the widgets that can work with
+    FOX data targets (that is, instances of class <code class="classname">FXDataTarget</code>).
+    Data targets are special objects that have a a string, float or integer
+    value associated with them, and can interact with widgets to keep the data
+    target's value in sync with the widget's setting. For example, you
+    can create a data target with a string value and attach that to a text
+    field widget. When the user types a new value in the text field, the data
+    target's value is automatically updated; and when the data
+    target's value is changed, the text field will update its setting.
+    Since a single data targets can be attached to multiple widgets, this can
+    be a useful way to keep multiple controls for the same logical value in
+    sync with each other.</p><div class="screenshot"><div class="mediaobject" align="center"><img src="images/datatarget.png" align="middle"></div></div></div><div class="simplesect" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="d0e1745"></a>dialog</h2></div></div></div><p>The <a xmlns:xlink="http://www.w3.org/1999/xlink" href="../examples/dialog.rb" target="_top"><code class="filename">dialog.rb</code></a>
+    example is a simple program demonstrating how to construct and display
+    modal and non-modal dialog boxes.</p><div class="screenshot"><div class="mediaobject" align="center"><img src="images/dialog.png" align="middle"></div></div></div><div class="simplesect" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="d0e1758"></a>dirlist</h2></div></div></div><p>The <a xmlns:xlink="http://www.w3.org/1999/xlink" href="../examples/dirlist.rb" target="_top"><code class="filename">dirlist.rb</code></a>
+    example program demonstrates the <code class="classname">FXDirList</code> widget.
+    The directory list is a special kind of tree list, where each tree item
+    represents a directory (or folder) in the file system.</p><div class="screenshot"><div class="mediaobject" align="center"><img src="images/dirlist.png" align="middle"></div></div></div><div class="simplesect" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="d0e1774"></a>iconlist</h2></div></div></div><p>The <a xmlns:xlink="http://www.w3.org/1999/xlink" href="../examples/iconlist.rb" target="_top"><code class="filename">iconlist.rb</code></a>
+    example program demonstrates the <code class="classname">FXIconList</code> widget.
+    An icon list is a special kind of list widget that can display its
+    contents in one of three basic modes (details mode, small icons mode or
+    large icons mode). The first screenshot below shows an icon list in
+    details mode, while the second shows the same icon list in "big
+    icons" mode.</p><div class="screenshot"><div class="mediaobject" align="center"><img src="images/iconlist-details.png" align="middle"></div></div><div class="screenshot"><div class="mediaobject" align="center"><img src="images/iconlist-bigicons.png" align="middle"></div></div></div><div class="simplesect" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="d0e1794"></a>mditest</h2></div></div></div><p>The <a xmlns:xlink="http://www.w3.org/1999/xlink" href="../examples/mditest.rb" target="_top"><code class="filename">mditest.rb</code></a>
+    example program demonstrates FOX's Multiple Document Interface (MDI)
+    capabilities, specifically the <code class="classname">FXMDIClient</code> and
+    <code class="classname">FXMDIChild</code> classes.</p><div class="screenshot"><div class="mediaobject" align="center"><img src="images/mditest.png" align="middle"></div></div></div><div class="simplesect" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="d0e1813"></a>groupbox</h2></div></div></div><p>The <a xmlns:xlink="http://www.w3.org/1999/xlink" href="../examples/groupbox.rb" target="_top"><code class="filename">groupbox.rb</code></a>
+    example program is a kind of "periodic table of widgets"
+    demonstration, FOX-style. It shows off a lot of the FOX widgets as well as
+    providing a good exercise of FOX's layout managers.</p><div class="screenshot"><div class="mediaobject" align="center"><img src="images/groupbox.png" align="middle"></div></div></div><div class="simplesect" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="d0e1826"></a>header</h2></div></div></div><p>The <a xmlns:xlink="http://www.w3.org/1999/xlink" href="../examples/header.rb" target="_top"><code class="filename">header.rb</code></a>
+    example program mainly demonstrates the <code class="classname">FXHeader</code>
+    widget and the <code class="classname">FXSplitter</code> layout manager.</p><div class="screenshot"><div class="mediaobject" align="center"><img src="images/header.png" align="middle"></div></div></div><div class="simplesect" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="d0e1845"></a>image</h2></div></div></div><p>The <a xmlns:xlink="http://www.w3.org/1999/xlink" href="../examples/image.rb" target="_top"><code class="filename">image.rb</code></a>
+    example demonstrates how to draw directly into an <code class="classname">FXImage</code>
+    object and then "draw" that image into a canvas.</p><div class="screenshot"><div class="mediaobject" align="center"><img src="images/image.png" align="middle"></div></div></div><div class="simplesect" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="d0e1861"></a>splitter</h2></div></div></div><p>The <a xmlns:xlink="http://www.w3.org/1999/xlink" href="../examples/splitter.rb" target="_top"><code class="filename">splitter.rb</code></a>
+    example demonstrates the <code class="classname">FXSplitter</code> layout manager.
+    It also provides an example of the <code class="classname">FXTreeList</code>
+    widget (on the left side of the split) and the <code class="classname">FXMatrix</code>
+    layout manager (in the middle pane).</p><div class="screenshot"><div class="mediaobject" align="center"><img src="images/splitter.png" align="middle"></div></div></div><div class="simplesect" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="d0e1883"></a>foursplit</h2></div></div></div><p>The <a xmlns:xlink="http://www.w3.org/1999/xlink" href="../examples/foursplit.rb" target="_top"><code class="filename">foursplit.rb</code></a>
+    example program demonstrates the <code class="classname">FX4Splitter</code> layout
+    manager. This four-way split is especially useful for CAD-type programs
+    where it's necessary to show multiple views of the model
+    simultaneously.</p><div class="screenshot"><div class="mediaobject" align="center"><img src="images/foursplit.png" align="middle"></div></div></div><div class="simplesect" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="d0e1899"></a>shutter</h2></div></div></div><p>The <a xmlns:xlink="http://www.w3.org/1999/xlink" href="../examples/shutter.rb" target="_top"><code class="filename">shutter.rb</code></a>
+    example provides a simple demonstration of the <code class="classname">FXShutter</code>
+    widget, with the skeleton of a PIM-type application. The very nice icons
+    used for this program are courtesy of <a xmlns:xlink="http://www.w3.org/1999/xlink" href="http://www.forrestwalter.com/icons" target="_top">Gort's Icons</a>.</p><div class="screenshot"><div class="mediaobject" align="center"><img src="images/shutter.png" align="middle"></div></div></div><div class="simplesect" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="d0e1918"></a>tabbook</h2></div></div></div><p>The <a xmlns:xlink="http://www.w3.org/1999/xlink" href="../examples/tabbook.rb" target="_top"><code class="filename">tabbook.rb</code></a>
+    example exists mainly to demonstrate the <code class="classname">FXTabBook</code>
+    widget, but shows off a few other features in the process.</p><div class="screenshot"><div class="mediaobject" align="center"><img src="images/tabbook.png" align="middle"></div></div></div><div class="simplesect" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="d0e1934"></a>table</h2></div></div></div><p>The <a xmlns:xlink="http://www.w3.org/1999/xlink" href="../examples/table.rb" target="_top"><code class="filename">table.rb</code></a>
+    example features the <code class="classname">FXTable</code> widget, sometimes
+    known as a "grid" or "spreadsheet" widget in other
+    toolkits.</p><div class="screenshot"><div class="mediaobject" align="center"><img src="images/table.png" align="middle"></div></div></div><div class="simplesect" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="d0e1950"></a>gltest</h2></div></div></div><p>The <a xmlns:xlink="http://www.w3.org/1999/xlink" href="../examples/gltest.rb" target="_top"><code class="filename">gltest.rb</code></a>
+    example program demonstrates how to create a basic OpenGL canvas (i.e. an
+    instance of the <code class="classname">FXGLCanvas</code> widget) and draw into
+    it. It also demonstrates how to use timers and chores. This example
+    requires the Ruby/OpenGL extension, available from the Ruby Application
+    Archive.</p><div class="screenshot"><div class="mediaobject" align="center"><img src="images/gltest.png" align="middle"></div></div></div><div class="simplesect" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="d0e1966"></a>glviewer</h2></div></div></div><p>The <a xmlns:xlink="http://www.w3.org/1999/xlink" href="../examples/glviewer.rb" target="_top"><code class="filename">glviewer.rb</code></a>
+    example program demonstrates how to use the <code class="classname">FXGLViewer</code>
+    widget and draw various kinds of GL objects into it. It can also be used
+    as model for a fairly complicated FXRuby application, since it includes a
+    lot of typical features (like a menu bar, toolbar, status line, etc.).</p><div class="screenshot"><div class="mediaobject" align="center"><img src="images/glviewer.png" align="middle"></div></div></div><div class="simplesect" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="d0e1982"></a>imageviewer</h2></div></div></div><p>Like the <a xmlns:xlink="http://www.w3.org/1999/xlink" href="../examples/glviewer.rb" target="_top"><code class="filename">glviewer.rb</code></a>
+    example, the <a xmlns:xlink="http://www.w3.org/1999/xlink" href="../examples/imageviewer.rb" target="_top"><code class="filename">imageviewer.rb</code></a>
+    can be used as a model for a typical full-featured GUI application, with a
+    menu bar, toolbar, and so forth. It also features the
+    <code class="classname">FXImageView</code> widget.</p><div class="screenshot"><div class="mediaobject" align="center"><img src="images/imageviewer.png" align="middle"></div></div></div><div class="simplesect" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="d0e2002"></a>dilbert</h2></div></div></div><p>The <a xmlns:xlink="http://www.w3.org/1999/xlink" href="../examples/dilbert.rb" target="_top"><code class="filename">dilbert.rb</code></a>
+    example fetches the "Daily Dilbert" cartoon and displays it in a
+    window. This was just a fun little exercise for me, but it does provide a
+    more bare-bones example of the <code class="classname">FXImageView</code> widget
+    than that provided by the (more complicated) <code class="filename">imageviewer.rb</code>
+    example.</p><p>This example program requires the html-parser extension, available
+    from the Ruby Application Archive.</p><div class="screenshot"><div class="mediaobject" align="center"><img src="images/dilbert.png" align="middle"></div></div></div><div class="simplesect" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="d0e2023"></a>raabrowser</h2></div></div></div><p>The <a xmlns:xlink="http://www.w3.org/1999/xlink" href="../examples/raabrowser.rb" target="_top"><code class="filename">raabrowser.rb</code></a>
+    example program shows a treelist view of the current Ruby Application
+    Archive (RAA) contents, and product-specific information for the currently
+    selected product in the panel on the right. This is a good demonstration
+    of the following features:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>the <code class="classname">FXSplitter</code> layout manager, used to
+        split the left side (containing the tree list) from the right side
+        (containing the information panel). If the panel on the left is too
+        narrow to see all of its contents (especially when you've expanded
+        the tree) try resizing the split.</p></li><li style="list-style-type: disc"><p>the <code class="classname">FXTreeList</code> widget, used to display
+        the RAA contents.</p></li><li style="list-style-type: disc"><p>data targets (i.e. instances of class <code class="classname">FXDataTarget</code>),
+        which are used for the contents of the fields in the information
+        panel.</p></li></ul></div><p>This example program requires the <a xmlns:xlink="http://www.w3.org/1999/xlink" href="http://www.jin.gr.jp/~nahi/Ruby/SOAP4R" target="_top">SOAP4R</a> extension.</p><div class="screenshot"><div class="mediaobject" align="center"><img src="images/raabrowser.png" align="middle"></div></div></div><div class="simplesect" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="d0e2060"></a>babelfish</h2></div></div></div><p>The <a xmlns:xlink="http://www.w3.org/1999/xlink" href="../examples/babelfish.rb" target="_top"><code class="filename">babelfish.rb</code></a>
+    example program, like the <code class="filename">raabrowser.rb</code> example,
+    depends on the <a xmlns:xlink="http://www.w3.org/1999/xlink" href="http://www.jin.gr.jp/~nahi/Ruby/SOAP4R" target="_top">SOAP4R</a>
+    extension. Other than that it doesn't bring anything new to the table.</p><div class="screenshot"><div class="mediaobject" align="center"><img src="images/babelfish.png" align="middle"></div></div></div><div class="simplesect" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="d0e2079"></a>browser</h2></div></div></div><p>The <a xmlns:xlink="http://www.w3.org/1999/xlink" href="../examples/browser.rb" target="_top"><code class="filename">browser.rb</code></a>
+    example program is mainly a "me too" for the class browser
+    distributed with Ruby/GTK. It's hard for me to get excited about it,
+    but here it is.</p><div class="screenshot"><div class="mediaobject" align="center"><img src="images/browser.png" align="middle"></div></div></div></div><div class="navfooter"><hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="unicode.html">Prev</a>&nbsp;</td><td width="20%" align="center"><a accesskey="u" href="pt01.html">Up</a></td><td width="40%" align="right">&nbsp;<a accesskey="n" href="events.html">Next</a></td></tr><tr><td width="40%" align="left" valign="top">Chapter&nbsp;6.&nbsp;Unicode and FXRuby&nbsp;</td><td width="20%" align="center"><a accesskey="h" href="book.html">Home</a></td><td width="40%" align="right" valign="top">&nbsp;Chapter&nbsp;8.&nbsp;FXRuby's Message-Target System</td></tr></table></div></body></html>

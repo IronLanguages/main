@@ -1,0 +1,8 @@
+* CHANGES
+* README
+* MANIFEST
+* Rakefile
+* win32-sapi.gemspec
+* examples/sapi5_test.rb
+* lib/win32/sapi5.rb
+* test/tc_sapi5.rb

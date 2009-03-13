@@ -1,0 +1,20 @@
+
+<html>
+<head><title>log_internal (Log4r::Logger)</title>
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+<style>
+  .kw { color: #3333FF; font-weight: bold }
+  .cmt { color: green; font-style: italic }
+  .str { color: #662222; font-style: italic }
+  .re  { color: #662222; }
+</style>
+</head>
+<body bgcolor="white">
+<pre><span class="cmt"># File log4r/staticlogger.rb, line 43</span>
+    <span class="kw">def</span> <span class="kw">self</span>.log_internal(level=1)
+      internal = Logger[<span class="str">'log4r'</span>]
+      <span class="kw">return</span> <span class="kw">if</span> internal.nil?
+      internal.send(LNAMES[level].downcase, <span class="kw">yield</span>)
+    <span class="kw">end</span></pre>
+</body>
+</html>

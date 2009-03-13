@@ -1,0 +1,23 @@
+
+<html>
+<head><title>new (Log4r::PatternFormatter)</title>
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+<style>
+  .kw { color: #3333FF; font-weight: bold }
+  .cmt { color: green; font-style: italic }
+  .str { color: #662222; font-style: italic }
+  .re  { color: #662222; }
+</style>
+</head>
+<body bgcolor="white">
+<pre><span class="cmt"># File log4r/formatter/patternformatter.rb, line 57</span>
+    <span class="kw">def</span> initialize(hash={})
+      <span class="kw">super</span>(hash)
+      @pattern = (hash[<span class="str">'pattern'</span>] <span class="kw">or</span> hash[:pattern] <span class="kw">or</span> <span class="kw">nil</span>)
+      @date_pattern = (hash[<span class="str">'date_pattern'</span>] <span class="kw">or</span> hash[:date_pattern] <span class="kw">or</span> <span class="kw">nil</span>)
+      @date_method = (hash[<span class="str">'date_method'</span>] <span class="kw">or</span> hash[:date_method] <span class="kw">or</span> <span class="kw">nil</span>)
+      @date_pattern = ISO8601 <span class="kw">if</span> @date_pattern.nil? <span class="kw">and</span> @date_method.nil?
+      PatternFormatter.create_format_methods(<span class="kw">self</span>)
+    <span class="kw">end</span></pre>
+</body>
+</html>

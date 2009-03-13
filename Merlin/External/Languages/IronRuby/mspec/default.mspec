@@ -107,21 +107,8 @@ class MSpecScript
     "library\\zlib",
     ]
   #.NET interop
-  net_interop_root = "..\\..\\..\\..\\..\\Main\\Languages\\Ruby\\Tests\\Interop"
-  set :derivation, [
-    net_interop_root + "\\derivation"
-    ]
-  set :load, [
-    net_interop_root + "\\load"
-    ]
-  set :mapping, [
-    net_interop_root + "\\mapping"
-    ]
-  set :special, [
-    net_interop_root + "\\special"
-    ]
-  set :using, [
-    net_interop_root + "\\using"
+  set :netinterop, [
+    "..\\..\\..\\..\\..\\Main\\Languages\\Ruby\\Tests\\Interop"
     ]
   
   set :thread, [
@@ -130,7 +117,6 @@ class MSpecScript
     ]
 
   #combination tasks
-  set :netinterop, get(:derivation) + get(:load) + get(:mapping) + get(:special) + get(:using)
   set :core, get(:core1) + get(:core2)
   set :lib, get(:lib1) + get(:lib2)
 

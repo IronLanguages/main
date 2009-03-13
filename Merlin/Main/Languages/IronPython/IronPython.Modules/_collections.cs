@@ -24,6 +24,7 @@ using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
 using Microsoft.Scripting;
 using Microsoft.Scripting.Actions;
+using Microsoft.Scripting.Math;
 using Microsoft.Scripting.Runtime;
 using SpecialNameAttribute = System.Runtime.CompilerServices.SpecialNameAttribute;
 
@@ -65,17 +66,19 @@ namespace IronPython.Modules {
                 extend(iterable);
             }
 
-            public void __init__(object iterable, int maxLen) {
-                if (maxLen < 0) {
-                    throw PythonOps.ValueError("maxlen must be non-negative");
-                }
-                _maxLen = maxLen;
+            public void __init__(object iterable, object maxLen) {
+                _maxLen = VerifyMaxLenValue(maxLen);
+                
                 clear();
                 extend(iterable);
             }
 
             public void __init__(object iterable, [ParamDictionary] IAttributesCollection dict) {
-                __init__(iterable, VerifyMaxLen(dict));
+                if (VerifyMaxLen(dict) < 0) {
+                    __init__(iterable);
+                } else {
+                    __init__(iterable, VerifyMaxLen(dict));
+                }
             }
 
             private static int VerifyMaxLen(IAttributesCollection dict) {
@@ -91,8 +94,21 @@ namespace IronPython.Modules {
                     }
                 }
 
-                if (value is int) return (int)value;
-                else if (value is Extensible<int>) return ((Extensible<int>)value).Value;
+                return VerifyMaxLenValue(value);
+            }
+
+            private static int VerifyMaxLenValue(object value) {
+                if (value == null) {
+                    return -1;
+                } else if (value is int || value is BigInteger || value is double) {
+                    int val = (int)value;
+                    if (val < 0) throw PythonOps.ValueError("maxlen must be non-negative");
+                    return val;
+                } else if (value is Extensible<int>) {
+                    int val = ((Extensible<int>)value).Value;
+                    if (val < 0) throw PythonOps.ValueError("maxlen must be non-negative");
+                    return val;
+                }
                 throw PythonOps.TypeError("deque(): keyword argument 'maxlen' requires integer");
             }
 

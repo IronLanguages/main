@@ -1,0 +1,13 @@
+History.txt
+LICENSE
+Manifest.txt
+README.txt
+Rakefile
+TODO
+lib/dm-ar-finders.rb
+lib/dm-ar-finders/version.rb
+spec/integration/ar-finders_spec.rb
+spec/spec.opts
+spec/spec_helper.rb
+tasks/install.rb
+tasks/spec.rb

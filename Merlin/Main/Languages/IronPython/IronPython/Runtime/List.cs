@@ -176,7 +176,7 @@ namespace IronPython.Runtime {
         /// the same as the length of the array.  The array is held
         /// onto and may be mutated in the future by the list.
         /// </summary>
-        /// <param name="items"></param>
+        /// <param name="data">params array to use for lists storage</param>
         internal static List FromArrayNoCopy(params object[] data) {
             return new List(data);
         }

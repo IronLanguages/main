@@ -1,0 +1,8 @@
+* MANIFEST
+* CHANGES
+* README
+* Rakefile
+* win32-sound.gempsec
+* examples/sound_test.rb
+* lib/win32/sound.rb
+* test/tc_sound.rb

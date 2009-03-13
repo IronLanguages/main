@@ -393,7 +393,6 @@ namespace IronPython.Runtime.Operations {
 
         public static int count(this string self, string ssub, int start, int end) {
             if (ssub == null) throw PythonOps.TypeError("expected string for 'sub' argument, got NoneType");
-            string v = self;
 
             if (start > self.Length) {
                 return 0;
@@ -407,9 +406,10 @@ namespace IronPython.Runtime.Operations {
             }
 
             int count = 0;
+            CompareInfo c = CultureInfo.InvariantCulture.CompareInfo;
             while (true) {
                 if (end <= start) break;
-                int index = v.IndexOf(ssub, start, end - start);
+                int index = c.IndexOf(self, ssub, start, end - start, CompareOptions.Ordinal);
                 if (index == -1) break;
                 count++;
                 start = index + ssub.Length;
@@ -509,6 +509,7 @@ namespace IronPython.Runtime.Operations {
         public static int find(this string self, string sub) {
             if (sub == null) throw PythonOps.TypeError("expected string, got NoneType");
             if (sub.Length == 1) return self.IndexOf(sub[0]);
+            
             CompareInfo c = CultureInfo.InvariantCulture.CompareInfo;
             return c.IndexOf(self, sub, CompareOptions.Ordinal);
 
@@ -518,7 +519,9 @@ namespace IronPython.Runtime.Operations {
             if (sub == null) throw PythonOps.TypeError("expected string, got NoneType");
             if (start > self.Length) return -1;
             start = PythonOps.FixSliceIndex(start, self.Length);
-            return self.IndexOf(sub, start);
+
+            CompareInfo c = CultureInfo.InvariantCulture.CompareInfo;
+            return c.IndexOf(self, sub, start, CompareOptions.Ordinal);
         }
 
         public static int find(this string self, string sub, int start, int end) {
@@ -528,7 +531,12 @@ namespace IronPython.Runtime.Operations {
             end = PythonOps.FixSliceIndex(end, self.Length);
             if (end < start) return -1;
 
-            return self.IndexOf(sub, start, end - start);
+            CompareInfo c = CultureInfo.InvariantCulture.CompareInfo;
+            return c.IndexOf(self, sub, start, end - start, CompareOptions.Ordinal);
+        }
+
+        public static int find(this string self, string sub, object start, [DefaultParameterValue(null)]object end) {
+            return find(self, sub, CheckIndex(start, 0), CheckIndex(end, self.Length));
         }
 
         public static int index(this string self, string sub) {
@@ -546,6 +554,10 @@ namespace IronPython.Runtime.Operations {
             int ret = find(self, sub, start, end);
             if (ret == -1) throw PythonOps.ValueError("substring {0} not found in {1}", sub, self);
             return ret;
+        }
+
+        public static int index(this string self, string sub, object start, [DefaultParameterValue(null)]object end) {
+            return index(self, sub, CheckIndex(start, 0), CheckIndex(end, self.Length));
         }
 
         public static bool isalnum(this string self) {
@@ -817,7 +829,12 @@ namespace IronPython.Runtime.Operations {
             if (sub.Length == 0) return end;    // match at the end
             if (end == 0) return -1;    // can't possibly find anything
 
-            return self.LastIndexOf(sub, end - 1, end - start);
+            CompareInfo c = CultureInfo.InvariantCulture.CompareInfo;
+            return c.LastIndexOf(self, sub, end - 1, end - start, CompareOptions.Ordinal);
+        }
+
+        public static int rfind(this string self, string sub, object start, [DefaultParameterValue(null)]object end) {
+            return rfind(self, sub, CheckIndex(start, 0), CheckIndex(end, self.Length));
         }
 
         public static int rindex(this string self, string sub) {
@@ -832,6 +849,10 @@ namespace IronPython.Runtime.Operations {
             int ret = rfind(self, sub, start, end);
             if (ret == -1) throw PythonOps.ValueError("substring {0} not found in {1}", sub, self);
             return ret;
+        }
+
+        public static int rindex(this string self, string sub, object start, [DefaultParameterValue(null)]object end) {
+            return rindex(self, sub, CheckIndex(start, 0), CheckIndex(end, self.Length));
         }
 
         public static string rjust(this string self, int width) {
@@ -1363,6 +1384,18 @@ namespace IronPython.Runtime.Operations {
         #endregion
 
         #region Private implementation details
+
+        private static int CheckIndex(object index, int defaultValue) {
+            int res;
+
+            if (index == null) {
+                res = defaultValue;
+            } else if (!Converter.TryConvertToIndex(index, out res)) {
+                throw PythonOps.TypeError("slice indices must be integers or None or have an __index__ method");
+            }
+
+            return res;
+        }
 
         private static void AppendJoin(object value, int index, StringBuilder sb) {
             string strVal;

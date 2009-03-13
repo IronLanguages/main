@@ -89,7 +89,7 @@ namespace System.Dynamic {
         /// <summary>
         /// Tries to perform binding of the dynamic invoke operation.
         /// </summary>    
-        /// <param name="binder">An instance of the <see cref="GetMemberBinder"/> that represents the details of the dynamic operation.</param>
+        /// <param name="binder">An instance of the <see cref="InvokeBinder"/> that represents the details of the dynamic operation.</param>
         /// <param name="instance">The target of the dynamic operation. </param>
         /// <param name="args">An array of <see cref="DynamicMetaObject"/> instances - arguments to the invoke member operation.</param>
         /// <param name="result">The new <see cref="DynamicMetaObject"/> representing the result of the binding.</param>
@@ -125,7 +125,7 @@ namespace System.Dynamic {
         /// <summary>
         /// Tries to perform binding of the dynamic get index operation.
         /// </summary>
-        /// <param name="binder">An instance of the <see cref="GetMemberBinder"/> that represents the details of the dynamic operation.</param>
+        /// <param name="binder">An instance of the <see cref="GetIndexBinder"/> that represents the details of the dynamic operation.</param>
         /// <param name="instance">The target of the dynamic operation. </param>
         /// <param name="args">An array of <see cref="DynamicMetaObject"/> instances - arguments to the invoke member operation.</param>
         /// <param name="result">The new <see cref="DynamicMetaObject"/> representing the result of the binding.</param>
@@ -143,7 +143,7 @@ namespace System.Dynamic {
         /// <summary>
         /// Tries to perform binding of the dynamic set index operation.
         /// </summary>
-        /// <param name="binder">An instance of the <see cref="GetMemberBinder"/> that represents the details of the dynamic operation.</param>
+        /// <param name="binder">An instance of the <see cref="SetIndexBinder"/> that represents the details of the dynamic operation.</param>
         /// <param name="instance">The target of the dynamic operation. </param>
         /// <param name="args">An array of <see cref="DynamicMetaObject"/> instances - arguments to the invoke member operation.</param>
         /// <param name="value">The <see cref="DynamicMetaObject"/> representing the value for the set index operation.</param>
@@ -158,6 +158,41 @@ namespace System.Dynamic {
                 return false;
             }
         }
+
+        /// <summary>
+        /// Tries to perform binding of the dynamic Convert operation.
+        /// </summary>
+        /// <param name="binder">An instance of the <see cref="ConvertBinder"/> that represents the details of the dynamic operation.</param>
+        /// <param name="instance">The target of the dynamic operation.</param>
+        /// <param name="result">The new <see cref="DynamicMetaObject"/> representing the result of the binding.</param>
+        /// <returns>true if operation was bound successfully; otherwise, false.</returns>
+        public static bool TryConvert(ConvertBinder binder, DynamicMetaObject instance, out DynamicMetaObject result) {
+            if (IsComObject(instance.Value)) {
+                ContractUtils.RequiresNotNull(binder, "binder");
+
+                // Converting a COM object to any interface is always considered possible - it will result in 
+                // a QueryInterface at runtime
+                if (binder.Type.IsInterface) {
+                    result = new DynamicMetaObject(
+                        Expression.Convert(
+                            instance.Expression,
+                            binder.Type
+                        ),
+                        BindingRestrictions.GetExpressionRestriction(
+                            Expression.Call(
+                                typeof(ComObject).GetMethod("IsComObject", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic),
+                                Helpers.Convert(instance.Expression, typeof(object))
+                            )
+                        )
+                    );
+                    return true;
+                }
+            }
+            
+            result = null;
+            return false;
+        }
+
 
         /// <summary>
         /// Gets the member names associated with the object.

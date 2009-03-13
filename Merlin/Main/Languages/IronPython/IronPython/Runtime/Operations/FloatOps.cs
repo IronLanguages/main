@@ -30,14 +30,14 @@ namespace IronPython.Runtime.Operations {
 
     public static partial class DoubleOps {
         [StaticExtensionMethod]
-        public static object __new__(CodeContext context, PythonType cls) {
+        public static object __new__(CodeContext/*!*/ context, PythonType cls) {
             if (cls == TypeCache.Double) return 0.0;
 
             return cls.CreateInstance(context);
         }
 
         [StaticExtensionMethod]
-        public static object __new__(CodeContext context, PythonType cls, object x) {
+        public static object __new__(CodeContext/*!*/ context, PythonType cls, object x) {
             if (cls == TypeCache.Double) {
                 if (x is string) {
                     return ParseFloat((string)x);
@@ -133,7 +133,7 @@ namespace IronPython.Runtime.Operations {
 
             return PythonTuple.MakeTuple(x, d);
         }
-        
+
         #region Unary operators
 
         public static object __int__(double d) {
@@ -265,6 +265,26 @@ namespace IronPython.Runtime.Operations {
             return Compare(x, y) != 0;
         }
 
+        internal const double PositiveZero = 0.0;
+        internal const double NegativeZero = -0.0;
+
+        internal static bool IsPositiveZero(double value) {
+            return (value == 0.0) && (1.0 / value == double.PositiveInfinity);
+        }
+
+        internal static bool IsNegativeZero(double value) {
+            return (value == 0.0) && (1.0 / value == double.NegativeInfinity);
+        }
+
+        internal static int Sign(double value) {
+            if (value == 0.0) {
+                return 1.0 / value == double.PositiveInfinity ? 1 : -1;
+            } else {
+                // note: NaN intentionally shows up as negative
+                return value > 0 ? 1 : -1;
+            }
+        }
+
         internal static int Compare(double x, double y) {
             if (Double.IsInfinity(x) && Double.IsNaN(y)) {
                 return 1;
@@ -289,7 +309,7 @@ namespace IronPython.Runtime.Operations {
             // BigInts can hold doubles, but doubles can't hold BigInts, so
             // if we're comparing against a BigInt then we should convert ourself
             // to a long and then compare.
-            if (object.ReferenceEquals(x,null)) return -1;
+            if (object.ReferenceEquals(x, null)) return -1;
             BigInteger by = BigInteger.Create(y);
             if (by == x) {
                 double mod = y % 1;
@@ -404,9 +424,11 @@ namespace IronPython.Runtime.Operations {
 
             if (spec.Sign == null) {
                 // This is special because its not "-nan", it's nan.
-                return spec.AlignNumericText(digits, self == 0, Double.IsNaN(self) || self > 0);
+                // Always pass isZero=false so that -0.0 shows up
+                return spec.AlignNumericText(digits, false, Double.IsNaN(self) || Sign(self) > 0);
             } else {
-                return spec.AlignNumericText(digits, self == 0, self > 0);
+                // Always pass isZero=false so that -0.0 shows up
+                return spec.AlignNumericText(digits, false, Sign(self) > 0);
             }
         }
 
@@ -431,7 +453,7 @@ namespace IronPython.Runtime.Operations {
                         // precision applies to the combined digits before and after the decimal point
                         // so we first need find out how many digits we have before...
                         int digitCnt = 1;
-                        double cur = Math.Abs(self);
+                        double cur = self;
                         while (cur >= 10) {
                             cur /= 10;
                             digitCnt++;
@@ -461,7 +483,7 @@ namespace IronPython.Runtime.Operations {
                         }
                     } else {
                         // just the default formatting
-                        if (self >= 1000000000000 || self <= -1000000000000) {
+                        if (self >= 1000000000000) {
                             digits = self.ToString("0.#e+00", CultureInfo.InvariantCulture);
                         } else {
                             digits = self.ToString("0.0", CultureInfo.InvariantCulture);
@@ -470,12 +492,11 @@ namespace IronPython.Runtime.Operations {
                     break;
                 case 'n':
                 case 'g':
-                case 'G':
-                    {
+                case 'G': {
                         // precision applies to the combined digits before and after the decimal point
                         // so we first need find out how many digits we have before...
                         int digitCnt = 1;
-                        double cur = Math.Abs(self);
+                        double cur = self;
                         while (cur >= 10) {
                             cur /= 10;
                             digitCnt++;
@@ -501,7 +522,7 @@ namespace IronPython.Runtime.Operations {
                             } else {
                                 // zero precision, no decimal
                                 fmt = "0";
-                            }                            
+                            }
 
                             digits = self.ToString(fmt + (spec.Type == 'G' ? "E+00" : "e+00"), CultureInfo.InvariantCulture);
                         } else {
@@ -527,7 +548,7 @@ namespace IronPython.Runtime.Operations {
                                 }
                             }
                         }
-                    }                   
+                    }
                     break;
                 default:
                     throw PythonOps.ValueError("Unknown conversion type {0}", spec.Type.ToString());
@@ -544,7 +565,7 @@ namespace IronPython.Runtime.Operations {
             return "IEEE, big-endian";
         }
 
-        public static void __setformat__(CodeContext/*!*/ context, string typestr, string fmt) {            
+        public static void __setformat__(CodeContext/*!*/ context, string typestr, string fmt) {
             switch (fmt) {
                 case "unknown":
                     break;
@@ -569,9 +590,9 @@ namespace IronPython.Runtime.Operations {
                 case "double":
                     PythonContext.GetContext(context).DoubleFormat = fmt;
                     break;
-                default: 
+                default:
                     throw PythonOps.ValueError("__setformat__() argument 1 must be 'double' or 'float'");
-            }            
+            }
         }
     }
 
@@ -626,6 +647,62 @@ namespace IronPython.Runtime.Operations {
             return (float)DoubleOps.Power(x, y);
         }
 
+        [StaticExtensionMethod]
+        public static object __new__(CodeContext/*!*/ context, PythonType cls) {
+            if (cls == TypeCache.Single) return (float)0.0;
+
+            return cls.CreateInstance(context);
+        }
+
+        [StaticExtensionMethod]
+        public static object __new__(CodeContext/*!*/ context, PythonType cls, object x) {
+            if (cls != TypeCache.Single) {
+                return cls.CreateInstance(context, x);
+            }
+
+            if (x is string) {
+                return ParseFloat((string)x);
+            } else if (x is Extensible<string>) {
+                return ParseFloat(((Extensible<string>)x).Value);
+            } else if (x is char) {
+                return ParseFloat(ScriptingRuntimeHelpers.CharToString((char)x));
+            }
+
+            double doubleVal;
+            if (Converter.TryConvertToDouble(x, out doubleVal)) return (float)doubleVal;
+
+            if (x is Complex64) throw PythonOps.TypeError("can't convert complex to Single; use abs(z)");
+
+            object d = PythonOps.CallWithContext(context, PythonOps.GetBoundAttr(context, x, Symbols.ConvertToFloat));
+            if (d is double) return (float)(double)d;
+            throw PythonOps.TypeError("__float__ returned non-float (type %s)", DynamicHelpers.GetPythonType(d));
+        }
+
+        [StaticExtensionMethod]
+        public static object __new__(CodeContext/*!*/ context, PythonType cls, IList<byte> s) {
+            if (cls != TypeCache.Single) {
+                return cls.CreateInstance(context, s);
+            }
+
+            object value;
+            IPythonObject po = s as IPythonObject;
+            if (po != null &&
+                PythonTypeOps.TryInvokeUnaryOperator(DefaultContext.Default, po, Symbols.ConvertToFloat, out value)) {
+                if (value is double) return (float)(double)value;
+                return value;
+            }
+
+            return ParseFloat(s.MakeString());
+        }
+
+        private static object ParseFloat(string x) {
+            try {
+                return (float)LiteralParser.ParseFloat(x);
+            } catch (FormatException) {
+                throw PythonOps.ValueError("invalid literal for Single(): {0}", x);
+            }
+        }
+
         public static string __str__(CodeContext/*!*/ context, float x) {
             // Python does not natively support System.Single. However, we try to provide
             // formatting consistent with System.Double.
@@ -636,6 +713,10 @@ namespace IronPython.Runtime.Operations {
 
         public static string __repr__(CodeContext/*!*/ context, float self) {
             return __str__(context, self);
+        }
+
+        public static string __format__(CodeContext/*!*/ context, float self, [NotNull]string/*!*/ formatSpec) {
+            return DoubleOps.__format__(context, self, formatSpec);
         }
 
         public static int __hash__(float x) {

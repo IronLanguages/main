@@ -1,0 +1,73 @@
+<html><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+   <title>Chapter&nbsp;2.&nbsp;Installing from Gems</title><link rel="stylesheet" href="style.css" type="text/css"><meta name="generator" content="DocBook v5 XSL Stylesheets V1.72.0"><link rel="start" href="book.html" title="Developing Graphical User Interfaces with FXRuby"><link rel="up" href="pt01.html" title="Part&nbsp;I.&nbsp;The Basics"><link rel="prev" href="build.html" title="Chapter&nbsp;1.&nbsp;Building from Source Code"><link rel="next" href="tutorial1.html" title="Chapter&nbsp;3.&nbsp;Hello, World!"></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="3" align="center">Chapter&nbsp;2.&nbsp;Installing from Gems</th></tr><tr><td width="20%" align="left"><a accesskey="p" href="build.html">Prev</a>&nbsp;</td><th width="60%" align="center">Part&nbsp;I.&nbsp;The Basics</th><td width="20%" align="right">&nbsp;<a accesskey="n" href="tutorial1.html">Next</a></td></tr></table><hr></div><div class="chapter" lang="en"><div class="titlepage"><div><div><h2 class="title"><a name="gems"></a>Chapter&nbsp;2.&nbsp;Installing from Gems</h2></div></div></div><div class="simplesect" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="d0e430"></a>Introduction</h2></div></div></div><p>FXRuby uses <a xmlns:xlink="http://www.w3.org/1999/xlink" href="http://rubygems.rubyforge.org" target="_top">RubyGems</a> as its preferred
+    packaging and distribution method. The code is available both as</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>a "source" gem, which contains source code that must be compiled
+        on your computer before it's installed; and,</p></li><li style="list-style-type: disc"><p>a "binary" gem, which contains a precompiled version of the code
+        for a specific operating system (such as Windows).</p></li></ul></div></div><div class="simplesect" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="d0e445"></a>Installing from a Source Gem</h2></div></div></div><p>If you've already downloaded the source gem, you can install it by
+    typing:</p><pre class="screen">$ <span><strong class="command">sudo gem install fxruby-1.6.13.gem</strong></span></pre><p>Note the use of the <span><strong class="command">sudo</strong></span> command to invoke
+    superuser privileges, since you'll typically need superuser privileges to
+    install the library files. By default, the source gem will look for your
+    FOX (and optionally, FXScintilla) installation in a few standard places,
+    such as the <code class="filename">/usr</code>, <code class="filename">/usr/local</code> and
+    <code class="filename">/sw</code> directories. If you've installed those libraries
+    under some other directory (for example, in your home directory) you might
+    need to pass some additional arguments on the command line, e.g.</p><pre class="screen">$ <span><strong class="command">sudo gem install fxruby-1.6.13.gem --force -- --with-fox-include=/home/lyle/include/fox-1.6 --with-fox-lib=/home/lyle/lib</strong></span></pre><p>If you're installing a source gem on a Windows box, you'd instead
+    type something like:</p><pre class="screen">C:\&gt; <span><strong class="command">gem install fxruby-1.6.13.gem --force -- --with-fox-include=C:\include\fox-1.6 --with-fox-lib=C:\lib</strong></span></pre><p>If you're installing a source gem, it can take quite awhile to build
+    FXRuby, so this might be a good time to take a coffee break. You won't see
+    any compiler output appear on the screen while the gem is compiling, but
+    rest assured that the output is being saved into the
+    <code class="filename">gem_make.out</code> file.</p><p>As a quick sanity check, to make sure that all is well, you should
+    probably fire up <code class="filename">irb</code> and try to require the FXRuby
+    gem once the installation is complete:</p><pre class="screen">$ <span><strong class="command">irb</strong></span>
+irb(main):001:0&gt; <strong class="userinput"><code><span><strong class="command">require 'rubygems'</strong></span></code></strong>
+true
+irb(main):002:0&gt; <span><strong class="command">require 'fox16'</strong></span>
+true</pre><p>If the import failed (usually with a message along the lines of
+    "Cannot load library"), first check the "Things That Can Go Wrong" section
+    of this chapter. If that doesn't help, drop me an e-mail or ask around on
+    the Ruby newsgroup or mailing list; it's quite likely that someone else
+    has run into this problem too. Once you do have a working FXRuby
+    installation, you're ready to check out the example programs.</p></div><div class="simplesect" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="d0e502"></a>Installing from a Binary Gem</h2></div></div></div><p>To install a binary gem for Windows, just type:</p><pre class="screen">C:\&gt; <span><strong class="command">gem install fxruby-1.6.13-mswin32.gem</strong></span></pre><p>As a quick sanity check, to make sure that all is well, you should
+    probably fire up <code class="filename">irb</code> and try to require the FXRuby
+    gem once the installation is complete:</p><pre class="screen">C:\&gt; <span><strong class="command">irb</strong></span>
+irb(main):001:0&gt; <strong class="userinput"><code><span><strong class="command">require 'rubygems'</strong></span></code></strong>
+true
+irb(main):002:0&gt; <span><strong class="command">require 'fox16'</strong></span>
+true</pre><p>If the import failed (usually with a message along the lines of
+    "Cannot load library"), first check the "Things That Can Go Wrong" section
+    of this chapter. If that doesn't help, drop me an e-mail or ask around on
+    the Ruby newsgroup or mailing list; it's quite likely that someone else
+    has run into this problem too. Once you do have a working FXRuby
+    installation, you're ready to check out the example programs.</p></div><div class="simplesect" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="d0e530"></a>Things That Can Go Wrong</h2></div></div></div><p><span class="emphasis"><em>"Cannot load library"</em></span></p><p>On Linux and other Unix systems that support shared libraries, FOX
+    is typically installed as a shared library named
+    <code class="filename">libFOX-1.6.so</code>. After all of the source files for
+    FXRuby are compiled, the last step is to link all of the FXRuby object
+    files together with the FOX library (and possibly other system libraries)
+    to produce a new shared object that Ruby can import as an extension
+    module.</p><p>There are a few things that can go wrong when you try to import this
+    extension into Ruby. A common problem is that the operating system cannot
+    locate the FOX shared library (<code class="filename">libFOX-1.6.so</code>) when it
+    tries to dynamically load the FXRuby extension module; when this happens,
+    the error message will look something like:</p><pre class="screen">$ <span><strong class="command">irb</strong></span>
+irb(main):001:0&gt; <strong class="userinput"><code>require 'fox16'</code></strong>
+LoadError: libFOX-1.6.so: cannot open shared object file: No such file or directory - /usr/local/lib/ruby/1.8/i686-linux/fox16.so
+        from (irb):1:in 'require'
+        from (irb):1
+    </pre><p>Note that the wording of this error message may be slightly
+    different, depending on your operating environment. One workaround for
+    this problem is to modify the <code class="constant">LD_LIBRARY_PATH</code>
+    environment variable to include the directory where
+    <code class="filename">libFOX-1.6.so</code> is installed. For example, if
+    <code class="filename">libFOX-1.6.so</code> is installed in <code class="filename">/usr/local/lib</code>, try setting:</p><pre class="screen">$ <span><strong class="command">export LD_LIBRARY_PATH=/usr/local/lib</strong></span>
+$ <span><strong class="command">irb</strong></span>
+irb(main):001:0&gt; <strong class="userinput"><code>require 'fox16'</code></strong>
+</pre><p>If this works, you can of course permanently add the
+    <code class="constant">LD_LIBRARY_PATH</code> setting to your login file(s) so that
+    you don't have to remember to type it each time. Another approach that
+    should work for Linux is to modify your
+    <code class="filename">/etc/ld.so.conf</code> file to include the installation
+    directory (e.g. <code class="filename">/usr/local/lib</code>). If you'd like to do
+    this instead, you'll need to (as root):</p><div class="orderedlist"><ol type="1" compact><li><p>Edit your <code class="filename">/etc/ld.so.conf</code> file and add the
+        directory where <code class="filename">libFOX-1.6.so</code> is installed;
+        and,</p></li><li><p>At the shell prompt, type <span><strong class="command">ldconfig</strong></span> to reload
+        the linker configuration.</p></li></ol></div></div></div><div class="navfooter"><hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="build.html">Prev</a>&nbsp;</td><td width="20%" align="center"><a accesskey="u" href="pt01.html">Up</a></td><td width="40%" align="right">&nbsp;<a accesskey="n" href="tutorial1.html">Next</a></td></tr><tr><td width="40%" align="left" valign="top">Chapter&nbsp;1.&nbsp;Building from Source Code&nbsp;</td><td width="20%" align="center"><a accesskey="h" href="book.html">Home</a></td><td width="40%" align="right" valign="top">&nbsp;Chapter&nbsp;3.&nbsp;Hello, World!</td></tr></table></div></body></html>

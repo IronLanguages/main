@@ -1,0 +1,89 @@
+#!/usr/local/bin/ruby -ws
+
+# ABC metric
+#
+# Assignments, Branches, and Calls
+#
+# A simple way to measure the complexity of a function or method.
+
+if defined? $I and String === $I then
+  $I.split(/:/).each do |dir|
+    $: << dir
+  end
+end
+
+PARSE_TREE_ABC=true
+
+begin require 'rubygems' rescue LoadError end
+require 'sexp'
+require 'parse_tree'
+require 'sexp_processor'
+
+old_classes = []
+ObjectSpace.each_object(Module) do |klass|
+  old_classes << klass
+end
+
+ARGV.each do |name|
+  begin
+    require name
+  rescue NameError => err
+    $stderr.puts "ERROR requiring #{name}. Perhaps you need to add some -I's?\n\n#{err}"
+  end
+end
+
+new_classes = []
+ObjectSpace.each_object(Module) do |klass|
+  new_classes << klass
+end
+
+score = {}
+
+new_classes -= old_classes
+
+klasses = Sexp.from_array(ParseTree.new.parse_tree(*new_classes))
+klasses.each do |klass|
+  klass.shift # :class
+  klassname = klass.shift
+  klass.shift # superclass
+  methods = klass
+
+  methods.each do |defn|
+    a=b=c=0
+    defn.shift
+    methodname = defn.shift
+    tokens = defn.structure.flatten
+    tokens.each do |token|
+      case token
+      when :attrasgn, :attrset, :dasgn_curr, :iasgn, :lasgn, :masgn then
+        a += 1
+      when :and, :case, :else, :if, :iter, :or, :rescue, :until, :when, :while  then
+        b += 1
+      when :call, :fcall, :super, :vcall, :yield then
+        c += 1
+      when :args, :argscat, :array, :begin, :block, :block_arg, :block_pass, :bool, :cfunc, :colon2, :const, :cvar, :defined, :defn, :dregx, :dstr, :dvar, :dxstr, :ensure, :false, :fbody, :gvar, :hash, :ivar, :lit, :long, :lvar, :match2, :match3, :nil, :not, :nth_ref, :return, :scope, :self, :splat, :str, :to_ary, :true, :unknown, :value, :void, :zarray, :zarray, :zclass, :zsuper then
+        # ignore
+      else
+        puts "unhandled token #{token.inspect}" if $VERBOSE
+      end
+    end
+    key = ["#{klassname}.#{methodname}", a, b, c]
+    val = Math.sqrt(a*a+b*b+c*c)
+    score[key] = val
+  end
+end
+
+puts "|ABC| = Math.sqrt(assignments^2 + branches^2 + calls^2)"
+puts
+count = 1
+ta = tb = tc = tval = 0
+score.sort_by { |k,v| v }.reverse.each do |key,val|
+  name, a, b, c = *key
+  ta += a
+  tb += b
+  tc += c
+  tval += val
+  printf "%3d) %-50s = %2d + %2d + %2d = %6.2f\n", count, name, a, b, c, val
+  count += 1
+end rescue nil
+printf "%3d) %-50s = %2d + %2d + %2d = %6.2f\n", count, "Total", ta, tb, tc, tval

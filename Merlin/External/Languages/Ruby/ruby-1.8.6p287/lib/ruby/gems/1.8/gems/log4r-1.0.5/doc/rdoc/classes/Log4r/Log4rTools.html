@@ -1,0 +1,116 @@
+
+<html><head>
+  <title>Class: Log4r::Log4rTools</title>
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <link rel=StyleSheet href="../.././rdoc-style.css" type="text/css" media=screen>
+  <script type="text/javascript" language="JavaScript">
+  <!--
+  function popCode(url) {
+    parent.frames.source.location = url
+  }
+  //-->
+  </script>
+</head>
+<body bgcolor="white">
+
+
+<table width="100%" border=0 cellspacing=0>
+ <tr class="title-row">
+ <td class="big-title-font">
+   <font size=-3><B>Class</B><BR></font>Log4r::Log4rTools
+ </td>
+ <td align="right">
+   <table cellspacing=0 cellpadding=2>
+     <tr valign="top">
+      <td class="small-title-font">In:</td>
+      <td class="small-title-font">
+log4r/base.rb
+      </td>
+     </tr>
+     <tr>
+      <td class="small-title-font">Parent:</td>
+      <td class="small-title-font">
+Object
+      </td>
+     </tr>
+   </table>
+  </td>
+  </tr>
+</table><br>
+  <!-- banner header -->
+
+
+<div class="description"><p>
+Some common functions
+</p>
+</div>
+
+</div>
+
+<table cellpadding=5 width="100%">
+<tr><td class="tablesubtitle">Methods</td></tr>
+</table><br>
+<div class="name-list">
+<a href="#M000035">comma_split</a>,
+<a href="#M000034">decode_bool</a>,
+<a href="#M000033">valid_level?</a>,
+<a href="#M000032">validate_level</a>,
+</div>
+
+
+
+  
+
+<table cellpadding=5 width="100%">
+<tr><td class="tablesubtitle">Public Class methods</td></tr>
+</table>
+<table width="100%" cellspacing = 0 cellpadding=5 border=0>
+<tr><td class="methodtitle">
+<a name="M000032">
+<b>validate_level</b>(level, depth=0) 
+<a href="Log4rTools.src/M000032.html" target="source" class="srclink">src</a>
+</a></td></tr>
+</table>
+<div class="description">
+<p>
+Raises ArgumentError if level argument is an invalid level. Depth specifies
+how many trace entries to remove.
+</p>
+</div>
+<table width="100%" cellspacing = 0 cellpadding=5 border=0>
+<tr><td class="methodtitle">
+<a name="M000033">
+<b>valid_level?</b>(lev) 
+<a href="Log4rTools.src/M000033.html" target="source" class="srclink">src</a>
+</a></td></tr>
+</table>
+<table width="100%" cellspacing = 0 cellpadding=5 border=0>
+<tr><td class="methodtitle">
+<a name="M000034">
+<b>decode_bool</b>(hash, symbol, default) 
+<a href="Log4rTools.src/M000034.html" target="source" class="srclink">src</a>
+</a></td></tr>
+</table>
+<div class="description">
+<p>
+Shortcut for decoding &#8216;true&#8217;, &#8216;false&#8217;, true, false
+or nil into a bool from a hash parameter. E.g., it looks for true/false
+values for the keys &#8216;symbol&#8217; and :symbol.
+</p>
+</div>
+<table width="100%" cellspacing = 0 cellpadding=5 border=0>
+<tr><td class="methodtitle">
+<a name="M000035">
+<b>comma_split</b>(string) 
+<a href="Log4rTools.src/M000035.html" target="source" class="srclink">src</a>
+</a></td></tr>
+</table>
+<div class="description">
+<p>
+Splits comma-delimited lists with arbitrary \s padding
+</p>
+</div>
+  <!-- method descriptions -->
+
+</body>
+</html>

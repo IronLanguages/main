@@ -1,0 +1,4 @@
+<%= form_for @obj do %>
+  <%= check_box(:foo, :on => "foowee", :off => "NO") %>
+  <%= check_box(:foo, :on => "YES",    :off => "NO", :true_if => "zoo") %>
+<% end =%>

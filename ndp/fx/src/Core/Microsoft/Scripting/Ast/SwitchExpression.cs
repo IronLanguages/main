@@ -86,6 +86,16 @@ namespace System.Linq.Expressions {
         internal override Expression Accept(ExpressionVisitor visitor) {
             return visitor.VisitSwitch(this);
         }
+
+        internal bool IsLifted {
+            get {
+                if (_switchValue.Type.IsNullableType()) {
+                    return (_comparison == null) ||
+                        _switchValue.Type != _comparison.GetParametersCached()[0].ParameterType.GetNonRefType();
+                }
+                return false;
+            }
+        }
     }
 
     public partial class Expression {
@@ -173,20 +183,31 @@ namespace System.Linq.Expressions {
                 }
                 // Validate that the switch value's type matches the comparison method's 
                 // left hand side parameter type.
-                var lhsParam = pms[0];
-                if (!ParameterIsAssignable(lhsParam, switchValue.Type)) {
-                    throw Error.SwitchValueTypeDoesNotMatchComparisonMethodParameter(switchValue.Type, lhsParam.ParameterType);
+                var leftParam = pms[0];
+                bool liftedCall = false;
+                if (!ParameterIsAssignable(leftParam, switchValue.Type)) {
+                    liftedCall = ParameterIsAssignable(leftParam, switchValue.Type.GetNonNullableType());
+                    if (!liftedCall) {
+                        throw Error.SwitchValueTypeDoesNotMatchComparisonMethodParameter(switchValue.Type, leftParam.ParameterType);
+                    }
                 }
 
-                var rhsParam = pms[1];
+                var rightParam = pms[1];
                 foreach (var c in caseList) {
                     ContractUtils.RequiresNotNull(c, "cases");
                     ValidateSwitchCaseType(c, type, switchType, "cases");
                     for (int i = 0; i < c.TestValues.Count; i++) {
                         // When a comparison method is provided, test values can have different type but have to
                         // be reference assignable to the right hand side parameter of the method.
-                        if (!ParameterIsAssignable(rhsParam, c.TestValues[i].Type)) {
-                            throw Error.TestValueTypeDoesNotMatchComparisonMethodParameter(c.TestValues[i].Type, rhsParam.ParameterType);
+                        Type rightOperandType = c.TestValues[i].Type;
+                        if (liftedCall) {
+                            if (!rightOperandType.IsNullableType()) {
+                                throw Error.TestValueTypeDoesNotMatchComparisonMethodParameter(c.TestValues[i].Type, rightParam.ParameterType);
+                            }
+                            rightOperandType = rightOperandType.GetNonNullableType();
+                        }
+                        if (!ParameterIsAssignable(rightParam, rightOperandType)) {
+                            throw Error.TestValueTypeDoesNotMatchComparisonMethodParameter(c.TestValues[i].Type, rightParam.ParameterType);
                         }
                     }
                 }

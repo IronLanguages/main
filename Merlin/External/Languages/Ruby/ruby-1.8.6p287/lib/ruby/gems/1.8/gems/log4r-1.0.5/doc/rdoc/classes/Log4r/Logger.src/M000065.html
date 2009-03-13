@@ -1,0 +1,29 @@
+
+<html>
+<head><title>add (Log4r::Logger)</title>
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+<style>
+  .kw { color: #3333FF; font-weight: bold }
+  .cmt { color: green; font-style: italic }
+  .str { color: #662222; font-style: italic }
+  .re  { color: #662222; }
+</style>
+</head>
+<body bgcolor="white">
+<pre><span class="cmt"># File log4r/logger.rb, line 114</span>
+    <span class="kw">def</span> add(*_outputters)
+      <span class="kw">for</span> thing <span class="kw">in</span> _outputters
+        o = (thing.kind_of?(Outputter) ? thing : Outputter[thing])
+        <span class="cmt"># some basic validation</span>
+        <span class="kw">if</span> <span class="kw">not</span> o.kind_of?(Outputter)
+          raise TypeError, &quot;Expected kind of Outputter, got #{o.class}&quot;, caller
+        <span class="kw">elsif</span> o.nil?
+          raise TypeError, &quot;Couldn't find Outputter '#{thing}'&quot;, caller
+        <span class="kw">end</span>
+        @outputters.push o
+        Logger.log_internal {&quot;Added outputter '#{o.name}' to '#{@fullname}'&quot;}
+      <span class="kw">end</span>
+      @outputters
+    <span class="kw">end</span></pre>
+</body>
+</html>

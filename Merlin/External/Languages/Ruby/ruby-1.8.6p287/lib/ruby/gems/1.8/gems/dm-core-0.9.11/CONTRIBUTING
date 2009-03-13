@@ -1,0 +1,51 @@
+# NOTE: This is a work in progress. As of July 24, it applies only to dm-core.
+
+# Contributing to Edge DataMapper
+
+We have now implemented Hoe throughout the DataMapper suite, so there will be a 
+handful of new procedures for contributing to our git repositories. I'll give 
+you a run through of how to set up your machine, and then provide a few 
+commands that should be run before committing or pushing changes.
+
+## Installing and configuring Hoe
+
+The first step is to install hoe. You'll need at least version 1.7.0.
+
+    (sudo) gem install hoe --include-dependencies
+    
+Now you'll need to configure hoe. You'll need to run this from inside of 
+dm-core, or one of the other DataMapper projects.
+
+    rake config_hoe
+    
+The only thing you should need to change is the exclude regular expression, 
+which needs to look like this:
+
+    exclude: !ruby/regexp /tmp$|CVS|\.svn|\.git|.+\.gemspec/
+    
+Now you have the correct setup for contributing.
+
+## Before committing changes
+
+Before you commit changes, you must verify that `Manifest.txt` (the file which 
+contains the names of every file to be included in a gem release) and 
+`[project-name].gemspec` are up to date. We have create a rake task to make 
+this easy:
+
+    rake gemspec
+    
+This will check `Manifest.txt` (using Hoe's `rake check_manifest`) to ensure 
+there are no differences between the files in the project, and those listed in 
+the manifest. If there is a difference, it will display a warning and a list of 
+the differences in `diff` format.
+
+If the changes in the diff are correct, then you can run the following command 
+to update the manifest.
+
+    rake check_manifest | patch
+    
+If there are files you do not want added to the manifest, then you should 
+remove the files from the project, and then run `rake gemspec` again.
+
+If `rake gemspec` says it was successful, then you can proceed with committing 
+and pushing your changes.

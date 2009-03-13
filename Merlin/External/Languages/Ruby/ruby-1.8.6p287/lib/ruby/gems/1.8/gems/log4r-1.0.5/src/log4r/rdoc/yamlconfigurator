@@ -1,0 +1,20 @@
+= Configuring Log4r with Log4r::YamlConfigurator
+
+The YamlConfigurator class allows one to set up Log4r via YAML.
+It is used almost exactly as Log4r::Configurator and has the same features,
+
+  ycfg = YamlConfigurator    # handy shorthand
+  ycfg['foo'] = bar          # replaces instances of #{foo} in the YAML with bar
+  ycfg.load_yaml_file('foo.yaml')
+
+Ruby 1.7 and 1.8 comes with a YAML parser. Hence, YAML can be used
+to configure Log4r out of the box.
+
+A comprehensive example of a Log4r YAML configuration is provided in the 
+examples directory.
+
+To use this class:
+
+  require 'log4r/yamlconfigurator'
+
+Thanks to Andreas Hund for making this possible.

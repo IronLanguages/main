@@ -1,0 +1,205 @@
+
+<html><head>
+  <title>File: emailoutputter.rb</title>
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <link rel=StyleSheet href="../../.././rdoc-style.css" type="text/css" media=screen>
+  <script type="text/javascript" language="JavaScript">
+  <!--
+  function popCode(url) {
+    parent.frames.source.location = url
+  }
+  //-->
+  </script>
+</head>
+<body bgcolor="white">
+
+<table width="100%">
+ <tr class="title-row">
+ <td><table width="100%"><tr>
+   <td class="big-title-font" colspan=2><font size=-3><B>File</B><BR></font>emailoutputter.rb</td>
+   <td align="right"><table cellspacing=0 cellpadding=2>
+         <tr>
+           <td  class="small-title-font">Path:</td>
+           <td class="small-title-font">log4r/outputter/emailoutputter.rb</td>
+         </tr>
+         <tr>
+           <td class="small-title-font">Modified:</td>
+           <td class="small-title-font">Wed Mar 17 11:13:07 PST 2004</td>
+         </tr>
+        </table>
+    </td></tr></table></td>
+  </tr>
+</table><br>
+  <!-- banner header -->
+
+
+<div class="description"><h1>EmailOutputter</h1>
+<p>
+This is an experimental class that sends a number of formatted log events
+as an RFC 822 email. It should work fine if Net:SMTP doesn&#8217;t cause
+any problems. Just in case, create a logger named &#8216;log4r&#8217; and
+give it an outputter to see the logging statements made by this class. If
+it fails to send email, it will set itself to OFF and stop logging.
+</p>
+<p>
+In order to use it,
+</p>
+<pre>
+  require 'log4r/outputter/emailoutputter'
+</pre>
+<h2>SMTP Configuration</h2>
+<p>
+All arguments to Net::SMTP.start are supported. Pass them as hash
+parameters to <tt>new</tt>. The to field is specified as a comma-delimited
+list of emails (padded with \s* if desired).
+</p>
+<p>
+An example:
+</p>
+<pre>
+  email_out = EmailOutputter.new 'email_out',
+                     :server=&gt;'localhost',
+                     :port=&gt;25,
+                     :domain=&gt;'somewhere.com',
+                     :from=&gt;'me@foo.bar',
+                     :to=&gt;'them@foo.bar, me@foo.bar, bozo@clown.net',
+                     :subject=&gt;'Log Report'
+</pre>
+<h2>LogEvent Buffer</h2>
+<p>
+EmailOutputter stores log messages in a buffer. When the buffer reaches a
+certain number, the <tt>buffsize</tt>, it will send an email containing the
+contents of the buffer. The default <tt>buffsize</tt> is 100. To set
+<tt>buffsize</tt>,
+</p>
+<pre>
+  email_out.buffsize = 1000   # set the buffsize to 1000
+</pre>
+<h2>Flush To Send Email</h2>
+<p>
+Flushing an EmailOutputter will mail out all the remaining LogEvents. This
+is convenient for systems that encapsulate the shutdown process. It&#8217;s
+a good idea to do this for all outputters,
+</p>
+<pre>
+  Outputter.each_outputter {|o| o.flush}
+</pre>
+<p>
+Alternatively, one can invoke flush on the outputter directly,
+</p>
+<pre>
+  email_out.flush
+</pre>
+<p>
+It&#8217;s also a good idea to notify the recepient of the email that the
+system is shutting down. Before flushing, log a message to the owner of
+this outputter,
+</p>
+<pre>
+  log_with_email_out.info &quot;The system is shutting down at #{Time.now}&quot;
+</pre>
+<h2>Format When?</h2>
+<p>
+LogEvents may either be formatted as they come in or as the email is being
+composed. To do the former, specify a value of <tt>true</tt> to the hash
+parameter <tt>formatfirst</tt>. The default is to format during email
+composition.
+</p>
+<pre>
+  email_out.formatfirst = true     # format as soon as LogEvents are received
+</pre>
+<h2>Immediate Notification</h2>
+<p>
+EmailOutputter can be configured to flush and send the email whenever the
+logger sees a certain log priority. Use the <tt>immediate_at</tt> hash
+parameter and specify the levels as a comma-delimited list (like an XML
+element). To trigger an email on FATAL and ERROR,
+</p>
+<pre>
+  email_out.immediate_at = &quot;FATAL, ERROR&quot;
+</pre>
+<h2>Example</h2>
+<p>
+A security logger sends email to several folks, buffering up to 25 log
+events and sending immediates on CRIT and WARN
+</p>
+<pre>
+  EmailOutputter.new 'security',
+                     :to =&gt; 'bob@secure.net, frank@secure.net',
+                     :buffsize =&gt; 25,
+                     :immediate_at =&gt; 'WARN, CRIT'
+</pre>
+<h2>XML Configuration</h2>
+<p>
+See <a href="../configurator_rb.html">log4r/configurator.rb</a> for
+details. Here&#8217;s an example:
+</p>
+<pre>
+  &lt;outputter name=&quot;security&quot; type=&quot;EmailOutputter&quot;
+             buffsize=&quot;25&quot; level=&quot;ALL&quot;&gt;
+    &lt;immediate_at&gt;WARN, CRIT&lt;/immediate_at&gt;
+    &lt;server&gt;localhost&lt;/server&gt;
+    &lt;from&gt;me@secure.net&lt;/from&gt;
+    &lt;to&gt;
+      bob@secure.net, frank@secure.net
+    &lt;/to&gt;
+    ...
+  &lt;/outputter&gt;
+</pre>
+<h2>To Do</h2>
+<p>
+This class could use some sophistication, in particular a means to compress
+the logs, a way to set the subject dynamically (probably via a block
+method), and a time trigger. When the time trigger is introduced, a
+<tt>buffsize</tt> of 0 should mean ignore <tt>buffsize</tt> to determine
+when to send the email.
+</p>
+</div>
+
+<table cellpadding=5 width="100%">
+<tr><td class="tablesubtitle">Required files</td></tr>
+</table><br>
+<div class="name-list">
+<a href="outputter_rb.html">log4r/outputter/outputter</a>
+log4r/staticlogger
+net/smtp
+</div>
+
+
+
+<table cellpadding=5 width="100%">
+<tr><td class="tablesubtitle">Classes and Modules</td></tr>
+</table><br>
+Module <a href="../../../classes/Log4r.html" class="link">Log4r</a><br />
+&nbsp;&nbsp;::Class <a href="../../../classes/Log4r/BasicFormatter.html" class="link">Log4r::BasicFormatter</a><br />
+&nbsp;&nbsp;::Class <a href="../../../classes/Log4r/ConfigError.html" class="link">Log4r::ConfigError</a><br />
+&nbsp;&nbsp;::Class <a href="../../../classes/Log4r/Configurator.html" class="link">Log4r::Configurator</a><br />
+&nbsp;&nbsp;::Class <a href="../../../classes/Log4r/DateFileOutputter.html" class="link">Log4r::DateFileOutputter</a><br />
+&nbsp;&nbsp;::Class <a href="../../../classes/Log4r/DefaultFormatter.html" class="link">Log4r::DefaultFormatter</a><br />
+&nbsp;&nbsp;::Class <a href="../../../classes/Log4r/EmailOutputter.html" class="link">Log4r::EmailOutputter</a><br />
+&nbsp;&nbsp;::Class <a href="../../../classes/Log4r/FileOutputter.html" class="link">Log4r::FileOutputter</a><br />
+&nbsp;&nbsp;::Class <a href="../../../classes/Log4r/Formatter.html" class="link">Log4r::Formatter</a><br />
+&nbsp;&nbsp;::Class <a href="../../../classes/Log4r/IOOutputter.html" class="link">Log4r::IOOutputter</a><br />
+&nbsp;&nbsp;::Class <a href="../../../classes/Log4r/Log4rTools.html" class="link">Log4r::Log4rTools</a><br />
+&nbsp;&nbsp;::Class <a href="../../../classes/Log4r/LogEvent.html" class="link">Log4r::LogEvent</a><br />
+&nbsp;&nbsp;::Class <a href="../../../classes/Log4r/LogServer.html" class="link">Log4r::LogServer</a><br />
+&nbsp;&nbsp;::Class <a href="../../../classes/Log4r/Logger.html" class="link">Log4r::Logger</a><br />
+&nbsp;&nbsp;::Class <a href="../../../classes/Log4r/ObjectFormatter.html" class="link">Log4r::ObjectFormatter</a><br />
+&nbsp;&nbsp;::Class <a href="../../../classes/Log4r/Outputter.html" class="link">Log4r::Outputter</a><br />
+&nbsp;&nbsp;::Class <a href="../../../classes/Log4r/PatternFormatter.html" class="link">Log4r::PatternFormatter</a><br />
+&nbsp;&nbsp;::Class <a href="../../../classes/Log4r/RemoteOutputter.html" class="link">Log4r::RemoteOutputter</a><br />
+&nbsp;&nbsp;::Class <a href="../../../classes/Log4r/RollingFileOutputter.html" class="link">Log4r::RollingFileOutputter</a><br />
+&nbsp;&nbsp;::Class <a href="../../../classes/Log4r/RootLogger.html" class="link">Log4r::RootLogger</a><br />
+&nbsp;&nbsp;::Class <a href="../../../classes/Log4r/SimpleFormatter.html" class="link">Log4r::SimpleFormatter</a><br />
+&nbsp;&nbsp;::Class <a href="../../../classes/Log4r/StderrOutputter.html" class="link">Log4r::StderrOutputter</a><br />
+&nbsp;&nbsp;::Class <a href="../../../classes/Log4r/StdoutOutputter.html" class="link">Log4r::StdoutOutputter</a><br />
+&nbsp;&nbsp;::Class <a href="../../../classes/Log4r/SyslogOutputter.html" class="link">Log4r::SyslogOutputter</a><br />
+&nbsp;&nbsp;::Class <a href="../../../classes/Log4r/YamlConfigurator.html" class="link">Log4r::YamlConfigurator</a><br />
+<br>
+
+  
+
+  <!-- method descriptions -->
+
+</body>
+</html>

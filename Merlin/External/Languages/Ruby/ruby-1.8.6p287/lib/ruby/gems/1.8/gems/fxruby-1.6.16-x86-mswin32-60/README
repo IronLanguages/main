@@ -1,0 +1,39 @@
+This is FXRuby, the Ruby language bindings for the FOX GUI toolkit. For
+instructions on building FXRuby from the source code, please see the build
+instructions from the FXRuby User's Guide:
+
+	doc/build.html
+
+The directory structure is:
+
+    doc/
+	Contains the documentation (a.k.a. the FXRuby User's Guide) in
+	HTML format.
+    examples/
+        Contains example programs demonstrating how to use FXRuby and
+        its many wonderful features.
+    ext/fox12
+        Contains the C++ source code for the shared library part of FXRuby.
+	These files are required to build FXRuby from the source code.
+    lib/fox12
+        Contains the Ruby source code for the rest of FXRuby. These files
+        are not required to "build" FXRuby, but they are a part of the
+	standard FXRuby runtime environment and must be installed along with
+	the shared library part.
+    tests/
+	Contains the beginnings of a test battery for FXRuby. Not much to
+	see here.
+
+If you're looking at a checkout of the source code from its CVS repository,
+you might see some additional directories of interest:
+
+    fox-includes/
+	An archive of the FOX library header files corresponding to this
+	release of FXRuby.
+    rdoc-sources/
+	The beginnings of a set of "fake" Ruby source files for the various
+	FXRuby classes, which are used to generate RDoc-style documentation.
+	Not quite ready for prime time, but should be soon.
+    swig-interfaces/
+	The SWIG interface files used to generate the C++ wrapper code (i.e.
+	the code found in the ext/fox directory).

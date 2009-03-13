@@ -48,4 +48,13 @@ end
 
 $VERBOSE = nil unless ENV['OUTPUT_WARNINGS']
 require File.dirname(__FILE__) + '/matchers'
+require File.dirname(__FILE__) + '/fixtures.generated'
+
+class Object
+  def csc(*args)
+  end
+  def assembly(*args)
+    yield
+  end
+end
 $: << (ENV["MERLIN_ROOT"] + "\\Bin\\Debug")

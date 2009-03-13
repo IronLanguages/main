@@ -1,0 +1,21 @@
+
+<html>
+<head><title>validate_level (Log4r::Log4rTools)</title>
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+<style>
+  .kw { color: #3333FF; font-weight: bold }
+  .cmt { color: green; font-style: italic }
+  .str { color: #662222; font-style: italic }
+  .re  { color: #662222; }
+</style>
+</head>
+<body bgcolor="white">
+<pre><span class="cmt"># File log4r/base.rb, line 38</span>
+    <span class="kw">def</span> <span class="kw">self</span>.validate_level(level, depth=0)
+      <span class="kw">unless</span> valid_level?(level)
+        raise ArgumentError, &quot;Log level must be in 0..#{LEVELS}&quot;,
+              caller[1..-(depth + 1)]
+      <span class="kw">end</span>
+    <span class="kw">end</span></pre>
+</body>
+</html>
