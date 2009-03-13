@@ -1,0 +1,62 @@
+#!/usr/local/bin/ruby -ws
+
+old_classes = []; new_classes = []
+
+ObjectSpace.each_object(Module) { |klass| old_classes << klass } if defined? $a
+
+require 'pp'
+
+begin require 'rubygems' rescue LoadError end
+require 'parse_tree'
+require 'sexp_processor'
+
+ObjectSpace.each_object(Module) { |klass| old_classes << klass } unless defined? $a
+
+class DependencyAnalyzer < SexpProcessor
+
+  attr_reader :dependencies
+  attr_accessor :current_class
+
+  def initialize
+    super
+    self.auto_shift_type = true
+    @dependencies = Hash.new { |h,k| h[k] = [] }
+    @current_method = nil
+    @current_class = nil
+  end
+
+  def self.process(*klasses)
+    analyzer = self.new
+    klasses.each do |start_klass|
+      analyzer.current_class = start_klass
+      analyzer.process(ParseTree.new.parse_tree(start_klass))
+    end
+
+    deps = analyzer.dependencies
+    deps.keys.sort_by {|k| k.to_s}.each do |dep_to|
+      dep_from = deps[dep_to]
+      puts "#{dep_to}: #{dep_from.uniq.sort.join(", ")}"
+    end
+  end
+
+  def process_defn(exp)
+    name = exp.shift
+    @current_method = name
+    return s(:defn, name, process(exp.shift), process(exp.shift))
+  end
+
+  def process_const(exp)
+    name = exp.shift
+    const = (defined?($c) ? @current_class.name : "#{@current_class}.#{@current_method}")
+    is_class = ! (Object.const_get(name) rescue nil).nil?
+    @dependencies[name] << const if is_class
+    return s(:const, name)
+  end
+end
+
+if __FILE__ == $0 then
+  ARGV.each { |name| require name }
+  ObjectSpace.each_object(Module) { |klass| new_classes << klass }
+  new_classes.delete DependencyAnalyzer unless defined? $a
+  DependencyAnalyzer.process(*(new_classes - old_classes))
+end

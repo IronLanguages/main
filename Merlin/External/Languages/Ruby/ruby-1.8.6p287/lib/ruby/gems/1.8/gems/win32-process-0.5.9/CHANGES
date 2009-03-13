@@ -1,0 +1,149 @@
+= 0.5.9 - 14-Jun-2008
+* Added a proper implementation of Process.ppid.
+
+= 0.5.8 - 24-Mar-2008
+* Fixed a bug in Process.create where the handles in the PROCESS_INFORMATION
+  struct were not closed, regardless of the 'close_handles' option. Thanks
+  go to Lars Christensen for the spot and the patch.
+
+= 0.5.7 - 27-Mar-2008
+* Fixed issues with thread_inherit and process_inherit in the Process.create
+  method. This in turn required an update to windows-pr. Thanks go to Steve
+  Shreeve for the spot.
+* Fixed a potential issue with startf_flags and stdin/stdout/stderr handling.
+  Thanks again go to Steve Shreeve for the spot and the patch.
+* Fixed the code so that it no longer emits redefinition warnings.
+* Fixed a bug in the Rake install task (for non-gem installations).
+
+== 0.5.6 - 13-Mar-2008
+* Fixed a bug in the Process.waitpid2 method where it wasn't returning the
+  proper exit code. Thanks go to Jeremy Bopp for the spot and the patch.
+* In the spirit of DWIM, if the 'stdin', 'stdout' or 'stderr' keys are
+  encountered in the startup_info hash, then the inherit flag is automatically
+  set to true and the startf_flags key is automatically OR'd with the
+  STARTF_USESTDHANDLES value. Thanks go to Sander Pool for the inspiration.
+
+== 0.5.5 - 12-Dec-2007
+* The Process.create method now automatically closes the process and thread
+  handles in the ProcessInfo struct before returning, unless you explicitly
+  tell it not to via the 'close_handles' option.
+* The Process.create method now supports creating a process as another user
+  via the 'with_logon', 'password' and 'domain' options.
+
+== 0.5.4 - 23-Nov-2007
+* Changed ProcessError to Process::Error.
+* Now requires windows-pr 0.7.3 or later because of some reorganization in
+  that library with regards to thread functions.
+* Better cleanup of HANDLE's in a couple methods when failure occurs.
+* Added an additional require/include necessitated by a change in the method
+  organization in the windows-pr library.
+
+== 0.5.3 - 29-Jul-2007
+* Added a Rakefile with tasks for installation and testing.
+* Removed the install.rb file (now handled by the Rakefile).
+* Updated the README and MANIFEST files.
+
+== 0.5.2 - 22-Jan-2007
+* The startup_info parameter for the Process.create method now accepts
+  'stdin', 'stdout', and 'stderr' as valid parameters, which you can pass
+  a Ruby IO object or a fileno in order to redirect output from the created
+  process.
+
+== 0.5.1 - 24-Aug-2006
+* Fixed a bug in the Process.create method where the return value for
+  CreateProcess() was being evaluated incorrectly.  Thanks go to David Haney
+  for the spot.
+* Added a slightly nicer error message if an invalid value is passed to the
+  Process.create method.
+* Removed an extraneous '%' character from an error message.
+
+== 0.5.0 - 29-Jul-2006
+* The Process.create method now returns a ProcessInfo struct instead of the
+  pid.  Note that you can still grab the pid out of the struct if needed.
+* The Process.create method now allows the process_inherit and
+  thread_inherit options which determine whether a process or thread
+  object's handles are inheritable, respectively.
+* The wait and wait2 methods will now work if GetProcessId() isn't defined
+  on your system.
+* The 'inherit?' hash option was changed to just 'inherit' (no question mark).
+* Minor doc correction - the 'inherit' option defaults to false, not true.
+
+== 0.4.2 - 29-May-2006
+* Fixed a typo/bug in Process.kill for signal 3, where I had accidentally
+  used CTRL_BRK_EVENT instead of the correct CTRL_BREAK_EVENT.  Thanks go
+  to Luis Lavena for the spot.
+
+== 0.4.1 - 13-May-2006
+* Fixed a bug where spaces in $LOAD_PATH would cause Process.fork to fail.
+  Thanks go to Justin Bailey for the spot and patch.
+* Added a short synopsis to the README file.
+
+== 0.4.0 - 7-May-2006
+* Now pure Ruby, courtesy of the Win32API package.
+* Now comes with a gem.
+* Modified Process.kill to send a signal to the current process if pid 0
+  is specified, as per the current 1.8 behavior.
+* Process.create now accepts the 'environment' key/value, where you can
+  pass a semicolon-separated string as the environment for the new process.
+* Moved the GUI related options of Process.create to subkeys of the
+  'startup_info' key.  See documentation for details.
+* Replaced Win32::ProcessError with just ProcessError.
+
+== 0.3.3 - 16-Apr-2006
+* Fixed a bug in Process.create with regards to creation_flags.  Thanks go
+  to Tophe Vigny for the spot.
+
+== 0.3.2 - 12-Aug-2005
+* Fixed a bug in Process.kill where a segfault could occur.  Thanks go to
+  Bill Atkins for the spot.
+* Changed VERSION to WIN32_PROCESS_VERSION, because it's a module.
+* Made the CHANGES, README and doc/process.txt documents rdoc friendly.
+* Removed the process.rd file.
+
+== 0.3.1 - 9-Dec-2004
+* Modified Process.fork to return an actual PID instead of a handle.  This
+  means that it should work with Process.kill and other methods that expect
+  an actual PID.
+* Modified Process.kill to understand the strings "SIGINT", "INT", "SIGBRK",
+  "BRK", "SIGKILL" and "KILL".  These correspond to signals 2, 3 and 9,
+  respectively.
+* Added better $LOAD_PATH handling for Process.fork.  Thanks go to Aslak
+  Hellesoy for the spot and the patch.
+* Replaced all instances of rb_sys_fail(0) with rb_raise().  This is because
+  of a strange bug in the Windows Installer that hasn't been nailed down yet.
+  This means that you can't rescue Errno::ENOENT any more, but will have to
+  rescue StandardError.  This only affects Process.kill.
+* The signals that were formerly 1 and 2 and now 2 and 3.  I did this because
+  I wanted the same signal number for SIGINT as it is on *nix.
+* Added a test_kill.rb script under the examples directory.
+* Other minor cleanup and corrections.
+
+== 0.3.0 - 25-Jul-2004
+* Added the create() method.
+* Moved the example programs to doc/examples.
+* Updated the docs, and toned down claims of fork's similarity to the Unix
+  version.
+* Minor updates to the test suite.
+
+== 0.2.1 - 17-May-2004
+* Made all methods module functions, except fork, rather than singleton
+  methods.
+* Minor doc changes.
+
+== 0.2.0 - 11-May-2004
+* Removed the Win32 module/namespace.  You no longer 'include Win32' and you
+  no longer need to prefix Process with 'Win32::'.
+* The fork() method is now a global function as well as a method of the
+  Process module.  That means you can call 'fork' instead of 'Process.fork'
+  if you like.
+* Doc updates to reflect the above changes.
+
+== 0.1.1 - 6-Mar-2004
+* Fixed bug where spaces in the directory name caused the fork() method to
+  fail (Park).
+* Normalized tc_process.rb somewhat to make it easier to run outside of the
+  test directory if desired.
+* Fixed up tc_process.rb a bit.
+
+== 0.1.0 - 19-Feb-2004
+* Initial release

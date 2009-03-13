@@ -1,0 +1,23 @@
+=== 0.9.11 / not released
+
+  * Added :destroy! constraints
+  * Added support for 1:1 constraints
+  * Added support for M:M constraints
+  * Add'l rspecs
+  * Updated readme.txt
+
+=== 0.9.10 / 2009-01-19
+
+* 1 major enhancement:
+
+  * Add :protect, :destroy, :set_nil and :skip constraints
+
+=== 0.9.9 / 2009-01-04
+
+* No changes this version
+
+=== 0.9.8 / 2008-12-07
+
+* 1 bug fix:
+
+  * Only extend defined adapter classes [#610 state:resolved]

@@ -1,0 +1,22 @@
+%h1
+  <%= class_name %> controller, edit action
+%p
+  Edit this file in
+  %tt
+    app/views/<%= file_name %>/edit.html.erb
+= error_messages_for @<%= singular_model %>
+
+= form_for(@<%= singular_model %>, :action => url(:<%= singular_model %>, @<%= singular_model %>)) do
+<% for property in properties.select{|p| !p.key?} -%>
+  %p
+    %b
+      <%= DataMapper::Inflection.humanize(property.field) %>
+    %br/
+    = <%= field_from_type(property.type) %> :<%= property.getter %>
+<% end -%>
+  %p
+    = submit "Update"
+
+= link_to 'Show', url(:<%= singular_model %>, @<%= singular_model %>)
+|
+= link_to 'Back', url(:<%= plural_model %>)

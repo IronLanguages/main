@@ -1,0 +1,24 @@
+
+<html>
+<head><title>decode_bool (Log4r::Log4rTools)</title>
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+<style>
+  .kw { color: #3333FF; font-weight: bold }
+  .cmt { color: green; font-style: italic }
+  .str { color: #662222; font-style: italic }
+  .re  { color: #662222; }
+</style>
+</head>
+<body bgcolor="white">
+<pre><span class="cmt"># File log4r/base.rb, line 59</span>
+    <span class="kw">def</span> <span class="kw">self</span>.decode_bool(hash, symbol, default)
+      data = hash[symbol]
+      data = hash[symbol.to_s] <span class="kw">if</span> data.nil?
+      <span class="kw">return</span> <span class="kw">case</span> data
+        <span class="kw">when</span> <span class="str">'true'</span>,<span class="kw">true</span> <span class="kw">then</span> <span class="kw">true</span>
+        <span class="kw">when</span> <span class="str">'false'</span>,<span class="kw">false</span> <span class="kw">then</span> <span class="kw">false</span>
+        <span class="kw">else</span> default
+        <span class="kw">end</span>
+    <span class="kw">end</span></pre>
+</body>
+</html>

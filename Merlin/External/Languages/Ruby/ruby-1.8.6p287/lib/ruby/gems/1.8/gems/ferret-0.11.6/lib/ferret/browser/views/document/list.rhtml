@@ -1,0 +1,49 @@
+<h3>List Documents</h3>
+<fieldset>
+  <legend>Show fields</legend>
+<form method="get" action="">
+<% fields = [];
+   field_settings = @params["field"]||{};
+   @reader.field_infos.each do |fi|
+     next unless fi.stored?
+ %>
+<label class="check" for="field_<%= fi.name %>">
+  <input name="field[<%= fi.name %>]" type="checkbox" id="field_<%= fi.name %>"
+  <% if field_settings[fi.name.to_s] == "on"; fields << fi.name %>
+    checked="checked"
+  <% end %>
+  onchange="this.form.submit();" /><%= fi.name %>
+</label>
+<% end %>
+</form>
+</fieldset>
+<hr/>
+<%= paginate(@page, @reader.max_doc/@page_size, '/document/list/') %>
+<hr/>
+<table cellpadding="0" cellspacing="0">
+
+  <tr>
+    <th>Internal ID</th>
+    <% fields.each do |field| %>
+    <th><%= field %></th>
+    <% end %>
+  </tr>
+
+  <% even=false; (@first...@last).each do |i| %>
+    <% if @reader.deleted?(i) %>
+    <tr class="<%= (even = !even) ? 'even' : 'odd' %>">
+      <td colspan="<%= fields.size + 1 %>" class="center" style="color:#b00;"><%=i%> is deleted</td>
+    </tr>
+    <% else %>
+    <tr onclick="location.href='/document/show/<%=i%>';"
+      class="<%= (even = !even) ? 'even' : 'odd' %>">
+      <td class="left"><a href="/document/show/<%=i%>"><%= i %></a></td>
+      <% doc = @reader[i]; fields.each do |field| %>
+      <td class="small"><%= truncate(doc[field]) %></td>
+      <% end %>
+    </tr>
+    <% end %>
+  <% end %>
+</table>
+<hr/>
+<%= choose_document(@doc_id) %>

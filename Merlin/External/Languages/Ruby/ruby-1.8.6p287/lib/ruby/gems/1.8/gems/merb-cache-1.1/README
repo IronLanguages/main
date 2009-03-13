@@ -1,0 +1,230 @@
+merb-cache
+==========
+
+A plugin for the Merb framework that provides caching stores,
+strategies and helpers.
+
+
+
+Tutorial
+==========
+
+Stores usually set up in application init file
+(init.rb) or environment specific init file (so you can
+use different stores for production, staging and development
+environment if you need to).
+
+# create a fundamental memcache store named :memcached for localhost
+
+dependency "merb-cache" do
+  Merb::Cache.setup do
+    register(:memcached, MemcachedStore, :namespace => "my_app", :servers => ["127.0.0.1:11211"])
+  end
+end
+
+# a default FileStore
+dependency "merb-cache" do
+  Merb::Cache.setup do
+    register(FileStore)
+  end
+end
+
+# another FileStore
+dependency "merb-cache" do
+  Merb::Cache.setup do
+    register(:tmp_cache, FileStore, :dir => "/tmp")
+  end
+end
+
+Now lets see how we can use stores in the application:
+
+class Tag
+  def find(parameters = {})
+    # poor man's identity map
+
+    if Merb::Cache[:memcached].exists?("tags", parameters)
+      Merb::Cache[:memcached].read("tags", parameters)
+    else
+      results = super(parameters)
+      Merb::Cache[:memcached].write("tags", results, parameters)
+
+      results
+    end
+  end
+
+  def popularity_rating
+    # lets keep the popularity rating cached for 30 seconds
+    # merb-cache will create a key from the model's id & the interval parameter
+
+    Merb::Cache[:memcached].fetch(self.id, :interval => Time.now.to_i / 30) do
+      self.run_long_popularity_rating_query
+    end
+  end
+end
+
+
+Or, if you want to use memcache’s built in expire option:
+
+# expire a cache entry for "bar" (identified by the key "foo" and
+# parameters {:baz => :bay}) in two hours
+Merb::Cache[:memcached].write("foo", "bar", {:baz => :bay}, :expire_in => 2.hours)
+
+# this will fail, because FileStore cannot expire cache entries
+Merb::Cache[:default].write("foo", "bar", {:baz => :bay}, :expire_in => 2.hours)
+
+# writing to the FileStore will fail, but the MemcachedStore will succeed
+Merb::Cache[:default, :memcached].write("foo", "bar", {:baz => :bay}, :expire_in => 2.hours)
+
+# this will fail
+Merb::Cache[:default, :memcached].write_all("foo", "bar", {:baz => :bay}, :expire_in => 2.hours)
+
+
+Setting up strategy stores is very similar to fundamental stores:
+
+Merb::Cache.setup do
+
+  # wraps the :memcached store we setup earlier
+  register(:zipped, GzipStore[:memcached])
+
+  # wrap a strategy store
+  register(:sha_and_zip, SHA1Store[:zipped])
+
+  # you can even use unnamed fundamental stores
+  register(:zipped_images, GzipStore[FileStore],
+            :dir => Merb.root / "public" / "images")
+
+  # or a combination or strategy & fundamental stores
+  register(:secured, SHA1Store[GzipStore[FileStore], FileStore],
+            :dir => Merb.root / "private")
+end
+
+
+You can use these strategy stores exactly like fundamental stores in your app code.
+
+Action & Page Caching
+Action & page caching have been implemented in strategy stores. So instead of manually specifying which type of caching you want for each action, you simply ask merb-cache to cache your action, and it will use the fastest cache available.
+
+First, let’s setup our page & action stores:
+
+config/environments/development.rb
+ 
+  Merb::Cache.setup do
+ 
+    # the order that stores are setup is important 
+    # faster stores should be setup first 
+ 
+    # page cache to the public dir
+    register(:page_store, PageStore[FileStore], 
+                      :dir => Merb.root / "public") 
+ 
+    # action cache to memcache 
+    register(:action_store, ActionStore[:sha_and_zip]) 
+ 
+    # sets up the ordering of stores when attempting to read/write cache entries 
+    register(:default, AdhocStore[:page_store, :action_store])
+  
+  end
+
+And now in our controller:
+class Tags < Merb::Controller 
+
+  # index & show will be page cached to the public dir. The index 
+  # action has no parameters, and the show parameter's are part of 
+  # the URL, making them both page-cache'able 
+  cache :index, :show 
+
+  def index 
+    render 
+  end 
+
+  def show(:slug) 
+    display Tag.first(:slug => slug) 
+  end 
+end 
+
+Our controller now page caches but the index & show action. Furthermore,
+the show action is cached separately for each slug parameter automatically.
+
+ 
+class Tags < Merb::Controller 
+
+  # the term is a route param, while the page & per_page params are part of the query string. 
+  # If only the term param is supplied, the request can be page cached, but if the page and/or 
+  # per_page param is part of the query string, the request will action cache. 
+  cache :catalog 
+
+  def catalog(term = 'a', page = 1, per_page = 20) 
+    @tags = Tag.for_term(term).paginate(page, per_page) 
+
+    display @tags 
+  end 
+end 
+
+Because the specific type of caching is not specified, the same action can either
+be page cached or action cached depending on the context of the request.
+
+
+Keeping a “Hot” Cache
+=====================
+
+Cache expiration is a constant problem for developers. When should content
+be expired? Should we “sweep” stale content? How do we balance serving fresh
+content and maintaining fast response times? These are difficult questions
+for developers, and are usually answered with ugly code added across our
+models, views, and controllers. Instead of designing an elaborate
+caching and expiring system, an alternate approach is to keep a “hot” cache.
+
+So what is a “hot” cache? A hot cache is what you get when you ignore
+trying to manually expire content, and instead focus on replacing old
+content with fresh data as soon as it becomes stale. Keeping a hot
+cache means no difficult expiration logic spread out across your
+app, and will all but eliminate cache misses.
+
+The problem until now with this approach has been the impact on
+response times. If the request has to wait on any pages that
+it has made stale to render the fresh version, it can slow down
+the response time dramatically. Thankfully, Merb has the run_later
+method which allows the fresh content to render after the
+response has been sent to the browser.
+It’s the best of both worlds. Here’s an example.
+
+ 
+class Tags &lt; Merb::Controller 
+
+  cache :index 
+  eager_cache :create, :index 
+
+  def index 
+    display Tag.all 
+  end 
+
+  def create(slug) 
+    @tag = Tag.new(slug) 
+
+    # redirect them back to the index action 
+    redirect url(:tags) 
+  end 
+end 
+
+The controller will eager_cache the index action whenever the create action
+is successfully called. If the client were to post a new tag to the
+create action, they would be redirect back to the index action.
+Right after the response had been sent to the client, the index action
+would be rendered with the newly created tag included and replaced
+in the cache. So when the user requests for the index action gets
+to the server, the freshest version is already in the cache, and
+the cache miss is avoided. This works regardless of the way
+the index action is cached.
+
+Hot cache helps fight dog pile effect
+(http://highscalability.com/strategy-break-memcache-dog-pile) but
+should be used with caution. It's great when you want to eagerly cache
+some page that user is not going to see immediately after
+creating/updating something because hot cache in current implementation
+uses worker queue (knows as run_later) and it does not guarantee that
+before redirect hits the action data is gonna be already cached.
+
+A good use case of eager caching is front end page of
+some newspaper site when staff updates site content, and
+is not redirected to page that uses new cache values immediately,
+but other users access it frequently.

@@ -1,0 +1,89 @@
+= #{version} Log4r API Reference
+
+Welcome to the Log4r API reference. There are two classes of reference,
+the file overview and the class API. They are listed under Files and Classes
+respectively. File overviews cover the use of the Log4r API and some 
+implementation details, whereas class APIs detail the methods available to 
+the various objects.
+
+The code examples in this API assume:
+
+  include Log4r
+
+This file overview covers some of the major concepts in Log4r.
+
+
+== Log Levels
+
+Log4r provides as many levels of logging as desired. Logging levels
+are an ordered set of names ranked by priority. The more important a level is,
+the higher its priority and the more likely we want to see any data associated 
+with it. Log4r provides many ways to filter information by level.
+
+Loggers and Outputters have a level parameter which serves as a level 
+threshold. Any data below this threshold will be ignored by the Logger or
+Outputter. Additionally, Outputters can be set to mask out any particular
+level or collection of levels.
+
+By combining level thresholds with other Log4r features, one can direct any
+set of data to any destination desired in a way that is easy to visualize
+and configure.
+
+=== Default Levels
+
+The default log levels and their priority rankings are:
+
+  DEBUG < INFO < WARN < ERROR < FATAL
+
+=== Custom Levels
+
+You can have as many levels as you desire, with any naming scheme. Log4r
+will automatically define level constants and log method names after
+your custom specification.
+
+Please see log4r/configurator.rb for details.
+
+=== Boundary Levels
+
+There are two special levels, <tt>ALL</tt> and <tt>OFF</tt> which
+denote whether we are logging at all levels or at none. The priority 
+ranks with respect to the logging levels are as follows:
+
+  ALL < logging levels as defined by user < OFF
+
+Thus, setting the level to <tt>ALL</tt> will enable logging at all levels
+whereas <tt>OFF</tt> will turn off logging completely.
+
+== File Overviews
+
+For Loggers::        log4r/logger.rb
+For Outputters::     log4r/outputter/outputter.rb
+For Formatters::     log4r/formatter/formatter.rb
+For configuration::  log4r/configurator.rb
+
+== Principal Classes of Log4r
+
+* Log4r::Logger - Interface to logging
+* Log4r::Outputter - An output destination for a logger.
+* Log4r::Formatter - A means of formatting log data.
+* Log4r::Configurator - A means of configuring Log4r 
+
+== Convenience Classes
+
+Log4r provides several convenience Outputters and Formatters. Please
+look at the file overviews of those classes for more details.
+
+== Remote Logging
+
+Log4r provides a way to send log events over a network. See log4r/logserver.rb
+for details.
+
+== What's Going on Inside?
+
+Log4r has an internal logger which records much of what goes on inside. To see 
+the output, define a Logger named 'log4r' and give it an Outputter of some
+sort. It logs only at the lowest and highest priorities. That would be
+DEBUG and FATAL for the standard setup.
+
+It is essential to view this data when using certain classes, like 
+Log4r::LogServer and Log4r::EmailOutputter.

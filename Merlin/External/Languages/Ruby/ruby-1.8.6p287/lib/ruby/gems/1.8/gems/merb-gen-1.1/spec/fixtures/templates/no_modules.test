@@ -1,0 +1,3 @@
+<% with_modules([]) do -%>
+test
+<% end -%>

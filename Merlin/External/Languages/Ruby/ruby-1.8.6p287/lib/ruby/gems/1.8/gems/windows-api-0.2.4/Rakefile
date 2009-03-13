@@ -1,0 +1,25 @@
+require 'rake'
+require 'rake/clean'
+require 'rake/testtask'
+require 'rbconfig'
+include Config
+
+desc 'Install the windows-api package (non-gem)'
+task :install do
+   sitelibdir = CONFIG["sitelibdir"]
+   installdir = File.join(sitelibdir, 'windows')
+   Dir.mkdir(installdir) unless File.exists?(installdir)
+   file = "lib/windows/api.rb"
+   FileUtils.cp(file, installdir, :verbose => true)
+end
+
+task :install_gem do
+   ruby 'windows-api.gemspec'
+   file = Dir["*.gem"].first
+   sh "gem install #{file}"
+end
+
+Rake::TestTask.new do |test|
+   test.warning = true
+   test.verbose = true
+end

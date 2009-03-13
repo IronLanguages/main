@@ -1,0 +1,79 @@
+
+body,td,p { font-family: Verdana, Arial, Helvetica, sans-serif; 
+       color: #000040;
+}
+
+.attr-rw { font-size: xx-small; color: #444488 }
+
+.title-row { background-color: #CCCCFF;
+             color:      #000010;
+}
+
+.big-title-font { 
+  color: black;
+  font-weight: bold;
+  font-family: Verdana, Arial, Helvetica, sans-serif; 
+  font-size: large; 
+  height: 60px;
+  padding: 10px 3px 10px 3px;
+}
+
+.small-title-font { color: black;
+                    font-family: Verdana, Arial, Helvetica, sans-serif;
+                    font-size:10; }
+
+.aqua { color: black }
+
+.method-name, .attr-name {
+      font-family: font-family: Verdana, Arial, Helvetica, sans-serif; 
+      font-weight: bold;
+      font-size: small;
+      margin-left: 20px;
+      color: #000033;
+}
+
+.tablesubtitle, .tablesubsubtitle {
+   width: 100%;
+   margin-top: 1ex;
+   margin-bottom: .5ex;
+   padding: 5px 0px 5px 3px;
+   font-size: large;
+   color: black;
+   background-color: #CCCCFF;
+   border: thin;
+}
+
+.name-list {
+  margin-left: 5px;
+  margin-bottom: 2ex;
+  line-height: 105%;
+}
+
+.description {
+  margin-left: 5px;
+  margin-bottom: 2ex;
+  line-height: 105%;
+  font-size: small;
+}
+
+.methodtitle {
+  font-size: small;
+  font-weight: bold;
+  text-decoration: none;
+  color: #000033;
+  background-color: white; 
+}
+
+.srclink {
+  font-size: small;
+  font-weight: bold;
+  text-decoration: none;
+  color: #0000DD;
+  background-color: white;
+}
+
+.paramsig {
+   font-size: small;
+}
+
+.srcbut { float: right }

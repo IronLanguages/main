@@ -1,0 +1,20 @@
+== 0.1.4 - 29-Jul-2007
+* Added a Rakefile with tasks for installation and testing.
+* Removed the install.rb file. The Rakefile now handles installation.
+* Removed the doc/sapi5.txt file. It was merged into the README.
+* Some doc updates.
+
+== 0.1.3 - 9-Nov-2005
+* Fixed SpInProcRecognizer class name.
+
+== 0.1.2 - 17-Jun-2005
+* Added a gemspec.
+* Some minor updates to the README and test file.
+* Removed the doc/sapi5.rd file.  Made the doc/sapi5.txt file roc friendly.
+
+== 0.1.1 - 1-Mar-2005
+* Moved the 'examples' directory to the toplevel directory.
+* Made the CHANGES and README files rdoc friendly.
+
+== 0.1.0 - 12-Oct-2004
+* Initial release

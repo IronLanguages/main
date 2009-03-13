@@ -1,0 +1,24 @@
+require 'rake'
+require 'rake/testtask'
+require 'rbconfig'
+include Config
+
+desc 'Install the win32-process package (non-gem)'
+task :install do
+   install_dir = File.join(CONFIG["sitelibdir"], 'win32')
+   Dir.mkdir(install_dir) unless File.exists?(install_dir)
+   cp 'lib/win32/process.rb', install_dir, :verbose => true
+end
+
+task :install_gem do
+   ruby 'win32-process.gemspec'
+   file = Dir["*.gem"].first
+   sh "gem install #{file}"
+end
+
+Rake::TestTask.new do |t|
+   t.libs << 'test'
+   t.verbose = true
+   t.warning = true
+   t.test_files = FileList['test/tc_process.rb']
+end

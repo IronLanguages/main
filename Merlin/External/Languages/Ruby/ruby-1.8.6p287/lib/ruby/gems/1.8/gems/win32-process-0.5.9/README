@@ -1,0 +1,116 @@
+= Description
+   This package provides the fork, wait, wait2, waitpid, and waitpid2 methods
+   for MS Windows. In addition, it provides a different implementation of the
+   kill method, and a proper implementation of the Process.ppid method.
+
+= Prerequisites
+   Ruby 1.8.2 or later.
+   The 'windows-pr' library, 0.8.6 or later.
+   The 'sys-proctable' library, 0.7.6 or later (test suite only).
+
+= Supported Platforms
+   This library is supported on Windows 2000 or later.
+
+= Installation Instructions
+   rake test (optional)
+   rake install (non-gem) or rake install_gem (gem)
+
+= Synopsis
+   require 'win32/process'
+
+   Process.fork{
+      3.times{
+         puts 'In the child'
+         sleep 1
+      }
+   }
+
+   Process.wait
+   puts 'Done'
+	
+= Developer's Notes
+== The Process.fork and Process.wait methods
+   The fork method is emulated on Windows by spawning another Ruby process
+   against $PROGRAM_NAME via the CreateProcess() Win32 API function. It will
+   use its parent's environment and starting directory.
+	
+   The various wait methods are a wrapper for the WaitForSingleObject() or
+   WaitForMultipleObjects() Win32 API functions, for the wait* and waitpid*
+   methods, respectively.  In the case of wait2 and waitpid2, the exit value
+   is returned via the GetExitCodeProcess() Win32API function.
+	
+   For now the waitpid and waitpid2 calls do not accept a second argument.
+   That's because we haven't yet determined if there's a signal we should
+   allow to be sent.
+
+   IMPORTANT!	
+   Note that because fork is calling CreateProcess($PROGRAM_NAME), it will
+   start again from the top of the script instead of from the point of the
+   call. We will try to address this in a future release, if possible.
+	
+== The Process.kill method
+   Initially, the kill method will try to get a HANDLE on the PID using the
+   OpenProcess() function. If that succeeds, we know the process is running.
+
+   In the event of signal 2 or signal 3, the GenerateConsoleCtrlEvent()
+   function is used to send a signal to that process. These will not kill
+   GUI processes. It will not (currently) send a signal to remote
+   processes.
+
+   In the event of signal 1 or 4-8, the CreateRemoteThread() function is used
+   after the HANDLE's process has been identified to create a thread
+   within that process. The ExitProcess() function is then sent to that
+   thread.
+
+   In the event of signal 9, the TerminateProcess() function is called. This
+   will almost certainly kill the process, but doesn't give the process a
+   chance to necessarily do any cleanup it might otherwise do.
+   
+== The Process.ppid method
+   In MRI the Process.ppid always returns 0 on MS Windows. With this library
+   it returns the actual parent pid.
+
+== Differences between Ruby's kill and the Win32 Utils kill
+   Ruby does not currently use the CreateRemoteThread() + ExitProcess()
+   approach which is, according to everything I've read, a cleaner approach.
+   This includes not only online research but also Jeffrey Richter's
+   "Advanced Windows Programming, 3rd Edition."
+	
+   Also, the way Process.kill handles multiple pids works slightly differently
+   (and better IMHO) in the Win32 Utils version than the way Ruby currently
+   provides.
+
+   The reason Process.kill was originally added, in case anyone cares for
+   historical trivia, is that Ruby 1.6.x did not support Process.kill on
+   Windows at all.
+	
+== Notes
+   It is unlikely you will be able to kill system processes with this module.
+   It's probably better that you don't.
+	
+== Known Bugs	
+   None known (though please see the +Details+ section for quirks).  Any
+   bugs should be reported on the project page at
+   http://rubyforge.org/projects/win32utils.
+	
+== Future Plans  
+   Train Process.fork to execute from the point of the call rather than the
+   top of the script (if possible).
+	
+   Other suggestions welcome.
+	
+== License
+   Ruby's
+	
+== Copyright
+   (C) 2003-2008 Daniel J. Berger
+   All Rights Reserved
+		
+== Warranty
+   This library is provided "as is" and without any express or
+   implied warranties, including, without limitation, the implied
+   warranties of merchantability and fitness for a particular purpose.
+	
+== Author(s)
+   Park Heesob	
+   Daniel J. Berger

@@ -1,0 +1,99 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html>
+<head>
+  <meta http-equiv="Content-type" content="text/html; charset=utf-8" />
+  <title><%= humanize_exception(@exceptions.first) %></title>
+  <%= partial :css %>
+</head>
+<body>
+  <% if @show_details %>
+  <% if @exceptions.size > 1 %>
+  <div class="internalError">
+    <div class="header">
+      <h1>Error Stack</h1>
+      <ul>
+        <% @exceptions.each_with_index do |exception,i| %>
+          <li>
+            <a href="#exception_<%= i %>"><%= humanize_exception(exception) %></a>
+            <%= escape_html(exception.message.split("\n",2).first) %>
+          </li>
+        <% end %>
+      </ul>
+    </div>
+  </div>
+  <% end %>
+  
+  <div class="internalError">
+    <div class="header">
+      <h1>Request Details</h1>
+      <h3>Parameters</h3>
+      <%= listing("Parameter", "Value", request.params) %>
+
+      <% if request.session? %>
+      <h3>Session</h3>
+      <%= listing("Key", "Value", request.session) %>
+      <% end %>
+
+      <h3>Cookies</h3>
+      <%= listing("Cookie", "Value", request.cookies) %>
+
+      <h3>Named Routes</h3>
+      <%= listing("Name", "Route", Merb::Router.named_routes) %>
+    </div>      
+  </div>
+  <% end %>
+
+  <% @exceptions.each_with_index do |exception,i| %>
+  <div class="internalError" id="exception_<%= i %>">
+    <div class="header">
+      <h1>
+        <%= humanize_exception(exception) %> 
+        <sup class="error_<%= exception.class.status %>"><%= exception.class.status %></sup>
+      </h1>
+      <%= error_codes(exception) %>
+    
+    <% if @show_details %>
+      <p class="options">
+        <label class="all">All<input type="checkbox" autocomplete="off" /></label>
+        <span class="all">
+          <label class="app">App<input type="checkbox" checked="checked" autocomplete="off"/></label>
+          <label class="framework">Framework<input type="checkbox" autocomplete="off"/></label>
+          <label class="gem">Gem<input type="checkbox" autocomplete="off"/></label>
+          <label class="other">Other<input type="checkbox" autocomplete="off"/></label>
+        </span>
+      </p>
+
+    <table class="trace">
+      <% exception.backtrace.each_with_index do |line, index| %>
+        <% type, shortname, filename, lineno, location = frame_details(line) %>
+        <tbody class="close <%= type %>" <%= "style='display:none'" unless type == "app" %>>
+          <tr class="file">
+            <td class="expand"><div>&nbsp;</div></td>              
+            <td class="path">
+              <%= shortname %>
+              <% if filename && filename.match(/\.erb$/) %>
+                (<strong>ERB Template</strong>)
+              <% else %>
+                in <strong><%= location ? location.match(/in (`.+')$/)[1] : 'main' %></strong>
+              <% end %>
+            </td>
+            <td class="line">
+              <%= textmate_url(filename, lineno) unless jar?(filename) %>
+            </td>
+          </tr>
+          <%= render_source(filename, lineno) unless jar?(filename) %>
+        </tbody>
+      <% end %>
+    </table>
+  <% end %>
+  </div>
+  <div class="footer">
+    lots of love, from <a href="http://www.merbivore.com">merb</a>
+  </div>
+  </div>
+  <% end %>
+  <%= partial :javascript %>
+</body>
+</html>

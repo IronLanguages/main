@@ -1,0 +1,23 @@
+<html><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+   <title>Better living through buttons</title><link rel="stylesheet" href="style.css" type="text/css"><meta name="generator" content="DocBook v5 XSL Stylesheets V1.72.0"><link rel="start" href="book.html" title="Developing Graphical User Interfaces with FXRuby"><link rel="up" href="tutorial1.html" title="Chapter&nbsp;3.&nbsp;Hello, World!"><link rel="prev" href="tutorial1.html" title="Chapter&nbsp;3.&nbsp;Hello, World!"><link rel="next" href="ch03s03.html" title="Messages"></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="3" align="center">Better living through buttons</th></tr><tr><td width="20%" align="left"><a accesskey="p" href="tutorial1.html">Prev</a>&nbsp;</td><th width="60%" align="center">Chapter&nbsp;3.&nbsp;Hello, World!</th><td width="20%" align="right">&nbsp;<a accesskey="n" href="ch03s03.html">Next</a></td></tr></table><hr></div><div class="section" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="d0e741"></a>Better living through buttons</h2></div></div></div><p>Obviously, we need to add a few things to make it more interesting.
+    Let's start by putting a button inside the main window. The
+    <code class="classname">FXButton</code> class provides a standard push-button
+    widget:</p><pre class="programlisting">require 'fox16'
+
+include Fox
+
+theApp = FXApp.new
+
+theMainWindow = FXMainWindow.new(theApp, "Hello")
+<span class="bold"><strong>FXButton.new(theMainWindow, "Hello, World!")</strong></span>
+theApp.create
+
+theMainWindow.show
+
+theApp.run</pre><p>As you might guess, passing <em class="parameter"><code>theMainWindow</code></em> as
+    the first argument to <code class="methodname">FXButton.new</code> tells FXRuby
+    that the new button is a child of the main window. The second argument to
+    <code class="methodname">FXButton.new</code> is a string that will be displayed
+    on the button. If you run the program <span class="emphasis"><em>now</em></span>, you should
+    see this:</p><div class="screenshot"><div class="mediaobject" align="center"><img src="images/hello-with-button.png" align="middle"></div></div></div><div class="navfooter"><hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="tutorial1.html">Prev</a>&nbsp;</td><td width="20%" align="center"><a accesskey="u" href="tutorial1.html">Up</a></td><td width="40%" align="right">&nbsp;<a accesskey="n" href="ch03s03.html">Next</a></td></tr><tr><td width="40%" align="left" valign="top">Chapter&nbsp;3.&nbsp;Hello, World!&nbsp;</td><td width="20%" align="center"><a accesskey="h" href="book.html">Home</a></td><td width="40%" align="right" valign="top">&nbsp;Messages</td></tr></table></div></body></html>

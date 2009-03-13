@@ -1,0 +1,60 @@
+== 0.4.4 - 26-Aug-2008
+* Some internal refactoring to ensure that the clipboard is closed on failure
+  in a more robust fashion.
+* Renamed the test file.
+* Eliminated the custom memcpy function, since windows-pr now does the right
+  thing. This necessitated bumping the minimum required windows-pr version.
+
+== 0.4.3 - 25-Jul-2007
+* Changed ClipboardError to Clipboard::Error
+* Added a Rakefile with tasks for testing and installation.
+* Removed the install.rb file since installation is now handled by the Rakefile.
+* Updates to the README and MANIFEST.
+
+== 0.4.2 - 27-Jan-2007
+* Fixes for the clipboard_test.rb example program setup code. Thanks go to
+  Harold Hausman for the spot.
+
+== 0.4.1 - 30-Jul-2006
+* Now uses the windows-pr package.  No API changes.
+* Made Clipboard.get_data a true alias (instead of a facade).
+
+== 0.4.0 - 24-Feb-2006
+* Removed the C version entirely and replaced it with a pure Ruby version
+  that uses the Win32API package.
+* Added a gemspec.
+* Added a install.rb file.
+
+== 0.3.1 - 2-Feb-2006
+* Unicode fix to handle characters with null bytes.  Thanks go to Brian
+  Marick for the spot.
+
+== 0.3.0 - 26-May-2005
+* Changed the Clipboard.data= method to Clipboard.set_data because it does,
+  in fact, take up to two arguments.  This API change is the main reason for
+  the VERSION bump.
+* Added Clipboard.get_data method as an alias for Clipboard.data.
+* Removed the clipboard.rd file.  The Clipboard.txt file is now rdoc friendly.
+* Now Unicode friendly.
+* Added more tests, including Unicode test.
+* General code cleanup.
+
+== 0.2.1 - 28-Feb-2005
+* Moved the 'examples' directory to the toplevel directory.
+* Renamed the sample script to 'clipboard_test.rb'.
+* Made this document and README rdoc friendly.
+
+== 0.2.0 - 12-Jul-2004
+* Made Clipboard a class instead of a module.
+* Moved the ClipboardError class under the Win32 module.
+* Added the formats() class method.
+* Added the register_format class method.
+* Added the format_available? class method.
+* Added the format_name class method.
+* Replaced all instances (1) of the deprecated STR2CSTR() function with the
+  StringValuePtr() function.  This means that as of version 0.2.0 this package
+  requires Ruby 1.8.0 or later.
+* Moved the sample script to doc/examples.
+
+== 0.1.0 - 19-Nov-2003
+* Initial release

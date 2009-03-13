@@ -1,0 +1,28 @@
+#!/usr/local/bin/ruby -w
+
+require 'parse_tree'
+
+all_nodes = ParseTree::NODE_NAMES
+
+ARGV.each do |processor|
+  require processor
+end
+
+ObjectSpace.each_object(Class) do |klass| 
+  if klass < SexpProcessor then
+
+    processor = klass.new
+    processors = klass.public_instance_methods(true).grep(/process_/)
+
+    if processor.strict then
+      puts "#{klass.name}:"
+      puts
+
+      # TODO: check unsupported against supported
+      processors = processors.map { |m| m[8..-1].intern } + processor.unsupported
+      unsupported = all_nodes - processors 
+      p unsupported.sort_by { |sym| sym.to_s }
+      puts
+    end
+  end
+end

@@ -1,0 +1,206 @@
+= 0.5.0 - 12-Sep-2008
+* Fixed an issue for Windows Vista and later where some event descriptions
+  were missing. This fix requires windows-pr 0.9.3 or later.
+* The EventLog#full? method now raises an EventLog::Error if it should fail
+  instead of a StandardError.
+* Minor tweak to mc.rb - chomp the input file name if run as a program.
+* Added test-unit 2.0.0 or later as a dependency.
+* Added ptools as a dependency for the sake of the test suite.
+* Renamed the test files to start with 'test_'.
+* Removed the ts_all.rb file.
+
+= 0.4.9 - 7-Sep-2008
+* The private get_description method, which is used internally to read the
+  event log, has been updated to work with 64 bit Windows. The changes needed
+  for this require a more recent windows-pr library, i.e. 0.9.2 or later.
+* Now properly separates the string inserts and description in the private
+  method get_last_event. This fixes the description and string_insert
+  properties for both the EventLog#tail and EventLog#notify_change methods.
+* Some internal refactoring to use begin/ensure where appropriate.
+
+= 0.4.8 - 17-May-2008
+* Fixed in a bug in the EventLog#read method where a log entry requiring
+  over 64k would fail and spiral into an infinite loop. Thanks go to
+  Stuart Clarke for the spot.
+* Improved handling of failed log reading in the read_last_event private
+  method.
+
+= 0.4.7 - 8-Dec-2007
+* Fixed a bug where you couldn't write to custom (parent) event sources.
+  Thanks go to Tim Uckun for the spot.
+* Now handles ParameterMessageFiles, both in the EventLog.add_event_source
+  method and in terms of getting event descriptions properly. Thanks go to
+  botp for spotting the description problem.
+* The EventLog.open_backup method handles a block the same way that the
+  EventLog.open method does.
+* The EventLog.add_event_source now returns the creation disposition
+  instead of self.
+
+= 0.4.6 - 27-Aug-2007
+* Reading event logs is now approximately 5-7 times faster!
+* Fixed a potential bug where, in rare cases, event descriptions could be
+  overwritten by other event descriptions.
+* Fixed a bug where, in unusual cases, there was leading garbage in the
+  event descriptions.
+
+= 0.4.5 - 25-Aug-2007
+* Fixed two potential issues where reading from remote event log sources
+  could fail either due to permissions (reading DLL's) or because local
+  registry entries didn't necessarily match the remote registry entries.
+  Thanks go to Andrew Garberoglio and Ivan Shiel for the spot.
+
+= 0.4.4 - 31-Jul-2007
+* The EventLogError class is now EventLog::Error.
+* The MCError class is now MC::Error.
+* Added a Rakefile with tasks for installation and testing.
+* Removed the install.rb file. Installation is now handled by the Rakefile.
+* Fixed some bad test cases in tc_eventlog.rb.
+* Added some more source comments.
+* Updates to the README and MANIFEST file.
+
+= 0.4.3 - 18-Dec-2006
+* Removed the FORMAT_MESSAGE_FROM_SYSTEM flag to the FormatMessage function
+  in the get_description private method because it could sometimes return
+  bogus information.  Thanks go to Greg Holmes for the spot.
+* Added the string_inserts member to the EventLogStruct.  This contains an
+  array of only the raw string inserts, rather than the entire text message.
+
+= 0.4.2 - 6-Aug-2006
+* Fixed a bug in the EventLog.read method related to the
+  EVENTLOG_BACKWARDS_READ flag.
+* Fixed a bug in the EventLog.read method where the event_type was not being
+  set properly.  Thanks go to "TheR" for the spot and the fix.
+* Fixed bugs in the EventLog#tail method where it would fail if the log was
+  full and dups would appear.
+
+= 0.4.1 - 28-May-2006
+* Fixed a bug in the EventLog#notify_change method where the handle would
+  die after five or six reads.  Thanks go to botp for the spot.
+
+= 0.4.0 - 24-May-2006
+* Now pure Ruby.
+* Now includes a gemspec.
+* Fixed a major bug the EventLog#tail method where it was reading the log in
+  the wrong order (!!!).
+* Fixed a bug in the EventLog#report_event with regards to long category_id's.
+  Actually, this wasn't so much "fixed" as "avoided" by virtue of using a
+  pure Ruby solution.
+* Added the EventLog#full? method.
+* Documentation updates and corrections, including the tutorial on creating
+  and writing to your own event source.
+  
+== 0.3.3 - 2-Jan-2006
+* If EventLog.new fails, it now raises EventLogError instead of StandardError.
+* Added documentation to the eventlog.txt file for EventLog#notify_change.
+* Added inline rdoc to the C source code.
+* Code cleanup.
+
+== 0.3.2 - 26-May-2005
+* Code now more Unicode friendly, and other cleanup.
+* Made the .txt files rdoc friendly, and removed the .rd files.
+* Minor adjustments to the test suite.
+
+== 0.3.1 - 16-Feb-2005
+* Minor modifications to the source to eliminate some warnings that appeared
+  in Ruby 1.8.2 or later, plus other minor tweaks.
+* Renamed the sample programs and moved the 'examples' directory to the
+  toplevel directory.
+* Made this document rdoc friendly.
+
+== 0.3.0 - 30-Oct-2004
+* Added the notify_change() and tail() methods.
+* Added the write() alias for report_event().
+* The read() class and instance methods now return an array of structs if
+  no block is given.
+* Added the 'rubymsg.mc' message category file.  If installed, this will
+  create a 'RubyMsg' event source for use with win32-service, though you
+  may use it for whatever you wish.  See the README for more details. 
+* Renamed struct back to EventLogStruct - sorry, sorry - I promise I won't
+  change this again.
+* Fixed a bug where using EventLog::SEEK_READ did not work properly (thanks
+  Park).
+* Added the notify.rb test script under doc/examples.
+
+== 0.2.5 - 28-Oct-2004
+* Modified the open() and read() class methods to default to "Application"
+  for the default Event source.
+* Removed the .html files.  You can generate these on your own with rd2.
+
+== 0.2.4 - 19-Oct-2004
+* Fixed a bug where a segfault would result if an Event Log entry were
+  somehow corrupted.  Thanks go again to Joey Gibson for the spot.
+* Very minor doc corrections in tutorial.txt and eventlog.txt
+
+== 0.2.3 - 14-Oct-2004
+* Fixed a bug where some Event Log descriptions were returning nil instead
+  of the actual description.  Thanks go to Joey Gibson for the spot.
+* Minor test suite and doc additions, including a "future plan" that may
+  be of interest.
+
+== 0.2.2 - 02-Jul-2004
+* Fixed a bug in the read() method where not all the records were being
+  returned.
+* Fixed calls to rb_time_new() - second argument appears to be mandatory as
+  of 1.8.2.
+* Renamed struct returned by read() to "EventLog".
+* Changed struct members "id" and "type" to "event_id" and "event_type",
+  respectively.  This was to avoid any confusion with the builtin Ruby
+  methods of the same name.
+* Replaced STR2CSTR() with StringValuePtr(), as the former is deprecated.
+  This means that as of this version, Ruby 1.8.0 or later is required.
+* Moved the sample programs to doc/examples.
+
+== 0.2.1 - 04-Mar-2004
+* The add_event_source() and report_event() methods now accept symbols as
+  well as do key validation.
+* Moved the EventLogError class under the Win32 module.
+* Normalized the tc_eventlog.rb and tc_mc.rb scripts by making it easier to
+  run them standalone from another directory.
+* Minor modification to the build process.
+* Added a test_write.rb script for general futzing when it comes to creating
+  and writing events to the log.
+* Doc updates, warranty information added.
+
+== 0.2.0 - 1-Feb-2004
+* Changed the Win32EventLogError class to just EventLogError.  I felt the
+  Win32 was redundant given that the class is already under the Win32 module.
+* Fixed bug where bogus error messages were returned because I was calling
+  GetLastError() too late.
+* Fixed bug where error messages were getting cut off and/or garbled due to
+  \r\n character.  (Thanks Park Heesob).
+* Added open_backup class method.
+
+== 0.1.4 - 16-Jan-2004
+* Slightly better handling of the EventLog#close method.  Adopted from code
+  previously submitted by Park Heesob.
+* Fixed a bug in the (internal) GetUser() function that caused a segfault if
+  there were 250+ records.  That function has been greatly simplified.
+* Removed the rb_ensure() approach.  What I thought was a memory leak was not,
+  in fact, a memory leak.  Also, it was slowing down the method considerably.
+* Minor test suite update.
+
+== 0.1.3 - 7-Jan-2004
+* Fixed memory leaks in read() method (Park Heesob).
+* Added read() class method (Daniel Berger).
+* Test suite and doc additions & updates
+
+== 0.1.2 - 30-Nov-2003
+* Added the report_event method.  You can now write to the event log.
+* Added the add_event_source class method, allowing you to register a custom
+  event source.
+* Added the win32-mc package to the distribution.  This is a simple
+  wrapper to generate .dll files from .mc files.
+* Added Event Type constants
+* Test suite additions
+* Documentation updates and additions, including a small tutorial.
+
+== 0.1.1 - 5-Nov-2003
+* Fixed the free() call, and added implicit eventlog closing (when the
+  EventLog object is free'd).
+* Simplified constants by removing 'EVENTLOG_' portion of name.
+* Cleanup in the GetDescription() method, which was causing segfaults in
+  conjunction with TestUnit.
+* Minor doc updates and cleanup.
+
+== 0.1.0 - 14-Oct-2003
+* Initial release

@@ -1,0 +1,55 @@
+#!/usr/local/bin/ruby -ws
+
+$v    ||= false
+$h    ||= false
+$f    ||= false
+$q    ||= false
+$help ||= false
+
+if $h or $help then
+  help = [
+          "autotest [options]",
+          nil,
+          "options:",
+          "\t-h",
+          "\t-help\t\tYou're looking at it.",
+          nil,
+          "\t-v\t\tBe verbose.",
+          "\t\t\tPrints files that autotest doesn't know how to map to",
+          "\t\t\ttests.",
+          nil,
+          "\t-q\t\tBe more quiet.",
+          nil,
+          "\t-f\t\tFast start.",
+          "\t\t\tDoesn't initially run tests at start.",
+         ]
+  STDERR.puts help.join("\n")
+  exit 1
+end
+
+class Dir
+  class << self
+    alias :old_index :[]
+    def [](*args)
+      $-w, old_warn = false, $-w
+      old_index(*args)
+    ensure
+      $-w = old_warn
+    end
+  end
+end
+
+require 'autotest'
+style = Autotest.autodiscover
+target = Autotest
+unless style.empty? then
+  mod = "autotest/#{style.join("_")}"
+  puts "loading #{mod}"
+  begin
+    require mod
+  rescue LoadError
+    abort "Autotest style #{mod} doesn't seem to exist. Aborting."
+  end
+  target = Autotest.const_get(style.map {|s| s.capitalize}.join)
+end
+target.run

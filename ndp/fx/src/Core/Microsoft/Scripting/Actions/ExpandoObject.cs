@@ -276,6 +276,30 @@ namespace System.Dynamic {
             return false;
         }
 
+        // We create a non-generic type for the debug view for each different collection type
+        // that uses DebuggerTypeProxy, instead of defining a generic debug view type and
+        // using different instantiations. The reason for this is that support for generics
+        // with using DebuggerTypeProxy is limited. For C#, DebuggerTypeProxy supports only
+        // open types (from MSDN http://msdn.microsoft.com/en-us/library/d8eyd8zc.aspx).
+        private sealed class KeyCollectionDebugView {
+            private ICollection<string> collection;
+            public KeyCollectionDebugView(ICollection<string> collection) {
+                Debug.Assert(collection != null);
+                this.collection = collection;
+            }
+
+            [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
+            public string[] Items {
+                get {
+                    string[] items = new string[collection.Count];
+                    collection.CopyTo(items, 0);
+                    return items;
+                }
+            }
+        }
+
+        [DebuggerTypeProxy(typeof(KeyCollectionDebugView))]
+        [DebuggerDisplay("Count = {Count}")]
         private class KeyCollection : ICollection<string> {
             private readonly ExpandoObject _expando;
             private readonly int _expandoVersion;
@@ -377,6 +401,30 @@ namespace System.Dynamic {
             #endregion
         }
 
+        // We create a non-generic type for the debug view for each different collection type
+        // that uses DebuggerTypeProxy, instead of defining a generic debug view type and
+        // using different instantiations. The reason for this is that support for generics
+        // with using DebuggerTypeProxy is limited. For C#, DebuggerTypeProxy supports only
+        // open types (from MSDN http://msdn.microsoft.com/en-us/library/d8eyd8zc.aspx).
+        private sealed class ValueCollectionDebugView {
+            private ICollection<object> collection;
+            public ValueCollectionDebugView(ICollection<object> collection) {
+                Debug.Assert(collection != null);
+                this.collection = collection;
+            }
+
+            [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
+            public object[] Items {
+                get {
+                    object[] items = new object[collection.Count];
+                    collection.CopyTo(items, 0);
+                    return items;
+                }
+            }
+        }
+
+        [DebuggerTypeProxy(typeof(ValueCollectionDebugView))]
+        [DebuggerDisplay("Count = {Count}")]
         private class ValueCollection : ICollection<object> {
             private readonly ExpandoObject _expando;
             private readonly int _expandoVersion;

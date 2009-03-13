@@ -1,2 +1,0 @@
-fails:TypeGroups with non-generic member allow static methods to be called on the non-generic member
-fails:TypeGroups with non-generic member don't cache the class information

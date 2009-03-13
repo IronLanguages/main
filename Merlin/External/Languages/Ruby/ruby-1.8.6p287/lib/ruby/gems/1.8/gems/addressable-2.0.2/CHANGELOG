@@ -1,0 +1,59 @@
+=== Addressable 2.0.2
+  * fixed issue with URI template expansion
+  * fixed issue with percent escaping characters 0-15
+
+=== Addressable 2.0.1
+  * fixed issue with query string assignment
+  * fixed issue with improperly encoded components
+
+=== Addressable 2.0.0
+  * the initialize method now takes an options hash as its only parameter
+  * added query_values method to URI class
+  * completely replaced IDNA implementation with pure Ruby
+  * renamed Addressable::ADDRESSABLE_VERSION to Addressable::VERSION
+  * completely reworked the Rakefile
+  * changed the behavior of the port method significantly
+  * Addressable::URI.encode_segment, Addressable::URI.unencode_segment renamed
+  * documentation is now in YARD format
+  * more rigorous type checking
+  * to_str method implemented, implicit conversion to Strings now allowed
+  * Addressable::URI#omit method added, Addressable::URI#merge method replaced
+  * updated URI Template code to match v 03 of the draft spec
+  * added a bunch of new specifications
+
+=== Addressable 1.0.4
+  * switched to using RSpec's pending system for specs that rely on IDN
+  * fixed issue with creating URIs with paths that are not prefixed with '/'
+
+=== Addressable 1.0.3
+  * implemented a hash method
+
+=== Addressable 1.0.2
+  * fixed minor bug with the extract_mapping method
+
+=== Addressable 1.0.1
+  * fixed minor bug with the extract_mapping method
+
+=== Addressable 1.0.0
+  * heuristic parse method added
+  * parsing is slightly more strict
+  * replaced to_h with to_hash
+  * fixed routing methods
+  * improved specifications
+  * improved heckle rake task
+  * no surviving heckle mutations
+
+=== Addressable 0.1.2
+  * improved normalization
+  * fixed bug in joining algorithm
+  * updated specifications
+  
+=== Addressable 0.1.1
+  * updated documentation
+  * added URI Template variable extraction
+  
+=== Addressable 0.1.0
+  * initial release
+  * implementation based on RFC 3986, 3987
+  * support for IRIs via libidn
+  * support for the URI Template draft spec

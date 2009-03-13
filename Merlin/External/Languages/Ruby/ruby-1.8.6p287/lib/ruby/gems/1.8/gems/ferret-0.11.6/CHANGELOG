@@ -1,0 +1,24 @@
+Fri Oct 20 22:25:37 JST 2006
+  * Added Filter#bits method to built-in Filters.
+  * Added MappingFilter < TokenFilter that can be used to map strings to other
+    strings during analysis. A possible use of this is it to Filter utf-8
+    characters to ascii characters.
+
+Fri Oct 13 09:18:31 JST 2006
+  * Changed documentation to state truthfully that FULL_ENGLISH_STOP_WORDS is
+    being used by default in StandardAnalyzer and StopwordFilter.
+  * Removed 'will', 's' and 't' from ENGLISH_STOP_WORDS so that all words in
+    ENGLISH_STOP_WORDS can be found in FULL_ENGLISH_STOP_WORDS, that is
+    ENGLISH_STOP_WORDS is a subset of FULL_ENGLISH_STOP_WORDS.
+
+Thu Oct 12 23:04:19 JST 2006
+  * Fixed adding SortField to Sort object in Ruby. Garbage collection wasn't 
+    working.
+  * Can now set :sort => SortField#new
+
+Tue Oct 10 14:42:17 JST 2006
+  * Fixed MultiTermDocEnum bug introduced in version 0.10.10 during
+    performance enhancements. 
+  * Added Filter#bits(index_reader) method to C implemented filters so that
+    they can be used in Ruby.
+

@@ -1,0 +1,137 @@
+= Information about Message Files
+Each event source should register message files that contain description
+strings for each event identifier, event category, and parameter. Register
+these files in the EventMessageFile, CategoryMessageFile, and
+ParameterMessageFile registry values for the event source.
+
+You can create one message file that contains descriptions for the event
+identifiers, categories, and parameters, or create three separate message
+files. Several applications can share the same message file.
+
+You should typically create message files as resource-only DLLs. They are
+smaller and faster than ordinary DLLs.
+
+= What does a .mc file look like?
+
+A .mc file is just a plain text file that is parsed by the "mc" utility to
+generate a header and, ultimately, a .dll file.  Here is a quick sample.
+Note that there must be a newline after the last '.' at the bottom.
+The ';' character denotes a comment.
+
+; foo.mc
+MessageId=0x1
+SymbolicName=CATEGORY_ERROR
+Language=English
+error
+.
+
+MessageId=0x2
+SymbolicName=CATEGORY_WARNING
+Language=English
+warning
+.
+
+MessageId=0x3
+Severity=Error
+SymbolicName=FOO_ERROR
+Language=English
+Error: %1
+.
+
+= How to generate a .dll file from a .mc file
+To turn this file into a .dll you have two options.  The first is to use the
+command line utilities.  Follow these steps:
+
+1) mc filename.mc
+2) rc -r -fo filename.res filename.rc
+3) link -dll -noentry -out:filename.dll filename.res
+
+Your other option is to use the win32-mc library, which is a simple wrapper
+for the above commands, and is included with this library.  You now have a
+dll that you can associate with your event source (i.e. the one you associate
+with your application).  You can also take a look at the C header file that
+.mc generates and use that in your own extensions if you like.
+
+After this you'll need to register your event source and associate the .dll
+file with it.  To do that, use the EventLog.add_event_source method. Be sure
+to specify the number of categories manually - it is not calculated
+automatically by the OS.
+
+Returning to the .mc file, the example I used actually creates two categories,
+"error" and "warning", and one event message.  The numbers you assign here
+create corresponding (though not identical) values in the header file that
+is generated. It is the values found in the header file that you pass to the
+EventLog#report_event method for the category or event id.  Here's the
+relevant data from the foo.h file (using foo.mc above):
+
+#define CATEGORY_ERROR 0x00000001L
+#define CATEGORY_WARNING 0x00000002L
+#define FOO_ERROR 0xC0000003L
+
+In the case of categories, that number is the name number that shows up in the
+"category" field in the Event Viewer.  In the case of event message files, it
+is the text that shows up in the event description.
+
+The "data" field is what replaces "%1" as an actual text string in the event
+log, sort of like a printf format specifier, except that it's always a string.
+
+= Registering an event source
+First, create the .dll file from the .mc file. Then register that .dll file
+for an event source we'll call "foo". You can name the .dll file anything
+you like, but for sanity's sake I recommend keeping the same as the event
+source name.
+
+require 'win32/eventlog'
+include Win32
+
+dll_file = 'c:\\wherever\\foo.dll'
+
+EventLog.add_event_source(
+   :source                => 'Application',
+   :key_name              => 'foo',
+   :category_count        => 2,
+   :event_message_file    => dll_file,
+   :category_message_file => dll_file
+)
+
+After you run this, you can run 'regedit' and see that your event source has
+been inserted into the registry. You can find it under:
+
+HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\EventLog\Application.
+
+= Writing to the event source
+Now that our event source 'foo' is registered, we can begin writing event
+log data for it.  Here's an example of how you use it:
+
+require 'win32/eventlog'
+include Win32
+
+EventLog.open('Application') do |log|
+   log.report_event(
+      :source     => 'foo',
+      :event_type => EventLog::WARN,
+      :category   => '0x00000002L'.hex,
+      :event_id   => '0x00000003L'.hex,
+      :data       => 'I'm warning you!'
+   )
+end
+
+Note the values used for the 'category' and 'event_id' keys.  Those are the
+values that were generated automatically in the foo.h file that I showed you
+above.  You'll have to manually inspect the header file that's generated to
+determine which values you should be using.
+
+You can now open your event log viewer and look at the message.  You can get
+to your event log viewer via Start -> Control Panel -> Administrative Tools ->
+Event Viewer.  You should see a warning message with the category "warning"
+and an event id of '3'.  If you right click on that entry and select
+"properties", you can see the event description is "Warning: I'm warning you!".
+
+== More Info
+For more information visit the following URL's:
+
+http://msdn.microsoft.com/library/default.asp?url=/library/en-us/tools/tools/message_text_file_syntax.asp
+
+http://msdn.microsoft.com/library/default.asp?url=/library/en-us/debug/base/message_files.asp
+
+http://msdn.microsoft.com/library/default.asp?url=/library/en-us/tools/tools/header_section.asp

@@ -1,0 +1,4 @@
+#!/usr/bin/env ruby -w
+
+exec "multiruby", "-S", "gem", *ARGV
+

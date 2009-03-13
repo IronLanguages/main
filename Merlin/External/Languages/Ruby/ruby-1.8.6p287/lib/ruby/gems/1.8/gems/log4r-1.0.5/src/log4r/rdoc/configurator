@@ -1,0 +1,243 @@
+= Configuring Log4r with Log4r::Configurator
+
+The Configurator class allows one to set up Log4r via XML.
+Additionally, Configurator contains methods to configure any Log4r 
+defaults. In particular, Configurator provides a method to
+customize the logging levels.
+
+Log4r is also configurable using YAML. For that, there is
+a class similar to Configurator called Log4r::YamlConfigurator. Please see
+log4r/yamlconfigurator.rb for details.
+
+REXML is required for XML configuration. Get REXML at 
+http://www.ruby-lang.org/en/raa-list.rhtml?name=REXML
+
+To use the Configurator class,
+
+  require 'log4r/configurator'
+
+== Custom Levels
+
+Suppose you want the following levels and ranks:
+
+  Foo < Bar < Baz
+
+This is easily accomplished:
+
+  Configurator.custom_levels('Foo', 'Bar', :Baz)
+
+The method accepts strings or symbols. However, custom levels must have names 
+that are valid for Ruby constants. Also, custom levels should be set before 
+anything else is done with Log4r, otherwise the default levels will be loaded.
+
+You can set custom levels in XML. That's covered in the following section.
+
+== XML Configuration
+
+If you have REXML, you can configure Log4r with XML.
+To do this, first write an XML configuration (which you can learn by
+studying this document and the examples provided in the distribution)
+and then load up the XML from within your program as follows:
+
+  Configurator.load_xml_file('/path/to/file.xml')
+
+The Log4r XML configuration system is very flexible and powerful. In fact,
+it is somewhat preferable to configuring Log4r in Ruby. In order to take
+full advantage of this feature, there are several concepts one must know.
+They are covered in the following three sections.
+
+=== Concept: XML Directives
+
+The expressive power of Ruby has enabled a feature I call 
+<i>XML directives</i>. An XML directive is a name-value pair belonging to 
+some element. It
+may be represented as an attribute (name="value") of the element, or
+as a child (<name>value</name>) of the element. Therefore, you are
+free to specify information about an object as either an attribute
+or an element. An example should clarify:
+
+  <object data="value"/>
+
+Is equivalent to:
+
+  <object>
+     <data>value</data>
+  </object>
+
+You can assume this behavior except where noted elsewhere in the API.
+
+=== Concept: XML Parameters
+
+A scheme which I call <i>XML parameters</i> enables one to utilize the XML 
+configuratin system for custom Outputters and Formatters.
+This requires <b>no</b> extra work on your part, so long as your objects 
+are set up using hash arguments and can decode string values. That is, once
+you've written a custom Outputter, it is automatically configurable in XML
+without having to write any extra code.
+
+An XML parameter is analogous to a hash argument to some object's <tt>new</tt>
+method. Consider these hash arguments to FileOutputter:
+
+  :filename => '/path/to/logs/my.log'
+  :trunc => 'true'
+
+We can specify them in XML like this:
+
+  <outputter type="FileOutputter" trunc="true">
+     <filename>/path/to/logs/my.log</filename>
+     ...
+
+The name of the element/attribute is just the name of the parameter. Note that
+the input will be a string, thus it's wise to convert the data in from 
+strings in any custom classes (to_i for integers, etc). Now let's suppose you 
+have defined a custom Outputter named MyOutputter with the following 
+additional hash args:
+
+  :myarg1 => 'foo'
+  :myarg2 => 123
+
+Automagically, you can configure your Outputter like so:
+
+  <outputter type="MyOutputter" myarg2="123">
+     <myarg1>foo</myarg1>
+     ...
+
+Isn't that nice? <tt>:-)</tt>
+
+=== Concept: Variable Substitution
+
+To kill the need for preprocessors, Configurator provides a means of variable 
+substitution for XML parameters at runtime. If you specify 
+<tt>#{foo}</tt> in an XML parameter value, Configurator will replace it with 
+the value of 'foo' in its parameter hashtable. The primary idea is that you 
+can figure stuff out in your program, 
+say the log path, and relay that information to the XML while it's being 
+loaded. Secondarily, it is a way to have aliases within an XML document.
+
+There are two ways to tell Configurator about these variables. The first
+method we'll cover is done within a Ruby program with Configurator[].
+
+  Configurator['logpath'] = '/path/to/logs'
+
+Thereafter, any occurence of <tt>#{logpath}</tt> in each and every XML 
+parameter will be substituted with '/path/to/logs'. For example:
+
+  <filename>#{logpath}/mylog.log</filename>
+
+Becomes,
+
+  <filename>/path/to/logs/mylog.log</filename>
+
+Aside from Configurator[], another way to define XML parameter variables
+is to define <tt>parameters</tt> under the <tt><pre_config></tt> element
+of an XML configuration:
+
+  <pre_config>
+     <parameter name="logpath" value="/path/to/logs'/>
+     <parameter name="other" value="somethingelse'/>
+     ...
+  </pre_config>
+
+Alternatively,
+
+  <pre_config>
+     <parameters>
+        <logpath>/path/to/logs</logpath>
+        <other>somethingelse</other>
+        ...
+     </parameters>
+     ...
+
+The end result is the same as using Configurator[]. However, this method
+is not dynamic. Configurator[] should be used when you want to set variables
+from within Ruby.
+
+= XML Grammar
+
+And now, here's the XML grammar we use to configure Log4r.
+
+== Root Element
+
+The root element is <tt><log4r_config></tt>. It can be embedded as a node of
+any other element in an XML file. For instance:
+
+  <my-xml-thing>
+     <customize-libraries>
+        <log4r_config>
+           <!-- log4r configuratin goes here -->
+        </log4r_config>
+        ...
+
+== Pre-config element
+
+The pre_config element is a child of log4r_config and contains:
+
+* 'custom_levels' element
+* 'global' element
+* 'parameters' element
+* any number of 'parameter' elements
+
+=== Pre_config: Custom Levels
+
+The custom_levels element is not an <i>XML directive</i> of pre_config. It
+<b>must</b> be specified like this:
+
+  <custom_levels>Foo, Bar, Baz</custom_levels>
+
+And <b>not</b> like this:
+
+  <!-- NOT SUPPORTED -->
+  <custom_levels levels="Foo, Bar, Baz"/>
+
+=== Pre_config: Global Level
+
+  <global level="DEBUG"/>
+
+or
+
+  <global><level>DEBUG</level></global>
+
+Here, level is an XML directive of global.
+
+=== Pre_config: Parameters
+
+Parameters are variables that will be substituted later on. Please
+see the <b>Concept: Variable Substitution</b> section above. Parameters 
+are <i>XML Directives</i>, which means they can be expressed using elements 
+or attributes. Here is an example:
+
+  <parameter name="param name 1" value="param value 1">
+  <parameter name="param name 2" value="param value 2">
+  ...
+  <parameters>
+     <param3>value3</param3>
+     <param4>value3</param4>
+     ...
+
+=== Pre_config: Complete Example
+
+   <log4r_config>
+
+      <pre_config>
+         <custom_levels>
+            Foo,Bar, Baz
+         </custom_levels>
+         <global level="Bar"/>
+         <parameters>
+            <logpath>/var/log/foo</logpath>
+            <mypattern>%l [%d] %m</mypattern>
+         </parameters>
+      </pre_config>
+
+      <!-- define some outputters and loggers -->
+      
+   </log4r_config>
+
+== Configuring Log4r Objects
+
+The XML configuration grammar for Loggers, Outputters and the like are 
+covered in the usage guidelines for those classes.
+
+== Order Doesn't Matter
+
+You can (it is hoped) define any of the XML objects in any order desired.
