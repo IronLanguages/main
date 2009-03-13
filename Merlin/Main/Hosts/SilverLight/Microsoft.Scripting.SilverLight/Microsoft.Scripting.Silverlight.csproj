@@ -15,7 +15,7 @@
     <SccProvider>SAK</SccProvider>
     <SilverlightBuild>true</SilverlightBuild>
     <TfsSilverlightPath>..\..\..\Utilities\Silverlight\x86ret\</TfsSilverlightPath>
-    <SilverlightInstallPath>C:\Program Files\Microsoft Silverlight\3.0.40226.0</SilverlightInstallPath>
+    <SilverlightInstallPath>C:\Program Files\Microsoft Silverlight\3.0.40307.0</SilverlightInstallPath>
     <SilverlightSdkPath Condition="Exists('$(TfsSilverlightPath)')">$(TfsSilverlightPath)</SilverlightSdkPath>
     <SilverlightSdkPath Condition="!Exists('$(TfsSilverlightPath)')">$(SilverlightInstallPath)</SilverlightSdkPath>
     <AssemblyOriginatorKeyFile>..\..\..\Support\MSSharedLibKey.snk</AssemblyOriginatorKeyFile>
