@@ -254,13 +254,21 @@ namespace IronRuby.Builtins {
                         case 'a':
                         case 'Z':
                             count = 1;
-                            char[] cstr = Protocols.CastToString(stringCast, context, self[i]).ToString().ToCharArray();
-                            int len1 = directive.Count.HasValue ? directive.Count.Value : cstr.Length;
-                            int len2 = (len1 > cstr.Length) ? cstr.Length : len1;
-                            writer.Write(cstr, 0, len2);
-                            if (len1 > len2) {
+                            str = Protocols.CastToString(stringCast, context, self[i]);
+                            char[] cstr = (str == null) ? new char[0] : str.ToString().ToCharArray();
+                            int dataLen;
+                            int paddedLen;
+                            if (directive.Count.HasValue) {
+                                paddedLen = directive.Count.Value;
+                                dataLen = Math.Min(cstr.Length, paddedLen);
+                            } else {
+                                paddedLen = cstr.Length;
+                                dataLen = cstr.Length;
+                            }
+                            writer.Write(cstr, 0, dataLen);
+                            if (paddedLen > dataLen) {
                                 byte fill = (directive.Directive == 'A') ? (byte)' ' : (byte)0;
-                                for (int j = 0; j < (len1 - len2); j++) {
+                                for (int j = 0; j < (paddedLen - dataLen); j++) {
                                     writer.Write(fill);
                                 }
                             }

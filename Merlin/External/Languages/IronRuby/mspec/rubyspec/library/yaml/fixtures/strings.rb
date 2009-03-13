@@ -11,6 +11,12 @@ $complex_key_1 = <<EOY
        2001-08-14 ]
 EOY
 
+$test_yaml_string =
+<<EOY
+project: 
+  name: RubySpec
+EOY
+
 $to_yaml_hash =
 <<EOY
 -

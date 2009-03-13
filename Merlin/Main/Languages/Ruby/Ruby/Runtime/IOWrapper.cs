@@ -50,6 +50,7 @@ namespace IronRuby.Runtime {
         private readonly bool _canRead;
         private readonly bool _canWrite;
         private readonly bool _canSeek;
+        private readonly bool _canFlush;
         private readonly bool _canBeClosed;
         private readonly byte[]/*!*/ _buffer;
         private int _writePos;
@@ -58,7 +59,7 @@ namespace IronRuby.Runtime {
 
         private const int _bufferSize = 0x1000;
 
-        public IOWrapper(RubyContext/*!*/ context, object io, bool canRead, bool canWrite, bool canSeek, bool canBeClosed) {
+        public IOWrapper(RubyContext/*!*/ context, object io, bool canRead, bool canWrite, bool canSeek, bool canFlush, bool canBeClosed) {
             Assert.NotNull(context);
 
             _context = context;
@@ -67,6 +68,7 @@ namespace IronRuby.Runtime {
             _canRead = canRead;
             _canWrite = canWrite;
             _canSeek = canSeek;
+            _canFlush = canFlush;
             _canBeClosed = canBeClosed;
             _buffer = new byte[_bufferSize];
             _writePos = 0;
@@ -122,6 +124,15 @@ namespace IronRuby.Runtime {
         public override void Flush() {
             FlushWrite();
             FlushRead();
+        }
+
+        public void Flush(CallWithoutArgsStorage/*!*/ flushStorage, RubyContext/*!*/ context) {
+            Flush();
+
+            if (_canFlush) {
+                var site = flushStorage.GetCallSite("flush");
+                site.Target(site, context, _obj);
+            }
         }
 
         private void FlushWrite() {

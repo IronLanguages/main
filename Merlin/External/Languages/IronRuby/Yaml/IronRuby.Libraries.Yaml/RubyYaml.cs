@@ -27,6 +27,10 @@ namespace IronRuby.StandardLibrary.Yaml {
 
     [RubyModule("YAML")]    
     public static partial class RubyYaml {
+
+        [RubyModule("BaseNode")]
+        public static class BaseNode { }
+
         private const string _TaggedClasses = "tagged_classes";
 
         // TODO: missing public singleton methods:
@@ -243,19 +247,26 @@ namespace IronRuby.StandardLibrary.Yaml {
         }
 
         [RubyMethod("quick_emit", RubyMethodAttributes.PublicSingleton)]
-        public static object QuickEmit(RubyContext/*!*/ context, BlockParam/*!*/ block, RubyModule/*!*/ self, object objectId, params object[] opts) {
-            if (block == null) {
-                throw RubyExceptions.NoBlockGiven();
-            }
-            MutableStringWriter writer = new MutableStringWriter();
-            //We currently don't support serialization options, so we just ignore opts argument
-            YamlOptions cfg = YamlOptions.DefaultOptions;
-            using (Serializer s = new Serializer(new Emitter(writer, cfg), cfg)) {
-                RubyRepresenter r = new RubyRepresenter(context, s, cfg);
+        public static object QuickEmit(RubyContext/*!*/ context, [NotNull]BlockParam/*!*/ block, RubyModule/*!*/ self, object objectId, [NotNull]object/*!*/ opts) {
+            if (opts is Hash) {
+                YamlOptions cfg = YamlOptions.DefaultOptions;
+                MutableStringWriter writer = new MutableStringWriter();
+                Emitter emitter = new Emitter(writer, cfg);
+
+                using (Serializer s = new Serializer(emitter, cfg)) {
+                    RubyRepresenter r = new RubyRepresenter(context, s, cfg);
+                    object result;
+                    block.Yield(r, out result);
+                    s.Serialize(result as Node);
+
+                    return writer.String;
+                }
+            } else if (opts is RubyRepresenter) {
                 object result;
-                block.Yield(r, out result);
-                s.Serialize(result as Node);
-                return writer.String;
+                block.Yield(opts as RubyRepresenter, out result);
+                return result as Node;
+            } else {
+                throw RubyExceptions.CreateUnexpectedTypeError(context, opts, "Hash");
             }
         }
 

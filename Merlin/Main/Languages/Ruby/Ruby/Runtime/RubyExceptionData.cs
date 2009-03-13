@@ -74,7 +74,8 @@ namespace IronRuby.Runtime {
             var result = new RubyArray();
             // Compiled trace: contains frames starting with the throw site up to the first filter/catch that the exception was caught by:
             StackTrace throwSiteTrace = DebugInfoAvailable ? new StackTrace(_exception, true) : new StackTrace(_exception);
-            AddBacktrace(result, throwSiteTrace.GetFrames(), hasFileAccessPermissions, skipFrames, false);
+            bool exceptionDetail = (context == null) ? RubyOptions.DefaultExceptionDetail : context.Options.ExceptionDetail;
+            AddBacktrace(result, throwSiteTrace.GetFrames(), hasFileAccessPermissions, skipFrames, exceptionDetail);
 
             if (catchSiteTrace != null) {
                 // skip one frame - the catch-site frame is already included

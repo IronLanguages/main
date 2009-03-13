@@ -603,7 +603,7 @@ namespace IronRuby.StandardLibrary.Zlib {
             // TODO: missing NoFooter, LengthError, CRCError constants
 
             [RubyMethod("wrap", RubyMethodAttributes.PublicSingleton)]
-            public static GZipFile/*!*/ Wrap(BinaryOpStorage/*!*/ newStorage, UnaryOpStorage/*!*/ closedStorage, UnaryOpStorage/*!*/ closeStorage, BlockParam block, RubyClass/*!*/ self, object io) {
+            public static object Wrap(BinaryOpStorage/*!*/ newStorage, UnaryOpStorage/*!*/ closedStorage, UnaryOpStorage/*!*/ closeStorage, BlockParam block, RubyClass/*!*/ self, object io) {
                 var newSite = newStorage.GetCallSite("new");
                 GZipFile gzipFile = (GZipFile)newSite.Target(newSite, self.Context, self, io);
 
@@ -614,11 +614,10 @@ namespace IronRuby.StandardLibrary.Zlib {
                 try {
                     object blockResult;
                     block.Yield(gzipFile, out blockResult);
+                    return blockResult;
                 } finally {
                     CloseFile(closedStorage, closeStorage, self, gzipFile);
                 }
-
-                return gzipFile;
             }
 
             private static void CloseFile(UnaryOpStorage/*!*/ closedStorage, UnaryOpStorage/*!*/ closeStorage, RubyClass self, GZipFile gzipFile) {
@@ -880,6 +879,18 @@ namespace IronRuby.StandardLibrary.Zlib {
 #endif
         }
 
+        [RubyException("StreamError"), Serializable]
+        public class StreamError : Error {
+            public StreamError() : this(null, null) { }
+            public StreamError(string message) : this(message, null) { }
+            public StreamError(string message, Exception inner) : base(message ?? "StreamError", inner) { }
+
+#if !SILVERLIGHT
+            protected StreamError(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context)
+                : base(info, context) { }
+#endif
+        }
+
         #endregion
 
         #region Deflate class
@@ -900,13 +911,19 @@ namespace IronRuby.StandardLibrary.Zlib {
                     throw new NotImplementedError("flush can only be FINISH");
                 }
 
-                MemoryStream ms = new MemoryStream();
-                // Use the newly created memory stream for the compressed data.
-                DeflateStream compressedzipStream = new DeflateStream(ms, CompressionMode.Compress, true);
-                byte[] inputData = str.ToByteArray();
-                compressedzipStream.Write(inputData, 0, inputData.Length);
-                compressedzipStream.Close();
-                return MutableString.CreateBinary(ms.GetBuffer());
+                MutableStringStream inputStream = new MutableStringStream(str);
+                MutableStringStream outputStream = new MutableStringStream();
+                DeflateStream compressedZipStream = new DeflateStream(outputStream, CompressionMode.Compress, true);
+
+                int remainingInputSize = str.Length;
+                byte[] inputDataBlock = new byte[Math.Min(0x1000, remainingInputSize)];
+                while (remainingInputSize > 0) {
+                    int count = inputStream.Read(inputDataBlock, 0, inputDataBlock.Length);
+                    compressedZipStream.Write(inputDataBlock, 0, count);
+                    remainingInputSize -= count;
+                }
+                compressedZipStream.Close();
+                return outputStream.String;
             }
 
             [RubyMethod("deflate", RubyMethodAttributes.PublicSingleton)]
@@ -951,8 +968,8 @@ namespace IronRuby.StandardLibrary.Zlib {
             // Zlib::GzipWriter.open(filename, level=nil, strategy=nil) { |gz| ... }
 
             [RubyMethod("<<")]
-            public static GzipWriter Output(ConversionStorage<MutableString>/*!*/ tosStorage, RubyContext/*!*/ context, GzipWriter/*!*/ self, object value) {
-                Write(tosStorage, context, self, value);
+            public static GzipWriter Output(ConversionStorage<MutableString>/*!*/ tosStorage, RubyContext/*!*/ context, GzipWriter/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ str) {
+                Write(tosStorage, context, self, str);
                 return self;
             }
 
@@ -964,8 +981,33 @@ namespace IronRuby.StandardLibrary.Zlib {
                 GZipFile.Close(closeStorage, context, self);
             }
 
-            // comment=(p1) 
-            // flush(flush=nil)
+            // comment=(p1)
+
+            [RubyMethod("flush")]
+            public static GzipWriter Flush(CallWithoutArgsStorage/*!*/ flushStorage, RubyContext/*!*/ context, GzipWriter/*!*/ self, [DefaultParameterValue(null)]object flush) {
+                int flushValue = SYNC_FLUSH;
+                if (flush != null) {
+                    if (!(flush is int)) {
+                        throw RubyExceptions.CreateUnexpectedTypeError(context, flush, "Fixnum");
+                    }
+                    flushValue = (int)flush;
+                }
+
+                switch (flushValue) {
+                    case NO_FLUSH:
+                    case SYNC_FLUSH:
+                    case FULL_FLUSH:
+                    case FINISH:
+                        self._gzipStream.Flush();
+                        self._ioWrapper.Flush(flushStorage, context);
+                        break;
+
+                    default:
+                        throw new StreamError("stream error");
+                }
+                return self;
+            }
+
             // mtime=(p1) 
             // orig_name=(p1) 
             // pos() 
@@ -975,8 +1017,7 @@ namespace IronRuby.StandardLibrary.Zlib {
             // puts(...) 
             // tell() 
             [RubyMethod("write")]
-            public static int Write(ConversionStorage<MutableString>/*!*/ tosStorage, RubyContext/*!*/ context, GzipWriter/*!*/ self, object obj) {
-                MutableString str = Protocols.ConvertToString(tosStorage, context, obj);
+            public static int Write(ConversionStorage<MutableString>/*!*/ tosStorage, RubyContext/*!*/ context, GzipWriter/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ str) {
                 byte[] bytes = str.ToByteArray();
 
                 self._gzipStream.Write(bytes, 0, bytes.Length);

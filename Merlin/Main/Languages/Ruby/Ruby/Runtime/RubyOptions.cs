@@ -34,6 +34,7 @@ namespace IronRuby {
         private readonly bool _hasSearchPaths;
         private readonly bool _noAssemblyResolveHook;
         private readonly RubyCompatibility _compatibility;
+        private static bool _DefaultExceptionDetail;
 
 #if DEBUG
         private static bool _UseThreadAbortForSyncRaise;
@@ -93,6 +94,12 @@ namespace IronRuby {
             get { return _CompileRegexps; }
         }
 #endif
+        /// <summary>
+        /// This is used when the per-engine RubyContext.Options.ExceptionDetail is not easily available
+        /// </summary>
+        public static bool DefaultExceptionDetail {
+            get { return _DefaultExceptionDetail; }
+        }
 
         public RubyOptions(IDictionary<string, object>/*!*/ options)
             : base(options) {
@@ -108,6 +115,7 @@ namespace IronRuby {
             _libraryPaths = GetStringCollectionOption(options, "LibraryPaths", ';', ',') ?? new ReadOnlyCollection<string>(new[] { "." });
             _hasSearchPaths = GetOption<object>(options, "SearchPaths", null) != null;
             _compatibility = GetCompatibility(options, "Compatibility", RubyCompatibility.Default);
+            _DefaultExceptionDetail = this.ExceptionDetail;
 #if DEBUG
             _UseThreadAbortForSyncRaise = GetOption(options, "UseThreadAbortForSyncRaise", false);
             _CompileRegexps = GetOption(options, "CompileRegexps", false);

@@ -25,6 +25,7 @@ using System.Collections.Generic;
 
 namespace IronRuby.StandardLibrary.Yaml {
 
+    [RubyClass("Out")]
     public class RubyRepresenter : Representer {
         private readonly RubyContext/*!*/ _context;
 
@@ -125,12 +126,23 @@ namespace IronRuby.StandardLibrary.Yaml {
         internal Node/*!*/ Map(object self, IDictionary/*!*/ map) {
             MutableString taguri = GetTagUri(self);
             object style = ToYamlStyle(self);
+            return Map(taguri, style, map);
+        }
 
+        internal Node/*!*/ Map(MutableString taguri, object to_yaml_style, IDictionary/*!*/ map) {
             return Map(
-                taguri != null ? taguri.ConvertToString() : "",
+                taguri != null ? taguri.ConvertToString() : "tag:yaml.org,2002:map",
                 map,
-                RubyOps.IsTrue(style)
+                RubyOps.IsTrue(to_yaml_style)
             );
+        }
+
+        [RubyMethod("map")]
+        public static Node/*!*/ Map(RubyContext/*!*/ context, [NotNull]BlockParam/*!*/ block, RubyRepresenter/*!*/ self, [DefaultProtocol]MutableString taguri, object to_yaml_style) {
+            var map = new Dictionary<object, object>();
+            object blockResult;
+            block.Yield(map, out blockResult);
+            return self.Map(taguri, to_yaml_style ?? false, map);
         }
 
         internal Node Sequence(object self, RubyArray seq) {

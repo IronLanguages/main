@@ -30,11 +30,11 @@ describe "Zlib::GzipWriter.wrap" do
     ScratchPad.recorded.should be_kind_of(Zlib::GzipWriter)
   end
 
-  it "returns the instance of GzipWriter" do
+  it "returns the block result" do
     ret = Zlib::GzipWriter.wrap(@io) do |gz|
-      ScratchPad.record gz
+      :end_of_block
     end
-    ret.should equal(ScratchPad.recorded)
+    ret.should == :end_of_block
   end
 
   it "allows the GzipWriter instance to be closed in the block" do

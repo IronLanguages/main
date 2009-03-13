@@ -95,4 +95,36 @@ describe "Object#to_yaml" do
     players = [{"a" => "b"}, {"b" => "c"}]
     players.to_yaml.should == "--- \n- a: b\n- b: c\n"
   end
+  
+  it "returns the YAML representation of a user class" do
+    YamlSpecs::Outer.new.to_yaml.should == <<EOF
+--- !ruby/object:YamlSpecs::Outer\s
+outer1: 1
+outer2: !ruby/object:YamlSpecs::Inner\s
+  inner1: 1
+  inner2: 2
+EOF
+  end
+
+  it "calls to_yaml on nested objects" do
+    YamlSpecs::OuterToYaml.new.to_yaml.should == <<EOF
+--- !ruby/object:YamlSpecs::OuterToYaml\s
+outer1: 1
+outer2: !ruby/object:YamlSpecs::InnerToYaml\s
+  inner1: 1
+  inner2: 2
+EOF
+  end
+
+  it "calls to_yaml on nested objects with Emitter" do
+    ScratchPad.record Hash.new
+    YamlSpecs::OuterToYaml.new.to_yaml
+    
+    emitter = ScratchPad.recorded[:emitter]
+    (emitter.methods - Object.new.methods).sort.should == YamlSpecs::EmitterMethods
+    not_compliant_on :ironruby do
+      emitter.class.should == YAML::Syck::Emitter
+      ScratchPad.recorded[:level].should == 1
+    end
+  end
 end

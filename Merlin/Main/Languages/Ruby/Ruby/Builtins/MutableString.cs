@@ -345,6 +345,13 @@ namespace IronRuby.Builtins {
         }
 
         /// <summary>
+        /// This property can be viewed using a string visualizer in a debugger, making it easy to inspect large or multi-line strings.
+        /// </summary>
+        internal string/*!*/ Dump {
+            get { return ToString(); }
+        }
+
+        /// <summary>
         /// Returns a copy of the content in a form of an byte array.
         /// The internal representation of the MutableString is preserved.
         /// </summary>

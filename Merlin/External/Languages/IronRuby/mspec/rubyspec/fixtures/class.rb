@@ -112,9 +112,13 @@ module ClassSpecs
   
   class StubReaderWithClose < StubReader    
     def close *args
+    end
+  end
   
   class Undef_to_s
-    undef to_s
+    if self.methods.include?(:to_s) then
+      undef to_s
+    end
   end
   
   class InitializeMethod

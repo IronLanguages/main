@@ -166,6 +166,11 @@ describe "Array#pack with ASCII-string format", :shared => true do
     ["abc", "def"].pack(format('*')+format('*')).should == "abcdef"
   end
 
+  it "handles nil" do
+    [nil].pack(format(0)).should == ""
+    [nil].pack(format('*')).should == ""
+  end
+  
   it "tries to convert the pack argument to a String using #to_str" do
     obj = mock('to_str')
     obj.should_receive(:to_str).and_return("abc")
@@ -227,6 +232,10 @@ describe "Array#pack with format 'A'" do
   it "returns space padded string" do
     ['abcde'].pack('A7').should == 'abcde  '
   end
+
+  it "handles nil" do
+    [nil].pack(format('1')).should == " "
+  end  
 end
 
 describe "Array#pack with format 'a'" do
@@ -235,6 +244,10 @@ describe "Array#pack with format 'a'" do
   it "returns null padded string with ('a<count>')" do
     ['abcdef'].pack('a7').should == "abcdef\x0"
   end
+
+  it "handles nil" do
+    [nil].pack(format('1')).should == "\000"
+  end  
 end
 
 describe "Array#pack with format 'Z'" do
@@ -243,6 +256,10 @@ describe "Array#pack with format 'Z'" do
   it "returns null padded string with ('a<count>')" do
     ['abcdef'].pack('a7').should == "abcdef\x0"
   end
+
+  it "handles nil" do
+    [nil].pack(format('1')).should == "\000"
+  end  
 end
 
 describe "Array#pack with format 'B'" do
