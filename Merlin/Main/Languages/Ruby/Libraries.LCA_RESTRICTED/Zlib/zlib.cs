@@ -984,16 +984,17 @@ namespace IronRuby.StandardLibrary.Zlib {
             // comment=(p1)
 
             [RubyMethod("flush")]
-            public static GzipWriter Flush(CallWithoutArgsStorage/*!*/ flushStorage, RubyContext/*!*/ context, GzipWriter/*!*/ self, [DefaultParameterValue(null)]object flush) {
-                int flushValue = SYNC_FLUSH;
+            public static GzipWriter Flush(CallWithoutArgsStorage/*!*/ flushStorage, RubyContext/*!*/ context, GzipWriter/*!*/ self, object flush) {
                 if (flush != null) {
-                    if (!(flush is int)) {
-                        throw RubyExceptions.CreateUnexpectedTypeError(context, flush, "Fixnum");
-                    }
-                    flushValue = (int)flush;
+                    throw RubyExceptions.CreateUnexpectedTypeError(context, flush, "Fixnum");
                 }
 
-                switch (flushValue) {
+                return Flush(flushStorage, context, self, SYNC_FLUSH);
+            }
+
+            [RubyMethod("flush")]
+            public static GzipWriter Flush(CallWithoutArgsStorage/*!*/ flushStorage, RubyContext/*!*/ context, GzipWriter/*!*/ self, [DefaultParameterValue(SYNC_FLUSH)]int flush) {
+                switch (flush) {
                     case NO_FLUSH:
                     case SYNC_FLUSH:
                     case FULL_FLUSH:

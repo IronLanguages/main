@@ -6630,7 +6630,8 @@ namespace IronRuby.StandardLibrary.Zlib {
             );
             
             module.DefineLibraryMethod("flush", 0x11, 
-                new System.Func<IronRuby.Runtime.CallWithoutArgsStorage, IronRuby.Runtime.RubyContext, IronRuby.StandardLibrary.Zlib.Zlib.GzipWriter, System.Object, IronRuby.StandardLibrary.Zlib.Zlib.GzipWriter>(IronRuby.StandardLibrary.Zlib.Zlib.GzipWriter.Flush)
+                new System.Func<IronRuby.Runtime.CallWithoutArgsStorage, IronRuby.Runtime.RubyContext, IronRuby.StandardLibrary.Zlib.Zlib.GzipWriter, System.Object, IronRuby.StandardLibrary.Zlib.Zlib.GzipWriter>(IronRuby.StandardLibrary.Zlib.Zlib.GzipWriter.Flush), 
+                new System.Func<IronRuby.Runtime.CallWithoutArgsStorage, IronRuby.Runtime.RubyContext, IronRuby.StandardLibrary.Zlib.Zlib.GzipWriter, System.Int32, IronRuby.StandardLibrary.Zlib.Zlib.GzipWriter>(IronRuby.StandardLibrary.Zlib.Zlib.GzipWriter.Flush)
             );
             
             module.DefineLibraryMethod("write", 0x11, 

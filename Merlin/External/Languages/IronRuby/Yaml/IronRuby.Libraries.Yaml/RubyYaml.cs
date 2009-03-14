@@ -247,27 +247,26 @@ namespace IronRuby.StandardLibrary.Yaml {
         }
 
         [RubyMethod("quick_emit", RubyMethodAttributes.PublicSingleton)]
-        public static object QuickEmit(RubyContext/*!*/ context, [NotNull]BlockParam/*!*/ block, RubyModule/*!*/ self, object objectId, [NotNull]object/*!*/ opts) {
-            if (opts is Hash) {
-                YamlOptions cfg = YamlOptions.DefaultOptions;
-                MutableStringWriter writer = new MutableStringWriter();
-                Emitter emitter = new Emitter(writer, cfg);
+        public static MutableString QuickEmit(RubyContext/*!*/ context, [NotNull]BlockParam/*!*/ block, RubyModule/*!*/ self, object objectId, [NotNull]Hash/*!*/ opts) {
+            YamlOptions cfg = YamlOptions.DefaultOptions;
+            MutableStringWriter writer = new MutableStringWriter();
+            Emitter emitter = new Emitter(writer, cfg);
 
-                using (Serializer s = new Serializer(emitter, cfg)) {
-                    RubyRepresenter r = new RubyRepresenter(context, s, cfg);
-                    object result;
-                    block.Yield(r, out result);
-                    s.Serialize(result as Node);
-
-                    return writer.String;
-                }
-            } else if (opts is RubyRepresenter) {
+            using (Serializer s = new Serializer(emitter, cfg)) {
+                RubyRepresenter r = new RubyRepresenter(context, s, cfg);
                 object result;
-                block.Yield(opts as RubyRepresenter, out result);
-                return result as Node;
-            } else {
-                throw RubyExceptions.CreateUnexpectedTypeError(context, opts, "Hash");
+                block.Yield(r, out result);
+                s.Serialize(result as Node);
+
+                return writer.String;
             }
+        }
+
+        [RubyMethod("quick_emit", RubyMethodAttributes.PublicSingleton)]
+        public static Node QuickEmit(RubyContext/*!*/ context, [NotNull]BlockParam/*!*/ block, RubyModule/*!*/ self, object objectId, [NotNull]RubyRepresenter/*!*/ opts) {
+            object result;
+            block.Yield(opts, out result);
+            return result as Node;
         }
 
         [RubyMethod("tagurize", RubyMethodAttributes.PublicSingleton)]
