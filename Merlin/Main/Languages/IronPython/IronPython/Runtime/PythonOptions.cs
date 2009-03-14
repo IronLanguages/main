@@ -50,6 +50,7 @@ namespace IronPython {
         private readonly bool _verbose;
         private readonly Version _version;
         private readonly bool _adaptiveCompilation;
+        private readonly bool _enableProfiler;
 
         public ReadOnlyCollection<string>/*!*/ Arguments {
             get { return _arguments; }
@@ -113,7 +114,7 @@ namespace IronPython {
         }
 
         /// <summary> 
-        /// Severity of a findong that indentation is formatted inconsistently.
+        /// Severity of a warning that indentation is formatted inconsistently.
         /// </summary>
         public Severity IndentationInconsistencySeverity {
             get { return _indentationInconsistencySeverity; }
@@ -132,6 +133,13 @@ namespace IronPython {
         /// </summary>
         public bool AdaptiveCompilation {
             get { return _adaptiveCompilation; }
+        }
+
+        /// <summary>
+        /// Enable profiling code
+        /// </summary>
+        public bool EnableProfiler {
+            get { return _enableProfiler; }
         }
 
         public PythonOptions() 
@@ -164,6 +172,7 @@ namespace IronPython {
             _recursionLimit = GetOption(options, "RecursionLimit", Int32.MaxValue);
             _indentationInconsistencySeverity = GetOption(options, "IndentationInconsistencySeverity", Severity.Ignore);
             _adaptiveCompilation = GetOption(options, "AdaptiveCompilation", true);
+            _enableProfiler = GetOption(options, "EnableProfiler", false);
 
             object value;
             if (options != null && options.TryGetValue("PythonVersion", out value)) {

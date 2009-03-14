@@ -183,6 +183,7 @@ namespace IronPython.Compiler.Ast {
                 }
             }
 
+            body = ag.AddProfiling(body);
             body = ag.AddReturnTarget(body);
 
             if (body.Type == typeof(void)) {

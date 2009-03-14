@@ -12,7 +12,6 @@
  *
  *
  * ***************************************************************************/
-#if MICROSOFT_SCRIPTING_CORE
 
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -117,9 +116,7 @@ namespace System.Linq.Expressions {
         }
 
         private void WritePrologue(string name) {
-            WriteLine("//");
-            WriteLine("// AST: {0}", name);
-            WriteLine("//");
+            WriteLine("// Expression: {0}", name);
             WriteLine();
         }
 
@@ -129,9 +126,7 @@ namespace System.Linq.Expressions {
             while (_lambdaIds != null && _lambdaIds.Count > 0) {
                 LambdaId b = _lambdaIds.Dequeue();
                 WriteLine();
-                WriteLine("//");
-                WriteLine("// LAMBDA: {0}({1})", b.Lambda.Name ?? "", b.Id);
-                WriteLine("//");
+                WriteLine("// LambdaExpression: {0}({1})", b.Lambda.Name ?? "", b.Id);
                 DumpLambda(b.Lambda);
                 WriteLine();
 
@@ -935,5 +930,3 @@ namespace System.Linq.Expressions {
         #endregion
     }
 }
-
-#endif

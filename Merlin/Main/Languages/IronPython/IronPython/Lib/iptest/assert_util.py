@@ -617,8 +617,9 @@ def retry_on_failure(f, *args, **kwargs):
             try:
                 ret_val = f(*args, **kwargs)
                 return ret_val
-            except:
-                print "retry_on_failure(%s): failed on attempt '%d'" % (f.__name__, i+1)
+            except Exception, e:
+                print "retry_on_failure(%s): failed on attempt '%d':" % (f.__name__, i+1)
+                print e
                 continue
         raise e
                 

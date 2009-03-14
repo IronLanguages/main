@@ -15,8 +15,9 @@
 
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Runtime.CompilerServices;
+using System.Diagnostics;
 using System.Dynamic.Utils;
+using System.Runtime.CompilerServices;
 
 namespace System.Linq.Expressions {
     /// <summary>
@@ -24,6 +25,9 @@ namespace System.Linq.Expressions {
     /// Needed to implement "eval" in some dynamic languages.
     /// Evaluates to an instance of <see cref="IList{IStrongBox}" /> when executed.
     /// </summary>
+#if !SILVERLIGHT
+    [DebuggerTypeProxy(typeof(Expression.RuntimeVariablesExpressionProxy))]
+#endif
     public sealed class RuntimeVariablesExpression : Expression {
         private readonly ReadOnlyCollection<ParameterExpression> _variables;
 

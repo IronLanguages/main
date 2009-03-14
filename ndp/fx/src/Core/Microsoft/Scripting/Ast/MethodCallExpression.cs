@@ -24,6 +24,9 @@ namespace System.Linq.Expressions {
     /// <summary>
     /// Represents a call to either static or an instance method.
     /// </summary>
+#if !SILVERLIGHT
+    [DebuggerTypeProxy(typeof(Expression.MethodCallExpressionProxy))]
+#endif
     public class MethodCallExpression : Expression, IArgumentProvider {
         private readonly MethodInfo _method;
 

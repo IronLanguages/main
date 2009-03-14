@@ -436,7 +436,7 @@ namespace IronPython.Runtime.Types {
             BindingTarget target = result.Target;
             res = result.MetaObject;
 
-            // BUG: enforceProtected should alwyas be enforced, but we have some tests that depend upon it not being enforced.
+            // BUG: enforceProtected should always be enforced, but we have some tests that depend upon it not being enforced.
             if (enforceProtected && target.Method != null && (target.Method.IsFamily || target.Method.IsFamilyOrAssembly)) {
                 // report an error when calling a protected member
                 res = new DynamicMetaObject(
@@ -452,6 +452,20 @@ namespace IronPython.Runtime.Types {
                     Ast.Property(null, typeof(PythonOps), "NotImplemented"),
                     res.Restrictions
                 );
+            } else if (target.Method != null) {
+                // Add profiling information for this builtin function, if applicable
+                IPythonSite pythonSite = (call as IPythonSite);
+                if (pythonSite != null) {
+                    var pc = PythonContext.GetContext(pythonSite.Binder.Context);
+                    var po = pc.Options as PythonOptions;
+                    if (po != null && po.EnableProfiler) {
+                        Profiler profiler = Profiler.GetProfiler(pc);
+                        res = new DynamicMetaObject(
+                            profiler.AddProfiling(res.Expression, target.Method),
+                            res.Restrictions
+                        );
+                    }
+                }
             }
 
             // add any warnings that are applicable for calling this function

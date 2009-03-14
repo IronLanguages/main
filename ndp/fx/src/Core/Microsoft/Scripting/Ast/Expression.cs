@@ -214,19 +214,6 @@ namespace System.Linq.Expressions {
 
 #if MICROSOFT_SCRIPTING_CORE
         /// <summary>
-        /// Creates a <see cref="String"/> representation of the Expression.
-        /// </summary>
-        /// <returns>A <see cref="String"/> representation of the Expression.</returns>
-        public string Dump {
-            get {
-                using (System.IO.StringWriter writer = new System.IO.StringWriter(CultureInfo.CurrentCulture)) {
-                    ExpressionWriter.Dump(this, GetType().Name, writer);
-                    return writer.ToString();
-                }
-            }
-        }
-
-        /// <summary>
         /// Writes a <see cref="String"/> representation of the <see cref="Expression"/> to a <see cref="TextWriter"/>.
         /// </summary>
         /// <param name="descr">A description for the root Expression.</param>
@@ -234,7 +221,22 @@ namespace System.Linq.Expressions {
         public void DumpExpression(string descr, TextWriter writer) {
             ExpressionWriter.Dump(this, descr, writer);
         }
+
+        /// <summary>
+        /// Creates a <see cref="String"/> representation of the Expression.
+        /// </summary>
+        /// <returns>A <see cref="String"/> representation of the Expression.</returns>
+        public string DebugView {
+#else
+        private string DebugView {
 #endif
+            get {
+                using (System.IO.StringWriter writer = new System.IO.StringWriter(CultureInfo.CurrentCulture)) {
+                    ExpressionWriter.Dump(this, GetType().Name, writer);
+                    return writer.ToString();
+                }
+            }
+        }
 
         /// <summary>
         /// Helper used for ensuring we only return 1 instance of a ReadOnlyCollection of T.

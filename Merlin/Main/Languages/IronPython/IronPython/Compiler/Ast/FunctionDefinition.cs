@@ -18,6 +18,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Dynamic;
+using System.Text;
 using System.Threading;
 using IronPython.Runtime;
 using IronPython.Runtime.Binding;
@@ -219,13 +220,30 @@ namespace IronPython.Compiler.Ast {
         }
 
         internal override MSAst.Expression Transform(AstGenerator ag) {
-            Debug.Assert(_variable != null, "Shouldn't be called by lamda expression");
+            Debug.Assert(_variable != null, "Shouldn't be called by lambda expression");
 
             MSAst.Expression function = TransformToFunctionExpression(ag);
             return ag.AddDebugInfo(ag.Globals.Assign(ag.Globals.GetVariable(_variable), function), new SourceSpan(Start, Header));
         }
 
         private static int _lambdaId;
+
+        private string MakeProfilerName(string name) {
+            var sb = new StringBuilder("def ");
+            sb.Append(name);
+            sb.Append('(');
+            bool comma = false;
+            foreach (var p in _parameters) {
+                if (comma) {
+                    sb.Append(", ");
+                } else {
+                    comma = true;
+                }
+                sb.Append(p.Name);
+            }
+            sb.Append(')');
+            return sb.ToString();
+        }
 
         internal MSAst.Expression TransformToFunctionExpression(AstGenerator ag) {
             string name;
@@ -237,7 +255,7 @@ namespace IronPython.Compiler.Ast {
             }
 
             // Create AST generator to generate the body with
-            AstGenerator bodyGen = new AstGenerator(ag, name, IsGenerator, false);
+            AstGenerator bodyGen = new AstGenerator(ag, name, IsGenerator, MakeProfilerName(name));
             if (NeedsLocalsDictionary || ContainsNestedFreeVariables) {
                 bodyGen.CreateNestedContext();
             }
@@ -315,6 +333,7 @@ namespace IronPython.Compiler.Ast {
                 body = s;
             }
 
+            body = bodyGen.AddProfiling(body);
             body = bodyGen.WrapScopeStatements(body);
             body = bodyGen.AddReturnTarget(body);
 

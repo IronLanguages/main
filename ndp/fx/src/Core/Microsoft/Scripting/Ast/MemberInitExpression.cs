@@ -15,14 +15,17 @@
 
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.Dynamic.Utils;
-using System.Text;
 using System.Runtime.CompilerServices;
 
 namespace System.Linq.Expressions {
     /// <summary>
     /// Represents calling a constructor and initializing one or more members of the new object.
     /// </summary>
+#if !SILVERLIGHT
+    [DebuggerTypeProxy(typeof(Expression.MemberInitExpressionProxy))]
+#endif
     public sealed class MemberInitExpression : Expression {
         private readonly NewExpression _newExpression;
         private readonly ReadOnlyCollection<MemberBinding> _bindings;

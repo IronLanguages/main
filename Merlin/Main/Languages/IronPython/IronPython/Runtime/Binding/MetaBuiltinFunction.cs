@@ -94,7 +94,7 @@ namespace IronPython.Runtime.Binding {
         }
 
         private DynamicMetaObject/*!*/ MakeSelflessCall(DynamicMetaObjectBinder/*!*/ call, Expression/*!*/ codeContext, DynamicMetaObject/*!*/[]/*!*/ args) {
-            // just check if it's the same built-in function.  Because built-in fucntions are
+            // just check if it's the same built-in function.  Because built-in functions are
             // immutable the identity check will suffice.  Because built-in functions are uncollectible
             // anyway we don't use the typical InstanceRestriction.
             BindingRestrictions selfRestrict = BindingRestrictions.GetExpressionRestriction(Ast.Equal(Expression, AstUtils.Constant(Value))).Merge(Restrictions);

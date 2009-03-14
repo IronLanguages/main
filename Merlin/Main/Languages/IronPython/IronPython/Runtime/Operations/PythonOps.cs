@@ -1598,6 +1598,7 @@ namespace IronPython.Runtime.Operations {
         /// 
         /// import spam.eggs
         /// </summary>
+        [ProfilerTreatsAsExternal]
         public static object ImportTop(CodeContext/*!*/ context, string fullName, int level) {
             return Importer.Import(context, fullName, null, level);
         }
@@ -1607,6 +1608,7 @@ namespace IronPython.Runtime.Operations {
         /// 
         /// import spam.eggs as ham
         /// </summary>
+        [ProfilerTreatsAsExternal]
         public static object ImportBottom(CodeContext/*!*/ context, string fullName, int level) {
             object module = Importer.Import(context, fullName, null, level);
 
@@ -1626,6 +1628,7 @@ namespace IronPython.Runtime.Operations {
         /// 
         /// from spam import eggs1, eggs2 
         /// </summary>
+        [ProfilerTreatsAsExternal]
         public static object ImportWithNames(CodeContext/*!*/ context, string fullName, string[] names, int level) {
             return Importer.Import(context, fullName, PythonTuple.MakeTuple(names), level);
         }
@@ -1647,6 +1650,7 @@ namespace IronPython.Runtime.Operations {
         /// 
         /// from spam import *
         /// </summary>
+        [ProfilerTreatsAsExternal]
         public static void ImportStar(CodeContext/*!*/ context, string fullName, int level) {
             object newmod = Importer.Import(context, fullName, PythonTuple.MakeTuple("*"), level);
 
@@ -1717,6 +1721,7 @@ namespace IronPython.Runtime.Operations {
         /// 
         /// exec code
         /// </summary>
+        [ProfilerTreatsAsExternal]
         public static void UnqualifiedExec(CodeContext/*!*/ context, object code) {
             IAttributesCollection locals = null;
             IAttributesCollection globals = null;
@@ -1748,6 +1753,7 @@ namespace IronPython.Runtime.Operations {
         /// 
         /// exec code in globals [, locals ]
         /// </summary>
+        [ProfilerTreatsAsExternal]
         public static void QualifiedExec(CodeContext/*!*/ context, object code, IAttributesCollection globals, object locals) {
             PythonFile pf;
             Stream cs;
@@ -1789,7 +1795,7 @@ namespace IronPython.Runtime.Operations {
                 PythonCompilerOptions compilerOptions = Builtin.GetRuntimeGeneratedCodeCompilerOptions(context, true, 0);
 
                 // do interpretation only on strings -- not on files, streams, or code objects
-                code = new FunctionCode(pythonContext.CompilePythonCode(Compiler.Ast.CompilationMode.Loookup, source, compilerOptions, ThrowingErrorSink.Default));
+                code = new FunctionCode(pythonContext.CompilePythonCode(Compiler.Ast.CompilationMode.Lookup, source, compilerOptions, ThrowingErrorSink.Default));
             }
 
             FunctionCode fc = code as FunctionCode;
