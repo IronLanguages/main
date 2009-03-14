@@ -13,5 +13,9 @@ namespace Microsoft.Scripting.Runtime {
 
             return BindingRestrictions.GetTypeRestriction(expr, type);
         }
+
+        public static BindingRestrictions GetRuntimeTypeRestriction(DynamicMetaObject obj) {
+            return obj.Restrictions.Merge(GetRuntimeTypeRestriction(obj.Expression, obj.GetLimitType()));
+        }
     }
 }

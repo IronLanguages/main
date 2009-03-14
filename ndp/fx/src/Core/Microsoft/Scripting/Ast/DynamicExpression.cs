@@ -24,6 +24,9 @@ namespace System.Linq.Expressions {
     /// <summary>
     /// Represents a dynamic operation.
     /// </summary>
+#if !SILVERLIGHT
+    [DebuggerTypeProxy(typeof(Expression.DynamicExpressionProxy))]
+#endif
     public class DynamicExpression : Expression, IArgumentProvider {
         private readonly CallSiteBinder _binder;
         private readonly Type _delegateType;

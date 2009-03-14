@@ -918,6 +918,15 @@ import Namespace.")]
         private static void SortModules(List<string> modules) {
             modules.Sort((string x, string y) => x.Length - y.Length);
         }
+
+        /// <summary>
+        /// Returns a list of profile data. The values are tuples of Profiler.Data objects
+        /// 
+        /// All times are expressed in the same unit of measure as DateTime.Ticks
+        /// </summary>
+        public static PythonTuple GetProfilerData(CodeContext/*!*/ context) {
+            return new PythonTuple(Profiler.GetProfiler(PythonContext.GetContext(context)).GetProfile());
+        }
         
 #if !SILVERLIGHT
         /// <summary>

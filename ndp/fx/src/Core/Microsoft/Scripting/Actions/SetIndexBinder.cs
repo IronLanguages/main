@@ -80,6 +80,13 @@ namespace System.Dynamic {
             return target.BindSetIndex(this, indexes, value);
         }
 
+        // this is a standard DynamicMetaObjectBinder
+        internal override sealed bool IsStandardBinder {
+            get {
+                return true;
+            }
+        }
+
         /// <summary>
         /// Performs the binding of the dynamic set index operation if the target dynamic object cannot bind.
         /// </summary>

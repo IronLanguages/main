@@ -42,7 +42,7 @@ namespace System.Linq.Expressions {
         /// <param name="node">The expression to visit.</param>
         /// <returns>The modified expression, if it or any subexpression was modified;
         /// otherwise, returns the original expression.</returns>
-        public Expression Visit(Expression node) {
+        public virtual Expression Visit(Expression node) {
             if (node != null) {
                 return node.Accept(this);
             }
@@ -58,7 +58,7 @@ namespace System.Linq.Expressions {
         protected ReadOnlyCollection<Expression> Visit(ReadOnlyCollection<Expression> nodes) {
             Expression[] newNodes = null;
             for (int i = 0, n = nodes.Count; i < n; i++) {
-                Expression node = nodes[i].Accept(this);
+                Expression node = Visit(nodes[i]);
 
                 if (newNodes != null) {
                     newNodes[i] = node;
@@ -80,7 +80,7 @@ namespace System.Linq.Expressions {
             Expression[] newNodes = null;
             for (int i = 0, n = nodes.ArgumentCount; i < n; i++) {
                 Expression curNode = nodes.GetArgument(i);
-                Expression node = curNode.Accept(this);
+                Expression node = Visit(curNode);
 
                 if (newNodes != null) {
                     newNodes[i] = node;
@@ -137,7 +137,7 @@ namespace System.Linq.Expressions {
             if (node == null) {
                 return null;
             }
-            node = node.Accept(this) as T;
+            node = Visit(node) as T;
             if (node == null) {
                 throw Error.MustRewriteToSameNode(callerName, typeof(T), callerName);
             }
@@ -156,7 +156,7 @@ namespace System.Linq.Expressions {
         protected ReadOnlyCollection<T> VisitAndConvert<T>(ReadOnlyCollection<T> nodes, string callerName) where T : Expression {
             T[] newNodes = null;
             for (int i = 0, n = nodes.Count; i < n; i++) {
-                T node = nodes[i].Accept(this) as T;
+                T node = Visit(nodes[i]) as T;
                 if (node == null) {
                     throw Error.MustRewriteToSameNode(callerName, typeof(T), callerName);
                 }

@@ -14,12 +14,16 @@
  * ***************************************************************************/
 
 using System.Dynamic.Utils;
+using System.Diagnostics;
 
 namespace System.Linq.Expressions {
 
     /// <summary>
     /// Represents an expression that has a conditional operator.
     /// </summary>
+#if !SILVERLIGHT
+    [DebuggerTypeProxy(typeof(Expression.ConditionalExpressionProxy))]
+#endif
     public class ConditionalExpression : Expression {
         private readonly Expression _test;
         private readonly Expression _true;

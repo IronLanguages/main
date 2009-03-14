@@ -135,6 +135,7 @@
     <Compile Include="Actions\SetIndexBinder.cs" />
     <Compile Include="Actions\SetMemberBinder.cs" />
     <Compile Include="Actions\SmallRuleSet.cs" />
+    <Compile Include="Ast\Expression.DebuggerProxy.cs" />
     <Compile Include="Ast\IArgumentProvider.cs" />
     <Compile Include="Ast\ListArgumentProvider.cs" />
     <Compile Include="Compiler\ArgumentPrepender.cs" />
