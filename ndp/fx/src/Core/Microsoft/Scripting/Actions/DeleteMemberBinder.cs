@@ -84,6 +84,14 @@ namespace System.Dynamic {
             return target.BindDeleteMember(this);
         }
 
+
+        // this is a standard DynamicMetaObjectBinder
+        internal override sealed bool IsStandardBinder {
+            get {
+                return true;
+            }
+        }
+
         /// <summary>
         /// Returns the hash code for this instance.
         /// </summary>

@@ -312,7 +312,7 @@ namespace IronPython.Runtime {
         /// Sets per-runtime state used by a module and returns the previous value.  The module
         /// should have a unique key for each piece of state it needs to store.
         /// </summary>
-        private object GetOrCreateModuleState(object key, Func<object> value) {
+        public T GetOrCreateModuleState<T>(object key, Func<T> value) where T : class {
             EnsureModuleState();
 
             lock (_moduleState) {
@@ -320,7 +320,7 @@ namespace IronPython.Runtime {
                 if (!_moduleState.TryGetValue(key, out result)) {
                     _moduleState[key] = result = value();
                 }
-                return result;
+                return (result as T);
             }
         }
 

@@ -15,6 +15,7 @@
 
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.Dynamic.Utils;
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -24,6 +25,9 @@ namespace System.Linq.Expressions {
     /// <summary>
     /// Represents a constructor call.
     /// </summary>
+#if !SILVERLIGHT
+    [DebuggerTypeProxy(typeof(Expression.NewExpressionProxy))]
+#endif
     public class NewExpression : Expression, IArgumentProvider {
         private readonly ConstructorInfo _constructor;
         private IList<Expression> _arguments;

@@ -3,11 +3,16 @@
 set CURRENT=%CD%
 set RUBY_SCRIPTS=%~dp0
 set MERLIN_ROOT=%RUBY_SCRIPTS:~0,-24%
-set RUBYOPT=
-set RUBY18_BIN=%MERLIN_ROOT%\..\External\Languages\Ruby\ruby-1.8.6p287\bin
+
 set PROGRAM_FILES_32=%ProgramFiles%
 set PROGRAM_FILES_64=%ProgramFiles%
 set PROGRAM_FILES_x86=%ProgramFiles(x86)%
+
+REM ruby.exe needs to be on the path
+set RUBY18_BIN=
+set RUBY18_EXE=ruby.exe
+set RUBY19_EXE=c:\ruby19\bin\ruby.exe
+set RUBYOPT=
 
 if exist "%PROGRAM_FILES_x86%" set PROGRAM_FILES_32=%PROGRAM_FILES_x86%
 

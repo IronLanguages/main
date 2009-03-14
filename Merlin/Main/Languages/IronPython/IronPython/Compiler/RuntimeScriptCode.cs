@@ -69,7 +69,7 @@ namespace IronPython.Compiler {
                 ((PythonCompilerOptions)_context.Options).Optimized = false;
                 Interlocked.CompareExchange(
                     ref _unoptimizedCode,
-                    _ast.TransformToAst(CompilationMode.Loookup, _context),
+                    _ast.TransformToAst(CompilationMode.Lookup, _context),
                     null
                 );
             }

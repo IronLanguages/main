@@ -13,16 +13,18 @@
  *
  * ***************************************************************************/
 
-using System.Reflection;
-using System.Dynamic;
+using System.Diagnostics;
 using System.Dynamic.Utils;
-using System.Text;
+using System.Reflection;
 
 namespace System.Linq.Expressions {
 
     /// <summary>
     /// Represents accessing a field or property.
     /// </summary>
+#if !SILVERLIGHT
+    [DebuggerTypeProxy(typeof(Expression.MemberExpressionProxy))]
+#endif
     public class MemberExpression : Expression {
         private readonly Expression _expression;
 

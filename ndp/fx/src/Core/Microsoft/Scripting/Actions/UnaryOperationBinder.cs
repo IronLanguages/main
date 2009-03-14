@@ -72,6 +72,13 @@ namespace System.Dynamic {
             return target.BindUnaryOperation(this);
         }
 
+        // this is a standard DynamicMetaObjectBinder
+        internal override sealed bool IsStandardBinder {
+            get {
+                return true;
+            }
+        }
+
         /// <summary>
         /// Determines whether the specified System.Object is equal to the current <see cref="BinaryOperationBinder"/>.
         /// </summary>

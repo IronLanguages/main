@@ -327,8 +327,7 @@ namespace Microsoft.Scripting.Hosting.Shell {
                 return null;
             }
 
-            ExecuteCommand(_engine.CreateScriptSourceFromString(s, 
-                (s.Contains(Environment.NewLine))? SourceCodeKind.Statements : SourceCodeKind.InteractiveCode));
+            ExecuteCommand(_engine.CreateScriptSourceFromString(s, SourceCodeKind.InteractiveCode));
             return null;
         }
 
@@ -379,12 +378,13 @@ namespace Microsoft.Scripting.Hosting.Shell {
 
                 bool allowIncompleteStatement = TreatAsBlankLine(line, autoIndentSize);
                 b.Append(line);
+                // Note that this does not use Environment.NewLine because some languages (eg. Python) only
+                // recognize \n as a line terminator.
                 b.Append("\n");
 
                 string code = b.ToString();
 
-                ScriptSource command = _engine.CreateScriptSourceFromString(code, 
-                    (code.Contains(Environment.NewLine))? SourceCodeKind.Statements : SourceCodeKind.InteractiveCode);
+                ScriptSource command = _engine.CreateScriptSourceFromString(code, SourceCodeKind.InteractiveCode);
                 ScriptCodeParseResult props = command.GetCodeProperties(_engine.GetCompilerOptions(_scope));
 
                 if (SourceCodePropertiesUtils.IsCompleteOrInvalid(props, allowIncompleteStatement)) {

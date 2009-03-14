@@ -13,9 +13,7 @@
  *
  * ***************************************************************************/
 
-using System;
-using System.Collections.Generic;
-using System.Text;
+using System.Diagnostics;
 using System.Dynamic.Utils;
 
 namespace System.Linq.Expressions {
@@ -25,6 +23,9 @@ namespace System.Linq.Expressions {
     /// This allows the debugger to highlight the correct source code when
     /// debugging.
     /// </summary>
+#if !SILVERLIGHT
+    [DebuggerTypeProxy(typeof(Expression.DebugInfoExpressionProxy))]
+#endif
     public class DebugInfoExpression : Expression {
 
         private readonly SymbolDocumentInfo _document;

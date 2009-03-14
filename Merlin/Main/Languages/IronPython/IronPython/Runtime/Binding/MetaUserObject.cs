@@ -143,9 +143,9 @@ namespace IronPython.Runtime.Binding {
                         } else if (type == typeof(BigInteger)) {
                             return MakeConvertRuleForCall(conversion, this, Symbols.ConvertToLong, "ConvertToLong");
                         } else if (type == typeof(IEnumerable)) {
-                            return PythonProtocol.ConvertToIEnumerable(conversion, this);
+                            return PythonProtocol.ConvertToIEnumerable(conversion, Restrict(Value.GetType()));
                         } else if (type == typeof(IEnumerator)){
-                            return PythonProtocol.ConvertToIEnumerator(conversion, this);
+                            return PythonProtocol.ConvertToIEnumerator(conversion, Restrict(Value.GetType()));
                         } else if (conversion.Type.IsSubclassOf(typeof(Delegate))) {
                             return MakeDelegateTarget(conversion, conversion.Type, Restrict(Value.GetType()));
                         }

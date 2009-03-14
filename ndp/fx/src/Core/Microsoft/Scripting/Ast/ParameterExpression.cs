@@ -24,6 +24,9 @@ namespace System.Linq.Expressions {
     /// name which all subclasses need.  Specialized subclasses provide the type and by ref
     /// flags.
     /// </summary>
+#if !SILVERLIGHT
+    [DebuggerTypeProxy(typeof(Expression.ParameterExpressionProxy))]
+#endif
     public class ParameterExpression : Expression {
         private readonly string _name;
 
