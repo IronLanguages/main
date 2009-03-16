@@ -1,5 +1,6 @@
 require 'zlib'
 require File.dirname(__FILE__) + '/../../../spec_helper'
+require File.dirname(__FILE__) + '/fixtures/classes'
 
 describe 'Zlib::Deflate#deflate' do
 
@@ -25,6 +26,13 @@ describe 'Zlib::Deflate#deflate' do
     zipped.should == "x\234\355\301\001\001\000\000\000\200\220\376\257\356\b\n#{"\000" * 31}\030\200\000\000\001"
   end
 
+  # This example is useful for implementations which do generate valid compressed output, but which
+  # do not compress to the exact same byte sequence as MRI
+  it 'deflates data to an inflatable format' do
+    zipped = @deflator.deflate DeflateSpecs::LoremIpsum, Zlib::FINISH
+    Zlib::Inflate.inflate(zipped).should == DeflateSpecs::LoremIpsum
+  end
+
 end
 
 describe 'Zlib::Deflate::deflate' do
@@ -43,6 +51,13 @@ describe 'Zlib::Deflate::deflate' do
     zipped = Zlib::Deflate.deflate data
 
     zipped.should == "x\234\355\301\001\001\000\000\000\200\220\376\257\356\b\n#{"\000" * 31}\030\200\000\000\001"
+  end
+  
+  # This example is useful for implementations which do generate valid compressed output, but which
+  # do not compress to the exact same byte sequence as MRI
+  it 'deflates data to an inflatable format' do
+    zipped = Zlib::Deflate.deflate DeflateSpecs::LoremIpsum
+    Zlib::Inflate.inflate(zipped).should == DeflateSpecs::LoremIpsum
   end
 
 end

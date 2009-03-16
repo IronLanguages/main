@@ -1,5 +1,6 @@
 require 'zlib'
 require File.dirname(__FILE__) + '/../../../spec_helper'
+require File.dirname(__FILE__) + '/fixtures/classes'
 
 describe 'Zlib::Inflate#inflate' do
 
@@ -25,6 +26,10 @@ describe 'Zlib::Inflate#inflate' do
     unzipped.should == "\000" * 32 * 1024
   end
 
+  it 'inflates Lorem Ipsum' do
+     @inflator.inflate(InflateSpecs::DeflatedLoremIpsum).should == InflateSpecs::LoremIpsum
+  end
+
 end
 
 describe 'Zlib::Inflate::inflate' do
@@ -43,6 +48,10 @@ describe 'Zlib::Inflate::inflate' do
     zipped = Zlib::Inflate.inflate data
 
     zipped.should == "\000" * 32 * 1024
+  end
+  
+  it 'inflates Lorem Ipsum' do
+     Zlib::Inflate.inflate(InflateSpecs::DeflatedLoremIpsum).should == InflateSpecs::LoremIpsum
   end
 
 end

@@ -5,7 +5,7 @@ require File.dirname(__FILE__) + '/fixtures/classes'
 
 describe "Zlib::GzipReader.wrap" do
   before :each do
-    @io = ClassSpecs::StubReaderWithClose.new GzipReaderSpecs::GzippedContents
+    @io = ClassSpecs::StubReaderWithClose.new GzipReaderSpecs::GzippedLoremIpsum
   end
   
   it "can be called without a block" do
@@ -46,7 +46,7 @@ describe "Zlib::GzipReader.wrap" do
 
   it "allows IO objects without a close method" do
     io = mock("io")
-    io.should_receive(:read).any_number_of_times.and_return(GzipReaderSpecs::GzippedContents, nil)
+    io.should_receive(:read).any_number_of_times.and_return(GzipReaderSpecs::GzippedLoremIpsum, nil)
     Zlib::GzipReader.wrap(io) { |gz| gz.read }
   end
 
