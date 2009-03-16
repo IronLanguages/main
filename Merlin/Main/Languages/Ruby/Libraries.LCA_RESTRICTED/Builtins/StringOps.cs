@@ -34,15 +34,16 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("inspect", RubyMethodAttributes.PublicInstance)]
         public static MutableString/*!*/ Inspect(string/*!*/ self) {
-            StringBuilder result = new StringBuilder();
-            result.Append('\'');
-            for (int i = 0; i < self.Length; i++) {
-                MutableStringOps.AppendStringRepresentationOfChar(result, self[i], i + 1 < self.Length ? self[i + 1] : -1,
-                   MutableStringOps.CharacterEscaping.EscapeSingleQuote | MutableStringOps.CharacterEscaping.UseUnicodeEscapes);
-            }
+            return MutableString.Create(MutableString.AppendUnicodeRepresentation(
+                new StringBuilder().Append('\''), self, false, false, '\'', -1).Append('\'').ToString()
+            );
+        }
 
-            result.Append('\'');
-            return MutableString.Create(result.ToString());
+        [RubyMethod("dump", RubyMethodAttributes.PublicInstance)]
+        public static MutableString/*!*/ Dump(string/*!*/ self) {
+            return MutableString.Create(MutableString.AppendUnicodeRepresentation(
+                new StringBuilder().Append('\''), self, false, true, '\'', -1).Append('\'').ToString()
+            );
         }
 
         [RubyMethod("===", RubyMethodAttributes.PublicInstance)]

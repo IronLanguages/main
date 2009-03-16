@@ -21,7 +21,9 @@ using IronRuby.Builtins;
 using IronRuby.Runtime;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Generation;
-using System.IO.Compression;
+#if !SILVERLIGHT
+    using System.IO.Compression;
+#endif
 using System.Diagnostics;
 using System.Text;
 using System.Runtime.InteropServices;
@@ -567,7 +569,7 @@ namespace IronRuby.StandardLibrary.Zlib {
 
             [RubyMethod("close")]
             public static MutableString/*!*/ Close(Inflate/*!*/ self) {
-                return MutableString.CreateBinary(self._outputBuffer);
+                return MutableString.CreateBinary(self._outputBuffer, RubyEncoding.Binary);
             }
         }
 
@@ -745,7 +747,7 @@ namespace IronRuby.StandardLibrary.Zlib {
                 while ((c = reader.ReadByte()) != 0) {
                     result.Add(c);
                 }
-                return MutableString.CreateBinary(result);
+                return MutableString.CreateBinary(result, RubyEncoding.Binary);
             }
 
             private static MutableString/*!*/ ReadToEnd(BinaryReader/*!*/ reader) {
@@ -756,7 +758,7 @@ namespace IronRuby.StandardLibrary.Zlib {
                     }
                 } catch (EndOfStreamException) {
                 }
-                return MutableString.CreateBinary(result);
+                return MutableString.CreateBinary(result, RubyEncoding.Binary);
             }
 
             private GZipReader(IOWrapper/*!*/ ioWrapper, BinaryReader/*!*/ reader)
@@ -894,8 +896,8 @@ namespace IronRuby.StandardLibrary.Zlib {
         #endregion
 
         #region Deflate class
-        
-        [RubyClass("Deflate")]
+#if !SILVERLIGHT
+        [RubyClass("Deflate", BuildConfig="!SILVERLIGHT")]
         public class Deflate : ZStream {
 
             public Deflate() {
@@ -931,17 +933,16 @@ namespace IronRuby.StandardLibrary.Zlib {
                 return DeflateString(new Deflate(), str, FINISH);
             }
         }
-
+#endif
         #endregion
 
         #region GzipWriter class
-
-        [RubyClass("GzipWriter")]
+#if !SILVERLIGHT
+        [RubyClass("GzipWriter", BuildConfig="!SILVERLIGHT")]
         public class GzipWriter : GZipFile {
             private int _level;
             private int _strategy;
             private GZipStream/*!*/ _gzipStream;
-
             private GzipWriter(RespondToStorage/*!*/ respondToStorage, RubyContext/*!*/ context, IOWrapper/*!*/ ioWrapper, int level, int strategy) 
                 : base(ioWrapper) {
                 _level = level;
@@ -1020,13 +1021,11 @@ namespace IronRuby.StandardLibrary.Zlib {
             [RubyMethod("write")]
             public static int Write(ConversionStorage<MutableString>/*!*/ tosStorage, RubyContext/*!*/ context, GzipWriter/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ str) {
                 byte[] bytes = str.ToByteArray();
-
                 self._gzipStream.Write(bytes, 0, bytes.Length);
-
                 return bytes.Length;
             }
         }
-
+#endif
         #endregion
     }
 }

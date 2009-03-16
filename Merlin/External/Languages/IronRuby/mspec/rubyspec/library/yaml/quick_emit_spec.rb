@@ -2,6 +2,10 @@ require File.dirname(__FILE__) + '/../../spec_helper'
 require File.dirname(__FILE__) + '/fixtures/common'
 
 describe "YAML.quick_emit" do
+  before(:each) do
+    ScratchPad.clear
+  end
+
   it "returns a yaml string" do
     y = YAML.quick_emit(nil, {}) do |out| 
       YamlSpecs.write_to_emitter(out, {"greeting" => "Hello"})
@@ -10,23 +14,12 @@ describe "YAML.quick_emit" do
   end
 
   it "returns a BaseNode node if emitter level is non-zero" do
-    ScratchPad.record Hash.new
+    ScratchPad.record({})
     YamlSpecs::OuterToYaml.new.to_yaml
     ScratchPad.recorded[:result].should be_kind_of(YAML::BaseNode)
   end
   
-  it "passes Out to block" do
-    out = nil
-    YAML.quick_emit(nil, {}) { |o| out = o; YamlSpecs.write_to_emitter(o, {"greeting" => "Hello"}) }
-
-    (out.methods - Object.new.methods).sort.should == YamlSpecs::OutMethods
-    not_compliant_on :ironruby do
-      out.should be_kind_of(YAML::Syck::Out)
-    end
-  end
-
   it "accepts Emitter argument" do
-    ScratchPad.clear
     YAML.quick_emit(nil, YAML.emitter) { ScratchPad.record :in_block; YamlSpecs.get_a_node }
     ScratchPad.recorded.should == :in_block
   end
@@ -37,10 +30,10 @@ describe "YAML.quick_emit" do
   end
 
   it "requires opts parameter to be a Hash or Emitter" do
-    lambda { YAML.quick_emit(nil, nil) }.should raise_error(TypeError, "wrong argument type nil (expected Hash)")
+    lambda { YAML.quick_emit(nil, nil) }.should raise_error(TypeError)
   end
 
   it "requires a block" do
-    lambda { YAML.quick_emit(nil, {}) }.should raise_error(NoMethodError, "undefined method `call' for nil:NilClass")
+    lambda { YAML.quick_emit(nil, {}) }.should raise_error(NoMethodError)
   end
 end

@@ -17,6 +17,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq.Expressions;
+using System.Diagnostics;
 
 namespace Microsoft.Scripting.Utils {
     public static class ContractUtils {
@@ -159,8 +160,39 @@ namespace Microsoft.Scripting.Utils {
                 }
                 i++;
             }
-        }       
+        }
 
+        [Conditional("FALSE")]
+        public static void Invariant(bool condition) {
+            // nop
+        }
 
+        [Conditional("FALSE")]
+        public static void Invariant(bool condition, string message) {
+            // nop
+        }
+
+        [Conditional("FALSE")]
+        public static void Ensures(bool condition) {
+            // nop
+        }
+
+        [Conditional("FALSE")]
+        public static void Ensures(bool condition, string message) {
+            // nop
+        }
+
+        public static T Result<T>() { 
+            return default(T); 
+        }
+
+        public static T Parameter<T>(out T value) { 
+            value = default(T); 
+            return value; 
+        }
+
+        public static T Old<T>(T value) { 
+            return value; 
+        }
     }
 }

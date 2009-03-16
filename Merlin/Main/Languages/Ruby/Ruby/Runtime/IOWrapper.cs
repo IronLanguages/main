@@ -287,13 +287,14 @@ namespace IronRuby.Runtime {
             _writePos = 0;
         }
 
-        private void WriteToObject(byte[] buffer, int offset, int count) {
+        private void WriteToObject(byte[]/*!*/ buffer, int offset, int count) {
+            // TODO:
             if (offset != 0 || count != buffer.Length) {
                 byte[] newBuffer = new byte[count];
                 Buffer.BlockCopy(buffer, offset, newBuffer, 0, count);
                 buffer = newBuffer;
             }
-            MutableString argument = MutableString.CreateBinary(buffer, count);
+            MutableString argument = MutableString.CreateBinary(buffer);
             _writeSite.Target(_writeSite, _context, _obj, argument);
         }
     }

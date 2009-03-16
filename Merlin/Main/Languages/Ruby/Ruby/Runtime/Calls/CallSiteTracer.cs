@@ -33,6 +33,7 @@ using MSA = System.Linq.Expressions;
 using Ast = System.Linq.Expressions.Expression;
 using Microsoft.Scripting;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
+using IronRuby.Builtins;
 
 namespace IronRuby.Runtime.Calls {
     public sealed class CallSiteTracer {
@@ -104,7 +105,7 @@ namespace IronRuby.Runtime.Calls {
             private readonly Dictionary<MSA.DynamicExpression, SourceSpan>/*!*/ _sites;
 
             public TraceAstGenerator(Dictionary<MSA.DynamicExpression, SourceSpan>/*!*/ sites,
-                RubyContext/*!*/ context, RubyCompilerOptions/*!*/ options, SourceUnit/*!*/ sourceUnit, Encoding/*!*/ encoding)
+                RubyContext/*!*/ context, RubyCompilerOptions/*!*/ options, SourceUnit/*!*/ sourceUnit, RubyEncoding/*!*/ encoding)
                 : base((RubyBinder)context.Binder, options, sourceUnit, encoding, false,
                     context.DomainManager.Configuration.DebugMode, false, false, false) {
                 _sites = sites;

@@ -5,15 +5,12 @@ $test_file = tmp("yaml_test_file")
 $test_parse_file = File.dirname(__FILE__) + "/test_yaml.yml"
 
 module YamlSpecs
-  EmitterMethods = ["emit", "level", "level=", "node_export", "reset", "set_resolver"]
-  OutMethods = ["emitter", "emitter=", "map", "scalar", "seq"]
-  
   def self.get_a_node
     io = StringIO.new($test_yaml_string)
     YAML.each_node(io) { |node| return node }
   end
   
-  def self.write_to_emitter out, h
+  def self.write_to_emitter(out, h)
     out.map(nil, nil) do |map|
       h.each_pair { |k, v| map.add(k, v) }
     end  
@@ -50,10 +47,10 @@ module YamlSpecs
       @inner2 = 2
     end
 
-    def to_yaml emitter
-      if ScratchPad.recorded != nil then
+    def to_yaml(emitter)
+      if ScratchPad.recorded
         ScratchPad.recorded[:emitter] = emitter
-        if emitter.respond_to? :level then
+        if emitter.respond_to? :level 
           ScratchPad.recorded[:level] = emitter.level
         end
       end
@@ -65,7 +62,7 @@ module YamlSpecs
         end
       end
       
-      if ScratchPad.recorded != nil then
+      if ScratchPad.recorded
         ScratchPad.recorded[:result] = node
       end
       

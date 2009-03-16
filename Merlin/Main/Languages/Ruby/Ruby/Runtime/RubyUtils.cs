@@ -400,24 +400,6 @@ namespace IronRuby.Runtime {
             return namespaceTracker.Name.Replace(Type.Delimiter.ToString(), "::");
         }
 
-        public static void CheckConstantName(string name) {
-            if (!Tokenizer.IsConstantName(name)) {
-                throw RubyExceptions.CreateNameError(String.Format("`{0}' is not allowed as a constant name", name));
-            }
-        }
-
-        public static void CheckClassVariableName(string name) {
-            if (!Tokenizer.IsClassVariableName(name)) {
-                throw RubyExceptions.CreateNameError(String.Format("`{0}' is not allowed as a class variable name", name));
-            }
-        }
-
-        public static void CheckInstanceVariableName(string name) {
-            if (!Tokenizer.IsInstanceVariableName(name)) {
-                throw RubyExceptions.CreateNameError(String.Format("`{0}' is not allowed as an instance variable name", name));
-            }
-        }
-
         #endregion
 
         #region Constants, Methods
@@ -438,7 +420,7 @@ namespace IronRuby.Runtime {
                 }
             }
 
-            CheckConstantName(name);
+            globalScope.Context.CheckConstantName(name);
             return owner.Context.ConstantMissing(owner, name);
         }
 
@@ -671,6 +653,19 @@ namespace IronRuby.Runtime {
             };
         }
 
+        private static SourceUnit/*!*/ CreateRubySourceUnit(RubyContext/*!*/ context, MutableString/*!*/ code, string path) {
+            if (context.KCode != null) {
+                if (context.KCode.CodePage != code.Encoding.CodePage && code.Encoding != RubyEncoding.Binary) {
+                    // TODO: exception type?
+                    throw new InvalidOperationException(String.Format("KCODE value ({0}) is incompatible with the current source encoding ({1})", context.KCode, code.Encoding));
+                }
+
+                return context.CreateSourceUnit(new BinaryContentProvider(code.ToByteArray()), path, context.KCode.Encoding, SourceCodeKind.File);
+            } else {
+                return context.CreateSnippet(code.ConvertToString(), path, SourceCodeKind.File);
+            }
+        }
+
         public static object Evaluate(MutableString/*!*/ code, RubyScope/*!*/ targetScope, object self, RubyModule module, MutableString file, int line) {
             Assert.NotNull(code, targetScope);
 
@@ -681,8 +676,8 @@ namespace IronRuby.Runtime {
 
             // we want to create a new top-level local scope:
             var options = CreateCompilerOptionsForEval(targetScope, methodScope, module != null, line);
+            var source = CreateRubySourceUnit(context, code, file != null ? file.ConvertToString() : "(eval)");
 
-            SourceUnit source = context.CreateSnippet(code.ConvertToString(), file != null ? file.ConvertToString() : "(eval)", SourceCodeKind.Statements);
             Expression<EvalEntryPointDelegate> lambda;
             try {
                 lambda = context.ParseSourceCode<EvalEntryPointDelegate>(source, options, context.RuntimeErrorSink);

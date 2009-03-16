@@ -19,9 +19,8 @@ describe "Zlib::GzipReader.wrap" do
   
   it "invokes the block with an instance of GzipReader" do
     Zlib::GzipReader.wrap(@io) do |gz|
-      ScratchPad.record gz
+      gz.should be_kind_of Zlib::GzipReader
     end
-    ScratchPad.recorded.should be_kind_of(Zlib::GzipReader)
   end
 
   it "returns the instance of GzipReader" do
@@ -53,6 +52,6 @@ describe "Zlib::GzipReader.wrap" do
 
   it "propagates Exceptions thrown from the block after calling io#close" do
     @io.should_receive(:close)
-    lambda { Zlib::GzipReader.wrap(@io) { raise "error from block" } }.should raise_error(RuntimeError, "error from block")
+    lambda { Zlib::GzipReader.wrap(@io) { raise "error from block" } }.should raise_error(RuntimeError)
   end
 end

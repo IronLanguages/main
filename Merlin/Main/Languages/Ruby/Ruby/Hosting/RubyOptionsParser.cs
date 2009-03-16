@@ -22,6 +22,9 @@ using Microsoft.Scripting.Hosting;
 using Microsoft.Scripting.Hosting.Shell;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
+using IronRuby.Builtins;
+using System.Text;
+using IronRuby.Runtime;
 
 namespace IronRuby.Hosting {
 
@@ -181,6 +184,12 @@ namespace IronRuby.Hosting {
                     break;
 
                 default:
+#if !SILVERLIGHT
+                    if (arg.StartsWith("-K")) {
+                        LanguageSetup.Options["KCode"] = optionName.Length >= 3 ? RubyEncoding.GetKCodingByNameInitial(optionName[2]) : null;
+                        break;
+                    }
+#endif
                     base.ParseArgument(arg);
                     if (ConsoleOptions.FileName != null) {
                         LanguageSetup.Options["MainFile"] = ConsoleOptions.FileName;
@@ -217,7 +226,9 @@ namespace IronRuby.Hosting {
              // { "-Fpattern",       "split() pattern for autosplit (-a)" },
              // { "-i[extension]",   "edit ARGV files in place (make backup if extension supplied)" },
                 { "-Idirectory",     "specify $LOAD_PATH directory (may be used more than once)" },
-             // { "-Kkcode",         "specifies KANJI (Japanese) code-set" },
+#if !SILVERLIGHT
+                { "-Kkcode",         "specifies KANJI (Japanese) code-set: { U, UTF8" },
+#endif
              // { "-l",              "enable line ending processing" },
              // { "-n",              "assume 'while gets(); ... end' loop around your script" },
              // { "-p",              "assume loop like -n but print line also like sed" },

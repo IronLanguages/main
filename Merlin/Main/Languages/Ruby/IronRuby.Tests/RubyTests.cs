@@ -62,13 +62,13 @@ namespace IronRuby.Tests {
 
                 Heredoc1,
                 Symbols1,
-                UnicodeIdentifiers1,
+                
+                KCode1,
+                KCode2,
 
                 Encoding1,
                 Encoding2,
                 Encoding3,
-                Encoding4,
-                Encoding5,
                 Encoding_Host1,
                 Encoding_Host2,
 
@@ -81,6 +81,7 @@ namespace IronRuby.Tests {
                 Scenario_RubySingletonConstants1,
                 Scenario_RubyMath1,
 
+                MutableString1,
                 StringsPlus,
                 Strings0,
                 Strings1,
@@ -91,8 +92,11 @@ namespace IronRuby.Tests {
                 Strings6,
                 Strings7,
                 Strings8,
+                Strings9,
                 ToSConversion1,
                 ToSConversion2,
+                Inspect1,
+                Inspect2,
 
                 Regex1,
                 Regex2,

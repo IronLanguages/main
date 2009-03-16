@@ -36,7 +36,7 @@ namespace IronRuby.Compiler.Ast {
         private readonly LexicalScope/*!*/ _definedScope;
         private readonly List<Initializer> _initializers;
         private readonly Statements/*!*/ _statements;
-        private readonly Encoding/*!*/ _encoding;
+        private readonly RubyEncoding/*!*/ _encoding;
 
         // An offset of the first byte after __END__ that can be read via DATA constant or -1 if __END__ is not present.
         private readonly int _dataOffset;
@@ -49,12 +49,12 @@ namespace IronRuby.Compiler.Ast {
             get { return _statements; }
         }
 
-        public Encoding/*!*/ Encoding {
+        public RubyEncoding/*!*/ Encoding {
             get { return _encoding; }
         }
 
         public SourceUnitTree(LexicalScope/*!*/ definedScope, Statements/*!*/ statements, List<Initializer> initializers, 
-            Encoding/*!*/ encoding, int dataOffset)
+            RubyEncoding/*!*/ encoding, int dataOffset)
             : base(SourceSpan.None) {
             Assert.NotNull(definedScope, statements, encoding);
 

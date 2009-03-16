@@ -87,31 +87,29 @@ module ClassSpecs
   class M < L; end
 
   class StubWriter
-    def write s
-      return s.size if s
-      0
+    def write(s)
+      s && s.size || 0
     end    
   end
   
   class StubWriterWithClose < StubWriter    
-    def close *args
+    def close(*args)
     end
   end
 
   class StubReader
-    def initialize s
+    def initialize(s)
       @s = s
     end
     
-    def read size=2048
-      s = @s
-      @s = nil
+    def read(size=2048)
+      s, @s = @s, nil
       s
     end    
   end
   
   class StubReaderWithClose < StubReader    
-    def close *args
+    def close(*args)
     end
   end
   

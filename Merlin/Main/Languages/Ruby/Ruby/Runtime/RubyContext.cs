@@ -341,8 +341,12 @@ namespace IronRuby.Runtime {
             _outputSeparator = null;
             _stringSeparator = null;
             _itemSeparator = null;
-            _kcode = KCode.Default;
             _mainThread = Thread.CurrentThread;
+            
+            if (_options.KCode != null) {
+                Utils.Log("Initialized to " + _options.KCode.Name, "KCODE");
+                KCode = _options.KCode;
+            }
             
             if (_options.Verbosity <= 0) {
                 Verbose = null;
@@ -1412,66 +1416,8 @@ namespace IronRuby.Runtime {
         /// <summary>
         /// $KCODE
         /// </summary>
-        private static KCode _kcode;
-
-        public KCode KCode {
-            get { return _kcode; }
-        }
-
-        public void SetKCode(MutableString encodingName) {
-            // TODO: Ruby 1.9 reports a warning:
-
-            // we allow nil as Ruby 1.9 does (Ruby 1.8 doesn't):
-            if (encodingName == null) {
-                _kcode = KCode.Default;
-            } else if (encodingName.IsEmpty) {
-                _kcode = KCode.Binary;
-            } else {
-                switch (encodingName.GetChar(0)) {
-                    case 'E':
-                    case 'e':
-                        _kcode = KCode.Euc;
-                        break;
-
-                    case 'S':
-                    case 's':
-                        _kcode = KCode.Sjis;
-                        break;
-
-                    case 'U':
-                    case 'u':
-                        _kcode = KCode.Utf8;
-                        break;
-
-                    default:
-                        _kcode = KCode.Binary;
-                        break;
-                }
-            }
-        }
-
-        public string GetKCodeName() {
-            switch (_kcode) {
-                case KCode.Default:
-                case KCode.Binary: return "NONE";
-                case KCode.Euc: return "EUC";
-                case KCode.Sjis: return "SJIS";
-                case KCode.Utf8: return "UTF8";
-                default: throw Assert.Unreachable;
-            }
-        }
-
-        public Encoding/*!*/ GetKCodeEncoding() {
-            switch (_kcode) {
-                case KCode.Default:
-                case KCode.Binary: return BinaryEncoding.Instance;
-                case KCode.Euc: return Encoding.GetEncoding("EUC-JP");
-                case KCode.Sjis: return Encoding.GetEncoding("SJIS");
-                case KCode.Utf8: return Encoding.UTF8;
-                default: throw Assert.Unreachable;
-            }
-        }
-
+        public RubyEncoding KCode { get; internal set; }
+        
         /// <summary>
         /// $SAFE
         /// </summary>
@@ -1695,7 +1641,7 @@ namespace IronRuby.Runtime {
 
         public override CompilerOptions/*!*/ GetCompilerOptions() {
             return new RubyCompilerOptions(_options) {
-                FactoryKind = TopScopeFactoryKind.Default
+                FactoryKind = TopScopeFactoryKind.Default,
             };
         }
 
@@ -1714,6 +1660,24 @@ namespace IronRuby.Runtime {
 
         public override ErrorSink GetCompilerErrorSink() {
             return _runtimeErrorSink;
+        }
+
+        public void CheckConstantName(string name) {
+            if (!Tokenizer.IsConstantName(name, _options.Compatibility >= RubyCompatibility.Ruby19 || KCode != null)) {
+                throw RubyExceptions.CreateNameError(String.Format("`{0}' is not allowed as a constant name", name));
+            }
+        }
+
+        public void CheckClassVariableName(string name) {
+            if (!Tokenizer.IsClassVariableName(name, _options.Compatibility >= RubyCompatibility.Ruby19 || KCode != null)) {
+                throw RubyExceptions.CreateNameError(String.Format("`{0}' is not allowed as a class variable name", name));
+            }
+        }
+
+        public void CheckInstanceVariableName(string name) {
+            if (!Tokenizer.IsInstanceVariableName(name, _options.Compatibility >= RubyCompatibility.Ruby19 || KCode != null)) {
+                throw RubyExceptions.CreateNameError(String.Format("`{0}' is not allowed as an instance variable name", name));
+            }
         }
 
         #endregion
@@ -2006,7 +1970,7 @@ namespace IronRuby.Runtime {
 
         private static SourceCodeReader/*!*/ GetSourceReader(Stream/*!*/ stream, Encoding/*!*/ defaultEncoding, RubyCompatibility compatibility) {
             if (compatibility <= RubyCompatibility.Ruby18) {
-                return new SourceCodeReader(new StreamReader(stream, BinaryEncoding.Instance, false), BinaryEncoding.Instance);
+                return new SourceCodeReader(new StreamReader(stream, defaultEncoding, false), defaultEncoding);
             }
 
             long initialPosition = stream.Position;

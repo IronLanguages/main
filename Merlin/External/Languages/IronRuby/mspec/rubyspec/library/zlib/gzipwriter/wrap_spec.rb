@@ -25,16 +25,14 @@ describe "Zlib::GzipWriter.wrap" do
   
   it "invokes the block with an instance of GzipWriter" do
     Zlib::GzipWriter.wrap(@io) do |gz|
-      ScratchPad.record gz
+      gz.should be_kind_of(Zlib::GzipWriter)
     end
-    ScratchPad.recorded.should be_kind_of(Zlib::GzipWriter)
   end
 
   it "returns the block result" do
-    ret = Zlib::GzipWriter.wrap(@io) do |gz|
+    Zlib::GzipWriter.wrap(@io) do |gz|
       :end_of_block
-    end
-    ret.should == :end_of_block
+    end.should == :end_of_block
   end
 
   it "allows the GzipWriter instance to be closed in the block" do
@@ -61,6 +59,6 @@ describe "Zlib::GzipWriter.wrap" do
 
   it "propagates Exceptions thrown from the block after calling close" do
     @io.should_receive :close
-    lambda { Zlib::GzipWriter.wrap(@io) { raise "error from block" } }.should raise_error(RuntimeError, "error from block")
+    lambda { Zlib::GzipWriter.wrap(@io) { raise "error from block" } }.should raise_error(RuntimeError)
   end
 end

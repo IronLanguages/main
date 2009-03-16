@@ -143,6 +143,8 @@
     <Compile Include="Compiler\Ast\Walkers\Walker.cs" />
     <Compile Include="Compiler\Errors.cs" />
     <Compile Include="Compiler\Parser\ParserStack.cs" />
+    <Compile Include="Compiler\Parser\StringContentBuilder.cs" />
+    <Compile Include="Runtime\BinaryContentProvider.cs" />
     <Compile Include="Runtime\Calls\ConvertToSAction.cs" />
     <Compile Include="Runtime\Calls\MethodResolutionResult.cs" />
     <Compile Include="Runtime\Calls\RubyLibraryMethodInfo.cs" />
@@ -190,7 +192,6 @@
     <Compile Include="Runtime\EqualityComparer.cs" />
     <Compile Include="Builtins\Hash.cs" />
     <Compile Include="Runtime\Globals\GlobalVariables.cs" />
-    <Compile Include="Runtime\Globals\KCode.cs" />
     <Compile Include="Runtime\Globals\ReadOnlyGlobalVariableInfo.cs" />
     <Compile Include="Runtime\Globals\GlobalVariableInfo.cs" />
     <Compile Include="Runtime\Globals\GlobalVariable.cs" />
@@ -203,6 +204,7 @@
     <Compile Include="Builtins\MutableString.cs" />
     <Compile Include="Builtins\Proc.cs" />
     <Compile Include="Builtins\Range.cs" />
+    <Compile Include="Runtime\KCoding.cs" />
     <Compile Include="Runtime\ReferenceEqualityComparer.cs" />
     <Compile Include="Compiler\Ast\Expressions\RangeExpression.cs" />
     <Compile Include="Runtime\Converter.cs" />

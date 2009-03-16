@@ -21,6 +21,9 @@ using System.Threading;
 using Microsoft.Scripting;
 using Microsoft.Scripting.Utils;
 using IronRuby.Runtime;
+using Microsoft.Scripting.Runtime;
+using System.Linq.Expressions;
+using IronRuby.Compiler;
 
 namespace IronRuby.Builtins {
 
@@ -29,26 +32,106 @@ namespace IronRuby.Builtins {
     /// Instances of this class are app-domain singletons. That's all right as far as the class is readonly and doesn't implement IRubyObject.
     /// Taint, frozen flags and instance variables need to be stored in per-runtime lookaside table.
     /// </summary>
-    public class RubyEncoding {
-        public static readonly RubyEncoding/*!*/ Binary = new RubyEncoding(BinaryEncoding.Instance);
-        public static readonly RubyEncoding/*!*/ UTF8 = new RubyEncoding(Encoding.UTF8);
-        public static readonly RubyEncoding/*!*/ Default = new RubyEncoding(StringUtils.DefaultEncoding);
+    public class RubyEncoding : IExpressionSerializable {
+        #region Singletons
 
-        private static Dictionary<int, RubyEncoding> _Encodings;
+        internal const int CodePageBinary = 0;
+        internal const int CodePageEUC = 51932;
+        internal const int CodePageUTF8 = 65001;
+        internal const int CodePageSJIS = 932;
 
+        public static readonly RubyEncoding/*!*/ Binary = new RubyEncoding(BinaryEncoding.Instance, BinaryEncoding.Instance);
+        public static readonly RubyEncoding/*!*/ UTF8 = new RubyEncoding(new UTF8Encoding(false, false), new UTF8Encoding(false, true));
+        public static readonly RubyEncoding/*!*/ Obsolete = Binary;
+        
+        private static RubyEncoding _default;
+        private static RubyEncoding _kUTF8, _kSJIS, _kEUC;
+
+        public static RubyEncoding/*!*/ KCodeUTF8 {
+            get {
+                if (_kUTF8 == null) {
+                    _kUTF8 = CreateKCoding(CodePageUTF8);
+                }
+                return _kUTF8;
+            }
+        }
+
+        public static RubyEncoding/*!*/ KCodeSJIS {
+            get {
+                if (_kSJIS == null) {
+                    _kSJIS = CreateKCoding(CodePageSJIS);
+                }
+                return _kSJIS;
+            }
+        }
+
+        public static RubyEncoding/*!*/ KCodeEUC {
+            get {
+                if (_kEUC == null) {
+                    _kEUC = CreateKCoding(CodePageEUC);
+                }
+                return _kEUC;
+            }
+        }
+        
+        public static RubyEncoding/*!*/ Default {
+            get {
+                if (_default == null) {
+                    _default = GetRubyEncoding(StringUtils.DefaultEncoding);
+                }
+                return _default;
+            }
+        }
+
+        private static RubyEncoding/*!*/ CreateKCoding(int codepage) {
+#if SILVERLIGHT
+            return new RubyEncoding(new UTF8Encoding(false, false), new UTF8Encoding(false, true));
+#else
+            return new RubyEncoding(KCoding.Create(codepage, false), KCoding.Create(codepage, true));
+#endif
+        }
+
+        #endregion
+
+        // TODO: use encoders/decoders?
         private readonly Encoding/*!*/ _encoding;
+        private readonly Encoding/*!*/ _strictEncoding;
+        private readonly bool _isKCoding;
 
-        private RubyEncoding(Encoding/*!*/ encoding) {
-            ContractUtils.RequiresNotNull(encoding, "encoding");
+        // TODO:
+        //private readonly Encoder/*!*/ _encoder, _strictEncoder;
+        //private readonly Decoder/*!*/ _decoder, _strictDecoder;
+
+        private RubyEncoding(Encoding/*!*/ encoding, Encoding/*!*/ strictEncoding) {
+            Assert.NotNull(encoding, strictEncoding);
+            Debug.Assert(encoding is KCoding == strictEncoding is KCoding);
+            _isKCoding = encoding is KCoding;
             _encoding = encoding;
+            _strictEncoding = strictEncoding;
+        }
+
+        public bool IsKCoding {
+            get { return _isKCoding; }
         }
 
         public Encoding/*!*/ Encoding {
             get { return _encoding; }
         }
 
+        internal Encoding/*!*/ StrictEncoding {
+            get { return _strictEncoding; }
+        }
+
         public string/*!*/ Name {
             get { return _encoding.WebName; }
+        }
+
+        public int CodePage {
+            get { return GetCodePage(_encoding); }
+        }
+
+        public override string/*!*/ ToString() {
+            return _isKCoding ? "KCODE: " + Name : Name;
         }
 
         /// <exception cref="ArgumentException">Unknown encoding.</exception>
@@ -72,39 +155,46 @@ namespace IronRuby.Builtins {
             return GetRubyEncoding(GetEncodingByRubyName(name));
         }
         
-#if SILVERLIGHT
+#if !SILVERLIGHT
+        private static Dictionary<int, RubyEncoding> _Encodings;
+
         public static RubyEncoding/*!*/ GetRubyEncoding(Encoding/*!*/ encoding) {
             ContractUtils.RequiresNotNull(encoding, "encoding");
-            if (encoding == BinaryEncoding.Instance) {
-                return Binary;
-            } else if (encoding == Encoding.UTF8) {
-                return UTF8;
-            } else {
-                throw new ArgumentException(String.Format("Unknown encoding: '{0}'", encoding));
+            
+            var kcoding = encoding as KCoding;
+            if (kcoding != null) {
+                return TryGetKCoding(kcoding.CodePage);
             }
+
+            if (encoding.CodePage == 0) {
+                if (encoding == BinaryEncoding.Instance) {
+                    return Binary;
+                }
+
+                // TODO: allow custom encodings (without codepage)
+            }
+
+            return GetRubyEncoding(encoding.CodePage);
+        }
+
+        private static RubyEncoding TryGetKCoding(int codepage) {
+            switch (codepage) {
+                case CodePageEUC: return KCodeEUC;
+                case CodePageSJIS: return KCodeSJIS;
+                case CodePageUTF8: return KCodeUTF8;
+                default: return null;
+            }
+        }
+
+        public static RubyEncoding GetKCodingByNameInitial(int initial) {
+            int codepage = KCoding.GetCodePage(initial);
+            return codepage > 0 ? TryGetKCoding(codepage) : null;
         }
 
         internal static RubyEncoding/*!*/ GetRubyEncoding(int codepage) {
             switch (codepage) {
-                case 0: return Binary;
-                case 65001: return UTF8;
-                default: throw new ArgumentException(String.Format("Unknown encoding codepage: {0}", codepage));
-            }
-        }
-#else
-        internal static RubyEncoding/*!*/ GetRubyEncoding(int codepage) {
-            return GetRubyEncoding(null, codepage);
-        }
-
-        public static RubyEncoding/*!*/ GetRubyEncoding(Encoding/*!*/ encoding) {
-            ContractUtils.RequiresNotNull(encoding, "encoding");
-            return GetRubyEncoding(encoding, encoding.CodePage);
-        }
-
-        private static RubyEncoding/*!*/ GetRubyEncoding(Encoding encoding, int codepage) {
-            switch (codepage) {
-                case 0: return Binary;
-                case 65001: return UTF8;
+                case CodePageBinary: return Binary;
+                case CodePageUTF8: return UTF8;
             }
 
             if (_Encodings == null) {
@@ -114,48 +204,26 @@ namespace IronRuby.Builtins {
             RubyEncoding result;
             lock (_Encodings) {
                 if (!_Encodings.TryGetValue(codepage, out result)) {
-                    _Encodings.Add(codepage, result = new RubyEncoding(encoding ?? Encoding.GetEncoding(codepage)));
+                    result = new RubyEncoding(
+                        Encoding.GetEncoding(codepage, EncoderFallback.ReplacementFallback, DecoderFallback.ReplacementFallback),
+                        Encoding.GetEncoding(codepage, EncoderFallback.ExceptionFallback, DecoderFallback.ExceptionFallback)
+                    );
+
+                    // TODO: check 
+                    // Some MutableString operations (GetHashCode) assume that all encodings map each characters \u0000..\u007f to an integer 0..0x7f and back
+                    // (this is not the same as IsAsciiIdentity, since the width of the resultign bytes could be > 1
+
+                    _Encodings.Add(codepage, result);
                 }
             }
 
             return result;
         }
-#endif
 
-        internal static Encoding/*!*/ GetEncoding(int codepage) {
-            switch (codepage) {
-                case 0: return BinaryEncoding.Instance;
-#if SILVERLIGHT
-                default: throw Assert.Unreachable;
-#else
-                default: return Encoding.GetEncoding(codepage);
-#endif
-            }
-        }
-
-        internal static int GetCodePage(Encoding/*!*/ encoding) {
-            Debug.Assert(encoding != null);
-
-            if (encoding == BinaryEncoding.Instance) {
-                return 0;
-            }
-
-#if SILVERLIGHT
-            if (encoding == BinaryEncoding.UTF8) {
-                return 65001;
-            }
-
-            throw Assert.Unreachable;
-#else
+        private static int GetCodePage(Encoding/*!*/ encoding) {
             return encoding.CodePage;
-#endif
         }
 
-        internal static Encoding/*!*/ GetDefaultHostEncoding(RubyCompatibility compatibility) {
-            return (compatibility >= RubyCompatibility.Ruby19) ? Encoding.UTF8 : BinaryEncoding.Instance;
-        }
-
-#if !SILVERLIGHT
         public static bool IsAsciiIdentity(Encoding/*!*/ encoding) {
             if (encoding == BinaryEncoding.Instance) {
                 return true;
@@ -287,6 +355,51 @@ namespace IronRuby.Builtins {
 
             return true;
         }
+
+        Expression/*!*/ IExpressionSerializable.CreateExpression() {
+            // TODO: use a static fields, deal with KCODEs
+            return Methods.CreateEncoding.OpCall(Expression.Constant(_encoding.CodePage));
+        }
+#else
+        public static RubyEncoding/*!*/ GetRubyEncoding(Encoding/*!*/ encoding) {
+            ContractUtils.RequiresNotNull(encoding, "encoding");
+            if (encoding == BinaryEncoding.Instance) {
+                return Binary;
+            } else if (encoding == Encoding.UTF8) {
+                return UTF8;
+            } else {
+                throw new ArgumentException(String.Format("Unknown encoding: '{0}'", encoding));
+            }
+        }
+
+        internal static RubyEncoding/*!*/ GetRubyEncoding(int codepage) {
+            switch (codepage) {
+                case CodePageBinary: return Binary;
+                case CodePageUTF8: return UTF8;
+                default: throw new ArgumentException(String.Format("Unknown encoding codepage: {0}", codepage));
+            }
+        }
+
+        private static int GetCodePage(Encoding/*!*/ encoding) {
+            Debug.Assert(encoding != null);
+
+            if (encoding == BinaryEncoding.Instance) {
+                return CodePageBinary;
+            }
+
+            if (encoding == BinaryEncoding.UTF8) {
+                return CodePageUTF8;
+            }
+
+            throw Assert.Unreachable;
+        }
+
+        Expression/*!*/ IExpressionSerializable.CreateExpression() {
+            // TODO: use a static fields, deal with KCODEs
+            return Expression.Constant(UTF8);
+        }
 #endif
+
     }
+
 }

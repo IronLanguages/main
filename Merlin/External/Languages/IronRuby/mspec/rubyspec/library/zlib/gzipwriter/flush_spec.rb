@@ -24,7 +24,7 @@ describe "Zlib::GzipWriter#flush" do
     
   it "raises BufError if called multiple times without writing data" do
     @gzip_writer.flush
-    lambda { @gzip_writer.flush }.should raise_error(Zlib::BufError, "buffer error")
+    lambda { @gzip_writer.flush }.should raise_error(Zlib::BufError)
   end
     
   it "can be called multiple times if data is written" do
@@ -42,12 +42,12 @@ describe "Zlib::GzipWriter#flush" do
     
   it "Zlib::FINISH closes the writer" do
     @gzip_writer.flush Zlib::FINISH
-    lambda { @gzip_writer << "Hello" }.should raise_error(Zlib::StreamError, "stream error")
+    lambda { @gzip_writer << "Hello" }.should raise_error(Zlib::StreamError)
     @gzip_writer.closed?.should be_false
   end
   
   it "throws StreamError for invalid parameter value" do
-    lambda { @gzip_writer.flush 5 }.should raise_error(Zlib::StreamError, "stream error")
-    lambda { @gzip_writer.flush "1" }.should raise_error(TypeError, "wrong argument type String (expected Fixnum)")
+    lambda { @gzip_writer.flush 5 }.should raise_error(Zlib::StreamError)
+    lambda { @gzip_writer.flush "1" }.should raise_error(TypeError)
   end
 end

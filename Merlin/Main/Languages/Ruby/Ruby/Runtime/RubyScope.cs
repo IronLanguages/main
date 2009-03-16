@@ -332,7 +332,7 @@ namespace IronRuby.Runtime {
                 return result;
             }
 
-            RubyUtils.CheckConstantName(name);
+            RubyContext.CheckConstantName(name);
             var owner = GetInnerMostModule();
             return owner.Context.ConstantMissing(owner, name);
         }

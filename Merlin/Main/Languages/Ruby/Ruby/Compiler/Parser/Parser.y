@@ -160,7 +160,7 @@ using IronRuby.Compiler.Ast;
 program:
       compstmt
         {
-            _ast = new SourceUnitTree(CurrentScope, $1, _initializers, _encoding, _tokenizer.DataOffset);
+            _ast = new SourceUnitTree(CurrentScope, $1, _initializers, Encoding, _tokenizer.DataOffset);
         }
 ;
 
