@@ -35,6 +35,7 @@ using Microsoft.Scripting.Utils;
 namespace IronPython.Runtime.Binding {
     using Ast = System.Linq.Expressions.Expression;
     using AstUtils = Microsoft.Scripting.Ast.Utils;
+    using System.Runtime.CompilerServices;
 
     public class PythonBinder : DefaultBinder {
         private PythonContext/*!*/ _context;
@@ -93,6 +94,22 @@ namespace IronPython.Runtime.Binding {
                 visType == typeof(char) ? ConversionResultKind.ImplicitCast : kind,
                 expr
             );
+        }
+
+        public override Func<object[], object> ConvertObject(int index, DynamicMetaObject knownType, Type toType, ConversionResultKind kind) {            
+            if (toType == typeof(object) || toType.IsAssignableFrom(knownType.LimitType)) {
+                return null;
+            }
+
+            Type visType = CompilerHelpers.GetVisibleType(toType);
+
+            if (knownType.LimitType == typeof(PythonType) && visType == typeof(Type)) {
+                return (args) => (Type)(PythonType)args[index];
+            }
+
+            CallSite<Func<CallSite, object, object>> convSite = CallSite<Func<CallSite, object, object>>.Create(_context.DefaultBinderState.Convert(visType, visType == typeof(char) ? ConversionResultKind.ImplicitCast : kind));
+
+            return (args) => convSite.Target(convSite, args[index]);
         }
 
         internal static MethodInfo GetGenericConvertMethod(Type toType) {
@@ -226,11 +243,12 @@ namespace IronPython.Runtime.Binding {
                     type,
                     name);
 
-                _resolvedMembers.CacheSlot(type, name, PythonTypeOps.GetSlot(mg, name, PrivateBinding), mg);
+                _resolvedMembers.CacheSlot(type, action.Kind == DynamicActionKind.GetMember, name, PythonTypeOps.GetSlot(mg, name, PrivateBinding), mg);
             }
 
             return mg ?? MemberGroup.EmptyGroup;
         }
+
 
         public override ErrorInfo/*!*/ MakeEventValidation(MemberGroup/*!*/ members, Expression eventObject, Expression/*!*/ value, Expression/*!*/ codeContext) {
             EventTracker ev = (EventTracker)members[0];
@@ -445,7 +463,7 @@ namespace IronPython.Runtime.Binding {
             string strName = SymbolTable.IdToString(name);
             Type curType = type.UnderlyingSystemType;
 
-            if (!_typeMembers.TryGetCachedSlot(curType, strName, out slot)) {
+            if (!_typeMembers.TryGetCachedSlot(curType, true, strName, out slot)) {
                 MemberGroup mg = TypeInfo.GetMember(
                     this,
                     OldGetMemberAction.Make(this, name),
@@ -454,7 +472,7 @@ namespace IronPython.Runtime.Binding {
 
                 slot = PythonTypeOps.GetSlot(mg, SymbolTable.IdToString(name), PrivateBinding);
 
-                _typeMembers.CacheSlot(curType, strName, slot, mg);
+                _typeMembers.CacheSlot(curType, true, strName, slot, mg);
             }
 
             if (slot != null && (slot.IsAlwaysVisible || PythonOps.IsClsVisible(context))) {
@@ -470,12 +488,10 @@ namespace IronPython.Runtime.Binding {
         /// for members.  It also searches for extension members in the type and any base types.
         /// </summary>
         public bool TryResolveSlot(CodeContext/*!*/ context, PythonType/*!*/ type, PythonType/*!*/ owner, SymbolId name, out PythonTypeSlot slot) {
-            Debug.Assert(type.IsSystemType);
-
             string strName = SymbolTable.IdToString(name);
             Type curType = type.UnderlyingSystemType;
 
-            if (!_resolvedMembers.TryGetCachedSlot(curType, strName, out slot)) {
+            if (!_resolvedMembers.TryGetCachedSlot(curType, true, strName, out slot)) {
                 MemberGroup mg = TypeInfo.GetMemberAll(
                     this,
                     OldGetMemberAction.Make(this, strName),
@@ -484,7 +500,7 @@ namespace IronPython.Runtime.Binding {
 
                 slot = PythonTypeOps.GetSlot(mg, SymbolTable.IdToString(name), PrivateBinding);
 
-                _resolvedMembers.CacheSlot(curType, strName, slot, mg);
+                _resolvedMembers.CacheSlot(curType, true, strName, slot, mg);
             }
 
             if (slot != null && (slot.IsAlwaysVisible || PythonOps.IsClsVisible(context))) {
@@ -501,7 +517,7 @@ namespace IronPython.Runtime.Binding {
         /// This search does not include members in any subtypes or their extension members.
         /// </summary>
         public void LookupMembers(CodeContext/*!*/ context, PythonType/*!*/ type, IAttributesCollection/*!*/ memberNames) {
-            if (!_typeMembers.IsFullyCached(type.UnderlyingSystemType)) {
+            if (!_typeMembers.IsFullyCached(type.UnderlyingSystemType, true)) {
                 Dictionary<string, KeyValuePair<PythonTypeSlot, MemberGroup>> members = new Dictionary<string, KeyValuePair<PythonTypeSlot, MemberGroup>>();
 
                 foreach (ResolvedMember rm in TypeInfo.GetMembers(
@@ -517,10 +533,10 @@ namespace IronPython.Runtime.Binding {
                     }
                 }
 
-                _typeMembers.CacheAll(type.UnderlyingSystemType, members);
+                _typeMembers.CacheAll(type.UnderlyingSystemType, true, members);
             }
 
-            foreach (KeyValuePair<string, PythonTypeSlot> kvp in _typeMembers.GetAllMembers(type.UnderlyingSystemType)) {
+            foreach (KeyValuePair<string, PythonTypeSlot> kvp in _typeMembers.GetAllMembers(type.UnderlyingSystemType, true)) {
                 PythonTypeSlot slot = kvp.Value;
                 string name = kvp.Key;
 
@@ -537,7 +553,7 @@ namespace IronPython.Runtime.Binding {
         /// types of the type and its subtypes.
         /// </summary>
         public void ResolveMemberNames(CodeContext/*!*/ context, PythonType/*!*/ type, PythonType/*!*/ owner, Dictionary<string, string>/*!*/ memberNames) {
-            if (!_resolvedMembers.IsFullyCached(type.UnderlyingSystemType)) {
+            if (!_resolvedMembers.IsFullyCached(type.UnderlyingSystemType, true)) {
                 Dictionary<string, KeyValuePair<PythonTypeSlot, MemberGroup>> members = new Dictionary<string, KeyValuePair<PythonTypeSlot, MemberGroup>>();
 
                 foreach (ResolvedMember rm in TypeInfo.GetMembersAll(
@@ -553,10 +569,10 @@ namespace IronPython.Runtime.Binding {
                     }
                 }
 
-                _resolvedMembers.CacheAll(type.UnderlyingSystemType, members);
+                _resolvedMembers.CacheAll(type.UnderlyingSystemType, true, members);
             }
 
-            foreach (KeyValuePair<string, PythonTypeSlot> kvp in _resolvedMembers.GetAllMembers(type.UnderlyingSystemType)) {
+            foreach (KeyValuePair<string, PythonTypeSlot> kvp in _resolvedMembers.GetAllMembers(type.UnderlyingSystemType, true)) {
                 PythonTypeSlot slot = kvp.Value;
                 string name = kvp.Key;
 
@@ -821,19 +837,19 @@ namespace IronPython.Runtime.Binding {
         /// all members (and remembering whether all members are cached).
         /// </summary>
         private class SlotCache {
-            private Dictionary<Type/*!*/, SlotCacheInfo/*!*/> _cachedInfos;
+            private Dictionary<CachedInfoKey/*!*/, SlotCacheInfo/*!*/> _cachedInfos;
 
             /// <summary>
             /// Writes to a cache the result of a type lookup.  Null values are allowed for the slots and they indicate that
             /// the value does not exist.
             /// </summary>
-            public void CacheSlot(Type/*!*/ type, string/*!*/ name, PythonTypeSlot slot, MemberGroup/*!*/ memberGroup) {
+            public void CacheSlot(Type/*!*/ type, bool isGetMember, string/*!*/ name, PythonTypeSlot slot, MemberGroup/*!*/ memberGroup) {
                 Debug.Assert(type != null); Debug.Assert(name != null);
 
                 EnsureInfo();
 
                 lock (_cachedInfos) {
-                    SlotCacheInfo slots = GetSlotForType(type);
+                    SlotCacheInfo slots = GetSlotForType(type, isGetMember);
 
                     if (slots.ResolvedAll && slot == null && memberGroup.Count == 0) {
                         // nothing to cache, and we know we don't need to cache non-hits.
@@ -849,13 +865,13 @@ namespace IronPython.Runtime.Binding {
             /// that a cached result for a member which doesn't exist has been stored.  Otherwise it returns true if a slot is found or
             /// false if it is not.
             /// </summary>
-            public bool TryGetCachedSlot(Type/*!*/ type, string/*!*/ name, out PythonTypeSlot slot) {
+            public bool TryGetCachedSlot(Type/*!*/ type, bool isGetMember, string/*!*/ name, out PythonTypeSlot slot) {
                 Debug.Assert(type != null); Debug.Assert(name != null);
 
                 if (_cachedInfos != null) {
                     lock (_cachedInfos) {
                         SlotCacheInfo slots;
-                        if (_cachedInfos.TryGetValue(type, out slots) &&
+                        if (_cachedInfos.TryGetValue(new CachedInfoKey(type, isGetMember), out slots) &&
                             (slots.TryGetSlot(name, out slot) || slots.ResolvedAll)) {
                             return true;
                         }
@@ -877,7 +893,7 @@ namespace IronPython.Runtime.Binding {
                 if (_cachedInfos != null) {
                     lock (_cachedInfos) {
                         SlotCacheInfo slots;
-                        if (_cachedInfos.TryGetValue(type, out slots) &&
+                        if (_cachedInfos.TryGetValue(new CachedInfoKey(type, getMemberAction), out slots) &&
                             (slots.TryGetMember(name, out group) || (getMemberAction && slots.ResolvedAll))) {
                             return true;
                         }
@@ -891,11 +907,11 @@ namespace IronPython.Runtime.Binding {
             /// <summary>
             /// Checks to see if all members have been populated for the provided type.
             /// </summary>
-            public bool IsFullyCached(Type/*!*/ type) {
+            public bool IsFullyCached(Type/*!*/ type, bool isGetMember) {
                 if (_cachedInfos != null) {
                     lock (_cachedInfos) {
                         SlotCacheInfo info;
-                        if (_cachedInfos.TryGetValue(type, out info)) {
+                        if (_cachedInfos.TryGetValue(new CachedInfoKey(type, isGetMember), out info)) {
                             return info.ResolvedAll;
                         }
                     }
@@ -910,13 +926,13 @@ namespace IronPython.Runtime.Binding {
             /// The dictionary is used for the internal storage and should not be modified after
             /// providing it to the cache.
             /// </summary>
-            public void CacheAll(Type/*!*/ type, Dictionary<string/*!*/, KeyValuePair<PythonTypeSlot/*!*/, MemberGroup/*!*/>> members) {
+            public void CacheAll(Type/*!*/ type, bool isGetMember, Dictionary<string/*!*/, KeyValuePair<PythonTypeSlot/*!*/, MemberGroup/*!*/>> members) {
                 Debug.Assert(type != null);
 
                 EnsureInfo();
 
                 lock (_cachedInfos) {
-                    SlotCacheInfo slots = GetSlotForType(type);
+                    SlotCacheInfo slots = GetSlotForType(type, isGetMember);
 
                     slots.Members = members;
                     slots.ResolvedAll = true;
@@ -929,10 +945,10 @@ namespace IronPython.Runtime.Binding {
             /// The caller must check that the type is fully cached and populate the cache if it isn't before
             /// calling this method.
             /// </summary>
-            public IEnumerable<KeyValuePair<string/*!*/, PythonTypeSlot/*!*/>>/*!*/ GetAllMembers(Type/*!*/ type) {
+            public IEnumerable<KeyValuePair<string/*!*/, PythonTypeSlot/*!*/>>/*!*/ GetAllMembers(Type/*!*/ type, bool isGetMember) {
                 Debug.Assert(type != null);
 
-                SlotCacheInfo info = GetSlotForType(type);
+                SlotCacheInfo info = GetSlotForType(type, isGetMember);
                 Debug.Assert(info.ResolvedAll);
 
                 foreach (KeyValuePair<string, PythonTypeSlot> slot in info.GetAllSlots()) {
@@ -942,17 +958,48 @@ namespace IronPython.Runtime.Binding {
                 }
             }
 
-            private SlotCacheInfo/*!*/ GetSlotForType(Type/*!*/ type) {
+            private SlotCacheInfo/*!*/ GetSlotForType(Type/*!*/ type, bool isGetMember) {
                 SlotCacheInfo slots;
-                if (!_cachedInfos.TryGetValue(type, out slots)) {
-                    _cachedInfos[type] = slots = new SlotCacheInfo();
+                var key = new CachedInfoKey(type, isGetMember);
+                if (!_cachedInfos.TryGetValue(key, out slots)) {
+                    _cachedInfos[key] = slots = new SlotCacheInfo();
                 }
                 return slots;
             }
 
+            class CachedInfoKey : IEquatable<CachedInfoKey> {
+                public readonly Type Type;
+                public readonly bool IsGetMember;
+
+                public CachedInfoKey(Type type, bool isGetMember) {
+                    Type = type;
+                    IsGetMember = isGetMember;
+                }
+
+                #region IEquatable<CachedInfoKey> Members
+
+                public bool Equals(CachedInfoKey other) {
+                    return other.Type == Type && other.IsGetMember == IsGetMember;
+                }
+
+                #endregion
+
+                public override bool Equals(object obj) {
+                    CachedInfoKey other = obj as CachedInfoKey;
+                    if (other != null) {
+                        return Equals(other);
+                    }
+
+                    return false;
+                }
+
+                public override int GetHashCode() {
+                    return Type.GetHashCode() ^ (IsGetMember ? -1 : 0);
+                }
+            }
             private void EnsureInfo() {
                 if (_cachedInfos == null) {
-                    Interlocked.CompareExchange(ref _cachedInfos, new Dictionary<Type, SlotCacheInfo>(), null);
+                    Interlocked.CompareExchange(ref _cachedInfos, new Dictionary<CachedInfoKey/*!*/, SlotCacheInfo>(), null);
                 }
             }
 

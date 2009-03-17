@@ -16,6 +16,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Dynamic;
 using System.Diagnostics;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -386,33 +387,39 @@ namespace IronPython.Compiler.Ast {
             // Do we need conversion?
             if (!CanAssign(type, expression.Type)) {
                 // Add conversion step to the AST
-                /*ActionExpression ae = expression as ActionExpression;
-                if (ae != null) {
+                DynamicExpression ae = expression as DynamicExpression;
+                ReducableDynamicExpression rde = expression as ReducableDynamicExpression;
+
+                if ((ae != null && ae.Binder is PythonBinaryOperationBinder) ||
+                    (rde != null && rde.Binder is PythonBinaryOperationBinder)) {
                     // create a combo site which does the conversion
-                    ParameterMappingInfo[] infos = new ParameterMappingInfo[ae.Arguments.Count];
+                    PythonBinaryOperationBinder binder;
+                    MSAst.Expression[] args;
+                    if (ae != null) {
+                        binder = (PythonBinaryOperationBinder)ae.Binder;
+                        args = ArrayUtils.ToArray(ae.Arguments);
+                    } else {
+                        binder = (PythonBinaryOperationBinder)rde.Binder;
+                        args = rde.Args;
+                    }
+
+                    ParameterMappingInfo[] infos = new ParameterMappingInfo[args.Length];
                     for (int i = 0; i<infos.Length; i++) {
                         infos[i] = ParameterMappingInfo.Parameter(i);
                     }
 
-                    expression = Ast.Dynamic(
-                        new ComboBinder(
-                            new BinderMappingInfo(
-                                (MetaAction)ae.BindingInfo,
-                                infos
-                            ),
-                            new BinderMappingInfo(
-                                new ConversionBinder(
-                                    BinderState,
-                                    type,
-                                    ConversionResultKind.ExplicitCast
-                                ),
-                                ParameterMappingInfo.Action(0)
+                    expression = Globals.Dynamic(
+                        BinderState.BinaryOperationRetType(
+                            binder,
+                            BinderState.Convert(
+                                type,
+                                ConversionResultKind.ExplicitCast
                             )
                         ),
                         type,
-                        ae.Arguments
+                        args
                     );
-                } else*/ {
+                } else {
                     expression = Convert(
                         type,
                         ConversionResultKind.ExplicitCast,

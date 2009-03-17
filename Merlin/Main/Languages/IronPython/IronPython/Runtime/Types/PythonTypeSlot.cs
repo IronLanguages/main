@@ -33,19 +33,13 @@ namespace IronPython.Runtime.Types {
     [PythonType]
     public class PythonTypeSlot {
         /// <summary>
-        /// Gets the value stored in the slot for the given instance. 
+        /// Gets the value stored in the slot for the given instance binding it to an instance if one is provided and
+        /// the slot binds to instances.
         /// </summary>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1007:UseGenericsWhereAppropriate")]
         internal virtual bool TryGetValue(CodeContext context, object instance, PythonType owner, out object value) {
             value = null;
             return false;
-        }
-
-        /// <summary>
-        /// Gets the value stored in the slot for the given instance, bound to the instance if possible
-        /// </summary>
-        internal virtual bool TryGetBoundValue(CodeContext context, object instance, PythonType owner, out object value) {
-            return TryGetValue(context, instance, owner, out value);
         }
 
         /// <summary>
@@ -67,6 +61,15 @@ namespace IronPython.Runtime.Types {
         internal virtual bool IsAlwaysVisible {
             get {
                 return true;
+            }
+        }
+
+        /// <summary>
+        /// True if generating code for gets can result in more optimal accesses.
+        /// </summary>
+        internal virtual bool CanOptimizeGets {
+            get {
+                return false;
             }
         }
 
@@ -114,7 +117,7 @@ namespace IronPython.Runtime.Types {
                 return false;
             }
         }
-        
+
         internal virtual bool IsSetDescriptor(CodeContext context, PythonType owner) {
             return false;
         }

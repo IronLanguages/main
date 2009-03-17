@@ -121,6 +121,7 @@ namespace IronRuby.Tests {
                 
                 AttributeAccessors1,
                 AttributeAccessors2,
+                AttributeAccessors3,
                 
                 Scenario_RubyDeclarations1,
                 Scenario_RubyDeclarations1A,
@@ -479,6 +480,7 @@ namespace IronRuby.Tests {
                 ClassDuplication6,
                 Clone1,
                 Dup1,
+                Structs1,
                 MetaModules1,
                 MetaModulesDuplication1,
   

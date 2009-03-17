@@ -15,9 +15,8 @@
 
 using System;
 using System.Collections.Generic;
+using System.Dynamic;
 using System.Linq.Expressions;
-using System.Diagnostics;
-using Microsoft.Scripting.Utils;
 using System.Reflection;
 
 namespace Microsoft.Scripting.Actions.Calls {
@@ -48,6 +47,27 @@ namespace Microsoft.Scripting.Actions.Calls {
         /// If <c>null</c> is returned the argument is skipped (not passed to the callee).
         /// </summary>
         internal protected abstract Expression ToExpression(ParameterBinder parameterBinder, IList<Expression> parameters, bool[] hasBeenUsed);
+
+        internal protected virtual Func<object[], object> ToDelegate(ParameterBinder parameterBinder, IList<DynamicMetaObject> knownTypes, bool[] hasBeenUsed) {
+            return null;
+        }
+
+        internal virtual bool CanGenerateDelegate {
+            get {
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Function for accessing an argument from a given index.  When returned from
+        /// ToDelegate closed over the value will enable delegate invocations for argument
+        /// gets to be optimized away.
+        /// 
+        /// This function is referenced via reflection and if renamed needs CALLERS UPDATED.
+        /// </summary>
+        public static object ArgumentRead(object value, object[] args) {
+            return args[(int)value];
+        }
 
         /// <summary>
         /// Returns the type required for the argument or null if the ArgBuilder

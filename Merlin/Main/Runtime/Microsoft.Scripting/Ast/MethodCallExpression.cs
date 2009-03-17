@@ -71,10 +71,10 @@ namespace Microsoft.Scripting.Ast {
             ReadOnlyCollection<Expression> finalArgs;
             if (convertedArguments == arguments) {
                 // we didn't convert anything, just convert the users original
-                // array to a ROC.
+                // array to a readonly collection.
                 finalArgs = convertedArguments.ToReadOnly();
             } else {
-                // we already copied the array so just stick it in a ROC.
+                // we already copied the array so just stick it in a readonly collection.
                 finalArgs = new ReadOnlyCollection<Expression>(convertedArguments);
             }
 

@@ -74,37 +74,12 @@ if NOT exist "%LOCAL_HOME%\.mspecrc" (
 call doskey /macrofile=%MERLIN_ROOT%\Scripts\Bat\%Alias.txt
 cd /D %CURRENT%
 
-REM Disable strong name validation for the assemblies we build, if it isn't already
-sn -Vl | find "*,31bf3856ad364e35" > NUL 2>&1
-IF NOT "%ERRORLEVEL%"=="0" goto DisableSNValidation
-goto Continue
-
-:DisableSNValidation
-
-sn -Vr *,31bf3856ad364e35
-IF NOT "%ERRORLEVEL%"=="0" goto SnError
-
 :Continue
 
 REM Run user specific setup
 if EXIST %MERLIN_ROOT%\..\Users\%USERNAME%\Dev.bat call %MERLIN_ROOT%\..\Users\%USERNAME%\Dev.bat
 
 cls
-
-goto End
-
-:SnError
-
-cls
-color 0C
-echo. 
-echo Disabling strong name validation failed!
-echo.
-echo We use delay signing for assemblies we build and so you need to disable 
-echo strong name validation during development.
-echo This requires elevated permissions. 
-echo Please run this script ONCE using "Run as administrator" command.
-echo.
 
 :End
 

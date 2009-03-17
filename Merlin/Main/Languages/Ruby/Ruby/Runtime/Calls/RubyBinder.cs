@@ -47,6 +47,13 @@ namespace IronRuby.Runtime.Calls {
             _context = context;
         }
 
+        internal static readonly DynamicMetaObject NullMetaObject =
+            new DynamicMetaObject(
+                AstUtils.Constant(null, typeof(DynamicNull)),
+                BindingRestrictions.GetTypeRestriction(AstUtils.Constant(null, typeof(DynamicNull)), typeof(DynamicNull)),
+                null
+            );
+
         protected override string GetTypeName(Type t) {
             RubyModule module;
             return _context.TryGetModule(t, out module) ? module.Name : RubyUtils.GetQualifiedName(t);

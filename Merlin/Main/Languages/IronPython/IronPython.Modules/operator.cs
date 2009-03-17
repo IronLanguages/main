@@ -307,11 +307,11 @@ namespace IronPython.Modules {
             return concat(context, a, b);
         }
 
-        public static object contains(CodeContext/*!*/ context, object a, object b) {
-            return PythonContext.GetContext(context).Operation(PythonOperationKind.Contains, b, a);
+        public static bool contains(CodeContext/*!*/ context, object a, object b) {
+            return PythonContext.GetContext(context).Contains(b, a);
         }
 
-        public static object __contains__(CodeContext/*!*/ context, object a, object b) {
+        public static bool __contains__(CodeContext/*!*/ context, object a, object b) {
             return contains(context, a, b);
         }
 

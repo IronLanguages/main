@@ -166,8 +166,8 @@ namespace System.Runtime.CompilerServices {
             );
 
             return new Expression<T>(
-                "CallSite.Target",
                 Expression.Block(body),
+                "CallSite.Target",
                 true, // always compile the rules with tail call optimization
                 new TrueReadOnlyCollection<ParameterExpression>(@params)
             );

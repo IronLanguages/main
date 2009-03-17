@@ -1023,21 +1023,17 @@ namespace IronRuby.Builtins {
                     ));
                 }
             } else {
-                // TODO:
-                throw new NotSupportedException();
-                //var actualArgs = RubyMethodGroupBase.MakeActualArgs(metaBuilder, args, SelfCallConvention.NoSelf, false, false);
-                //if (actualArgs.Length == 1) {
-                //    var convertBinder = args.RubyContext.CreateConvertBinder(type, true);
-                //    var converted = convertBinder.Bind(actualArgs[0], DynamicMetaObject.EmptyMetaObjects);
+                var actualArgs = RubyMethodGroupBase.NormalizeArguments(metaBuilder, args, SelfCallConvention.NoSelf, false, false);
+                if (actualArgs.Length == 1) {
+                    var convertBinder = args.RubyContext.CreateConvertBinder(type, true);
+                    var converted = convertBinder.Bind(actualArgs[0], DynamicMetaObject.EmptyMetaObjects);
 
-                //    // TODO: Should MakeActualArgs return a struct that provides us an information whether to treat particular argument's restrictions as conditions?
-                //    // Items of a splatted array are stored in locals. Therefore we cannot apply restrictions on them.
-                //    metaBuilder.SetMetaResult(converted, args.SimpleArgumentCount == 0 && args.Signature.HasSplattedArgument);
-                //} else {
-                //    metaBuilder.SetError(Methods.MakeWrongNumberOfArgumentsError.OpCall(
-                //        AstUtils.Constant(args.ExplicitArgumentCount - 1), AstUtils.Constant(0)
-                //    ));
-                //}
+                    // TODO: Should NormalizeArguments return a struct that provides us an information whether to treat particular argument's restrictions as conditions?
+                    // The splatted array is stored in a local. Therefore we cannot apply restrictions on it.
+                    metaBuilder.SetMetaResult(converted, args.SimpleArgumentCount == 0 && args.Signature.HasSplattedArgument);
+                } else {
+                    metaBuilder.SetWrongNumberOfArgumentsError(actualArgs.Length, 0);
+                }
             }
         }
 

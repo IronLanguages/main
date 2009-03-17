@@ -462,10 +462,11 @@ namespace IronPython.Runtime {
         private static bool FindAndLoadModuleFromImporter(CodeContext/*!*/ context, object importer, string fullName, List path, out object ret) {
             object find_module = PythonOps.GetBoundAttr(context, importer, SymbolTable.StringToId("find_module"));
 
-            object loader = PythonOps.CallWithContext(context, find_module, fullName, path);
+            PythonContext pycontext = PythonContext.GetContext(context);
+            object loader = pycontext.Call(context, find_module, fullName, path);
             if (loader != null) {
                 object findMod = PythonOps.GetBoundAttr(context, loader, SymbolTable.StringToId("load_module"));
-                ret = PythonOps.CallWithContext(context, findMod, fullName);
+                ret = pycontext.Call(context, findMod, fullName);
                 return ret != null;
             }
 

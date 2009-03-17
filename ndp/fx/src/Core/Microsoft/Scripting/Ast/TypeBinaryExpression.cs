@@ -73,7 +73,7 @@ namespace System.Linq.Expressions {
             // For value types (including Void, but not nullables), we can
             // determine the result now
             if (cType.IsValueType && !cType.IsNullableType()) {
-                return Expression.Block(Expression, Expression.Constant(cType == _typeOperand));
+                return Expression.Block(Expression, Expression.Constant(cType == _typeOperand.GetNonNullableType()));
             }
 
             // Can check the value right now for constants.

@@ -28,6 +28,9 @@ using Microsoft.Scripting.Utils;
 
 using Ast = System.Linq.Expressions.Expression;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
+using Microsoft.Scripting;
+using System.Reflection;
+using System.Diagnostics;
 
 namespace IronPython.Runtime.Binding {
     
@@ -53,6 +56,9 @@ namespace IronPython.Runtime.Binding {
             if (self.NeedsDeferral()) {
                 return Defer(self);
             }
+
+            PerfTrack.NoteEvent(PerfTrack.Categories.Binding, "Convert " + Type.FullName + " " + self.LimitType);
+            PerfTrack.NoteEvent(PerfTrack.Categories.BindingTarget, "Conversion");
 
             Type type = Type;
 
@@ -124,6 +130,98 @@ namespace IronPython.Runtime.Binding {
             }
 
             return res ?? Binder.Binder.ConvertTo(Type, ResultKind, self);
+        }
+
+        public override T BindDelegate<T>(CallSite<T> site, object[] args) {
+            //Debug.Assert(typeof(T).GetMethod("Invoke").ReturnType == Type);
+
+            object target = args[0];
+            T res = null;
+            if (typeof(T) == typeof(Func<CallSite, object, string>) && target is string) {
+                res = (T)(object)new Func<CallSite, object, string>(StringConversion);
+            } else if (typeof(T) == typeof(Func<CallSite, object, int>) && target is int) {
+                res = (T)(object)new Func<CallSite, object, int>(IntConversion);
+            } else if (typeof(T) == typeof(Func<CallSite, object, bool>) && target is bool) {
+                res = (T)(object)new Func<CallSite, object, bool>(BoolConversion);
+            } else if (target != null) {
+                if (target.GetType() == Type || Type.IsAssignableFrom(target.GetType())) {
+                    if (typeof(T) == typeof(Func<CallSite, object, object>)) {
+                        // called via a helper call site in the runtime (e.g. Converter.Convert)
+                        res = (T)(object)new Func<CallSite, object, object>(new IdentityConversion(target.GetType()).Convert);
+                    } else {
+                        // called via an embedded call site
+                        Debug.Assert(typeof(T).GetMethod("Invoke").ReturnType == Type);
+                        if (typeof(T).GetMethod("Invoke").GetParameters()[1].ParameterType == typeof(object)) {
+                            object identityConversion = Activator.CreateInstance(typeof(IdentityConversion<>).MakeGenericType(Type), target.GetType());
+                            res = (T)(object)Delegate.CreateDelegate(typeof(T), identityConversion, identityConversion.GetType().GetMethod("Convert"));
+                        }
+                    }
+                }
+            }
+            
+            if (res != null) {
+                CacheTarget(res);
+                return res;
+            }
+
+            PerfTrack.NoteEvent(PerfTrack.Categories.Binding, "Convert " + Type.FullName + " " + CompilerHelpers.GetType(args[0]) + " " + typeof(T));
+            return base.BindDelegate(site, args);
+        }
+
+        public string StringConversion(CallSite site, object value) {
+            string str = value as string;
+            if (str != null) {
+                return str;
+            }
+
+            return ((CallSite<Func<CallSite, object, string>>)site).Update(site, value);
+        }
+
+        public int IntConversion(CallSite site, object value) {
+            if (value is int) {
+                return (int)value;
+            }
+
+            return ((CallSite<Func<CallSite, object, int>>)site).Update(site, value);
+        }
+
+        public bool BoolConversion(CallSite site, object value) {
+            if (value is bool) {
+                return (bool)value;
+            }
+
+            return ((CallSite<Func<CallSite, object, bool>>)site).Update(site, value);
+        }
+        
+        class IdentityConversion {
+            private readonly Type _type;
+
+            public IdentityConversion(Type type) {
+                _type = type;
+            }
+            public object Convert(CallSite site, object value) {
+                if (value != null && value.GetType() == _type) {
+                    return value;
+                }
+
+                return ((CallSite<Func<CallSite, object, object>>)site).Update(site, value);
+            }
+        }
+
+        class IdentityConversion<T> {
+            private readonly Type _type;
+
+            public IdentityConversion(Type type) {
+                _type = type;
+            }
+
+            public T Convert(CallSite site, object value) {
+                if (value != null && value.GetType() == _type) {
+                    return (T)value;
+                }
+
+                return ((CallSite<Func<CallSite, object, T>>)site).Update(site, value);
+            }
         }
 
         internal static bool IsIndexless(DynamicMetaObject/*!*/ arg) {

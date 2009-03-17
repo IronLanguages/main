@@ -160,6 +160,8 @@ namespace Microsoft.Scripting.Actions.Calls {
         /// failure that prevents the method from being called.  The BindingTarget can
         /// also be called reflectively at runtime, create an Expression for embedding in
         /// a RuleBuilder, or be used for performing an abstract call.
+        /// 
+        /// OBSOLETE
         /// </summary>
         public BindingTarget MakeBindingTarget(CallTypes callType, Type[] types) {
             ContractUtils.RequiresNotNull(types, "types");
@@ -206,16 +208,16 @@ namespace Microsoft.Scripting.Actions.Calls {
         }
 
         /// <summary>
-        /// Creates a BindingTarget given the specified CallType and parameter types.
+        /// Creates a BindingTarget given the specified CallType and argument meta-objects.
         /// 
         /// The BindingTarget can then be tested for the success or particular type of
-        /// failure that prevents the method from being called.  The BindingTarget can
-        /// also be called reflectively at runtime, create an Expression for embedding in
-        /// a RuleBuilder, or be used for performing an abstract call.
+        /// failure that prevents the method from being called. If successfully bound the BindingTarget
+        /// contains a list of argument meta-objects with additional restrictions that ensure the selection
+        /// of the particular overload.
         /// </summary>
         public BindingTarget MakeBindingTarget(CallTypes callType, DynamicMetaObject[] metaObjects) {
-            ContractUtils.RequiresNotNull(metaObjects, "types");
-            ContractUtils.RequiresNotNullItems(metaObjects, "types");
+            ContractUtils.RequiresNotNull(metaObjects, "metaObjects");
+            ContractUtils.RequiresNotNullItems(metaObjects, "metaObjects");
 
             TargetSet ts = GetTargetSet(metaObjects.Length);
             if (ts != null && !ts.IsParamsDictionaryOnly()) {
@@ -692,6 +694,7 @@ namespace Microsoft.Scripting.Actions.Calls {
                 return true;
             }
 
+            // OBSOLETE
             internal BindingTarget MakeBindingTarget(CallTypes callType, Type[] types, string[] names, NarrowingLevel minLevel, NarrowingLevel maxLevel) {
                 List<ConversionResult> lastFail = new List<ConversionResult>();
                 List<CallFailure> failures = null;
@@ -836,6 +839,7 @@ namespace Microsoft.Scripting.Actions.Calls {
                 return false;
             }
 
+            // OBSOLETE
             private Type[] GetTypesForTest(Type[] types, IList<MethodCandidate> candidates) {
                 // if we have a single target we need no tests.
                 if (_targets.Count == 1) return null;
@@ -850,24 +854,28 @@ namespace Microsoft.Scripting.Actions.Calls {
                 return tests;
             }
 
-            private DynamicMetaObject[] GetRestrictedMetaObjects(MethodCandidate target, DynamicMetaObject[] objects, IList<MethodCandidate> candidates) {
+            private RestrictionInfo GetRestrictedMetaObjects(MethodCandidate target, DynamicMetaObject[] objects, IList<MethodCandidate> candidates) {
                 IList<ParameterWrapper> parameters = target.Parameters;
 
                 Debug.Assert(parameters.Count == objects.Length);
 
                 DynamicMetaObject[] resObjects = new DynamicMetaObject[objects.Length];
+                Type[] types = new Type[objects.Length];
+
                 for (int i = 0; i < objects.Length; i++) {
                     if (_targets.Count > 0 && AreArgumentTypesOverloaded(i, objects.Length, candidates)) {                                                
                         resObjects[i] = RestrictOne(objects[i], parameters[i]);
+                        types[i] = objects[i].GetLimitType();
                     } else if (parameters[i].Type.IsAssignableFrom(objects[i].Expression.Type)) {
                         // we have a strong enough type already
                         resObjects[i] = objects[i];
                     } else {
                         resObjects[i] = RestrictOne(objects[i], parameters[i]);
+                        types[i] = objects[i].GetLimitType();
                     }
                 }
 
-                return resObjects;
+                return new RestrictionInfo(resObjects, types);
             }
 
             private DynamicMetaObject RestrictOne(DynamicMetaObject obj, ParameterWrapper forParam) {
@@ -977,6 +985,7 @@ namespace Microsoft.Scripting.Actions.Calls {
                 return new MethodCandidate(target, level);
             }
 
+            // OBSOLETE
             private BindingTarget MakeSuccessfulBindingTarget(CallTypes callType, Type[] types, List<MethodCandidate> result) {
                 MethodCandidate resTarget = result[0];
                 return new BindingTarget(_binder.Name, callType == CallTypes.None ? types.Length : types.Length - 1, resTarget.Target, resTarget.NarrowingLevel, GetTypesForTest(types, _targets));

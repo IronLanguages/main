@@ -433,7 +433,7 @@ namespace IronPython.Runtime {
             XRange xr = seq as XRange;
             if (xr != null) {
                 int n = xr.__len__();
-                object ret = PythonContext.GetContext(context).Call(cls);
+                object ret = PythonContext.GetContext(context).CallSplat(cls);
                 if (ret.GetType() == typeof(PythonDictionary)) {
                     PythonDictionary dr = ret as PythonDictionary;
                     for (int i = 0; i < n; i++) {

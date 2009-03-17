@@ -748,8 +748,20 @@ namespace System.Linq.Expressions {
                 opFalse == null || opFalse.ReturnType != typeof(bool)) {
                 throw Error.LogicalOperatorMustHaveBooleanOperators(nodeType, method.Name);
             }
+            VerifyOpTrueFalse(nodeType, left, opFalse);
+            VerifyOpTrueFalse(nodeType, left, opTrue);
         }
 
+        private static void VerifyOpTrueFalse(ExpressionType nodeType, Type left, MethodInfo opTrue) {
+            ParameterInfo[] pmsOpTrue = opTrue.GetParametersCached();
+            if (pmsOpTrue.Length != 1)
+                throw Error.IncorrectNumberOfMethodCallArguments(opTrue);
+
+            if (!ParameterIsAssignable(pmsOpTrue[0], left)) {
+                if (!(TypeUtils.IsNullableType(left) && ParameterIsAssignable(pmsOpTrue[0], TypeUtils.GetNonNullableType(left))))
+                    throw Error.OperandTypesDoNotMatchParameters(nodeType, opTrue.Name);
+            }
+        }
 
         private static bool IsValidLiftedConditionalLogicalOperator(Type left, Type right, ParameterInfo[] pms) {
             return left == right && TypeUtils.IsNullableType(right) && pms[1].ParameterType == TypeUtils.GetNonNullableType(right);

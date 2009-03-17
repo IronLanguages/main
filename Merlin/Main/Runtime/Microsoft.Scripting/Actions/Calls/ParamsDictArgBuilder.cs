@@ -75,12 +75,43 @@ namespace Microsoft.Scripting.Actions.Calls {
             return res;
         }
 
+        private int[] GetParameters(bool[] hasBeenUsed) {
+            var res = new List<int>(_nameIndexes.Length);
+            for (int i = 0; i < _nameIndexes.Length; i++) {
+                int parameterIndex = _nameIndexes[i] + _argIndex;
+                if (!hasBeenUsed[parameterIndex]) {
+                    res.Add(parameterIndex);
+                    hasBeenUsed[parameterIndex] = true;
+                }
+            }
+            return res.ToArray();
+        }
+
         private Expression[] ConstantNames() {
             Expression[] res = new Expression[_names.Length];
             for (int i = 0; i < _names.Length; i++) {
                 res[i] = AstUtils.Constant(_names[i]);
             }
             return res;
+        }
+
+        internal override bool CanGenerateDelegate {
+            get {
+                return true;
+            }
+        }
+
+        protected internal override Func<object[], object> ToDelegate(ParameterBinder parameterBinder, IList<DynamicMetaObject> knownTypes, bool[] hasBeenUsed) {
+            string[] names = _names;
+            int[] indexes = GetParameters(hasBeenUsed);
+
+            return (args) => {
+                object[] values = new object[indexes.Length];
+                for (int i = 0; i < indexes.Length; i++) {
+                    values[i] = args[indexes[i] + 1];
+                }
+                return BinderOps.MakeSymbolDictionary(names, values);
+            };
         }
     }
 }

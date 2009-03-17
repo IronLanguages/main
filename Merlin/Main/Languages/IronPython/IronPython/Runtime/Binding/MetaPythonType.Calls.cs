@@ -56,6 +56,8 @@ namespace IronPython.Runtime.Binding {
         #region Invoke Implementation
 
         private DynamicMetaObject/*!*/ InvokeWorker(DynamicMetaObjectBinder/*!*/ call, DynamicMetaObject/*!*/[]/*!*/ args, Expression/*!*/ codeContext) {
+            PerfTrack.NoteEvent(PerfTrack.Categories.Binding, "Type Invoke " + Value.UnderlyingSystemType.FullName + args.Length);
+            PerfTrack.NoteEvent(PerfTrack.Categories.BindingTarget, "Type Invoke");
             if (this.NeedsDeferral()) {
                 return call.Defer(ArrayUtils.Insert(this, args));
             }

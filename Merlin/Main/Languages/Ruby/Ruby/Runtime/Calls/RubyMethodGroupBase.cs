@@ -226,13 +226,23 @@ namespace IronRuby.Runtime.Calls {
 
             // Allocates a variable holding BlockParam. At runtime the BlockParam is created with a new RFC instance that
             // identifies the library method frame as a proc-converter target of a method unwinder triggered by break from a block.
-            //
-            // NOTE: We check for null block here -> test for that fact is added in MakeActualArgs
-            if (args.Signature.HasBlock && args.GetBlock() != null && calleeHasBlockParam) {
-                if (metaBuilder.BfcVariable == null) {
-                    metaBuilder.BfcVariable = metaBuilder.GetTemporary(typeof(BlockParam), "#bfc");
+            if (args.Signature.HasBlock) {
+                var metaBlock = args.GetMetaBlock();
+                if (metaBlock.Value != null && calleeHasBlockParam) {
+                    if (metaBuilder.BfcVariable == null) {
+                        metaBuilder.BfcVariable = metaBuilder.GetTemporary(typeof(BlockParam), "#bfc");
+                    }
+                    metaBuilder.ControlFlowBuilder = RuleControlFlowBuilder;
                 }
-                metaBuilder.ControlFlowBuilder = RuleControlFlowBuilder;
+
+                // Block test - we need to test for a block regardless of whether it is actually passed to the method or not
+                // since the information that the block is not null is used for overload resolution.
+                if (metaBlock.Value == null) {
+                    metaBuilder.AddRestriction(Ast.Equal(metaBlock.Expression, AstUtils.Constant(null)));
+                } else {
+                    // don't need to test the exact type of the Proc since the code is subclass agnostic:
+                    metaBuilder.AddRestriction(Ast.NotEqual(metaBlock.Expression, AstUtils.Constant(null)));
+                }
             }
 
             var actualArgs = MakeActualArgs(metaBuilder, args, callConvention, calleeHasBlockParam, true);
@@ -302,10 +312,86 @@ namespace IronRuby.Runtime.Calls {
             return false;
         }
 
-        internal static Expression[]/*!*/ MakeActualArgs(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args,
+        // Normalizes arguments: inserts self, expands splats, and inserts rhs arg. 
+        // Adds any restrictions/conditions applied to the arguments to the given meta-builder.
+        internal static DynamicMetaObject[]/*!*/ NormalizeArguments(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args,
             SelfCallConvention callConvention, bool calleeHasBlockParam, bool injectMissingBlockParam) {
 
-            var actualArgs = new List<Expression>(args.ExplicitArgumentCount);
+            var result = new List<DynamicMetaObject>();
+
+            // self (instance):
+            if (callConvention == SelfCallConvention.SelfIsInstance) {
+                result.Add(args.MetaTarget);
+            }
+
+            // block:
+            if (calleeHasBlockParam) {
+                if (args.Signature.HasBlock) {
+                    if (args.GetMetaBlock() == null) {
+                        // the user explicitly passed nil as a block arg:
+                        result.Add(RubyBinder.NullMetaObject);
+                    } else {
+                        // pass BlockParam:
+                        Debug.Assert(metaBuilder.BfcVariable != null);
+                        result.Add(new DynamicMetaObject(metaBuilder.BfcVariable, BindingRestrictions.Empty));
+                    }
+                } else {
+                    // no block passed into a method with a BlockParam:
+                    result.Add(RubyBinder.NullMetaObject);
+                }
+            } else if (injectMissingBlockParam) {
+                // no block passed into a method w/o a BlockParam (we still need to fill the missing block argument):
+                result.Add(RubyBinder.NullMetaObject);
+            }
+
+            // self (parameter):
+            if (callConvention == SelfCallConvention.SelfIsParameter) {
+                result.Add(args.MetaTarget);
+            }
+
+            // simple arguments:
+            for (int i = 0; i < args.SimpleArgumentCount; i++) {
+                result.Add(args.GetSimpleMetaArgument(i));
+            }
+
+            // splat argument:
+            int listLength;
+            ParameterExpression listVariable;
+            if (args.Signature.HasSplattedArgument) {
+                var splatted = args.GetSplattedMetaArgument();
+
+                if (metaBuilder.AddSplattedArgumentTest(splatted.Value, splatted.Expression, out listLength, out listVariable)) {
+
+                    // AddTestForListArg only returns 'true' if the argument is a List<object>
+                    var list = (List<object>)splatted.Value;
+
+                    // get arguments, add tests
+                    for (int j = 0; j < listLength; j++) {
+                        result.Add(DynamicMetaObject.Create(
+                            list[j], 
+                            Ast.Call(listVariable, typeof(List<object>).GetMethod("get_Item"), AstUtils.Constant(j))
+                        ));
+                    }
+
+                } else {
+                    // argument is not an array => add the argument itself:
+                    result.Add(splatted);
+                }
+            }
+
+            // rhs argument:
+            if (args.Signature.HasRhsArgument) {
+                result.Add(args.GetRhsMetaArgument());
+            }
+
+            return result.ToArray();
+        }
+
+        // TODO: OBSOLETE
+        private static Expression[]/*!*/ MakeActualArgs(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args,
+            SelfCallConvention callConvention, bool calleeHasBlockParam, bool injectMissingBlockParam) {
+
+            var actualArgs = new List<Expression>();
 
             // self (instance):
             if (callConvention == SelfCallConvention.SelfIsInstance) {
@@ -314,27 +400,10 @@ namespace IronRuby.Runtime.Calls {
                 AddArgument(actualArgs, args.Target, args.TargetExpression);
             }
 
-            Proc block = null;
-            Expression blockExpression = null;
-
-            // block test - we need to test for a block regardless of whether it is actually passed to the method or not
-            // since the information that the block is not null is used for overload resolution.
-            if (args.Signature.HasBlock) {
-                block = args.GetBlock();
-                blockExpression = args.GetBlockExpression();
-
-                if (block == null) {
-                    metaBuilder.AddRestriction(Ast.Equal(blockExpression, AstUtils.Constant(null)));
-                } else {
-                    // don't need to test the exact type of the Proc since the code is subclass agnostic:
-                    metaBuilder.AddRestriction(Ast.NotEqual(blockExpression, AstUtils.Constant(null)));
-                }
-            }
-
             // block:
             if (calleeHasBlockParam) {
                 if (args.Signature.HasBlock) {
-                    if (block == null) {
+                    if (args.GetBlock() == null) {
                         // the user explicitly passed nil as a block arg:
                         actualArgs.Add(AstUtils.Constant(null));
                     } else {
@@ -362,6 +431,7 @@ namespace IronRuby.Runtime.Calls {
                 var value = args.GetSimpleArgument(i);
                 var expr = args.GetSimpleArgumentExpression(i);
 
+                // TODO: overload-resolution restrictions
                 metaBuilder.AddObjectTypeRestriction(value, expr);
                 AddArgument(actualArgs, value, expr);
             }
@@ -383,6 +453,7 @@ namespace IronRuby.Runtime.Calls {
                         var value = list[j];
                         var expr = Ast.Call(listVariable, typeof(List<object>).GetMethod("get_Item"), AstUtils.Constant(j));
 
+                        // TODO: overload-resolution restrictions
                         metaBuilder.AddObjectTypeCondition(value, expr);
                         AddArgument(actualArgs, value, expr);
                     }
@@ -398,6 +469,7 @@ namespace IronRuby.Runtime.Calls {
                 var value = args.GetRhsArgument();
                 var expr = args.GetRhsArgumentExpression();
 
+                // TODO: overload-resolution restrictions
                 metaBuilder.AddObjectTypeRestriction(value, expr);
                 AddArgument(actualArgs, value, expr);
             }
@@ -405,6 +477,7 @@ namespace IronRuby.Runtime.Calls {
             return actualArgs.ToArray();
         }
 
+        // TODO: OBSOLETE
         private static void AddArgument(List<Expression>/*!*/ actualArgs, object arg, Expression/*!*/ expr) {
             if (arg == null) {
                 actualArgs.Add(AstUtils.Constant(null));
@@ -418,6 +491,7 @@ namespace IronRuby.Runtime.Calls {
             }
         }
 
+        // TODO: OBSOLETE
         private static Type[]/*!*/ GetSignatureToMatch(CallArguments/*!*/ args, SelfCallConvention callConvention) {
             var result = new List<Type>(args.ExplicitArgumentCount);
 

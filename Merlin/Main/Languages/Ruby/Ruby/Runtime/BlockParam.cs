@@ -27,6 +27,7 @@ using Ast = System.Linq.Expressions.Expression;
 using AstFactory = IronRuby.Compiler.Ast.AstFactory;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 using IronRuby.Compiler.Generation;
+using System.Dynamic;
 
 namespace IronRuby.Runtime {
     
@@ -42,6 +43,13 @@ namespace IronRuby.Runtime {
     }
 
     internal sealed class MissingBlockParam {
+        internal static readonly DynamicMetaObject MetaObject;
+
+        static MissingBlockParam() {
+            var value = new MissingBlockParam();
+            var constant = Ast.Constant(value);
+            MetaObject = new DynamicMetaObject(constant, BindingRestrictions.GetTypeRestriction(constant, typeof(MissingBlockParam)), value);
+        }
     }
 
     public sealed partial class BlockParam {
