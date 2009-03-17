@@ -178,6 +178,10 @@ namespace Microsoft.Scripting.Actions {
             );
         }
 
+        public virtual Func<object[], object> ConvertObject(int index, DynamicMetaObject knownType, Type toType, ConversionResultKind conversionResultKind) {
+            throw new NotSupportedException();
+        }
+
         /// <summary>
         /// Gets the members that are visible from the provided type of the specified name.
         /// 
@@ -572,6 +576,7 @@ namespace Microsoft.Scripting.Actions {
         }
 
         #endregion
+
     }
 }
 

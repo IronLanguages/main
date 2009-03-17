@@ -16,11 +16,11 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Dynamic;
 using System.Linq.Expressions;
 using System.Reflection;
-using Microsoft.Scripting.Actions;
-using Microsoft.Scripting.Utils;
 using Microsoft.Scripting.Generation;
+using Microsoft.Scripting.Utils;
 
 namespace Microsoft.Scripting.Actions.Calls {
     /// <summary>
@@ -91,6 +91,24 @@ namespace Microsoft.Scripting.Actions.Calls {
             Debug.Assert(parameters[_index] != null);
             hasBeenUsed[_index] = true;
             return parameterBinder.ConvertExpression(parameters[_index], ParameterInfo, _parameterType);
+        }
+
+        protected internal override Func<object[], object> ToDelegate(ParameterBinder parameterBinder, IList<DynamicMetaObject> knownTypes, bool[] hasBeenUsed) {
+            Func<object[], object> conv = parameterBinder.ConvertObject(_index + 1, knownTypes[_index], ParameterInfo, _parameterType);
+            if (conv != null) {
+                return conv;
+            }
+
+            return (Func<object[], object>)Delegate.CreateDelegate(
+                typeof(Func<object[], object>), 
+                _index + 1, 
+                typeof(ArgBuilder).GetMethod("ArgumentRead"));
+        }
+
+        internal override bool CanGenerateDelegate {
+            get {
+                return true;
+            }
         }
 
         public int Index {

@@ -17,6 +17,7 @@ using System;
 using System.Linq.Expressions;
 using System.Dynamic;
 
+using Microsoft.Scripting;
 using Microsoft.Scripting.Actions;
 using Microsoft.Scripting.Actions.Calls;
 using Microsoft.Scripting.Runtime;
@@ -60,6 +61,9 @@ namespace IronPython.Runtime.Binding {
         #region Invoke Implementation
 
         private DynamicMetaObject/*!*/ InvokeWorker(DynamicMetaObjectBinder/*!*/ call, Expression/*!*/ codeContext, DynamicMetaObject/*!*/[] args) {
+            PerfTrack.NoteEvent(PerfTrack.Categories.Binding, "BuiltinMethodDesc Invoke " + Value.DeclaringType + "." + Value.__name__ + " w/ " + args.Length + " args");
+            PerfTrack.NoteEvent(PerfTrack.Categories.BindingTarget, "BuiltinMethodDesc Invoke");
+
             CallSignature signature = BindingHelpers.GetCallSignature(call);
             BindingRestrictions selfRestrict = BindingRestrictions.GetInstanceRestriction(Expression, Value).Merge(Restrictions);
 
@@ -80,7 +84,6 @@ namespace IronPython.Runtime.Binding {
                 this,
                 args,
                 false,  // no self
-                true,
                 selfRestrict,
                 (newArgs) => {
                     BindingTarget target;

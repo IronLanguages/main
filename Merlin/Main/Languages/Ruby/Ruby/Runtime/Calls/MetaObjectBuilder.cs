@@ -99,20 +99,28 @@ namespace IronRuby.Runtime.Calls {
             SetError(Methods.MakeWrongNumberOfArgumentsError.OpCall(AstUtils.Constant(actual), AstUtils.Constant(expected)));
         }
 
+        public void SetMetaResult(DynamicMetaObject/*!*/ metaResult, bool treatRestrictionsAsConditions) {
+            _result = metaResult.Expression;
+            AddRestriction(metaResult.Restrictions.ToExpression(), treatRestrictionsAsConditions);
+        }
+
         public void AddCondition(Expression/*!*/ condition) {
             Assert.NotNull(condition);
             _condition = (_condition != null) ? Ast.AndAlso(_condition, condition) : condition;
         }
 
         public void AddRestriction(Expression/*!*/ restriction) {
+            AddRestriction(restriction, false);
+        }
+
+        public void AddRestriction(Expression/*!*/ restriction, bool treatRestrictionsAsConditions) {
             Assert.NotNull(restriction);
-            if (_treatRestrictionsAsConditions) {
+            if (treatRestrictionsAsConditions || _treatRestrictionsAsConditions) {
                 AddCondition(restriction);
             } else {
                 _restriction = (_restriction != null) ? Ast.AndAlso(_restriction, restriction) : restriction;
             }
         }
-
         public static Expression/*!*/ GetObjectTypeTestExpression(object value, Expression/*!*/ expression) {
             if (value == null) {
                 return Ast.Equal(expression, AstUtils.Constant(null));

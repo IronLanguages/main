@@ -152,6 +152,37 @@ p P.dup.new { 'foo' }[]
             }, output);
         }
 
+        public void Structs1() {
+            AssertOutput(() => CompilerTest(@"
+S = Struct.new(:f,:g)
+class S
+  alias set_f f=
+end
+
+s = S[1,2]
+s.set_f rescue p $!
+s.set_f(3)
+puts s.f
+s.set_f(4,5) rescue p $!
+s.set_f(*[]) rescue p $!
+s.set_f(*[6])
+puts s.f
+s.set_f(*[6,7]) rescue p $!
+puts s.f(*[])
+puts s.f(*[1]) rescue p $!
+"
+                ), @"
+#<ArgumentError: wrong number of arguments (0 for 1)>
+3
+#<ArgumentError: wrong number of arguments (2 for 1)>
+#<ArgumentError: wrong number of arguments (0 for 1)>
+6
+#<ArgumentError: wrong number of arguments (2 for 1)>
+6
+#<ArgumentError: wrong number of arguments (1 for 0)>
+");
+        }
+
         public void MetaModules1() {
             AssertOutput(delegate() {
                 CompilerTest(@"

@@ -429,7 +429,7 @@ namespace IronPython.Modules {
 
             private void Save(CodeContext/*!*/ context, object obj) {
                 if (_persist_id != null) {
-                    string res = Converter.ConvertToString(PythonContext.GetContext(context).Call(_persist_id, obj));
+                    string res = Converter.ConvertToString(PythonContext.GetContext(context).CallSplat(_persist_id, obj));
                     if (res != null) {
                         SavePersId(context, res);
                         return;
@@ -1531,7 +1531,7 @@ namespace IronPython.Modules {
             private void LoadBinPersid(CodeContext/*!*/ context) {
                 if (_pers_loader == null) throw CannotUnpickle(context, "cannot unpickle binary persistent ID w/o persistent_load");
 
-                _stack.append(PythonContext.GetContext(context).Call(_pers_loader, _stack.pop()));
+                _stack.append(PythonContext.GetContext(context).CallSplat(_pers_loader, _stack.pop()));
             }
 
             private void LoadBinPut(CodeContext/*!*/ context) {
@@ -1761,7 +1761,7 @@ namespace IronPython.Modules {
                 if (_pers_loader == null) {
                     throw CannotUnpickle(context, "A load persistent ID instruction is present but no persistent_load function is available");
                 }
-                _stack.append(PythonContext.GetContext(context).Call(_pers_loader, ReadLineNoNewline(context)));
+                _stack.append(PythonContext.GetContext(context).CallSplat(_pers_loader, ReadLineNoNewline(context)));
             }
 
             private void LoadPop(CodeContext/*!*/ context) {

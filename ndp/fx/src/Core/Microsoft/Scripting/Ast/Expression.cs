@@ -28,9 +28,10 @@ namespace System.Linq.Expressions {
     /// </summary>
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1506:AvoidExcessiveClassCoupling")]
     public abstract partial class Expression {
+        private delegate LambdaExpression LambdaFactory(Expression body, string name, bool tailCall, ReadOnlyCollection<ParameterExpression> parameters);
+
         private static readonly CacheDict<Type, MethodInfo> _LambdaDelegateCache = new CacheDict<Type, MethodInfo>(40);
-        private static CacheDict<Type, Func<Expression, string, IEnumerable<ParameterExpression>, LambdaExpression>> _exprCtors;
-        private static MethodInfo _lambdaCtorMethod;
+        private static CacheDict<Type, LambdaFactory> _LambdaFactories;
 
         // protected ctors are part of API surface area
 
@@ -242,9 +243,9 @@ namespace System.Linq.Expressions {
         /// Helper used for ensuring we only return 1 instance of a ReadOnlyCollection of T.
         /// 
         /// This is called from various methods where we internally hold onto an IList of T
-        /// or a ROC of T.  We check to see if we've already returned a ROC of T and if so
-        /// simply return the other one.  Otherwise we do a thread-safe replacement of hte
-        /// list w/ a ROC which wraps it.
+        /// or a readonly collection of T.  We check to see if we've already returned a 
+        /// readonly collection of T and if so simply return the other one.  Otherwise we do 
+        /// a thread-safe replacement of the list w/ a readonly collection which wraps it.
         /// 
         /// Ultimately this saves us from having to allocate a ReadOnlyCollection for our
         /// data types because the compiler is capable of going directly to the IList of T.
@@ -258,7 +259,7 @@ namespace System.Linq.Expressions {
                 return res;
             }
 
-            // otherwise make sure only ROC every gets exposed
+            // otherwise make sure only readonly collection every gets exposed
             Interlocked.CompareExchange<IList<T>>(
                 ref collection,
                 value.ToReadOnly(),
@@ -281,12 +282,12 @@ namespace System.Linq.Expressions {
         /// 
         /// This enables users to get the ReadOnlyCollection w/o it consuming more memory than if 
         /// it was just an array.  Meanwhile The DLR internally avoids accessing  which would force 
-        /// the ROC to be created resulting in a typical memory savings.
+        /// the readonly collection to be created resulting in a typical memory savings.
         /// </summary>
         internal static ReadOnlyCollection<Expression> ReturnReadOnly(IArgumentProvider provider, ref object collection) {
             Expression tObj = collection as Expression;
             if (tObj != null) {
-                // otherwise make sure only one ROC ever gets exposed
+                // otherwise make sure only one readonly collection ever gets exposed
                 Interlocked.CompareExchange(
                     ref collection,
                     new ReadOnlyCollection<Expression>(new ListArgumentProvider(provider, tObj)),
@@ -294,7 +295,7 @@ namespace System.Linq.Expressions {
                 );
             }
 
-            // and return what is not guaranteed to be a ROC
+            // and return what is not guaranteed to be a readonly collection
             return (ReadOnlyCollection<Expression>)collection;
         }
 

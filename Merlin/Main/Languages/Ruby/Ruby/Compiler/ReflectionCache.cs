@@ -51,11 +51,13 @@ namespace IronRuby.Compiler {
     internal static partial class Methods {
         private static ConstructorInfo _RubyCallSignatureCtor;
         private static MethodInfo _Stopwatch_GetTimestamp, _IEnumerable_Of_Object_GetEnumerator, _IEnumerator_MoveNext,
-            _IEnumerator_get_Current;
+            _IEnumerator_get_Current, _RubyStruct_GetValue, _RubyStruct_SetValue;
 
         public static ConstructorInfo RubyCallSignatureCtor { get { return _RubyCallSignatureCtor ?? (_RubyCallSignatureCtor = GetConstructor(typeof(RubyCallSignature), typeof(uint))); } }
 
         public static MethodInfo Stopwatch_GetTimestamp { get { return _Stopwatch_GetTimestamp ?? (_Stopwatch_GetTimestamp = GetMethod(typeof(Stopwatch), "GetTimestamp")); } }
+        public static MethodInfo RubyStruct_GetValue { get { return _RubyStruct_GetValue ?? (_RubyStruct_GetValue = GetMethod(typeof(RubyStruct), "GetValue", BindingFlags.Instance, typeof(int))); } }
+        public static MethodInfo RubyStruct_SetValue { get { return _RubyStruct_SetValue ?? (_RubyStruct_SetValue = GetMethod(typeof(RubyStruct), "SetValue", BindingFlags.Instance, typeof(int), typeof(object))); } }
         public static MethodInfo IEnumerable_Of_Object_GetEnumerator { get { return _IEnumerable_Of_Object_GetEnumerator ?? (_IEnumerable_Of_Object_GetEnumerator = GetMethod(typeof(IEnumerable<object>), "GetEnumerator", BindingFlags.Instance, Type.EmptyTypes)); } }
         public static MethodInfo IEnumerator_get_Current { get { return _IEnumerator_get_Current ?? (_IEnumerator_get_Current = GetMethod(typeof(IEnumerator), "get_Current", BindingFlags.Instance, Type.EmptyTypes)); } }
         public static MethodInfo IEnumerator_MoveNext { get { return _IEnumerator_MoveNext ?? (_IEnumerator_MoveNext = GetMethod(typeof(IEnumerator), "MoveNext", BindingFlags.Instance, Type.EmptyTypes)); } }

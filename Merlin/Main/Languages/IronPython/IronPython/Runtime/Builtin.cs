@@ -214,7 +214,7 @@ namespace IronPython.Runtime {
 
             if (xType.TryResolveSlot(context, Symbols.Coerce, out pts)) {
                 object callable;
-                if (pts.TryGetBoundValue(context, x, xType, out callable)) {
+                if (pts.TryGetValue(context, x, xType, out callable)) {
                     return PythonCalls.Call(context, callable, y);
                 }
             }

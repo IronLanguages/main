@@ -69,10 +69,6 @@ namespace IronPython.Runtime.Types {
             }
         }
 
-        internal override bool TryGetBoundValue(CodeContext context, object instance, PythonType owner, out object value) {
-            return TryGetValue(context, instance, owner, out value);
-        }
-
         internal BuiltinFunction/*!*/ Template {
             get { return _template; }
         }

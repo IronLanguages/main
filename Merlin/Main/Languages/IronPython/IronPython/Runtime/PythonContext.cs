@@ -97,8 +97,10 @@ namespace IronPython.Runtime {
         private CallSite<Func<CallSite, object, IList<string>>> _getMemberNamesSite;
         private CallSite<Func<CallSite, CodeContext, object, object>> _finalizerSite;
         private CallSite<Func<CallSite, CodeContext, PythonFunction, object>> _functionCallSite;
-        private CallSite<Func<CallSite, object, object, bool>> _greaterThanSite, _lessThanSite, _greaterThanEqualSite, _lessThanEqualSite;
+        private CallSite<Func<CallSite, object, object, bool>> _greaterThanSite, _lessThanSite, _greaterThanEqualSite, _lessThanEqualSite, _containsSite;
         private CallSite<Func<CallSite, CodeContext, object, object[], object>> _callSplatSite;
+        private CallSite<Func<CallSite, CodeContext, object, object, object>> _callSite1;
+        private CallSite<Func<CallSite, CodeContext, object, object, object, object>> _callSite2;
         private CallSite<Func<CallSite, CodeContext, object, object[], IAttributesCollection, object>> _callDictSite;
         private CallSite<Func<CallSite, CodeContext, object, string, IAttributesCollection, IAttributesCollection, PythonTuple, int, object>> _importSite;
         private CallSite<Func<CallSite, CodeContext, object, string, IAttributesCollection, IAttributesCollection, PythonTuple, object>> _oldImportSite;
@@ -1721,6 +1723,10 @@ namespace IronPython.Runtime {
 
         }
 
+        internal SiteLocalStorage<CallSite<Func<CallSite, CodeContext, object, object>>> GetGenericCallSiteStorage0() {
+            return GetGenericSiteStorage<CallSite<Func<CallSite, CodeContext, object, object>>>();
+        }
+
         internal SiteLocalStorage<CallSite<Func<CallSite, CodeContext, object, object[], IAttributesCollection, object>>> GetGenericKeywordCallSiteStorage() {
             return GetGenericSiteStorage<CallSite<Func<CallSite, CodeContext, object, object[], IAttributesCollection, object>>>();
 
@@ -1802,7 +1808,7 @@ namespace IronPython.Runtime {
             object callable;
 
             if (pt.TryResolveMixedSlot(context, symbol, out pts) &&
-                pts.TryGetBoundValue(context, target, pt, out callable)) {
+                pts.TryGetValue(context, target, pt, out callable)) {
 
                 result = site.Target(site, context, callable);
                 return true;
@@ -1853,7 +1859,7 @@ namespace IronPython.Runtime {
             object callable;
 
             if (pt.TryResolveMixedSlot(context, symbol, out pts) &&
-                pts.TryGetBoundValue(context, target, pt, out callable)) {
+                pts.TryGetValue(context, target, pt, out callable)) {
 
                 result = site.Target(site, context, callable, value1, value2);
                 return true;
@@ -2347,6 +2353,10 @@ namespace IronPython.Runtime {
             return Comparison(self, other, PythonOperationKind.LessThanOrEqual, ref _lessThanEqualSite);
         }
 
+        internal bool Contains(object self, object other) {
+            return Comparison(self, other, PythonOperationKind.Contains, ref _containsSite);
+        }
+
         internal bool Equal(object self, object other) {
             return DynamicHelpers.GetPythonType(self).EqualRetBool(self, other);
         }
@@ -2376,19 +2386,31 @@ namespace IronPython.Runtime {
             );
         }
 
-        internal object Call(object func, params object[] args) {
-            if (_callSplatSite == null) {
-                Interlocked.CompareExchange(
-                    ref _callSplatSite,
-                    MakeSplatSite(),
-                    null
-                );
-            }
+        internal object CallSplat(object func, params object[] args) {
+            EnsureCallSplatSite();
 
             return _callSplatSite.Target(_callSplatSite, DefaultBinderState.Context, func, args);
         }
 
         internal object CallWithContext(CodeContext/*!*/ context, object func, params object[] args) {
+            EnsureCallSplatSite();
+
+            return _callSplatSite.Target(_callSplatSite, context, func, args);
+        }
+
+        internal object Call(CodeContext/*!*/ context, object func, object arg0) {
+            EnsureCall1Site();
+
+            return _callSite1.Target(_callSite1, context, func, arg0);
+        }
+
+        internal object Call(CodeContext/*!*/ context, object func, object arg0, object arg1) {
+            EnsureCall2Site();
+
+            return _callSite2.Target(_callSite2, context, func, arg0, arg1);
+        }
+
+        private void EnsureCallSplatSite() {
             if (_callSplatSite == null) {
                 Interlocked.CompareExchange(
                     ref _callSplatSite,
@@ -2396,12 +2418,30 @@ namespace IronPython.Runtime {
                     null
                 );
             }
-
-            return _callSplatSite.Target(_callSplatSite, context, func, args);
         }
 
         internal CallSite<Func<CallSite, CodeContext, object, object[], object>> MakeSplatSite() {
             return CallSite<Func<CallSite, CodeContext, object, object[], object>>.Create(Binders.InvokeSplat(DefaultBinderState));
+        }
+
+        private void EnsureCall2Site() {
+            if (_callSite2 == null) {
+                Interlocked.CompareExchange(
+                    ref _callSite2,
+                    CallSite<Func<CallSite, CodeContext, object, object, object, object>>.Create(DefaultBinderState.Invoke(new CallSignature(2))),
+                    null
+                );
+            }
+        }
+
+        private void EnsureCall1Site() {
+            if (_callSite1 == null) {
+                Interlocked.CompareExchange(
+                    ref _callSite1,
+                    CallSite<Func<CallSite, CodeContext, object, object, object>>.Create(DefaultBinderState.InvokeOne),
+                    null
+                );
+            }
         }
 
         internal object CallWithKeywords(object func, object[] args, IAttributesCollection dict) {

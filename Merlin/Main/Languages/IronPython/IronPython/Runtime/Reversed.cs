@@ -45,7 +45,7 @@ namespace IronPython.Runtime {
             PythonTypeSlot getitem;
             PythonType pt = DynamicHelpers.GetPythonType(o);
             if(!pt.TryResolveSlot(context, Symbols.GetItem, out getitem) ||
-                !getitem.TryGetBoundValue(context, o, pt, out boundFunc)
+                !getitem.TryGetValue(context, o, pt, out boundFunc)
                 || o is PythonDictionary) {
                 throw PythonOps.TypeError("argument to reversed() must be a sequence");
             }

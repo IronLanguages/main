@@ -16,9 +16,10 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Linq.Expressions;
 using System.Dynamic;
+using System.Linq.Expressions;
 
+using Microsoft.Scripting;
 using Microsoft.Scripting.Actions;
 using Microsoft.Scripting.Utils;
 
@@ -66,6 +67,9 @@ namespace IronPython.Runtime.Binding {
         #region Invoke Implementation
 
         private DynamicMetaObject InvokeWorker(DynamicMetaObjectBinder/*!*/ callAction, DynamicMetaObject/*!*/[] args) {
+            PerfTrack.NoteEvent(PerfTrack.Categories.Binding, "Method Invoke " + args.Length);
+            PerfTrack.NoteEvent(PerfTrack.Categories.BindingTarget, "Method");
+
             CallSignature signature = BindingHelpers.GetCallSignature(callAction);
             DynamicMetaObject self = Restrict(typeof(Method));
             BindingRestrictions restrictions = self.Restrictions;

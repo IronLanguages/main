@@ -900,4 +900,45 @@ namespace IronPythonTest.BinderTest {
 
     public class GenericOnlyConflict<T> { }
     public class GenericOnlyConflict<T1, T2> { }
+
+    class BaseClassNoInterface {
+        #region I1 Members
+
+        public void M() {
+            InterfaceTestHelper.Flag = true;
+        }
+
+        #endregion
+        
+    }
+
+    class DerivedClassWithInterface : BaseClassNoInterface, I1 {
+    }
+
+    abstract class AbstractClassWithInterface : I1 {
+
+        #region I1 Members
+
+        public abstract void M();
+
+        #endregion
+    }
+
+    class DerivedClassWithInterfaceImpl : AbstractClassWithInterface {
+        #region I1 Members
+
+        public override void M() {
+            InterfaceTestHelper.Flag = true;
+        }
+
+        #endregion
+    }
+
+    public class InterfaceTestHelper {
+        public static bool Flag = false;
+
+        public static object GetObject() { return new DerivedClassWithInterface(); }
+        public static object GetObject2() { return new DerivedClassWithInterfaceImpl(); }
+    }
+
 }

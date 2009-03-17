@@ -51,11 +51,16 @@ namespace IronRuby.Runtime.Calls {
         }
 
         internal override void BuildCallNoFlow(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args, string/*!*/ name) {
-            metaBuilder.Result = Methods.GetInstanceVariable.OpCall(
-                args.ScopeExpression,
-                AstFactory.Box(args.TargetExpression),
-                AstUtils.Constant(InstanceVariableName)
-            );
+            var actualArgs = RubyMethodGroupInfo.NormalizeArguments(metaBuilder, args, SelfCallConvention.NoSelf, false, false);
+            if (actualArgs.Length == 0) {
+                metaBuilder.Result = Methods.GetInstanceVariable.OpCall(
+                    args.ScopeExpression,
+                    AstFactory.Box(args.TargetExpression),
+                    AstUtils.Constant(InstanceVariableName)
+                );
+            } else {
+                metaBuilder.SetWrongNumberOfArgumentsError(actualArgs.Length, 0);
+            }
         }
 
         protected internal override RubyMemberInfo/*!*/ Copy(RubyMemberFlags flags, RubyModule/*!*/ module) {
@@ -73,15 +78,17 @@ namespace IronRuby.Runtime.Calls {
         }
 
         internal override void BuildCallNoFlow(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args, string/*!*/ name) {
-
-            var actualArgs = RubyMethodGroupInfo.MakeActualArgs(metaBuilder, args, SelfCallConvention.SelfIsParameter, false, false);
-
-            metaBuilder.Result = Methods.SetInstanceVariable.OpCall(
-                AstFactory.Box(actualArgs[0]),
-                AstFactory.Box(actualArgs[1]),
-                args.ScopeExpression,
-                AstUtils.Constant(InstanceVariableName)
-            );
+            var actualArgs = RubyMethodGroupInfo.NormalizeArguments(metaBuilder, args, SelfCallConvention.NoSelf, false, false);
+            if (actualArgs.Length == 1) {
+                metaBuilder.Result = Methods.SetInstanceVariable.OpCall(
+                    AstFactory.Box(args.TargetExpression),
+                    AstFactory.Box(actualArgs[0].Expression),
+                    args.ScopeExpression,
+                    AstUtils.Constant(InstanceVariableName)
+                );
+            } else {
+                metaBuilder.SetWrongNumberOfArgumentsError(actualArgs.Length, 1);
+            }
         }
 
         protected internal override RubyMemberInfo/*!*/ Copy(RubyMemberFlags flags, RubyModule/*!*/ module) {

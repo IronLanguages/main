@@ -37,7 +37,7 @@ namespace Microsoft.Scripting.Actions.Calls {
         private readonly string _name;                                                    // the name of the method being bound to
         private readonly MethodTarget _target;                                            // the MethodTarget if the binding was successful 
         private readonly Type[] _argTests;                                                // Deprecated: if successful tests needed to disambiguate between overloads, MetaObject binding is preferred
-        private readonly DynamicMetaObject[] _restrictedArgs;                                    // the arguments after they've been restricted to their known types
+        private readonly RestrictionInfo _restrictedArgs;                                    // the arguments after they've been restricted to their known types
         private readonly NarrowingLevel _level;                                           // the NarrowingLevel at which the target succeeds on conversion
         private readonly CallFailure[] _callFailures;                                     // if failed on conversion the various conversion failures for all overloads
         private readonly MethodTarget[] _ambiguousMatches;                                // list of methods which are ambiguous to bind to.
@@ -45,7 +45,9 @@ namespace Microsoft.Scripting.Actions.Calls {
         private readonly int _actualArgs;                                                 // gets the actual number of arguments provided
 
         /// <summary>
-        /// Creates a new BindingTarget when the method binding has succeeded
+        /// Creates a new BindingTarget when the method binding has succeeded.
+        /// 
+        /// OBSOLETE
         /// </summary>
         internal BindingTarget(string name, int actualArgumentCount, MethodTarget target, NarrowingLevel level, Type[] argTests) {
             _name = name;
@@ -56,9 +58,9 @@ namespace Microsoft.Scripting.Actions.Calls {
         }
 
         /// <summary>
-        /// Creates a new BindingTarget when the method binding has succeeded
+        /// Creates a new BindingTarget when the method binding has succeeded.
         /// </summary>
-        internal BindingTarget(string name, int actualArgumentCount, MethodTarget target, NarrowingLevel level, DynamicMetaObject[] restrictedArgs) {
+        internal BindingTarget(string name, int actualArgumentCount, MethodTarget target, NarrowingLevel level, RestrictionInfo restrictedArgs) {
             _name = name;
             _target = target;
             _restrictedArgs = restrictedArgs;
@@ -168,12 +170,24 @@ namespace Microsoft.Scripting.Actions.Calls {
                 throw new InvalidOperationException("An expression cannot be produced because the method binding was done with Expressions, not MetaObject's");
             }
 
-            Expression[] exprs = new Expression[_restrictedArgs.Length];
+            Expression[] exprs = new Expression[_restrictedArgs.Objects.Length];
             for (int i = 0; i < exprs.Length; i++) {
-                exprs[i] = _restrictedArgs[i].Expression;
+                exprs[i] = _restrictedArgs.Objects[i].Expression;
             }
 
             return _target.MakeExpression(parameterBinder, exprs);
+        }
+
+        public OptimizingCallDelegate MakeDelegate(ParameterBinder parameterBinder) {
+            ContractUtils.RequiresNotNull(parameterBinder, "parameterBinder");
+
+            if (_target == null) {
+                throw new InvalidOperationException("An expression cannot be produced because the method binding was unsuccessful.");
+            } else if (_restrictedArgs == null) {
+                throw new InvalidOperationException("An expression cannot be produced because the method binding was done with Expressions, not MetaObject's");
+            }
+
+            return _target.MakeDelegate(parameterBinder, _restrictedArgs);
         }
 
         /// <summary>
@@ -263,7 +277,7 @@ namespace Microsoft.Scripting.Actions.Calls {
         /// The members of the array correspond to each of the arguments.  All members of the array
         /// have a value.
         /// </summary>
-        public IList<DynamicMetaObject> RestrictedArguments {
+        public RestrictionInfo RestrictedArguments {
             get {
                 return _restrictedArgs;
             }

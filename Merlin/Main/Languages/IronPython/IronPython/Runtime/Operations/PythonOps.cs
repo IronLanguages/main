@@ -2392,7 +2392,7 @@ namespace IronPython.Runtime.Operations {
 
         public static object GetInitSlotMember(CodeContext/*!*/ context, PythonType type, PythonTypeSlot slot, object instance) {
             object value;
-            if (!slot.TryGetBoundValue(context, instance, type, out value)) {
+            if (!slot.TryGetValue(context, instance, type, out value)) {
                 throw PythonOps.TypeError("bad __init__");
             }
 
@@ -2412,7 +2412,7 @@ namespace IronPython.Runtime.Operations {
                     PythonTypeSlot dts;
                     if (t.TryLookupSlot(context, name, out dts)) {
                         object ret;
-                        if (dts.TryGetBoundValue(context, instance, type, out ret)) {
+                        if (dts.TryGetValue(context, instance, type, out ret)) {
                             return ret;
                         }
                         return dts;
@@ -2768,7 +2768,7 @@ namespace IronPython.Runtime.Operations {
         #endregion
 
         public static bool SlotTryGetBoundValue(CodeContext/*!*/ context, PythonTypeSlot/*!*/ slot, object instance, PythonType owner, out object value) {
-            return slot.TryGetBoundValue(context, instance, owner, out value);
+            return slot.TryGetValue(context, instance, owner, out value);
         }
 
         public static bool SlotTryGetValue(CodeContext/*!*/ context, PythonTypeSlot/*!*/ slot, object instance, PythonType owner, out object value) {
@@ -2845,7 +2845,7 @@ namespace IronPython.Runtime.Operations {
         #region Function helpers
 
         [NoSideEffects]
-        public static PythonFunction MakeFunction(CodeContext/*!*/ context, string name, Delegate target, string[] argNames, object[] defaults,
+        public static object MakeFunction(CodeContext/*!*/ context, string name, Delegate target, string[] argNames, object[] defaults,
             FunctionAttributes attributes, string docString, int lineNumber, string fileName) {
             PythonFunction ret = new PythonFunction(context, name, target, argNames, defaults, attributes);
             if (docString != null) ret.__doc__ = docString;
@@ -3256,6 +3256,10 @@ namespace IronPython.Runtime.Operations {
 
             Debug.Assert(pm.BinderState != null);
             return pm.BinderState;
+        }
+
+        public static DynamicMetaObjectBinder MakeComboAction(CodeContext/*!*/ context, DynamicMetaObjectBinder opBinder, DynamicMetaObjectBinder convBinder) {
+            return GetBinderState(context).BinaryOperationRetType((PythonBinaryOperationBinder)opBinder, (ConversionBinder)convBinder);
         }
 
         public static DynamicMetaObjectBinder MakeInvokeAction(CodeContext/*!*/ context, CallSignature signature) {

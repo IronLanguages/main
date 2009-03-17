@@ -42,6 +42,12 @@ namespace Microsoft.Scripting.Actions.Calls {
             return new ReferenceArgBuilder(ParameterInfo, Type, newIndex);
         }
 
+        internal override bool CanGenerateDelegate {
+            get {
+                return false;
+            }
+        }
+
         public override int Priority {
             get { return 5; }
         }

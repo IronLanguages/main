@@ -330,7 +330,7 @@ namespace Microsoft.Scripting.Actions {
                 // if we succeed make the target for the rule
                 return new DynamicMetaObject(
                     target.MakeExpression(parameterBinder),
-                    restrictions.Merge(MakeSplatTests(callType, signature, args).Merge(BindingRestrictions.Combine(target.RestrictedArguments)))
+                    restrictions.Merge(MakeSplatTests(callType, signature, args).Merge(BindingRestrictions.Combine(target.RestrictedArguments.Objects)))
                 );
             }
             // make an error rule

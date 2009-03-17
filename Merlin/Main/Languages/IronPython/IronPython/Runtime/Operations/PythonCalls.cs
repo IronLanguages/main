@@ -24,11 +24,11 @@ using IronPython.Runtime.Binding;
 namespace IronPython.Runtime.Operations {
     public static partial class PythonCalls {
         public static object Call(object func, params object[] args) {
-            return DefaultContext.DefaultPythonContext.Call(func, args);
+            return DefaultContext.DefaultPythonContext.CallSplat(func, args);
         }
 
         public static object Call(CodeContext/*!*/ context, object func, params object[] args) {
-            return PythonContext.GetContext(context).Call(func, args);
+            return PythonContext.GetContext(context).CallSplat(func, args);
         }
 
         public static object CallWithKeywordArgs(CodeContext/*!*/ context, object func, object[] args, string[] names) {

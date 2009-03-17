@@ -49,6 +49,10 @@ namespace Microsoft.Scripting {
             OverAllocate,   // a spot where we have an un-ideal algorithm that needs to allocate more than necessary
             Rules,          // related to rules / actions.
             RuleEvaluation, // a rule was evaluated
+            Binding,        // a rule was bound
+            BindingSlow,
+            BindingFast,    
+            BindingTarget,  // a rule was bound against a target of a specific type
             Count
         }
 

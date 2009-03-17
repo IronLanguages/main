@@ -1186,6 +1186,7 @@ namespace IronPython.Runtime.Types {
                         ((mi.Attributes & ~MethodAttributes.MemberAccessMask) | MethodAttributes.Public),
                     mi.ReturnType,
                     ReflectionUtils.GetParameterTypes(parameters));
+                CopyGenericMethodAttributes(mi, impl);
                 il = new ILGen(impl.GetILGenerator());
             }
             //CompilerHelpers.GetArgumentNames(parameters));  TODO: Set names
@@ -1257,7 +1258,7 @@ namespace IronPython.Runtime.Types {
                 attrs,
                 mi.ReturnType, types
             );
-
+            CopyGenericMethodAttributes(mi, method);
             for (int i = 0; i < types.Length; i++) {
                 method.DefineParameter(i + 1, ParameterAttributes.None, parms[i].Name);
             }
@@ -1350,13 +1351,18 @@ namespace IronPython.Runtime.Types {
             }
             Type[] signature = ReflectionUtils.GetParameterTypes(decl.GetParameters());
             impl = _tg.DefineMethod(decl.Name, finalAttrs, decl.ReturnType, signature);
-            if (decl.IsGenericMethodDefinition) {
-                Type[] args = decl.GetGenericArguments();
+            CopyGenericMethodAttributes(decl, impl);
+            return new ILGen(impl.GetILGenerator());
+        }
+
+        private static void CopyGenericMethodAttributes(MethodInfo from, MethodBuilder to) {
+            if (from.IsGenericMethodDefinition) {
+                Type[] args = from.GetGenericArguments();
                 string[] names = new string[args.Length];
                 for (int i = 0; i < args.Length; i++) {
                     names[i] = args[i].Name;
                 }
-                var builders = impl.DefineGenericParameters(names);
+                var builders = to.DefineGenericParameters(names);
                 for (int i = 0; i < args.Length; i++) {
                     // Copy template parameter attributes
                     builders[i].SetGenericParameterAttributes(args[i].GenericParameterAttributes);
@@ -1376,7 +1382,6 @@ namespace IronPython.Runtime.Types {
                     }
                 }
             }
-            return new ILGen(impl.GetILGenerator());
         }
 
         /// <summary>
