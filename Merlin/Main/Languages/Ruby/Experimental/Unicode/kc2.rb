@@ -1,6 +1,12 @@
-$KCODE = "u"
-s = eval("\"\\xce\\xa3\"")
+s = "\xce\xa3\x1F\xF0\x92\x8D\x85\xCE"
 
+$KCODE = "UTF8"
+puts s.inspect
+puts s.dump
+
+puts '---'
+
+$KCODE = "SJIS"
 puts s.inspect
 puts s.dump
 
@@ -39,3 +45,5 @@ end
 
 puts s.inspect
 puts s.dump
+
+

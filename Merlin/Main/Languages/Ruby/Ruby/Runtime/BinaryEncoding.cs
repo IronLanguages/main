@@ -16,6 +16,7 @@
 using System;
 using System.Text;
 using Microsoft.Scripting.Utils;
+using IronRuby.Builtins;
 
 namespace IronRuby.Runtime {
 
@@ -29,10 +30,13 @@ namespace IronRuby.Runtime {
         
         // TODO: remove
         public static readonly Encoding/*!*/ Obsolete = Instance;
+
 #if !SILVERLIGHT
-        private BinaryEncoding():base(0) {
+        private BinaryEncoding()
+            : base(RubyEncoding.CodePageBinary) {
 #else
-        private BinaryEncoding():base() {
+        private BinaryEncoding() 
+            : base() {
 #endif
         }
 

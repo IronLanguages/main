@@ -14,6 +14,13 @@
  * ***************************************************************************/
 
 using System;
+using IronRuby.Builtins;
+using System.Text;
+using System.Diagnostics;
+using System.Collections.Generic;
+using IronRuby.Runtime;
+using Microsoft.Scripting;
+
 namespace IronRuby.Tests {
     public partial class Tests {
         public void StringsPlus() {
@@ -180,6 +187,15 @@ bar
 ");
         }
 
+        [Options(Compatibility = RubyCompatibility.Ruby19)]
+        public void Strings9() {
+            // TODO:
+            var source = Engine.CreateScriptSource(new BinaryContentProvider(BinaryEncoding.Instance.GetBytes(@"""\u03a3""")), null, BinaryEncoding.Instance);
+            AssertExceptionThrown<SyntaxErrorException>(() => source.Execute<MutableString>());
+
+            // TODO: mixing incompatible encodings at compile time (literals "foo" "bar") or runtime "foo" + "bar"
+        }
+
         /// <summary>
         /// Embedded string does call "to_s" w/o calling "respond_to?" first.
         /// </summary>
@@ -226,6 +242,71 @@ SUB
 ");
         }
 
+        [Options(Compatibility = RubyCompatibility.Ruby18)]
+        private void Inspect1() {
+            const char sq = '\'';
+
+            var sjisEncoding = RubyEncoding.GetRubyEncoding("SJIS");
+            // あ
+            var sjisWide = new byte[] { 0x82, 0xa0 };
+            // \u{12345} in UTF-8:
+            var utf8 = new byte[] { 0xF0, 0x92, 0x8D, 0x85 };
+            // surrogates: U+d808 U+df45 
+            var utf16 = Encoding.UTF8.GetString(utf8);
+
+            string s;
+
+            s = MutableStringOps.GetQuotedStringRepresentation(MutableString.CreateBinary(utf8, RubyEncoding.Binary), Context, false, sq).ToString();
+            Assert(s == @"'\360\222\215\205'");
+
+            s = MutableStringOps.GetQuotedStringRepresentation(MutableString.CreateBinary(utf8, RubyEncoding.Binary), Context, true, sq).ToString();
+            Assert(s == @"'\360\222\215\205'");
+
+            s = MutableStringOps.GetQuotedStringRepresentation(MutableString.CreateBinary(utf8, RubyEncoding.KCodeUTF8), Context, false, sq).ToString();
+            Assert(s == "'" + utf16 + "'");
+
+            s = MutableStringOps.GetQuotedStringRepresentation(MutableString.CreateBinary(utf8, RubyEncoding.KCodeUTF8), Context, true, sq).ToString();
+            Assert(s == @"'\360\222\215\205'");
+
+            s = MutableStringOps.GetQuotedStringRepresentation(MutableString.CreateBinary(sjisWide, RubyEncoding.KCodeSJIS), Context, false, sq).ToString();
+            Assert(s == @"'あ'");
+
+            s = MutableStringOps.GetQuotedStringRepresentation(MutableString.CreateBinary(sjisWide, RubyEncoding.KCodeSJIS), Context, true, sq).ToString();
+            Assert(s == @"'\202\240'");
+        }
+
+        [Options(Compatibility = RubyCompatibility.Ruby19)]
+        private void Inspect2() {
+            const char sq = '\'';
+
+            var sjisEncoding = RubyEncoding.GetRubyEncoding("SJIS");
+            // あ
+            var sjisWide = new byte[] { 0x82, 0xa0 };
+            // \u{12345} in UTF-8:
+            var utf8 = new byte[] { 0xF0, 0x92, 0x8D, 0x85 };
+            // \u{12345} in UTF-16: U+d808 U+df45 
+            var utf16 = Encoding.UTF8.GetString(utf8);
+
+            string s;
+
+            s = MutableStringOps.GetQuotedStringRepresentation(MutableString.CreateBinary(utf8, RubyEncoding.Binary), Context, false, sq).ToString();
+            Assert(s == @"'\xF0\x92\x8D\x85'");
+
+            s = MutableStringOps.GetQuotedStringRepresentation(MutableString.CreateBinary(utf8, RubyEncoding.Binary), Context, true, sq).ToString();
+            Assert(s == @"'\xF0\x92\x8D\x85'");
+
+            s = MutableStringOps.GetQuotedStringRepresentation(MutableString.CreateBinary(utf8, RubyEncoding.UTF8), Context, false, sq).ToString();
+            Assert(s == "'" + utf16 + "'");
+
+            s = MutableStringOps.GetQuotedStringRepresentation(MutableString.CreateBinary(utf8, RubyEncoding.UTF8), Context, true, sq).ToString();
+            Assert(s == @"'\u{12345}'");
+
+            s = MutableStringOps.GetQuotedStringRepresentation(MutableString.CreateBinary(sjisWide, sjisEncoding), Context, false, sq).ToString();
+            Assert(s == @"'あ'");
+
+            s = MutableStringOps.GetQuotedStringRepresentation(MutableString.CreateBinary(sjisWide, sjisEncoding), Context, true, sq).ToString();
+            Assert(s == @"'\x82\xA0'");
+        }
 
     }
 }

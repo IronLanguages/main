@@ -78,6 +78,7 @@ namespace IronRuby.Compiler {
         public static readonly ErrorInfo InvalidEscapeCharacter = new ErrorInfo(Tokenizer + 53, "Invalid escape character syntax");
         public static readonly ErrorInfo NullCharacterInSymbol = new ErrorInfo(Tokenizer + 54, "Symbol cannot contain '\\0'");
         public static readonly ErrorInfo EmptySymbolLiteral = new ErrorInfo(Tokenizer + 55, "empty symbol literal");
+        public static readonly ErrorInfo EncodingsMixed = new ErrorInfo(Tokenizer + 56, "{0} mixed within {1} source");
 
         public static readonly ErrorInfo FileInitializerInMethod = new ErrorInfo(Tokenizer + 60, "BEGIN in method");
         public static readonly ErrorInfo FileFinalizerInMethod = new ErrorInfo(Tokenizer + 61, "END in method; use at_exit");    

@@ -50,9 +50,6 @@ namespace IronRuby.Compiler {
         public int Integer2 { get { return _numeric.Integer2; } set { _numeric.Integer2 = value; } }
         public double Double { get { return _numeric.Double; } set { _numeric.Double = value; } }
 
-        // Tokens: StringContent
-        internal StringLiteralEncoding/*!*/ StringLiteralEncoding { get { return (StringLiteralEncoding)Integer1; } }
-        
         // Tokens: StringBegin, SymbolBegin, RegexBegin, ShellStringBegin
         internal StringTokenizer/*!*/ StringTokenizer { get { return (StringTokenizer)_obj1; } set { _obj1 = value; } }
 
@@ -78,6 +75,7 @@ namespace IronRuby.Compiler {
         public Maplet Maplet { get { return (Maplet)_obj1; } set { _obj1 = value; } }
         public BigInteger/*!*/ BigInteger { get { return (BigInteger)_obj1; } set { _obj1 = value; } }
         public String/*!*/ String { get { return (String)_obj1; } set { _obj1 = value; } }
+        public object/*!*/ StringContent { get { return (object)_obj1; } set { _obj1 = value; } }
         public Parameters Parameters { get { return (Parameters)_obj1; } set { _obj1 = value; } }
         public LocalVariable LocalVariable { get { return (LocalVariable)_obj1; } set { _obj1 = value; } }
         public SimpleAssignmentExpression SimpleAssignmentExpression { get { return (SimpleAssignmentExpression)_obj1; } set { _obj1 = value; } }
@@ -109,22 +107,14 @@ namespace IronRuby.Compiler {
             Double = value;
         }
 
-        internal void SetString(string/*!*/ value, StringLiteralEncoding encoding) {
+        internal void SetString(string/*!*/ value) {
             Assert.NotNull(value);
             String = value;
-            Integer1 = (int)encoding;
         }
 
-        internal void SetString(string/*!*/ value, bool hasUnicodeEscape) {
-            SetString(value, 
-                hasUnicodeEscape ? StringLiteralEncoding.UTF8 : 
-                value.IsAscii() ? StringLiteralEncoding.Ascii : // TODO: tokenizer already knows IsAscii
-                StringLiteralEncoding.Default
-            );
-        }
-
-        internal void SetSymbol(string/*!*/ value) {
-            SetString(value, StringLiteralEncoding.Ascii);
+        internal void SetStringContent(StringContentBuilder/*!*/ contentBuilder) {
+            Assert.NotNull(contentBuilder);
+            StringContent = contentBuilder.ToValue();
         }
 
         internal void SetStringTokenizer(StringTokenizer value) {

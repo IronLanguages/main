@@ -955,13 +955,8 @@ namespace IronRuby.Runtime {
 
         #endregion
 
-        /// <summary>
-        /// Each string part type will be specified using one of the following suffices
-        /// </summary>
-        public const char SuffixEncoded = 'E'; // Use encoding codepage System.String
-        public const char SuffixBinary = 'B'; // Binary (ASCII) System.String
-        public const char SuffixUTF8 = 'U'; // UTF8 encoded System.String
-        public const char SuffixMutable = 'M'; // String part is a Ruby string variable - because of variable substitution using "#{var}"
+        public const char SuffixLiteral = 'L';       // Repr: literal string
+        public const char SuffixMutable = 'M';       // non-literal "...#{expr}..."
 
         /// <summary>
         /// Specialized signatures exist for upto the following number of string parts
@@ -1001,237 +996,131 @@ namespace IronRuby.Runtime {
         }
 
         [Emitted]
-        public static RubyRegex/*!*/ CreateRegexB(string/*!*/ str1, RubyRegexOptions options, StrongBox<RubyRegex> regexpCache) {
-            Func<RubyRegex> createRegex = delegate { return new RubyRegex(str1, options); };
-            return CreateRegexWorker(options, regexpCache, true, createRegex);
-        }
-
-        [Emitted]
-        public static RubyRegex/*!*/ CreateRegexU(string/*!*/ str1, RubyRegexOptions options, StrongBox<RubyRegex> regexpCache) {
-            Func<RubyRegex> createRegex = delegate { return new RubyRegex(CreateMutableStringU(str1), options); };
-            return CreateRegexWorker(options, regexpCache, true, createRegex);
-        }
-
-        [Emitted]
-        public static RubyRegex/*!*/ CreateRegexE(string/*!*/ str1, int codepage, RubyRegexOptions options, StrongBox<RubyRegex> regexpCache) {
-            Func<RubyRegex> createRegex = delegate { return new RubyRegex(CreateMutableStringE(str1, codepage), options); };
+        public static RubyRegex/*!*/ CreateRegexL(string/*!*/ str1, RubyEncoding/*!*/ encoding, RubyRegexOptions options, StrongBox<RubyRegex> regexpCache) {
+            Func<RubyRegex> createRegex = delegate { return new RubyRegex(CreateMutableStringL(str1, encoding), options); };
             return CreateRegexWorker(options, regexpCache, true, createRegex);
         }
         
         [Emitted]
-        public static RubyRegex/*!*/ CreateRegexM(MutableString str1, RubyRegexOptions options, StrongBox<RubyRegex> regexpCache) {
-            Func<RubyRegex> createRegex = delegate { return new RubyRegex(CreateMutableStringM(str1), options); };
+        public static RubyRegex/*!*/ CreateRegexM(MutableString str1, RubyEncoding/*!*/ encoding, RubyRegexOptions options, StrongBox<RubyRegex> regexpCache) {
+            Func<RubyRegex> createRegex = delegate { return new RubyRegex(CreateMutableStringM(str1, encoding), options); };
             return CreateRegexWorker(options, regexpCache, false, createRegex);
         }
 
         [Emitted]
-        public static RubyRegex/*!*/ CreateRegexBM(string/*!*/ str1, MutableString str2, RubyRegexOptions options, StrongBox<RubyRegex> regexpCache) {
-            Func<RubyRegex> createRegex = delegate { return new RubyRegex(CreateMutableStringBM(str1, str2), options); };
+        public static RubyRegex/*!*/ CreateRegexLM(string/*!*/ str1, MutableString str2, RubyEncoding/*!*/ encoding, RubyRegexOptions options, StrongBox<RubyRegex> regexpCache) {
+            Func<RubyRegex> createRegex = delegate { return new RubyRegex(CreateMutableStringLM(str1, str2, encoding), options); };
             return CreateRegexWorker(options, regexpCache, false, createRegex);
         }
 
         [Emitted]
-        public static RubyRegex/*!*/ CreateRegexUM(string/*!*/ str1, MutableString str2, RubyRegexOptions options, StrongBox<RubyRegex> regexpCache) {
-            Func<RubyRegex> createRegex = delegate { return new RubyRegex(CreateMutableStringUM(str1, str2), options); };
+        public static RubyRegex/*!*/ CreateRegexML(MutableString str1, string/*!*/ str2, RubyEncoding/*!*/ encoding, RubyRegexOptions options, StrongBox<RubyRegex> regexpCache) {
+            Func<RubyRegex> createRegex = delegate { return new RubyRegex(CreateMutableStringML(str1, str2, encoding), options); };
             return CreateRegexWorker(options, regexpCache, false, createRegex);
         }
 
         [Emitted]
-        public static RubyRegex/*!*/ CreateRegexEM(string/*!*/ str1, MutableString str2, int codepage, RubyRegexOptions options, StrongBox<RubyRegex> regexpCache) {
-            Func<RubyRegex> createRegex = delegate { return new RubyRegex(CreateMutableStringEM(str1, str2, codepage), options); };
+        public static RubyRegex/*!*/ CreateRegexMM(MutableString str1, MutableString str2, RubyEncoding/*!*/ encoding, RubyRegexOptions options, StrongBox<RubyRegex> regexpCache) {
+            Func<RubyRegex> createRegex = delegate { return new RubyRegex(CreateMutableStringMM(str1, str2, encoding), options); };
             return CreateRegexWorker(options, regexpCache, false, createRegex);
         }
 
         [Emitted]
-        public static RubyRegex/*!*/ CreateRegexMB(MutableString str1, string/*!*/ str2, RubyRegexOptions options, StrongBox<RubyRegex> regexpCache) {
-            Func<RubyRegex> createRegex = delegate { return new RubyRegex(CreateMutableStringMB(str1, str2), options); };
-            return CreateRegexWorker(options, regexpCache, false, createRegex);
-        }
-
-        [Emitted]
-        public static RubyRegex/*!*/ CreateRegexMU(MutableString str1, string/*!*/ str2, RubyRegexOptions options, StrongBox<RubyRegex> regexpCache) {
-            Func<RubyRegex> createRegex = delegate { return new RubyRegex(CreateMutableStringMU(str1, str2), options); };
-            return CreateRegexWorker(options, regexpCache, false, createRegex);
-        }
-
-        [Emitted]
-        public static RubyRegex/*!*/ CreateRegexME(MutableString str1, string/*!*/ str2, int codepage, RubyRegexOptions options, StrongBox<RubyRegex> regexpCache) {
-            Func<RubyRegex> createRegex = delegate { return new RubyRegex(CreateMutableStringME(str1, str2, codepage), options); };
-            return CreateRegexWorker(options, regexpCache, false, createRegex);
-        }
-
-        [Emitted]
-        public static RubyRegex/*!*/ CreateRegexMM(MutableString str1, MutableString str2, RubyRegexOptions options, StrongBox<RubyRegex> regexpCache) {
-            Func<RubyRegex> createRegex = delegate { return new RubyRegex(CreateMutableStringMM(str1, str2), options); };
-            return CreateRegexWorker(options, regexpCache, false, createRegex);
-        }
-
-        [Emitted]
-        public static RubyRegex/*!*/ CreateRegexN(object[]/*!*/ strings, int codepage, RubyRegexOptions options, StrongBox<RubyRegex> regexpCache) {
-            Func<RubyRegex> createRegex = delegate { return new RubyRegex(CreateMutableStringN(strings, codepage), options); };
+        public static RubyRegex/*!*/ CreateRegexN(object[]/*!*/ strings, RubyEncoding/*!*/ encoding, RubyRegexOptions options, StrongBox<RubyRegex> regexpCache) {
+            Func<RubyRegex> createRegex = delegate { return new RubyRegex(CreateMutableStringN(strings, encoding), options); };
             return CreateRegexWorker(options, regexpCache, false, createRegex);
         }
 
         #endregion
 
-        // TODO: encodings
         #region CreateMutableString
 
         [Emitted]
-        public static MutableString/*!*/ CreateMutableStringB(string/*!*/ str) {
-            return MutableString.Create(str, BinaryEncoding.Instance); 
+        public static MutableString/*!*/ CreateMutableStringL(string/*!*/ str1, RubyEncoding/*!*/ encoding) {
+            return MutableString.Create(str1, encoding);
         }
 
         [Emitted]
-        public static MutableString/*!*/ CreateMutableStringU(string/*!*/ str) {
-            return MutableString.Create(str, Encoding.UTF8);
+        public static MutableString/*!*/ CreateMutableStringM(MutableString str1, RubyEncoding/*!*/ encoding) {
+            return MutableString.CreateInternal(str1, encoding);
         }
 
         [Emitted]
-        public static MutableString/*!*/ CreateMutableStringE(string/*!*/ str1, int codepage) {
-            return MutableString.Create(str1, RubyEncoding.GetEncoding(codepage));
+        public static MutableString/*!*/ CreateMutableStringLM(string/*!*/ str1, MutableString str2, RubyEncoding/*!*/ encoding) {
+            return MutableString.CreateMutable(str1, encoding).Append(str2);
         }
 
         [Emitted]
-        public static MutableString/*!*/ CreateMutableStringM(MutableString str1) {
-            return MutableString.CreateInternal(str1);
+        public static MutableString/*!*/ CreateMutableStringML(MutableString str1, string/*!*/ str2, RubyEncoding/*!*/ encoding) {
+            return MutableString.CreateInternal(str1, encoding).Append(str2);
         }
 
         [Emitted]
-        public static MutableString/*!*/ CreateMutableStringBM(string/*!*/ str1, MutableString str2) {
-            // TODO: encoding 
-            return MutableString.CreateMutable(str1, BinaryEncoding.Instance).Append(str2);
+        public static MutableString/*!*/ CreateMutableStringMM(MutableString str1, MutableString str2, RubyEncoding/*!*/ encoding) {
+            return MutableString.CreateInternal(str1, encoding).Append(str2);
         }
 
         [Emitted]
-        public static MutableString/*!*/ CreateMutableStringUM(string/*!*/ str1, MutableString str2) {
-            // TODO: encoding 
-            return MutableString.CreateMutable(str1, BinaryEncoding.UTF8).Append(str2);
+        public static MutableString/*!*/ CreateMutableStringN(object/*!*/[]/*!*/ parts, RubyEncoding/*!*/ encoding) {
+            return ConcatStrings(parts, encoding);
         }
 
-        [Emitted]
-        public static MutableString/*!*/ CreateMutableStringEM(string/*!*/ str1, MutableString str2, int codepage) {
-            return MutableString.CreateMutable(str1, RubyEncoding.GetEncoding(codepage)).Append(str2);
-        }
+        private static MutableString/*!*/ ConcatStrings(object/*!*/[]/*!*/ parts, RubyEncoding/*!*/ encoding) {
+            var result = MutableString.CreateMutable(encoding);
 
-        [Emitted]
-        public static MutableString/*!*/ CreateMutableStringMB(MutableString str1, string/*!*/ str2) {
-            // TODO: encoding 
-            return MutableString.CreateInternal(str1).Append(str2);
-        }
+            for (int i = 0; i < parts.Length; i++) {
+                object part = parts[i];
+                byte[] bytes;
+                string str;
 
-        [Emitted]
-        public static MutableString/*!*/ CreateMutableStringMU(MutableString str1, string/*!*/ str2) {
-            // TODO: encoding 
-            return MutableString.CreateInternal(str1).Append(str2);
-        }
+                if ((str = part as string) != null) {
+                    result.Append(str);
+                } else if ((bytes = part as byte[]) != null) {
+                    result.Append(bytes);
+                } else {
+                    // TODO: check if encoding of str is compatible with encoding of the result:
+                    result.Append((MutableString)part);
+                }
+            }
 
-        [Emitted]
-        public static MutableString/*!*/ CreateMutableStringME(MutableString str1, string/*!*/ str2, int codepage) {
-            // TODO: encoding 
-            return MutableString.CreateInternal(str1).Append(str2);
-        }
-
-        [Emitted]
-        public static MutableString/*!*/ CreateMutableStringMM(MutableString str1, MutableString str2) {
-            // TODO: encoding 
-            return MutableString.CreateInternal(str1).Append(str2);
-        }
-
-        [Emitted]
-        public static MutableString/*!*/ CreateMutableStringN(object[]/*!*/ strings, int codepage) {
-            // TODO: encodings of literals in the array needs to be handled
-            return ConcatenateStrings(strings);
+            return result;
         }
 
         #endregion
 
-        // TODO: encodings
         #region CreateSymbol
 
         [Emitted]
-        public static SymbolId/*!*/ CreateSymbolB(string/*!*/ str1) {
-            Debug.Assert(str1.Length > 0);
-            return SymbolTable.StringToId(str1);
+        public static SymbolId/*!*/ CreateSymbolL(string/*!*/ str1, RubyEncoding/*!*/ encoding) {
+            return ToSymbolChecked(CreateMutableStringL(str1, encoding));
         }
         
         [Emitted]
-        public static SymbolId/*!*/ CreateSymbolU(string/*!*/ str1) {
-            Debug.Assert(str1.Length > 0);
-            return SymbolTable.StringToId(str1);
+        public static SymbolId/*!*/ CreateSymbolM(MutableString str1, RubyEncoding/*!*/ encoding) {
+            return ToSymbolChecked(CreateMutableStringM(str1, encoding));
         }
 
         [Emitted]
-        public static SymbolId/*!*/ CreateSymbolE(string/*!*/ str1, int codepage) {
-            Debug.Assert(str1.Length > 0);
-            return SymbolTable.StringToId(str1);
+        public static SymbolId/*!*/ CreateSymbolLM(string/*!*/ str1, MutableString str2, RubyEncoding/*!*/ encoding) {
+            return ToSymbolChecked(CreateMutableStringLM(str1, str2, encoding));
+        }
+
+        [Emitted]
+        public static SymbolId/*!*/ CreateSymbolML(MutableString str1, string/*!*/ str2, RubyEncoding/*!*/ encoding) {
+            return ToSymbolChecked(CreateMutableStringML(str1, str2, encoding));
         }
         
         [Emitted]
-        public static SymbolId/*!*/ CreateSymbolM(MutableString str1) {
-            if (MutableString.IsNullOrEmpty(str1)) {
-                throw RubyExceptions.CreateArgumentError("interning empty string");
-            }
-            return SymbolTable.StringToId(str1.ConvertToString());
+        public static SymbolId/*!*/ CreateSymbolMM(MutableString str1, MutableString str2, RubyEncoding/*!*/ encoding) {
+            return ToSymbolChecked(CreateMutableStringMM(str1, str2, encoding));
         }
 
         [Emitted]
-        public static SymbolId/*!*/ CreateSymbolBM(string/*!*/ str1, MutableString str2) {
-            Debug.Assert(str1.Length > 0);
-            return (str2 != null) ? SymbolTable.StringToId(str1 + str2.ConvertToString()) : SymbolTable.StringToId(str1);
+        public static SymbolId/*!*/ CreateSymbolN(object[]/*!*/ strings, RubyEncoding/*!*/ encoding) {
+            return ToSymbolChecked(CreateMutableStringN(strings, encoding));
         }
 
-        [Emitted]
-        public static SymbolId/*!*/ CreateSymbolUM(string/*!*/ str1, MutableString str2) {
-            Debug.Assert(str1.Length > 0);
-            return (str2 != null) ? SymbolTable.StringToId(str1 + str2.ConvertToString()) : SymbolTable.StringToId(str1);
-        }
-
-        [Emitted]
-        public static SymbolId/*!*/ CreateSymbolEM(string/*!*/ str1, MutableString str2, int codepage) {
-            Debug.Assert(str1.Length > 0);
-            return (str2 != null) ? SymbolTable.StringToId(str1 + str2.ConvertToString()) : SymbolTable.StringToId(str1);
-        }
-
-        [Emitted]
-        public static SymbolId/*!*/ CreateSymbolMB(MutableString str1, string/*!*/ str2) {
-            Debug.Assert(str2.Length > 0);
-            return (str1 != null) ? SymbolTable.StringToId(str1.ConvertToString() + str2) : SymbolTable.StringToId(str2);
-        }
-
-        [Emitted]
-        public static SymbolId/*!*/ CreateSymbolMU(MutableString str1, string/*!*/ str2) {
-            Debug.Assert(str2.Length > 0);
-            return (str1 != null) ? SymbolTable.StringToId(str1.ConvertToString() + str2) : SymbolTable.StringToId(str2);
-        }
-
-        [Emitted]
-        public static SymbolId/*!*/ CreateSymbolME(MutableString str1, string/*!*/ str2, int codepage) {
-            Debug.Assert(str2.Length > 0);
-            return (str1 != null) ? SymbolTable.StringToId(str1.ConvertToString() + str2) : SymbolTable.StringToId(str2);
-        }
-        
-        [Emitted]
-        public static SymbolId/*!*/ CreateSymbolMM(MutableString str1, MutableString str2) {
-            MutableString str;
-            if (MutableString.IsNullOrEmpty(str1)) {
-                if (MutableString.IsNullOrEmpty(str2)) {
-                    throw RubyExceptions.CreateArgumentError("interning empty string");
-                } else {
-                    str = str2;
-                }
-            } else if (MutableString.IsNullOrEmpty(str2)) {
-                str = str1;
-            } else {
-                str = MutableString.Create(str1).Append(str2);
-            }
-
-            return SymbolTable.StringToId(str.ToString());
-        }
-
-        [Emitted]
-        public static SymbolId/*!*/ CreateSymbolN(object[]/*!*/ strings, int codepage) {
-            var str = ConcatenateStrings(strings);
+        private static SymbolId/*!*/ ToSymbolChecked(MutableString/*!*/ str) {
             if (str.IsEmpty) {
                 throw RubyExceptions.CreateArgumentError("interning empty string");
             }
@@ -1240,28 +1129,8 @@ namespace IronRuby.Runtime {
 
         #endregion
 
-        // TODO: encodings
-        // TODO: could be optimized if we knew that we don't have any string literal:
-        private static MutableString/*!*/ ConcatenateStrings(object[]/*!*/ strings) {
-            Assert.NotNull(strings);
-            Type strType = typeof(string);
-            MutableString result = MutableString.CreateMutable();
-            for (int i = 0; i < strings.Length; i++) {
-                object str = strings[i];
-                if (str != null) {
-                    if (str.GetType() == strType) {
-                        result.Append((string)str);
-                    } else {
-                        result.Append((MutableString)str);
-                    }
-                }
-            }
-            return result;
-        }
-
         [Emitted]
         public static RubyEncoding/*!*/ CreateEncoding(int codepage) {
-            Debug.Assert(codepage >= 0, "Null encoding not allowed here");
             return RubyEncoding.GetRubyEncoding(codepage);
         }
 

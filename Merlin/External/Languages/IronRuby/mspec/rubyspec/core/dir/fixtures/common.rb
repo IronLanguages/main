@@ -25,6 +25,8 @@ module DirSpecs
       rescue
       end
     end
+  ensure
+    $KCODE = old_kcode
   end
 
   def DirSpecs.create_mock_dirs

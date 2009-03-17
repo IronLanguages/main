@@ -17,6 +17,7 @@ using System;
 using Microsoft.Scripting;
 using Microsoft.Scripting.Utils;
 using IronRuby.Builtins;
+using System.Text;
 
 namespace IronRuby.Runtime {
     internal sealed class SpecialGlobalVariableInfo : GlobalVariable {
@@ -114,9 +115,13 @@ namespace IronRuby.Runtime {
                     return context.Verbose;
 
                 case GlobalVariableId.KCode:
-                    // TODO: Ruby 1.9 reports a warning:
-                    string name = context.GetKCodeName();
-                    return (name != null) ? MutableString.Create(name) : null;
+#if !SILVERLIGHT
+                    if (context.RubyOptions.Compatibility == RubyCompatibility.Ruby18) {
+                        return MutableString.Create(KCoding.GetKCodeName(context.KCode));
+                    }
+#endif
+                    context.ReportWarning("variable $KCODE is no longer effective");
+                    return null;
 
                 case GlobalVariableId.ChildProcessExitStatus:
                     return context.ChildProcessExitStatus;
@@ -221,9 +226,16 @@ namespace IronRuby.Runtime {
                     return;
                 
                 case GlobalVariableId.KCode:
-                    // MRI calls to_str; we don't do that, it's inconsistent with other globals.
-                    // If some app depends on this behavior, it will fail gracefully:
-                    context.SetKCode((value != null) ? RequireType<MutableString>(value, name, "String") : null);
+#if !SILVERLIGHT
+                    if (context.RubyOptions.Compatibility == RubyCompatibility.Ruby18) {
+                        // MRI calls to_str; we don't do that, it's inconsistent with other globals.
+                        // If some app depends on this behavior, it will fail gracefully:
+                        context.KCode = RubyEncoding.GetKCodingByNameInitial(RequireType<MutableString>(value, name, "String").GetFirstChar());
+                        Utils.Log(String.Format("Set to {0}", context.KCode), "KCODE");
+                        return;
+                    }
+#endif
+                    context.ReportWarning("variable $KCODE is no longer effective");
                     return;
 
                 case GlobalVariableId.ChildProcessExitStatus:

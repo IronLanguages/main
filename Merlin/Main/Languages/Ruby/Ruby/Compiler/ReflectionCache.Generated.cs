@@ -96,82 +96,46 @@ namespace IronRuby.Compiler {
         private static MethodInfo _CreateModuleEvalScope;
         public static MethodInfo/*!*/ CreateModuleScope { get { return _CreateModuleScope ?? (_CreateModuleScope = GetMethod(typeof(RubyOps), "CreateModuleScope")); } }
         private static MethodInfo _CreateModuleScope;
-        public static MethodInfo/*!*/ CreateMutableStringB { get { return _CreateMutableStringB ?? (_CreateMutableStringB = GetMethod(typeof(RubyOps), "CreateMutableStringB")); } }
-        private static MethodInfo _CreateMutableStringB;
-        public static MethodInfo/*!*/ CreateMutableStringBM { get { return _CreateMutableStringBM ?? (_CreateMutableStringBM = GetMethod(typeof(RubyOps), "CreateMutableStringBM")); } }
-        private static MethodInfo _CreateMutableStringBM;
-        public static MethodInfo/*!*/ CreateMutableStringE { get { return _CreateMutableStringE ?? (_CreateMutableStringE = GetMethod(typeof(RubyOps), "CreateMutableStringE")); } }
-        private static MethodInfo _CreateMutableStringE;
-        public static MethodInfo/*!*/ CreateMutableStringEM { get { return _CreateMutableStringEM ?? (_CreateMutableStringEM = GetMethod(typeof(RubyOps), "CreateMutableStringEM")); } }
-        private static MethodInfo _CreateMutableStringEM;
+        public static MethodInfo/*!*/ CreateMutableStringL { get { return _CreateMutableStringL ?? (_CreateMutableStringL = GetMethod(typeof(RubyOps), "CreateMutableStringL")); } }
+        private static MethodInfo _CreateMutableStringL;
+        public static MethodInfo/*!*/ CreateMutableStringLM { get { return _CreateMutableStringLM ?? (_CreateMutableStringLM = GetMethod(typeof(RubyOps), "CreateMutableStringLM")); } }
+        private static MethodInfo _CreateMutableStringLM;
         public static MethodInfo/*!*/ CreateMutableStringM { get { return _CreateMutableStringM ?? (_CreateMutableStringM = GetMethod(typeof(RubyOps), "CreateMutableStringM")); } }
         private static MethodInfo _CreateMutableStringM;
-        public static MethodInfo/*!*/ CreateMutableStringMB { get { return _CreateMutableStringMB ?? (_CreateMutableStringMB = GetMethod(typeof(RubyOps), "CreateMutableStringMB")); } }
-        private static MethodInfo _CreateMutableStringMB;
-        public static MethodInfo/*!*/ CreateMutableStringME { get { return _CreateMutableStringME ?? (_CreateMutableStringME = GetMethod(typeof(RubyOps), "CreateMutableStringME")); } }
-        private static MethodInfo _CreateMutableStringME;
+        public static MethodInfo/*!*/ CreateMutableStringML { get { return _CreateMutableStringML ?? (_CreateMutableStringML = GetMethod(typeof(RubyOps), "CreateMutableStringML")); } }
+        private static MethodInfo _CreateMutableStringML;
         public static MethodInfo/*!*/ CreateMutableStringMM { get { return _CreateMutableStringMM ?? (_CreateMutableStringMM = GetMethod(typeof(RubyOps), "CreateMutableStringMM")); } }
         private static MethodInfo _CreateMutableStringMM;
-        public static MethodInfo/*!*/ CreateMutableStringMU { get { return _CreateMutableStringMU ?? (_CreateMutableStringMU = GetMethod(typeof(RubyOps), "CreateMutableStringMU")); } }
-        private static MethodInfo _CreateMutableStringMU;
         public static MethodInfo/*!*/ CreateMutableStringN { get { return _CreateMutableStringN ?? (_CreateMutableStringN = GetMethod(typeof(RubyOps), "CreateMutableStringN")); } }
         private static MethodInfo _CreateMutableStringN;
-        public static MethodInfo/*!*/ CreateMutableStringU { get { return _CreateMutableStringU ?? (_CreateMutableStringU = GetMethod(typeof(RubyOps), "CreateMutableStringU")); } }
-        private static MethodInfo _CreateMutableStringU;
-        public static MethodInfo/*!*/ CreateMutableStringUM { get { return _CreateMutableStringUM ?? (_CreateMutableStringUM = GetMethod(typeof(RubyOps), "CreateMutableStringUM")); } }
-        private static MethodInfo _CreateMutableStringUM;
-        public static MethodInfo/*!*/ CreateRegexB { get { return _CreateRegexB ?? (_CreateRegexB = GetMethod(typeof(RubyOps), "CreateRegexB")); } }
-        private static MethodInfo _CreateRegexB;
-        public static MethodInfo/*!*/ CreateRegexBM { get { return _CreateRegexBM ?? (_CreateRegexBM = GetMethod(typeof(RubyOps), "CreateRegexBM")); } }
-        private static MethodInfo _CreateRegexBM;
-        public static MethodInfo/*!*/ CreateRegexE { get { return _CreateRegexE ?? (_CreateRegexE = GetMethod(typeof(RubyOps), "CreateRegexE")); } }
-        private static MethodInfo _CreateRegexE;
-        public static MethodInfo/*!*/ CreateRegexEM { get { return _CreateRegexEM ?? (_CreateRegexEM = GetMethod(typeof(RubyOps), "CreateRegexEM")); } }
-        private static MethodInfo _CreateRegexEM;
+        public static MethodInfo/*!*/ CreateRegexL { get { return _CreateRegexL ?? (_CreateRegexL = GetMethod(typeof(RubyOps), "CreateRegexL")); } }
+        private static MethodInfo _CreateRegexL;
+        public static MethodInfo/*!*/ CreateRegexLM { get { return _CreateRegexLM ?? (_CreateRegexLM = GetMethod(typeof(RubyOps), "CreateRegexLM")); } }
+        private static MethodInfo _CreateRegexLM;
         public static MethodInfo/*!*/ CreateRegexM { get { return _CreateRegexM ?? (_CreateRegexM = GetMethod(typeof(RubyOps), "CreateRegexM")); } }
         private static MethodInfo _CreateRegexM;
-        public static MethodInfo/*!*/ CreateRegexMB { get { return _CreateRegexMB ?? (_CreateRegexMB = GetMethod(typeof(RubyOps), "CreateRegexMB")); } }
-        private static MethodInfo _CreateRegexMB;
-        public static MethodInfo/*!*/ CreateRegexME { get { return _CreateRegexME ?? (_CreateRegexME = GetMethod(typeof(RubyOps), "CreateRegexME")); } }
-        private static MethodInfo _CreateRegexME;
+        public static MethodInfo/*!*/ CreateRegexML { get { return _CreateRegexML ?? (_CreateRegexML = GetMethod(typeof(RubyOps), "CreateRegexML")); } }
+        private static MethodInfo _CreateRegexML;
         public static MethodInfo/*!*/ CreateRegexMM { get { return _CreateRegexMM ?? (_CreateRegexMM = GetMethod(typeof(RubyOps), "CreateRegexMM")); } }
         private static MethodInfo _CreateRegexMM;
-        public static MethodInfo/*!*/ CreateRegexMU { get { return _CreateRegexMU ?? (_CreateRegexMU = GetMethod(typeof(RubyOps), "CreateRegexMU")); } }
-        private static MethodInfo _CreateRegexMU;
         public static MethodInfo/*!*/ CreateRegexN { get { return _CreateRegexN ?? (_CreateRegexN = GetMethod(typeof(RubyOps), "CreateRegexN")); } }
         private static MethodInfo _CreateRegexN;
-        public static MethodInfo/*!*/ CreateRegexU { get { return _CreateRegexU ?? (_CreateRegexU = GetMethod(typeof(RubyOps), "CreateRegexU")); } }
-        private static MethodInfo _CreateRegexU;
-        public static MethodInfo/*!*/ CreateRegexUM { get { return _CreateRegexUM ?? (_CreateRegexUM = GetMethod(typeof(RubyOps), "CreateRegexUM")); } }
-        private static MethodInfo _CreateRegexUM;
         public static MethodInfo/*!*/ CreateRfcForMethod { get { return _CreateRfcForMethod ?? (_CreateRfcForMethod = GetMethod(typeof(RubyOps), "CreateRfcForMethod")); } }
         private static MethodInfo _CreateRfcForMethod;
         public static MethodInfo/*!*/ CreateStructInstance { get { return _CreateStructInstance ?? (_CreateStructInstance = GetMethod(typeof(RubyOps), "CreateStructInstance")); } }
         private static MethodInfo _CreateStructInstance;
-        public static MethodInfo/*!*/ CreateSymbolB { get { return _CreateSymbolB ?? (_CreateSymbolB = GetMethod(typeof(RubyOps), "CreateSymbolB")); } }
-        private static MethodInfo _CreateSymbolB;
-        public static MethodInfo/*!*/ CreateSymbolBM { get { return _CreateSymbolBM ?? (_CreateSymbolBM = GetMethod(typeof(RubyOps), "CreateSymbolBM")); } }
-        private static MethodInfo _CreateSymbolBM;
-        public static MethodInfo/*!*/ CreateSymbolE { get { return _CreateSymbolE ?? (_CreateSymbolE = GetMethod(typeof(RubyOps), "CreateSymbolE")); } }
-        private static MethodInfo _CreateSymbolE;
-        public static MethodInfo/*!*/ CreateSymbolEM { get { return _CreateSymbolEM ?? (_CreateSymbolEM = GetMethod(typeof(RubyOps), "CreateSymbolEM")); } }
-        private static MethodInfo _CreateSymbolEM;
+        public static MethodInfo/*!*/ CreateSymbolL { get { return _CreateSymbolL ?? (_CreateSymbolL = GetMethod(typeof(RubyOps), "CreateSymbolL")); } }
+        private static MethodInfo _CreateSymbolL;
+        public static MethodInfo/*!*/ CreateSymbolLM { get { return _CreateSymbolLM ?? (_CreateSymbolLM = GetMethod(typeof(RubyOps), "CreateSymbolLM")); } }
+        private static MethodInfo _CreateSymbolLM;
         public static MethodInfo/*!*/ CreateSymbolM { get { return _CreateSymbolM ?? (_CreateSymbolM = GetMethod(typeof(RubyOps), "CreateSymbolM")); } }
         private static MethodInfo _CreateSymbolM;
-        public static MethodInfo/*!*/ CreateSymbolMB { get { return _CreateSymbolMB ?? (_CreateSymbolMB = GetMethod(typeof(RubyOps), "CreateSymbolMB")); } }
-        private static MethodInfo _CreateSymbolMB;
-        public static MethodInfo/*!*/ CreateSymbolME { get { return _CreateSymbolME ?? (_CreateSymbolME = GetMethod(typeof(RubyOps), "CreateSymbolME")); } }
-        private static MethodInfo _CreateSymbolME;
+        public static MethodInfo/*!*/ CreateSymbolML { get { return _CreateSymbolML ?? (_CreateSymbolML = GetMethod(typeof(RubyOps), "CreateSymbolML")); } }
+        private static MethodInfo _CreateSymbolML;
         public static MethodInfo/*!*/ CreateSymbolMM { get { return _CreateSymbolMM ?? (_CreateSymbolMM = GetMethod(typeof(RubyOps), "CreateSymbolMM")); } }
         private static MethodInfo _CreateSymbolMM;
-        public static MethodInfo/*!*/ CreateSymbolMU { get { return _CreateSymbolMU ?? (_CreateSymbolMU = GetMethod(typeof(RubyOps), "CreateSymbolMU")); } }
-        private static MethodInfo _CreateSymbolMU;
         public static MethodInfo/*!*/ CreateSymbolN { get { return _CreateSymbolN ?? (_CreateSymbolN = GetMethod(typeof(RubyOps), "CreateSymbolN")); } }
         private static MethodInfo _CreateSymbolN;
-        public static MethodInfo/*!*/ CreateSymbolU { get { return _CreateSymbolU ?? (_CreateSymbolU = GetMethod(typeof(RubyOps), "CreateSymbolU")); } }
-        private static MethodInfo _CreateSymbolU;
-        public static MethodInfo/*!*/ CreateSymbolUM { get { return _CreateSymbolUM ?? (_CreateSymbolUM = GetMethod(typeof(RubyOps), "CreateSymbolUM")); } }
-        private static MethodInfo _CreateSymbolUM;
         public static MethodInfo/*!*/ CreateTopLevelHostedScope { get { return _CreateTopLevelHostedScope ?? (_CreateTopLevelHostedScope = GetMethod(typeof(RubyOps), "CreateTopLevelHostedScope")); } }
         private static MethodInfo _CreateTopLevelHostedScope;
         public static MethodInfo/*!*/ CreateTopLevelScope { get { return _CreateTopLevelScope ?? (_CreateTopLevelScope = GetMethod(typeof(RubyOps), "CreateTopLevelScope")); } }
@@ -451,16 +415,10 @@ namespace IronRuby.Compiler {
             Debug.Assert(suffix.Length <= RubyOps.MakeStringParamCount);
             switch (suffix) {
                 case "N": return CreateRegexN;
-                case "B": return CreateRegexB;
-                case "E": return CreateRegexE;
-                case "U": return CreateRegexU;
+                case "L": return CreateRegexL;
                 case "M": return CreateRegexM;
-                case "BM": return CreateRegexBM;
-                case "UM": return CreateRegexUM;
-                case "EM": return CreateRegexEM;
-                case "MB": return CreateRegexMB;
-                case "MU": return CreateRegexMU;
-                case "ME": return CreateRegexME;
+                case "LM": return CreateRegexLM;
+                case "ML": return CreateRegexML;
                 case "MM": return CreateRegexMM;
             }
             throw Assert.Unreachable;
@@ -470,16 +428,10 @@ namespace IronRuby.Compiler {
             Debug.Assert(suffix.Length <= RubyOps.MakeStringParamCount);
             switch (suffix) {
                 case "N": return CreateMutableStringN;
-                case "B": return CreateMutableStringB;
-                case "E": return CreateMutableStringE;
-                case "U": return CreateMutableStringU;
+                case "L": return CreateMutableStringL;
                 case "M": return CreateMutableStringM;
-                case "BM": return CreateMutableStringBM;
-                case "UM": return CreateMutableStringUM;
-                case "EM": return CreateMutableStringEM;
-                case "MB": return CreateMutableStringMB;
-                case "MU": return CreateMutableStringMU;
-                case "ME": return CreateMutableStringME;
+                case "LM": return CreateMutableStringLM;
+                case "ML": return CreateMutableStringML;
                 case "MM": return CreateMutableStringMM;
             }
             throw Assert.Unreachable;
@@ -489,16 +441,10 @@ namespace IronRuby.Compiler {
             Debug.Assert(suffix.Length <= RubyOps.MakeStringParamCount);
             switch (suffix) {
                 case "N": return CreateSymbolN;
-                case "B": return CreateSymbolB;
-                case "E": return CreateSymbolE;
-                case "U": return CreateSymbolU;
+                case "L": return CreateSymbolL;
                 case "M": return CreateSymbolM;
-                case "BM": return CreateSymbolBM;
-                case "UM": return CreateSymbolUM;
-                case "EM": return CreateSymbolEM;
-                case "MB": return CreateSymbolMB;
-                case "MU": return CreateSymbolMU;
-                case "ME": return CreateSymbolME;
+                case "LM": return CreateSymbolLM;
+                case "ML": return CreateSymbolML;
                 case "MM": return CreateSymbolMM;
             }
             throw Assert.Unreachable;

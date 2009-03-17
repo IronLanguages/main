@@ -32,10 +32,10 @@ namespace IronRuby.Builtins {
             // Called by Class#new rule when creating a Ruby subclass of String.
             // The encoding is set to BINARY.
             public Subclass(RubyClass/*!*/ rubyClass)
-                : this(rubyClass, BinaryEncoding.Instance) {
+                : this(rubyClass, RubyEncoding.Binary) {
             }
 
-            public Subclass(RubyClass/*!*/ rubyClass, Encoding encoding) 
+            public Subclass(RubyClass/*!*/ rubyClass, RubyEncoding/*!*/ encoding) 
                 : base(encoding) {
                 Assert.NotNull(rubyClass);
                 _class = rubyClass;

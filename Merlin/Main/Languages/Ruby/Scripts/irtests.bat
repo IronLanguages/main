@@ -4,13 +4,13 @@ start "Smoke Tests" %MERLIN_ROOT%\Languages\Ruby\Tests\Scripts\irtest.bat
 
 start "Legacy Tests" %MERLIN_ROOT%\Languages\Ruby\Tests\run.bat
 
-set RUBY_SPEC_CMD=%MERLIN_ROOT%\Languages\Ruby\Scripts\RunRspec.cmd
+start "Core RubySpec tests" mspec ci -fd -V :core
 
-start "Core RubySpec tests" %RUBY_SPEC_CMD% .
+start "Language RubySpec tests" mspec ci -fd -V :lang
 
-start "Language RubySpec tests" %RUBY_SPEC_CMD% ..\language
+start "Library RubySpec tests" mspec ci -fd -V :lib
 
-start "Library RubySpec tests" %RUBY_SPEC_CMD% ..\library
+start "Command Line RubySpec tests" mspec ci -fd -V :cli
 
 @if exist %MERLIN_ROOT%\Scripts\Python\GenerateSystemCoreCsproj.py (
   echo Dev10 build test:

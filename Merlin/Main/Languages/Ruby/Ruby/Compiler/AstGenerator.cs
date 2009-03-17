@@ -42,14 +42,14 @@ namespace IronRuby.Compiler.Ast {
         private readonly RubyCompilerOptions/*!*/ _compilerOptions;
         private readonly SourceUnit/*!*/ _sourceUnit;
         private readonly MSA.SymbolDocumentInfo _document;
-        private readonly Encoding/*!*/ _encoding;
+        private readonly RubyEncoding/*!*/ _encoding;
         private readonly Profiler _profiler;
         private readonly bool _debugCompiler;
         private readonly bool _debugMode;
         private readonly bool _traceEnabled;
         private readonly bool _savingToDisk;
 
-        internal AstGenerator(RubyBinder/*!*/ binder, RubyCompilerOptions/*!*/ options, SourceUnit/*!*/ sourceUnit, Encoding/*!*/ encoding,
+        internal AstGenerator(RubyBinder/*!*/ binder, RubyCompilerOptions/*!*/ options, SourceUnit/*!*/ sourceUnit, RubyEncoding/*!*/ encoding,
             bool debugCompiler, bool debugMode, bool traceEnabled, bool profilerEnabled, bool savingToDisk) {
 
             Assert.NotNull(binder, options, encoding);
@@ -93,7 +93,7 @@ namespace IronRuby.Compiler.Ast {
             get { return _sourceUnit; }
         }
 
-        public Encoding Encoding {
+        public RubyEncoding/*!*/ Encoding {
             get { return _encoding; }
         }
 

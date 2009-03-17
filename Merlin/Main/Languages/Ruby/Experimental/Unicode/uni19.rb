@@ -49,3 +49,9 @@ puts s[0].dump, s[1].dump
 puts '---'
 
 puts s.delete('X') rescue p $! 
+
+puts :x.encoding
+puts :'ab'.encoding
+puts :"abΣ".encoding
+puts :"abΣ\xce\xa3".encoding
+

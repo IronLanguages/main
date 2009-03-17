@@ -21,7 +21,7 @@ using System.Net.Sockets;
 
 namespace IronRuby.StandardLibrary.Sockets {
     internal class SocketStream : System.IO.Stream {
-        public SocketStream(/*!*/Socket s) {
+        public SocketStream(Socket/*!*/ s) {
             _socket = s;
         }
 

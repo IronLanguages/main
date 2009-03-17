@@ -369,9 +369,7 @@ namespace IronRuby.Tests {
                     failedCases.Add(test);
 
                     Console.Error.WriteLine();
-                    Console.ForegroundColor = ConsoleColor.Red;
-                    Console.Error.WriteLine("{0}) {1} {2} : {3}", failedCases.Count, test, frame.GetFileName(), frame.GetFileLineNumber());
-                    Console.ForegroundColor = ConsoleColor.Gray;
+                    WriteError("{0}) {1} {2} : {3}", failedCases.Count, test, frame.GetFileName(), frame.GetFileLineNumber());
                     Console.Error.WriteLine(message);
                 }
             }
@@ -382,9 +380,7 @@ namespace IronRuby.Tests {
                     Exception exception = _unexpectedExceptions[i].Item001;
 
                     Console.Error.WriteLine();
-                    Console.ForegroundColor = ConsoleColor.Red;
-                    Console.Error.WriteLine("{0}) {1} (unexpected exception)", failedCases.Count, test);
-                    Console.ForegroundColor = ConsoleColor.Gray;
+                    WriteError("{0}) {1} (unexpected exception)", failedCases.Count, test);
                     Console.Error.WriteLine(exception);
                     failedCases.Add(test);
                 }
@@ -439,9 +435,17 @@ namespace IronRuby.Tests {
         }
 
         private void PrintTestCaseFailed() {
+            var oldColor = Console.ForegroundColor;
             Console.ForegroundColor = ConsoleColor.Red;
             Console.WriteLine("> FAILED");
-            Console.ForegroundColor = ConsoleColor.Gray;
+            Console.ForegroundColor = oldColor;
+        }
+
+        private void WriteError(string/*!*/ str, params object[] args) {
+            var oldColor = Console.ForegroundColor;
+            Console.ForegroundColor = ConsoleColor.Red;
+            Console.WriteLine(str, args);
+            Console.ForegroundColor = oldColor;
         }
 
         [DebuggerHiddenAttribute]

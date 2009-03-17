@@ -472,7 +472,7 @@ namespace IronRuby.Builtins {
             }
 
             // TODO: optimize if the value is not read:
-            int result = self.PeekByte(index);
+            int result = self.GetByte(index);
             self.Remove(index, 1);
             return result;
         }
@@ -1068,90 +1068,29 @@ namespace IronRuby.Builtins {
 
         #region dump, inspect
 
-        [Flags]
-        public enum CharacterEscaping {
-            UseOctalEscapes = 1,
-            UseUnicodeEscapes = 2,
-            EscapeDoubleQuote = 4,
-            EscapeSingleQuote = 8
+        public static string/*!*/ GetQuotedStringRepresentation(MutableString/*!*/ self, RubyContext/*!*/ context, bool forceEscapes, char quote) {
+            return self.AppendRepresentation(
+                new StringBuilder().Append(quote), 
+                context.RubyOptions.Compatibility == RubyCompatibility.Ruby18, 
+                forceEscapes,
+                quote
+            ).Append(quote).ToString();
         }
 
-        public static void AppendStringRepresentationOfChar(StringBuilder/*!*/ result, int c, int nextc) {
-            AppendStringRepresentationOfChar(result, c, nextc, CharacterEscaping.UseOctalEscapes | CharacterEscaping.EscapeDoubleQuote);
-        }
-
-        public static void AppendStringRepresentationOfChar(StringBuilder/*!*/ result, int c, int nextc, CharacterEscaping escaping) {
-            switch (c) {
-                case '\a': result.Append("\\a"); break;
-                case '\b': result.Append("\\b"); break;
-                case '\t': result.Append("\\t"); break;
-                case '\n': result.Append("\\n"); break;
-                case '\v': result.Append("\\v"); break;
-                case '\f': result.Append("\\f"); break;
-                case '\r': result.Append("\\r"); break;
-                case 27: result.Append("\\e"); break;
-                case '"': if ((escaping & CharacterEscaping.EscapeDoubleQuote) != 0) result.Append("\\\""); else result.Append('"'); break;
-                case '\'': if ((escaping & CharacterEscaping.EscapeSingleQuote) != 0) result.Append("\\'"); else result.Append('\''); break;
-                case '\\': result.Append("\\\\"); break;
-
-                case '#':
-                    switch (nextc) {
-                        case '{':
-                        case '$':
-                        case '@':
-                            result.Append('\\');
-                            break;
-                    }
-                    result.Append('#');
-                    break;
-
-                default:
-                    if ((escaping & CharacterEscaping.UseOctalEscapes) != 0) {
-                        if (c < 32 || c > 126) {
-                            result.Append('\\');
-                            result.Append(System.Convert.ToString(c, 8).PadLeft(3, '0'));
-                        } else {
-                            result.Append((char)c);
-                        }
-                    } else if ((escaping & CharacterEscaping.UseUnicodeEscapes) != 0) {
-                        if (Char.IsControl((char)c)) {
-                            result.Append("\\u");
-                            result.Append(System.Convert.ToString(c, 16).PadLeft(4, '0'));
-                        } else {
-                            result.Append((char)c);
-                        }
-                    }
-                    break;
-            }
-        }
-
-        private static StringBuilder/*!*/ Dump(MutableString/*!*/ self) {
-            StringBuilder result = new StringBuilder();
-            result.Append('"');
-
-            byte[] bytes = self.ToByteArray();
-            for (int i = 0; i < bytes.Length; i++) {
-                AppendStringRepresentationOfChar(result, bytes[i], i + 1 < bytes.Length ? bytes[i + 1] : -1);
-            }
-
-            result.Append('"');
-            return result;
-        }
-
+        // encoding aware
         [RubyMethod("dump")]
         public static MutableString/*!*/ Dump(RubyContext/*!*/ context, MutableString/*!*/ self) {
-            StringBuilder result = Dump(self);
             // Note that "self" could be a subclass of MutableString, and the return value should be
             // of the same type
-            return self.CreateInstance().Append(result).TaintBy(self);
+            return self.CreateInstance().Append(GetQuotedStringRepresentation(self, context, true, '"')).TaintBy(self);
         }
 
+        // encoding aware
         [RubyMethod("inspect")]
         public static MutableString/*!*/ Inspect(RubyContext/*!*/ context, MutableString/*!*/ self) {
-            StringBuilder result = Dump(self);
             // Note that "self" could be a subclass of MutableString, but the return value should 
             // always be just a MutableString
-            return MutableString.CreateMutable(result.Capacity).Append(result).TaintBy(self);
+            return MutableString.Create(GetQuotedStringRepresentation(self, context, false, '"'), self.Encoding).TaintBy(self);
         }
 
         #endregion
@@ -1252,20 +1191,23 @@ namespace IronRuby.Builtins {
 
         #region empty?, size, length, encoding
 
+        // encoding aware
         [RubyMethod("empty?")]
-        public static bool Empty(MutableString/*!*/ self) {
-            return self.Length == 0;
+        public static bool IsEmpty(MutableString/*!*/ self) {
+            return self.IsEmpty;
         }
 
+        // encoding aware
         [RubyMethod("size")]
         [RubyMethod("length")]
-        public static int MutableStringLength(MutableString/*!*/ self) {
-            return self.Length;
+        public static int GetLength(MutableString/*!*/ self) {
+            return (self.Encoding.IsKCoding) ? self.GetByteCount() : self.GetCharCount();
         }
 
+        // encoding aware
         [RubyMethod("encoding")]
-        public static RubyEncoding GetEncoding(MutableString/*!*/ self) {
-            return (self.Encoding != null) ? RubyEncoding.GetRubyEncoding(self.Encoding) : null;
+        public static RubyEncoding/*!*/ GetEncoding(MutableString/*!*/ self) {
+            return self.Encoding;
         }
 
         #endregion
@@ -2821,12 +2763,12 @@ namespace IronRuby.Builtins {
 
         private static MutableString/*!*/ ToHex(BinaryReader/*!*/ reader, int nibbleCount, bool swap) {
             int wholeChars = nibbleCount / 2;
-            MutableString hex = MutableString.CreateMutable(nibbleCount);
+            MutableString hex = MutableString.CreateMutable(nibbleCount, RubyEncoding.Binary);
 
             for (int i = 0; i < wholeChars; i++) {
                 byte b = reader.ReadByte();
-                char loNibble = ToLowerHexDigit(b & 0x0F);
-                char hiNibble = ToLowerHexDigit((b & 0xF0) >> 4);
+                char loNibble = (b & 0x0F).ToLowerHexDigit();
+                char hiNibble = ((b & 0xF0) >> 4).ToLowerHexDigit();
 
                 if (swap) {
                     hex.Append(loNibble);
@@ -2841,17 +2783,13 @@ namespace IronRuby.Builtins {
             if ((nibbleCount & 1) != 0) {
                 int b = reader.ReadByte();
                 if (swap) {
-                    hex.Append(ToLowerHexDigit(b & 0x0F));
+                    hex.Append((b & 0x0F).ToLowerHexDigit());
                 } else {
-                    hex.Append(ToLowerHexDigit((b & 0xF0) >> 4));
+                    hex.Append(((b & 0xF0) >> 4).ToLowerHexDigit());
                 }
             }
 
             return hex;
-        }
-
-        private static char ToLowerHexDigit(int digit) {
-            return (char)((digit < 10) ? '0' + digit : 'a' + digit - 10);
         }
 
         #endregion
@@ -2884,6 +2822,26 @@ namespace IronRuby.Builtins {
             }
             return sum;
         }
+
+        #endregion
+
+        #region Encodings (1.9)
+
+        //ascii_only?
+        //bytes
+        //bytesize
+        //chars
+        //codepoints
+        //each_byte
+        //each_char
+        //each_codepoint
+        //encode
+        //encode!
+        //encoding
+        //force_encoding
+        //getbyte
+        //setbyte
+        //valid_encoding?
 
         #endregion
 

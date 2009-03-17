@@ -18,35 +18,51 @@ using System.Collections.Generic;
 using Microsoft.Scripting.Utils;
 using System.Text;
 using IronRuby.Runtime;
+using System.Diagnostics;
 
 namespace IronRuby.Builtins {
     public partial class MutableString {
         [Serializable]
         private abstract class Content {
-            protected MutableString/*!*/ _owner;
+            protected MutableString _owner;
 
             #region Utils
 
             internal void SetOwner(MutableString/*!*/ owner) {
                 Assert.NotNull(owner);
+                Debug.Assert(_owner == null || _owner.Encoding == owner.Encoding);
                 _owner = owner;
             }
 
-            protected Content(MutableString/*!*/ owner) {
-                Assert.NotNull(owner);
+            protected Content(MutableString owner) {
                 _owner = owner;
             }
 
-            protected BinaryContent/*!*/ WrapContent(byte[]/*!*/ bytes) {
-                var result = new BinaryContent(_owner, new List<byte>(bytes)); // TODO: do not copy
+            protected BinaryContent/*!*/ WrapContent(byte[]/*!*/ bytes, int count) {
+                var result = new BinaryContent(bytes, count, _owner);
                 _owner.SetContent(result);
                 return result;
             }
             
-            protected StringBuilderContent/*!*/ WrapContent(StringBuilder/*!*/ sb) {
-                var result = new StringBuilderContent(_owner, sb);
+            protected CharArrayContent/*!*/ WrapContent(char[]/*!*/ chars, int count) {
+                var result = new CharArrayContent(chars, count, _owner);
                 _owner.SetContent(result);
                 return result;
+            }
+
+            public bool IsBinaryEncoded {
+                get { return _owner._encoding == RubyEncoding.Binary; }
+            }
+
+            public override int GetHashCode() {
+                int binarySum;
+                int hash = GetHashCode(out binarySum);
+
+                // xor with the encoding if there are any non-ASCII characters in the string:
+                if (binarySum >= 0x0080) {
+                    hash ^= _owner.Encoding.GetHashCode();
+                }
+                return hash;
             }
 
             #endregion
@@ -64,15 +80,14 @@ namespace IronRuby.Builtins {
             public abstract bool IsBinary { get; }
             public abstract bool IsEmpty { get; }
             public abstract int Length { get; }
+            public abstract int GetBinaryHashCode();
+            public abstract int GetHashCode(out int binarySum);
             public abstract int GetCharCount();
             public abstract int GetByteCount();
-            public abstract void GetDebugView(out string/*!*/ value, out string/*!*/ type);
-            public abstract Content/*!*/ Clone(MutableString/*!*/ newOwner);
+            public abstract Content/*!*/ Clone();
 
             public abstract char GetChar(int index);
             public abstract byte GetByte(int index);
-            public abstract byte PeekByte(int index);
-            public abstract char PeekChar(int index);
             public abstract string/*!*/ GetStringSlice(int start, int count);
             public abstract byte[]/*!*/ GetBinarySlice(int start, int count);
 
@@ -99,6 +114,7 @@ namespace IronRuby.Builtins {
             public abstract Content/*!*/ Append(char c, int repeatCount);
             public abstract Content/*!*/ Append(byte b, int repeatCount);
             public abstract Content/*!*/ Append(string/*!*/ str, int start, int count);
+            public abstract Content/*!*/ Append(char[]/*!*/ chars, int start, int count);
             public abstract Content/*!*/ Append(byte[]/*!*/ bytes, int start, int count);
             public abstract Content/*!*/ AppendTo(Content/*!*/ str, int start, int count);
 
@@ -107,6 +123,7 @@ namespace IronRuby.Builtins {
             public abstract Content/*!*/ Insert(int index, char c);
             public abstract Content/*!*/ Insert(int index, byte b);
             public abstract Content/*!*/ Insert(int index, string/*!*/ str, int start, int count);
+            public abstract Content/*!*/ Insert(int index, char[]/*!*/ chars, int start, int count);
             public abstract Content/*!*/ Insert(int index, byte[]/*!*/ bytes, int start, int count);
             public abstract Content/*!*/ InsertTo(Content/*!*/ str, int index, int start, int count);
 
