@@ -147,7 +147,7 @@ namespace Microsoft.Scripting.Runtime {
         internal protected abstract ScriptCode CompileSourceCode(SourceUnit sourceUnit, CompilerOptions options, ErrorSink errorSink);
 
         internal protected virtual ScriptCode LoadCompiledCode(Delegate method, string path) {
-            return LegacyScriptCode.Load((DlrMainCallTarget)method, this, path);
+            throw new NotSupportedException();
         }
 
         #endregion

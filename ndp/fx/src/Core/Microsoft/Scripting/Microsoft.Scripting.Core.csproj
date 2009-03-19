@@ -155,6 +155,7 @@
     <Compile Include="Ast\GotoExpression.cs" />
     <Compile Include="Compiler\LabelInfo.cs" />
     <Compile Include="Compiler\AnalyzedTree.cs" />
+    <Compile Include="Compiler\OffsetTrackingILGenerator.cs" />
     <Compile Include="Compiler\RuntimeVariableList.cs" />
     <Compile Include="Actions\UpdateDelegates.Generated.cs" />
     <Compile Include="Ast\DynamicExpression.cs" />
@@ -212,11 +213,13 @@
     <Compile Include="Compiler\LambdaCompiler.Statements.cs" />
     <Compile Include="Compiler\LambdaCompiler.Unary.cs" />
     <Compile Include="Compiler\LambdaCompiler.cs" />
+    <Compile Include="Compiler\DebugInfoGenerator.cs" />
     <Compile Include="Compiler\Set.cs" />
     <Compile Include="Compiler\StackSpiller.Bindings.cs" />
     <Compile Include="Compiler\StackSpiller.Generated.cs" />
     <Compile Include="Compiler\StackSpiller.Temps.cs" />
     <Compile Include="Compiler\StackSpiller.cs" />
+    <Compile Include="Compiler\SymbolDocumentGenerator.cs" />
     <Compile Include="Compiler\VariableBinder.cs" />
     <Compile Include="Compiler\AssemblyGen.cs" />
     <Compile Include="Compiler\ILGen.cs" />

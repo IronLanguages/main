@@ -267,7 +267,7 @@ namespace IronPython.Compiler {
             _name = SymbolTable.StringToId(name);
             _isLocal = isLocal;
         }
-
+        public override int ConsumedStack { get { return 1; } }
         public override int ProducedStack { get { return 1; } }
         public override int Run(StackFrame frame) {
             if (_isLocal) {

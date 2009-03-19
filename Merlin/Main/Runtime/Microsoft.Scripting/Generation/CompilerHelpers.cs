@@ -25,6 +25,7 @@ using Microsoft.Scripting.Actions;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 using Microsoft.Scripting.Interpreter;
+using System.Linq.Expressions.Compiler;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace Microsoft.Scripting.Generation {
@@ -693,6 +694,22 @@ namespace Microsoft.Scripting.Generation {
         }
 
         /// <summary>
+        /// Compiles the lambda into a method definition.
+        /// </summary>
+        /// <param name="lambda">the lambda to compile</param>
+        /// <param name="method">A <see cref="MethodBuilder"/> which will be used to hold the lambda's IL.</param>
+        /// <param name="emitDebugSymbols">A parameter that indicates if debugging information should be emitted to a PDB symbol store.</param>
+        public static void CompileToMethod(this LambdaExpression lambda, MethodBuilder method, bool emitDebugSymbols) {
+            if (emitDebugSymbols) {
+                var module = method.Module as ModuleBuilder;
+                ContractUtils.Requires(module != null, "method", "MethodBuilder does not have a valid ModuleBuilder");
+                lambda.CompileToMethod(method, DebugInfoGenerator.CreatePdbGenerator());
+            } else {
+                lambda.CompileToMethod(method);
+            }
+        }
+
+        /// <summary>
         /// Compiles the LambdaExpression.
         /// 
         /// If the lambda is compiled with emitDebugSymbols, it will be
@@ -706,7 +723,7 @@ namespace Microsoft.Scripting.Generation {
         /// <param name="emitDebugSymbols">true to generate a debuggable method, false otherwise</param>
         /// <returns>the compiled delegate</returns>
         public static T Compile<T>(this Expression<T> lambda, bool emitDebugSymbols) {
-            return emitDebugSymbols ? CompileToMethod(lambda, true) : lambda.Compile();
+            return emitDebugSymbols ? CompileToMethod(lambda, DebugInfoGenerator.CreatePdbGenerator(), true) : lambda.Compile();
         }
 
         /// <summary>
@@ -717,10 +734,11 @@ namespace Microsoft.Scripting.Generation {
         /// have debugging information.
         /// </summary>
         /// <param name="lambda">the lambda to compile</param>
-        /// <param name="emitDebugSymbols">true to generate a debuggable method, false otherwise</param>
+        /// <param name="debugInfoGenerator">Debugging information generator used by the compiler to mark sequence points and annotate local variables.</param>
+        /// <param name="emitDebugSymbols">True if debug symbols (PDBs) are emitted by the <paramref name="debugInfoGenerator"/>.</param>
         /// <returns>the compiled delegate</returns>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1011:ConsiderPassingBaseTypesAsParameters")]
-        public static T CompileToMethod<T>(Expression<T> lambda, bool emitDebugSymbols) {
+        public static T CompileToMethod<T>(Expression<T> lambda, DebugInfoGenerator debugInfoGenerator, bool emitDebugSymbols) {
             var type = Snippets.Shared.DefineType(lambda.Name, typeof(object), false, emitDebugSymbols).TypeBuilder;
             var rewriter = new BoundConstantsRewriter(type);
             lambda = (Expression<T>)rewriter.Visit(lambda);
@@ -728,7 +746,7 @@ namespace Microsoft.Scripting.Generation {
             //Create a unique method name when the lambda doesn't have a name or the name is empty.
             string methodName = String.IsNullOrEmpty(lambda.Name) ? GetUniqueMethodName() : lambda.Name;
             var method = type.DefineMethod(methodName, CompilerHelpers.PublicStatic);
-            lambda.CompileToMethod(method, emitDebugSymbols);
+            lambda.CompileToMethod(method, debugInfoGenerator);
 
             var finished = type.CreateType();
 

@@ -40,7 +40,7 @@ describe "File.expand_path" do
   end
 
   # FIXME: do not use conditionals like this around #it blocks
-  unless not home = ENV['HOME']
+  unless not home = ENV['HOME'].tr('\\', '/')
     it "converts a pathname to an absolute pathname, using ~ (home) as base" do
       File.expand_path('~').should == home
       File.expand_path('~', '/tmp/gumby/ddd').should == home

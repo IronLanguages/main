@@ -64,6 +64,7 @@
     <SilverlightInstallPath>C:\Program Files\Microsoft Silverlight\3.0.40307.0</SilverlightInstallPath>
     <SilverlightSdkPath Condition="Exists('$(TfsSilverlightPath)')">$(TfsSilverlightPath)</SilverlightSdkPath>
     <SilverlightSdkPath Condition="!Exists('$(TfsSilverlightPath)')">$(SilverlightInstallPath)</SilverlightSdkPath>
+    <NoWarn>414,219</NoWarn>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Silverlight Release|AnyCPU' ">
     <OutputPath>..\..\..\Bin\Silverlight Release\</OutputPath>
@@ -77,6 +78,7 @@
     <SilverlightInstallPath>C:\Program Files\Microsoft Silverlight\3.0.40307.0</SilverlightInstallPath>
     <SilverlightSdkPath Condition="Exists('$(TfsSilverlightPath)')">$(TfsSilverlightPath)</SilverlightSdkPath>
     <SilverlightSdkPath Condition="!Exists('$(TfsSilverlightPath)')">$(SilverlightInstallPath)</SilverlightSdkPath>
+    <NoWarn>414,219</NoWarn>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" Condition=" '$(SilverlightBuild)' != 'true' " />
@@ -315,11 +317,13 @@
     <Compile Include="Builtins\RubyModule.cs" />
     <Compile Include="Builtins\RubyInputProvider.cs" />
     <Compile Include="Runtime\RubyGlobalScope.cs" />
+    <Compile Include="Runtime\RubyMethodDebugInfo.cs" />
     <Compile Include="Runtime\RubyOps.cs" />
     <Compile Include="Runtime\Calls\RubyMethodInfo.cs" />
     <Compile Include="Runtime\RubyContext.cs" />
     <Compile Include="Runtime\RubyOptions.cs" />
     <Compile Include="Runtime\RubyScope.cs" />
+    <Compile Include="Runtime\RubyScriptCode.cs" />
     <Compile Include="Runtime\RubyUtils.cs" />
     <Compile Include="Runtime\RuntimeFlowControl.cs" />
     <Compile Include="Runtime\RuntimeErrorSink.cs" />

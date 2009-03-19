@@ -40,7 +40,7 @@ namespace System.Linq.Expressions.Compiler {
                 var e = node.GetExpression(index);
                 var next = node.GetExpression(index + 1);
 
-                if (_emitDebugSymbols) {
+                if (EmitDebugSymbols) {
                     // No need to emit a clearance if the next expression in the block is also a
                     // DebugInfoExprssion.
                     var debugInfo = e as DebugInfoExpression;
