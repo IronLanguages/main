@@ -129,19 +129,17 @@ namespace IronRuby.Builtins {
 
         #endregion
 
-        #region Dynamic Operations
+        #region Dynamic Operations: Invoke
 
-        internal static void SetCallActionRule(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args, bool testTarget) {
+        internal void BuildInvoke(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args) {
             Assert.NotNull(metaBuilder, args);
 
             var convertedTarget = AstUtils.Convert(args.TargetExpression, typeof(Proc));
 
             // test for target type:
-            if (testTarget) {
-                metaBuilder.AddTypeRestriction(args.Target.GetType(), args.TargetExpression);
-            }
+            metaBuilder.AddTypeRestriction(args.Target.GetType(), args.TargetExpression);
 
-            SetProcCallRule(
+            BuildCall(
                 metaBuilder,
                 convertedTarget,                              // proc object  
                 Ast.Property(convertedTarget, SelfProperty),  // self captured by the block closure
@@ -153,7 +151,7 @@ namespace IronRuby.Builtins {
         /// <summary>
         /// From control flow perspective it "calls" the proc.
         /// </summary>
-        internal static void SetProcCallRule(
+        internal static void BuildCall(
             MetaObjectBuilder/*!*/ metaBuilder,
             Expression/*!*/ procExpression,     // proc object
             Expression/*!*/ selfExpression,     // self passed to the proc
@@ -185,6 +183,8 @@ namespace IronRuby.Builtins {
                 resultVariable
             );
         }
+
+        #endregion
 
         #region Call // TODO: generate
 
@@ -252,8 +252,6 @@ namespace IronRuby.Builtins {
             RubyOps.MethodProcCall(blockParam, result);
             return result;
         }
-
-        #endregion
 
         #endregion
 

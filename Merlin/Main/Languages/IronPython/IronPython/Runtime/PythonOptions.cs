@@ -188,7 +188,7 @@ namespace IronPython {
                     throw new ArgumentException("Expected Version to be 2.5 or 2.6");
                 }
             } else {
-                _version = new Version(2, 5);
+                _version = new Version(2, 6);
             }
         }
     }

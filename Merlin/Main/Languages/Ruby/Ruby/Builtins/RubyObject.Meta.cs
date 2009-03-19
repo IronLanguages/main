@@ -19,6 +19,8 @@ using System.Linq.Expressions;
 using Microsoft.Scripting.Utils;
 using IronRuby.Runtime;
 using IronRuby.Runtime.Calls;
+using System.Reflection;
+using IronRuby.Compiler;
 
 namespace IronRuby.Builtins {
 
@@ -27,24 +29,21 @@ namespace IronRuby.Builtins {
             return new Meta(parameter, BindingRestrictions.Empty, this);
         }
 
-        internal class Meta : DynamicMetaObject {
+        internal class Meta : RubyMetaObject<IRubyObject> {
+            public override RubyContext/*!*/ Context {
+                get { return Value.Class.Context; }
+            }
+
+            protected override MethodInfo/*!*/ ContextConverter {
+                get { return Methods.GetContextFromIRubyObject; }
+            }
+
             public Meta(Expression/*!*/ expression, BindingRestrictions/*!*/ restrictions, IRubyObject/*!*/ value)
                 : base(expression, restrictions, value) {
-                ContractUtils.RequiresNotNull(value, "value");
             }
 
-            public override DynamicMetaObject/*!*/ BindGetMember(GetMemberBinder/*!*/ binder) {
-                var self = (IRubyObject)Value;
-                return RubyGetMemberBinder.TryBind(self.Class.Context, binder, this) ?? binder.FallbackGetMember(this);
-            }
-
-            public override DynamicMetaObject/*!*/ BindInvokeMember(InvokeMemberBinder/*!*/ binder, params DynamicMetaObject/*!*/[]/*!*/ args) {
-                var self = (IRubyObject)Value;
-                return RubyInvokeMemberBinder.TryBind(self.Class.Context, binder, this, args) ?? binder.FallbackInvokeMember(this, args);
-            }
-
-            public override IEnumerable<string> GetDynamicMemberNames() {
-                var self = (IRubyObject)Value;
+            public override IEnumerable<string>/*!*/ GetDynamicMemberNames() {
+                var self = Value;
                 RubyInstanceData instanceData = self.GetInstanceData();
                 RubyModule theClass = (instanceData != null ? instanceData.ImmediateClass : null) ?? self.Class;
                 var names = new List<string>();

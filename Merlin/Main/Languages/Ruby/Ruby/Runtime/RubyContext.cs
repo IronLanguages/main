@@ -2024,28 +2024,26 @@ namespace IronRuby.Runtime {
         public override GetMemberBinder/*!*/ CreateGetMemberBinder(string/*!*/ name, bool ignoreCase) {
             // TODO:
             if (ignoreCase) {
-                throw new NotSupportedException("Ignore-case lookup not supported");
+                return base.CreateGetMemberBinder(name, ignoreCase);
             }
-            return new RubyGetMemberBinder(this, name);
+            return new InteropBinder.GetMember(this, name);
         }
 
-        public override InvokeMemberBinder/*!*/ CreateCallBinder(string name, bool ignoreCase, CallInfo callInfo) {
-            if (callInfo.ArgumentNames.Count != 0) {
+        public override InvokeMemberBinder/*!*/ CreateCallBinder(string/*!*/ name, bool ignoreCase, CallInfo/*!*/ callInfo) {
+            // TODO:
+            if (ignoreCase || callInfo.ArgumentNames.Count != 0) {
                 return base.CreateCallBinder(name, ignoreCase, callInfo);
             }
-            // TODO:
-            if (ignoreCase) {
-                throw new NotSupportedException("Ignore-case lookup not supported");
-            }
-            return new RubyInvokeMemberBinder(this, name, callInfo);
+            return new InteropBinder.InvokeMember(this, name, callInfo);
         }
 
         public override CreateInstanceBinder/*!*/ CreateCreateBinder(CallInfo /*!*/ callInfo) {
+            // TODO:
             if (callInfo.ArgumentNames.Count != 0) {
                 return base.CreateCreateBinder(callInfo);
             }
 
-            return new RubyCreateInstanceBinder(this, callInfo);
+            return new InteropBinder.CreateInstance(this, callInfo);
         }
 
         #endregion

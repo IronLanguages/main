@@ -1090,6 +1090,9 @@ namespace IronRuby.Builtins {
                 if (_methods.TryGetValue(name, out method)) {
                     if (method.IsHidden || method.IsUndefined) {
                         return false;
+                    } else if (this == _context.ObjectClass && name == Symbols.Initialize) {
+                        // We prohibit removing Object#initialize to simplify object construction logic (this is compatible with 1.9 behavior).
+                        return false;
                     } else if (method.IsRemovable) {
                         // Method is used in a dynamic site or group => update version of all dependencies of this module.
                         if (method.InvalidateSitesOnOverride || method.InvalidateGroupsOnRemoval) {

@@ -152,8 +152,8 @@ namespace IronPython.Hosting {
                 case "-X:MTA":
                     ConsoleOptions.IsMta = true;
                     break;
-                case "-X:Python26":
-                    LanguageSetup.Options["PythonVersion"] = new Version(2, 6);
+                case "-X:Python25":
+                    LanguageSetup.Options["PythonVersion"] = new Version(2, 5);
                     break;
 
                 case "-d":

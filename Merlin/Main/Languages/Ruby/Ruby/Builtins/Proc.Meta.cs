@@ -46,27 +46,14 @@ namespace IronRuby.Builtins {
                 : base(expression, restrictions, value) {
             }
 
-            public override DynamicMetaObject/*!*/ BindInvoke(InvokeBinder/*!*/ binder, DynamicMetaObject/*!*/[]/*!*/ args) {
-                RubyCallSignature callSignature;
-                if (RubyCallSignature.TryCreate(binder.CallInfo, out callSignature)) {
-                    return binder.FallbackInvoke(this, args);
-                }
-
-                var context = new DynamicMetaObject(
-                    Methods.GetContextFromProc.OpCall(AstUtils.Convert(Expression, typeof(Proc))),
-                    BindingRestrictions.Empty,
-                    RubyOps.GetContextFromProc((Proc)Value)
-                );
-
-                var metaBuilder = new MetaObjectBuilder();
-                Proc.SetCallActionRule(metaBuilder, new CallArguments(context, this, args, callSignature), true);
-                return metaBuilder.CreateMetaObject(binder);
-            }
-
             // Conversion to a delegate.
             public override DynamicMetaObject/*!*/ BindConvert(ConvertBinder/*!*/ binder) {
-                return RubyBinder.TryBindCovertToDelegate(this, binder, Methods.CreateDelegateFromProc)
+                return InteropBinder.TryBindCovertToDelegate(this, binder, Methods.CreateDelegateFromProc)
                     ?? base.BindConvert(binder);
+            }
+
+            public override DynamicMetaObject/*!*/ BindInvoke(InvokeBinder/*!*/ binder, DynamicMetaObject/*!*/[]/*!*/ args) {
+                return InteropBinder.Invoke.Bind(Context, binder, this, args, Value.BuildInvoke);
             }
         }
     }

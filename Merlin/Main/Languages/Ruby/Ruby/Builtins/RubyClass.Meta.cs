@@ -33,22 +33,15 @@ namespace IronRuby.Builtins {
                 ContractUtils.RequiresNotNull(value, "value");
             }
 
-            public override DynamicMetaObject/*!*/ BindInvokeMember(InvokeMemberBinder/*!*/ binder, params DynamicMetaObject/*!*/[]/*!*/ args) {
-                var self = (RubyClass)Value;
-                return RubyInvokeMemberBinder.TryBind(self.Context, binder, this, args) ?? binder.FallbackInvokeMember(this, args);
+            public override DynamicMetaObject/*!*/ BindCreateInstance(CreateInstanceBinder/*!*/ binder, DynamicMetaObject/*!*/[]/*!*/ args) {
+                return InteropBinder.InvokeMember.Bind(CreateMetaContext(), binder, this, args, binder.FallbackCreateInstance);
             }
 
-            public override DynamicMetaObject/*!*/ BindGetMember(GetMemberBinder/*!*/ binder) {
-                var self = (RubyClass)Value;
-                return RubyGetMemberBinder.TryBind(self.Context, binder, this) ?? binder.FallbackGetMember(this);
-            }
-
-            public override IEnumerable<string> GetDynamicMemberNames() {
-                var self = (RubyClass)Value;
+            public override IEnumerable<string>/*!*/ GetDynamicMemberNames() {
                 var names = new List<string>();
 
-                using (self.Context.ClassHierarchyLocker()) {
-                    self.SingletonClass.ForEachMember(true, RubyMethodAttributes.DefaultVisibility, (name, member) => names.Add(name));
+                using (Context.ClassHierarchyLocker()) {
+                    Value.SingletonClass.ForEachMember(true, RubyMethodAttributes.DefaultVisibility, (name, member) => names.Add(name));
                 }
 
                 return names;

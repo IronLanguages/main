@@ -14,25 +14,18 @@
  * ***************************************************************************/
 
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq.Expressions;
 using System.Reflection;
-using System.Dynamic;
-using System.Text;
-using System.Threading;
-using IronPython.Runtime.Operations;
-using IronPython.Runtime.Types;
+using System.Runtime.CompilerServices;
+
 using Microsoft.Scripting;
-using Microsoft.Scripting.Actions;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
-using Ast = System.Linq.Expressions.Expression;
-using AstUtils = Microsoft.Scripting.Ast.Utils;
-using SpecialNameAttribute = System.Runtime.CompilerServices.SpecialNameAttribute;
-using System.Runtime.CompilerServices;
+
 using IronPython.Compiler;
+using IronPython.Runtime.Operations;
+using IronPython.Runtime.Types;
 
 namespace IronPython.Runtime {
     public sealed partial class PythonFunction : PythonTypeSlot {
@@ -268,8 +261,9 @@ namespace IronPython.Runtime {
 
             public object Call0(CallSite site, CodeContext context, object func) {
                 PythonFunction pyfunc = func as PythonFunction;
-                if (pyfunc != null && pyfunc.FunctionCompatibility == _compat && pyfunc.Target.GetType() == typeof(CallTarget0)) {
-                    return ((CallTarget0)pyfunc.Target)();
+                CallTarget0 target;
+                if (pyfunc != null && !EnforceRecursion && pyfunc._compat == _compat && (target = pyfunc.Target as CallTarget0) != null) {
+                    return target();
                 }
 
                 return ((CallSite<Func<CallSite, CodeContext, object, object>>)site).Update(site, context, func);
@@ -283,7 +277,7 @@ namespace IronPython.Runtime {
 
             public object Default1Call0(CallSite site, CodeContext context, object func) {
                 PythonFunction pyfunc = func as PythonFunction;
-                if (pyfunc != null && pyfunc.FunctionCompatibility == _compat) {
+                if (pyfunc != null && !EnforceRecursion && pyfunc._compat == _compat) {
                     var callTarget = pyfunc.Target as CallTarget1;
                     if (callTarget != null) {
                         int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount;
@@ -296,7 +290,7 @@ namespace IronPython.Runtime {
 
             public object Default2Call0(CallSite site, CodeContext context, object func) {
                 PythonFunction pyfunc = func as PythonFunction;
-                if (pyfunc != null && pyfunc.FunctionCompatibility == _compat) {
+                if (pyfunc != null && !EnforceRecursion && pyfunc._compat == _compat) {
                     var callTarget = pyfunc.Target as CallTarget2;
                     if (callTarget != null) {
                         int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount;
@@ -309,7 +303,7 @@ namespace IronPython.Runtime {
 
             public object Default3Call0(CallSite site, CodeContext context, object func) {
                 PythonFunction pyfunc = func as PythonFunction;
-                if (pyfunc != null && pyfunc.FunctionCompatibility == _compat) {
+                if (pyfunc != null && !EnforceRecursion && pyfunc._compat == _compat) {
                     var callTarget = pyfunc.Target as CallTarget3;
                     if (callTarget != null) {
                         int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount;
@@ -322,7 +316,7 @@ namespace IronPython.Runtime {
 
             public object Default4Call0(CallSite site, CodeContext context, object func) {
                 PythonFunction pyfunc = func as PythonFunction;
-                if (pyfunc != null && pyfunc.FunctionCompatibility == _compat) {
+                if (pyfunc != null && !EnforceRecursion && pyfunc._compat == _compat) {
                     var callTarget = pyfunc.Target as CallTarget4;
                     if (callTarget != null) {
                         int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount;
@@ -335,7 +329,7 @@ namespace IronPython.Runtime {
 
             public object Default5Call0(CallSite site, CodeContext context, object func) {
                 PythonFunction pyfunc = func as PythonFunction;
-                if (pyfunc != null && pyfunc.FunctionCompatibility == _compat) {
+                if (pyfunc != null && !EnforceRecursion && pyfunc._compat == _compat) {
                     var callTarget = pyfunc.Target as CallTarget5;
                     if (callTarget != null) {
                         int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount;
@@ -348,7 +342,7 @@ namespace IronPython.Runtime {
 
             public object Default6Call0(CallSite site, CodeContext context, object func) {
                 PythonFunction pyfunc = func as PythonFunction;
-                if (pyfunc != null && pyfunc.FunctionCompatibility == _compat) {
+                if (pyfunc != null && !EnforceRecursion && pyfunc._compat == _compat) {
                     var callTarget = pyfunc.Target as CallTarget6;
                     if (callTarget != null) {
                         int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount;
@@ -361,7 +355,7 @@ namespace IronPython.Runtime {
 
             public object Default7Call0(CallSite site, CodeContext context, object func) {
                 PythonFunction pyfunc = func as PythonFunction;
-                if (pyfunc != null && pyfunc.FunctionCompatibility == _compat) {
+                if (pyfunc != null && !EnforceRecursion && pyfunc._compat == _compat) {
                     var callTarget = pyfunc.Target as CallTarget7;
                     if (callTarget != null) {
                         int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount;
@@ -374,7 +368,7 @@ namespace IronPython.Runtime {
 
             public object Default8Call0(CallSite site, CodeContext context, object func) {
                 PythonFunction pyfunc = func as PythonFunction;
-                if (pyfunc != null && pyfunc.FunctionCompatibility == _compat) {
+                if (pyfunc != null && !EnforceRecursion && pyfunc._compat == _compat) {
                     var callTarget = pyfunc.Target as CallTarget8;
                     if (callTarget != null) {
                         int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount;
@@ -387,7 +381,7 @@ namespace IronPython.Runtime {
 
             public object Default9Call0(CallSite site, CodeContext context, object func) {
                 PythonFunction pyfunc = func as PythonFunction;
-                if (pyfunc != null && pyfunc.FunctionCompatibility == _compat) {
+                if (pyfunc != null && !EnforceRecursion && pyfunc._compat == _compat) {
                     var callTarget = pyfunc.Target as CallTarget9;
                     if (callTarget != null) {
                         int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount;
@@ -400,7 +394,7 @@ namespace IronPython.Runtime {
 
             public object Default10Call0(CallSite site, CodeContext context, object func) {
                 PythonFunction pyfunc = func as PythonFunction;
-                if (pyfunc != null && pyfunc.FunctionCompatibility == _compat) {
+                if (pyfunc != null && !EnforceRecursion && pyfunc._compat == _compat) {
                     var callTarget = pyfunc.Target as CallTarget10;
                     if (callTarget != null) {
                         int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount;
@@ -413,7 +407,7 @@ namespace IronPython.Runtime {
 
             public object Default11Call0(CallSite site, CodeContext context, object func) {
                 PythonFunction pyfunc = func as PythonFunction;
-                if (pyfunc != null && pyfunc.FunctionCompatibility == _compat) {
+                if (pyfunc != null && !EnforceRecursion && pyfunc._compat == _compat) {
                     var callTarget = pyfunc.Target as CallTarget11;
                     if (callTarget != null) {
                         int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount;
@@ -426,7 +420,7 @@ namespace IronPython.Runtime {
 
             public object Default12Call0(CallSite site, CodeContext context, object func) {
                 PythonFunction pyfunc = func as PythonFunction;
-                if (pyfunc != null && pyfunc.FunctionCompatibility == _compat) {
+                if (pyfunc != null && !EnforceRecursion && pyfunc._compat == _compat) {
                     var callTarget = pyfunc.Target as CallTarget12;
                     if (callTarget != null) {
                         int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount;
@@ -439,7 +433,7 @@ namespace IronPython.Runtime {
 
             public object Default13Call0(CallSite site, CodeContext context, object func) {
                 PythonFunction pyfunc = func as PythonFunction;
-                if (pyfunc != null && pyfunc.FunctionCompatibility == _compat) {
+                if (pyfunc != null && !EnforceRecursion && pyfunc._compat == _compat) {
                     var callTarget = pyfunc.Target as CallTarget13;
                     if (callTarget != null) {
                         int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount;
@@ -477,7 +471,7 @@ namespace IronPython.Runtime {
 
             public object Call1(CallSite site, CodeContext context, object func, T0 arg0) {
                 PythonFunction pyfunc = func as PythonFunction;
-                if (pyfunc != null && pyfunc.FunctionCompatibility == _compat) {
+                if (pyfunc != null && !EnforceRecursion && pyfunc._compat == _compat) {
                     var callTarget = pyfunc.Target as CallTarget1;
                     if (callTarget != null) {
                         return callTarget(arg0);
@@ -489,7 +483,7 @@ namespace IronPython.Runtime {
 
             public object GeneratorCall1(CallSite site, CodeContext context, object func, T0 arg0) {
                 PythonFunction pyfunc = func as PythonFunction;
-                if (pyfunc != null && pyfunc.FunctionCompatibility == _compat) {
+                if (pyfunc != null && !EnforceRecursion && pyfunc._compat == _compat) {
                     var callTarget = pyfunc.Target as GeneratorTarget1;
                     if (callTarget != null) {
                         PythonGenerator res = new PythonGenerator(pyfunc);
@@ -503,7 +497,7 @@ namespace IronPython.Runtime {
 
             public object Default1Call1(CallSite site, CodeContext context, object func, T0 arg0) {
                 PythonFunction pyfunc = func as PythonFunction;
-                if (pyfunc != null && pyfunc.FunctionCompatibility == _compat) {
+                if (pyfunc != null && !EnforceRecursion && pyfunc._compat == _compat) {
                     var callTarget = pyfunc.Target as CallTarget2;
                     if (callTarget != null) {            
                         int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount + 1;
@@ -516,7 +510,7 @@ namespace IronPython.Runtime {
 
             public object Default2Call1(CallSite site, CodeContext context, object func, T0 arg0) {
                 PythonFunction pyfunc = func as PythonFunction;
-                if (pyfunc != null && pyfunc.FunctionCompatibility == _compat) {
+                if (pyfunc != null && !EnforceRecursion && pyfunc._compat == _compat) {
                     var callTarget = pyfunc.Target as CallTarget3;
                     if (callTarget != null) {            
                         int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount + 1;
@@ -529,7 +523,7 @@ namespace IronPython.Runtime {
 
             public object Default3Call1(CallSite site, CodeContext context, object func, T0 arg0) {
                 PythonFunction pyfunc = func as PythonFunction;
-                if (pyfunc != null && pyfunc.FunctionCompatibility == _compat) {
+                if (pyfunc != null && !EnforceRecursion && pyfunc._compat == _compat) {
                     var callTarget = pyfunc.Target as CallTarget4;
                     if (callTarget != null) {            
                         int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount + 1;
@@ -542,7 +536,7 @@ namespace IronPython.Runtime {
 
             public object Default4Call1(CallSite site, CodeContext context, object func, T0 arg0) {
                 PythonFunction pyfunc = func as PythonFunction;
-                if (pyfunc != null && pyfunc.FunctionCompatibility == _compat) {
+                if (pyfunc != null && !EnforceRecursion && pyfunc._compat == _compat) {
                     var callTarget = pyfunc.Target as CallTarget5;
                     if (callTarget != null) {            
                         int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount + 1;
@@ -555,7 +549,7 @@ namespace IronPython.Runtime {
 
             public object Default5Call1(CallSite site, CodeContext context, object func, T0 arg0) {
                 PythonFunction pyfunc = func as PythonFunction;
-                if (pyfunc != null && pyfunc.FunctionCompatibility == _compat) {
+                if (pyfunc != null && !EnforceRecursion && pyfunc._compat == _compat) {
                     var callTarget = pyfunc.Target as CallTarget6;
                     if (callTarget != null) {            
                         int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount + 1;
@@ -568,7 +562,7 @@ namespace IronPython.Runtime {
 
             public object Default6Call1(CallSite site, CodeContext context, object func, T0 arg0) {
                 PythonFunction pyfunc = func as PythonFunction;
-                if (pyfunc != null && pyfunc.FunctionCompatibility == _compat) {
+                if (pyfunc != null && !EnforceRecursion && pyfunc._compat == _compat) {
                     var callTarget = pyfunc.Target as CallTarget7;
                     if (callTarget != null) {            
                         int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount + 1;
@@ -581,7 +575,7 @@ namespace IronPython.Runtime {
 
             public object Default7Call1(CallSite site, CodeContext context, object func, T0 arg0) {
                 PythonFunction pyfunc = func as PythonFunction;
-                if (pyfunc != null && pyfunc.FunctionCompatibility == _compat) {
+                if (pyfunc != null && !EnforceRecursion && pyfunc._compat == _compat) {
                     var callTarget = pyfunc.Target as CallTarget8;
                     if (callTarget != null) {            
                         int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount + 1;
@@ -594,7 +588,7 @@ namespace IronPython.Runtime {
 
             public object Default8Call1(CallSite site, CodeContext context, object func, T0 arg0) {
                 PythonFunction pyfunc = func as PythonFunction;
-                if (pyfunc != null && pyfunc.FunctionCompatibility == _compat) {
+                if (pyfunc != null && !EnforceRecursion && pyfunc._compat == _compat) {
                     var callTarget = pyfunc.Target as CallTarget9;
                     if (callTarget != null) {            
                         int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount + 1;
@@ -607,7 +601,7 @@ namespace IronPython.Runtime {
 
             public object Default9Call1(CallSite site, CodeContext context, object func, T0 arg0) {
                 PythonFunction pyfunc = func as PythonFunction;
-                if (pyfunc != null && pyfunc.FunctionCompatibility == _compat) {
+                if (pyfunc != null && !EnforceRecursion && pyfunc._compat == _compat) {
                     var callTarget = pyfunc.Target as CallTarget10;
                     if (callTarget != null) {            
                         int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount + 1;
@@ -620,7 +614,7 @@ namespace IronPython.Runtime {
 
             public object Default10Call1(CallSite site, CodeContext context, object func, T0 arg0) {
                 PythonFunction pyfunc = func as PythonFunction;
-                if (pyfunc != null && pyfunc.FunctionCompatibility == _compat) {
+                if (pyfunc != null && !EnforceRecursion && pyfunc._compat == _compat) {
                     var callTarget = pyfunc.Target as CallTarget11;
                     if (callTarget != null) {            
                         int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount + 1;
@@ -633,7 +627,7 @@ namespace IronPython.Runtime {
 
             public object Default11Call1(CallSite site, CodeContext context, object func, T0 arg0) {
                 PythonFunction pyfunc = func as PythonFunction;
-                if (pyfunc != null && pyfunc.FunctionCompatibility == _compat) {
+                if (pyfunc != null && !EnforceRecursion && pyfunc._compat == _compat) {
                     var callTarget = pyfunc.Target as CallTarget12;
                     if (callTarget != null) {            
                         int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount + 1;
@@ -646,7 +640,7 @@ namespace IronPython.Runtime {
 
             public object Default12Call1(CallSite site, CodeContext context, object func, T0 arg0) {
                 PythonFunction pyfunc = func as PythonFunction;
-                if (pyfunc != null && pyfunc.FunctionCompatibility == _compat) {
+                if (pyfunc != null && !EnforceRecursion && pyfunc._compat == _compat) {
                     var callTarget = pyfunc.Target as CallTarget13;
                     if (callTarget != null) {            
                         int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount + 1;
@@ -663,7 +657,7 @@ namespace IronPython.Runtime {
 
             public object Call2(CallSite site, CodeContext context, object func, T0 arg0, T1 arg1) {
                 PythonFunction pyfunc = func as PythonFunction;
-                if (pyfunc != null && pyfunc.FunctionCompatibility == _compat) {
+                if (pyfunc != null && !EnforceRecursion && pyfunc._compat == _compat) {
                     var callTarget = pyfunc.Target as CallTarget2;
                     if (callTarget != null) {
                         return callTarget(arg0, arg1);
@@ -675,7 +669,7 @@ namespace IronPython.Runtime {
 
             public object GeneratorCall2(CallSite site, CodeContext context, object func, T0 arg0, T1 arg1) {
                 PythonFunction pyfunc = func as PythonFunction;
-                if (pyfunc != null && pyfunc.FunctionCompatibility == _compat) {
+                if (pyfunc != null && !EnforceRecursion && pyfunc._compat == _compat) {
                     var callTarget = pyfunc.Target as GeneratorTarget2;
                     if (callTarget != null) {
                         PythonGenerator res = new PythonGenerator(pyfunc);
@@ -689,7 +683,7 @@ namespace IronPython.Runtime {
 
             public object Default1Call2(CallSite site, CodeContext context, object func, T0 arg0, T1 arg1) {
                 PythonFunction pyfunc = func as PythonFunction;
-                if (pyfunc != null && pyfunc.FunctionCompatibility == _compat) {
+                if (pyfunc != null && !EnforceRecursion && pyfunc._compat == _compat) {
                     var callTarget = pyfunc.Target as CallTarget3;
                     if (callTarget != null) {            
                         int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount + 2;
@@ -702,7 +696,7 @@ namespace IronPython.Runtime {
 
             public object Default2Call2(CallSite site, CodeContext context, object func, T0 arg0, T1 arg1) {
                 PythonFunction pyfunc = func as PythonFunction;
-                if (pyfunc != null && pyfunc.FunctionCompatibility == _compat) {
+                if (pyfunc != null && !EnforceRecursion && pyfunc._compat == _compat) {
                     var callTarget = pyfunc.Target as CallTarget4;
                     if (callTarget != null) {            
                         int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount + 2;
@@ -715,7 +709,7 @@ namespace IronPython.Runtime {
 
             public object Default3Call2(CallSite site, CodeContext context, object func, T0 arg0, T1 arg1) {
                 PythonFunction pyfunc = func as PythonFunction;
-                if (pyfunc != null && pyfunc.FunctionCompatibility == _compat) {
+                if (pyfunc != null && !EnforceRecursion && pyfunc._compat == _compat) {
                     var callTarget = pyfunc.Target as CallTarget5;
                     if (callTarget != null) {            
                         int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount + 2;
@@ -728,7 +722,7 @@ namespace IronPython.Runtime {
 
             public object Default4Call2(CallSite site, CodeContext context, object func, T0 arg0, T1 arg1) {
                 PythonFunction pyfunc = func as PythonFunction;
-                if (pyfunc != null && pyfunc.FunctionCompatibility == _compat) {
+                if (pyfunc != null && !EnforceRecursion && pyfunc._compat == _compat) {
                     var callTarget = pyfunc.Target as CallTarget6;
                     if (callTarget != null) {            
                         int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount + 2;
@@ -741,7 +735,7 @@ namespace IronPython.Runtime {
 
             public object Default5Call2(CallSite site, CodeContext context, object func, T0 arg0, T1 arg1) {
                 PythonFunction pyfunc = func as PythonFunction;
-                if (pyfunc != null && pyfunc.FunctionCompatibility == _compat) {
+                if (pyfunc != null && !EnforceRecursion && pyfunc._compat == _compat) {
                     var callTarget = pyfunc.Target as CallTarget7;
                     if (callTarget != null) {            
                         int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount + 2;
@@ -754,7 +748,7 @@ namespace IronPython.Runtime {
 
             public object Default6Call2(CallSite site, CodeContext context, object func, T0 arg0, T1 arg1) {
                 PythonFunction pyfunc = func as PythonFunction;
-                if (pyfunc != null && pyfunc.FunctionCompatibility == _compat) {
+                if (pyfunc != null && !EnforceRecursion && pyfunc._compat == _compat) {
                     var callTarget = pyfunc.Target as CallTarget8;
                     if (callTarget != null) {            
                         int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount + 2;
@@ -767,7 +761,7 @@ namespace IronPython.Runtime {
 
             public object Default7Call2(CallSite site, CodeContext context, object func, T0 arg0, T1 arg1) {
                 PythonFunction pyfunc = func as PythonFunction;
-                if (pyfunc != null && pyfunc.FunctionCompatibility == _compat) {
+                if (pyfunc != null && !EnforceRecursion && pyfunc._compat == _compat) {
                     var callTarget = pyfunc.Target as CallTarget9;
                     if (callTarget != null) {            
                         int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount + 2;
@@ -780,7 +774,7 @@ namespace IronPython.Runtime {
 
             public object Default8Call2(CallSite site, CodeContext context, object func, T0 arg0, T1 arg1) {
                 PythonFunction pyfunc = func as PythonFunction;
-                if (pyfunc != null && pyfunc.FunctionCompatibility == _compat) {
+                if (pyfunc != null && !EnforceRecursion && pyfunc._compat == _compat) {
                     var callTarget = pyfunc.Target as CallTarget10;
                     if (callTarget != null) {            
                         int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount + 2;
@@ -793,7 +787,7 @@ namespace IronPython.Runtime {
 
             public object Default9Call2(CallSite site, CodeContext context, object func, T0 arg0, T1 arg1) {
                 PythonFunction pyfunc = func as PythonFunction;
-                if (pyfunc != null && pyfunc.FunctionCompatibility == _compat) {
+                if (pyfunc != null && !EnforceRecursion && pyfunc._compat == _compat) {
                     var callTarget = pyfunc.Target as CallTarget11;
                     if (callTarget != null) {            
                         int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount + 2;
@@ -806,7 +800,7 @@ namespace IronPython.Runtime {
 
             public object Default10Call2(CallSite site, CodeContext context, object func, T0 arg0, T1 arg1) {
                 PythonFunction pyfunc = func as PythonFunction;
-                if (pyfunc != null && pyfunc.FunctionCompatibility == _compat) {
+                if (pyfunc != null && !EnforceRecursion && pyfunc._compat == _compat) {
                     var callTarget = pyfunc.Target as CallTarget12;
                     if (callTarget != null) {            
                         int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount + 2;
@@ -819,7 +813,7 @@ namespace IronPython.Runtime {
 
             public object Default11Call2(CallSite site, CodeContext context, object func, T0 arg0, T1 arg1) {
                 PythonFunction pyfunc = func as PythonFunction;
-                if (pyfunc != null && pyfunc.FunctionCompatibility == _compat) {
+                if (pyfunc != null && !EnforceRecursion && pyfunc._compat == _compat) {
                     var callTarget = pyfunc.Target as CallTarget13;
                     if (callTarget != null) {            
                         int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount + 2;
@@ -836,7 +830,7 @@ namespace IronPython.Runtime {
 
             public object Call3(CallSite site, CodeContext context, object func, T0 arg0, T1 arg1, T2 arg2) {
                 PythonFunction pyfunc = func as PythonFunction;
-                if (pyfunc != null && pyfunc.FunctionCompatibility == _compat) {
+                if (pyfunc != null && !EnforceRecursion && pyfunc._compat == _compat) {
                     var callTarget = pyfunc.Target as CallTarget3;
                     if (callTarget != null) {
                         return callTarget(arg0, arg1, arg2);
@@ -848,7 +842,7 @@ namespace IronPython.Runtime {
 
             public object GeneratorCall3(CallSite site, CodeContext context, object func, T0 arg0, T1 arg1, T2 arg2) {
                 PythonFunction pyfunc = func as PythonFunction;
-                if (pyfunc != null && pyfunc.FunctionCompatibility == _compat) {
+                if (pyfunc != null && !EnforceRecursion && pyfunc._compat == _compat) {
                     var callTarget = pyfunc.Target as GeneratorTarget3;
                     if (callTarget != null) {
                         PythonGenerator res = new PythonGenerator(pyfunc);
@@ -862,7 +856,7 @@ namespace IronPython.Runtime {
 
             public object Default1Call3(CallSite site, CodeContext context, object func, T0 arg0, T1 arg1, T2 arg2) {
                 PythonFunction pyfunc = func as PythonFunction;
-                if (pyfunc != null && pyfunc.FunctionCompatibility == _compat) {
+                if (pyfunc != null && !EnforceRecursion && pyfunc._compat == _compat) {
                     var callTarget = pyfunc.Target as CallTarget4;
                     if (callTarget != null) {            
                         int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount + 3;
@@ -875,7 +869,7 @@ namespace IronPython.Runtime {
 
             public object Default2Call3(CallSite site, CodeContext context, object func, T0 arg0, T1 arg1, T2 arg2) {
                 PythonFunction pyfunc = func as PythonFunction;
-                if (pyfunc != null && pyfunc.FunctionCompatibility == _compat) {
+                if (pyfunc != null && !EnforceRecursion && pyfunc._compat == _compat) {
                     var callTarget = pyfunc.Target as CallTarget5;
                     if (callTarget != null) {            
                         int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount + 3;
@@ -888,7 +882,7 @@ namespace IronPython.Runtime {
 
             public object Default3Call3(CallSite site, CodeContext context, object func, T0 arg0, T1 arg1, T2 arg2) {
                 PythonFunction pyfunc = func as PythonFunction;
-                if (pyfunc != null && pyfunc.FunctionCompatibility == _compat) {
+                if (pyfunc != null && !EnforceRecursion && pyfunc._compat == _compat) {
                     var callTarget = pyfunc.Target as CallTarget6;
                     if (callTarget != null) {            
                         int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount + 3;
@@ -901,7 +895,7 @@ namespace IronPython.Runtime {
 
             public object Default4Call3(CallSite site, CodeContext context, object func, T0 arg0, T1 arg1, T2 arg2) {
                 PythonFunction pyfunc = func as PythonFunction;
-                if (pyfunc != null && pyfunc.FunctionCompatibility == _compat) {
+                if (pyfunc != null && !EnforceRecursion && pyfunc._compat == _compat) {
                     var callTarget = pyfunc.Target as CallTarget7;
                     if (callTarget != null) {            
                         int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount + 3;
@@ -914,7 +908,7 @@ namespace IronPython.Runtime {
 
             public object Default5Call3(CallSite site, CodeContext context, object func, T0 arg0, T1 arg1, T2 arg2) {
                 PythonFunction pyfunc = func as PythonFunction;
-                if (pyfunc != null && pyfunc.FunctionCompatibility == _compat) {
+                if (pyfunc != null && !EnforceRecursion && pyfunc._compat == _compat) {
                     var callTarget = pyfunc.Target as CallTarget8;
                     if (callTarget != null) {            
                         int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount + 3;
@@ -927,7 +921,7 @@ namespace IronPython.Runtime {
 
             public object Default6Call3(CallSite site, CodeContext context, object func, T0 arg0, T1 arg1, T2 arg2) {
                 PythonFunction pyfunc = func as PythonFunction;
-                if (pyfunc != null && pyfunc.FunctionCompatibility == _compat) {
+                if (pyfunc != null && !EnforceRecursion && pyfunc._compat == _compat) {
                     var callTarget = pyfunc.Target as CallTarget9;
                     if (callTarget != null) {            
                         int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount + 3;
@@ -940,7 +934,7 @@ namespace IronPython.Runtime {
 
             public object Default7Call3(CallSite site, CodeContext context, object func, T0 arg0, T1 arg1, T2 arg2) {
                 PythonFunction pyfunc = func as PythonFunction;
-                if (pyfunc != null && pyfunc.FunctionCompatibility == _compat) {
+                if (pyfunc != null && !EnforceRecursion && pyfunc._compat == _compat) {
                     var callTarget = pyfunc.Target as CallTarget10;
                     if (callTarget != null) {            
                         int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount + 3;
@@ -953,7 +947,7 @@ namespace IronPython.Runtime {
 
             public object Default8Call3(CallSite site, CodeContext context, object func, T0 arg0, T1 arg1, T2 arg2) {
                 PythonFunction pyfunc = func as PythonFunction;
-                if (pyfunc != null && pyfunc.FunctionCompatibility == _compat) {
+                if (pyfunc != null && !EnforceRecursion && pyfunc._compat == _compat) {
                     var callTarget = pyfunc.Target as CallTarget11;
                     if (callTarget != null) {            
                         int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount + 3;
@@ -966,7 +960,7 @@ namespace IronPython.Runtime {
 
             public object Default9Call3(CallSite site, CodeContext context, object func, T0 arg0, T1 arg1, T2 arg2) {
                 PythonFunction pyfunc = func as PythonFunction;
-                if (pyfunc != null && pyfunc.FunctionCompatibility == _compat) {
+                if (pyfunc != null && !EnforceRecursion && pyfunc._compat == _compat) {
                     var callTarget = pyfunc.Target as CallTarget12;
                     if (callTarget != null) {            
                         int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount + 3;
@@ -979,7 +973,7 @@ namespace IronPython.Runtime {
 
             public object Default10Call3(CallSite site, CodeContext context, object func, T0 arg0, T1 arg1, T2 arg2) {
                 PythonFunction pyfunc = func as PythonFunction;
-                if (pyfunc != null && pyfunc.FunctionCompatibility == _compat) {
+                if (pyfunc != null && !EnforceRecursion && pyfunc._compat == _compat) {
                     var callTarget = pyfunc.Target as CallTarget13;
                     if (callTarget != null) {            
                         int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount + 3;
@@ -996,7 +990,7 @@ namespace IronPython.Runtime {
 
             public object Call4(CallSite site, CodeContext context, object func, T0 arg0, T1 arg1, T2 arg2, T3 arg3) {
                 PythonFunction pyfunc = func as PythonFunction;
-                if (pyfunc != null && pyfunc.FunctionCompatibility == _compat) {
+                if (pyfunc != null && !EnforceRecursion && pyfunc._compat == _compat) {
                     var callTarget = pyfunc.Target as CallTarget4;
                     if (callTarget != null) {
                         return callTarget(arg0, arg1, arg2, arg3);
@@ -1008,7 +1002,7 @@ namespace IronPython.Runtime {
 
             public object GeneratorCall4(CallSite site, CodeContext context, object func, T0 arg0, T1 arg1, T2 arg2, T3 arg3) {
                 PythonFunction pyfunc = func as PythonFunction;
-                if (pyfunc != null && pyfunc.FunctionCompatibility == _compat) {
+                if (pyfunc != null && !EnforceRecursion && pyfunc._compat == _compat) {
                     var callTarget = pyfunc.Target as GeneratorTarget4;
                     if (callTarget != null) {
                         PythonGenerator res = new PythonGenerator(pyfunc);
@@ -1022,7 +1016,7 @@ namespace IronPython.Runtime {
 
             public object Default1Call4(CallSite site, CodeContext context, object func, T0 arg0, T1 arg1, T2 arg2, T3 arg3) {
                 PythonFunction pyfunc = func as PythonFunction;
-                if (pyfunc != null && pyfunc.FunctionCompatibility == _compat) {
+                if (pyfunc != null && !EnforceRecursion && pyfunc._compat == _compat) {
                     var callTarget = pyfunc.Target as CallTarget5;
                     if (callTarget != null) {            
                         int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount + 4;
@@ -1035,7 +1029,7 @@ namespace IronPython.Runtime {
 
             public object Default2Call4(CallSite site, CodeContext context, object func, T0 arg0, T1 arg1, T2 arg2, T3 arg3) {
                 PythonFunction pyfunc = func as PythonFunction;
-                if (pyfunc != null && pyfunc.FunctionCompatibility == _compat) {
+                if (pyfunc != null && !EnforceRecursion && pyfunc._compat == _compat) {
                     var callTarget = pyfunc.Target as CallTarget6;
                     if (callTarget != null) {            
                         int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount + 4;
@@ -1048,7 +1042,7 @@ namespace IronPython.Runtime {
 
             public object Default3Call4(CallSite site, CodeContext context, object func, T0 arg0, T1 arg1, T2 arg2, T3 arg3) {
                 PythonFunction pyfunc = func as PythonFunction;
-                if (pyfunc != null && pyfunc.FunctionCompatibility == _compat) {
+                if (pyfunc != null && !EnforceRecursion && pyfunc._compat == _compat) {
                     var callTarget = pyfunc.Target as CallTarget7;
                     if (callTarget != null) {            
                         int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount + 4;
@@ -1061,7 +1055,7 @@ namespace IronPython.Runtime {
 
             public object Default4Call4(CallSite site, CodeContext context, object func, T0 arg0, T1 arg1, T2 arg2, T3 arg3) {
                 PythonFunction pyfunc = func as PythonFunction;
-                if (pyfunc != null && pyfunc.FunctionCompatibility == _compat) {
+                if (pyfunc != null && !EnforceRecursion && pyfunc._compat == _compat) {
                     var callTarget = pyfunc.Target as CallTarget8;
                     if (callTarget != null) {            
                         int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount + 4;
@@ -1074,7 +1068,7 @@ namespace IronPython.Runtime {
 
             public object Default5Call4(CallSite site, CodeContext context, object func, T0 arg0, T1 arg1, T2 arg2, T3 arg3) {
                 PythonFunction pyfunc = func as PythonFunction;
-                if (pyfunc != null && pyfunc.FunctionCompatibility == _compat) {
+                if (pyfunc != null && !EnforceRecursion && pyfunc._compat == _compat) {
                     var callTarget = pyfunc.Target as CallTarget9;
                     if (callTarget != null) {            
                         int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount + 4;
@@ -1087,7 +1081,7 @@ namespace IronPython.Runtime {
 
             public object Default6Call4(CallSite site, CodeContext context, object func, T0 arg0, T1 arg1, T2 arg2, T3 arg3) {
                 PythonFunction pyfunc = func as PythonFunction;
-                if (pyfunc != null && pyfunc.FunctionCompatibility == _compat) {
+                if (pyfunc != null && !EnforceRecursion && pyfunc._compat == _compat) {
                     var callTarget = pyfunc.Target as CallTarget10;
                     if (callTarget != null) {            
                         int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount + 4;
@@ -1100,7 +1094,7 @@ namespace IronPython.Runtime {
 
             public object Default7Call4(CallSite site, CodeContext context, object func, T0 arg0, T1 arg1, T2 arg2, T3 arg3) {
                 PythonFunction pyfunc = func as PythonFunction;
-                if (pyfunc != null && pyfunc.FunctionCompatibility == _compat) {
+                if (pyfunc != null && !EnforceRecursion && pyfunc._compat == _compat) {
                     var callTarget = pyfunc.Target as CallTarget11;
                     if (callTarget != null) {            
                         int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount + 4;
@@ -1113,7 +1107,7 @@ namespace IronPython.Runtime {
 
             public object Default8Call4(CallSite site, CodeContext context, object func, T0 arg0, T1 arg1, T2 arg2, T3 arg3) {
                 PythonFunction pyfunc = func as PythonFunction;
-                if (pyfunc != null && pyfunc.FunctionCompatibility == _compat) {
+                if (pyfunc != null && !EnforceRecursion && pyfunc._compat == _compat) {
                     var callTarget = pyfunc.Target as CallTarget12;
                     if (callTarget != null) {            
                         int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount + 4;
@@ -1126,7 +1120,7 @@ namespace IronPython.Runtime {
 
             public object Default9Call4(CallSite site, CodeContext context, object func, T0 arg0, T1 arg1, T2 arg2, T3 arg3) {
                 PythonFunction pyfunc = func as PythonFunction;
-                if (pyfunc != null && pyfunc.FunctionCompatibility == _compat) {
+                if (pyfunc != null && !EnforceRecursion && pyfunc._compat == _compat) {
                     var callTarget = pyfunc.Target as CallTarget13;
                     if (callTarget != null) {            
                         int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount + 4;
@@ -1143,7 +1137,7 @@ namespace IronPython.Runtime {
 
             public object Call5(CallSite site, CodeContext context, object func, T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4) {
                 PythonFunction pyfunc = func as PythonFunction;
-                if (pyfunc != null && pyfunc.FunctionCompatibility == _compat) {
+                if (pyfunc != null && !EnforceRecursion && pyfunc._compat == _compat) {
                     var callTarget = pyfunc.Target as CallTarget5;
                     if (callTarget != null) {
                         return callTarget(arg0, arg1, arg2, arg3, arg4);
@@ -1155,7 +1149,7 @@ namespace IronPython.Runtime {
 
             public object GeneratorCall5(CallSite site, CodeContext context, object func, T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4) {
                 PythonFunction pyfunc = func as PythonFunction;
-                if (pyfunc != null && pyfunc.FunctionCompatibility == _compat) {
+                if (pyfunc != null && !EnforceRecursion && pyfunc._compat == _compat) {
                     var callTarget = pyfunc.Target as GeneratorTarget5;
                     if (callTarget != null) {
                         PythonGenerator res = new PythonGenerator(pyfunc);
@@ -1169,7 +1163,7 @@ namespace IronPython.Runtime {
 
             public object Default1Call5(CallSite site, CodeContext context, object func, T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4) {
                 PythonFunction pyfunc = func as PythonFunction;
-                if (pyfunc != null && pyfunc.FunctionCompatibility == _compat) {
+                if (pyfunc != null && !EnforceRecursion && pyfunc._compat == _compat) {
                     var callTarget = pyfunc.Target as CallTarget6;
                     if (callTarget != null) {            
                         int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount + 5;
@@ -1182,7 +1176,7 @@ namespace IronPython.Runtime {
 
             public object Default2Call5(CallSite site, CodeContext context, object func, T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4) {
                 PythonFunction pyfunc = func as PythonFunction;
-                if (pyfunc != null && pyfunc.FunctionCompatibility == _compat) {
+                if (pyfunc != null && !EnforceRecursion && pyfunc._compat == _compat) {
                     var callTarget = pyfunc.Target as CallTarget7;
                     if (callTarget != null) {            
                         int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount + 5;
@@ -1195,7 +1189,7 @@ namespace IronPython.Runtime {
 
             public object Default3Call5(CallSite site, CodeContext context, object func, T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4) {
                 PythonFunction pyfunc = func as PythonFunction;
-                if (pyfunc != null && pyfunc.FunctionCompatibility == _compat) {
+                if (pyfunc != null && !EnforceRecursion && pyfunc._compat == _compat) {
                     var callTarget = pyfunc.Target as CallTarget8;
                     if (callTarget != null) {            
                         int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount + 5;
@@ -1208,7 +1202,7 @@ namespace IronPython.Runtime {
 
             public object Default4Call5(CallSite site, CodeContext context, object func, T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4) {
                 PythonFunction pyfunc = func as PythonFunction;
-                if (pyfunc != null && pyfunc.FunctionCompatibility == _compat) {
+                if (pyfunc != null && !EnforceRecursion && pyfunc._compat == _compat) {
                     var callTarget = pyfunc.Target as CallTarget9;
                     if (callTarget != null) {            
                         int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount + 5;
@@ -1221,7 +1215,7 @@ namespace IronPython.Runtime {
 
             public object Default5Call5(CallSite site, CodeContext context, object func, T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4) {
                 PythonFunction pyfunc = func as PythonFunction;
-                if (pyfunc != null && pyfunc.FunctionCompatibility == _compat) {
+                if (pyfunc != null && !EnforceRecursion && pyfunc._compat == _compat) {
                     var callTarget = pyfunc.Target as CallTarget10;
                     if (callTarget != null) {            
                         int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount + 5;
@@ -1234,7 +1228,7 @@ namespace IronPython.Runtime {
 
             public object Default6Call5(CallSite site, CodeContext context, object func, T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4) {
                 PythonFunction pyfunc = func as PythonFunction;
-                if (pyfunc != null && pyfunc.FunctionCompatibility == _compat) {
+                if (pyfunc != null && !EnforceRecursion && pyfunc._compat == _compat) {
                     var callTarget = pyfunc.Target as CallTarget11;
                     if (callTarget != null) {            
                         int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount + 5;
@@ -1247,7 +1241,7 @@ namespace IronPython.Runtime {
 
             public object Default7Call5(CallSite site, CodeContext context, object func, T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4) {
                 PythonFunction pyfunc = func as PythonFunction;
-                if (pyfunc != null && pyfunc.FunctionCompatibility == _compat) {
+                if (pyfunc != null && !EnforceRecursion && pyfunc._compat == _compat) {
                     var callTarget = pyfunc.Target as CallTarget12;
                     if (callTarget != null) {            
                         int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount + 5;
@@ -1260,7 +1254,7 @@ namespace IronPython.Runtime {
 
             public object Default8Call5(CallSite site, CodeContext context, object func, T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4) {
                 PythonFunction pyfunc = func as PythonFunction;
-                if (pyfunc != null && pyfunc.FunctionCompatibility == _compat) {
+                if (pyfunc != null && !EnforceRecursion && pyfunc._compat == _compat) {
                     var callTarget = pyfunc.Target as CallTarget13;
                     if (callTarget != null) {            
                         int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount + 5;
@@ -1277,7 +1271,7 @@ namespace IronPython.Runtime {
 
             public object Call6(CallSite site, CodeContext context, object func, T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5) {
                 PythonFunction pyfunc = func as PythonFunction;
-                if (pyfunc != null && pyfunc.FunctionCompatibility == _compat) {
+                if (pyfunc != null && !EnforceRecursion && pyfunc._compat == _compat) {
                     var callTarget = pyfunc.Target as CallTarget6;
                     if (callTarget != null) {
                         return callTarget(arg0, arg1, arg2, arg3, arg4, arg5);
@@ -1289,7 +1283,7 @@ namespace IronPython.Runtime {
 
             public object GeneratorCall6(CallSite site, CodeContext context, object func, T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5) {
                 PythonFunction pyfunc = func as PythonFunction;
-                if (pyfunc != null && pyfunc.FunctionCompatibility == _compat) {
+                if (pyfunc != null && !EnforceRecursion && pyfunc._compat == _compat) {
                     var callTarget = pyfunc.Target as GeneratorTarget6;
                     if (callTarget != null) {
                         PythonGenerator res = new PythonGenerator(pyfunc);
@@ -1303,7 +1297,7 @@ namespace IronPython.Runtime {
 
             public object Default1Call6(CallSite site, CodeContext context, object func, T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5) {
                 PythonFunction pyfunc = func as PythonFunction;
-                if (pyfunc != null && pyfunc.FunctionCompatibility == _compat) {
+                if (pyfunc != null && !EnforceRecursion && pyfunc._compat == _compat) {
                     var callTarget = pyfunc.Target as CallTarget7;
                     if (callTarget != null) {            
                         int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount + 6;
@@ -1316,7 +1310,7 @@ namespace IronPython.Runtime {
 
             public object Default2Call6(CallSite site, CodeContext context, object func, T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5) {
                 PythonFunction pyfunc = func as PythonFunction;
-                if (pyfunc != null && pyfunc.FunctionCompatibility == _compat) {
+                if (pyfunc != null && !EnforceRecursion && pyfunc._compat == _compat) {
                     var callTarget = pyfunc.Target as CallTarget8;
                     if (callTarget != null) {            
                         int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount + 6;
@@ -1329,7 +1323,7 @@ namespace IronPython.Runtime {
 
             public object Default3Call6(CallSite site, CodeContext context, object func, T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5) {
                 PythonFunction pyfunc = func as PythonFunction;
-                if (pyfunc != null && pyfunc.FunctionCompatibility == _compat) {
+                if (pyfunc != null && !EnforceRecursion && pyfunc._compat == _compat) {
                     var callTarget = pyfunc.Target as CallTarget9;
                     if (callTarget != null) {            
                         int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount + 6;
@@ -1342,7 +1336,7 @@ namespace IronPython.Runtime {
 
             public object Default4Call6(CallSite site, CodeContext context, object func, T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5) {
                 PythonFunction pyfunc = func as PythonFunction;
-                if (pyfunc != null && pyfunc.FunctionCompatibility == _compat) {
+                if (pyfunc != null && !EnforceRecursion && pyfunc._compat == _compat) {
                     var callTarget = pyfunc.Target as CallTarget10;
                     if (callTarget != null) {            
                         int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount + 6;
@@ -1355,7 +1349,7 @@ namespace IronPython.Runtime {
 
             public object Default5Call6(CallSite site, CodeContext context, object func, T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5) {
                 PythonFunction pyfunc = func as PythonFunction;
-                if (pyfunc != null && pyfunc.FunctionCompatibility == _compat) {
+                if (pyfunc != null && !EnforceRecursion && pyfunc._compat == _compat) {
                     var callTarget = pyfunc.Target as CallTarget11;
                     if (callTarget != null) {            
                         int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount + 6;
@@ -1368,7 +1362,7 @@ namespace IronPython.Runtime {
 
             public object Default6Call6(CallSite site, CodeContext context, object func, T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5) {
                 PythonFunction pyfunc = func as PythonFunction;
-                if (pyfunc != null && pyfunc.FunctionCompatibility == _compat) {
+                if (pyfunc != null && !EnforceRecursion && pyfunc._compat == _compat) {
                     var callTarget = pyfunc.Target as CallTarget12;
                     if (callTarget != null) {            
                         int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount + 6;
@@ -1381,7 +1375,7 @@ namespace IronPython.Runtime {
 
             public object Default7Call6(CallSite site, CodeContext context, object func, T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5) {
                 PythonFunction pyfunc = func as PythonFunction;
-                if (pyfunc != null && pyfunc.FunctionCompatibility == _compat) {
+                if (pyfunc != null && !EnforceRecursion && pyfunc._compat == _compat) {
                     var callTarget = pyfunc.Target as CallTarget13;
                     if (callTarget != null) {            
                         int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount + 6;
@@ -1398,7 +1392,7 @@ namespace IronPython.Runtime {
 
             public object Call7(CallSite site, CodeContext context, object func, T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6) {
                 PythonFunction pyfunc = func as PythonFunction;
-                if (pyfunc != null && pyfunc.FunctionCompatibility == _compat) {
+                if (pyfunc != null && !EnforceRecursion && pyfunc._compat == _compat) {
                     var callTarget = pyfunc.Target as CallTarget7;
                     if (callTarget != null) {
                         return callTarget(arg0, arg1, arg2, arg3, arg4, arg5, arg6);
@@ -1410,7 +1404,7 @@ namespace IronPython.Runtime {
 
             public object GeneratorCall7(CallSite site, CodeContext context, object func, T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6) {
                 PythonFunction pyfunc = func as PythonFunction;
-                if (pyfunc != null && pyfunc.FunctionCompatibility == _compat) {
+                if (pyfunc != null && !EnforceRecursion && pyfunc._compat == _compat) {
                     var callTarget = pyfunc.Target as GeneratorTarget7;
                     if (callTarget != null) {
                         PythonGenerator res = new PythonGenerator(pyfunc);
@@ -1424,7 +1418,7 @@ namespace IronPython.Runtime {
 
             public object Default1Call7(CallSite site, CodeContext context, object func, T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6) {
                 PythonFunction pyfunc = func as PythonFunction;
-                if (pyfunc != null && pyfunc.FunctionCompatibility == _compat) {
+                if (pyfunc != null && !EnforceRecursion && pyfunc._compat == _compat) {
                     var callTarget = pyfunc.Target as CallTarget8;
                     if (callTarget != null) {            
                         int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount + 7;
@@ -1437,7 +1431,7 @@ namespace IronPython.Runtime {
 
             public object Default2Call7(CallSite site, CodeContext context, object func, T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6) {
                 PythonFunction pyfunc = func as PythonFunction;
-                if (pyfunc != null && pyfunc.FunctionCompatibility == _compat) {
+                if (pyfunc != null && !EnforceRecursion && pyfunc._compat == _compat) {
                     var callTarget = pyfunc.Target as CallTarget9;
                     if (callTarget != null) {            
                         int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount + 7;
@@ -1450,7 +1444,7 @@ namespace IronPython.Runtime {
 
             public object Default3Call7(CallSite site, CodeContext context, object func, T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6) {
                 PythonFunction pyfunc = func as PythonFunction;
-                if (pyfunc != null && pyfunc.FunctionCompatibility == _compat) {
+                if (pyfunc != null && !EnforceRecursion && pyfunc._compat == _compat) {
                     var callTarget = pyfunc.Target as CallTarget10;
                     if (callTarget != null) {            
                         int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount + 7;
@@ -1463,7 +1457,7 @@ namespace IronPython.Runtime {
 
             public object Default4Call7(CallSite site, CodeContext context, object func, T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6) {
                 PythonFunction pyfunc = func as PythonFunction;
-                if (pyfunc != null && pyfunc.FunctionCompatibility == _compat) {
+                if (pyfunc != null && !EnforceRecursion && pyfunc._compat == _compat) {
                     var callTarget = pyfunc.Target as CallTarget11;
                     if (callTarget != null) {            
                         int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount + 7;
@@ -1476,7 +1470,7 @@ namespace IronPython.Runtime {
 
             public object Default5Call7(CallSite site, CodeContext context, object func, T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6) {
                 PythonFunction pyfunc = func as PythonFunction;
-                if (pyfunc != null && pyfunc.FunctionCompatibility == _compat) {
+                if (pyfunc != null && !EnforceRecursion && pyfunc._compat == _compat) {
                     var callTarget = pyfunc.Target as CallTarget12;
                     if (callTarget != null) {            
                         int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount + 7;
@@ -1489,7 +1483,7 @@ namespace IronPython.Runtime {
 
             public object Default6Call7(CallSite site, CodeContext context, object func, T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6) {
                 PythonFunction pyfunc = func as PythonFunction;
-                if (pyfunc != null && pyfunc.FunctionCompatibility == _compat) {
+                if (pyfunc != null && !EnforceRecursion && pyfunc._compat == _compat) {
                     var callTarget = pyfunc.Target as CallTarget13;
                     if (callTarget != null) {            
                         int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount + 7;
@@ -1506,7 +1500,7 @@ namespace IronPython.Runtime {
 
             public object Call8(CallSite site, CodeContext context, object func, T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7) {
                 PythonFunction pyfunc = func as PythonFunction;
-                if (pyfunc != null && pyfunc.FunctionCompatibility == _compat) {
+                if (pyfunc != null && !EnforceRecursion && pyfunc._compat == _compat) {
                     var callTarget = pyfunc.Target as CallTarget8;
                     if (callTarget != null) {
                         return callTarget(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7);
@@ -1518,7 +1512,7 @@ namespace IronPython.Runtime {
 
             public object GeneratorCall8(CallSite site, CodeContext context, object func, T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7) {
                 PythonFunction pyfunc = func as PythonFunction;
-                if (pyfunc != null && pyfunc.FunctionCompatibility == _compat) {
+                if (pyfunc != null && !EnforceRecursion && pyfunc._compat == _compat) {
                     var callTarget = pyfunc.Target as GeneratorTarget8;
                     if (callTarget != null) {
                         PythonGenerator res = new PythonGenerator(pyfunc);
@@ -1532,7 +1526,7 @@ namespace IronPython.Runtime {
 
             public object Default1Call8(CallSite site, CodeContext context, object func, T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7) {
                 PythonFunction pyfunc = func as PythonFunction;
-                if (pyfunc != null && pyfunc.FunctionCompatibility == _compat) {
+                if (pyfunc != null && !EnforceRecursion && pyfunc._compat == _compat) {
                     var callTarget = pyfunc.Target as CallTarget9;
                     if (callTarget != null) {            
                         int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount + 8;
@@ -1545,7 +1539,7 @@ namespace IronPython.Runtime {
 
             public object Default2Call8(CallSite site, CodeContext context, object func, T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7) {
                 PythonFunction pyfunc = func as PythonFunction;
-                if (pyfunc != null && pyfunc.FunctionCompatibility == _compat) {
+                if (pyfunc != null && !EnforceRecursion && pyfunc._compat == _compat) {
                     var callTarget = pyfunc.Target as CallTarget10;
                     if (callTarget != null) {            
                         int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount + 8;
@@ -1558,7 +1552,7 @@ namespace IronPython.Runtime {
 
             public object Default3Call8(CallSite site, CodeContext context, object func, T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7) {
                 PythonFunction pyfunc = func as PythonFunction;
-                if (pyfunc != null && pyfunc.FunctionCompatibility == _compat) {
+                if (pyfunc != null && !EnforceRecursion && pyfunc._compat == _compat) {
                     var callTarget = pyfunc.Target as CallTarget11;
                     if (callTarget != null) {            
                         int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount + 8;
@@ -1571,7 +1565,7 @@ namespace IronPython.Runtime {
 
             public object Default4Call8(CallSite site, CodeContext context, object func, T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7) {
                 PythonFunction pyfunc = func as PythonFunction;
-                if (pyfunc != null && pyfunc.FunctionCompatibility == _compat) {
+                if (pyfunc != null && !EnforceRecursion && pyfunc._compat == _compat) {
                     var callTarget = pyfunc.Target as CallTarget12;
                     if (callTarget != null) {            
                         int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount + 8;
@@ -1584,7 +1578,7 @@ namespace IronPython.Runtime {
 
             public object Default5Call8(CallSite site, CodeContext context, object func, T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7) {
                 PythonFunction pyfunc = func as PythonFunction;
-                if (pyfunc != null && pyfunc.FunctionCompatibility == _compat) {
+                if (pyfunc != null && !EnforceRecursion && pyfunc._compat == _compat) {
                     var callTarget = pyfunc.Target as CallTarget13;
                     if (callTarget != null) {            
                         int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount + 8;
@@ -1601,7 +1595,7 @@ namespace IronPython.Runtime {
 
             public object Call9(CallSite site, CodeContext context, object func, T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8) {
                 PythonFunction pyfunc = func as PythonFunction;
-                if (pyfunc != null && pyfunc.FunctionCompatibility == _compat) {
+                if (pyfunc != null && !EnforceRecursion && pyfunc._compat == _compat) {
                     var callTarget = pyfunc.Target as CallTarget9;
                     if (callTarget != null) {
                         return callTarget(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8);
@@ -1613,7 +1607,7 @@ namespace IronPython.Runtime {
 
             public object GeneratorCall9(CallSite site, CodeContext context, object func, T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8) {
                 PythonFunction pyfunc = func as PythonFunction;
-                if (pyfunc != null && pyfunc.FunctionCompatibility == _compat) {
+                if (pyfunc != null && !EnforceRecursion && pyfunc._compat == _compat) {
                     var callTarget = pyfunc.Target as GeneratorTarget9;
                     if (callTarget != null) {
                         PythonGenerator res = new PythonGenerator(pyfunc);
@@ -1627,7 +1621,7 @@ namespace IronPython.Runtime {
 
             public object Default1Call9(CallSite site, CodeContext context, object func, T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8) {
                 PythonFunction pyfunc = func as PythonFunction;
-                if (pyfunc != null && pyfunc.FunctionCompatibility == _compat) {
+                if (pyfunc != null && !EnforceRecursion && pyfunc._compat == _compat) {
                     var callTarget = pyfunc.Target as CallTarget10;
                     if (callTarget != null) {            
                         int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount + 9;
@@ -1640,7 +1634,7 @@ namespace IronPython.Runtime {
 
             public object Default2Call9(CallSite site, CodeContext context, object func, T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8) {
                 PythonFunction pyfunc = func as PythonFunction;
-                if (pyfunc != null && pyfunc.FunctionCompatibility == _compat) {
+                if (pyfunc != null && !EnforceRecursion && pyfunc._compat == _compat) {
                     var callTarget = pyfunc.Target as CallTarget11;
                     if (callTarget != null) {            
                         int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount + 9;
@@ -1653,7 +1647,7 @@ namespace IronPython.Runtime {
 
             public object Default3Call9(CallSite site, CodeContext context, object func, T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8) {
                 PythonFunction pyfunc = func as PythonFunction;
-                if (pyfunc != null && pyfunc.FunctionCompatibility == _compat) {
+                if (pyfunc != null && !EnforceRecursion && pyfunc._compat == _compat) {
                     var callTarget = pyfunc.Target as CallTarget12;
                     if (callTarget != null) {            
                         int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount + 9;
@@ -1666,7 +1660,7 @@ namespace IronPython.Runtime {
 
             public object Default4Call9(CallSite site, CodeContext context, object func, T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8) {
                 PythonFunction pyfunc = func as PythonFunction;
-                if (pyfunc != null && pyfunc.FunctionCompatibility == _compat) {
+                if (pyfunc != null && !EnforceRecursion && pyfunc._compat == _compat) {
                     var callTarget = pyfunc.Target as CallTarget13;
                     if (callTarget != null) {            
                         int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount + 9;
@@ -1683,7 +1677,7 @@ namespace IronPython.Runtime {
 
             public object Call10(CallSite site, CodeContext context, object func, T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9) {
                 PythonFunction pyfunc = func as PythonFunction;
-                if (pyfunc != null && pyfunc.FunctionCompatibility == _compat) {
+                if (pyfunc != null && !EnforceRecursion && pyfunc._compat == _compat) {
                     var callTarget = pyfunc.Target as CallTarget10;
                     if (callTarget != null) {
                         return callTarget(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9);
@@ -1695,7 +1689,7 @@ namespace IronPython.Runtime {
 
             public object GeneratorCall10(CallSite site, CodeContext context, object func, T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9) {
                 PythonFunction pyfunc = func as PythonFunction;
-                if (pyfunc != null && pyfunc.FunctionCompatibility == _compat) {
+                if (pyfunc != null && !EnforceRecursion && pyfunc._compat == _compat) {
                     var callTarget = pyfunc.Target as GeneratorTarget10;
                     if (callTarget != null) {
                         PythonGenerator res = new PythonGenerator(pyfunc);
@@ -1709,7 +1703,7 @@ namespace IronPython.Runtime {
 
             public object Default1Call10(CallSite site, CodeContext context, object func, T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9) {
                 PythonFunction pyfunc = func as PythonFunction;
-                if (pyfunc != null && pyfunc.FunctionCompatibility == _compat) {
+                if (pyfunc != null && !EnforceRecursion && pyfunc._compat == _compat) {
                     var callTarget = pyfunc.Target as CallTarget11;
                     if (callTarget != null) {            
                         int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount + 10;
@@ -1722,7 +1716,7 @@ namespace IronPython.Runtime {
 
             public object Default2Call10(CallSite site, CodeContext context, object func, T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9) {
                 PythonFunction pyfunc = func as PythonFunction;
-                if (pyfunc != null && pyfunc.FunctionCompatibility == _compat) {
+                if (pyfunc != null && !EnforceRecursion && pyfunc._compat == _compat) {
                     var callTarget = pyfunc.Target as CallTarget12;
                     if (callTarget != null) {            
                         int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount + 10;
@@ -1735,7 +1729,7 @@ namespace IronPython.Runtime {
 
             public object Default3Call10(CallSite site, CodeContext context, object func, T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9) {
                 PythonFunction pyfunc = func as PythonFunction;
-                if (pyfunc != null && pyfunc.FunctionCompatibility == _compat) {
+                if (pyfunc != null && !EnforceRecursion && pyfunc._compat == _compat) {
                     var callTarget = pyfunc.Target as CallTarget13;
                     if (callTarget != null) {            
                         int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount + 10;
@@ -1752,7 +1746,7 @@ namespace IronPython.Runtime {
 
             public object Call11(CallSite site, CodeContext context, object func, T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, T10 arg10) {
                 PythonFunction pyfunc = func as PythonFunction;
-                if (pyfunc != null && pyfunc.FunctionCompatibility == _compat) {
+                if (pyfunc != null && !EnforceRecursion && pyfunc._compat == _compat) {
                     var callTarget = pyfunc.Target as CallTarget11;
                     if (callTarget != null) {
                         return callTarget(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10);
@@ -1764,7 +1758,7 @@ namespace IronPython.Runtime {
 
             public object GeneratorCall11(CallSite site, CodeContext context, object func, T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, T10 arg10) {
                 PythonFunction pyfunc = func as PythonFunction;
-                if (pyfunc != null && pyfunc.FunctionCompatibility == _compat) {
+                if (pyfunc != null && !EnforceRecursion && pyfunc._compat == _compat) {
                     var callTarget = pyfunc.Target as GeneratorTarget11;
                     if (callTarget != null) {
                         PythonGenerator res = new PythonGenerator(pyfunc);
@@ -1778,7 +1772,7 @@ namespace IronPython.Runtime {
 
             public object Default1Call11(CallSite site, CodeContext context, object func, T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, T10 arg10) {
                 PythonFunction pyfunc = func as PythonFunction;
-                if (pyfunc != null && pyfunc.FunctionCompatibility == _compat) {
+                if (pyfunc != null && !EnforceRecursion && pyfunc._compat == _compat) {
                     var callTarget = pyfunc.Target as CallTarget12;
                     if (callTarget != null) {            
                         int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount + 11;
@@ -1791,7 +1785,7 @@ namespace IronPython.Runtime {
 
             public object Default2Call11(CallSite site, CodeContext context, object func, T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, T10 arg10) {
                 PythonFunction pyfunc = func as PythonFunction;
-                if (pyfunc != null && pyfunc.FunctionCompatibility == _compat) {
+                if (pyfunc != null && !EnforceRecursion && pyfunc._compat == _compat) {
                     var callTarget = pyfunc.Target as CallTarget13;
                     if (callTarget != null) {            
                         int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount + 11;
@@ -1808,7 +1802,7 @@ namespace IronPython.Runtime {
 
             public object Call12(CallSite site, CodeContext context, object func, T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, T10 arg10, T11 arg11) {
                 PythonFunction pyfunc = func as PythonFunction;
-                if (pyfunc != null && pyfunc.FunctionCompatibility == _compat) {
+                if (pyfunc != null && !EnforceRecursion && pyfunc._compat == _compat) {
                     var callTarget = pyfunc.Target as CallTarget12;
                     if (callTarget != null) {
                         return callTarget(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11);
@@ -1820,7 +1814,7 @@ namespace IronPython.Runtime {
 
             public object GeneratorCall12(CallSite site, CodeContext context, object func, T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, T10 arg10, T11 arg11) {
                 PythonFunction pyfunc = func as PythonFunction;
-                if (pyfunc != null && pyfunc.FunctionCompatibility == _compat) {
+                if (pyfunc != null && !EnforceRecursion && pyfunc._compat == _compat) {
                     var callTarget = pyfunc.Target as GeneratorTarget12;
                     if (callTarget != null) {
                         PythonGenerator res = new PythonGenerator(pyfunc);
@@ -1834,7 +1828,7 @@ namespace IronPython.Runtime {
 
             public object Default1Call12(CallSite site, CodeContext context, object func, T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, T10 arg10, T11 arg11) {
                 PythonFunction pyfunc = func as PythonFunction;
-                if (pyfunc != null && pyfunc.FunctionCompatibility == _compat) {
+                if (pyfunc != null && !EnforceRecursion && pyfunc._compat == _compat) {
                     var callTarget = pyfunc.Target as CallTarget13;
                     if (callTarget != null) {            
                         int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount + 12;
@@ -1851,7 +1845,7 @@ namespace IronPython.Runtime {
 
             public object Call13(CallSite site, CodeContext context, object func, T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, T10 arg10, T11 arg11, T12 arg12) {
                 PythonFunction pyfunc = func as PythonFunction;
-                if (pyfunc != null && pyfunc.FunctionCompatibility == _compat) {
+                if (pyfunc != null && !EnforceRecursion && pyfunc._compat == _compat) {
                     var callTarget = pyfunc.Target as CallTarget13;
                     if (callTarget != null) {
                         return callTarget(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12);
@@ -1863,7 +1857,7 @@ namespace IronPython.Runtime {
 
             public object GeneratorCall13(CallSite site, CodeContext context, object func, T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, T10 arg10, T11 arg11, T12 arg12) {
                 PythonFunction pyfunc = func as PythonFunction;
-                if (pyfunc != null && pyfunc.FunctionCompatibility == _compat) {
+                if (pyfunc != null && !EnforceRecursion && pyfunc._compat == _compat) {
                     var callTarget = pyfunc.Target as GeneratorTarget13;
                     if (callTarget != null) {
                         PythonGenerator res = new PythonGenerator(pyfunc);

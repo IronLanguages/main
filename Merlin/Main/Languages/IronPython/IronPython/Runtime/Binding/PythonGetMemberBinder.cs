@@ -278,7 +278,7 @@ namespace IronPython.Runtime.Binding {
             _state = binder;
         }
 
-        public override DynamicMetaObject FallbackGetMember(DynamicMetaObject self, DynamicMetaObject onBindingError) {
+        public override DynamicMetaObject FallbackGetMember(DynamicMetaObject self, DynamicMetaObject errorSuggestion) {
 #if !SILVERLIGHT
             DynamicMetaObject com;
             if (System.Dynamic.ComBinder.TryBindGetMember(this, self, out com, true)) {

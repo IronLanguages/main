@@ -22,6 +22,8 @@ using System.Linq.Expressions;
 using Ast = System.Linq.Expressions.Expression;
 using AstFactory = IronRuby.Compiler.Ast.AstFactory;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
+using System.Dynamic;
+using System.Reflection;
 
 namespace IronRuby.Runtime.Calls {
 
@@ -47,7 +49,12 @@ namespace IronRuby.Runtime.Calls {
             return Ast.Call(Methods.GetMethod(GetType(), "Make"));
         }
 
-        protected override void BuildConversion(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args) {
+        protected override ConvertBinder/*!*/ GetInteropBinder(RubyContext/*!*/ context, out MethodInfo postConverter) {
+            postConverter = Methods.ToMutableString;
+            return new InteropBinder.Convert(context, typeof(string), false);
+        }
+
+        protected override void Build(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args) {
             const string ToS = "to_s";
 
             // no conversion for a subclass of string:
@@ -79,8 +86,7 @@ namespace IronRuby.Runtime.Calls {
                     return;
                 }
             } else {
-                args.InsertMethodName(ToS);
-                RubyCallAction.BindToMethodMissing(metaBuilder, args, ToS, methodMissing, RubyMethodVisibility.None, false);
+                RubyCallAction.BindToMethodMissing(metaBuilder, args, ToS, methodMissing, RubyMethodVisibility.None, false, true);
             }
 
             metaBuilder.Result = Methods.ToSDefaultConversion.OpCall(args.ContextExpression, AstFactory.Box(args.TargetExpression), AstFactory.Box(metaBuilder.Result));
