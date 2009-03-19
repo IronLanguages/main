@@ -306,7 +306,16 @@ namespace System.Dynamic {
 #else
             if (ido != null) {
 #endif
-                return ido.GetMetaObject(expression);
+                var idoMetaObject = ido.GetMetaObject(expression);
+                if (idoMetaObject.Value != ido) {
+                    throw new InvalidOperationException();
+                }
+
+                if (idoMetaObject.Expression != expression) {
+                    throw new InvalidOperationException();
+                }
+
+                return idoMetaObject;
             } else {
                 return new DynamicMetaObject(expression, BindingRestrictions.Empty, value);
             }

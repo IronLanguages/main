@@ -1,0 +1,112 @@
+
+<html><head>
+  <title>Class: Log4r::IOOutputter</title>
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <link rel=StyleSheet href="../.././rdoc-style.css" type="text/css" media=screen>
+  <script type="text/javascript" language="JavaScript">
+  <!--
+  function popCode(url) {
+    parent.frames.source.location = url
+  }
+  //-->
+  </script>
+</head>
+<body bgcolor="white">
+
+
+<table width="100%" border=0 cellspacing=0>
+ <tr class="title-row">
+ <td class="big-title-font">
+   <font size=-3><B>Class</B><BR></font>Log4r::IOOutputter
+ </td>
+ <td align="right">
+   <table cellspacing=0 cellpadding=2>
+     <tr valign="top">
+      <td class="small-title-font">In:</td>
+      <td class="small-title-font">
+log4r/outputter/iooutputter.rb
+      </td>
+     </tr>
+     <tr>
+      <td class="small-title-font">Parent:</td>
+      <td class="small-title-font">
+        <a href="Outputter.html" class="cyan">
+Outputter
+         </a>
+      </td>
+     </tr>
+   </table>
+  </td>
+  </tr>
+</table><br>
+  <!-- banner header -->
+
+
+<div class="description"><p>
+IO <a href="Outputter.html">Outputter</a> invokes print then flush on the
+wrapped IO object. If the IO stream dies, <a
+href="IOOutputter.html">IOOutputter</a> sets itself to OFF and the system
+continues on its merry way.
+</p>
+<p>
+To find out why an IO stream died, create a logger named
+&#8216;log4r&#8217; and look at the output.
+</p>
+</div>
+
+</div>
+
+<table cellpadding=5 width="100%">
+<tr><td class="tablesubtitle">Methods</td></tr>
+</table><br>
+<div class="name-list">
+<a href="#M000051">close</a>,
+<a href="#M000050">closed?</a>,
+<a href="#M000049">new</a>,
+</div>
+
+
+
+  
+
+<table cellpadding=5 width="100%">
+<tr><td class="tablesubtitle">Public Class methods</td></tr>
+</table>
+<table width="100%" cellspacing = 0 cellpadding=5 border=0>
+<tr><td class="methodtitle">
+<a name="M000049">
+<b>new</b>(_name, _out, hash={}) 
+<a href="IOOutputter.src/M000049.html" target="source" class="srclink">src</a>
+</a></td></tr>
+</table>
+<div class="description">
+<p>
+<a href="IOOutputter.html">IOOutputter</a> needs an IO object to write to.
+</p>
+</div>
+<table cellpadding=5 width="100%">
+<tr><td class="tablesubtitle">Public Instance methods</td></tr>
+</table>
+<table width="100%" cellspacing = 0 cellpadding=5 border=0>
+<tr><td class="methodtitle">
+<a name="M000050">
+<b>closed?</b>() 
+<a href="IOOutputter.src/M000050.html" target="source" class="srclink">src</a>
+</a></td></tr>
+</table>
+<table width="100%" cellspacing = 0 cellpadding=5 border=0>
+<tr><td class="methodtitle">
+<a name="M000051">
+<b>close</b>() 
+<a href="IOOutputter.src/M000051.html" target="source" class="srclink">src</a>
+</a></td></tr>
+</table>
+<div class="description">
+<p>
+Close the IO and sets level to OFF
+</p>
+</div>
+  <!-- method descriptions -->
+
+</body>
+</html>

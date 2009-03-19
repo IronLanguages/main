@@ -676,8 +676,12 @@ namespace IronPython.Compiler {
             if (start == '0') {
                 if (NextChar('x') || NextChar('X')) {
                     return ReadHexNumber();
-                } else if (_python26 && (NextChar('b') || NextChar('B'))) {
-                    return ReadBinaryNumber();
+                } else if (_python26) {
+                    if (NextChar('b') || NextChar('B')) {
+                        return ReadBinaryNumber();
+                    } else if (NextChar('o') || NextChar('O')) {
+                        return ReadOctalNumber();
+                    }
                 }
                 b = 8;
             }
@@ -756,6 +760,31 @@ namespace IronPython.Compiler {
             }
         }
 
+        private Token ReadOctalNumber() {
+            while (true) {
+                int ch = NextChar();
+
+                switch (ch) {
+                    case '0': case '1': case '2': case '3':
+                    case '4': case '5': case '6': case '7':
+                        break;
+
+                    case 'l': case 'L':
+                        _buffer.MarkSingleLineTokenEnd();
+
+                        // TODO: parse in place
+                        return new ConstantValueToken(LiteralParser.ParseBigInteger(_buffer.GetTokenSubstring(2, _buffer.TokenLength - 2), 8));
+
+                    default:
+                        _buffer.Back();
+                        _buffer.MarkSingleLineTokenEnd();
+
+                        // TODO: parse in place
+                        return new ConstantValueToken(ParseInteger(_buffer.GetTokenSubstring(2), 8));
+                }
+            }
+        }
+
         private Token ReadHexNumber() {
             while (true) {
                 int ch = NextChar();
@@ -778,7 +807,7 @@ namespace IronPython.Compiler {
                         _buffer.MarkSingleLineTokenEnd();
 
                         // TODO: parse in place
-                        return new ConstantValueToken(ParseInteger(_buffer.GetTokenSubstring(2, _buffer.TokenLength - 2), 16));
+                        return new ConstantValueToken(ParseInteger(_buffer.GetTokenSubstring(2), 16));
                 }
             }
         }

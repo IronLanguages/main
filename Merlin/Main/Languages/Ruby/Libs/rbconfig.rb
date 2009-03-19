@@ -24,7 +24,7 @@ module Config
   # the Ruby libraries
   # Note that this symbol should be redefined by the packaging script for binary
   # layouts
-  TOPDIR = File.dirname(__FILE__) + '/../../../../External/languages/ruby/ruby-1.8.6/'
+  TOPDIR = File.dirname(__FILE__) + '/../../../../External/languages/ruby/ruby-1.8.6p287/'
 
   DESTDIR = TOPDIR && TOPDIR[/\A[a-z]:/i] || '' unless defined? DESTDIR
   CONFIG = {}

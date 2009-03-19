@@ -16,9 +16,11 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Dynamic;
 using System.Diagnostics;
 using System.Linq.Expressions;
 using System.Reflection;
+using System.Text;
 
 using Microsoft.Scripting;
 using Microsoft.Scripting.Actions;
@@ -56,15 +58,18 @@ namespace IronPython.Compiler.Ast {
         private readonly List<ParameterExpression> _params;             // parameters allocated during the transformation of the code
         private readonly List<VariableInfo> _visibleVars;               // list of all variables and which ones are closed over.
         private MSAst.ParameterExpression _localCodeContext;            // the current context if it's different from the global context.
+        private readonly Profiler _profiler;                            // captures timing data if profiling
         private readonly AstGenerator/*!*/ _parent;                     // the parent generator
+        private readonly string/*!*/ _profilerName;                     // a human-friendly name to be used as the output form the profiler
 
         private static readonly Dictionary<string, MethodInfo> _HelperMethods = new Dictionary<string, MethodInfo>(); // cache of helper methods
         private static readonly MethodInfo _UpdateStackTrace = typeof(ExceptionHelpers).GetMethod("UpdateStackTrace");
         private static readonly MethodInfo _GetCurrentMethod = typeof(MethodBase).GetMethod("GetCurrentMethod");
         internal static readonly MSAst.Expression[] EmptyExpression = new MSAst.Expression[0];
         internal static readonly MSAst.BlockExpression EmptyBlock = Ast.Block(AstUtils.Empty());
+        private const string NameForExec = "module: <exec>";
 
-        private AstGenerator(string name, bool generator, bool print) {
+        private AstGenerator(string name, bool generator, string profilerName, bool print) {
             _print = print;
             _generatorLabel = generator ? Ast.Label(typeof(object)) : null;
 
@@ -72,21 +77,32 @@ namespace IronPython.Compiler.Ast {
             _locals = new List<ParameterExpression>();
             _visibleVars = new List<VariableInfo>();
             _params = new List<ParameterExpression>();
+
+            if (profilerName == null) {
+                if (name.IndexOfAny(System.IO.Path.GetInvalidPathChars()) >= 0) {
+                    _profilerName = "module " + name;
+                } else {
+                    _profilerName = "module " + System.IO.Path.GetFileNameWithoutExtension(name);
+                }
+            } else {
+                _profilerName = profilerName;
+            }
         }
 
-        internal AstGenerator(AstGenerator/*!*/ parent, string name, bool generator, bool print)
-            : this(name, generator, false) {
+        internal AstGenerator(AstGenerator/*!*/ parent, string name, bool generator, string profilerName)
+            : this(name, generator, profilerName, false) {
             Assert.NotNull(parent);
             _context = parent.Context;
             _binderState = parent.BinderState;
             _parent = parent;
             _document = _context.SourceUnit.Document;
+            _profiler = parent._profiler;
 
             _globals = parent._globals;
         }
 
         internal AstGenerator(CompilationMode mode, CompilerContext/*!*/ context, SourceSpan span, string name, bool generator, bool print)
-            : this(name, generator, print) {
+            : this(name, generator, null, print) {
             Assert.NotNull(context);
             _context = context;
             _binderState = new BinderState(Binder);
@@ -95,9 +111,18 @@ namespace IronPython.Compiler.Ast {
             LanguageContext pc = context.SourceUnit.LanguageContext;
             switch (mode) {
                 case CompilationMode.Collectable: _globals = new ArrayGlobalAllocator(pc); break;
-                case CompilationMode.Loookup: _globals = new DictionaryGlobalAllocator(); break;
+                case CompilationMode.Lookup: _globals = new DictionaryGlobalAllocator(); break;
                 case CompilationMode.ToDisk: _globals = new SavableGlobalAllocator(pc); break;
                 case CompilationMode.Uncollectable: _globals = new StaticGlobalAllocator(pc, name); break;
+            }
+
+            PythonOptions po = (pc.Options as PythonOptions);
+            Assert.NotNull(po);
+            if (po.EnableProfiler && mode != CompilationMode.ToDisk) {
+                _profiler = Profiler.GetProfiler(PythonContext);
+                if (mode == CompilationMode.Lookup) {
+                    _profilerName = NameForExec;
+                }
             }
         }
 
@@ -362,33 +387,39 @@ namespace IronPython.Compiler.Ast {
             // Do we need conversion?
             if (!CanAssign(type, expression.Type)) {
                 // Add conversion step to the AST
-                /*ActionExpression ae = expression as ActionExpression;
-                if (ae != null) {
+                DynamicExpression ae = expression as DynamicExpression;
+                ReducableDynamicExpression rde = expression as ReducableDynamicExpression;
+
+                if ((ae != null && ae.Binder is PythonBinaryOperationBinder) ||
+                    (rde != null && rde.Binder is PythonBinaryOperationBinder)) {
                     // create a combo site which does the conversion
-                    ParameterMappingInfo[] infos = new ParameterMappingInfo[ae.Arguments.Count];
+                    PythonBinaryOperationBinder binder;
+                    MSAst.Expression[] args;
+                    if (ae != null) {
+                        binder = (PythonBinaryOperationBinder)ae.Binder;
+                        args = ArrayUtils.ToArray(ae.Arguments);
+                    } else {
+                        binder = (PythonBinaryOperationBinder)rde.Binder;
+                        args = rde.Args;
+                    }
+
+                    ParameterMappingInfo[] infos = new ParameterMappingInfo[args.Length];
                     for (int i = 0; i<infos.Length; i++) {
                         infos[i] = ParameterMappingInfo.Parameter(i);
                     }
 
-                    expression = Ast.Dynamic(
-                        new ComboBinder(
-                            new BinderMappingInfo(
-                                (MetaAction)ae.BindingInfo,
-                                infos
-                            ),
-                            new BinderMappingInfo(
-                                new ConversionBinder(
-                                    BinderState,
-                                    type,
-                                    ConversionResultKind.ExplicitCast
-                                ),
-                                ParameterMappingInfo.Action(0)
+                    expression = Globals.Dynamic(
+                        BinderState.BinaryOperationRetType(
+                            binder,
+                            BinderState.Convert(
+                                type,
+                                ConversionResultKind.ExplicitCast
                             )
                         ),
                         type,
-                        ae.Arguments
+                        args
                     );
-                } else*/ {
+                } else {
                     expression = Convert(
                         type,
                         ConversionResultKind.ExplicitCast,
@@ -787,6 +818,25 @@ namespace IronPython.Compiler.Ast {
             }
         }
 
+        internal string ProfilerName {
+            get {
+                if (_parent != null) {
+                    return _parent.ProfilerName + ": " + _profilerName;
+                } else {
+                    return _profilerName;
+                }
+            }
+        }
+
+        internal MSAst.Expression AddProfiling(MSAst.Expression/*!*/ body) {
+            if (_profiler != null) {
+                MSAst.ParameterExpression tick = GetTemporary("$tick", typeof(long));
+                bool unique = (_profilerName == NameForExec);
+                body = _profiler.AddProfiling(body, tick, ProfilerName, unique);
+            }
+            return body;
+        }
+
         internal ScriptCode MakeScriptCode(MSAst.Expression/*!*/ body, CompilerContext/*!*/ context, PythonAst/*!*/ ast) {
             return Globals.MakeScriptCode(Ast.Block(_locals, body), context, ast);
         }
@@ -945,6 +995,6 @@ namespace IronPython.Compiler.Ast {
         ToDisk,
         Uncollectable,
         Collectable,
-        Loookup
+        Lookup
     }
 }

@@ -240,9 +240,12 @@ namespace IronPython.Runtime {
         /// where parent.module is the mod.__name__
         /// </summary>
         /// <param name="context"></param>
+        /// <param name="globals">the globals dictionary</param>
         /// <param name="name">Name of the module to be imported</param>
         /// <param name="full">Output - full name of the module being imported</param>
         /// <param name="path">Path to use to search for "full"</param>
+        /// <param name="level">the import level for relaive imports</param>
+        /// <param name="parentScope">the parent scope</param>
         /// <returns></returns>
          private static bool TryGetNameAndPath(CodeContext/*!*/ context, object globals, string name, int level, out string full, out List path, out Scope parentScope) {
            Debug.Assert(level != 0);   // shouldn't be here for absolute imports
@@ -459,10 +462,11 @@ namespace IronPython.Runtime {
         private static bool FindAndLoadModuleFromImporter(CodeContext/*!*/ context, object importer, string fullName, List path, out object ret) {
             object find_module = PythonOps.GetBoundAttr(context, importer, SymbolTable.StringToId("find_module"));
 
-            object loader = PythonOps.CallWithContext(context, find_module, fullName, path);
+            PythonContext pycontext = PythonContext.GetContext(context);
+            object loader = pycontext.Call(context, find_module, fullName, path);
             if (loader != null) {
                 object findMod = PythonOps.GetBoundAttr(context, loader, SymbolTable.StringToId("load_module"));
-                ret = PythonOps.CallWithContext(context, findMod, fullName);
+                ret = pycontext.Call(context, findMod, fullName);
                 return ret != null;
             }
 

@@ -1,0 +1,19 @@
+
+<html>
+<head><title>load_xml_file (Log4r::Configurator)</title>
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+<style>
+  .kw { color: #3333FF; font-weight: bold }
+  .cmt { color: green; font-style: italic }
+  .str { color: #662222; font-style: italic }
+  .re  { color: #662222; }
+</style>
+</head>
+<body bgcolor="white">
+<pre><span class="cmt"># File log4r/configurator.rb, line 54</span>
+    <span class="kw">def</span> <span class="kw">self</span>.load_xml_file(filename)
+      detect_rexml
+      actual_load Document.new(File.new(filename))
+    <span class="kw">end</span></pre>
+</body>
+</html>

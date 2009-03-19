@@ -24,6 +24,9 @@ namespace System.Linq.Expressions {
     /// <summary>
     /// Represents a call to either static or an instance method.
     /// </summary>
+#if !SILVERLIGHT
+    [DebuggerTypeProxy(typeof(Expression.MethodCallExpressionProxy))]
+#endif
     public class MethodCallExpression : Expression, IArgumentProvider {
         private readonly MethodInfo _method;
 
@@ -176,7 +179,7 @@ namespace System.Linq.Expressions {
     }
 
     internal class MethodCallExpression1 : MethodCallExpression, IArgumentProvider {
-        private object _arg0;       // storage for the 1st argument or a ROC.  See IArgumentProvider
+        private object _arg0;       // storage for the 1st argument or a readonly collection.  See IArgumentProvider
 
         public MethodCallExpression1(MethodInfo method, Expression arg0)
             : base(method) {
@@ -213,7 +216,7 @@ namespace System.Linq.Expressions {
     }
 
     internal class MethodCallExpression2 : MethodCallExpression, IArgumentProvider {
-        private object _arg0;               // storage for the 1st argument or a ROC.  See IArgumentProvider
+        private object _arg0;               // storage for the 1st argument or a readonly collection.  See IArgumentProvider
         private readonly Expression _arg1;  // storage for the 2nd arg
 
         public MethodCallExpression2(MethodInfo method, Expression arg0, Expression arg1)
@@ -252,7 +255,7 @@ namespace System.Linq.Expressions {
     }
 
     internal class MethodCallExpression3 : MethodCallExpression, IArgumentProvider {
-        private object _arg0;           // storage for the 1st argument or a ROC.  See IArgumentProvider
+        private object _arg0;           // storage for the 1st argument or a readonly collection.  See IArgumentProvider
         private readonly Expression _arg1, _arg2; // storage for the 2nd - 3rd args.
 
         public MethodCallExpression3(MethodInfo method, Expression arg0, Expression arg1, Expression arg2)
@@ -293,7 +296,7 @@ namespace System.Linq.Expressions {
     }
 
     internal class MethodCallExpression4 : MethodCallExpression, IArgumentProvider {
-        private object _arg0;               // storage for the 1st argument or a ROC.  See IArgumentProvider
+        private object _arg0;               // storage for the 1st argument or a readonly collection.  See IArgumentProvider
         private readonly Expression _arg1, _arg2, _arg3;  // storage for the 2nd - 4th args.
 
         public MethodCallExpression4(MethodInfo method, Expression arg0, Expression arg1, Expression arg2, Expression arg3)
@@ -336,7 +339,7 @@ namespace System.Linq.Expressions {
     }
 
     internal class MethodCallExpression5 : MethodCallExpression, IArgumentProvider {
-        private object _arg0;           // storage for the 1st argument or a ROC.  See IArgumentProvider
+        private object _arg0;           // storage for the 1st argument or a readonly collection.  See IArgumentProvider
         private readonly Expression _arg1, _arg2, _arg3, _arg4;   // storage for the 2nd - 5th args.
 
         public MethodCallExpression5(MethodInfo method, Expression arg0, Expression arg1, Expression arg2, Expression arg3, Expression arg4)
@@ -383,7 +386,7 @@ namespace System.Linq.Expressions {
 
     internal class InstanceMethodCallExpression2 : MethodCallExpression, IArgumentProvider {
         private readonly Expression _instance;
-        private object _arg0;                // storage for the 1st argument or a ROC.  See IArgumentProvider
+        private object _arg0;                // storage for the 1st argument or a readonly collection.  See IArgumentProvider
         private readonly Expression _arg1;   // storage for the 2nd argument
 
         public InstanceMethodCallExpression2(MethodInfo method, Expression instance, Expression arg0, Expression arg1)
@@ -430,7 +433,7 @@ namespace System.Linq.Expressions {
 
     internal class InstanceMethodCallExpression3 : MethodCallExpression, IArgumentProvider {
         private readonly Expression _instance;
-        private object _arg0;                       // storage for the 1st argument or a ROC.  See IArgumentProvider
+        private object _arg0;                       // storage for the 1st argument or a readonly collection.  See IArgumentProvider
         private readonly Expression _arg1, _arg2;   // storage for the 2nd - 3rd argument
 
         public InstanceMethodCallExpression3(MethodInfo method, Expression instance, Expression arg0, Expression arg1, Expression arg2)

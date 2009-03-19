@@ -1,0 +1,27 @@
+<h3>View Document</h3>
+<%= choose_document(@doc_id) %>
+<hr/>
+<%= paginate_docs %>
+<% total_length = 0 %>
+<div class="display">
+<% if @doc %>
+<h3>Fields</h3>
+<dl>
+<% @doc.each_pair do |field, value| %>
+<% total_length += value.length %>
+<dt><%= field %></dt>
+<dd>
+  <% if value.length > 50 %>
+  <pre><%= value %></pre>
+  <% else %>
+  <%= value %>
+  <% end %>
+</dd>
+<% end %>
+</dl>
+<hr/>
+<% else %>
+<p style="color:#933;">Document has been deleted</p>
+<% end %>
+</div>
+<%= (total_length > 1000) ? paginate_docs : '' %>

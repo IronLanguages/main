@@ -571,7 +571,7 @@ namespace IronPython.Modules {
 
             [SpecialName]
             public object Call(CodeContext/*!*/ context, params object[] args) {
-                return PythonContext.GetContext(context).Call(GetObject(), args);
+                return PythonContext.GetContext(context).CallSplat(GetObject(), args);
             }
                         
             [SpecialName]

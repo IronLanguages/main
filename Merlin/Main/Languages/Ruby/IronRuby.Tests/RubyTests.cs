@@ -62,13 +62,13 @@ namespace IronRuby.Tests {
 
                 Heredoc1,
                 Symbols1,
-                UnicodeIdentifiers1,
+                
+                KCode1,
+                KCode2,
 
                 Encoding1,
                 Encoding2,
                 Encoding3,
-                Encoding4,
-                Encoding5,
                 Encoding_Host1,
                 Encoding_Host2,
 
@@ -81,6 +81,7 @@ namespace IronRuby.Tests {
                 Scenario_RubySingletonConstants1,
                 Scenario_RubyMath1,
 
+                MutableString1,
                 StringsPlus,
                 Strings0,
                 Strings1,
@@ -91,8 +92,11 @@ namespace IronRuby.Tests {
                 Strings6,
                 Strings7,
                 Strings8,
+                Strings9,
                 ToSConversion1,
                 ToSConversion2,
+                Inspect1,
+                Inspect2,
 
                 Regex1,
                 Regex2,
@@ -117,6 +121,7 @@ namespace IronRuby.Tests {
                 
                 AttributeAccessors1,
                 AttributeAccessors2,
+                AttributeAccessors3,
                 
                 Scenario_RubyDeclarations1,
                 Scenario_RubyDeclarations1A,
@@ -230,6 +235,7 @@ namespace IronRuby.Tests {
                 Scenario_RubyInitializers5,
                 RubyInitializersCaching1,
                 RubyInitializersCaching2,
+                RubyInitializersCaching3,
                 RubyAllocators1,
 
                 Scenario_RubyForLoop1,
@@ -304,13 +310,13 @@ namespace IronRuby.Tests {
                 CrossRuntime2,
 
                 Scenario_RubyConsole1,
-                // TODO: interop, hosting: Scenario_RubyConsole2,
-                Scenario_RubyConsole3,
-                Scenario_RubyConsole4,
                 ObjectOperations1,
                 ObjectOperations2,
                 PythonInterop1,
                 PythonInterop2,
+                PythonInterop3,
+                PythonInterop4,
+
                 CustomTypeDescriptor1,
                 CustomTypeDescriptor2,
                 
@@ -475,6 +481,7 @@ namespace IronRuby.Tests {
                 ClassDuplication6,
                 Clone1,
                 Dup1,
+                Structs1,
                 MetaModules1,
                 MetaModulesDuplication1,
   

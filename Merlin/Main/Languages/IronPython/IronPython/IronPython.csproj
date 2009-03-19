@@ -20,6 +20,7 @@
     <SignAssembly Condition="'$(SignAssembly)' == '' And Exists('$(AssemblyOriginatorKeyFile)')">true</SignAssembly>
     <SignedSym Condition="'$(SignAssembly)' == 'true'">SIGNED</SignedSym>
     <DelaySign>true</DelaySign>
+    <BaseAddress>879755264</BaseAddress>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
     <DebugSymbols>true</DebugSymbols>
@@ -39,7 +40,8 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <RunCodeAnalysis>false</RunCodeAnalysis>
-    <BaseAddress>1933574144</BaseAddress>
+    <DocumentationFile>..\..\..\Bin\Release\IronPython.XML</DocumentationFile>
+    <NoWarn>1591</NoWarn>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'FxCop|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -80,6 +82,10 @@
     <SilverlightSdkPath Condition="Exists('$(TfsSilverlightPath)')">$(TfsSilverlightPath)</SilverlightSdkPath>
     <SilverlightSdkPath Condition="!Exists('$(TfsSilverlightPath)')">$(SilverlightInstallPath)</SilverlightSdkPath>
   </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DocumentationFile>..\..\..\Bin\Debug\IronPython.XML</DocumentationFile>
+    <NoWarn>1591</NoWarn>
+  </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" Condition=" $(SilverlightBuild) != 'true' " />
     <Reference Include="mscorlib, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e" Condition=" '$(SilverlightBuild)' == 'true' ">
@@ -103,6 +109,7 @@
     <Compile Include="Compiler\Ast\AssertStatement.cs" />
     <Compile Include="Compiler\Ast\AssignmentStatement.cs" />
     <Compile Include="Compiler\Ast\AstGenerator.cs" />
+    <Compile Include="Runtime\Profiler.cs" />
     <Compile Include="Compiler\GlobalAllocator.cs" />
     <Compile Include="Compiler\Ast\AugmentedAssignStatement.cs" />
     <Compile Include="Compiler\Ast\BackQuoteExpression.cs" />
@@ -141,6 +148,7 @@
     <Compile Include="Compiler\Ast\ModuleName.cs" />
     <Compile Include="Compiler\Ast\NameExpression.cs" />
     <Compile Include="Compiler\Ast\Node.cs" />
+    <Compile Include="Compiler\ReducableDynamicExpression.cs" />
     <Compile Include="Compiler\SavableScriptCode.cs" />
     <Compile Include="Compiler\StaticGlobalAllocator.cs" />
     <Compile Include="Compiler\Ast\OrExpression.cs" />
@@ -170,6 +178,13 @@
     <Compile Include="Compiler\Ast\YieldExpression.cs" />
     <Compile Include="Compiler\FieldBuilderExpression.cs" />
     <Compile Include="Compiler\OnDiskScriptCode.cs" />
+    <Compile Include="Runtime\Binding\FastBindResult.cs" />
+    <Compile Include="Runtime\Binding\FastGetBase.cs" />
+    <Compile Include="Runtime\Binding\FastSetBase.cs" />
+    <Compile Include="Runtime\Binding\IFastGettable.cs" />
+    <Compile Include="Runtime\Binding\IFastInvokable.cs" />
+    <Compile Include="Runtime\Binding\OperationRetBoolBinder.cs" />
+    <Compile Include="Runtime\Binding\OperationRetBoolBinder.Generated.cs" />
     <Compile Include="Runtime\BuiltinsDictionaryStorage.cs" />
     <Compile Include="Runtime\CustomDictionaryStorage.cs" />
     <Compile Include="Runtime\GlobalDictionaryStorage.cs" />
@@ -219,6 +234,7 @@
     <Compile Include="Runtime\Operations\ByteOps.cs" />
     <Compile Include="Runtime\Operations\IListOfByteOps.cs" />
     <Compile Include="Runtime\Python3Warning.cs" />
+    <Compile Include="Runtime\PythonFunction.Generated.cs" />
     <Compile Include="Runtime\PythonOptions.cs" />
     <Compile Include="Runtime\CompiledLoader.cs" />
     <Compile Include="Runtime\NoLineFeedSourceContentProvider.cs" />
@@ -230,6 +246,7 @@
     <Compile Include="Runtime\PythonTypeAttribute.cs" />
     <Compile Include="Runtime\RuntimeVariablesDictionaryStorage.cs" />
     <Compile Include="Runtime\StringFormatSpec.cs" />
+    <Compile Include="Runtime\Types\BuiltinFunction.Generated.cs" />
     <Compile Include="Runtime\Types\CachedNewTypeInfo.cs" />
     <Compile Include="Runtime\Types\DynamicBaseTypeAttribute.cs" />
     <Compile Include="Runtime\Types\InstanceCreator.cs" />

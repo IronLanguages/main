@@ -62,6 +62,7 @@ namespace IronRuby.StandardLibrary.Yaml {
         public static MutableString TagUri(RubyContext/*!*/ context, object self) {
             MutableString str = MutableString.Create("!ruby/object:");
             str.Append(RubyUtils.GetClassName(context, self));
+            str.Append(' ');
             return str;
         }
     }

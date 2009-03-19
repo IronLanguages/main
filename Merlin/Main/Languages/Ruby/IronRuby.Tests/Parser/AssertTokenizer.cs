@@ -35,38 +35,65 @@ namespace IronRuby.Tests {
         private LoggingErrorSink _log;
         private List<Tokens>/*!*/ _allTokens;
         private List<object>/*!*/ _allValues;
+        public RubyCompatibility Compatibility { get; set; }
 
         public AssertTokenizer(Tests/*!*/ tests) {
             _log = new LoggingErrorSink();
             _tests = tests;
             _context = tests.Context;
+            DefaultEncoding = RubyEncoding.UTF8;
+            Compatibility = tests.Context.RubyOptions.Compatibility;
+        }
+
+        public Tokenizer Tokenizer {
+            get { return _tokenizer; }
+        }
+
+        public List<Tokens>/*!*/ AllTokens {
+            get { return _allTokens; }
+        }
+
+        public List<object>/*!*/ AllValues {
+            get { return _allValues; }
         }
 
         public AssertTokenizer/*!*/ B {
             get { if (Debugger.IsAttached) Debugger.Break(); return this; }
         }
 
+        public RubyEncoding/*!*/ DefaultEncoding { get; set; }
+
         public void EOF() {
             Read(Tokens.EndOfFile);
             Expect();
         }
 
+        public AssertTokenizer/*!*/ Load(object/*!*/ source, Action<Tokenizer>/*!*/ tokenizerInit) { // source: byte[] or string
+            var result = Load(source);
+            tokenizerInit(result.Tokenizer);
+            return result;
+        }
+
         public AssertTokenizer/*!*/ Load(object/*!*/ source) { // source: byte[] or string
             _tests.Assert(_log.Errors.Count == 0, "Previous test case reported unexpected error/warning(s)");
 
-            _tokenizer = new Tokenizer(false, DummyVariableResolver.AllMethodNames) {
-                ErrorSink = _log,
-                Compatibility = _context.RubyOptions.Compatibility
-            };
-
             SourceUnit sourceUnit;
+            RubyEncoding encoding;
             byte[] binarySource = source as byte[];
             if (binarySource != null) {
-                sourceUnit = _context.CreateSourceUnit(new BinaryContentProvider(binarySource), null, BinaryEncoding.Instance, SourceCodeKind.File);
+                encoding = RubyEncoding.Binary;
+                sourceUnit = _context.CreateSourceUnit(new BinaryContentProvider(binarySource), null, encoding.Encoding, SourceCodeKind.File);
             } else {
+                encoding = DefaultEncoding;
                 sourceUnit = _context.CreateSnippet((string)source, SourceCodeKind.File);
             }
-            
+
+            _tokenizer = new Tokenizer(false, DummyVariableResolver.AllMethodNames) {
+                ErrorSink = _log,
+                Compatibility = Compatibility,
+                Encoding = encoding
+            };
+
             _tokenizer.Initialize(sourceUnit);
             _allTokens = new List<Tokens>();
             _allValues = new List<object>();
@@ -105,7 +132,16 @@ namespace IronRuby.Tests {
         public AssertTokenizer/*!*/ Read(string/*!*/ expected) {
             Next();
             _tests.Assert(_actualToken == Tokens.StringContent);
-            _tests.Assert(expected == _actualValue.String);
+            _tests.Assert(_actualValue.StringContent is string);
+            _tests.Assert(expected == (string)_actualValue.StringContent);
+            return this;
+        }
+
+        public AssertTokenizer/*!*/ Read(byte[]/*!*/ expected) {
+            Next();
+            _tests.Assert(_actualToken == Tokens.StringContent);
+            _tests.Assert(_actualValue.StringContent is byte[]);
+            _tests.Assert(expected.ValueCompareTo(expected.Length, (byte[])_actualValue.StringContent) == 0);
             return this;
         }
 
@@ -168,6 +204,14 @@ namespace IronRuby.Tests {
             get { return Read(expected); }
         }
 
+        public AssertTokenizer/*!*/ this[string/*!*/ expected, Encoding/*!*/ encoding] {
+            get { return Read(encoding.GetBytes(expected)); }
+        }
+
+        public AssertTokenizer/*!*/ this[byte[]/*!*/ expected] {
+            get { return Read(expected); }
+        }
+
         public AssertTokenizer/*!*/ this[int expected] {
             get { return Read(expected); }
         }
@@ -176,7 +220,8 @@ namespace IronRuby.Tests {
             get {
                 Next();
                 _tests.Assert(_actualToken == token);
-                _tests.Assert(expected == _actualValue.String);
+                _tests.Assert(_actualValue.StringContent is string);
+                _tests.Assert(expected == (string)_actualValue.StringContent);
                 return this; 
             }
         }

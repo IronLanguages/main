@@ -1,0 +1,45 @@
+
+<html>
+<head><title>new (Log4r::FileOutputter)</title>
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+<style>
+  .kw { color: #3333FF; font-weight: bold }
+  .cmt { color: green; font-style: italic }
+  .str { color: #662222; font-style: italic }
+  .re  { color: #662222; }
+</style>
+</head>
+<body bgcolor="white">
+<pre><span class="cmt"># File log4r/outputter/fileoutputter.rb, line 16</span>
+    <span class="kw">def</span> initialize(_name, hash={})
+      <span class="kw">super</span>(_name, <span class="kw">nil</span>, hash)
+
+      @trunc = Log4rTools.decode_bool(hash, :trunc, <span class="kw">true</span>)
+      _filename = (hash[:filename] <span class="kw">or</span> hash[<span class="str">'filename'</span>])
+
+      <span class="kw">if</span> _filename.class != String
+        raise TypeError, <span class="str">&quot;Argument 'filename' must be a String&quot;</span>, caller
+      <span class="kw">end</span>
+
+      <span class="cmt"># file validation</span>
+      <span class="kw">if</span> FileTest.exist?( _filename )
+        <span class="kw">if</span> <span class="kw">not</span> FileTest.file?( _filename )
+          raise StandardError, &quot;'#{_filename}' is not a regular file&quot;, caller
+        <span class="kw">elsif</span> <span class="kw">not</span> FileTest.writable?( _filename )
+          raise StandardError, &quot;'#{_filename}' is not writable!&quot;, caller
+        <span class="kw">end</span>
+      <span class="kw">else</span> <span class="cmt"># ensure directory is writable</span>
+        dir = File.dirname( _filename )
+        <span class="kw">if</span> <span class="kw">not</span> FileTest.writable?( dir )
+          raise StandardError, &quot;'#{dir}' is not writable!&quot;
+        <span class="kw">end</span>
+      <span class="kw">end</span>
+
+      @filename = _filename
+      @out = File.new(@filename, (@trunc ? <span class="str">&quot;w&quot;</span> : <span class="str">&quot;a&quot;</span>)) 
+      Logger.log_internal {
+        &quot;FileOutputter '#{@name}' writing to #{@filename}&quot;
+      }
+    <span class="kw">end</span></pre>
+</body>
+</html>

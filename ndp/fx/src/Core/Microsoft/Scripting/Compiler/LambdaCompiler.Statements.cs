@@ -199,18 +199,15 @@ namespace System.Linq.Expressions.Compiler {
         /// </summary>
         private static Type GetTestValueType(SwitchExpression node) {
             if (node.Comparison == null) {
-                // If we have no comparison or the switch type is nullable, all
-                // right side types must be the same.
+                // If we have no comparison, all right side types must be the
+                // same.
                 return node.Cases[0].TestValues[0].Type;
             }
 
             // Otherwise, get the type from the method.
-            // We don't support a lifted call in switch (where the method's args
-            // are not nullable but the expression passed are nullable) so we
-            // don't have to worry about that here.
-            Type result = node.Comparison.GetParametersCached()[1].ParameterType;
-            if (result.IsByRef) {
-                result = result.GetElementType();
+            Type result = node.Comparison.GetParametersCached()[1].ParameterType.GetNonRefType();
+            if (node.IsLifted) {
+                result = TypeUtils.GetNullableType(result);
             }
             return result;
         }

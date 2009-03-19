@@ -1,0 +1,19 @@
+The examples are:
+
+1. outofthebox.rb                 - How to get started with minimal setup
+2. simpleconfig.rb                - Using Log4r casually
+3. moderateconfig.rb              - A more sophisticated config
+4. xmlconfig.rb and moderate.xml  - XML configuration example based on #3
+5. rrsetup.rb and rrconfig.xml    - A real example (or used to be ;-)
+6. logserver.rb and logclient.rb  - Remote logging example
+7. fileroll.rb                    - Using RollingFileOutputter
+8. yaml.rb and log4r_yaml.yaml    - YAML configuration example
+
+The output will go to screen and to files in the directory logs/.
+
+Note to RubyGems users: The syntax to require log4r as a gem is as follows:
+
+  require 'rubygems'
+  require_gem 'log4r'
+
+Obviously, the examples will need to be modified to follow this.

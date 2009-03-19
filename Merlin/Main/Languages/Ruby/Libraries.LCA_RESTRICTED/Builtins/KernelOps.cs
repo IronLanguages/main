@@ -1190,7 +1190,7 @@ namespace IronRuby.Builtins {
             object value;
             if (!context.TryGetInstanceVariable(self, name, out value)) {
                 // We didn't find it, check if the name is valid
-                RubyUtils.CheckInstanceVariableName(name);
+                context.CheckInstanceVariableName(name);
                 return null;
             }
             return value;
@@ -1198,7 +1198,7 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("instance_variable_set")]
         public static object InstanceVariableSet(RubyContext/*!*/ context, object self, [DefaultProtocol, NotNull]string/*!*/ name, object value) {
-            RubyUtils.CheckInstanceVariableName(name);
+            context.CheckInstanceVariableName(name);
             context.SetInstanceVariable(self, name, value);
             return value;
         }
@@ -1208,7 +1208,7 @@ namespace IronRuby.Builtins {
             object value;
             if (!context.TryGetInstanceVariable(self, name, out value)) {
                 // We didn't find it, check if the name is valid
-                RubyUtils.CheckInstanceVariableName(name);
+                context.CheckInstanceVariableName(name);
                 return false;
             }
 
@@ -1220,7 +1220,7 @@ namespace IronRuby.Builtins {
             object value;
             if (!context.TryRemoveInstanceVariable(self, name, out value)) {
                 // We didn't find it, check if the name is valid
-                RubyUtils.CheckInstanceVariableName(name);
+                context.CheckInstanceVariableName(name);
 
                 throw RubyExceptions.CreateNameError(String.Format("instance variable `{0}' not defined", name));
             }

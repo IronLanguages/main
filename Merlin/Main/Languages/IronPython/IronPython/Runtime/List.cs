@@ -176,7 +176,7 @@ namespace IronPython.Runtime {
         /// the same as the length of the array.  The array is held
         /// onto and may be mutated in the future by the list.
         /// </summary>
-        /// <param name="items"></param>
+        /// <param name="data">params array to use for lists storage</param>
         internal static List FromArrayNoCopy(params object[] data) {
             return new List(data);
         }
@@ -299,6 +299,10 @@ namespace IronPython.Runtime {
         }
 
         public virtual bool __contains__(object value) {
+            return ContainsWorker(value);
+        }
+
+        internal bool ContainsWorker(object value) {
             lock (this) {
                 for (int i = 0; i < _size; i++) {
                     object thisIndex = _data[i];

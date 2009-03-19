@@ -145,11 +145,15 @@ namespace IronPython.Hosting {
                     LanguageSetup.Options["RecursionLimit"] = limit;
                     break;
 
+                case "-X:EnableProfiler":
+                    LanguageSetup.Options["EnableProfiler"] = ScriptingRuntimeHelpers.True;
+                    break;
+
                 case "-X:MTA":
                     ConsoleOptions.IsMta = true;
                     break;
-                case "-X:Python26":
-                    LanguageSetup.Options["PythonVersion"] = new Version(2, 6);
+                case "-X:Python25":
+                    LanguageSetup.Options["PythonVersion"] = new Version(2, 5);
                     break;
 
                 case "-d":
@@ -213,6 +217,7 @@ namespace IronPython.Hosting {
                 { "-X:MaxRecursion",        "Set the maximum recursion level" },
                 { "-X:MTA",                 "Run in multithreaded apartment" },
                 { "-X:Python26",            "Enable Python 2.6 features" },
+                { "-X:EnableProfiler",      "Enables profiling support in the compiler" },
             };
 
             // Append the Python-specific options and the standard options

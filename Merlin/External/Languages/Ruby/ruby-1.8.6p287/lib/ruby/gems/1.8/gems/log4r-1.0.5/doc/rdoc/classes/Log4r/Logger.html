@@ -1,0 +1,341 @@
+
+<html><head>
+  <title>Class: Log4r::Logger</title>
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <link rel=StyleSheet href="../.././rdoc-style.css" type="text/css" media=screen>
+  <script type="text/javascript" language="JavaScript">
+  <!--
+  function popCode(url) {
+    parent.frames.source.location = url
+  }
+  //-->
+  </script>
+</head>
+<body bgcolor="white">
+
+
+<table width="100%" border=0 cellspacing=0>
+ <tr class="title-row">
+ <td class="big-title-font">
+   <font size=-3><B>Class</B><BR></font>Log4r::Logger
+ </td>
+ <td align="right">
+   <table cellspacing=0 cellpadding=2>
+     <tr valign="top">
+      <td class="small-title-font">In:</td>
+      <td class="small-title-font">
+log4r/staticlogger.rb
+log4r/repository.rb
+log4r/loggerfactory.rb
+<a href="../../files/log4r/logger_rb.html">log4r/logger.rb</a>
+      </td>
+     </tr>
+     <tr>
+      <td class="small-title-font">Parent:</td>
+      <td class="small-title-font">
+Object
+      </td>
+     </tr>
+   </table>
+  </td>
+  </tr>
+</table><br>
+  <!-- banner header -->
+
+
+<div class="description"><p>
+See <a href="../../files/log4r/logger_rb.html">log4r/logger.rb</a>
+</p>
+</div>
+
+</div>
+
+<table cellpadding=5 width="100%">
+<tr><td class="tablesubtitle">Methods</td></tr>
+</table><br>
+<div class="name-list">
+<a href="#M000068">==</a>,
+<a href="#M000054">[]</a>,
+<a href="#M000065">add</a>,
+<a href="#M000061">additive=</a>,
+<a href="#M000056">each</a>,
+<a href="#M000057">each_logger</a>,
+<a href="#M000055">get</a>,
+<a href="#M000053">global</a>,
+<a href="#M000067">is_root?</a>,
+<a href="#M000060">level=</a>,
+<a href="#M000058">log_internal</a>,
+<a href="#M000059">new</a>,
+<a href="#M000064">outputters=</a>,
+<a href="#M000063">parent=</a>,
+<a href="#M000066">remove</a>,
+<a href="#M000052">root</a>,
+<a href="#M000062">trace=</a>,
+</div>
+
+<table cellpadding=5 width="100%">
+<tr><td class="tablesubtitle">Attributes</td></tr>
+</table><br>
+<table cellspacing=5>
+     <tr valign="top">
+       <td align="center" class="attr-rw">&nbsp;[R]&nbsp;</td>
+       <td class="attr-name">additive</td>
+       <td></td>
+     </tr>
+     <tr valign="top">
+       <td align="center" class="attr-rw">&nbsp;[R]&nbsp;</td>
+       <td class="attr-name">fullname</td>
+       <td></td>
+     </tr>
+     <tr valign="top">
+       <td align="center" class="attr-rw">&nbsp;[R]&nbsp;</td>
+       <td class="attr-name">level</td>
+       <td></td>
+     </tr>
+     <tr valign="top">
+       <td align="center" class="attr-rw">&nbsp;[R]&nbsp;</td>
+       <td class="attr-name">name</td>
+       <td></td>
+     </tr>
+     <tr valign="top">
+       <td align="center" class="attr-rw">&nbsp;[R]&nbsp;</td>
+       <td class="attr-name">outputters</td>
+       <td></td>
+     </tr>
+     <tr valign="top">
+       <td align="center" class="attr-rw">&nbsp;[R]&nbsp;</td>
+       <td class="attr-name">parent</td>
+       <td></td>
+     </tr>
+     <tr valign="top">
+       <td align="center" class="attr-rw">&nbsp;[R]&nbsp;</td>
+       <td class="attr-name">path</td>
+       <td></td>
+     </tr>
+     <tr valign="top">
+       <td align="center" class="attr-rw">&nbsp;[R]&nbsp;</td>
+       <td class="attr-name">trace</td>
+       <td></td>
+     </tr>
+</table>
+
+
+  
+
+<table cellpadding=5 width="100%">
+<tr><td class="tablesubtitle">Public Class methods</td></tr>
+</table>
+<table width="100%" cellspacing = 0 cellpadding=5 border=0>
+<tr><td class="methodtitle">
+<a name="M000052">
+<b>root</b>() 
+<a href="Logger.src/M000052.html" target="source" class="srclink">src</a>
+</a></td></tr>
+</table>
+<div class="description">
+<p>
+Returns the root logger. Identical to <a
+href="Logger.html">Logger</a>.global
+</p>
+</div>
+<table width="100%" cellspacing = 0 cellpadding=5 border=0>
+<tr><td class="methodtitle">
+<a name="M000053">
+<b>global</b>() 
+<a href="Logger.src/M000053.html" target="source" class="srclink">src</a>
+</a></td></tr>
+</table>
+<div class="description">
+<p>
+Returns the root logger. Identical to <a href="Logger.html">Logger</a>.root
+</p>
+</div>
+<table width="100%" cellspacing = 0 cellpadding=5 border=0>
+<tr><td class="methodtitle">
+<a name="M000054">
+<b>[]</b>(_fullname) 
+<a href="Logger.src/M000054.html" target="source" class="srclink">src</a>
+</a></td></tr>
+</table>
+<div class="description">
+<p>
+Get a logger with a fullname from the repository or nil if logger
+wasn&#8217;t found.
+</p>
+</div>
+<table width="100%" cellspacing = 0 cellpadding=5 border=0>
+<tr><td class="methodtitle">
+<a name="M000055">
+<b>get</b>(_fullname) 
+<a href="Logger.src/M000055.html" target="source" class="srclink">src</a>
+</a></td></tr>
+</table>
+<div class="description">
+<p>
+Like <a href="Logger.html">Logger</a>[] except that it raises NameError if
+<a href="Logger.html">Logger</a> wasn&#8217;t found.
+</p>
+</div>
+<table width="100%" cellspacing = 0 cellpadding=5 border=0>
+<tr><td class="methodtitle">
+<a name="M000056">
+<b>each</b>() {|fullname, logger| ...} 
+<a href="Logger.src/M000056.html" target="source" class="srclink">src</a>
+</a></td></tr>
+</table>
+<div class="description">
+<p>
+Yields fullname and logger for every logger in the system.
+</p>
+</div>
+<table width="100%" cellspacing = 0 cellpadding=5 border=0>
+<tr><td class="methodtitle">
+<a name="M000057">
+<b>each_logger</b>() {|logger}| ...} 
+<a href="Logger.src/M000057.html" target="source" class="srclink">src</a>
+</a></td></tr>
+</table>
+<table width="100%" cellspacing = 0 cellpadding=5 border=0>
+<tr><td class="methodtitle">
+<a name="M000058">
+<b>log_internal</b>(level=1) {|| ...} 
+<a href="Logger.src/M000058.html" target="source" class="srclink">src</a>
+</a></td></tr>
+</table>
+<div class="description">
+<p>
+Internal logging for <a href="../Log4r.html">Log4r</a> components. Accepts
+only blocks. To see such log events, create a logger named
+&#8216;log4r&#8217; and give it an outputter.
+</p>
+</div>
+<table width="100%" cellspacing = 0 cellpadding=5 border=0>
+<tr><td class="methodtitle">
+<a name="M000059">
+<b>new</b>(_fullname, _level=nil, _additive=true, _trace=false) 
+<a href="Logger.src/M000059.html" target="source" class="srclink">src</a>
+</a></td></tr>
+</table>
+<div class="description">
+<p>
+<a href="Logger.html">Logger</a> requires a name. The last 3 parameters
+are:
+</p>
+<table>
+<tr><td valign="top">level:</td><td>Do I have a level? (Otherwise, I&#8217;ll inherit my parent&#8217;s)
+
+</td></tr>
+<tr><td valign="top">additive:</td><td>Am I additive?
+
+</td></tr>
+<tr><td valign="top">trace:</td><td>Do I record the execution trace? (slows things a wee bit)
+
+</td></tr>
+</table>
+</div>
+<table cellpadding=5 width="100%">
+<tr><td class="tablesubtitle">Public Instance methods</td></tr>
+</table>
+<table width="100%" cellspacing = 0 cellpadding=5 border=0>
+<tr><td class="methodtitle">
+<a name="M000060">
+<b>level=</b>(_level) 
+<a href="Logger.src/M000060.html" target="source" class="srclink">src</a>
+</a></td></tr>
+</table>
+<div class="description">
+<p>
+Set the logger level dynamically. Does not affect children.
+</p>
+</div>
+<table width="100%" cellspacing = 0 cellpadding=5 border=0>
+<tr><td class="methodtitle">
+<a name="M000061">
+<b>additive=</b>(_additive) 
+<a href="Logger.src/M000061.html" target="source" class="srclink">src</a>
+</a></td></tr>
+</table>
+<div class="description">
+<p>
+Set the additivity of the logger dynamically. True or false.
+</p>
+</div>
+<table width="100%" cellspacing = 0 cellpadding=5 border=0>
+<tr><td class="methodtitle">
+<a name="M000062">
+<b>trace=</b>(_trace) 
+<a href="Logger.src/M000062.html" target="source" class="srclink">src</a>
+</a></td></tr>
+</table>
+<div class="description">
+<p>
+Set whether the logger traces. Can be set dynamically. Defaults to false
+and understands the strings &#8216;true&#8217; and &#8216;false&#8217;.
+</p>
+</div>
+<table width="100%" cellspacing = 0 cellpadding=5 border=0>
+<tr><td class="methodtitle">
+<a name="M000063">
+<b>parent=</b>(parent) 
+<a href="Logger.src/M000063.html" target="source" class="srclink">src</a>
+</a></td></tr>
+</table>
+<div class="description">
+<p>
+Please don&#8217;t reset the parent
+</p>
+</div>
+<table width="100%" cellspacing = 0 cellpadding=5 border=0>
+<tr><td class="methodtitle">
+<a name="M000064">
+<b>outputters=</b>(_outputters) 
+<a href="Logger.src/M000064.html" target="source" class="srclink">src</a>
+</a></td></tr>
+</table>
+<div class="description">
+<p>
+Set the Outputters dynamically by name or reference. Can be done any time.
+</p>
+</div>
+<table width="100%" cellspacing = 0 cellpadding=5 border=0>
+<tr><td class="methodtitle">
+<a name="M000065">
+<b>add</b>(*_outputters) 
+<a href="Logger.src/M000065.html" target="source" class="srclink">src</a>
+</a></td></tr>
+</table>
+<div class="description">
+<p>
+Add outputters by name or by reference. Can be done any time.
+</p>
+</div>
+<table width="100%" cellspacing = 0 cellpadding=5 border=0>
+<tr><td class="methodtitle">
+<a name="M000066">
+<b>remove</b>(*_outputters) 
+<a href="Logger.src/M000066.html" target="source" class="srclink">src</a>
+</a></td></tr>
+</table>
+<div class="description">
+<p>
+Remove outputters from this logger by name only. Can be done any time.
+</p>
+</div>
+<table width="100%" cellspacing = 0 cellpadding=5 border=0>
+<tr><td class="methodtitle">
+<a name="M000067">
+<b>is_root?</b>() 
+<a href="Logger.src/M000067.html" target="source" class="srclink">src</a>
+</a></td></tr>
+</table>
+<table width="100%" cellspacing = 0 cellpadding=5 border=0>
+<tr><td class="methodtitle">
+<a name="M000068">
+<b>==</b>(other) 
+<a href="Logger.src/M000068.html" target="source" class="srclink">src</a>
+</a></td></tr>
+</table>
+  <!-- method descriptions -->
+
+</body>
+</html>

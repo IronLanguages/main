@@ -17,7 +17,9 @@ using System;
 using System.Diagnostics;
 using System.Dynamic;
 using System.Linq.Expressions;
+using System.Runtime.CompilerServices;
 
+using Microsoft.Scripting;
 using Microsoft.Scripting.Actions;
 using Microsoft.Scripting.Runtime;
 
@@ -77,6 +79,41 @@ namespace IronPython.Runtime.Binding {
             }
 #endif
             return Fallback(target, cc.Expression);
+        }
+
+        public override T BindDelegate<T>(CallSite<T> site, object[] args) {
+            Debug.Assert(args[1].GetType() == typeof(CodeContext));
+            
+            IFastGettable fastGet = args[0] as IFastGettable;
+            if (fastGet != null) {
+                T res = fastGet.MakeGetBinding<T>(site, this, (CodeContext)args[1], Name);
+                if (res != null) {
+                    PerfTrack.NoteEvent(PerfTrack.Categories.BindingFast, "IFastGettable");
+                    return res;
+                }
+
+                PerfTrack.NoteEvent(PerfTrack.Categories.BindingSlow, "IFastGettable");
+            }
+
+            IPythonObject pyObj = args[0] as IPythonObject;
+            if (pyObj != null && !(args[0] is IProxyObject)) {
+                FastBindResult<T> res = UserTypeOps.MakeGetBinding<T>((CodeContext)args[1], site, pyObj, this);
+                if (res.Target != null) {
+                    PerfTrack.NoteEvent(PerfTrack.Categories.BindingFast, "IPythonObject");
+                    if (res.ShouldCache) {
+                        CacheTarget(res.Target);
+                    }
+                    return res.Target;
+                }
+
+                PerfTrack.NoteEvent(PerfTrack.Categories.BindingSlow, "IPythonObject");
+            }
+
+            return base.BindDelegate<T>(site, args);
+        }
+
+        public Func<CallSite, object, CodeContext, object> OptimizeDelegate(CallSite<Func<CallSite, object, CodeContext, object>> site, object self, CodeContext context) {
+            return base.BindDelegate<Func<CallSite, object, CodeContext, object>>(site, new object[] { self, context });
         }
 
         private DynamicMetaObject GetForeignObject(DynamicMetaObject self) {
@@ -241,7 +278,7 @@ namespace IronPython.Runtime.Binding {
             _state = binder;
         }
 
-        public override DynamicMetaObject FallbackGetMember(DynamicMetaObject self, DynamicMetaObject onBindingError) {
+        public override DynamicMetaObject FallbackGetMember(DynamicMetaObject self, DynamicMetaObject errorSuggestion) {
 #if !SILVERLIGHT
             DynamicMetaObject com;
             if (System.Dynamic.ComBinder.TryBindGetMember(this, self, out com, true)) {

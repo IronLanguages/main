@@ -20,6 +20,7 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Dynamic;
 
+using Microsoft.Scripting;
 using Microsoft.Scripting.Actions;
 using Microsoft.Scripting.Actions.Calls;
 using Microsoft.Scripting.Generation;
@@ -48,6 +49,9 @@ namespace IronPython.Runtime.Binding {
         }
 
         public override DynamicMetaObject BindConvert(ConvertBinder/*!*/ conversion) {
+            PerfTrack.NoteEvent(PerfTrack.Categories.Binding, "BuiltinFunc Convert " + conversion.Type);
+            PerfTrack.NoteEvent(PerfTrack.Categories.BindingTarget, "BuiltinFunc Convert");            
+
             if (conversion.Type.IsSubclassOf(typeof(Delegate))) {
                 return MakeDelegateTarget(conversion, conversion.Type, Restrict(typeof(BuiltinFunction)));
             }
@@ -55,6 +59,8 @@ namespace IronPython.Runtime.Binding {
         }
 
         DynamicMetaObject IPythonOperable.BindOperation(PythonOperationBinder action, DynamicMetaObject[] args) {
+            PerfTrack.NoteEvent(PerfTrack.Categories.Binding, "BuiltinFunc Operation " + action.Operation);
+            PerfTrack.NoteEvent(PerfTrack.Categories.BindingTarget, "BuiltinFunc Operation");
             switch (action.Operation) {
                 case PythonOperationKind.CallSignatures:
                     return PythonProtocol.MakeCallSignatureOperation(this, Value.Targets);
@@ -76,6 +82,10 @@ namespace IronPython.Runtime.Binding {
         #region Invoke Implementation
 
         private DynamicMetaObject/*!*/ InvokeWorker(DynamicMetaObjectBinder/*!*/ call, Expression/*!*/ codeContext, DynamicMetaObject/*!*/[]/*!*/ args) {
+            PerfTrack.NoteEvent(PerfTrack.Categories.Binding, "BuiltinFunc Invoke " + Value.DeclaringType.FullName + "." + Value.Name + " with " + args.Length + " args " + Value.IsUnbound);
+            PerfTrack.NoteEvent(PerfTrack.Categories.BindingTarget, "BuiltinFunction " + Value.Targets.Count + ", " + Value.Targets[0].GetParameters().Length);
+            PerfTrack.NoteEvent(PerfTrack.Categories.BindingSlow, "BuiltinFunction " + BindingHelpers.GetCallSignature(call));
+
             if (this.NeedsDeferral()) {
                 return call.Defer(ArrayUtils.Insert(this, args));
             }
@@ -94,7 +104,7 @@ namespace IronPython.Runtime.Binding {
         }
 
         private DynamicMetaObject/*!*/ MakeSelflessCall(DynamicMetaObjectBinder/*!*/ call, Expression/*!*/ codeContext, DynamicMetaObject/*!*/[]/*!*/ args) {
-            // just check if it's the same built-in function.  Because built-in fucntions are
+            // just check if it's the same built-in function.  Because built-in functions are
             // immutable the identity check will suffice.  Because built-in functions are uncollectible
             // anyway we don't use the typical InstanceRestriction.
             BindingRestrictions selfRestrict = BindingRestrictions.GetExpressionRestriction(Ast.Equal(Expression, AstUtils.Constant(Value))).Merge(Restrictions);
@@ -105,7 +115,6 @@ namespace IronPython.Runtime.Binding {
                 this,
                 args,
                 false,  // no self
-                false,
                 selfRestrict,
                 (newArgs) => {
                     BindingTarget target;
@@ -158,7 +167,6 @@ namespace IronPython.Runtime.Binding {
                 this,
                 ArrayUtils.Insert(self, args),
                 true,   // has self
-                false,
                 selfRestrict,
                 (newArgs) => {
                     CallSignature signature = BindingHelpers.GetCallSignature(call);
@@ -261,7 +269,7 @@ namespace IronPython.Runtime.Binding {
             );
         }
 
-        private static CallSignature GetReversedSignature(CallSignature signature) {
+        internal static CallSignature GetReversedSignature(CallSignature signature) {
             return new CallSignature(ArrayUtils.Append(signature.GetArgumentInfos(), new Argument(ArgumentType.Simple)));
         }
 

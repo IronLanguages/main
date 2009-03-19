@@ -163,6 +163,16 @@ namespace IronPython.Compiler.Ast {
                     ),
                     type
                 );
+            } else if (op == PythonOperator.In) {
+                return AstUtils.Convert(
+                    ag.Operation(
+                        typeof(bool),
+                        PythonOperationKind.Contains,
+                        left,
+                        right
+                    ),
+                    type
+                );
             }
 
             PythonOperationKind action = PythonOperatorToAction(op);

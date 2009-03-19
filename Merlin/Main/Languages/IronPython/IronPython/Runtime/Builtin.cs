@@ -214,7 +214,7 @@ namespace IronPython.Runtime {
 
             if (xType.TryResolveSlot(context, Symbols.Coerce, out pts)) {
                 object callable;
-                if (pts.TryGetBoundValue(context, x, xType, out callable)) {
+                if (pts.TryGetValue(context, x, xType, out callable)) {
                     return PythonCalls.Call(context, callable, y);
                 }
             }
@@ -448,7 +448,7 @@ namespace IronPython.Runtime {
             // TODO: remove TrimStart
             var sourceUnit = pythonContext.CreateSnippet(expression.TrimStart(' ', '\t'), SourceCodeKind.Expression);
             var compilerOptions = GetRuntimeGeneratedCodeCompilerOptions(context, true, 0);
-            var scriptCode = pythonContext.CompilePythonCode(Compiler.Ast.CompilationMode.Loookup, sourceUnit, compilerOptions, ThrowingErrorSink.Default);
+            var scriptCode = pythonContext.CompilePythonCode(Compiler.Ast.CompilationMode.Lookup, sourceUnit, compilerOptions, ThrowingErrorSink.Default);
 
             return scriptCode.Run(scope);
         }

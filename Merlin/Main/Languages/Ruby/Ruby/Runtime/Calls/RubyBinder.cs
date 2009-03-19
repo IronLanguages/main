@@ -47,6 +47,13 @@ namespace IronRuby.Runtime.Calls {
             _context = context;
         }
 
+        internal static readonly DynamicMetaObject NullMetaObject =
+            new DynamicMetaObject(
+                AstUtils.Constant(null, typeof(DynamicNull)),
+                BindingRestrictions.GetTypeRestriction(AstUtils.Constant(null, typeof(DynamicNull)), typeof(DynamicNull)),
+                null
+            );
+
         protected override string GetTypeName(Type t) {
             RubyModule module;
             return _context.TryGetModule(t, out module) ? module.Name : RubyUtils.GetQualifiedName(t);
@@ -486,37 +493,22 @@ namespace IronRuby.Runtime.Calls {
 
         #region MetaObjects
 
+        // negative start reserves as many slots at the beginning of the new array:
         internal static Expression/*!*/[]/*!*/ ToExpressions(DynamicMetaObject/*!*/[]/*!*/ args, int start) {
             var result = new Expression[args.Length - start];
-            for (int i = 0; i < result.Length; i++) {
+            for (int i = Math.Max(0, -start); i < result.Length; i++) {
                 result[i] = args[start + i].Expression;
             }
             return result;
         }
 
+        // negative start reserves as many slots at the beginning of the new array:
         internal static object/*!*/[]/*!*/ ToValues(DynamicMetaObject/*!*/[]/*!*/ args, int start) {
             var result = new object[args.Length - start];
-            for (int i = 0; i < result.Length; i++) {
+            for (int i = Math.Max(0, -start); i < result.Length; i++) {
                 result[i] = args[start + i].Value;
             }
             return result;
-        }
-
-        internal static DynamicMetaObject TryBindCovertToDelegate(RubyMetaObject/*!*/ metaTarget, ConvertBinder/*!*/ binder, MethodInfo/*!*/ delegateFactory) {
-            var metaBuilder = new MetaObjectBuilder();
-            return TryBuildConversionToDelegate(metaBuilder, metaTarget, binder.Type, delegateFactory) ? metaBuilder.CreateMetaObject(binder) : null;
-        }
-
-        internal static bool TryBuildConversionToDelegate(MetaObjectBuilder/*!*/ metaBuilder, RubyMetaObject/*!*/ metaTarget, Type/*!*/ delegateType, MethodInfo/*!*/ delegateFactory) {
-            MethodInfo invoke;
-            if (!typeof(Delegate).IsAssignableFrom(delegateType) || (invoke = delegateType.GetMethod("Invoke")) == null) {
-                return false;
-            }
-
-            var type = metaTarget.Value.GetType();
-            metaBuilder.AddTypeRestriction(type, metaTarget.Expression);
-            metaBuilder.Result = delegateFactory.OpCall(AstUtils.Constant(delegateType), Ast.Convert(metaTarget.Expression, type));
-            return true;
         }
 
         #endregion

@@ -1,0 +1,133 @@
+
+<html><head>
+  <title>Class: Log4r::BasicFormatter</title>
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <link rel=StyleSheet href="../.././rdoc-style.css" type="text/css" media=screen>
+  <script type="text/javascript" language="JavaScript">
+  <!--
+  function popCode(url) {
+    parent.frames.source.location = url
+  }
+  //-->
+  </script>
+</head>
+<body bgcolor="white">
+
+
+<table width="100%" border=0 cellspacing=0>
+ <tr class="title-row">
+ <td class="big-title-font">
+   <font size=-3><B>Class</B><BR></font>Log4r::BasicFormatter
+ </td>
+ <td align="right">
+   <table cellspacing=0 cellpadding=2>
+     <tr valign="top">
+      <td class="small-title-font">In:</td>
+      <td class="small-title-font">
+<a href="../../files/log4r/formatter/formatter_rb.html">log4r/formatter/formatter.rb</a>
+      </td>
+     </tr>
+     <tr>
+      <td class="small-title-font">Parent:</td>
+      <td class="small-title-font">
+        <a href="SimpleFormatter.html" class="cyan">
+SimpleFormatter
+         </a>
+      </td>
+     </tr>
+   </table>
+  </td>
+  </tr>
+</table><br>
+  <!-- banner header -->
+
+
+<div class="description"><p>
+<a href="BasicFormatter.html">BasicFormatter</a> produces output like this:
+</p>
+<pre>
+  WARN loggername: I dropped my Wookie!
+</pre>
+<p>
+Or like this if trace is on:
+</p>
+<pre>
+  WARN loggername(file.rb at 12): Hot potato!
+</pre>
+<p>
+Also, it will pretty-print any Exception it gets and <tt>inspect</tt>
+everything else.
+</p>
+<p>
+Hash arguments include:
+</p>
+<table>
+<tr><td valign="top"><tt>depth</tt>:</td><td>How many lines of the stacktrace to display.
+
+</td></tr>
+</table>
+</div>
+
+</div>
+
+<table cellpadding=5 width="100%">
+<tr><td class="tablesubtitle">Methods</td></tr>
+</table><br>
+<div class="name-list">
+<a href="#M000074">format</a>,
+<a href="#M000075">format_object</a>,
+<a href="#M000073">new</a>,
+</div>
+
+
+
+  
+
+<table cellpadding=5 width="100%">
+<tr><td class="tablesubtitle">Public Class methods</td></tr>
+</table>
+<table width="100%" cellspacing = 0 cellpadding=5 border=0>
+<tr><td class="methodtitle">
+<a name="M000073">
+<b>new</b>(hash={}) 
+<a href="BasicFormatter.src/M000073.html" target="source" class="srclink">src</a>
+</a></td></tr>
+</table>
+<table cellpadding=5 width="100%">
+<tr><td class="tablesubtitle">Public Instance methods</td></tr>
+</table>
+<table width="100%" cellspacing = 0 cellpadding=5 border=0>
+<tr><td class="methodtitle">
+<a name="M000074">
+<b>format</b>(event) 
+<a href="BasicFormatter.src/M000074.html" target="source" class="srclink">src</a>
+</a></td></tr>
+</table>
+<table width="100%" cellspacing = 0 cellpadding=5 border=0>
+<tr><td class="methodtitle">
+<a name="M000075">
+<b>format_object</b>(obj) 
+<a href="BasicFormatter.src/M000075.html" target="source" class="srclink">src</a>
+</a></td></tr>
+</table>
+<div class="description">
+<p>
+Formats data according to its class:
+</p>
+<table>
+<tr><td valign="top">String:</td><td>Prints it out as normal.
+
+</td></tr>
+<tr><td valign="top">Exception:</td><td>Produces output similar to command-line exceptions.
+
+</td></tr>
+<tr><td valign="top">Object:</td><td>Prints the type of object, then the output of <tt>inspect</tt>. An example
+&#8212; Array: [1, 2, 3]
+
+</td></tr>
+</table>
+</div>
+  <!-- method descriptions -->
+
+</body>
+</html>

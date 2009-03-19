@@ -1,0 +1,16 @@
+ Short TODO list
+ ===============
+
+ * Add logic_validator -- validates(“You need more money!”) { |instance| instance.money < 1_000_000 }
+ * Allow for the translation of strings in messages
+ * Add the canned RFC2822 email format to format_validator
+ * Add a validates_acceptance_of validator
+ * Add a validates_each validator
+ * Add a validates_true validator
+
+ * Validators do not accept associations except validates_uniqueness_of - fix this
+ * Add auto validation on cardinality of associations
+
+ ---
+ TODO tickets may also be found in the DataMapper Issue Tracker:
+ http://datamapper.lighthouseapp.com/

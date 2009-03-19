@@ -20,6 +20,7 @@
     <SignAssembly Condition="'$(SignAssembly)' == '' And Exists('$(AssemblyOriginatorKeyFile)')">true</SignAssembly>
     <SignedSym Condition="'$(SignAssembly)' == 'true'">SIGNED</SignedSym>
     <DelaySign>true</DelaySign>
+    <BaseAddress>887095296</BaseAddress>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'FxCop|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -148,9 +149,13 @@
     <Compile Include="Compiler\Ast\Walkers\Walker.cs" />
     <Compile Include="Compiler\Errors.cs" />
     <Compile Include="Compiler\Parser\ParserStack.cs" />
+    <Compile Include="Compiler\Parser\StringContentBuilder.cs" />
+    <Compile Include="Runtime\BinaryContentProvider.cs" />
     <Compile Include="Runtime\Calls\ConvertToSAction.cs" />
+    <Compile Include="Runtime\Calls\InteropBinder.cs" />
     <Compile Include="Runtime\Calls\MethodResolutionResult.cs" />
     <Compile Include="Runtime\Calls\RubyLibraryMethodInfo.cs" />
+    <Compile Include="Runtime\Calls\RubyMetaBinder.cs" />
     <Compile Include="Runtime\Calls\RubyMetaObject.cs" />
     <Compile Include="Runtime\Calls\RubyMethodGroupBase.cs" />
     <Compile Include="Runtime\CheckedMonitor.cs" />
@@ -176,7 +181,6 @@
     <Compile Include="Runtime\Calls\CallArguments.cs" />
     <Compile Include="Runtime\Calls\BlockDispatcherUnsplatN.cs" />
     <Compile Include="Runtime\Calls\CallSiteTracer.cs" />
-    <Compile Include="Runtime\Calls\RubyInvokeMemberBinder.cs" />
     <Compile Include="Runtime\Calls\MetaObjectBuilder.cs" />
     <Compile Include="Runtime\Calls\ProtocolConversionAction.cs" />
     <Compile Include="Runtime\Calls\RubyCallAction.cs" />
@@ -195,7 +199,6 @@
     <Compile Include="Runtime\EqualityComparer.cs" />
     <Compile Include="Builtins\Hash.cs" />
     <Compile Include="Runtime\Globals\GlobalVariables.cs" />
-    <Compile Include="Runtime\Globals\KCode.cs" />
     <Compile Include="Runtime\Globals\ReadOnlyGlobalVariableInfo.cs" />
     <Compile Include="Runtime\Globals\GlobalVariableInfo.cs" />
     <Compile Include="Runtime\Globals\GlobalVariable.cs" />
@@ -208,6 +211,7 @@
     <Compile Include="Builtins\MutableString.cs" />
     <Compile Include="Builtins\Proc.cs" />
     <Compile Include="Builtins\Range.cs" />
+    <Compile Include="Runtime\KCoding.cs" />
     <Compile Include="Runtime\ReferenceEqualityComparer.cs" />
     <Compile Include="Compiler\Ast\Expressions\RangeExpression.cs" />
     <Compile Include="Runtime\Converter.cs" />
@@ -333,8 +337,6 @@
     <Compile Include="Compiler\ReflectionCache.Generated.cs" />
     <Compile Include="RubyCompatibility.cs" />
     <Compile Include="Builtins\RubyModule.Subclass.cs" />
-    <Compile Include="Runtime\Calls\RubyCreateInstanceBinder.cs" />
-    <Compile Include="Runtime\Calls\RubyGetMemberBinder.cs" />
     <Compile Include="Runtime\IOWrapper.cs" />
     <None Include="Compiler\Parser\Parser.y" />
   </ItemGroup>

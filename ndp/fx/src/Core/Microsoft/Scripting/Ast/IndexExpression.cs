@@ -25,6 +25,9 @@ namespace System.Linq.Expressions {
     /// <summary>
     /// Represents indexing a property or array.
     /// </summary>
+#if !SILVERLIGHT
+    [DebuggerTypeProxy(typeof(Expression.IndexExpressionProxy))]
+#endif
     public sealed class IndexExpression : Expression, IArgumentProvider {
         private readonly Expression _instance;
         private readonly PropertyInfo _indexer;

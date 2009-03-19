@@ -18,6 +18,9 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using Microsoft.Scripting;
 using System.Threading;
+using System.Text;
+using IronRuby.Builtins;
+using IronRuby.Runtime;
 
 namespace IronRuby {
 
@@ -34,6 +37,8 @@ namespace IronRuby {
         private readonly bool _hasSearchPaths;
         private readonly bool _noAssemblyResolveHook;
         private readonly RubyCompatibility _compatibility;
+        private static bool _DefaultExceptionDetail;
+        private readonly RubyEncoding _kcode = null;
 
 #if DEBUG
         private static bool _UseThreadAbortForSyncRaise;
@@ -84,6 +89,10 @@ namespace IronRuby {
             get { return _compatibility; }
         }
 
+        public RubyEncoding KCode {
+            get { return _kcode; }
+        }
+
 #if DEBUG
         public static bool UseThreadAbortForSyncRaise {
             get { return _UseThreadAbortForSyncRaise; }
@@ -93,6 +102,12 @@ namespace IronRuby {
             get { return _CompileRegexps; }
         }
 #endif
+        /// <summary>
+        /// This is used when the per-engine RubyContext.Options.ExceptionDetail is not easily available
+        /// </summary>
+        public static bool DefaultExceptionDetail {
+            get { return _DefaultExceptionDetail; }
+        }
 
         public RubyOptions(IDictionary<string, object>/*!*/ options)
             : base(options) {
@@ -108,6 +123,13 @@ namespace IronRuby {
             _libraryPaths = GetStringCollectionOption(options, "LibraryPaths", ';', ',') ?? new ReadOnlyCollection<string>(new[] { "." });
             _hasSearchPaths = GetOption<object>(options, "SearchPaths", null) != null;
             _compatibility = GetCompatibility(options, "Compatibility", RubyCompatibility.Default);
+            _DefaultExceptionDetail = this.ExceptionDetail;
+
+#if !SILVERLIGHT
+            if (_compatibility == RubyCompatibility.Ruby18) {
+                _kcode = GetKCoding(options, "KCode", null);
+            }
+#endif
 #if DEBUG
             _UseThreadAbortForSyncRaise = GetOption(options, "UseThreadAbortForSyncRaise", false);
             _CompileRegexps = GetOption(options, "CompileRegexps", false);
@@ -134,5 +156,20 @@ namespace IronRuby {
             }
             return defaultValue;
         }
+
+#if !SILVERLIGHT
+        private static RubyEncoding GetKCoding(IDictionary<string, object>/*!*/ options, string/*!*/ name, RubyEncoding defaultValue) {
+            object value;
+            if (options != null && options.TryGetValue(name, out value)) {
+                RubyEncoding rubyEncoding = value as RubyEncoding;
+                if (rubyEncoding != null && rubyEncoding.IsKCoding) {
+                    return rubyEncoding;
+                }
+
+                throw new ArgumentException(String.Format("Invalid value for option {0}. Specify one of RubyEncoding.KCode* encodings.", name));
+            }
+            return defaultValue;
+        }
+#endif
     }
 }

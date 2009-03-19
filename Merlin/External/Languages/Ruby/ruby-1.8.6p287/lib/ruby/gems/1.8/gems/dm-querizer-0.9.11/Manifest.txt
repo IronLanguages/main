@@ -1,0 +1,16 @@
+History.txt
+LICENSE
+Manifest.txt
+README.txt
+Rakefile
+TODO
+lib/dm-querizer.rb
+lib/dm-querizer/collection.rb
+lib/dm-querizer/model.rb
+lib/dm-querizer/querizer.rb
+lib/dm-querizer/version.rb
+spec/querizer_spec.rb
+spec/spec.opts
+spec/spec_helper.rb
+tasks/install.rb
+tasks/spec.rb

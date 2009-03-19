@@ -433,6 +433,28 @@ p x.send('foo')
 ");
         }
 
+        public void AttributeAccessors3() {
+            AssertOutput(() => CompilerTest(@"
+class C
+  attr_accessor :foo 
+  
+  alias set_foo foo=
+end
+
+c = C.new
+
+c.foo = 1
+c.set_foo(*[2])
+c.set_foo(3,4) rescue p $!
+p c.foo(*[])
+p c.foo(1) rescue p $!
+"), @"
+#<ArgumentError: wrong number of arguments (2 for 1)>
+2
+#<ArgumentError: wrong number of arguments (1 for 0)>
+");
+        }
+
         public void MethodAdded1() {
             AssertOutput(delegate {
                 CompilerTest(@"

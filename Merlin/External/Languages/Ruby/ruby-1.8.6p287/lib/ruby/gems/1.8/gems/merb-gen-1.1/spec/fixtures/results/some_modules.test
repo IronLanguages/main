@@ -1,0 +1,5 @@
+module Blah
+  module Monkey
+    test
+  end # Monkey
+end # Blah

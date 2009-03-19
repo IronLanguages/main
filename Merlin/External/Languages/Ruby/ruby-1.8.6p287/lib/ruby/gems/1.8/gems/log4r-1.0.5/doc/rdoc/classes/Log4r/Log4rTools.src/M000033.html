@@ -1,0 +1,18 @@
+
+<html>
+<head><title>valid_level? (Log4r::Log4rTools)</title>
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+<style>
+  .kw { color: #3333FF; font-weight: bold }
+  .cmt { color: green; font-style: italic }
+  .str { color: #662222; font-style: italic }
+  .re  { color: #662222; }
+</style>
+</head>
+<body bgcolor="white">
+<pre><span class="cmt"># File log4r/base.rb, line 45</span>
+    <span class="kw">def</span> <span class="kw">self</span>.valid_level?(lev)
+      <span class="kw">not</span> lev.nil? <span class="kw">and</span> lev.kind_of?(Numeric) <span class="kw">and</span> lev &gt;= ALL <span class="kw">and</span> lev &lt;= OFF
+    <span class="kw">end</span></pre>
+</body>
+</html>

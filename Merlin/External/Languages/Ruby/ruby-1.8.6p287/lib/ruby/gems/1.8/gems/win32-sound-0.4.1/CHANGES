@@ -1,0 +1,39 @@
+== 0.4.1 - 27-Jul-2007
+* Changed SoundError to Sound::Error.
+* Added a Rakefile with tasks for installation and testing.
+* Removed the install.rb file. Installation is now handled via a rake task.
+* Documentation updates.
+
+== 0.4.0 - 26-Feb-2006
+* Now pure Ruby only.
+* Documentation updates and reorganization.
+* Added a gemspec.
+* Minor test suite changes.
+
+== 0.3.0 - 29-May-2005
+* Changed the Sound.volume= method (which didn't work) to
+  Sound.set_wave_volume because it takes up to two values and only affects
+  the wave volume, not the master volume.
+* Renamed the Sound.volume method to Sound.wave_volume.
+* Fixed a bug in the Sound.wave_volume method.
+* Created the Sound.get_wave_volume alias for Sound.wave_volume.
+* Fixed the Sound.set_wave_volume method.
+* Test adjustments and additions to reflect API changes.
+* Now Unicode friendly.
+* Removed the sound.rd file.  The sound.txt file is now rdoc friendly.
+
+== 0.2.1 - 1-Mar-2005
+* Moved the 'examples' directory to the toplevel directory
+* Made the CHANGES and README files rdoc friendly
+* Some cleanup in sound.h.
+
+== 0.2.0 - 13-Jul-2004
+* Moved the SoundError class under the Win32 module namespace
+* Replaced the deprecated STR2CSTR() function with the StringValuePtr()
+  function.  This means that as of version 0.2.0, this package requires
+  Ruby 1.8.0 or later.
+* Moved the test.rb script to doc/examples
+* Added the README file (oops).
+
+== 0.1.0 - 14-Feb-2004
+* Initial release

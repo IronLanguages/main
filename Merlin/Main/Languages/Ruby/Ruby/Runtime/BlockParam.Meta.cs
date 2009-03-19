@@ -26,6 +26,7 @@ using Ast = System.Linq.Expressions.Expression;
 using AstFactory = IronRuby.Compiler.Ast.AstFactory;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 using IronRuby.Compiler;
+using System.Reflection;
     
 namespace IronRuby.Runtime {
     public sealed partial class BlockParam : IDynamicMetaObjectProvider {
@@ -33,9 +34,13 @@ namespace IronRuby.Runtime {
             return new Meta(parameter, BindingRestrictions.Empty, this);
         }
 
-        internal sealed class Meta : DynamicMetaObject {
-            private BlockParam BlockParam {
-                get { return (BlockParam)Value; }
+        internal sealed class Meta : RubyMetaObject<BlockParam> {
+            public override RubyContext/*!*/ Context {
+                get { return Value.RubyContext; }
+            }
+
+            protected override MethodInfo/*!*/ ContextConverter {
+                get { return Methods.GetContextFromBlockParam; }
             }
 
             public Meta(Expression/*!*/ expression, BindingRestrictions/*!*/ restrictions, BlockParam/*!*/ value)
@@ -43,22 +48,8 @@ namespace IronRuby.Runtime {
                 ContractUtils.RequiresNotNull(value, "value");
             }
 
-            public override DynamicMetaObject/*!*/ BindInvoke(InvokeBinder/*!*/ action, DynamicMetaObject/*!*/[]/*!*/ args) {
-                RubyCallSignature callSignature;
-                if (RubyCallSignature.TryCreate(action.CallInfo, out callSignature)) {
-                    return action.FallbackInvoke(this, args);
-                }
-
-                var metaBuilder = new MetaObjectBuilder();
-
-                var context = new DynamicMetaObject(
-                    Methods.GetContextFromBlockParam.OpCall(AstUtils.Convert(Expression, typeof(BlockParam))),
-                    BindingRestrictions.Empty,
-                    RubyOps.GetContextFromBlockParam((BlockParam)Value)
-                );
-
-                BlockParam.SetCallActionRule(metaBuilder, new CallArguments(context, this, args, callSignature));
-                return metaBuilder.CreateMetaObject(action);
+            public override DynamicMetaObject/*!*/ BindInvoke(InvokeBinder/*!*/ binder, DynamicMetaObject/*!*/[]/*!*/ args) {
+                return InteropBinder.Invoke.Bind(Context, binder, this, args, Value.BuildInvoke);
             }
         }
     }

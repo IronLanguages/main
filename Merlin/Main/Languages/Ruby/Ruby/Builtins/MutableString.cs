@@ -35,78 +35,183 @@ namespace IronRuby.Builtins {
     [Serializable]
     [DebuggerDisplay("{GetDebugValue()}", Type = "{GetDebugType()}")]
     public partial class MutableString : IEquatable<MutableString>, IComparable<MutableString>, IRubyObjectState, IDuplicable {
-        private Content/*!*/ _content; 
-        private Encoding/*!*/ _encoding;
+        private Content/*!*/ _content;
+        private RubyEncoding/*!*/ _encoding;
         
         // The lowest bit is tainted flag.
         // The version is set to FrozenVersion when the string is frozen. FrozenVersion is the maximum version, so any update to the version 
         // triggers an OverflowException, which we convert to InvalidOperationException.
         private uint _versionAndFlags;
 
+        // Cached hashcode or Utils.ReservedHashCode if it needs to be recalculated:
+        private int _hashCode = Utils.ReservedHashCode;
+
         private const uint IsTaintedFlag = 1;
-        private const int FlagsCount = 1;
-        private const uint FlagsMask = (1U << FlagsCount) - 1;
+        private const int FlagCount = 1;
+        private const uint FlagsMask = (1U << FlagCount) - 1;
         private const uint VersionMask = ~FlagsMask;
         private const uint FrozenVersion = VersionMask;
 
-        public static readonly MutableString/*!*/ Empty = MutableString.Create(String.Empty).Freeze();
+        public static readonly MutableString Empty = MutableString.Create(String.Empty).Freeze();
 
-        #region Construction
-
-        private MutableString(Content/*!*/ content, Encoding/*!*/ encoding) {
-            Assert.NotNull(content, encoding);
-            content.SetOwner(this);
-            _content = content;
-            _encoding = encoding;
-        }
+        #region Constructors
 
         private void SetContent(Content/*!*/ content) {
             Assert.NotNull(content);
+            content.SetOwner(this);
             _content = content;
         }
 
+        private MutableString(Content/*!*/ content, RubyEncoding/*!*/ encoding) {
+            Assert.NotNull(content, encoding);
+            _encoding = encoding;
+            SetContent(content);
+        }
+
         // creates a copy including the taint flag, not including the version:
-        protected MutableString(MutableString/*!*/ str) {
-            Assert.NotNull(str);
-            _content = str._content.Clone(this);
-            _encoding = str._encoding;
+        protected MutableString(MutableString/*!*/ str) 
+            : this(str._content.Clone(), str._encoding) {
             IsTainted = str.IsTainted;
         }
 
-        // mutable
-        private MutableString(StringBuilder/*!*/ sb, Encoding/*!*/ encoding) {
-            _content = new StringBuilderContent(this, sb);
-            _encoding = encoding;
-        }
-        
-        // binary
-        private MutableString(List<byte>/*!*/ bytes, Encoding/*!*/ encoding) {
-            _content = new BinaryContent(this, bytes);
-            _encoding = encoding;
+        // mutable (doesn't make a copy of the array):
+        private MutableString(char[]/*!*/ chars, RubyEncoding/*!*/ encoding)
+            : this(new CharArrayContent(chars, null), encoding) {
         }
 
-        // immutable
-        private MutableString(string/*!*/ str, Encoding/*!*/ encoding) {
-            _content = new StringContent(this, str);
-            _encoding = encoding;
+        // mutable (doesn't make a copy of the array):
+        private MutableString(char[]/*!*/ chars, int count, RubyEncoding/*!*/ encoding)
+            : this(new CharArrayContent(chars, count, null), encoding) {
         }
 
-        // Ruby subclasses (MutableString.Subclass):
-        protected MutableString(Encoding encoding) 
-            : this(new StringBuilder(), encoding) {
+        // binary (doesn't make a copy of the array):
+        private MutableString(byte[]/*!*/ bytes, RubyEncoding/*!*/ encoding) 
+            : this(new BinaryContent(bytes, null), encoding) {
+        }
+
+        // binary (doesn't make a copy of the array):
+        private MutableString(byte[]/*!*/ bytes, int count, RubyEncoding/*!*/ encoding)
+            : this(new BinaryContent(bytes, count, null), encoding) {
+        }
+
+        // immutable:
+        private MutableString(string/*!*/ str, RubyEncoding/*!*/ encoding)
+            : this(new StringContent(str, null), encoding) {
+        }
+
+        // mutable (visible for subclasses):
+        protected MutableString(RubyEncoding/*!*/ encoding)
+            : this(new CharArrayContent(new char[Utils.MinBufferSize], 0, null), encoding) {
         }
 
         // Ruby allocator
         public MutableString() 
-            : this(String.Empty, BinaryEncoding.Instance) {
+            : this(String.Empty, RubyEncoding.Binary) {
         }
 
+        #endregion
+
+        #region Obsolete
+
+        /// <summary>
+        /// Creates an empty textual MutableString.
+        /// </summary>
+        public static MutableString/*!*/ CreateMutable() {
+            // TODO: encoding
+            return new MutableString(RubyEncoding.Obsolete);
+        }
+
+
+        // TODO: encoding
+        public static MutableString/*!*/ CreateMutable(string/*!*/ str) {
+            return new MutableString(str.ToCharArray(), RubyEncoding.Obsolete);
+        }
+
+        // TODO: encoding
+        public static MutableString/*!*/ Create(string/*!*/ str) {
+            return Create(str, RubyEncoding.Obsolete);
+        }
+
+        #endregion
+
+        #region Factories
+
+        public static MutableString/*!*/ CreateMutable(RubyEncoding/*!*/ encoding) {
+            return new MutableString(encoding);
+        }
+
+        public static MutableString/*!*/ CreateMutable(int capacity, RubyEncoding/*!*/ encoding) {
+            ContractUtils.Requires(capacity >= 0, "Capacity must be greater or equal to zero.");
+            ContractUtils.RequiresNotNull(encoding, "encoding");
+            return new MutableString(new char[capacity], 0, encoding);
+        }
+
+        public static MutableString/*!*/ CreateMutable(string/*!*/ str, RubyEncoding/*!*/ encoding) {
+            ContractUtils.RequiresNotNull(encoding, "encoding");
+            return new MutableString(str.ToCharArray(), encoding);
+        }
+
+        public static MutableString/*!*/ Create(string/*!*/ str, RubyEncoding/*!*/ encoding) {
+            ContractUtils.RequiresNotNull(str, "str");
+            ContractUtils.RequiresNotNull(encoding, "encoding");
+            return new MutableString(str.ToCharArray(), encoding);
+        }
+
+        public static MutableString/*!*/ CreateBinary() {
+            return new MutableString(RubyEncoding.Binary);
+        }
+
+        public static MutableString/*!*/ CreateBinary(int capacity) {
+            return CreateBinary(capacity, RubyEncoding.Binary);
+        }
+
+        public static MutableString/*!*/ CreateBinary(int capacity, RubyEncoding/*!*/ encoding) {
+            ContractUtils.Requires(capacity >= 0, "Capacity must be greater or equal to zero.");
+            ContractUtils.RequiresNotNull(encoding, "encoding");
+            return new MutableString(new byte[capacity], 0, encoding);
+        }
+
+        public static MutableString/*!*/ CreateBinary(byte[]/*!*/ bytes) {
+            return CreateBinary(bytes, RubyEncoding.Binary);
+        }
+
+        public static MutableString/*!*/ CreateBinary(byte[]/*!*/ bytes, RubyEncoding/*!*/ encoding) {
+            ContractUtils.RequiresNotNull(bytes, "bytes");
+            ContractUtils.RequiresNotNull(encoding, "encoding");
+            return new MutableString(ArrayUtils.Copy(bytes), encoding);
+        }
+
+        public static MutableString/*!*/ CreateBinary(List<byte>/*!*/ bytes, RubyEncoding/*!*/ encoding) {
+            ContractUtils.RequiresNotNull(bytes, "bytes");
+            ContractUtils.RequiresNotNull(encoding, "encoding");
+            return new MutableString(bytes.ToArray(), encoding);
+        }
+
+        /// <summary>
+        /// Creates an instance of MutableString with content and taint copied from a given string.
+        /// </summary>
+        public static MutableString/*!*/ Create(MutableString/*!*/ str) {
+            ContractUtils.RequiresNotNull(str, "str");
+            return new MutableString(str);
+        }
+
+        // used by RubyOps:
+        internal static MutableString/*!*/ CreateInternal(MutableString str, RubyEncoding/*!*/ encoding) {
+            if (str != null) {
+                // "...#{str}..."
+                return new MutableString(str);
+            } else {
+                // empty literal: "...#{nil}..."
+                return CreateMutable(String.Empty, encoding);
+            }
+        }
+        
         /// <summary>
         /// Creates a blank instance of self type with no flags set.
         /// Copies encoding from the current class.
         /// </summary>
         public virtual MutableString/*!*/ CreateInstance() {
-            return new MutableString(new StringBuilder(), _encoding);
+            return new MutableString(_encoding);
         }
 
         /// <summary>
@@ -130,92 +235,6 @@ namespace IronRuby.Builtins {
             return Duplicate(context, copySingletonMembers, CreateInstance());
         }
 
-        /// <summary>
-        /// Creates an empty textual MutableString.
-        /// </summary>
-        public static MutableString/*!*/ CreateMutable() {
-            // TODO: encoding
-            return new MutableString(new StringBuilder(), BinaryEncoding.Obsolete);
-        }
-
-        // TODO: encoding
-        public static MutableString/*!*/ CreateMutable(int capacity) {
-            return new MutableString(new StringBuilder(capacity), BinaryEncoding.Obsolete);
-        }
-
-        // TODO: encoding
-        public static MutableString/*!*/ CreateMutable(string/*!*/ str, int capacity) {
-            return new MutableString(new StringBuilder(str, capacity), BinaryEncoding.Obsolete);
-        }
-
-        // TODO: encoding
-        public static MutableString/*!*/ CreateMutable(string/*!*/ str) {
-            return new MutableString(new StringBuilder(str), BinaryEncoding.Obsolete);
-        }
-
-        public static MutableString/*!*/ CreateMutable(string/*!*/ str, Encoding encoding) {
-            return new MutableString(new StringBuilder(str), encoding);
-        }
-
-        // TODO: encoding
-        public static MutableString/*!*/ Create(string/*!*/ str) {
-            return Create(str, BinaryEncoding.Obsolete);
-        }
-
-        public static MutableString/*!*/ Create(string/*!*/ str, Encoding/*!*/ encoding) {
-            ContractUtils.RequiresNotNull(str, "str");
-            ContractUtils.RequiresNotNull(encoding, "encoding");
-            return new MutableString(str, encoding);
-        }
-
-        /// <summary>
-        /// Creates an instance of MutableString with content and taint copied from a given string.
-        /// </summary>
-        public static MutableString/*!*/ Create(MutableString/*!*/ str) {
-            ContractUtils.RequiresNotNull(str, "str");
-            return new MutableString(str);
-        }
-
-        // used by RubyOps:
-        internal static MutableString/*!*/ CreateInternal(MutableString str) {
-            if (str != null) {
-                // "...#{str}..."
-                return new MutableString(str);
-            } else {
-                // empty literal: "...#{nil}..."
-                return CreateMutable(String.Empty, BinaryEncoding.Instance);
-            }
-        }
-
-        public static MutableString/*!*/ CreateBinary() {
-            return new MutableString(new List<byte>(), BinaryEncoding.Instance);
-        }
-
-        public static MutableString/*!*/ CreateBinary(int capacity) {
-            return new MutableString(new List<byte>(capacity), BinaryEncoding.Instance);
-        }
-
-        public static MutableString/*!*/ CreateBinary(byte[]/*!*/ bytes) {
-            ContractUtils.RequiresNotNull(bytes, "bytes");
-            return CreateBinary((IList<byte>)bytes, bytes.Length);
-        }
-
-        public static MutableString/*!*/ CreateBinary(IList<byte>/*!*/ bytes) {
-            ContractUtils.RequiresNotNull(bytes, "bytes");
-            return CreateBinary(bytes, bytes.Count);
-        }
-
-        public static MutableString/*!*/ CreateBinary(byte[]/*!*/ bytes, int capacity) {
-            return CreateBinary((IList<byte>)bytes, capacity);
-        }
-
-        public static MutableString/*!*/ CreateBinary(IList<byte>/*!*/ bytes, int capacity) {
-            ContractUtils.RequiresNotNull(bytes, "bytes");
-            List<Byte> list = new List<byte>(capacity);
-            list.AddRange(bytes);
-            return new MutableString(list, BinaryEncoding.Instance);
-        }
-
         public static MutableString[]/*!*/ MakeArray(ICollection<string>/*!*/ stringCollection) {
             ContractUtils.RequiresNotNull(stringCollection, "stringCollection");
             MutableString[] result = new MutableString[stringCollection.Count];
@@ -228,21 +247,54 @@ namespace IronRuby.Builtins {
 
         #endregion
 
-        #region Versioning and Flags
+        #region Versioning, Encoding, HashCode, and Flags
 
         [CLSCompliant(false)]
         public uint Version {
-            get {
-                return _versionAndFlags >> FlagsCount; 
+            get { return _versionAndFlags >> FlagCount; }
+        }
+
+        private void MutateNonContent() {
+            try {
+                checked { _versionAndFlags += (1 << FlagCount); }
+            } catch (OverflowException) {
+                throw RubyExceptions.CreateTypeError("can't modify frozen object");
             }
         }
 
         private void Mutate() {
-            try {
-                checked { _versionAndFlags += (1 << FlagsCount); }
-            } catch (OverflowException) {
-                throw RubyExceptions.CreateTypeError("can't modify frozen object");
+            MutateNonContent();
+            _hashCode = Utils.ReservedHashCode;
+        }
+
+        public override int GetHashCode() {
+            if (_hashCode != Utils.ReservedHashCode) {
+                return _hashCode;
             }
+
+            // 1.8 strings don't know encodings => if 2 strings are binary equivalent they have the same hash:
+            return _hashCode = (_encoding.IsKCoding) ? _content.GetBinaryHashCode() : _content.GetHashCode();
+        }
+
+        public bool IsBinary {
+            get { return _content.IsBinary; }
+        }
+
+        public bool IsBinaryEncoded {
+            get { return _encoding == RubyEncoding.Binary; }
+        }
+
+        /// <summary>
+        /// Gets or sets (TODO) encoding.
+        /// </summary>
+        public RubyEncoding/*!*/ Encoding {
+            get { return _encoding; }
+            //set {
+            //    // TODO: encoding change - needs transcode if not binary ...
+            //    ContractUtils.RequiresNotNull(value, "value");
+            //    Mutate();
+            //    _encoding = value;
+            //}
         }
 
         public bool IsTainted {
@@ -250,7 +302,7 @@ namespace IronRuby.Builtins {
                 return (_versionAndFlags & IsTaintedFlag) != 0; 
             }
             set {
-                Mutate();
+                MutateNonContent();
                 _versionAndFlags = (_versionAndFlags & ~IsTaintedFlag) | (value ? IsTaintedFlag : 0);
             }
         }
@@ -296,37 +348,7 @@ namespace IronRuby.Builtins {
 
         #endregion
 
-        #region Misc (read-only)
-
-        public bool IsBinary {
-            get {
-                return _content.IsBinary;
-            }
-        }
-
-        public Encoding/*!*/ Encoding {
-            get { return _encoding; }
-            set {
-                ContractUtils.RequiresNotNull(value, "value");
-                _encoding = value;
-            }
-        }
-
-        public override int GetHashCode() {
-            return _content.GetHashCode();
-        }
-
-        internal string/*!*/ GetDebugValue() {
-            string value, type;
-            _content.GetDebugView(out value, out type);
-            return value;
-        }
-
-        internal string/*!*/ GetDebugType() {
-            string value, type;
-            _content.GetDebugView(out value, out type);
-            return type;
-        }
+        #region Regular Expressions (read-only)
 
         internal MutableString/*!*/ EscapeRegularExpression() {
             return new MutableString(_content.EscapeRegularExpression(), _encoding);
@@ -342,6 +364,13 @@ namespace IronRuby.Builtins {
         /// </summary>
         public override string/*!*/ ToString() {
             return _content.ToString();
+        }
+
+        /// <summary>
+        /// This property can be viewed using a string visualizer in a debugger, making it easy to inspect large or multi-line strings.
+        /// </summary>
+        internal string/*!*/ Dump {
+            get { return ToString(); }
         }
 
         /// <summary>
@@ -386,15 +415,7 @@ namespace IronRuby.Builtins {
 
         #endregion
 
-        #region Comparisons (read-only)
-
-        public static bool operator ==(MutableString self, char other) {
-            return Equals(self, other);
-        }
-
-        public static bool operator !=(MutableString self, char other) {
-            return !Equals(self, other);
-        }
+        #region Comparisons (read-only) (TODO: Encodings)
 
         public static bool operator ==(MutableString self, MutableString other) {
             return Equals(self, other);
@@ -409,11 +430,6 @@ namespace IronRuby.Builtins {
             if (ReferenceEquals(self, null)) return false;
             if (ReferenceEquals(other, null)) return false;
             return other._content.ReverseCompareTo(self._content) == 0;
-        }
-
-        private static bool Equals(MutableString self, char other) {
-            if (ReferenceEquals(self, null)) return false;
-            return self.GetCharCount() == 1 && self.GetChar(0) == other;
         }
 
         public override bool Equals(object other) {
@@ -476,16 +492,6 @@ namespace IronRuby.Builtins {
         #endregion
 
         #region Slices (read-only)
-
-        // converts the result, not the string
-        public char PeekChar(int index) {
-            return _content.PeekChar(index);
-        }
-
-        // converts the result, not the string
-        public byte PeekByte(int index) {
-            return _content.PeekByte(index);
-        }
 
         // converts the string representation to text if not already
         public char GetChar(int index) {
@@ -730,10 +736,10 @@ namespace IronRuby.Builtins {
             return this;
         }
 
-        public MutableString/*!*/ Append(StringBuilder value) {
+        public MutableString/*!*/ Append(char[] value) {
             if (value != null) {
                 Mutate();
-                _content.Append(value.ToString(), 0, value.Length);
+                _content.Append(value, 0, value.Length);
             }
             return this;
         }
@@ -951,7 +957,279 @@ namespace IronRuby.Builtins {
 
 
         #endregion
-               
+
+        #region Quoted Representation
+
+#if !SILVERLIGHT
+        private sealed class DumpDecoderFallback : DecoderFallback {
+            // \xXX
+            // \000
+            private const int ReplacementLength = 4;
+
+            // We can't emit backslash directly since it would be escaped by subsequent processing.
+            internal const char EscapePlaceholder = '\uffff';
+
+            private readonly bool _octalEscapes;
+
+            public DumpDecoderFallback(bool octalEscapes) {
+                _octalEscapes = octalEscapes;
+            }
+
+            public override DecoderFallbackBuffer/*!*/ CreateFallbackBuffer() {
+                return new Buffer(this);
+            }
+
+            public override int MaxCharCount {
+                get { return ReplacementLength; }
+            }
+
+            internal sealed class Buffer : DecoderFallbackBuffer {
+                private readonly DumpDecoderFallback _fallback;
+                private int _index;
+                private byte[] _bytes;
+
+                public Buffer(DumpDecoderFallback/*!*/ fallback) {
+                    _fallback = fallback;
+                }
+
+                public bool HasInvalidCharacters {
+                    get { return _bytes != null; }
+                }
+
+                public override bool Fallback(byte[]/*!*/ bytesUnknown, int index) {
+                    _bytes = bytesUnknown;
+                    _index = 0;
+                    return true;
+                }
+
+                public override char GetNextChar() {
+                    if (Remaining == 0) {
+                        return '\0';
+                    }
+
+                    int state = _index % ReplacementLength;
+                    int b = _bytes[_index / ReplacementLength];
+                    _index++;
+
+                    if (_fallback._octalEscapes) {
+                        switch (state) {
+                            case 0: return EscapePlaceholder;
+                            case 1: return (char)('0' + (b >> 6));
+                            case 2: return (char)('0' + ((b >> 3) & 7));
+                            case 3: return (char)('0' + (b & 7));
+                        }
+                    } else {
+                        switch (state) {
+                            case 0: return EscapePlaceholder;
+                            case 1: return 'x';
+                            case 2: return (b >> 4).ToUpperHexDigit();
+                            case 3: return (b & 0xf).ToUpperHexDigit();
+                        }
+                    }
+
+                    throw Assert.Unreachable;
+                }
+
+                public override bool MovePrevious() {
+                    if (_index == 0) {
+                        return false;
+                    }
+                    _index--;
+                    return true;
+                }
+
+                public override int Remaining {
+                    get { return _bytes.Length * ReplacementLength - _index; }
+                }
+
+                public override void Reset() {
+                    _index = 0;
+                }
+            }
+        }
+
+        private static string/*!*/ ToStringWithEscapedInvalidCharacters(byte[]/*!*/ bytes, Encoding/*!*/ encoding, bool octalEscapes, out int escapePlaceholder) {
+            var decoder = encoding.GetDecoder();
+            decoder.Fallback = new DumpDecoderFallback(octalEscapes);
+            char[] chars = new char[decoder.GetCharCount(bytes, 0, bytes.Length, true)];
+            decoder.GetChars(bytes, 0, bytes.Length, chars, 0, true);
+            escapePlaceholder = ((DumpDecoderFallback.Buffer)decoder.FallbackBuffer).HasInvalidCharacters ? DumpDecoderFallback.EscapePlaceholder : -1;
+            return new String(chars);
+        }
+#else
+        private static string/*!*/ ToStringWithEscapedInvalidCharacters(byte[]/*!*/ bytes, Encoding/*!*/ encoding, bool octalEscapes, out int escapePlaceholder) {
+            // Silverlight doens't support fallbacks, just replace invalid characters with the default replacement:
+            escapePlaceholder = -1;
+            return new String(encoding.GetChars(bytes));
+        }
+#endif
+
+        private static void AppendBinaryCharRepresentation(StringBuilder/*!*/ result, int currentChar, int nextChar, bool octalEscape, 
+            bool escapeNonAscii, int quote) {
+
+            Debug.Assert(currentChar >= 0 && currentChar <= 0x00ff);
+            switch (currentChar) {
+                case '\a': result.Append("\\a"); break;
+                case '\b': result.Append("\\b"); break;
+                case '\t': result.Append("\\t"); break;
+                case '\n': result.Append("\\n"); break;
+                case '\v': result.Append("\\v"); break;
+                case '\f': result.Append("\\f"); break;
+                case '\r': result.Append("\\r"); break;
+                case 27: result.Append("\\e"); break;
+                case '\\': result.Append("\\\\"); break;
+
+                case '#':
+                    switch (nextChar) {
+                        case '{':
+                        case '$':
+                        case '@':
+                            result.Append('\\');
+                            break;
+                    }
+                    result.Append('#');
+                    break;
+
+                default:
+                    if (currentChar == quote) {
+                        result.Append('\\');
+                        result.Append((char)quote);
+                    } else if (currentChar < 0x0020 || currentChar >= 0x080 && escapeNonAscii) {
+                        if (octalEscape) {
+                            AppendOctalEscape(result, currentChar);
+                        } else {
+                            AppendHexEscape(result, currentChar);
+                        }
+                    } else {
+                        result.Append((char)currentChar);
+                    }
+                    break;
+            }
+        }
+
+        public static int AppendUnicodeCharRepresentation(StringBuilder/*!*/ result, int currentChar, int nextChar, bool forceEscapes, 
+            int quote, int escapePlaceholder) {
+
+            int inc = 1;
+            if (currentChar == escapePlaceholder) {
+                result.Append('\\');
+            } else if (currentChar < 0x0080) {
+                AppendBinaryCharRepresentation(result, currentChar, nextChar, false, false, quote);
+            } else if (forceEscapes) {
+                if (Char.IsSurrogatePair((char)currentChar, (char)nextChar)) {
+                    currentChar = Tokenizer.ToCodePoint(currentChar, nextChar);
+                    inc = 2;
+                }
+                result.Append("\\u{");
+                result.Append(Convert.ToString(currentChar, 16));
+                result.Append('}');
+            } else {
+                result.Append((char)currentChar);
+            }
+            return inc;
+        }
+
+        public static void AppendCharRepresentation(StringBuilder/*!*/ result, int currentChar, int nextChar, bool octalEscape, bool forceEscapes, 
+            int quote, int escapePlaceholder) {
+
+            if (currentChar == escapePlaceholder) {
+                result.Append('\\');
+            } else if (currentChar < 0x0100) {
+                AppendBinaryCharRepresentation(result, currentChar, nextChar, octalEscape, forceEscapes, quote);
+            } else {
+                result.Append((char)currentChar);
+            }
+        }
+
+        private static void AppendHexEscape(StringBuilder/*!*/ result, int c) {
+            result.Append("\\x");
+            result.Append((c >> 4).ToUpperHexDigit());
+            result.Append((c & 0xf).ToUpperHexDigit());
+        }
+
+        private static void AppendOctalEscape(StringBuilder/*!*/ result, int c) {
+            result.Append('\\');
+            result.Append((char)('0' + (c >> 6)));
+            result.Append((char)('0' + ((c >> 3) & 7)));
+            result.Append((char)('0' + (c & 7)));
+        }
+
+        private string/*!*/ ToStringWithEscapedInvalidCharacters(bool octalEscapes, out int escapePlaceholder) {
+            if (IsBinary) {
+                return ToStringWithEscapedInvalidCharacters(ToByteArray(), _encoding.Encoding, octalEscapes, out escapePlaceholder);
+            } else {
+                escapePlaceholder = -1;
+                return ToString();
+            }
+        }
+
+        public StringBuilder/*!*/ AppendRepresentation(StringBuilder/*!*/ result, bool octalEscapes, bool forceEscapes, int quote) {
+            ContractUtils.RequiresNotNull(result, "result");
+
+            if (_encoding == RubyEncoding.Binary) {
+                if (IsBinary) {
+                    AppendBinaryRepresentation(result, ToByteArray(), octalEscapes, true, quote);
+                } else {
+                    AppendStringRepresentation(result, ToString(), octalEscapes, true, quote, -1);
+                }
+            } else if (_encoding == RubyEncoding.UTF8 || _encoding == RubyEncoding.KCodeUTF8 || !forceEscapes) {
+                int escapePlaceholder;
+                var str = ToStringWithEscapedInvalidCharacters(octalEscapes, out escapePlaceholder);
+                if (_encoding == RubyEncoding.UTF8) {
+                    AppendUnicodeRepresentation(result, str, octalEscapes, forceEscapes, quote, escapePlaceholder);
+                } else if (forceEscapes) {
+                    AppendBinaryRepresentation(result, ToByteArray(), octalEscapes, true, quote);
+                } else {
+                    AppendStringRepresentation(result, str, octalEscapes, forceEscapes, quote, escapePlaceholder);
+                }
+            } else {
+                AppendBinaryRepresentation(result, ToByteArray(), octalEscapes, true, quote);
+            }
+            
+            return result;
+        }
+
+        public static StringBuilder/*!*/ AppendUnicodeRepresentation(StringBuilder/*!*/ result, string/*!*/ str, bool octalEscapes, bool forceEscapes,
+            int quote, int escapePlaceholder) {
+
+            int i = 0;
+            while (i < str.Length) {
+                i += AppendUnicodeCharRepresentation(result, (int)str[i], (i < str.Length - 1) ? (int)str[i + 1] : -1, forceEscapes, quote, escapePlaceholder);
+            }
+
+            return result;
+        }
+
+        public static StringBuilder/*!*/ AppendStringRepresentation(StringBuilder/*!*/ result, string/*!*/ str, bool octalEscapes, bool forceEscapes,
+            int quote, int escapePlaceholder) {
+            for (int i = 0; i < str.Length; i++) {
+                AppendCharRepresentation(result, (int)str[i], (i < str.Length - 1) ? (int)str[i + 1] : -1, octalEscapes, forceEscapes, quote, escapePlaceholder);
+            }
+            return result;
+        }
+
+        public static StringBuilder/*!*/ AppendBinaryRepresentation(StringBuilder/*!*/ result, byte[]/*!*/ bytes, bool octalEscapes, bool forceEscapes, int quote) {
+            for (int i = 0; i < bytes.Length; i++) {
+                AppendCharRepresentation(result, (int)bytes[i], (i < bytes.Length - 1) ? (int)bytes[i + 1] : -1, octalEscapes, forceEscapes, quote, -1);
+            }
+            return result;
+        }
+
+        internal string/*!*/ GetDebugValue() {
+            return AppendRepresentation(new StringBuilder(), false, false, '"').ToString();
+        }
+
+        internal string/*!*/ GetDebugType() {
+            if (!IsBinary) {
+                return "String (" + _encoding.ToString() + ")";
+            } else if (_encoding != RubyEncoding.Binary) {
+                return "String (binary/" + _encoding.ToString() + ")";
+            } else {
+                return "String (binary)";
+            }
+        }
+
+        #endregion
 
 #if OBSOLETE
         #region Utils
@@ -985,6 +1263,6 @@ namespace IronRuby.Builtins {
         }
 
         #endregion
-#endif        
+#endif
     }
 }

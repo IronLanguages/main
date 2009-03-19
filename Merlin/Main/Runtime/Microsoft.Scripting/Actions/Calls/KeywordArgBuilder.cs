@@ -16,6 +16,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Dynamic;
 using System.Linq.Expressions;
 
 namespace Microsoft.Scripting.Actions.Calls {
@@ -66,6 +67,20 @@ namespace Microsoft.Scripting.Actions.Calls {
             int index = GetKeywordIndex(parameters.Count);
             hasBeenUsed[index] = true;
             return _builder.ToExpression(parameterBinder, new Expression[] { parameters[index] }, new bool[1]);
+        }
+        
+        protected internal override Func<object[], object> ToDelegate(ParameterBinder parameterBinder, IList<DynamicMetaObject> knownTypes, bool[] hasBeenUsed) {
+            int index = GetKeywordIndex(knownTypes.Count);
+            hasBeenUsed[index] = true;
+
+            var target = _builder.ToDelegate(parameterBinder, new DynamicMetaObject[] { knownTypes[index] }, new bool[1]);
+            return (args) => target(new object[] { args[index] });
+        }
+
+        internal override bool CanGenerateDelegate {
+            get {
+                return base.CanGenerateDelegate;
+            }
         }
 
         public override Type Type {

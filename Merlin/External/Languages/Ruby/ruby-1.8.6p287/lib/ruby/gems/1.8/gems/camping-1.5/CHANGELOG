@@ -1,0 +1,99 @@
+= 1.5
+=== 3rd Oct, 2006
+
+* Camping::Apps stores an array of classes for all loaded apps. 
+* bin/camping can be given a directory. Like: <tt>camping examples/</tt>
+* Console mode -- thank zimbatm. Use: camping -C yourapp.rb 
+* Call controllers with Camping.method_missing.
+
+    Tepee.get(:Index) #=> (Response)
+    Blog.post(:Delete, id) #=> (Response) 
+
+    Blog.post(:Login, :input => {'username' => 'admin', 'password' => 'camping'}) 
+      #=> #<Blog::Controllers::Login @user=... > 
+
+    Blog.get(:Info, :env => {:HTTP_HOST => 'wagon'}) 
+      #=> #<Blog::Controllers::Info @env={'HTTP_HOST'=>'wagon'} ...> 
+
+* Using \r\n instead of \n on output. FastCGI has these needs. 
+* ActiveRecord no longer required or installed. 
+* If you refer to Models::Base, however, ActiveRecord will be loaded with autoload. (see lib/camping/db.rb) 
+* new Camping::FastCGI.serve which will serve a whole directory of apps
+  (see http://code.whytheluckystiff.net/camping/wiki/TheCampingServer) 
+* ~/.campingrc can contain database connection info if you want your default to be something other than SQLite. 
+
+    database: 
+      adapter: mysql 
+      username: camping 
+      socket: /tmp/mysql.sock 
+      password: NOFORESTFIRES 
+      database: camping 
+
+* controllers are now *ordered*. uses the inherited hook to keep track of all 
+  classes created with R. those classes are scanned, in order, when a request is 
+  made. any other controllers are handled first. so if you plan on overriding the 
+  urls method, be sure to subclass from R(). 
+* Console mode will load .irbrc in the working directory, if present. 
+  (for example, in my ~/git/balloon directory, i have this in the .irbrc: 
+  include Balloon::Models 
+  when camping -C balloon.rb gets run, the models all get included in main.) 
+* And, of course, many other bugfixes from myself and the loyal+kind zimbatm...
+* Markaby updated to 0.5. (See its CHANGELOG.)
+
+= 1.4.2
+=== 18th May, 2006
+
+* Efficient file uploads for multipart/form-data POSTs.
+* Camping tool now uses Mongrel, if available.  If not, sticks with WEBrick.
+* Multiple apps can be loaded with the camping tool, each mounted according to their file name.
+
+= 1.4.1
+=== 3rd May, 2006
+
+* Streaming HTTP support.  If body is IO, will simply pass to the controller.  Mongrel, in particular, supports this nicely.
+
+= 1.4
+=== 11th April, 2006
+
+* Moved Camping::Controllers::Base to Camping::Base.
+* Moved Camping::Controllers::R to Camping::R.
+* New session library (lib/camping/session.rb).
+* WEBrick handler (lib/camping/webrick.rb) and Mongrel handler (lib/camping/mongrel.rb).
+* Helpers#URL, builds a complete URL for a route.  Returns a URI object. This way relative links could just return self.URL.path.
+* Base#initialize takes over some of Base#service's duties.
+* ENV now available as @env in controllers and views.
+* Beautiful multi-page docs without frames!
+
+= 1.3
+=== 28th January, 2006
+
+* bin/camping: an application launcher.
+* <tt>Camping.run(request, response)</tt> now changed to <tt>controller = Camping.run(request, env)</tt>
+* This means outputting the response is the wrapper/server's job.  See bin/camping, you can do a controller.to_s at the least.
+* <tt>Controllers::Base.env</tt> is the new thread-safe home for <tt>ENV</tt>.
+* The input hash now works more like Rails params.  You can call keys
+  like methods or with symbols or strings.
+* Queries are now parsed more like PHP/Rails, in that you can denote
+  structure with brackets: post[user]=_why;post[id]=2
+* Auto-prefix table names, to help prevent name clash.
+* Helpers.errors_for simple validation.
+* Lots of empty :href and :action attributes, a bug.
+* New single-page flipbook RDoc template.
+
+= 1.2
+=== 23rd January, 2006
+
+* Camping.goes allows fresh modules build from all Camping parts.
+* File uploads now supported (multipart/form-data).
+* Helpers.R can rebuild routes.
+* Helpers./ for tracing paths from the root.
+
+= 1.1
+=== 19th January, 2006
+
+* Allowed request and response streams to be passed in, to allow WEBrick and FastCGI support.
+
+= 1.0
+=== 17th January, 2006
+
+* Initial checkin, see announcement at http://redhanded.hobix.com/bits/campingAMicroframework.html.

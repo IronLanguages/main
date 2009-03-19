@@ -92,7 +92,7 @@ namespace IronPython.Runtime {
 
         [SpecialName]
         public object Call(CodeContext/*!*/ context, params object[] args) {
-            return PythonContext.GetContext(context).Call(this, args);
+            return PythonContext.GetContext(context).CallSplat(this, args);
         }
 
         [SpecialName]

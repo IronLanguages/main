@@ -88,7 +88,6 @@ namespace IronPython.Runtime.Binding {
         /// this (e.g. we have a splatted params list, kw-dict, and defaults) we call a helper which extracts them
         /// in the proper order (first try the list, then the dict, then the defaults).
         /// </summary>
-        /// <typeparam name="T"></typeparam>
         class FunctionBinderHelper {
             private readonly MetaPythonFunction/*!*/ _func;         // the meta object for the function we're calling
             private readonly DynamicMetaObject/*!*/[]/*!*/ _args;          // the arguments for the function
@@ -107,6 +106,9 @@ namespace IronPython.Runtime.Binding {
             private Expression _paramlessCheck;                     // tests when we have no parameters
 
             public FunctionBinderHelper(DynamicMetaObjectBinder/*!*/ call, MetaPythonFunction/*!*/ function, Expression codeContext, DynamicMetaObject/*!*/[]/*!*/ args) {
+                PerfTrack.NoteEvent(PerfTrack.Categories.Binding, "PythonFunction Invoke " + function.Value.FunctionCompatibility + " w/ " + args.Length + " args");
+                PerfTrack.NoteEvent(PerfTrack.Categories.BindingTarget, "PythonFunction");
+
                 _call = call;
                 _func = function;
                 _args = args;

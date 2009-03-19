@@ -1,0 +1,2 @@
+class FormForSpecs < SpecController
+end

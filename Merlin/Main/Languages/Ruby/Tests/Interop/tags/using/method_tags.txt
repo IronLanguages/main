@@ -1,2 +1,0 @@
-fails:.NET methods are included in an objects method list
-fails:Overloaded .NET methods correctly report error message

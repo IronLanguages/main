@@ -85,8 +85,8 @@ namespace System.Linq.Expressions.Compiler {
         /// <summary>
         /// Finds a delegate type for a CallSite using the types in the ReadOnlyCollection of Expression. 
         /// 
-        /// We take the ROC of Expression explicitly to avoid allocating memory (an array of types) on
-        /// lookup of delegate types.
+        /// We take the readonly collection of Expression explicitly to avoid allocating memory (an array 
+        /// of types) on lookup of delegate types.
         /// </summary>
         internal static Type MakeCallSiteDelegate(ReadOnlyCollection<Expression> types, Type returnType) {
             lock (_DelegateCache) {

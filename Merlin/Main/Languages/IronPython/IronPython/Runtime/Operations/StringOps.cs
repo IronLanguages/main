@@ -393,7 +393,6 @@ namespace IronPython.Runtime.Operations {
 
         public static int count(this string self, string ssub, int start, int end) {
             if (ssub == null) throw PythonOps.TypeError("expected string for 'sub' argument, got NoneType");
-            string v = self;
 
             if (start > self.Length) {
                 return 0;
@@ -407,9 +406,10 @@ namespace IronPython.Runtime.Operations {
             }
 
             int count = 0;
+            CompareInfo c = CultureInfo.InvariantCulture.CompareInfo;
             while (true) {
                 if (end <= start) break;
-                int index = v.IndexOf(ssub, start, end - start);
+                int index = c.IndexOf(self, ssub, start, end - start, CompareOptions.Ordinal);
                 if (index == -1) break;
                 count++;
                 start = index + ssub.Length;
@@ -493,6 +493,8 @@ namespace IronPython.Runtime.Operations {
                     case '\t':
                         if (tabsize > 0) {
                             int tabs = tabsize - (col % tabsize);
+                            int existingSize = ret.Capacity;
+                            ret.Capacity = checked(existingSize + tabs);
                             ret.Append(' ', tabs);
                             col = 0;
                         }
@@ -509,6 +511,7 @@ namespace IronPython.Runtime.Operations {
         public static int find(this string self, string sub) {
             if (sub == null) throw PythonOps.TypeError("expected string, got NoneType");
             if (sub.Length == 1) return self.IndexOf(sub[0]);
+            
             CompareInfo c = CultureInfo.InvariantCulture.CompareInfo;
             return c.IndexOf(self, sub, CompareOptions.Ordinal);
 
@@ -518,7 +521,9 @@ namespace IronPython.Runtime.Operations {
             if (sub == null) throw PythonOps.TypeError("expected string, got NoneType");
             if (start > self.Length) return -1;
             start = PythonOps.FixSliceIndex(start, self.Length);
-            return self.IndexOf(sub, start);
+
+            CompareInfo c = CultureInfo.InvariantCulture.CompareInfo;
+            return c.IndexOf(self, sub, start, CompareOptions.Ordinal);
         }
 
         public static int find(this string self, string sub, int start, int end) {
@@ -528,7 +533,8 @@ namespace IronPython.Runtime.Operations {
             end = PythonOps.FixSliceIndex(end, self.Length);
             if (end < start) return -1;
 
-            return self.IndexOf(sub, start, end - start);
+            CompareInfo c = CultureInfo.InvariantCulture.CompareInfo;
+            return c.IndexOf(self, sub, start, end - start, CompareOptions.Ordinal);
         }
 
         public static int find(this string self, string sub, object start, [DefaultParameterValue(null)]object end) {
@@ -773,27 +779,23 @@ namespace IronPython.Runtime.Operations {
             throw PythonOps.TypeError("expected a character buffer object");
         }
 
-        public static string replace(this string self, object old, object new_) {
-            string oldString = StringOrBuffer(old);
-            string newString = StringOrBuffer(new_);
-            if (oldString.Length == 0) return ReplaceEmpty(self, newString, self.Length + 1);
-            return self.Replace(oldString, newString);
-        }
-
-        public static string replace(this string self, object old, object new_, int maxsplit) {
-            if (maxsplit == -1) return replace(self, old, new_);
+        public static string replace(this string self, object old, object new_, [DefaultParameterValue(-1)]int maxsplit) {
             string oldString = StringOrBuffer(old);
             string newString = StringOrBuffer(new_);
             if (oldString.Length == 0) return ReplaceEmpty(self, newString, maxsplit);
 
             string v = self;
-            StringBuilder ret = new StringBuilder(v.Length);
+            int replacements = count(v, oldString);
+            replacements = (maxsplit < 0 || maxsplit > replacements) ? replacements : maxsplit;
+            int newLength = v.Length;
+            newLength -= replacements * oldString.Length;
+            newLength = checked(newLength + replacements * newString.Length);
+            StringBuilder ret = new StringBuilder(newLength);
 
             int index;
             int start = 0;
-
-            while (maxsplit > 0 && (index = v.IndexOf(oldString, start)) != -1) {
-                ret.Append(v.Substring(start, index - start));
+            while (maxsplit != 0 && (index = v.IndexOf(oldString, start)) != -1) {
+                ret.Append(v, start, index - start);
                 ret.Append(newString);
                 start = index + oldString.Length;
                 maxsplit--;
@@ -825,7 +827,8 @@ namespace IronPython.Runtime.Operations {
             if (sub.Length == 0) return end;    // match at the end
             if (end == 0) return -1;    // can't possibly find anything
 
-            return self.LastIndexOf(sub, end - 1, end - start);
+            CompareInfo c = CultureInfo.InvariantCulture.CompareInfo;
+            return c.LastIndexOf(self, sub, end - 1, end - start, CompareOptions.Ordinal);
         }
 
         public static int rfind(this string self, string sub, object start, [DefaultParameterValue(null)]object end) {
@@ -1405,20 +1408,23 @@ namespace IronPython.Runtime.Operations {
         }
 
         private static string ReplaceEmpty(string self, string new_, int maxsplit) {
-            if (maxsplit == 0) return self;
-
             string v = self;
-            int max = maxsplit > v.Length ? v.Length : maxsplit;
-            StringBuilder ret = new StringBuilder(v.Length * (new_.Length + 1));
+
+            if (maxsplit == 0) return v;
+            else if (maxsplit < 0) maxsplit = v.Length + 1;
+            else if (maxsplit > v.Length + 1) maxsplit = checked(v.Length + 1);
+            
+            int newLength = checked(v.Length + new_.Length * maxsplit);
+            int max = Math.Min(v.Length, maxsplit);
+            StringBuilder ret = new StringBuilder(newLength);
             for (int i = 0; i < max; i++) {
                 ret.Append(new_);
                 ret.Append(v[i]);
             }
-            for (int i = max; i < v.Length; i++) {
-                ret.Append(v[i]);
-            }
             if (maxsplit > max) {
                 ret.Append(new_);
+            } else {
+                ret.Append(v, max, v.Length - max);
             }
 
             return ret.ToString();

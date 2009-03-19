@@ -26,6 +26,7 @@ using System.Threading;
 
 using Microsoft.Scripting;
 using Microsoft.Scripting.Actions;
+using Microsoft.Scripting.Generation;
 using Microsoft.Scripting.Math;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
@@ -44,7 +45,7 @@ namespace IronPython.Runtime.Types {
     [PythonType("type")]
     [Documentation(@"type(object) -> gets the type of the object
 type(name, bases, dict) -> creates a new type instance with the given name, base classes, and members from the dictionary")]
-    public class PythonType : IMembersList, IDynamicMetaObjectProvider, IWeakReferenceable, ICodeFormattable {
+    public class PythonType : IMembersList, IDynamicMetaObjectProvider, IWeakReferenceable, ICodeFormattable, IFastGettable {
         private Type/*!*/ _underlyingSystemType;            // the underlying CLI system type for this type
         private string _name;                               // the name of the type
         private Dictionary<SymbolId, PythonTypeSlot> _dict; // type-level slots & attributes
@@ -52,6 +53,10 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
         private int _version = GetNextVersion();            // version of the type
         private List<WeakReference> _subtypes;              // all of the subtypes of the PythonType
         private PythonContext _pythonContext;               // the context the type was created from, or null for system types.
+        internal Dictionary<string, UserGetBase> _cachedGets; // cached gets on user defined type instances
+        internal Dictionary<string, UserGetBase> _cachedTryGets; // cached try gets on used defined type instances
+        internal Dictionary<SetMemberKey, FastSetBase> _cachedSets; // cached sets on user defined instances
+        internal Dictionary<string, FastGetBase> _cachedTypeGets; // cached gets on types (system and user types)
 
         // commonly calculatable
         private List<PythonType> _resolutionOrder;          // the search order for methods in the type
@@ -60,6 +65,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
 
         // fields that frequently remain null
         private WeakRefTracker _weakrefTracker;             // storage for Python style weak references
+        private WeakReference _weakRef;                     // single weak ref instance used for all user PythonTypes.
         private string[] _slots;                            // the slots when the class was created
         private OldClass _oldClass;                         // the associated OldClass or null for new-style types  
         private int _originalSlotCount;                     // the number of slots when the type was created
@@ -227,8 +233,12 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
 
         [SpecialName, PropertyMethod, WrapperDescriptor]
         public static PythonTuple Get__bases__(CodeContext/*!*/ context, PythonType/*!*/ type) {
-            object[] res = new object[type.BaseTypes.Count];
-            IList<PythonType> bases = type.BaseTypes;
+            return type.GetBasesTuple();
+        }
+
+        private PythonTuple GetBasesTuple() {
+            object[] res = new object[BaseTypes.Count];
+            IList<PythonType> bases = BaseTypes;
             for (int i = 0; i < bases.Count; i++) {
                 PythonType baseType = bases[i];
 
@@ -433,7 +443,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
                 string module = "unknown";
                 object modObj;
                 if (TryLookupSlot(context, Symbols.Module, out dts) &&
-                    dts.TryGetBoundValue(context, this, this, out modObj)) {
+                    dts.TryGetValue(context, this, this, out modObj)) {
                     module = modObj as string;
                 }
                 return string.Format("<class '{0}.{1}'>", module, name);
@@ -665,7 +675,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
             }
 
             object func;
-            if (!lenSlot.TryGetBoundValue(ctx, o, this, out func)) {
+            if (!lenSlot.TryGetValue(ctx, o, this, out func)) {
                 length = 0;
                 return false;
             }
@@ -1054,7 +1064,6 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
         /// </summary>
         /// <param name="name"></param>
         /// <param name="slot"></param>
-        /// <param name="context">the context the slot is added for</param>
         internal void AddSlot(SymbolId name, PythonTypeSlot slot) {
             Debug.Assert(!IsSystemType);
 
@@ -1117,7 +1126,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
         internal bool TryGetBoundCustomMember(CodeContext context, SymbolId name, out object value) {
             PythonTypeSlot dts;
             if (TryResolveSlot(context, name, out dts)) {
-                if (dts.TryGetBoundValue(context, null, this, out value)) {
+                if (dts.TryGetValue(context, null, this, out value)) {
                     return true;
                 }
             }
@@ -1125,7 +1134,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
             // search the type
             PythonType myType = DynamicHelpers.GetPythonType(this);
             if (myType.TryResolveSlot(context, name, out dts)) {
-                if (dts.TryGetBoundValue(context, this, myType, out value)) {
+                if (dts.TryGetValue(context, this, myType, out value)) {
                     return true;
                 }
             }
@@ -1133,6 +1142,328 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
             value = null;
             return false;
         }
+
+        #region IFastGettable Members
+
+        T IFastGettable.MakeGetBinding<T>(CallSite<T> site, PythonGetMemberBinder/*!*/ binder, CodeContext context, string name) {
+            Debug.Assert(typeof(T) == typeof(Func<CallSite, object, CodeContext, object>));
+
+            if (GetType() != typeof(PythonType)) {
+                // we don't optimize classes derived from meta classes yet                
+                return null;
+            }
+
+            switch (name) {
+                case "__dict__":
+                    return (T)(object)new Func<CallSite, object, CodeContext, object>(FastGetSingleton.Instance.GetDictionary);
+                case "__class__":
+                    return (T)(object)new Func<CallSite, object, CodeContext, object>(FastGetSingleton.Instance.GetClass);
+                case "__bases__":
+                    return (T)(object)new Func<CallSite, object, CodeContext, object>(FastGetSingleton.Instance.GetBases);
+                case "__name__":
+                    return (T)(object)new Func<CallSite, object, CodeContext, object>(FastGetSingleton.Instance.GetName);
+            }
+
+
+            int version = _version;
+            PythonTypeSlot dts;
+            SymbolId symName = SymbolTable.StringToId(name);
+            if (TryResolveSlot(context, symName, out dts) && dts.GetAlwaysSucceeds) {
+                return MakeFastGetDelegate<T>(binder, dts, _version, false);
+            }
+
+            // search the type
+            PythonType myType = DynamicHelpers.GetPythonType(this);
+            if (myType.TryResolveSlot(context, symName, out dts) && dts.GetAlwaysSucceeds) {
+                return MakeFastGetDelegate<T>(binder, dts, _version, true);
+            }
+
+            return null;
+        }
+
+        private T MakeFastGetDelegate<T>(PythonGetMemberBinder binder, PythonTypeSlot slot, int version, bool fromMetaClass) where T : class {
+            if (slot is ReflectedExtensionProperty) {
+                // very tricky, these include WrapperDescriptors.
+                return null;
+            }
+
+            if (IsSystemType) {
+                if (slot.CanOptimizeGets) {
+                    FastGetBase fastGet;
+                    EnsureFastTypeGets();
+                    lock (_cachedTypeGets) {
+                        if (!_cachedTypeGets.TryGetValue(binder.Name, out fastGet)) {
+                            _cachedTypeGets[binder.Name] = fastGet = new OptimizingFastGetSystemType(
+                                    binder,
+                                    this,
+                                    slot,
+                                    fromMetaClass
+                                );
+                        }
+
+                        OptimizingFastGetSystemType sysGet = (OptimizingFastGetSystemType)fastGet;
+                        if (sysGet.UseNonOptimizedSite) {
+                            return (T)(object)new Func<CallSite, object, CodeContext, object>(sysGet.GetSlot);
+                        }
+
+                        return null;
+                    }
+                } else {
+                    ReflectedField field = slot as ReflectedField;
+                    if (field != null) {
+                        return (T)(object)new Func<CallSite, object, CodeContext, object>(
+                            new FastGetSystemTypeValue(binder, this, field._info.GetValue(null)).GetSlot
+                        );
+                    }
+                    return (T)(object)new Func<CallSite, object, CodeContext, object>(new FastGetSystemTypeSlot(binder, this, slot, fromMetaClass).GetSlot);
+                }
+            }
+
+            if (slot.CanOptimizeGets) {
+                EnsureFastTypeGets();
+                lock (_cachedTypeGets) {
+                    FastGetBase fastGet;
+                    if (!_cachedTypeGets.TryGetValue(binder.Name, out fastGet) || ((OptimizingFastGetUserType)fastGet)._version != version) {
+                        _cachedTypeGets[binder.Name] = fastGet = new OptimizingFastGetUserType(
+                            binder,
+                            this,
+                            _version,
+                            slot,
+                            fromMetaClass
+                        );
+                    }
+
+                    OptimizingFastGetUserType userGet = (OptimizingFastGetUserType)fastGet;
+                    if (userGet.UseNonOptimizedSite) {
+                        return (T)(object)new Func<CallSite, object, CodeContext, object>(userGet.GetSlot);
+                    }
+
+                    return null;
+                }
+            } else {
+                ReflectedField field = slot as ReflectedField;                
+                if (field != null) {
+                    return (T)(object)new Func<CallSite, object, CodeContext, object>(
+                        new FastGetUserTypeValue(binder, this, _version, field._info.GetValue(null)).GetSlot
+                    );
+                }
+
+                return (T)(object)new Func<CallSite, object, CodeContext, object>(new FastGetUserTypeSlot(binder, this, _version, slot, fromMetaClass).GetSlot);
+            }
+        }
+
+        private void EnsureFastTypeGets() {
+            if (_cachedTypeGets == null) {
+                Interlocked.CompareExchange(ref _cachedTypeGets,
+                    new Dictionary<string, FastGetBase>(),
+                    null);
+            }
+        }
+
+        class FastGetUserTypeBase : FastGetBase {
+            protected readonly WeakReference _type;
+            internal readonly int _version;
+            protected int _hitCount;            
+
+            public FastGetUserTypeBase(PythonGetMemberBinder binder, PythonType type, int version)
+                : base(binder) {
+                if (type._weakRef == null) {
+                    type._weakRef = new WeakReference(type);
+                }
+                _type = type._weakRef;
+                _version = version;
+            }
+
+            public bool UseNonOptimizedSite {
+                get {
+                    return _hitCount < 100;
+                }
+            }
+        }
+
+        class FastGetUserTypeSlot : FastGetUserTypeBase {
+            private readonly PythonTypeSlot _slot;
+            private readonly bool _fromMetaClass;
+
+            public FastGetUserTypeSlot(PythonGetMemberBinder binder, PythonType type, int version, PythonTypeSlot slot, bool fromMetaClass)
+                : base(binder, type, version) {
+                if (type._weakRef == null) {
+                    type._weakRef = new WeakReference(type);
+                }
+                _fromMetaClass = fromMetaClass;
+                _slot = slot;
+            }
+            
+            public object GetSlot(CallSite site, object self, CodeContext context) {
+                object res;
+                if (self == _type.Target && ((PythonType)self).Version == _version && _slot.TryGetValue(context, _fromMetaClass ? self : null, (PythonType)self, out res)) {
+                    return res;
+                }
+
+                return Update(site, self, context);
+            }
+        }
+
+        class OptimizingFastGetUserType : FastGetUserTypeBase {
+            private readonly PythonTypeSlot _slot;
+            private readonly bool _fromMetaClass;
+
+            public OptimizingFastGetUserType(PythonGetMemberBinder binder, PythonType type, int version, PythonTypeSlot slot, bool fromMetaClass)
+                : base(binder, type, version) {
+                if (type._weakRef == null) {
+                    type._weakRef = new WeakReference(type);
+                }
+                _fromMetaClass = fromMetaClass;
+                _slot = slot;
+            }
+
+            public object GetSlot(CallSite site, object self, CodeContext context) {
+                object res;
+                if (self == _type.Target && 
+                    ((PythonType)self).Version == _version && 
+                    UseNonOptimizedSite &&
+                    _slot.TryGetValue(context, _fromMetaClass ? self : null, (PythonType)self, out res)) {
+                    _hitCount++;
+                    return res;
+                }
+
+                return Update(site, self, context);
+            }
+        }
+
+        class FastGetUserTypeValue : FastGetUserTypeBase {
+            private readonly object _value;
+
+            public FastGetUserTypeValue(PythonGetMemberBinder binder, PythonType type, int version, object value)
+                : base(binder, type, version) {
+                _value = value;
+            }
+
+            public object GetSlot(CallSite site, object self, CodeContext context) {
+                if (self == _type.Target && ((PythonType)self).Version == _version) {
+                    return _value;
+                }
+
+                return Update(site, self, context);
+            }
+        }
+
+        class FastGetSystemTypeBase : FastGetBase {
+            protected readonly PythonType _type;
+            internal int _hitCount;            
+
+            public FastGetSystemTypeBase(PythonGetMemberBinder binder, PythonType type)
+                : base(binder) {
+                _type = type;
+            }
+
+            internal bool UseNonOptimizedSite {
+                get {
+                    return _hitCount < 100;
+                }
+            }
+        }
+
+        class FastGetSystemTypeSlot : FastGetSystemTypeBase {
+            private readonly PythonTypeSlot _slot;
+            private readonly PythonType _instance;
+
+            public FastGetSystemTypeSlot(PythonGetMemberBinder binder, PythonType type, PythonTypeSlot slot, bool fromMetaClass)
+                : base(binder, type) {
+                _slot = slot;
+                if (fromMetaClass) {
+                    _instance = type;
+                }
+            }
+
+            public object GetSlot(CallSite site, object self, CodeContext context) {
+                object res;
+                if (self == _type && _slot.TryGetValue(context, _instance, _type, out res)) {
+                    return res;
+                }
+
+                return Update(site, self, context);
+            }
+        }
+
+        class OptimizingFastGetSystemType : FastGetSystemTypeBase {
+            private readonly PythonTypeSlot _slot;
+            private readonly PythonType _instance;
+
+            public OptimizingFastGetSystemType(PythonGetMemberBinder binder, PythonType type, PythonTypeSlot slot, bool fromMetaClass)
+                : base(binder, type) {
+                _slot = slot;
+                if (fromMetaClass) {
+                    _instance = type;
+                }
+            }
+
+            public object GetSlot(CallSite site, object self, CodeContext context) {
+                object res;
+                if (self == _type && UseNonOptimizedSite && _slot.TryGetValue(context, _instance, _type, out res)) {
+                    _hitCount++;
+                    return res;
+                }
+
+                return Update(site, self, context);
+            }
+        }
+
+        class FastGetSystemTypeValue : FastGetSystemTypeBase {
+            private readonly object _value;
+
+            public FastGetSystemTypeValue(PythonGetMemberBinder binder, PythonType type, object value)
+                : base(binder, type) {
+                _value = value;
+            }
+
+            public object GetSlot(CallSite site, object self, CodeContext context) {
+                if (self == _type) {
+                    return _value;
+                }
+
+                return Update(site, self, context);
+            }
+        }
+
+
+        class FastGetSingleton {
+            public static FastGetSingleton Instance = new FastGetSingleton();
+
+            public object GetDictionary(CallSite site, object self, CodeContext context) {
+                if (self.GetType() == typeof(PythonType)) {
+                    return new DictProxy(((PythonType)self));
+                }
+
+                return ((CallSite<Func<CallSite, object, CodeContext, object>>)site).Update(site, self, context);
+            }
+
+            public object GetClass(CallSite site, object self, CodeContext context) {
+                if (self.GetType() == typeof(PythonType)) {
+                    return TypeCache.PythonType;
+                }
+
+                return ((CallSite<Func<CallSite, object, CodeContext, object>>)site).Update(site, self, context);
+            }
+
+            public object GetBases(CallSite site, object self, CodeContext context) {
+                if (self.GetType() == typeof(PythonType)) {
+                    return ((PythonType)self).GetBasesTuple();
+                }
+
+                return ((CallSite<Func<CallSite, object, CodeContext, object>>)site).Update(site, self, context);
+            }
+
+            public object GetName(CallSite site, object self, CodeContext context) {
+                if (self.GetType() == typeof(PythonType)) {
+                    return ((PythonType)self).Name;
+                }
+
+                return ((CallSite<Func<CallSite, object, CodeContext, object>>)site).Update(site, self, context);
+            }
+        }
+
+        #endregion
 
         #endregion
 
@@ -1218,7 +1549,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
             if ((pt = instance as PythonType) != null) {
                 PythonTypeSlot pts;
                 if (pt.TryLookupSlot(context, name, out pts)) {
-                    hasValue = pts.TryGetBoundValue(context, null, this, out value);
+                    hasValue = pts.TryGetValue(context, null, this, out value);
                 }
             } else if ((sdo = instance as IPythonObject) != null) {
                 IAttributesCollection iac = sdo.Dict;
@@ -1319,7 +1650,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
 
                 PythonTypeSlot slot;
                 if (dt.TryLookupSlot(context, name, out slot)) {
-                    if (slot.TryGetBoundValue(context, instance, this, out value))
+                    if (slot.TryGetValue(context, instance, this, out value))
                         return true;
                 }
             }
@@ -1336,7 +1667,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
 
                 PythonTypeSlot slot;
                 if (dt.TryLookupSlot(context, name, out slot)) {
-                    if (slot.TryGetBoundValue(context, instance, this, out value))
+                    if (slot.TryGetValue(context, instance, this, out value))
                         return true;
                 }
             }
@@ -2142,4 +2473,286 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
 
         #endregion
     }
+
+    enum OptimizedGetKind {
+        None,
+        SlotDict,
+        SlotOnly,
+        UserSlot
+    }
+
+    class UserGetBase : FastGetBase {
+        internal readonly int _version;
+        internal Func<CallSite, object, CodeContext, object> _func;
+        internal int _hitCount;
+
+        public UserGetBase(PythonGetMemberBinder binder, int version)
+            : base(binder) {
+            _version = version;
+        }
+
+        internal bool ShouldUseNonOptimizedSite {
+            get {
+                return _hitCount < 100;
+            }
+        }
+    }
+
+    class GetAttributeDelegates : UserGetBase {
+        private readonly string _name;
+        private readonly PythonTypeSlot _getAttributeSlot;
+        private readonly PythonTypeSlot _getAttrSlot;
+        private readonly CallSite<Func<CallSite, object, CodeContext, object>> _site;
+        private readonly SiteLocalStorage<CallSite<Func<CallSite, CodeContext, object, string, object>>>/*!*/ _storage;
+
+        public GetAttributeDelegates(CallSite<Func<CallSite, object, CodeContext, object>>/*!*/ site, PythonGetMemberBinder/*!*/ binder, string/*!*/ name, int version, PythonTypeSlot/*!*/ getAttributeSlot, PythonTypeSlot/*!*/ getAttrSlot)
+            : base(binder, version) {
+            Assert.NotNull(site, binder, getAttributeSlot);
+
+            _storage = new SiteLocalStorage<CallSite<Func<CallSite, CodeContext, object, string, object>>>();
+            _getAttributeSlot = getAttributeSlot;
+            _getAttrSlot = getAttrSlot;
+            _name = name;
+            _site = site;
+            _func = GetAttribute;
+        }
+
+        public object GetAttribute(CallSite site, object self, CodeContext context) {
+            IPythonObject ipo = self as IPythonObject;
+            if (ipo != null && ipo.PythonType.Version == _version) {
+                if (Binder.IsNoThrow) {
+                    return UserTypeOps.GetAttributeNoThrow(context, self, _name, _getAttributeSlot, _getAttrSlot, _storage);
+                }
+
+                return UserTypeOps.GetAttribute(context, self, _name, _getAttributeSlot, _getAttrSlot, _storage);
+            }
+            return Update(site, self, context);
+        }
+    }
+
+    class GetMemberDelegates : UserGetBase {
+        private readonly SymbolId _name;
+        private readonly PythonTypeSlot _slot, _getattrSlot;
+        private readonly SlotGetValue _slotFunc;
+
+        public GetMemberDelegates(OptimizedGetKind getKind, PythonGetMemberBinder binder, SymbolId name, int version, PythonTypeSlot slot, PythonTypeSlot getattrSlot, SlotGetValue slotFunc)
+            : base(binder, version) {
+            _slot = slot;
+            _name = name;
+            _getattrSlot = getattrSlot;
+            _slotFunc = slotFunc;
+            switch (getKind) {
+                case OptimizedGetKind.SlotDict: _func = SlotDict; break;
+                case OptimizedGetKind.SlotOnly: _func = SlotOnly; break;
+                case OptimizedGetKind.UserSlot: _func = UserSlot; break;
+                default: throw new InvalidOperationException();
+            }
+        }
+
+        public object SlotDict(CallSite site, object self, CodeContext context) {
+            IPythonObject ipo = self as IPythonObject;
+            if (ipo != null && ipo.PythonType.Version == _version && ShouldUseNonOptimizedSite) {
+                _hitCount++;
+
+                object res;
+                if (ipo.Dict != null && ipo.Dict.TryGetValue(_name, out res)) {
+                    return res;
+                }
+
+                if (_slot != null && _slot.TryGetValue(context, self, ipo.PythonType, out res)) {
+                    return res;
+                }
+
+                if (_getattrSlot != null && _getattrSlot.TryGetValue(context, self, ipo.PythonType, out res)) {
+                    return GetAttr(context, res);
+                }
+
+                return TypeError(ipo);
+            }
+
+            return Update(site, self, context);
+        }
+
+        public object SlotOnly(CallSite site, object self, CodeContext context) {
+            IPythonObject ipo = self as IPythonObject;
+            if (ipo != null && ipo.PythonType.Version == _version && ShouldUseNonOptimizedSite) {
+                _hitCount++;
+
+                object res;
+                if (_slot != null && _slot.TryGetValue(context, self, ipo.PythonType, out res)) {
+                    return res;
+                }
+
+                if (_getattrSlot != null && _getattrSlot.TryGetValue(context, self, ipo.PythonType, out res)) {
+                    return GetAttr(context, res);
+                }
+
+                return TypeError(ipo);
+            }
+
+            return Update(site, self, context);
+        }
+
+        public object UserSlot(CallSite site, object self, CodeContext context) {
+            IPythonObject ipo = self as IPythonObject;
+            if (ipo != null && ipo.PythonType.Version == _version && ShouldUseNonOptimizedSite) {
+                object res = _slotFunc(self);
+                if (res != Uninitialized.Instance) {
+                    return res;
+                }
+
+                if (_getattrSlot != null && _getattrSlot.TryGetValue(context, self, ipo.PythonType, out res)) {
+                    return GetAttr(context, res);
+                }
+
+                return TypeError(ipo);
+            }
+
+            return Update(site, self, context);
+        }
+
+        private object GetAttr(CodeContext context, object res) {
+            if (Binder.IsNoThrow) {
+                try {
+                    return PythonOps.CallWithContext(context, res, SymbolTable.IdToString(_name));
+                } catch (MissingMemberException) {
+                    return OperationFailed.Value;
+                }
+            } else {
+                return PythonOps.CallWithContext(context, res, SymbolTable.IdToString(_name));
+            }
+        }
+
+        private object TypeError(IPythonObject ipo) {
+            if (Binder.IsNoThrow) {
+                return OperationFailed.Value;
+            }
+
+            throw PythonOps.AttributeErrorForMissingAttribute(ipo.PythonType.Name, _name);
+        }
+    }
+
+    enum OptimizedSetKind {
+        None,
+        SetAttr,
+        UserSlot,
+        SetDict,
+        Error
+    }
+    
+    class SetMemberDelegates<TValue> : FastSetBase<TValue> {
+        private readonly SymbolId _name;
+        private readonly PythonTypeSlot _slot;
+        private readonly CallSite<Func<CallSite, object, TValue, object>> _site;
+        private readonly SlotSetValue _slotFunc;
+        private readonly CodeContext _context;
+        private readonly OptimizedSetKind _kind;
+
+        public SetMemberDelegates(CodeContext context, OptimizedSetKind kind, CallSite<Func<CallSite, object, TValue, object>> site, PythonSetMemberBinder binder, SymbolId name, int version, PythonTypeSlot slot, SlotSetValue slotFunc) 
+            : base(binder, version) {
+            _slot = slot;
+            _name = name;
+            _site = site;
+            _slotFunc = slotFunc;
+            _context = context;
+            _kind = kind;
+            switch (kind) {
+                case OptimizedSetKind.SetAttr: _func = new Func<CallSite, object, TValue, object>(SetAttr); break;
+                case OptimizedSetKind.UserSlot: _func = new Func<CallSite, object, TValue, object>(UserSlot); break;
+                case OptimizedSetKind.SetDict: _func = new Func<CallSite, object, TValue, object>(SetDict); break;
+                case OptimizedSetKind.Error: _func = new Func<CallSite, object, TValue, object>(Error); break;
+            }
+        }
+
+        public OptimizedSetKind Kind {
+            get {
+                return _kind;
+            }
+        }
+
+        public object SetAttr(CallSite site, object self, TValue value) {
+            IPythonObject ipo = self as IPythonObject;
+            if (ipo != null && ipo.PythonType.Version == _version && ShouldUseNonOptimizedSite) {
+                _hitCount++;
+
+                object res;
+                if (_slot.TryGetValue(_context, self, ipo.PythonType, out res)) {
+                    return PythonOps.CallWithContext(_context, res, SymbolTable.IdToString(_name), value);
+                }
+
+                return TypeError(ipo);
+            }
+
+            return Update(site, self, value);
+        }
+
+        public object SetDict(CallSite site, object self, TValue value) {
+            IPythonObject ipo = self as IPythonObject;
+            if (ipo != null && ipo.PythonType.Version == _version && ShouldUseNonOptimizedSite) {
+                _hitCount++;
+
+                UserTypeOps.SetDictionaryValue(ipo, _name, value);
+                return null;
+            }
+
+            return Update(site, self, value);
+        }
+
+        public object Error(CallSite site, object self, TValue value) {
+            IPythonObject ipo = self as IPythonObject;
+            if (ipo != null && ipo.PythonType.Version == _version) {
+                return TypeError(ipo);
+            }
+
+            return Update(site, self, value);
+        }
+
+        public object UserSlot(CallSite site, object self, TValue value) {
+            IPythonObject ipo = self as IPythonObject;
+            if (ipo != null && ipo.PythonType.Version == _version && ShouldUseNonOptimizedSite) {
+                _hitCount++;
+
+                _slotFunc(self, value);
+                return null;
+            }
+
+            return Update(site, self, value);
+        }
+
+        private object TypeError(IPythonObject ipo) {
+            throw PythonOps.AttributeErrorForMissingAttribute(ipo.PythonType.Name, _name);
+        }
+    }
+
+    class SetMemberKey : IEquatable<SetMemberKey> {
+        public readonly Type Type;
+        public readonly string Name;
+
+        public SetMemberKey(Type type, string name) {
+            Type = type;
+            Name = name;
+        }
+
+        #region IEquatable<SetMemberKey> Members
+
+        public bool Equals(SetMemberKey other) {
+            return Type == other.Type && Name == other.Name;
+        }
+
+        #endregion
+
+        public override bool Equals(object obj) {
+            SetMemberKey other = obj as SetMemberKey;
+            if (other == null) {
+                return false;
+            }
+
+            return Equals(other);
+        }
+
+        public override int GetHashCode() {
+            return Type.GetHashCode() ^ Name.GetHashCode();
+        }
+    }
+
 }

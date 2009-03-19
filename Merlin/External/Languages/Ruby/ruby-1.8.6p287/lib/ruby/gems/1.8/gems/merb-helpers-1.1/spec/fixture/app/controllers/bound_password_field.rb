@@ -1,0 +1,2 @@
+class BoundPasswordFieldSpecs < SpecController
+end

@@ -13,15 +13,16 @@
  *
  * ***************************************************************************/
 
-using System.Collections.Generic;
+using System.Diagnostics;
 using System.Dynamic.Utils;
-using System.Text;
-using System.Reflection;
 
 namespace System.Linq.Expressions {
     /// <summary>
     /// Represents an operation between an expression and a type. 
     /// </summary>
+#if !SILVERLIGHT
+    [DebuggerTypeProxy(typeof(Expression.TypeBinaryExpressionProxy))]
+#endif
     public sealed class TypeBinaryExpression : Expression {
         private readonly Expression _expression;
         private readonly Type _typeOperand;
@@ -72,7 +73,7 @@ namespace System.Linq.Expressions {
             // For value types (including Void, but not nullables), we can
             // determine the result now
             if (cType.IsValueType && !cType.IsNullableType()) {
-                return Expression.Block(Expression, Expression.Constant(cType == _typeOperand));
+                return Expression.Block(Expression, Expression.Constant(cType == _typeOperand.GetNonNullableType()));
             }
 
             // Can check the value right now for constants.

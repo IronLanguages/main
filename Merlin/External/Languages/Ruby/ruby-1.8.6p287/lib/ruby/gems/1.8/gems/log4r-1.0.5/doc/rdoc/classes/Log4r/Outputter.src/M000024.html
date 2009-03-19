@@ -1,0 +1,29 @@
+
+<html>
+<head><title>formatter= (Log4r::Outputter)</title>
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+<style>
+  .kw { color: #3333FF; font-weight: bold }
+  .cmt { color: green; font-style: italic }
+  .str { color: #662222; font-style: italic }
+  .re  { color: #662222; }
+</style>
+</head>
+<body bgcolor="white">
+<pre><span class="cmt"># File log4r/outputter/outputter.rb, line 60</span>
+    <span class="kw">def</span> formatter=(_formatter)
+      <span class="kw">if</span> _formatter.kind_of?(Formatter)
+        @formatter = _formatter
+      <span class="kw">elsif</span> _formatter.kind_of?(Class) <span class="kw">and</span> _formatter &lt;= Formatter
+        <span class="kw">if</span> _formatter.respond_to? :instance
+          @formatter = _formatter.instance
+        <span class="kw">else</span>
+          @formatter = _formatter.new
+        <span class="kw">end</span>
+      <span class="kw">else</span>
+        raise TypeError, <span class="str">&quot;Argument was not a Formatter!&quot;</span>, caller
+      <span class="kw">end</span>
+      Logger.log_internal {&quot;Outputter '#{@name}' using #{@formatter.class}&quot;}
+    <span class="kw">end</span></pre>
+</body>
+</html>

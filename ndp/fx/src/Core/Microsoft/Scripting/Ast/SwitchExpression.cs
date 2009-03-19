@@ -23,6 +23,9 @@ namespace System.Linq.Expressions {
     /// <summary>
     /// Represents a control expression that handles multiple selections by passing control to a <see cref="SwitchCase"/>.
     /// </summary>
+#if !SILVERLIGHT
+    [DebuggerTypeProxy(typeof(Expression.SwitchExpressionProxy))]
+#endif
     public sealed class SwitchExpression : Expression {
         private readonly Type _type;
         private readonly Expression _switchValue;
@@ -85,6 +88,16 @@ namespace System.Linq.Expressions {
 
         internal override Expression Accept(ExpressionVisitor visitor) {
             return visitor.VisitSwitch(this);
+        }
+
+        internal bool IsLifted {
+            get {
+                if (_switchValue.Type.IsNullableType()) {
+                    return (_comparison == null) ||
+                        _switchValue.Type != _comparison.GetParametersCached()[0].ParameterType.GetNonRefType();
+                }
+                return false;
+            }
         }
     }
 
@@ -164,7 +177,9 @@ namespace System.Linq.Expressions {
             ContractUtils.RequiresNotEmpty(caseList, "cases");
             ContractUtils.RequiresNotNullItems(caseList, "cases");
 
-            Type switchType = caseList[0].Body.Type;
+            // Type of the result. Either provided, or it is type of the branches.
+            Type resultType = type ?? caseList[0].Body.Type;
+            bool customType = type != null;
 
             if (comparison != null) {
                 var pms = comparison.GetParametersCached();
@@ -173,20 +188,31 @@ namespace System.Linq.Expressions {
                 }
                 // Validate that the switch value's type matches the comparison method's 
                 // left hand side parameter type.
-                var lhsParam = pms[0];
-                if (!ParameterIsAssignable(lhsParam, switchValue.Type)) {
-                    throw Error.SwitchValueTypeDoesNotMatchComparisonMethodParameter(switchValue.Type, lhsParam.ParameterType);
+                var leftParam = pms[0];
+                bool liftedCall = false;
+                if (!ParameterIsAssignable(leftParam, switchValue.Type)) {
+                    liftedCall = ParameterIsAssignable(leftParam, switchValue.Type.GetNonNullableType());
+                    if (!liftedCall) {
+                        throw Error.SwitchValueTypeDoesNotMatchComparisonMethodParameter(switchValue.Type, leftParam.ParameterType);
+                    }
                 }
 
-                var rhsParam = pms[1];
+                var rightParam = pms[1];
                 foreach (var c in caseList) {
                     ContractUtils.RequiresNotNull(c, "cases");
-                    ValidateSwitchCaseType(c, type, switchType, "cases");
+                    ValidateSwitchCaseType(c.Body, customType, resultType, "cases");
                     for (int i = 0; i < c.TestValues.Count; i++) {
                         // When a comparison method is provided, test values can have different type but have to
                         // be reference assignable to the right hand side parameter of the method.
-                        if (!ParameterIsAssignable(rhsParam, c.TestValues[i].Type)) {
-                            throw Error.TestValueTypeDoesNotMatchComparisonMethodParameter(c.TestValues[i].Type, rhsParam.ParameterType);
+                        Type rightOperandType = c.TestValues[i].Type;
+                        if (liftedCall) {
+                            if (!rightOperandType.IsNullableType()) {
+                                throw Error.TestValueTypeDoesNotMatchComparisonMethodParameter(rightOperandType, rightParam.ParameterType);
+                            }
+                            rightOperandType = rightOperandType.GetNonNullableType();
+                        }
+                        if (!ParameterIsAssignable(rightParam, rightOperandType)) {
+                            throw Error.TestValueTypeDoesNotMatchComparisonMethodParameter(rightOperandType, rightParam.ParameterType);
                         }
                     }
                 }
@@ -196,7 +222,7 @@ namespace System.Linq.Expressions {
                 var firstTestValue = caseList[0].TestValues[0];
                 foreach (var c in caseList) {
                     ContractUtils.RequiresNotNull(c, "cases");
-                    ValidateSwitchCaseType(c, type, switchType, "cases");
+                    ValidateSwitchCaseType(c.Body, customType, resultType, "cases");
                     // When no comparison method is provided, require all test values to have the same type.
                     for (int i = 0; i < c.TestValues.Count; i++) {
                         if (firstTestValue.Type != c.TestValues[i].Type) {
@@ -215,17 +241,9 @@ namespace System.Linq.Expressions {
             }
 
             if (defaultBody == null) {
-                if (type != null) {
-                    ContractUtils.Requires(type == typeof(void), "defaultBody", Strings.DefaultBodyMustBeSupplied);
-                } else {
-                    ContractUtils.Requires(switchType == typeof(void), "defaultBody", Strings.DefaultBodyMustBeSupplied);
-                }
+                ContractUtils.Requires(resultType == typeof(void), "defaultBody", Strings.DefaultBodyMustBeSupplied);
             } else {
-                if (type != null) {
-                    ContractUtils.Requires(TypeUtils.AreReferenceAssignable(type, defaultBody.Type), "defaultBody", Strings.ArgumentTypesMustMatch);
-                } else {
-                    ContractUtils.Requires(switchType == defaultBody.Type, "cases", Strings.AllCaseBodiesMustHaveSameType);
-                }
+                ValidateSwitchCaseType(defaultBody, customType, resultType, "defaultBody");
             }
 
             // if we have a non-boolean userdefined equals, we don't want it.
@@ -233,22 +251,24 @@ namespace System.Linq.Expressions {
                 throw Error.EqualityMustReturnBoolean(comparison);
             }
 
-            return new SwitchExpression(type ?? switchType, switchValue, defaultBody, comparison, caseList);
+            return new SwitchExpression(resultType, switchValue, defaultBody, comparison, caseList);
         }
 
 
         /// <summary>
-        /// When nodeType is not null, validate that the type of the switch case's body is reference assignable to
-        /// the nodeType. Otherwise, validate the type of the switch case's body is the same as switchType.
+        /// If custom type is provided, all branches must be reference assignable to the result type.
+        /// If no custom type is provided, all branches must have the same type - resultType.
         /// </summary>
-        private static void ValidateSwitchCaseType(SwitchCase switchCase, Type nodeType, Type switchType, string casesParamName) {
-            if (nodeType != null) {
-                if (!TypeUtils.AreReferenceAssignable(nodeType, switchCase.Body.Type)) {
-                    throw new ArgumentException(Strings.ArgumentTypesMustMatch, casesParamName);
+        private static void ValidateSwitchCaseType(Expression @case, bool customType, Type resultType, string parameterName) {
+            if (customType) {
+                if (resultType != typeof(void)) {
+                    if (!TypeUtils.AreReferenceAssignable(resultType, @case.Type)) {
+                        throw new ArgumentException(Strings.ArgumentTypesMustMatch, parameterName);
+                    }
                 }
             } else {
-                if (switchType != switchCase.Body.Type) {
-                    throw new ArgumentException(Strings.AllCaseBodiesMustHaveSameType, casesParamName);
+                if (resultType != @case.Type) {
+                    throw new ArgumentException(Strings.AllCaseBodiesMustHaveSameType, parameterName);
                 }
             }
         }

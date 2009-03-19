@@ -368,7 +368,7 @@ class CSProjCompiler
 
   def transform_config_file(configuration, source_path, target_build_path)
     # signing is on for IronRuby in Merlin, off for SVN and Binary
-    layout = {'Merlin' => { :LibraryPaths => '..\..\Languages\Ruby\libs;..\..\..\External\Languages\Ruby\Ruby-1.8.6\lib\ruby\site_ruby\1.8;..\..\..\External\Languages\Ruby\Ruby-1.8.6\lib\ruby\site_ruby;..\..\..\External\Languages\Ruby\Ruby-1.8.6\lib\ruby\1.8' }, 
+    layout = {'Merlin' => { :LibraryPaths => '..\..\Languages\Ruby\libs;..\..\..\External\Languages\Ruby\Ruby-1.8.6p287\lib\ruby\site_ruby\1.8;..\..\..\External\Languages\Ruby\Ruby-1.8.6p287\lib\ruby\site_ruby;..\..\..\External\Languages\Ruby\Ruby-1.8.6p287\lib\ruby\1.8' }, 
               'Binary' => { :LibraryPaths => '..\lib\IronRuby;..\lib\ruby\site_ruby\1.8;..\lib\ruby\site_ruby;..\lib\ruby\1.8' } }
     
     transform_config source_path, target_build_path, layout[configuration][:LibraryPaths]

@@ -47,28 +47,13 @@ namespace IronRuby.Builtins {
                 : base(expression, restrictions, value) {
             }
 
-            public override DynamicMetaObject/*!*/ BindInvoke(InvokeBinder/*!*/ binder, DynamicMetaObject/*!*/[]/*!*/ args) {
-                RubyCallSignature callSignature;
-                if (RubyCallSignature.TryCreate(binder.CallInfo, out callSignature)) {
-                    return binder.FallbackInvoke(this, args);
-                }
-
-                var self = (RubyMethod)Value;
-
-                var context = new DynamicMetaObject(
-                    Methods.GetContextFromMethod.OpCall(AstUtils.Convert(Expression, typeof(RubyMethod))),
-                    BindingRestrictions.Empty,
-                    RubyOps.GetContextFromMethod(self)
-                );
-
-                var metaBuilder = new MetaObjectBuilder();
-                Value.SetRuleForCall(metaBuilder, new CallArguments(context, this, args, callSignature));
-                return metaBuilder.CreateMetaObject(binder);
+            public override DynamicMetaObject/*!*/ BindConvert(ConvertBinder/*!*/ binder) {
+                return InteropBinder.TryBindCovertToDelegate(this, binder, Methods.CreateDelegateFromMethod) 
+                    ?? base.BindConvert(binder);
             }
 
-            public override DynamicMetaObject/*!*/ BindConvert(ConvertBinder/*!*/ binder) {
-                return RubyBinder.TryBindCovertToDelegate(this, binder, Methods.CreateDelegateFromMethod) 
-                    ?? base.BindConvert(binder);
+            public override DynamicMetaObject/*!*/ BindInvoke(InvokeBinder/*!*/ binder, DynamicMetaObject/*!*/[]/*!*/ args) {
+                return InteropBinder.Invoke.Bind(Context, binder, this, args, Value.BuildInvoke);
             }
         }
     }

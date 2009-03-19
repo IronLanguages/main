@@ -20,10 +20,9 @@ using System.Linq.Expressions;
 using System.Reflection;
 using System.Text;
 using Microsoft.Contracts;
-using Microsoft.Scripting.Actions;
+using Microsoft.Scripting.Generation;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
-using Microsoft.Scripting.Generation;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace Microsoft.Scripting.Actions.Calls {
@@ -106,6 +105,121 @@ namespace Microsoft.Scripting.Actions.Calls {
             return string.Format("MethodTarget({0} on {1})", Method, Method.DeclaringType.FullName);
         }
 
+        internal OptimizingCallDelegate MakeDelegate(ParameterBinder parameterBinder, RestrictionInfo restrictionInfo) {
+            MethodInfo mi = Method as MethodInfo;
+            if (mi == null) {
+                return null;
+            }
+
+            Type declType = mi.GetBaseDefinition().DeclaringType;
+            if (declType != null &&
+                declType.Assembly == typeof(string).Assembly &&
+                declType.IsSubclassOf(typeof(MemberInfo))) {
+                // members of reflection are off limits via reflection in partial trust
+                return null;
+            }
+
+            if (_returnBuilder.CountOutParams > 0) {
+                return null;
+            }
+
+            // if we have a non-visible method see if we can find a better method which
+            // will call the same thing but is visible.  If this fails we still bind anyway - it's
+            // the callers responsibility to filter out non-visible methods.
+            mi = CompilerHelpers.TryGetCallableMethod(mi);
+
+            Func<object[], object>[] builders = new Func<object[],object>[_argBuilders.Count];
+            bool[] hasBeenUsed = new bool[restrictionInfo.Objects.Length];
+
+            for (int i = 0; i < _argBuilders.Count; i++) {
+                if (!_argBuilders[i].CanGenerateDelegate) {
+                    return null;
+                }
+
+                builders[i] = _argBuilders[i].ToDelegate(parameterBinder, restrictionInfo.Objects, hasBeenUsed);
+            }
+            
+            if (_instanceBuilder != null && !(_instanceBuilder is NullArgBuilder)) {
+                return new Caller(mi, builders, _instanceBuilder.ToDelegate(parameterBinder, restrictionInfo.Objects, hasBeenUsed)).CallWithInstance;
+            } else {
+                return new Caller(mi, builders, null).Call;
+            }
+        }
+
+        class Caller {
+            private readonly Func<object[], object>[] _argBuilders;
+            private readonly Func<object[], object> _instanceBuilder;
+            private readonly MethodInfo _mi;
+            private ReflectedCaller _caller;            
+            private int _hitCount;
+
+            public Caller(MethodInfo mi, Func<object[], object>[] argBuilders, Func<object[], object> instanceBuilder) {
+                _mi = mi;
+                _argBuilders = argBuilders;
+                _instanceBuilder = instanceBuilder;                
+            }
+
+            public object Call(object[] args, out bool shouldOptimize) {
+                shouldOptimize = TrackUsage(args);
+
+                try {
+                    if (_caller != null) {
+                        return _caller.Invoke(GetArguments(args));
+                    }
+                    return _mi.Invoke(null, GetArguments(args));
+                } catch (TargetInvocationException tie) {
+                    ExceptionHelpers.UpdateForRethrow(tie.InnerException);
+                    throw tie.InnerException;
+                }
+            }
+
+            public object CallWithInstance(object[] args, out bool shouldOptimize) {
+                shouldOptimize = TrackUsage(args);
+
+                try {
+                    if (_caller != null) {
+                        return _caller.InvokeInstance(_instanceBuilder(args), GetArguments(args));
+                    }
+
+                    return _mi.Invoke(_instanceBuilder(args), GetArguments(args));
+                } catch (TargetInvocationException tie) {
+                    ExceptionHelpers.UpdateForRethrow(tie.InnerException);
+                    throw tie.InnerException;
+                }
+            }
+
+            private object[] GetArguments(object[] args) {
+                object[] finalArgs = new object[_argBuilders.Length];
+                for (int i = 0; i < finalArgs.Length; i++) {
+                    finalArgs[i] = _argBuilders[i](args);
+                }
+                return finalArgs;
+            }
+
+            private bool TrackUsage(object[] args) {
+                bool shouldOptimize;
+                _hitCount++;
+                shouldOptimize = false;
+
+                bool forceCaller = false;
+                if (_hitCount <= 100 && _caller == null) {
+                    foreach (object o in args) {
+                        // can't pass Missing.Value via reflection, use a ReflectedCaller
+                        if (o == Missing.Value) {
+                            forceCaller = true;
+                        }
+                    }
+                }
+
+                if (_hitCount > 100) {
+                    shouldOptimize = true;
+                } else if ((_hitCount > 5 || forceCaller) && _caller == null) {
+                    _caller = ReflectedCaller.Create(_mi);
+                }
+                return shouldOptimize;
+            }            
+        }
+
         internal Expression MakeExpression(ParameterBinder parameterBinder, IList<Expression> parameters) {
             bool[] usageMarkers;
             Expression[] spilledArgs;
@@ -115,7 +229,10 @@ namespace Microsoft.Scripting.Actions.Calls {
             MethodInfo mi = mb as MethodInfo;
             Expression ret, call;
             if (mi != null) {
-                mb = CompilerHelpers.GetCallableMethod(mi, _binder._binder.PrivateBinding);
+                // if we have a non-visible method see if we can find a better method which
+                // will call the same thing but is visible.  If this fails we still bind anyway - it's
+                // the callers responsibility to filter out non-visible methods.
+                mb = CompilerHelpers.TryGetCallableMethod(mi);
             }
 
             ConstructorInfo ci = mb as ConstructorInfo;
@@ -214,7 +331,7 @@ namespace Microsoft.Scripting.Actions.Calls {
             }
             
             if (actualArgs != null) {                
-                for (int i = 0, n = args.Length; i < n;  i++) {
+                for (int i = 0; i < args.Length;  i++) {
                     if (args[i] != null && actualArgs[i] == null) {
                         actualArgs[i] = parameterBinder.GetTemporary(args[i].Type, null);
                         args[i] = Expression.Assign(actualArgs[i], args[i]);
@@ -386,4 +503,6 @@ namespace Microsoft.Scripting.Actions.Calls {
             return consuming;
         }
     }
+
+    public delegate object OptimizingCallDelegate(object[]args, out bool shouldOptimize);
 }

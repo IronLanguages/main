@@ -1,0 +1,33 @@
+
+<html>
+<head><title>new (Log4r::DateFileOutputter)</title>
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+<style>
+  .kw { color: #3333FF; font-weight: bold }
+  .cmt { color: green; font-style: italic }
+  .str { color: #662222; font-style: italic }
+  .re  { color: #662222; }
+</style>
+</head>
+<body bgcolor="white">
+<pre><span class="cmt"># File log4r/outputter/datefileoutputter.rb, line 47</span>
+    <span class="kw">def</span> initialize(_name, hash={})
+      @DatePattern = (hash[:date_pattern] <span class="kw">or</span> hash[<span class="str">'date_pattern'</span>] <span class="kw">or</span>
+                      DEFAULT_DATE_FMT)
+      @DateStamp = Time.now.strftime( @DatePattern);
+      _dirname = (hash[:dirname] <span class="kw">or</span> hash[<span class="str">'dirname'</span>])
+      <span class="cmt"># hash[:dirname] masks hash[:filename]</span>
+      <span class="kw">if</span> _dirname
+        <span class="kw">if</span> <span class="kw">not</span> FileTest.directory?( _dirname)
+          raise StandardError, &quot;'#{_dirname}' must be a valid directory&quot;, caller
+        <span class="kw">end</span>
+        @filebase = File.basename( $0, <span class="str">'.rb'</span>) + <span class="str">&quot;.log&quot;</span>
+      <span class="kw">else</span>
+        @filebase = File.basename((hash[:filename] <span class="kw">or</span> hash[<span class="str">'filename'</span>] <span class="kw">or</span> <span class="str">&quot;&quot;</span>))
+      <span class="kw">end</span>
+      hash[<span class="str">'filename'</span>] = File.join(_dirname,
+                    @filebase.sub(<span class="re">/(\.\w*)$/</span>, &quot;_#{@DateStamp}&quot; + <span class="str">'\1'</span>))
+      <span class="kw">super</span>(_name, hash)
+    <span class="kw">end</span></pre>
+</body>
+</html>

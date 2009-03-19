@@ -616,8 +616,7 @@ namespace IronRuby.Runtime {
                 return null;
             }
 
-            // TODO: default encoding:
-            var sourceUnit = _context.CreateFileUnit(path, BinaryEncoding.Instance, SourceCodeKind.File);
+            var sourceUnit = language.CreateFileUnit(path, (_context.KCode ?? RubyEncoding.Binary).Encoding, SourceCodeKind.File);
             return new ResolvedFile(sourceUnit, extensionAppended ? extension : null);
         }
 

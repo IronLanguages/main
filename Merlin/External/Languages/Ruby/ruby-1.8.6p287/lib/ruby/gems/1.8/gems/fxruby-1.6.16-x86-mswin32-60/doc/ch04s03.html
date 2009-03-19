@@ -1,0 +1,37 @@
+<html><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+   <title>Sending Data to the Clipboard</title><link rel="stylesheet" href="style.css" type="text/css"><meta name="generator" content="DocBook v5 XSL Stylesheets V1.72.0"><link rel="start" href="book.html" title="Developing Graphical User Interfaces with FXRuby"><link rel="up" href="clipboardtut.html" title="Chapter&nbsp;4.&nbsp;Working With the Clipboard"><link rel="prev" href="ch04s02.html" title="Acquiring the Clipboard"><link rel="next" href="ch04s04.html" title="Pasting Data from the Clipboard"></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="3" align="center">Sending Data to the Clipboard</th></tr><tr><td width="20%" align="left"><a accesskey="p" href="ch04s02.html">Prev</a>&nbsp;</td><th width="60%" align="center">Chapter&nbsp;4.&nbsp;Working With the Clipboard</th><td width="20%" align="right">&nbsp;<a accesskey="n" href="ch04s04.html">Next</a></td></tr></table><hr></div><div class="section" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="d0e1071"></a>Sending Data to the Clipboard</h2></div></div></div><p>Whenever some other window requests the clipboard's contents (e.g.
+    as a result of a "paste" operation) FOX will send a
+    <code class="constant">SEL_CLIPBOARD_REQUEST</code> message to the current
+    clipboard owner. Remember, the clipboard owner is the window that called
+    <code class="methodname">acquireClipboard()</code>. For our example, the main
+    window is acting as the clipboard owner and so it needs to handle the
+    <code class="constant">SEL_CLIPBOARD_REQUEST</code> message:</p><pre class="programlisting"># Handle clipboard request
+self.connect(SEL_CLIPBOARD_REQUEST) do
+  setDNDData(FROM_CLIPBOARD, FXWindow.stringType, Fox.fxencodeStringData(@clippedCustomer.to_s))
+end
+</pre><p>The <code class="methodname">setDNDData()</code> method takes three
+    arguments. The first argument tells FOX which kind of data transfer we're
+    trying to accomplish; as it turns out, this method can be used for
+    drag-and-drop (<code class="constant">FROM_DRAGNDROP</code>) and X11 selection
+    (<code class="constant">FROM_SELECTION</code>) data transfer as well. The second
+    argument to <code class="methodname">setDNDData()</code> is the drag type for the
+    data and the last argument is the data itself, a binary string.</p><p>If you're wondering why we need to call the
+    <code class="methodname">fxencodeStringData()</code> module method to preprocess
+    the string returned by the call to <code class="methodname">Customer#to_s</code>,
+    that's a reasonable thing to wonder about. In order for FOX to play nice
+    with other clipboard-aware applications, it must be able to store string
+    data on the clipboard in the format expected by those applications.
+    Unfortunately, that expected format is platform-dependent and does not
+    always correspond directly to the format that Ruby uses internally to
+    store its string data. The <code class="methodname">fxencodeStringData()</code>
+    method (and the corresponding
+    <code class="methodname">fxdecodeStringData()</code> method) provide you with a
+    platform-independent way of sending (or receiving) string data with the
+    <code class="constant">stringType</code> drag type.</p><p>If you run the program as it currently stands, you should now be
+    able to select a customer from the list, click the "Copy" button and then
+    paste the selected customer data (as a string) into some other
+    application. For example, if you're trying this tutorial on a Windows
+    machine, try pasting into a copy of Notepad or Microsoft Word. The pasted
+    text should look something like:</p><pre class="programlisting">#&lt;struct Struct::Customer name="Joe Smith", address="123 Maple, Anytown, NC", zip=12345&gt;
+</pre></div><div class="navfooter"><hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="ch04s02.html">Prev</a>&nbsp;</td><td width="20%" align="center"><a accesskey="u" href="clipboardtut.html">Up</a></td><td width="40%" align="right">&nbsp;<a accesskey="n" href="ch04s04.html">Next</a></td></tr><tr><td width="40%" align="left" valign="top">Acquiring the Clipboard&nbsp;</td><td width="20%" align="center"><a accesskey="h" href="book.html">Home</a></td><td width="40%" align="right" valign="top">&nbsp;Pasting Data from the Clipboard</td></tr></table></div></body></html>

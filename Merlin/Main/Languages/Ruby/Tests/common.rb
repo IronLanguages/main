@@ -30,7 +30,7 @@ module TestPath
         MERLIN_ROOT     = get_environment_variable('MERLIN_ROOT')
         TEST_DIR        = MERLIN_ROOT + "/Languages/Ruby/Tests"
         CORECLR_ROOT    = MERLIN_ROOT + "/Utilities/Silverlight/x86ret"
-        CRUBY_EXE       = MERLIN_ROOT + "/../External/Languages/Ruby/ruby-1.8.6/bin/ruby.exe"
+        CRUBY_EXE       = get_environment_variable('RUBY18_EXE')
         
         ROWAN_BIN       = get_environment_variable('ROWAN_BIN')
 
@@ -39,10 +39,15 @@ module TestPath
             IRUBY_EXE       = MERLIN_ROOT + "/Test/Scripts/ir.cmd"
             IPYTHON_EXE     = ROWAN_BIN + "/ipy.exe"
         else
-            IRUBY_EXE       = MERLIN_ROOT + "/Test/Scripts/ir.cmd"
+            ir_cmd          = MERLIN_ROOT + "/Test/Scripts/ir.cmd"
+            if File.exists? ir_cmd then
+                IRUBY_EXE   = ir_cmd
+            else
+                IRUBY_EXE   = MERLIN_ROOT + "/bin/debug/ir.exe" # ir.cmd does not exist in GIT
+            end
             IPYTHON_EXE     = MERLIN_ROOT + "/bin/debug/ipy.exe"
-        end 
-        
+        end
+                
         PARSEONLY_EXE   = IPYTHON_EXE + " " + TEST_DIR + "/Tools/parseonly.py " 
     else
         TEST_DIR        = File.expand_path(File.dirname(__FILE__))

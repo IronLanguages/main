@@ -126,7 +126,8 @@ namespace IronPython.Compiler.Ast {
         }
         
         internal override MSAst.Expression Transform(AstGenerator ag) {
-            AstGenerator builder = new AstGenerator(ag, SymbolTable.IdToString(_name), false, false);
+            string className = SymbolTable.IdToString(_name);
+            AstGenerator builder = new AstGenerator(ag, className, false, "class " + className);
 
             // we always need to create a nested context for class defs
             builder.CreateNestedContext();

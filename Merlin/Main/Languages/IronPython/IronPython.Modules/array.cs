@@ -112,6 +112,9 @@ namespace IronPython.Modules {
             }
 
             public static PythonArray operator *(PythonArray array, int value) {
+                if ((BigInteger)value * array.__len__() * array.itemsize > SysModule.maxsize) {
+                    throw PythonOps.MemoryError("");
+                }
                 PythonArray data = new PythonArray(array.typecode, Type.Missing);
                 for (int i = 0; i < value; i++) {
                     data.extend(array);
@@ -120,6 +123,9 @@ namespace IronPython.Modules {
             }
 
             public static PythonArray operator *(PythonArray array, BigInteger value) {
+                if (value * array.__len__() * array.itemsize > SysModule.maxsize) {
+                    throw PythonOps.MemoryError("");
+                }
                 int intValue;
                 if (!value.AsInt32(out intValue)) {
                     throw PythonOps.OverflowError("cannot fit 'long' into an index-sized integer");
@@ -128,6 +134,9 @@ namespace IronPython.Modules {
             }
 
             public static PythonArray operator *(int value, PythonArray array) {
+                if ((BigInteger)value * array.__len__() * array.itemsize > SysModule.maxsize) {
+                    throw PythonOps.MemoryError("");
+                }
                 PythonArray data = new PythonArray(array.typecode, Type.Missing);
                 for (int i = 0; i < value; i++) {
                     data.extend(array);
@@ -136,6 +145,9 @@ namespace IronPython.Modules {
             }
 
             public static PythonArray operator *(BigInteger value, PythonArray array) {
+                if (value * array.__len__() * array.itemsize > SysModule.maxsize) {
+                    throw PythonOps.MemoryError("");
+                }
                 int intValue;
                 if (!value.AsInt32(out intValue)) {
                     throw PythonOps.OverflowError("cannot fit 'long' into an index-sized integer");

@@ -49,8 +49,8 @@ msip    =%windir%\system32\WindowsPowerShell\v1.0\powershell.exe measure-command
 rbx     =%MERLIN_ROOT%\Bin\Debug\ir.exe $*
 rbr     =%MERLIN_ROOT%\Bin\Release\ir.exe $*
 rbd     =%MERLIN_ROOT%\Bin\Debug\ir.exe -D $*
-irb19   =%MERLIN_ROOT%\..\External\Languages\Ruby\ruby-1.9.0-0\bin\irb.bat $*
-ruby19  =%MERLIN_ROOT%\..\External\Languages\Ruby\ruby-1.9.0-0\bin\ruby.exe $*
+irb19   =%MERLIN_ROOT%\..\External\Languages\Ruby\ruby-1.9.1p0\bin\irb.bat $*
+ruby19  =%MERLIN_ROOT%\..\External\Languages\Ruby\ruby-1.9.1p0\bin\ruby.exe $*
 
 ;==============================================================================
 ;= Chiron aliases

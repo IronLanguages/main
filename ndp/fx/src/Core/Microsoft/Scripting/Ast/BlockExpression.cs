@@ -23,8 +23,10 @@ namespace System.Linq.Expressions {
     /// <summary>
     /// Represents a block that contains a sequence of expressions where variables can be defined.
     /// </summary>
+#if !SILVERLIGHT
+    [DebuggerTypeProxy(typeof(Expression.BlockExpressionProxy))]
+#endif
     public class BlockExpression : Expression {
-
         /// <summary>
         /// Gets the expressions in this block.
         /// </summary>
@@ -124,16 +126,16 @@ namespace System.Linq.Expressions {
         /// supports nodes which hold onto 5 Expressions and puts all of the arguments into the
         /// ReadOnlyCollection.
         /// 
-        /// Ultimately this means if we create the ROC we will be slightly more wasteful as we'll
-        /// have a ROC + some fields in the type.  The DLR internally avoids accessing anything
-        /// which would force the ROC to be created.
+        /// Ultimately this means if we create the readonly collection we will be slightly more wasteful as we'll
+        /// have a readonly collection + some fields in the type.  The DLR internally avoids accessing anything
+        /// which would force the readonly collection to be created.
         /// 
         /// This is used by BlockExpression5 and MethodCallExpression5.
         /// </summary>
         internal static ReadOnlyCollection<Expression> ReturnReadOnlyExpressions(BlockExpression provider, ref object collection) {
             Expression tObj = collection as Expression;
             if (tObj != null) {
-                // otherwise make sure only one ROC ever gets exposed
+                // otherwise make sure only one readonly collection ever gets exposed
                 Interlocked.CompareExchange(
                     ref collection,
                     new ReadOnlyCollection<Expression>(new BlockExpressionList(provider, tObj)),
@@ -141,7 +143,7 @@ namespace System.Linq.Expressions {
                 );
             }
 
-            // and return what is not guaranteed to be a ROC
+            // and return what is not guaranteed to be a readonly collection
             return (ReadOnlyCollection<Expression>)collection;
         }
     }
@@ -149,7 +151,7 @@ namespace System.Linq.Expressions {
     #region Specialized Subclasses
 
     internal sealed class Block2 : BlockExpression {
-        private object _arg0;                   // storage for the 1st argument or a ROC.  See IArgumentProvider
+        private object _arg0;                   // storage for the 1st argument or a readonly collection.  See IArgumentProvider
         private readonly Expression _arg1;      // storage for the 2nd argument.
 
         internal Block2(Expression arg0, Expression arg1) {
@@ -184,7 +186,7 @@ namespace System.Linq.Expressions {
     }
 
     internal sealed class Block3 : BlockExpression {
-        private object _arg0;                       // storage for the 1st argument or a ROC.  See IArgumentProvider
+        private object _arg0;                       // storage for the 1st argument or a readonly collection.  See IArgumentProvider
         private readonly Expression _arg1, _arg2;   // storage for the 2nd and 3rd arguments.
 
         internal Block3(Expression arg0, Expression arg1, Expression arg2) {
@@ -221,7 +223,7 @@ namespace System.Linq.Expressions {
     }
 
     internal sealed class Block4 : BlockExpression {
-        private object _arg0;                               // storage for the 1st argument or a ROC.  See IArgumentProvider
+        private object _arg0;                               // storage for the 1st argument or a readonly collection.  See IArgumentProvider
         private readonly Expression _arg1, _arg2, _arg3;    // storarg for the 2nd, 3rd, and 4th arguments.
 
         internal Block4(Expression arg0, Expression arg1, Expression arg2, Expression arg3) {
@@ -260,7 +262,7 @@ namespace System.Linq.Expressions {
     }
 
     internal sealed class Block5 : BlockExpression {
-        private object _arg0;                                       // storage for the 1st argument or a ROC.  See IArgumentProvider
+        private object _arg0;                                       // storage for the 1st argument or a readonly collection.  See IArgumentProvider
         private readonly Expression _arg1, _arg2, _arg3, _arg4;     // storage for the 2nd - 5th args.
 
         internal Block5(Expression arg0, Expression arg1, Expression arg2, Expression arg3, Expression arg4) {
@@ -333,7 +335,7 @@ namespace System.Linq.Expressions {
     }
 
     internal class ScopeExpression : BlockExpression {
-        private IList<ParameterExpression> _variables;      // list of variables or ReadOnlyCollection if the user has accessed the ROC
+        private IList<ParameterExpression> _variables;      // list of variables or ReadOnlyCollection if the user has accessed the readonly collection
 
         internal ScopeExpression(IList<ParameterExpression> variables) {
             _variables = variables;

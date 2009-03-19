@@ -45,13 +45,21 @@ namespace Microsoft.Scripting.Runtime {
 
             if (type == self.Expression.Type) {
                 if (type.IsSealedOrValueType()) {
-                    return self;
+                    return new DynamicMetaObject(
+                        self.Expression,
+                        self.Restrictions.Merge(BindingRestrictionsHelpers.GetRuntimeTypeRestriction(self.Expression, type)),
+                        self.Value
+                    );
                 }
 
                 if (self.Expression.NodeType == ExpressionType.New ||
                     self.Expression.NodeType == ExpressionType.NewArrayBounds ||
                     self.Expression.NodeType == ExpressionType.NewArrayInit) {
-                    return self;
+                    return new DynamicMetaObject(
+                        self.Expression,
+                        self.Restrictions.Merge(BindingRestrictionsHelpers.GetRuntimeTypeRestriction(self.Expression, type)),
+                        self.Value
+                    );
                 }
             }
 

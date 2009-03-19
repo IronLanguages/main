@@ -93,7 +93,7 @@ namespace IronRuby.Compiler.Ast {
 
         internal MSA.Expression/*!*/ TransformIsDefined(AstGenerator/*!*/ gen) {
             MSA.Expression condition = TransformDefinedCondition(gen);
-            MSA.Expression result = Methods.CreateMutableStringB.OpCall(AstUtils.Constant(GetNodeName(gen)));
+            MSA.Expression result = Methods.CreateMutableStringL.OpCall(AstUtils.Constant(GetNodeName(gen)), Ast.Constant(gen.Encoding));
             return (condition != null) ? Ast.Condition(condition, result, AstFactory.NullOfMutableString) : result;
         }
 

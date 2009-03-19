@@ -19,6 +19,7 @@ using IronRuby.Runtime;
 using Microsoft.Scripting;
 using Microsoft.Scripting.Hosting.Shell;
 using Microsoft.Scripting.Runtime;
+using System.Reflection;
 using System.Threading;
 
 namespace IronRuby.Hosting {
@@ -32,9 +33,16 @@ namespace IronRuby.Hosting {
 
         protected override string Logo {
             get {
-                return String.Format("IronRuby {1} on .NET {2}{0}Copyright (c) Microsoft Corporation. All rights reserved.{0}{0}",
-                    Environment.NewLine, RubyContext.IronRubyVersion, Environment.Version);
+                return String.Format("IronRuby {1} on {2}{0}Copyright (c) Microsoft Corporation. All rights reserved.{0}{0}",
+                    Environment.NewLine, RubyContext.IronRubyVersion, GetRuntime());
             }
+        }
+
+        private static string GetRuntime() {
+            Type mono = typeof(object).Assembly.GetType("Mono.Runtime");
+            return mono != null ?
+                (string)mono.GetMethod("GetDisplayName", BindingFlags.Static | BindingFlags.NonPublic).Invoke(null, null)
+                : string.Format(".NET {0}", Environment.Version);
         }
 
         protected override int? TryInteractiveAction() {
@@ -52,9 +60,9 @@ namespace IronRuby.Hosting {
             }
         }
 
-        // overridden to set the default encoding to BINARY
+        // overridden to set the default encoding to KCODE/BINARY
         protected override int RunFile(string fileName) {
-            return RunFile(Engine.CreateScriptSourceFromFile(fileName, BinaryEncoding.Instance));
+            return RunFile(Engine.CreateScriptSourceFromFile(fileName, (((RubyContext)Language).RubyOptions.KCode ?? RubyEncoding.Binary).Encoding));
         }
 
         protected override Scope/*!*/ CreateScope() {

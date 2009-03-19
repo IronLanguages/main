@@ -1,0 +1,111 @@
+body {
+	background-color: #FFFFFF;
+	font-family:sans-serif;
+}
+
+a:link { color:#014DA3 }
+a:active { color:#AA0000 }
+a:visited { color:#014DA3 }
+a:hoover { color:#AA0000 }
+
+.example {
+	font-family: monospace;
+	border:1px solid #007;
+	background:#FFFFFF;
+	margin:1em;
+}
+
+pre.box {
+	margin:0px 1em 1em 1em;
+	color:#AA0000;
+}
+
+.menu {
+	font-family:sans-serif;
+	font-size:10px;
+	border-left: 1px solid #AA0000;
+	border-right: 1px solid #AA0000;
+	border-bottom: 1px solid #AA0000;
+	background:#EEEEEE;
+	color:#AA0000;
+}
+
+.menutitle {
+  font-family:sans-serif;
+  font-size:medium;
+  color:#FFFFFF;
+  font-weight:bold;
+  background:#AA0000;
+  border-right: 1px solid #AA0000;
+  border-left: 1px solid #AA0000;
+  border-top: 1px solid #AA0000;
+  border-bottom: 1px solid #AA0000;
+}
+
+.menubuff {
+  font-family:sans-serif;
+  font-size:1px;
+  color:#000000;
+  border-left: 1px solid #AA0000;
+  border-right: 1px solid #AA0000;
+  font-weight:bold;
+  background-color: #99CCFF;
+  height:5;
+  padding-bottom: 0;
+}
+
+.contentbuff {
+	font-family:sans-serif;
+	font-size:10px;
+	border-left: 1px solid #AA0000;
+	border-right: 1px solid #AA0000;
+	font-weight:bold;
+	background-color: #99CCFF;
+  height:5;
+	padding-bottom: 0;
+}
+
+.header {
+	font-family:sans-serif;
+	color:#AA0000;
+}
+
+.content {
+  font-family:sans-serif;
+  font-size:medium;
+  color:#000000;
+  background:#EEEEEE;
+  border-right: 2px solid #AA0000;
+  border-left: 2px solid #AA0000;
+  border-bottom: 2px solid #AA0000;
+  padding-bottom: 5;
+  padding-right: 5;
+  padding-left: 5;
+  padding-top: 0;
+}
+.contenttitle {
+font-family:sans-serif;
+font-size:medium;
+color:#FFFFFF;
+font-weight:bold;
+background-color:#AA0000;
+border-left: 2px solid #AA0000;
+border-top: 1px solid #AA0000;
+border-right: 2px solid #AA0000;
+padding: 2;
+}
+
+.contentbuff {
+  font-family:sans-serif;
+  font-size:10px;
+  color:#014DA3;
+  border-left: 2px solid #AA0000;
+  border-right: 2px solid #AA0000;
+  font-weight:bold;
+  background-color:#99CCFF;
+  height:13;
+  padding-bottom: 0;
+}
+
+br { padding-bottom: 200 }
+

@@ -28,26 +28,26 @@ namespace IronRuby.Tests {
         public void RubyHosting_DelegateConversions() {
             var lambda = Engine.Execute(@"lambda { |a| a + 1 }");
             var result = Engine.Operations.Invoke(lambda, 5);
-            Debug.Assert((int)result == 6);
+            Assert((int)result == 6);
 
             var func = Engine.Operations.ConvertTo<Func<int, int>>(lambda);
-            Debug.Assert(func(10) == 11);
+            Assert(func(10) == 11);
 
             var method = Engine.Execute(@"def foo(a,b); a + b; end; method(:foo)");
             var func2 = Engine.Operations.ConvertTo<Func<int, int, int>>(method);
-            Debug.Assert(func2(1, 2) == 3);
+            Assert(func2(1, 2) == 3);
 
             Engine.Runtime.Globals.SetVariable("F1", typeof(Func<int, int>));
             var func3 = (Func<int, int>)Engine.Execute(@"F1.to_class.new { |a| a + 3 }");
-            Debug.Assert(func3(1) == 4);
+            Assert(func3(1) == 4);
 
-            // TODO:
-#if TODO
             var func4 = (Func<int, int>)Engine.Execute(@"F1.to_class.new lambda { |a| a + 4 }");
-            Debug.Assert(func4(1) == 5);
+            Assert(func4(1) == 5);
 
             var func5 = (Func<int, int>)Engine.Execute(@"F1.to_class.new(*[lambda { |a| a + 5 }])");
-            Debug.Assert(func5(1) == 6);
+            Assert(func5(1) == 6);
+
+            AssertExceptionThrown<ArgumentException>(() => Engine.Execute(@"F1.to_class.new(*[])"));
 
             if (_driver.RunPython) {
                 var py = Runtime.GetEngine("python");
@@ -60,9 +60,8 @@ py_add
 ");
                 Engine.Runtime.Globals.SetVariable("PyAdd", pyAdd);
                 var pyFunc = (Func<string[], string[], string[]>)Engine.Execute(@"F2.to_class.new PyAdd");
-                Debug.Assert(String.Join(";", pyFunc(new[] { "x" }, new[] { "y" })) == "x;y");
+                Assert(String.Join(";", pyFunc(new[] { "x" }, new[] { "y" })) == "x;y");
             }
-#endif
         }
 
         public void RubyHosting1A() {
@@ -166,7 +165,7 @@ bar
                 setup.InterpretedMode = true;
             });
 
-            Debug.Assert(ruby.Setup.InterpretedMode == true);
+            Assert(ruby.Setup.InterpretedMode == true);
         }
 
         public void Scenario_RubyEngine1() {
@@ -247,45 +246,6 @@ class C; include M; end
 "));
         }
 
-        public void Scenario_RubyConsole2() {
-#if OBSOLETE
-            // TODO: interop
-            ScriptScope module = ScriptDomainManager.CurrentManager.CreateModule("Scenario_RubyConsole2");
-            module.SetVariable("a", 0);
-            RB.Execute(module, RB.CreateScriptSourceFromString("10.times { |x| a = a + x + 1}", SourceCodeKind.Statements));
-            object a = module.LookupVariable("a");
-            Assert((int)a == 55);
-
-            module.SetVariable("b", 1);
-            RB.Execute(module, RB.CreateScriptSourceFromString("10.times { |x| b = b + x + 1}", SourceCodeKind.Statements));
-            object b = module.LookupVariable("b");
-            Assert((int)b == 56);
-#endif
-        }
-
-        public void Scenario_RubyConsole3() {
-            // TODO: bug in top-level scope
-
-            //            ScriptModule module = ScriptDomainManager.CurrentManager.CreateModule("Scenario_RubyConsole3");
-            //            RB.Execute(@"
-            //for i in [11] do
-            //    j = 1
-            //end", module);
-            //            object a = module.LookupVariable("j");
-            //            Assert((int)a == 1);
-        }
-
-        public void Scenario_RubyConsole4() {
-
-            //            XAssertOutput(delegate() {
-            //                RB.ExecuteInteractiveCode("x = 1");
-            //                RB.ExecuteInteractiveCode("puts x");
-            //            }, @"
-            //=> 1
-            //=> nil
-            //1");
-        }
-
         public void ObjectOperations1() {
             var cls = Engine.Execute(@"
 class C
@@ -296,13 +256,13 @@ class C
 end
 ");
             var obj = Engine.Operations.CreateInstance(cls) as RubyObject;
-            Debug.Assert(obj != null && obj.Class.Name == "C");
+            Assert(obj != null && obj.Class.Name == "C");
 
             obj = Engine.Operations.InvokeMember(cls, "new") as RubyObject;
-            Debug.Assert(obj != null && obj.Class.Name == "C");
+            Assert(obj != null && obj.Class.Name == "C");
 
             var foo = Engine.Operations.GetMember(obj, "foo") as RubyMethod;
-            Debug.Assert(foo != null && foo.Name == "foo" && foo.Target == obj);
+            Assert(foo != null && foo.Name == "foo" && foo.Target == obj);
 
             AssertOutput(() => Engine.Operations.Invoke(foo, 1, 2), "[1, 2]");
             AssertOutput(() => Engine.Operations.InvokeMember(obj, "foo", 1, 2), "[1, 2]");
@@ -340,15 +300,16 @@ end
             Engine.Execute(@"
 class C
   def foo
-    puts 'foo'
+    123
   end
 end
 ");
 
-            py.CreateScriptSourceFromString(@"
+            var result = py.Execute<int>(@"
 import C
-C.new().foo()    # TODO: C().foo()
-", SourceCodeKind.Statements).Execute();
+C().foo()
+");
+            Assert(result == 123);
         }
 
         public void PythonInterop2() {
@@ -356,14 +317,58 @@ C.new().foo()    # TODO: C().foo()
 
             var py = Runtime.GetEngine("python");
 
-            py.CreateScriptSourceFromString(@"
+            py.Execute(@"
 class C(object):
-  def foo(self):
-    print 'foo'
-", SourceCodeKind.Statements).Execute(Runtime.Globals);
+  def foo(self, a, b):
+    return a + b
+", Runtime.Globals);
+
+            Assert(Engine.Execute<int>("C.new.foo(3,4)") == 7);
+        }
+
+        public void PythonInterop3() {
+            if (!_driver.RunPython) return;
+
+            var py = Runtime.GetEngine("python");
+
+            var scope = py.CreateScope();
+            py.Execute(@"
+def python():
+  return 'Python'
+", scope);
 
             Engine.Execute(@"
-p C             #TODO: C.new
+def self.ruby
+  python.call + ' + Ruby'
+end
+", scope);
+
+            AssertOutput(() => py.Execute(@"
+print ruby()
+", scope), @"
+Python + Ruby
+");
+        }
+
+        public void PythonInterop4() {
+            if (!_driver.RunPython) return;
+
+            var py = Runtime.GetEngine("python");
+
+            var scope = py.CreateScope();
+            py.Execute(@"
+def get_python_class():
+  class C(object): 
+    def __str__(self):
+      return 'this is C'
+
+  return C()
+", scope);
+
+            AssertOutput(() => Engine.Execute(@"
+p get_python_class.call
+", scope), @"
+this is C
 ");
         }
 
@@ -393,9 +398,9 @@ class C
 end
 ");
             var obj = Engine.Operations.CreateInstance(cls);
-            Debug.Assert(obj != null);
+            Assert(obj != null);
             var ictd = Engine.Operations.CreateInstance(cls) as ICustomTypeDescriptor;
-            Debug.Assert(ictd != null);
+            Assert(ictd != null);
             Assert(ictd.GetClassName() == "C");
             var props = ictd.GetProperties();
             Assert(props.Count == 2);
@@ -414,9 +419,9 @@ class D < C
 end
 ");
             var obj = Engine.Operations.CreateInstance(cls);
-            Debug.Assert(obj != null);
+            Assert(obj != null);
             var ictd = Engine.Operations.CreateInstance(cls) as ICustomTypeDescriptor;
-            Debug.Assert(ictd != null);
+            Assert(ictd != null);
             Assert(ictd.GetClassName() == "D");
             var props = ictd.GetProperties();
             Assert(props.Count == 1);

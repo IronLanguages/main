@@ -129,6 +129,12 @@ namespace IronPython.Runtime.Types {
             }
         }
 
+        internal override bool CanOptimizeGets {
+            get {
+                return !_info.IsLiteral;
+            }
+        }
+
         internal override bool TrySetValue(CodeContext context, object instance, PythonType owner, object value) {
             if (ShouldSetOrDelete(owner)) {
                 DoSet(context, instance, value);

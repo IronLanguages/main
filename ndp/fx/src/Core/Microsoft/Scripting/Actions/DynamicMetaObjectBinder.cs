@@ -90,11 +90,11 @@ namespace System.Dynamic {
             Expression body = binding.Expression;
             BindingRestrictions restrictions = binding.Restrictions;
 
-            // if target is an IDO we may have a target-specific binding. 
-            // so it makes sense to restrict on the target's type.
-            // ideally IDO's should do this, but they often miss this.
-            if (args[0] as IDynamicMetaObjectProvider != null) {
-                restrictions = BindingRestrictions.GetTypeRestriction(parameters[0], args[0].GetType()).Merge(restrictions);
+            // if the target is IDO, standard binders ask it to bind the rule so we may have a target-specific binding. 
+            // it makes sense to restrict on the target's type in such cases.
+            // ideally IDO metaobjects should do this, but they often miss that type of "this" is significant.
+            if (IsStandardBinder && args[0] as IDynamicMetaObjectProvider != null) {
+                VerifyRestrictions(restrictions);
             }
 
             restrictions = AddRemoteObjectRestrictions(restrictions, args, parameters);
@@ -110,6 +110,12 @@ namespace System.Dynamic {
             }
 
             return body;
+        }
+
+        private static void VerifyRestrictions(BindingRestrictions restrictions) {
+            if (restrictions.Equals(BindingRestrictions.Empty)) {
+                throw new InvalidOperationException();
+            }
         }
 
         private static DynamicMetaObject[] CreateArgumentMetaObjects(object[] args, ReadOnlyCollection<ParameterExpression> parameters) {
@@ -260,6 +266,13 @@ namespace System.Dynamic {
             }
 
             return Expression.Convert(expression, type);
+        }
+
+        // used to detect standard MetaObjectBinders.
+        internal virtual bool IsStandardBinder {
+            get {
+                return false;
+            }
         }
 
 #if !SILVERLIGHT

@@ -1,0 +1,279 @@
+h2. Overview.
+
+A plugin for the Merb framework that allows you to send email from Merb application.
+It separates email composition and sending into micro MVC: you may have mail controllers
+that compose complex emails, emails have their own views and models (models use MailFactory
+library and non-persistable).
+
+
+h2. Installation.
+
+(sudo) gem install merb-mailer
+
+It will install "mailfactory":http://mailfactory.rubyforge.org/ gem and "mime-types":http://mime-types.rubyforge.org/ that mailfactory depends on.
+
+
+h2. Configuration.
+
+In init.rb, include a dependency on 'merb-mailer'.With versions of Merb earlier than 0.9.3 Merb::Mailer may raise a NameError when configuration is put into
+after_app_loads block. Put it to the very end of your init file and it should work. This problem does not exist in Git HEAD.
+
+
+h3. Using SMTP.
+
+<pre><code class="ruby">
+  Merb::Mailer.config = {
+    :host   => 'smtp.yourserver.com',
+    :port   => '25',
+    :user   => 'user',
+    :pass   => 'pass',
+    :auth   => :plain # :plain, :login, :cram_md5, the default is no auth
+    :domain => "localhost.localdomain" # the HELO domain provided by the client to the server
+  }
+</code></pre>  
+
+  
+h3. Using Gmail SMTP.
+
+Configuration example for Gmail SMTP:
+
+<pre><code class="ruby">
+Merb::Mailer.config = {
+  :host   => 'smtp.gmail.com',
+  :port   => '587',
+  :user   => 'user@gmail.com',
+  :pass   => 'pass',
+  :auth   => :plain
+}
+</code></pre>  
+
+* require the gem "smtptls"
+* Use :text option instead of :body when deliver.
+
+<pre><code class="ruby">
+m = Merb::Mailer.new :to      => 'foo@bar.com',
+                     :from    => 'bar@foo.com',
+                     :subject => 'Welcome to whatever!',
+                     :text    => partial(:sometemplate)
+m.deliver!
+</code></pre>
+
+h3. Using Sendmail.
+
+  Merb::Mailer.config = {:sendmail_path => '/somewhere/odd'}
+  Merb::Mailer.delivery_method = :sendmail
+
+
+
+h2. Sending mail from controllers.
+
+Merb mailer plugin has idea of separation of mailer logic from mailer templates
+to the point mailers in Merb have own tiny MVC architecture for emails.
+Your application controllers usually delegate email sending to mail controllers
+instead of doing it on their own.
+
+To send your mail using mail controller you use send_mail method that
+takes mail controller class, action name, mail parameters and action parameters.
+params hash with action parameters mentioned above is accessible in mail controller's
+action.
+
+<pre>
+<code class="ruby">
+def send_activation_email(person)
+	send_mail PeopleMailer, :activation, {
+		:from => "no-reply@example.com",
+		:to => person.email,
+		:subject => "Please activate your account"
+	}, {
+		:name => person.name
+	}
+end
+</code>
+</pre>
+
+Mail parameters you can specify:
+
+* :to
+* :from
+* :replyto
+* :subject
+* :body
+* :cc
+
+
+Example of Merb controller:
+<pre>
+<code class="ruby">
+class ProductDeliveryMailer < Merb::MailController
+  def notify_on_delivery
+	  @delivery_info = params[:details]
+		# you can access @delivery_info in rendered template
+    render_mail
+  end  
+end
+</code>
+</pre>
+
+Mail templates are kept under app/views/mail controller name/template name just like with regular controllers.
+Content types in template name may be either text or html, like in
+app/mailers/views/user_mailer/hello.text.erb for the mailer controller above:
+
+<pre>
+Hello <%= params[:name] %>
+</pre>
+
+render_mail works similarly to render method. It takes either action as Symbol or Hash of
+template paths. Most of the times naming templates the same as your actions works so you
+can just use
+
+<pre>
+<code class="ruby">
+class ResourceShortageMailer < Merb::MailController
+  def notify_on_disk_space_shortage
+    render_mail
+  end  
+end
+</code>
+</pre>
+
+and it will render app/mailers/views/resource_shortage_mailer/notify_on_disk_space_shortage.text.erb.
+
+If you need to specify template path explicitly, you can do it for both text and html:
+
+<pre>
+<code class="ruby">
+class ResourceShortageMailer < Merb::MailController
+  def notify_on_disk_space_shortage
+    render_mail :action => { :html => :hdd_space_shortage_detailed, :text => :hdd_space_shortage }
+  end  
+end
+</code>
+</pre>
+
+This will look for app/mailers/views/resource_shortage_mailer/hdd_space_shortage_detailed.html.erb for
+html and app/mailers/views/resource_shortage_mailer/hdd_space_shortage.text.erb for text.
+
+See Merb::MailerMixin#render_mail documentation for more examples, this method has a lot of options how you can use it.
+
+h2. Using Merb mailer to send emails outside of controllers.
+
+There are two ways of sending email with merb-mailer: using mail controllers and using just Merb::Mailer.
+Here is example of using Merb::Mailer to deliver emails from model hook.
+
+class Person
+	include DataMapper::Resource
+
+	after :create, :deliver_activation_notification
+
+  protected
+  
+  def deliver_activation_notification
+	  body_string = <<-EOS
+		  Please activate your account...
+		EOS
+	
+	  Merb::Mailer.new(
+		  :from    => "no-reply@webapp.com",
+			:to      => self.email,
+			:subject => "Activate your account",
+			:body    => body_string
+		).deliver!
+  end
+end
+
+In this example we deliver signup activation email from model hook.
+Keep in mind that Merb::Mailer is a thin wrapper around MailFactory that
+provides several ways of sending emails. You can access plain text email body
+with text method of mailer and html body with html method, respectively.
+
+
+
+h2. Testing mailers.
+
+A word of warning: merb-mailer does not raise exceptions when your template is not found.
+So if nothing gets rendered, check merb test environment log to make sure you have no
+warnings. If it is considered a bug, file a ticket to LightHouse.
+
+Make sure you use test sending method so emails won't be sent on each tests run.
+Add this line to your test file:
+
+<pre>
+<code class="ruby">
+Merb::Mailer.delivery_method = :test_send
+</code>
+</pre>
+
+Here is an example of helper to test mailers themselves:
+<pre>
+<code class="ruby">
+def describe_mail(mailer, template, &block)
+  describe "/#{mailer.to_s.downcase}/#{template}" do
+    before :each do
+      @mailer_class, @template = mailer, template
+      @assigns = {}
+    end
+
+    def deliver(send_params={}, mail_params={})
+      mail_params = {:from => "from@example.com", :to => "to@example.com", :subject => "Please activate your account"}.merge(mail_params)
+      @mailer_class.new(send_params).dispatch_and_deliver @template.to_sym, mail_params
+      @mail = Merb::Mailer.deliveries.last
+    end
+
+    instance_eval &block
+  end
+end
+</code>
+</pre>
+
+Mailer controller specs may look like this then:
+<pre>
+<code class="ruby">
+require File.join(File.dirname(__FILE__),'..','spec_helper')
+
+describe_mail UserMailer, :hello do
+  it "sends activation" do
+    deliver :name => "Jamie"
+    @mail.text.should == "Please activate your account, Jamie"
+  end
+end
+</code>
+</pre>
+
+Most of mail controller specs verify delivered email headers like
+to, subject or body. To access deliveries you use Merb::Mailer.deliveries
+array.
+
+It is recommended to clear it on test setup first:
+
+<pre>
+<code class="ruby">
+require File.join(File.dirname(__FILE__),'..','spec_helper')
+
+describe_mail UserMailer, :hello do
+  before :each do
+    Merb::Mailer.deliveries.clear
+	end
+end
+</code>
+</pre>
+
+To do actual matching you can create a helper like this:
+
+<pre>
+<code class="ruby">
+def last_delivered_email
+  Merb::Mailer.deliveries.last
+end
+</code>
+</pre>
+
+and use it like this:
+
+<pre>
+<code class="ruby">
+last_delivered_email.from.first.should == "no-reply@webapp.com"
+</code>
+</pre>
+
+Note that MailFactory that is used by merb-mailer under the covers returns headers
+as Arrays. This is why we used from.first in example above.

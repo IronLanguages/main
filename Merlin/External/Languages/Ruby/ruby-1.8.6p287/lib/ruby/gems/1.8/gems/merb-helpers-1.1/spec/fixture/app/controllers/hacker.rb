@@ -1,0 +1,2 @@
+class Hacker < Application
+end

@@ -1,0 +1,13 @@
+* CHANGES
+* MANIFEST
+* Rakefile
+* README
+* win32-file.gemspec
+* lib/win32/file.rb
+* test/sometestfile.txt
+* test/tc_file_attributes.rb
+* test/tc_file_constants.rb
+* test/tc_file_encryption.rb
+* test/tc_file_path.rb
+* test/tc_file_security.rb
+* test/tc_file_stat.rb

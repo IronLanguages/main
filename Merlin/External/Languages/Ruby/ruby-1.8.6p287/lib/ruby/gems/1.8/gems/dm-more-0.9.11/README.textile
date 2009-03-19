@@ -1,0 +1,16 @@
+h1. dm-more
+
+h2. Extra, non-essential parts for DataMapper
+
+Including
+
+  * Migrations
+  * Validations
+  * Serializers
+  * A Command-Line Interface
+  * Timestamps
+  * Types
+  * ActiveRecord-style finders
+  * Adapters for your favorite repository or database type
+  * Integration with your favorite web frameworks
+  * Observers for watching resources.

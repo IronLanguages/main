@@ -1,0 +1,22 @@
+
+<html>
+<head><title>new (Log4r::SyslogOutputter)</title>
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+<style>
+  .kw { color: #3333FF; font-weight: bold }
+  .cmt { color: green; font-style: italic }
+  .str { color: #662222; font-style: italic }
+  .re  { color: #662222; }
+</style>
+</head>
+<body bgcolor="white">
+<pre><span class="cmt"># File log4r/outputter/syslogoutputter.rb, line 40</span>
+    <span class="kw">def</span> initialize(_name, hash={})
+      <span class="kw">super</span>(_name, hash)
+      ident = (hash[:ident] <span class="kw">or</span> hash[<span class="str">'ident'</span>] <span class="kw">or</span> _name)
+      logopt = (hash[:logopt] <span class="kw">or</span> hash[<span class="str">'logopt'</span>] <span class="kw">or</span> LOG_PID | LOG_CONS).to_i
+      facility = (hash[:facility] <span class="kw">or</span> hash[<span class="str">'facility'</span>] <span class="kw">or</span> LOG_USER).to_i
+      @syslog = Syslog.open(ident, logopt, facility)
+    <span class="kw">end</span></pre>
+</body>
+</html>

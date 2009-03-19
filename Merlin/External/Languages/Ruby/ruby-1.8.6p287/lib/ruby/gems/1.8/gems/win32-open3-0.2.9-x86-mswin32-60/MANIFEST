@@ -1,0 +1,11 @@
+* CHANGES
+* MANIFEST
+* README
+* Rakefile
+* win32-open3.gemspec
+* doc/open3.txt
+* examples/open3_test.rb
+* ext/extconf.rb
+* ext/win32/open3.c
+* ext/win32/open3.h
+* test/tc_open3.rb

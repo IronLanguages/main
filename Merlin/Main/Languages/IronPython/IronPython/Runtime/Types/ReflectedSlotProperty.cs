@@ -53,12 +53,6 @@ namespace IronPython.Runtime.Types {
             return true;
         }
 
-        internal override bool GetAlwaysSucceeds {
-            get {
-                return true;
-            }
-        }
-
         internal override bool TrySetValue(CodeContext context, object instance, PythonType owner, object value) {
             if (instance != null) {
                 Setter(instance, value);
@@ -96,7 +90,7 @@ namespace IronPython.Runtime.Types {
             }
         }
 
-        private SlotGetValue Getter {
+        internal SlotGetValue Getter {
             get {
                 SlotValue value = Value;
                 lock (value) {
@@ -106,7 +100,7 @@ namespace IronPython.Runtime.Types {
             }
         }
 
-        private SlotSetValue Setter {
+        internal SlotSetValue Setter {
             get {
                 SlotValue value = Value;
                 lock (value) {

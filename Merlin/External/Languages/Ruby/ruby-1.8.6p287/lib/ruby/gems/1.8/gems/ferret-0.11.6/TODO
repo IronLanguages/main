@@ -1,0 +1,17 @@
+= TODO
+
+* user defined sorting
+* add field compression
+* Fix highlighting to work for compressed fields
+* Fix highlighting to work for external fields
+* Add Ferret::Index::Index
+* Fix:
+> Working Query:  field1:value1 AND NOT field2:value2
+> Failing Query:    field1:value1 AND ( NOT field2:value2 )
+
+= Done
+* Add string Sort descripter
+* fix memory bug
+* add MultiReader interface
+* add lexicographical sort (byte sort)
+* Add highlighting

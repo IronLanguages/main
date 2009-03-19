@@ -1,0 +1,62 @@
+= Description
+   This library provides an Open3.popen3 implementation for MS Windows.
+
+= Prerequisites
+   Ruby 1.8.2 or later
+   C++ compiler (if building from source).
+   
+= Installation
+   rake test (optional)
+   rake install (non-gem) or rake install_gem (gem)
+   
+= Synopsis
+   require 'win32/open3'
+	
+   Open3.popen3('ver'){ |io_in, io_out, io_err|
+      error = io_err.gets
+      if error
+         puts "Error: " + error.chomp
+         exit
+      end
+      puts "Result: " + io_out.readlines.last.chomp
+   }
+
+= Notes
+   This library is not supported on Windows 95, 98, or ME.
+   This is a stripped down version of Park Heesob's win32_popen library.
+
+= Developer's Notes
+   This is a repackaging of Heesob's win32_popen module. The purpose of the
+   repackaging was to create a unified API between the existing Ruby open3
+   library and this library.
+
+   The popen2 and posix_popen methods are not included in this release. They
+   were originally part of the win32_popen module, but have been left out.
+   They may be added back in at a later date.
+
+   There are a couple of differences in the Windows version for open3 (which
+   also apply to Open4.popen4) - the mode flag and the show flag.  For the
+   mode, you can specify either 't' (text, the default) or 'b' (binary) as a
+   second argument. For the show flag, you can specify either true or false,
+   which will show the console window, or not, depending on the value you
+   pass.  The default is false.
+
+= Known Issues
+   I have noticed that this library (and others) may segfault if you are using
+   the latest version of the Ruby one-click installer and VC++ 7.0 or later.
+   This appears to be an issue between VC++ 6 (which the installer was built
+   with) and VC++ 7.0. Your best solution is to either upgrade your C
+   compiler or to rebuild Ruby from scratch rather than using the installer.
+   
+= Precompiled binaries
+
+   If you do a typical "gem install win32-open3" you will get a precompiled
+   binary appropriate for your platform. If you want to build from source,
+   go the project page and download, download the .zip file, and run the
+   'install' Rake task from the command line.
+   
+= Future Plans
+   Replace the current implementation with a pure Ruby version.
+ 
+= More Documentation
+   See the doc/open3.txt file for more details.

@@ -5,7 +5,6 @@ fails:Array#pack just ignores unknown format
 fails:Array#pack ignores white spaces
 fails:Array#pack skips everything till the end of line (LF) string with ('#')
 fails:Array#pack returns a tainted string when a pack argument is tainted
-fails:Array#pack reuses last array element as often as needed to complete the string
 fails:Array#pack with format 'B' returns packed bit-string descending order
 fails:Array#pack with format 'B' accepts characters other than 0 or 1 for compatibility to perl
 fails:Array#pack with format 'B' conversion edge case: all zeros

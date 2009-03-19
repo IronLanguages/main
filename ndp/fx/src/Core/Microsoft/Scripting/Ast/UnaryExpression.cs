@@ -23,6 +23,9 @@ namespace System.Linq.Expressions {
     /// <summary>
     /// Represents an expression that has a unary operator.
     /// </summary>
+#if !SILVERLIGHT
+    [DebuggerTypeProxy(typeof(Expression.UnaryExpressionProxy))]
+#endif
     public sealed class UnaryExpression : Expression {
         private readonly Expression _operand;
         private readonly MethodInfo _method;

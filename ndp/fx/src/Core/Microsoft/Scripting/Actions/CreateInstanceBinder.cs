@@ -71,6 +71,13 @@ namespace System.Dynamic {
             return target.BindCreateInstance(this, args);
         }
 
+        // this is a standard DynamicMetaObjectBinder
+        internal override sealed bool IsStandardBinder {
+            get {
+                return true;
+            }
+        }
+
         /// <summary>
         /// Determines whether the specified <see cref="Object" /> is equal to the current object.
         /// </summary>

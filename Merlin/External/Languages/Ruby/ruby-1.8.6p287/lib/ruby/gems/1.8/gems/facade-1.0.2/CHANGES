@@ -1,0 +1,13 @@
+== 1.0.2 - 11-Jun-2007
+* Added a Rakefile with tasks for installation and testing.
+* Removed the install.rb file. Installation is now handled as a Rake task.
+* Some test suite refactoring.
+* Fixed the FACADE_VERSION number (now 1.0.2, was 1.1.0).
+
+== 1.0.1 - 8-Jun-2005
+* Moved project to RubyForge.
+* Added a .gemspec file.
+* Added a MANIFEST.
+
+== 1.0.0 - 18-May-2005
+* Initial release

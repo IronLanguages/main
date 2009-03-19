@@ -1,0 +1,108 @@
+= Outputters
+
+An Outputter is a logging destination with a particular way to format
+data. It has a level threshold and a flexible level mask.
+
+Outputters must have names.
+
+== Level Threshold
+
+Outputters have their own level thresholds that default to <tt>root</tt> 
+level. They will not write any log events with a rank less than their
+threshold.
+
+== Level Mask
+
+Alternatively, an Outputter can be told to log specific levels only:
+
+  o = StdoutOutputter.new 'console'
+  o.only_at DEBUG, FATAL         # only DEBUG and FATAL get written 
+
+== Outputter Repository
+
+When outputters are created, they store themselves in an Outputter
+repository similar to the Logger repository. 
+
+  StdoutOutputter.new 'console'   => Create 'console' outputter
+  Outputter['console']            => Get it back from the stash.
+
+== Formatter
+
+An outputter has a format defined by its Formatter. If no Formatter
+is specified, DefaultFormatter will be used.
+
+== Outputter is Abstract
+
+The basic Outputter class is both abstract and a null object.
+
+== Interesting Outputters
+
+* log4r/outputter/syslogoutputter.rb - Logs to syslog
+* log4r/outputter/emailoutputter.rb - Email logs
+* log4r/logserver.rb - For remote logging
+
+== Subclasses
+
+* Log4r::IOOutputter - for any IO object
+* Log4r::StdoutOutputter - $stdout
+* Log4r::StderrOutputter - $stderr
+* Log4r::FileOutputter - log to a file
+* Log4r::RollingFileOutputter - log to a file and split it as it grows
+* Log4r::SyslogOutputter - logs to syslog
+* Log4r::EmailOutputter - email logs
+* Log4r::RemoteOutputter - for remote logging
+
+== Default Outputters
+
+Two outputters named 'stdout' and 'stderr' are created automatically at
+the root level. They are nice shortcuts.
+
+  Outputter['stdout'] => 'stdout'
+  Outputter['stderr'] => 'stderr'
+  Outputter.stdout    => 'stdout'
+  Outputter.stderr    => 'stderr'
+
+== Configuring
+
+Outputters must have names and receive hash arguments. The parameter name
+for the hash args can be either a symbol or a string. All defined outputters
+accept <tt>:level</tt> and <tt>:formatter</tt> arguments. For arguments 
+specific to a convenience Outputter, please look at the class description.
+
+The level threshold, the levels to log at (only_at) and formatter can be
+changed dynamically using the <tt>=</tt> methods.
+
+As a collective example of all this, here are various ways to set up an 
+IOOutputter:
+
+  IOOutputter.new ExoticIO.new 'exotic', 'level' => WARN, 
+                  :formatter => MyFormatter.new
+  # an equivalent way:
+  o = IOOutputter.new ExoticIO.new 'exotic'
+  o.level = WARN
+  o.formatter = MyFormatter         # we can specify just the class
+  o.only_at = THIS, THAT
+
+== XML Configuration
+
+Specify outputters as children of <tt><log4r_config></tt>:
+
+  <log4r_config>
+    <outputter name="myout" type="Log4r::StdoutOutputter">
+      <only_at>DEBUG, INFO</only_at>
+    </outputter>
+    <outputter name="file" level="WARN">
+      <type>FileOutputter</type>
+      <filename>#{logpath}/file.log</filename>
+      <trunc>false</trunc>
+    </outputter>
+    ...
+
+As explained in log4r/configurator.rb, the hash arguments you would normally
+pass to <tt>new</tt> are specified as <i>XML parameters</i>.
+It is given an IO object to write 
+to, a Formatter to call, and, optionally, levels to write at.
+
+Outputters invoke print then flush on the wrapped IO object.
+If the IO chokes, the Outputter will close the IO and set its
+level to <tt>OFF</tt>.

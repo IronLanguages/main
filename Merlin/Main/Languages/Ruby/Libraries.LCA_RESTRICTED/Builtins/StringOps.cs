@@ -15,6 +15,7 @@
 
 using System.Text;
 using IronRuby.Runtime;
+using Microsoft.Scripting.Runtime;
 
 namespace IronRuby.Builtins {
     // Extension methods for System.String
@@ -34,21 +35,29 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("inspect", RubyMethodAttributes.PublicInstance)]
         public static MutableString/*!*/ Inspect(string/*!*/ self) {
-            StringBuilder result = new StringBuilder();
-            result.Append('\'');
-            for (int i = 0; i < self.Length; i++) {
-                MutableStringOps.AppendStringRepresentationOfChar(result, self[i], i + 1 < self.Length ? self[i + 1] : -1,
-                   MutableStringOps.CharacterEscaping.EscapeSingleQuote | MutableStringOps.CharacterEscaping.UseUnicodeEscapes);
-            }
+            return MutableString.Create(MutableString.AppendUnicodeRepresentation(
+                new StringBuilder().Append('\''), self, false, false, '\'', -1).Append('\'').ToString()
+            );
+        }
 
-            result.Append('\'');
-            return MutableString.Create(result.ToString());
+        [RubyMethod("dump", RubyMethodAttributes.PublicInstance)]
+        public static MutableString/*!*/ Dump(string/*!*/ self) {
+            return MutableString.Create(MutableString.AppendUnicodeRepresentation(
+                new StringBuilder().Append('\''), self, false, true, '\'', -1).Append('\'').ToString()
+            );
         }
 
         [RubyMethod("===", RubyMethodAttributes.PublicInstance)]
         [RubyMethod("==", RubyMethodAttributes.PublicInstance)]
         public static bool Equals(string str, object other) {
             return str.Equals(other);
+        }
+
+        // TODO: add all non-mutating string operations
+
+        [RubyMethod("+")]
+        public static string/*!*/ Concatenate(string/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ other) {
+            return self + other.ToString();
         }
     }
 }

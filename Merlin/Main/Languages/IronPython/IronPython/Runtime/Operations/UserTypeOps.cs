@@ -24,6 +24,7 @@ using Microsoft.Scripting.Generation;
 using Microsoft.Scripting.Runtime;
 
 using IronPython.Runtime.Types;
+using IronPython.Runtime.Binding;
 
 namespace IronPython.Runtime.Operations {
     
@@ -261,18 +262,18 @@ namespace IronPython.Runtime.Operations {
             }
 
             try {
-                if (getAttributeSlot.TryGetBoundValue(context, self, ((IPythonObject)self).PythonType, out value)) {
+                if (getAttributeSlot.TryGetValue(context, self, ((IPythonObject)self).PythonType, out value)) {
                     return callSite.Data.Target(callSite.Data, context, value, name);
                 } 
             } catch (MissingMemberException) {
-                if (getAttrSlot != null && getAttrSlot.TryGetBoundValue(context, self, ((IPythonObject)self).PythonType, out value)) {
+                if (getAttrSlot != null && getAttrSlot.TryGetValue(context, self, ((IPythonObject)self).PythonType, out value)) {
                     return callSite.Data.Target(callSite.Data, context, value, name);
                 }
 
                 throw;
             }
 
-            if (getAttrSlot != null && getAttrSlot.TryGetBoundValue(context, self, ((IPythonObject)self).PythonType, out value)) {
+            if (getAttrSlot != null && getAttrSlot.TryGetValue(context, self, ((IPythonObject)self).PythonType, out value)) {
                 return callSite.Data.Target(callSite.Data, context, value, name);
             }
 
@@ -286,12 +287,12 @@ namespace IronPython.Runtime.Operations {
             }
 
             try {
-                if (getAttributeSlot.TryGetBoundValue(context, self, ((IPythonObject)self).PythonType, out value)) {
+                if (getAttributeSlot.TryGetValue(context, self, ((IPythonObject)self).PythonType, out value)) {
                     return callSite.Data.Target(callSite.Data, context, value, name);
                 }
             } catch (MissingMemberException) {
                 try {
-                    if (getAttrSlot != null && getAttrSlot.TryGetBoundValue(context, self, ((IPythonObject)self).PythonType, out value)) {
+                    if (getAttrSlot != null && getAttrSlot.TryGetValue(context, self, ((IPythonObject)self).PythonType, out value)) {
                         return callSite.Data.Target(callSite.Data, context, value, name);
                     }
 
@@ -302,7 +303,7 @@ namespace IronPython.Runtime.Operations {
             }
 
             try {
-                if (getAttrSlot != null && getAttrSlot.TryGetBoundValue(context, self, ((IPythonObject)self).PythonType, out value)) {
+                if (getAttrSlot != null && getAttrSlot.TryGetValue(context, self, ((IPythonObject)self).PythonType, out value)) {
                     return callSite.Data.Target(callSite.Data, context, value, name);
                 }
             } catch (MissingMemberException) {
@@ -348,5 +349,81 @@ namespace IronPython.Runtime.Operations {
         }
 
         #endregion
+
+        internal static Binding.FastBindResult<T> MakeGetBinding<T>(CodeContext codeContext, CallSite<T> site, IPythonObject self, Binding.PythonGetMemberBinder getBinder) where T : class {
+            if (typeof(IDynamicMetaObjectProvider).IsAssignableFrom(self.GetType().BaseType)) {
+                // very tricky, user is inheriting from a class which implements IDO, we
+                // don't optimize this yet.
+                return new Binding.FastBindResult<T>();
+            }
+            return (Binding.FastBindResult<T>)(object)new Binding.MetaUserObject.FastGetBinderHelper(
+                codeContext,
+                (CallSite<Func<CallSite, object, CodeContext, object>>)(object)site, 
+                self, 
+                getBinder).GetBinding(codeContext, getBinder.Name);
+        }
+
+        internal static FastBindResult<T> MakeSetBinding<T>(CodeContext codeContext, CallSite<T> site, IPythonObject self, object value, Binding.PythonSetMemberBinder setBinder) where T : class {
+            if (typeof(IDynamicMetaObjectProvider).IsAssignableFrom(self.GetType().BaseType)) {
+                // very tricky, user is inheriting from a class which implements IDO, we
+                // don't optimize this yet.
+                return new FastBindResult<T>();
+            }
+
+            // optimized versions for possible literals that can show up in code.
+            Type setType = typeof(T);
+            if (setType == typeof(Func<CallSite, object, object, object>)) {
+                return (FastBindResult<T>)(object)new Binding.MetaUserObject.FastSetBinderHelper<object>(
+                    codeContext,
+                    (CallSite<Func<CallSite, object, object, object>>)(object)site,
+                    self,
+                    value,
+                    setBinder).MakeSet();
+            } else if (setType == typeof(Func<CallSite, object, string, object>)) {
+                return (FastBindResult<T>)(object)new Binding.MetaUserObject.FastSetBinderHelper<string>(
+                    codeContext,
+                    (CallSite<Func<CallSite, object, string, object>>)(object)site,
+                    self,
+                    value,
+                    setBinder).MakeSet();
+            } else if (setType == typeof(Func<CallSite, object, int, object>)) {
+                return (FastBindResult<T>)(object)new Binding.MetaUserObject.FastSetBinderHelper<int>(
+                    codeContext,
+                    (CallSite<Func<CallSite, object, int, object>>)(object)site,
+                    self,
+                    value,
+                    setBinder).MakeSet();
+            } else if (setType == typeof(Func<CallSite, object, double, object>)) {
+                return (FastBindResult<T>)(object)new Binding.MetaUserObject.FastSetBinderHelper<double>(
+                    codeContext,
+                    (CallSite<Func<CallSite, object, double, object>>)(object)site,
+                    self,
+                    value,
+                    setBinder).MakeSet();
+            } else if (setType == typeof(Func<CallSite, object, List, object>)) {
+                return (FastBindResult<T>)(object)new Binding.MetaUserObject.FastSetBinderHelper<List>(
+                    codeContext,
+                    (CallSite<Func<CallSite, object, List, object>>)(object)site,
+                    self,
+                    value,
+                    setBinder).MakeSet();
+            } else if (setType == typeof(Func<CallSite, object, PythonTuple, object>)) {
+                return (FastBindResult<T>)(object)new Binding.MetaUserObject.FastSetBinderHelper<PythonTuple>(
+                    codeContext,
+                    (CallSite<Func<CallSite, object, PythonTuple, object>>)(object)site,
+                    self,
+                    value,
+                    setBinder).MakeSet();
+            } else if (setType == typeof(Func<CallSite, object, PythonDictionary, object>)) {
+                return (FastBindResult<T>)(object)new Binding.MetaUserObject.FastSetBinderHelper<PythonDictionary>(
+                    codeContext,
+                    (CallSite<Func<CallSite, object, PythonDictionary, object>>)(object)site,
+                    self,
+                    value,
+                    setBinder).MakeSet();
+            }
+
+            return new FastBindResult<T>();
+        }
     }
 }

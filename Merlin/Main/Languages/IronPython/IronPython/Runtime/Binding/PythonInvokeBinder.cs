@@ -16,14 +16,18 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq.Expressions;
 using System.Dynamic;
-using IronPython.Runtime.Operations;
+using System.Linq.Expressions;
+using System.Runtime.CompilerServices;
+
 using Microsoft.Scripting;
 using Microsoft.Scripting.Actions;
 using Microsoft.Scripting.Actions.Calls;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
+
+using IronPython.Runtime.Operations;
+
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace IronPython.Runtime.Binding {
@@ -85,6 +89,26 @@ namespace IronPython.Runtime.Binding {
 #endif
 
             return Fallback(context.Expression, target, args);
+        }
+
+        public override T BindDelegate<T>(CallSite<T> site, object[] args) {
+            IFastInvokable ifi = args[1] as IFastInvokable;
+            if (ifi != null) {
+                FastBindResult<T> res = ifi.MakeInvokeBinding(site, this, (CodeContext)args[0], ArrayUtils.ShiftLeft(args, 2));
+                if (res.Target != null) {
+                    if (res.ShouldCache) {
+                        base.CacheTarget(res.Target);
+                    }
+
+                    return res.Target;
+                }
+            }
+
+            return base.BindDelegate(site, args);
+        }
+
+        public T Optimize<T>(CallSite<T> site, object[] args) where T : class {
+            return base.BindDelegate<T>(site, args);
         }
 
         /// <summary>

@@ -31,6 +31,7 @@ using IronRuby.Compiler.Generation;
 using System.Runtime.Serialization;
 using System.Security.Permissions;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
+using IronRuby.Compiler.Ast;
 
 namespace IronRuby.Builtins {
 
@@ -164,29 +165,38 @@ namespace IronRuby.Builtins {
 
         private static RuleGenerator/*!*/ CreateGetter(int index) {
             return delegate(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args, string/*!*/ name) {
-                metaBuilder.Result = Ast.Call(
-                    Ast.Convert(args.TargetExpression, typeof(RubyStruct)),
-                    typeof(RubyStruct).GetMethod("GetValue"),
-                    AstUtils.Constant(index)
-                );
+                
+                var actualArgs = RubyMethodGroupInfo.NormalizeArguments(metaBuilder, args, SelfCallConvention.NoSelf, false, false);
+                if (actualArgs.Length == 0) {
+                    metaBuilder.Result = Ast.Call(
+                        Ast.Convert(args.TargetExpression, typeof(RubyStruct)),
+                        Methods.RubyStruct_GetValue,
+                        AstUtils.Constant(index)
+                    );
+                } else {
+                    metaBuilder.SetWrongNumberOfArgumentsError(actualArgs.Length, 0);
+                }
             };
         }
 
         private static RuleGenerator/*!*/ CreateSetter(int index) {
             return delegate(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args, string/*!*/ name) {
 
-                var actualArgs = RubyMethodGroupInfo.MakeActualArgs(metaBuilder, args, SelfCallConvention.SelfIsParameter, false, false);
-
-                metaBuilder.Result = Ast.Call(
-                    Ast.Convert(actualArgs[0], typeof(RubyStruct)),
-                    typeof(RubyStruct).GetMethod("SetValue"),
-                    AstUtils.Constant(index),
-                    Ast.Convert(actualArgs[1], typeof(object))
-                );
+                var actualArgs = RubyMethodGroupInfo.NormalizeArguments(metaBuilder, args, SelfCallConvention.NoSelf, false, false);
+                if (actualArgs.Length == 1) {
+                    metaBuilder.Result = Ast.Call(
+                        Ast.Convert(args.TargetExpression, typeof(RubyStruct)),
+                        Methods.RubyStruct_SetValue,
+                        AstUtils.Constant(index),
+                        AstFactory.Box(actualArgs[0].Expression)
+                    );
+                } else {
+                    metaBuilder.SetWrongNumberOfArgumentsError(actualArgs.Length, 1);
+                }
             };
         }
 
-        #endregion 
+        #endregion
 
         public int GetIndex(string/*!*/ name) {
             int result;

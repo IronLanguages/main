@@ -1925,7 +1925,7 @@ public partial class Parser
       // program -> compstmt 
 #line 162 "Parser.y"
 			{
-            _ast = new SourceUnitTree(CurrentScope, GetValue(1).Statements, _initializers, _encoding, _tokenizer.DataOffset);
+            _ast = new SourceUnitTree(CurrentScope, GetValue(1).Statements, _initializers, Encoding, _tokenizer.DataOffset);
         }
   }
 

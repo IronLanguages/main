@@ -1,0 +1,2 @@
+class BoundRadioGroupSpecs < SpecController
+end

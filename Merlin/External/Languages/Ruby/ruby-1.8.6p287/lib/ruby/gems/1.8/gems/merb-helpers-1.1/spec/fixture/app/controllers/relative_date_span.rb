@@ -1,0 +1,2 @@
+class RelativeDateSpanSpecs < SpecController
+end

@@ -72,6 +72,13 @@ namespace System.Dynamic {
             return target.BindUnaryOperation(this);
         }
 
+        // this is a standard DynamicMetaObjectBinder
+        internal override sealed bool IsStandardBinder {
+            get {
+                return true;
+            }
+        }
+
         /// <summary>
         /// Determines whether the specified System.Object is equal to the current <see cref="BinaryOperationBinder"/>.
         /// </summary>
@@ -104,10 +111,6 @@ namespace System.Dynamic {
                 case ExpressionType.Not:
                 case ExpressionType.Decrement:
                 case ExpressionType.Increment:
-                case ExpressionType.PreIncrementAssign:
-                case ExpressionType.PreDecrementAssign:
-                case ExpressionType.PostIncrementAssign:
-                case ExpressionType.PostDecrementAssign:
                 case ExpressionType.OnesComplement:
                 case ExpressionType.IsTrue:
                 case ExpressionType.IsFalse:

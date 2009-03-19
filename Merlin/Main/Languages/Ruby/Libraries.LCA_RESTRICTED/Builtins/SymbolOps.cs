@@ -33,18 +33,19 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("inspect")]
-        public static MutableString/*!*/ Inspect(SymbolId self) {
+        public static MutableString/*!*/ Inspect(RubyContext/*!*/ context, SymbolId self) {
             var str = SymbolTable.IdToString(self);
+            bool allowMultiByteCharacters = context.RubyOptions.Compatibility >= RubyCompatibility.Ruby19 || context.KCode != null;
 
             // simple cases:
             if (
-                Tokenizer.IsMethodName(str) ||
-                Tokenizer.IsConstantName(str) ||
-                Tokenizer.IsInstanceVariableName(str) ||
-                Tokenizer.IsClassVariableName(str) ||
-                Tokenizer.IsGlobalVariableName(str)
+                Tokenizer.IsMethodName(str, allowMultiByteCharacters) ||
+                Tokenizer.IsConstantName(str, allowMultiByteCharacters) ||
+                Tokenizer.IsInstanceVariableName(str, allowMultiByteCharacters) ||
+                Tokenizer.IsClassVariableName(str, allowMultiByteCharacters) ||
+                Tokenizer.IsGlobalVariableName(str, allowMultiByteCharacters)
             ) {
-                return MutableString.CreateMutable(":", 1 + str.Length).Append(str);
+                return MutableString.CreateMutable(1 + str.Length, RubyEncoding.Obsolete).Append(':').Append(str);
             }
 
             // TODO: this is neither efficient nor complete.
@@ -100,10 +101,10 @@ namespace IronRuby.Builtins {
                 case "$`":
                 case "$'":		
                 case "$+":
-                    return MutableString.CreateMutable(":", 1 + str.Length).Append(str);
+                    return MutableString.CreateMutable(1 + str.Length, RubyEncoding.Obsolete).Append(':').Append(str);
             }
 
-            return MutableString.CreateMutable(":\"", 3 + str.Length).Append(str).Append('"');
+            return MutableString.CreateMutable(3 + str.Length, RubyEncoding.Obsolete).Append(":\"").Append(str).Append('"');
         }
 
         [RubyMethod("to_i")]

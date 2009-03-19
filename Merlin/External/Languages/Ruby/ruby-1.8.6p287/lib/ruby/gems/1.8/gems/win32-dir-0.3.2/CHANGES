@@ -1,0 +1,23 @@
+== 0.3.2 - 25-Jul-2007
+* Added a Rakefile with tasks for testing and installation.
+* Removed the install.rb file (the Rakefile handles installation).
+* Minor updates the README, MANIFEST, and test file.
+
+== 0.3.1 - 16-Oct-2006
+* Added the Dir.empty? method.
+* Changed the Dir.reparse_dir? method to Dir.junction? (but kept an alias
+  for backwards compatibility).
+* Added rdoc for Dir.junction? (oops).
+* Some test tweaks and additions.
+
+== 0.3.0 - 28-May-2006
+* Now pure Ruby.
+* Now has a gem.
+* Added a VERSION constant.
+
+== 0.2.0 - 27-Jun-2005
+* Added the Dir.create_junction and Dir.reparse_dir? methods.
+* Added corresponding tests and documentation.
+
+== 0.1.0 - 25-Feb-2005
+* Initial release

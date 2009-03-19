@@ -21,6 +21,7 @@
     <SignAssembly Condition="'$(SignAssembly)' == '' And Exists('$(AssemblyOriginatorKeyFile)')">true</SignAssembly>
     <SignedSym Condition="'$(SignAssembly)' == 'true'">SIGNED</SignedSym>
     <DelaySign>true</DelaySign>
+    <BaseAddress>855638016</BaseAddress>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'FxCop|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -59,7 +60,6 @@
     <WarningLevel>4</WarningLevel>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <RunCodeAnalysis>false</RunCodeAnalysis>
-    <BaseAddress>1929379840</BaseAddress>
     <NoWarn>
     </NoWarn>
   </PropertyGroup>
@@ -141,6 +141,7 @@
     <Compile Include="Actions\SetIndexBinder.cs" />
     <Compile Include="Actions\SetMemberBinder.cs" />
     <Compile Include="Actions\SmallRuleSet.cs" />
+    <Compile Include="Ast\Expression.DebuggerProxy.cs" />
     <Compile Include="Ast\IArgumentProvider.cs" />
     <Compile Include="Ast\ListArgumentProvider.cs" />
     <Compile Include="Compiler\ArgumentPrepender.cs" />

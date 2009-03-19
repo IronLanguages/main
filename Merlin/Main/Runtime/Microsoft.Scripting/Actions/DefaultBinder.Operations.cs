@@ -210,7 +210,7 @@ namespace Microsoft.Scripting.Actions {
 
                     return new DynamicMetaObject(
                         call,
-                        BindingRestrictions.Combine(target.RestrictedArguments)
+                        BindingRestrictions.Combine(target.RestrictedArguments.Objects)
                     );
                 }
             }
@@ -473,7 +473,7 @@ namespace Microsoft.Scripting.Actions {
                     if (oper == IndexType.Get) {
                         return new DynamicMetaObject(
                             target.MakeExpression(),
-                            restrictions.Merge(BindingRestrictions.Combine(target.RestrictedArguments))
+                            restrictions.Merge(BindingRestrictions.Combine(target.RestrictedArguments.Objects))
                         );
                     } else {
                         return new DynamicMetaObject(
@@ -482,7 +482,7 @@ namespace Microsoft.Scripting.Actions {
                                 target.MakeExpression(),
                                 arg2
                             ),
-                            restrictions.Merge(BindingRestrictions.Combine(target.RestrictedArguments))
+                            restrictions.Merge(BindingRestrictions.Combine(target.RestrictedArguments.Objects))
                         );
                     }
                 }
@@ -571,7 +571,7 @@ namespace Microsoft.Scripting.Actions {
             if (target.Success) {
                 return new DynamicMetaObject(
                     target.MakeExpression(new ParameterBinderWithCodeContext(this, codeContext)),
-                    restrictions.Merge(BindingRestrictions.Combine(target.RestrictedArguments))
+                    restrictions.Merge(BindingRestrictions.Combine(target.RestrictedArguments.Objects))
                 );
             }
 
@@ -586,7 +586,7 @@ namespace Microsoft.Scripting.Actions {
             if (target.Success) {
                 return new DynamicMetaObject(
                     Ast.Not(target.MakeExpression()),
-                    BindingRestrictions.Combine(target.RestrictedArguments)
+                    BindingRestrictions.Combine(target.RestrictedArguments.Objects)
                 );
             }
 

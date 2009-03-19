@@ -15,10 +15,10 @@
 
 using System;
 using System.Collections.Generic;
+using System.Dynamic;
 using System.Linq.Expressions;
-using Microsoft.Scripting.Utils;
-using Microsoft.Scripting.Actions;
 using System.Reflection;
+using Microsoft.Scripting.Utils;
 
 namespace Microsoft.Scripting.Actions.Calls {
     /// <summary>
@@ -58,6 +58,10 @@ namespace Microsoft.Scripting.Actions.Calls {
             Assert.NotNull(expr, toType);
 
             return _actionBinder.ConvertExpression(expr, toType, ConversionResultKind.ExplicitCast, null);
+        }
+
+        public virtual Func<object[], object> ConvertObject(int index, DynamicMetaObject knownType, ParameterInfo info, Type toType) {
+            throw new NotImplementedException();
         }
 
         public virtual Expression GetDynamicConversion(Expression value, Type type) {

@@ -24,6 +24,9 @@ namespace System.Linq.Expressions {
     /// <summary>
     /// Represents a dynamic operation.
     /// </summary>
+#if !SILVERLIGHT
+    [DebuggerTypeProxy(typeof(Expression.DynamicExpressionProxy))]
+#endif
     public class DynamicExpression : Expression, IArgumentProvider {
         private readonly CallSiteBinder _binder;
         private readonly Type _delegateType;
@@ -148,7 +151,7 @@ namespace System.Linq.Expressions {
     #region Specialized Subclasses
 
     internal class DynamicExpressionN : DynamicExpression, IArgumentProvider {
-        private IList<Expression> _arguments;       // storage for the original IList or ROC.  See IArgumentProvider for more info.
+        private IList<Expression> _arguments;       // storage for the original IList or readonly collection.  See IArgumentProvider for more info.
 
         internal DynamicExpressionN(Type delegateType, CallSiteBinder binder, IList<Expression> arguments)
             : base(delegateType, binder) {
@@ -191,7 +194,7 @@ namespace System.Linq.Expressions {
     }
 
     internal class DynamicExpression1 : DynamicExpression, IArgumentProvider {
-        private object _arg0;               // storage for the 1st argument or a ROC.  See IArgumentProvider for more info.
+        private object _arg0;               // storage for the 1st argument or a readonly collection.  See IArgumentProvider for more info.
 
         internal DynamicExpression1(Type delegateType, CallSiteBinder binder, Expression arg0)
             : base(delegateType, binder) {
@@ -236,7 +239,7 @@ namespace System.Linq.Expressions {
     }
 
     internal class DynamicExpression2 : DynamicExpression, IArgumentProvider {
-        private object _arg0;                   // storage for the 1st argument or a ROC.  See IArgumentProvider for more info.
+        private object _arg0;                   // storage for the 1st argument or a readonly collection.  See IArgumentProvider for more info.
         private readonly Expression _arg1;      // storage for the 2nd argument
 
         internal DynamicExpression2(Type delegateType, CallSiteBinder binder, Expression arg0, Expression arg1)
@@ -284,7 +287,7 @@ namespace System.Linq.Expressions {
     }
 
     internal class DynamicExpression3 : DynamicExpression, IArgumentProvider {
-        private object _arg0;                       // storage for the 1st argument or a ROC.  See IArgumentProvider for more info.
+        private object _arg0;                       // storage for the 1st argument or a readonly collection.  See IArgumentProvider for more info.
         private readonly Expression _arg1, _arg2;   // storage for the 2nd & 3rd arguments
 
         internal DynamicExpression3(Type delegateType, CallSiteBinder binder, Expression arg0, Expression arg1, Expression arg2)
@@ -334,7 +337,7 @@ namespace System.Linq.Expressions {
     }
 
     internal class DynamicExpression4 : DynamicExpression, IArgumentProvider {
-        private object _arg0;                               // storage for the 1st argument or a ROC.  See IArgumentProvider for more info.
+        private object _arg0;                               // storage for the 1st argument or a readonly collection.  See IArgumentProvider for more info.
         private readonly Expression _arg1, _arg2, _arg3;    // storage for the 2nd - 4th arguments
 
         internal DynamicExpression4(Type delegateType, CallSiteBinder binder, Expression arg0, Expression arg1, Expression arg2, Expression arg3)

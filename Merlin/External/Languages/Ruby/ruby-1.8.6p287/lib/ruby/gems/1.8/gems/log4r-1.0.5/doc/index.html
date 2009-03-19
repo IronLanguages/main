@@ -1,0 +1,228 @@
+<html>
+<head>
+  <title>Log4r - Manual</title>
+  <link rel="stylesheet" type="text/css" href="log4r.css">
+</head>
+<body>
+
+<div align="right"><img src="images/log4r-logo.png"/></div>
+<hr noshade>
+
+<table border="0" cellspacing="3" cellpadding="0" width="100%"> 
+<tr>
+
+<!-- Sidebar -->
+<td width="15%" valign="top">
+<table cellspacing="0" cellpadding="0" width=100%" nowrap="true">
+
+<!-- Log4r Box -->
+<tr><td >
+<table width="100%" cellspacing="0" cellpadding="0" align="center" >
+<tr><td width="100%" class="menutitle">Log4r</td></tr>
+<tr><td width="100%" class="menubuff">&nbsp;</td></tr>
+<!-- list -->
+<table class="menu"  cellspacing="3" cellpadding="0" width="100%"
+       align="center">
+<tr><td ><a href="index.html">Home Page</a></tr></td>
+<tr><td><a href="http://sourceforge.net/project/showfiles.php?group_id=43396">
+Download</a></td></tr>
+<tr><td nowrap="true">
+<a href="http://sourceforge.net/projects/log4r/">@ SourceForge</a>
+</td></tr>
+<tr><td>
+<a href="license.html">License</a>
+</td></tr>
+<tr><td>
+<a href="contact.html">Contact</a>
+</td></tr>
+</table>
+</td></tr>
+
+<tr><td height=15>&nbsp;</td></tr>
+
+<!-- Doc Box -->
+<tr><td >
+<table cellspacing="0" cellpadding="0" align="center" width="100%">
+<tr><td width="100%"  class="menutitle">Documents</td></tr>
+<tr><td  width="100%" class="menubuff">&nbsp;</td></tr>
+<!-- list -->
+<table class="menu"  cellspacing="3" cellpadding="0" width="100%"
+       align="center">
+<tr><td>
+    <a href="manual.html">1.0.5 Manual</a>
+</tr></tr>
+<tr><td>
+    <a href="rdoc/index.html">1.0.5 RDoc API</a>
+</td></tr>
+
+</table>
+</td></tr>
+
+<tr><td height=15>&nbsp;</td></tr>
+
+<!-- Development Box -->
+<tr><td >
+<table cellspacing="0" cellpadding="0" align="center" width="100%">
+<tr><td width="100%"  class="menutitle">Development</td></tr>
+<tr><td  width="100%" class="menubuff">&nbsp;</td></tr>
+<!-- list -->
+<table class="menu"  cellspacing="3" cellpadding="0" width="100%"
+       align="center">
+<tr><td>
+<a
+href="http://sourceforge.net/tracker/?atid=436181&group_id=43396&func=browse">
+Bugs</a>
+</tr></tr>
+<tr><td>
+<a
+href="http://sourceforge.net/tracker/?atid=436184&group_id=43396&func=browse">
+Requests</a>
+</td></tr>
+<tr><td>
+<a href="contribute.html">Contribute</a>
+</td></tr>
+
+</table>
+</td></tr>
+
+<tr><td height=15>&nbsp;</td></tr>
+
+
+<!-- Link Box -->
+<tr><td >
+<table cellspacing="0" cellpadding="0" align="center" width="100%">
+<tr><td width="100%"  class="menutitle">Links</td></tr>
+<tr><td  width="100%" class="menubuff">&nbsp;</td></tr>
+<!-- list -->
+<table class="menu"  cellspacing="3" cellpadding="0" width="100%"
+       align="center">
+<tr><td>
+<a href="http://www.ruby-lang.org/en/index.html">Ruby</a>
+</td></tr>
+<tr><td>
+<a href="http://jakarta.apache.org/log4j/docs/index.html">Apache Log4j</a>
+</tr></tr>
+<tr><td>
+<a href="http://www.ruby-lang.org/en/raa-list.rhtml?name=REXML">REXML</a>
+</td></tr>
+<tr><td>
+<a href="http://rm-f.net/~cout/ruby/romp/">ROMP</a>
+</td></tr>
+<tr><td height="5">&nbsp;</td></tr>
+<tr><td align="center">
+<a href="http://sourceforge.net">
+<img
+src="http://sourceforge.net/sflogo.php?group_id=43396" width="88" height="31"
+border="0" alt="SourceForge Logo"></a>
+</td></tr>
+
+</table>
+</td></tr>
+
+</table>
+</td>
+
+<!-- Main column -->
+<td width="85%" align="left" valign="top">
+<center>
+<table cellspacing="0" cellpadding="0" align="center" width="95%">
+
+
+<tr><td width="100%" class="contenttitle">A Powerful Logging Library for Ruby
+</td></tr>
+<tr><td width="100%" class="contentbuff">&nbsp;</td></tr>
+<tr><td width="100%" class="content">
+
+<h4 class="header">What Log4r Is</h4>
+Log4r is a comprehensive and flexible logging library written in Ruby
+for use in Ruby programs. It features a heiarchial logging system
+of any number of levels, custom level names, logger inheritance,
+multiple output destinations, execution tracing, custom formatting, thread
+safteyness, XML and YAML configuration, and more.
+<p/>
+Log4r is an adherent to the philosophy of logging using simple print 
+statements. What Log4r adds to this philosophy is a flexible way of 
+controling the information being logged. Log information can be sent to
+any kind of destination and with varying degrees of importance. Log4r is 
+designed so that logging statements can remain in production code with
+almost no extra computational cost.
+<p/>
+Log4r intends to be easy to use and configure, no matter the complexity.
+Casual scripts can use Log4r right away with minimal configuration, while
+more sophisticated applications can set up a structured configuration file 
+in XML or YAML. Comprehensive documentation is provided, with a user's manual,
+a reference API, and over a dozen examples. Log4r attempts to abide by the 
+Principle of Least Surprise, which means that it works as intended at all 
+points.
+<p/>
+Log4r was inspired by and provides much of the features of the
+<a href="http://jakarta.apache.org/log4j/docs/index.html">Apache Log4j</a> 
+project, but is not a direct implementation or clone. Aside from superficial
+similarities, the projects are not related in any way and the code base is 
+completely distinct. Log4r was developed without even looking at the 
+Apache Log4j code.
+<p/>
+Log4r is an Open Source project and intends to remain that way. The Log4r
+license is similar to the Ruby Language license. It resides on
+<a href="license.html">this page</a> and in the distribution in a file
+named LICENSE.
+
+<!--
+<p><hr noshade color="#AA0000">
+<h4 class="header">But Why?</h4>
+
+Why a logging system like Log4r? 
+<p/>
+
+There are many non-obvious reasons. First,
+logging should not be confused with Unit testing. Unit testing and logging are
+complementary rather than exclusive. Second, logging provides a handy way
+for a program to provide useful information about itself to different 
+audiences. With logging, your application's state can be tracked over time and
+not be a complete mystery. With Log4r, you can control the amount and type of
+information that show up without having to comment out the logging statements 
+in your code. This helps reduce noise and maximize the usefulness of log files.
+Finally, logging is extremely useful in applications that are not all in one
+place (distributed). If you want to debug a client and server at the same time,
+a logging system like Log4r becomes critical.
+-->
+
+<p><hr noshade color="#AA0000">
+<h4 class="header">Getting Started with Log4r</h4>
+
+<ol>
+<li> Download the latest version from
+<a href="http://sourceforge.net/project/showfiles.php?group_id=43396">this page</a>
+<li> Try out the examples in the <tt>examples</tt> directory of the distribution
+<li> Install by running <tt>ruby install.rb</tt>
+<li> Read the nice <a href="manual.html">manual</a>
+<li> Use Log4r
+<li> Consult the <a href="rdoc/index.html">Log4r RDoc API</a> for reference
+<li> <a href="http://www.ruby-lang.org/en/raa-list.rhtml?name=REXML">
+Get REXML</a> to take advantage of the XML config
+<li> <a href="contribute.html">Contribute</a>!
+</ol>
+
+Have fun!
+
+<p/>
+
+</td></tr>
+
+
+</table>
+</center>
+</td>
+
+
+</tr>
+</table>
+<hr noshade>
+<div align="right">
+<font color="#888888" size="-1">
+<i>
+ $Id: index.html,v 1.7 2004/03/17 21:45:20 fando Exp $
+</i></font>
+</div>
+</body>
+</html>

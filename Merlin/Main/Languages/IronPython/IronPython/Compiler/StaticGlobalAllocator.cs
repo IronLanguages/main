@@ -135,16 +135,20 @@ namespace IronPython.Compiler.Ast {
             MSAst.Expression siteField = CreateFieldBuilderExpression(fi);
             _sites.Add(new SiteInfo(binder, delegateType, fi, siteField));
 
-            return Ast.Call(
-                Ast.Field(
-                    siteField,
-                    siteType.GetField("Target")
+            return new ReducableDynamicExpression(
+                Ast.Call(
+                    Ast.Field(
+                        siteField,
+                        siteType.GetField("Target")
+                    ),
+                    delegateType.GetMethod("Invoke"),
+                    ArrayUtils.Insert(
+                        siteField,
+                        args
+                    )
                 ),
-                delegateType.GetMethod("Invoke"),
-                ArrayUtils.Insert(
-                    siteField,
-                    args
-                )
+                binder,
+                args
             );
         }
 
@@ -281,6 +285,10 @@ namespace IronPython.Compiler.Ast {
         public override MSAst.Expression/*!*/ GetConstant(object value) {
             // if we can emit the value and we won't be continiously boxing/unboxing
             // then don't bother caching the value in a static field.
+            
+            // TODO: Sometimes we don't want to pre-box the values, such as if it's an int
+            // going to a call site which can be strongly typed.  We need to coordinate 
+            // more with whoever consumes the values.
             if (CompilerHelpers.CanEmitConstant(value, CompilerHelpers.GetType(value)) &&
                 !CompilerHelpers.GetType(value).IsValueType) {
                 return Ast.Constant(value);

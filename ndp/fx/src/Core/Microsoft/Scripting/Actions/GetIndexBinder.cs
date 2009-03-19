@@ -72,6 +72,13 @@ namespace System.Dynamic {
 
             return target.BindGetIndex(this, args);
         }
+        
+        // this is a standard DynamicMetaObjectBinder
+        internal override sealed bool IsStandardBinder {
+            get {
+                return true;
+            }
+        }
 
         /// <summary>
         /// Performs the binding of the dynamic get index operation if the target dynamic object cannot bind.

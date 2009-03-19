@@ -46,9 +46,9 @@ namespace System.Linq.Expressions {
     /// 
     /// It is important that the Expressions consistently return the same ReadOnlyCollection otherwise the
     /// re-writer will be broken and it would be a breaking change from LINQ v1.  The problem is that currently
-    /// users can rely on object identity to tell if the node has changed.  Storing the ROC in an overloaded
-    /// field enables us to both reduce memory usage as well as maintain compatibility and an easy to use external
-    /// API.
+    /// users can rely on object identity to tell if the node has changed.  Storing the readonly collection in 
+    /// an overloaded field enables us to both reduce memory usage as well as maintain compatibility and an 
+    /// easy to use external API.
     /// </summary>
     internal interface IArgumentProvider {
         Expression GetArgument(int index);

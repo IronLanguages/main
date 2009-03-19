@@ -1,0 +1,63 @@
+#!/usr/local/bin/ruby -ws
+
+require 'pp'
+begin require 'rubygems' rescue LoadError end
+require 'parse_tree'
+require 'sexp'
+
+$a ||= false
+$h ||= false
+$n ||= false
+$r ||= false
+$s ||= false
+$U ||= false
+$n = $n.intern if $n
+
+$u ||= ! ($U || $r)
+
+if $h then
+  puts "usage: #{File.basename $0} [options] [file...]"
+  puts "options:"
+  puts "-h      : display usage"
+  puts "-a      : all nodes, including newline"
+  puts "-n=node : only display matching nodes"
+  puts "-r      : raw arrays, no sexps"
+  puts "-s      : structural sexps, strip all content and show bare tree"
+  puts "-u      : unified sexps (now the default)"
+  puts "-U      : UNunified sexps"
+
+  exit 1
+end
+
+ARGV.push "-" if ARGV.empty?
+
+if $u then
+  require 'sexp_processor'
+  require 'unified_ruby'
+
+  class Unifier
+    include UnifiedRuby
+  end
+end
+
+parse_tree = ParseTree.new($a)
+unifier = Unifier.new if $u
+
+ARGV.each do |file|
+  ruby = file == "-" ? $stdin.read : File.read(file)
+
+  sexp = parse_tree.parse_tree_for_string(ruby, file).first
+  sexp = Sexp.from_array sexp unless $r
+  sexp = unifier.process(sexp) if $u
+  sexp = sexp.structure if $s
+
+  if $n then
+    sexp.each_of_type $n do |node|
+      p node
+    end
+  elsif defined? $q then
+    p sexp
+  else
+    pp sexp
+  end
+end

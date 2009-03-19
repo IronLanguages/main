@@ -50,6 +50,8 @@ namespace IronRuby.Runtime {
         private readonly bool _canRead;
         private readonly bool _canWrite;
         private readonly bool _canSeek;
+        private readonly bool _canFlush;
+        private readonly bool _canBeClosed;
         private readonly byte[]/*!*/ _buffer;
         private int _writePos;
         private int _readPos;
@@ -57,7 +59,7 @@ namespace IronRuby.Runtime {
 
         private const int _bufferSize = 0x1000;
 
-        public IOWrapper(RubyContext/*!*/ context, object io, bool canRead, bool canWrite, bool canSeek) {
+        public IOWrapper(RubyContext/*!*/ context, object io, bool canRead, bool canWrite, bool canSeek, bool canFlush, bool canBeClosed) {
             Assert.NotNull(context);
 
             _context = context;
@@ -66,10 +68,16 @@ namespace IronRuby.Runtime {
             _canRead = canRead;
             _canWrite = canWrite;
             _canSeek = canSeek;
+            _canFlush = canFlush;
+            _canBeClosed = canBeClosed;
             _buffer = new byte[_bufferSize];
             _writePos = 0;
             _readPos = 0;
             _readLen = 0;
+        }
+
+        public object UnderlyingObject {
+            get { return _obj; }
         }
 
         public override bool CanRead {
@@ -78,6 +86,10 @@ namespace IronRuby.Runtime {
 
         public override bool CanSeek {
             get { return _canSeek; }
+        }
+
+        public bool CanBeClosed {
+            get { return _canBeClosed; }
         }
 
         public override bool CanWrite {
@@ -112,6 +124,15 @@ namespace IronRuby.Runtime {
         public override void Flush() {
             FlushWrite();
             FlushRead();
+        }
+
+        public void Flush(CallWithoutArgsStorage/*!*/ flushStorage, RubyContext/*!*/ context) {
+            Flush();
+
+            if (_canFlush) {
+                var site = flushStorage.GetCallSite("flush");
+                site.Target(site, context, _obj);
+            }
         }
 
         private void FlushWrite() {
@@ -266,13 +287,14 @@ namespace IronRuby.Runtime {
             _writePos = 0;
         }
 
-        private void WriteToObject(byte[] buffer, int offset, int count) {
+        private void WriteToObject(byte[]/*!*/ buffer, int offset, int count) {
+            // TODO:
             if (offset != 0 || count != buffer.Length) {
                 byte[] newBuffer = new byte[count];
                 Buffer.BlockCopy(buffer, offset, newBuffer, 0, count);
                 buffer = newBuffer;
             }
-            MutableString argument = MutableString.CreateBinary(buffer, count);
+            MutableString argument = MutableString.CreateBinary(buffer);
             _writeSite.Target(_writeSite, _context, _obj, argument);
         }
     }

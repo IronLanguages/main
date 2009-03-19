@@ -982,7 +982,7 @@ namespace IronRuby.Builtins {
         public static IOWrapper/*!*/ CreateIOWrapper(RespondToStorage/*!*/ respondToStorage, 
             RubyContext/*!*/ context, object io, FileAccess access) {
 
-            bool canRead, canWrite, canSeek;
+            bool canRead, canWrite, canSeek, canFlush, canBeClosed;
 
             if (access == FileAccess.Read || access == FileAccess.ReadWrite) {
                 canRead = Protocols.RespondTo(respondToStorage, context, io, "read");
@@ -997,8 +997,10 @@ namespace IronRuby.Builtins {
             }
 
             canSeek = Protocols.RespondTo(respondToStorage, context, io, "seek") && Protocols.RespondTo(respondToStorage, context, io, "tell");
+            canFlush = Protocols.RespondTo(respondToStorage, context, io, "flush");
+            canBeClosed = Protocols.RespondTo(respondToStorage, context, io, "close");
 
-            return new IOWrapper(context, io, canRead, canWrite, canSeek);
+            return new IOWrapper(context, io, canRead, canWrite, canSeek, canFlush, canBeClosed);
         }
     }
 }

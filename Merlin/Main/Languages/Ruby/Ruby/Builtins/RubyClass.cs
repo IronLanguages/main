@@ -886,10 +886,14 @@ namespace IronRuby.Builtins {
                 metaBuilder.AddVersionTest(this);
 
                 initializer = ResolveMethodForSiteNoLock(Symbols.Initialize, IgnoreVisibility).Info;
-                // TODO:
-                //ResolveMethodMissingForSite
+
+                // Initializer resolves to Object#initializer unless overridden in a derived class.
+                // We ensure that this method cannot be removed.
+                Debug.Assert(initializer != null);
             }
 
+            // Ruby libraries: should initialize fully via factories/constructors.
+            // C# "initialize" methods: ignored - we don't consider them initializers.
             RubyMethodInfo overriddenInitializer = initializer as RubyMethodInfo;
 
             // Initializer is overridden => initializer is invoked on an uninitialized instance.
@@ -916,9 +920,11 @@ namespace IronRuby.Builtins {
                     constructionOverloads = (MethodBase[])ReflectionUtils.GetMethodInfos(_factories);
                     callConvention = SelfCallConvention.SelfIsParameter;
                 } else {
+                    // TODO: handle protected constructors
                     constructionOverloads = type.GetConstructors();
                     if (constructionOverloads.Length == 0) {
-                        throw RubyExceptions.CreateAllocatorUndefinedError(this);
+                        metaBuilder.SetError(Methods.MakeAllocatorUndefinedError.OpCall(Ast.Convert(args.TargetExpression, typeof(RubyClass))));
+                        return;
                     }
                     callConvention = SelfCallConvention.NoSelf;
                 }
@@ -1023,21 +1029,14 @@ namespace IronRuby.Builtins {
                     ));
                 }
             } else {
-                // TODO:
-                throw new NotSupportedException();
-                //var actualArgs = RubyMethodGroupBase.MakeActualArgs(metaBuilder, args, SelfCallConvention.NoSelf, false, false);
-                //if (actualArgs.Length == 1) {
-                //    var convertBinder = args.RubyContext.CreateConvertBinder(type, true);
-                //    var converted = convertBinder.Bind(actualArgs[0], DynamicMetaObject.EmptyMetaObjects);
-
-                //    // TODO: Should MakeActualArgs return a struct that provides us an information whether to treat particular argument's restrictions as conditions?
-                //    // Items of a splatted array are stored in locals. Therefore we cannot apply restrictions on them.
-                //    metaBuilder.SetMetaResult(converted, args.SimpleArgumentCount == 0 && args.Signature.HasSplattedArgument);
-                //} else {
-                //    metaBuilder.SetError(Methods.MakeWrongNumberOfArgumentsError.OpCall(
-                //        AstUtils.Constant(args.ExplicitArgumentCount - 1), AstUtils.Constant(0)
-                //    ));
-                //}
+                var actualArgs = RubyMethodGroupBase.NormalizeArguments(metaBuilder, args, SelfCallConvention.NoSelf, false, false);
+                if (actualArgs.Length == 1) {
+                    var convertBinder = args.RubyContext.CreateConvertBinder(type, true);
+                    var converted = convertBinder.Bind(actualArgs[0], DynamicMetaObject.EmptyMetaObjects);
+                    metaBuilder.SetMetaResult(converted, args);
+                } else {
+                    metaBuilder.SetWrongNumberOfArgumentsError(actualArgs.Length, 1);
+                }
             }
         }
 

@@ -1,0 +1,593 @@
+<html>
+<head>
+  <title>1.0.5 Log4r Manual</title>
+  <link rel="stylesheet" type="text/css" href="log4r.css">
+</head>
+<body>
+
+<div align="right"><img src="images/log4r-logo.png"/></div>
+<hr noshade>
+
+<table border="0" cellspacing="3" cellpadding="0" width="100%"> 
+<tr>
+
+<!-- Sidebar -->
+<td width="15%" valign="top">
+<table cellspacing="0" cellpadding="0" width=100%" nowrap="true">
+
+<!-- Log4r Box -->
+<tr><td >
+<table width="100%" cellspacing="0" cellpadding="0" align="center" >
+<tr><td width="100%" class="menutitle">Log4r</td></tr>
+<tr><td width="100%" class="menubuff">&nbsp;</td></tr>
+<!-- list -->
+<table class="menu"  cellspacing="3" cellpadding="0" width="100%"
+       align="center">
+<tr><td ><a href="index.html">Home Page</a></tr></td>
+<tr><td><a href="http://sourceforge.net/project/showfiles.php?group_id=43396">
+Download</a></td></tr>
+<tr><td nowrap="true">
+<a href="http://sourceforge.net/projects/log4r/">@ SourceForge</a>
+</td></tr>
+<tr><td>
+<a href="license.html">License</a>
+</td></tr>
+<tr><td>
+<a href="contact.html">Contact</a>
+</td></tr>
+</table>
+</td></tr>
+
+<tr><td height=15>&nbsp;</td></tr>
+
+<!-- Doc Box -->
+<tr><td >
+<table cellspacing="0" cellpadding="0" align="center" width="100%">
+<tr><td width="100%"  class="menutitle">Documents</td></tr>
+<tr><td  width="100%" class="menubuff">&nbsp;</td></tr>
+<!-- list -->
+<table class="menu"  cellspacing="3" cellpadding="0" width="100%"
+       align="center">
+<tr><td>
+    <a href="manual.html">1.0.5 Manual</a>
+</tr></tr>
+<tr><td>
+    <a href="rdoc/index.html">1.0.5 RDoc API</a>
+</td></tr>
+
+</table>
+</td></tr>
+
+<tr><td height=15>&nbsp;</td></tr>
+
+<!-- Development Box -->
+<tr><td >
+<table cellspacing="0" cellpadding="0" align="center" width="100%">
+<tr><td width="100%"  class="menutitle">Development</td></tr>
+<tr><td  width="100%" class="menubuff">&nbsp;</td></tr>
+<!-- list -->
+<table class="menu"  cellspacing="3" cellpadding="0" width="100%"
+       align="center">
+<tr><td>
+<a
+href="http://sourceforge.net/tracker/?atid=436181&group_id=43396&func=browse">
+Bugs</a>
+</tr></tr>
+<tr><td>
+<a
+href="http://sourceforge.net/tracker/?atid=436184&group_id=43396&func=browse">
+Requests</a>
+</td></tr>
+<tr><td>
+<a href="contribute.html">Contribute</a>
+</td></tr>
+
+</table>
+</td></tr>
+
+<tr><td height=15>&nbsp;</td></tr>
+
+
+<!-- Link Box -->
+<tr><td >
+<table cellspacing="0" cellpadding="0" align="center" width="100%">
+<tr><td width="100%"  class="menutitle">Links</td></tr>
+<tr><td  width="100%" class="menubuff">&nbsp;</td></tr>
+<!-- list -->
+<table class="menu"  cellspacing="3" cellpadding="0" width="100%"
+       align="center">
+<tr><td>
+<a href="http://www.ruby-lang.org/en/index.html">Ruby</a>
+</td></tr>
+<tr><td>
+<a href="http://jakarta.apache.org/log4j/docs/index.html">Apache Log4j</a>
+</tr></tr>
+<tr><td>
+<a href="http://www.ruby-lang.org/en/raa-list.rhtml?name=REXML">REXML</a>
+</td></tr>
+<tr><td>
+<a href="http://rm-f.net/~cout/ruby/romp/">ROMP</a>
+</td></tr>
+<tr><td height="5">&nbsp;</td></tr>
+<tr><td align="center">
+<a href="http://sourceforge.net">
+<img
+src="http://sourceforge.net/sflogo.php?group_id=43396" width="88" height="31"
+border="0" alt="SourceForge Logo"></a>
+</td></tr>
+
+</table>
+</td></tr>
+
+</table>
+</td>
+
+<!-- Main column -->
+<td width="85%" align="left" valign="top">
+<center>
+<table cellspacing="0" cellpadding="0" align="center" width="95%">
+
+
+<tr><td width="100%" class="contenttitle">1.0.5 Log4r Manual</td></tr>
+<tr><td width="100%" class="contentbuff">&nbsp;</td></tr>
+<tr><td width="100%" class="content">
+
+<a name="toc">
+<h4 ><a href="#toc">Table of Contents</a></h4>
+
+<ul>
+<li><a href="#scope">Scope of This Manual</a>
+<li><a href="#is">What Log4r Is</a>
+<li><a href="#outofbox">Out of the Box</a>
+<li><a href="#overview">Overview</a>
+  <ul>
+	<li><a href="#levels"> Levels</a>
+	<li><a href="#loggers"> Loggers</a>
+	<li><a href="#outputters"> Outputters</a>
+	<li><a href="#formatters"> Formatters</a>
+	<li><a href="#config"> Configuration</a>
+	<li><a href="#remote"> Remote Logging</a>
+	</ul>
+<li><a href="#art">The Art of Logging</a>
+  <ul>
+	<li><a href="#avoid">Avoiding Parameter Evaluation</a>
+	<li><a href="#howmany">How Many?</a>
+	<li><a href="#whereto">Where To?</a>
+	<li><a href="#tracing">Where From?</a>
+	<li><a href="#who">Who's Talking?</a>
+    <li><a href="#nullobj">The Null Logger</a>
+  </ul>
+<li><a href="#gotchas">Gotchas</a>
+<li><a href="#performance">Performance</a>
+<li><a href="#project">The Project Itself</a>
+</ul>
+
+<hr noshade color="#AA0000">
+
+<a name="scope">
+<h4 ><a href="#toc">Scope of this Manual</a></h4>
+
+Most of the API documentation resides in the 
+<a href="rdoc/index.html">Log4r RDoc API</a>, so this manual will be brief
+and targeted to people starting to learn about Log4r or who want to see 
+what Log4r has to offer.
+<p/>
+Besides the general overview, a section called 
+<a href="#art">The Art of Logging</a> provides tricks and tips in using
+Log4r efficiently.
+<p/>
+Click on the section title to go back to the 
+<a href="#toc">Table of Contents</a> at any time.
+
+<p/><hr noshade color="#AA0000">
+<a name="is">
+<h4 ><a href="#toc">What Log4r Is</a></h4>
+Log4r is a comprehensive and flexible logging library written in Ruby
+for use in Ruby programs. It features a heiarchial logging system
+of any number of levels, custom level names, logger inheritance,
+multiple output destinations, execution tracing, custom formatting, thread
+safteyness, XML and YAML configuration, and more.
+<p/>
+Log4r is an adherent to the philosophy of logging using simple print 
+statements. What Log4r adds to this philosophy is a flexible way of 
+controling the information being logged. Log information can be sent to
+any kind of destination and with varying degrees of importance. Log4r is 
+designed so that logging statements can remain in production code with
+almost no extra computational cost.
+<p/>
+Log4r intends to be easy to use and configure, no matter the complexity.
+Casual scripts can use Log4r right away with minimal configuration, while
+more sophisticated applications can set up a structured configuration file 
+in XML or YAML. Comprehensive documentation is provided, with a user's manual,
+a reference API, and over a dozen examples. Log4r attempts to abide by the 
+Principle of Least Surprise, which means that it works as intended at all 
+points.
+<p/>
+Log4r was inspired by and provides much of the features of the
+<a href="http://jakarta.apache.org/log4j/docs/index.html">Apache Log4j</a> 
+project, but is not a direct implementation or clone. Aside from superficial
+similarities, the projects are not related in any way and the code base is 
+completely distinct. Log4r was developed without even looking at the 
+Apache Log4j code.
+<p/>
+Log4r is an Open Source project and intends to remain that way. The Log4r
+license is similar to the Ruby Language license. It resides on
+<p/>
+While Log4r is interpreted, it attempts to achieve optimal performance and
+scale well. Already, plans are being made to write the performance-critical 
+components as a C extension to Ruby.
+<p/>
+Log4r was inspired by and provides much of the features of the
+<a href="http://jakarta.apache.org/log4j/docs/index.html">Apache Log4j</a> 
+project, but is not a direct implementation or clone. Aside from superficial
+similarities, the projects are not related in any way and the code base is 
+completely distinct. Log4r was developed without even looking at the 
+Apache Log4j code.
+<p/>
+Log4r is an Open Source project and intends to remain that way. The Log4r
+license is similar to the Ruby Language license. It resides on
+<a href="license.html">this page</a> and in the distribution in a file
+
+<p><hr noshade color="#AA0000">
+<a name="outofbox">
+<h4 ><a href="#toc">Out of the Box</a></h4>
+
+Here's an example of how to use Log4r right away.
+<div class="example">
+<pre class="box">require 'log4r'
+include Log4r
+
+# create a logger named 'mylog' that logs to stdout
+mylog = Logger.new 'mylog'
+mylog.outputters = Outputter.stdout
+
+# Now we can log.
+def do_log(log)
+  log.debug "This is a message with level DEBUG"
+  log.info "This is a message with level INFO"
+  log.warn "This is a message with level WARN"
+  log.error "This is a message with level ERROR"
+  log.fatal "This is a message with level FATAL"
+end
+do_log(mylog)
+</pre>
+</div>
+
+The output will look something like this:
+
+<div class="example">
+<pre class="box">DEBUG mylog: This is a message with level DEBUG
+ INFO mylog: This is a message with level INFO
+ WARN mylog: This is a message with level WARN
+ERROR mylog: This is a message with level ERROR
+FATAL mylog: This is a message with level FATAL</pre>
+</div>
+
+For ease of access, the logger is stored in a hashtable keyed to its name:
+
+<div class="example">
+<pre class="box">mylog = Logger['mylog']        # Get our logger back</pre>
+</div>
+
+Suppose we want to turn off <tt>DEBUG</tt>, <tt>INFO</tt>
+and <tt>WARN</tt> messages and see only <tt>ERROR</tt> and <tt>FATAL</tt>.
+To do this, we set the level threshold for mylog to <tt>ERROR</tt>:
+
+<div class="example">
+<pre class="box">mylog.level = ERROR</pre>
+</div>
+
+Running <tt>do_log(mylog)</tt> yields:
+
+<div class="example">
+<pre class="box">ERROR mylog: This is a message with level ERROR
+FATAL mylog: This is a message with level FATAL</pre>
+</div>
+
+<p><hr noshade color="#AA0000">
+<a name="overview">
+<h4 ><a href="#toc">Overview</a></h4>
+
+We will now go over the components of Log4r. A summary of each is provided,
+and links to the
+<a href="rdoc/index.html">Log4r RDoc API</a> are provided for further perusal.
+
+<p><hr noshade color="#AA0000">
+<a name="levels">
+<h4 ><a href="#toc">Levels</a></h4>
+
+Log4r uses a heiarchial system of logging. That is, certain log events
+can have a higher priority than other log events. Hence, one can control
+how much information one wants to log by adjusting the <b>level threshold</b>
+of logging. By default, the logging levels and priorities are:
+
+<div class="example">
+<pre class="box">DEBUG &lt; INFO &lt; WARN &lt; ERROR &lt; FATAL</pre>
+</div>
+In the previous section, we saw how setting the level to <tt>ERROR</tt>
+prevented messages with levels <tt>DEBUG</tt>, <tt>INFO</tt> and <tt>WARN</tt>
+from showing up. The names and numbers of these levels are configurable.
+You can have any number of levels and name them whatever you wish. The
+logging methods we saw in the last section will be named after the custom
+levels. Log4r adjusts itself to suit your needs.
+<p/>
+
+To find out more about levels, please see 
+<a href="rdoc/files/log4r_rb.html">rdoc/files/log4r_rb.html</a>.
+
+<p><hr noshade color="#AA0000">
+<a name="loggers">
+<h4 ><a href="#toc">Loggers</a></h4>
+The principle interface in Log4r is a Logger. Loggers have one logging method
+for each level and any number of output destinations. A logger's level
+threshold and output destinations may be changed dynamically. Loggers are
+stored within a Repository for retrieval at any time. Loggers provide
+all kinds of data for logging: the log message itself, the line number and
+file it was called in, a timestamp, the log priority, and so on.
+<p/>
+Loggers can inherit other Loggers. Inheritance means that a Logger initially
+adopts the characteristics of its parent if none are specified. A Logger's
+level is inherited once, and a Logger will write to its parents output
+destinations as well as its own. This behavior is optional, but allows one
+to structure a powerful, and easily configurable logging system.
+<p/>
+To find out more about loggers, please see
+<a href="rdoc/files/log4r/logger_rb.html">rdoc/files/log4r/logger_rb.html</a>.
+<p><hr noshade color="#AA0000">
+<a name="outputters">
+<h4 ><a href="#toc">Outputters</a></h4>
+
+An output destination (file, raw IO, stdout, etc.) is represented by an 
+Outputter object. An Outputter has a
+particular means of formatting data (Formatter) and has a level threshold
+of its own. Outputters, like Loggers, are stored in a repository and can be 
+retrieved and manipulated at any time. Every outputter is thread-safe, meaning
+that multiple threads can log to the same Outputter without worrying about
+race conditions.
+<p/>
+There is a growing collection of outputters provided: raw IO, to stdout, 
+to stderr, to files (including one that splits and zips up logs periodically),
+to syslog and to an email address. If a specialized Outputter is needed, one
+can be created from scratch in almost no time, thanks to the ease of 
+extending log4r outputters, the well documented code and the open source 
+license.
+<p/>
+To find out more about outputters, please see
+<a href="rdoc/files/log4r/outputter/outputter_rb.html">
+rdoc/files/log4r/outputter/outputter_rb.html</a>.
+<p><hr noshade color="#AA0000">
+<a name="formatters">
+<h4 ><a href="#toc">Formatters</a></h4>
+A Formatter is responsible for rendering a log message into an output format.
+Several Formatters are provided, including the powerful PatternFormatter.
+PatternFormatter uses sprintf-like directives to format log messages and
+eliminates the need for custom Formatters.
+<p/>
+To find out more about formatters, please see
+<a href="rdoc/files/log4r/formatter/formatter_rb.html">
+rdoc/files/log4r/formatter/formatter_rb.html</a>.
+<br/>
+To find out more about PatternFormatter, please see
+<a href="rdoc/files/log4r/formatter/patternformatter_rb.html">
+rdoc/files/log4r/formatter/patternformatter_rb.html</a>.
+<p><hr noshade color="#AA0000">
+<a name="config">
+<h4 ><a href="#toc">Configuration</a></h4>
+Configuring Log4r is accomplished via the Configurator and YamlConfigurator
+classes. They allow one to set custom levels and load up XML or YAML 
+configurations. The XML and YAML grammar used by Log4r is extremely flexible 
+and can accomodate the configuration of custom Outputters and Formatters with 
+no extra work. That is, if a custom Outputter is created, it can immedieately
+be configured without needing to write extra code. This is acomplished by
+taking advantage of Ruby's powerful reflection capabilities.
+<p/>
+To find out more about configuration, please see
+<a href="rdoc/files/log4r/configurator_rb.html">rdoc/files/log4r/configurator_rb.html</a>.
+<br/>
+For YAML configuration, also see
+<a href="rdoc/files/log4r/yamlconfigurator_rb.html">rdoc/files/log4r/yamlconfigurator.html</a>
+
+<p><hr noshade color="#AA0000">
+<a name="remote">
+<h4 ><a href="#toc">Remote Logging</a></h4>
+
+It is possible to send log events from an Outputter to a Logger over a network.
+This is accomplished using the distributed Ruby library ROMP, a subclass of
+Logger called LogServer, and a RemoteOutputter.
+<p/>
+To find out more about remote logging, please see
+<a href="rdoc/files/log4r/logserver_rb.html">
+rdoc/files/log4r/logserver_rb.html</a>
+<p/>
+Alternatively, one can just send log reports via email using EmailOutputter.
+<p/>
+To find out more about EmailOutputter, please see
+<a href="rdoc/classes/Log4r/EmailOutputter.html">
+rdoc/classes/Log4r/EmailOutputter.html</a>
+
+<p><hr noshade color="#AA0000">
+<a name="art">
+<h4 ><a href="#toc">The Art of Logging</a></h4>
+
+Log4r in itself does not automatically enable people to understand logging, 
+however it does provide tools to assist in <i>The Art of Logging</i>. We will 
+now cover some of the techniques in this art and how to use Log4r to 
+accomplish them.
+
+<p><hr noshade color="#AA0000">
+<a name="avoid">
+<h4 ><a href="#toc">Avoiding Parameter Evaluation</a></h4>
+
+Suppose we have a complex structure and don't have the time to
+make a special <tt>to_s</tt> method. When we want to log the contents
+of the object, we end up doing something like this:
+
+<div class="example">
+<pre class="box">log.debug( myobj.collect{|e| e.collect{|p| p.to_s}} )</pre>
+</div>
+
+It is expensive to do this because every time the debug method is called,
+the parameters passed to it will be evaluated. Because this is a feature of
+Ruby, setting the logger to <tt>OFF</tt> will not prevent the evaluation. 
+There are two ways to get around parameter evaluation. The first is to
+perform a simple if condition:
+
+<div class="example">
+<pre class="box">if log.debug?
+  log.debug( myobj.collect{|e| e.collect{|p| p.to_s}} )
+end</pre></div>
+</div>
+
+Here we are introduced to <tt>log.debug?</tt>, which is called a 
+<i>query method</i>. It returns true if <tt>DEBUG</tt> messages are being 
+logged, otherwise it returns false. Query methods are very cheap 
+to invoke and are a great way to encapsulate complext logging statements.
+The query methods, like the logging ones, are named after the levels, but with 
+a question mark at the end. As another example, <tt>log.info?</tt> will find 
+out if <tt>INFO</tt> is being logged and so on.
+<p/>
+The second way around parameter evaluation is to pass a block to the
+logging method:
+
+<div class="example">
+<pre class="box">log.debug { myobj.collect{|e| e.collect{|p| p.to_s} }</pre>
+</div>
+
+The block will be evaluated if and only if the logger is capable of handling
+<tt>DEBUG</tt> log events.
+
+<p><hr noshade color="#AA0000">
+<a name="howmany">
+<h4 ><a href="#toc">How Many?</a></h4>
+How many loggers should one have? Only experience can tell, but
+a general rule of thumb is to create one static logger per class and
+one per service or state. 
+<p/>
+When dealing with a large number of loggers, logger 
+inheritance and additivity can help organize what gets logged and to where.
+<p/>
+The configuration possibilities in Log4r are uncountable and can sometimes 
+be daunting. It's best to start with something simple and evolve it over time. 
+To assist in this task, Log4r can be set up using XML or YAML configuration 
+files.
+<p><hr noshade color="#AA0000">
+<a name="whereto">
+<h4 ><a href="#toc">Where To?</a></h4>
+Log4r lets one associate any number of Outputters to a Logger. Logger
+additivity enables propagation of a log event upwards in the logger heiarchy.
+The outputters themselves can have their own level thresholds. Unlike normal
+loggers, Outputters can log at certain specific log levels. this allows
+one to channel particular data to a particular output. All things considered, 
+log4r offers tremendous flexibility in deciding what gets logged where.
+
+<p><hr noshade color="#AA0000">
+<a name="tracing">
+<h4 ><a href="#toc">Where From?</a></h4>
+
+Want to find out where a particular log statement came from? Loggers have
+tracers which record the call stack when turned on:
+
+<div class="example">
+<pre class="box">Logger['mylog'].trace = true</pre>
+</div>
+
+The trace is then accesible by a Formatter.
+
+<p><hr noshade color="#AA0000">
+<a name="who">
+<h4 ><a href="#toc">Who's Talking?</a></h4>
+
+If there are many loggers that use logger inheritance,
+it's occasionally a good idea to show the full ancestry of a logger in the log 
+statement. Here's how to set up PatternFormatter to show the full ancestry 
+of a logger in a logging statement (in XML):
+
+<div class="example">
+<pre class="box">&lt;formatter type="PatternFormatter"&gt;
+  &lt;!-- %C shows full ancestry --&gt;
+  &lt;pattern&gt;[%l %C] %m&lt;/pattern&gt;
+&lt;/formatter&gt;</pre>
+</div>
+
+For a logger named 'me' with ancestors 'cain::grandpa::pa', it will produce:
+
+<div class="example">
+<pre class="box">[DEBUG cain::grandpa::pa::me] Log message</pre>
+</div>
+
+<p><hr noshade color="#AA0000">
+<a name="nullobj">
+  <h4 ><a href="#toc">The Null Logger</a></h4>
+In addition to being the parent of all loggers, Logger.root is a null
+object. That means that it does absolutely nothing when its log methods are
+invoked. Its query methods always return false and it has no outputters.
+It is useful to turn loggers off from within code:
+
+<div class="example">
+  <pre class="box">noisylog = Logger.root
+noisy.debug "This won't do anything"</pre>
+</div>
+
+<p><hr noshade color="#AA0000">
+<a name="gotchas">
+<h4 ><a href="#toc">Gotchas</a></h4>
+
+If you are using Log4r, there are a few gotchas that you should be aware of:
+
+<ul>
+<li>Logger levels can be dynamically redefined, but the change won't be 
+noticed by any children. That is, if you set <code>root.level=OFF</code> 
+<i>after</i> defining some loggers, none of the loggers will change their level 
+to <code>OFF</code>. There is a good reason for this behavior.
+</li>
+<li>Dynamically redefining levels, tracing or additivity is expensive. It's 
+best to set up all your loggers in a config script and avoid making dynamic
+changes to Log4r objects. The dynamism is most useful for debugging and 
+development, where local control of logging is a great convenience.
+</li>
+<li>When an <code>IOOutputter</code>'s <code>IO</code> is closed,
+the <code>IOOutputter</code> changes its level to <code>OFF</code>
+</li>
+</ul>
+
+<p><hr noshade color="#AA0000">
+<a name="performance">
+<h4 ><a href="#toc">Performance</a></h4>
+
+Profiling has revealed that log4r is typically an order of magnitude or
+two slower than log4j. However, this is still damn fast! In particular,
+if a logger is set to <code>OFF</code>, the overhead of checking to
+see if a log event should be logged nearly vanishes. This was accomplished by
+dynamically redefining the unloggable logging methods to do nothing.
+<p/>
+In the future, Log4r's performance critical features will be written as a C
+extension to Ruby. It will still be optional, but it will be available for
+those who absolutely need to squeeze every last ounce of performance out of
+Log4r. (No longer in the works, unfortunately.)
+<p><hr noshade color="#AA0000">
+<a name="project">
+<h4 ><a href="#toc">The Project Itself</a></h4>
+Log4r was initially developed by one person and is slowly but surely gaining
+popularity and new developers. Please refer to the 
+<a href="contact.html">contact</a> page for more information on the
+developers.
+
+</td></tr>
+
+
+</table>
+</center>
+</td>
+
+
+</tr>
+</table>
+<hr noshade>
+<div align="right">
+<font color="#888888" size="-1">
+<i>
+ $Id: manual.html,v 1.14 2004/03/17 21:07:14 fando Exp $
+</i></font>
+</div>
+</body>
+</html>

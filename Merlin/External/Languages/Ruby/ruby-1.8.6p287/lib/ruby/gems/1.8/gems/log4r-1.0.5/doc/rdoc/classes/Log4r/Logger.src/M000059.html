@@ -1,0 +1,30 @@
+
+<html>
+<head><title>new (Log4r::Logger)</title>
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+<style>
+  .kw { color: #3333FF; font-weight: bold }
+  .cmt { color: green; font-style: italic }
+  .str { color: #662222; font-style: italic }
+  .re  { color: #662222; }
+</style>
+</head>
+<body bgcolor="white">
+<pre><span class="cmt"># File log4r/logger.rb, line 26</span>
+    <span class="kw">def</span> initialize(_fullname, _level=<span class="kw">nil</span>, _additive=<span class="kw">true</span>, _trace=<span class="kw">false</span>)
+      <span class="cmt"># validation</span>
+      raise ArgumentError, <span class="str">&quot;Logger must have a name&quot;</span>, caller <span class="kw">if</span> _fullname.nil?
+      Log4rTools.validate_level(_level) <span class="kw">unless</span> _level.nil?
+      validate_name(_fullname)
+      
+      <span class="cmt"># create the logger</span>
+      @fullname = _fullname
+      @outputters = []
+      @additive = _additive
+      deal_with_inheritance(_level)
+      LoggerFactory.define_methods(<span class="kw">self</span>)
+      <span class="kw">self</span>.trace = _trace
+      Repository[@fullname] = <span class="kw">self</span>
+    <span class="kw">end</span></pre>
+</body>
+</html>

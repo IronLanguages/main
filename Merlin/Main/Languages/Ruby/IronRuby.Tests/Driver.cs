@@ -98,7 +98,7 @@ namespace IronRuby.Tests {
         private static bool _displayList;
         private static bool _partialTrust;
         private static bool _interpret;
-        private static bool _runPython;
+        private static bool _runPython = true;
 
         public TestRuntime TestRuntime {
             get { return _testRuntime; }
@@ -130,14 +130,14 @@ namespace IronRuby.Tests {
 
         private static bool ParseArguments(List<string>/*!*/ args) {
             if (args.Contains("/help") || args.Contains("-?") || args.Contains("/?") || args.Contains("-help")) {
-                Console.WriteLine("Partial trust              : /partial");
-                Console.WriteLine("Interpret                  : /interpret");
-                Console.WriteLine("Run Python interop tests   : /py");
-                Console.WriteLine("Run Specific Tests         : [/debug] [/exclude] [test_to_run ...]");
-                Console.WriteLine("List Tests                 : /list");
-                Console.WriteLine("Tokenizer baseline         : /tokenizer <target-dir> <sources-file>");
-                Console.WriteLine("Productions dump           : /tokenizer /prod <target-dir> <sources-file>");
-                Console.WriteLine("Benchmark                  : /tokenizer /bm <target-dir> <sources-file>");
+                Console.WriteLine("Partial trust                : /partial");
+                Console.WriteLine("Interpret                    : /interpret");
+                Console.WriteLine("Disable Python interop tests : /py-");
+                Console.WriteLine("Run Specific Tests           : [/debug] [/exclude] [test_to_run ...]");
+                Console.WriteLine("List Tests                   : /list");
+                Console.WriteLine("Tokenizer baseline           : /tokenizer <target-dir> <sources-file>");
+                Console.WriteLine("Productions dump             : /tokenizer /prod <target-dir> <sources-file>");
+                Console.WriteLine("Benchmark                    : /tokenizer /bm <target-dir> <sources-file>");
             }
 
             if (args.Contains("/list")) {
@@ -163,6 +163,11 @@ namespace IronRuby.Tests {
             if (args.Contains("/interpret")) {
                 args.Remove("/interpret");
                 _interpret = true;
+            }
+
+            if (args.Contains("/py-")) {
+                args.Remove("/py-");
+                _runPython = false;
             }
 
             if (args.Contains("/py")) {
@@ -369,9 +374,7 @@ namespace IronRuby.Tests {
                     failedCases.Add(test);
 
                     Console.Error.WriteLine();
-                    Console.ForegroundColor = ConsoleColor.Red;
-                    Console.Error.WriteLine("{0}) {1} {2} : {3}", failedCases.Count, test, frame.GetFileName(), frame.GetFileLineNumber());
-                    Console.ForegroundColor = ConsoleColor.Gray;
+                    WriteError("{0}) {1} {2} : {3}", failedCases.Count, test, frame.GetFileName(), frame.GetFileLineNumber());
                     Console.Error.WriteLine(message);
                 }
             }
@@ -382,9 +385,7 @@ namespace IronRuby.Tests {
                     Exception exception = _unexpectedExceptions[i].Item001;
 
                     Console.Error.WriteLine();
-                    Console.ForegroundColor = ConsoleColor.Red;
-                    Console.Error.WriteLine("{0}) {1} (unexpected exception)", failedCases.Count, test);
-                    Console.ForegroundColor = ConsoleColor.Gray;
+                    WriteError("{0}) {1} (unexpected exception)", failedCases.Count, test);
                     Console.Error.WriteLine(exception);
                     failedCases.Add(test);
                 }
@@ -439,9 +440,17 @@ namespace IronRuby.Tests {
         }
 
         private void PrintTestCaseFailed() {
+            var oldColor = Console.ForegroundColor;
             Console.ForegroundColor = ConsoleColor.Red;
             Console.WriteLine("> FAILED");
-            Console.ForegroundColor = ConsoleColor.Gray;
+            Console.ForegroundColor = oldColor;
+        }
+
+        private void WriteError(string/*!*/ str, params object[] args) {
+            var oldColor = Console.ForegroundColor;
+            Console.ForegroundColor = ConsoleColor.Red;
+            Console.WriteLine(str, args);
+            Console.ForegroundColor = oldColor;
         }
 
         [DebuggerHiddenAttribute]
