@@ -166,7 +166,7 @@ namespace IronRuby.Builtins {
         }
 #endif
 
-        public Type/*!*/ GetUnderlyingSystemType() {
+        public override Type/*!*/ GetUnderlyingSystemType() {
             if (_isSingletonClass) {
                 throw new InvalidOperationException("Singleton class doesn't have underlying system type.");
             }

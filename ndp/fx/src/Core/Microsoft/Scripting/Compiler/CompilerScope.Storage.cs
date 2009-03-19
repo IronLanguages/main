@@ -46,13 +46,13 @@ namespace System.Linq.Expressions.Compiler {
         private sealed class LocalStorage : Storage {
             private readonly LocalBuilder _local;
 
-            internal LocalStorage(LambdaCompiler compiler, ParameterExpression v)
-                : base(compiler, v) {
+            internal LocalStorage(LambdaCompiler compiler, ParameterExpression variable)
+                : base(compiler, variable) {
                 // ByRef variables are supported. This is used internally by
                 // the compiler when emitting an inlined lambda invoke, to 
                 // handle ByRef parameters. BlockExpression prevents this
                 // from being exposed to user created trees.
-                _local = compiler.GetNamedLocal(v.IsByRef ? v.Type.MakeByRefType() : v.Type, v.Name);
+                _local = compiler.GetNamedLocal(variable.IsByRef ? variable.Type.MakeByRefType() : variable.Type, variable);
             }
 
             internal override void EmitLoad() {
@@ -145,7 +145,7 @@ namespace System.Linq.Expressions.Compiler {
                 : base(compiler, variable) {
                 _boxType = typeof(StrongBox<>).MakeGenericType(variable.Type);
                 _boxValueField = _boxType.GetField("Value");
-                _boxLocal = compiler.GetNamedLocal(_boxType, variable.Name);
+                _boxLocal = compiler.GetNamedLocal(_boxType, variable);
             }
 
             internal override void EmitLoad() {

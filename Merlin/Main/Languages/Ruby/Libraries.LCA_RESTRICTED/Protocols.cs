@@ -395,9 +395,9 @@ namespace IronRuby.Runtime {
                 return tt.Type;
             }
 
-            RubyClass rc = value as RubyClass;
-            if (rc != null) {
-                return rc.GetUnderlyingSystemType();
+            RubyModule module = value as RubyModule;
+            if (module != null) {
+                return module.GetUnderlyingSystemType();
             }
 
             throw RubyExceptions.InvalidValueForType(context, value, "Class");

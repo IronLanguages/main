@@ -59,7 +59,7 @@ namespace IronRuby.Tests {
             _driver = driver;
             _testName = testCase.Name;
 
-            if (_driver.IsDebug) {
+            if (_driver.SaveToAssemblies) {
                 Environment.SetEnvironmentVariable("DLR_AssembliesFileName", _testName);
             }
 
@@ -72,8 +72,7 @@ namespace IronRuby.Tests {
                 }
             }
 
-            // TODO: dynamic modules with symbols are not available in partial trust
-            runtimeSetup.DebugMode = !driver.PartialTrust;
+            runtimeSetup.DebugMode = _driver.IsDebug;
             languageSetup.Options["InterpretedMode"] = _driver.Interpret;
             languageSetup.Options["Verbosity"] = 2;
             languageSetup.Options["Compatibility"] = testCase.Compatibility;
@@ -94,6 +93,7 @@ namespace IronRuby.Tests {
         private TestRuntime _testRuntime; 
         private static bool _excludeSelectedCases;
         private static bool _isDebug;
+        private static bool _saveToAssemblies;
         private static bool _runTokenizerDriver;
         private static bool _displayList;
         private static bool _partialTrust;
@@ -116,6 +116,10 @@ namespace IronRuby.Tests {
             get { return _isDebug; }
         }
 
+        public bool SaveToAssemblies {
+            get { return _saveToAssemblies; }
+        }
+
         public bool PartialTrust {
             get { return _partialTrust; }
         }
@@ -132,8 +136,10 @@ namespace IronRuby.Tests {
             if (args.Contains("/help") || args.Contains("-?") || args.Contains("/?") || args.Contains("-help")) {
                 Console.WriteLine("Partial trust                : /partial");
                 Console.WriteLine("Interpret                    : /interpret");
+                Console.WriteLine("Save to assemblies           : /save");
+                Console.WriteLine("Debug Mode                   : /debug");
                 Console.WriteLine("Disable Python interop tests : /py-");
-                Console.WriteLine("Run Specific Tests           : [/debug] [/exclude] [test_to_run ...]");
+                Console.WriteLine("Run Specific Tests           : [/exclude] [test_to_run ...]");
                 Console.WriteLine("List Tests                   : /list");
                 Console.WriteLine("Tokenizer baseline           : /tokenizer <target-dir> <sources-file>");
                 Console.WriteLine("Productions dump             : /tokenizer /prod <target-dir> <sources-file>");
@@ -148,6 +154,11 @@ namespace IronRuby.Tests {
             if (args.Contains("/debug")) {
                 args.Remove("/debug");
                 _isDebug = true;
+            }
+
+            if (args.Contains("/save")) {
+                args.Remove("/save");
+                _saveToAssemblies = true;
             }
 
             if (args.Contains("/partial")) {
@@ -278,7 +289,7 @@ namespace IronRuby.Tests {
         }
 
         private static void InitializeDomain() {
-            if (_isDebug) {
+            if (_saveToAssemblies) {
                 string _dumpDir = Path.Combine(Path.GetTempPath(), "RubyTests");
 
                 if (Directory.Exists(_dumpDir)) {
@@ -374,7 +385,11 @@ namespace IronRuby.Tests {
                     failedCases.Add(test);
 
                     Console.Error.WriteLine();
-                    WriteError("{0}) {1} {2} : {3}", failedCases.Count, test, frame.GetFileName(), frame.GetFileLineNumber());
+                    if (_partialTrust) {
+                        WriteError("{0}) {1}", failedCases.Count, test);
+                    } else {
+                        WriteError("{0}) {1} {2} : {3}", failedCases.Count, test, frame.GetFileName(), frame.GetFileLineNumber());
+                    }
                     Console.Error.WriteLine(message);
                 }
             }
@@ -397,7 +412,12 @@ namespace IronRuby.Tests {
                 Console.ForegroundColor = ConsoleColor.Gray;
             } else {
                 Console.WriteLine();
-                Console.Write("Repro: {0}", Environment.CommandLine);
+                // TODO:
+                if (!_partialTrust) { 
+                    Console.Write("Repro: {0}", Environment.CommandLine);
+                } else {
+                    Console.Write("Repro: IronRuby.Tests.exe /partial");
+                }
                 if (largs.Count == 0) {
                     Console.Write(" {0}", String.Join(" ", failedCases.ToArray()));
                 }

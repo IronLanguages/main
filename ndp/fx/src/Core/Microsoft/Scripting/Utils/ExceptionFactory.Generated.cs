@@ -320,15 +320,6 @@ namespace System.Linq.Expressions {
         }
 
         /// <summary>
-        /// A string like  "MethodBuilder does not have a valid ModuleBuilder"
-        /// </summary>
-        internal static string MethodBuilderDoesNotHaveModuleBuilder {
-            get {
-                return "MethodBuilder does not have a valid ModuleBuilder";
-            }
-        }
-
-        /// <summary>
         /// A string like  "MethodBuilder does not have a valid TypeBuilder"
         /// </summary>
         internal static string MethodBuilderDoesNotHaveTypeBuilder {
