@@ -19,7 +19,7 @@ using System.Reflection;
 using System.Resources;
 
 [assembly: AssemblyVersion("2.0.5.0")]
-[assembly: AssemblyFileVersion("3.0.40307.0")]
-[assembly: AssemblyInformationalVersion("3.0.40307.0")]
+[assembly: AssemblyFileVersion("2.0.31005.0")]
+[assembly: AssemblyInformationalVersion("2.0.31005.0")]
 
 #endif
