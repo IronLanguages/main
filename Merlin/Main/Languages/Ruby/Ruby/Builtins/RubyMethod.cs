@@ -54,7 +54,7 @@ namespace IronRuby.Builtins {
 
         #region Dynamic Operations
 
-        internal void SetRuleForCall(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args) {
+        internal void BuildInvoke(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args) {
             Assert.NotNull(metaBuilder, args);
             Debug.Assert(args.Target == this);
 

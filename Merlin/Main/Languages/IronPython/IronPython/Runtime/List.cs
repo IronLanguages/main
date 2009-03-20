@@ -299,6 +299,10 @@ namespace IronPython.Runtime {
         }
 
         public virtual bool __contains__(object value) {
+            return ContainsWorker(value);
+        }
+
+        internal bool ContainsWorker(object value) {
             lock (this) {
                 for (int i = 0; i < _size; i++) {
                     object thisIndex = _data[i];

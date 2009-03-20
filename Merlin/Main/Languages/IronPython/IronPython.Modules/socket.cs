@@ -1850,7 +1850,7 @@ namespace IronPython.Modules {
                     foreach (string s in _data) {
                         res.Append(s);
                     }
-                    DefaultContext.DefaultPythonContext.Call(PythonOps.GetBoundAttr(DefaultContext.Default, _userSocket, SymbolTable.StringToId("sendall")), res.ToString());
+                    DefaultContext.DefaultPythonContext.CallSplat(PythonOps.GetBoundAttr(DefaultContext.Default, _userSocket, SymbolTable.StringToId("sendall")), res.ToString());
                     _data.Clear();
                 }
             }
@@ -1869,7 +1869,7 @@ namespace IronPython.Modules {
             }
 
             public override int Read(byte[] buffer, int offset, int count) {
-                object received = DefaultContext.DefaultPythonContext.Call(PythonOps.GetBoundAttr(DefaultContext.Default, _userSocket, SymbolTable.StringToId("recv")), count);
+                object received = DefaultContext.DefaultPythonContext.CallSplat(PythonOps.GetBoundAttr(DefaultContext.Default, _userSocket, SymbolTable.StringToId("recv")), count);
                 string data = Converter.ConvertToString(received);
 
                 return PythonAsciiEncoding.Instance.GetBytes(data, 0, data.Length, buffer, offset);

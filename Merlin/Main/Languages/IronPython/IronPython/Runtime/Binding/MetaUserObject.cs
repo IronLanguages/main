@@ -51,11 +51,13 @@ namespace IronPython.Runtime.Binding {
         #region MetaObject Overrides
 
         public override DynamicMetaObject/*!*/ BindInvokeMember(InvokeMemberBinder/*!*/ action, DynamicMetaObject/*!*/[]/*!*/ args) {
-            return new InvokeBinderHelper(this, action, args, BinderState.GetCodeContext(action)).Bind();
+            return new InvokeBinderHelper(this, action, args, BinderState.GetCodeContext(action)).Bind(BinderState.GetBinderState(action).Context, action.Name);
         }
 
         public override DynamicMetaObject/*!*/ BindConvert(ConvertBinder/*!*/ conversion) {
             Type type = conversion.Type;
+            PerfTrack.NoteEvent(PerfTrack.Categories.Binding, "Conversion " + conversion.Type.FullName);
+            PerfTrack.NoteEvent(PerfTrack.Categories.BindingTarget, "Conversion");
             ValidationInfo typeTest = BindingHelpers.GetValidationInfo(this, Value.PythonType);
 
             return BindingHelpers.AddDynamicTestAndDefer(

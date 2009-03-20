@@ -111,10 +111,6 @@ namespace System.Dynamic {
                 case ExpressionType.Not:
                 case ExpressionType.Decrement:
                 case ExpressionType.Increment:
-                case ExpressionType.PreIncrementAssign:
-                case ExpressionType.PreDecrementAssign:
-                case ExpressionType.PostIncrementAssign:
-                case ExpressionType.PostDecrementAssign:
                 case ExpressionType.OnesComplement:
                 case ExpressionType.IsTrue:
                 case ExpressionType.IsFalse:

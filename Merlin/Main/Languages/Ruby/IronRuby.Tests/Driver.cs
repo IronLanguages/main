@@ -98,7 +98,7 @@ namespace IronRuby.Tests {
         private static bool _displayList;
         private static bool _partialTrust;
         private static bool _interpret;
-        private static bool _runPython;
+        private static bool _runPython = true;
 
         public TestRuntime TestRuntime {
             get { return _testRuntime; }
@@ -130,14 +130,14 @@ namespace IronRuby.Tests {
 
         private static bool ParseArguments(List<string>/*!*/ args) {
             if (args.Contains("/help") || args.Contains("-?") || args.Contains("/?") || args.Contains("-help")) {
-                Console.WriteLine("Partial trust              : /partial");
-                Console.WriteLine("Interpret                  : /interpret");
-                Console.WriteLine("Run Python interop tests   : /py");
-                Console.WriteLine("Run Specific Tests         : [/debug] [/exclude] [test_to_run ...]");
-                Console.WriteLine("List Tests                 : /list");
-                Console.WriteLine("Tokenizer baseline         : /tokenizer <target-dir> <sources-file>");
-                Console.WriteLine("Productions dump           : /tokenizer /prod <target-dir> <sources-file>");
-                Console.WriteLine("Benchmark                  : /tokenizer /bm <target-dir> <sources-file>");
+                Console.WriteLine("Partial trust                : /partial");
+                Console.WriteLine("Interpret                    : /interpret");
+                Console.WriteLine("Disable Python interop tests : /py-");
+                Console.WriteLine("Run Specific Tests           : [/debug] [/exclude] [test_to_run ...]");
+                Console.WriteLine("List Tests                   : /list");
+                Console.WriteLine("Tokenizer baseline           : /tokenizer <target-dir> <sources-file>");
+                Console.WriteLine("Productions dump             : /tokenizer /prod <target-dir> <sources-file>");
+                Console.WriteLine("Benchmark                    : /tokenizer /bm <target-dir> <sources-file>");
             }
 
             if (args.Contains("/list")) {
@@ -163,6 +163,11 @@ namespace IronRuby.Tests {
             if (args.Contains("/interpret")) {
                 args.Remove("/interpret");
                 _interpret = true;
+            }
+
+            if (args.Contains("/py-")) {
+                args.Remove("/py-");
+                _runPython = false;
             }
 
             if (args.Contains("/py")) {

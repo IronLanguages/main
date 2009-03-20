@@ -78,22 +78,32 @@ namespace IronPython.Runtime.Binding {
         }
 
         public override DynamicMetaObject/*!*/ BindBinaryOperation(BinaryOperationBinder/*!*/ binder, DynamicMetaObject/*!*/ arg) {
+            PerfTrack.NoteEvent(PerfTrack.Categories.Binding, "OldClass BinaryOperation" + binder.Operation);
+            PerfTrack.NoteEvent(PerfTrack.Categories.BindingTarget, "OldClass BinaryOperation");
             return PythonProtocol.Operation(binder, this, arg, null);
         }
 
         public override DynamicMetaObject/*!*/ BindUnaryOperation(UnaryOperationBinder/*!*/ binder) {
+            PerfTrack.NoteEvent(PerfTrack.Categories.Binding, "OldClass UnaryOperation" + binder.Operation);
+            PerfTrack.NoteEvent(PerfTrack.Categories.BindingTarget, "OldClass UnaryOperation");
             return PythonProtocol.Operation(binder, this);
         }
 
         public override DynamicMetaObject/*!*/ BindGetIndex(GetIndexBinder/*!*/ binder, DynamicMetaObject/*!*/[]/*!*/ indexes) {
+            PerfTrack.NoteEvent(PerfTrack.Categories.Binding, "OldClass GetIndex" + indexes.Length);
+            PerfTrack.NoteEvent(PerfTrack.Categories.BindingTarget, "OldClass GetIndex");
             return PythonProtocol.Index(binder, PythonIndexType.GetItem, ArrayUtils.Insert(this, indexes));
         }
 
         public override DynamicMetaObject/*!*/ BindSetIndex(SetIndexBinder/*!*/ binder, DynamicMetaObject/*!*/[]/*!*/ indexes, DynamicMetaObject/*!*/ value) {
+            PerfTrack.NoteEvent(PerfTrack.Categories.Binding, "OldClass SetIndex" + indexes.Length);
+            PerfTrack.NoteEvent(PerfTrack.Categories.BindingTarget, "OldClass SetIndex");
             return PythonProtocol.Index(binder, PythonIndexType.SetItem, ArrayUtils.Insert(this, ArrayUtils.Append(indexes, value)));
         }
 
         public override DynamicMetaObject/*!*/ BindDeleteIndex(DeleteIndexBinder/*!*/ binder, DynamicMetaObject/*!*/[]/*!*/ indexes) {
+            PerfTrack.NoteEvent(PerfTrack.Categories.Binding, "OldClass DeleteIndex" + indexes.Length);
+            PerfTrack.NoteEvent(PerfTrack.Categories.BindingTarget, "OldClass DeleteIndex");
             return PythonProtocol.Index(binder, PythonIndexType.DeleteItem, ArrayUtils.Insert(this, indexes));
         }
         
@@ -149,6 +159,8 @@ namespace IronPython.Runtime.Binding {
         #region Invoke Implementation
 
         private DynamicMetaObject/*!*/ InvokeWorker(DynamicMetaObjectBinder/*!*/ invoke, Expression/*!*/ codeContext, DynamicMetaObject/*!*/[] args) {
+            PerfTrack.NoteEvent(PerfTrack.Categories.Binding, "OldClass Invoke");
+
             DynamicMetaObject self = Restrict(typeof(OldInstance));
 
             Expression[] exprArgs = new Expression[args.Length + 1];
@@ -378,6 +390,7 @@ namespace IronPython.Runtime.Binding {
             CustomOldClassDictionaryStorage dict;
             int key = GetCustomStorageSlot(name, out dict);
             if (key == -1) {
+                PerfTrack.NoteEvent(PerfTrack.Categories.Binding, "OldInstance " + access + " NoOptimized"); 
                 return MakeDynamicMemberAccess(member, name, access, args);
             }
 
@@ -397,7 +410,7 @@ namespace IronPython.Runtime.Binding {
                     AstUtils.Constant(null)
                 )
             );
-
+            PerfTrack.NoteEvent(PerfTrack.Categories.Binding, "OldInstance " + access + " Optimized"); 
             switch (access) {
                 case MemberAccess.Invoke:
                     ParameterExpression value = Ast.Variable(typeof(object), "value");
@@ -578,6 +591,8 @@ namespace IronPython.Runtime.Binding {
         #region IPythonOperable Members
 
         DynamicMetaObject IPythonOperable.BindOperation(PythonOperationBinder action, DynamicMetaObject[] args) {
+            PerfTrack.NoteEvent(PerfTrack.Categories.Binding, "OldClass PythonOperation " + action.Operation);
+
             if (action.Operation == PythonOperationKind.IsCallable) {
                 return MakeIsCallable(action);
             }

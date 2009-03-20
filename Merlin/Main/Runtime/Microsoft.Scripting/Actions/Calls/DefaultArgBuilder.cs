@@ -15,15 +15,15 @@
 
 using System;
 using System.Collections.Generic;
-using System.Reflection;
+using System.Diagnostics;
+using System.Dynamic;
 using System.Linq.Expressions;
-using Microsoft.Scripting.Utils;
+using System.Reflection;
 using Microsoft.Scripting.Generation;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace Microsoft.Scripting.Actions.Calls {
-    using Ast = System.Linq.Expressions.Expression;
-    
+
     /// <summary>
     /// ArgBuilder which provides a default parameter value for a method call.
     /// </summary>
@@ -47,6 +47,27 @@ namespace Microsoft.Scripting.Actions.Calls {
             }
 
             return parameterBinder.ConvertExpression(AstUtils.Constant(val), ParameterInfo, ParameterInfo.ParameterType);            
+        }
+
+        protected internal override Func<object[], object> ToDelegate(ParameterBinder parameterBinder, IList<DynamicMetaObject> knownTypes, bool[] hasBeenUsed) {
+            object val = ParameterInfo.DefaultValue;
+            if (val is Missing) {
+                val = CompilerHelpers.GetMissingValue(ParameterInfo.ParameterType);
+            }
+            Debug.Assert(val != Missing.Value);
+            return (args) => val;
+        }
+
+        internal override bool CanGenerateDelegate {
+            get {
+                if (ParameterInfo.ParameterType.IsByRef) {
+                    return false;
+                } else if (ParameterInfo.DefaultValue is Missing && CompilerHelpers.GetMissingValue(ParameterInfo.ParameterType) is Missing) {
+                    // reflection throws when we do this
+                    return false;
+                }
+                return true;
+            }
         }
     }
 }

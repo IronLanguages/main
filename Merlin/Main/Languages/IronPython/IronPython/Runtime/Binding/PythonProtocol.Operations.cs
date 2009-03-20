@@ -42,6 +42,9 @@ namespace IronPython.Runtime.Binding {
         private const string DisallowCoerce = "DisallowCoerce";
 
         public static DynamicMetaObject/*!*/ Operation(BinaryOperationBinder/*!*/ operation, DynamicMetaObject target, DynamicMetaObject arg, DynamicMetaObject errorSuggestion) {
+            PerfTrack.NoteEvent(PerfTrack.Categories.Binding, "Fallback BinaryOperator " + target.LimitType.FullName + " " + operation.Operation + " " + arg.LimitType.FullName);
+            PerfTrack.NoteEvent(PerfTrack.Categories.BindingTarget, operation.Operation.ToString());
+
             DynamicMetaObject[] args = new[] { target, arg };
             if (BindingHelpers.NeedsDeferral(args)) {
                 return operation.Defer(target, arg);
@@ -94,6 +97,9 @@ namespace IronPython.Runtime.Binding {
         }
 
         public static DynamicMetaObject/*!*/ Operation(UnaryOperationBinder/*!*/ operation, DynamicMetaObject arg) {
+            PerfTrack.NoteEvent(PerfTrack.Categories.Binding, "Fallback UnaryOperator " + " " + operation.Operation + " " + arg.LimitType.FullName);
+            PerfTrack.NoteEvent(PerfTrack.Categories.BindingTarget, operation.Operation.ToString());
+
             DynamicMetaObject[] args = new[] { arg };
             if (arg.NeedsDeferral()) {
                 return operation.Defer(arg);
@@ -129,6 +135,8 @@ namespace IronPython.Runtime.Binding {
         }
 
         public static DynamicMetaObject/*!*/ Index(DynamicMetaObjectBinder/*!*/ operation, PythonIndexType index, params DynamicMetaObject[] args) {
+            PerfTrack.NoteEvent(PerfTrack.Categories.Binding, "Fallback Index " + " " + index + " " + args[0].LimitType + ", " + args[1].LimitType + args.Length);
+            PerfTrack.NoteEvent(PerfTrack.Categories.BindingTarget, index.ToString());
             if (BindingHelpers.NeedsDeferral(args)) {
                 return operation.Defer(args);
             }
@@ -141,6 +149,12 @@ namespace IronPython.Runtime.Binding {
         }
 
         public static DynamicMetaObject/*!*/ Operation(PythonOperationBinder/*!*/ operation, params DynamicMetaObject/*!*/[]/*!*/ args) {
+            if (args.Length == 1) {
+                PerfTrack.NoteEvent(PerfTrack.Categories.Binding, "Fallback PythonOp " + " " + operation.Operation + " " + args[0].LimitType);
+            } else {
+                PerfTrack.NoteEvent(PerfTrack.Categories.Binding, "Fallback PythonOp " + " " + operation.Operation + " " + args[0].LimitType + ", " + args[1].LimitType);
+            }
+            PerfTrack.NoteEvent(PerfTrack.Categories.BindingTarget, operation.Operation.ToString());
             if (BindingHelpers.NeedsDeferral(args)) {
                 return operation.Defer(args);
             }
@@ -243,12 +257,12 @@ namespace IronPython.Runtime.Binding {
                                 Ast.Block(                                            // body
                         // getItemRes = param0.__getitem__(curIndex)
                                     Utils.Try(
-                                        Ast.Convert(
+                                        Ast.Block(
                                             Ast.Assign(
                                                 getItemRes,
                                                 sf.Target.Expression
                                             ),
-                                            typeof(void)
+                                            Ast.Empty()
                                         )
                                     ).Catch(
                         // end of indexes, return false
@@ -553,12 +567,18 @@ namespace IronPython.Runtime.Binding {
             BinderState state = BinderState.GetBinderState(operation);
 
             return new DynamicMetaObject(
-                Binders.Get(
+                Binders.Convert(
                     BinderState.GetCodeContext(operation),
                     state,
                     typeof(string),
-                    "__doc__",
-                    args[0].Expression
+                    ConversionResultKind.ExplicitCast,
+                    Binders.Get(
+                        BinderState.GetCodeContext(operation),
+                        state,
+                        typeof(object),
+                        "__doc__",
+                        args[0].Expression
+                    )
                 ),
                 args[0].Restrictions
             );
@@ -1821,7 +1841,10 @@ namespace IronPython.Runtime.Binding {
                                             binder,
                                             typeof(object),
                                             "__index__",
-                                            args[i].Expression
+                                            Ast.Convert(
+                                                args[i].Expression,
+                                                typeof(object)
+                                            )
                                         )
                                     )
                                 ),                               

@@ -253,6 +253,15 @@ namespace IronRuby.Runtime.Calls {
             _signature = signature;
         }
 
+        internal CallArguments(RubyContext/*!*/ context, DynamicMetaObject/*!*/ target, DynamicMetaObject/*!*/[]/*!*/ args, CallInfo/*!*/ callInfo) 
+            : this (
+                new DynamicMetaObject(AstUtils.Constant(context), BindingRestrictions.Empty, context),
+                target,
+                args,
+                RubyCallSignature.Simple(callInfo.ArgumentCount)
+            ) {
+        }
+
         public void InsertSimple(int index, DynamicMetaObject/*!*/ arg) {
             index = GetSimpleArgumentsIndex(index);
 

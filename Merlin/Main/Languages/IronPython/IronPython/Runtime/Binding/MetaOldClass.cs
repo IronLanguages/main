@@ -39,7 +39,7 @@ namespace IronPython.Runtime.Binding {
 
         #region IPythonInvokable Members
 
-        public DynamicMetaObject/*!*/ Invoke(PythonInvokeBinder/*!*/ pythonInvoke, Expression/*!*/ codeContext, DynamicMetaObject/*!*/ target, DynamicMetaObject/*!*/[]/*!*/ args) {
+        public DynamicMetaObject/*!*/ Invoke(PythonInvokeBinder/*!*/ pythonInvoke, Expression/*!*/ codeContext, DynamicMetaObject/*!*/ target, DynamicMetaObject/*!*/[]/*!*/ args) {            
             return MakeCallRule(pythonInvoke, codeContext, args);
         }
 
@@ -47,7 +47,7 @@ namespace IronPython.Runtime.Binding {
 
         #region IPythonGetable Members
 
-        public DynamicMetaObject GetMember(PythonGetMemberBinder member, Expression codeContext) {
+        public DynamicMetaObject GetMember(PythonGetMemberBinder member, Expression codeContext) {            
             // no codeContext filtering but avoid an extra site by handling this action directly
             return MakeGetMember(member, codeContext);
         }
@@ -81,6 +81,8 @@ namespace IronPython.Runtime.Binding {
         }
 
         public override DynamicMetaObject BindConvert(ConvertBinder/*!*/ conversion) {
+            PerfTrack.NoteEvent(PerfTrack.Categories.Binding, "OldClass Convert");
+            PerfTrack.NoteEvent(PerfTrack.Categories.BindingTarget, "OldClass Convert");
             if (conversion.Type.IsSubclassOf(typeof(Delegate))) {
                 return MakeDelegateTarget(conversion, conversion.Type, Restrict(typeof(OldClass)));
             }
@@ -100,6 +102,9 @@ namespace IronPython.Runtime.Binding {
         #region Calls
 
         private DynamicMetaObject/*!*/ MakeCallRule(DynamicMetaObjectBinder/*!*/ call, Expression/*!*/ codeContext, DynamicMetaObject[] args) {
+            PerfTrack.NoteEvent(PerfTrack.Categories.Binding, "OldClass Invoke w/ " + args.Length + " args");
+            PerfTrack.NoteEvent(PerfTrack.Categories.BindingTarget, "OldClass Invoke");
+
             CallSignature signature = BindingHelpers.GetCallSignature(call);
             // TODO: If we know __init__ wasn't present we could construct the OldInstance directly.
 
@@ -193,6 +198,8 @@ namespace IronPython.Runtime.Binding {
         #region Member Access
 
         private DynamicMetaObject/*!*/ MakeSetMember(string/*!*/ name, DynamicMetaObject/*!*/ value) {
+            PerfTrack.NoteEvent(PerfTrack.Categories.Binding, "OldClass SetMember");
+            PerfTrack.NoteEvent(PerfTrack.Categories.BindingTarget, "OldClass SetMember");
             DynamicMetaObject self = Restrict(typeof(OldClass));
 
             Expression call, valueExpr = AstUtils.Convert(value.Expression, typeof(object));
@@ -235,6 +242,8 @@ namespace IronPython.Runtime.Binding {
         }
 
         private DynamicMetaObject/*!*/ MakeDeleteMember(DeleteMemberBinder/*!*/ member) {
+            PerfTrack.NoteEvent(PerfTrack.Categories.Binding, "OldClass DeleteMember");
+            PerfTrack.NoteEvent(PerfTrack.Categories.BindingTarget, "OldClass DeleteMember");
             DynamicMetaObject self = Restrict(typeof(OldClass));
 
             return new DynamicMetaObject(
@@ -249,6 +258,8 @@ namespace IronPython.Runtime.Binding {
         }
 
         private DynamicMetaObject/*!*/ MakeGetMember(DynamicMetaObjectBinder/*!*/ member, Expression codeContext) {
+            PerfTrack.NoteEvent(PerfTrack.Categories.Binding, "OldClass GetMember");
+            PerfTrack.NoteEvent(PerfTrack.Categories.BindingTarget, "OldClass GetMember");
             DynamicMetaObject self = Restrict(typeof(OldClass));
 
             Expression target;

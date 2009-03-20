@@ -253,6 +253,16 @@ namespace IronRuby.Runtime {
         #region Context
 
         [Emitted]
+        public static RubyContext/*!*/ GetContextFromModule(RubyModule/*!*/ module) {
+            return module.Context;
+        }
+        
+        [Emitted]
+        public static RubyContext/*!*/ GetContextFromIRubyObject(IRubyObject/*!*/ obj) {
+            return obj.Class.Context;
+        }
+        
+        [Emitted]
         public static RubyContext/*!*/ GetContextFromScope(RubyScope/*!*/ scope) {
             return scope.RubyContext;
         }
@@ -1338,6 +1348,13 @@ namespace IronRuby.Runtime {
                 throw new InvalidOperationException(String.Format("{0}#to_proc should return Proc", className));
             }
             return result;
+        }
+
+        // TODO: (interop conversion)
+        // Used for implicit conversions from System.String to MutableString.
+        [Emitted]
+        public static MutableString/*!*/ ToMutableString(string/*!*/ str) {
+            return MutableString.Create(str, RubyEncoding.UTF8);
         }
 
         [Emitted] // ProtocolConversionAction

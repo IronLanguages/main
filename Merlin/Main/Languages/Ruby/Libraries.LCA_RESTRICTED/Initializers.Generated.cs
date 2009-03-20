@@ -560,6 +560,10 @@ namespace IronRuby.Builtins {
         }
         
         private static void LoadClrString_Instance(IronRuby.Builtins.RubyModule/*!*/ module) {
+            module.DefineLibraryMethod("+", 0x51, 
+                new System.Func<System.String, IronRuby.Builtins.MutableString, System.String>(IronRuby.Builtins.StringOps.Concatenate)
+            );
+            
             module.DefineLibraryMethod("==", 0x51, 
                 new System.Func<System.String, System.Object, System.Boolean>(IronRuby.Builtins.StringOps.Equals)
             );

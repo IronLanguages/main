@@ -106,6 +106,9 @@ namespace IronPython.Runtime.Binding {
             private Expression _paramlessCheck;                     // tests when we have no parameters
 
             public FunctionBinderHelper(DynamicMetaObjectBinder/*!*/ call, MetaPythonFunction/*!*/ function, Expression codeContext, DynamicMetaObject/*!*/[]/*!*/ args) {
+                PerfTrack.NoteEvent(PerfTrack.Categories.Binding, "PythonFunction Invoke " + function.Value.FunctionCompatibility + " w/ " + args.Length + " args");
+                PerfTrack.NoteEvent(PerfTrack.Categories.BindingTarget, "PythonFunction");
+
                 _call = call;
                 _func = function;
                 _args = args;

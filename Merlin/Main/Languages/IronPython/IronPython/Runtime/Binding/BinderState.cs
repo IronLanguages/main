@@ -28,7 +28,7 @@ using IronPython.Runtime.Operations;
 namespace IronPython.Runtime.Binding {
     using Ast = System.Linq.Expressions.Expression;
 
-    class BinderState : IExpressionSerializable {
+    public class BinderState : IExpressionSerializable {
         private readonly PythonBinder/*!*/ _binder;
         private CodeContext _context;
         private static readonly BinderState Default = new BinderState(DefaultContext.DefaultPythonBinder, DefaultContext.Default);
@@ -42,6 +42,7 @@ namespace IronPython.Runtime.Binding {
         private Dictionary<PythonOperationKind, PythonOperationBinder/*!*/> _operationBinders;
         private Dictionary<ExpressionType, PythonUnaryOperationBinder/*!*/> _unaryBinders;
         private Dictionary<ExpressionType, PythonBinaryOperationBinder/*!*/> _binaryBinders;
+        private Dictionary<BinaryOperationRetTypeKey, OperationRetBoolBinder/*!*/> _binaryRetTypeBinders;
         private Dictionary<Type/*!*/, ConversionBinder/*!*/>[] _conversionBinders;
         private Dictionary<CallSignature, CreateFallback/*!*/> _createBinders;
         private Dictionary<CallSignature, CompatibilityInvokeBinder/*!*/> _compatInvokeBinders;
@@ -357,6 +358,26 @@ namespace IronPython.Runtime.Binding {
             }
         }
 
+        internal OperationRetBoolBinder/*!*/ BinaryOperationRetType(PythonBinaryOperationBinder opBinder, ConversionBinder convBinder) {
+            if (_binaryRetTypeBinders == null) {
+                Interlocked.CompareExchange(
+                    ref _binaryRetTypeBinders,
+                    new Dictionary<BinaryOperationRetTypeKey, OperationRetBoolBinder>(),
+                    null
+                );
+            }
+
+            lock (_binaryRetTypeBinders) {
+                OperationRetBoolBinder res;
+                BinaryOperationRetTypeKey key = new BinaryOperationRetTypeKey(convBinder.Type, opBinder.Operation);
+                if (!_binaryRetTypeBinders.TryGetValue(key, out res)) {
+                    _binaryRetTypeBinders[key] = res = new OperationRetBoolBinder(opBinder, convBinder);
+                }
+
+                return res;
+            }
+        }
+
         internal PythonGetIndexBinder/*!*/ GetIndex(int argCount) {
             if (_getIndexBinders == null) {
                 Interlocked.CompareExchange(ref _getIndexBinders, new PythonGetIndexBinder[argCount + 1], null);
@@ -454,5 +475,36 @@ namespace IronPython.Runtime.Binding {
 
         #endregion
 
+        class BinaryOperationRetTypeKey : IEquatable<BinaryOperationRetTypeKey> {
+            public readonly Type ReturnType;
+            public readonly ExpressionType Operation;
+
+            public BinaryOperationRetTypeKey(Type retType, ExpressionType operation) {
+                ReturnType = retType;
+                Operation = operation;
+            }
+
+            #region IEquatable<BinaryOperationRetTypeKey> Members
+
+            public bool Equals(BinaryOperationRetTypeKey other) {
+                return other.ReturnType == ReturnType &&
+                    other.Operation == Operation;
+            }
+
+            #endregion
+
+            public override int GetHashCode() {
+                return ReturnType.GetHashCode() ^ Operation.GetHashCode();
+            }
+
+            public override bool Equals(object obj) {
+                BinaryOperationRetTypeKey other = obj as BinaryOperationRetTypeKey;
+                if (other != null) {
+                    return Equals(other);
+                }
+
+                return false;
+            }
+        }
     }
 }

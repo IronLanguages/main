@@ -37,9 +37,22 @@ namespace IronRuby.Runtime.Calls {
             : base(expression, restrictions, value) {
             ContractUtils.RequiresNotNull(value, "value");
         }
-    }
 
+        internal DynamicMetaObject/*!*/ CreateMetaContext() {
+            return new DynamicMetaObject(ContextExpression, BindingRestrictions.Empty, Context);
+        }
+
+        public override DynamicMetaObject/*!*/ BindInvokeMember(InvokeMemberBinder/*!*/ binder, params DynamicMetaObject/*!*/[]/*!*/ args) {
+            return InteropBinder.InvokeMember.Bind(CreateMetaContext(), binder, this, args, binder.FallbackInvokeMember);
+        }
+
+        public override DynamicMetaObject/*!*/ BindGetMember(GetMemberBinder/*!*/ binder) {
+            return InteropBinder.GetMember.Bind(CreateMetaContext(), binder, this, binder.FallbackGetMember);
+        }
+    }
+    
     public abstract class RubyMetaObject<T> : RubyMetaObject {
+        // TODO: use interface?
         protected abstract MethodInfo/*!*/ ContextConverter { get; }
 
         public new T/*!*/ Value {

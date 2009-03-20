@@ -40,7 +40,7 @@ namespace IronRuby.Runtime.Calls {
         }
 
         public static void MethodCall(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args, string/*!*/ name) {
-            ((RubyMethod)args.Target).SetRuleForCall(metaBuilder, args);
+            ((RubyMethod)args.Target).BuildInvoke(metaBuilder, args);
         }
     }
 }

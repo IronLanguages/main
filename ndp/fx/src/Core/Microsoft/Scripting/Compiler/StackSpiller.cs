@@ -112,7 +112,7 @@ namespace System.Linq.Expressions.Compiler {
                 }
 
                 // Clone the lambda, replacing the body & variables
-                return new Expression<T>(lambda.Name, newBody, lambda.TailCall, lambda.Parameters);
+                return new Expression<T>(newBody, lambda.Name, lambda.TailCall, lambda.Parameters);
             }
 
             return lambda;

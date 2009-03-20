@@ -184,8 +184,12 @@ namespace IronRuby.Compiler {
         private static MethodInfo _GetClassVariable;
         public static MethodInfo/*!*/ GetContextFromBlockParam { get { return _GetContextFromBlockParam ?? (_GetContextFromBlockParam = GetMethod(typeof(RubyOps), "GetContextFromBlockParam")); } }
         private static MethodInfo _GetContextFromBlockParam;
+        public static MethodInfo/*!*/ GetContextFromIRubyObject { get { return _GetContextFromIRubyObject ?? (_GetContextFromIRubyObject = GetMethod(typeof(RubyOps), "GetContextFromIRubyObject")); } }
+        private static MethodInfo _GetContextFromIRubyObject;
         public static MethodInfo/*!*/ GetContextFromMethod { get { return _GetContextFromMethod ?? (_GetContextFromMethod = GetMethod(typeof(RubyOps), "GetContextFromMethod")); } }
         private static MethodInfo _GetContextFromMethod;
+        public static MethodInfo/*!*/ GetContextFromModule { get { return _GetContextFromModule ?? (_GetContextFromModule = GetMethod(typeof(RubyOps), "GetContextFromModule")); } }
+        private static MethodInfo _GetContextFromModule;
         public static MethodInfo/*!*/ GetContextFromProc { get { return _GetContextFromProc ?? (_GetContextFromProc = GetMethod(typeof(RubyOps), "GetContextFromProc")); } }
         private static MethodInfo _GetContextFromProc;
         public static MethodInfo/*!*/ GetContextFromScope { get { return _GetContextFromScope ?? (_GetContextFromScope = GetMethod(typeof(RubyOps), "GetContextFromScope")); } }
@@ -354,6 +358,8 @@ namespace IronRuby.Compiler {
         private static MethodInfo _ToHashValidator;
         public static MethodInfo/*!*/ ToIntegerValidator { get { return _ToIntegerValidator ?? (_ToIntegerValidator = GetMethod(typeof(RubyOps), "ToIntegerValidator")); } }
         private static MethodInfo _ToIntegerValidator;
+        public static MethodInfo/*!*/ ToMutableString { get { return _ToMutableString ?? (_ToMutableString = GetMethod(typeof(RubyOps), "ToMutableString")); } }
+        private static MethodInfo _ToMutableString;
         public static MethodInfo/*!*/ ToProcValidator { get { return _ToProcValidator ?? (_ToProcValidator = GetMethod(typeof(RubyOps), "ToProcValidator")); } }
         private static MethodInfo _ToProcValidator;
         public static MethodInfo/*!*/ ToRegexValidator { get { return _ToRegexValidator ?? (_ToRegexValidator = GetMethod(typeof(RubyOps), "ToRegexValidator")); } }

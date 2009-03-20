@@ -20,13 +20,15 @@ using System.Reflection;
 using System.Reflection.Emit;
 using System.Text;
 using System.Threading;
-using Microsoft.Scripting;
-using Microsoft.Scripting.Runtime;
-using IronPython.Runtime.Binding;
 
+using Microsoft.Scripting;
+using Microsoft.Scripting.Actions.Calls;
+
+using IronPython.Compiler;
+
+using Ast = System.Linq.Expressions.Expression;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 using MSAst = System.Linq.Expressions;
-using Ast = System.Linq.Expressions.Expression;
 
 namespace IronPython.Runtime {
 
@@ -231,7 +233,7 @@ namespace IronPython.Runtime {
         #region Compilation support
 
         internal MSAst.Expression AddOuterProfiling(MSAst.Expression/*!*/ body, MSAst.ParameterExpression/*!*/ tick, int profileIndex) {
-            return AstUtils.Try(
+            return Ast.Block(
                 Ast.Assign(
                     tick,
                     Ast.Call(
@@ -240,19 +242,21 @@ namespace IronPython.Runtime {
                         AstUtils.Constant(profileIndex)
                     )
                 ),
-                body
-            ).Finally(
-                Ast.Call(
-                    Ast.Constant(this, typeof(Profiler)),
-                    typeof(Profiler).GetMethod("FinishCall"),
-                    AstUtils.Constant(profileIndex),
-                    tick
+                AstUtils.Try(                
+                    body
+                ).Finally(
+                    Ast.Call(
+                        Ast.Constant(this, typeof(Profiler)),
+                        typeof(Profiler).GetMethod("FinishCall"),
+                        AstUtils.Constant(profileIndex),
+                        tick
+                    )
                 )
             );
         }
 
         internal MSAst.Expression AddInnerProfiling(MSAst.Expression/*!*/ body, MSAst.ParameterExpression/*!*/ tick, int profileIndex) {
-            return AstUtils.Try(
+            return Ast.Block(
                 Ast.Assign(
                     tick,
                     Ast.Call(
@@ -262,15 +266,17 @@ namespace IronPython.Runtime {
                         tick
                     )
                 ),
-                body
-            ).Finally(
-                Ast.Assign(
-                    tick,
-                    Ast.Call(
-                        Ast.Constant(this, typeof(Profiler)),
-                        typeof(Profiler).GetMethod("FinishNestedCall"),
-                        AstUtils.Constant(profileIndex),
-                        tick
+                AstUtils.Try(
+                    body
+                ).Finally(
+                    Ast.Assign(
+                        tick,
+                        Ast.Call(
+                            Ast.Constant(this, typeof(Profiler)),
+                            typeof(Profiler).GetMethod("FinishNestedCall"),
+                            AstUtils.Constant(profileIndex),
+                            tick
+                        )
                     )
                 )
             );
@@ -289,6 +295,13 @@ namespace IronPython.Runtime {
 
             protected override MSAst.Expression/*!*/ VisitDynamic(MSAst.DynamicExpression/*!*/ node) {
                 return _profiler.AddInnerProfiling(node, _tick, _profileIndex);
+            }
+
+            protected override MSAst.Expression/*!*/ VisitExtension(MSAst.Expression node) {
+                if (node is ReducableDynamicExpression) {
+                    return _profiler.AddInnerProfiling(node, _tick, _profileIndex);
+                }
+                return base.VisitExtension(node);
             }
 
             protected override System.Linq.Expressions.Expression VisitMethodCall(MSAst.MethodCallExpression node) {
@@ -333,6 +346,25 @@ namespace IronPython.Runtime {
                 new MSAst.ParameterExpression[] { tick },
                 AddOuterProfiling(body, tick, profileIndex)
             );
+        }
+
+        /// <summary>
+        /// Wraps a call to a MethodInfo with profiling capture for that MethodInfo
+        /// </summary>
+        internal OptimizingCallDelegate AddProfiling(OptimizingCallDelegate/*!*/ callDelgate, MethodBase/*!*/ method) {
+            if ((method is DynamicMethod) || IgnoreMethod(method)) {
+                return callDelgate;
+            }
+            
+            int profileIndex = GetProfilerIndex(method);
+            return delegate(object[] callArgs, out bool shouldOptimize) {
+                long callStart = StartCall(profileIndex);
+                try {
+                    return callDelgate(callArgs, out shouldOptimize);
+                } finally {
+                    FinishCall(profileIndex, callStart);
+                }
+            };
         }
 
         #endregion
