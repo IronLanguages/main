@@ -13,6 +13,8 @@
  *
  * ***************************************************************************/
 
+using ILGenerator = System.Linq.Expressions.Compiler.OffsetTrackingILGenerator;
+
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Dynamic.Utils;

@@ -108,6 +108,14 @@ namespace IronRuby.Builtins {
             get { return _tracker != null && _tracker.Type.IsInterface; }
         }
 
+        public virtual Type/*!*/ GetUnderlyingSystemType() {
+            if (IsInterface) {
+                return _tracker.Type;
+            } else {
+                throw new InvalidOperationException();
+            }
+        }
+
         public RubyClass/*!*/ SingletonClass {
             get {
                 Debug.Assert(_singletonClass != null);
@@ -1089,6 +1097,9 @@ namespace IronRuby.Builtins {
                 RubyMemberInfo method;
                 if (_methods.TryGetValue(name, out method)) {
                     if (method.IsHidden || method.IsUndefined) {
+                        return false;
+                    } else if (this == _context.ObjectClass && name == Symbols.Initialize) {
+                        // We prohibit removing Object#initialize to simplify object construction logic (this is compatible with 1.9 behavior).
                         return false;
                     } else if (method.IsRemovable) {
                         // Method is used in a dynamic site or group => update version of all dependencies of this module.

@@ -13,6 +13,8 @@
  *
  * ***************************************************************************/
 
+using ILGenerator = System.Linq.Expressions.Compiler.OffsetTrackingILGenerator;
+
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
@@ -59,7 +61,7 @@ namespace System.Linq.Expressions.Compiler {
         private readonly bool _hasClosureArgument;
 
         // True if we want to emitting debug symbols
-        private readonly bool _emitDebugSymbols;
+        private bool EmitDebugSymbols { get { return _tree.DebugInfoGenerator != null; } }
 
         // Runtime constants bound to the delegate
         private readonly BoundConstants _boundConstants;
@@ -88,7 +90,9 @@ namespace System.Linq.Expressions.Compiler {
             _tree = tree;
             _lambda = lambda;
             _method = method;
-            _ilg = method.GetILGenerator();
+
+            _ilg = new OffsetTrackingILGenerator(method.GetILGenerator());
+
             _hasClosureArgument = true;
 
             // These are populated by AnalyzeTree/VariableBinder
@@ -101,7 +105,7 @@ namespace System.Linq.Expressions.Compiler {
         /// <summary>
         /// Creates a lambda compiler that will compile into the provided Methodbuilder
         /// </summary>
-        private LambdaCompiler(AnalyzedTree tree, LambdaExpression lambda, MethodBuilder method, bool emitDebugSymbols) {
+        private LambdaCompiler(AnalyzedTree tree, LambdaExpression lambda, MethodBuilder method) {
             _hasClosureArgument = tree.Scopes[lambda].NeedsClosure;
             Type[] paramTypes = GetParameterTypes(lambda);
             if (_hasClosureArgument) {
@@ -121,8 +125,8 @@ namespace System.Linq.Expressions.Compiler {
             _lambda = lambda;
             _typeBuilder = (TypeBuilder)method.DeclaringType;
             _method = method;
-            _ilg = method.GetILGenerator();
-            _emitDebugSymbols = emitDebugSymbols;
+
+            _ilg = new OffsetTrackingILGenerator(method.GetILGenerator());
 
             // These are populated by AnalyzeTree/VariableBinder
             _scope = tree.Scopes[lambda];
@@ -141,7 +145,6 @@ namespace System.Linq.Expressions.Compiler {
             _ilg = parent._ilg;
             _hasClosureArgument = parent._hasClosureArgument;
             _typeBuilder = parent._typeBuilder;
-            _emitDebugSymbols = parent._emitDebugSymbols;
             _scope = _tree.Scopes[lambda];
             _boundConstants = parent._boundConstants;
         }
@@ -170,11 +173,14 @@ namespace System.Linq.Expressions.Compiler {
         /// Compiler entry point
         /// </summary>
         /// <param name="lambda">LambdaExpression to compile.</param>
+        /// <param name="debugInfoGenerator">Debug info generator.</param>
         /// <returns>The compiled delegate.</returns>
-        internal static Delegate Compile(LambdaExpression lambda) {
+        internal static Delegate Compile(LambdaExpression lambda, DebugInfoGenerator debugInfoGenerator) {
             // 1. Bind lambda
             AnalyzedTree tree = AnalyzeLambda(ref lambda);
 
+            tree.DebugInfoGenerator = debugInfoGenerator;
+            
             // 2. Create lambda compiler
             LambdaCompiler c = new LambdaCompiler(tree, lambda);
 
@@ -191,12 +197,14 @@ namespace System.Linq.Expressions.Compiler {
         /// 
         /// (probably shouldn't be modifying parameters/return type...)
         /// </summary>
-        internal static void Compile(LambdaExpression lambda, MethodBuilder method, bool emitDebugSymbols) {
+        internal static void Compile(LambdaExpression lambda, MethodBuilder method, DebugInfoGenerator debugInfoGenerator) {
             // 1. Bind lambda
             AnalyzedTree tree = AnalyzeLambda(ref lambda);
 
+            tree.DebugInfoGenerator = debugInfoGenerator;
+            
             // 2. Create lambda compiler
-            LambdaCompiler c = new LambdaCompiler(tree, lambda, method, emitDebugSymbols);
+            LambdaCompiler c = new LambdaCompiler(tree, lambda, method);
 
             // 3. Emit
             c.EmitLambdaBody();
@@ -231,12 +239,12 @@ namespace System.Linq.Expressions.Compiler {
             }
         }
 
-        internal LocalBuilder GetNamedLocal(Type type, string name) {
-            Debug.Assert(type != null);
+        internal LocalBuilder GetNamedLocal(Type type, ParameterExpression variable) {
+            Debug.Assert(type != null && variable != null);
 
             LocalBuilder lb = _ilg.DeclareLocal(type);
-            if (_emitDebugSymbols && name != null) {
-                lb.SetLocalSymInfo(name);
+            if (EmitDebugSymbols && variable.Name != null) {
+                _tree.DebugInfoGenerator.SetLocalName(lb, variable.Name);
             }
             return lb;
         }

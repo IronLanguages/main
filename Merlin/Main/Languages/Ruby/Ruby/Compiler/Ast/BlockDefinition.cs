@@ -173,11 +173,12 @@ namespace IronRuby.Compiler.Ast {
                 gen.CurrentScopeVariable,
                 gen.CurrentRfcVariable,
                 gen.CurrentSelfVariable,
-                Ast.Lambda(
-                    BlockDispatcher.GetDelegateType(parameterCount, attributes),
+                BlockDispatcher.CreateLambda(
                     body,
                     RubyExceptionData.EncodeMethodName(gen.SourceUnit, gen.CurrentMethod.MethodName, Location), 
-                    new ReadOnlyCollection<MSA.ParameterExpression>(parameters)
+                    new ReadOnlyCollection<MSA.ParameterExpression>(parameters),
+                    parameterCount,
+                    attributes
                 ),
                 AstUtils.Constant(parameterCount),
                 AstUtils.Constant(attributes)

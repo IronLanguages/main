@@ -246,45 +246,6 @@ class C; include M; end
 "));
         }
 
-        public void Scenario_RubyConsole2() {
-#if OBSOLETE
-            // TODO: interop
-            ScriptScope module = ScriptDomainManager.CurrentManager.CreateModule("Scenario_RubyConsole2");
-            module.SetVariable("a", 0);
-            RB.Execute(module, RB.CreateScriptSourceFromString("10.times { |x| a = a + x + 1}", SourceCodeKind.Statements));
-            object a = module.LookupVariable("a");
-            Assert((int)a == 55);
-
-            module.SetVariable("b", 1);
-            RB.Execute(module, RB.CreateScriptSourceFromString("10.times { |x| b = b + x + 1}", SourceCodeKind.Statements));
-            object b = module.LookupVariable("b");
-            Assert((int)b == 56);
-#endif
-        }
-
-        public void Scenario_RubyConsole3() {
-            // TODO: bug in top-level scope
-
-            //            ScriptModule module = ScriptDomainManager.CurrentManager.CreateModule("Scenario_RubyConsole3");
-            //            RB.Execute(@"
-            //for i in [11] do
-            //    j = 1
-            //end", module);
-            //            object a = module.LookupVariable("j");
-            //            Assert((int)a == 1);
-        }
-
-        public void Scenario_RubyConsole4() {
-
-            //            XAssertOutput(delegate() {
-            //                RB.ExecuteInteractiveCode("x = 1");
-            //                RB.ExecuteInteractiveCode("puts x");
-            //            }, @"
-            //=> 1
-            //=> nil
-            //1");
-        }
-
         public void ObjectOperations1() {
             var cls = Engine.Execute(@"
 class C
@@ -339,15 +300,16 @@ end
             Engine.Execute(@"
 class C
   def foo
-    puts 'foo'
+    123
   end
 end
 ");
 
-            py.CreateScriptSourceFromString(@"
+            var result = py.Execute<int>(@"
 import C
-C.new().foo()    # TODO: C().foo()
-", SourceCodeKind.Statements).Execute();
+C().foo()
+");
+            Assert(result == 123);
         }
 
         public void PythonInterop2() {
@@ -355,14 +317,58 @@ C.new().foo()    # TODO: C().foo()
 
             var py = Runtime.GetEngine("python");
 
-            py.CreateScriptSourceFromString(@"
+            py.Execute(@"
 class C(object):
-  def foo(self):
-    print 'foo'
-", SourceCodeKind.Statements).Execute(Runtime.Globals);
+  def foo(self, a, b):
+    return a + b
+", Runtime.Globals);
+
+            Assert(Engine.Execute<int>("C.new.foo(3,4)") == 7);
+        }
+
+        public void PythonInterop3() {
+            if (!_driver.RunPython) return;
+
+            var py = Runtime.GetEngine("python");
+
+            var scope = py.CreateScope();
+            py.Execute(@"
+def python():
+  return 'Python'
+", scope);
 
             Engine.Execute(@"
-p C             #TODO: C.new
+def self.ruby
+  python.call + ' + Ruby'
+end
+", scope);
+
+            AssertOutput(() => py.Execute(@"
+print ruby()
+", scope), @"
+Python + Ruby
+");
+        }
+
+        public void PythonInterop4() {
+            if (!_driver.RunPython) return;
+
+            var py = Runtime.GetEngine("python");
+
+            var scope = py.CreateScope();
+            py.Execute(@"
+def get_python_class():
+  class C(object): 
+    def __str__(self):
+      return 'this is C'
+
+  return C()
+", scope);
+
+            AssertOutput(() => Engine.Execute(@"
+p get_python_class.call
+", scope), @"
+this is C
 ");
         }
 

@@ -48,9 +48,9 @@ namespace IronRuby.Runtime {
         public static readonly string/*!*/ MriReleaseDate = "2008-05-28";
 
         // IronRuby:
-        public const string/*!*/ IronRubyVersionString = "1.0.0.0";
-        public static readonly Version IronRubyVersion = new Version(1, 0, 0, 0);
-        internal const string/*!*/ IronRubyDisplayName = "IronRuby 1.0 Alpha";
+        public const string/*!*/ IronRubyVersionString = "0.3.0.0";
+        public static readonly Version IronRubyVersion = new Version(0, 3, 0, 0);
+        internal const string/*!*/ IronRubyDisplayName = "IronRuby 0.3";
         internal const string/*!*/ IronRubyNames = "IronRuby;Ruby;rb";
         internal const string/*!*/ IronRubyFileExtensions = ".rb";
 
@@ -1568,7 +1568,7 @@ namespace IronRuby.Runtime {
             }
 #endif
 
-            Expression<DlrMainCallTarget> lambda = ParseSourceCode<DlrMainCallTarget>(sourceUnit, (RubyCompilerOptions)options, errorSink);
+            var lambda = ParseSourceCode<Func<Scope, LanguageContext, object>>(sourceUnit, (RubyCompilerOptions)options, errorSink);
             if (lambda == null) {
                 return null;
             }
@@ -1576,7 +1576,7 @@ namespace IronRuby.Runtime {
             if (Options.InterpretedMode) {
                 return new InterpretedScriptCode(lambda, sourceUnit);
             } else {
-                return new LegacyScriptCode(lambda, sourceUnit);
+                return new RubyScriptCode(lambda, sourceUnit);
             }
         }
 
@@ -1660,6 +1660,12 @@ namespace IronRuby.Runtime {
 
         public override ErrorSink GetCompilerErrorSink() {
             return _runtimeErrorSink;
+        }
+
+        protected override ScriptCode/*!*/ LoadCompiledCode(Delegate/*!*/ method, string path) {
+            // TODO:
+            SourceUnit su = new SourceUnit(this, NullTextContentProvider.Null, path, SourceCodeKind.File);
+            return new RubyScriptCode((Func<Scope, LanguageContext, object>)method, su);
         }
 
         public void CheckConstantName(string name) {
@@ -1818,14 +1824,14 @@ namespace IronRuby.Runtime {
   parse:         {1}
   ast transform: {2}
   script code:   {3}
-  il:            {4}
+  il:            {4} (TODO)
   binding:       {5} ({6} calls)
 ",
                     _upTime.Elapsed,
                     new TimeSpan(_ParseTimeTicks),
                     new TimeSpan(_AstGenerationTimeTicks),
                     new TimeSpan(Loader._ScriptCodeGenerationTimeTicks),
-                    new TimeSpan(Loader._ILGenerationTimeTicks),
+                    new TimeSpan(), // TODO: new TimeSpan(Loader._ILGenerationTimeTicks),
 #if MEASURE
                     new TimeSpan(MetaAction.BindingTimeTicks), 
                     MetaAction.BindCallCount
@@ -2024,28 +2030,26 @@ namespace IronRuby.Runtime {
         public override GetMemberBinder/*!*/ CreateGetMemberBinder(string/*!*/ name, bool ignoreCase) {
             // TODO:
             if (ignoreCase) {
-                throw new NotSupportedException("Ignore-case lookup not supported");
+                return base.CreateGetMemberBinder(name, ignoreCase);
             }
-            return new RubyGetMemberBinder(this, name);
+            return new InteropBinder.GetMember(this, name);
         }
 
-        public override InvokeMemberBinder/*!*/ CreateCallBinder(string name, bool ignoreCase, CallInfo callInfo) {
-            if (callInfo.ArgumentNames.Count != 0) {
+        public override InvokeMemberBinder/*!*/ CreateCallBinder(string/*!*/ name, bool ignoreCase, CallInfo/*!*/ callInfo) {
+            // TODO:
+            if (ignoreCase || callInfo.ArgumentNames.Count != 0) {
                 return base.CreateCallBinder(name, ignoreCase, callInfo);
             }
-            // TODO:
-            if (ignoreCase) {
-                throw new NotSupportedException("Ignore-case lookup not supported");
-            }
-            return new RubyInvokeMemberBinder(this, name, callInfo);
+            return new InteropBinder.InvokeMember(this, name, callInfo);
         }
 
         public override CreateInstanceBinder/*!*/ CreateCreateBinder(CallInfo /*!*/ callInfo) {
+            // TODO:
             if (callInfo.ArgumentNames.Count != 0) {
                 return base.CreateCreateBinder(callInfo);
             }
 
-            return new RubyCreateInstanceBinder(this, callInfo);
+            return new InteropBinder.CreateInstance(this, callInfo);
         }
 
         #endregion

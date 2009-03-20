@@ -81,7 +81,6 @@ namespace IronRuby.Runtime {
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1823:AvoidUnusedPrivateFields")]
         private int _compiledFileCount;
 
-        internal static long _ILGenerationTimeTicks;
         internal static long _ScriptCodeGenerationTimeTicks;
 
         /// <summary>
@@ -477,13 +476,6 @@ namespace IronRuby.Runtime {
         }
 
         internal object CompileAndRun(Scope globalScope, ScriptCode/*!*/ code, bool tryEvaluate) {
-            long ts1 = Stopwatch.GetTimestamp();
-            if (code is LegacyScriptCode) {
-                ((LegacyScriptCode)code).EnsureCompiled();
-            }
-            long ts2 = Stopwatch.GetTimestamp();
-            Interlocked.Add(ref _ILGenerationTimeTicks, ts2 - ts1);
-
             return globalScope != null ? code.Run(globalScope) : code.Run();
         }
 

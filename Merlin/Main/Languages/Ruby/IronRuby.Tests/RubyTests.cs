@@ -235,6 +235,7 @@ namespace IronRuby.Tests {
                 Scenario_RubyInitializers5,
                 RubyInitializersCaching1,
                 RubyInitializersCaching2,
+                RubyInitializersCaching3,
                 RubyAllocators1,
 
                 Scenario_RubyForLoop1,
@@ -309,13 +310,13 @@ namespace IronRuby.Tests {
                 CrossRuntime2,
 
                 Scenario_RubyConsole1,
-                // TODO: interop, hosting: Scenario_RubyConsole2,
-                Scenario_RubyConsole3,
-                Scenario_RubyConsole4,
                 ObjectOperations1,
                 ObjectOperations2,
                 PythonInterop1,
                 PythonInterop2,
+                PythonInterop3,
+                PythonInterop4,
+
                 CustomTypeDescriptor1,
                 CustomTypeDescriptor2,
                 

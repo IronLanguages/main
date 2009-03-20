@@ -209,7 +209,7 @@ namespace IronRuby.Runtime {
 
         internal const int ReservedHashCode = Int32.MaxValue;
 
-        // never returns Int32.MaxValue
+        // never returns ReservedHashCode
         internal static int GetValueHashCode(this string/*!*/ str, out int binarySum) {
             int result = 5381;
             int sum = 0;
@@ -222,7 +222,7 @@ namespace IronRuby.Runtime {
             return result == ReservedHashCode ? 1 : result;
         }
 
-        // never returns Int32.MaxValue
+        // never returns ReservedHashCode
         internal static int GetValueHashCode(this char[]/*!*/ array, int itemCount, out int binarySum) {
             int result = 5381;
             int sum = 0;
@@ -235,7 +235,7 @@ namespace IronRuby.Runtime {
             return result == ReservedHashCode ? 1 : result;
         }
 
-        // never returns Int32.MaxValue
+        // never returns ReservedHashCode
         internal static int GetValueHashCode(this byte[]/*!*/ array, int itemCount, out int binarySum) {
             int result = 5381;
             int sum = 0;

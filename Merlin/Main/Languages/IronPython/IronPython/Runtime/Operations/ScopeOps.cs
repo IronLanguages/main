@@ -59,14 +59,21 @@ namespace IronPython.Runtime.Types {
             }
         }
 
-        public static object __getattribute__(Scope/*!*/ self, string name) {
+        public static object __getattribute__(CodeContext/*!*/ context, Scope/*!*/ self, string name) {
+            switch (name) {
+                // never look in the dict for these...
+                case "__dict__": return Get__dict__(self);
+                case "__class__": return DynamicHelpers.GetPythonType(self);
+            }
+
             SymbolId si = SymbolTable.StringToId(name);
             object res;
             if (self.TryGetName(si, out res)) {
                 return res;
             }
 
-            throw PythonOps.AttributeErrorForMissingAttribute("module", si);
+            // fall back to object to provide all of our other attributes (e.g. __setattr__, etc...)
+            return ObjectOps.__getattribute__(context, self, name);
         }
 
         public static void __setattr__(Scope/*!*/ self, string name, object value) {

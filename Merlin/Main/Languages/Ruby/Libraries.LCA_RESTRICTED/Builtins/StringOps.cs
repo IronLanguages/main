@@ -15,6 +15,7 @@
 
 using System.Text;
 using IronRuby.Runtime;
+using Microsoft.Scripting.Runtime;
 
 namespace IronRuby.Builtins {
     // Extension methods for System.String
@@ -50,6 +51,13 @@ namespace IronRuby.Builtins {
         [RubyMethod("==", RubyMethodAttributes.PublicInstance)]
         public static bool Equals(string str, object other) {
             return str.Equals(other);
+        }
+
+        // TODO: add all non-mutating string operations
+
+        [RubyMethod("+")]
+        public static string/*!*/ Concatenate(string/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ other) {
+            return self + other.ToString();
         }
     }
 }

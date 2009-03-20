@@ -61,6 +61,7 @@
     <NoStdLib>true</NoStdLib>
     <SilverlightBuild>true</SilverlightBuild>
     <SilverlightSdkPath>..\..\..\Utilities\Silverlight\x86ret\</SilverlightSdkPath>
+    <NoWarn>414,219</NoWarn>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Silverlight Release|AnyCPU' ">
     <OutputPath>..\..\..\Bin\Silverlight Release\</OutputPath>
@@ -71,6 +72,7 @@
     <ErrorReport>prompt</ErrorReport>
     <SilverlightBuild>true</SilverlightBuild>
     <SilverlightSdkPath>..\..\..\Utilities\Silverlight\x86ret\</SilverlightSdkPath>
+    <NoWarn>414,219</NoWarn>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" Condition=" '$(SilverlightBuild)' != 'true' " />
@@ -146,8 +148,10 @@
     <Compile Include="Compiler\Parser\StringContentBuilder.cs" />
     <Compile Include="Runtime\BinaryContentProvider.cs" />
     <Compile Include="Runtime\Calls\ConvertToSAction.cs" />
+    <Compile Include="Runtime\Calls\InteropBinder.cs" />
     <Compile Include="Runtime\Calls\MethodResolutionResult.cs" />
     <Compile Include="Runtime\Calls\RubyLibraryMethodInfo.cs" />
+    <Compile Include="Runtime\Calls\RubyMetaBinder.cs" />
     <Compile Include="Runtime\Calls\RubyMetaObject.cs" />
     <Compile Include="Runtime\Calls\RubyMethodGroupBase.cs" />
     <Compile Include="Runtime\CheckedMonitor.cs" />
@@ -173,7 +177,6 @@
     <Compile Include="Runtime\Calls\CallArguments.cs" />
     <Compile Include="Runtime\Calls\BlockDispatcherUnsplatN.cs" />
     <Compile Include="Runtime\Calls\CallSiteTracer.cs" />
-    <Compile Include="Runtime\Calls\RubyInvokeMemberBinder.cs" />
     <Compile Include="Runtime\Calls\MetaObjectBuilder.cs" />
     <Compile Include="Runtime\Calls\ProtocolConversionAction.cs" />
     <Compile Include="Runtime\Calls\RubyCallAction.cs" />
@@ -308,11 +311,13 @@
     <Compile Include="Builtins\RubyModule.cs" />
     <Compile Include="Builtins\RubyInputProvider.cs" />
     <Compile Include="Runtime\RubyGlobalScope.cs" />
+    <Compile Include="Runtime\RubyMethodDebugInfo.cs" />
     <Compile Include="Runtime\RubyOps.cs" />
     <Compile Include="Runtime\Calls\RubyMethodInfo.cs" />
     <Compile Include="Runtime\RubyContext.cs" />
     <Compile Include="Runtime\RubyOptions.cs" />
     <Compile Include="Runtime\RubyScope.cs" />
+    <Compile Include="Runtime\RubyScriptCode.cs" />
     <Compile Include="Runtime\RubyUtils.cs" />
     <Compile Include="Runtime\RuntimeFlowControl.cs" />
     <Compile Include="Runtime\RuntimeErrorSink.cs" />
@@ -330,8 +335,6 @@
     <Compile Include="Compiler\ReflectionCache.Generated.cs" />
     <Compile Include="RubyCompatibility.cs" />
     <Compile Include="Builtins\RubyModule.Subclass.cs" />
-    <Compile Include="Runtime\Calls\RubyCreateInstanceBinder.cs" />
-    <Compile Include="Runtime\Calls\RubyGetMemberBinder.cs" />
     <Compile Include="Runtime\IOWrapper.cs" />
     <None Include="Compiler\Parser\Parser.y" />
   </ItemGroup>

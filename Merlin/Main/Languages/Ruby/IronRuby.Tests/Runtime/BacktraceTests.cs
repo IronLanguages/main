@@ -15,10 +15,11 @@
 
 using Microsoft.Scripting;
 using System;
+
 namespace IronRuby.Tests {
     public partial class Tests {
         private bool PreciseTraces {
-            get { return !_driver.PartialTrust || _driver.Interpret; }
+            get { return Runtime.Setup.DebugMode || _driver.Interpret; }
         }
 
         public void Backtrace1() {
@@ -171,13 +172,13 @@ foo
             }, PreciseTraces ? @"
 Backtrace4.rb:7:in `baz'
 Backtrace4.rb:11:in `foo'
-*.cs:*:in `Bar'
+*:*:in `Bar'
 Backtrace4.rb:11:in `foo'
 Backtrace4.rb:14
 " : @"
 Backtrace4.rb:6:in `baz'
 Backtrace4.rb:11:in `foo'
-:0:in `Bar'
+*:*:in `Bar'
 Backtrace4.rb:10:in `foo'
 Backtrace4.rb:0
 ", OutputFlags.Match);

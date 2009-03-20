@@ -33,22 +33,45 @@ using System.Reflection;
 using System.Collections.Generic;
 
 namespace IronRuby.Runtime.Calls {
-    public abstract class RubyConversionAction : DynamicMetaObjectBinder {
+    public abstract class RubyConversionAction : RubyMetaBinder {
         protected RubyConversionAction() {
         }
 
         // All protocol conversion actions ignore the current scope and use RubyContext only. 
         // That means if the to_xxx conversion methods or respond_to? are aliased to scope manipulating methods (e.g. eval, private, ...)
         // it won't work. We assume that this is acceptable (it could be easily changed, we can define 2 kinds of protocol actions: with scope and with context).
-        internal static readonly RubyCallSignature Signature = RubyCallSignature.WithImplicitSelf(0);
-
-        public override DynamicMetaObject/*!*/ Bind(DynamicMetaObject/*!*/ context, DynamicMetaObject/*!*/[]/*!*/ args) {
-            var mo = new MetaObjectBuilder();
-            BuildConversion(mo, new CallArguments(context, args, Signature));
-            return mo.CreateMetaObject(this);
+        public override RubyCallSignature Signature {
+            get { return RubyCallSignature.WithImplicitSelf(0); }
         }
 
-        protected abstract void BuildConversion(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args);
+        protected virtual ConvertBinder/*!*/ GetInteropBinder(RubyContext/*!*/ context, out MethodInfo postConverter) {
+            throw new NotImplementedException("TODO");
+        }
+
+        protected override DynamicMetaObject/*!*/ InteropBind(CallArguments/*!*/ args) {
+            var metaBuilder = new MetaObjectBuilder();
+
+            // TODO: pass block as the last parameter (before RHS arg?):
+            var normalizedArgs = RubyMethodGroupBase.NormalizeArguments(metaBuilder, args, SelfCallConvention.NoSelf, false, false);
+
+            MethodInfo postConverter;
+            ConvertBinder interopBinder = GetInteropBinder(args.RubyContext, out postConverter);
+
+            if (normalizedArgs.Length == 0) {
+                // TODO: the type of result.Expression (and LimitType) should be the type of the conversion.
+                var result = interopBinder.Bind(args.MetaTarget, normalizedArgs);
+                metaBuilder.SetMetaResult(result, args);
+
+                if (postConverter != null) {
+                    metaBuilder.Result = postConverter.OpCall(AstUtils.Convert(metaBuilder.Result, interopBinder.Type));
+                }
+
+            } else {
+                metaBuilder.SetWrongNumberOfArgumentsError(normalizedArgs.Length, 0);
+            }
+
+            return metaBuilder.CreateMetaObject(interopBinder);
+        }
 
         public static RubyConversionAction TryGetDefaultConversionAction(Type/*!*/ parameterType) {
             if (parameterType == typeof(MutableString)) {
@@ -110,7 +133,7 @@ namespace IronRuby.Runtime.Calls {
 
         protected abstract bool TryImplicitConversion(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args);
 
-        protected override void BuildConversion(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args) {
+        protected override void Build(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args) {
             BuildConversion(metaBuilder, args, ConversionResultValidator != null ? ConversionResultValidator.ReturnType : typeof(object), this);
         }
 
@@ -338,6 +361,11 @@ namespace IronRuby.Runtime.Calls {
         protected override string/*!*/ ToMethodName { get { return Symbols.ToStr; } }
         protected override string/*!*/ TargetTypeName { get { return "String"; } }
         protected override MethodInfo ConversionResultValidator { get { return Methods.ToStringValidator; } }
+
+        protected override ConvertBinder/*!*/ GetInteropBinder(RubyContext/*!*/ context, out MethodInfo postConverter) {
+            postConverter = Methods.ToMutableString;
+            return new InteropBinder.Convert(context, typeof(string), true);
+        }
     }
 
     public sealed class TryConvertToStrAction : TryConvertToReferenceTypeAction<TryConvertToStrAction, MutableString> {
@@ -609,7 +637,7 @@ namespace IronRuby.Runtime.Calls {
             return ReferenceEquals(other, this);
         }
 
-        protected override void BuildConversion(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args) {
+        protected override void Build(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args) {
             ProtocolConversionAction.BuildConversion(metaBuilder, args, _resultType, _conversions);
         }
     }

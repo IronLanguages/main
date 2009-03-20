@@ -167,9 +167,9 @@ namespace IronRuby.Library.Scanner {
         }
 
 #if SIGNED
-        const string RubyAssembly = @"IronRuby.Libraries, Version=1.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35";
+        const string RubyAssembly = @"IronRuby.Libraries, Version=0.3.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35";
 #else
-        const string RubyAssembly = @"IronRuby.Libraries, Version=1.0.0.0, Culture=neutral";
+        const string RubyAssembly = @"IronRuby.Libraries, Version=0.3.0.0, Culture=neutral";
 #endif
         internal static Dictionary<Type, Type> ExtensionModules;
 

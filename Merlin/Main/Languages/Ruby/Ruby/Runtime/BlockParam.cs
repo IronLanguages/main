@@ -177,10 +177,9 @@ namespace IronRuby.Runtime {
         #region Dynamic Operations
 
         /// <summary>
-        /// OldCallAction on Proc target.
-        /// From control flow perspective it "yields" to the proc.
+        /// "yields" to the proc.
         /// </summary>
-        internal void SetCallActionRule(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args) {
+        internal void BuildInvoke(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args) {
             Assert.NotNull(metaBuilder, args);
             Debug.Assert(!args.Signature.HasBlock);
 

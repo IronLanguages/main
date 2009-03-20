@@ -299,17 +299,9 @@ namespace IronPython.Runtime {
         }
 
         public static object ParseInteger(string text, int b) {
-            if (b == 0 && text.StartsWith("0x")) {
-                int shift = 0;
-                int ret = 0;
-                for (int i = text.Length - 1; i >= 2; i--) {
-                    ret |= HexValue(text[i]) << shift;
-                    shift += 4;
-                }
-                return ret;
+            if (b == 0) {
+                b = DetectRadix(ref text);
             }
-
-            if (b == 0) b = DetectRadix(ref text);
             int iret;
             if (!ParseInt(text, b, out iret)) {
                 BigInteger ret = ParseBigInteger(text, b);
@@ -411,6 +403,12 @@ namespace IronPython.Runtime {
             if (s.StartsWith("0x") || s.StartsWith("0X")) {
                 s = s.Substring(2);
                 return 16;
+            } else if (s.startswith("0o") || s.startswith("0O")) {
+                s = s.Substring(2);
+                return 8;
+            } else if (s.startswith("0b") || s.startswith("0B")) {
+                s = s.Substring(2);
+                return 2;
             } else if (s.StartsWith("0")) {
                 return 8;
             } else {

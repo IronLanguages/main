@@ -890,8 +890,8 @@ add 'foo', 'bar'
 
             const int Id = 0x12345678;
 
-            var lambda = CallSiteTracer.Transform<DlrMainCallTarget>(ast, sourceUnit, options, Id);
-            var code = new LegacyScriptCode(lambda, sourceUnit);
+            var lambda = CallSiteTracer.Transform<Func<Scope, LanguageContext, object>>(ast, sourceUnit, options, Id);
+            var code = new RubyScriptCode(lambda, sourceUnit);
 
             var locations = new List<int>();
             CallSiteTracer.Register((context, args, result, id, location) => {

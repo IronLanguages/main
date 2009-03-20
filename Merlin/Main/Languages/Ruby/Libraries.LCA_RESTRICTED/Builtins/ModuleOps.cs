@@ -324,7 +324,7 @@ namespace IronRuby.Builtins {
                     );
                 }
 
-                self.SetDefinedMethodNoEventNoLock(self.Context, methodName, info, attributesScope.Visibility);
+                self.SetDefinedMethodNoEventNoLock(self.Context, methodName, info, visibility);
             }
 
             self.Context.MethodAdded(self, methodName);
@@ -454,6 +454,11 @@ namespace IronRuby.Builtins {
         // thread-safe:
         [RubyMethod("remove_method", RubyMethodAttributes.PrivateInstance)]
         public static RubyModule/*!*/ RemoveMethod(RubyModule/*!*/ self, [DefaultProtocol, NotNull]string/*!*/ methodName) {
+            // MRI 1.8: reports a warning and allows removal
+            // MRI 1.9: throws a NameError
+            if (self == self.Context.ObjectClass && methodName == Symbols.Initialize) {
+                throw RubyExceptions.CreateNameError("Cannot remove Object#initialize");
+            }
             if (!self.RemoveMethod(methodName)) {
                 throw RubyExceptions.CreateUndefinedMethodError(self, methodName);
             }

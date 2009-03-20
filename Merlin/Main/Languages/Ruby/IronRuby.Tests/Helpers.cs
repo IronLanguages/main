@@ -113,7 +113,7 @@ namespace IronRuby.Tests {
 
             string name = _driver.TestRuntime.TestName;
 
-            if (_driver.IsDebug) {
+            if (_driver.SaveToAssemblies) {
                 string path = Path.Combine(Snippets.Shared.SnippetsDirectory, name + ".rb");
                 Directory.CreateDirectory(Snippets.Shared.SnippetsDirectory);
                 File.WriteAllText(path, code);
