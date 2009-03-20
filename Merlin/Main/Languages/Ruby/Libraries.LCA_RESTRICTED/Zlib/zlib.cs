@@ -1025,7 +1025,7 @@ namespace IronRuby.StandardLibrary.Zlib {
 
                 MutableStringStream inputStream = new MutableStringStream(str);
                 MutableStringStream outputStream = new MutableStringStream();
-                ZDeflateStream compressedZipStream = new ZDeflateStream(outputStream, true);
+                ZDeflateStream compressedZipStream = new ZDeflateStream(outputStream, false);
 
                 int remainingInputSize = str.Length;
                 byte[] inputDataBlock = new byte[Math.Min(0x1000, remainingInputSize)];

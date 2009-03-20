@@ -146,6 +146,7 @@ internal class LibraryDef {
 
 
         public string BuildConfig;
+        public RubyCompatibility Compatibility;
 
         private int _dependencyOrder;
 
@@ -237,6 +238,7 @@ internal class LibraryDef {
         public string/*!*/ Name;
         public List<MethodInfo>/*!*/ Overloads = new List<MethodInfo>();
         public string BuildConfig;
+        public RubyCompatibility Compatibility;
         public RubyMethodAttributes/*!*/ Attributes;
 
         public bool IsRuleGenerator {
@@ -263,6 +265,18 @@ internal class LibraryDef {
     }
 
     #endregion
+
+    private void WriteRubyCompatibilityCheck(RubyCompatibility compatibility) {
+        if (compatibility != RubyCompatibility.Default) {
+            _output.WriteLine("if (Context.RubyOptions.Compatibility >= RubyCompatibility.{0}) {{", compatibility.ToString());
+        }
+    }
+
+    private void WriteRubyCompatibilityCheckEnd(RubyCompatibility compatibility) {
+        if (compatibility != RubyCompatibility.Default) {
+            _output.WriteLine("}");
+        }
+    }
 
     #region Reflection
 
@@ -324,6 +338,7 @@ internal class LibraryDef {
                 def.Trait = trait;
                 def.Extends = (module.Extends != null) ? module.Extends : trait;
                 def.BuildConfig = module.BuildConfig;
+                def.Compatibility = module.Compatibility;
 
                 def.Super = null;
                 if (cls != null && def.Extends != typeof(object) && !def.Extends.IsInterface && !def.IsExtension) {
@@ -404,6 +419,10 @@ internal class LibraryDef {
                             } else {
                                 def.BuildConfig = declaringDef.BuildConfig;
                             }
+                        }
+
+                        if (declaringDef.Compatibility != RubyCompatibility.Default) {
+                            def.Compatibility = (RubyCompatibility)Math.Max((int)declaringDef.Compatibility, (int)def.Compatibility);
                         }
 
                         // we will need a reference for setting the constant:
@@ -516,6 +535,7 @@ internal class LibraryDef {
                         }
 
                         def.BuildConfig = attr.BuildConfig;
+                        def.Compatibility = attr.Compatibility;
 
                         methods.Add(attr.Name, def);
                     }
@@ -691,6 +711,7 @@ internal class LibraryDef {
                 continue;
             }
 
+            Debug.Assert(attr.Compatibility == RubyCompatibility.Default);
             moduleDef.Constants.Add(name, new ConstantDef(name, member, attr.BuildConfig));
         }
     }
@@ -832,6 +853,7 @@ internal class LibraryDef {
                 if (def.BuildConfig != null) {
                     _output.WriteLine("#if " + def.BuildConfig);
                 }
+                WriteRubyCompatibilityCheck(def.Compatibility);
 
                 if (def.IsGlobal) {
                     GenerateAliases(def, ModuleDef.ObjectClassRef);
@@ -840,6 +862,7 @@ internal class LibraryDef {
                     _output.WriteLine("{0}.SetConstant(\"{1}\", {2});", def.DeclaringTypeRef, def.SimpleName, def.Reference);
                 }
 
+                WriteRubyCompatibilityCheckEnd(def.Compatibility);
                 if (def.BuildConfig != null) {
                     _output.WriteLine("#endif");
                 }
@@ -862,6 +885,8 @@ internal class LibraryDef {
         if (def.BuildConfig != null) {
             _output.WriteLine("#if " + def.BuildConfig);
         }
+        WriteRubyCompatibilityCheck(def.Compatibility);
+
 
         switch (def.Kind) {
             case ModuleKind.Class:
@@ -955,6 +980,7 @@ internal class LibraryDef {
                 throw Assert.Unreachable;
         }
 
+        WriteRubyCompatibilityCheckEnd(def.Compatibility);
         if (def.BuildConfig != null) {
             _output.WriteLine("#endif");
         }
@@ -1038,6 +1064,8 @@ internal class LibraryDef {
             if (moduleDef.BuildConfig != null) {
                 _output.WriteLine("#if " + moduleDef.BuildConfig);
             }
+            WriteRubyCompatibilityCheck(moduleDef.Compatibility);
+
             _output.WriteLine("private static void Load{0}_Constants({1}/*!*/ module) {{", moduleDef.Id, TypeRubyModule);
             _output.Indent++;
 
@@ -1046,6 +1074,7 @@ internal class LibraryDef {
 
             _output.Indent--;
             _output.WriteLine("}");
+            WriteRubyCompatibilityCheckEnd(moduleDef.Compatibility);
             if (moduleDef.BuildConfig != null) {
                 _output.WriteLine("#endif");
             }
@@ -1104,14 +1133,21 @@ internal class LibraryDef {
                 _output.WriteLine("#if " + def.BuildConfig);
             }
 
+            int attributes = (int)def.Attributes;
+            if (def.Compatibility != RubyCompatibility.Default) {
+                int encodedCompat = ((int)def.Compatibility) << RubyMethodAttribute.CompatibilityEncodingShift;
+                Debug.Assert((encodedCompat & attributes) == 0);
+                attributes |= encodedCompat;
+            }
+
             if (def.IsRuleGenerator) {
                 _output.WriteLine("module.DefineRuleGenerator(\"{0}\", 0x{1:x}, {2}.{3}());",
                     def.Name,
-                    (int)def.Attributes,
+                    attributes,
                     TypeName(def.Overloads[0].DeclaringType),
                     def.Overloads[0].Name);
             } else {
-                _output.Write("module.DefineLibraryMethod(\"{0}\", 0x{1:x}", def.Name, (int)def.Attributes);
+                _output.Write("module.DefineLibraryMethod(\"{0}\", 0x{1:x}", def.Name, attributes);
 
                 _output.WriteLine(", ");
 
@@ -1165,6 +1201,7 @@ internal class LibraryDef {
                 if (moduleDef.BuildConfig != null) {
                     _output.WriteLine("#if " + moduleDef.BuildConfig);
                 }
+                WriteRubyCompatibilityCheck(moduleDef.Compatibility);
 
                 // public static Exception/*!*/ Factory(RubyClass/*!*/ self, [DefaultParameterValue(null)]object message) {
                 //     return InitializeException(new Exception(GetClrMessage(self, message)), message);
@@ -1191,6 +1228,7 @@ internal class LibraryDef {
                 _output.WriteLine("}");
                 _output.WriteLine();
 
+                WriteRubyCompatibilityCheckEnd(moduleDef.Compatibility);
                 if (moduleDef.BuildConfig != null) {
                     _output.WriteLine("#endif");
                 }

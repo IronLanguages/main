@@ -1171,9 +1171,7 @@ namespace IronRuby.Runtime {
 
         [Emitted] //Body:
         public static void SetCurrentExceptionAndStackTrace(RubyScope/*!*/ scope, Exception/*!*/ exception) {
-            if (RubyExceptionData.TryGetInstance(exception) == null) {
-                RubyExceptionData.AssociateInstance(exception).SetCompiledTrace(scope.RubyContext);
-            }
+            RubyExceptionData.GetInstance(exception).SetCompiledTrace(scope.RubyContext);
             scope.RubyContext.CurrentException = exception;
         }
 

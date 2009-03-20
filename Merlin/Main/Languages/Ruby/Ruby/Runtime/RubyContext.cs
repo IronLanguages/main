@@ -1888,6 +1888,7 @@ namespace IronRuby.Runtime {
             RubyExceptionData data = RubyExceptionData.GetInstance(exception);
             var message = RubyExceptionData.GetClrMessage(data.Message, exceptionClass.Name);
 
+            RubyExceptionData.GetInstance(exception).SetCompiledTrace(this);
             RubyArray backtrace = data.Backtrace;
 
             StringBuilder sb = new StringBuilder();
