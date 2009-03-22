@@ -1,5 +1,6 @@
 Merlin/External/Languages/Ruby/ruby-1.8.6
 Merlin/Main/bin
+Merlin/Main/Bin
 Merlin/Main/External
 *.csproj.vspscc
 *.vssscc
