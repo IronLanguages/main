@@ -108,3 +108,18 @@ describe "Overloaded .NET methods" do
     end
   end
 end
+
+describe "Generic .NET methods" do
+  before :each do
+    @klass = ClassWithMethods.new
+  end
+  it "properly binds and returns the type arguments" do
+    %w{public_1_generic_1_arg public_2_generic_2_arg
+       public_3_generic_3_arg protected_1_generic_1_arg
+       protected_2_generic_2_arg protected_3_generic_3_arg}.each do |m|
+      generic_count = m.match(/_(\d)_generic_(\d)_/)[1].to_i
+      generics =  [Fixnum, String, Symbol][0..(generic_count -1)]
+      @klass.method(m).of(*generics).clr_members[0].get_generic_arguments.should == generics.map {|e| e.to_clr_type}
+    end
+  end
+end

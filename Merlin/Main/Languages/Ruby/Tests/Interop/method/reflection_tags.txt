@@ -1,0 +1,2 @@
+fails:Reflecting on abstract .NET methods should be able to be grabbed as an object after call to #method
+fails:Reflecting on abstract .NET methods are able to be grabbed as an object

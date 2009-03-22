@@ -3,7 +3,7 @@ require File.dirname(__FILE__) + '/../spec_helper'
 describe "Basic .NET classes" do
   csc <<-EOL
     public class EmptyClass {}
-    public class Klass {public int m() {return 1;}}
+    public partial class Klass {public int m() {return 1;}}
     public abstract class EmptyAbstractClass {}
     public abstract class AbstractClass {public abstract int m();}
     public static class EmptyStaticClass {}
