@@ -24,7 +24,7 @@ public interface IEmptyInterfaceGroup { }
 
     public interface IInterfaceGroup1<T> {void m1();}
     public interface IInterfaceGroup1<T,V> {void m1();}
-#line 135 "./method/invocation/generic_spec.rb"
+#line 161 "./method/invocation/generic_spec.rb"
 public partial class ClassWithMethods {
         #region private methods
   private string Private1Generic0Arg<T>() {
@@ -115,9 +115,38 @@ public partial class ClassWithMethods {
     return System.String.Format("{0} {1} {2} {3}", arg0, arg1, arg2, arg3);
   }
   #endregion
+  
+  #region Constrained methods
+  public T StructConstraintMethod<T>(T arg0)
+  where T : struct {
+    return arg0;
+  }
+
+  public T ClassConstraintMethod<T>(T arg0)
+  where T : class {
+    return arg0;
+  }
+
+  public T ConstructorConstraintMethod<T>()
+  where T : new() {
+    return new T();
+  }
+  #endregion
 
     }
-#line 157 "./method/invocation/generic_spec.rb"
+
+    public partial class Klass {
+      private int _foo;
+      
+      public int Foo {
+        get { return _foo; }
+      }
+
+      public Klass() {
+        _foo = 10;
+      }
+    }
+#line 195 "./method/invocation/generic_spec.rb"
 #pragma warning disable 693
     public partial class GenericClassWithMethods<K> {
       #region private methods
@@ -209,6 +238,23 @@ public partial class ClassWithMethods {
     return System.String.Format("{0} {1} {2} {3}", arg0, arg1, arg2, arg3);
   }
   #endregion
+  
+  #region Constrained methods
+  public T StructConstraintMethod<T>(T arg0)
+  where T : struct {
+    return arg0;
+  }
+
+  public T ClassConstraintMethod<T>(T arg0)
+  where T : class {
+    return arg0;
+  }
+
+  public T ConstructorConstraintMethod<T>()
+  where T : new() {
+    return new T();
+  }
+  #endregion
 
       public string Public1Generic2Arg<T>(T arg0, K arg1) {
         return Public2Generic2Arg<T, K>(arg0, arg1);
@@ -218,7 +264,7 @@ public partial class ClassWithMethods {
         return arg0.ToString();
       }
     }
-#line 186 "./method/invocation/generic_spec.rb"
+#line 224 "./method/invocation/generic_spec.rb"
 public partial class GenericClass2Params<K, J> {
       #region private methods
   private string Private1Generic0Arg<T>() {
@@ -307,6 +353,23 @@ public partial class GenericClass2Params<K, J> {
 
   public string Public3Generic4Arg<T, U, V>(T arg0, U arg1, V arg2, string arg3) {
     return System.String.Format("{0} {1} {2} {3}", arg0, arg1, arg2, arg3);
+  }
+  #endregion
+  
+  #region Constrained methods
+  public T StructConstraintMethod<T>(T arg0)
+  where T : struct {
+    return arg0;
+  }
+
+  public T ClassConstraintMethod<T>(T arg0)
+  where T : class {
+    return arg0;
+  }
+
+  public T ConstructorConstraintMethod<T>()
+  where T : new() {
+    return new T();
   }
   #endregion
 

@@ -91,10 +91,30 @@ require 'ironruby'
     return System.String.Format("{0} {1} {2} {3}", arg0, arg1, arg2, arg3);
   }
   #endregion
+  
+  #region Constrained methods
+  public T StructConstraintMethod<T>(T arg0)
+  where T : struct {
+    return arg0;
+  }
+
+  public T ClassConstraintMethod<T>(T arg0)
+  where T : class {
+    return arg0;
+  }
+
+  public T ConstructorConstraintMethod<T>()
+  where T : new() {
+    return new T();
+  }
+  #endregion
 EOL
 describe :generic_methods, :shared => true do
   it "are callable via call and [] when pubic or protected" do
     @klass.method(:public_1_generic_0_arg).of(Fixnum).call.to_s.should == "public generic no args"
+    @klass.method(:struct_constraint_method).of(Fixnum).call(1).should == 1
+    @klass.method(:class_constraint_method).of(String).call("a").should == "a"
+    @klass.method(:constructor_constraint_method).of(Klass).call.foo.should == 10
     (@public_method_list + @protected_method_list).each do |m|
       generic_count, arity = m.match(/_(\d)_generic_(\d)_/)[1..2].map {|e| e.to_i}
       generics = Array.new(generic_count, Fixnum)
@@ -128,6 +148,12 @@ describe :generic_methods, :shared => true do
       lambda {@klass.send(m, *args)}.should raise_error(ArgumentError)
     end
   end
+
+  it "has proper errors for constrained generics" do
+    lambda { @klass.method(:struct_constraint_method).of(String).call("a")}.should raise_error(ArgumentError)
+    lambda { @klass.method(:class_constraint_method).of(Fixnum).call(1)}.should raise_error(ArgumentError)
+    lambda { @klass.method(:constructor_constraint_method).of(String).call("a")}.should raise_error(ArgumentError)
+  end
 end
 
 describe "Generic methods" do
@@ -135,6 +161,18 @@ describe "Generic methods" do
     csc <<-EOL
     public partial class ClassWithMethods {
       #{@methods_string}
+    }
+
+    public partial class Klass {
+      private int _foo;
+      
+      public int Foo {
+        get { return _foo; }
+      }
+
+      public Klass() {
+        _foo = 10;
+      }
     }
     EOL
     before :each do
