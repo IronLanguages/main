@@ -32,7 +32,7 @@ class Object
     puts header << ":" << string.to_s if $DEBUG
   end
 
-  def describe(string)
+  def describe(string, opts=nil)
     debug("describe", string)
     yield
   end
@@ -46,7 +46,8 @@ class Object
 
   def csc(code)
     debug("csc", code)
-    Compiler.code << "//" + caller[0]
+    file, line_number = caller[0].split(":")
+    Compiler.code << "#line #{line_number} \"#{file}\""
     Compiler.code << code.strip
   end
 end
