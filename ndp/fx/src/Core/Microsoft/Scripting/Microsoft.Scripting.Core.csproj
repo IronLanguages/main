@@ -226,6 +226,7 @@
     <Compile Include="Utils\ExceptionFactory.Generated.cs" />
     <Compile Include="Utils\Function.cs" />
     <Compile Include="Utils\Helpers.cs" />
+    <Compile Include="Utils\IRuntimeVariables.cs" />
     <Compile Include="Utils\ReadOnlyCollectionBuilder.cs" />
     <Compile Include="Utils\ReadOnlyDictionary.cs" />
     <Compile Include="Utils\ReferenceEqualityComparer.cs" />

@@ -2,7 +2,7 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProductVersion>9.0.30729</ProductVersion>
+    <ProductVersion>9.0.21022</ProductVersion>
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>{EB66B766-6354-4208-A3D4-AACBDCB5C3B3}</ProjectGuid>
     <OutputType>Library</OutputType>
@@ -182,6 +182,7 @@
     <Compile Include="Interpreter\LightLambda.cs" />
     <Compile Include="Interpreter\Instruction.cs" />
     <Compile Include="Interpreter\LightCompiler.cs" />
+    <Compile Include="Interpreter\RuntimeVariables.cs" />
     <Compile Include="Interpreter\StackFrame.cs" />
     <Compile Include="Runtime\BindingRestrictionsHelpers.cs" />
     <Compile Include="Runtime\DynamicNull.cs" />

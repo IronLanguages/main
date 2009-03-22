@@ -15,12 +15,9 @@
 
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Linq.Expressions;
-using System.Reflection;
 using System.Runtime.CompilerServices;
 using Microsoft.Scripting.Generation;
-using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 
@@ -171,14 +168,14 @@ namespace Microsoft.Scripting.Interpreter {
             // All of them were rewritten. Just return the array, wrapped in a
             // read-only collection.
             if (vars.Count == 0) {
-                return Expression.New(
-                    typeof(ReadOnlyCollection<IStrongBox>).GetConstructor(new[] { typeof(IList<IStrongBox>) }),
+                return Expression.Invoke(
+                    Expression.Constant((Func<IStrongBox[], IRuntimeVariables>)RuntimeVariables.Create),
                     boxesArray
                 );
             }
 
             // Otherwise, we need to return an object that merges them
-            Func<IList<IStrongBox>, IList<IStrongBox>, int[], IList<IStrongBox>> helper = MergedRuntimeVariables.Create;
+            Func<IRuntimeVariables, IRuntimeVariables, int[], IRuntimeVariables> helper = MergedRuntimeVariables.Create;
             return Expression.Invoke(AstUtils.Constant(helper), Expression.RuntimeVariables(vars), boxesArray, AstUtils.Constant(indexes));
         }
 
@@ -201,7 +198,7 @@ namespace Microsoft.Scripting.Interpreter {
                     // We need to convert to object to store the value in the box.
                     return Expression.Block(
                         new[] { variable },
-                        Expression.Assign(variable, Visit(node.Right)), 
+                        Expression.Assign(variable, Visit(node.Right)),
                         Expression.Assign(Expression.Field(box, "Value"), Ast.Utils.Convert(variable, typeof(object))),
                         variable
                     );
@@ -231,104 +228,51 @@ namespace Microsoft.Scripting.Interpreter {
             return Visit(node.ReduceExtensions());
         }
 
+
         #region MergedRuntimeVariables
 
         /// <summary>
         /// Provides a list of variables, supporing read/write of the values
         /// </summary>
-        private sealed class MergedRuntimeVariables : IList<IStrongBox> {
-            private readonly IList<IStrongBox> _first;
-            private readonly IList<IStrongBox> _second;
+        private sealed class MergedRuntimeVariables : IRuntimeVariables {
+            private readonly IRuntimeVariables _first;
+            private readonly IRuntimeVariables _second;
 
             // For reach item, the index into the first or second list
             // Positive values mean the first array, negative means the second
             private readonly int[] _indexes;
 
-            private MergedRuntimeVariables(IList<IStrongBox> first, IList<IStrongBox> second, int[] indexes) {
+            private MergedRuntimeVariables(IRuntimeVariables first, IRuntimeVariables second, int[] indexes) {
                 _first = first;
                 _second = second;
                 _indexes = indexes;
             }
 
-            internal static IList<IStrongBox> Create(IList<IStrongBox> first, IList<IStrongBox> second, int[] indexes) {
+            internal static IRuntimeVariables Create(IRuntimeVariables first, IRuntimeVariables second, int[] indexes) {
                 return new MergedRuntimeVariables(first, second, indexes);
             }
 
-            public int Count {
+            int IRuntimeVariables.Count {
                 get { return _indexes.Length; }
             }
 
-            public IStrongBox this[int index] {
+            object IRuntimeVariables.this[int index] {
                 get {
                     index = _indexes[index];
                     return (index >= 0) ? _first[index] : _second[-1 - index];
                 }
                 set {
-                    throw new NotSupportedException("Collection is read-only.");
-                }
-            }
-
-            public int IndexOf(IStrongBox item) {
-                for (int i = 0, n = _indexes.Length; i < n; i++) {
-                    if (this[i] == item) {
-                        return i;
+                    index = _indexes[index];
+                    if (index >= 0) {
+                        _first[index] = value;
+                    } else {
+                        _second[-1 - index] = value;
                     }
                 }
-                return -1;
-            }
-
-            public bool Contains(IStrongBox item) {
-                return IndexOf(item) >= 0;
-            }
-
-            public void CopyTo(IStrongBox[] array, int arrayIndex) {
-                ContractUtils.RequiresNotNull(array, "array");
-                int count = _indexes.Length;
-                if (arrayIndex < 0 || arrayIndex + count > array.Length) {
-                    throw new ArgumentOutOfRangeException("arrayIndex");
-                }
-                for (int i = 0; i < count; i++) {
-                    array[arrayIndex++] = this[i];
-                }
-            }
-
-            bool ICollection<IStrongBox>.IsReadOnly {
-                get { return true; }
-            }
-
-            public IEnumerator<IStrongBox> GetEnumerator() {
-                for (int i = 0, n = _indexes.Length; i < n; i++) {
-                    yield return this[i];
-                }
-            }
-
-            System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() {
-                return GetEnumerator();
-            }
-
-            void IList<IStrongBox>.Insert(int index, IStrongBox item) {
-                throw new NotSupportedException("Collection is read-only.");
-            }
-
-            void IList<IStrongBox>.RemoveAt(int index) {
-                throw new NotSupportedException("Collection is read-only.");
-            }
-
-            void ICollection<IStrongBox>.Add(IStrongBox item) {
-                throw new NotSupportedException("Collection is read-only.");
-            }
-
-            void ICollection<IStrongBox>.Clear() {
-                throw new NotSupportedException("Collection is read-only.");
-            }
-
-            bool ICollection<IStrongBox>.Remove(IStrongBox item) {
-                throw new NotSupportedException("Collection is read-only.");
             }
         }
         #endregion
 
         #endregion
-
     }
 }

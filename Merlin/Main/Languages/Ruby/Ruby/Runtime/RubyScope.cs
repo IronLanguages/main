@@ -41,7 +41,18 @@ namespace IronRuby.Runtime {
     [DebuggerTypeProxy(typeof(RubyScope.DebugView))]
 #endif
     public abstract class RubyScope {
-        internal static readonly LocalsDictionary _EmptyLocals = new LocalsDictionary(new IStrongBox[0], new SymbolId[0]);
+        private sealed class EmptyRuntimeVariables : IRuntimeVariables {
+            int IRuntimeVariables.Count {
+                get { return 0; }
+            }
+
+            object IRuntimeVariables.this[int index] {
+                get { throw new IndexOutOfRangeException(); }
+                set { throw new IndexOutOfRangeException(); }
+            }
+        }
+
+        internal static readonly LocalsDictionary _EmptyLocals = new LocalsDictionary(new EmptyRuntimeVariables(), new SymbolId[0]);
 
         private readonly IAttributesCollection/*!*/ _frame;
         private readonly RubyTopLevelScope/*!*/ _top;

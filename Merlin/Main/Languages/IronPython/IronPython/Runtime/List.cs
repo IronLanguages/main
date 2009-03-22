@@ -264,7 +264,7 @@ namespace IronPython.Runtime {
                 n = self._size;
                 //??? is this useful optimization
                 //???if (n == 1) return new List(Array.ArrayList.Repeat(this[0], count));
-                newCount = n * count;
+                newCount = checked(n * count);
                 ret = ArrayOps.CopyArray(self._data, newCount);                
             }
 
@@ -344,7 +344,7 @@ namespace IronPython.Runtime {
         public List InPlaceMultiply(int count) {
             lock (this) {
                 int n = this._size;
-                int newCount = n * count;
+                int newCount = checked(n * count);
                 EnsureSize(newCount);
 
                 int block = n;

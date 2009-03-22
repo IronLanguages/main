@@ -1044,6 +1044,38 @@ namespace IronPythonTest {
 
     }
 
+    public class MixedProperties {
+        private object _foo, _bar;
+        public object Foo {
+            get {
+                return _foo;
+            }
+            protected set {
+                _foo = value;
+            }
+        }
+
+        public object Bar {
+            protected get {
+                return _bar;
+            }
+            set {
+                _bar = value;
+            }
+        }
+
+        public object GetFoo() {
+            return _foo;
+        }
+
+        public object GetBar() {
+            return _bar;
+        }
+    }
+
+    public class MixedPropertiesInherited : MixedProperties {
+    }
+
     public static class GenericMethodTester {
         public static int TestIntFactory0(IGenericMethods i) { return i.Factory0<int>(); }
         public static string TestStringFactory0(IGenericMethods i) { return i.Factory0<string>(); }
