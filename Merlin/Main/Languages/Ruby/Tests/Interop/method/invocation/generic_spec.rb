@@ -154,6 +154,14 @@ describe :generic_methods, :shared => true do
     lambda { @klass.method(:class_constraint_method).of(Fixnum).call(1)}.should raise_error(ArgumentError)
     lambda { @klass.method(:constructor_constraint_method).of(String).call("a")}.should raise_error(ArgumentError)
   end
+
+  it "has proper error messages for skipping generic" do
+    lambda {@klass.method(:public_1_generic_1_arg).call("a")}.should raise_error(ArgumentError, /generic/i)
+  end
+
+  it "has proper error messages for incorrect number of arguments" do
+    lambda {@klass.method(:public_1_generic_2_arg).of(Fixnum).call(1)}.should raise_error(ArgumentError, /1 for 2/)
+  end
 end
 
 describe "Generic methods" do

@@ -1,0 +1,2 @@
+fails:Generic methods on generic classes with 2 parameters has proper error messages for skipping generic
+fails:Generic methods on generic classes with 2 parameters has proper error messages for incorrect number of arguments
