@@ -414,6 +414,43 @@ namespace Microsoft.Scripting.Generation {
         }
 
         /// <summary>
+        /// Sees if two MemberInfos point to the same underlying construct in IL.  This
+        /// ignores the ReflectedType property which exists on MemberInfos which
+        /// causes direct comparisons to be false even if they are the same member.
+        /// </summary>
+        public static bool MemberEquals(this MemberInfo self, MemberInfo other) {
+            if ((self == null) != (other == null)) {
+                // one null, the other isn't.
+                return false;
+            } else if (self == null) {
+                // both null
+                return true;
+            }
+
+            if (self.MemberType != other.MemberType) {
+                return false;
+            }
+
+            switch (self.MemberType) {
+                case MemberTypes.Field:
+                    return ((FieldInfo)self).FieldHandle.Equals(((FieldInfo)other).FieldHandle);
+                case MemberTypes.Method:
+                    return ((MethodInfo)self).MethodHandle.Equals(((MethodInfo)other).MethodHandle);
+                case MemberTypes.Constructor:
+                    return ((ConstructorInfo)self).MethodHandle.Equals(((ConstructorInfo)other).MethodHandle);
+                case MemberTypes.NestedType:
+                case MemberTypes.TypeInfo:
+                    return ((Type)self).TypeHandle.Equals(((Type)other).TypeHandle);
+                case MemberTypes.Event:
+                case MemberTypes.Property:
+                default:
+                    return
+                        ((MemberInfo)self).Module == ((MemberInfo)other).Module &&
+                        ((MemberInfo)self).MetadataToken == ((MemberInfo)other).MetadataToken;
+            }
+        }
+
+        /// <summary>
         /// Given a MethodInfo which may be declared on a non-public type this attempts to
         /// return a MethodInfo which will dispatch to the original MethodInfo but is declared
         /// on a public type.

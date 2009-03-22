@@ -509,6 +509,7 @@ namespace Microsoft.Scripting.Interpreter {
 
             object ret = _target.Invoke(args);
             if (!_isVoid) frame.Push(ret);
+
             return +1;
         }
 
@@ -529,7 +530,7 @@ namespace Microsoft.Scripting.Interpreter {
         public override int ProducedStack { get { return 1; } }
         public override int Run(StackFrame frame) {
             StrongBox<object>[] closure = new StrongBox<object>[ConsumedStack];
-            for (int i = closure.Length - 1; i >= 0; i-- ) {
+            for (int i = closure.Length - 1; i >= 0; i--) {
                 closure[i] = (StrongBox<object>)frame.Pop();
             }
 
@@ -740,7 +741,7 @@ namespace Microsoft.Scripting.Interpreter {
             for (int i = ret.Length - 1; i >= 0; i--) {
                 ret[i] = (IStrongBox)frame.Pop();
             }
-            frame.Push(ret);
+            frame.Push(RuntimeVariables.Create(ret));
             return +1;
         }
     }
