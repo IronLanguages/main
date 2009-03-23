@@ -109,6 +109,16 @@ require 'ironruby'
   }
   #endregion
 EOL
+
+@conflicting_method_string = <<-EOL
+  public string Public1Generic2Arg<T>(T arg0, K arg1) {
+    return Public2Generic2Arg<T, K>(arg0, arg1);
+  }
+  
+  public string ConflictingGenericMethod<K>(K arg0) {
+    return arg0.ToString();
+  }
+EOL
 describe :generic_methods, :shared => true do
   it "are callable via call and [] when pubic or protected" do
     @klass.method(:public_1_generic_0_arg).of(Fixnum).call.to_s.should == "public generic no args"
@@ -204,14 +214,9 @@ describe "Generic methods" do
     #pragma warning disable 693
     public partial class GenericClassWithMethods<K> {
     #{@methods_string}
-      public string Public1Generic2Arg<T>(T arg0, K arg1) {
-        return Public2Generic2Arg<T, K>(arg0, arg1);
-      }
-      
-      public string ConflictingGenericMethod<K>(K arg0) {
-        return arg0.ToString();
-      }
+    #{@conflicting_method_string}
     }
+    #pragma warning restore 693
     EOL
     before :each do
       @klass = GenericClassWithMethods.of(Fixnum).new
@@ -230,15 +235,10 @@ describe "Generic methods" do
 
   describe "on generic classes with 2 parameters" do
     csc <<-EOL
+    #pragma warning disable 693
     public partial class GenericClass2Params<K, J> {
     #{@methods_string}
-      public string Public1Generic2Arg<T>(T arg0, K arg1) {
-        return Public2Generic2Arg<T, K>(arg0, arg1);
-      }
-      
-      public string ConflictingGenericMethod<K>(K arg0) {
-        return arg0.ToString();
-      }
+    #{@conflicting_method_string}
     }
     #pragma warning restore 693
     EOL

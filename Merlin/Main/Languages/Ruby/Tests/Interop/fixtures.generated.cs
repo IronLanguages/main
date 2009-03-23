@@ -24,7 +24,7 @@ public interface IEmptyInterfaceGroup { }
 
     public interface IInterfaceGroup1<T> {void m1();}
     public interface IInterfaceGroup1<T,V> {void m1();}
-#line 161 "./method/invocation/generic_spec.rb"
+#line 179 "./method/invocation/generic_spec.rb"
 public partial class ClassWithMethods {
         #region private methods
   private string Private1Generic0Arg<T>() {
@@ -146,7 +146,7 @@ public partial class ClassWithMethods {
         _foo = 10;
       }
     }
-#line 195 "./method/invocation/generic_spec.rb"
+#line 213 "./method/invocation/generic_spec.rb"
 #pragma warning disable 693
     public partial class GenericClassWithMethods<K> {
       #region private methods
@@ -257,15 +257,18 @@ public partial class ClassWithMethods {
   #endregion
 
       public string Public1Generic2Arg<T>(T arg0, K arg1) {
-        return Public2Generic2Arg<T, K>(arg0, arg1);
-      }
-      
-      public string ConflictingGenericMethod<K>(K arg0) {
-        return arg0.ToString();
-      }
+    return Public2Generic2Arg<T, K>(arg0, arg1);
+  }
+  
+  public string ConflictingGenericMethod<K>(K arg0) {
+    return arg0.ToString();
+  }
+
     }
-#line 224 "./method/invocation/generic_spec.rb"
-public partial class GenericClass2Params<K, J> {
+    #pragma warning restore 693
+#line 237 "./method/invocation/generic_spec.rb"
+#pragma warning disable 693
+    public partial class GenericClass2Params<K, J> {
       #region private methods
   private string Private1Generic0Arg<T>() {
     return "private generic no args";
@@ -374,12 +377,13 @@ public partial class GenericClass2Params<K, J> {
   #endregion
 
       public string Public1Generic2Arg<T>(T arg0, K arg1) {
-        return Public2Generic2Arg<T, K>(arg0, arg1);
-      }
-      
-      public string ConflictingGenericMethod<K>(K arg0) {
-        return arg0.ToString();
-      }
+    return Public2Generic2Arg<T, K>(arg0, arg1);
+  }
+  
+  public string ConflictingGenericMethod<K>(K arg0) {
+    return arg0.ToString();
+  }
+
     }
     #pragma warning restore 693
 #line 41 "./method/modification/override_spec.rb"
