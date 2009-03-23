@@ -107,6 +107,11 @@ require 'ironruby'
   where T : new() {
     return new T();
   }
+
+  public T TypeConstraintMethod<T, TBase>(T arg0)
+  where T : TBase {
+    return arg0;
+  }
   #endregion
 EOL
 
@@ -122,9 +127,6 @@ EOL
 describe :generic_methods, :shared => true do
   it "are callable via call and [] when pubic or protected" do
     @klass.method(:public_1_generic_0_arg).of(Fixnum).call.to_s.should == "public generic no args"
-    @klass.method(:struct_constraint_method).of(Fixnum).call(1).should == 1
-    @klass.method(:class_constraint_method).of(String).call("a").should == "a"
-    @klass.method(:constructor_constraint_method).of(Klass).call.foo.should == 10
     (@public_method_list + @protected_method_list).each do |m|
       generic_count, arity = m.match(/_(\d)_generic_(\d)_/)[1..2].map {|e| e.to_i}
       generics = Array.new(generic_count, Fixnum)
@@ -134,6 +136,22 @@ describe :generic_methods, :shared => true do
       @klass.method(m).of(*generics).call(*args).to_s.should == args.join(" ")
       @klass.method(m).of(*generics)[*args].to_s.should == args.join(" ")
     end
+  end
+
+  it "binds struct constraints correctly" do 
+    @klass.method(:struct_constraint_method).of(Fixnum).call(1).should == 1
+  end
+
+  it "binds class constraints correctly" do
+    @klass.method(:class_constraint_method).of(String).call("a").should == "a"
+  end
+
+  it "binds constructor constraints correctly" do
+    @klass.method(:constructor_constraint_method).of(Klass).call.foo.should == 10
+  end
+
+  it "binds secondary type constraints correctly" do
+    @klass.method(:type_constraint_method).of(SubKlass, Klass).call(SubKlass.new).foo.should == 10
   end
 
   if IronRuby.dlr_config.private_binding
@@ -162,7 +180,22 @@ describe :generic_methods, :shared => true do
   it "has proper errors for constrained generics" do
     lambda { @klass.method(:struct_constraint_method).of(String).call("a")}.should raise_error(ArgumentError)
     lambda { @klass.method(:class_constraint_method).of(Fixnum).call(1)}.should raise_error(ArgumentError)
-    lambda { @klass.method(:constructor_constraint_method).of(String).call("a")}.should raise_error(ArgumentError)
+    lambda { @klass.method(:constructor_constraint_method).of(ClrString).call}.should raise_error(ArgumentError)
+    lambda { @klass.method(:type_constraint_method).of(String, Klass).call("a")}.should raise_error(ArgumentError)
+  end
+
+  it "can use Ruby types for constrained generics" do
+    class Foo
+      attr_reader :foo
+      def initialize
+        @foo = 10
+      end
+    end
+
+    class SubFoo < Foo
+    end
+    @klass.method(:constructor_constraint_method).of(Foo).call.foo.should == 10
+    @klass.method(:type_constraint_method).of(SubFoo, Foo).call(SubFoo.new).foo.should == 10
   end
 
   it "has proper error messages for skipping generic" do
@@ -201,6 +234,8 @@ describe "Generic methods" do
         _foo = 10;
       }
     }
+
+    public partial class SubKlass : Klass {}
     EOL
     before :each do
       @klass = ClassWithMethods.new

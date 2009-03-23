@@ -24,7 +24,7 @@ public interface IEmptyInterfaceGroup { }
 
     public interface IInterfaceGroup1<T> {void m1();}
     public interface IInterfaceGroup1<T,V> {void m1();}
-#line 179 "./method/invocation/generic_spec.rb"
+#line 221 "./method/invocation/generic_spec.rb"
 public partial class ClassWithMethods {
         #region private methods
   private string Private1Generic0Arg<T>() {
@@ -131,6 +131,11 @@ public partial class ClassWithMethods {
   where T : new() {
     return new T();
   }
+
+  public T TypeConstraintMethod<T, TBase>(T arg0)
+  where T : TBase {
+    return arg0;
+  }
   #endregion
 
     }
@@ -146,7 +151,9 @@ public partial class ClassWithMethods {
         _foo = 10;
       }
     }
-#line 213 "./method/invocation/generic_spec.rb"
+
+    public partial class SubKlass : Klass {}
+#line 257 "./method/invocation/generic_spec.rb"
 #pragma warning disable 693
     public partial class GenericClassWithMethods<K> {
       #region private methods
@@ -254,6 +261,11 @@ public partial class ClassWithMethods {
   where T : new() {
     return new T();
   }
+
+  public T TypeConstraintMethod<T, TBase>(T arg0)
+  where T : TBase {
+    return arg0;
+  }
   #endregion
 
       public string Public1Generic2Arg<T>(T arg0, K arg1) {
@@ -266,7 +278,7 @@ public partial class ClassWithMethods {
 
     }
     #pragma warning restore 693
-#line 237 "./method/invocation/generic_spec.rb"
+#line 282 "./method/invocation/generic_spec.rb"
 #pragma warning disable 693
     public partial class GenericClass2Params<K, J> {
       #region private methods
@@ -373,6 +385,11 @@ public partial class ClassWithMethods {
   public T ConstructorConstraintMethod<T>()
   where T : new() {
     return new T();
+  }
+
+  public T TypeConstraintMethod<T, TBase>(T arg0)
+  where T : TBase {
+    return arg0;
   }
   #endregion
 
