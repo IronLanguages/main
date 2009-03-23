@@ -174,6 +174,15 @@ describe :generic_methods, :shared => true do
   end
 end
 
+describe :generic_conflicting_methods, :shared => true do
+  it "binds class type parameter correctly" do
+    @klass.method(:public_1_generic_2_arg).of(String).call("hello", 1).to_s.should == "hello 1"
+  end
+
+  it "binds conflicting type parameter correctly" do
+    @klass.method(:conflicting_generic_method).of(String).call("hello").to_s.should == "hello"
+  end
+end
 describe "Generic methods" do
   describe "on regular classes" do
     csc <<-EOL
@@ -231,6 +240,7 @@ describe "Generic methods" do
                         protected_3_generic_3_arg protected_3_generic_3_arg}
     end
     it_behaves_like :generic_methods, Object.new
+    it_behaves_like :generic_conflicting_methods, Object.new
   end
 
   describe "on generic classes with 2 parameters" do
@@ -255,5 +265,6 @@ describe "Generic methods" do
                         protected_3_generic_3_arg protected_3_generic_3_arg}
     end
     it_behaves_like :generic_methods, Object.new
+    it_behaves_like :generic_conflicting_methods, Object.new
   end
 end
