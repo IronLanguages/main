@@ -1,3 +1,9 @@
+#line 4 "./bcl/array/conversion_spec.rb"
+public partial class Klass {
+      public T[] ArrayAcceptingMethod<T>(T[] arg0) {
+        return arg0;
+      }
+    }
 #line 4 "./class/mapping_spec.rb"
 public class EmptyClass {}
     public partial class Klass {public int m() {return 1;}}

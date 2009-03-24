@@ -1,0 +1,2 @@
+fails:Converting Ruby arrays to .NET arrays properly converts to object array
+fails:Converting Ruby arrays to .NET arrays properly converts to typed array
