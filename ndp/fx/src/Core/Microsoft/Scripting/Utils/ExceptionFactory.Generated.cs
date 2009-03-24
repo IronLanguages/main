@@ -320,15 +320,6 @@ namespace System.Linq.Expressions {
         }
 
         /// <summary>
-        /// A string like  "MethodBuilder does not have a valid ModuleBuilder"
-        /// </summary>
-        internal static string MethodBuilderDoesNotHaveModuleBuilder {
-            get {
-                return "MethodBuilder does not have a valid ModuleBuilder";
-            }
-        }
-
-        /// <summary>
         /// A string like  "MethodBuilder does not have a valid TypeBuilder"
         /// </summary>
         internal static string MethodBuilderDoesNotHaveTypeBuilder {
@@ -1471,6 +1462,13 @@ namespace System.Linq.Expressions {
             return FormatString("Switch value of type '{0}' cannot be used for the comparison method parameter of type '{1}'", p0, p1);
         }
 
+        /// <summary>
+        /// A string like  "An IDynamicMetaObjectProvider {0} created an invalid DynamicMetaObject instance."
+        /// </summary>
+        internal static string InvalidMetaObjectCreated(object p0) {
+            return FormatString("An IDynamicMetaObjectProvider {0} created an invalid DynamicMetaObject instance.", p0);
+        }
+
     }
     /// <summary>
     ///    Strongly-typed and parameterized exception factory.
@@ -2462,6 +2460,13 @@ namespace System.Linq.Expressions {
         /// </summary>
         internal static Exception SwitchValueTypeDoesNotMatchComparisonMethodParameter(object p0, object p1) {
             return new ArgumentException(Strings.SwitchValueTypeDoesNotMatchComparisonMethodParameter(p0, p1));
+        }
+
+        /// <summary>
+        /// InvalidOperationException with message like "An IDynamicMetaObjectProvider {0} created an invalid DynamicMetaObject instance."
+        /// </summary>
+        internal static Exception InvalidMetaObjectCreated(object p0) {
+            return new InvalidOperationException(Strings.InvalidMetaObjectCreated(p0));
         }
 
     }

@@ -710,7 +710,7 @@ namespace IronRuby.Runtime {
                     targetScope.RuntimeFlowControl
                 );
             } else {
-                return lambda.Compile(source.EmitDebugSymbols)(
+                return RubyScriptCode.CompileLambda(lambda, context.DomainManager.Configuration.DebugMode)(
                     targetScope,
                     self,
                     module,

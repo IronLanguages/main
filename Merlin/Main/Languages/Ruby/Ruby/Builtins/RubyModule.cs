@@ -108,6 +108,14 @@ namespace IronRuby.Builtins {
             get { return _tracker != null && _tracker.Type.IsInterface; }
         }
 
+        public virtual Type/*!*/ GetUnderlyingSystemType() {
+            if (IsInterface) {
+                return _tracker.Type;
+            } else {
+                throw new InvalidOperationException();
+            }
+        }
+
         public RubyClass/*!*/ SingletonClass {
             get {
                 Debug.Assert(_singletonClass != null);

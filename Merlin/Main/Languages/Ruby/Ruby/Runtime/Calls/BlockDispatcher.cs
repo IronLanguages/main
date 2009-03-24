@@ -22,6 +22,7 @@ using Microsoft.Scripting.Utils;
 using System.Linq.Expressions;
 using System.Reflection;
 using IronRuby.Builtins;
+using System.Collections.ObjectModel;
 
 namespace IronRuby.Runtime.Calls {
     using Ast = System.Linq.Expressions.Expression;
@@ -108,18 +109,19 @@ namespace IronRuby.Runtime.Calls {
             return new BlockDispatcherUnsplatN((BlockCallTargetUnsplatN)method, parameterCount, attributes);
         }
 
-        internal static Type/*!*/ GetDelegateType(int parameterCount, BlockSignatureAttributes attributes) {
+        internal static LambdaExpression/*!*/ CreateLambda(Expression body, string name, ReadOnlyCollection<ParameterExpression> parameters,
+            int parameterCount, BlockSignatureAttributes attributes) {
             if ((attributes & BlockSignatureAttributes.HasUnsplatParameter) == 0) {
                 switch (parameterCount) {
-                    case 0: return typeof(BlockCallTarget0);
-                    case 1: return typeof(BlockCallTarget1);
-                    case 2: return typeof(BlockCallTarget2);
-                    case 3: return typeof(BlockCallTarget3);
-                    case 4: return typeof(BlockCallTarget4);
-                    default: return typeof(BlockCallTargetN);
+                    case 0: return Ast.Lambda<BlockCallTarget0>(body, name, parameters);
+                    case 1: return Ast.Lambda<BlockCallTarget1>(body, name, parameters);
+                    case 2: return Ast.Lambda<BlockCallTarget2>(body, name, parameters);
+                    case 3: return Ast.Lambda<BlockCallTarget3>(body, name, parameters);
+                    case 4: return Ast.Lambda<BlockCallTarget4>(body, name, parameters);
+                    default: return Ast.Lambda<BlockCallTargetN>(body, name, parameters);
                 }
             }
-            return typeof(BlockCallTargetUnsplatN);
+            return Ast.Lambda<BlockCallTargetUnsplatN>(body, name, parameters);
         }
 
         private static void CopyArgumentsFromSplattee(object[]/*!*/ args, int initializedArgCount, int parameterCount, 

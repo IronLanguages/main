@@ -179,7 +179,7 @@ namespace IronPython.Runtime.Operations {
             if (cls == TypeCache.String) {
                 return FastNew(context, @object);
             } else {
-                return cls.CreateInstance(context, @object);
+                return cls.CreateInstance(context, __new__(context, TypeCache.String, @object));
             }
         }
 
@@ -197,7 +197,7 @@ namespace IronPython.Runtime.Operations {
             if (cls == TypeCache.String) {
                 return FastNew(context, @object);
             } else {
-                return cls.CreateInstance(context, @object);
+                return cls.CreateInstance(context, __new__(context, TypeCache.String, @object));
             }
         }
 
@@ -206,7 +206,7 @@ namespace IronPython.Runtime.Operations {
             if (cls == TypeCache.String) {
                 return CheckAsciiString(context, ScriptingRuntimeHelpers.CharToString(@object));
             } else {
-                return cls.CreateInstance(context, @object);
+                return cls.CreateInstance(context, __new__(context, TypeCache.String, @object));
             }
         }
 
@@ -215,7 +215,7 @@ namespace IronPython.Runtime.Operations {
             if (cls == TypeCache.String) {
                 return @object.ToString();
             } else {
-                return cls.CreateInstance(context, @object);
+                return cls.CreateInstance(context, __new__(context, TypeCache.String, @object));
             }
         }
 
@@ -224,7 +224,7 @@ namespace IronPython.Runtime.Operations {
             if (cls == TypeCache.String) {
                 return FastNew(context, @object);
             } else {
-                return cls.CreateInstance(context, @object);
+                return cls.CreateInstance(context, __new__(context, TypeCache.String, @object));
             }
         }
 
@@ -233,7 +233,7 @@ namespace IronPython.Runtime.Operations {
             if (cls == TypeCache.String) {
                 return @object.ToString();
             } else {
-                return cls.CreateInstance(context, @object);
+                return cls.CreateInstance(context, __new__(context, TypeCache.String, @object));
             }
         }
 
@@ -242,7 +242,7 @@ namespace IronPython.Runtime.Operations {
             if (cls == TypeCache.String) {
                 return @object.ToString();
             } else {
-                return cls.CreateInstance(context, @object);
+                return cls.CreateInstance(context, __new__(context, TypeCache.String, @object));
             }
         }
 
@@ -251,7 +251,7 @@ namespace IronPython.Runtime.Operations {
             if (cls == TypeCache.String) {
                 return DoubleOps.__str__(context, @object);
             } else {
-                return cls.CreateInstance(context, @object);
+                return cls.CreateInstance(context, __new__(context, TypeCache.String, @object));
             }
         }
 
@@ -260,7 +260,7 @@ namespace IronPython.Runtime.Operations {
             if (cls == TypeCache.String) {
                 return FastNew(context, @object);
             } else {
-                return cls.CreateInstance(context, @object);
+                return cls.CreateInstance(context, __new__(context, TypeCache.String, @object));
             }
         }
 
@@ -269,7 +269,7 @@ namespace IronPython.Runtime.Operations {
             if (cls == TypeCache.String) {
                 return SingleOps.__str__(context, @object);
             } else {
-                return cls.CreateInstance(context, @object);
+                return cls.CreateInstance(context, __new__(context, TypeCache.String, @object));
             }
         }
 
@@ -285,7 +285,7 @@ namespace IronPython.Runtime.Operations {
             if (cls == TypeCache.String) {
                 return decode(context, str, encoding ?? PythonContext.GetContext(context).GetDefaultEncodingName(), errors);
             } else {
-                return cls.CreateInstance(context, str, encoding, errors);
+                return cls.CreateInstance(context, __new__(context, TypeCache.String, str, encoding, errors));
             }
         }
       

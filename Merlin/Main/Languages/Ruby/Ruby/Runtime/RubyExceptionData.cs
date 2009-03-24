@@ -204,13 +204,27 @@ namespace IronRuby.Runtime {
             methodName = method.Name;
 
             fileName = (hasFileAccessPermission) ? frame.GetFileName() : null;
-            line = frame.GetFileLineNumber();
+            var sourceLine = line = frame.GetFileLineNumber();
 
             if (TryParseRubyMethodName(ref methodName, ref fileName, ref line)) {
                 // Ruby method:
                 if (methodName == TopLevelMethodName) {
                     methodName = null;
                 }
+
+                if (sourceLine == 0) {
+                    RubyMethodDebugInfo debugInfo;
+                    if (RubyMethodDebugInfo.TryGet(method, out debugInfo)) {
+                        var ilOffset = frame.GetILOffset();
+                        if (ilOffset >= 0) {
+                            var mappedLine = debugInfo.Map(ilOffset);
+                            if (mappedLine != 0) {
+                                line = mappedLine;
+                            }
+                        }
+                    }
+                }
+
                 return true;
             } else if (method.IsDefined(typeof(RubyStackTraceHiddenAttribute), false)) {
                 return false;

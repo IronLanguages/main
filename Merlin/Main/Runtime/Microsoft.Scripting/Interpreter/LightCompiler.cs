@@ -1121,7 +1121,7 @@ namespace Microsoft.Scripting.Interpreter {
         }
 
         private void CompileRuntimeVariablesExpression(Expression expr) {
-            //Generates an IList<IStrongBox> for all requested variables
+            // Generates IRuntimeVariables for all requested variables
             var node = (RuntimeVariablesExpression)expr;
             foreach (var variable in node.Variables) {
                 this.EnsureAvailableForClosure(variable);

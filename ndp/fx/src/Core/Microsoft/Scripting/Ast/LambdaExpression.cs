@@ -21,6 +21,7 @@ using System.Linq.Expressions.Compiler;
 using System.Reflection;
 using System.Reflection.Emit;
 using System.Threading;
+using System.Runtime.CompilerServices;
 
 namespace System.Linq.Expressions {
     /// <summary>
@@ -115,27 +116,44 @@ namespace System.Linq.Expressions {
         /// </summary>
         /// <returns>A delegate containing the compiled version of the lambda.</returns>
         public Delegate Compile() {
-            return LambdaCompiler.Compile(this);
+            return LambdaCompiler.Compile(this, null);
+        }
+
+        /// <summary>
+        /// Produces a delegate that represents the lambda expression.
+        /// </summary>
+        /// <param name="debugInfoGenerator">Debugging information generator used by the compiler to mark sequence points and annotate local variables.</param>
+        /// <returns>A delegate containing the compiled version of the lambda.</returns>
+        public Delegate Compile(DebugInfoGenerator debugInfoGenerator) {
+            ContractUtils.RequiresNotNull(debugInfoGenerator, "debugInfoGenerator");
+            return LambdaCompiler.Compile(this, debugInfoGenerator);
         }
 
         /// <summary>
         /// Compiles the lambda into a method definition.
         /// </summary>
         /// <param name="method">A <see cref="MethodBuilder"/> which will be used to hold the lambda's IL.</param>
-        /// <param name="emitDebugSymbols">A parameter that indicates if debugging information should be emitted.</param>
-        public void CompileToMethod(MethodBuilder method, bool emitDebugSymbols) {
+        public void CompileToMethod(MethodBuilder method) {
+            CompileToMethodInternal(method, null);
+        }
+
+        /// <summary>
+        /// Compiles the lambda into a method definition and custom debug information.
+        /// </summary>
+        /// <param name="method">A <see cref="MethodBuilder"/> which will be used to hold the lambda's IL.</param>
+        /// <param name="debugInfoGenerator">Debugging information generator used by the compiler to mark sequence points and annotate local variables.</param>
+        public void CompileToMethod(MethodBuilder method, DebugInfoGenerator debugInfoGenerator) {
+            ContractUtils.RequiresNotNull(debugInfoGenerator, "debugInfoGenerator");
+            CompileToMethodInternal(method, debugInfoGenerator);
+        }
+
+        private void CompileToMethodInternal(MethodBuilder method, DebugInfoGenerator debugInfoGenerator) {
             ContractUtils.RequiresNotNull(method, "method");
             ContractUtils.Requires(method.IsStatic, "method");
-
             var type = method.DeclaringType as TypeBuilder;
             ContractUtils.Requires(type != null, "method", Strings.MethodBuilderDoesNotHaveTypeBuilder);
-            
-            if (emitDebugSymbols) {
-                var module = method.Module as ModuleBuilder;
-                ContractUtils.Requires(module != null, "method", Strings.MethodBuilderDoesNotHaveModuleBuilder);
-            }
 
-            LambdaCompiler.Compile(this, method, emitDebugSymbols);
+            LambdaCompiler.Compile(this, method, debugInfoGenerator);
         }
 
         internal abstract LambdaExpression Accept(StackSpiller spiller);
@@ -159,7 +177,17 @@ namespace System.Linq.Expressions {
         /// </summary>
         /// <returns>A delegate containing the compiled version of the lambda.</returns>
         public new TDelegate Compile() {
-            return (TDelegate)(object)LambdaCompiler.Compile(this);
+            return (TDelegate)(object)LambdaCompiler.Compile(this, null);
+        }
+
+        /// <summary>
+        /// Produces a delegate that represents the lambda expression.
+        /// </summary>
+        /// <param name="debugInfoGenerator">Debugging information generator used by the compiler to mark sequence points and annotate local variables.</param>
+        /// <returns>A delegate containing the compiled version of the lambda.</returns>
+        public new TDelegate Compile(DebugInfoGenerator debugInfoGenerator) {
+            ContractUtils.RequiresNotNull(debugInfoGenerator, "debugInfoGenerator");
+            return (TDelegate)(object)LambdaCompiler.Compile(this, debugInfoGenerator);
         }
 
         internal override Expression Accept(ExpressionVisitor visitor) {

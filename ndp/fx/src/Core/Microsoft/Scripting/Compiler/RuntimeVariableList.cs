@@ -13,11 +13,8 @@
  *
  * ***************************************************************************/
 
-using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
-using System.Dynamic.Utils;
-using System.Linq.Expressions;
 using System.Linq.Expressions.Compiler;
 
 namespace System.Runtime.CompilerServices {
@@ -35,7 +32,7 @@ namespace System.Runtime.CompilerServices {
         /// <param name="indexes">An array of indicies into the closure array where variables are found.</param>
         /// <returns>An interface to access variables.</returns>
         [Obsolete("do not use this method", true), EditorBrowsable(EditorBrowsableState.Never)]
-        public static IList<IStrongBox> CreateRuntimeVariables(object[] data, long[] indexes) {
+        public static IRuntimeVariables CreateRuntimeVariables(object[] data, long[] indexes) {
             return new RuntimeVariableList(data, indexes);
         }
 
@@ -44,15 +41,30 @@ namespace System.Runtime.CompilerServices {
         /// </summary>
         /// <returns>An interface to access variables.</returns>
         [Obsolete("do not use this method", true), EditorBrowsable(EditorBrowsableState.Never)]
-        public static IList<IStrongBox> CreateRuntimeVariables() {
-            return EmptyReadOnlyCollection<IStrongBox>.Instance;
+        public static IRuntimeVariables CreateRuntimeVariables() {
+            return new EmptyRuntimeVariables();
+        }
+
+        private sealed class EmptyRuntimeVariables : IRuntimeVariables {
+            int IRuntimeVariables.Count {
+                get { return 0; }
+            }
+
+            object IRuntimeVariables.this[int index] {
+                get {
+                    throw new ArgumentOutOfRangeException("index");
+                }
+                set {
+                    throw new ArgumentOutOfRangeException("index");
+                }
+            }
         }
 
         /// <summary>
         /// Provides a list of variables, supporing read/write of the values
         /// Exposed via RuntimeVariablesExpression
         /// </summary>
-        private sealed class RuntimeVariableList : IList<IStrongBox> {
+        private sealed class RuntimeVariableList : IRuntimeVariables {
             // The top level environment. It contains pointers to parent
             // environments, which are always in the first element
             private readonly object[] _data;
@@ -77,83 +89,29 @@ namespace System.Runtime.CompilerServices {
                 get { return _indexes.Length; }
             }
 
-            public IStrongBox this[int index] {
+            public object this[int index] {
                 get {
-                    // We lookup the closure using two ints:
-                    // 1. The high dword is the number of parents to go up
-                    // 2. The low dword is the index into that array
-                    long closureKey = _indexes[index];
-
-                    // walk up the parent chain to find the real environment
-                    object[] result = _data;
-                    for (int parents = (int)(closureKey >> 32); parents > 0; parents--) {
-                        result = HoistedLocals.GetParent(result);
-                    }
-
-                    // Return the variable storage
-                    return (IStrongBox)result[(int)closureKey];
+                    return GetStrongBox(index).Value;
                 }
                 set {
-                    throw Error.CollectionReadOnly();
+                    GetStrongBox(index).Value = value;
                 }
             }
 
-            public int IndexOf(IStrongBox item) {
-                for (int i = 0, n = _indexes.Length; i < n; i++) {
-                    if (this[i] == item) {
-                        return i;
-                    }
+            private IStrongBox GetStrongBox(int index) {
+                // We lookup the closure using two ints:
+                // 1. The high dword is the number of parents to go up
+                // 2. The low dword is the index into that array
+                long closureKey = _indexes[index];
+
+                // walk up the parent chain to find the real environment
+                object[] result = _data;
+                for (int parents = (int)(closureKey >> 32); parents > 0; parents--) {
+                    result = HoistedLocals.GetParent(result);
                 }
-                return -1;
-            }
 
-            public bool Contains(IStrongBox item) {
-                return IndexOf(item) >= 0;
-            }
-
-            public void CopyTo(IStrongBox[] array, int arrayIndex) {
-                ContractUtils.RequiresNotNull(array, "array");
-                int count = _indexes.Length;
-                if (arrayIndex < 0 || arrayIndex + count > array.Length) {
-                    throw new ArgumentOutOfRangeException("arrayIndex");
-                }
-                for (int i = 0; i < count; i++) {
-                    array[arrayIndex++] = this[i];
-                }
-            }
-
-            bool ICollection<IStrongBox>.IsReadOnly {
-                get { return true; }
-            }
-
-            public IEnumerator<IStrongBox> GetEnumerator() {
-                for (int i = 0, n = _indexes.Length; i < n; i++) {
-                    yield return this[i];
-                }
-            }
-
-            System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() {
-                return GetEnumerator();
-            }
-
-            void IList<IStrongBox>.Insert(int index, IStrongBox item) {
-                throw Error.CollectionReadOnly();
-            }
-
-            void IList<IStrongBox>.RemoveAt(int index) {
-                throw Error.CollectionReadOnly();
-            }
-
-            void ICollection<IStrongBox>.Add(IStrongBox item) {
-                throw Error.CollectionReadOnly();
-            }
-
-            void ICollection<IStrongBox>.Clear() {
-                throw Error.CollectionReadOnly();
-            }
-
-            bool ICollection<IStrongBox>.Remove(IStrongBox item) {
-                throw Error.CollectionReadOnly();
+                // Return the variable storage
+                return (IStrongBox)result[(int)closureKey];
             }
         }
     }

@@ -324,7 +324,7 @@ namespace IronRuby.Builtins {
                     );
                 }
 
-                self.SetDefinedMethodNoEventNoLock(self.Context, methodName, info, attributesScope.Visibility);
+                self.SetDefinedMethodNoEventNoLock(self.Context, methodName, info, visibility);
             }
 
             self.Context.MethodAdded(self, methodName);

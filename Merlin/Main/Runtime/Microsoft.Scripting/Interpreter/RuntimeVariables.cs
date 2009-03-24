@@ -13,21 +13,34 @@
  *
  * ***************************************************************************/
 
-using System.Collections;
-using System.Collections.Generic;
-using System.Diagnostics.SymbolStore;
-using System.Dynamic.Utils;
+using System;
 using System.Runtime.CompilerServices;
 
-namespace System.Linq.Expressions.Compiler {
-    internal sealed class AnalyzedTree {
-        internal readonly Dictionary<object, CompilerScope> Scopes = new Dictionary<object, CompilerScope>();
-        internal readonly Dictionary<LambdaExpression, BoundConstants> Constants = new Dictionary<LambdaExpression, BoundConstants>();
+namespace Microsoft.Scripting.Interpreter {
+    internal sealed class RuntimeVariables : IRuntimeVariables {
+        private readonly IStrongBox[] _boxes;
 
-        internal DebugInfoGenerator DebugInfoGenerator { get; set; }
+        private RuntimeVariables(IStrongBox[] boxes) {
+            _boxes = boxes;
+        }
 
-        // Created by VariableBinder
-        internal AnalyzedTree() {
+        int IRuntimeVariables.Count {
+            get {
+                return _boxes.Length;
+            }
+        }
+
+        object IRuntimeVariables.this[int index] {
+            get {
+                return _boxes[index].Value;
+            }
+            set {
+                _boxes[index].Value = value;
+            }
+        }
+
+        internal static IRuntimeVariables Create(IStrongBox[] boxes) {
+            return new RuntimeVariables(boxes);
         }
     }
 }

@@ -156,8 +156,7 @@ namespace IronRuby.Compiler.Ast {
                 }
                 bodyWithParamInit[parameters.Length] = body;
 
-                return Ast.Lambda(
-                    RubyMethodInfo.ParamsArrayDelegateType,
+                return Ast.Lambda<Func<object, Proc, object[], object>>(
                     Ast.Block(
                         new ReadOnlyCollection<MSA.ParameterExpression>(parameters), 
                         new ReadOnlyCollection<MSA.Expression>(bodyWithParamInit)

@@ -724,34 +724,20 @@ namespace System.Linq.Expressions.Compiler {
         }
 
         private void EmitDebugInfoExpression(Expression expr) {
-            if (!_emitDebugSymbols) {
+            if (!EmitDebugSymbols) {
                 return;
             }
             var node = (DebugInfoExpression)expr;
-
-            var symbolWriter = GetSymbolWriter(node.Document);
 
             if (node.IsClear && _sequencePointCleared) {
                 // Emitting another clearance after one clearance does not
                 // have any effect, so we can save it.
                 return;
             }
-            _ilg.MarkSequencePoint(symbolWriter, node.StartLine, node.StartColumn, node.EndLine, node.EndColumn);
+
+            _tree.DebugInfoGenerator.MarkSequencePoint(_lambda, _method, _ilg, node);
             _ilg.Emit(OpCodes.Nop);
             _sequencePointCleared = node.IsClear;
-        }
-
-        private ISymbolDocumentWriter GetSymbolWriter(SymbolDocumentInfo document) {
-            Debug.Assert(_emitDebugSymbols);
-
-            ISymbolDocumentWriter result;
-            if (!_tree.SymbolWriters.TryGetValue(document, out result)) {
-                var module = (ModuleBuilder)_typeBuilder.Module;
-                result = module.DefineDocument(document.FileName, document.Language, document.LanguageVendor, SymbolGuids.DocumentType_Text);
-                _tree.SymbolWriters.Add(document, result);
-            }
-
-            return result;
         }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "expr")]

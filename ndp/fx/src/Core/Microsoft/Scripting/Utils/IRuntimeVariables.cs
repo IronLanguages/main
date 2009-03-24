@@ -13,21 +13,21 @@
  *
  * ***************************************************************************/
 
-using System.Collections;
-using System.Collections.Generic;
-using System.Diagnostics.SymbolStore;
-using System.Dynamic.Utils;
-using System.Runtime.CompilerServices;
+namespace System.Runtime.CompilerServices {
+    /// <summary>
+    /// An interface to represent values of runtime variables.
+    /// </summary>
+    public interface IRuntimeVariables {
+        /// <summary>
+        /// Count of the variables.
+        /// </summary>
+        int Count { get; }
 
-namespace System.Linq.Expressions.Compiler {
-    internal sealed class AnalyzedTree {
-        internal readonly Dictionary<object, CompilerScope> Scopes = new Dictionary<object, CompilerScope>();
-        internal readonly Dictionary<LambdaExpression, BoundConstants> Constants = new Dictionary<LambdaExpression, BoundConstants>();
-
-        internal DebugInfoGenerator DebugInfoGenerator { get; set; }
-
-        // Created by VariableBinder
-        internal AnalyzedTree() {
-        }
+        /// <summary>
+        /// An indexer to get/set the values of the runtime variables.
+        /// </summary>
+        /// <param name="index">An index of the runtime variable.</param>
+        /// <returns>The value of the runtime variable.</returns>
+        object this[int index] { get; set; }
     }
 }
