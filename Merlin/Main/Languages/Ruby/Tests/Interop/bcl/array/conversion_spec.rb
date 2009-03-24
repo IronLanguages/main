@@ -9,14 +9,10 @@ describe "Converting Ruby arrays to .NET arrays" do
     }
   EOL
   it "properly converts to object array" do
-    a = System::Array.of(Object).new(2)
-    a[0], a[1] = 1, "string"
-    Klass.new.method(:array_accepting_method).of(Object).call([1, "string"].to_clr_array).should == a
+    Klass.new.method(:array_accepting_method).of(Object).call([1, "string"].to_clr_array).should == [1, "string"]
   end
 
   it "properly converts to typed array" do
-    a = System::Array.of(Fixnum).new(3)
-    a[0], a[1], a[2] = 1,2,3
-    Klass.new.method(:array_accepting_method).of(Fixnum).call([1,2,3].to_clr_array(Fixnum)).should == a
+    Klass.new.method(:array_accepting_method).of(Fixnum).call([1,2,3].to_clr_array(Fixnum)).should == [1,2,3]
   end
 end
