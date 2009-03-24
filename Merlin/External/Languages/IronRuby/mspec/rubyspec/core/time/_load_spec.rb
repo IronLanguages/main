@@ -2,10 +2,13 @@ require File.dirname(__FILE__) + '/../../spec_helper'
 require File.dirname(__FILE__) + '/fixtures/methods'
 
 describe "Time#_load" do
+  before :each do
+    @t = Time.local(2000, 1, 15, 20, 1, 1)
+  end
+  
   ruby_bug("http://redmine.ruby-lang.org/issues/show/627", "1.8.7") do
     it "loads a time object in the new format" do
-      t = Time.local(2000, 1, 15, 20, 1, 1)
-      t = t.gmtime
+      t = @t.gmtime
 
       high =               1 << 31 |
             (t.gmt? ? 1 : 0) << 30 |
@@ -31,5 +34,9 @@ describe "Time#_load" do
     low =  t.usec
 
     Time._load([high, low].pack("LL")).should == t
+  end
+  
+  it "loads local time" do
+    Time._load("\004\002\031\200\000\000\020\004").should == @t
   end
 end

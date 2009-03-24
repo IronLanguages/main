@@ -1,5 +1,11 @@
 @setlocal
 
+msbuild.exe %MERLIN_ROOT%\Languages\Ruby\Ruby.sln /p:Configuration="Debug"
+if not %ERRORLEVEL%==0 goto END
+REM IronPython needs to be in sync for the language interop tests
+msbuild.exe %MERLIN_ROOT%\Languages\IronPython\IronPython.sln /p:Configuration="Debug"
+if not %ERRORLEVEL%==0 goto END
+
 start "Smoke Tests" %MERLIN_ROOT%\Languages\Ruby\Tests\Scripts\irtest.bat
 
 start "Legacy Tests" %MERLIN_ROOT%\Languages\Ruby\Tests\run.bat
@@ -17,3 +23,4 @@ start "Command Line RubySpec tests" mspec ci -fd -V :cli
   %MERLIN_ROOT%\Bin\Debug\ipy.exe %MERLIN_ROOT%\Scripts\Python\GenerateSystemCoreCsproj.py
 )
 
+:END
