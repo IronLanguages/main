@@ -21,8 +21,8 @@ using System.Text;
 using IronRuby.Builtins;
 using IronRuby.Runtime;
 
-namespace IronRuby.Compiler {
-    internal sealed class StringContentBuilder {
+namespace IronRuby.Builtins {
+    public sealed class MutableStringBuilder {
         private readonly RubyEncoding/*!*/ _encoding;
 
         // character cache: converted to bytes each time a byte is appended:
@@ -34,12 +34,12 @@ namespace IronRuby.Compiler {
         private int _charCount;
         private int _byteCount;
 
-        public StringContentBuilder(RubyEncoding/*!*/ encoding) {
+        public MutableStringBuilder(RubyEncoding/*!*/ encoding) {
             Assert.NotNull(encoding);
             _encoding = encoding;
         }
 
-        public StringContentBuilder(string/*!*/ value, RubyEncoding/*!*/ encoding) 
+        public MutableStringBuilder(string/*!*/ value, RubyEncoding/*!*/ encoding) 
             : this(encoding) {
             Assert.NotNull(value);
             _chars = value.ToCharArray();
@@ -131,6 +131,16 @@ namespace IronRuby.Compiler {
             _chars = null;
             _charCount = _byteCount = 0;
             return result;
+        }
+
+        public MutableString/*!*/ ToMutableString() {
+            object value = ToValue();
+            string str = value as string;
+            if (str != null) {
+                return MutableString.Create(str);
+            } else {
+                return MutableString.CreateBinary((byte[])value);
+            }
         }
 
         [Conditional("DEBUG")]

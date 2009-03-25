@@ -2087,7 +2087,7 @@ namespace IronRuby.Compiler {
         }
         
         // Appends escaped regex escape sequence.
-        private void AppendEscapedRegexEscape(StringContentBuilder/*!*/ content, int term) {
+        private void AppendEscapedRegexEscape(MutableStringBuilder/*!*/ content, int term) {
             int c = Read();
 
             switch (c) {
@@ -2146,7 +2146,7 @@ namespace IronRuby.Compiler {
             }
         }
 
-        private void AppendRegularExpressionCompositeEscape(StringContentBuilder/*!*/ content, int term) {
+        private void AppendRegularExpressionCompositeEscape(MutableStringBuilder/*!*/ content, int term) {
             int c = ReadNormalizeEndOfLine();
             if (c == '\\') {
                 AppendEscapedRegexEscape(content, term);
@@ -2157,7 +2157,7 @@ namespace IronRuby.Compiler {
             }
         }
 
-        private void AppendEscapedOctalEscape(StringContentBuilder/*!*/ content) {
+        private void AppendEscapedOctalEscape(MutableStringBuilder/*!*/ content) {
             int start = _bufferPos - 1;
             ReadOctalEscape(0);
 
@@ -2165,7 +2165,7 @@ namespace IronRuby.Compiler {
             content.Append(_lineBuffer, start, _bufferPos - start);
         }
 
-        private void AppendEscapedHexEscape(StringContentBuilder/*!*/ content) {
+        private void AppendEscapedHexEscape(MutableStringBuilder/*!*/ content) {
             int start = _bufferPos - 1;
             ReadHexEscape();
 
@@ -2173,7 +2173,7 @@ namespace IronRuby.Compiler {
             content.Append(_lineBuffer, start, _bufferPos - start);
         }
 
-        private void AppendEscapedUnicode(StringContentBuilder/*!*/ content) {
+        private void AppendEscapedUnicode(MutableStringBuilder/*!*/ content) {
             int start = _bufferPos - 1;
 
             if (Peek() == '{') {
@@ -2272,7 +2272,7 @@ namespace IronRuby.Compiler {
         }
 
         // Reads up to 6 hex characters, treats them as a exadecimal code-point value and appends the result to the buffer.
-        private void AppendUnicodeCodePoint(StringContentBuilder/*!*/ content, StringType stringType) {
+        private void AppendUnicodeCodePoint(MutableStringBuilder/*!*/ content, StringType stringType) {
             int codepoint = ReadUnicodeCodePoint();
 
             if (codepoint < 0x10000) {
@@ -2319,7 +2319,7 @@ namespace IronRuby.Compiler {
         }
 
         // returns last character read
-        private int ReadStringContent(StringContentBuilder/*!*/ content, StringType stringType, int terminator, int openingParenthesis, 
+        private int ReadStringContent(MutableStringBuilder/*!*/ content, StringType stringType, int terminator, int openingParenthesis, 
             ref int nestingLevel) {
 
             while (true) {
@@ -2406,7 +2406,7 @@ namespace IronRuby.Compiler {
             }
         }
 
-        private void AppendCharacter(StringContentBuilder/*!*/ content, int c, StringType stringType) {
+        private void AppendCharacter(MutableStringBuilder/*!*/ content, int c, StringType stringType) {
             if (c == 0 && (stringType & StringType.Symbol) != 0) {
                 ReportError(Errors.NullCharacterInSymbol);
             } else {
@@ -2414,7 +2414,7 @@ namespace IronRuby.Compiler {
             }
         }
 
-        private void AppendByte(StringContentBuilder/*!*/ content, byte b, StringType stringType) {
+        private void AppendByte(MutableStringBuilder/*!*/ content, byte b, StringType stringType) {
             if (b == 0 && (stringType & StringType.Symbol) != 0) {
                 ReportError(Errors.NullCharacterInSymbol);
             } else {
@@ -2494,7 +2494,7 @@ namespace IronRuby.Compiler {
                 return Tokens.WordSeparator;
             }
 
-            StringContentBuilder content;
+            MutableStringBuilder content;
 
             // start of #$variable, #@variable, #{expression} in a string:
             if ((stringKind & StringType.ExpandsEmbedded) != 0 && c == '#') {
@@ -2509,10 +2509,10 @@ namespace IronRuby.Compiler {
                         MarkSingleLineTokenEnd();
                         return StringEmbeddedCodeBegin();
                 }
-                content = new StringContentBuilder(_encoding);
+                content = new MutableStringBuilder(_encoding);
                 content.Append('#');
             } else {
-                content = new StringContentBuilder(_encoding);
+                content = new MutableStringBuilder(_encoding);
                 SeekRelative(-eolnWidth);
             }
 
@@ -2707,7 +2707,7 @@ namespace IronRuby.Compiler {
         }
 
         private Tokens TokenizeExpandingHeredocContent(HeredocTokenizer/*!*/ heredoc) {
-            StringContentBuilder content;
+            MutableStringBuilder content;
 
             int c = Peek();
             if (c == '#') {
@@ -2725,10 +2725,10 @@ namespace IronRuby.Compiler {
                         return StringEmbeddedCodeBegin();
                 }
 
-                content = new StringContentBuilder(_encoding);
+                content = new MutableStringBuilder(_encoding);
                 content.Append('#');
             } else {
-                content = new StringContentBuilder(_encoding);
+                content = new MutableStringBuilder(_encoding);
             }
 
             bool isIndented = (heredoc.Properties & StringType.IndentedHeredoc) != 0;

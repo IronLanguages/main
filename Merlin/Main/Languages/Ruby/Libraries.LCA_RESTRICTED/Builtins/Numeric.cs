@@ -107,6 +107,16 @@ namespace IronRuby.Builtins {
 
         #region coerce
 
+        [RubyMethod("coerce")]
+        public static RubyArray/*!*/ Coerce(int self, int other) {
+            return RubyOps.MakeArray2(other, self);
+        }
+
+        [RubyMethod("coerce")]
+        public static RubyArray/*!*/ Coerce(double self, double other) {
+            return RubyOps.MakeArray2(other, self);
+        }
+
         /// <summary>
         /// If other is the same type as self, returns an array [other, self].
         /// Otherwise, returns an array [floatOther, floatSelf], whose elements are other and self represented as Float objects.
@@ -116,7 +126,7 @@ namespace IronRuby.Builtins {
         /// It is intended to find a compatible common type between the two operands of the operator. 
         /// </remarks>
         [RubyMethod("coerce")]
-        public static RubyArray Coerce(ConversionStorage<double>/*!*/ tof1, ConversionStorage<double>/*!*/ tof2, 
+        public static RubyArray/*!*/ Coerce(ConversionStorage<double>/*!*/ tof1, ConversionStorage<double>/*!*/ tof2, 
             RubyContext/*!*/ context, object self, object other) {
 
             if (context.GetClassOf(self) == context.GetClassOf(other)) {
@@ -146,7 +156,7 @@ namespace IronRuby.Builtins {
 
             var divide = divideStorage.GetCallSite("/");
             var tof = tofStorage.GetSite(ConvertToFAction.Instance);
-            return FloatOps.Floor(tof.Target(tof, context, divide.Target(divide, context, self, other)));
+            return ClrFloat.Floor(tof.Target(tof, context, divide.Target(divide, context, self, other)));
         }
 
         #endregion
@@ -206,7 +216,7 @@ namespace IronRuby.Builtins {
         /// </remarks>
         [RubyMethod("round")]
         public static object Round([DefaultProtocol]double self) {
-            return FloatOps.Round(self);
+            return ClrFloat.Round(self);
         }
 
         /// <summary>
@@ -217,7 +227,7 @@ namespace IronRuby.Builtins {
         /// </remarks>
         [RubyMethod("floor")]
         public static object Floor([DefaultProtocol]double self) {
-            return FloatOps.Floor(self);
+            return ClrFloat.Floor(self);
         }
 
         /// <summary>
@@ -228,7 +238,7 @@ namespace IronRuby.Builtins {
         /// </remarks>
         [RubyMethod("ceil")]
         public static object Ceil([DefaultProtocol]double self) {
-            return FloatOps.Ceil(self);
+            return ClrFloat.Ceil(self);
         }
 
         /// <summary>
@@ -239,7 +249,7 @@ namespace IronRuby.Builtins {
         /// </remarks>
         [RubyMethod("truncate")]
         public static object Truncate([DefaultProtocol]double self) {
-            return FloatOps.ToInt(self);
+            return ClrFloat.ToInt(self);
         }
         
         #endregion
@@ -428,7 +438,7 @@ namespace IronRuby.Builtins {
             RubyContext/*!*/ context, BlockParam block, object self, object limit, [Optional]object step) {
 
             if (step == Missing.Value) {
-                step = ScriptingRuntimeHelpers.Int32ToObject(1);
+                step = ClrInteger.One;
             }
 
             if (self is double || limit is double || step is double) {

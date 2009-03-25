@@ -144,10 +144,10 @@ namespace IronRuby.Builtins {
                     _writer.Write((sbyte)(value - 5));
                 } else {
                     byte[] _buffer = new byte[5];
-                    _buffer[1] = (byte)value;
-                    _buffer[2] = (byte)(value >> 8);
-                    _buffer[3] = (byte)(value >> 16);
-                    _buffer[4] = (byte)(value >> 24);
+                    _buffer[1] = (byte)(value & 0xff);
+                    _buffer[2] = (byte)((value >> 8) & 0xff);
+                    _buffer[3] = (byte)((value >> 16) & 0xff);
+                    _buffer[4] = (byte)((value >> 24) & 0xff);
 
                     int len = 4;
                     sbyte lenbyte;
@@ -162,7 +162,7 @@ namespace IronRuby.Builtins {
                         }
                         lenbyte = (sbyte)len;
                     }
-                    _buffer[0] = (byte)lenbyte;
+                    _buffer[0] = unchecked((byte)lenbyte);
 
                     _writer.Write(_buffer, 0, len + 1);
                 }
@@ -563,15 +563,15 @@ namespace IronRuby.Builtins {
                     }
                     uint value = 0;
                     for (int i = 0; i < 4; i++) {
-                        byte nextByte;
+                        uint nextByte;
                         if (i < first) {
                             nextByte = _reader.ReadByte();
                         } else {
                             nextByte = fill;
                         }
-                        value = value | (uint)(nextByte << (i * 8));
+                        value |= nextByte << (i * 8);
                     }
-                    return (int)value;
+                    return unchecked((int)value);
                 }
             }
 
