@@ -9,7 +9,32 @@ describe "Creating a .NET array" do
     System::Array.of(Fixnum).new(5).should == [0,0,0,0,0]
   end
 
-  it "can't be resized" do
-    lambda {System::Array.of(Fixnum).new(1)[1] = 5}.should raise_error(System::NotSupportedException)
+  it "takes a default value" do
+    System::Array.of(Fixnum).new(3,3).should == [3,3,3]
+  end
+
+  it "can be done via create_instance" do
+    System::Array.create_instance(Fixnum.to_clr_type, 2).should == [0,0]
+  end
+
+  describe "with multiple dimensions" do
+    before :each do
+      @array = System::Array.CreateInstance(Fixnum.to_clr_type, 2, 3)
+      (@array.get_lower_bound(0)..@array.get_upper_bound(0)).each do |i|
+        (@array.get_lower_bound(1)..@array.get_upper_bound(1)).each do |j|
+          @array.set_value((i*100)+(j*10), i, j)
+        end
+      end
+    end
+
+    it "can be done with multi-dimnsion arrays via create_instance" do
+      @array.class.to_s.should == "System::Int32[,]"
+    end
+
+    it "can be referenced" do
+      @array[1][1].should == 11
+      @array.get_value(1,1).should == 11
+    end
   end
 end
+
