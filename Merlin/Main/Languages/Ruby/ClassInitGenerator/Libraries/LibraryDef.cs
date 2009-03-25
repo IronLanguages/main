@@ -435,9 +435,9 @@ internal class LibraryDef {
                         }
                     }
 
-                        if (declaringDef.Compatibility != RubyCompatibility.Default) {
-                            def.Compatibility = (RubyCompatibility)Math.Max((int)declaringDef.Compatibility, (int)def.Compatibility);
-                        }
+                    if (declaringDef.Compatibility != RubyCompatibility.Default) {
+                        def.Compatibility = (RubyCompatibility)Math.Max((int)declaringDef.Compatibility, (int)def.Compatibility);
+                    }
 
                     // we will need a reference for setting the constant:
                     def.DeclaringTypeRef = declaringDef.GetReference(ref defVariableId);
@@ -589,16 +589,16 @@ internal class LibraryDef {
                     }
                     def.Overloads.Add(method);
                 }
-            } 
-            
+            }
+
             if (method.IsDefined(typeof(RubyConstructorAttribute), false)) {
                 if (!RequireStatic(method)) continue;
                 moduleDef.Factories.Add(method);
-            } 
-            
+            }
+
             if (method.IsDefined(typeof(RubyConstantAttribute), false)) {
                 if (!RequireStatic(method)) continue;
-                
+
                 var parameters = method.GetParameters();
                 if (parameters.Length != 1 || !parameters[0].ParameterType.IsAssignableFrom(typeof(RubyModule)) ||
                     parameters[0].Attributes != ParameterAttributes.None) {
@@ -651,7 +651,7 @@ internal class LibraryDef {
                     if (parameterInfos[i].ParameterType.IsByRef) {
                         LogMethodError("has ref/out parameter", methodDef, overload);
                     }
-                    
+
                     var type = parameterInfos[i].ParameterType;
 
                     if (type == typeof(CodeContext)) {
@@ -808,7 +808,7 @@ internal class LibraryDef {
         AnyErrors = true;
     }
 
-    private void LogMethodWarning(string/*!*/ message, MethodDef methodDef, MethodBase/*!*/ overload,params object[] args) {
+    private void LogMethodWarning(string/*!*/ message, MethodDef methodDef, MethodBase/*!*/ overload, params object[] args) {
         string methodName = (methodDef != null) ? "method \"" + methodDef.Name + '"' : "factory";
         Console.Error.WriteLine("Warning: {0}: {1}", methodName, String.Format(message, args));
         Console.Error.WriteLine("         overload: {0}", ReflectionUtils.FormatSignature(new StringBuilder(), overload));
@@ -965,7 +965,7 @@ internal class LibraryDef {
 #endif
 
                 if (def.IsExtension) {
-                    _output.Write("ExtendClass(typeof({0}), {1}, {2}, ", 
+                    _output.Write("ExtendClass(typeof({0}), {1}, {2}, ",
                         TypeName(def.Extends),
                         def.Super != null ? def.Super.RefName : "null",
                         def.GetInitializerDelegates()
@@ -975,7 +975,7 @@ internal class LibraryDef {
                         def.IsGlobal ? "Global" : "",
                         def.QualifiedName,
                         TypeName(def.Extends),
-                        def.Extends == def.Trait ? "true" : "false", 
+                        def.Extends == def.Trait ? "true" : "false",
                         def.Super.RefName,
                         def.GetInitializerDelegates()
                     );
@@ -1169,7 +1169,7 @@ internal class LibraryDef {
     private void GenerateHiddenMethods(IDictionary<string, HiddenMethod>/*!*/ methods) {
         foreach (KeyValuePair<string, HiddenMethod> entry in methods) {
             if (entry.Value == HiddenMethod.Undefined) {
-                _output.WriteLine("module.{0}(\"{1}\");", 
+                _output.WriteLine("module.{0}(\"{1}\");",
                     Builtins ? "UndefineMethodNoEvent" : "UndefineMethod",
                     entry.Key
                 );
