@@ -1049,6 +1049,27 @@ namespace IronPython.Runtime {
             }
         }
 
+        internal bool FastSwap(int i, int j) {
+            // ensure i <= j
+            if (i > j) {
+                int tmp = i;
+                i = j;
+                j = tmp;
+            }
+
+            // bounds checking
+            if (i < 0 || j >= _size) {
+                return false;
+            } else if (i == j) {
+                return true;
+            }
+
+            object temp = _data[i];
+            _data[i] = _data[j];
+            _data[j] = temp;
+            return true;
+        }
+
         #region IList Members
 
         bool IList.IsReadOnly {

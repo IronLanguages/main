@@ -1,5 +1,4 @@
 require File.dirname(__FILE__) + '/../../spec_helper'
-require 'ironruby'
 
 describe "Single time loading of a .NET BCL assembly without Strong Name" do
   before :each do

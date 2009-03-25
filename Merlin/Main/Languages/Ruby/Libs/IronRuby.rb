@@ -13,4 +13,4 @@
 #
 # ****************************************************************************
 
-load_assembly 'IronRuby.Libraries', 'IronRuby.StandardLibrary.IronRubyModule'
+warn("IronRuby library is built-in and doesn't need to be required anymore") 

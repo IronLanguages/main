@@ -29,6 +29,7 @@
     <OutputPath>..\..\..\Bin\Debug\</OutputPath>
     <DefineConstants>DEBUG;TRACE;$(SignedSym)</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
+    <CheckForOverflowUnderflow>true</CheckForOverflowUnderflow>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -108,7 +109,6 @@
     <Compile Include="Builtins\Signal.cs" />
     <Compile Include="Builtins\SingletonOps.cs" />
     <Compile Include="Builtins\StringFormatter.cs" />
-    <Compile Include="Builtins\StringOps.cs" />
     <Compile Include="Builtins\StructOps.cs" />
     <Compile Include="Builtins\SymbolOps.cs" />
     <Compile Include="Builtins\ThreadGroup.cs" />
@@ -118,17 +118,26 @@
     <Compile Include="Builtins\UnboundMethod.cs" />
     <Compile Include="Digest\Digest.cs" />
     <Compile Include="Enumerator\Enumerator.cs" />
+    <Compile Include="Extensions\CharOps.cs" />
+    <Compile Include="Extensions\ClrBigInteger.cs" />
+    <Compile Include="Extensions\ClrFloat.cs" />
+    <Compile Include="Extensions\ClrInteger.cs" />
+    <None Include="Extensions\ClrInteger.Generator.rb" />
+    <Compile Include="Extensions\ClrInteger.Generated.cs" />
+    <Compile Include="Extensions\ClrStringOps.cs" />
     <Compile Include="Extensions\IComparableOps.cs" />
     <Compile Include="Extensions\IDictionaryOps.cs" />
     <Compile Include="Extensions\IEnumerableOps.cs" />
     <Compile Include="Extensions\IListOps.cs" />
+    <Compile Include="Extensions\IronRubyOps.cs" />
+    <Compile Include="Extensions\MultiDimensionalArrayOps.cs" />
+    <Compile Include="Extensions\SingleOps.cs" />
     <Compile Include="Extensions\TypeGroupOps.cs" />
     <Compile Include="Extensions\TypeOps.cs" />
     <Compile Include="Extensions\TypeTrackerOps.cs" />
     <Compile Include="FileControl\Fcntl.cs" />
     <Compile Include="Iconv\Iconv.cs" />
     <Compile Include="Initializers.Generated.cs" />
-    <Compile Include="IronRuby\IronRubyOps.cs" />
     <Compile Include="OpenSSL\OpenSSL.cs" />
     <Compile Include="ParseTree\IronRubyParseTreeOps.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
