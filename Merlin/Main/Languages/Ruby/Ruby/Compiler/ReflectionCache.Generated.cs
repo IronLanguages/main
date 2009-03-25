@@ -142,6 +142,10 @@ namespace IronRuby.Compiler {
         private static MethodInfo _CreateTopLevelScope;
         public static MethodInfo/*!*/ CreateTypeConversionError { get { return _CreateTypeConversionError ?? (_CreateTypeConversionError = GetMethod(typeof(RubyOps), "CreateTypeConversionError")); } }
         private static MethodInfo _CreateTypeConversionError;
+        public static MethodInfo/*!*/ CreateVector { get { return _CreateVector ?? (_CreateVector = GetMethod(typeof(RubyOps), "CreateVector")); } }
+        private static MethodInfo _CreateVector;
+        public static MethodInfo/*!*/ CreateVectorWithValues { get { return _CreateVectorWithValues ?? (_CreateVectorWithValues = GetMethod(typeof(RubyOps), "CreateVectorWithValues")); } }
+        private static MethodInfo _CreateVectorWithValues;
         public static MethodInfo/*!*/ CreateWrappedTopLevelScope { get { return _CreateWrappedTopLevelScope ?? (_CreateWrappedTopLevelScope = GetMethod(typeof(RubyOps), "CreateWrappedTopLevelScope")); } }
         private static MethodInfo _CreateWrappedTopLevelScope;
         public static MethodInfo/*!*/ DefineBlock { get { return _DefineBlock ?? (_DefineBlock = GetMethod(typeof(RubyOps), "DefineBlock")); } }

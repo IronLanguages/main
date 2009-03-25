@@ -30,6 +30,7 @@ using IronRuby.Runtime.Calls;
 using Microsoft.Scripting.Runtime;
 using System.Runtime.InteropServices;
 using Microsoft.Scripting.Generation;
+using IronRuby.Compiler;
 
 internal class LibraryDef {
 
@@ -105,14 +106,34 @@ internal class LibraryDef {
     }
 
     private class ModuleDef {
+        // Full Ruby name (e.g. "IronRuby::Clr::String")
         public string/*!*/ QualifiedName;
+
+        // Name of the constant defined within declaring module (e.g. "String")
         public string/*!*/ SimpleName;
+
+        // Full Ruby name with '::' replaced by '__' (e.g. "IronRuby__Clr__String").
         public string/*!*/ Id;
+
+        // The trait only extends an existing CLR type, it doesn't define/reopen a Ruby module.
         public bool IsExtension;
+
+        // Defines an Exception class.
         public bool IsException;
+
+        // Aliases for the module (constants defined in the declaring type).
         public List<string>/*!*/ Aliases = new List<string>();
 
+        // The type declaring Ruby methods:
         public Type/*!*/ Trait;
+
+        // Type type being extended by trait (same as Trait for non-extension classes):
+        public Type/*!*/ Extends;
+
+        // If non-null, the declaring Ruby module is specified here and is different from the declaring CLR type.
+        // Target declaration must be within the same library.
+        public Type DefineIn;
+
         public IDictionary<string, MethodDef>/*!*/ InstanceMethods = new SortedDictionary<string, MethodDef>();
         public IDictionary<string, MethodDef>/*!*/ ClassMethods = new SortedDictionary<string, MethodDef>();
         public IDictionary<string, ConstantDef>/*!*/ Constants = new SortedDictionary<string, ConstantDef>();
@@ -123,9 +144,6 @@ internal class LibraryDef {
         public List<MethodInfo>/*!*/ Factories = new List<MethodInfo>();
 
         public List<MixinRef>/*!*/ Mixins = new List<MixinRef>();
-
-        // Type real type (same as Trait for non-extension classes):
-        public Type/*!*/ Extends;
 
         public ModuleKind Kind;
         public bool HasCopyInclusions;
@@ -337,14 +355,15 @@ internal class LibraryDef {
 
                 def.Trait = trait;
                 def.Extends = (module.Extends != null) ? module.Extends : trait;
+                def.DefineIn = module.DefineIn;
                 def.BuildConfig = module.BuildConfig;
                 def.Compatibility = module.Compatibility;
 
                 def.Super = null;
-                if (cls != null && def.Extends != typeof(object) && !def.Extends.IsInterface && !def.IsExtension) {
+                if (cls != null && def.Extends != typeof(object) && !def.Extends.IsInterface) {
                     if (cls != null && cls.Inherits != null) {
                         def.Super = new TypeRef(cls.Inherits);
-                    } else {
+                    } else if (!def.IsExtension) {
                         def.Super = new TypeRef(def.Extends.BaseType);
                     }
                 }
@@ -398,49 +417,45 @@ internal class LibraryDef {
 
         int defVariableId = 1;
 
-        // qualified names, ids, declaring modules:
+        // declaring modules, build configurations:
         foreach (ModuleDef def in _moduleDefs.Values) {
             if (!def.IsExtension) {
-                def.QualifiedName = def.SimpleName;
-
                 // finds the inner most Ruby module def containing this module def:
-                Type declaringType = def.Trait.DeclaringType;
-                while (declaringType != null) {
-                    ModuleDef declaringDef;
-                    if (_traits.TryGetValue(declaringType, out declaringDef)) {
-                        def.QualifiedName = declaringDef.QualifiedName + "::" + def.SimpleName;
-                        def.DeclaringModule = declaringDef;
-                        def.IsGlobal = false;
+                ModuleDef declaringDef = GetDeclaringModuleDef(def);
+                if (declaringDef != null) {
+                    def.DeclaringModule = declaringDef;
+                    def.IsGlobal = false;
 
-                        // inherits build config:
-                        if (declaringDef.BuildConfig != null) {
-                            if (def.BuildConfig != null) {
-                                def.BuildConfig = declaringDef.BuildConfig + " && " + def.BuildConfig;
-                            } else {
-                                def.BuildConfig = declaringDef.BuildConfig;
-                            }
+                    // inherits build config:
+                    if (declaringDef.BuildConfig != null) {
+                        if (def.BuildConfig != null) {
+                            def.BuildConfig = declaringDef.BuildConfig + " && " + def.BuildConfig;
+                        } else {
+                            def.BuildConfig = declaringDef.BuildConfig;
                         }
+                    }
 
                         if (declaringDef.Compatibility != RubyCompatibility.Default) {
                             def.Compatibility = (RubyCompatibility)Math.Max((int)declaringDef.Compatibility, (int)def.Compatibility);
                         }
 
-                        // we will need a reference for setting the constant:
-                        def.DeclaringTypeRef = declaringDef.GetReference(ref defVariableId);
-                        def.GetReference(ref defVariableId);
-                        break;
-                    } else {
-                        declaringType = declaringType.DeclaringType;
-                    }
+                    // we will need a reference for setting the constant:
+                    def.DeclaringTypeRef = declaringDef.GetReference(ref defVariableId);
+                    def.GetReference(ref defVariableId);
                 }
-            } else {
-                def.QualifiedName = RubyUtils.GetQualifiedName(def.Extends);
             }
 
             if (def.Kind == ModuleKind.Singleton) {
                 // we need to refer to the singleton object returned from singelton factory:
                 def.GetReference(ref defVariableId);
+            }
+        }
 
+        // qualified names, ids:
+        foreach (ModuleDef def in _moduleDefs.Values) {
+            SetQualifiedName(def);
+
+            if (def.Kind == ModuleKind.Singleton) {
                 def.Id = "__Singleton_" + def.QualifiedName;
             } else {
                 def.Id = def.QualifiedName.Replace(':', '_');
@@ -487,6 +502,39 @@ internal class LibraryDef {
 
         // TODO: checks
         // - loops in copy-inclusion
+    }
+
+    private void SetQualifiedName(ModuleDef/*!*/ def) {
+        if (def.QualifiedName == null) {
+            if (def.IsExtension) {
+                def.QualifiedName = RubyUtils.GetQualifiedName(def.Extends);
+            } else if (def.DeclaringModule == null) {
+                def.QualifiedName = def.SimpleName;
+            } else {
+                SetQualifiedName(def.DeclaringModule);
+                def.QualifiedName = def.DeclaringModule.QualifiedName + "::" + def.SimpleName;
+            }
+        }
+    }
+
+    private ModuleDef GetDeclaringModuleDef(ModuleDef/*!*/ def) {
+        ModuleDef declaringDef;
+        if (def.DefineIn != null) {
+            if (_traits.TryGetValue(def.DefineIn, out declaringDef)) {
+                return declaringDef;
+            }
+            LogError("Declaring type specified by DeclareIn parameter '{0}' is not Ruby module definition or is in different library", def.DefineIn);
+        }
+
+        Type declaringType = def.Trait.DeclaringType;
+        while (declaringType != null) {
+            if (_traits.TryGetValue(declaringType, out declaringDef)) {
+                return declaringDef;
+            } else {
+                declaringType = declaringType.DeclaringType;
+            }
+        }
+        return null;
     }
 
     private string/*!*/ MakeModuleReference(Type/*!*/ typeRef) {
@@ -917,7 +965,11 @@ internal class LibraryDef {
 #endif
 
                 if (def.IsExtension) {
-                    _output.Write("ExtendClass(typeof({0}), {1}, ", TypeName(def.Extends), def.GetInitializerDelegates());
+                    _output.Write("ExtendClass(typeof({0}), {1}, {2}, ", 
+                        TypeName(def.Extends),
+                        def.Super != null ? def.Super.RefName : "null",
+                        def.GetInitializerDelegates()
+                    );
                 } else {
                     _output.Write("Define{0}Class(\"{1}\", typeof({2}), {3}, {4}, {5}, ",
                         def.IsGlobal ? "Global" : "",

@@ -2,7 +2,7 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProductVersion>9.0.30729</ProductVersion>
+    <ProductVersion>9.0.21022</ProductVersion>
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>{155CE436-1669-4A48-8095-410F2430237F}</ProjectGuid>
     <OutputType>Library</OutputType>
@@ -114,6 +114,7 @@
     <Compile Include="sha256.cs" />
     <Compile Include="sha512.cs" />
     <Compile Include="socket.cs" />
+    <Compile Include="_heapq.cs" />
     <Compile Include="_struct.cs" />
     <Compile Include="thread.cs" />
     <Compile Include="time.cs" />

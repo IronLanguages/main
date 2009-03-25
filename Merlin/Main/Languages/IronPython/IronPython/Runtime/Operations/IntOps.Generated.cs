@@ -18,6 +18,7 @@ using System.Runtime.CompilerServices;
 using IronPython.Runtime.Types;
 using Microsoft.Scripting.Math;
 using Microsoft.Scripting.Runtime;
+using Microsoft.Scripting.Utils;
 
 namespace IronPython.Runtime.Operations {
 
@@ -136,7 +137,7 @@ namespace IronPython.Runtime.Operations {
             if (y == -1 && x == SByte.MinValue) {
                 return -(Int16)SByte.MinValue;
             } else {
-                return (SByte)Int32Ops.FloorDivideImpl((Int32)x, (Int32)y);
+                return (SByte)MathUtils.FloorDivideUnchecked(x, y);
             }
         }
         [SpecialName]
@@ -631,7 +632,7 @@ namespace IronPython.Runtime.Operations {
             if (y == -1 && x == Int16.MinValue) {
                 return -(Int32)Int16.MinValue;
             } else {
-                return (Int16)Int32Ops.FloorDivideImpl((Int32)x, (Int32)y);
+                return (Int16)MathUtils.FloorDivideUnchecked(x, y);
             }
         }
         [SpecialName]
@@ -1586,7 +1587,7 @@ namespace IronPython.Runtime.Operations {
             if (y == -1 && x == Int64.MinValue) {
                 return -(BigInteger)Int64.MinValue;
             } else {
-                return (Int64)BigIntegerOps.FloorDivideImpl((BigInteger)x, (BigInteger)y);
+                return (Int64)MathUtils.FloorDivideUnchecked(x, y);
             }
         }
         [SpecialName]

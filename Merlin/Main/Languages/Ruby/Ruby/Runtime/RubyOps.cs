@@ -886,6 +886,75 @@ namespace IronRuby.Runtime {
 
         #endregion
 
+        #region CLR Vectors (factories mimic Ruby Array factories)
+
+        [Emitted, RubyConstructor]
+        public static object/*!*/ CreateVector(ConversionStorage<Union<IList, int>>/*!*/ toAryToInt, BlockParam block, RubyClass/*!*/ self,
+            [NotNull]object/*!*/ arrayOrSize) {
+
+            var elementType = self.GetUnderlyingSystemType().GetElementType();
+            Debug.Assert(elementType != null);
+
+            var site = toAryToInt.GetSite(CompositeConversionAction.ToAryToInt);
+            var union = site.Target(site, self.Context, arrayOrSize);
+
+            if (union.First != null) {
+                // block ignored
+                return CreateVectorInternal(self.Context, elementType, union.First);
+            } else if (block != null) {
+                return PopulateVector(self.Context, CreateVectorInternal(elementType, union.Second), block);
+            } else {
+                return CreateVectorInternal(elementType, union.Second);
+            }
+        }
+
+        [Emitted, RubyConstructor]
+        public static Array/*!*/ CreateVectorWithValues(RubyClass/*!*/ self, [DefaultProtocol]int size, object value) {
+            var elementType = self.GetUnderlyingSystemType().GetElementType();
+            Debug.Assert(elementType != null);
+
+            var result = CreateVectorInternal(elementType, size);
+            for (int i = 0; i < size; i++) {
+                SetVectorItem(self.Context, result, i, value);
+            }
+            return result;
+        }
+
+        public static Array/*!*/ CreateVectorInternal(Type/*!*/ elementType, int size) {
+            if (size < 0) {
+                throw RubyExceptions.CreateArgumentError("negative array size");
+            }
+
+            return Array.CreateInstance(elementType, size);
+        }
+
+        private static Array/*!*/ CreateVectorInternal(RubyContext/*!*/ context, Type/*!*/ elementType, IList/*!*/ list) {
+            var result = Array.CreateInstance(elementType, list.Count);
+            for (int i = 0; i < result.Length; i++) {
+                SetVectorItem(context, result, i, list[i]);
+            }
+
+            return result;
+        }
+
+        private static object PopulateVector(RubyContext/*!*/ context, Array/*!*/ array, BlockParam/*!*/ block) {
+            for (int i = 0; i < array.Length; i++) {
+                object item;
+                if (block.Yield(i, out item)) {
+                    return item;
+                }
+                SetVectorItem(context, array, i, item);
+            }
+            return array;
+        }
+
+        private static void SetVectorItem(RubyContext/*!*/ context, Array/*!*/ array, int index, object value) {
+            // TODO: convert to the element type:
+            array.SetValue(value, index);
+        }
+
+        #endregion
+
         #region Global Variables
 
         [Emitted]
@@ -1696,6 +1765,25 @@ namespace IronRuby.Runtime {
         [Emitted]
         public static Delegate/*!*/ CreateDelegateFromMethod(Type/*!*/ type, RubyMethod/*!*/ method) {
             return BinderOps.GetDelegate(method.Info.Context, method, type);
+        }
+
+        #endregion
+
+        #region Numeric Operations
+
+        // TODO: generate for all numeric types
+
+        public static object NarrowInt64Byte(long value) {
+            return (value >= Byte.MinValue && value <= Byte.MaxValue) ? (object)(Byte)value : (object)value;
+        }
+
+        public static object NarrowInt32Byte(int value) {
+            return (value >= Byte.MinValue && value <= Byte.MaxValue) ? (object)(Byte)value : (object)value;
+        }
+
+        public static object NarrowInt64Int32(long value) {
+            // TODO: we can use Int64 as long as Int64 implements all BigInt methods
+            return (value >= Int32.MinValue && value <= Int32.MaxValue) ? (object)(Int32)value : (BigInteger)value;
         }
 
         #endregion

@@ -610,7 +610,7 @@ namespace IronRuby.Runtime {
             }
         }
 
-        internal bool TryGetModule(Type/*!*/ type, out RubyModule result) {
+        public bool TryGetModule(Type/*!*/ type, out RubyModule result) {
             lock (ModuleCacheLock) {
                 return _moduleCache.TryGetValue(type, out result);
             }
@@ -679,7 +679,7 @@ namespace IronRuby.Runtime {
 
             RubyClass baseClass = GetOrCreateClassNoLock(type.BaseType);
             TypeTracker tracker = (TypeTracker)TypeTracker.FromMemberInfo(type);
-            RubyModule[] interfaceMixins = GetDeclaredInterfaceModules(type);
+            RubyModule[] interfaceMixins = GetDeclaredInterfaceModulesNoLock(type);
             RubyModule[] expandedMixins;
 
             if (interfaceMixins != null) {
@@ -696,13 +696,21 @@ namespace IronRuby.Runtime {
             return result;
         }
 
-        private RubyModule[] GetDeclaredInterfaceModules(Type/*!*/ type) {
+        private RubyModule[] GetDeclaredInterfaceModulesNoLock(Type/*!*/ type) {
             // TODO:
             if (type.IsGenericTypeDefinition) {
                 return null;
             }
 
             List<RubyModule> interfaces = new List<RubyModule>();
+            
+            if (type.IsArray && type.GetArrayRank() > 1) {
+                RubyModule mdaModule;
+                if (TryGetModuleNoLock(typeof(MultiDimensionalArray), out mdaModule)) {
+                    interfaces.Add(mdaModule);
+                }
+            }
+
             foreach (Type iface in ReflectionUtils.GetDeclaredInterfaces(type)) {
                 interfaces.Add(GetOrCreateModuleNoLock(iface));
             }

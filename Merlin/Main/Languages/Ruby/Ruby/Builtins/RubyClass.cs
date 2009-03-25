@@ -730,7 +730,12 @@ namespace IronRuby.Builtins {
         }
 
         private MemberInfo[]/*!*/ GetDeclaredClrMethods(Type/*!*/ type, BindingFlags bindingFlags, string/*!*/ name) {
-            return type.GetMember(name, MemberTypes.Method, bindingFlags | BindingFlags.InvokeMethod);
+            // GetMember uses prefix matching if the name ends with '*':
+            if (name.LastCharacter() != '*') {
+                return type.GetMember(name, MemberTypes.Method, bindingFlags | BindingFlags.InvokeMethod);
+            } else {
+                return new MemberInfo[0];
+            }
         }
 
         // Returns the number of methods newly added to the dictionary.
@@ -919,6 +924,9 @@ namespace IronRuby.Builtins {
                 } else if (_factories.Length != 0) {
                     constructionOverloads = (MethodBase[])ReflectionUtils.GetMethodInfos(_factories);
                     callConvention = SelfCallConvention.SelfIsParameter;
+                } else if (type.IsArray && type.GetArrayRank() == 1) {
+                    constructionOverloads = ClrVectorFactories;
+                    callConvention = SelfCallConvention.SelfIsParameter;
                 } else {
                     // TODO: handle protected constructors
                     constructionOverloads = type.GetConstructors();
@@ -1039,6 +1047,17 @@ namespace IronRuby.Builtins {
                 }
             }
         }
+
+        private MethodBase/*!*/[]/*!*/ ClrVectorFactories {
+            get {
+                if (_clrVectorFactories == null) {
+                    _clrVectorFactories = new[] { Methods.CreateVector, Methods.CreateVectorWithValues };
+                }
+                return _clrVectorFactories;
+            }
+        }
+
+        private static MethodBase[] _clrVectorFactories;
 
         #endregion
     }
