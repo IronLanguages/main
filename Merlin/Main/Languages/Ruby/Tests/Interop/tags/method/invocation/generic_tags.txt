@@ -1,3 +1,4 @@
 fails:Generic methods on generic classes with 2 parameters has proper error messages for skipping generic
 fails:Generic methods on generic classes with 2 parameters has proper error messages for incorrect number of arguments
 fails:Generic methods on generic classes with 2 parameters can use Ruby types for constrained generics
+fails:Generic methods on generic classes with 2 parameters has proper errors for constrained generics
