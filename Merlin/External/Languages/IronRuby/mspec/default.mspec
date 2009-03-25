@@ -131,7 +131,11 @@ class MSpecScript
                       ]
   # The default implementation to run the specs.
   # TODO: change this to rely on an environment variable
-  set :target, "#{ENV['MERLIN_ROOT']}\\Test\\Scripts\\ir.cmd"
+  if ENV['ROWAN_BIN']
+    set :target, "#{ENV['MERLIN_ROOT']}\\Test\\Scripts\\ir.cmd"
+  else
+    set :target, "#{ENV['MERLIN_ROOT']}\\bin\\debug\\ir.exe"
+  end
   set :prefix, "#{ENV['MERLIN_ROOT']}\\..\\External\\Languages\\IronRuby\\mspec\\rubyspec"
 end
 
