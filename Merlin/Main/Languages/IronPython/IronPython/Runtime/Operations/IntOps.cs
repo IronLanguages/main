@@ -22,6 +22,7 @@ using System.Text;
 
 using Microsoft.Scripting.Math;
 using Microsoft.Scripting.Runtime;
+using Microsoft.Scripting.Utils;
 
 using IronPython.Runtime.Types;
 
@@ -190,39 +191,12 @@ namespace IronPython.Runtime.Operations {
             if (y == -1 && x == Int32.MinValue) {
                 return -BigInteger.Create(Int32.MinValue);
             }
-            return ScriptingRuntimeHelpers.Int32ToObject(FloorDivideImpl(x, y));
-        }
-
-        internal static int FloorDivideImpl(int x, int y) {
-            int q = x / y;
-
-            if (x >= 0) {
-                if (y > 0) return q;
-                else if (x % y == 0) return q;
-                else return q - 1;
-            } else {
-                if (y > 0) {
-                    if (x % y == 0) return q;
-                    else return q - 1;
-                } else return q;
-            }
+            return ScriptingRuntimeHelpers.Int32ToObject(MathUtils.FloorDivideUnchecked(x, y));
         }
 
         [SpecialName]
         public static int Mod(int x, int y) {
-            if (y == -1) return 0;
-            int r = x % y;
-
-            if (x >= 0) {
-                if (y > 0) return r;
-                else if (r == 0) return 0;
-                else return r + y;
-            } else {
-                if (y > 0) {
-                    if (r == 0) return r;
-                    else return r + y;
-                } else return r;
-            }
+            return MathUtils.FloorRemainder(x, y);
         }
 
         [SpecialName]

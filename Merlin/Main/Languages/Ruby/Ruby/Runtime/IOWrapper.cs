@@ -126,7 +126,7 @@ namespace IronRuby.Runtime {
             FlushRead();
         }
 
-        public void Flush(CallWithoutArgsStorage/*!*/ flushStorage, RubyContext/*!*/ context) {
+        public void Flush(UnaryOpStorage/*!*/ flushStorage, RubyContext/*!*/ context) {
             Flush();
 
             if (_canFlush) {

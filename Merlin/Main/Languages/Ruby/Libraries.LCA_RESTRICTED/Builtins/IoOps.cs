@@ -668,18 +668,12 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("printf")]
         public static void PrintFormatted(
-            ConversionStorage<IntegerValue>/*!*/ integerConversion, 
-            ConversionStorage<int>/*!*/ fixnumCast, 
-            ConversionStorage<double>/*!*/ tofConversion, 
-            ConversionStorage<MutableString>/*!*/ tosConversion,
+            StringFormatterSiteStorage/*!*/ storage, 
             ConversionStorage<MutableString>/*!*/ stringCast, 
             BinaryOpStorage/*!*/ writeStorage,
-            UnaryOpStorage/*!*/ inspectStorage,
             RubyContext/*!*/ context, RubyIO/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ format, [NotNull]params object[]/*!*/ args) {
 
-            KernelOps.PrintFormatted(integerConversion, fixnumCast, tofConversion, tosConversion, stringCast, writeStorage, inspectStorage, context, 
-                null, self, format, args
-            );
+            KernelOps.PrintFormatted(storage, stringCast, writeStorage, context, null, self, format, args);
         }
 
         #endregion

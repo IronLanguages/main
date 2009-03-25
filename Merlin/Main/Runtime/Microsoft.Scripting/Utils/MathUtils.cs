@@ -20,6 +20,134 @@ namespace Microsoft.Scripting.Utils {
 
     public static class MathUtils {
         /// <summary>
+        /// Calculates the quotient of two 32-bit signed integers rounded towards negative infinity.
+        /// </summary>
+        /// <param name="x">Dividend.</param>
+        /// <param name="y">Divisor.</param>
+        /// <returns>The quotient of the specified numbers rounded towards negative infinity, or <code>(int)Floor((double)x/(double)y)</code>.</returns>
+        /// <exception cref="DivideByZeroException"><paramref name="y"/> is 0.</exception>
+        /// <remarks>The caller must check for overflow (x = Int32.MinValue, y = -1)</remarks>
+        public static int FloorDivideUnchecked(int x, int y) {
+            int q = x / y;
+
+            if (x >= 0) {
+                if (y > 0) {
+                    return q;
+                } else if (x % y == 0) {
+                    return q;
+                } else {
+                    return q - 1;
+                }
+            } else {
+                if (y > 0) {
+                    if (x % y == 0) {
+                        return q;
+                    } else {
+                        return q - 1;
+                    }
+                } else {
+                    return q;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Calculates the quotient of two 32-bit signed integers rounded towards negative infinity.
+        /// </summary>
+        /// <param name="x">Dividend.</param>
+        /// <param name="y">Divisor.</param>
+        /// <returns>The quotient of the specified numbers rounded towards negative infinity, or <code>(int)Floor((double)x/(double)y)</code>.</returns>
+        /// <exception cref="DivideByZeroException"><paramref name="y"/> is 0.</exception>
+        /// <remarks>The caller must check for overflow (x = Int64.MinValue, y = -1)</remarks>
+        public static long FloorDivideUnchecked(long x, long y) {
+            long q = x / y;
+
+            if (x >= 0) {
+                if (y > 0) {
+                    return q;
+                } else if (x % y == 0) {
+                    return q;
+                } else {
+                    return q - 1;
+                }
+            } else {
+                if (y > 0) {
+                    if (x % y == 0) {
+                        return q;
+                    } else {
+                        return q - 1;
+                    }
+                } else {
+                    return q;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Calculates the remainder of floor division of two 32-bit signed integers.
+        /// </summary>
+        /// <param name="x">Dividend.</param>
+        /// <param name="y">Divisor.</param>
+        /// <returns>The remainder of of floor division of the specified numbers, or <code>x - (int)Floor((double)x/(double)y) * y</code>.</returns>
+        /// <exception cref="DivideByZeroException"><paramref name="y"/> is 0.</exception>
+        public static int FloorRemainder(int x, int y) {
+            if (y == -1) return 0;
+            int r = x % y;
+
+            if (x >= 0) {
+                if (y > 0) {
+                    return r;
+                } else if (r == 0) {
+                    return 0;
+                } else {
+                    return r + y;
+                }
+            } else {
+                if (y > 0) {
+                    if (r == 0) {
+                        return 0;
+                    } else {
+                        return r + y;
+                    }
+                } else {
+                    return r;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Calculates the remainder of floor division of two 32-bit signed integers.
+        /// </summary>
+        /// <param name="x">Dividend.</param>
+        /// <param name="y">Divisor.</param>
+        /// <returns>The remainder of of floor division of the specified numbers, or <code>x - (int)Floor((double)x/(double)y) * y</code>.</returns>
+        /// <exception cref="DivideByZeroException"><paramref name="y"/> is 0.</exception>
+        public static long FloorRemainder(long x, long y) {
+            if (y == -1) return 0;
+            long r = x % y;
+
+            if (x >= 0) {
+                if (y > 0) {
+                    return r;
+                } else if (r == 0) {
+                    return 0;
+                } else {
+                    return r + y;
+                }
+            } else {
+                if (y > 0) {
+                    if (r == 0) {
+                        return 0;
+                    } else {
+                        return r + y;
+                    }
+                } else {
+                    return r;
+                }
+            }
+        }
+
+        /// <summary>
         /// Behaves like Math.Round(value, MidpointRounding.AwayFromZero)
         /// Needed because CoreCLR doesn't support this particular overload of Math.Round
         /// </summary>
@@ -64,6 +192,19 @@ namespace Microsoft.Scripting.Utils {
                 double num = GetPowerOf10(-precision);
                 return RoundAwayFromZero(value / num) * num;
             }
+        }
+
+        public static bool IsNegativeZero(double self) {
+#if SILVERLIGHT // BitConverter.DoubleToInt64Bits
+            if ( self != 0.0 ) {
+              return false;
+            }
+            byte[] bits = BitConverter.GetBytes(self);
+            return (bits[7] == 0x80 && bits[6] == 0x00 && bits[5] == 0x00 && bits[4] == 0x00
+                && bits[3] == 0x00 && bits[2] == 0x00 && bits[1] == 0x00 && bits[0] == 0x00);
+#else
+            return (self == 0.0 && 1.0 / self < 0);
+#endif
         }
     }
 

@@ -39,7 +39,7 @@ namespace IronRuby.StandardLibrary.Enumerator {
         }
     }
 
-    [RubyModule(Extends = typeof(EnumerableModule))]
+    [RubyModule("Enumerable", Extends = typeof(EnumerableModule))]
     public static class Enumerable {
 
         #region Enumerator class

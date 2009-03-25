@@ -22,7 +22,7 @@ using Microsoft.Scripting.Runtime;
 using IronRuby.Runtime;
 using IronRuby.Builtins;
 
-namespace IronRuby.Tests.Interop.Generics1 {
+namespace InteropTests.Generics1 {
     public class C {
         public int Arity { get { return 0; } }
     }
@@ -810,11 +810,9 @@ NoMethodError
         public void ClrGenerics1() {
             Runtime.LoadAssembly(typeof(Tests).Assembly);
 
-            var generics1 = typeof(Interop.Generics1.C).Namespace.Replace(".", "::");
-
             AssertOutput(delegate() {
                 CompilerTest(@"
-include " + generics1 + @"
+include InteropTests::Generics1
 p C
 p C.new.arity
 p C[String].new.arity
@@ -1152,6 +1150,120 @@ puts $d.p
 ");
             }, @"
 test
+");
+        }
+
+        /// <summary>
+        /// TODO: Currently we don't narrow results of arithmetic operations to the self-type even if the value fits.
+        /// That might by just fine, but in some scenarios (overload resolution) it might be better to narrow the result type.
+        /// Shelveset "Numerics-MetaOpsWithNarrowing" contains prototype implementation of the narrowing.
+        /// </summary>
+        public void ClrPrimitiveNumericTypes1() {
+            AssertOutput(delegate() {
+                CompilerTest(@"
+[System::Byte, System::SByte, System::UInt16, System::Int16, System::UInt32, System::Int64, System::UInt64, System::Single].each_with_index do |t,i|
+  p t.ancestors
+  p t.new(i).class
+  p x = t.new(i) + 1, x.class   
+  p t.new(i).size rescue puts 'no size method'
+end
+");
+            }, @"
+[System::Byte, Integer, Precision, Numeric, Comparable, Object, Kernel]
+System::Byte
+1
+Fixnum
+1
+[System::SByte, Integer, Precision, Numeric, Comparable, Object, Kernel]
+System::SByte
+2
+Fixnum
+1
+[System::UInt16, Integer, Precision, Numeric, Comparable, Object, Kernel]
+System::UInt16
+3
+Fixnum
+2
+[System::Int16, Integer, Precision, Numeric, Comparable, Object, Kernel]
+System::Int16
+4
+Fixnum
+2
+[System::UInt32, Integer, Precision, Numeric, Comparable, Object, Kernel]
+System::UInt32
+5
+Fixnum
+4
+[System::Int64, Integer, Precision, Numeric, Comparable, Object, Kernel]
+System::Int64
+6
+Fixnum
+8
+[System::UInt64, Integer, Precision, Numeric, Comparable, Object, Kernel]
+System::UInt64
+7
+Fixnum
+8
+[System::Single, Precision, Numeric, Comparable, Object, Kernel]
+System::Single
+8.0
+Float
+no size method
+");
+        }
+
+        public void ClrArrays1() {
+            Context.SetGlobalConstant("A2", Context.GetClass(typeof(int[,])));
+            AssertOutput(delegate() {
+                CompilerTest(@"
+# multi-dim array:
+a2 = A2.new(2,4)
+a2[0,1] = 123
+p a2[0,1]
+
+# vectors:                                                     
+p System::Array[Fixnum].new(10) { |i| i + 1 }
+p System::Array[Fixnum].new(3)
+p System::Array[Fixnum].new([1,2,3])
+p System::Array[Fixnum].new(3, 12)
+
+# TODO: conversions:
+# p System::Array[System::Char].new(3, 'x')
+");
+            }, @"
+123
+[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+[0, 0, 0]
+[1, 2, 3]
+[12, 12, 12]
+");
+        }
+        
+        public void ClrChar1() {
+            AssertOutput(delegate() {
+                CompilerTest(@"
+p System::Char.ancestors
+p System::String.ancestors
+
+a = System::Array[System::Char].new([System::Char.new('a'), System::Char.new('b')])  # TODO: implicit conversion
+p System::Char.new(a)
+
+x = System::Char.new('foo')
+p x.size
+p x.index('f')
+p x + 'oo'
+p x == 'f'
+p System::Char.new('9').to_i
+");
+            }, @"
+[System::Char, IronRuby::Clr::String, Enumerable, Comparable, System::IComparable, System::ValueType, Object, Kernel]
+[System::String, IronRuby::Clr::String, Enumerable, Comparable, System::Collections::IEnumerable, Object, Kernel]
+'a'
+1
+0
+'foo'
+true
+9
 ");
         }
     }

@@ -63,11 +63,11 @@ namespace IronRuby.Builtins {
             return _context.DefineLibraryClass(name, type, instanceTrait, classTrait, constantsInitializer, super, mixins, factories, isSelfContained, _builtin);
         }
 
-        protected RubyClass/*!*/ ExtendClass(Type/*!*/ type,
+        protected RubyClass/*!*/ ExtendClass(Type/*!*/ type, RubyClass super, 
             Action<RubyModule> instanceTrait, Action<RubyModule> classTrait, Action<RubyModule> constantsInitializer,
             RubyModule/*!*/[]/*!*/ mixins, params Delegate[] factories) {
 
-            return _context.DefineLibraryClass(null, type, instanceTrait, classTrait, constantsInitializer, null, mixins, factories, false, _builtin);
+            return _context.DefineLibraryClass(null, type, instanceTrait, classTrait, constantsInitializer, super, mixins, factories, false, _builtin);
         }
 
         protected RubyModule/*!*/ DefineGlobalModule(string/*!*/ name, Type/*!*/ type, bool isSelfContained,

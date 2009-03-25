@@ -547,30 +547,20 @@ namespace IronRuby.Builtins {
         [RubyMethod("printf", RubyMethodAttributes.PrivateInstance)]
         [RubyMethod("printf", RubyMethodAttributes.PublicSingleton)]
         public static void PrintFormatted(
-            ConversionStorage<IntegerValue>/*!*/ integerConversion,
-            ConversionStorage<int>/*!*/ fixnumCast,
-            ConversionStorage<double>/*!*/ tofConversion, 
-            ConversionStorage<MutableString>/*!*/ tosConversion,
+            StringFormatterSiteStorage/*!*/ storage,
             ConversionStorage<MutableString>/*!*/ stringCast, 
             BinaryOpStorage/*!*/ writeStorage,
-            UnaryOpStorage/*!*/ inspectStorage,
             RubyContext/*!*/ context, object self, [NotNull]MutableString/*!*/ format, [NotNull]params object[]/*!*/ args) {
 
-            PrintFormatted(integerConversion, fixnumCast, tofConversion, tosConversion, stringCast, writeStorage, inspectStorage, context, 
-                self, context.StandardOutput, format, args
-            );
+            PrintFormatted(storage, stringCast, writeStorage, context, self, context.StandardOutput, format, args);
         }
 
         [RubyMethod("printf", RubyMethodAttributes.PrivateInstance)]
         [RubyMethod("printf", RubyMethodAttributes.PublicSingleton)]
         public static void PrintFormatted(
-            ConversionStorage<IntegerValue>/*!*/ integerConversion, 
-            ConversionStorage<int>/*!*/ fixnumCast,
-            ConversionStorage<double>/*!*/ tofConversion, 
-            ConversionStorage<MutableString>/*!*/ tosConversion,
+            StringFormatterSiteStorage/*!*/ storage, 
             ConversionStorage<MutableString>/*!*/ stringCast, 
             BinaryOpStorage/*!*/ writeStorage,
-            UnaryOpStorage/*!*/ inspectStorage,
             RubyContext/*!*/ context, object self, object io, [NotNull]object/*!*/ format, [NotNull]params object[]/*!*/ args) {
 
             Debug.Assert(!(io is MutableString));
@@ -578,9 +568,7 @@ namespace IronRuby.Builtins {
             // TODO: BindAsObject attribute on format?
             // format cannot be strongly typed to MutableString due to ambiguity between signatures (MS, object) vs (object, MS)
             Protocols.Write(writeStorage, context, io, 
-                Sprintf(integerConversion, fixnumCast, tofConversion, tosConversion, inspectStorage, context, self, 
-                    Protocols.CastToString(stringCast, context, format), 
-                args)
+                Sprintf(storage, context, self, Protocols.CastToString(stringCast, context, format), args)
             );
         }
 
@@ -857,13 +845,10 @@ namespace IronRuby.Builtins {
         [RubyMethod("format", RubyMethodAttributes.PublicSingleton)]
         [RubyMethod("sprintf", RubyMethodAttributes.PrivateInstance)]
         [RubyMethod("sprintf", RubyMethodAttributes.PublicSingleton)]
-        public static MutableString/*!*/ Sprintf(ConversionStorage<IntegerValue>/*!*/ integerCast, ConversionStorage<int>/*!*/ fixnumCast,
-            ConversionStorage<double>/*!*/ tofConversion, ConversionStorage<MutableString>/*!*/ tosConversion, UnaryOpStorage/*!*/ inspectStorage,
-            RubyContext/*!*/ context, object self, [DefaultProtocol, NotNull]MutableString/*!*/ format, [NotNull]params object[] args) {
+        public static MutableString/*!*/ Sprintf(StringFormatterSiteStorage/*!*/ storage, RubyContext/*!*/ context, 
+            object self, [DefaultProtocol, NotNull]MutableString/*!*/ format, [NotNull]params object[] args) {
 
-            return new StringFormatter(integerCast, fixnumCast, tofConversion, tosConversion, inspectStorage, context, 
-                format.ConvertToString(), args
-            ).Format();
+            return new StringFormatter(storage, context, format.ConvertToString(), args).Format();
         }
 
         //srand

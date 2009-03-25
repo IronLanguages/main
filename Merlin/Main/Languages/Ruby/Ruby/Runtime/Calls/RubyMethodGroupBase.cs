@@ -36,7 +36,7 @@ using Ast = System.Linq.Expressions.Expression;
 
 namespace IronRuby.Runtime.Calls {
 
-    internal enum SelfCallConvention {
+    public enum SelfCallConvention {
         SelfIsInstance,
         SelfIsParameter,
         NoSelf
@@ -314,7 +314,7 @@ namespace IronRuby.Runtime.Calls {
 
         // Normalizes arguments: inserts self, expands splats, and inserts rhs arg. 
         // Adds any restrictions/conditions applied to the arguments to the given meta-builder.
-        internal static DynamicMetaObject[]/*!*/ NormalizeArguments(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args,
+        public static DynamicMetaObject[]/*!*/ NormalizeArguments(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args,
             SelfCallConvention callConvention, bool calleeHasBlockParam, bool injectMissingBlockParam) {
 
             var result = new List<DynamicMetaObject>();

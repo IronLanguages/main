@@ -386,6 +386,7 @@ namespace IronRuby.Builtins {
             }
 
             if (index < self.Count) {
+                // TODO: conversions
                 self[index] = value;
             } else {
                 ExpandList(self, index);
