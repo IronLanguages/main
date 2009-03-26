@@ -138,6 +138,10 @@ class UserString < String
   include AnAttribute
 end
 
+class UserRange < Range
+  include AnAttribute
+end
+
 module Meths
   def meths_method() end
 end
@@ -161,6 +165,9 @@ module MarshalSpec
     "'a'..'b'" => [('a'..'b'),
                    "\004\bo:\nRange\b:\nbegin\"\006a:\texclF:\bend\"\006b",
                    { :begin => 'a', :end => 'b', :exclude_end? => false }],
+    "Range subclass" => [UserRange.new(1,2),
+                     "\004\bo:\016UserRange\t:\bendi\a:\nbegini\006:\texclF:\a@ai\006",
+               { :begin => 1, :end => 2, :exclude_end? => false, :a => 1 }],
     "Struct" => [Struct::Useful.new(1, 2),
                  "\004\bS:\023Struct::Useful\a:\006ai\006:\006bi\a"],
     "Symbol" => [:symbol,

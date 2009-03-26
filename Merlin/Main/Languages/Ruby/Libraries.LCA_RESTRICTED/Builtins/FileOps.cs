@@ -504,20 +504,36 @@ namespace IronRuby.Builtins {
         private static MutableString/*!*/ ExpandPath(RubyContext/*!*/ context, MutableString/*!*/ path) {
             PlatformAdaptationLayer pal = context.DomainManager.Platform;
             int length = path.Length;
+            bool raisingRubyException = false;
             try {
                 if (path == null || length == 0)
                     return Glob.CanonicalizePath(MutableString.Create(Directory.GetCurrentDirectory()));
 
-                if (length == 1 && path.GetChar(0) == '~')
-                    return Glob.CanonicalizePath(MutableString.Create(Path.GetFullPath(pal.GetEnvironmentVariable("HOME"))));
+                if (path.GetChar(0) == '~') {
+                    if (length == 1 || (path.GetChar(1) == Path.DirectorySeparatorChar ||
+                                        path.GetChar(1) == Path.AltDirectorySeparatorChar)) {
 
-                if (path.GetChar(0) == '~' && (path.GetChar(1) == Path.DirectorySeparatorChar || path.GetChar(1) == Path.AltDirectorySeparatorChar)) {
-                    string homeDirectory = pal.GetEnvironmentVariable("HOME");
-                    return Glob.CanonicalizePath(length < 3 ? MutableString.Create(homeDirectory) : MutableString.Create(Path.Combine(homeDirectory, path.GetSlice(2).ConvertToString())));
+                        string homeDirectory = pal.GetEnvironmentVariable("HOME");
+                        if (homeDirectory == null) {
+                            raisingRubyException = true;
+                            throw RubyExceptions.CreateArgumentError("couldn't find HOME environment -- expanding `~'");
+                        }
+                        if (length <= 2) {
+                            path = MutableString.Create(homeDirectory);
+                        } else {
+                            path = MutableString.Create(Path.Combine(homeDirectory, path.GetSlice(2).ConvertToString()));
+                        }
+                        return Glob.CanonicalizePath(path);
+                    } else {
+                        return path;
+                    }
                 } else {
                     return Glob.CanonicalizePath(MutableString.Create(Path.GetFullPath(path.ConvertToString())));
                 }
             } catch (Exception e) {
+                if (raisingRubyException) {
+                    throw;
+                }
                 // Re-throw exception as a reasonable Ruby exception
                 throw new Errno.InvalidError(path.ConvertToString(), e);
             }

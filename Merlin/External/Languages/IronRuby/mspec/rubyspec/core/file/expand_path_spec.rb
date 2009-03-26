@@ -39,15 +39,33 @@ describe "File.expand_path" do
     File.expand_path(".", "#{@rootdir}").should == "#{@rootdir}"
   end
 
-  # FIXME: do not use conditionals like this around #it blocks
-  unless not home = ENV['HOME'].tr('\\', '/')
-    it "converts a pathname to an absolute pathname, using ~ (home) as base" do
+  it "converts a pathname to an absolute pathname, using ~ (home) as base" do
+    home = ENV['HOME']
+    initial_home = home
+    begin
+      platform_is :windows do
+        if not home then
+          home = "c:\\Users\\janedoe"
+          ENV['HOME'] = home
+        end
+        home = home.tr '\\', '/'
+      end
       File.expand_path('~').should == home
       File.expand_path('~', '/tmp/gumby/ddd').should == home
       File.expand_path('~/a', '/tmp/gumby/ddd').should == File.join(home, 'a')
+      File.expand_path('~a').should == '~a'
+      File.expand_path('~/').should == home
+      File.expand_path('~/..badfilename').should == "#{home}/..badfilename"
+      File.expand_path('~/a','~/b').should == "#{home}/a"
+      
+      
+      ENV['HOME'] = nil
+      lambda { File.expand_path('~') }.should raise_error(ArgumentError)
+    ensure
+      ENV['HOME'] = initial_home
     end
   end
-
+ 
   platform_is_not :windows do
     # FIXME: these are insane!
     it "expand path with " do
@@ -64,11 +82,8 @@ describe "File.expand_path" do
       File.expand_path('./////').should == Dir.pwd
       File.expand_path('.').should == Dir.pwd
       File.expand_path(Dir.pwd).should == Dir.pwd
-      File.expand_path('~/').should == ENV['HOME']
-      File.expand_path('~/..badfilename').should == "#{ENV['HOME']}/..badfilename"
       File.expand_path('..').should == Dir.pwd.split('/')[0...-1].join("/")
       File.expand_path('//').should == '//'
-      File.expand_path('~/a','~/b').should == "#{ENV['HOME']}/a"
     end
 
     it "raises an ArgumentError if the path is not valid" do
