@@ -1,0 +1,19 @@
+require File.dirname(__FILE__) + '/../../spec_helper'
+require File.dirname(__FILE__) + '/../shared/instantiable'
+require File.dirname(__FILE__) + '/../shared/uninstantiable'
+
+describe "Generic .NET classes" do
+  it_behaves_like :uninstantiable_generic_class, GenericClass
+end
+
+describe "Generic .NET classes with type param" do
+  it_behaves_like :instantiable_class, GenericClass[Object]
+end
+
+describe "Empty generic .NET classes" do
+  it_behaves_like :uninstantiable_generic_class, EmptyGenericClass
+end
+
+describe "Empty generic .NET classes with type param" do
+  it_behaves_like :instantiable_class, EmptyGenericClass[Object]
+end

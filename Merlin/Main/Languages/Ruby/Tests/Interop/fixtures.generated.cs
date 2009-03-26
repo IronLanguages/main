@@ -19,6 +19,8 @@ public class EmptyClass {}
     public static class StaticClass {public static int m() {return 1;}}
     public sealed class SealedClass {public int m() {return 1;}}
     public sealed class EmptySealedClass {}
+    public class EmptyGenericClass<T>{}
+    public class GenericClass<T>{}
 #line 4 "./delegate/mapping_spec.rb"
 public delegate void VoidVoidDelegate();
 #line 4 "./enum/mapping_spec.rb"

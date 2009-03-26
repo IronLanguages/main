@@ -10,12 +10,15 @@ describe "Basic .NET classes" do
     public static class StaticClass {public static int m() {return 1;}}
     public sealed class SealedClass {public int m() {return 1;}}
     public sealed class EmptySealedClass {}
+    public class EmptyGenericClass<T>{}
+    public class GenericClass<T>{}
   EOL
   it "map to Ruby classes" do
     [EmptyClass, Klass, 
       AbstractClass, EmptyAbstractClass, 
       StaticClass, EmptyStaticClass,
-      SealedClass, EmptySealedClass].each do |klass|
+      SealedClass, EmptySealedClass,
+      GenericClass, EmptyGenericClass].each do |klass|
         klass.should be_kind_of Class
       end
   end
