@@ -11,7 +11,7 @@ describe "Basic .NET classes" do
     public sealed class SealedClass {public int m() {return 1;}}
     public sealed class EmptySealedClass {}
     public class EmptyGenericClass<T>{}
-    public class GenericClass<T>{}
+    public class GenericClass<T>{public int m() {return 1;}}
   EOL
   it "map to Ruby classes" do
     [EmptyClass, Klass, 

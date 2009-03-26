@@ -20,7 +20,7 @@ public class EmptyClass {}
     public sealed class SealedClass {public int m() {return 1;}}
     public sealed class EmptySealedClass {}
     public class EmptyGenericClass<T>{}
-    public class GenericClass<T>{}
+    public class GenericClass<T>{public int m() {return 1;}}
 #line 4 "./delegate/mapping_spec.rb"
 public delegate void VoidVoidDelegate();
 #line 4 "./enum/mapping_spec.rb"
