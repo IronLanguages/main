@@ -1,11 +1,12 @@
-class UserDefined
-
+class UserOuter
   class Nested
     def ==(other)
       other.kind_of? self.class
     end
   end
+end
 
+class UserSimple
   attr_reader :a, :b
 
   def initialize
@@ -13,6 +14,15 @@ class UserDefined
     @b = @a
   end
 
+  def ==(other)
+    self.class === other and
+    @a == other.a and
+    @b == other.b
+  end
+
+end
+
+class UserDefined < UserSimple
   def _dump(depth)
     Marshal.dump [@a, @b]
   end
@@ -26,13 +36,6 @@ class UserDefined
 
     obj
   end
-
-  def ==(other)
-    self.class === other and
-    @a == other.a and
-    @b == other.b
-  end
-
 end
 
 class UserDefinedWithIvar
@@ -101,10 +104,21 @@ class UserMarshalWithIvar
   end
 end
 
+module AnAttribute
+  attr :a
+
+  def initialize(*args)
+    @a = 1
+    super
+  end
+end
+
 class UserArray < Array
+  include AnAttribute
 end
 
 class UserHash < Hash
+  include AnAttribute
 end
 
 class UserHashInitParams < Hash
@@ -117,9 +131,11 @@ class UserObject
 end
 
 class UserRegexp < Regexp
+  include AnAttribute
 end
 
 class UserString < String
+  include AnAttribute
 end
 
 module Meths
@@ -161,10 +177,10 @@ module MarshalSpec
                      "\004\b\"\002,\001#{'big' * 100}"],
     "String extended" => [''.extend(Meths), # TODO: check for module on load
                           "\004\be:\nMeths\"\000"],
-    "String subclass" => [UserString.new,
-                          "\004\bC:\017UserString\"\000"],
+    "String subclass" => [UserString.new("hello"),
+                          "\004\bIC:\017UserString\"\nhello\006:\a@ai\006"],
     "String subclass extended" => [UserString.new.extend(Meths),
-                                   "\004\be:\nMethsC:\017UserString\"\000"],
+                                   "\004\bIe:\nMethsC:\017UserString\"\000\006:\a@ai\006"],
     "Symbol small" => [:big,
                        "\004\b:\010big"],
     "Symbol big" => [('big' * 100).to_sym,
@@ -199,8 +215,11 @@ module MarshalSpec
                        "\004\bc\vString"],
     "Module Marshal" => [Marshal,
                          "\004\bm\fMarshal"],
-    "Module nested" => [UserDefined::Nested.new,
-                        "\004\bo:\030UserDefined::Nested\000"],
+    "User type" => [UserSimple.new,
+                        "\004\bo:\017UserSimple\a:\a@b\"\nstuff:\a@a@\006",
+                        { :a => "stuff", :b => "stuff" }],
+    "Module nested" => [UserOuter::Nested.new,
+                        "\004\bo:\026UserOuter::Nested\000"],
     "_dump object" => [UserDefinedWithIvar.new,
                        "\004\bu:\030UserDefinedWithIvar5\004\b[\bI\"\nstuff\006:\t@foo:\030UserDefinedWithIvar\"\tmore@\a"],
     "_dump object extended" => [UserDefined.new.extend(Meths),
@@ -210,7 +229,9 @@ module MarshalSpec
     "Regexp" => [/\A.\Z/,
                  "\004\b/\n\\A.\\Z\000"],
     "Regexp subclass /i" => [UserRegexp.new('', Regexp::IGNORECASE),
-                             "\004\bC:\017UserRegexp/\000\001"],
+                             "\004\bIC:\017UserRegexp/\000\001\006:\a@ai\006"],
+    "Regexp subclass extended" => [UserRegexp.new('').extend(Meths),
+                             "\004\bIe:\nMethsC:\017UserRegexp/\000\000\006:\a@ai\006"],
     "Float 0.0" => [0.0,
                     "\004\bf\0060"],
     "Float -0.0" => [-0.0,
@@ -223,12 +244,12 @@ module MarshalSpec
                     "\004\bf\0061"],
     "Hash" => [Hash.new,
                "\004\b{\000"],
-    "Hash subclass" => [UserHash.new,
-                        "\004\bC:\rUserHash{\000"],
+    "Hash subclass" => [UserHash.new.merge({:hi => "hi"}),
+                        "\004\bIC:\rUserHash{\006:\ahi\"\ahi\006:\a@ai\006"],
     "Array" => [Array.new,
                 "\004\b[\000"],
-    "Array subclass" => [UserArray.new,
-                     "\004\bC:\016UserArray[\000"],
+    "Array subclass" => [UserArray.new([100, 200]),
+                     "\004\bIC:\016UserArray[\aiii\001\310\006:\a@ai\006"],
     "Struct" => [Struct::Pyramid.new,
                  "\004\bS:\024Struct::Pyramid\000"],
   }

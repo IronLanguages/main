@@ -41,35 +41,25 @@ if exist "%PROGRAM_FILES_32%\Microsoft.NET\SDK\v2.0\Bin\sdkvars.bat" (
 
 set PATH=%PATH%;%MERLIN_ROOT%\Languages\Ruby\Scripts;%MERLIN_ROOT%\Languages\Ruby\Scripts\bin;%RUBY18_BIN%;%MERLIN_ROOT%\..\External\Languages\IronRuby\mspec\mspec\bin
 
-if DEFINED HOME (
-  set LOCAL_HOME=%HOME%
-  goto SetRubyEnv
-)
-
-if DEFINED HOMEDRIVE (
-  if DEFINED HOMEDIR (
-    set LOCAL_HOME="%HOMEDRIVE%\%HOMEDIR%"
-    goto SetRubyEnv
+if not DEFINED HOME (
+  if DEFINED HOMEDRIVE (
+    if DEFINED HOMEPATH (
+      set HOME=%HOMEDRIVE%\%HOMEPATH%
+      goto SetRubyEnv
+    )
   )
+  if not DEFINED USERPROFILE (
+    echo Error: One of HOME, HOMEDRIVE,HOMEPATH, or USERPROFILE needs to be set
+    goto END
+  )
+  set HOME=%USERPROFILE%
 )
-
-if DEFINED USERPROFILE (
-  set LOCAL_HOME=%USERPROFILE%
-  goto SetRubyEnv
-)
-
-echo No suitable HOME environment found. This means that all of
-echo HOME, HOMEDIR, HOMEDRIVE, and USERPROFILE are not set
-goto RubyDone
 
 :SetRubyEnv
 
-if NOT exist "%LOCAL_HOME%\.mspecrc" (
-  copy "%MERLIN_ROOT%\Languages\Ruby\default.mspec" "%LOCAL_HOME%\.mspecrc"
-  goto RubyDone
+if NOT exist "%HOME%\.mspecrc" (
+  copy "%MERLIN_ROOT%\Languages\Ruby\default.mspec" "%HOME%\.mspecrc"
 )
-
-:RubyDone
 
 call doskey /macrofile=%MERLIN_ROOT%\Scripts\Bat\%Alias.txt
 cd /D %CURRENT%
@@ -85,5 +75,4 @@ cls
 
 set BAT=
 set CURRENT=
-set LOCAL_HOME=
 

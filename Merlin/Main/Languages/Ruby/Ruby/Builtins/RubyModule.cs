@@ -1150,6 +1150,10 @@ namespace IronRuby.Builtins {
         public void DefineLibraryMethod(string/*!*/ name, int attributes, params Delegate[]/*!*/ overloads) {
             var flags = (RubyMemberFlags)(attributes & (int)RubyMethodAttributes.MemberFlagsMask);
             bool skipEvent = ((RubyMethodAttributes)attributes & RubyMethodAttributes.NoEvent) != 0;
+            RubyCompatibility compatibility = (RubyCompatibility)(attributes >> RubyMethodAttribute.CompatibilityEncodingShift);
+            if (compatibility > Context.RubyOptions.Compatibility) {
+                return;
+            }
             SetLibraryMethod(name, new RubyLibraryMethodInfo(overloads, flags, this), skipEvent);
         }
 

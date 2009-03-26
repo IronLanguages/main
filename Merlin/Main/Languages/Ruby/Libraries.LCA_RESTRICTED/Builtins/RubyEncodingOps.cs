@@ -24,7 +24,7 @@ using Microsoft.Scripting.Utils;
 using Microsoft.Scripting;
 
 namespace IronRuby.Builtins {
-    [RubyClass("Encoding", Extends = typeof(RubyEncoding), Inherits = typeof(Object), BuildConfig = "!SILVERLIGHT")]
+    [RubyClass("Encoding", Extends = typeof(RubyEncoding), Inherits = typeof(Object), Compatibility = RubyCompatibility.Ruby19, BuildConfig = "!SILVERLIGHT")]
     public static class RubyEncodingOps {
         #region Public Instance Methods
 

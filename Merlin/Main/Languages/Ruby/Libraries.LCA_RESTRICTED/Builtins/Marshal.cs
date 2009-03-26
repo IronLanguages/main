@@ -278,37 +278,23 @@ namespace IronRuby.Builtins {
                 }
             }
 
+            private void WriteRange(Range/*!*/ range) {
+                _writer.Write((byte)'o');
+                WriteSymbol("Range");
+                WriteInt32(3);
+                WriteSymbol("begin");
+                WriteAnObject(range.Begin);
+                WriteSymbol("end");
+                WriteAnObject(range.End);
+                WriteSymbol("excl");
+                WriteAnObject(range.ExcludeEnd);
+            }
+
             private void WriteObject(object/*!*/ obj) {
                 _writer.Write((byte)'o');
                 RubyClass theClass = _context.GetClassOf(obj);
                 TestForAnonymous(theClass);
                 WriteSymbol(theClass.Name);
-
-#if !SILVERLIGHT
-                ISerializable serializableObj = (obj as ISerializable);
-                if (serializableObj != null) {
-                    SerializationInfo info = new SerializationInfo(theClass.GetUnderlyingSystemType(), new FormatterConverter());
-                    serializableObj.GetObjectData(info, _streamingContext);
-                    int count = info.MemberCount;
-                    try {
-                        // We need this attribute for CLR serialization but it's not compatible with MRI serialization
-                        // Unfortunately, there's no way to test for a value without either iterating over all values
-                        // or throwing an exception if it's not present
-                        if (info.GetValue("#class", typeof(RubyClass)) != null) {
-                            count--;
-                        }
-                    } catch (Exception) {
-                    }
-                    WriteInt32(count);
-                    foreach (SerializationEntry entry in info) {
-                        if (!entry.Name.Equals("#class")) {
-                            WriteSymbol(entry.Name);
-                            WriteAnObject(entry.Value);
-                        }
-                    }
-                    return;
-                }
-#endif
             }
 
             private void WriteUsingDump(object/*!*/ obj) {
@@ -443,6 +429,8 @@ namespace IronRuby.Builtins {
                             WriteModule((RubyModule)obj);
                         } else if (obj is RubyStruct) {
                             WriteStruct((RubyStruct)obj);
+                        } else if (obj is Range) {
+                            WriteRange((Range)obj);
                         } else {
                             if (writeInstanceData) {
                                 // Overwrite the "I"; we always have instance data

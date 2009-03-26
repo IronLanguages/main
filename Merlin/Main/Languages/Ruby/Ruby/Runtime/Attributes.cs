@@ -22,6 +22,7 @@ namespace IronRuby.Runtime {
 
     public abstract class RubyAttribute : Attribute {
         private string _buildConfig;
+        private RubyCompatibility _compatibility = RubyCompatibility.Default;
 
         /// <summary>
         /// If set, indicates what build configurations this module should be available under
@@ -35,6 +36,14 @@ namespace IronRuby.Runtime {
         public string BuildConfig {
             get { return _buildConfig; }
             set { _buildConfig = value; }
+        }
+
+        /// <summary>
+        /// Which language version supports the feature
+        /// </summary>
+        public RubyCompatibility Compatibility {
+            get { return _compatibility; }
+            set { _compatibility = value; }
         }
     }
 
@@ -75,6 +84,11 @@ namespace IronRuby.Runtime {
     public sealed class RubyMethodAttribute : RubyAttribute {
         private readonly string/*!*/ _name;
         private readonly RubyMethodAttributes _methodAttributes;
+
+        /// <summary>
+        /// RubyCompatibility is encoded along with the method attributes in the initialization code
+        /// </summary>
+        internal const int CompatibilityEncodingShift = 16;
 
         public string/*!*/ Name {
             get { return _name; }

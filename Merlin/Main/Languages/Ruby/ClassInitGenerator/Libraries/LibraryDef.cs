@@ -164,6 +164,7 @@ internal class LibraryDef {
 
 
         public string BuildConfig;
+        public RubyCompatibility Compatibility;
 
         private int _dependencyOrder;
 
@@ -255,6 +256,7 @@ internal class LibraryDef {
         public string/*!*/ Name;
         public List<MethodInfo>/*!*/ Overloads = new List<MethodInfo>();
         public string BuildConfig;
+        public RubyCompatibility Compatibility;
         public RubyMethodAttributes/*!*/ Attributes;
 
         public bool IsRuleGenerator {
@@ -281,6 +283,18 @@ internal class LibraryDef {
     }
 
     #endregion
+
+    private void WriteRubyCompatibilityCheck(RubyCompatibility compatibility) {
+        if (compatibility != RubyCompatibility.Default) {
+            _output.WriteLine("if (Context.RubyOptions.Compatibility >= RubyCompatibility.{0}) {{", compatibility.ToString());
+        }
+    }
+
+    private void WriteRubyCompatibilityCheckEnd(RubyCompatibility compatibility) {
+        if (compatibility != RubyCompatibility.Default) {
+            _output.WriteLine("}");
+        }
+    }
 
     #region Reflection
 
@@ -343,6 +357,7 @@ internal class LibraryDef {
                 def.Extends = (module.Extends != null) ? module.Extends : trait;
                 def.DefineIn = module.DefineIn;
                 def.BuildConfig = module.BuildConfig;
+                def.Compatibility = module.Compatibility;
 
                 def.Super = null;
                 if (cls != null && def.Extends != typeof(object) && !def.Extends.IsInterface) {
@@ -418,6 +433,10 @@ internal class LibraryDef {
                         } else {
                             def.BuildConfig = declaringDef.BuildConfig;
                         }
+                    }
+
+                    if (declaringDef.Compatibility != RubyCompatibility.Default) {
+                        def.Compatibility = (RubyCompatibility)Math.Max((int)declaringDef.Compatibility, (int)def.Compatibility);
                     }
 
                     // we will need a reference for setting the constant:
@@ -564,21 +583,22 @@ internal class LibraryDef {
                         }
 
                         def.BuildConfig = attr.BuildConfig;
+                        def.Compatibility = attr.Compatibility;
 
                         methods.Add(attr.Name, def);
                     }
                     def.Overloads.Add(method);
                 }
-            } 
-            
+            }
+
             if (method.IsDefined(typeof(RubyConstructorAttribute), false)) {
                 if (!RequireStatic(method)) continue;
                 moduleDef.Factories.Add(method);
-            } 
-            
+            }
+
             if (method.IsDefined(typeof(RubyConstantAttribute), false)) {
                 if (!RequireStatic(method)) continue;
-                
+
                 var parameters = method.GetParameters();
                 if (parameters.Length != 1 || !parameters[0].ParameterType.IsAssignableFrom(typeof(RubyModule)) ||
                     parameters[0].Attributes != ParameterAttributes.None) {
@@ -631,7 +651,7 @@ internal class LibraryDef {
                     if (parameterInfos[i].ParameterType.IsByRef) {
                         LogMethodError("has ref/out parameter", methodDef, overload);
                     }
-                    
+
                     var type = parameterInfos[i].ParameterType;
 
                     if (type == typeof(CodeContext)) {
@@ -739,6 +759,7 @@ internal class LibraryDef {
                 continue;
             }
 
+            Debug.Assert(attr.Compatibility == RubyCompatibility.Default);
             moduleDef.Constants.Add(name, new ConstantDef(name, member, attr.BuildConfig));
         }
     }
@@ -787,7 +808,7 @@ internal class LibraryDef {
         AnyErrors = true;
     }
 
-    private void LogMethodWarning(string/*!*/ message, MethodDef methodDef, MethodBase/*!*/ overload,params object[] args) {
+    private void LogMethodWarning(string/*!*/ message, MethodDef methodDef, MethodBase/*!*/ overload, params object[] args) {
         string methodName = (methodDef != null) ? "method \"" + methodDef.Name + '"' : "factory";
         Console.Error.WriteLine("Warning: {0}: {1}", methodName, String.Format(message, args));
         Console.Error.WriteLine("         overload: {0}", ReflectionUtils.FormatSignature(new StringBuilder(), overload));
@@ -880,6 +901,7 @@ internal class LibraryDef {
                 if (def.BuildConfig != null) {
                     _output.WriteLine("#if " + def.BuildConfig);
                 }
+                WriteRubyCompatibilityCheck(def.Compatibility);
 
                 if (def.IsGlobal) {
                     GenerateAliases(def, ModuleDef.ObjectClassRef);
@@ -888,6 +910,7 @@ internal class LibraryDef {
                     _output.WriteLine("{0}.SetConstant(\"{1}\", {2});", def.DeclaringTypeRef, def.SimpleName, def.Reference);
                 }
 
+                WriteRubyCompatibilityCheckEnd(def.Compatibility);
                 if (def.BuildConfig != null) {
                     _output.WriteLine("#endif");
                 }
@@ -910,6 +933,8 @@ internal class LibraryDef {
         if (def.BuildConfig != null) {
             _output.WriteLine("#if " + def.BuildConfig);
         }
+        WriteRubyCompatibilityCheck(def.Compatibility);
+
 
         switch (def.Kind) {
             case ModuleKind.Class:
@@ -940,7 +965,7 @@ internal class LibraryDef {
 #endif
 
                 if (def.IsExtension) {
-                    _output.Write("ExtendClass(typeof({0}), {1}, {2}, ", 
+                    _output.Write("ExtendClass(typeof({0}), {1}, {2}, ",
                         TypeName(def.Extends),
                         def.Super != null ? def.Super.RefName : "null",
                         def.GetInitializerDelegates()
@@ -950,7 +975,7 @@ internal class LibraryDef {
                         def.IsGlobal ? "Global" : "",
                         def.QualifiedName,
                         TypeName(def.Extends),
-                        def.Extends == def.Trait ? "true" : "false", 
+                        def.Extends == def.Trait ? "true" : "false",
                         def.Super.RefName,
                         def.GetInitializerDelegates()
                     );
@@ -1007,6 +1032,7 @@ internal class LibraryDef {
                 throw Assert.Unreachable;
         }
 
+        WriteRubyCompatibilityCheckEnd(def.Compatibility);
         if (def.BuildConfig != null) {
             _output.WriteLine("#endif");
         }
@@ -1090,6 +1116,8 @@ internal class LibraryDef {
             if (moduleDef.BuildConfig != null) {
                 _output.WriteLine("#if " + moduleDef.BuildConfig);
             }
+            WriteRubyCompatibilityCheck(moduleDef.Compatibility);
+
             _output.WriteLine("private static void Load{0}_Constants({1}/*!*/ module) {{", moduleDef.Id, TypeRubyModule);
             _output.Indent++;
 
@@ -1098,6 +1126,7 @@ internal class LibraryDef {
 
             _output.Indent--;
             _output.WriteLine("}");
+            WriteRubyCompatibilityCheckEnd(moduleDef.Compatibility);
             if (moduleDef.BuildConfig != null) {
                 _output.WriteLine("#endif");
             }
@@ -1140,7 +1169,7 @@ internal class LibraryDef {
     private void GenerateHiddenMethods(IDictionary<string, HiddenMethod>/*!*/ methods) {
         foreach (KeyValuePair<string, HiddenMethod> entry in methods) {
             if (entry.Value == HiddenMethod.Undefined) {
-                _output.WriteLine("module.{0}(\"{1}\");", 
+                _output.WriteLine("module.{0}(\"{1}\");",
                     Builtins ? "UndefineMethodNoEvent" : "UndefineMethod",
                     entry.Key
                 );
@@ -1156,14 +1185,21 @@ internal class LibraryDef {
                 _output.WriteLine("#if " + def.BuildConfig);
             }
 
+            int attributes = (int)def.Attributes;
+            if (def.Compatibility != RubyCompatibility.Default) {
+                int encodedCompat = ((int)def.Compatibility) << RubyMethodAttribute.CompatibilityEncodingShift;
+                Debug.Assert((encodedCompat & attributes) == 0);
+                attributes |= encodedCompat;
+            }
+
             if (def.IsRuleGenerator) {
                 _output.WriteLine("module.DefineRuleGenerator(\"{0}\", 0x{1:x}, {2}.{3}());",
                     def.Name,
-                    (int)def.Attributes,
+                    attributes,
                     TypeName(def.Overloads[0].DeclaringType),
                     def.Overloads[0].Name);
             } else {
-                _output.Write("module.DefineLibraryMethod(\"{0}\", 0x{1:x}", def.Name, (int)def.Attributes);
+                _output.Write("module.DefineLibraryMethod(\"{0}\", 0x{1:x}", def.Name, attributes);
 
                 _output.WriteLine(", ");
 
@@ -1217,6 +1253,7 @@ internal class LibraryDef {
                 if (moduleDef.BuildConfig != null) {
                     _output.WriteLine("#if " + moduleDef.BuildConfig);
                 }
+                WriteRubyCompatibilityCheck(moduleDef.Compatibility);
 
                 // public static Exception/*!*/ Factory(RubyClass/*!*/ self, [DefaultParameterValue(null)]object message) {
                 //     return InitializeException(new Exception(GetClrMessage(self, message)), message);
@@ -1243,6 +1280,7 @@ internal class LibraryDef {
                 _output.WriteLine("}");
                 _output.WriteLine();
 
+                WriteRubyCompatibilityCheckEnd(moduleDef.Compatibility);
                 if (moduleDef.BuildConfig != null) {
                     _output.WriteLine("#endif");
                 }

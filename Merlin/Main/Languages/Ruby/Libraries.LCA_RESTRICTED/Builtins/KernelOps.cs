@@ -725,7 +725,7 @@ namespace IronRuby.Builtins {
 
                 if (e != null) {
                     if (backtrace != null) {
-                        RubyExceptionData.GetInstance(e).SetBacktrace(setBackTraceStorage.GetCallSite(), context, backtrace);
+                        RubyExceptionData.GetInstance(e).SetBacktraceForRaise(setBackTraceStorage.GetCallSite(), context, backtrace);
                     }
                     return e;
                 }

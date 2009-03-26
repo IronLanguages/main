@@ -274,7 +274,7 @@ namespace IronRuby.Builtins {
             try {
                 DateTime result = new DateTime(year, month, day, hour, minute, second, DateTimeKind.Utc);
                 result = result.AddTicks(usec * 10L);
-                if (isUtc) {
+                if (!isUtc) {
                     result = result.ToLocalTime();
                 }
                 return result;
