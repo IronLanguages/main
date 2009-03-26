@@ -123,3 +123,20 @@ describe "Generic .NET methods" do
     end
   end
 end
+
+describe "Static .NET methods" do
+  csc <<-EOL
+    public partial class Klass{
+      public static int StaticVoidMethod() {
+        return 1;
+      }
+    }
+  EOL
+
+  it "don't incorrectly get cached when called on an instance" do
+    #might be related to Rubyforge 24104
+    Klass.new.method(:test_method) rescue nil
+    Klass.method(:test_method).should be_kind_of(Method)
+  end
+end
+

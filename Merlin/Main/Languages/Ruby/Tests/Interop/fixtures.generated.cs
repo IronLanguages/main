@@ -30,7 +30,7 @@ public interface IEmptyInterfaceGroup { }
 
     public interface IInterfaceGroup1<T> {void m1();}
     public interface IInterfaceGroup1<T,V> {void m1();}
-#line 221 "./method/invocation/generic_spec.rb"
+#line 220 "./method/invocation/generic_spec.rb"
 public partial class ClassWithMethods {
         #region private methods
   private string Private1Generic0Arg<T>() {
@@ -159,7 +159,7 @@ public partial class ClassWithMethods {
     }
 
     public partial class SubKlass : Klass {}
-#line 257 "./method/invocation/generic_spec.rb"
+#line 256 "./method/invocation/generic_spec.rb"
 #pragma warning disable 693
     public partial class GenericClassWithMethods<K> {
       #region private methods
@@ -284,7 +284,7 @@ public partial class ClassWithMethods {
 
     }
     #pragma warning restore 693
-#line 282 "./method/invocation/generic_spec.rb"
+#line 281 "./method/invocation/generic_spec.rb"
 #pragma warning disable 693
     public partial class GenericClass2Params<K, J> {
       #region private methods
@@ -435,6 +435,12 @@ public partial class ClassWithOverloads {
       public string Overloaded() { return "empty"; }
       public string Overloaded(int arg) { return "one arg"; }
       public string Overloaded(int arg1, int arg2) { return "two args"; }
+    }
+#line 128 "./method/reflection_spec.rb"
+public partial class Klass{
+      public static int StaticVoidMethod() {
+        return 1;
+      }
     }
 #line 4 "./struct/mapping_spec.rb"
 public struct EmptyStruct {}
