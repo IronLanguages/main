@@ -4,6 +4,12 @@ public partial class Klass {
         return arg0;
       }
     }
+#line 14 "./class/instantiation/abstract_spec.rb"
+public partial class DerivedFromAbstract : AbstractClass {
+    public override int m() {return 1;}
+  }
+#line 32 "./class/instantiation/abstract_spec.rb"
+public abstract partial class AbstractDerived : Klass {}
 #line 4 "./class/mapping_spec.rb"
 public class EmptyClass {}
     public partial class Klass {public int m() {return 1;}}
@@ -415,7 +421,7 @@ public partial class ClassWithMethods {
       return a+b;
     }
   }
-#line 65 "./method/modification/override_spec.rb"
+#line 45 "./method/modification/override_spec.rb"
 public class VirtualMethodBaseClass { 
       public virtual string VirtualMethod() { return "virtual"; } 
     }
