@@ -12,13 +12,17 @@ describe "Basic .NET classes" do
     public sealed class EmptySealedClass {}
     public class EmptyGenericClass<T>{}
     public class GenericClass<T>{public int m() {return 1;}}
+    public class EmptyGeneric2Class<T,U>{}
+    public class Generic2Class<T,U>{public int m() {return 1;}}
   EOL
   it "map to Ruby classes" do
     [EmptyClass, Klass, 
       AbstractClass, EmptyAbstractClass, 
       StaticClass, EmptyStaticClass,
       SealedClass, EmptySealedClass,
-      GenericClass, EmptyGenericClass].each do |klass|
+      GenericClass, EmptyGenericClass,
+      Generic2Class, EmptyGeneric2Class
+    ].each do |klass|
         klass.should be_kind_of Class
       end
   end

@@ -21,6 +21,8 @@ public class EmptyClass {}
     public sealed class EmptySealedClass {}
     public class EmptyGenericClass<T>{}
     public class GenericClass<T>{public int m() {return 1;}}
+    public class EmptyGeneric2Class<T,U>{}
+    public class Generic2Class<T,U>{public int m() {return 1;}}
 #line 4 "./delegate/mapping_spec.rb"
 public delegate void VoidVoidDelegate();
 #line 4 "./enum/mapping_spec.rb"
