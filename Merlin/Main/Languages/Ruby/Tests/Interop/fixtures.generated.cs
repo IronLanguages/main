@@ -409,7 +409,13 @@ public partial class ClassWithMethods {
 
     }
     #pragma warning restore 693
-#line 41 "./method/modification/override_spec.rb"
+#line 4 "./method/modification/override_spec.rb"
+public partial class ClassWithMethods {
+    public int SummingMethod(int a, int b){
+      return a+b;
+    }
+  }
+#line 65 "./method/modification/override_spec.rb"
 public class VirtualMethodBaseClass { 
       public virtual string VirtualMethod() { return "virtual"; } 
     }
