@@ -8,11 +8,14 @@ describe "Basic .NET classes" do
     public abstract class AbstractClass {public abstract int m();}
     public static class EmptyStaticClass {}
     public static class StaticClass {public static int m() {return 1;}}
+    public sealed class SealedClass {public int m() {return 1;}}
+    public sealed class EmptySealedClass {}
   EOL
   it "map to Ruby classes" do
     [EmptyClass, Klass, 
       AbstractClass, EmptyAbstractClass, 
-      StaticClass, EmptyStaticClass].each do |klass|
+      StaticClass, EmptyStaticClass,
+      SealedClass, EmptySealedClass].each do |klass|
         klass.should be_kind_of Class
       end
   end

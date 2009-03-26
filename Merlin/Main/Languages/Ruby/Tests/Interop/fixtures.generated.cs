@@ -17,6 +17,8 @@ public class EmptyClass {}
     public abstract class AbstractClass {public abstract int m();}
     public static class EmptyStaticClass {}
     public static class StaticClass {public static int m() {return 1;}}
+    public sealed class SealedClass {public int m() {return 1;}}
+    public sealed class EmptySealedClass {}
 #line 4 "./delegate/mapping_spec.rb"
 public delegate void VoidVoidDelegate();
 #line 4 "./enum/mapping_spec.rb"
