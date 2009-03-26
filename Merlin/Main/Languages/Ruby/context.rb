@@ -399,7 +399,7 @@ IronRubyCompiler = CSProjCompiler.new do
                 :dir        => '../../../../ndp/fx/src/Core/Microsoft/Scripting'
   dlr_libs  :references => ['Microsoft.Scripting.Core.dll', '!System.Xml.dll', '!System.dll', '!System.Configuration.dll', 'Microsoft.Scripting.ExtensionAttribute.dll','!System.Runtime.Remoting.dll'],
             :switches   => ['target:library'], 
-            :resources  => {Pathname.new('math') + 'MathResources.resx' => Pathname.new('Microsoft.Scripting.Math.MathResources.resources')}, 
+            :resources  => {Pathname.new('Math') + 'MathResources.resx' => Pathname.new('Microsoft.Scripting.Math.MathResources.resources')}, 
             :output     => 'Microsoft.Scripting.dll', 
             :csproj     => 'Microsoft.Scripting.csproj',
             :dir        => '../../Runtime/Microsoft.Scripting'

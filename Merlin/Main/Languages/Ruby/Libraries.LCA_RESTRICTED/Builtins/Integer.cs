@@ -23,7 +23,6 @@ namespace IronRuby.Builtins {
 
     [RubyClass("Integer"), Includes(typeof(Precision))]
     public class Integer : Numeric {
-
         public Integer(RubyClass/*!*/ cls) 
             : base(cls) { 
         }
@@ -203,7 +202,7 @@ namespace IronRuby.Builtins {
         [RubyMethod("succ")]
         [RubyMethod("next")]
         public static object Next(int self) {
-            return FixnumOps.Add(self, 1);
+            return ClrInteger.Add(self, 1);
         }
 
         /// <summary>
@@ -215,7 +214,7 @@ namespace IronRuby.Builtins {
         [RubyMethod("next")]
         public static object Next(BinaryOpStorage/*!*/ addStorage, RubyContext/*!*/ context, object/*!*/ self) {
             var site = addStorage.GetCallSite("+");
-            return site.Target(site, context, self, 1);
+            return site.Target(site, context, self, ClrInteger.One);
         }
 
         #endregion

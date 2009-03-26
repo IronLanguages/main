@@ -215,7 +215,6 @@ foo
         public void CrossRuntime1() {
             AssertOutput(() => {
                 CompilerTest(@"
-load_assembly 'IronRuby.Libraries', 'IronRuby.StandardLibrary.IronRubyModule'
 engine = IronRuby.create_engine
 puts engine.execute('1+1')
 puts engine.execute('Fixnum')
@@ -370,6 +369,25 @@ p get_python_class.call
 ", scope), @"
 this is C
 ");
+        }
+
+        public void PythonInterop5() {
+            if (!_driver.RunPython) return;
+
+            var py = Runtime.GetEngine("python");
+
+            var scope = py.CreateScope();
+            py.Execute(@"
+from System.Collections import ArrayList
+class A(ArrayList):
+  def Count(self): return 123
+", scope);
+
+            Assert(Engine.Execute<int>(@"
+a = A().new
+a.Count
+", scope) == 123);
+            
         }
 
         public void CustomTypeDescriptor1() {

@@ -547,7 +547,7 @@ namespace IronRuby.Builtins {
         [RubyMethod("<=>")]
         public static object Comparison(RubyModule/*!*/ self, [NotNull]RubyModule/*!*/ module) {
             if (ReferenceEquals(self, module)) {
-                return ScriptingRuntimeHelpers.Int32ToObject(0);
+                return ClrInteger.Zero;
             }
 
             if (self.Context != module.Context) {
@@ -556,11 +556,11 @@ namespace IronRuby.Builtins {
 
             using (self.Context.ClassHierarchyLocker()) {
                 if (self.HasAncestorNoLock(module)) {
-                    return ScriptingRuntimeHelpers.Int32ToObject(-1);
+                    return ClrInteger.MinusOne;
                 }
 
                 if (module.HasAncestorNoLock(self)) {
-                    return ScriptingRuntimeHelpers.Int32ToObject(1);
+                    return ClrInteger.One;
                 }
             }
             return null;

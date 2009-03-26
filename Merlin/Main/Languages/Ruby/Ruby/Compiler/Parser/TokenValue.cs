@@ -112,7 +112,7 @@ namespace IronRuby.Compiler {
             String = value;
         }
 
-        internal void SetStringContent(StringContentBuilder/*!*/ contentBuilder) {
+        internal void SetStringContent(MutableStringBuilder/*!*/ contentBuilder) {
             Assert.NotNull(contentBuilder);
             StringContent = contentBuilder.ToValue();
         }

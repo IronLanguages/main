@@ -782,6 +782,10 @@ namespace IronRuby.Runtime {
                 return true;
             }
 
+            if (fromType == typeof(char) && toType == typeof(string)) {
+                return true;
+            }
+
 
 #if !SILVERLIGHT
             // try available type conversions...

@@ -18,6 +18,8 @@ using Microsoft.Scripting;
 using Microsoft.Scripting.Runtime;
 using IronRuby.Compiler;
 using IronRuby.Compiler.Ast;
+using IronRuby.Builtins;
+using Microsoft.Scripting.Math;
 
 namespace IronRuby.Tests {
 
@@ -424,6 +426,22 @@ puts 2.1560
 2.0
 2.156
 ");
+        }
+
+        public void NumericOps1() {
+            // overflow tests:
+            Assert((BigInteger)ClrInteger.Minus(Int32.MinValue) == -(BigInteger)Int32.MinValue);
+            Assert((BigInteger)ClrInteger.Abs(Int32.MinValue) == -(BigInteger)Int32.MinValue);
+
+            Assert((BigInteger)ClrInteger.Divide(Int32.MinValue, -1) == -(BigInteger)Int32.MinValue);
+            Assert(ClrInteger.Modulo(Int32.MinValue, -1) == 0);
+
+            var dm = ClrInteger.DivMod(Int32.MinValue, -1);
+            Assert((BigInteger)dm[0] == -(BigInteger)Int32.MinValue);
+            Assert((int)dm[1] == 0);
+
+            Assert((int)ClrInteger.LeftShift(1, Int32.MinValue) == 0);
+            AssertExceptionThrown<ArgumentOutOfRangeException>(() => ClrInteger.RightShift(1, Int32.MinValue));
         }
 
         public void Scenario_RubyInclusions1() {

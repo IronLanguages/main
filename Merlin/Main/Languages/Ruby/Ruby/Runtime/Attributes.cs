@@ -117,21 +117,24 @@ namespace IronRuby.Runtime {
         }
     }
 
-#if TODO
-    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Interface, AllowMultiple = false)]
-    public class RubyExtensionAttribute : RubyAttribute {
-        private readonly Type/*!*/ _extends;
+    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Interface, AllowMultiple = true)]
+    public class DeclaresRubyModuleAttribute : RubyAttribute {
+        private readonly string/*!*/ _name;
+        private readonly Type/*!*/ _moduleDefinitionType;
 
-        public Type/*!*/ Extends {
-            get { return _extends; }
+        public string/*!*/ Name {
+            get { return _name; }
         }
 
-        public RubyExtensionAttribute(Type/*!*/ extends) {
-            ContractUtils.RequiresNotNull(extends, "extends");
-            _extends = extends;
+        public Type/*!*/ ModuleDefinitionType {
+            get { return _moduleDefinitionType; }
+        }
+
+        public DeclaresRubyModuleAttribute(string/*!*/ name, Type/*!*/ moduleDefinitionType) {
+            _name = name;
+            _moduleDefinitionType = moduleDefinitionType;
         }
     }
-#endif
 
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Interface, AllowMultiple = false)]
     public class RubyModuleAttribute : RubyAttribute {
@@ -140,6 +143,7 @@ namespace IronRuby.Runtime {
         private bool _mixinInterfaces;
         private bool _hideClrMembers;
         private Type _extends;
+        private Type _defineIn;
 
         /// <summary>
         /// If an extension type doesn't specify Ruby name its name is inferred from the CLR 
@@ -221,6 +225,11 @@ namespace IronRuby.Runtime {
         public Type Extends {
             get { return _extends; }
             set { _extends = value; }
+        }
+
+        public Type DefineIn {
+            get { return _defineIn; }
+            set { _defineIn = value; }
         }
 
         public RubyModuleAttribute() {
@@ -326,5 +335,6 @@ namespace IronRuby.Runtime {
     [AttributeUsage(AttributeTargets.Parameter, AllowMultiple = false)]
     public class DefaultProtocolAttribute : Attribute {
     }
+
 }
 

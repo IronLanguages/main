@@ -55,6 +55,7 @@ namespace IronRuby.Tests {
                 MethodCallCaching6,
 
                 NumericLiterals1,
+                NumericOps1,
                 StringLiterals1,
                 Escapes1,
                 UnicodeEscapes1,
@@ -316,6 +317,7 @@ namespace IronRuby.Tests {
                 PythonInterop2,
                 PythonInterop3,
                 PythonInterop4,
+                PythonInterop5,
 
                 CustomTypeDescriptor1,
                 CustomTypeDescriptor2,
@@ -356,6 +358,9 @@ namespace IronRuby.Tests {
                 ClrOverride1,
                 ClrConstructor1,
                 // TODO: ClrConstructor2,
+                ClrPrimitiveNumericTypes1,
+                ClrArrays1,
+                ClrChar1,
                 Scenario_RubyEngine1,
                 Scenario_RubyInteractive1,
                 Scenario_RubyInteractive2,

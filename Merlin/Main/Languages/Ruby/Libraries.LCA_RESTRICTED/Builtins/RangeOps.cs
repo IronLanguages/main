@@ -307,7 +307,7 @@ namespace IronRuby.Builtins {
             RubyContext/*!*/ context, BlockParam block, Range/*!*/ self, [Optional]object step) {
 
             if (step == Missing.Value) {
-                step = ScriptingRuntimeHelpers.Int32ToObject(1);
+                step = ClrInteger.One;
             }
             
             // We attempt to cast step to Fixnum here even though if we were iterating over Floats, for instance, we use step as is.

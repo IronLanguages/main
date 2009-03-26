@@ -88,12 +88,10 @@ def run_tool(cmd, args=""):
     process.StartInfo.Arguments = args
     process.StartInfo.CreateNoWindow = True
     process.StartInfo.UseShellExecute = False
-    process.StartInfo.RedirectStandardInput = True
-    process.StartInfo.RedirectStandardOutput = True
-    process.StartInfo.RedirectStandardError = True
+    process.StartInfo.RedirectStandardInput = False
+    process.StartInfo.RedirectStandardOutput = False
+    process.StartInfo.RedirectStandardError = False
     process.Start()
-    output = process.StandardOutput.ReadToEnd()
-    output = process.StandardError.ReadToEnd()
     process.WaitForExit()
     return process.ExitCode
 

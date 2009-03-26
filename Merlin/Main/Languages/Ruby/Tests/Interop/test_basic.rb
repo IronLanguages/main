@@ -93,7 +93,7 @@ def test_generictypes
     IntList2 = list[Fixnum]
     assert_equal(IntList2.new.to_string, 'System.Collections.Generic.List`1[System.Int32]'.to_clr_string)
 
-    Dict = System::Collections::Generic::Dictionary[ClrString, ClrString]
+    Dict = System::Collections::Generic::Dictionary[System::String, System::String]
     assert_equal(Dict.new.to_string, 'System.Collections.Generic.Dictionary`2[System.String,System.String]'.to_clr_string)
     
     assert_raise(ArgumentError) { System::Type.of(Fixnum) }

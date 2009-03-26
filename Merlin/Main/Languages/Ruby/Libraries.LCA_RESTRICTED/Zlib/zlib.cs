@@ -632,7 +632,7 @@ namespace IronRuby.StandardLibrary.Zlib {
                 }
             }
 
-            internal static void Close(CallWithoutArgsStorage/*!*/ closeStorage, RubyContext/*!*/ context, GZipFile/*!*/ self) {
+            internal static void Close(UnaryOpStorage/*!*/ closeStorage, RubyContext/*!*/ context, GZipFile/*!*/ self) {
                 if (self._ioWrapper.CanBeClosed) {
                     var site = closeStorage.GetCallSite("close");
                     site.Target(site, context, self._ioWrapper.UnderlyingObject);
@@ -835,7 +835,7 @@ namespace IronRuby.StandardLibrary.Zlib {
 
             [RubyMethod("close")]
             [RubyMethod("finish")]
-            public static GZipReader/*!*/ Close(CallWithoutArgsStorage/*!*/ closeStorage, RubyContext/*!*/ context, GZipReader/*!*/ self) {
+            public static GZipReader/*!*/ Close(UnaryOpStorage/*!*/ closeStorage, RubyContext/*!*/ context, GZipReader/*!*/ self) {
                 GZipFile.Close(closeStorage, context, self);
                 return self;
             }
@@ -1086,7 +1086,7 @@ namespace IronRuby.StandardLibrary.Zlib {
 
             [RubyMethod("close")]
             [RubyMethod("finish")]
-            public static void Close(CallWithoutArgsStorage/*!*/ closeStorage, RubyContext/*!*/ context, GzipWriter/*!*/ self) {
+            public static void Close(UnaryOpStorage/*!*/ closeStorage, RubyContext/*!*/ context, GzipWriter/*!*/ self) {
                 self._gzipStream.Close();
                 self._ioWrapper.Flush();
                 GZipFile.Close(closeStorage, context, self);
@@ -1095,7 +1095,7 @@ namespace IronRuby.StandardLibrary.Zlib {
             // comment=(p1)
 
             [RubyMethod("flush")]
-            public static GzipWriter Flush(CallWithoutArgsStorage/*!*/ flushStorage, RubyContext/*!*/ context, GzipWriter/*!*/ self, object flush) {
+            public static GzipWriter Flush(UnaryOpStorage/*!*/ flushStorage, RubyContext/*!*/ context, GzipWriter/*!*/ self, object flush) {
                 if (flush != null) {
                     throw RubyExceptions.CreateUnexpectedTypeError(context, flush, "Fixnum");
                 }
@@ -1104,7 +1104,7 @@ namespace IronRuby.StandardLibrary.Zlib {
             }
 
             [RubyMethod("flush")]
-            public static GzipWriter Flush(CallWithoutArgsStorage/*!*/ flushStorage, RubyContext/*!*/ context, GzipWriter/*!*/ self, [DefaultParameterValue(SYNC_FLUSH)]int flush) {
+            public static GzipWriter Flush(UnaryOpStorage/*!*/ flushStorage, RubyContext/*!*/ context, GzipWriter/*!*/ self, [DefaultParameterValue(SYNC_FLUSH)]int flush) {
                 switch (flush) {
                     case NO_FLUSH:
                     case SYNC_FLUSH:
