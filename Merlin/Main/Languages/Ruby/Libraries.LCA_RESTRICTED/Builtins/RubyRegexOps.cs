@@ -306,7 +306,7 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("===")]
         public static bool CaseCompare(ConversionStorage<MutableString>/*!*/ stringTryCast, RubyScope/*!*/ scope, RubyRegex/*!*/ self, object obj) {
-            MutableString str = Protocols.TryCastToString(stringTryCast, scope.RubyContext, obj);
+            MutableString str = Protocols.TryCastToString(stringTryCast, obj);
             if (str == null) {
                 return false;
             } 
@@ -317,7 +317,7 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("~")]
         public static object ImplicitMatch(ConversionStorage<MutableString>/*!*/ stringCast, RubyScope/*!*/ scope, RubyRegex/*!*/ self) {
-            return MatchIndex(scope, self, Protocols.CastToString(stringCast, scope.RubyContext, scope.GetInnerMostClosureScope().LastInputLine));
+            return MatchIndex(scope, self, Protocols.CastToString(stringCast, scope.GetInnerMostClosureScope().LastInputLine));
         }
 
         [RubyMethod("source")]
@@ -362,7 +362,7 @@ namespace IronRuby.Builtins {
 
                     Append(regex, result);
                 } else {
-                    result.Append(RubyRegex.Escape(Protocols.CastToString(stringCast, self.Context, strings[i])));
+                    result.Append(RubyRegex.Escape(Protocols.CastToString(stringCast, strings[i])));
                 }
             }
 

@@ -67,20 +67,7 @@ namespace Microsoft.Scripting {
 #endif
         }
 
-        // TODO: this is a Python specific option (for optimized modules)
-        // Can it be debug-only, or moved to Python?
-        private readonly static bool _lightweightScopes = ReadOption("LightweightScopes");
-
         private readonly static bool _trackPerformance = ReadDebugOption("TrackPerformance");
-
-        /// <summary>
-        /// Generate optimized scopes that can be garbage collected
-        /// (globals are stored in an array instead of static fields on a
-        /// generated type)
-        /// </summary>
-        internal static bool LightweightScopes {
-            get { return _lightweightScopes; }
-        }
 
         internal static bool TrackPerformance {
             get { return _trackPerformance; }

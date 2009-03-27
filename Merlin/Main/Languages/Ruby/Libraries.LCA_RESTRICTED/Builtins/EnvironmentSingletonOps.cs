@@ -243,26 +243,26 @@ namespace IronRuby.Builtins {
             return null;
         }
 
-        private static void Update(ConversionStorage<MutableString>/*!*/ stringCast, RubyContext/*!*/ context, Hash/*!*/ values) {
-            PlatformAdaptationLayer pal = context.DomainManager.Platform;
+        private static void Update(ConversionStorage<MutableString>/*!*/ stringCast, Hash/*!*/ values) {
+            PlatformAdaptationLayer pal = stringCast.Context.DomainManager.Platform;
             foreach (var pair in values) {
-                var name = Protocols.CastToString(stringCast, context, pair.Key).ToString();
-                var value = Protocols.CastToString(stringCast, context, pair.Value).ToString();
+                var name = Protocols.CastToString(stringCast, pair.Key).ToString();
+                var value = Protocols.CastToString(stringCast, pair.Value).ToString();
                 
                 pal.SetEnvironmentVariable(name, value);
             }
         }
 
         [RubyMethod("replace")]
-        public static object/*!*/ Replace(ConversionStorage<MutableString>/*!*/ stringCast, RubyContext/*!*/ context, object/*!*/ self, [NotNull]Hash/*!*/ values) {
-            Clear(context, self);
-            Update(stringCast, context, values);
+        public static object/*!*/ Replace(ConversionStorage<MutableString>/*!*/ stringCast, object/*!*/ self, [NotNull]Hash/*!*/ values) {
+            Clear(stringCast.Context, self);
+            Update(stringCast, values);
             return self;
         }
 
         [RubyMethod("update")]
-        public static object/*!*/ Update(ConversionStorage<MutableString>/*!*/ stringCast, RubyContext/*!*/ context, object/*!*/ self, [NotNull]Hash/*!*/ values) {
-            Update(stringCast, context, values);
+        public static object/*!*/ Update(ConversionStorage<MutableString>/*!*/ stringCast, object/*!*/ self, [NotNull]Hash/*!*/ values) {
+            Update(stringCast, values);
             return self;
         }
 

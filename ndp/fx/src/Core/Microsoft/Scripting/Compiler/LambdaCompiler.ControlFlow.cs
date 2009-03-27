@@ -14,6 +14,7 @@
  * ***************************************************************************/
 
 using System.Diagnostics;
+using System.Dynamic.Utils;
 
 namespace System.Linq.Expressions.Compiler {
 
@@ -219,25 +220,28 @@ namespace System.Linq.Expressions.Compiler {
         // See if this lambda has a return label
         // If so, we'll create it now and mark it as allowing the "ret" opcode
         // This allows us to generate better IL
-        private void AddReturnLabel(Expression lambdaBody) {
+        private void AddReturnLabel(LambdaExpression lambda) {
+            var expression = lambda.Body;
+
             while (true) {
-                switch (lambdaBody.NodeType) {
+                switch (expression.NodeType) {
                     default:
                         // Didn't find return label
                         return;
                     case ExpressionType.Label:
-                        // Found it!
-                        var label = ((LabelExpression)lambdaBody).Target;
-                        _labelInfo.Add(label, new LabelInfo(_ilg, label, true));
+                        // Found the label. We can directly return from this place
+                        // only if the label type is reference assignable to the lambda return type.
+                        var label = ((LabelExpression)expression).Target;
+                        _labelInfo.Add(label, new LabelInfo(_ilg, label, TypeUtils.AreReferenceAssignable(lambda.ReturnType, label.Type)));
                         return;
                     case ExpressionType.Block:
                         // Look in the last significant expression of a block
-                        var body = (BlockExpression)lambdaBody;
+                        var body = (BlockExpression)expression;
                         // omit empty and debuginfo at the end of the block since they
                         // are not going to emit any IL
                         for (int i = body.ExpressionCount - 1; i >= 0; i--) {
-                            lambdaBody = body.GetExpression(i);
-                            if (Significant(lambdaBody)) {
+                            expression = body.GetExpression(i);
+                            if (Significant(expression)) {
                                 break;
                             }
                         }

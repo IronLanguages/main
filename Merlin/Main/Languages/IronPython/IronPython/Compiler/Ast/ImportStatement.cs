@@ -55,7 +55,7 @@ namespace IronPython.Compiler.Ast {
                     // _references[i] = PythonOps.Import(<code context>, _names[i])
                     ag.AddDebugInfo(
                         ag.Globals.Assign(
-                            ag.Globals.GetVariable(_variables[i]), 
+                            ag.Globals.GetVariable(ag, _variables[i]), 
                             Ast.Call(
                                 AstGenerator.GetHelperMethod(                           // helper
                                     _asNames[i] == SymbolId.Empty ? "ImportTop" : "ImportBottom"

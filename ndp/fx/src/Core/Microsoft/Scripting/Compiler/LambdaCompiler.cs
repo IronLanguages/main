@@ -151,7 +151,7 @@ namespace System.Linq.Expressions.Compiler {
 
         private void InitializeMethod() {
             // See if we can find a return label, so we can emit better IL
-            AddReturnLabel(_lambda.Body);
+            AddReturnLabel(_lambda);
             _boundConstants.EmitCacheConstants(this);
         }
 

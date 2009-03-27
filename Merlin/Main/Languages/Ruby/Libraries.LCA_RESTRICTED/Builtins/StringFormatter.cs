@@ -26,33 +26,38 @@ using SM = System.Math;
 using IronRuby.Runtime.Calls;
 using System.Runtime.CompilerServices;
 using Microsoft.Scripting.Generation;
+using IronRuby.Compiler.Generation;
 
 namespace IronRuby.Builtins {
 
-    public sealed class StringFormatterSiteStorage : SiteLocalStorage {
-        private CallSite<Func<CallSite, RubyContext, object, int>> _fixnumCast;
-        private CallSite<Func<CallSite, RubyContext, object, double>> _tofConversion;
-        private CallSite<Func<CallSite, RubyContext, object, MutableString>> _tosConversion;
-        private CallSite<Func<CallSite, RubyContext, object, IntegerValue>> _integerConversion;
+    public sealed class StringFormatterSiteStorage : RubyCallSiteStorage {
+        private CallSite<Func<CallSite, object, int>> _fixnumCast;
+        private CallSite<Func<CallSite, object, double>> _tofConversion;
+        private CallSite<Func<CallSite, object, MutableString>> _tosConversion;
+        private CallSite<Func<CallSite, object, IntegerValue>> _integerConversion;
 
-        public int CastToFixnum(RubyContext/*!*/ context, object value) {
-            var site = RubyUtils.GetCallSite(ref _fixnumCast, ConvertToFixnumAction.Instance);
-            return site.Target(site, context, value);
+        [Emitted]
+        public StringFormatterSiteStorage(RubyContext/*!*/ context) : base(context) {
         }
 
-        public double CastToDouble(RubyContext/*!*/ context, object value) {
-            var site = RubyUtils.GetCallSite(ref _tofConversion, ConvertToFAction.Instance);
-            return site.Target(site, context, value);
+        public int CastToFixnum(object value) {
+            var site = RubyUtils.GetCallSite(ref _fixnumCast, ConvertToFixnumAction.Make(Context));
+            return site.Target(site, value);
         }
 
-        public MutableString/*!*/ ConvertToString(RubyContext/*!*/ context, object value) {
-            var site = RubyUtils.GetCallSite(ref _tosConversion, ConvertToSAction.Instance);
-            return site.Target(site, context, value);
+        public double CastToDouble(object value) {
+            var site = RubyUtils.GetCallSite(ref _tofConversion, ConvertToFAction.Make(Context));
+            return site.Target(site, value);
         }
 
-        public IntegerValue ConvertToInteger(RubyContext/*!*/ context, object value) {
-            var site = RubyUtils.GetCallSite(ref _integerConversion, CompositeConversionAction.ToIntToI);
-            return site.Target(site, context, value);
+        public MutableString/*!*/ ConvertToString(object value) {
+            var site = RubyUtils.GetCallSite(ref _tosConversion, ConvertToSAction.Make(Context));
+            return site.Target(site, value);
+        }
+
+        public IntegerValue ConvertToInteger(object value) {
+            var site = RubyUtils.GetCallSite(ref _integerConversion, CompositeConversionAction.Make(Context, CompositeConversion.ToIntToI));
+            return site.Target(site, value);
         }
     }
 
@@ -126,9 +131,8 @@ namespace IronRuby.Builtins {
             _data = data;
         }
 
-        internal StringFormatter(StringFormatterSiteStorage/*!*/ siteStorage, 
-            RubyContext/*!*/ context, string/*!*/ format, IList/*!*/ data)
-            : this(context, format, data) {
+        internal StringFormatter(StringFormatterSiteStorage/*!*/ siteStorage, string/*!*/ format, IList/*!*/ data)
+            : this(siteStorage.Context, format, data) {
             Assert.NotNull(siteStorage);
             _siteStorage = siteStorage;
         }
@@ -243,7 +247,7 @@ namespace IronRuby.Builtins {
                 int? argindex = TryReadArgumentIndex();
                 _curCh = _format[_index++];
 
-                res = _siteStorage.CastToFixnum(_context, GetData(argindex));
+                res = _siteStorage.CastToFixnum(GetData(argindex));
             } else {
                 if (Char.IsDigit(_curCh)) {
                     res = 0;
@@ -331,7 +335,7 @@ namespace IronRuby.Builtins {
 
         // TODO: encodings
         private void AppendChar() {
-            int value = _siteStorage.CastToFixnum(_context, _opts.Value);
+            int value = _siteStorage.CastToFixnum(_opts.Value);
             if (value < 0 && _context.RubyOptions.Compatibility >= RubyCompatibility.Ruby19) {
                 throw RubyExceptions.CreateArgumentError(String.Format("invalid character: {0}", value));
             }
@@ -350,7 +354,7 @@ namespace IronRuby.Builtins {
         }
 
         private void AppendInt(char format) {
-            IntegerValue integer = (_opts.Value == null) ? 0 : _siteStorage.ConvertToInteger(_context, _opts.Value);
+            IntegerValue integer = (_opts.Value == null) ? 0 : _siteStorage.ConvertToInteger(_opts.Value);
 
             object val;
             bool isPositive;
@@ -422,7 +426,7 @@ namespace IronRuby.Builtins {
         private void AppendFloat(char type) {
             double v;
             if (_siteStorage != null) {
-                v = _siteStorage.CastToDouble(_context, _opts.Value);
+                v = _siteStorage.CastToDouble(_opts.Value);
             } else {
                 v = (double)_opts.Value;
             }
@@ -805,7 +809,7 @@ namespace IronRuby.Builtins {
         /// for BigInteger below that should be kept in sync.
         /// </summary>
         private void AppendBase(char format, int radix) {
-            IntegerValue integer = (_opts.Value == null) ? 0 : _siteStorage.ConvertToInteger(_context, _opts.Value);
+            IntegerValue integer = (_opts.Value == null) ? 0 : _siteStorage.ConvertToInteger(_opts.Value);
 
             // TODO: split paths for bignum and fixnum
             object value = integer.IsFixnum ? (object)integer.Fixnum : (object)integer.Bignum;
@@ -930,7 +934,7 @@ namespace IronRuby.Builtins {
         }
 
         private void AppendString() {
-            MutableString/*!*/ str = _siteStorage.ConvertToString(_context, _opts.Value);
+            MutableString/*!*/ str = _siteStorage.ConvertToString(_opts.Value);
             if (KernelOps.Tainted(_context, str)) {
                 _tainted = true;
             }

@@ -141,7 +141,7 @@ namespace IronRuby.Builtins {
                     }
 
                     metaBuilder.Result = Ast.Call(typeof(RubyIOOps).GetMethod("InvokeOpenBlock"), 
-                        args.ContextExpression, 
+                        args.MetaContext.Expression, 
                         metaBuilder.BfcVariable, 
                         metaBuilder.Result
                     );
@@ -352,8 +352,8 @@ namespace IronRuby.Builtins {
         #region Public instance methods
 
         [RubyMethod("<<")]
-        public static RubyIO Output(BinaryOpStorage/*!*/ writeStorage, RubyContext/*!*/ context, RubyIO/*!*/ self, object value) {
-            Protocols.Write(writeStorage, context, self, value);
+        public static RubyIO Output(BinaryOpStorage/*!*/ writeStorage, RubyIO/*!*/ self, object value) {
+            Protocols.Write(writeStorage, self, value);
             return self;
         }
 
@@ -572,57 +572,57 @@ namespace IronRuby.Builtins {
         
         [RubyMethod("print")]
         public static void Print(BinaryOpStorage/*!*/ writeStorage, RubyScope/*!*/ scope, object self) {
-            Print(writeStorage, scope.RubyContext, self, scope.GetInnerMostClosureScope().LastInputLine);
+            Print(writeStorage, self, scope.GetInnerMostClosureScope().LastInputLine);
         }
 
         [RubyMethod("print")]
-        public static void Print(BinaryOpStorage/*!*/ writeStorage, RubyContext/*!*/ context, object self, object value) {
-            Protocols.Write(writeStorage, context, self, value);
+        public static void Print(BinaryOpStorage/*!*/ writeStorage, object self, object value) {
+            Protocols.Write(writeStorage, self, value);
         }
 
         [RubyMethod("print")]
-        public static void Print(BinaryOpStorage/*!*/ writeStorage, UnaryOpStorage/*!*/ tosStorage, RubyContext/*!*/ context, object self, 
+        public static void Print(BinaryOpStorage/*!*/ writeStorage, UnaryOpStorage/*!*/ tosStorage, object self, 
             [NotNull]params object[]/*!*/ args) {
-            MutableString delimiter = context.OutputSeparator;
+            MutableString delimiter = writeStorage.Context.OutputSeparator;
             for (int i = 0; i < args.Length; i++) {
-                MutableString str = ToPrintedString(tosStorage, context, args[i]);
+                MutableString str = ToPrintedString(tosStorage, args[i]);
                 if (delimiter != null) {
                     str.Append(delimiter);
                 }
-                Print(writeStorage, context, self, str);
+                Print(writeStorage, self, str);
             }
         }
 
         [RubyMethod("putc")]
-        public static MutableString/*!*/ Putc(BinaryOpStorage/*!*/ writeStorage, RubyContext/*!*/ context, object self, [NotNull]MutableString/*!*/ val) {
+        public static MutableString/*!*/ Putc(BinaryOpStorage/*!*/ writeStorage, object self, [NotNull]MutableString/*!*/ val) {
             if (val.IsEmpty) {
                 throw RubyExceptions.CreateTypeError("can't convert String into Integer");
             }
 
             // writes a single byte into the output stream:
             var c = MutableString.CreateBinary(val.GetBinarySlice(0, 1));
-            Protocols.Write(writeStorage, context, self, c);
+            Protocols.Write(writeStorage, self, c);
             return val;
         }
 
         [RubyMethod("putc")]
-        public static int Putc(BinaryOpStorage/*!*/ writeStorage, RubyContext/*!*/ context, object self, [DefaultProtocol]int c) {
+        public static int Putc(BinaryOpStorage/*!*/ writeStorage, object self, [DefaultProtocol]int c) {
             MutableString str = MutableString.CreateBinary(1).Append(unchecked((byte)c));
-            Protocols.Write(writeStorage, context, self, str);
+            Protocols.Write(writeStorage, self, str);
             return c;
         }
 
         private static readonly MutableString NewLine = MutableString.CreateMutable("\n").Freeze();
 
-        public static MutableString/*!*/ ToPrintedString(UnaryOpStorage/*!*/ tosStorage, RubyContext/*!*/ context, object obj) {
+        public static MutableString/*!*/ ToPrintedString(UnaryOpStorage/*!*/ tosStorage, object obj) {
             IDictionary<object, object> hash;
             List<object> list;
             MutableString str;
 
             if ((list = obj as List<object>) != null) {
-                return IListOps.Join(tosStorage, context, list, NewLine);
+                return IListOps.Join(tosStorage, list, NewLine);
             } else if ((hash = obj as IDictionary<object, object>) != null) {
-                return IDictionaryOps.ToString(tosStorage, context, hash);
+                return IDictionaryOps.ToString(tosStorage, hash);
             } else if (obj == null) {
                 return MutableString.Create("nil");
             } else if (obj is bool) {
@@ -636,33 +636,33 @@ namespace IronRuby.Builtins {
             } else if ((str = obj as MutableString) != null) {
                 return str;
             } else {
-                return RubyUtils.ObjectToMutableString(tosStorage, context, obj);
+                return RubyUtils.ObjectToMutableString(tosStorage, obj);
             }
         }
 
         [RubyMethod("puts")]
-        public static void PutsEmptyLine(BinaryOpStorage/*!*/ writeStorage, RubyContext/*!*/ context, object self) {
-            Protocols.Write(writeStorage, context, self, MutableString.CreateMutable("\n"));
+        public static void PutsEmptyLine(BinaryOpStorage/*!*/ writeStorage, object self) {
+            Protocols.Write(writeStorage, self, MutableString.CreateMutable("\n"));
         }
 
         [RubyMethod("puts")]
-        public static void Puts(BinaryOpStorage/*!*/ writeStorage, RubyContext/*!*/ context, object self, [NotNull]MutableString/*!*/ str) {
-            Protocols.Write(writeStorage, context, self, str);
+        public static void Puts(BinaryOpStorage/*!*/ writeStorage, object self, [NotNull]MutableString/*!*/ str) {
+            Protocols.Write(writeStorage, self, str);
 
             if (!str.EndsWith('\n')) {
-                PutsEmptyLine(writeStorage, context, self);
+                PutsEmptyLine(writeStorage, self);
             }
         }
 
         [RubyMethod("puts")]
-        public static void Puts(BinaryOpStorage/*!*/ writeStorage, UnaryOpStorage/*!*/ tosStorage, RubyContext/*!*/ context, object self, [NotNull]object/*!*/ val) {
-            Puts(writeStorage, context, self, ToPrintedString(tosStorage, context, val));
+        public static void Puts(BinaryOpStorage/*!*/ writeStorage, UnaryOpStorage/*!*/ tosStorage, object self, [NotNull]object/*!*/ val) {
+            Puts(writeStorage, self, ToPrintedString(tosStorage, val));
         }
 
         [RubyMethod("puts")]
-        public static void Puts(BinaryOpStorage/*!*/ writeStorage, UnaryOpStorage/*!*/ tosStorage, RubyContext/*!*/ context, object self, [NotNull]params object[]/*!*/ vals) {
+        public static void Puts(BinaryOpStorage/*!*/ writeStorage, UnaryOpStorage/*!*/ tosStorage, object self, [NotNull]params object[]/*!*/ vals) {
             for (int i = 0; i < vals.Length; i++) {
-                Puts(writeStorage, tosStorage, context, self, vals[i]);
+                Puts(writeStorage, tosStorage, self, vals[i]);
             }
         }
 
@@ -671,9 +671,9 @@ namespace IronRuby.Builtins {
             StringFormatterSiteStorage/*!*/ storage, 
             ConversionStorage<MutableString>/*!*/ stringCast, 
             BinaryOpStorage/*!*/ writeStorage,
-            RubyContext/*!*/ context, RubyIO/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ format, [NotNull]params object[]/*!*/ args) {
+            RubyIO/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ format, [NotNull]params object[]/*!*/ args) {
 
-            KernelOps.PrintFormatted(storage, stringCast, writeStorage, context, null, self, format, args);
+            KernelOps.PrintFormatted(storage, stringCast, writeStorage, null, self, format, args);
         }
 
         #endregion
@@ -691,8 +691,8 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("write")]
-        public static int Write(ConversionStorage<MutableString>/*!*/ tosStorage, RubyContext/*!*/ context, RubyIO/*!*/ self, object obj) {
-            return Write(self, Protocols.ConvertToString(tosStorage, context, obj));
+        public static int Write(ConversionStorage<MutableString>/*!*/ tosStorage, RubyIO/*!*/ self, object obj) {
+            return Write(self, Protocols.ConvertToString(tosStorage, obj));
         }
 
         //write_nonblock
@@ -973,28 +973,26 @@ namespace IronRuby.Builtins {
 
         #endregion
 
-        public static IOWrapper/*!*/ CreateIOWrapper(RespondToStorage/*!*/ respondToStorage, 
-            RubyContext/*!*/ context, object io, FileAccess access) {
-
+        public static IOWrapper/*!*/ CreateIOWrapper(RespondToStorage/*!*/ respondToStorage, object io, FileAccess access) {
             bool canRead, canWrite, canSeek, canFlush, canBeClosed;
 
             if (access == FileAccess.Read || access == FileAccess.ReadWrite) {
-                canRead = Protocols.RespondTo(respondToStorage, context, io, "read");
+                canRead = Protocols.RespondTo(respondToStorage, io, "read");
             } else {
                 canRead = false;
             }
 
             if (access == FileAccess.Write || access == FileAccess.ReadWrite) {
-                canWrite = Protocols.RespondTo(respondToStorage, context, io, "write");
+                canWrite = Protocols.RespondTo(respondToStorage, io, "write");
             } else {
                 canWrite = false;
             }
 
-            canSeek = Protocols.RespondTo(respondToStorage, context, io, "seek") && Protocols.RespondTo(respondToStorage, context, io, "tell");
-            canFlush = Protocols.RespondTo(respondToStorage, context, io, "flush");
-            canBeClosed = Protocols.RespondTo(respondToStorage, context, io, "close");
+            canSeek = Protocols.RespondTo(respondToStorage, io, "seek") && Protocols.RespondTo(respondToStorage, io, "tell");
+            canFlush = Protocols.RespondTo(respondToStorage, io, "flush");
+            canBeClosed = Protocols.RespondTo(respondToStorage, io, "close");
 
-            return new IOWrapper(context, io, canRead, canWrite, canSeek, canFlush, canBeClosed);
+            return new IOWrapper(respondToStorage.Context, io, canRead, canWrite, canSeek, canFlush, canBeClosed);
         }
     }
 }

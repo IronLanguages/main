@@ -81,24 +81,29 @@ namespace IronPython.Compiler.Ast {
             set { _variable = value; }
         }
 
-        internal MSAst.Expression Transform(AstGenerator inner, bool needsWrapperMethod) {
-            MSAst.ParameterExpression parameter;
+        internal MSAst.Expression Transform(AstGenerator inner, bool needsWrapperMethod, bool needsLocalsDictionary, List<MSAst.Expression> init) {
             string name = SymbolTable.IdToString(Name);
-            if (_variable.AccessedInNestedScope) {
+            if (_variable.AccessedInNestedScope || needsLocalsDictionary) {
+                ClosureExpression closureVar;
                 if (needsWrapperMethod) {
-                    parameter = inner.ClosedOverVariable(typeof(object), name);
+                    closureVar = inner.LiftedVariable(Variable, name, _variable.AccessedInNestedScope);
                 } else {
-                    parameter = inner.ClosedOverParameter(typeof(object), name);
+                    closureVar = inner.LiftedParameter(Variable, name);
                 }
+                inner.SetLocalLiftedVariable(_variable, closureVar);
+                init.Add(closureVar.Create());
+
+                return closureVar;                
             } else {
+                MSAst.Expression parameter;
                 if (needsWrapperMethod) {
                     parameter = inner.Variable(typeof(object), name);
                 } else {
                     parameter = inner.Parameter(typeof(object), name);
                 }
+                inner.Globals.SetParameter(_variable, parameter);
+                return parameter;
             }
-            inner.Globals.SetParameter(_variable, parameter);
-            return parameter;
         }
 
         internal virtual void Init(AstGenerator inner, List<MSAst.Expression> init) {
@@ -131,7 +136,7 @@ namespace IronPython.Compiler.Ast {
             MSAst.Expression stmt = _tuple.TransformSet(
                 inner,
                 Span,
-                inner.Globals.GetVariable(Variable),
+                inner.Globals.GetVariable(inner, Variable),
                 PythonOperationKind.None
             );
 

@@ -19,7 +19,7 @@ using System.Runtime.InteropServices;
 using Microsoft.Scripting.Runtime;
 
 namespace IronRuby.Builtins {
-    [RubyClass(Extends = typeof(char), MixinInterfaces = true)]
+    [RubyClass(Extends = typeof(char))]
     [Includes(typeof(ClrString), typeof(Enumerable), typeof(Comparable))]
     public static class CharOps {
         private static Exception/*!*/ EmptyError(string/*!*/ argType) {

@@ -31,26 +31,23 @@ using IronRuby.Compiler;
 
 namespace IronRuby.Runtime.Calls {
     internal sealed class RubyParameterBinder : ParameterBinder {
-        private Expression _scopeExpression;
-        private Expression _contextExpression;
+        private readonly CallArguments/*!*/ _args;
+        
+        public RubyContext/*!*/ Context {
+            get { return _args.RubyContext; }
+        }
 
         public Expression/*!*/ ScopeExpression {
-            get { return _scopeExpression ?? (_scopeExpression = Methods.GetEmptyScope.OpCall(_contextExpression)); }
+            get { return _args.MetaScope.Expression; }
         }
 
         public Expression/*!*/ ContextExpression {
-            get { return _contextExpression ?? (_contextExpression = Methods.GetContextFromScope.OpCall(_scopeExpression)); }
+            get { return _args.MetaContext.Expression; }
         }
 
-        public RubyParameterBinder(ActionBinder/*!*/ binder, Expression/*!*/ scopeOrContextExpression, bool isScope)
-            : base(binder) {
-            Assert.NotNull(binder, scopeOrContextExpression);
-
-            if (isScope) {
-                _scopeExpression = AstUtils.Convert(scopeOrContextExpression, typeof(RubyScope));
-            } else {
-                _contextExpression = AstUtils.Convert(scopeOrContextExpression, typeof(RubyContext));
-            }
+        public RubyParameterBinder(CallArguments/*!*/ args)
+            : base(args.RubyContext.Binder) {
+            _args = args;
         }
 
         public override Expression/*!*/ ConvertExpression(Expression/*!*/ expr, ParameterInfo info, Type/*!*/ toType) {
@@ -68,20 +65,16 @@ namespace IronRuby.Runtime.Calls {
 
             // protocol conversions:
             if (info != null && info.IsDefined(typeof(DefaultProtocolAttribute), false)) {
-                var action = RubyConversionAction.TryGetDefaultConversionAction(toType);
+                var action = RubyConversionAction.TryGetDefaultConversionAction(Context, toType);
                 if (action != null) {
                     // TODO: once we work with MetaObjects, we could inline these dynamic sites:
-                    return Ast.Dynamic(action, toType, ContextExpression, expr);
+                    return Ast.Dynamic(action, toType, expr);
                 }
 
                 throw new InvalidOperationException(String.Format("No default protocol conversion for type {0}.", toType));
             }
 
-            return Binder.ConvertExpression(expr, toType, ConversionResultKind.ExplicitCast, ScopeExpression);
-        }
-
-        public override Expression/*!*/ GetDynamicConversion(Expression/*!*/ value, Type/*!*/ type) {
-            return Expression.Dynamic(OldConvertToAction.Make(Binder, type), type, ScopeExpression, value);
+            return Binder.ConvertExpression(expr, toType, ConversionResultKind.ExplicitCast, null);
         }
     }
 }

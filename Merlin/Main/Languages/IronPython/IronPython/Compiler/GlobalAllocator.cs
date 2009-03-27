@@ -38,6 +38,7 @@ namespace IronPython.Compiler.Ast {
     /// </summary>
     abstract class GlobalAllocator {
         private readonly Dictionary<PythonVariable/*!*/, MSAst.Expression/*!*/>/*!*/ _variables = new Dictionary<PythonVariable/*!*/, MSAst.Expression/*!*/>();
+        
 
         protected GlobalAllocator() {
         }
@@ -60,12 +61,19 @@ namespace IronPython.Compiler.Ast {
             return Utils.Constant(name);
         }
 
+        /// <summary>
+        /// Generates any preparation code for a new class def or function def scope.
+        /// </summary>
+        public virtual MSAst.Expression[] PrepareScope(AstGenerator/*!*/ gen) {
+            return AstGenerator.EmptyExpression;
+        }
+
         #endregion
 
         #region Fixed Public API Surface
 
         public MSAst.Expression/*!*/ Assign(MSAst.Expression/*!*/ expression, MSAst.Expression value) {
-            IPythonGlobalExpression pyGlobal = expression as IPythonGlobalExpression;
+            IPythonVariableExpression pyGlobal = expression as IPythonVariableExpression;
             if(pyGlobal != null) {
                 return pyGlobal.Assign(value);
             }
@@ -74,7 +82,7 @@ namespace IronPython.Compiler.Ast {
         }
 
         public MSAst.Expression/*!*/ Delete(MSAst.Expression/*!*/ expression) {
-            IPythonGlobalExpression pyGlobal = expression as IPythonGlobalExpression;
+            IPythonVariableExpression pyGlobal = expression as IPythonVariableExpression;
             if (pyGlobal != null) {
                 return pyGlobal.Delete();
             }
@@ -90,7 +98,7 @@ namespace IronPython.Compiler.Ast {
             return Ast.Dynamic(binder, retType, args);
         }
 
-        public MSAst.Expression/*!*/ CreateVariable(AstGenerator/*!*/ ag, PythonVariable/*!*/ variable) {
+        public MSAst.Expression/*!*/ CreateVariable(AstGenerator/*!*/ ag, PythonVariable/*!*/ variable, bool emitDictionary) {
             Assert.NotNull(ag, variable);
 
             Debug.Assert(variable.Kind != VariableKind.Parameter);
@@ -104,28 +112,31 @@ namespace IronPython.Compiler.Ast {
                 case VariableKind.HiddenLocal:
                     if (ag.IsGlobal) {
                         return _variables[variable] = GetGlobal(name, ag, true);
-                    } else if (variable.AccessedInNestedScope) {
-                        return _variables[variable] = ag.ClosedOverVariable(typeof(object), name);
+                    } else if (variable.AccessedInNestedScope || (emitDictionary && variable.Kind != VariableKind.HiddenLocal)) {
+                        return ag.SetLocalLiftedVariable(variable, ag.LiftedVariable(variable, name, variable.AccessedInNestedScope));
                     } else {
                         return _variables[variable] = ag.Variable(typeof(object), name);
                     }
-                case VariableKind.Temporary:
-                    return _variables[variable] = ag.HiddenVariable(typeof(object), name);
                 default:
                     throw Assert.Unreachable;
             }
         }
 
-        public void SetParameter(PythonVariable/*!*/ variable, ParameterExpression/*!*/ parameter) {
+        public void SetParameter(PythonVariable/*!*/ variable, MSAst.Expression/*!*/ parameter) {
             Assert.NotNull(variable, parameter);
 
             _variables[variable] = parameter;
         }
 
-        public MSAst.Expression/*!*/ GetVariable(PythonVariable/*!*/ variable) {
-            Assert.NotNull(variable);
+        public MSAst.Expression/*!*/ GetVariable(AstGenerator/*!*/ ag, PythonVariable/*!*/ variable) {
+            Assert.NotNull(ag, variable);
 
-            return _variables[variable];
+            MSAst.Expression res;
+            if(_variables.TryGetValue(variable, out res)) {
+                return res;
+            }
+
+            return ag.LocalLifted[variable];
         }
 
         #endregion

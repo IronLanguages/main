@@ -895,8 +895,8 @@ namespace IronRuby.Runtime {
             var elementType = self.GetUnderlyingSystemType().GetElementType();
             Debug.Assert(elementType != null);
 
-            var site = toAryToInt.GetSite(CompositeConversionAction.ToAryToInt);
-            var union = site.Target(site, self.Context, arrayOrSize);
+            var site = toAryToInt.GetSite(CompositeConversionAction.Make(self.Context, CompositeConversion.ToAryToInt));
+            var union = site.Target(site, arrayOrSize);
 
             if (union.First != null) {
                 // block ignored
@@ -1266,10 +1266,11 @@ namespace IronRuby.Runtime {
                 throw RubyExceptions.CreateTypeError("class or module required for rescue clause");
             }
 
+            var context = scope.RubyContext;
             var site = comparisonStorage.GetCallSite("===");
-            bool result = IsTrue(site.Target(site, scope.RubyContext, classObject, scope.RubyContext.CurrentException));
+            bool result = IsTrue(site.Target(site, classObject, context.CurrentException));
             if (result) {
-                RubyExceptionData.ActiveExceptionHandled(scope.RubyContext.CurrentException);
+                RubyExceptionData.ActiveExceptionHandled(context.CurrentException);
             }
             return result;
         }

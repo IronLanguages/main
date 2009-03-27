@@ -164,8 +164,8 @@ namespace IronPython.Compiler.Ast {
                 Debug.Assert(moduleName != null);
 
                 body = Ast.Block(
-                    ag.Globals.Assign(ag.Globals.GetVariable(_fileVariable), Ast.Constant(name)),
-                    ag.Globals.Assign(ag.Globals.GetVariable(_nameVariable), Ast.Constant(moduleName)),
+                    ag.Globals.Assign(ag.Globals.GetVariable(ag, _fileVariable), Ast.Constant(name)),
+                    ag.Globals.Assign(ag.Globals.GetVariable(ag, _nameVariable), Ast.Constant(moduleName)),
                     body // already typed to void
                 );
 
@@ -196,7 +196,7 @@ namespace IronPython.Compiler.Ast {
         internal override MSAst.Expression Transform(AstGenerator ag) {
             List<MSAst.Expression> block = new List<MSAst.Expression>();
             // Create the variables
-            CreateVariables(ag, block);
+            CreateVariables(ag, null, block, false, false);
 
             MSAst.Expression bodyStmt = ag.Transform(_body);
 
@@ -204,7 +204,7 @@ namespace IronPython.Compiler.Ast {
 
             if (_isModule) {
                 block.Add(ag.Globals.Assign(
-                    ag.Globals.GetVariable(_docVariable),
+                    ag.Globals.GetVariable(ag, _docVariable),
                     Ast.Constant(doc)
                 ));
             }

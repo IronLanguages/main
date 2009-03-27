@@ -80,44 +80,44 @@ namespace IronRuby.Runtime {
         /// <summary>
         /// Converts an object to string using to_str protocol (<see cref="ConvertToStrAction"/>).
         /// </summary>
-        public static MutableString/*!*/ CastToString(ConversionStorage<MutableString>/*!*/ stringCast, RubyContext/*!*/ context, object obj) {
-            var site = stringCast.GetSite(ConvertToStrAction.Instance);
-            return site.Target(site, context, obj);
+        public static MutableString/*!*/ CastToString(ConversionStorage<MutableString>/*!*/ stringCast, object obj) {
+            var site = stringCast.GetSite(ConvertToStrAction.Make(stringCast.Context));
+            return site.Target(site, obj);
         }
 
         /// <summary>
         /// Converts an object to string using try-to_str protocol (<see cref="TryConvertToStrAction"/>).
         /// </summary>
-        public static MutableString TryCastToString(ConversionStorage<MutableString>/*!*/ stringTryCast, RubyContext/*!*/ context, object obj) {
-            var site = stringTryCast.GetSite(TryConvertToStrAction.Instance);
-            return site.Target(site, context, obj);
+        public static MutableString TryCastToString(ConversionStorage<MutableString>/*!*/ stringTryCast, object obj) {
+            var site = stringTryCast.GetSite(TryConvertToStrAction.Make(stringTryCast.Context));
+            return site.Target(site, obj);
         }
 
         /// <summary>
         /// Convert to string using to_s protocol (<see cref="ConvertToSAction"/>).
         /// </summary>
-        public static MutableString/*!*/ ConvertToString(ConversionStorage<MutableString>/*!*/ tosStorage, RubyContext/*!*/ context, object obj) {
-            var site = tosStorage.GetSite(ConvertToSAction.Instance);
-            return site.Target(site, context, obj);
+        public static MutableString/*!*/ ConvertToString(ConversionStorage<MutableString>/*!*/ tosStorage, object obj) {
+            var site = tosStorage.GetSite(ConvertToSAction.Make(tosStorage.Context));
+            return site.Target(site, obj);
         }
 
         #endregion
 
         #region CastToArray, TryCastToArray, TryConvertToArray
 
-        public static IList/*!*/ CastToArray(ConversionStorage<IList>/*!*/ arrayCast, RubyContext/*!*/ context, object obj) {
-            var site = arrayCast.GetSite(ConvertToArrayAction.Instance);
-            return site.Target(site, context, obj);
+        public static IList/*!*/ CastToArray(ConversionStorage<IList>/*!*/ arrayCast, object obj) {
+            var site = arrayCast.GetSite(ConvertToArrayAction.Make(arrayCast.Context));
+            return site.Target(site, obj);
         }
 
-        public static IList TryCastToArray(ConversionStorage<IList>/*!*/ arrayTryCast, RubyContext/*!*/ context, object obj) {
-            var site = arrayTryCast.GetSite(TryConvertToArrayAction.Instance);
-            return site.Target(site, context, obj);
+        public static IList TryCastToArray(ConversionStorage<IList>/*!*/ arrayTryCast, object obj) {
+            var site = arrayTryCast.GetSite(TryConvertToArrayAction.Make(arrayTryCast.Context));
+            return site.Target(site, obj);
         }
 
-        public static IList TryConvertToArray(ConversionStorage<IList>/*!*/ tryToA, RubyContext/*!*/ context, object obj) {
-            var site = tryToA.GetSite(TryConvertToAAction.Instance);
-            return site.Target(site, context, obj);
+        public static IList TryConvertToArray(ConversionStorage<IList>/*!*/ tryToA, object obj) {
+            var site = tryToA.GetSite(TryConvertToAAction.Make(tryToA.Context));
+            return site.Target(site, obj);
         }
 
         #endregion
@@ -134,30 +134,30 @@ namespace IronRuby.Runtime {
             throw RubyExceptions.InvalidValueForType(context, value, "Float");
         }
 
-        public static IntegerValue ConvertToInteger(ConversionStorage<IntegerValue>/*!*/ integerConversion, RubyContext/*!*/ context, object value) {
-            var site = integerConversion.GetSite(CompositeConversionAction.ToIntToI);
-            return site.Target(site, context, value); 
+        public static IntegerValue ConvertToInteger(ConversionStorage<IntegerValue>/*!*/ integerConversion, object value) {
+            var site = integerConversion.GetSite(CompositeConversionAction.Make(integerConversion.Context, CompositeConversion.ToIntToI));
+            return site.Target(site, value); 
         }
 
-        public static IntegerValue CastToInteger(ConversionStorage<IntegerValue>/*!*/ integerConversion, RubyContext/*!*/ context, object value) {
-            var site = integerConversion.GetSite(ConvertToIntAction.Instance);
-            return site.Target(site, context, value);
+        public static IntegerValue CastToInteger(ConversionStorage<IntegerValue>/*!*/ integerConversion, object value) {
+            var site = integerConversion.GetSite(ConvertToIntAction.Make(integerConversion.Context));
+            return site.Target(site, value);
         }
 
-        public static int CastToFixnum(ConversionStorage<int>/*!*/ conversionStorage, RubyContext/*!*/ context, object value) {
-            var site = conversionStorage.GetSite(ConvertToFixnumAction.Instance);
-            return site.Target(site, context, value);
+        public static int CastToFixnum(ConversionStorage<int>/*!*/ conversionStorage, object value) {
+            var site = conversionStorage.GetSite(ConvertToFixnumAction.Make(conversionStorage.Context));
+            return site.Target(site, value);
         }
 
         /// <summary>
         /// Like CastToInteger, but converts the result to an unsigned int.
         /// </summary>
-        public static uint CastToUInt32Unchecked(ConversionStorage<IntegerValue>/*!*/ integerConversion, RubyContext/*!*/ context, object obj) {
+        public static uint CastToUInt32Unchecked(ConversionStorage<IntegerValue>/*!*/ integerConversion, object obj) {
             if (obj == null) {
                 throw RubyExceptions.CreateTypeError("no implicit conversion from nil to integer");
             }
 
-            IntegerValue integer = CastToInteger(integerConversion, context, obj);
+            IntegerValue integer = CastToInteger(integerConversion, obj);
             if (integer.IsFixnum) {
                 return unchecked((uint)integer.Fixnum);
             } 
@@ -172,12 +172,12 @@ namespace IronRuby.Runtime {
         /// <summary>
         /// Like CastToInteger, but converts the result to an unsigned int.
         /// </summary>
-        public static ulong CastToUInt64Unchecked(ConversionStorage<IntegerValue>/*!*/ integerConversion, RubyContext/*!*/ context, object obj) {
+        public static ulong CastToUInt64Unchecked(ConversionStorage<IntegerValue>/*!*/ integerConversion, object obj) {
             if (obj == null) {
                 throw RubyExceptions.CreateTypeError("no implicit conversion from nil to integer");
             }
 
-            IntegerValue integer = CastToInteger(integerConversion, context, obj);
+            IntegerValue integer = CastToInteger(integerConversion, obj);
             if (integer.IsFixnum) {
                 return unchecked((ulong)integer.Fixnum);
             }
@@ -200,32 +200,32 @@ namespace IronRuby.Runtime {
             BinaryOpStorage/*!*/ comparisonStorage,
             BinaryOpStorage/*!*/ lessThanStorage,
             BinaryOpStorage/*!*/ greaterThanStorage,
-            RubyContext/*!*/ context, object lhs, object rhs) {
+            object lhs, object rhs) {
 
             var compare = comparisonStorage.GetCallSite("<=>");
 
-            var result = compare.Target(compare, context, lhs, rhs);
+            var result = compare.Target(compare, lhs, rhs);
             if (result != null) {
-                return Protocols.ConvertCompareResult(lessThanStorage, greaterThanStorage, context, result);
+                return Protocols.ConvertCompareResult(lessThanStorage, greaterThanStorage, result);
             } else {
-                throw RubyExceptions.MakeComparisonError(context, lhs, rhs);
+                throw RubyExceptions.MakeComparisonError(comparisonStorage.Context, lhs, rhs);
             }
         }
     
         public static int ConvertCompareResult(
             BinaryOpStorage/*!*/ lessThanStorage, 
             BinaryOpStorage/*!*/ greaterThanStorage,
-            RubyContext/*!*/ context, object/*!*/ result) {
+             object/*!*/ result) {
 
             Debug.Assert(result != null);
 
             var greaterThanSite = greaterThanStorage.GetCallSite(">");
-            if (RubyOps.IsTrue(greaterThanSite.Target(greaterThanSite, context, result, 0))) {
+            if (RubyOps.IsTrue(greaterThanSite.Target(greaterThanSite, result, 0))) {
                 return 1;
             }
 
             var lessThanSite = lessThanStorage.GetCallSite("<");
-            if (RubyOps.IsTrue(lessThanSite.Target(lessThanSite, context, result, 0))) {
+            if (RubyOps.IsTrue(lessThanSite.Target(lessThanSite, result, 0))) {
                 return -1;
             }
 
@@ -246,23 +246,23 @@ namespace IronRuby.Runtime {
         /// <summary>
         /// Protocol for determining value equality in Ruby (uses IsTrue protocol on result of == call)
         /// </summary>
-        public static bool IsEqual(BinaryOpStorage/*!*/ equals, RubyContext/*!*/ context, object lhs, object rhs) {
+        public static bool IsEqual(BinaryOpStorage/*!*/ equals, object lhs, object rhs) {
             // check reference equality first:
             if (lhs == rhs) {
                 return true;
             }
             var site = equals.GetCallSite("==");
-            return IsTrue(site.Target(site, context, lhs, rhs));
+            return IsTrue(site.Target(site, lhs, rhs));
         }
 
-        public static bool RespondTo(RespondToStorage/*!*/ respondToStorage, RubyContext/*!*/ context, object target, string/*!*/ methodName) {
+        public static bool RespondTo(RespondToStorage/*!*/ respondToStorage, object target, string/*!*/ methodName) {
             var site = respondToStorage.GetCallSite();
-            return IsTrue(site.Target(site, context, target, SymbolTable.StringToId(methodName)));
+            return IsTrue(site.Target(site, target, SymbolTable.StringToId(methodName)));
         }
 
-        public static void Write(BinaryOpStorage/*!*/ writeStorage, RubyContext/*!*/ context, object target, object value) {
+        public static void Write(BinaryOpStorage/*!*/ writeStorage, object target, object value) {
             var site = writeStorage.GetCallSite("write");
-            site.Target(site, context, target, value);
+            site.Target(site, target, value);
         }
 
         #endregion
@@ -279,10 +279,10 @@ namespace IronRuby.Runtime {
         public static object CoerceAndCompare(
             BinaryOpStorage/*!*/ coercionStorage,
             BinaryOpStorage/*!*/ comparisonStorage, 
-            RubyContext/*!*/ context, object self, object other) {
+            object self, object other) {
 
             object result;
-            return TryCoerceAndApply(coercionStorage, comparisonStorage, "<=>", context, self, other, out result) ? result : null;
+            return TryCoerceAndApply(coercionStorage, comparisonStorage, "<=>", self, other, out result) ? result : null;
         }
 
         /// <summary>
@@ -291,17 +291,15 @@ namespace IronRuby.Runtime {
         /// <exception cref="ArgumentError">
         /// "coerce" method is not defined, throws a subclass of SystemException, or returns something other than a pair of objects.
         /// </exception>
-        public static bool CoerceAndRelate(
-            BinaryOpStorage/*!*/ coercionStorage,
-            BinaryOpStorage/*!*/ comparisonStorage, string/*!*/ relationalOp, 
-            RubyContext/*!*/ context, object self, object other) {
+        public static bool CoerceAndRelate(BinaryOpStorage/*!*/ coercionStorage, BinaryOpStorage/*!*/ comparisonStorage, 
+            string/*!*/ relationalOp, object self, object other) {
 
             object result;
-            if (TryCoerceAndApply(coercionStorage, comparisonStorage, relationalOp, context, self, other, out result)) {
+            if (TryCoerceAndApply(coercionStorage, comparisonStorage, relationalOp, self, other, out result)) {
                 return RubyOps.IsTrue(result);
             }
-            
-            throw RubyExceptions.MakeComparisonError(context, self, other);
+
+            throw RubyExceptions.MakeComparisonError(coercionStorage.Context, self, other);
         }
 
         /// <summary>
@@ -310,17 +308,15 @@ namespace IronRuby.Runtime {
         /// <exception cref="TypeError">
         /// "coerce" method is not defined, throws a subclass of SystemException, or returns something other than a pair of objects.
         /// </exception>
-        public static object CoerceAndApply(
-            BinaryOpStorage/*!*/ coercionStorage,
-            BinaryOpStorage/*!*/ binaryOpStorage, string/*!*/ binaryOp,
-            RubyContext/*!*/ context, object self, object other) {
+        public static object CoerceAndApply(BinaryOpStorage/*!*/ coercionStorage, BinaryOpStorage/*!*/ binaryOpStorage, 
+            string/*!*/ binaryOp, object self, object other) {
 
             object result;
-            if (TryCoerceAndApply(coercionStorage, binaryOpStorage, binaryOp, context, self, other, out result)) {
+            if (TryCoerceAndApply(coercionStorage, binaryOpStorage, binaryOp, self, other, out result)) {
                 return result;
             }
 
-            throw RubyExceptions.MakeCoercionError(context, other, self);
+            throw RubyExceptions.MakeCoercionError(coercionStorage.Context, other, self);
         }
 
         /// <summary>
@@ -332,14 +328,14 @@ namespace IronRuby.Runtime {
         public static object TryCoerceAndApply(
             BinaryOpStorage/*!*/ coercionStorage,
             BinaryOpStorage/*!*/ binaryOpStorage, string/*!*/ binaryOp,
-            RubyContext/*!*/ context, object self, object other) {
+            object self, object other) {
 
             if (other == null) {
                 return null;
             }
 
             object result;
-            if (TryCoerceAndApply(coercionStorage, binaryOpStorage, binaryOp, context, self, other, out result)) {
+            if (TryCoerceAndApply(coercionStorage, binaryOpStorage, binaryOp, self, other, out result)) {
                 if (result != null) {
                     return RubyOps.IsTrue(result);
                 }
@@ -350,7 +346,7 @@ namespace IronRuby.Runtime {
         private static bool TryCoerceAndApply(
             BinaryOpStorage/*!*/ coercionStorage,
             BinaryOpStorage/*!*/ binaryOpStorage, string/*!*/ binaryOp,
-            RubyContext/*!*/ context, object self, object other, out object result) {
+            object self, object other, out object result) {
 
             // doesn't call method_missing:
             var coerce = coercionStorage.GetCallSite("coerce", new RubyCallSignature(1, RubyCallFlags.IsTryCall | RubyCallFlags.HasImplicitSelf));
@@ -359,7 +355,7 @@ namespace IronRuby.Runtime {
 
             try {
                 // Swap self and other around to do the coercion.
-                coercedValues = coerce.Target(coerce, context, other, self) as IList;
+                coercedValues = coerce.Target(coerce, other, self) as IList;
             } catch (SystemException) { 
                 // catches StandardError (like rescue)
                 result = null;
@@ -368,7 +364,7 @@ namespace IronRuby.Runtime {
 
             if (coercedValues != null && coercedValues.Count == 2) {
                 var compare = binaryOpStorage.GetCallSite(binaryOp);
-                result = compare.Target(compare, context, coercedValues[0], coercedValues[1]);
+                result = compare.Target(compare, coercedValues[0], coercedValues[1]);
                 return true;
             }
 

@@ -443,18 +443,19 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("raise")]
         [RubyStackTraceHidden]
-        public static void RaiseException(RespondToStorage/*!*/ respondToStorage, UnaryOpStorage/*!*/ storage0, BinaryOpStorage/*!*/ storage1, SetBacktraceStorage/*!*/ setBackTraceStorage, 
-            RubyContext/*!*/ context, Thread/*!*/ self, object/*!*/ obj, [Optional]object arg, [Optional]RubyArray backtrace) {
+        public static void RaiseException(RespondToStorage/*!*/ respondToStorage, UnaryOpStorage/*!*/ storage0, BinaryOpStorage/*!*/ storage1, 
+            CallSiteStorage<Action<CallSite, Exception, RubyArray>>/*!*/ setBackTraceStorage, 
+            Thread/*!*/ self, object/*!*/ obj, [Optional]object arg, [Optional]RubyArray backtrace) {
 
             if (self == Thread.CurrentThread) {
-                KernelOps.RaiseException(respondToStorage, storage0, storage1, setBackTraceStorage, context, self, obj, arg, backtrace);
+                KernelOps.RaiseException(respondToStorage, storage0, storage1, setBackTraceStorage, self, obj, arg, backtrace);
                 return;
             }
 
 #if SILVERLIGHT
             throw new NotImplementedError("Thread#raise is not implemented on Silverlight");
 #else
-            Exception e = KernelOps.CreateExceptionToRaise(respondToStorage, storage0, storage1, setBackTraceStorage, context, obj, arg, backtrace);
+            Exception e = KernelOps.CreateExceptionToRaise(respondToStorage, storage0, storage1, setBackTraceStorage, obj, arg, backtrace);
             RaiseAsyncException(self, e);
 #endif
         }

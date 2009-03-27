@@ -58,7 +58,7 @@ namespace IronRuby.Runtime {
         // can be set explicitly by the user (even to nil):
         private RubyArray _backtrace;
 
-        private CallSite<Action<CallSite, RubyContext, Exception, RubyArray>>/*!*/ _setBacktraceCallSite = CallSite<Action<CallSite, RubyContext, Exception, RubyArray>>.Create(RubyCallAction.Make("set_backtrace", 1));
+        private CallSite<Action<CallSite, RubyContext, Exception, RubyArray>>/*!*/ _setBacktraceCallSite;
 
         private RubyExceptionData(Exception/*!*/ exception) {
             _exception = exception;
@@ -81,7 +81,7 @@ namespace IronRuby.Runtime {
             }
 
             _backtrace = result;
-            SetBacktraceForRaise(_setBacktraceCallSite, context, _backtrace);
+            SetBacktraceForRaise(context, _backtrace);
         }
 
         internal void SetCompiledTrace(RubyContext/*!*/ context) {
@@ -102,15 +102,19 @@ namespace IronRuby.Runtime {
 
             // we need to copy the trace since the source locations in frames above catch site could be altered by further interpretation:
             _backtrace = AddBacktrace(new RubyArray(), state, 0);
-            SetBacktraceForRaise(_setBacktraceCallSite, state.ScriptCode.LanguageContext as RubyContext, _backtrace);
+            SetBacktraceForRaise((RubyContext)state.ScriptCode.LanguageContext, _backtrace);
         }
 
         /// <summary>
         /// This is called by the IronRuby runtime to set the backtrace for an exception that has being raised. 
         /// Note that the backtrace may be set directly by user code as well. However, that uses a different code path.
         /// </summary>
-        public void SetBacktraceForRaise(CallSite<Action<CallSite, RubyContext, Exception, RubyArray>> setBacktraceCallSite, RubyContext/*!*/ context, RubyArray backtrace) {
-            setBacktraceCallSite.Target(setBacktraceCallSite, context, _exception, backtrace);
+        private void SetBacktraceForRaise(RubyContext/*!*/ context, RubyArray backtrace) {
+            if (_setBacktraceCallSite == null) {
+                Interlocked.CompareExchange(ref _setBacktraceCallSite, CallSite<Action<CallSite, RubyContext, Exception, RubyArray>>.
+                    Create(RubyCallAction.MakeShared("set_backtrace", RubyCallSignature.WithImplicitSelf(1))), null);
+            }
+            _setBacktraceCallSite.Target(_setBacktraceCallSite, context, _exception, backtrace);
         }
 
         internal static RubyArray/*!*/ CreateBacktrace(RubyContext/*!*/ context, IEnumerable<StackFrame>/*!*/ stackTrace, int skipFrames) {

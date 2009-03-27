@@ -141,8 +141,6 @@ namespace IronRuby.Runtime {
             return FormatMethodMissingMessage(context, self, name, "undefined method `{0}' for {1}");
         }
 
-        private static readonly UnaryOpStorage/*!*/ ToSSiteStorage = new UnaryOpStorage();
-
         private static string/*!*/ FormatMethodMissingMessage(RubyContext/*!*/ context, object self, string/*!*/ name, string/*!*/ message) {
             Assert.NotNull(name);
             string strObject;
@@ -150,9 +148,8 @@ namespace IronRuby.Runtime {
             if (self == null) {
                 strObject = "nil:NilClass";
             } else {
-                // TODO: cross-runtime
-                var site = ToSSiteStorage.GetCallSite("to_s", RubyCallSignature.WithImplicitSelf(0));
-                strObject = (site.Target(site, context, self) as MutableString ?? RubyUtils.ObjectToMutableString(context, self)).ConvertToString();
+                var site = context.StringConversionSite;
+                strObject = (site.Target(site, self) as MutableString ?? RubyUtils.ObjectToMutableString(context, self)).ConvertToString();
 
                 if (!strObject.StartsWith("#")) {
                     strObject += ":" + RubyUtils.GetClassName(context, self);

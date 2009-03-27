@@ -16,13 +16,11 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using Microsoft.Scripting;
 using System.Threading;
-using System.Text;
 using IronRuby.Builtins;
-using IronRuby.Runtime;
+using Microsoft.Scripting;
 
-namespace IronRuby {
+namespace IronRuby.Runtime {
 
     [Serializable]
     public sealed class RubyOptions : LanguageOptions {
@@ -40,8 +38,9 @@ namespace IronRuby {
         private readonly RubyEncoding _kcode = null;
 
 #if DEBUG
-        private static bool _UseThreadAbortForSyncRaise;
-        private static bool _CompileRegexps;
+        public static bool UseThreadAbortForSyncRaise;
+        public static bool CompileRegexps;
+        public static bool ShowRules;
 #endif
 
         public ReadOnlyCollection<string>/*!*/ Arguments {
@@ -92,16 +91,6 @@ namespace IronRuby {
             get { return _kcode; }
         }
 
-#if DEBUG
-        public static bool UseThreadAbortForSyncRaise {
-            get { return _UseThreadAbortForSyncRaise; }
-        }
-
-        public static bool CompileRegexps {
-            get { return _CompileRegexps; }
-        }
-#endif
-
         public RubyOptions(IDictionary<string, object>/*!*/ options)
             : base(options) {
             _arguments = GetStringCollectionOption(options, "Arguments") ?? EmptyStringCollection;
@@ -121,10 +110,6 @@ namespace IronRuby {
             if (_compatibility == RubyCompatibility.Ruby18) {
                 _kcode = GetKCoding(options, "KCode", null);
             }
-#endif
-#if DEBUG
-            _UseThreadAbortForSyncRaise = GetOption(options, "UseThreadAbortForSyncRaise", false);
-            _CompileRegexps = GetOption(options, "CompileRegexps", false);
 #endif
         }
 

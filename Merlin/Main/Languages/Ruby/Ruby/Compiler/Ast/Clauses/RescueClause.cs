@@ -86,7 +86,7 @@ namespace IronRuby.Compiler.Ast {
 
             MSA.Expression condition;
             if (_types.Length != 0 || _splatType != null) {
-                var comparisonSiteStorage = Ast.Constant(new BinaryOpStorage());
+                var comparisonSiteStorage = Ast.Constant(new BinaryOpStorage(gen.Context));
 
                 if (_types.Length == 0) {
                     // splat only:
@@ -153,12 +153,7 @@ namespace IronRuby.Compiler.Ast {
         }
 
         private MSA.Expression/*!*/ TransformSplatType(AstGenerator/*!*/ gen) {
-            return Ast.Dynamic(
-                ConvertToArraySplatAction.Instance,
-                typeof(object),
-                Methods.GetContextFromScope.OpCall(gen.CurrentScopeVariable),
-                _splatType.TransformRead(gen)
-            );
+            return Ast.Dynamic(ConvertToArraySplatAction.Make(gen.Context), typeof(object), _splatType.TransformRead(gen));
         }
 
         private MSA.Expression/*!*/ MakeCompareException(AstGenerator/*!*/ gen, MSA.Expression/*!*/ comparisonSiteStorage, MSA.Expression/*!*/ expression) {

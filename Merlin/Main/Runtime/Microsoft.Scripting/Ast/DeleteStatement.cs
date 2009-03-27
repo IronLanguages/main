@@ -56,8 +56,8 @@ namespace Microsoft.Scripting.Ast {
             );
         }
 
-        protected override Expression VisitChildren(ExpressionVisitor visitor) {
-            Expression v = visitor.Visit(_variable);
+        protected override Expression VisitChildren(Func<Expression, Expression> visitor) {
+            Expression v = visitor(_variable);
             if (v == _variable) {
                 return this;
             }

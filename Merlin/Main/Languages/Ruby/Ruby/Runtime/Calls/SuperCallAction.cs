@@ -18,72 +18,48 @@ using System.Diagnostics;
 using System.Linq.Expressions;
 using System.Dynamic;
 
-using Microsoft.Scripting;
-using Microsoft.Scripting.Actions;
 using Microsoft.Scripting.Utils;
 using Microsoft.Scripting.Runtime;
 
 using IronRuby.Builtins;
-using AstUtils = Microsoft.Scripting.Ast.Utils;
-using Ast = System.Linq.Expressions.Expression;
-using AstFactory = IronRuby.Compiler.Ast.AstFactory;
 using IronRuby.Compiler;
 using IronRuby.Compiler.Generation;
+using AstUtils = Microsoft.Scripting.Ast.Utils;
+using Ast = System.Linq.Expressions.Expression;
 
 namespace IronRuby.Runtime.Calls {
 
-    public sealed class SuperCallAction : DynamicMetaObjectBinder, IExpressionSerializable, IEquatable<SuperCallAction> {
+    public sealed class SuperCallAction : RubyMetaBinder, IExpressionSerializable {
         private readonly RubyCallSignature _signature;
         private readonly int _lexicalScopeId;
 
-        internal RubyCallSignature Signature {
-            get { return _signature; }
-        }
-
-        private SuperCallAction(RubyCallSignature signature, int lexicalScopeId) {
+        internal SuperCallAction(RubyContext context, RubyCallSignature signature, int lexicalScopeId)
+            : base(context) {
             _signature = signature;
             _lexicalScopeId = lexicalScopeId;
         }
 
+        public static SuperCallAction/*!*/ Make(RubyContext/*!*/ context, RubyCallSignature signature, int lexicalScopeId) {
+            ContractUtils.RequiresNotNull(context, "context");
+            return context.MetaBinderFactory.SuperCall(lexicalScopeId, signature);
+        }
+
         [Emitted]
-        public static SuperCallAction/*!*/ Make(RubyCallSignature signature, int lexicalScopeId) {
-            return new SuperCallAction(signature, lexicalScopeId);
-        }
-
-        public static SuperCallAction/*!*/ Make(int argumentCount, int lexicalScopeId) {
-            ContractUtils.Requires(argumentCount >= 0, "argumentCount");
-            return new SuperCallAction(RubyCallSignature.WithScope(argumentCount), lexicalScopeId);
-        }
-
-        #region Object Overrides, IEquatable
-
-        public override bool Equals(object obj) {
-            return Equals(obj as SuperCallAction);
-        }
-
-        public override int GetHashCode() {
-            return _signature.GetHashCode() ^ _lexicalScopeId;
+        public static SuperCallAction/*!*/ MakeShared(RubyCallSignature signature, int lexicalScopeId) {
+            return RubyMetaBinderFactory.Shared.SuperCall(lexicalScopeId, signature);
         }
 
         public override string/*!*/ ToString() {
-            return "super" + _signature.ToString() + ":" + _lexicalScopeId;
+            return "super" + _signature.ToString() + ":" + _lexicalScopeId + (Context != null ? " @" + Context.RuntimeId.ToString() : null);
         }
 
-        public bool Equals(SuperCallAction other) {
-            return other != null && _signature.Equals(other._signature) && _lexicalScopeId == other._lexicalScopeId;
+        public override RubyCallSignature Signature {
+            get { return _signature; }
         }
-
-        #endregion
 
         #region Rule Generation
 
-        public override DynamicMetaObject/*!*/ Bind(DynamicMetaObject/*!*/ context, DynamicMetaObject/*!*/[]/*!*/ args) {
-            var mo = new MetaObjectBuilder();
-            BuildSuperCall(mo, new CallArguments(context, args, _signature));
-            return mo.CreateMetaObject(this);
-        }
-
-        internal void BuildSuperCall(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args) {
+        protected override void Build(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args) {
             RubyModule currentDeclaringModule;
             string currentMethodName;
 
@@ -96,7 +72,7 @@ namespace IronRuby.Runtime.Calls {
             
             metaBuilder.AddCondition(
                 Methods.IsSuperCallTarget.OpCall(
-                    AstUtils.Convert(args.ScopeExpression, typeof(RubyScope)),
+                    AstUtils.Convert(args.MetaScope.Expression, typeof(RubyScope)),
                     AstUtils.Constant(currentDeclaringModule),
                     AstUtils.Constant(currentMethodName),
                     targetExpression
@@ -118,7 +94,7 @@ namespace IronRuby.Runtime.Calls {
 
                 // target is stored in a local, therefore it cannot be part of the restrictions:
                 metaBuilder.TreatRestrictionsAsConditions = true;
-                metaBuilder.AddTargetTypeTest(target, targetClass, targetExpression, scope.RubyContext, args.ContextExpression);
+                metaBuilder.AddTargetTypeTest(target, targetClass, targetExpression, args.MetaContext);
                 metaBuilder.TreatRestrictionsAsConditions = false;
 
                 method = targetClass.ResolveSuperMethodNoLock(currentMethodName, currentDeclaringModule).InvalidateSitesOnOverride().Info;
@@ -135,16 +111,20 @@ namespace IronRuby.Runtime.Calls {
             }
         }
 
+        protected override DynamicMetaObject/*!*/ InteropBind(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args) {
+            metaBuilder.SetError(Ast.New(
+                typeof(NotSupportedException).GetConstructor(new[] { typeof(string) }),
+                Ast.Constant("Super call not supported on foreign meta-objects")
+            ));
+            return metaBuilder.CreateMetaObject(this);
+        }
+
         #endregion
 
         #region IExpressionSerializable Members
 
         Expression/*!*/ IExpressionSerializable.CreateExpression() {
-            return Expression.Call(
-                Methods.GetMethod(typeof(SuperCallAction), "Make", typeof(RubyCallSignature), typeof(int)),
-                _signature.CreateExpression(),
-                AstUtils.Constant(_lexicalScopeId)
-            );
+            return Methods.GetMethod(GetType(), "MakeShared").OpCall(_signature.CreateExpression(), AstUtils.Constant(_lexicalScopeId));
         }
 
         #endregion

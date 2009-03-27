@@ -248,7 +248,7 @@ namespace IronRuby.Runtime.Calls {
             var actualArgs = MakeActualArgs(metaBuilder, args, callConvention, calleeHasBlockParam, true);
 
             if (bindingTarget.Success) {
-                var parameterBinder = new RubyParameterBinder(args.RubyContext.Binder, args.MetaContext.Expression, args.Signature.HasScope);
+                var parameterBinder = new RubyParameterBinder(args);
                 metaBuilder.Result = bindingTarget.MakeExpression(parameterBinder, actualArgs);
             } else {
                 metaBuilder.SetError(args.RubyContext.RubyBinder.MakeInvalidParametersError(bindingTarget).Expression);
@@ -329,7 +329,7 @@ namespace IronRuby.Runtime.Calls {
                 if (args.Signature.HasBlock) {
                     if (args.GetMetaBlock() == null) {
                         // the user explicitly passed nil as a block arg:
-                        result.Add(RubyBinder.NullMetaObject);
+                        result.Add(RubyBinder.NullMetaBlockParam);
                     } else {
                         // pass BlockParam:
                         Debug.Assert(metaBuilder.BfcVariable != null);
@@ -337,11 +337,11 @@ namespace IronRuby.Runtime.Calls {
                     }
                 } else {
                     // no block passed into a method with a BlockParam:
-                    result.Add(RubyBinder.NullMetaObject);
+                    result.Add(RubyBinder.NullMetaBlockParam);
                 }
             } else if (injectMissingBlockParam) {
                 // no block passed into a method w/o a BlockParam (we still need to fill the missing block argument):
-                result.Add(RubyBinder.NullMetaObject);
+                result.Add(RubyBinder.NullMetaBlockParam);
             }
 
             // self (parameter):

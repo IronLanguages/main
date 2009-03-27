@@ -96,7 +96,7 @@ namespace IronRuby.StandardLibrary.Sockets {
             }
 
             Socket socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-            socket.Bind(new IPEndPoint(listeningInterface, ConvertToPortNum(stringCast, fixnumCast, self.Context, port)));
+            socket.Bind(new IPEndPoint(listeningInterface, ConvertToPortNum(stringCast, fixnumCast, port)));
             socket.Listen(10);
 
             return new TCPServer(self.Context, socket);

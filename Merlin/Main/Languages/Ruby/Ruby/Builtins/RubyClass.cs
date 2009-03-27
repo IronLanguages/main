@@ -94,11 +94,16 @@ namespace IronRuby.Builtins {
 
         #region Dynamic Sites
 
-        private CallSite<Func<CallSite, RubyContext, object, object>> _inspectSite;
-        private CallSite<Func<CallSite, RubyContext, object, MutableString>> _stringConversionSite;
+        private CallSite<Func<CallSite, object, object>> _inspectSite;
+        private CallSite<Func<CallSite, object, MutableString>> _stringConversionSite;
 
-        public CallSite<Func<CallSite, RubyContext, object, object>> InspectSite { get { return RubyUtils.GetCallSite(ref _inspectSite, "inspect", 0); } }
-        public CallSite<Func<CallSite, RubyContext, object, MutableString>> StringConversionSite { get { return RubyUtils.GetCallSite(ref _stringConversionSite, ConvertToSAction.Instance); } }
+        public CallSite<Func<CallSite, object, object>>/*!*/ InspectSite { 
+            get { return RubyUtils.GetCallSite(ref _inspectSite, Context, "inspect", 0); } 
+        }
+
+        public CallSite<Func<CallSite, object, MutableString>>/*!*/ StringConversionSite {
+            get { return RubyUtils.GetCallSite(ref _stringConversionSite, ConvertToSAction.Make(Context)); } 
+        }
 
         #endregion
 
@@ -962,7 +967,7 @@ namespace IronRuby.Builtins {
             } else {
                 // TODO: we need more refactoring of RubyMethodGroupInfo.BuildCall to be able to inline this:
                 metaBuilder.Result = Ast.Dynamic(
-                    RubyCallAction.Make("initialize", 
+                    RubyCallAction.Make(args.RubyContext, "initialize", 
                         new RubyCallSignature(args.Signature.ArgumentCount, args.Signature.Flags | RubyCallFlags.HasImplicitSelf)
                     ),
                     typeof(object),
@@ -1012,7 +1017,7 @@ namespace IronRuby.Builtins {
             }
 
             if ((ctor = type.GetConstructor(new[] { typeof(RubyContext) })) != null) {
-                metaBuilder.Result = Ast.New(ctor, args.ContextExpression);
+                metaBuilder.Result = Ast.New(ctor, AstUtils.Convert(args.MetaContext.Expression, typeof(RubyContext)));
                 return;
             }
 
