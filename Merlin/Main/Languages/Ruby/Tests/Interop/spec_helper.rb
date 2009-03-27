@@ -48,6 +48,7 @@ end
 
 $VERBOSE = nil unless ENV['OUTPUT_WARNINGS']
 require File.dirname(__FILE__) + '/matchers'
+require File.dirname(__FILE__) + '/helpers'
 require File.dirname(__FILE__) + '/fixtures.generated'
 
 class Object

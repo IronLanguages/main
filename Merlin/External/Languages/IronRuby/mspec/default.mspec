@@ -134,7 +134,7 @@ class MSpecScript
   if ENV['ROWAN_BIN']
     set :target, "#{ENV['MERLIN_ROOT']}\\Test\\Scripts\\ir.cmd"
   else
-    set :target, "#{ENV['MERLIN_ROOT']}\\bin\\debug\\ir.exe"
+    set :target, "#{ENV['MERLIN_ROOT']}\\bin\\debug\\ir.exe"    
   end
   set :prefix, "#{ENV['MERLIN_ROOT']}\\..\\External\\Languages\\IronRuby\\mspec\\rubyspec"
 end
