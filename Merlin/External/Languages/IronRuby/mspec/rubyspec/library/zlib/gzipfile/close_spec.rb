@@ -2,7 +2,7 @@ require File.dirname(__FILE__) + '/../../../spec_helper'
 require 'stringio'
 require 'zlib'
 
-describe 'Zlib::GzipFile#close' do
+describe 'Zlib::GzipFile#finish' do
   it 'finishes the stream and closes the io' do
     io = StringIO.new
     Zlib::GzipWriter.wrap io do |gzio|

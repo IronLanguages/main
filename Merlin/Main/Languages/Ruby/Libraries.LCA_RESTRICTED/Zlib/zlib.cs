@@ -585,6 +585,8 @@ namespace IronRuby.StandardLibrary.Zlib {
             protected int _outPos;
             protected int _inPos;
             protected bool _isClosed;
+            protected MutableString/*!*/ _originalName;
+            protected MutableString/*!*/ _comment;
 
             public GZipFile(IOWrapper/*!*/ ioWrapper) {
                 Debug.Assert(ioWrapper != null);
@@ -647,11 +649,30 @@ namespace IronRuby.StandardLibrary.Zlib {
                 return self._isClosed;
             }
 
-            // comment() 
+            [RubyMethod("comment")]
+            public static MutableString/*!*/ Comment(GZipFile/*!*/ self)
+            {
+                if (self._isClosed)
+                    throw new Error("closed gzip stream");
+
+                return self._comment;
+            }
+
             // crc() 
             // level() 
             // mtime() 
-            // orig_name() 
+
+            [RubyMethod("orig_name")]
+            [RubyMethod("original_name")]
+            public static MutableString/*!*/ OriginalName(GZipFile/*!*/ self)
+            {
+                // TODO: Returns original filename recorded in the gzip file header, or nil if original filename is not present.
+                if (self._isClosed)
+                    throw new Error("closed gzip stream");
+
+                return self._originalName;
+            }
+
             // os_code() 
             // sync() 
             // sync = flag
@@ -668,23 +689,11 @@ namespace IronRuby.StandardLibrary.Zlib {
 
             protected MutableString _xtraField;
             protected MutableString/*!*/ _contents;
-            protected MutableString/*!*/ _originalName;
-            protected MutableString/*!*/ _comment;
             protected ushort _headerCrc;
 
             [RubyMethod("xtra_field")]
             public static MutableString ExtraField(GZipReader/*!*/ self) {
                 return self._xtraField;
-            }
-
-            [RubyMethod("original_name")]
-            public static MutableString/*!*/ OriginalName(GZipReader/*!*/ self) {
-                return self._originalName;
-            }
-
-            [RubyMethod("comment")]
-            public static MutableString/*!*/ Comment(GZipReader/*!*/ self) {
-                return self._comment;
             }
 
             [RubyConstant("OSES")]
@@ -1084,15 +1093,37 @@ namespace IronRuby.StandardLibrary.Zlib {
                 return self;
             }
 
+            /*
+             * Closes the GzipFile object. This method calls close method of the
+             * associated IO object. Returns the associated IO object.
+             */
             [RubyMethod("close")]
-            [RubyMethod("finish")]
-            public static void Close(UnaryOpStorage/*!*/ closeStorage, RubyContext/*!*/ context, GzipWriter/*!*/ self) {
+            public static void Close(UnaryOpStorage/*!*/ closeStorage, RubyContext/*!*/ context, GzipWriter/*!*/ self)
+            {
                 self._gzipStream.Close();
                 self._ioWrapper.Flush();
                 GZipFile.Close(closeStorage, context, self);
             }
 
-            // comment=(p1)
+            /*
+             * Closes the GzipFile object. Unlike Zlib::GzipFile#close, this method never
+             * calls the close method of the associated IO object. Returns the associated IO
+             * object.
+             */
+            [RubyMethod("finish")]
+            public static void Finish(UnaryOpStorage/*!*/ closeStorage, RubyContext/*!*/ context, GzipWriter/*!*/ self) {
+                self._gzipStream.Close();
+                self._ioWrapper.Flush();
+                GZipFile.Close(closeStorage, context, self);
+            }
+
+            [RubyMethod("comment=")]
+            public static GzipWriter Comment(GzipWriter/*!*/ self, MutableString/*!*/ comment)
+            {
+                self._comment = comment;
+
+                return self;
+            }
 
             [RubyMethod("flush")]
             public static GzipWriter Flush(UnaryOpStorage/*!*/ flushStorage, RubyContext/*!*/ context, GzipWriter/*!*/ self, object flush) {
@@ -1121,7 +1152,15 @@ namespace IronRuby.StandardLibrary.Zlib {
             }
 
             // mtime=(p1) 
-            // orig_name=(p1) 
+            
+            [RubyMethod("orig_name=")]
+            public static GzipWriter OriginalName(GzipWriter/*!*/ self, MutableString/*!*/ originalName)
+            {
+                self._originalName = originalName;
+
+                return self;
+            }
+
             // pos() 
             // print(...) 
             // printf(...) 
