@@ -80,7 +80,7 @@ namespace IronRuby.Runtime.Calls {
             }
 
             internal TracingRubyCallAction(string/*!*/ methodName, RubyCallSignature signature)
-                : base(methodName, signature) {
+                : base(null, methodName, signature) {
             }
 
             public override string/*!*/ ToString() {
@@ -106,8 +106,7 @@ namespace IronRuby.Runtime.Calls {
 
             public TraceAstGenerator(Dictionary<MSA.DynamicExpression, SourceSpan>/*!*/ sites,
                 RubyContext/*!*/ context, RubyCompilerOptions/*!*/ options, SourceUnit/*!*/ sourceUnit, RubyEncoding/*!*/ encoding)
-                : base((RubyBinder)context.Binder, options, sourceUnit, encoding, false,
-                    context.DomainManager.Configuration.DebugMode, false, false, false) {
+                : base(options, sourceUnit, encoding, false, context.DomainManager.Configuration.DebugMode, false, false, false) {
                 _sites = sites;
             }
 

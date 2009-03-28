@@ -548,17 +548,17 @@ namespace IronPython.Runtime {
         }
 
 
-        private Compiler.Ast.CompilationMode GetCompilationMode(PythonCompilerOptions options, SourceUnit source) {
+        private Compiler.CompilationMode GetCompilationMode(PythonCompilerOptions options, SourceUnit source) {
 
             if (ShouldInterpret(options, source)) {
                 // force collectible code for the adaptive compiler.  Technically these should
                 // be orthogonal but 
-                return Compiler.Ast.CompilationMode.Collectable;
+                return Compiler.CompilationMode.Collectable;
             }
 
-            return (_options.Optimize || options.Optimized) ? 
-                Compiler.Ast.CompilationMode.Uncollectable : 
-                Compiler.Ast.CompilationMode.Collectable;
+            return ((_options.Optimize || options.Optimized) && !_options.LightweightScopes) ? 
+                Compiler.CompilationMode.Uncollectable : 
+                Compiler.CompilationMode.Collectable;
         }
 
         internal bool ShouldInterpret(PythonCompilerOptions options, SourceUnit source) {
@@ -621,7 +621,7 @@ namespace IronPython.Runtime {
             return ast;
         }
 
-        internal ScriptCode CompilePythonCode(Compiler.Ast.CompilationMode? compilationMode, SourceUnit/*!*/ sourceUnit, CompilerOptions/*!*/ options, ErrorSink/*!*/ errorSink) {
+        internal ScriptCode CompilePythonCode(Compiler.CompilationMode? compilationMode, SourceUnit/*!*/ sourceUnit, CompilerOptions/*!*/ options, ErrorSink/*!*/ errorSink) {
             var pythonOptions = (PythonCompilerOptions)options;
 
             if (sourceUnit.Kind == SourceCodeKind.File) {
@@ -802,7 +802,7 @@ namespace IronPython.Runtime {
             return GetScriptCode(sourceCode, moduleName, options, null);
         }
 
-        internal ScriptCode GetScriptCode(SourceUnit sourceCode, string moduleName, ModuleOptions options, Compiler.Ast.CompilationMode? mode) {
+        internal ScriptCode GetScriptCode(SourceUnit sourceCode, string moduleName, ModuleOptions options, Compiler.CompilationMode? mode) {
             PythonCompilerOptions compilerOptions = GetPythonCompilerOptions();
             
             compilerOptions.SkipFirstLine = (options & ModuleOptions.SkipFirstLine) != 0;

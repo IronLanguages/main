@@ -15,31 +15,51 @@
 
 using System;
 using System.Collections.Generic;
-using System.Text;
 using Microsoft.Scripting;
-using System.Runtime.CompilerServices;
 using Microsoft.Scripting.Runtime;
+
+using Tuple = Microsoft.Scripting.Tuple;
 
 namespace IronPython.Runtime {
     class RuntimeVariablesDictionaryStorage : CustomDictionaryStorage {
-        private readonly IList<IStrongBox> _boxes;
+        private readonly Tuple _boxes;
         private readonly SymbolId[] _args;
 
-        public RuntimeVariablesDictionaryStorage(IList<IStrongBox> boxes, SymbolId[] args) {
+        public RuntimeVariablesDictionaryStorage(Tuple boxes, SymbolId[] args) {
             _boxes = boxes;
             _args = args;
         }
 
+        internal Tuple Tuple {
+            get {
+                return _boxes;
+            }
+        }
+
+        internal SymbolId[] Names {
+            get {
+                return _args;
+            }
+        }
+
         protected override IEnumerable<KeyValuePair<SymbolId, object>> GetExtraItems() {
             for (int i = 0; i < _args.Length; i++) {
-                yield return new KeyValuePair<SymbolId, object>(_args[i], _boxes[i].Value);
+                if (_args[i] == SymbolId.Empty) {
+                    continue;
+                }
+
+                if (GetCell(i).Value != Uninitialized.Instance) {
+                    yield return new KeyValuePair<SymbolId, object>(_args[i], GetCell(i).Value);
+                }
             }
         }
 
         protected override bool TrySetExtraValue(SymbolId key, object value) {
             for (int i = 0; i < _args.Length; i++) {
                 if (_args[i] == key) {
-                    _boxes[i].Value = value;
+                    var cell = GetCell(i);
+
+                    cell.Value = value;
                     return true;
                 }
             }
@@ -49,8 +69,9 @@ namespace IronPython.Runtime {
         protected override bool TryGetExtraValue(SymbolId key, out object value) {
             for (int i = 0; i < _args.Length; i++) {
                 if (_args[i] == key) {
-                    if (_boxes[i].Value != Uninitialized.Instance) {
-                        value = _boxes[i].Value;
+                    var cell = GetCell(i);
+                    if (cell.Value != Uninitialized.Instance) {
+                        value = cell.Value;
                         return true;
                     }
                     break;
@@ -64,14 +85,20 @@ namespace IronPython.Runtime {
         protected override bool? TryRemoveExtraValue(SymbolId key) {
             for (int i = 0; i < _args.Length; i++) {
                 if (_args[i] == key) {
-                    if (_boxes[i].Value != Uninitialized.Instance) {
-                        _boxes[i].Value = Uninitialized.Instance;
+                    var cell = GetCell(i);
+
+                    if (cell.Value != Uninitialized.Instance) {
+                        cell.Value = Uninitialized.Instance;
                         return true;
                     }
                     return false;
                 }
             }
             return null;
+        }
+
+        internal ClosureCell GetCell(int i) {
+            return ((ClosureCell)_boxes.GetNestedValue(_args.Length, i));
         }
     }
 }

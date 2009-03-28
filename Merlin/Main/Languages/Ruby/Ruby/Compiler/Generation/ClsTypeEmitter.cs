@@ -24,6 +24,7 @@ using Microsoft.Scripting.Generation;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 using System.Runtime.CompilerServices;
+using IronRuby.Runtime;
 
 namespace IronRuby.Compiler.Generation {
 
@@ -254,13 +255,13 @@ namespace IronRuby.Compiler.Generation {
         internal void OverrideMethods(Type type) {
             // if we have conflicting virtual's due to new slots only override the methods on the
             // most derived class.
-            Dictionary<KeyValuePair<string, MethodSignatureInfo>, MethodInfo> added = new Dictionary<KeyValuePair<string, MethodSignatureInfo>, MethodInfo>();
+            var added = new Dictionary<Key<string, MethodSignatureInfo>, MethodInfo>();
 
             MethodInfo overridden;
             MethodInfo[] methods = type.GetMethods(BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static | BindingFlags.FlattenHierarchy);
 
             foreach (MethodInfo mi in methods) {
-                KeyValuePair<string, MethodSignatureInfo> key = new KeyValuePair<string, MethodSignatureInfo>(mi.Name, new MethodSignatureInfo(mi.IsStatic, mi.GetParameters()));
+                var key = Key.Create(mi.Name, new MethodSignatureInfo(mi.IsStatic, mi.GetParameters()));
 
                 if (!added.TryGetValue(key, out overridden)) {
                     added[key] = mi;
@@ -272,7 +273,7 @@ namespace IronRuby.Compiler.Generation {
                 }
             }
 
-            Dictionary<PropertyInfo, PropertyBuilder> overriddenProperties = new Dictionary<PropertyInfo, PropertyBuilder>();
+            var overriddenProperties = new Dictionary<PropertyInfo, PropertyBuilder>();
             foreach (MethodInfo mi in added.Values) {
                 if (!ShouldOverrideVirtual(mi) || !CanOverrideMethod(mi)) continue;
 

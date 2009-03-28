@@ -35,11 +35,11 @@ namespace IronRuby.Builtins {
         /// So, if <code>klass.induced_from</code> doesn't return an instance of klass, it will be necessary to reimplement prec.
         /// </remarks>
         [RubyMethod("prec")]
-        public static object Prec(CallSiteStorage<Func<CallSite, RubyContext, RubyClass, object, object>>/*!*/ inducedFromStorage,
+        public static object Prec(CallSiteStorage<Func<CallSite, RubyClass, object, object>>/*!*/ inducedFromStorage,
             object self, [NotNull]RubyClass/*!*/ klass) {
 
             var inducedFrom = inducedFromStorage.GetCallSite("induced_from", 1);
-            return inducedFrom.Target(inducedFrom, klass.Context, klass, self);
+            return inducedFrom.Target(inducedFrom, klass, self);
         }
 
         /// <summary>
@@ -47,22 +47,21 @@ namespace IronRuby.Builtins {
         /// </summary>
         [RubyMethod("prec_i")]
         public static object PrecInteger(
-            CallSiteStorage<Func<CallSite, RubyContext, object, RubyClass, object>>/*!*/ precStorage,
-            RubyContext/*!*/ context, object self) {
+            CallSiteStorage<Func<CallSite, object, RubyClass, object>>/*!*/ precStorage,
+             object self) {
 
             var prec = precStorage.GetCallSite("prec", 1);
-            return prec.Target(prec, context, self, context.GetClass(typeof(Integer)));
+            return prec.Target(prec, self, precStorage.Context.GetClass(typeof(Integer)));
         }
 
         /// <summary>
         /// Returns a Float converted from self. It is equivalent to <code>prec(Float)</code>.
         /// </summary>
         [RubyMethod("prec_f")]
-        public static object PrecFloat(CallSiteStorage<Func<CallSite, RubyContext, object, RubyClass, object>>/*!*/ precStorage, 
-            RubyContext/*!*/ context, object self) {
+        public static object PrecFloat(CallSiteStorage<Func<CallSite, object, RubyClass, object>>/*!*/ precStorage, object self) {
 
             var prec = precStorage.GetCallSite("prec", 1);
-            return prec.Target(prec, context, self, context.GetClass(typeof(double)));
+            return prec.Target(prec, self, precStorage.Context.GetClass(typeof(double)));
         }
 
         #endregion

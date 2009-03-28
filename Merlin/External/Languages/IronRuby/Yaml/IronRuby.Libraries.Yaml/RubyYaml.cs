@@ -172,20 +172,20 @@ namespace IronRuby.StandardLibrary.Yaml {
             // TODO: only if io was converted to a string:
             io = CreateDefaultStream(newStorage, scope, self);
 
-            AddDocumentsToStream(addStorage, scope.RubyContext, rc, io);
+            AddDocumentsToStream(addStorage, rc, io);
             return io;
         }
 
         private static object CreateDefaultStream(UnaryOpStorage/*!*/ newStorage, RubyScope/*!*/ scope, RubyModule/*!*/ yamlModule) {
             object streamClass = RubyUtils.GetConstant(scope.GlobalScope, yamlModule, "Stream", false);
             var newSite = newStorage.GetCallSite("new");
-            return newSite.Target(newSite, scope.RubyContext, streamClass);
+            return newSite.Target(newSite, streamClass);
         }
 
-        private static void AddDocumentsToStream(BinaryOpStorage/*!*/ addStorage, RubyContext/*!*/ context, IEnumerable/*!*/ documents, object io) {
+        private static void AddDocumentsToStream(BinaryOpStorage/*!*/ addStorage, IEnumerable/*!*/ documents, object io) {
             var addSite = addStorage.GetCallSite("add");
             foreach (object doc in documents) {
-                addSite.Target(addSite, context, io, doc);
+                addSite.Target(addSite, io, doc);
             }
         }
 
@@ -230,10 +230,10 @@ namespace IronRuby.StandardLibrary.Yaml {
             RubyScope/*!*/ scope, RubyModule/*!*/ self, [NotNull]params object[] args) {
 
             object io = CreateDefaultStream(newStorage, scope, self);
-            AddDocumentsToStream(addStorage, scope.RubyContext, args, io);
+            AddDocumentsToStream(addStorage, args, io);
 
             var emitSite = emitStorage.GetCallSite("emit");
-            return emitSite.Target(emitSite, scope.RubyContext, io);
+            return emitSite.Target(emitSite, io);
         }
 
         [RubyMethod("quick_emit_node", RubyMethodAttributes.PublicSingleton)]
@@ -270,8 +270,8 @@ namespace IronRuby.StandardLibrary.Yaml {
         }
 
         [RubyMethod("tagurize", RubyMethodAttributes.PublicSingleton)]
-        public static object Tagurize(ConversionStorage<MutableString>/*!*/ stringTryCast, RubyContext/*!*/ context, RubyModule/*!*/ self, object arg) {
-            var str = Protocols.TryCastToString(stringTryCast, context, arg);
+        public static object Tagurize(ConversionStorage<MutableString>/*!*/ stringTryCast, RubyModule/*!*/ self, object arg) {
+            var str = Protocols.TryCastToString(stringTryCast, arg);
             return (str != null) ? MutableString.Create("tag:yaml.org,2002:").Append(str) : arg;
         }
 

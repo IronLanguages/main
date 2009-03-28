@@ -24,7 +24,7 @@ using Microsoft.Scripting;
 
 namespace IronRuby.Builtins {
 
-    [RubyClass(Extends = typeof(string), MixinInterfaces = true)]
+    [RubyClass(Extends = typeof(string))]
     [Includes(typeof(ClrString), typeof(Enumerable), typeof(Comparable))]
     public static class ClrStringOps {
         [RubyConstructor]
@@ -51,11 +51,9 @@ namespace IronRuby.Builtins {
         #region %, *, +
 
         [RubyMethod("%")]
-        public static string/*!*/ Format(StringFormatterSiteStorage/*!*/ storage, RubyContext/*!*/ context,
-            string/*!*/ self, object arg) {
-
+        public static string/*!*/ Format(StringFormatterSiteStorage/*!*/ storage, string/*!*/ self, object arg) {
             IList args = arg as IList ?? new object[] { arg };
-            StringFormatter formatter = new StringFormatter(storage, context, self, args);
+            StringFormatter formatter = new StringFormatter(storage, self, args);
             return formatter.Format().ToString();
         }
 
@@ -94,9 +92,8 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("<=>")]
-        public static object Compare(BinaryOpStorage/*!*/ comparisonStorage, RespondToStorage/*!*/ respondToStorage,
-            RubyContext/*!*/ context, string/*!*/ self, object other) {
-            return MutableStringOps.Compare(comparisonStorage, respondToStorage, context, self, other);
+        public static object Compare(BinaryOpStorage/*!*/ comparisonStorage, RespondToStorage/*!*/ respondToStorage, string/*!*/ self, object other) {
+            return MutableStringOps.Compare(comparisonStorage, respondToStorage, self, other);
         }
 
         [RubyMethod("==")]
@@ -114,9 +111,8 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("==")]
         [RubyMethod("===")]
-        public static bool Equals(RespondToStorage/*!*/ respondToStorage, BinaryOpStorage/*!*/ equalsStorage,
-            RubyContext/*!*/ context, string/*!*/ self, object other) {
-            return MutableStringOps.Equals(respondToStorage, equalsStorage, context, self, other);
+        public static bool Equals(RespondToStorage/*!*/ respondToStorage, BinaryOpStorage/*!*/ equalsStorage, string/*!*/ self, object other) {
+            return MutableStringOps.Equals(respondToStorage, equalsStorage, self, other);
         }
 
         #endregion

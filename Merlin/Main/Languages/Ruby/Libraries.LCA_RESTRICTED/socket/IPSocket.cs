@@ -33,7 +33,7 @@ namespace IronRuby.StandardLibrary.Sockets {
         
         [RubyMethod("getaddress", RubyMethodAttributes.PublicSingleton)]
         public static MutableString/*!*/ GetAddress(ConversionStorage<MutableString>/*!*/ stringCast, RubyClass/*!*/ self, object hostNameOrAddress) {
-            return MutableString.Create(GetHostAddress(ConvertToHostString(stringCast, self.Context, hostNameOrAddress)).ToString());
+            return MutableString.Create(GetHostAddress(ConvertToHostString(stringCast, hostNameOrAddress)).ToString());
         }
 
         #region Public Instance Methods
@@ -49,15 +49,17 @@ namespace IronRuby.StandardLibrary.Sockets {
         }
 
         [RubyMethod("recvfrom")]
-        public static RubyArray/*!*/ ReceiveFrom(ConversionStorage<int>/*!*/ conversionStorage, RubyContext/*!*/ context, IPSocket/*!*/ self, 
+        public static RubyArray/*!*/ ReceiveFrom(ConversionStorage<int>/*!*/ conversionStorage, IPSocket/*!*/ self, 
             int length, [DefaultParameterValue(null)]object/*Numeric*/ flags) {
 
-            SocketFlags sFlags = ConvertToSocketFlag(conversionStorage, context, flags);
+            SocketFlags sFlags = ConvertToSocketFlag(conversionStorage, flags);
             byte[] buffer = new byte[length];
             EndPoint fromEP = new IPEndPoint(IPAddress.Any, 0);
             int received = self.Socket.ReceiveFrom(buffer, sFlags, ref fromEP);
             MutableString str = MutableString.CreateBinary();
             str.Append(buffer, 0, received);
+
+            var context = conversionStorage.Context;
             context.SetObjectTaint(str, true);
             return RubyOps.MakeArray2(str, GetAddressArray(context, fromEP));
         }

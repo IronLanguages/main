@@ -28,9 +28,9 @@ namespace IronRuby.Builtins {
             BinaryOpStorage/*!*/ compareStorage,
             BinaryOpStorage/*!*/ lessThanStorage,
             BinaryOpStorage/*!*/ greaterThanStorage,
-            RubyContext/*!*/ context, object self, object other) {
+            object self, object other) {
 
-            return Compare(compareStorage, lessThanStorage, greaterThanStorage, context, self, other).GetValueOrDefault(0) < 0;
+            return Compare(compareStorage, lessThanStorage, greaterThanStorage, self, other).GetValueOrDefault(0) < 0;
         }
 
         [RubyMethod("<=")]
@@ -38,9 +38,9 @@ namespace IronRuby.Builtins {
             BinaryOpStorage/*!*/ compareStorage,
             BinaryOpStorage/*!*/ lessThanStorage,
             BinaryOpStorage/*!*/ greaterThanStorage,            
-            RubyContext/*!*/ context, object self, object other) {
+            object self, object other) {
 
-            return Compare(compareStorage, lessThanStorage, greaterThanStorage, context, self, other).GetValueOrDefault(1) <= 0;
+            return Compare(compareStorage, lessThanStorage, greaterThanStorage, self, other).GetValueOrDefault(1) <= 0;
         }
 
         [RubyMethod(">=")]
@@ -48,9 +48,9 @@ namespace IronRuby.Builtins {
             BinaryOpStorage/*!*/ compareStorage,
             BinaryOpStorage/*!*/ lessThanStorage,
             BinaryOpStorage/*!*/ greaterThanStorage,
-            RubyContext/*!*/ context, object self, object other) {
+            object self, object other) {
 
-            return Compare(compareStorage, lessThanStorage, greaterThanStorage, context, self, other).GetValueOrDefault(-1) >= 0;
+            return Compare(compareStorage, lessThanStorage, greaterThanStorage, self, other).GetValueOrDefault(-1) >= 0;
         }
 
         [RubyMethod(">")]
@@ -58,28 +58,25 @@ namespace IronRuby.Builtins {
             BinaryOpStorage/*!*/ compareStorage,
             BinaryOpStorage/*!*/ lessThanStorage,
             BinaryOpStorage/*!*/ greaterThanStorage,
-            RubyContext/*!*/ context, object self, object other) {
+            object self, object other) {
 
-            return Compare(compareStorage, lessThanStorage, greaterThanStorage, context, self, other).GetValueOrDefault(0) > 0;
+            return Compare(compareStorage, lessThanStorage, greaterThanStorage, self, other).GetValueOrDefault(0) > 0;
         }
 
         /// <summary>
         /// Try to compare the lhs and rhs. Throws and exception if comparison returns null. Returns null on failure, -1/0/+1 otherwise.
         /// </summary>
-        private static int? Compare(
-            BinaryOpStorage/*!*/ compareStorage,
-            BinaryOpStorage/*!*/ lessThanStorage,
-            BinaryOpStorage/*!*/ greaterThanStorage,
-            RubyContext/*!*/ context, object lhs, object rhs) {
+        private static int? Compare(BinaryOpStorage/*!*/ compareStorage, BinaryOpStorage/*!*/ lessThanStorage, BinaryOpStorage/*!*/ greaterThanStorage,
+            object lhs, object rhs) {
 
             // calls method_missing, doesn't catch any exception:
             var compare = compareStorage.GetCallSite("<=>");
-            object compareResult = compare.Target(compare, context, lhs, rhs);
+            object compareResult = compare.Target(compare, lhs, rhs);
             
             if (compareResult != null) {
-                return Protocols.ConvertCompareResult(lessThanStorage, greaterThanStorage, context, compareResult);
+                return Protocols.ConvertCompareResult(lessThanStorage, greaterThanStorage, compareResult);
             } else {
-                throw RubyExceptions.MakeComparisonError(context, lhs, rhs);
+                throw RubyExceptions.MakeComparisonError(lessThanStorage.Context, lhs, rhs);
             }
         }
 
@@ -88,15 +85,14 @@ namespace IronRuby.Builtins {
             BinaryOpStorage/*!*/ compareStorage,
             BinaryOpStorage/*!*/ lessThanStorage,
             BinaryOpStorage/*!*/ greaterThanStorage,
-            RubyContext/*!*/ context, object self, object min, object max) {
+            object self, object min, object max) {
 
-            return !Less(compareStorage, lessThanStorage, greaterThanStorage, context, self, min)
-                && !Greater(compareStorage, lessThanStorage, greaterThanStorage, context, self, max);
+            return !Less(compareStorage, lessThanStorage, greaterThanStorage, self, min)
+                && !Greater(compareStorage, lessThanStorage, greaterThanStorage, self, max);
         }
 
         [RubyMethod("==")]
-        public static object Equal(BinaryOpStorage/*!*/ compareStorage,
-            RubyContext/*!*/ context, object self, object other) {
+        public static object Equal(BinaryOpStorage/*!*/ compareStorage, object self, object other) {
 
             if (self == other) {
                 return ScriptingRuntimeHelpers.True;
@@ -107,7 +103,7 @@ namespace IronRuby.Builtins {
 
             object compareResult;
             try {
-                compareResult = compare.Target(compare, context, self, other);
+                compareResult = compare.Target(compare, self, other);
             } catch (SystemException) {
                 // catches StandardError (like rescue)
                 return null;

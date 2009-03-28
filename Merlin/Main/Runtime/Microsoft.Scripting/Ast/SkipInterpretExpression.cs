@@ -53,8 +53,8 @@ namespace Microsoft.Scripting.Ast {
             return _body;
         }
 
-        protected override Expression VisitChildren(ExpressionVisitor visitor) {
-            Expression body = visitor.Visit(_body);
+        protected override Expression VisitChildren(Func<Expression, Expression> visitor) {
+            Expression body = visitor(_body);
             if (body == _body) {
                 return this;
             }

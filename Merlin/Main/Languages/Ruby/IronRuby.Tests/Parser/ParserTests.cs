@@ -290,6 +290,24 @@ namespace IronRuby.Tests {
             t.Load("def Σ;end", (tok) => tok.AllowNonAsciiIdentifiers = true)
                 [Tokens.Def][Tokens.Identifier][(Tokens)';'][Tokens.End].EOF();
 
+            // BOM can be used as an identifier in 1.8 -KU mode:
+            t.Load(new byte[] { 
+                0xEF, 0xBB, 0xBF, (byte)'=', (byte)'1' 
+            }, (tok) => { 
+                tok.Compatibility = RubyCompatibility.Ruby18; tok.AllowNonAsciiIdentifiers = true; 
+            })
+            [Tokens.Identifier][(Tokens)'='][1].EOF();
+
+            // we should report a warning if -KCODE is not used and treat BOM as whitespace (MRI 1.8 reports an error):
+            t.Load(new byte[] { 
+                0xEF, 0xBB, 0xBF, (byte)'=', (byte)'1' 
+            }, (tok) => { 
+                tok.Compatibility = RubyCompatibility.Ruby18; 
+                tok.AllowNonAsciiIdentifiers = false;
+                tok.Verbatim = true;
+            }) 
+            [Tokens.Whitespace][(Tokens)'='][1].Expect(Errors.InvalidUseOfByteOrderMark);
+            
             t.Expect();
         }
 

@@ -35,47 +35,6 @@ using System.Runtime.CompilerServices;
 using Microsoft.Scripting.Generation;
 
 namespace IronRuby.Runtime {
-
-    public class CallSiteStorage<TCallSiteFunc> : SiteLocalStorage<CallSite<TCallSiteFunc>> where TCallSiteFunc : class {
-        public CallSite<TCallSiteFunc>/*!*/ GetCallSite(string/*!*/ methodName, int argumentCount) {
-            return RubyUtils.GetCallSite(ref Data, methodName, argumentCount);
-        }
-
-        public CallSite<TCallSiteFunc>/*!*/ GetCallSite(string/*!*/ methodName, RubyCallSignature signature) {
-            return RubyUtils.GetCallSite(ref Data, methodName, signature);
-        }
-    }
-
-    public class BinaryOpStorage : CallSiteStorage<Func<CallSite, RubyContext, object, object, object>> {
-        public CallSite<Func<CallSite, RubyContext, object, object, object>>/*!*/ GetCallSite(string/*!*/ methodName) {
-            return GetCallSite(methodName, 1);
-        }
-    }
-
-    public class UnaryOpStorage : CallSiteStorage<Func<CallSite, RubyContext, object, object>> {
-        public CallSite<Func<CallSite, RubyContext, object, object>>/*!*/ GetCallSite(string/*!*/ methodName) {
-            return GetCallSite(methodName, 0);
-        }
-    }
-
-    public class RespondToStorage : CallSiteStorage<Func<CallSite, RubyContext, object, SymbolId, object>> {
-        public CallSite<Func<CallSite, RubyContext, object, SymbolId, object>>/*!*/ GetCallSite() {
-            return GetCallSite("respond_to?", 1);
-        }
-    }
-
-    public class ConversionStorage<TResult> : CallSiteStorage<Func<CallSite, RubyContext, object, TResult>> {
-        public CallSite<Func<CallSite, RubyContext, object, TResult>>/*!*/ GetSite(RubyConversionAction/*!*/ conversion) {
-            return RubyUtils.GetCallSite(ref Data, conversion);
-        }
-    }
-
-    public class SetBacktraceStorage : CallSiteStorage<Action<CallSite, RubyContext, Exception, RubyArray>> {
-        public CallSite<Action<CallSite, RubyContext, Exception, RubyArray>>/*!*/ GetCallSite() {
-            return GetCallSite("set_backtrace", 1);
-        }
-    }
-
     public static class RubyUtils {
         #region Objects
 
@@ -120,9 +79,8 @@ namespace IronRuby.Runtime {
             return context.GetClassOf(self).Name;
         }
 
-        public static MutableString/*!*/ InspectObject(UnaryOpStorage/*!*/ inspectStorage, ConversionStorage<MutableString>/*!*/ tosStorage,
-            RubyContext/*!*/ context, object obj) {
-
+        public static MutableString/*!*/ InspectObject(UnaryOpStorage/*!*/ inspectStorage, ConversionStorage<MutableString>/*!*/ tosStorage, object obj) {
+            var context = tosStorage.Context;
             using (IDisposable handle = RubyUtils.InfiniteInspectTracker.TrackObject(obj)) {
                 if (handle == null) {
                     return MutableString.Create("...");
@@ -152,10 +110,10 @@ namespace IronRuby.Runtime {
                         str.Append("=");
 
                         var inspectSite = inspectStorage.GetCallSite("inspect");
-                        object inspectedValue = inspectSite.Target(inspectSite, context, var.Value);
+                        object inspectedValue = inspectSite.Target(inspectSite, var.Value);
 
-                        var tosSite = tosStorage.GetSite(ConvertToSAction.Instance);
-                        str.Append(tosSite.Target(tosSite, context, inspectedValue));
+                        var tosSite = tosStorage.GetSite(ConvertToSAction.Make(context));
+                        str.Append(tosSite.Target(tosSite, inspectedValue));
 
                         str.TaintBy(var.Value, context);
                     }
@@ -183,9 +141,9 @@ namespace IronRuby.Runtime {
             return str;
         }
 
-        public static MutableString/*!*/ ObjectToMutableString(UnaryOpStorage/*!*/ tosStorage, RubyContext/*!*/ context, object obj) {
+        public static MutableString/*!*/ ObjectToMutableString(UnaryOpStorage/*!*/ tosStorage, object obj) {
             var site = tosStorage.GetCallSite("to_s");
-            return site.Target(site, context, obj) as MutableString ?? ObjectToMutableString(context, obj);
+            return site.Target(site, obj) as MutableString ?? ObjectToMutableString(tosStorage.Context, obj);
         }
 
         public static MutableString/*!*/ AppendFormatHexObjectId(MutableString/*!*/ str, int objectId) {
@@ -193,9 +151,9 @@ namespace IronRuby.Runtime {
         }
 
         public static bool TryDuplicateObject(
-            CallSiteStorage<Func<CallSite, RubyContext, object, object, object>>/*!*/ initializeCopyStorage,
-            CallSiteStorage<Func<CallSite, RubyContext, RubyClass, object>>/*!*/ allocateStorage, 
-            RubyContext/*!*/ context, object obj, bool cloneSemantics, out object copy) {
+            CallSiteStorage<Func<CallSite, object, object, object>>/*!*/ initializeCopyStorage,
+            CallSiteStorage<Func<CallSite, RubyClass, object>>/*!*/ allocateStorage, 
+            object obj, bool cloneSemantics, out object copy) {
 
             // Ruby value types can't be cloned
             if (RubyUtils.IsRubyValueType(obj)) {
@@ -203,19 +161,21 @@ namespace IronRuby.Runtime {
                 return false;
             }
 
+            var context = allocateStorage.Context;
+
             IDuplicable clonable = obj as IDuplicable;
             if (clonable != null) {
                 copy = clonable.Duplicate(context, cloneSemantics);
             } else {
                 // .NET classes and library clases that doesn't implement IDuplicable:
                 var allocateSite = allocateStorage.GetCallSite("allocate", 0);
-                copy = allocateSite.Target(allocateSite, context, context.GetClassOf(obj));
+                copy = allocateSite.Target(allocateSite, context.GetClassOf(obj));
 
                 context.CopyInstanceData(obj, copy, cloneSemantics);
             }
 
             var initializeCopySite = initializeCopyStorage.GetCallSite("initialize_copy", 1);
-            initializeCopySite.Target(initializeCopySite, context, copy, obj);
+            initializeCopySite.Target(initializeCopySite, copy, obj);
             if (cloneSemantics) {
                 context.FreezeObjectBy(copy, obj);
             }
@@ -827,31 +787,31 @@ namespace IronRuby.Runtime {
 
         #region Call Site Storage Extensions
 
-        public static CallSite<TCallSiteFunc>/*!*/ GetCallSite<TCallSiteFunc>(ref CallSite<TCallSiteFunc>/*!*/ site,
+        public static CallSite<TCallSiteFunc>/*!*/ GetCallSite<TCallSiteFunc>(ref CallSite<TCallSiteFunc>/*!*/ site, RubyContext/*!*/ context,
             string/*!*/ methodName, int argumentCount) where TCallSiteFunc : class {
 
             if (site == null) {
                 Interlocked.CompareExchange(ref site,
-                    CallSite<TCallSiteFunc>.Create(RubyCallAction.Make(methodName, RubyCallSignature.WithImplicitSelf(argumentCount))), null);
+                    CallSite<TCallSiteFunc>.Create(RubyCallAction.Make(context, methodName, RubyCallSignature.WithImplicitSelf(argumentCount))), null);
             }
             return site;
         }
 
-        public static CallSite<TCallSiteFunc>/*!*/ GetCallSite<TCallSiteFunc>(ref CallSite<TCallSiteFunc>/*!*/ site,
+        public static CallSite<TCallSiteFunc>/*!*/ GetCallSite<TCallSiteFunc>(ref CallSite<TCallSiteFunc>/*!*/ site, RubyContext/*!*/ context,
             string/*!*/ methodName, RubyCallSignature signature) where TCallSiteFunc : class {
 
             if (site == null) {
                 Interlocked.CompareExchange(ref site,
-                    CallSite<TCallSiteFunc>.Create(RubyCallAction.Make(methodName, signature)), null);
+                    CallSite<TCallSiteFunc>.Create(RubyCallAction.Make(context, methodName, signature)), null);
             }
             return site;
         }
 
-        public static CallSite<Func<CallSite, RubyContext, object, TResult>>/*!*/ GetCallSite<TResult>(
-            ref CallSite<Func<CallSite, RubyContext, object, TResult>>/*!*/ site, RubyConversionAction/*!*/ conversion) {
+        public static CallSite<Func<CallSite, object, TResult>>/*!*/ GetCallSite<TResult>(
+            ref CallSite<Func<CallSite, object, TResult>>/*!*/ site, RubyConversionAction/*!*/ conversion) {
 
             if (site == null) {
-                Interlocked.CompareExchange(ref site, CallSite<Func<CallSite, RubyContext, object, TResult>>.Create(conversion), null);
+                Interlocked.CompareExchange(ref site, CallSite<Func<CallSite, object, TResult>>.Create(conversion), null);
             }
             return site;
         }

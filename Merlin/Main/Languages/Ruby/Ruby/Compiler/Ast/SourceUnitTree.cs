@@ -182,8 +182,8 @@ namespace IronRuby.Compiler.Ast {
                 var resultVariable = scope.DefineHiddenVariable("#result", typeof(object));
 
                 var epilogue = Methods.PrintInteractiveResult.OpCall(runtimeScopeVariable,
-                    Ast.Dynamic(ConvertToSAction.Instance, typeof(MutableString), Methods.GetContextFromScope.OpCall(gen.CurrentScopeVariable), 
-                        Ast.Dynamic(RubyCallAction.Make("inspect", RubyCallSignature.WithScope(0)), typeof(object), 
+                    Ast.Dynamic(ConvertToSAction.Make(gen.Context), typeof(MutableString),
+                        Ast.Dynamic(RubyCallAction.Make(gen.Context, "inspect", RubyCallSignature.WithScope(0)), typeof(object), 
                             gen.CurrentScopeVariable, resultVariable
                         )
                     )

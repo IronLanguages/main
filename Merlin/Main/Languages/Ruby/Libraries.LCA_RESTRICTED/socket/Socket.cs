@@ -42,7 +42,7 @@ namespace IronRuby.StandardLibrary.Sockets {
         public static RubySocket/*!*/ CreateSocket(ConversionStorage<MutableString>/*!*/ stringCast, ConversionStorage<int>/*!*/ fixnumCast, 
             RubyClass/*!*/ self, [NotNull]object/*!*/ domain, [DefaultProtocol]int/*!*/ type, [DefaultProtocol]int protocol) {
 
-            AddressFamily addressFamily = ConvertToAddressFamily(stringCast, fixnumCast, self.Context, domain);
+            AddressFamily addressFamily = ConvertToAddressFamily(stringCast, fixnumCast, domain);
             return new RubySocket(self.Context, new Socket(addressFamily, (SocketType)type, (ProtocolType)protocol));
         }
 
@@ -53,22 +53,22 @@ namespace IronRuby.StandardLibrary.Sockets {
         [RubyMethod("getaddrinfo", RubyMethodAttributes.PublicSingleton)]
         public static RubyArray GetAddressInfo(
             ConversionStorage<MutableString>/*!*/ stringCast, ConversionStorage<int>/*!*/ fixnumCast, 
-            RubyContext/*!*/ context, RubyClass/*!*/ self, object hostNameOrAddress, object port,
+            RubyClass/*!*/ self, object hostNameOrAddress, object port,
             [DefaultParameterValue(null)]object family,
             [DefaultParameterValue(0)]object socktype,
             [DefaultParameterValue(0)]object protocol,
             [DefaultParameterValue(null)]object flags) {
 
             IPHostEntry entry = (hostNameOrAddress != null) ? 
-                GetHostEntry(ConvertToHostString(stringCast, context, hostNameOrAddress)) : MakeEntry(IPAddress.Any);
+                GetHostEntry(ConvertToHostString(stringCast, hostNameOrAddress)) : MakeEntry(IPAddress.Any);
 
-            int iPort = ConvertToPortNum(stringCast, fixnumCast, context, port);
+            int iPort = ConvertToPortNum(stringCast, fixnumCast, port);
 
             // Sadly the family, socktype, protocol and flags get passed through at best and ignored at worst, 
             // since System.Net does not provide for them
-            AddressFamily addrFamily = ConvertToAddressFamily(stringCast, fixnumCast, context, family);
-            int socketType = Protocols.CastToFixnum(fixnumCast, context, socktype);
-            int protocolType = Protocols.CastToFixnum(fixnumCast, context, protocol);
+            AddressFamily addrFamily = ConvertToAddressFamily(stringCast, fixnumCast, family);
+            int socketType = Protocols.CastToFixnum(fixnumCast, socktype);
+            int protocolType = Protocols.CastToFixnum(fixnumCast, protocol);
 
             RubyArray results = new RubyArray(entry.AddressList.Length);
             for (int i = 0; i < entry.AddressList.Length; ++i) {
@@ -77,7 +77,7 @@ namespace IronRuby.StandardLibrary.Sockets {
                 RubyArray result = new RubyArray(9);
                 result.Add(ToAddressFamilyString(address.AddressFamily));
                 result.Add(iPort);
-                if (DoNotReverseLookup(context).Value) {
+                if (DoNotReverseLookup(self.Context).Value) {
                     result.Add(MutableString.Create(address.ToString()));
                 } else {
                     IPHostEntry alias = GetHostEntry(address);
@@ -99,7 +99,7 @@ namespace IronRuby.StandardLibrary.Sockets {
         public static RubyArray GetHostByAddress(ConversionStorage<MutableString>/*!*/ stringCast, ConversionStorage<int>/*!*/ fixnumCast, 
             RubyClass/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ address, [DefaultParameterValue(null)]object type) {
 
-            AddressFamily addressFamily = ConvertToAddressFamily(stringCast, fixnumCast, self.Context, type);
+            AddressFamily addressFamily = ConvertToAddressFamily(stringCast, fixnumCast, type);
             IPHostEntry entry = GetHostEntry(new IPAddress(address.ConvertToBytes()));
 
             return CreateHostEntryArray(entry, true);
@@ -170,20 +170,20 @@ namespace IronRuby.StandardLibrary.Sockets {
             }
 
             // We only support AF_INET (IP V4) family
-            AddressFamily addressFamily = ConvertToAddressFamily(stringCast, fixnumCast, self.Context, hostInfo[0]);
+            AddressFamily addressFamily = ConvertToAddressFamily(stringCast, fixnumCast, hostInfo[0]);
             if (addressFamily != AddressFamily.InterNetwork) {
                 throw new SocketException((int)SocketError.AddressFamilyNotSupported);
             }
 
             // Lookup the service name for the given port.
-            int port = ConvertToPortNum(stringCast, fixnumCast, self.Context, hostInfo[1]);
+            int port = ConvertToPortNum(stringCast, fixnumCast, hostInfo[1]);
             ServiceName service = SearchForService(port);
 
             // hostInfo[2] should have a host name
             // if it exists and is not null hostInfo[3] should have an IP address
             // in that case we use that rather than the host name.
             object hostName =  (hostInfo.Count > 3 && hostInfo[3] != null) ? hostInfo[3] : hostInfo[2];
-            IPHostEntry entry = GetHostEntry(ConvertToHostString(stringCast, self.Context, hostName));
+            IPHostEntry entry = GetHostEntry(ConvertToHostString(stringCast, hostName));
 
             RubyArray result = new RubyArray(2);
             result.Add(MutableString.Create(entry.HostName));
@@ -220,10 +220,10 @@ namespace IronRuby.StandardLibrary.Sockets {
         [RubyMethod("pack_sockaddr_in", RubyMethodAttributes.PublicSingleton)]
         public static MutableString/*!*/ PackInetSockAddr(ConversionStorage<MutableString>/*!*/ stringCast, ConversionStorage<int>/*!*/ fixnumCast, 
             RubyClass/*!*/ self, object port, object hostNameOrAddress) {
-            int iPort = ConvertToPortNum(stringCast, fixnumCast, self.Context, port);
+            int iPort = ConvertToPortNum(stringCast, fixnumCast,port);
 
             IPAddress address = (hostNameOrAddress != null) ?
-                GetHostAddress(ConvertToHostString(stringCast, self.Context, hostNameOrAddress)) : IPAddress.Loopback;
+                GetHostAddress(ConvertToHostString(stringCast, hostNameOrAddress)) : IPAddress.Loopback;
 
             SocketAddress socketAddress = new IPEndPoint(address, iPort).Serialize();
             var result = MutableString.CreateBinary(socketAddress.Size);
@@ -316,21 +316,21 @@ namespace IronRuby.StandardLibrary.Sockets {
         }
 
         [RubyMethod("recvfrom")]
-        public static RubyArray/*!*/ ReceiveFrom(ConversionStorage<int>/*!*/ fixnumCast, RubyContext/*!*/ context, RubySocket/*!*/ self, int length) {
-            return ReceiveFrom(fixnumCast, context, self, length, null);
+        public static RubyArray/*!*/ ReceiveFrom(ConversionStorage<int>/*!*/ fixnumCast, RubySocket/*!*/ self, int length) {
+            return ReceiveFrom(fixnumCast, self, length, null);
         }
 
         [RubyMethod("recvfrom")]
-        public static RubyArray/*!*/ ReceiveFrom(ConversionStorage<int>/*!*/ fixnumCast, RubyContext/*!*/ context, RubySocket/*!*/ self, 
+        public static RubyArray/*!*/ ReceiveFrom(ConversionStorage<int>/*!*/ fixnumCast, RubySocket/*!*/ self, 
             int length, object/*Numeric*/ flags) {
-            SocketFlags sFlags = ConvertToSocketFlag(fixnumCast, context, flags);
+            SocketFlags sFlags = ConvertToSocketFlag(fixnumCast, flags);
             byte[] buffer = new byte[length];
             EndPoint fromEP = new IPEndPoint(IPAddress.Any, 0);
             int received = self.Socket.ReceiveFrom(buffer, sFlags, ref fromEP);
             MutableString str = MutableString.CreateBinary();
             str.Append(buffer, 0, received);
             str.IsTainted = true;
-            return RubyOps.MakeArray2(str, GetAddressArray(context, fromEP));
+            return RubyOps.MakeArray2(str, GetAddressArray(fixnumCast.Context, fromEP));
         }
 
 

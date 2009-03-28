@@ -68,7 +68,7 @@ namespace Microsoft.Scripting.Ast {
             return string.Format("Global {0} {1}", Type.Name, _name);
         }
 
-        protected override Expression VisitChildren(ExpressionVisitor visitor) {
+        protected override Expression VisitChildren(Func<Expression, Expression> visitor) {
             return this;
         }
     }

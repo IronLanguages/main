@@ -57,9 +57,9 @@ namespace Microsoft.Scripting.Ast {
             }
         }
 
-        protected override Expression VisitChildren(ExpressionVisitor visitor) {
-            Expression left = visitor.Visit(_left);
-            Expression right = visitor.Visit(_right);
+        protected override Expression VisitChildren(Func<Expression, Expression> visitor) {
+            Expression left = visitor(_left);
+            Expression right = visitor(_right);
 
             if (left != _left || right != _right) {
                 return new AssignmentExtensionExpression(left, right);

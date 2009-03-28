@@ -35,9 +35,9 @@ namespace IronRuby.StandardLibrary.Yaml {
             BinaryOpStorage/*!*/ comparisonStorage,
             BinaryOpStorage/*!*/ lessThanStorage,
             BinaryOpStorage/*!*/ greaterThanStorage,
-            RubyContext/*!*/ context, object self) {
-            return ArrayOps.SortInPlace(comparisonStorage, lessThanStorage, greaterThanStorage, context, 
-                null, KernelOps.InstanceVariables(context, self)
+            object self) {
+            return ArrayOps.SortInPlace(comparisonStorage, lessThanStorage, greaterThanStorage,
+                null, KernelOps.InstanceVariables(comparisonStorage.Context, self)
             );
         }
 
@@ -141,12 +141,12 @@ namespace IronRuby.StandardLibrary.Yaml {
     [RubyModule(Extends = typeof(Exception))]
     public static class YamlExceptionOps {
         [RubyMethod("to_yaml_node", RubyMethodAttributes.PrivateInstance)]
-        public static Node ToYamlNode(CallSiteStorage<Func<CallSite, RubyContext, Exception, object>>/*!*/ messageStorage,
+        public static Node ToYamlNode(CallSiteStorage<Func<CallSite, Exception, object>>/*!*/ messageStorage,
             Exception/*!*/ self, [NotNull]RubyRepresenter/*!*/ rep) {
 
             var site = messageStorage.GetCallSite("message", 0);
             var map = new Dictionary<MutableString, object>() {
-                { MutableString.Create("message"), site.Target(site, rep.Context, self) }
+                { MutableString.Create("message"), site.Target(site, self) }
             };
             
             rep.AddYamlProperties(self, map);
@@ -165,15 +165,15 @@ namespace IronRuby.StandardLibrary.Yaml {
     public static class YamlStringOps {
         [RubyMethod("is_complex_yaml?")]
         public static bool IsComplexYaml(
-            CallSiteStorage<Func<CallSite, RubyContext, object, MutableString>>/*!*/ toYamlStyleStorage,
-            CallSiteStorage<Func<CallSite, RubyContext, object, RubyArray>>/*!*/ toYamlPropertiesStorage,
-            RubyContext/*!*/ context, MutableString/*!*/ self) {
+            CallSiteStorage<Func<CallSite, object, MutableString>>/*!*/ toYamlStyleStorage,
+            CallSiteStorage<Func<CallSite, object, RubyArray>>/*!*/ toYamlPropertiesStorage,
+            MutableString/*!*/ self) {
 
             var toYamlStyleSite = toYamlStyleStorage.GetCallSite("to_yaml_style", 0);
             var toYamlPropertiesSite = toYamlPropertiesStorage.GetCallSite("to_yaml_properties", 0);
 
-            return RubyOps.IsTrue(toYamlStyleSite.Target(toYamlStyleSite, context, self)) ||
-                   toYamlPropertiesSite.Target(toYamlPropertiesSite, context, self).Count == 0 ||
+            return RubyOps.IsTrue(toYamlStyleSite.Target(toYamlStyleSite, self)) ||
+                   toYamlPropertiesSite.Target(toYamlPropertiesSite, self).Count == 0 ||
                    AfterNewLine(self.ConvertToString());
         }
 
@@ -184,10 +184,10 @@ namespace IronRuby.StandardLibrary.Yaml {
         }
 
         [RubyMethod("is_binary_data?")]
-        public static object IsBinaryData(UnaryOpStorage/*!*/ isEmptyStorage, RubyContext/*!*/ context, MutableString/*!*/ self) {
+        public static object IsBinaryData(UnaryOpStorage/*!*/ isEmptyStorage, MutableString/*!*/ self) {
 
             var site = isEmptyStorage.GetCallSite("empty?");
-            if (RubyOps.IsTrue(site.Target(site, context, self))) {
+            if (RubyOps.IsTrue(site.Target(site, self))) {
                 return null;
             }
 
@@ -198,7 +198,7 @@ namespace IronRuby.StandardLibrary.Yaml {
         public static Node/*!*/ ToYamlNode(UnaryOpStorage/*!*/ isBinaryDataStorage, MutableString/*!*/ self, [NotNull]RubyRepresenter/*!*/ rep) {
 
             var site = isBinaryDataStorage.GetCallSite("is_binary_data?");
-            if (RubyOps.IsTrue(site.Target(site, rep.Context, self))) {
+            if (RubyOps.IsTrue(site.Target(site, self))) {
                 return rep.BaseCreateNode(self.ConvertToBytes());
             }
 
@@ -237,7 +237,7 @@ namespace IronRuby.StandardLibrary.Yaml {
     public static class YamlIntegerOps {
         [RubyMethod("to_yaml_node", RubyMethodAttributes.PrivateInstance)]
         public static Node/*!*/ ToYaml(ConversionStorage<MutableString>/*!*/ tosStorage, object self, [NotNull]RubyRepresenter/*!*/ rep) {
-            return rep.Scalar(self, Protocols.ConvertToString(tosStorage, rep.Context, self));
+            return rep.Scalar(self, Protocols.ConvertToString(tosStorage, self));
         }          
 
         [RubyMethod("taguri")]
@@ -263,7 +263,7 @@ namespace IronRuby.StandardLibrary.Yaml {
     public static class YamlDoubleOps {
         [RubyMethod("to_yaml_node", RubyMethodAttributes.PrivateInstance)]
         public static Node/*!*/ ToYaml(ConversionStorage<MutableString>/*!*/ tosStorage, double self, [NotNull]RubyRepresenter/*!*/ rep) {
-            MutableString str = Protocols.ConvertToString(tosStorage, rep.Context, self);
+            MutableString str = Protocols.ConvertToString(tosStorage, self);
             if (str != null) {
                 if (str.Equals("Infinity")) {
                     str = MutableString.Create(".Inf");
@@ -292,8 +292,8 @@ namespace IronRuby.StandardLibrary.Yaml {
             var end = endStorage.GetCallSite("end");
 
             var map = new Dictionary<MutableString, object>() {
-                { MutableString.Create("begin"), begin.Target(begin, rep.Context, self) },
-                { MutableString.Create("end"), end.Target(end, rep.Context, self) },
+                { MutableString.Create("begin"), begin.Target(begin, self) },
+                { MutableString.Create("end"), end.Target(end, self) },
                 { MutableString.Create("excl"), self.ExcludeEnd },
             };
 
@@ -351,7 +351,7 @@ namespace IronRuby.StandardLibrary.Yaml {
     public static class YamlTrueOps {
         [RubyMethod("to_yaml_node", RubyMethodAttributes.PrivateInstance)]
         public static Node/*!*/ ToYaml(ConversionStorage<MutableString>/*!*/ tosStorage, object self, [NotNull]RubyRepresenter/*!*/ rep) {
-            return rep.Scalar(self, Protocols.ConvertToString(tosStorage, rep.Context, self));
+            return rep.Scalar(self, Protocols.ConvertToString(tosStorage, self));
         }
 
         [RubyMethod("taguri")]
@@ -364,7 +364,7 @@ namespace IronRuby.StandardLibrary.Yaml {
     public static class YamlFalseOps {
         [RubyMethod("to_yaml_node", RubyMethodAttributes.PrivateInstance)]
         public static Node/*!*/ ToYaml(ConversionStorage<MutableString>/*!*/ tosStorage, object self, [NotNull]RubyRepresenter/*!*/ rep) {
-            return rep.Scalar(self, Protocols.ConvertToString(tosStorage, rep.Context, self));
+            return rep.Scalar(self, Protocols.ConvertToString(tosStorage, self));
         }
 
         [RubyMethod("taguri")]

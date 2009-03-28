@@ -96,7 +96,7 @@ namespace IronRuby.Builtins {
 
             var site = comparisonStorage.GetCallSite("<=>");
             try {
-                compareResult = site.Target(site, context, begin, end);
+                compareResult = site.Target(site, begin, end);
             } catch (Exception) {
                 compareResult = null;
             }

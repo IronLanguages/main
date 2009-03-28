@@ -15,23 +15,19 @@
 
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Dynamic;
-using System.Linq.Expressions;
-using System.Diagnostics;
-using Microsoft.Scripting.Actions;
 using IronRuby.Runtime.Calls;
-using IronRuby.Builtins;
+using IronRuby.Runtime;
+using Microsoft.Scripting.Utils;
 
 namespace IronRuby.Compiler.Ast {
-    using MSA = System.Linq.Expressions;
     using Ast = System.Linq.Expressions.Expression;
-    using AstUtils = Microsoft.Scripting.Ast.Utils;
+    using MSA = System.Linq.Expressions;
 
     /// <summary>
     /// Simple helper for building up method call actions.
     /// </summary>
     internal class CallBuilder {
-        private readonly AstGenerator _gen;
+        private readonly AstGenerator/*!*/ _gen;
 
         private readonly List<MSA.Expression>/*!*/ _args = new List<MSA.Expression>();
         
@@ -41,7 +37,8 @@ namespace IronRuby.Compiler.Ast {
         public MSA.Expression Block;
         public MSA.Expression RhsArgument;
 
-        internal CallBuilder(AstGenerator gen) {
+        internal CallBuilder(AstGenerator/*!*/ gen) {
+            Assert.NotNull(gen);
             _gen = gen;
         }
 
@@ -54,12 +51,12 @@ namespace IronRuby.Compiler.Ast {
         }
 
         public MSA.DynamicExpression/*!*/ MakeCallAction(string/*!*/ name, bool hasImplicitSelf) {
-            return MakeCallAction(name, _gen.Binder, MakeCallSignature(hasImplicitSelf), GetExpressions());
+            return MakeCallAction(_gen.Context, name, MakeCallSignature(hasImplicitSelf), GetExpressions());
         }
 
-        public static MSA.DynamicExpression/*!*/ MakeCallAction(string/*!*/ name, ActionBinder/*!*/ binder, RubyCallSignature signature, 
+        private static MSA.DynamicExpression/*!*/ MakeCallAction(RubyContext/*!*/ context, string/*!*/ name, RubyCallSignature signature, 
             params MSA.Expression[]/*!*/ args) {
-            RubyCallAction call = RubyCallAction.Make(name, signature);
+            RubyCallAction call = RubyCallAction.Make(context, name, signature);
             switch (args.Length) {
                 case 0: return Ast.Dynamic(call, typeof(object), AstFactory.EmptyExpressions);
                 case 1: return Ast.Dynamic(call, typeof(object), args[0]);
@@ -77,7 +74,7 @@ namespace IronRuby.Compiler.Ast {
 
         public MSA.Expression/*!*/ MakeSuperCallAction(int lexicalScopeId) {
             return Ast.Dynamic(
-                SuperCallAction.Make(MakeCallSignature(true), lexicalScopeId),
+                SuperCallAction.Make(_gen.Context, MakeCallSignature(true), lexicalScopeId),
                 typeof(object),
                 GetExpressions()
             );

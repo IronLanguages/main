@@ -84,9 +84,8 @@ namespace IronRuby.Builtins {
         /// <returns>self + other</returns>
         /// <remarks>Coerces self and other using other.coerce(self) then dynamically invokes +</remarks>
         [RubyMethod("+")]
-        public static object Add(BinaryOpStorage/*!*/ coercionStorage, BinaryOpStorage/*!*/ binaryOpSite,
-            RubyContext/*!*/ context, object/*!*/ self, object other) {
-            return Protocols.CoerceAndApply(coercionStorage, binaryOpSite, "+", context, self, other);
+        public static object Add(BinaryOpStorage/*!*/ coercionStorage, BinaryOpStorage/*!*/ binaryOpSite, object/*!*/ self, object other) {
+            return Protocols.CoerceAndApply(coercionStorage, binaryOpSite, "+", self, other);
         }
 
         #endregion
@@ -118,9 +117,8 @@ namespace IronRuby.Builtins {
         /// <returns>self - other</returns>
         /// <remarks>Coerces self and other using other.coerce(self) then dynamically invokes -</remarks>
         [RubyMethod("-")]
-        public static object Subtract(BinaryOpStorage/*!*/ coercionStorage, BinaryOpStorage/*!*/ binaryOpSite,
-            RubyContext/*!*/ context, object/*!*/ self, object other) {
-            return Protocols.CoerceAndApply(coercionStorage, binaryOpSite, "-", context, self, other);
+        public static object Subtract(BinaryOpStorage/*!*/ coercionStorage, BinaryOpStorage/*!*/ binaryOpSite, object/*!*/ self, object other) {
+            return Protocols.CoerceAndApply(coercionStorage, binaryOpSite, "-", self, other);
         }
 
         #endregion
@@ -152,9 +150,8 @@ namespace IronRuby.Builtins {
         /// <returns>self * other</returns>
         /// <remarks>Coerces self and other using other.coerce(self) then dynamically invokes *</remarks>
         [RubyMethod("*")]
-        public static object Multiply(BinaryOpStorage/*!*/ coercionStorage, BinaryOpStorage/*!*/ binaryOpSite,
-            RubyContext/*!*/ context, object/*!*/ self, object other) {
-            return Protocols.CoerceAndApply(coercionStorage, binaryOpSite, "*", context, self, other);
+        public static object Multiply(BinaryOpStorage/*!*/ coercionStorage, BinaryOpStorage/*!*/ binaryOpSite, object/*!*/ self, object other) {
+            return Protocols.CoerceAndApply(coercionStorage, binaryOpSite, "*", self, other);
         }
 
         #endregion
@@ -186,9 +183,8 @@ namespace IronRuby.Builtins {
         /// <returns>self / other</returns>
         /// <remarks>Coerces self and other using other.coerce(self) then dynamically invokes /</remarks>
         [RubyMethod("/")]
-        public static object Divide(BinaryOpStorage/*!*/ coercionStorage, BinaryOpStorage/*!*/ binaryOpSite,
-            RubyContext/*!*/ context, object/*!*/ self, object other) {
-            return Protocols.CoerceAndApply(coercionStorage, binaryOpSite, "/", context, self, other);
+        public static object Divide(BinaryOpStorage/*!*/ coercionStorage, BinaryOpStorage/*!*/ binaryOpSite, object/*!*/ self, object other) {
+            return Protocols.CoerceAndApply(coercionStorage, binaryOpSite, "/", self, other);
         }
 
         /// <summary>
@@ -197,9 +193,8 @@ namespace IronRuby.Builtins {
         /// <returns>self.div(other)</returns>
         /// <remarks>Coerces self and other using other.coerce(self) then dynamically invokes div</remarks>
         [RubyMethod("div")]
-        public static object Div(BinaryOpStorage/*!*/ coercionStorage, BinaryOpStorage/*!*/ binaryOpSite,
-            RubyContext/*!*/ context, object/*!*/ self, object other) {
-            return Protocols.CoerceAndApply(coercionStorage, binaryOpSite, "div", context, self, other);
+        public static object Div(BinaryOpStorage/*!*/ coercionStorage, BinaryOpStorage/*!*/ binaryOpSite, object/*!*/ self, object other) {
+            return Protocols.CoerceAndApply(coercionStorage, binaryOpSite, "div", self, other);
         }
 
         #endregion
@@ -232,9 +227,8 @@ namespace IronRuby.Builtins {
         /// <returns>self divided by other as Float</returns>
         /// <remarks>Coerces self and other using other.coerce(self) then dynamically invokes quo</remarks>
         [RubyMethod("quo")]
-        public static object Quotient(BinaryOpStorage/*!*/ coercionStorage, BinaryOpStorage/*!*/ binaryOpSite,
-            RubyContext/*!*/ context, object/*!*/ self, object other) {
-            return Protocols.CoerceAndApply(coercionStorage, binaryOpSite, "quo", context, self, other);
+        public static object Quotient(BinaryOpStorage/*!*/ coercionStorage, BinaryOpStorage/*!*/ binaryOpSite, object/*!*/ self, object other) {
+            return Protocols.CoerceAndApply(coercionStorage, binaryOpSite, "quo", self, other);
         }
 
         #endregion
@@ -286,9 +280,8 @@ namespace IronRuby.Builtins {
         /// <returns>self ** exponent</returns>
         /// <remarks>Coerces self and other using other.coerce(self) then dynamically invokes **</remarks>
         [RubyMethod("**")]
-        public static object Power(BinaryOpStorage/*!*/ coercionStorage, BinaryOpStorage/*!*/ binaryOpSite,
-            RubyContext/*!*/ context, object/*!*/ self, object exponent) {
-            return Protocols.CoerceAndApply(coercionStorage, binaryOpSite, "**", context, self, exponent);
+        public static object Power(BinaryOpStorage/*!*/ coercionStorage, BinaryOpStorage/*!*/ binaryOpSite, object/*!*/ self, object exponent) {
+            return Protocols.CoerceAndApply(coercionStorage, binaryOpSite, "**", self, exponent);
         }
 
         #endregion
@@ -312,9 +305,8 @@ namespace IronRuby.Builtins {
         /// <returns>self % other, as Fixnum or Bignum</returns>
         /// <remarks>Coerces self and other using other.coerce(self) then dynamically invokes %</remarks>
         [RubyMethod("%")]
-        public static object ModuloOp(BinaryOpStorage/*!*/ coercionStorage, BinaryOpStorage/*!*/ binaryOpSite,
-            RubyContext/*!*/ context, object/*!*/ self, object other) {
-            return Protocols.CoerceAndApply(coercionStorage, binaryOpSite, "%", context, self, other);
+        public static object ModuloOp(BinaryOpStorage/*!*/ coercionStorage, BinaryOpStorage/*!*/ binaryOpSite, object/*!*/ self, object other) {
+            return Protocols.CoerceAndApply(coercionStorage, binaryOpSite, "%", self, other);
         }
 
         /// <summary>
@@ -323,9 +315,8 @@ namespace IronRuby.Builtins {
         /// <returns>self modulo other, as Fixnum or Bignum</returns>
         /// <remarks>Coerces self and other using other.coerce(self) then dynamically invokes modulo</remarks>
         [RubyMethod("modulo")]
-        public static object Modulo(BinaryOpStorage/*!*/ coercionStorage, BinaryOpStorage/*!*/ binaryOpSite,
-            RubyContext/*!*/ context, object/*!*/ self, object other) {
-            return Protocols.CoerceAndApply(coercionStorage, binaryOpSite, "modulo", context, self, other);
+        public static object Modulo(BinaryOpStorage/*!*/ coercionStorage, BinaryOpStorage/*!*/ binaryOpSite, object/*!*/ self, object other) {
+            return Protocols.CoerceAndApply(coercionStorage, binaryOpSite, "modulo", self, other);
         }
 
         #endregion
@@ -360,9 +351,8 @@ namespace IronRuby.Builtins {
         /// <returns>Should return [self div other, self modulo other], but the divmod implementation is free to return an arbitrary object.</returns>
         /// <remarks>Coerces self and other using other.coerce(self) then dynamically invokes divmod</remarks>
         [RubyMethod("divmod")]
-        public static object DivMod(BinaryOpStorage/*!*/ coercionStorage, BinaryOpStorage/*!*/ binaryOpSite,
-            RubyContext/*!*/ context, object/*!*/ self, object other) {
-            return Protocols.CoerceAndApply(coercionStorage, binaryOpSite, "divmod", context, self, other);
+        public static object DivMod(BinaryOpStorage/*!*/ coercionStorage, BinaryOpStorage/*!*/ binaryOpSite, object/*!*/ self, object other) {
+            return Protocols.CoerceAndApply(coercionStorage, binaryOpSite, "divmod", self, other);
         }
 
         #endregion
@@ -392,9 +382,8 @@ namespace IronRuby.Builtins {
         /// <returns>Float, Fixnum or Bignum</returns>
         /// <remarks>Coerces self and other using other.coerce(self) then dynamically invokes remainder</remarks>
         [RubyMethod("remainder")]
-        public static object Remainder(BinaryOpStorage/*!*/ coercionStorage, BinaryOpStorage/*!*/ binaryOpSite,
-            RubyContext/*!*/ context, object/*!*/ self, object other) {
-            return Protocols.CoerceAndApply(coercionStorage, binaryOpSite, "remainder", context, self, other);
+        public static object Remainder(BinaryOpStorage/*!*/ coercionStorage, BinaryOpStorage/*!*/ binaryOpSite, object/*!*/ self, object other) {
+            return Protocols.CoerceAndApply(coercionStorage, binaryOpSite, "remainder", self, other);
         }
 
         #endregion
@@ -441,9 +430,8 @@ namespace IronRuby.Builtins {
         /// Dynamically invokes &lt;=&gt;.
         /// </remarks>
         [RubyMethod("<=>")]
-        public static object Compare(BinaryOpStorage/*!*/ coercionStorage, BinaryOpStorage/*!*/ comparisonStorage,
-            RubyContext/*!*/ context, BigInteger/*!*/ self, object other) {
-            return Protocols.CoerceAndCompare(coercionStorage, comparisonStorage, context, self, other);
+        public static object Compare(BinaryOpStorage/*!*/ coercionStorage, BinaryOpStorage/*!*/ comparisonStorage, BigInteger/*!*/ self, object other) {
+            return Protocols.CoerceAndCompare(coercionStorage, comparisonStorage, self, other);
         }
 
         #endregion
@@ -479,9 +467,9 @@ namespace IronRuby.Builtins {
         /// <returns>true or false</returns>
         /// <remarks>Dynamically invokes other == self (i.e. swaps self and other around)</remarks>
         [RubyMethod("==")]
-        public static bool Equal(BinaryOpStorage/*!*/ equals, RubyContext/*!*/ context, BigInteger/*!*/ self, object other) {
+        public static bool Equal(BinaryOpStorage/*!*/ equals, BigInteger/*!*/ self, object other) {
             // If we can't convert then swap self and other and try again.
-            return Protocols.IsEqual(equals, context, other, self);
+            return Protocols.IsEqual(equals, other, self);
         }
 
         #endregion

@@ -49,7 +49,7 @@ namespace IronRuby.Runtime {
             }
 
             public override DynamicMetaObject/*!*/ BindInvoke(InvokeBinder/*!*/ binder, DynamicMetaObject/*!*/[]/*!*/ args) {
-                return InteropBinder.Invoke.Bind(Context, binder, this, args, Value.BuildInvoke);
+                return InteropBinder.Invoke.Bind(binder, this, args, Value.BuildInvoke);
             }
         }
     }

@@ -28,17 +28,28 @@ namespace IronPython.Compiler.Ast {
     using Ast = System.Linq.Expressions.Expression;
 
     class SavableGlobalAllocator : ArrayGlobalAllocator {
-        private readonly MSAst.Expression/*!*/ _constantPool;
         private readonly List<MSAst.Expression/*!*/>/*!*/ _constants;
 
         public SavableGlobalAllocator(LanguageContext/*!*/ context)
             : base(context) {
-            _constantPool = Ast.Variable(typeof(object[]), "$constantPool");
             _constants = new List<MSAst.Expression>();
         }
 
         public override System.Linq.Expressions.Expression GetConstant(object value) {
             return Utils.Constant(value);
+        }
+
+        public override System.Linq.Expressions.Expression[] PrepareScope(AstGenerator gen) {
+            gen.AddHiddenVariable(GlobalArray);
+            return new MSAst.Expression[] {
+                Ast.Assign(
+                    GlobalArray, 
+                    Ast.Call(
+                        typeof(PythonOps).GetMethod("GetGlobalArrayFromContext"),
+                        ArrayGlobalAllocator._globalContext
+                    )
+                )
+            };
         }
 
         public override ScriptCode/*!*/ MakeScriptCode(MSAst.Expression/*!*/ body, CompilerContext/*!*/ context, PythonAst/*!*/ ast) {

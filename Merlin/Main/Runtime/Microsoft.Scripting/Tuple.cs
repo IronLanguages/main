@@ -17,12 +17,10 @@ using System;
 using System.CodeDom.Compiler;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq.Expressions;
 using System.Reflection;
-using System.Reflection.Emit;
-using System.Dynamic;
-using Microsoft.Scripting.Generation;
-using Microsoft.Scripting.Utils;
 using Microsoft.Scripting.Runtime;
+using Microsoft.Scripting.Utils;
 
 namespace Microsoft.Scripting {
     public abstract class Tuple {
@@ -32,7 +30,11 @@ namespace Microsoft.Scripting {
         public abstract object GetValue(int index);
         public abstract void SetValue(int index, object value);
 
-        internal void SetValue(int size, int index, object value) {
+        /// <summary>
+        /// Sets the value at the given index for a tuple of the given size.  This set supports
+        /// walking through nested tuples to get the correct final index.
+        /// </summary>
+        public void SetNestedValue(int size, int index, object value) {
             if (size < Tuple.MaxSize) {
                 // fast path
                 SetValue(index, value);
@@ -50,7 +52,11 @@ namespace Microsoft.Scripting {
             }
         }
 
-        internal object GetValue(int size, int index) {
+        /// <summary>
+        /// Gets the value at the given index for a tuple of the given size.  This get
+        /// supports walking through nested tuples to get the correct final index.
+        /// </summary>
+        public object GetNestedValue(int size, int index) {
             if (size < Tuple.MaxSize) {
                 // fast path
                 return GetValue(index);
@@ -309,35 +315,60 @@ namespace Microsoft.Scripting {
             get;
         }
 
-        internal static void EmitNew(ILGen cg, Type tupleType, int start, int end) {
+        /// <summary>
+        /// Provides an expression for creating a tuple with the specified values.
+        /// </summary>
+        public static Expression Create(params Expression[] values) {
+            return CreateNew(MakeTupleType(ArrayUtils.ConvertAll(values, x => x.Type)), 0, values.Length, values);
+        }
+
+        private static int PowerOfTwoRound(int value) {
+            int res = 1;
+            while (value > res) {
+                res = res << 1;
+            }
+
+            return res;
+        }
+
+        internal static Expression CreateNew(Type tupleType, int start, int end, Expression[] values) {
             int size = end - start;
             Debug.Assert(tupleType != null);
             Debug.Assert(tupleType.IsSubclassOf(typeof(Tuple)));
 
-            cg.EmitNew(tupleType.GetConstructor(Type.EmptyTypes));
-
+            Expression[] newValues;
             if (size > Tuple.MaxSize) {
+
                 int multiplier = 1;
                 while (size > Tuple.MaxSize) {
                     size = (size + Tuple.MaxSize - 1) / Tuple.MaxSize;
                     multiplier *= Tuple.MaxSize;
                 }
+                newValues = new Expression[PowerOfTwoRound(size)];
                 for (int i = 0; i < size; i++) {
                     int newStart = start + (i * multiplier);
                     int newEnd = System.Math.Min(end, start + ((i + 1) * multiplier));
 
                     PropertyInfo pi = tupleType.GetProperty("Item" + String.Format("{0:D3}", i));
 
-                    // dup tuple that we originally constructed
-                    cg.Emit(OpCodes.Dup);
+                    newValues[i] = CreateNew(pi.PropertyType, newStart, newEnd, values);
+                }
 
-                    // construct nested tuple
-                    EmitNew(cg, pi.PropertyType, newStart, newEnd);
+                for (int i = size; i < newValues.Length; i++) {
+                    newValues[i] = Expression.Constant(null, typeof(DynamicNull));
+                }
+            } else {
+                newValues = new Expression[PowerOfTwoRound(size)];
+                for (int i = 0; i < size; i++) {
+                    newValues[i] = values[i + start];
+                }
 
-                    // save into original tuple
-                    cg.EmitPropertySet(pi);
+                for (int i = size; i < newValues.Length; i++) {
+                    newValues[i] = Expression.Constant(null, typeof(DynamicNull));
                 }
             }
+            
+            return Expression.New(tupleType.GetConstructor(ArrayUtils.ConvertAll(newValues, x => x.Type)), newValues);
         }
     }
 

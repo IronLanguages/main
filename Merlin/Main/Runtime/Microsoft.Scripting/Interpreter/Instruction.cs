@@ -653,6 +653,24 @@ namespace Microsoft.Scripting.Interpreter {
         }
     }
 
+    public class FieldAssignInstruction : Instruction {
+        private readonly FieldInfo _field;
+
+        public FieldAssignInstruction(FieldInfo field) {
+            Debug.Assert(!field.IsStatic);
+            _field = field;
+        }
+
+        public override int ConsumedStack { get { return 2; } }
+        public override int ProducedStack { get { return 0; } }
+        public override int Run(StackFrame frame) {
+            object value = frame.Pop();
+            object self = frame.Pop();
+            _field.SetValue(self, value);
+            return +1;
+        }
+    }
+
     public class ArrayIndexInstruction<T> : Instruction {
         public static readonly Instruction Instance = new ArrayIndexInstruction<T>();
 

@@ -114,8 +114,8 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("include", RubyMethodAttributes.PrivateInstance)]
         public static RubyModule/*!*/ Include(
-            CallSiteStorage<Func<CallSite, RubyContext, RubyModule, RubyModule, object>>/*!*/ appendFeaturesStorage,
-            CallSiteStorage<Func<CallSite, RubyContext, RubyModule, RubyModule, object>>/*!*/ includedStorage,
+            CallSiteStorage<Func<CallSite, RubyModule, RubyModule, object>>/*!*/ appendFeaturesStorage,
+            CallSiteStorage<Func<CallSite, RubyModule, RubyModule, object>>/*!*/ includedStorage,
             RubyModule/*!*/ self, [NotNull]params RubyModule[]/*!*/ modules) {
 
             RubyUtils.RequireMixins(self, modules);
@@ -126,8 +126,8 @@ namespace IronRuby.Builtins {
             // Kernel#append_features inserts the module at the beginning of ancestors list;
             // ancestors after include: [modules[0], modules[1], ..., modules[N-1], self, ...]
             for (int i = modules.Length - 1; i >= 0; i--) {
-                appendFeatures.Target(appendFeatures, self.Context, modules[i], self);
-                included.Target(included, self.Context, modules[i], self);
+                appendFeatures.Target(appendFeatures, modules[i], self);
+                included.Target(included, modules[i], self);
             }
 
             return self;

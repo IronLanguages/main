@@ -17,9 +17,14 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+
+using Microsoft.Scripting;
 using Microsoft.Scripting.Runtime;
+
 using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Operations;
+
+using Tuple = Microsoft.Scripting.Tuple;
 
 namespace IronPython.Runtime {
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1710:IdentifiersShouldHaveCorrectSuffix"), PythonType("generator")]
@@ -53,6 +58,8 @@ namespace IronPython.Runtime {
         /// Since send() could send an exception, we need to keep this different from throwable's value.
         /// </summary>
         private object _sendValue;
+        [PythonHidden]
+        public Tuple Closure;
 
         private static object _notStarted = new object();
 
@@ -202,9 +209,15 @@ namespace IronPython.Runtime {
 
         #region Internal implementation details
 
-        private CodeContext Context {
+        internal CodeContext Context {
             get {
                 return _function.Context;
+            }
+        }
+
+        internal PythonFunction Function {
+            get {
+                return _function;
             }
         }
 

@@ -14,10 +14,9 @@
  * ***************************************************************************/
 
 using IronRuby.Builtins;
-using IronRuby.Runtime;
 using IronRuby.Compiler.Generation;
 
-namespace IronRuby {
+namespace IronRuby.Runtime {
     public interface IRubyObject {
         // Gets the ruby class associated with this object
         [Emitted] // RubyTypeBuilder

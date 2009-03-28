@@ -59,11 +59,16 @@ namespace IronRuby.Compiler {
             }
         }
 
+        public bool Verbatim {
+            get { return _verbatim; }
+            set { _verbatim = value; }
+        }
+
         private RubyEncoding/*!*/ _encoding;
         private TextReader _input;
         private SourceLocation _initialLocation;
         private RubyCompatibility _compatibility;
-        private readonly bool _verbatim;
+        private bool _verbatim;
         private int _multiByteIdentifier = Int32.MaxValue;
 
         private SourceUnit _sourceUnit;
@@ -795,9 +800,20 @@ namespace IronRuby.Compiler {
 
                 default:
                     if (!IsIdentifierInitial(c, _multiByteIdentifier)) {
-                        ReportError(Errors.InvalidCharacterInExpression, (char)c);
-                        MarkSingleLineTokenEnd();
-                        return Tokens.InvalidCharacter;
+                        // UTF-8 BOM detection:
+                        if (_compatibility == RubyCompatibility.Ruby18 && _currentLineIndex == 0 && _bufferPos == 1 &&
+                            (c == 0xEF && Peek() == 0xBB && Peek(1) == 0xBF)) {
+                            ReportError(Errors.InvalidUseOfByteOrderMark);
+                            // skip BOM and continue parsing as if it was whitespace:
+                            Read();
+                            Read();
+                            MarkSingleLineTokenEnd();
+                            return Tokens.Whitespace;
+                        } else {
+                            ReportError(Errors.InvalidCharacterInExpression, (char)c);
+                            MarkSingleLineTokenEnd();
+                            return Tokens.InvalidCharacter;
+                        }
                     }
 
                     return MarkSingleLineTokenEnd(ReadIdentifier(c, cmdState));

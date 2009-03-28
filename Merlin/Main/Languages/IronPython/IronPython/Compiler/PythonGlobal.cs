@@ -42,6 +42,7 @@ namespace IronPython.Compiler {
         private CodeContext/*!*/ _context;
 
         internal static PropertyInfo/*!*/ CurrentValueProperty = typeof(PythonGlobal).GetProperty("CurrentValue");
+        internal static PropertyInfo/*!*/ RawValueProperty = typeof(PythonGlobal).GetProperty("RawValue");
 
         public PythonGlobal(CodeContext/*!*/ context, SymbolId name) {
             Assert.NotNull(context);
@@ -90,11 +91,11 @@ namespace IronPython.Compiler {
             throw PythonOps.NameError(_name);
         }
 
-        internal object RawValue {
+        public object RawValue {
             get {
                 return _value;
             }
-            set {
+            internal set {
                 _value = value;
             }
         }
