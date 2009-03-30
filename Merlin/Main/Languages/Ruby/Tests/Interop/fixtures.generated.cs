@@ -4,6 +4,10 @@ public partial class Klass {
         return arg0;
       }
     }
+#line 4 "./bcl/numerics/decimal_spec.rb"
+public partial class Klass {
+    public decimal MyDecimal {get; set;}
+  }
 #line 14 "./class/instantiation/abstract_spec.rb"
 public partial class DerivedFromAbstract : AbstractClass {
     public override int m() {return 1;}
