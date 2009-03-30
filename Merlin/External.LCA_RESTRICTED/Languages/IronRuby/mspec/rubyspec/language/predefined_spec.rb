@@ -122,6 +122,35 @@ describe "Predefined global $+" do
   end
 end
 
+describe "Predefined globals $0 and $PROGRAM_NAME" do
+  it "are identical" do
+    $0.__id__.should == $PROGRAM_NAME.__id__
+  end
+
+  it "represents the program name" do
+    ruby_exe(fixture(__FILE__, "program_name.rb")).split.should == [File.expand_path(fixture(__FILE__, "program_name.rb")), File.expand_path(fixture(__FILE__, "program_name.rb"))]
+  end
+
+  it "can be set via =" do
+    begin
+      old_program_name = $0
+      $0 = "foo"
+      $0.should == "foo"
+    ensure
+      $0 = old_program_name
+    end
+  end
+
+  it "can only be set to a string" do
+    begin
+      old_program_name = $0
+      lambda {$0 = 1}.should raise_error(TypeError)
+    ensure
+      $0 = old_program_name
+    end
+  end
+end
+
 describe "Predefined globals $1..N" do
   it "are equivalent to $~[N]" do
     /(f)(o)(o)/ =~ 'foo'
