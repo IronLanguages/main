@@ -10,6 +10,7 @@ describe :file_stat, :shared => true do
 
   it "returns a File::Stat object if the given file exists" do
     st = File.send(@method, @file)
+    st.class.should == File::Stat
 
     st.file?.should == true
     st.zero?.should == false
