@@ -35,7 +35,7 @@ namespace IronRuby.Runtime {
             _context = context;
         }
 
-        private CallSite<Func<CallSite, RubyContext, object, object, object>> _WriteSite;
+        private CallSite<Func<CallSite, object, object, object>> _WriteSite;
 
         public override void Add(SourceUnit sourceUnit, string message, SourceSpan span, int errorCode, Severity severity) {
             if (severity == Severity.Warning && !ReportWarning(_context.Verbose, errorCode)) {
@@ -62,14 +62,14 @@ namespace IronRuby.Runtime {
                 if (_WriteSite == null) {
                     Interlocked.CompareExchange(
                         ref _WriteSite,
-                        CallSite<Func<CallSite, RubyContext, object, object, object>>.Create(RubyCallAction.Make("write", 1)),
+                        CallSite<Func<CallSite, object, object, object>>.Create(RubyCallAction.Make(_context, "write", 1)),
                         null
                     );
                 }
 
                 message = RubyContext.FormatErrorMessage(message, "warning", path, line, span.Start.Column, null);
 
-                _WriteSite.Target(_WriteSite, _context, _context.StandardErrorOutput, MutableString.CreateMutable(message));
+                _WriteSite.Target(_WriteSite, _context.StandardErrorOutput, MutableString.CreateMutable(message));
             }
         }
 

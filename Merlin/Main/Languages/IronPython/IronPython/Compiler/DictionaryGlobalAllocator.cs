@@ -19,6 +19,7 @@ using Microsoft.Scripting;
 using Microsoft.Scripting.Generation;
 using Microsoft.Scripting.Runtime;
 
+using IronPython.Runtime;
 using IronPython.Runtime.Operations;
 
 using MSAst = System.Linq.Expressions;
@@ -38,7 +39,7 @@ namespace IronPython.Compiler.Ast {
         public DictionaryGlobalAllocator() {            
             _globalScope = Ast.Parameter(typeof(Scope), "$scope");
             _language = Ast.Parameter(typeof(LanguageContext), "$language");
-            _globalCtx = Ast.Parameter(typeof(CodeContext), "$globalContext");
+            _globalCtx = ArrayGlobalAllocator._globalContext;
         }
 
         public override ScriptCode/*!*/ MakeScriptCode(MSAst.Expression/*!*/ body, CompilerContext/*!*/ context, PythonAst/*!*/ ast) {            
@@ -54,14 +55,25 @@ namespace IronPython.Compiler.Ast {
                 body
             );
 
-            string name = ((PythonCompilerOptions)context.Options).ModuleName ?? "<unnamed>";
+            PythonCompilerOptions pco = ((PythonCompilerOptions)context.Options);
+            string name = pco.ModuleName ?? "<unnamed>";
             var lambda = Ast.Lambda<Func<Scope, LanguageContext, object>>(
                 finalBody, 
                 name,
                 new[] { _globalScope, _language } 
             );
 
-            return new PythonScriptCode(lambda.Compile(context.SourceUnit.EmitDebugSymbols), context.SourceUnit);
+
+            Func<Scope, LanguageContext, object> func;
+            // TODO: adaptive compilation should be eanbled
+            /*PythonContext pc = (PythonContext)context.SourceUnit.LanguageContext;
+            if (pc.ShouldInterpret(pco, context.SourceUnit)) {
+                func = CompilerHelpers.LightCompile(lambda);
+            } else*/ {
+                func = lambda.Compile(context.SourceUnit.EmitDebugSymbols);
+            }
+
+            return new PythonScriptCode(func, context.SourceUnit);
         }
 
         public override MSAst.Expression/*!*/ GlobalContext {

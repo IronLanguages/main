@@ -110,7 +110,7 @@ namespace IronPython.Compiler.Ast {
                     statements.Add(
                         ag.AddDebugInfo(
                             ag.Globals.Assign(
-                                ag.Globals.GetVariable(_variables[i]), 
+                                ag.Globals.GetVariable(ag, _variables[i]), 
                                 Ast.Call(
                                     AstGenerator.GetHelperMethod("ImportFrom"),
                                     ag.LocalContext,

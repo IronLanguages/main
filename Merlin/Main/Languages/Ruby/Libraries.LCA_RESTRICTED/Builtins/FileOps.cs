@@ -379,9 +379,7 @@ namespace IronRuby.Builtins {
         private static readonly MutableString InfiniteRecursionMarker = MutableString.Create("[...]").Freeze();
 
         [RubyMethod("join", RubyMethodAttributes.PublicSingleton)]
-        public static MutableString Join(ConversionStorage<MutableString>/*!*/ stringCast, RubyContext/*!*/ context, RubyClass/*!*/ self, 
-            [NotNull]params object[] parts) {
-
+        public static MutableString Join(ConversionStorage<MutableString>/*!*/ stringCast, RubyClass/*!*/ self, [NotNull]params object[] parts) {
             MutableString result = MutableString.CreateMutable();
             Dictionary<object, bool> visitedLists = null;
             var worklist = new Stack<object>();
@@ -408,7 +406,7 @@ namespace IronRuby.Builtins {
                 } else if (part == null) {
                     throw RubyExceptions.CreateTypeConversionError("NilClass", "String");
                 } else {
-                    str = Protocols.CastToString(stringCast, context, part);
+                    str = Protocols.CastToString(stringCast, part);
                 }
 
                 if (current > 0) {

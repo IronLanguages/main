@@ -312,7 +312,7 @@ namespace System.Linq.Expressions {
         /// <see cref="Expression.VisitChildren" /> will try to reduce the node.
         /// </remarks>
         protected internal virtual Expression VisitExtension(Expression node) {
-            return node.VisitChildren(this);
+            return node.VisitChildren(this.Visit);
         }
 
         /// <summary>

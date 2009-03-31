@@ -147,7 +147,7 @@ internal class LibraryDef {
 
         public ModuleKind Kind;
         public bool HasCopyInclusions;
-
+        
         public TypeRef Super;              // non-null for all classes except for object
 
         // Non-null for modules nested in other Ruby modules.
@@ -374,15 +374,6 @@ internal class LibraryDef {
                         def.Mixins.Add(new MixinRef(new TypeRef(type), includes.Copy));
                     }
                     def.HasCopyInclusions |= includes.Copy;
-                }
-
-                if (cls != null && cls.MixinInterfaces) {
-                    foreach (Type iface in def.Extends.GetInterfaces()) {
-                        ModuleDef mixin;
-                        if (_moduleDefs.TryGetValue(iface, out mixin)) {
-                            def.Mixins.Add(new MixinRef(new TypeRef(mixin.Extends), false));
-                        }
-                    }
                 }
 
                 _moduleDefs.Add(def.Extends, def);
@@ -658,9 +649,9 @@ internal class LibraryDef {
                         LogMethodError("CodeContext is obsolete use RubyContext instead.", methodDef, overload);
                     }
 
-                    if (type.IsSubclassOf(typeof(SiteLocalStorage))) {
+                    if (type.IsSubclassOf(typeof(RubyCallSiteStorage))) {
                         if (hasSelf || hasContext || hasBlock) {
-                            LogMethodError("SiteLocalStorage must precede all other parameters", methodDef, overload);
+                            LogMethodError("RubyCallSiteStorage must precede all other parameters", methodDef, overload);
                         }
                         storageCount++;
                     } else if (type == typeof(RubyContext) || type == typeof(RubyScope)) {
@@ -669,7 +660,7 @@ internal class LibraryDef {
                         }
 
                         if (i - storageCount != 0) {
-                            LogMethodError("Context parameter must be the first parameter following optional SiteLocalStorage", methodDef, overload);
+                            LogMethodError("Context parameter must be the first parameter following optional RubyCallSiteStorage", methodDef, overload);
                         }
 
                         hasContext = true;
@@ -685,7 +676,7 @@ internal class LibraryDef {
                         }
 
                         if (!hasContext && i - storageCount != 0) {
-                            LogMethodError("Block parameter must be the first parameter following optional SiteLocalStorage", methodDef, overload);
+                            LogMethodError("Block parameter must be the first parameter following optional RubyCallSiteStorage", methodDef, overload);
                         }
 
                         // TODO: we should detect a call to the BlockParam.Yield:

@@ -361,7 +361,7 @@ namespace IronPython.Runtime {
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1062:ValidateArgumentsOfPublicMethods")]
         public static List dir(CodeContext/*!*/ context) {
-            List res = PythonOps.MakeListFromSequence(LocalsAsAttributesCollection(context).Keys);
+            List res = PythonOps.MakeListFromSequence(context.Scope.Dict.Keys);
 
             res.sort(context);
             return res;
@@ -412,7 +412,7 @@ namespace IronPython.Runtime {
             IAttributesCollection attrLocals = null;
             if (locals == null) {
                 if (context.Scope.Parent != null) {
-                    attrLocals = LocalsAsAttributesCollection(context);
+                    attrLocals = context.Scope.Dict;
                 }
             } else {
                 attrLocals = locals as IAttributesCollection ?? new PythonDictionary(new ObjectAttributesAdapter(context, locals));
@@ -448,7 +448,7 @@ namespace IronPython.Runtime {
             // TODO: remove TrimStart
             var sourceUnit = pythonContext.CreateSnippet(expression.TrimStart(' ', '\t'), SourceCodeKind.Expression);
             var compilerOptions = GetRuntimeGeneratedCodeCompilerOptions(context, true, 0);
-            var scriptCode = pythonContext.CompilePythonCode(Compiler.Ast.CompilationMode.Lookup, sourceUnit, compilerOptions, ThrowingErrorSink.Default);
+            var scriptCode = pythonContext.CompilePythonCode(Compiler.CompilationMode.Lookup, sourceUnit, compilerOptions, ThrowingErrorSink.Default);
 
             return scriptCode.Run(scope);
         }
@@ -1005,14 +1005,17 @@ namespace IronPython.Runtime {
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1062:ValidateArgumentsOfPublicMethods")]
         public static object locals(CodeContext/*!*/ context) {
-            ObjectAttributesAdapter adapter = context.Scope.Dict as ObjectAttributesAdapter;
-            if (adapter != null) {
-                // we've wrapped Locals in an IAttributesCollection, give the user back the
-                // original object.
-                return adapter.Backing;
+            PythonDictionary dict = context.Scope.Dict as PythonDictionary;
+            if (dict != null) {
+                ObjectAttributesAdapter adapter = dict._storage as ObjectAttributesAdapter;
+                if (adapter != null) {
+                    // we've wrapped Locals in an IAttributesCollection, give the user back the
+                    // original object.
+                    return adapter.Backing;
+                }                
             }
 
-            return LocalScopeDictionaryStorage.GetObjectFromScope(context.Scope);
+            return context.Scope.Dict;
         }
 
         internal static IAttributesCollection LocalsAsAttributesCollection(CodeContext/*!*/ context) {

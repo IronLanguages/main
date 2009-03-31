@@ -59,7 +59,7 @@ namespace IronRuby.Runtime.Calls {
                 return CreateErrorMetaObject(target, args, errorSuggestion);
             }
 
-            public static DynamicMetaObject/*!*/ Bind(RubyContext/*!*/ context, InvokeBinder/*!*/ binder,
+            public static DynamicMetaObject/*!*/ Bind(InvokeBinder/*!*/ binder,
                 RubyMetaObject/*!*/ target, DynamicMetaObject/*!*/[]/*!*/ args, Action<MetaObjectBuilder, CallArguments>/*!*/ buildInvoke) {
 
                 RubyCallSignature callSignature;
@@ -67,8 +67,10 @@ namespace IronRuby.Runtime.Calls {
                     return binder.FallbackInvoke(target, args);
                 }
 
-                var metaBuilder = new MetaObjectBuilder();
-                buildInvoke(metaBuilder, new CallArguments(target.CreateMetaContext(), target, args, callSignature));
+                var callArgs = new CallArguments(target.CreateMetaContext(), target, args, callSignature);
+                var metaBuilder = new MetaObjectBuilder(target, args);
+
+                buildInvoke(metaBuilder, callArgs);
                 return metaBuilder.CreateMetaObject(binder);
             }
         }
@@ -87,7 +89,7 @@ namespace IronRuby.Runtime.Calls {
             public override DynamicMetaObject/*!*/ FallbackInvokeMember(DynamicMetaObject/*!*/ target, DynamicMetaObject/*!*/[]/*!*/ args,
                 DynamicMetaObject errorSuggestion) {
 
-                var metaBuilder = new MetaObjectBuilder();
+                var metaBuilder = new MetaObjectBuilder(target, args);
                 var callArgs = new CallArguments(_context, target, args, CallInfo);
 
                 if (!RubyCallAction.Build(metaBuilder, Name, callArgs, errorSuggestion == null)) {
@@ -107,7 +109,7 @@ namespace IronRuby.Runtime.Calls {
 
                 return new DynamicMetaObject(
                     Expression.Dynamic(new Invoke(_context, CallInfo), typeof(object), exprs), 
-                    target.Restrictions.Merge(BindingRestrictions.Combine(args)) // TODO: this should be done everywhere!
+                    target.Restrictions.Merge(BindingRestrictions.Combine(args))
                 );
             }
 
@@ -131,8 +133,8 @@ namespace IronRuby.Runtime.Calls {
                 DynamicMetaObjectBinder/*!*/ binder, DynamicMetaObject/*!*/ target, DynamicMetaObject/*!*/[]/*!*/ args, Fallback/*!*/ fallback) {
                 Debug.Assert(fallback != null);
 
-                var metaBuilder = new MetaObjectBuilder();
                 var callArgs = new CallArguments(context, target, args, RubyCallSignature.Simple(callInfo.ArgumentCount));
+                var metaBuilder = new MetaObjectBuilder(target, args);
 
                 if (!RubyCallAction.Build(metaBuilder, methodName, callArgs, false)) {
                     metaBuilder.SetMetaResult(fallback(target, args), false);
@@ -166,8 +168,8 @@ namespace IronRuby.Runtime.Calls {
                 Func<DynamicMetaObject, DynamicMetaObject>/*!*/ fallback) {
                 Debug.Assert(fallback != null);
 
-                var metaBuilder = new MetaObjectBuilder();
                 var callArgs = new CallArguments(context, target, DynamicMetaObject.EmptyMetaObjects, RubyCallSignature.Simple(0));
+                var metaBuilder = new MetaObjectBuilder(target);
                 
                 RubyMemberInfo methodMissing;
                 var method = RubyCallAction.Resolve(metaBuilder, binder.Name, callArgs, out methodMissing);
@@ -209,20 +211,20 @@ namespace IronRuby.Runtime.Calls {
         }
 
         // TODO: convert binder
-        internal static DynamicMetaObject TryBindCovertToDelegate(RubyMetaObject/*!*/ metaTarget, ConvertBinder/*!*/ binder, MethodInfo/*!*/ delegateFactory) {
-            var metaBuilder = new MetaObjectBuilder();
-            return TryBuildConversionToDelegate(metaBuilder, metaTarget, binder.Type, delegateFactory) ? metaBuilder.CreateMetaObject(binder) : null;
+        internal static DynamicMetaObject TryBindCovertToDelegate(RubyMetaObject/*!*/ target, ConvertBinder/*!*/ binder, MethodInfo/*!*/ delegateFactory) {
+            var metaBuilder = new MetaObjectBuilder(target);
+            return TryBuildConversionToDelegate(metaBuilder, target, binder.Type, delegateFactory) ? metaBuilder.CreateMetaObject(binder) : null;
         }
 
-        internal static bool TryBuildConversionToDelegate(MetaObjectBuilder/*!*/ metaBuilder, RubyMetaObject/*!*/ metaTarget, Type/*!*/ delegateType, MethodInfo/*!*/ delegateFactory) {
+        internal static bool TryBuildConversionToDelegate(MetaObjectBuilder/*!*/ metaBuilder, RubyMetaObject/*!*/ target, Type/*!*/ delegateType, MethodInfo/*!*/ delegateFactory) {
             MethodInfo invoke;
             if (!typeof(Delegate).IsAssignableFrom(delegateType) || (invoke = delegateType.GetMethod("Invoke")) == null) {
                 return false;
             }
 
-            var type = metaTarget.Value.GetType();
-            metaBuilder.AddTypeRestriction(type, metaTarget.Expression);
-            metaBuilder.Result = delegateFactory.OpCall(AstUtils.Constant(delegateType), Ast.Convert(metaTarget.Expression, type));
+            var type = target.Value.GetType();
+            metaBuilder.AddTypeRestriction(type, target.Expression);
+            metaBuilder.Result = delegateFactory.OpCall(AstUtils.Constant(delegateType), Ast.Convert(target.Expression, type));
             return true;
         }
     }

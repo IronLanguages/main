@@ -52,7 +52,7 @@ namespace IronPython.Compiler.Ast {
                 throw PythonOps.SyntaxError(IronPython.Resources.MisplacedYield, ag.Context.SourceUnit, span, IronPython.Hosting.ErrorCodes.SyntaxError);
             }
 
-            MSAst.Expression instance = ag.GeneratorParameter;
+            MSAst.Expression instance = FunctionDefinition._generatorParam;
             Debug.Assert(instance.Type == typeof(IronPython.Runtime.PythonGenerator));
 
             MSAst.Expression s2 = Ast.Call(

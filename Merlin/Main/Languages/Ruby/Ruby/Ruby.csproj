@@ -148,11 +148,14 @@
     <Compile Include="Compiler\Errors.cs" />
     <Compile Include="Compiler\Parser\ParserStack.cs" />
     <Compile Include="Runtime\BinaryContentProvider.cs" />
+    <Compile Include="Runtime\CallSiteStorages.cs" />
+    <Compile Include="Runtime\Calls\CompositeConversionAction.cs" />
     <Compile Include="Runtime\Calls\ConvertToSAction.cs" />
     <Compile Include="Runtime\Calls\InteropBinder.cs" />
     <Compile Include="Runtime\Calls\MethodResolutionResult.cs" />
     <Compile Include="Runtime\Calls\RubyLibraryMethodInfo.cs" />
     <Compile Include="Runtime\Calls\RubyMetaBinder.cs" />
+    <Compile Include="Runtime\Calls\RubyMetaBinderFactory.cs" />
     <Compile Include="Runtime\Calls\RubyMetaObject.cs" />
     <Compile Include="Runtime\Calls\RubyMethodGroupBase.cs" />
     <Compile Include="Runtime\CheckedMonitor.cs" />
@@ -323,6 +326,7 @@
     <Compile Include="Runtime\RuntimeFlowControl.cs" />
     <Compile Include="Runtime\RuntimeErrorSink.cs" />
     <Compile Include="Runtime\StackUnwinder.cs" />
+    <Compile Include="Runtime\Key.cs" />
     <Compile Include="Runtime\Union.cs" />
     <Compile Include="Runtime\Utils.cs" />
     <Compile Include="Builtins\MatchData.Subclass.cs" />

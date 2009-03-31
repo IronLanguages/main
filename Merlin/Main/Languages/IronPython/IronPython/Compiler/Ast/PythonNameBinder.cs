@@ -312,6 +312,8 @@ namespace IronPython.Compiler.Ast {
 
         // FunctionDefinition
         public override bool Walk(FunctionDefinition node) {
+            node._nameVariable = _globalScope.EnsureGlobalVariable(Symbols.Name);            
+            
             // Name is defined in the enclosing context
             if (!node.IsLambda) {
                 node.Variable = DefineName(node.Name);

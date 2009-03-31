@@ -140,7 +140,6 @@ namespace IronRuby.Runtime {
     public class RubyModuleAttribute : RubyAttribute {
         private readonly string _name;
 
-        private bool _mixinInterfaces;
         private bool _hideClrMembers;
         private Type _extends;
         private Type _defineIn;
@@ -207,14 +206,6 @@ namespace IronRuby.Runtime {
         /// </summary>
         public string Name {
             get { return _name; }
-        }
-
-        /// <summary>
-        /// Indicates that CLR interface modules should be mixed in to the module.
-        /// </summary>
-        public bool MixinInterfaces {
-            get { return _mixinInterfaces; }
-            set { _mixinInterfaces = value; }
         }
 
         public bool HideClrMembers {

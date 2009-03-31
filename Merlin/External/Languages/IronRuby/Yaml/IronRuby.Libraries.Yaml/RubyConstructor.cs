@@ -36,18 +36,20 @@ namespace IronRuby.StandardLibrary.Yaml {
         private readonly static Dictionary<string, Regex> _yamlMultiRegexps = new Dictionary<string, Regex>();                
         private readonly static Regex _regexPattern = new Regex("^/(?<expr>.+)/(?<opts>[eimnosux]*)$", RegexOptions.Compiled);
 
-        private readonly CallSite<Func<CallSite, RubyContext, RubyModule, object, object, object, object>> _New =
-            CallSite<Func<CallSite, RubyContext, RubyModule, object, object, object, object>>.Create(
-            RubyCallAction.Make("new", RubyCallSignature.WithImplicitSelf(3))
-        );
+        private readonly CallSite<Func<CallSite, RubyModule, object, object, object, object>> _newSite;
 
-        private readonly CallSite<Func<CallSite, RubyContext, object, object, Hash, object>> _YamlInitialize =
-            CallSite<Func<CallSite, RubyContext, object, object, Hash, object>>.Create(
-            RubyCallAction.Make("yaml_initialize", RubyCallSignature.WithImplicitSelf(3))
-        );
+        private readonly CallSite<Func<CallSite, object, object, Hash, object>> _yamlInitializeSite;
         
         public RubyConstructor(RubyGlobalScope/*!*/ scope, NodeProvider/*!*/ nodeProvider)
             : base(nodeProvider, scope) {
+            
+            _newSite = CallSite<Func<CallSite, RubyModule, object, object, object, object>>.Create(
+                RubyCallAction.Make(scope.Context, "new", RubyCallSignature.WithImplicitSelf(3))
+            ); 
+
+            _yamlInitializeSite = CallSite<Func<CallSite, object, object, Hash, object>>.Create(
+                RubyCallAction.Make(scope.Context, "yaml_initialize", RubyCallSignature.WithImplicitSelf(3))
+            );
         }
 
         static RubyConstructor() {
@@ -198,7 +200,7 @@ namespace IronRuby.StandardLibrary.Yaml {
                 }                
             }
 
-            var comparisonStorage = new BinaryOpStorage();
+            var comparisonStorage = new BinaryOpStorage(ctor.GlobalScope.Context);
             return new Range(comparisonStorage, ctor.GlobalScope.Context, begin, end, excludeEnd);            
         }
 
@@ -244,7 +246,7 @@ namespace IronRuby.StandardLibrary.Yaml {
                 RubyMethodInfo method = module.GetMethod("yaml_initialize") as RubyMethodInfo;
                 if (method != null) {
                     object result = RubyUtils.CreateObject((RubyClass)module);
-                    ctor._YamlInitialize.Target(ctor._YamlInitialize, globalScope.Context, result, className, values);
+                    ctor._yamlInitializeSite.Target(ctor._yamlInitializeSite, result, className, values);
                     return result;
                 } else {
                     return RubyUtils.CreateObject((RubyClass)module, values, true);
@@ -302,7 +304,7 @@ namespace IronRuby.StandardLibrary.Yaml {
 
                 RubyModule module;
                 if (ctor.GlobalScope.Context.TryGetModule(ctor.GlobalScope, "Date", out module)) {
-                    return ctor._New.Target(ctor._New, ctor.GlobalScope.Context, module, year_ymd, month_ymd, day_ymd);
+                    return ctor._newSite.Target(ctor._newSite, module, year_ymd, month_ymd, day_ymd);
                 } else {
                     throw new ConstructorException("Date class not found.");
                 }

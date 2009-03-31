@@ -97,12 +97,12 @@ namespace IronRuby.Compiler {
         internal const int RuntimeVerboseWarning = WarningLevel2;
         public static readonly ErrorInfo InterpretedAsGroupedExpression = new ErrorInfo(WarningLevel2 + 1, "(...) interpreted as grouped expression");
         public static readonly ErrorInfo AmbiguousFirstArgument = new ErrorInfo(WarningLevel2 + 2, "Ambiguous first argument; put parentheses or even spaces");
+        public static readonly ErrorInfo AmpersandInterpretedAsProcArgument = new ErrorInfo(WarningLevel2 + 3, "`&' interpreted as argument prefix"); // TODO: level 1?
+        public static readonly ErrorInfo AmpersandInVoidContext = new ErrorInfo(WarningLevel2 + 4, "Useless use of & in void context"); // TODO: level 1?
+        public static readonly ErrorInfo StarInterpretedAsSplatArgument = new ErrorInfo(WarningLevel2 + 5, "`*' interpreted as argument prefix"); // TODO: level 1?
+        public static readonly ErrorInfo InvalidUseOfByteOrderMark = new ErrorInfo(WarningLevel2 + 6, "The source code appears to be encoded (UTF-8 byte-order-mark detected). Run in 1.9 compatibility mode to decode it properly.");
         
-        // TODO: level 1?
-        public static readonly ErrorInfo AmpersandInterpretedAsProcArgument = new ErrorInfo(WarningLevel2 + 3, "`&' interpreted as argument prefix");
-        public static readonly ErrorInfo AmpersandInVoidContext = new ErrorInfo(WarningLevel2 + 4, "Useless use of & in void context");
-        public static readonly ErrorInfo StarInterpretedAsSplatArgument = new ErrorInfo(WarningLevel2 + 5, "`*' interpreted as argument prefix");
-    
+        
         internal static bool IsVerboseWarning(int errorCode) {
             return errorCode >= WarningLevel2;
         }

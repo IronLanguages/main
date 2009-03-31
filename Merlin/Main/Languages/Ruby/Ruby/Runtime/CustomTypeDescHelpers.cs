@@ -158,7 +158,7 @@ namespace IronRuby.Runtime {
             var result = new List<PropertyDescriptor>(properties.Count);
             foreach (var pair in properties) {
                 if (pair.Value == (readable | writable)) {
-                    result.Add(new RubyPropertyDescriptor(pair.Key, self, immediateClass.GetUnderlyingSystemType()));
+                    result.Add(new RubyPropertyDescriptor(context, pair.Key, self, immediateClass.GetUnderlyingSystemType()));
                 }
             }
             return result.ToArray();
@@ -237,22 +237,22 @@ namespace IronRuby.Runtime {
 
         class RubyPropertyDescriptor : PropertyDescriptor {
             private readonly string/*!*/ _name;
-            private readonly Type _propertyType;
-            private readonly Type _componentType;
-            private readonly CallSite<Func<CallSite, RubyContext, object, object>> _getterSite;
-            private readonly CallSite<Func<CallSite, RubyContext, object, object, object>> _setterSite;
+            private readonly Type/*!*/ _propertyType;
+            private readonly Type/*!*/ _componentType;
+            private readonly CallSite<Func<CallSite, object, object>>/*!*/ _getterSite;
+            private readonly CallSite<Func<CallSite, object, object, object>>/*!*/ _setterSite;
 
-            internal RubyPropertyDescriptor(string name, object testObject, Type componentType)
+            internal RubyPropertyDescriptor(RubyContext/*!*/ context, string/*!*/ name, object testObject, Type/*!*/ componentType)
                 : base(name, null) {
                 _name = name;
                 _componentType = componentType;
 
-                _getterSite = CallSite<Func<CallSite, RubyContext, object, object>>.Create(
-                    RubyCallAction.Make(_name, RubyCallSignature.WithImplicitSelf(0))
+                _getterSite = CallSite<Func<CallSite, object, object>>.Create(
+                    RubyCallAction.Make(context, _name, RubyCallSignature.WithImplicitSelf(0))
                 );
 
-                _setterSite = CallSite<Func<CallSite, RubyContext, object, object, object>>.Create(
-                    RubyCallAction.Make(_name + "=", RubyCallSignature.WithImplicitSelf(0))
+                _setterSite = CallSite<Func<CallSite, object, object, object>>.Create(
+                    RubyCallAction.Make(context, _name + "=", RubyCallSignature.WithImplicitSelf(0))
                 );
 
                 try {
@@ -262,17 +262,13 @@ namespace IronRuby.Runtime {
                 }
             }
 
-            private static RubyContext/*!*/ GetContext(object obj) {
-                return GetClass(obj).Context;
-            }
-
             public override object GetValue(object obj) {
-                return _getterSite.Target.Invoke(_getterSite, GetContext(obj), obj);
+                return _getterSite.Target.Invoke(_getterSite, obj);
             }
 
             public override void SetValue(object obj, object value) {
                 if (_setterSite != null) {
-                    _setterSite.Target.Invoke(_setterSite, GetContext(obj), obj, value);
+                    _setterSite.Target.Invoke(_setterSite, obj, value);
                 }
             }
 

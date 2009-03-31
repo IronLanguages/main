@@ -590,7 +590,7 @@ M2(Fixnum)
                 return "M1(String)";
             }
 
-            public static string M1(RubyContext context, BinaryOpStorage storage, double foo) {
+            public static string M1(BinaryOpStorage storage, RubyContext context, double foo) {
                 return "M1(Float)";
             }
 
@@ -1256,8 +1256,8 @@ p x == 'f'
 p System::Char.new('9').to_i
 ");
             }, @"
-[System::Char, IronRuby::Clr::String, Enumerable, Comparable, System::IComparable, System::ValueType, Object, Kernel]
-[System::String, IronRuby::Clr::String, Enumerable, Comparable, System::Collections::IEnumerable, Object, Kernel]
+[System::Char, IronRuby::Clr::String, Enumerable, Comparable, System::ValueType, Object, Kernel]
+[System::String, IronRuby::Clr::String, Enumerable, Comparable, Object, Kernel]
 'a'
 1
 0

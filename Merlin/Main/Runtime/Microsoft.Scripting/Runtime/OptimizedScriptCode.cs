@@ -92,11 +92,7 @@ namespace Microsoft.Scripting.Runtime {
         private Scope CompileOptimizedScope() {
             DlrMainCallTarget target;
             IAttributesCollection globals;
-            if (UseLightweightScopes) {
-                CompileWithArrayGlobals(out target, out globals);
-            } else {
-                CompileWithStaticGlobals(out target, out globals);
-            }
+            CompileWithStaticGlobals(out target, out globals);
 
             // Force creation of names used in other script codes into all optimized dictionaries
             Scope scope = new Scope(globals);
@@ -109,41 +105,8 @@ namespace Microsoft.Scripting.Runtime {
             return scope;
         }
 
-        private static bool UseLightweightScopes {        
-            get {
-
-                if (DebugOptions.LightweightScopes) {
-                    return true;
-                }
-
-#if !SILVERLIGHT
-                try {
-                    // Static field compiler requires ReflectionEmit (in CLR V2) or UnmanagedCode (in CLR V2 SP1) permission.
-                    // If we are running in partial-trust, fall through to generated dynamic code.
-                    // TODO: Symbol information requires unmanaged code permission.  Move the error
-                    // handling lower and just don't dump PDBs.
-                    new SecurityPermission(SecurityPermissionFlag.UnmanagedCode).Demand();
-                } catch (SecurityException) {
-                    return true;
-                }
-#endif
-                return false;
-            }
-        }
-
         public LambdaExpression Code {
             get { return _code; }
-        }
-
-        private void CompileWithArrayGlobals(out DlrMainCallTarget target, out IAttributesCollection globals) {
-            GlobalArrayRewriter rewriter = new GlobalArrayRewriter();
-            Expression<DlrMainCallTarget> lambda = rewriter.RewriteLambda(Code);
-
-            // Compile target
-            target = lambda.Compile(SourceUnit.EmitDebugSymbols);
-
-            // Create globals
-            globals = rewriter.CreateDictionary();
         }
 
         private void CompileWithStaticGlobals(out DlrMainCallTarget target, out IAttributesCollection globals) {

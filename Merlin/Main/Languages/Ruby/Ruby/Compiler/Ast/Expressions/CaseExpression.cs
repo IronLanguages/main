@@ -83,7 +83,7 @@ namespace IronRuby.Compiler.Ast {
         private static MSA.Expression/*!*/ MakeTest(AstGenerator/*!*/ gen, MSA.Expression/*!*/ expr, MSA.Expression/*!*/ value) {
             if (value != null) {
                 // InvokeMember("===", <expr>, <value>)
-                expr = Ast.Dynamic(RubyCallAction.Make("===", RubyCallSignature.WithScope(1)), typeof(object), 
+                expr = Ast.Dynamic(RubyCallAction.Make(gen.Context, "===", RubyCallSignature.WithScope(1)), typeof(object), 
                     gen.CurrentScopeVariable,
                     expr,
                     value

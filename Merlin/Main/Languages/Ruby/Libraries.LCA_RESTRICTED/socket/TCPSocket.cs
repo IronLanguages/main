@@ -29,13 +29,13 @@ namespace IronRuby.StandardLibrary.Sockets {
 
         [RubyMethod("gethostbyname", RubyMethodAttributes.PublicSingleton)]
         public static RubyArray/*!*/ GetHostByName(ConversionStorage<MutableString>/*!*/ stringCast, RubyClass/*!*/ self, object hostNameOrAddress) {
-            return GetHostByName(ConvertToHostString(stringCast, self.Context, hostNameOrAddress), false);
+            return GetHostByName(ConvertToHostString(stringCast, hostNameOrAddress), false);
         }
 
         [RubyConstructor]
         public static TCPSocket/*!*/ CreateTCPSocket(ConversionStorage<MutableString>/*!*/ stringCast, ConversionStorage<int>/*!*/ fixnumCast, 
             RubyClass/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ remoteHost, object remotePort) {
-            int port = ConvertToPortNum(stringCast, fixnumCast, self.Context, remotePort);
+            int port = ConvertToPortNum(stringCast, fixnumCast, remotePort);
 
             Socket socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
             socket.Connect(remoteHost.ConvertToString(), port);

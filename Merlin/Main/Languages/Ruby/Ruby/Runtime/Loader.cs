@@ -109,6 +109,7 @@ namespace IronRuby.Runtime {
             Assert.NotNull(context);
             _context = context;
 
+            _toStrStorage = new ConversionStorage<MutableString>(context);
             _loadPaths = MakeLoadPaths(context.RubyOptions);
             _loadedFiles = new RubyArray();
             _unfinishedFiles = new Stack<string>();
@@ -543,13 +544,14 @@ namespace IronRuby.Runtime {
         internal string[]/*!*/ GetLoadPathStrings() {
             var loadPaths = GetLoadPaths();
             var result = new string[loadPaths.Length];
+            var toStr = _toStrStorage.GetSite(ConvertToStrAction.Make(_context));
 
             for (int i = 0; i < loadPaths.Length; i++) {
                 if (loadPaths[i] == null) {
                     throw RubyExceptions.CreateTypeConversionError("nil", "String");
                 }
 
-                result[i] = _toStrSite.Target(_toStrSite, _context, loadPaths[i]).ConvertToString();
+                result[i] = toStr.Target(toStr, loadPaths[i]).ConvertToString();
             }
 
             return result;
@@ -627,8 +629,7 @@ namespace IronRuby.Runtime {
 
         #region Global Variables
 
-        private readonly CallSite<Func<CallSite, RubyContext, object, MutableString>> _toStrSite = 
-            CallSite<Func<CallSite, RubyContext, object, MutableString>>.Create(ConvertToStrAction.Instance);
+        private readonly ConversionStorage<MutableString>/*!*/ _toStrStorage;
 
         internal object[]/*!*/ GetLoadPaths() {
             lock (_loadedFiles) {
@@ -698,13 +699,15 @@ namespace IronRuby.Runtime {
         }
 
         private bool IsFileLoaded(MutableString/*!*/ path) {
+            var toStr = _toStrStorage.GetSite(ConvertToStrAction.Make(_context));
+
             foreach (object file in GetLoadedFiles()) {
                 if (file == null) {
                     throw RubyExceptions.CreateTypeConversionError("nil", "String");
                 }
 
                 // case sensitive comparison:
-                if (path.Equals(_toStrSite.Target(_toStrSite, _context, file))) {
+                if (path.Equals(toStr.Target(toStr, file))) {
                     return true;
                 }
             }

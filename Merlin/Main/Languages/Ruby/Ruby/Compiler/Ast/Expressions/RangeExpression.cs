@@ -86,7 +86,7 @@ namespace IronRuby.Compiler.Ast {
                     AstFactory.Box(_begin.TransformRead(gen)), 
                     AstFactory.Box(_end.TransformRead(gen)), 
                     gen.CurrentScopeVariable, 
-                    AstUtils.Constant(new BinaryOpStorage())
+                    AstUtils.Constant(new BinaryOpStorage(gen.Context))
                 );
             }
         }

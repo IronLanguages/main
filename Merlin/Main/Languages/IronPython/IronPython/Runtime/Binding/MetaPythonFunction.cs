@@ -803,10 +803,9 @@ namespace IronPython.Runtime.Binding {
                 if (IsGenerator(method)) {
                     _temps.Add((ParameterExpression)(pg = Ast.Variable(typeof(PythonGenerator), "$gen")));
 
-                    invokeArgs = ArrayUtils.Insert(
-                        pg,
-                        invokeArgs
-                    );
+                    invokeArgs = ArrayUtils.Insert(pg, invokeArgs);
+                } else {
+                    invokeArgs = ArrayUtils.Insert(GetFunctionParam(), invokeArgs);
                 }
 
                 Expression invoke = AstUtils.SimpleCallHelper(

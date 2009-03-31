@@ -145,10 +145,10 @@ namespace System.Linq.Expressions {
         }
 
         /// <summary>
-        /// Reduces the node and then calls Visit on the reduced expression.
+        /// Reduces the node and then calls the visitor delegate on the reduced expression.
         /// Throws an exception if the node isn't reducible.
         /// </summary>
-        /// <param name="visitor">An instance of <see cref="ExpressionVisitor"/>.</param>
+        /// <param name="visitor">An instance of <see cref="Func{Expression, Expression}"/>.</param>
         /// <returns>The expression being visited, or an expression which should replace it in the tree.</returns>
         /// <remarks>
         /// Override this method to provide logic to walk the node's children. 
@@ -156,9 +156,9 @@ namespace System.Linq.Expressions {
         /// children, and if any of them change, should return a new copy of
         /// itself with the modified children.
         /// </remarks>
-        protected internal virtual Expression VisitChildren(ExpressionVisitor visitor) {
+        protected internal virtual Expression VisitChildren(Func<Expression, Expression> visitor) {
             ContractUtils.Requires(CanReduce, "this", Strings.MustBeReducible);
-            return visitor.Visit(ReduceExtensions());
+            return visitor(ReduceExtensions());
         }
 
         // Visitor pattern: this is the method that dispatches back to the visitor

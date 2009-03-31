@@ -147,6 +147,10 @@ namespace IronRuby.Hosting {
                     SetTraceFilter(PopNextArg(), true);
                     break;
 
+                case "-ER":
+                    RubyOptions.ShowRules = true;
+                    break;
+
                 case "-save":
                     LanguageSetup.Options["SavePath"] = optionValue ?? AppDomain.CurrentDomain.BaseDirectory;
                     break;
@@ -156,11 +160,11 @@ namespace IronRuby.Hosting {
                     break;
 
                 case "-useThreadAbortForSyncRaise":
-                    LanguageSetup.Options["UseThreadAbortForSyncRaise"] = true;
+                    RubyOptions.UseThreadAbortForSyncRaise = true;
                     break;
 
                 case "-compileRegexps":
-                    LanguageSetup.Options["CompileRegexps"] = true;
+                    RubyOptions.CompileRegexps = true;
                     break;
 #endif
                 case "-trace":

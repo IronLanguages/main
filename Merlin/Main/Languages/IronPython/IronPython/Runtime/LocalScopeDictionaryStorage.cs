@@ -62,27 +62,5 @@ namespace IronPython.Runtime {
 
             return new PythonDictionary(new LocalScopeDictionaryStorage(scope));
         }
-
-        internal static object GetObjectFromScope(Scope scope) {
-            Scope curScope = scope;
-            int count = 0;
-            while (ScopeVisible(curScope, scope)) {
-                curScope = curScope.Parent;
-                count++;
-            }
-
-            if (count == 1) {
-                PythonDictionary pd = scope.Dict as PythonDictionary;
-                if (pd != null) {
-                    ObjectAttributesAdapter adapter = pd._storage as ObjectAttributesAdapter;
-                    if (adapter != null) {
-                        return adapter.Backing;
-                    }
-                    return pd;
-                }
-            }
-
-            return new PythonDictionary(new LocalScopeDictionaryStorage(scope));
-        }
     }    
 }

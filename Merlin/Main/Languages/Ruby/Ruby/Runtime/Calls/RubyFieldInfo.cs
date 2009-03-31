@@ -63,7 +63,7 @@ namespace IronRuby.Runtime.Calls {
                             args.GetRhsArgumentExpression(), 
                             _fieldInfo.FieldType, 
                             ConversionResultKind.ExplicitCast, 
-                            args.ScopeExpression
+                            null
                         )
                     );
                 }

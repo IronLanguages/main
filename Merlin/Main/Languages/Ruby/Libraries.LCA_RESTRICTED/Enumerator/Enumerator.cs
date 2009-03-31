@@ -13,19 +13,19 @@
  *
  * ***************************************************************************/
 
+using EachSite = System.Func<System.Runtime.CompilerServices.CallSite, object, IronRuby.Builtins.Proc, object>;
+using EnumerableModule = IronRuby.Builtins.Enumerable;
+
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using IronRuby.Builtins;
 using IronRuby.Runtime;
 using IronRuby.Runtime.Calls;
 using Microsoft.Scripting;
-using Microsoft.Scripting.Runtime;
-using System.Runtime.InteropServices;
-
-using EnumerableModule = IronRuby.Builtins.Enumerable;
-using EachSite = System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, object, IronRuby.Builtins.Proc, object>;
 using Microsoft.Scripting.Utils;
+using Microsoft.Scripting.Runtime;
 
 namespace IronRuby.StandardLibrary.Enumerator {
 
@@ -96,8 +96,8 @@ namespace IronRuby.StandardLibrary.Enumerator {
         #region each_cons, each_slice
 
         [RubyMethod("each_cons")]
-        public static object EachCons(CallSiteStorage<EachSite>/*!*/ each, RubyContext/*!*/ context, BlockParam/*!*/ block, object self, [DefaultProtocol]int sliceSize) {
-            return EachSlice(each, context, block, self, sliceSize, false, (slice) => {
+        public static object EachCons(CallSiteStorage<EachSite>/*!*/ each, BlockParam/*!*/ block, object self, [DefaultProtocol]int sliceSize) {
+            return EachSlice(each, block, self, sliceSize, false, (slice) => {
                 RubyArray newSlice = new RubyArray(slice.Count);
                 for (int i = 1; i < slice.Count; i++) {
                     newSlice.Add(slice[i]);
@@ -107,11 +107,11 @@ namespace IronRuby.StandardLibrary.Enumerator {
         }
 
         [RubyMethod("each_slice")]
-        public static object EachSlice(CallSiteStorage<EachSite>/*!*/ each, RubyContext/*!*/ context, BlockParam/*!*/ block, object self, [DefaultProtocol]int sliceSize) {
-            return EachSlice(each, context, block, self, sliceSize, true, (slice) => null);
+        public static object EachSlice(CallSiteStorage<EachSite>/*!*/ each, BlockParam/*!*/ block, object self, [DefaultProtocol]int sliceSize) {
+            return EachSlice(each, block, self, sliceSize, true, (slice) => null);
         }
 
-        private static object EachSlice(CallSiteStorage<EachSite>/*!*/ each, RubyContext/*!*/ context, BlockParam/*!*/ block, object self, int sliceSize, 
+        private static object EachSlice(CallSiteStorage<EachSite>/*!*/ each, BlockParam/*!*/ block, object self, int sliceSize, 
             bool includeIncomplete, Func<RubyArray/*!*/, RubyArray>/*!*/ newSliceFactory) {
 
             if (sliceSize <= 0) {
@@ -120,7 +120,7 @@ namespace IronRuby.StandardLibrary.Enumerator {
 
             RubyArray slice = null;
 
-            EnumerableModule.Each(each, context, self, Proc.Create(context, delegate(BlockParam/*!*/ selfBlock, object item) {
+            EnumerableModule.Each(each, self, Proc.Create(each.Context, delegate(BlockParam/*!*/ selfBlock, object item) {
                 if (slice == null) {
                     slice = new RubyArray(sliceSize);
                 }

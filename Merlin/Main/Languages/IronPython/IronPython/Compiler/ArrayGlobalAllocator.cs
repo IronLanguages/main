@@ -39,12 +39,14 @@ namespace IronPython.Compiler.Ast {
         private readonly MSAst.ParameterExpression/*!*/ _globalArray;
         private readonly CodeContext _context;
         private readonly Scope _scope;
+        private readonly GlobalArrayConstant _array;
         internal static readonly MSAst.ParameterExpression/*!*/ _globalContext = Ast.Parameter(typeof(CodeContext), "$globalContext");
 
         public ArrayGlobalAllocator(LanguageContext/*!*/ context) {
             _globalArray = Ast.Parameter(typeof(PythonGlobal[]), "$globalArray");
             _scope = new Scope(new PythonDictionary(new GlobalDictionaryStorage(_globalVals)));
             _context = new CodeContext(_scope, context);
+            _array = new GlobalArrayConstant();
         }
 
         public override ScriptCode/*!*/ MakeScriptCode(MSAst.Expression/*!*/ body, CompilerContext/*!*/ context, PythonAst/*!*/ ast) {
@@ -57,6 +59,8 @@ namespace IronPython.Compiler.Ast {
                 
                 globalArray[global.Value.Index] = _globalVals[globalName];
             }
+            
+            _array.Array = globalArray;
 
             // finally build the funcion that's closed over the array and
             string name = ((PythonCompilerOptions)context.Options).ModuleName ?? "<unnamed>";
@@ -72,6 +76,43 @@ namespace IronPython.Compiler.Ast {
             );
 
             return new RuntimeScriptCode(context, func, ast, _context);
+        }
+
+        public override MSAst.Expression[] PrepareScope(AstGenerator/*!*/ gen) {
+            gen.AddHiddenVariable(_globalArray);
+            return new MSAst.Expression[] {
+                Ast.Assign(_globalArray, _array)
+            };
+        }
+
+        /// <summary>
+        /// Provides a wrapper expression for our PythonGlobal array of global variables.
+        /// 
+        /// This always reduces to a PythonGlobal[] but we update it at the very end of the
+        /// compilation process.  This enables us to create nodes which refer to this
+        /// array and burn them in as constants even before the array has been created.
+        /// </summary>
+        private class GlobalArrayConstant : MSAst.Expression {
+            public PythonGlobal[] Array;
+
+            public override bool CanReduce {
+                get {
+                    return true;
+                }
+            }
+
+            protected override MSAst.ExpressionType NodeTypeImpl() {
+                return MSAst.ExpressionType.Extension;
+            }
+
+            protected override Type TypeImpl() {
+                return typeof(PythonGlobal[]);
+            }
+
+            public override System.Linq.Expressions.Expression Reduce() {
+                // type specified for a better debugging experience (otherwise it ends up null)
+                return MSAst.Expression.Constant(Array, typeof(PythonGlobal[]));
+            }
         }
 
         protected MSAst.ParameterExpression/*!*/ GlobalArray {
