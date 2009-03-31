@@ -377,6 +377,17 @@ describe "Execution variable $:" do
     $:.should include("foo")
   end
 end
+
+describe "Execution variable $KCODE" do
+  it "defaults to NONE" do
+    begin
+      old_kcode, $KCODE = $KCODE, ""
+      $KCODE.should == "NONE"
+    ensure
+      $KCODE = old_kcode
+    end
+  end
+end
 =begin
 Standard Objects 
 ---------------------------------------------------------------------------------------------------
