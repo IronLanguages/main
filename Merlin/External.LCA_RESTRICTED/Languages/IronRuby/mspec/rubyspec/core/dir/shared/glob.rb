@@ -34,6 +34,10 @@ describe :dir_glob, :shared => true do
   it "returns empty array when empty pattern provided" do
     Dir.send(@method, '').should == []
   end
+  
+  it "returns empty array when nonexistent folder provided" do
+    Dir.send(@method, "#{DirSpecs.nonexistent}/*").should == []
+  end
 
   it "matches regexp special +" do
     Dir.send(@method, 'special/+').should == ['special/+']
