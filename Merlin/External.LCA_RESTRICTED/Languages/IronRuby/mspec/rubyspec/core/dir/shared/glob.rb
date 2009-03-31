@@ -251,4 +251,10 @@ describe :dir_glob_recursive, :shared => true do
 
     Dir.send(@method, 'a/**/b/**/z').sort.should == expected
   end
+
+  platform_is :windows do
+    it "returns empty array for recursive match on root" do
+      Dir["C:\\**\\"].should == []
+    end
+  end
 end
