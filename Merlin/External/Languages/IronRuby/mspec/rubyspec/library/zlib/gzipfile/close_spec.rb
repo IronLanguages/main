@@ -2,21 +2,35 @@ require File.dirname(__FILE__) + '/../../../spec_helper'
 require 'stringio'
 require 'zlib'
 
-describe 'Zlib::GzipFile#finish' do
-  it 'finishes the stream and closes the io' do
-    io = StringIO.new
-    Zlib::GzipWriter.wrap io do |gzio|
+describe 'Zlib::GzipFile#close' do
+  before(:each) do
+	@io = StringIO.new
+  end
+  
+  it 'closes the io' do
+    Zlib::GzipWriter.wrap @io do |gzio|
+      gzio.close
+      
+      gzio.closed?.should == true
+    end
+  end
+  
+  it 'calls the close method of the associated IO object' do
+    Zlib::GzipWriter.wrap @io do |gzio|
       gzio.close
 
-      gzio.closed?.should == true
-
-      lambda { gzio.orig_name }.should \
-        raise_error(Zlib::GzipFile::Error, 'closed gzip stream')
-      lambda { gzio.comment }.should \
-        raise_error(Zlib::GzipFile::Error, 'closed gzip stream')
+      @io.closed?.should == true
     end
-
-    io.string[10..-1].should == "\003\000\000\000\000\000\000\000\000\000"
+  end
+  
+  it 'returns the associated IO object' do
+    Zlib::GzipWriter.wrap @io do |gzio|
+      gzio.close.should eql(@io)
+    end
+  end
+  
+  after do
+    @io.close unless @io.closed?
   end
 end
 
