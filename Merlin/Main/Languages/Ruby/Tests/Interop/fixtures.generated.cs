@@ -449,6 +449,15 @@ public partial class ClassWithMethods {
 
     }
     #pragma warning restore 693
+#line 4 "./method/invocation/indexers_spec.rb"
+public partial class ClassWithIndexer {
+      public int[,] Values = new int[,] { {0, 10}, {20, 30} };
+
+      public int this[int i, int j] { 
+        get { return Values[i,j]; } 
+        set { Values[i,j] = value; } 
+      }
+    }
 #line 4 "./method/invocation/overload_spec.rb"
 public partial class ClassWithOverloads {
     public string PublicProtectedOverload(){
