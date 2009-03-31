@@ -38,7 +38,7 @@ namespace IronRuby.Compiler.Ast {
     internal class AstGenerator {
         private static int _UniqueId;
 
-        private readonly RubyBinder/*!*/ _binder;
+        private readonly RubyContext/*!*/ _context;
         private readonly RubyCompilerOptions/*!*/ _compilerOptions;
         private readonly SourceUnit/*!*/ _sourceUnit;
         private readonly MSA.SymbolDocumentInfo _document;
@@ -49,11 +49,11 @@ namespace IronRuby.Compiler.Ast {
         private readonly bool _traceEnabled;
         private readonly bool _savingToDisk;
 
-        internal AstGenerator(RubyBinder/*!*/ binder, RubyCompilerOptions/*!*/ options, SourceUnit/*!*/ sourceUnit, RubyEncoding/*!*/ encoding,
+        internal AstGenerator(RubyCompilerOptions/*!*/ options, SourceUnit/*!*/ sourceUnit, RubyEncoding/*!*/ encoding,
             bool debugCompiler, bool debugMode, bool traceEnabled, bool profilerEnabled, bool savingToDisk) {
 
-            Assert.NotNull(binder, options, encoding);
-            _binder = binder;
+            Assert.NotNull(options, encoding, sourceUnit);
+            _context = (RubyContext)sourceUnit.LanguageContext;
             _compilerOptions = options;
             _debugCompiler = debugCompiler;
             _debugMode = debugMode;
@@ -97,10 +97,8 @@ namespace IronRuby.Compiler.Ast {
             get { return _encoding; }
         }
 
-        internal ActionBinder Binder {
-            get {
-                return _binder;
-            }
+        internal RubyContext/*!*/ Context {
+            get { return _context; }
         }
 
         #region Lexical Scopes

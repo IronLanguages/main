@@ -121,12 +121,11 @@ namespace IronRuby.Builtins {
         #region Instance Methods
         
         [RubyMethod("[]")]
-        public static object GetElement(CallSiteStorage<Func<CallSite, RubyContext, Hash, object, object>>/*!*/ storage,            
-            RubyContext/*!*/ context, Hash/*!*/ self, object key) {
+        public static object GetElement(CallSiteStorage<Func<CallSite, Hash, object, object>>/*!*/ storage, Hash/*!*/ self, object key) {
             object result;
             if (!self.TryGetValue(BaseSymbolDictionary.NullToObj(key), out result)) {
                 var site = storage.GetCallSite("default", 1);
-                return site.Target(site, context, self, key);
+                return site.Target(site, self, key);
             }
             return result;
         }
@@ -137,11 +136,10 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("default")]
-        public static object GetDefaultValue(CallSiteStorage<Func<CallSite, RubyContext, Proc, Hash, object, object>>/*!*/ storage,
-            RubyContext/*!*/ context, Hash/*!*/ self, object key) {
+        public static object GetDefaultValue(CallSiteStorage<Func<CallSite, Proc, Hash, object, object>>/*!*/ storage, Hash/*!*/ self, object key) {
             if (self.DefaultProc != null) {
                 var site = storage.GetCallSite("call", 2);
-                return site.Target(site, context, self.DefaultProc, self, key);
+                return site.Target(site, self.DefaultProc, self, key);
             }
             return self.DefaultValue;
         }
@@ -201,14 +199,12 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("shift")]
-        public static object Shift(CallSiteStorage<Func<CallSite, RubyContext, Hash, object, object>>/*!*/ storage, 
-            RubyContext/*!*/ context, Hash/*!*/ self) {
-
-            RubyUtils.RequiresNotFrozen(context, self);
+        public static object Shift(CallSiteStorage<Func<CallSite, Hash, object, object>>/*!*/ storage, Hash/*!*/ self) {
+            RubyUtils.RequiresNotFrozen(storage.Context, self);
 
             if (self.Count == 0) {
                 var site = storage.GetCallSite("default", 1);
-                return site.Target(site, context, self, null);
+                return site.Target(site, self, null);
             }
 
             IEnumerator<KeyValuePair<object, object>> e = self.GetEnumerator();

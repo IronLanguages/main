@@ -29,7 +29,7 @@ namespace IronRuby.Tests {
     public partial class Tests {
 
         #region Block
-
+    
         public void OverloadResolution_Block() {
             var t = GetType();
 
@@ -47,13 +47,13 @@ namespace IronRuby.Tests {
 
             var arguments = new[] {
                 // 1.times
-                new CallArguments(scopeArg, instanceInt, new DynamicMetaObject[0], RubyCallSignature.WithScope(0)),
+                new CallArguments(Context, scopeArg, new[] { instanceInt }, RubyCallSignature.WithScope(0)),
                 // 1.times &nil             
-                new CallArguments(scopeArg, instanceInt, new[] {  nullArg }, RubyCallSignature.WithScopeAndBlock(0)),
+                new CallArguments(Context, scopeArg, new[] {  instanceInt, nullArg }, RubyCallSignature.WithScopeAndBlock(0)),
                 // 1.times &p                            
-                new CallArguments(contextArg, instanceInt, new[] {  procArg }, RubyCallSignature.WithBlock(0)),
+                new CallArguments(Context, instanceInt, new[] {  procArg }, RubyCallSignature.WithBlock(0)),
                 // obj.times &p                          
-                new CallArguments(contextArg, instanceStr, new[] {  procArg }, RubyCallSignature.WithBlock(0)),
+                new CallArguments(Context, instanceStr, new[] {  procArg }, RubyCallSignature.WithBlock(0)),
             };
 
             var results = new[] {

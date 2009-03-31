@@ -25,10 +25,13 @@ using Microsoft.Scripting.Utils;
 using IronPython.Runtime.Operations;
 
 namespace IronPython.Compiler {
-
-    interface IPythonGlobalExpression {
+    interface IPythonVariableExpression  {
         Expression/*!*/ Assign(Expression/*!*/ value);
         Expression/*!*/ Delete();
+    }
+
+    interface IPythonGlobalExpression : IPythonVariableExpression {
+        Expression/*!*/ RawValue();
     }
     /// <summary>
     /// Small reducable node which just fetches the value from a PythonGlobal
@@ -79,11 +82,18 @@ namespace IronPython.Compiler {
             );
         }
 
-        public virtual Expression/*!*/ Assign(Expression/*!*/ value) {
+        public Expression/*!*/ RawValue() {
+            return Expression.Property(
+                _variable,
+                PythonGlobal.RawValueProperty
+            );
+        }
+
+        public Expression/*!*/ Assign(Expression/*!*/ value) {
             return new PythonSetGlobalVariableExpression(this, value);
         }
 
-        public virtual Expression/*!*/ Delete() {
+        public Expression/*!*/ Delete() {
             return Expression.Assign(
                 Expression.Property(
                     Target,
@@ -93,8 +103,8 @@ namespace IronPython.Compiler {
             );
         }
 
-        protected override Expression VisitChildren(ExpressionVisitor visitor) {
-            Expression v = visitor.Visit(_variable);
+        protected override Expression VisitChildren(Func<Expression, Expression> visitor) {
+            Expression v = visitor(_variable);
             if (v == _variable) {
                 return this;
             }
@@ -161,9 +171,9 @@ namespace IronPython.Compiler {
         }
 
 
-        protected override Expression VisitChildren(ExpressionVisitor visitor) {
-            var g = (PythonGlobalVariableExpression)visitor.Visit(_global);
-            var v = visitor.Visit(_value);
+        protected override Expression VisitChildren(Func<Expression, Expression> visitor) {
+            var g = (PythonGlobalVariableExpression)visitor(_global);
+            var v = visitor(_value);
             if (g == _global && v == _value) {
                 return this;
             }
@@ -223,6 +233,14 @@ namespace IronPython.Compiler {
             get {
                 return true;
             }
+        }
+
+        public Expression/*!*/ RawValue() {
+            return Expression.Call(
+                typeof(PythonOps).GetMethod(_isLocal ? "RawGetLocal" : "RawGetGlobal"),
+                _scope,
+                Utils.Constant(SymbolTable.StringToId(_name))
+            );
         }
 
         public override Expression/*!*/ Reduce() {

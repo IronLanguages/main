@@ -25,25 +25,11 @@ using IronRuby.Runtime.Calls;
 namespace IronRuby.Runtime {
 
     public class IOWrapper : Stream {
-        private static readonly CallSite<Func<CallSite, RubyContext, object, MutableString, object>> _writeSite =
-            CallSite<Func<CallSite, RubyContext, object, MutableString, object>>.Create(
-                RubyCallAction.Make("write", RubyCallSignature.WithImplicitSelf(1))
-            );
-
-        private static readonly CallSite<Func<CallSite, RubyContext, object, int, MutableString>> _readSite =
-            CallSite<Func<CallSite, RubyContext, object, int, MutableString>>.Create(
-                RubyCallAction.Make("read", RubyCallSignature.WithImplicitSelf(1))
-            );
-
-        private static readonly CallSite<Func<CallSite, RubyContext, object, long, int, object>> _seekSite =
-            CallSite<Func<CallSite, RubyContext, object, long, int, object>>.Create(
-                RubyCallAction.Make("seek", RubyCallSignature.WithImplicitSelf(2))
-            );
-
-        private static readonly CallSite<Func<CallSite, RubyContext, object, long>> _tellSite =
-            CallSite<Func<CallSite, RubyContext, object, long>>.Create(
-                RubyCallAction.Make("tell", RubyCallSignature.WithImplicitSelf(0))
-            );
+        private readonly CallSite<Func<CallSite, object, MutableString, object>> _writeSite;
+        private readonly CallSite<Func<CallSite, object, int, MutableString>> _readSite;
+        private readonly CallSite<Func<CallSite, object, long, int, object>> _seekSite;
+        private readonly CallSite<Func<CallSite, object, long>> _tellSite;
+            
 
         private readonly RubyContext/*!*/ _context;
         private readonly object _obj;
@@ -63,6 +49,20 @@ namespace IronRuby.Runtime {
             Assert.NotNull(context);
 
             _context = context;
+
+            _writeSite = CallSite<Func<CallSite, object, MutableString, object>>.Create(
+                RubyCallAction.Make(context, "write", RubyCallSignature.WithImplicitSelf(1))
+            );
+            _readSite = CallSite<Func<CallSite, object, int, MutableString>>.Create(
+                RubyCallAction.Make(context, "read", RubyCallSignature.WithImplicitSelf(1))
+            );
+            _seekSite = CallSite<Func<CallSite, object, long, int, object>>.Create(
+                RubyCallAction.Make(context, "seek", RubyCallSignature.WithImplicitSelf(2))
+            );
+            _tellSite = CallSite<Func<CallSite, object, long>>.Create(
+                RubyCallAction.Make(context, "tell", RubyCallSignature.WithImplicitSelf(0))
+            );
+
             _obj = io;
 
             _canRead = canRead;
@@ -111,7 +111,7 @@ namespace IronRuby.Runtime {
                 if (!_canSeek) {
                     throw new NotSupportedException();
                 }
-                return _tellSite.Target(_tellSite, _context, _obj);
+                return _tellSite.Target(_tellSite, _obj);
             }
             set {
                 if (!_canSeek) {
@@ -131,7 +131,7 @@ namespace IronRuby.Runtime {
 
             if (_canFlush) {
                 var site = flushStorage.GetCallSite("flush");
-                site.Target(site, context, _obj);
+                site.Target(site, _obj);
             }
         }
 
@@ -201,7 +201,7 @@ namespace IronRuby.Runtime {
         }
 
         private int ReadFromObject(byte[]/*!*/ buffer, int offset, int count) {
-            MutableString result = _readSite.Target(_readSite, _context, _obj, count);
+            MutableString result = _readSite.Target(_readSite, _obj, count);
             if (result == null) {
                 return 0;
             } else {
@@ -229,7 +229,7 @@ namespace IronRuby.Runtime {
                     break;
             }
 
-            _seekSite.Target(_seekSite, _context, _obj, offset, rubyOrigin);
+            _seekSite.Target(_seekSite, _obj, offset, rubyOrigin);
             return Position;
         }
 
@@ -295,7 +295,7 @@ namespace IronRuby.Runtime {
                 buffer = newBuffer;
             }
             MutableString argument = MutableString.CreateBinary(buffer);
-            _writeSite.Target(_writeSite, _context, _obj, argument);
+            _writeSite.Target(_writeSite, _obj, argument);
         }
     }
 }

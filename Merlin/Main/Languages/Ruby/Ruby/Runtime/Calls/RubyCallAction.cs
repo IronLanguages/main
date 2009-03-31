@@ -14,29 +14,22 @@
  * ***************************************************************************/
 
 using System;
-using System.Diagnostics;
 using System.Linq.Expressions;
-using System.Reflection;
 using System.Dynamic;
 
-using Microsoft.Scripting;
 using Microsoft.Scripting.Utils;
 using Microsoft.Scripting.Runtime;
-using Microsoft.Scripting.Actions;
 
 using IronRuby.Builtins;
 using IronRuby.Compiler;
 
 using Ast = System.Linq.Expressions.Expression;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
-using AstFactory = IronRuby.Compiler.Ast.AstFactory;
 using IronRuby.Compiler.Generation;
-using System.Collections.Generic;
-using System.Runtime.CompilerServices;
-   
+
 namespace IronRuby.Runtime.Calls {
 
-    public class RubyCallAction : RubyMetaBinder, IEquatable<RubyCallAction>, IExpressionSerializable {
+    public class RubyCallAction : RubyMetaBinder, IExpressionSerializable {
         private readonly RubyCallSignature _signature;
         private readonly string/*!*/ _methodName;
 
@@ -48,91 +41,53 @@ namespace IronRuby.Runtime.Calls {
             get { return _methodName; }
         }
 
-        protected RubyCallAction(string/*!*/ methodName, RubyCallSignature signature) {
+        internal protected RubyCallAction(RubyContext context, string/*!*/ methodName, RubyCallSignature signature) 
+            : base(context) {
             Assert.NotNull(methodName);
             _methodName = methodName;
             _signature = signature;
         }
 
-        public static RubyCallAction/*!*/ Make(string/*!*/ methodName, int argumentCount) {
-            return Make(methodName, RubyCallSignature.Simple(argumentCount));
+        /// <summary>
+        /// Creates a runtime-bound call site binder.
+        /// </summary>
+        public static RubyCallAction/*!*/ Make(RubyContext/*!*/ context, string/*!*/ methodName, int argumentCount) {
+            return Make(context, methodName, RubyCallSignature.Simple(argumentCount));
         }
 
+        /// <summary>
+        /// Creates a runtime-bound call site binder.
+        /// </summary>
+        public static RubyCallAction/*!*/ Make(RubyContext/*!*/ context, string/*!*/ methodName, RubyCallSignature signature) {
+            ContractUtils.RequiresNotNull(context, "context");
+            ContractUtils.RequiresNotNull(methodName, "methodName");
+            return context.MetaBinderFactory.Call(methodName, signature);
+        }
+
+        /// <summary>
+        /// Creates a call site binder that can be used from multiple runtimes. The site it binds for can be called from multiple runtimes.
+        /// </summary>
         [Emitted]
-        public static RubyCallAction/*!*/ Make(string/*!*/ methodName, RubyCallSignature signature) {
-            return new RubyCallAction(methodName, signature);
-        }
-
-        #region Object Overrides, IEquatable
-
-        public override int GetHashCode() {
-            return _methodName.GetHashCode() ^ _signature.GetHashCode() ^ GetType().GetHashCode();
-        }
-
-        public override bool Equals(object obj) {
-            return Equals(obj as RubyCallAction);
+        public static RubyCallAction/*!*/ MakeShared(string/*!*/ methodName, RubyCallSignature signature) {
+            // TODO: reduce usage of these sites to minimum
+            return RubyMetaBinderFactory.Shared.Call(methodName, signature);
         }
 
         public override string/*!*/ ToString() {
-            return _methodName + _signature.ToString();
+            return _methodName + _signature.ToString() + (Context != null ? " @" + Context.RuntimeId.ToString() : null);
         }
-
-        public bool Equals(RubyCallAction other) {
-            return other != null && _methodName == other._methodName && _signature.Equals(other._signature) && other.GetType() == GetType();
-        }
-
-        #endregion
 
         #region IExpressionSerializable Members
 
         Expression/*!*/ IExpressionSerializable.CreateExpression() {
             return Expression.Call(
-                Methods.GetMethod(typeof(RubyCallAction), "Make", typeof(string), typeof(RubyCallSignature)),
+                Methods.GetMethod(typeof(RubyCallAction), "MakeShared", typeof(string), typeof(RubyCallSignature)),
                 AstUtils.Constant(_methodName),
                 _signature.CreateExpression()
             );
         }
 
         #endregion
-
-        private DynamicMetaObjectBinder/*!*/ GetInteropBinder(RubyContext/*!*/ context, CallInfo/*!*/ callInfo) {
-            switch (_methodName) {
-                case "new":
-                    return new InteropBinder.CreateInstance(context, callInfo);                    
-
-                case "call":
-                    return new InteropBinder.Invoke(context, callInfo);
-
-                case "to_s":
-                    return new InteropBinder.Convert(context, typeof(string), true);
-                    
-                case "to_str":
-                    return new InteropBinder.Convert(context, typeof(string), false);
-                    
-                // TODO: other ops
-
-                default:
-                    if (_methodName.EndsWith("=")) {
-                        // TODO: SetMemberBinder
-                        throw new NotSupportedException();
-                    } else {
-                        return new InteropBinder.InvokeMember(context, _methodName, callInfo);
-                    }
-            }
-        }
-
-        protected override DynamicMetaObject/*!*/ InteropBind(CallArguments/*!*/ args) {
-            var metaBuilder = new MetaObjectBuilder();
-
-            // TODO: pass block as the last parameter (before RHS arg?):
-            var normalizedArgs = RubyMethodGroupBase.NormalizeArguments(metaBuilder, args, SelfCallConvention.NoSelf, false, false);
-            var callInfo = new CallInfo(normalizedArgs.Length);
-
-            var interopBinder = GetInteropBinder(args.RubyContext, callInfo);
-            var result = interopBinder.Bind(args.MetaTarget, normalizedArgs);
-            metaBuilder.SetMetaResult(result, args);
-            return metaBuilder.CreateMetaObject(interopBinder);
-        }
 
         protected override void Build(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args) {
             Build(metaBuilder, _methodName, args, true);
@@ -156,7 +111,7 @@ namespace IronRuby.Runtime.Calls {
             MethodResolutionResult method;
             RubyClass targetClass = args.RubyContext.GetImmediateClassOf(args.Target);
             using (targetClass.Context.ClassHierarchyLocker()) {
-                metaBuilder.AddTargetTypeTest(args.Target, targetClass, args.TargetExpression, args.RubyContext, args.ContextExpression);
+                metaBuilder.AddTargetTypeTest(args.Target, targetClass, args.TargetExpression, args.MetaContext);
 
                 // TODO: All sites should have either implicit-self or has-scope flag set?
                 var visibilityContext = args.Signature.HasImplicitSelf || !args.Signature.HasScope ? RubyClass.IgnoreVisibility : args.Scope.SelfImmediateClass;
@@ -179,7 +134,7 @@ namespace IronRuby.Runtime.Calls {
                 // We don't need to compare versions, just the class objects (super-class relationship cannot be changed).
                 // Since we don't want to hold on a class object (to make it collectible) we compare references to the version boxes.
                 metaBuilder.AddCondition(Ast.Equal(
-                    Methods.GetSelfClassVersionHandle.OpCall(args.ScopeExpression),
+                    Methods.GetSelfClassVersionHandle.OpCall(AstUtils.Convert(args.MetaScope.Expression, typeof(RubyScope))),
                     Ast.Constant(args.Scope.SelfImmediateClass.Version)
                 ));
             }
@@ -198,9 +153,13 @@ namespace IronRuby.Runtime.Calls {
                 if (isSuperCall) {
                     metaBuilder.SetError(Methods.MakeMissingSuperException.OpCall(AstUtils.Constant(methodName)));
                 } else if (incompatibleVisibility == RubyMethodVisibility.Private) {
-                    metaBuilder.SetError(Methods.MakePrivateMethodCalledError.OpCall(args.ContextExpression, args.TargetExpression, AstUtils.Constant(methodName)));
+                    metaBuilder.SetError(Methods.MakePrivateMethodCalledError.OpCall(
+                        AstUtils.Convert(args.MetaContext.Expression, typeof(RubyContext)), args.TargetExpression, AstUtils.Constant(methodName))
+                    );
                 } else if (incompatibleVisibility == RubyMethodVisibility.Protected) {
-                    metaBuilder.SetError(Methods.MakeProtectedMethodCalledError.OpCall(args.ContextExpression, args.TargetExpression, AstUtils.Constant(methodName)));
+                    metaBuilder.SetError(Methods.MakeProtectedMethodCalledError.OpCall(
+                        AstUtils.Convert(args.MetaContext.Expression, typeof(RubyContext)), args.TargetExpression, AstUtils.Constant(methodName))
+                    );
                 } else if (defaultFallback) {
                     args.InsertMethodName(methodName);
                     methodMissing.BuildCall(metaBuilder, args, methodName);
@@ -214,5 +173,44 @@ namespace IronRuby.Runtime.Calls {
 
             return true;
         }
+
+        private DynamicMetaObjectBinder/*!*/ GetInteropBinder(RubyContext/*!*/ context, CallInfo/*!*/ callInfo) {
+            switch (_methodName) {
+                case "new":
+                    return new InteropBinder.CreateInstance(context, callInfo);
+
+                case "call":
+                    return new InteropBinder.Invoke(context, callInfo);
+
+                case "to_s":
+                    return new InteropBinder.Convert(context, typeof(string), true);
+
+                case "to_str":
+                    return new InteropBinder.Convert(context, typeof(string), false);
+
+                // TODO: other ops
+
+                default:
+                    if (_methodName.EndsWith("=")) {
+                        // TODO: SetMemberBinder
+                        throw new NotSupportedException();
+                    } else {
+                        return new InteropBinder.InvokeMember(context, _methodName, callInfo);
+                    }
+            }
+        }
+
+        protected override DynamicMetaObject/*!*/ InteropBind(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args) {
+            // TODO: pass block as the last parameter (before RHS arg?):
+            var normalizedArgs = RubyMethodGroupBase.NormalizeArguments(metaBuilder, args, SelfCallConvention.NoSelf, false, false);
+            var callInfo = new CallInfo(normalizedArgs.Length);
+
+            var interopBinder = GetInteropBinder(args.RubyContext, callInfo);
+            var result = interopBinder.Bind(args.MetaTarget, normalizedArgs);
+            metaBuilder.SetMetaResult(result, args);
+            return metaBuilder.CreateMetaObject(interopBinder);
+        }
+
+        
     }
 }

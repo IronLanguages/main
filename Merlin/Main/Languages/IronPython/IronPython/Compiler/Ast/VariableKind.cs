@@ -42,14 +42,6 @@ namespace IronPython.Compiler.Ast {
         Parameter,
 
         /// <summary>
-        /// Temporary variable
-        /// 
-        /// Temporaries must be contained within the lambda
-        /// (cannot be referenced from nested lambdas)
-        /// </summary>
-        Temporary,
-
-        /// <summary>
         /// Global variable
         /// 
         /// Should only appear in global (top level) lambda.

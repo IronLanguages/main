@@ -53,7 +53,7 @@ namespace IronRuby.Builtins {
         [RubyMethod("induced_from", RubyMethodAttributes.PublicSingleton)]
         public static object InducedFrom(UnaryOpStorage/*!*/ toiStorage, RubyClass/*!*/ self, double obj) {
             var site = toiStorage.GetCallSite("to_i");
-            return site.Target(site, self.Context, obj);
+            return site.Target(site, obj);
         }
 
         /// <summary>
@@ -139,21 +139,19 @@ namespace IronRuby.Builtins {
         /// This approach automatically deals with Floats and overflow/underflow between Fixnum and Bignum.
         /// </remarks>
         [RubyMethod("downto")]
-        public static object DownTo(
-            BinaryOpStorage/*!*/ lessThanStorage,
-            BinaryOpStorage/*!*/ subtractStorage,
-            RubyContext/*!*/ context, BlockParam block, object/*!*/ self, object other) {
+        public static object DownTo(BinaryOpStorage/*!*/ lessThanStorage, BinaryOpStorage/*!*/ subtractStorage,
+            BlockParam block, object/*!*/ self, object other) {
             object i = self;
             object compare = null;
 
             var lessThan = lessThanStorage.GetCallSite("<");
             while (RubyOps.IsFalse(compare)) {
                 // Rather than test i >= other we test !(i < other)
-                compare = lessThan.Target(lessThan, context, i, other);
+                compare = lessThan.Target(lessThan, i, other);
 
                 // If the comparison failed (i.e. returned null) then we throw an error.
                 if (compare == null) {
-                    throw RubyExceptions.MakeComparisonError(context, i, other);
+                    throw RubyExceptions.MakeComparisonError(lessThanStorage.Context, i, other);
                 }
 
                 // If the comparison worked but returned false then we 
@@ -168,7 +166,7 @@ namespace IronRuby.Builtins {
                     }
 
                     var subtract = subtractStorage.GetCallSite("-");
-                    i = subtract.Target(subtract, context, i, 1);
+                    i = subtract.Target(subtract, i, 1);
                 }
             }
             return self;
@@ -212,9 +210,9 @@ namespace IronRuby.Builtins {
         /// <remarks>Dynamically invokes "+" operator to get next value.</remarks>
         [RubyMethod("succ")]
         [RubyMethod("next")]
-        public static object Next(BinaryOpStorage/*!*/ addStorage, RubyContext/*!*/ context, object/*!*/ self) {
+        public static object Next(BinaryOpStorage/*!*/ addStorage, object/*!*/ self) {
             var site = addStorage.GetCallSite("+");
-            return site.Target(site, context, self, ClrInteger.One);
+            return site.Target(site, self, ClrInteger.One);
         }
 
         #endregion
@@ -259,14 +257,10 @@ namespace IronRuby.Builtins {
         /// Dynamically invokes "&lt;" operator to check if we have reached self - 1.
         /// </remarks>
         [RubyMethodAttribute("times")]
-        public static object Times(
-            BinaryOpStorage/*!*/ lessThanStorage,
-            BinaryOpStorage/*!*/ addStorage,
-            RubyContext/*!*/ context, BlockParam block, object/*!*/ self) {
-
+        public static object Times(BinaryOpStorage/*!*/ lessThanStorage, BinaryOpStorage/*!*/ addStorage, BlockParam block, object/*!*/ self) {
             object i = 0;
             var lessThan = lessThanStorage.GetCallSite("<");
-            while (RubyOps.IsTrue(lessThan.Target(lessThan, context, i, self))) {
+            while (RubyOps.IsTrue(lessThan.Target(lessThan, i, self))) {
                 if (block == null) {
                     throw RubyExceptions.NoBlockGiven();
                 }
@@ -277,7 +271,7 @@ namespace IronRuby.Builtins {
                 }
 
                 var add = addStorage.GetCallSite("+");
-                i = add.Target(add, context, i, 1);
+                i = add.Target(add, i, 1);
             }
             return self;
         }
@@ -325,21 +319,19 @@ namespace IronRuby.Builtins {
         /// This approach automatically deals with Floats and overflow/underflow between Fixnum and Bignum.
         /// </remarks>
         [RubyMethod("upto")]
-        public static object UpTo(
-            BinaryOpStorage/*!*/ greaterThanStorage,
-            BinaryOpStorage/*!*/ addStorage, 
-            RubyContext/*!*/ context, BlockParam block, object/*!*/ self, object other) {
+        public static object UpTo(BinaryOpStorage/*!*/ greaterThanStorage, BinaryOpStorage/*!*/ addStorage, 
+            BlockParam block, object/*!*/ self, object other) {
 
             object i = self;
             object compare = null;
             var greaterThan = greaterThanStorage.GetCallSite(">");
             while (RubyOps.IsFalse(compare)) {
                 // Rather than test i <= other we test !(i > other)
-                compare = greaterThan.Target(greaterThan, context, i, other);
+                compare = greaterThan.Target(greaterThan, i, other);
 
                 // If the comparison failed (i.e. returned null) then we throw an error.
                 if (compare == null) {
-                    throw RubyExceptions.MakeComparisonError(context, i, other);
+                    throw RubyExceptions.MakeComparisonError(greaterThanStorage.Context, i, other);
                 }
 
                 // If the comparison worked but returned false then we carry on
@@ -354,7 +346,7 @@ namespace IronRuby.Builtins {
                     }
 
                     var add = addStorage.GetCallSite("+");
-                    i = add.Target(add, context, i, 1);
+                    i = add.Target(add, i, 1);
                 }
             }
             return self;

@@ -457,6 +457,25 @@ namespace Microsoft.Scripting.Interpreter {
                 return;
             }
 
+            FieldInfo fi = member.Member as FieldInfo;
+            if (fi != null) {
+                this.Compile(member.Expression);
+                this.Compile(node.Right);
+
+                int index = 0;
+                if (!asVoid) {
+                    index = AddVariable(Expression.Parameter(node.Right.Type, null));
+                    AddInstruction(new SetLocalInstruction(index));
+                    // TODO: free the variable when it goes out of scope
+                }
+
+                AddInstruction(new FieldAssignInstruction(fi));
+
+                if (!asVoid) {
+                    AddInstruction(new GetLocalInstruction(index));
+                }
+                return;
+            }
 
             throw new NotImplementedException();
         }

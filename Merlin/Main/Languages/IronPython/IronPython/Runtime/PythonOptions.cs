@@ -51,6 +51,7 @@ namespace IronPython {
         private readonly Version _version;
         private readonly bool _adaptiveCompilation;
         private readonly bool _enableProfiler;
+        private readonly bool _lightweightScopes;
 
         public ReadOnlyCollection<string>/*!*/ Arguments {
             get { return _arguments; }
@@ -135,6 +136,12 @@ namespace IronPython {
             get { return _adaptiveCompilation; }
         }
 
+        public bool LightweightScopes {
+            get {
+                return _lightweightScopes;
+            }
+        }
+
         /// <summary>
         /// Enable profiling code
         /// </summary>
@@ -173,6 +180,7 @@ namespace IronPython {
             _indentationInconsistencySeverity = GetOption(options, "IndentationInconsistencySeverity", Severity.Ignore);
             _adaptiveCompilation = GetOption(options, "AdaptiveCompilation", true);
             _enableProfiler = GetOption(options, "EnableProfiler", false);
+            _lightweightScopes = GetOption(options, "LightweightScopes", false);
 
             object value;
             if (options != null && options.TryGetValue("PythonVersion", out value)) {

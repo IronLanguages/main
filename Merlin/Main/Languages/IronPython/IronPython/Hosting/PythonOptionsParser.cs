@@ -148,6 +148,10 @@ namespace IronPython.Hosting {
                 case "-X:EnableProfiler":
                     LanguageSetup.Options["EnableProfiler"] = ScriptingRuntimeHelpers.True;
                     break;
+                
+                case "-X:LightweightScopes":
+                    LanguageSetup.Options["LightweightScopes"] = ScriptingRuntimeHelpers.True;
+                    break;
 
                 case "-X:MTA":
                     ConsoleOptions.IsMta = true;
@@ -218,6 +222,7 @@ namespace IronPython.Hosting {
                 { "-X:MTA",                 "Run in multithreaded apartment" },
                 { "-X:Python26",            "Enable Python 2.6 features" },
                 { "-X:EnableProfiler",      "Enables profiling support in the compiler" },
+                { "-X:LightweightScopes",   "Generate optimized scopes that can be garbage collected" },
             };
 
             // Append the Python-specific options and the standard options

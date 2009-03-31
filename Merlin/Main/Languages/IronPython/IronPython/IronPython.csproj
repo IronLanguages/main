@@ -103,6 +103,9 @@
     <Compile Include="Compiler\Ast\AssertStatement.cs" />
     <Compile Include="Compiler\Ast\AssignmentStatement.cs" />
     <Compile Include="Compiler\Ast\AstGenerator.cs" />
+    <Compile Include="Compiler\ClosureExpression.cs" />
+    <Compile Include="Compiler\ClosureInfo.cs" />
+    <Compile Include="Compiler\CompilationMode.cs" />
     <Compile Include="Runtime\Profiler.cs" />
     <Compile Include="Compiler\GlobalAllocator.cs" />
     <Compile Include="Compiler\Ast\AugmentedAssignStatement.cs" />

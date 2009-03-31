@@ -67,7 +67,7 @@ namespace IronRuby.Compiler.Ast {
                     return TransformConcatentation(gen, _parts, Methods.CreateSymbol);
 
                 case StringKind.Command:
-                    return Ast.Dynamic(RubyCallAction.Make("`", new RubyCallSignature(1, RubyCallFlags.HasScope | RubyCallFlags.HasImplicitSelf)), typeof(object),
+                    return Ast.Dynamic(RubyCallAction.Make(gen.Context, "`", new RubyCallSignature(1, RubyCallFlags.HasScope | RubyCallFlags.HasImplicitSelf)), typeof(object),
                         gen.CurrentScopeVariable,
                         gen.CurrentSelfVariable,
                         TransformConcatentation(gen, _parts, Methods.CreateMutableString)
@@ -83,11 +83,7 @@ namespace IronRuby.Compiler.Ast {
         }
         
         internal static MSA.Expression/*!*/ MakeConversion(AstGenerator/*!*/ gen, Expression/*!*/ expression) {
-            return Ast.Dynamic(
-                ConvertToSAction.Instance,
-                typeof(MutableString),
-                Methods.GetContextFromScope.OpCall(gen.CurrentScopeVariable), expression.TransformRead(gen)
-            );
+            return Ast.Dynamic(ConvertToSAction.Make(gen.Context), typeof(MutableString), expression.TransformRead(gen));
         }
 
         #region Literal Concatenation

@@ -30,23 +30,18 @@ namespace IronRuby.Runtime.Calls {
     // 1) implicit conversion to MutableString
     // 2) calls to_s
     // 3) default conversion if (2) returns a non-string
-    public sealed class ConvertToSAction : RubyConversionAction, IExpressionSerializable, IEquatable<ConvertToSAction> {
-        public static readonly ConvertToSAction Instance = new ConvertToSAction();
-
-        private ConvertToSAction() {
+    public sealed class ConvertToSAction : RubyConversionAction, IExpressionSerializable {
+        public static ConvertToSAction/*!*/ Make(RubyContext/*!*/ context) {
+            return context.MetaBinderFactory.Conversion<ConvertToSAction>();
         }
 
         [Emitted]
-        public static ConvertToSAction/*!*/ Make() {
-            return Instance;
-        }
-
-        public bool Equals(ConvertToSAction other) {
-            return other != null;
+        public static ConvertToSAction/*!*/ MakeShared() {
+            return RubyMetaBinderFactory.Shared.Conversion<ConvertToSAction>();
         }
 
         Expression/*!*/ IExpressionSerializable.CreateExpression() {
-            return Ast.Call(Methods.GetMethod(GetType(), "Make"));
+            return Methods.GetMethod(GetType(), "MakeShared").OpCall();
         }
 
         protected override ConvertBinder/*!*/ GetInteropBinder(RubyContext/*!*/ context, out MethodInfo postConverter) {
@@ -69,7 +64,7 @@ namespace IronRuby.Runtime.Calls {
 
             RubyClass targetClass = args.RubyContext.GetImmediateClassOf(args.Target);
             using (targetClass.Context.ClassHierarchyLocker()) {
-                metaBuilder.AddTargetTypeTest(args.Target, targetClass, args.TargetExpression, args.RubyContext, args.ContextExpression);
+                metaBuilder.AddTargetTypeTest(args.Target, targetClass, args.TargetExpression, args.MetaContext);
                 conversionMethod = targetClass.ResolveMethodForSiteNoLock(ToS, RubyClass.IgnoreVisibility).Info;
 
                 // find method_missing - we need to add "to_xxx" methods to the missing methods table:
@@ -89,7 +84,11 @@ namespace IronRuby.Runtime.Calls {
                 RubyCallAction.BindToMethodMissing(metaBuilder, args, ToS, methodMissing, RubyMethodVisibility.None, false, true);
             }
 
-            metaBuilder.Result = Methods.ToSDefaultConversion.OpCall(args.ContextExpression, AstFactory.Box(args.TargetExpression), AstFactory.Box(metaBuilder.Result));
+            metaBuilder.Result = Methods.ToSDefaultConversion.OpCall(
+                AstUtils.Convert(args.MetaContext.Expression, typeof(RubyContext)), 
+                AstFactory.Box(args.TargetExpression), 
+                AstFactory.Box(metaBuilder.Result)
+            );
         }
     }
 

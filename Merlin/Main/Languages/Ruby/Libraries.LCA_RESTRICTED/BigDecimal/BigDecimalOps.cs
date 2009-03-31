@@ -379,8 +379,8 @@ namespace IronRuby.StandardLibrary.BigDecimal {
         [RubyMethod("+")]
         [RubyMethod("add")]
         public static object Add(BinaryOpStorage/*!*/ coercionStorage, BinaryOpStorage/*!*/ opStorage, 
-            RubyContext/*!*/ context, BigDecimal/*!*/ self, object other) {
-            return Protocols.CoerceAndApply(coercionStorage, opStorage, "+", context, self, other);
+            BigDecimal/*!*/ self, object other) {
+            return Protocols.CoerceAndApply(coercionStorage, opStorage, "+", self, other);
         }
 
         [RubyMethod("add")]
@@ -408,8 +408,8 @@ namespace IronRuby.StandardLibrary.BigDecimal {
 
         [RubyMethod("add")]
         public static object Add(BinaryOpStorage/*!*/ coercionStorage, BinaryOpStorage/*!*/ opStorage, 
-            RubyContext/*!*/ context, BigDecimal/*!*/ self, object other, [DefaultProtocol]int n) {
-            return Protocols.CoerceAndApply(coercionStorage, opStorage, "+", context, self, other);
+            BigDecimal/*!*/ self, object other, [DefaultProtocol]int n) {
+            return Protocols.CoerceAndApply(coercionStorage, opStorage, "+", self, other);
         }
 
         #endregion
@@ -438,9 +438,8 @@ namespace IronRuby.StandardLibrary.BigDecimal {
 
         [RubyMethod("-")]
         [RubyMethod("sub")]
-        public static object Subtract(BinaryOpStorage/*!*/ coercionStorage, BinaryOpStorage/*!*/ binaryOpSite,
-            RubyContext/*!*/ context, BigDecimal/*!*/ self, object other) {
-            return Protocols.CoerceAndApply(coercionStorage, binaryOpSite, "-", context, self, other);
+        public static object Subtract(BinaryOpStorage/*!*/ coercionStorage, BinaryOpStorage/*!*/ binaryOpSite, BigDecimal/*!*/ self, object other) {
+            return Protocols.CoerceAndApply(coercionStorage, binaryOpSite, "-", self, other);
         }
 
         [RubyMethod("sub")]
@@ -468,8 +467,8 @@ namespace IronRuby.StandardLibrary.BigDecimal {
 
         [RubyMethod("sub")]
         public static object Subtract(BinaryOpStorage/*!*/ coercionStorage, BinaryOpStorage/*!*/ binaryOpSite, 
-            RubyContext/*!*/ context, BigDecimal/*!*/ self, object other, [DefaultProtocol]int n) {
-            return Protocols.CoerceAndApply(coercionStorage, binaryOpSite, "sub", context, self, other);
+            BigDecimal/*!*/ self, object other, [DefaultProtocol]int n) {
+            return Protocols.CoerceAndApply(coercionStorage, binaryOpSite, "sub", self, other);
         }
 
         #endregion
@@ -495,8 +494,8 @@ namespace IronRuby.StandardLibrary.BigDecimal {
 
         [RubyMethod("*")]
         public static object Multiply(BinaryOpStorage/*!*/ coercionStorage, BinaryOpStorage/*!*/ binaryOpSite, 
-            RubyContext/*!*/ context, BigDecimal/*!*/ self, object other) {
-            return Protocols.CoerceAndApply(coercionStorage, binaryOpSite, "*", context, self, other);
+            BigDecimal/*!*/ self, object other) {
+            return Protocols.CoerceAndApply(coercionStorage, binaryOpSite, "*", self, other);
         }
 
         [RubyMethod("mult")]
@@ -524,9 +523,9 @@ namespace IronRuby.StandardLibrary.BigDecimal {
 
         [RubyMethod("mult")]
         public static object Multiply(BinaryOpStorage/*!*/ coercionStorage, BinaryOpStorage/*!*/ binaryOpSite, 
-            RubyContext/*!*/ context, BigDecimal/*!*/ self, object other, [DefaultProtocol]int n) {
+            BigDecimal/*!*/ self, object other, [DefaultProtocol]int n) {
             // TODO: converts result to BigDecimal
-            return Protocols.CoerceAndApply(coercionStorage, binaryOpSite, "mult", context, self, other);
+            return Protocols.CoerceAndApply(coercionStorage, binaryOpSite, "mult", self, other);
         }
 
         #endregion
@@ -585,19 +584,19 @@ namespace IronRuby.StandardLibrary.BigDecimal {
         [RubyMethod("modulo")]
         public static object Modulo(BinaryOpStorage/*!*/ moduloStorage, RubyContext/*!*/ context, BigDecimal/*!*/ self, double other) {
             var modulo = moduloStorage.GetCallSite("modulo");
-            return modulo.Target(modulo, context, BigDecimal.ToFloat(GetConfig(context), self), other);
+            return modulo.Target(modulo, BigDecimal.ToFloat(GetConfig(context), self), other);
         }
 
         [RubyMethod("%")]
         public static object ModuloOp(BinaryOpStorage/*!*/ coercionStorage, BinaryOpStorage/*!*/ binaryOpSite, 
             RubyContext/*!*/ context, BigDecimal/*!*/ self, object other) {
-            return Protocols.CoerceAndApply(coercionStorage, binaryOpSite, "%", context, self, other);
+            return Protocols.CoerceAndApply(coercionStorage, binaryOpSite, "%", self, other);
         }
 
         [RubyMethod("modulo")]
         public static object Modulo(BinaryOpStorage/*!*/ coercionStorage, BinaryOpStorage/*!*/ binaryOpSite, 
             RubyContext/*!*/ context, BigDecimal/*!*/ self, object other) {
-            return Protocols.CoerceAndApply(coercionStorage, binaryOpSite, "modulo", context, self, other);
+            return Protocols.CoerceAndApply(coercionStorage, binaryOpSite, "modulo", self, other);
         }
 
         #endregion
@@ -645,7 +644,7 @@ namespace IronRuby.StandardLibrary.BigDecimal {
         [RubyMethod("divmod")]
         public static object DivMod(BinaryOpStorage/*!*/ coercionStorage, BinaryOpStorage/*!*/ binaryOpSite, 
             RubyContext/*!*/ context, BigDecimal/*!*/ self, object other) {
-            return Protocols.CoerceAndApply(coercionStorage, binaryOpSite, "divmod", context, self, other);
+            return Protocols.CoerceAndApply(coercionStorage, binaryOpSite, "divmod", self, other);
         }
 
         #endregion
@@ -663,9 +662,8 @@ namespace IronRuby.StandardLibrary.BigDecimal {
         }
 
         [RubyMethod("remainder")]
-        public static object Remainder(BinaryOpStorage/*!*/ coercionStorage, BinaryOpStorage/*!*/ binaryOpSite, 
-            RubyContext/*!*/ context, BigDecimal/*!*/ self, object other) {
-            return Protocols.CoerceAndApply(coercionStorage, binaryOpSite, "remainder", context, self, other);
+        public static object Remainder(BinaryOpStorage/*!*/ coercionStorage, BinaryOpStorage/*!*/ binaryOpSite, BigDecimal/*!*/ self, object other) {
+            return Protocols.CoerceAndApply(coercionStorage, binaryOpSite, "remainder", self, other);
         }
 
         #endregion
@@ -707,9 +705,8 @@ namespace IronRuby.StandardLibrary.BigDecimal {
         }
 
         [RubyMethod("<=>")]
-        public static object Compare(BinaryOpStorage/*!*/ coercionStorage, BinaryOpStorage/*!*/ comparisonStorage, 
-            RubyContext/*!*/ context, BigDecimal/*!*/ self, object other) {
-            return Protocols.CoerceAndCompare(coercionStorage, comparisonStorage, context, self, other);
+        public static object Compare(BinaryOpStorage/*!*/ coercionStorage, BinaryOpStorage/*!*/ comparisonStorage, BigDecimal/*!*/ self, object other) {
+            return Protocols.CoerceAndCompare(coercionStorage, comparisonStorage, self, other);
         }
 
         #endregion
@@ -742,9 +739,8 @@ namespace IronRuby.StandardLibrary.BigDecimal {
         }
 
         [RubyMethod(">")]
-        public static object GreaterThan(BinaryOpStorage/*!*/ coercionStorage, BinaryOpStorage/*!*/ comparisonStorage, 
-            RubyContext/*!*/ context, BigDecimal/*!*/ self, object other) {
-            return Protocols.TryCoerceAndApply(coercionStorage, comparisonStorage, ">", context, self, other); 
+        public static object GreaterThan(BinaryOpStorage/*!*/ coercionStorage, BinaryOpStorage/*!*/ comparisonStorage, BigDecimal/*!*/ self, object other) {
+            return Protocols.TryCoerceAndApply(coercionStorage, comparisonStorage, ">", self, other); 
         }
 
         #endregion
@@ -777,8 +773,8 @@ namespace IronRuby.StandardLibrary.BigDecimal {
 
         [RubyMethod(">=")]
         public static object GreaterThanOrEqual(BinaryOpStorage/*!*/ coercionStorage, BinaryOpStorage/*!*/ comparisonStorage, 
-            RubyContext/*!*/ context, BigDecimal/*!*/ self, object other) {
-            return Protocols.TryCoerceAndApply(coercionStorage, comparisonStorage, ">=", context, self, other);
+            BigDecimal/*!*/ self, object other) {
+            return Protocols.TryCoerceAndApply(coercionStorage, comparisonStorage, ">=", self, other);
         }
 
         #endregion
@@ -811,8 +807,8 @@ namespace IronRuby.StandardLibrary.BigDecimal {
 
         [RubyMethod("<")]
         public static object LessThan(BinaryOpStorage/*!*/ coercionStorage, BinaryOpStorage/*!*/ comparisonStorage, 
-            RubyContext/*!*/ context, BigDecimal/*!*/ self, object other) {
-            return Protocols.TryCoerceAndApply(coercionStorage, comparisonStorage, "<", context, self, other);
+            BigDecimal/*!*/ self, object other) {
+            return Protocols.TryCoerceAndApply(coercionStorage, comparisonStorage, "<", self, other);
         }
 
         #endregion
@@ -845,8 +841,8 @@ namespace IronRuby.StandardLibrary.BigDecimal {
 
         [RubyMethod("<=")]
         public static object LessThanOrEqual(BinaryOpStorage/*!*/ coercionStorage, BinaryOpStorage/*!*/ comparisonStorage, 
-            RubyContext/*!*/ context, BigDecimal/*!*/ self, object other) {
-            return Protocols.TryCoerceAndApply(coercionStorage, comparisonStorage, "<=", context, self, other);
+            BigDecimal/*!*/ self, object other) {
+            return Protocols.TryCoerceAndApply(coercionStorage, comparisonStorage, "<=", self, other);
         }
 
         #endregion
@@ -888,12 +884,12 @@ namespace IronRuby.StandardLibrary.BigDecimal {
         [RubyMethod("eql?")] // HACK - this is actually semantically wrong but is what the BigDecimal library does.
         [RubyMethod("==")]
         [RubyMethod("===")]
-        public static object Equal(BinaryOpStorage/*!*/ equals, RubyContext/*!*/ context, BigDecimal/*!*/ self, object other) {
+        public static object Equal(BinaryOpStorage/*!*/ equals, BigDecimal/*!*/ self, object other) {
             // This is a hack since normal numeric values do not return nil for nil (they return false)
             if (other == null) {
                 return null;
             }
-            return Protocols.IsEqual(equals, context, other, self);
+            return Protocols.IsEqual(equals, other, self);
         }
 
         #endregion

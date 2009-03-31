@@ -330,11 +330,9 @@ namespace IronRuby.Builtins {
         #region %, *, +
 
         [RubyMethod("%")]
-        public static MutableString/*!*/ Format(StringFormatterSiteStorage/*!*/ storage, RubyContext/*!*/ context, 
-            MutableString/*!*/ self, object arg) {
-
+        public static MutableString/*!*/ Format(StringFormatterSiteStorage/*!*/ storage, MutableString/*!*/ self, object arg) {
             IList args = arg as IList ?? new object[] { arg };
-            StringFormatter formatter = new StringFormatter(storage, context, self.ConvertToString(), args);
+            StringFormatter formatter = new StringFormatter(storage, self.ConvertToString(), args);
             return formatter.Format().TaintBy(self);
         }
 
@@ -388,19 +386,18 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("<=>")]
-        public static object Compare(BinaryOpStorage/*!*/ comparisonStorage, RespondToStorage/*!*/ respondToStorage, 
-            RubyContext/*!*/ context, object/*!*/ self, object other) {
+        public static object Compare(BinaryOpStorage/*!*/ comparisonStorage, RespondToStorage/*!*/ respondToStorage, object/*!*/ self, object other) {
             // Self is object so that we can reuse this method.
 
             // We test to see if other responds to to_str AND <=>
             // Ruby never attempts to convert other to a string via to_str and call Compare ... which is strange -- feels like a BUG in Ruby
 
-            if (Protocols.RespondTo(respondToStorage, context, other, "to_str") && Protocols.RespondTo(respondToStorage, context, other, "<=>")) {
+            if (Protocols.RespondTo(respondToStorage, other, "to_str") && Protocols.RespondTo(respondToStorage, other, "<=>")) {
                 var site = comparisonStorage.GetCallSite("<=>");
-                object result = Integer.TryUnaryMinus(site.Target(site, context, other, self));
+                object result = Integer.TryUnaryMinus(site.Target(site, other, self));
                 if (result == null) {
                     throw RubyExceptions.CreateTypeError(String.Format("{0} can't be coerced into Fixnum",
-                        RubyUtils.GetClassName(context, result)));
+                        RubyUtils.GetClassName(comparisonStorage.Context, result)));
                 }
 
                 return result;
@@ -418,15 +415,15 @@ namespace IronRuby.Builtins {
         [RubyMethod("==")]
         [RubyMethod("===")]
         public static bool Equals(RespondToStorage/*!*/ respondToStorage, BinaryOpStorage/*!*/ equalsStorage,
-            RubyContext/*!*/ context, object/*!*/ self, object other) {
+            object/*!*/ self, object other) {
             // Self is object so that we can reuse this method.
 
-            if (!Protocols.RespondTo(respondToStorage, context, other, "to_str")) {
+            if (!Protocols.RespondTo(respondToStorage, other, "to_str")) {
                 return false;
             }
 
             var equals = equalsStorage.GetCallSite("==");
-            return Protocols.IsTrue(equals.Target(equals, context, other, self));
+            return Protocols.IsTrue(equals.Target(equals, other, self));
         }
 
         #endregion
@@ -491,10 +488,10 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("slice!")]
-        public static MutableString RemoveSubstringInPlace(ConversionStorage<int>/*!*/ fixnumCast, RubyContext/*!*/ context, 
+        public static MutableString RemoveSubstringInPlace(ConversionStorage<int>/*!*/ fixnumCast, 
             MutableString/*!*/ self, [NotNull]Range/*!*/ range) {
-            int begin = Protocols.CastToFixnum(fixnumCast, context, range.Begin);
-            int end = Protocols.CastToFixnum(fixnumCast, context, range.End);
+            int begin = Protocols.CastToFixnum(fixnumCast, range.Begin);
+            int end = Protocols.CastToFixnum(fixnumCast, range.End);
 
             if (!InInclusiveRangeNormalized(self, ref begin)) {
                 return null;
@@ -581,10 +578,9 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("[]")]
         [RubyMethod("slice")]
-        public static MutableString GetSubstring(ConversionStorage<int>/*!*/ fixnumCast, RubyContext/*!*/ context, MutableString/*!*/ self, 
-            [NotNull]Range/*!*/ range) {
-            int begin = Protocols.CastToFixnum(fixnumCast, context, range.Begin);
-            int end = Protocols.CastToFixnum(fixnumCast, context, range.End);
+        public static MutableString GetSubstring(ConversionStorage<int>/*!*/ fixnumCast, MutableString/*!*/ self, [NotNull]Range/*!*/ range) {
+            int begin = Protocols.CastToFixnum(fixnumCast, range.Begin);
+            int end = Protocols.CastToFixnum(fixnumCast, range.End);
 
             begin = NormalizeIndex(self, begin);
             if (begin < 0 || begin > self.Length) {
@@ -712,11 +708,11 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("[]=")]
-        public static MutableString/*!*/ ReplaceSubstring(ConversionStorage<int>/*!*/ fixnumCast, RubyContext/*!*/ context, MutableString/*!*/ self, 
+        public static MutableString/*!*/ ReplaceSubstring(ConversionStorage<int>/*!*/ fixnumCast, MutableString/*!*/ self, 
             [NotNull]Range/*!*/ range, [DefaultProtocol, NotNull]MutableString/*!*/ value) {
 
-            int begin = Protocols.CastToFixnum(fixnumCast, context, range.Begin);
-            int end = Protocols.CastToFixnum(fixnumCast, context, range.End);
+            int begin = Protocols.CastToFixnum(fixnumCast, range.Begin);
+            int end = Protocols.CastToFixnum(fixnumCast, range.End);
 
             begin = begin < 0 ? begin + self.Length : begin;
 
@@ -1233,7 +1229,7 @@ namespace IronRuby.Builtins {
             // resets the $~ scope variable to the last match (skipped if block jumped):
             matchScope.CurrentMatch = match;
 
-            MutableString replacement = Protocols.ConvertToString(tosConversion, scope.RubyContext, blockResult);
+            MutableString replacement = Protocols.ConvertToString(tosConversion, blockResult);
             result.TaintBy(replacement);
 
             // Note - we don't interpolate special sequences like \1 in block return value
@@ -1278,7 +1274,7 @@ namespace IronRuby.Builtins {
                 // resets the $~ scope variable to the last match (skipd if block jumped):
                 matchScope.CurrentMatch = currentMatch;
 
-                MutableString replacement = Protocols.ConvertToString(tosConversion, scope.RubyContext, blockResult);
+                MutableString replacement = Protocols.ConvertToString(tosConversion, blockResult);
                 result.TaintBy(replacement);
 
                 // prematch:
@@ -1819,10 +1815,10 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("=~")]
-        public static object Match(CallSiteStorage<Func<CallSite, RubyContext, object, MutableString, object>>/*!*/ storage,
+        public static object Match(CallSiteStorage<Func<CallSite, RubyScope, object, MutableString, object>>/*!*/ storage,
             RubyScope/*!*/ scope, MutableString/*!*/ self, object obj) {
-            var site = storage.GetCallSite("=~", 1);
-            return site.Target(site, scope.RubyContext, obj, self);
+            var site = storage.GetCallSite("=~", new RubyCallSignature(1, RubyCallFlags.HasScope | RubyCallFlags.HasImplicitSelf));
+            return site.Target(site, scope, obj, self);
         }
 
         [RubyMethod("match")]
@@ -2079,7 +2075,7 @@ namespace IronRuby.Builtins {
                 }
                 
                 if (defaultSeparator != null) {
-                    separator = Protocols.CastToString(stringCast, scope.RubyContext, defaultSeparator);
+                    separator = Protocols.CastToString(stringCast, defaultSeparator);
                 }
             }
 
@@ -2351,9 +2347,9 @@ namespace IronRuby.Builtins {
             BinaryOpStorage/*!*/ greaterThanStorage,
             BinaryOpStorage/*!*/ equalsStorage,
             UnaryOpStorage/*!*/ succStorage,
-            RubyContext/*!*/ context, BlockParam block, MutableString/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ endString) {
+            BlockParam block, MutableString/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ endString) {
 
-            RangeOps.Each(stringCast, respondToStorage, comparisonStorage, lessThanStorage, greaterThanStorage, equalsStorage, succStorage, context, 
+            RangeOps.Each(stringCast, respondToStorage, comparisonStorage, lessThanStorage, greaterThanStorage, equalsStorage, succStorage,  
                 block, new Range(self, endString, false)
             );
 

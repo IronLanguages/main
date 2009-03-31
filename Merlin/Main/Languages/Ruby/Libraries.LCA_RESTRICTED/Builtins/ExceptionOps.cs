@@ -140,7 +140,7 @@ namespace IronRuby.Builtins {
                         if (!metaBuilder.Error) {
                             // ReinitializeException(<result>, #message)
                             metaBuilder.Result = Ast.Call(null, new Func<RubyContext, Exception, object, Exception>(ReinitializeException).Method,
-                                args.ContextExpression,
+                                AstUtils.Convert(args.MetaContext.Expression, typeof(RubyContext)),
                                 metaBuilder.Result,
                                 messageVariable ?? AstFactory.Box(argsBuilder[0])
                             );
@@ -157,23 +157,21 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("to_s")]
         [RubyMethod("to_str")]
-        public static MutableString/*!*/ GetMessage(ConversionStorage<MutableString>/*!*/ tosStorage, RubyContext/*!*/ context, Exception/*!*/ self) {
-            return Protocols.ConvertToString(tosStorage, context, GetMessage(self));
+        public static MutableString/*!*/ GetMessage(ConversionStorage<MutableString>/*!*/ tosStorage, Exception/*!*/ self) {
+            return Protocols.ConvertToString(tosStorage, GetMessage(self));
         }
 
         [RubyMethod("inspect", RubyMethodAttributes.PublicInstance)]
-        public static MutableString/*!*/ Inspect(UnaryOpStorage/*!*/ inspectStorage, ConversionStorage<MutableString>/*!*/ tosStorage,
-            RubyContext/*!*/ context, Exception/*!*/ self) {
-
+        public static MutableString/*!*/ Inspect(UnaryOpStorage/*!*/ inspectStorage, ConversionStorage<MutableString>/*!*/ tosStorage, Exception/*!*/ self) {
             object message = RubyExceptionData.GetInstance(self).Message;
-            string className = RubyUtils.GetClassName(context, self);
+            string className = RubyUtils.GetClassName(inspectStorage.Context, self);
 
             MutableString result = MutableString.CreateMutable();
             result.Append("#<");
             result.Append(className);
             result.Append(": ");
             if (message != null) {
-                result.Append(KernelOps.Inspect(inspectStorage, tosStorage, context, message));
+                result.Append(KernelOps.Inspect(inspectStorage, tosStorage, message));
             } else {
                 result.Append(className);
             }

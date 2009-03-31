@@ -63,6 +63,7 @@ namespace IronRuby.Runtime {
         private RubyOptions/*!*/ _options;
         private readonly Loader/*!*/ _loader;
         private readonly Scope/*!*/ _globalScope;
+        private readonly RubyMetaBinderFactory/*!*/ _metaBinderFactory;
 
         #region Global Variables (thread-safe access)
 
@@ -275,6 +276,10 @@ namespace IronRuby.Runtime {
             get { return _globalScope; }
         }
 
+        internal RubyMetaBinderFactory/*!*/ MetaBinderFactory {
+            get { return _metaBinderFactory; }
+        }
+
         public Loader/*!*/ Loader {
             get { return _loader; }
         }
@@ -322,6 +327,7 @@ namespace IronRuby.Runtime {
 
             Binder = new RubyBinder(this);
 
+            _metaBinderFactory = new RubyMetaBinderFactory(this);
             _runtimeErrorSink = new RuntimeErrorSink(this);
             _equalityComparer = new EqualityComparer(this);
             _globalVariables = new Dictionary<string, GlobalVariable>();
@@ -1284,7 +1290,7 @@ namespace IronRuby.Runtime {
             RubyClass cls = GetClassOf(obj);
             var inspect = cls.InspectSite;
             var toS = cls.StringConversionSite;
-            return toS.Target(toS, this, inspect.Target(inspect, this, obj));
+            return toS.Target(toS, inspect.Target(inspect, obj));
         }
 
         #endregion
@@ -1597,6 +1603,8 @@ namespace IronRuby.Runtime {
         private static long _AstGenerationTimeTicks;
 
         internal Expression<T> ParseSourceCode<T>(SourceUnit/*!*/ sourceUnit, RubyCompilerOptions/*!*/ options, ErrorSink/*!*/ errorSink) {
+            Debug.Assert(sourceUnit.LanguageContext == this);
+
             long ts1, ts2;
 
             ts1 = Stopwatch.GetTimestamp();
@@ -1634,7 +1642,6 @@ namespace IronRuby.Runtime {
         internal Expression<T>/*!*/ TransformTree<T>(SourceUnitTree/*!*/ ast, SourceUnit/*!*/ sourceUnit, RubyCompilerOptions/*!*/ options) {
             return ast.Transform<T>(
                 new AstGenerator(
-                    (RubyBinder)Binder,
                     options,
                     sourceUnit,
                     ast.Encoding,
@@ -2023,13 +2030,13 @@ namespace IronRuby.Runtime {
         }
 
         protected override string/*!*/ FormatObject(DynamicOperations/*!*/ operations, object obj) {
-            var inspectSite = operations.GetOrCreateSite<RubyContext, object, object>(
-                RubyCallAction.Make("inspect", RubyCallSignature.WithImplicitSelf(1))
+            var inspectSite = operations.GetOrCreateSite<object, object>(
+                RubyCallAction.Make(this, "inspect", RubyCallSignature.WithImplicitSelf(1))
             );
 
-            var tosSite = operations.GetOrCreateSite<RubyContext, object, MutableString>(ConvertToSAction.Instance);
+            var tosSite = operations.GetOrCreateSite<object, MutableString>(ConvertToSAction.Make(this));
 
-            return tosSite.Target(tosSite, this, inspectSite.Target(inspectSite, this, obj)).ToString();
+            return tosSite.Target(tosSite, inspectSite.Target(inspectSite, obj)).ToString();
         }
 
         #endregion
@@ -2063,10 +2070,16 @@ namespace IronRuby.Runtime {
 
         #endregion
 
-        #region Special Call Sites (thread-safe)
+        #region Dynamic Sites (thread-safe)
 
-        private readonly Dictionary<KeyValuePair<string, RubyCallSignature>, CallSite>/*!*/ _sendSites =
-            new Dictionary<KeyValuePair<string, RubyCallSignature>, CallSite>();
+        private CallSite<Func<CallSite, object, MutableString>> _stringConversionSite;
+
+        public CallSite<Func<CallSite, object, MutableString>>/*!*/ StringConversionSite {
+            get { return RubyUtils.GetCallSite(ref _stringConversionSite, ConvertToSAction.Make(this)); }
+        }
+
+        private readonly Dictionary<Key<string, RubyCallSignature>, CallSite>/*!*/ _sendSites =
+            new Dictionary<Key<string, RubyCallSignature>, CallSite>();
 
         private object SendSitesLock { get { return _sendSites; } }
 
@@ -2075,12 +2088,12 @@ namespace IronRuby.Runtime {
 
             lock (SendSitesLock) {
                 CallSite site;
-                if (_sendSites.TryGetValue(new KeyValuePair<string, RubyCallSignature>(methodName, callSignature), out site)) {
+                if (_sendSites.TryGetValue(Key.Create(methodName, callSignature), out site)) {
                     return (CallSite<TSiteFunc>)site;
                 }
 
-                var newSite = CallSite<TSiteFunc>.Create(RubyCallAction.Make(methodName, callSignature));
-                _sendSites.Add(new KeyValuePair<string, RubyCallSignature>(methodName, callSignature), newSite);
+                var newSite = CallSite<TSiteFunc>.Create(RubyCallAction.Make(this, methodName, callSignature));
+                _sendSites.Add(Key.Create(methodName, callSignature), newSite);
                 return newSite;
             }
         }
@@ -2089,41 +2102,41 @@ namespace IronRuby.Runtime {
 
         #region Ruby Events
 
-        private CallSite<Func<CallSite, RubyContext, RubyModule, SymbolId, object>> _constantMissingCallbackSite;
-        private CallSite<Func<CallSite, RubyContext, RubyModule, SymbolId, object>> _methodAddedCallbackSite;
-        private CallSite<Func<CallSite, RubyContext, RubyModule, SymbolId, object>> _methodRemovedCallbackSite;
-        private CallSite<Func<CallSite, RubyContext, RubyModule, SymbolId, object>> _methodUndefinedCallbackSite;
-        private CallSite<Func<CallSite, RubyContext, object, SymbolId, object>> _singletonMethodAddedCallbackSite;
-        private CallSite<Func<CallSite, RubyContext, object, SymbolId, object>> _singletonMethodRemovedCallbackSite;
-        private CallSite<Func<CallSite, RubyContext, object, SymbolId, object>> _singletonMethodUndefinedCallbackSite;
-        private CallSite<Func<CallSite, RubyContext, object, SymbolId, object>> _respondTo;
-        private CallSite<Func<CallSite, RubyContext, RubyClass, RubyClass, object>> _classInheritedCallbackSite;
+        private CallSite<Func<CallSite, RubyModule, SymbolId, object>> _constantMissingCallbackSite;
+        private CallSite<Func<CallSite, RubyModule, SymbolId, object>> _methodAddedCallbackSite;
+        private CallSite<Func<CallSite, RubyModule, SymbolId, object>> _methodRemovedCallbackSite;
+        private CallSite<Func<CallSite, RubyModule, SymbolId, object>> _methodUndefinedCallbackSite;
+        private CallSite<Func<CallSite, object, SymbolId, object>> _singletonMethodAddedCallbackSite;
+        private CallSite<Func<CallSite, object, SymbolId, object>> _singletonMethodRemovedCallbackSite;
+        private CallSite<Func<CallSite, object, SymbolId, object>> _singletonMethodUndefinedCallbackSite;
+        private CallSite<Func<CallSite, object, SymbolId, object>> _respondTo;
+        private CallSite<Func<CallSite, RubyClass, RubyClass, object>> _classInheritedCallbackSite;
         
-        private object Send<TReceiver>(ref CallSite<Func<CallSite, RubyContext, TReceiver, SymbolId, object>> site, string/*!*/ eventName,
+        private object Send<TReceiver>(ref CallSite<Func<CallSite, TReceiver, SymbolId, object>> site, string/*!*/ eventName,
             TReceiver target, string/*!*/ memberName) {
 
             if (site == null) {
                 Interlocked.CompareExchange(
                     ref site,
-                    CallSite<Func<CallSite, RubyContext, TReceiver, SymbolId, object>>.Create(RubyCallAction.Make(eventName, RubyCallSignature.WithImplicitSelf(1))),
+                    CallSite<Func<CallSite, TReceiver, SymbolId, object>>.Create(RubyCallAction.Make(this, eventName, RubyCallSignature.WithImplicitSelf(1))),
                     null
                 );
             }
 
-            return site.Target(site, this, target, SymbolTable.StringToId(memberName));
+            return site.Target(site, target, SymbolTable.StringToId(memberName));
         }
 
         private void ClassInheritedEvent(RubyClass/*!*/ superClass, RubyClass/*!*/ subClass) {
             if (_classInheritedCallbackSite == null) {
                 Interlocked.CompareExchange(
                     ref _classInheritedCallbackSite,
-                    CallSite<Func<CallSite, RubyContext, RubyClass, RubyClass, object>>.Create(RubyCallAction.Make(Symbols.Inherited, RubyCallSignature.WithImplicitSelf(1)
+                    CallSite<Func<CallSite, RubyClass, RubyClass, object>>.Create(RubyCallAction.Make(this, Symbols.Inherited, RubyCallSignature.WithImplicitSelf(1)
                     )),
                     null
                 );
             }
 
-            _classInheritedCallbackSite.Target(_classInheritedCallbackSite, this, superClass, subClass);
+            _classInheritedCallbackSite.Target(_classInheritedCallbackSite, superClass, subClass);
         }
 
         internal object ConstantMissing(RubyModule/*!*/ module, string/*!*/ name) {

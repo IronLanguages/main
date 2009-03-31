@@ -16,12 +16,18 @@
 using IronRuby.Builtins;
 using IronRuby.Compiler.Generation;
 using IronRuby.Runtime;
+using Microsoft.Scripting.Runtime;
 using System.Diagnostics;
 using System;
 
 namespace IronRuby.Builtins {
     [RubyModule("IronRuby", Extends = typeof(Ruby))]
     public static class IronRubyOps {
+
+        [RubyMethod("dlr_config", RubyMethodAttributes.PublicSingleton)]
+        public static DlrConfiguration/*!*/ GetCurrentRuntimeConfiguration(RubyContext/*!*/ context, object self) {
+            return context.DomainManager.Configuration;
+        }
 
         [RubyModule("Clr")]
         public static class ClrOps {

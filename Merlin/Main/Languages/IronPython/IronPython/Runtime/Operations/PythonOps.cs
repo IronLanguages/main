@@ -671,6 +671,22 @@ namespace IronPython.Runtime.Operations {
             return size0 > size1 ? +1 : -1;
         }
 
+        public static bool ArraysEqual(object[] data0, int size0, object[] data1, int size1) {
+            if (size0 != size1) {
+                return false;
+            }
+            for (int i = 0; i < size0; i++) {
+                if (data0[i] != null) {
+                    if (!EqualRetBool(data0[i], data1[i])) {
+                        return false;
+                    }
+                } else if (data1[i] != null) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
         public static object PowerMod(CodeContext/*!*/ context, object x, object y, object z) {
             object ret;
             if (z == null) {
@@ -1262,8 +1278,12 @@ namespace IronPython.Runtime.Operations {
             return TypeCache.OldInstance;
         }
 
-        public static object MakeClass(Func<CodeContext> body, CodeContext/*!*/ context, string name, object[] bases, string selfNames) {
-            return MakeClass(context, name, bases, selfNames, body().Scope.Dict);
+        public static object MakeClass(object body, CodeContext/*!*/ parentContext, string name, object[] bases, string selfNames) {
+            Func<CodeContext, CodeContext> func = body as Func<CodeContext, CodeContext>;
+            if (func == null) {
+                func = ((Compiler.Ast.LazyClass)body).EnsureDelegate();
+            }
+            return MakeClass(parentContext, name, bases, selfNames, func(parentContext).Scope.Dict);
         }
 
         internal static object MakeClass(CodeContext context, string name, object[] bases, string selfNames, IAttributesCollection vars) {
@@ -1795,7 +1815,7 @@ namespace IronPython.Runtime.Operations {
                 PythonCompilerOptions compilerOptions = Builtin.GetRuntimeGeneratedCodeCompilerOptions(context, true, 0);
 
                 // do interpretation only on strings -- not on files, streams, or code objects
-                code = new FunctionCode(pythonContext.CompilePythonCode(Compiler.Ast.CompilationMode.Lookup, source, compilerOptions, ThrowingErrorSink.Default));
+                code = new FunctionCode(pythonContext.CompilePythonCode(Compiler.CompilationMode.Lookup, source, compilerOptions, ThrowingErrorSink.Default));
             }
 
             FunctionCode fc = code as FunctionCode;
@@ -1997,11 +2017,11 @@ namespace IronPython.Runtime.Operations {
                 if (context == null) {
                     context = DefaultContext.Default;
                 }
-                PythonFunction fx = new PythonFunction(context, name, null, ArrayUtils.EmptyStrings, ArrayUtils.EmptyObjects, FunctionAttributes.None);
+                PythonFunction fx = new PythonFunction(context, null, new FunctionInfo(name, null, ArrayUtils.EmptyStrings, FunctionAttributes.None, 0, String.Empty, null, false), "", ArrayUtils.EmptyObjects, null);
 
                 TraceBackFrame tbf = new TraceBackFrame(
                     new PythonDictionary(new GlobalScopeDictionaryStorage(context.Scope)),
-                    LocalScopeDictionaryStorage.GetDictionaryFromScope(context.Scope),
+                    context.Scope.Dict,
                     fx.func_code);
 
                 fx.func_code.SetFilename(frame.GetFileName());
@@ -2844,20 +2864,13 @@ namespace IronPython.Runtime.Operations {
 
         #region Function helpers
 
+        public static FunctionInfo MakeFunctionInfo(string name, object documentation, string[] argNames, FunctionAttributes flags, int lineNumber, string path) {
+            return new FunctionInfo(name, documentation, argNames, flags, lineNumber, path, null, false);
+        }
+
         [NoSideEffects]
-        public static object MakeFunction(CodeContext/*!*/ context, string name, Delegate target, string[] argNames, object[] defaults,
-            FunctionAttributes attributes, string docString, int lineNumber, string fileName) {
-            PythonFunction ret = new PythonFunction(context, name, target, argNames, defaults, attributes);
-            if (docString != null) ret.__doc__ = docString;
-            ret.func_code.SetLineNumber(lineNumber);
-            object fn;
-            if (fileName != null) {
-                ret.func_code.SetFilename(fileName);
-            } else if (context.GlobalScope.Dict.TryGetValue(Symbols.File, out fn) && fn is string) {
-                ret.func_code.SetFilename((string)fn);
-            }
-            ret.func_code.SetFlags(attributes);
-            return ret;
+        public static object MakeFunction(CodeContext/*!*/ context, Delegate target, FunctionInfo funcInfo, object modName, object[] defaults) {
+            return new PythonFunction(context, target, funcInfo, modName, defaults, null);
         }
 
         public static CodeContext FunctionGetContext(PythonFunction func) {
@@ -3413,8 +3426,8 @@ namespace IronPython.Runtime.Operations {
         }
 
         #region Global Access
-#if FALSE
-        public static CodeContext/*!*/ CreateLocalContext(CodeContext/*!*/ outerContext, IList<IStrongBox> boxes, SymbolId[] args, bool isVisible) {
+
+        public static CodeContext/*!*/ CreateLocalContext(CodeContext/*!*/ outerContext, Microsoft.Scripting.Tuple boxes, SymbolId[] args, bool isVisible) {
             return new CodeContext(
                 new Scope(
                     outerContext.Scope,
@@ -3425,9 +3438,44 @@ namespace IronPython.Runtime.Operations {
                 ), 
                 outerContext.LanguageContext, 
                 outerContext
-            );
+            );            
         }
-#endif
+
+        public static CodeContext/*!*/ GetGlobalContext(CodeContext/*!*/ context) {
+            while (context.Parent != null) {
+                context = context.Parent;
+            }
+
+            return context;
+        }
+
+        public static ClosureCell/*!*/ MakeClosureCell() {
+            return new ClosureCell(Uninitialized.Instance);
+        }
+
+        public static ClosureCell/*!*/ MakeClosureCellWithValue(object initialValue) {
+            return new ClosureCell(initialValue);
+        }
+
+        public static Microsoft.Scripting.Tuple/*!*/ GetClosureTupleFromFunction(PythonFunction/*!*/ function) {
+            return GetClosureTupleFromContext(function.Context);
+        }
+
+        public static Microsoft.Scripting.Tuple/*!*/ GetClosureTupleFromGenerator(PythonGenerator/*!*/ generator) {
+            return GetClosureTupleFromContext(generator.Context);
+        }
+
+        public static Microsoft.Scripting.Tuple/*!*/ GetClosureTupleFromContext(CodeContext/*!*/ context) {
+            return ((context.Scope.Dict as PythonDictionary)._storage as RuntimeVariablesDictionaryStorage).Tuple;
+        }
+
+        public static CodeContext/*!*/ GetParentContextFromFunction(PythonFunction/*!*/ function) {
+            return function.Context;
+        }
+
+        public static CodeContext/*!*/ GetParentContextFromGenerator(PythonGenerator/*!*/ generator) {
+            return generator.Context;
+        }
 
         public static object GetGlobal(Scope scope, SymbolId name) {
             return GetLocal(scope.ModuleScope, name);
@@ -3454,6 +3502,19 @@ namespace IronPython.Runtime.Operations {
 
             throw NameError(name);
             
+        }
+
+        public static object RawGetGlobal(Scope scope, SymbolId name) {
+            return RawGetLocal(scope.ModuleScope, name);
+        }
+
+        public static object RawGetLocal(Scope scope, SymbolId name) {
+            object res;
+            if (scope.TryLookupName(name, out res)) {
+                return res;
+            }
+
+            return Uninitialized.Instance;
         }
 
         public static void SetGlobal(Scope scope, SymbolId name, object value) {
@@ -3486,8 +3547,15 @@ namespace IronPython.Runtime.Operations {
             return new CodeContext(scope, context);
         }
 
-        public static PythonGlobal[] GetGlobalArray(Scope scope) {
+        public static PythonGlobal/*!*/[]/*!*/ GetGlobalArray(Scope/*!*/ scope) {
             return ((GlobalDictionaryStorage)((PythonDictionary)scope.Dict)._storage).Data;
+        }
+
+        public static PythonGlobal/*!*/[]/*!*/ GetGlobalArrayFromContext(CodeContext/*!*/ context) {
+            Debug.Assert(context != null);
+            PythonGlobal[] res = GetGlobalArray(GetGlobalContext(context).Scope);
+            Debug.Assert(res != null);
+            return res;
         }
 
         #endregion

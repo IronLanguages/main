@@ -14,31 +14,43 @@
  * ***************************************************************************/
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
+using System.Dynamic;
 using System.Linq.Expressions;
 using System.Reflection;
-using System.Collections.Generic;
-using System.Dynamic;
-
-using Microsoft.Scripting.Actions;
-using Microsoft.Scripting.Utils;
-
-using Ast = System.Linq.Expressions.Expression;
-using AstFactory = IronRuby.Compiler.Ast.AstFactory;
-using AstUtils = Microsoft.Scripting.Ast.Utils;
+using System.Threading;
 using IronRuby.Builtins;
 using IronRuby.Compiler;
+using Microsoft.Scripting.Actions;
+using Microsoft.Scripting.Utils;
+using Ast = System.Linq.Expressions.Expression;
+using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace IronRuby.Runtime.Calls {
     public sealed class MetaObjectBuilder {
+        // RubyContext the site binder is bound to or null if it is unbound.
+        private readonly RubyContext _siteContext;
+
         private Expression _condition;
-        private Expression _restriction;
+        private BindingRestrictions/*!*/ _restrictions;
         private Expression _result;
         private List<ParameterExpression> _temps;
         private bool _error;
         private bool _treatRestrictionsAsConditions;
 
-        internal MetaObjectBuilder() {
+        internal MetaObjectBuilder(RubyMetaBinder/*!*/ rubyBinder, DynamicMetaObject/*!*/[]/*!*/ arguments) 
+            : this((DynamicMetaObject)null, arguments) {
+            _siteContext = rubyBinder.Context;
+        }
+
+        internal MetaObjectBuilder(DynamicMetaObject target, params DynamicMetaObject/*!*/[]/*!*/ arguments) {
+            var restrictions = BindingRestrictions.Combine(arguments);
+            if (target != null) {
+                restrictions = target.Restrictions.Merge(restrictions);
+            }
+
+            _restrictions = restrictions;
         }
 
         public bool Error {
@@ -63,6 +75,10 @@ namespace IronRuby.Runtime.Calls {
             set { _treatRestrictionsAsConditions = value; }
         }
 
+#if DEBUG && !SILVERLIGHT && !SYSTEM_CORE
+        private static int _ruleCounter;
+#endif
+
         internal DynamicMetaObject/*!*/ CreateMetaObject(DynamicMetaObjectBinder/*!*/ action) {
             Debug.Assert(ControlFlowBuilder == null, "Control flow required but not built");
 
@@ -77,15 +93,42 @@ namespace IronRuby.Runtime.Calls {
                 expr = Ast.Block(_temps, expr);
             }
 
-            BindingRestrictions restrictions;
-            if (_restriction != null) {
-                restrictions = BindingRestrictions.GetExpressionRestriction(_restriction);
-            } else {
-                restrictions = BindingRestrictions.Empty;
+#if DEBUG && !SILVERLIGHT && !SYSTEM_CORE
+            if (RubyOptions.ShowRules) {
+                var oldColor = Console.ForegroundColor;
+                try {
+                    Console.ForegroundColor = ConsoleColor.Cyan;
+                    Console.WriteLine("Rule #{0}: {1}", Interlocked.Increment(ref _ruleCounter), action);
+                    Console.ForegroundColor = ConsoleColor.DarkGray;
+                    var d = (_restrictions != BindingRestrictions.Empty) ? Ast.IfThen(_restrictions.ToExpression(), expr) : expr;
+                    d.DumpExpression(null, Console.Out);
+                } finally {
+                    Console.ForegroundColor = oldColor;
+                }
+            }
+#endif
+
+            return new DynamicMetaObject(expr, _restrictions);
+        }
+
+        public ParameterExpression/*!*/ GetTemporary(Type/*!*/ type, string/*!*/ name) {
+            if (_temps == null) {
+                _temps = new List<ParameterExpression>();
             }
 
-            return new DynamicMetaObject(expr, restrictions);
+            var variable = Ast.Variable(type, name);
+            _temps.Add(variable);
+            return variable;
         }
+
+        public void BuildControlFlow(CallArguments/*!*/ args) {
+            if (ControlFlowBuilder != null) {
+                ControlFlowBuilder(this, args);
+                ControlFlowBuilder = null;
+            }
+        }
+
+        #region Result
 
         public void SetError(Expression/*!*/ expression) {
             Assert.NotNull(expression);
@@ -108,39 +151,16 @@ namespace IronRuby.Runtime.Calls {
 
         public void SetMetaResult(DynamicMetaObject/*!*/ metaResult, bool treatRestrictionsAsConditions) {
             _result = metaResult.Expression;
-            AddRestriction(metaResult.Restrictions.ToExpression(), treatRestrictionsAsConditions);
-        }
-
-        public void AddCondition(Expression/*!*/ condition) {
-            Assert.NotNull(condition);
-            _condition = (_condition != null) ? Ast.AndAlso(_condition, condition) : condition;
-        }
-
-        public void AddRestriction(Expression/*!*/ restriction) {
-            AddRestriction(restriction, false);
-        }
-
-        public void AddRestriction(Expression/*!*/ restriction, bool treatRestrictionsAsConditions) {
-            Assert.NotNull(restriction);
             if (treatRestrictionsAsConditions || _treatRestrictionsAsConditions) {
-                AddCondition(restriction);
+                AddCondition(metaResult.Restrictions.ToExpression());
             } else {
-                _restriction = (_restriction != null) ? Ast.AndAlso(_restriction, restriction) : restriction;
-            }
-        }
-        public static Expression/*!*/ GetObjectTypeTestExpression(object value, Expression/*!*/ expression) {
-            if (value == null) {
-                return Ast.Equal(expression, AstUtils.Constant(null));
-            } else {
-                return RuleBuilder.MakeTypeTestExpression(value.GetType(), expression);
+                Add(metaResult.Restrictions);
             }
         }
 
-        public void AddTypeRestriction(Type/*!*/ type, Expression/*!*/ expression) {
-            // TODO: assertion failure in DLR:
-            // AddRestriction(Ast.TypeEqual(expression, type));
-            AddRestriction(RuleBuilder.MakeTypeTestExpression(type, expression));
-        }
+        #endregion
+
+        #region Restrictions
 
         public void AddObjectTypeRestriction(object value, Expression/*!*/ expression) {
             if (value == null) {
@@ -150,24 +170,66 @@ namespace IronRuby.Runtime.Calls {
             }
         }
 
+        public void AddTypeRestriction(Type/*!*/ type, Expression/*!*/ expression) {
+            if (_treatRestrictionsAsConditions) {
+                AddCondition(Ast.TypeEqual(expression, type));
+            } else if (expression.Type != type || !type.IsSealed) {
+                Add(BindingRestrictions.GetTypeRestriction(expression, type));
+            }
+        }
+
+        public void AddRestriction(Expression/*!*/ restriction) {
+            if (_treatRestrictionsAsConditions) {
+                AddCondition(restriction);
+            } else {
+                Add(BindingRestrictions.GetExpressionRestriction(restriction));
+            }
+        }
+
+        private void Add(BindingRestrictions/*!*/ restriction) {
+            Debug.Assert(!_treatRestrictionsAsConditions);
+            _restrictions = _restrictions.Merge(restriction);
+        }
+
+        #endregion
+
+        #region Conditions
+
+        public void AddCondition(Expression/*!*/ condition) {
+            Assert.NotNull(condition);
+            _condition = (_condition != null) ? Ast.AndAlso(_condition, condition) : condition;
+        }
+
+        public static Expression/*!*/ GetObjectTypeTestExpression(object value, Expression/*!*/ expression) {
+            if (value == null) {
+                return Ast.Equal(expression, AstUtils.Constant(null));
+            } else {
+                return RuleBuilder.MakeTypeTestExpression(value.GetType(), expression);
+            }
+        }
+
         public void AddObjectTypeCondition(object value, Expression/*!*/ expression) {
             AddCondition(GetObjectTypeTestExpression(value, expression));
         }
 
-        // TODO: do not test runtime for runtime bound sites
-        public void AddTargetTypeTest(object target, RubyClass/*!*/ targetClass, Expression/*!*/ targetParameter, 
-            RubyContext/*!*/ context, Expression/*!*/ contextExpression) {
+        #endregion
+
+        #region Tests
+
+        public void AddTargetTypeTest(object target, RubyClass/*!*/ targetClass, Expression/*!*/ targetParameter, DynamicMetaObject/*!*/ metaContext) {
 
             // no changes to the module's class hierarchy while building the test:
             targetClass.Context.RequiresClassHierarchyLock();
 
             // initialization changes the version number, so ensure that the module is initialized:
-            targetClass.InitializeMethodsNoLock(); 
-            
+            targetClass.InitializeMethodsNoLock();
+
+            var context = (RubyContext)metaContext.Value;
+
             // singleton nil:
             if (target == null) {
                 AddRestriction(Ast.Equal(targetParameter, AstUtils.Constant(null)));
-                AddFullVersionTest(context.NilClass, context, contextExpression);
+                AddFullVersionTest(context.NilClass, metaContext);
                 return;
             }
 
@@ -179,9 +241,9 @@ namespace IronRuby.Runtime.Calls {
                 ));
 
                 if ((bool)target) {
-                    AddFullVersionTest(context.TrueClass, context, contextExpression);
+                    AddFullVersionTest(context.TrueClass, metaContext);
                 } else {
-                    AddFullVersionTest(context.FalseClass, context, contextExpression);
+                    AddFullVersionTest(context.FalseClass, metaContext);
                 }
                 return;
 
@@ -197,7 +259,7 @@ namespace IronRuby.Runtime.Calls {
                 );
 
                 // we need to check for a runtime (e.g. "foo" .NET string instance could be shared accross runtimes):
-                AddFullVersionTest(targetClass, context, contextExpression);
+                AddFullVersionTest(targetClass, metaContext);
                 return;
             }
 
@@ -228,17 +290,22 @@ namespace IronRuby.Runtime.Calls {
                 throw new NotSupportedException("Type implementing IRubyObject should have RubyClass getter");
             } else {
                 // CLR objects:
-                AddFullVersionTest(targetClass, context, contextExpression);
+                AddFullVersionTest(targetClass, metaContext);
             }
         }
 
-        private void AddFullVersionTest(RubyClass/*!*/ cls, RubyContext/*!*/ context, Expression/*!*/ contextExpression) {
-            Assert.NotNull(cls, context, contextExpression);
+        private void AddFullVersionTest(RubyClass/*!*/ cls, DynamicMetaObject/*!*/ metaContext) {
+            Assert.NotNull(cls, metaContext);
             cls.Context.RequiresClassHierarchyLock();
 
             // check for runtime (note that the module's runtime could be different from the call-site runtime):
-            AddRestriction(Ast.Equal(contextExpression, AstUtils.Constant(context)));
-
+            if (_siteContext == null) {
+                // TODO: use holder
+                AddRestriction(Ast.Equal(metaContext.Expression, AstUtils.Constant(metaContext.Value)));
+            } else if (_siteContext != metaContext.Value) {
+                throw new InvalidOperationException("Runtime-bound site called from a different runtime");
+            }
+             
             AddVersionTest(cls);
         }
 
@@ -274,21 +341,6 @@ namespace IronRuby.Runtime.Calls {
             return false;
         }
 
-        public ParameterExpression/*!*/ GetTemporary(Type/*!*/ type, string/*!*/ name) {
-            if (_temps == null) {
-                _temps = new List<ParameterExpression>();
-            }
-
-            var variable = Ast.Variable(type, name);
-            _temps.Add(variable);
-            return variable;
-        }
-
-        public void BuildControlFlow(CallArguments/*!*/ args) {
-            if (ControlFlowBuilder != null) {
-                ControlFlowBuilder(this, args);
-                ControlFlowBuilder = null;
-            }
-        }
+        #endregion
     }
 }

@@ -56,12 +56,12 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("[]")]
-        public static RubyArray GetGroup(ConversionStorage<int>/*!*/ fixnumCast, RubyContext/*!*/ context, MatchData/*!*/ self, [NotNull]Range/*!*/ range) {
+        public static RubyArray GetGroup(ConversionStorage<int>/*!*/ fixnumCast, MatchData/*!*/ self, [NotNull]Range/*!*/ range) {
             int begin, count;
-            if (!IListOps.NormalizeRange(fixnumCast, context, self.Groups.Count, range, out begin, out count)) {
+            if (!IListOps.NormalizeRange(fixnumCast, self.Groups.Count, range, out begin, out count)) {
                 return null;
             }
-            return GetGroup(context, self, begin, count);
+            return GetGroup(fixnumCast.Context, self, begin, count);
         }
 
         [RubyMethod("begin")]
@@ -155,11 +155,11 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("values_at")]
         public static RubyArray/*!*/ ValuesAt(ConversionStorage<int>/*!*/ conversionStorage, 
-            RubyContext/*!*/ context, MatchData/*!*/ self, [NotNull]params object[]/*!*/ indices) {
+            MatchData/*!*/ self, [DefaultProtocol, NotNull]params int[]/*!*/ indices) {
 
             RubyArray result = new RubyArray();
             for (int i = 0; i < indices.Length; i++) {
-                result.Add(GetGroup(context, self, Protocols.CastToFixnum(conversionStorage, context, indices[i])));
+                result.Add(GetGroup(conversionStorage.Context, self, indices[i]));
             }
             return result;
         }

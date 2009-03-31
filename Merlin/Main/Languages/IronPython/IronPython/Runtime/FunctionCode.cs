@@ -19,6 +19,7 @@ using System.Runtime.CompilerServices;
 using IronPython.Runtime.Operations;
 using Microsoft.Scripting;
 using Microsoft.Scripting.Runtime;
+using System.Linq.Expressions;
 
 namespace IronPython.Runtime {
     /// <summary>
@@ -37,6 +38,9 @@ namespace IronPython.Runtime {
         private string _filename;
         private int _lineNo;
         private FunctionAttributes _flags;      // future division, generator
+        private LambdaExpression _lambda;
+        private bool _shouldInterpret;
+        private bool _emitDebugSymbols;
         #endregion
 
         internal FunctionCode(ScriptCode code, CompileFlags compilerFlags)
@@ -50,8 +54,18 @@ namespace IronPython.Runtime {
             _code = code;
         }
 
-        internal FunctionCode(PythonFunction f) {
+        internal FunctionCode(PythonFunction f, FunctionInfo funcInfo) {
             _func = f;
+            _filename = funcInfo.Path;
+            object fn;
+            if (_filename == null && f.Context.GlobalScope.Dict.TryGetValue(Symbols.File, out fn) && fn is string) {
+                _filename = (string)fn;
+            }
+            _lineNo = funcInfo.LineNumber;
+            _flags = funcInfo.Flags;
+            _lambda = funcInfo.Code;
+            _shouldInterpret = funcInfo.ShouldInterpret;
+            _emitDebugSymbols = funcInfo.EmitDebugSymbols;
         }
 
         #region Public constructors
@@ -178,6 +192,12 @@ namespace IronPython.Runtime {
 
         #region Internal API Surface
 
+        internal LambdaExpression Code {
+            get {
+                return _lambda;
+            }
+        }
+
         internal void SetFilename(string sourceFile) {
             _filename = sourceFile;
         }
@@ -261,6 +281,14 @@ namespace IronPython.Runtime {
             }
 
             throw PythonOps.TypeError("bad code");
+        }
+
+        internal Delegate GetCompiledCode() {
+            if (_shouldInterpret) {
+                return Microsoft.Scripting.Generation.CompilerHelpers.LightCompile(Code);
+            }
+
+            return Code.Compile();
         }
     }
 }

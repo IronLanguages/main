@@ -198,10 +198,6 @@ namespace Microsoft.Scripting.Hosting.Shell {
                 case "-X:AutoIndent": ConsoleOptions.AutoIndent = true; break;
                 //#endif
 
-                case "-X:LightweightScopes":
-                    SetDlrOption(arg.Substring(3));
-                    break;
-
 #if DEBUG
                 case "-X:AssembliesDir":
                     _assembliesDir = PopNextArg();
@@ -281,7 +277,6 @@ namespace Microsoft.Scripting.Hosting.Shell {
                 { "-X:ExceptionDetail",          "Enable ExceptionDetail mode" },
                 { "-X:Interpret",                "Enable interpreted mode" },
                 { "-X:AdaptiveCompilation",      "Enable adaptive compilation" },
-                { "-X:LightweightScopes",        "Generate optimized scopes that can be garbage collected" },
                 { "-X:MaxRecursion",             "Set the maximum recursion level" },
                 { "-X:PassExceptions",           "Do not catch exceptions that are unhandled by script code" },
                 { "-X:PrivateBinding",           "Enable binding to private members" },
