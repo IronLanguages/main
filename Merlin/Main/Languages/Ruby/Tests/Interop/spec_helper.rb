@@ -54,6 +54,8 @@ require File.dirname(__FILE__) + '/fixtures.generated'
 class Object
   def csc(*args)
   end
+  def reference(arg)
+  end
   def assembly(*args)
     yield
   end

@@ -1,3 +1,6 @@
+using Microsoft.Scripting.Hosting;
+  using IronRuby.Runtime;
+  using IronRuby.Builtins;
 #line 4 "./bcl/array/conversion_spec.rb"
 public partial class Klass {
       public T[] ArrayAcceptingMethod<T>(T[] arg0) {
@@ -27,6 +30,27 @@ public class EmptyClass {}
     public class GenericClass<T>{public int m() {return 1;}}
     public class EmptyGeneric2Class<T,U>{}
     public class Generic2Class<T,U>{public int m() {return 1;}}
+#line 10 "./delegate/conversion_spec.rb"
+#line 15 "./delegate/conversion_spec.rb"
+public partial class DelegateConversionClass {
+    public delegate int Delegate1(string str);
+    private ScriptEngine _engine;
+    private Proc _lambda;
+
+    public DelegateConversionClass(string lambdaExpr)  {
+      _engine = IronRuby.Ruby.CreateEngine();
+      _lambda = (Proc) _engine.Execute(lambdaExpr);
+    }
+
+    public int DirectInvoke() {
+      return (int) _engine.Operations.Invoke(_lambda, "1");
+    }
+
+    public int ConvertToDelegate() {
+      Delegate1 d = _engine.Operations.ConvertTo<Delegate1>(_lambda);
+      return d("1");
+    }
+  }
 #line 4 "./delegate/mapping_spec.rb"
 public delegate void VoidVoidDelegate();
 #line 4 "./enum/mapping_spec.rb"
