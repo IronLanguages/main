@@ -7,9 +7,6 @@ describe "Generic .NET classes" do
 end
 
 describe "Generic .NET classes with type param" do
-  csc <<-EOL
-  public interface IInterface {}
-  EOL
   it_behaves_like :instantiable_class, GenericClass[Object]
 
   describe "of interface" do

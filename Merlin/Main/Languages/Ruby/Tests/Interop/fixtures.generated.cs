@@ -449,6 +449,16 @@ public partial class ClassWithMethods {
 
     }
     #pragma warning restore 693
+#line 4 "./method/invocation/overload_spec.rb"
+public partial class ClassWithOverloads {
+    public string PublicProtectedOverload(){
+      return "public overload";
+    }
+    
+    protected string PublicProtectedOverload(string str) {
+      return "protected overload";
+    }
+  }
 #line 4 "./method/modification/override_spec.rb"
 public partial class ClassWithMethods {
     public int SummingMethod(int a, int b){
