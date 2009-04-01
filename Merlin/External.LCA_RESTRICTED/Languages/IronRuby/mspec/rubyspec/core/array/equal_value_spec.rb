@@ -16,6 +16,9 @@ describe "Array#==" do
     obj = mock('5')
     def obj.==(other) true end
     [obj].should == [5]
+    #obj not returning a true bool
+    def obj.==(other) end
+    [obj].should_not == [5]
   end
 
   it "returns false if the other is shorter than self" do
