@@ -1,0 +1,1 @@
+fails:Marshal.dump dumps a Module nested

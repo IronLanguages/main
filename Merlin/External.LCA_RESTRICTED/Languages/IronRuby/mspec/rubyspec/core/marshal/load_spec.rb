@@ -89,7 +89,7 @@ describe "Marshal::load" do
     new_obj.instance_variable_get(:@noise).should == 'much'
     new_obj_metaclass_ancestors = class << new_obj; ancestors; end
     new_obj_metaclass_ancestors.first(3).should ==
-      [Meths, UserRegexp, AnAttribute]
+      [Meths, UserRegexp, Regexp]
   end
 
   it "loads a Float NaN" do
@@ -206,26 +206,17 @@ describe "Marshal::load" do
     lambda { Marshal.load marshal_data }.should raise_error(TypeError)
   end
   
-  it "raises ArgumentError on loading from an empty string" do
-    lambda { Marshal.load("") }.should raise_error(ArgumentError)
-  end
-
   it "raises EOFError on loading an empty file" do
     temp_file = tmp("marshal.rubinius.tmp.#{Process.pid}")
     file = File.new(temp_file, "w+")
     begin
-      lambda { Marshal.load(file) }.should raise_error(EOFError)
+      # TODO: This should be in an ensure block, but because of a bug in
+      # Rubinius that can't be done yet.
+      File.unlink(temp_file)
 
-      compliant_on :rubinius do
-        # TODO: This should be in an ensure block, but because of a bug in
-        # Rubinius that can't be done yet.
-        File.unlink(temp_file)
-      end
+      lambda { Marshal.load(file) }.should raise_error(EOFError)
     ensure
       file.close
-      not_compliant_on :rubinius do
-        File.unlink(temp_file)
-      end
     end
   end
 

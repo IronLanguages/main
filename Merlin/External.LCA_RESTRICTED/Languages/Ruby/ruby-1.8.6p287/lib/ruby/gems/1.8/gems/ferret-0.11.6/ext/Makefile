@@ -4,12 +4,12 @@ SHELL = /bin/sh
 #### Start of system configuration section. ####
 
 srcdir = .
-topdir = c:/vsl/m2/Merlin/External/Languages/Ruby/Ruby-1.8.6p287/lib/ruby/1.8/i386-mswin32
+topdir = c:/vsl/m2/Merlin/External.LCA_RESTRICTED/Languages/Ruby/Ruby-1.8.6p287/lib/ruby/1.8/i386-mswin32
 hdrdir = $(topdir)
 VPATH = $(srcdir);$(topdir);$(hdrdir)
 
 DESTDIR = c:
-prefix = $(DESTDIR)/vsl/m2/Merlin/External/Languages/Ruby/Ruby-1.8.6p287
+prefix = $(DESTDIR)/vsl/m2/Merlin/External.LCA_RESTRICTED/Languages/Ruby/Ruby-1.8.6p287
 exec_prefix = $(prefix)
 sitedir = $(prefix)/lib/ruby/site_ruby
 rubylibdir = $(libdir)/ruby/$(ruby_version)
@@ -51,7 +51,7 @@ RUBY_SO_NAME = msvcrt-ruby18
 arch = i386-mswin32
 sitearch = i386-msvcrt
 ruby_version = 1.8
-ruby = c:/vsl/m2/Merlin/External/Languages/Ruby/Ruby-1.8.6p287/bin/ruby
+ruby = c:/vsl/m2/Merlin/External.LCA_RESTRICTED/Languages/Ruby/Ruby-1.8.6p287/bin/ruby
 RUBY = $(ruby:/=\)
 RM = $(RUBY) -run -e rm -- -f
 MAKEDIRS = @$(RUBY) -run -e mkdir -- -p
@@ -84,8 +84,8 @@ EXTSTATIC =
 STATIC_LIB = 
 
 RUBYCOMMONDIR = $(sitedir)$(target_prefix)
-RUBYLIBDIR = c:/vsl/m2/Merlin/External/Languages/Ruby/Ruby-1.8.6p287/lib/ruby/gems/1.8/gems/ferret-0.11.6/lib$(target_prefix)
-RUBYARCHDIR = c:/vsl/m2/Merlin/External/Languages/Ruby/Ruby-1.8.6p287/lib/ruby/gems/1.8/gems/ferret-0.11.6/lib$(target_prefix)
+RUBYLIBDIR = c:/vsl/m2/Merlin/External.LCA_RESTRICTED/Languages/Ruby/Ruby-1.8.6p287/lib/ruby/gems/1.8/gems/ferret-0.11.6/lib$(target_prefix)
+RUBYARCHDIR = c:/vsl/m2/Merlin/External.LCA_RESTRICTED/Languages/Ruby/Ruby-1.8.6p287/lib/ruby/gems/1.8/gems/ferret-0.11.6/lib$(target_prefix)
 
 TARGET_SO     = $(DLLIB)
 CLEANLIBS     = $(TARGET).so $(TARGET).il? $(TARGET).tds $(TARGET).map

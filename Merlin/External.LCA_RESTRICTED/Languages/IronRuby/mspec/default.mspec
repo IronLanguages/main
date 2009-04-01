@@ -136,6 +136,6 @@ class MSpecScript
   else
     set :target, "#{ENV['MERLIN_ROOT']}\\bin\\debug\\ir.exe"    
   end
-  set :prefix, "#{ENV['MERLIN_ROOT']}\\..\\External\\Languages\\IronRuby\\mspec\\rubyspec"
+  set :prefix, "#{ENV['MERLIN_ROOT']}\\..\\External.LCA_RESTRICTED\\Languages\\IronRuby\\mspec\\rubyspec"
 end
 
