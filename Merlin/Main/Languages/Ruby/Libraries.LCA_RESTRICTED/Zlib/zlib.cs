@@ -585,6 +585,8 @@ namespace IronRuby.StandardLibrary.Zlib {
             protected int _outPos;
             protected int _inPos;
             protected bool _isClosed;
+            protected MutableString/*!*/ _originalName;
+            protected MutableString/*!*/ _comment;
 
             public GZipFile(IOWrapper/*!*/ ioWrapper) {
                 Debug.Assert(ioWrapper != null);
@@ -634,8 +636,8 @@ namespace IronRuby.StandardLibrary.Zlib {
                 }
             }
 
-            internal static void Close(UnaryOpStorage/*!*/ closeStorage, GZipFile/*!*/ self) {
-                if (self._ioWrapper.CanBeClosed) {
+            internal static void Close(UnaryOpStorage/*!*/ closeStorage, GZipFile/*!*/ self, bool callClose) {
+                if (callClose && self._ioWrapper.CanBeClosed) {
                     var site = closeStorage.GetCallSite("close");
                     site.Target(site, self._ioWrapper.UnderlyingObject);
                 }
@@ -649,11 +651,29 @@ namespace IronRuby.StandardLibrary.Zlib {
                 return self._isClosed;
             }
 
-            // comment() 
+            [RubyMethod("comment")]
+            public static MutableString/*!*/ Comment(GZipFile/*!*/ self) {
+                if (self._isClosed) {
+                    throw new Error("closed gzip stream");
+                }
+
+                return self._comment;
+            }
+
             // crc() 
             // level() 
             // mtime() 
-            // orig_name() 
+
+            [RubyMethod("orig_name")]
+            [RubyMethod("original_name")]
+            public static MutableString/*!*/ OriginalName(GZipFile/*!*/ self) {
+                if (self._isClosed) {
+                    throw new Error("closed gzip stream");
+                }
+
+                return self._originalName;
+            }
+
             // os_code() 
             // sync() 
             // sync = flag
@@ -670,23 +690,11 @@ namespace IronRuby.StandardLibrary.Zlib {
 
             protected MutableString _xtraField;
             protected MutableString/*!*/ _contents;
-            protected MutableString/*!*/ _originalName;
-            protected MutableString/*!*/ _comment;
             protected ushort _headerCrc;
 
             [RubyMethod("xtra_field")]
             public static MutableString ExtraField(GZipReader/*!*/ self) {
                 return self._xtraField;
-            }
-
-            [RubyMethod("original_name")]
-            public static MutableString/*!*/ OriginalName(GZipReader/*!*/ self) {
-                return self._originalName;
-            }
-
-            [RubyMethod("comment")]
-            public static MutableString/*!*/ Comment(GZipReader/*!*/ self) {
-                return self._comment;
             }
 
             [RubyConstant("OSES")]
@@ -836,10 +844,15 @@ namespace IronRuby.StandardLibrary.Zlib {
             }
 
             [RubyMethod("close")]
+            public static object/*!*/ Close(UnaryOpStorage/*!*/ closeStorage, RubyContext/*!*/ context, GZipReader/*!*/ self) {
+                GZipFile.Close(closeStorage, self, true);
+                return self._ioWrapper.UnderlyingObject;
+            }
+
             [RubyMethod("finish")]
-            public static GZipReader/*!*/ Close(UnaryOpStorage/*!*/ closeStorage, GZipReader/*!*/ self) {
-                GZipFile.Close(closeStorage, self);
-                return self;
+            public static object/*!*/ Finish(UnaryOpStorage/*!*/ closeStorage, RubyContext/*!*/ context, GZipReader/*!*/ self) {
+                GZipFile.Close(closeStorage, self, false);
+                return self._ioWrapper.UnderlyingObject;
             }
         }
 
@@ -1087,14 +1100,27 @@ namespace IronRuby.StandardLibrary.Zlib {
             }
 
             [RubyMethod("close")]
-            [RubyMethod("finish")]
-            public static void Close(UnaryOpStorage/*!*/ closeStorage, GzipWriter/*!*/ self) {
+            public static object/*!*/ Close(UnaryOpStorage/*!*/ closeStorage, RubyContext/*!*/ context, GzipWriter/*!*/ self) {
                 self._gzipStream.Close();
                 self._ioWrapper.Flush();
-                GZipFile.Close(closeStorage, self);
+                GZipFile.Close(closeStorage, self, true);
+ 				return self._ioWrapper.UnderlyingObject;
             }
 
-            // comment=(p1)
+            [RubyMethod("finish")]
+            public static object/*!*/ Finish(UnaryOpStorage/*!*/ closeStorage, RubyContext/*!*/ context, GzipWriter/*!*/ self) {
+                self._gzipStream.Close();
+                self._ioWrapper.Flush(closeStorage, context);
+                GZipFile.Close(closeStorage, self, false);
+                return self._ioWrapper.UnderlyingObject;
+            }
+
+            [RubyMethod("comment=")]
+            public static MutableString/*!*/ Comment(GzipWriter/*!*/ self, [DefaultProtocol]MutableString comment) {
+                self._comment = comment;
+
+                return comment;
+            }
 
             [RubyMethod("flush")]
             public static GzipWriter Flush(UnaryOpStorage/*!*/ flushStorage, RubyContext/*!*/ context, GzipWriter/*!*/ self, object flush) {
@@ -1123,7 +1149,14 @@ namespace IronRuby.StandardLibrary.Zlib {
             }
 
             // mtime=(p1) 
-            // orig_name=(p1) 
+            
+            [RubyMethod("orig_name=")]
+            public static MutableString/*!*/ OriginalName(GzipWriter/*!*/ self, [DefaultProtocol]MutableString originalName) {
+                self._originalName = originalName;
+
+                return originalName;
+            }
+
             // pos() 
             // print(...) 
             // printf(...) 
