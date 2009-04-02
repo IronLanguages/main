@@ -636,8 +636,12 @@ namespace IronRuby.StandardLibrary.Zlib {
                 }
             }
 
-            internal static void Close(UnaryOpStorage/*!*/ closeStorage, GZipFile/*!*/ self, bool callClose) {
-                if (callClose && self._ioWrapper.CanBeClosed) {
+            internal static void Close(UnaryOpStorage/*!*/ closeStorage, GZipFile/*!*/ self, bool closeIO) {
+                if (self._isClosed) {
+                    throw new Error("closed gzip stream");
+                }
+
+                if (closeIO && self._ioWrapper.CanBeClosed) {
                     var site = closeStorage.GetCallSite("close");
                     site.Target(site, self._ioWrapper.UnderlyingObject);
                 }
@@ -1101,6 +1105,9 @@ namespace IronRuby.StandardLibrary.Zlib {
 
             [RubyMethod("close")]
             public static object/*!*/ Close(UnaryOpStorage/*!*/ closeStorage, RubyContext/*!*/ context, GzipWriter/*!*/ self) {
+                if (self._isClosed) {
+                    throw new Error("closed gzip stream");
+                }
                 self._gzipStream.Close();
                 self._ioWrapper.Flush();
                 GZipFile.Close(closeStorage, self, true);
@@ -1116,7 +1123,10 @@ namespace IronRuby.StandardLibrary.Zlib {
             }
 
             [RubyMethod("comment=")]
-            public static MutableString/*!*/ Comment(GzipWriter/*!*/ self, [DefaultProtocol]MutableString comment) {
+            public static MutableString/*!*/ Comment(GzipWriter/*!*/ self, [NotNull]MutableString/*!*/ comment) {
+                if (self._isClosed) {
+                    throw new Error("closed gzip stream");
+                }
                 self._comment = comment;
 
                 return comment;
@@ -1151,7 +1161,11 @@ namespace IronRuby.StandardLibrary.Zlib {
             // mtime=(p1) 
             
             [RubyMethod("orig_name=")]
-            public static MutableString/*!*/ OriginalName(GzipWriter/*!*/ self, [DefaultProtocol]MutableString originalName) {
+            public static MutableString/*!*/ OriginalName(GzipWriter/*!*/ self, [NotNull]MutableString/*!*/ originalName) {
+                if (self._isClosed) {
+                    throw new Error("closed gzip stream");
+                }
+
                 self._originalName = originalName;
 
                 return originalName;

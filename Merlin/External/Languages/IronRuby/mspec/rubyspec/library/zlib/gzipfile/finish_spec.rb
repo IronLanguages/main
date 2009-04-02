@@ -5,31 +5,25 @@ require 'zlib'
 describe 'Zlib::GzipFile#finish' do
   before(:each) do
 	@io = StringIO.new
+	@gzip_writer = Zlib::GzipWriter.new @io
   end
   
-  it 'closes the io' do
-    Zlib::GzipWriter.wrap @io do |gzio|
-      gzio.finish
-      
-      gzio.closed?.should == true
-    end
+  it 'closes the GzipFile' do
+    @gzip_writer.finish
+    @gzip_writer.closed?.should be_true
   end
   
-  it 'never calls the close method of the associated IO object' do
-    Zlib::GzipWriter.wrap @io do |gzio|
-      gzio.finish
-
-      @io.closed?.should == false
-    end
+  it 'does not close the IO object' do
+    @gzip_writer.finish
+    @io.closed?.should be_false
   end
   
   it 'returns the associated IO object' do
-    Zlib::GzipWriter.wrap @io do |gzio|
-      gzio.finish.should eql(@io)
-    end
+    @gzip_writer.finish.should eql(@io)
   end
   
-  after do
-    @io.close
+  it 'raises Zlib::GzipFile::Error if called multiple times' do
+    @gzip_writer.finish
+    lambda { @gzip_writer.finish }.should raise_error(Zlib::GzipFile::Error)
   end
 end
