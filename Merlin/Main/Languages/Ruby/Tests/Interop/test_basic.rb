@@ -17,34 +17,6 @@ require "../util/assert.rb"
 
 require "mscorlib"
 
-def test_stringbuilder
-    x = System::Text::StringBuilder.new
-    x.Append("abc")
-    x.Append("def")
-    x.Append(100)
-    x.Insert(3, "012")
-    
-    assert_equal(x.ToString, System::String::Concat("abc012def100"))
-    
-    x.Capacity = 20
-    assert_equal(x.Capacity, 20)
-    assert_equal(x.Length, 12)
-end
-
-def test_string
-    a = System::Char::Parse("a")
-    b = System::Char::Parse("b")
-    x = System::String.new(a, 2)
-    y = System::String.new(b, 3)
-    
-    str = System::String
-    assert_equal(str.Concat(x, y), System::String::Concat("aabbb"))
-    
-    assert_equal(str.Compare(x, y), -1)
-    assert_equal(str.Compare(y, x), 1)
-    assert_equal(str.Compare(x, x), 0)
-end 
-
 def test_field
     # const field
     assert_equal(System::Int32.MaxValue, 2147483647)
