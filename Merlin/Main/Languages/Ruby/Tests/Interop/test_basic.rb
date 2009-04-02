@@ -17,23 +17,6 @@ require "../util/assert.rb"
 
 require "mscorlib"
 
-def test_field
-    # const field
-    assert_equal(System::Int32.MaxValue, 2147483647)
-    # enum
-    assert_equal(System::DayOfWeek.Sunday.ToString().to_str, 'Sunday')
-    # readonly field
-    assert_equal(System::DateTime.MaxValue.ToString().to_str, '12/31/9999 11:59:59 PM')
-    
-    assert_raise(NoMethodError) { print System::Int32.MaxValue2 }
-    
-    # setting to a read only field raises NoMethodError
-    assert_raise(NoMethodError) { System::Int32.MaxValue = 5 }
-    assert_raise(NoMethodError) { System::DayOfWeek.Sunday = 5 }
-    assert_raise(NoMethodError) { System::DateTime.MaxValue = 5 }
-    
-    # TODO: set field test (need a type with a writable static field)
-end 
 
 def test_event
     require "System, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"
