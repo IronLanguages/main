@@ -41,8 +41,31 @@ class BeAbleToLoadMatcher
   end
 end
 
+class ClrStringMatcher
+  def initialize(str)
+    @expected = str
+  end
+
+  def matches?(actual)
+    @actual = actual
+    @actual.to_s == @expected
+  end
+
+  def failure_message
+    ["Expected CLR string '#{@actual}'", "to equal Ruby string \"#{@expected}\""]
+  end
+
+  def negative_failure_message
+    ["Expected CLR string '#{@actual}'", "to not equal Ruby string \"#{@expected}\""]
+  end
+end
+
 class Object
   def be_able_to_load(assembly)
     BeAbleToLoadMatcher.new(assembly)
+  end
+
+  def equal_clr_string(str)
+    ClrStringMatcher.new(str)
   end
 end
