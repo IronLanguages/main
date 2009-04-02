@@ -33,12 +33,12 @@ describe "Ruby classes derived from .NET classes with overloaded constructors" d
 
   it "properly selects overloaded constructors" do
     OverloadedConstructorClass.new("hello").should be_kind_of(OverloadedConstructorClass)
-    OverloadedConstructorClass.new("hello").val.to_s.should == "string constructor"
+    OverloadedConstructorClass.new("hello").val.should equal_clr_string("string constructor")
   end
   
   it "properly selects overloaded constructors for super" do
     RubyOverloadedConstructorClass.new("hello").should be_kind_of(RubyOverloadedConstructorClass)
-    OverloadedConstructorClass.new("hello").val.to_s.should == "string constructor"
+    OverloadedConstructorClass.new("hello").val.should equal_clr_string("string constructor")
 end
 
 end

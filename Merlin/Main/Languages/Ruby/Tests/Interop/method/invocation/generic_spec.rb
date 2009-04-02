@@ -125,15 +125,15 @@ EOL
 EOL
 describe :generic_methods, :shared => true do
   it "are callable via call and [] when pubic or protected" do
-    @klass.method(:public_1_generic_0_arg).of(Fixnum).call.to_s.should == "public generic no args"
+    @klass.method(:public_1_generic_0_arg).of(Fixnum).call.should equal_clr_string("public generic no args")
     (@public_method_list + @protected_method_list).each do |m|
       generic_count, arity = m.match(/_(\d)_generic_(\d)_/)[1..2].map {|e| e.to_i}
       generics = Array.new(generic_count, Fixnum)
       args = Array.new(arity, 1)
       args << args.pop.to_s.to_clr_string if arity > generic_count
 
-      @klass.method(m).of(*generics).call(*args).to_s.should == args.join(" ")
-      @klass.method(m).of(*generics)[*args].to_s.should == args.join(" ")
+      @klass.method(m).of(*generics).call(*args).should equal_clr_string(args.join(" "))
+      @klass.method(m).of(*generics)[*args].should equal_clr_string(args.join(" "))
     end
   end
 
@@ -161,8 +161,8 @@ describe :generic_methods, :shared => true do
         args = Array.new(arity, 1)
         args << args.pop.to_s.to_clr_string if arity > generic_count
 
-        @klass.method(m).of(*generics).call(*args).to_s.should == args.join(" ")
-        @klass.method(m).of(*generics)[*args].to_s.should == args.join(" ")
+        @klass.method(m).of(*generics).call(*args).should equal_clr_string(args.join(" "))
+        @klass.method(m).of(*generics)[*args].should equal_clr_string(args.join(" "))
       end
     end
   end
@@ -208,11 +208,11 @@ end
 
 describe :generic_conflicting_methods, :shared => true do
   it "binds class type parameter correctly" do
-    @klass.method(:public_1_generic_2_arg).of(String).call("hello", 1).to_s.should == "hello 1"
+    @klass.method(:public_1_generic_2_arg).of(String).call("hello", 1).should equal_clr_string("hello 1")
   end
 
   it "binds conflicting type parameter correctly" do
-    @klass.method(:conflicting_generic_method).of(String).call("hello").to_s.should == "hello"
+    @klass.method(:conflicting_generic_method).of(String).call("hello").should equal_clr_string("hello")
   end
 end
 describe "Generic methods" do

@@ -18,18 +18,18 @@ describe "Overload resolution" do
   end
 
   it "is performed" do
-    @methods.call(100).to_s.should == "one arg"
-    @methods.call(100, 100).to_s.should == "two args"
-    @klass.overloaded(100).to_s.should == "one arg"
-    @klass.overloaded(100, 100).to_s.should == "two args"
+    @methods.call(100).should equal_clr_string("one arg")
+    @methods.call(100, 100).should equal_clr_string("two args")
+    @klass.overloaded(100).should equal_clr_string("one arg")
+    @klass.overloaded(100, 100).should equal_clr_string("two args")
   end
 
   it "correctly binds with methods of different visibility" do
     method = @klass.method(:public_protected_overload)
-    @klass.public_protected_overload.to_s.should == "public overload"
-    @klass.public_protected_overload("abc").to_s.should == "protected overload"
-    method.call.to_s.should == "public overload"
-    method.call("abc").to_s.should == "protected overload"
+    @klass.public_protected_overload.should equal_clr_string("public overload")
+    @klass.public_protected_overload("abc").should equal_clr_string("protected overload")
+    method.call.should equal_clr_string("public overload")
+    method.call("abc").should equal_clr_string("protected overload")
   end
 end
 
@@ -39,7 +39,7 @@ describe "Selecting .NET overloads" do
   end
   
   it "is allowed" do
-    @methods.overloads(Fixnum,Fixnum).call(100,100).to_s.should == "two args"
+    @methods.overloads(Fixnum,Fixnum).call(100,100).should equal_clr_string("two args")
   end
 
   it "correctly reports error message" do
