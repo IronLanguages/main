@@ -17,6 +17,22 @@ public partial class DerivedFromAbstract : AbstractClass {
   }
 #line 32 "./class/instantiation/abstract_spec.rb"
 public abstract partial class AbstractDerived : Klass {}
+#line 9 "./class/instantiation/class_spec.rb"
+public partial class OverloadedConstructorClass {
+      public string val;
+
+      public OverloadedConstructorClass() {
+        val = "empty constructor";
+      }
+
+      public OverloadedConstructorClass(string str) {
+        val = "string constructor";
+      }
+
+      public OverloadedConstructorClass(string str, int i) {
+        val = "string int constructor";
+      }
+    }
 #line 4 "./class/mapping_spec.rb"
 public class EmptyClass {}
     public partial class Klass {public int m() {return 1;}}
