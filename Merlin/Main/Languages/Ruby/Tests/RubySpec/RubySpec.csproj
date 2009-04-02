@@ -43,15 +43,15 @@
   </Target>
   -->
   <ItemGroup>
-    <Content Include="..\..\..\..\..\External\Languages\IronRuby\mspec\ironruby-tags\critical_tags.txt">
+    <Content Include="..\..\..\..\..\External.LCA_RESTRICTED\Languages\IronRuby\mspec\ironruby-tags\critical_tags.txt">
       <Link>IronRuby-tags\critical_tags.txt</Link>
     </Content>
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\..\..\..\..\External\Languages\IronRuby\mspec\mspec\spec\spec_helper.rb">
+    <None Include="..\..\..\..\..\External.LCA_RESTRICTED\Languages\IronRuby\mspec\mspec\spec\spec_helper.rb">
       <Link>MSpec\Spec\spec_helper.rb</Link>
     </None>
-    <None Include="..\..\..\..\..\External\Languages\IronRuby\mspec\rubyspec\spec_helper.rb">
+    <None Include="..\..\..\..\..\External.LCA_RESTRICTED\Languages\IronRuby\mspec\rubyspec\spec_helper.rb">
       <Link>RubySpec\spec_helper.rb</Link>
     </None>
   </ItemGroup>

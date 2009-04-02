@@ -1,4 +1,4 @@
-c:/vsl/m2/Merlin/External/Languages/Ruby/Ruby-1.8.6p287/bin/ruby.exe extconf.rb install pkg/do_mysql-0.9.12 --no-update-sources
+c:/vsl/m2/Merlin/External.LCA_RESTRICTED/Languages/Ruby/Ruby-1.8.6p287/bin/ruby.exe extconf.rb install pkg/do_mysql-0.9.12 --no-update-sources
 checking for mysql.h... no
 checking for main() in libmysql.lib... no
 checking for mysql_query() in mysql.h... no
@@ -17,7 +17,7 @@ Provided configuration options:
 	--with-make-prog
 	--srcdir=.
 	--curdir
-	--ruby=c:/vsl/m2/Merlin/External/Languages/Ruby/Ruby-1.8.6p287/bin/ruby
+	--ruby=c:/vsl/m2/Merlin/External.LCA_RESTRICTED/Languages/Ruby/Ruby-1.8.6p287/bin/ruby
 	--with-mysql-dir
 	--without-mysql-dir
 	--with-mysql-include

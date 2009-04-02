@@ -531,6 +531,18 @@ namespace IronRuby.Tests {
                 Backtrace2,
                 Backtrace3,
                 Backtrace4,
+
+                Dlr_ClrSubtype,
+                Dlr_MethodMissing,
+                Dlr_Miscellaneous,
+                Dlr_Convertible,
+                Dlr_Indexable,
+                Dlr_Number,
+                Dlr_Enumerable,
+                Dlr_Comparable,
+                Dlr_RubyObjects,
+                Dlr_Methods,
+                Dlr_Languages
             };
         }
     }
