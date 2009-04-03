@@ -128,6 +128,9 @@ describe "Predefined globals $0 and $PROGRAM_NAME" do
   end
 
   it "represents the program name" do
+    #This tests the program name in a clean environment. Program_name.rb
+    #just puts $0 and $PROGRAM_NAME, so we split the output to get rid of
+    #the \n and then we compare it to an array of the file names.
     ruby_exe(fixture(__FILE__, "program_name.rb")).split.should == [File.expand_path(fixture(__FILE__, "program_name.rb")), File.expand_path(fixture(__FILE__, "program_name.rb"))]
   end
 

@@ -78,6 +78,18 @@ describe "Invoking events" do
     @helper[:proc].should == 1
   end
 
+  it "works with to_proc syntax" do
+    @klass.full_event &@lambda
+    @klass.invoke_full_event(1)
+    @helper[:lambda].should == 1
+  end
+
+  it "works with block syntax" do
+    @klass.full_event {|s,e| @helper[:block] += e} 
+    @klass.invoke_full_event(1)
+    @helper[:block].should == 1
+  end
+
   it "works with multiple objects via add" do
     @klass.full_event.add @method
     @klass.full_event.add @proc

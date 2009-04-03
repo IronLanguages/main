@@ -334,7 +334,7 @@ describe "String#%" do
     ("%*e" % [10, 9]).should == "9.000000e+00"
   end
 
-  it "truncates floating point numbers with %f" do
+  it "rounds floating point numbers with %f" do
     float = 78.54534
     ("%2.2f" % float).should == "78.55"
     ("%2.4f" % float).should == "78.5453"
