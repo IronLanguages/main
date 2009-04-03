@@ -105,7 +105,7 @@ else:
         # get some directories and files
         ip_root             = path_combine(rowan_root, basePyDir)
         external_dir        = path_combine(rowan_root, r'..\External.LCA_RESTRICTED\Languages\IronPython')
-        clean_external_dir  = path_combine(rowan_root, r'..\External.LCA_RESTRICTED\Languages\CPython\25')
+        clean_external_dir  = path_combine(rowan_root, r'..\External.LCA_RESTRICTED\Languages\CPython\26')
         public_testdir      = path_combine(ip_root, r'Tests')
         compat_testdir      = path_combine(ip_root, r'Tests\compat')
         test_inputs_dir     = path_combine(ip_root, r'Tests\Inputs')

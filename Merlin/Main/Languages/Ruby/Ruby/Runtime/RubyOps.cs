@@ -1760,12 +1760,12 @@ namespace IronRuby.Runtime {
         [Emitted]
         public static Delegate/*!*/ CreateDelegateFromProc(Type/*!*/ type, Proc/*!*/ proc) {
             BlockParam bp = CreateBfcForProcCall(proc);
-            return BinderOps.GetDelegate(proc.LocalScope.RubyContext, bp, type);
+            return proc.LocalScope.RubyContext.GetDelegate(bp, type);
         }
 
         [Emitted]
         public static Delegate/*!*/ CreateDelegateFromMethod(Type/*!*/ type, RubyMethod/*!*/ method) {
-            return BinderOps.GetDelegate(method.Info.Context, method, type);
+            return method.Info.Context.GetDelegate(method, type);
         }
 
         #endregion

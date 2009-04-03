@@ -188,7 +188,7 @@ namespace System.Dynamic {
                     return true;
                 }
             }
-            
+
             result = null;
             return false;
         }
@@ -204,7 +204,21 @@ namespace System.Dynamic {
             ContractUtils.RequiresNotNull(value, "value");
             ContractUtils.Requires(IsComObject(value), "value", Strings.ComObjectExpected);
 
-            return ComObject.ObjectToComObject(value).MemberNames;
+            return ComObject.ObjectToComObject(value).GetMemberNames(false);
+        }
+
+        /// <summary>
+        /// Gets the member names of the data-like members associated with the object.
+        /// This function can operate only with objects for which <see cref="IsComObject"/> returns true.
+        /// </summary>
+        /// <param name="value">The object for which member names are requested.</param>
+        /// <returns>The collection of member names.</returns>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode")]
+        internal static IList<string> GetDynamicDataMemberNames(object value) {
+            ContractUtils.RequiresNotNull(value, "value");
+            ContractUtils.Requires(IsComObject(value), "value", Strings.ComObjectExpected);
+
+            return ComObject.ObjectToComObject(value).GetMemberNames(true);
         }
 
         /// <summary>
@@ -212,13 +226,14 @@ namespace System.Dynamic {
         /// This function can operate only with objects for which <see cref="IsComObject"/> returns true.
         /// </summary>
         /// <param name="value">The object for which data members are requested.</param>
+        /// <param name="names">The enumeration of names of data members for which to retrieve values.</param>
         /// <returns>The collection of pairs that represent data member's names and their data.</returns>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode")]
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1006:DoNotNestGenericTypesInMemberSignatures")]
-        public static IEnumerable<KeyValuePair<string, object>> GetDynamicDataMembers(object value) {
+        internal static IList<KeyValuePair<string, object>> GetDynamicDataMembers(object value, IEnumerable<string> names) {
             ContractUtils.RequiresNotNull(value, "value");
             ContractUtils.Requires(IsComObject(value), "value", Strings.ComObjectExpected);
-
-            return ComObject.ObjectToComObject(value).DataMembers;
+            return ComObject.ObjectToComObject(value).GetMembers(names);
         }
 
         private static bool TryGetMetaObject(ref DynamicMetaObject instance) {
@@ -254,13 +269,13 @@ namespace System.Dynamic {
             }
 
             public override int GetHashCode() {
-                return _originalBinder.GetHashCode() ^ (_CanReturnCallables? 1: 0);
+                return _originalBinder.GetHashCode() ^ (_CanReturnCallables ? 1 : 0);
             }
 
             public override bool Equals(object obj) {
                 ComGetMemberBinder other = obj as ComGetMemberBinder;
-                return other != null && 
-                    _CanReturnCallables == other._CanReturnCallables && 
+                return other != null &&
+                    _CanReturnCallables == other._CanReturnCallables &&
                     _originalBinder.Equals(other._originalBinder);
             }
         }

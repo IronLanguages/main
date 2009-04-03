@@ -106,12 +106,12 @@ namespace System.Dynamic {
             return new ComObject(rcw);
         }
 
-        internal virtual IEnumerable<string> MemberNames {
-            get { return new string[0]; }
+        internal virtual IList<string> GetMemberNames(bool dataOnly) {
+            return new string[0];
         }
 
-        internal virtual IEnumerable<KeyValuePair<string, object>> DataMembers {
-            get { return new KeyValuePair<string, object>[0]; }
+        internal virtual IList<KeyValuePair<string, object>> GetMembers(IEnumerable<string> names) {
+            return new KeyValuePair<string, object>[0];
         }
 
         DynamicMetaObject IDynamicMetaObjectProvider.GetMetaObject(Expression parameter) {

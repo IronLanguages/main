@@ -656,6 +656,17 @@ import Namespace.")]
         }
 
         /// <summary>
+        /// Attempts to convert the provided object to the specified type.  Conversions that 
+        /// will be attempted include standard Python conversions as well as .NET implicit
+        /// and explicit conversions.
+        /// 
+        /// If the conversion cannot be performed a TypeError will be raised.
+        /// </summary>
+        public static object Convert(CodeContext/*!*/ context, object o, Type toType) {
+            return Converter.Convert(o, toType);
+        }
+
+        /// <summary>
         /// Provides a helper for compiling a group of modules into a single assembly.  The assembly can later be
         /// reloaded using the clr.AddReference API.
         /// </summary>

@@ -75,11 +75,6 @@ namespace Microsoft.Scripting.Ast {
     /// Factory methods.
     /// </summary>
     public static partial class Utils {
-        [Obsolete("use Assign overload without SourceSpan")]
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "span")]
-        public static UnboundAssignment Assign(SymbolId name, Expression value, SourceSpan span) {
-            return Assign(name, value);
-        }
         public static UnboundAssignment Assign(SymbolId name, Expression value) {
             ContractUtils.Requires(!name.IsEmpty && !name.IsInvalid, "name", "Invalid or empty name is not allowed");
             ContractUtils.RequiresNotNull(value, "value");

@@ -1281,7 +1281,7 @@ namespace IronPython.Runtime.Operations {
         public static object MakeClass(object body, CodeContext/*!*/ parentContext, string name, object[] bases, string selfNames) {
             Func<CodeContext, CodeContext> func = body as Func<CodeContext, CodeContext>;
             if (func == null) {
-                func = ((Compiler.Ast.LazyClass)body).EnsureDelegate();
+                func = ((Compiler.LazyCode<Func<CodeContext, CodeContext>>)body).EnsureDelegate();
             }
             return MakeClass(parentContext, name, bases, selfNames, func(parentContext).Scope.Dict);
         }
@@ -2864,6 +2864,15 @@ namespace IronPython.Runtime.Operations {
 
         #region Function helpers
 
+        public static PythonGenerator MakeGenerator(PythonFunction function, Tuple data, object generatorCode) {
+            PythonGeneratorNext next = generatorCode as PythonGeneratorNext;
+            if (next == null) {
+                next = ((LazyCode<PythonGeneratorNext>)generatorCode).EnsureDelegate();
+            }
+
+            return new PythonGenerator(function, next, data);
+        }
+
         public static FunctionInfo MakeFunctionInfo(string name, object documentation, string[] argNames, FunctionAttributes flags, int lineNumber, string path) {
             return new FunctionInfo(name, documentation, argNames, flags, lineNumber, path, null, false);
         }
@@ -3178,10 +3187,6 @@ namespace IronPython.Runtime.Operations {
             l.AddNoLock(o);
         }
 
-        public static void InitializePythonGenerator(PythonGenerator/*!*/ generator, IEnumerator/*!*/ enumerator) {
-            generator.Next = enumerator;
-        }
-        
         public static object GetUserDescriptorValue(object instance, PythonTypeSlot slot) {
             return GetUserDescriptor(((PythonTypeUserDescriptorSlot)slot).Value, instance, ((IPythonObject)instance).PythonType);
         }
@@ -3377,7 +3382,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         public static Delegate GetDelegate(CodeContext context, object target, Type type) {
-            return BinderOps.GetDelegate(context.LanguageContext, target, type);
+            return context.LanguageContext.GetDelegate(target, type);
         }
 
         public static int CompareLists(List self, List other) {

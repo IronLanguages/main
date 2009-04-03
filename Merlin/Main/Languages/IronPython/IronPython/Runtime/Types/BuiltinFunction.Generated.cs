@@ -130,13 +130,17 @@ namespace IronPython.Runtime.Types {
         class OptimizingInfo {
             public readonly OptimizingCallDelegate Caller;
             public readonly Type[] TypeTest;
-            public readonly PythonInvokeBinder Binder;
+            public readonly CallSignature Signature;
             public Delegate OptimizedDelegate;
 
-            public OptimizingInfo(OptimizingCallDelegate caller, Type[] types, PythonInvokeBinder binder) {
+            public OptimizingInfo(OptimizingCallDelegate caller, Type[] types, CallSignature signature) {
                 Caller = caller;
-                Binder = binder;
+                Signature = signature;
                 TypeTest = types;
+            }
+
+            public PythonInvokeBinder GetInvokeBinder(CodeContext context) {
+                return PythonContext.GetContext(context).DefaultBinderState.Invoke(Signature);
             }
         }
 
@@ -159,7 +163,8 @@ namespace IronPython.Runtime.Types {
                     object res = _info.Caller.Invoke(new object[] { context }, out shouldOptimize);
 
                     if (shouldOptimize) {
-                        _info.OptimizedDelegate = _info.Binder.Optimize(_site, new object[] { context, func });
+
+                        _info.OptimizedDelegate = ((PythonInvokeBinder)_site.Binder).Optimize(_site, new object[] { context, func });
                     }
 
                     return res;
@@ -194,7 +199,7 @@ namespace IronPython.Runtime.Types {
                     object res = _info.Caller(new object[] { context, bf.__self__ }, out shouldOptimize);
 
                     if (shouldOptimize) {
-                        _info.OptimizedDelegate = _info.Binder.Optimize(_site, new object[] { context, func });
+                        _info.OptimizedDelegate = _info.GetInvokeBinder(context).Optimize(_site, new object[] { context, func });
                     }
 
                     return res;
@@ -233,7 +238,7 @@ namespace IronPython.Runtime.Types {
                     object res = _info.Caller(new object[] { context, arg0 }, out shouldOptimize);
 
                     if (shouldOptimize) {
-                        _info.OptimizedDelegate = _info.Binder.Optimize(_site, new object[] { context, func, arg0 });
+                        _info.OptimizedDelegate = _info.GetInvokeBinder(context).Optimize(_site, new object[] { context, func, arg0 });
                     }
 
                     return res;
@@ -271,7 +276,7 @@ namespace IronPython.Runtime.Types {
                     object res = _info.Caller(new object[] { context, bf.__self__, arg0 }, out shouldOptimize);
 
                     if (shouldOptimize) {
-                        _info.OptimizedDelegate = _info.Binder.Optimize(_site, new object[] { context, func, arg0 });
+                        _info.OptimizedDelegate = _info.GetInvokeBinder(context).Optimize(_site, new object[] { context, func, arg0 });
                     }
 
                     return res;
@@ -307,7 +312,7 @@ namespace IronPython.Runtime.Types {
                     object res = _info.Caller(new object[] { context, arg0, arg1 }, out shouldOptimize);
 
                     if (shouldOptimize) {
-                        _info.OptimizedDelegate = _info.Binder.Optimize(_site, new object[] { context, func, arg0, arg1 });
+                        _info.OptimizedDelegate = _info.GetInvokeBinder(context).Optimize(_site, new object[] { context, func, arg0, arg1 });
                     }
 
                     return res;
@@ -347,7 +352,7 @@ namespace IronPython.Runtime.Types {
                     object res = _info.Caller(new object[] { context, bf.__self__, arg0, arg1 }, out shouldOptimize);
 
                     if (shouldOptimize) {
-                        _info.OptimizedDelegate = _info.Binder.Optimize(_site, new object[] { context, func, arg0, arg1 });
+                        _info.OptimizedDelegate = _info.GetInvokeBinder(context).Optimize(_site, new object[] { context, func, arg0, arg1 });
                     }
 
                     return res;
@@ -385,7 +390,7 @@ namespace IronPython.Runtime.Types {
                     object res = _info.Caller(new object[] { context, arg0, arg1, arg2 }, out shouldOptimize);
 
                     if (shouldOptimize) {
-                        _info.OptimizedDelegate = _info.Binder.Optimize(_site, new object[] { context, func, arg0, arg1, arg2 });
+                        _info.OptimizedDelegate = _info.GetInvokeBinder(context).Optimize(_site, new object[] { context, func, arg0, arg1, arg2 });
                     }
 
                     return res;
@@ -427,7 +432,7 @@ namespace IronPython.Runtime.Types {
                     object res = _info.Caller(new object[] { context, bf.__self__, arg0, arg1, arg2 }, out shouldOptimize);
 
                     if (shouldOptimize) {
-                        _info.OptimizedDelegate = _info.Binder.Optimize(_site, new object[] { context, func, arg0, arg1, arg2 });
+                        _info.OptimizedDelegate = _info.GetInvokeBinder(context).Optimize(_site, new object[] { context, func, arg0, arg1, arg2 });
                     }
 
                     return res;
@@ -467,7 +472,7 @@ namespace IronPython.Runtime.Types {
                     object res = _info.Caller(new object[] { context, arg0, arg1, arg2, arg3 }, out shouldOptimize);
 
                     if (shouldOptimize) {
-                        _info.OptimizedDelegate = _info.Binder.Optimize(_site, new object[] { context, func, arg0, arg1, arg2, arg3 });
+                        _info.OptimizedDelegate = _info.GetInvokeBinder(context).Optimize(_site, new object[] { context, func, arg0, arg1, arg2, arg3 });
                     }
 
                     return res;
@@ -511,7 +516,7 @@ namespace IronPython.Runtime.Types {
                     object res = _info.Caller(new object[] { context, bf.__self__, arg0, arg1, arg2, arg3 }, out shouldOptimize);
 
                     if (shouldOptimize) {
-                        _info.OptimizedDelegate = _info.Binder.Optimize(_site, new object[] { context, func, arg0, arg1, arg2, arg3 });
+                        _info.OptimizedDelegate = _info.GetInvokeBinder(context).Optimize(_site, new object[] { context, func, arg0, arg1, arg2, arg3 });
                     }
 
                     return res;
@@ -553,7 +558,7 @@ namespace IronPython.Runtime.Types {
                     object res = _info.Caller(new object[] { context, arg0, arg1, arg2, arg3, arg4 }, out shouldOptimize);
 
                     if (shouldOptimize) {
-                        _info.OptimizedDelegate = _info.Binder.Optimize(_site, new object[] { context, func, arg0, arg1, arg2, arg3, arg4 });
+                        _info.OptimizedDelegate = _info.GetInvokeBinder(context).Optimize(_site, new object[] { context, func, arg0, arg1, arg2, arg3, arg4 });
                     }
 
                     return res;
@@ -599,7 +604,7 @@ namespace IronPython.Runtime.Types {
                     object res = _info.Caller(new object[] { context, bf.__self__, arg0, arg1, arg2, arg3, arg4 }, out shouldOptimize);
 
                     if (shouldOptimize) {
-                        _info.OptimizedDelegate = _info.Binder.Optimize(_site, new object[] { context, func, arg0, arg1, arg2, arg3, arg4 });
+                        _info.OptimizedDelegate = _info.GetInvokeBinder(context).Optimize(_site, new object[] { context, func, arg0, arg1, arg2, arg3, arg4 });
                     }
 
                     return res;
@@ -643,7 +648,7 @@ namespace IronPython.Runtime.Types {
                     object res = _info.Caller(new object[] { context, arg0, arg1, arg2, arg3, arg4, arg5 }, out shouldOptimize);
 
                     if (shouldOptimize) {
-                        _info.OptimizedDelegate = _info.Binder.Optimize(_site, new object[] { context, func, arg0, arg1, arg2, arg3, arg4, arg5 });
+                        _info.OptimizedDelegate = _info.GetInvokeBinder(context).Optimize(_site, new object[] { context, func, arg0, arg1, arg2, arg3, arg4, arg5 });
                     }
 
                     return res;
@@ -691,7 +696,7 @@ namespace IronPython.Runtime.Types {
                     object res = _info.Caller(new object[] { context, bf.__self__, arg0, arg1, arg2, arg3, arg4, arg5 }, out shouldOptimize);
 
                     if (shouldOptimize) {
-                        _info.OptimizedDelegate = _info.Binder.Optimize(_site, new object[] { context, func, arg0, arg1, arg2, arg3, arg4, arg5 });
+                        _info.OptimizedDelegate = _info.GetInvokeBinder(context).Optimize(_site, new object[] { context, func, arg0, arg1, arg2, arg3, arg4, arg5 });
                     }
 
                     return res;
@@ -737,7 +742,7 @@ namespace IronPython.Runtime.Types {
                     object res = _info.Caller(new object[] { context, arg0, arg1, arg2, arg3, arg4, arg5, arg6 }, out shouldOptimize);
 
                     if (shouldOptimize) {
-                        _info.OptimizedDelegate = _info.Binder.Optimize(_site, new object[] { context, func, arg0, arg1, arg2, arg3, arg4, arg5, arg6 });
+                        _info.OptimizedDelegate = _info.GetInvokeBinder(context).Optimize(_site, new object[] { context, func, arg0, arg1, arg2, arg3, arg4, arg5, arg6 });
                     }
 
                     return res;
@@ -787,7 +792,7 @@ namespace IronPython.Runtime.Types {
                     object res = _info.Caller(new object[] { context, bf.__self__, arg0, arg1, arg2, arg3, arg4, arg5, arg6 }, out shouldOptimize);
 
                     if (shouldOptimize) {
-                        _info.OptimizedDelegate = _info.Binder.Optimize(_site, new object[] { context, func, arg0, arg1, arg2, arg3, arg4, arg5, arg6 });
+                        _info.OptimizedDelegate = _info.GetInvokeBinder(context).Optimize(_site, new object[] { context, func, arg0, arg1, arg2, arg3, arg4, arg5, arg6 });
                     }
 
                     return res;
@@ -835,7 +840,7 @@ namespace IronPython.Runtime.Types {
                     object res = _info.Caller(new object[] { context, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7 }, out shouldOptimize);
 
                     if (shouldOptimize) {
-                        _info.OptimizedDelegate = _info.Binder.Optimize(_site, new object[] { context, func, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7 });
+                        _info.OptimizedDelegate = _info.GetInvokeBinder(context).Optimize(_site, new object[] { context, func, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7 });
                     }
 
                     return res;
@@ -887,7 +892,7 @@ namespace IronPython.Runtime.Types {
                     object res = _info.Caller(new object[] { context, bf.__self__, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7 }, out shouldOptimize);
 
                     if (shouldOptimize) {
-                        _info.OptimizedDelegate = _info.Binder.Optimize(_site, new object[] { context, func, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7 });
+                        _info.OptimizedDelegate = _info.GetInvokeBinder(context).Optimize(_site, new object[] { context, func, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7 });
                     }
 
                     return res;
@@ -937,7 +942,7 @@ namespace IronPython.Runtime.Types {
                     object res = _info.Caller(new object[] { context, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8 }, out shouldOptimize);
 
                     if (shouldOptimize) {
-                        _info.OptimizedDelegate = _info.Binder.Optimize(_site, new object[] { context, func, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8 });
+                        _info.OptimizedDelegate = _info.GetInvokeBinder(context).Optimize(_site, new object[] { context, func, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8 });
                     }
 
                     return res;
@@ -991,7 +996,7 @@ namespace IronPython.Runtime.Types {
                     object res = _info.Caller(new object[] { context, bf.__self__, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8 }, out shouldOptimize);
 
                     if (shouldOptimize) {
-                        _info.OptimizedDelegate = _info.Binder.Optimize(_site, new object[] { context, func, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8 });
+                        _info.OptimizedDelegate = _info.GetInvokeBinder(context).Optimize(_site, new object[] { context, func, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8 });
                     }
 
                     return res;
@@ -1043,7 +1048,7 @@ namespace IronPython.Runtime.Types {
                     object res = _info.Caller(new object[] { context, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9 }, out shouldOptimize);
 
                     if (shouldOptimize) {
-                        _info.OptimizedDelegate = _info.Binder.Optimize(_site, new object[] { context, func, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9 });
+                        _info.OptimizedDelegate = _info.GetInvokeBinder(context).Optimize(_site, new object[] { context, func, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9 });
                     }
 
                     return res;
@@ -1099,7 +1104,7 @@ namespace IronPython.Runtime.Types {
                     object res = _info.Caller(new object[] { context, bf.__self__, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9 }, out shouldOptimize);
 
                     if (shouldOptimize) {
-                        _info.OptimizedDelegate = _info.Binder.Optimize(_site, new object[] { context, func, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9 });
+                        _info.OptimizedDelegate = _info.GetInvokeBinder(context).Optimize(_site, new object[] { context, func, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9 });
                     }
 
                     return res;
@@ -1153,7 +1158,7 @@ namespace IronPython.Runtime.Types {
                     object res = _info.Caller(new object[] { context, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10 }, out shouldOptimize);
 
                     if (shouldOptimize) {
-                        _info.OptimizedDelegate = _info.Binder.Optimize(_site, new object[] { context, func, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10 });
+                        _info.OptimizedDelegate = _info.GetInvokeBinder(context).Optimize(_site, new object[] { context, func, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10 });
                     }
 
                     return res;
@@ -1211,7 +1216,7 @@ namespace IronPython.Runtime.Types {
                     object res = _info.Caller(new object[] { context, bf.__self__, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10 }, out shouldOptimize);
 
                     if (shouldOptimize) {
-                        _info.OptimizedDelegate = _info.Binder.Optimize(_site, new object[] { context, func, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10 });
+                        _info.OptimizedDelegate = _info.GetInvokeBinder(context).Optimize(_site, new object[] { context, func, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10 });
                     }
 
                     return res;
@@ -1267,7 +1272,7 @@ namespace IronPython.Runtime.Types {
                     object res = _info.Caller(new object[] { context, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11 }, out shouldOptimize);
 
                     if (shouldOptimize) {
-                        _info.OptimizedDelegate = _info.Binder.Optimize(_site, new object[] { context, func, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11 });
+                        _info.OptimizedDelegate = _info.GetInvokeBinder(context).Optimize(_site, new object[] { context, func, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11 });
                     }
 
                     return res;
@@ -1327,7 +1332,7 @@ namespace IronPython.Runtime.Types {
                     object res = _info.Caller(new object[] { context, bf.__self__, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11 }, out shouldOptimize);
 
                     if (shouldOptimize) {
-                        _info.OptimizedDelegate = _info.Binder.Optimize(_site, new object[] { context, func, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11 });
+                        _info.OptimizedDelegate = _info.GetInvokeBinder(context).Optimize(_site, new object[] { context, func, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11 });
                     }
 
                     return res;
@@ -1385,7 +1390,7 @@ namespace IronPython.Runtime.Types {
                     object res = _info.Caller(new object[] { context, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12 }, out shouldOptimize);
 
                     if (shouldOptimize) {
-                        _info.OptimizedDelegate = _info.Binder.Optimize(_site, new object[] { context, func, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12 });
+                        _info.OptimizedDelegate = _info.GetInvokeBinder(context).Optimize(_site, new object[] { context, func, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12 });
                     }
 
                     return res;
@@ -1447,7 +1452,7 @@ namespace IronPython.Runtime.Types {
                     object res = _info.Caller(new object[] { context, bf.__self__, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12 }, out shouldOptimize);
 
                     if (shouldOptimize) {
-                        _info.OptimizedDelegate = _info.Binder.Optimize(_site, new object[] { context, func, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12 });
+                        _info.OptimizedDelegate = _info.GetInvokeBinder(context).Optimize(_site, new object[] { context, func, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12 });
                     }
 
                     return res;

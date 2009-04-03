@@ -48,7 +48,7 @@ namespace Microsoft.Scripting.Ast {
         private bool _dictionary;
         private bool _global;
         private bool _visible = true;
-        private bool _doNotAddContext;
+        private bool _addCodeContext;
         private bool _completed;
 
         private static int _lambdaId; //for generating unique lambda name
@@ -167,12 +167,12 @@ namespace Microsoft.Scripting.Ast {
         /// Prevents builder from inserting context scope.
         /// Default is false (will insert if needed).
         /// </summary>
-        public bool DoNotAddContext {
+        public bool AddCodeContext {
             get {
-                return _doNotAddContext;
+                return _addCodeContext;
             }
             set {
-                _doNotAddContext = value;
+                _addCodeContext = value;
             }
         }
 
@@ -564,7 +564,7 @@ namespace Microsoft.Scripting.Ast {
             Expression body = _body;
 
             // wrap a CodeContext scope if needed
-            if (!_global && !DoNotAddContext) {
+            if (!_global && AddCodeContext) {
 
                 var vars = GetVisibleVariables();
 
@@ -618,29 +618,11 @@ namespace Microsoft.Scripting.Ast {
             }
             return delegateType;
         }
-
-
-        private static T[] ToArray<T>(List<T> list) {
-            return list != null ? list.ToArray() : new T[0];
-        }
     }
 
     public static partial class Utils {
         /// <summary>
-        /// Creates new instance of the LambdaBuilder with specified name, return type and a source span.
-        /// </summary>
-        /// <param name="returnType">Return type of the lambda being built.</param>
-        /// <param name="name">Name of the lambda being built.</param>
-        /// <param name="span">SourceSpan for the lambda being built.</param>
-        /// <returns>New instance of the </returns>
-        [Obsolete("use a Lambda overload without SourceSpan")]
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "span")]
-        public static LambdaBuilder Lambda(Type returnType, string name, SourceSpan span) {
-            return Lambda(returnType, name);
-        }
-
-        /// <summary>
-        /// Creates new instnace of the LambdaBuilder with specified name and a return type.
+        /// Creates new instance of the LambdaBuilder with the specified name and return type.
         /// </summary>
         /// <param name="returnType">Return type of the lambda being built.</param>
         /// <param name="name">Name for the lambda being built.</param>

@@ -2,7 +2,7 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProductVersion>9.0.21022</ProductVersion>
+    <ProductVersion>9.0.30729</ProductVersion>
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>{EB66B766-6354-4208-A3D4-AACBDCB5C3B3}</ProjectGuid>
     <OutputType>Library</OutputType>
@@ -138,7 +138,6 @@
     <Compile Include="Actions\OperationBinder.cs" />
     <Compile Include="Actions\OperationMetaObject.cs" />
     <Compile Include="ArgumentTypeException.cs" />
-    <Compile Include="Ast\ActionExpression.cs" />
     <Compile Include="Ast\CodeContextExpression.cs" />
     <Compile Include="Ast\FinallyFlowControlExpression.cs" />
     <Compile Include="Ast\FlowControlRewriter.cs" />
@@ -237,19 +236,14 @@
     <Compile Include="Ast\AssignmentExpression.cs" />
     <Compile Include="Ast\BinaryExpression.cs" />
     <Compile Include="Ast\Block.cs" />
-    <Compile Include="Ast\BreakStatement.cs" />
-    <Compile Include="Ast\ConditionalExpression.cs" />
     <Compile Include="Ast\ConstantExpression.cs" />
-    <Compile Include="Ast\ContinueStatement.cs" />
     <Compile Include="Ast\DeleteStatement.cs" />
     <Compile Include="Ast\DeleteUnboundExpression.cs" />
     <Compile Include="Ast\EmptyStatements.cs" />
-    <Compile Include="Ast\LabeledStatement.cs" />
     <Compile Include="Ast\LambdaBuilder.cs" />
     <Compile Include="Ast\LambdaParameterRewriter.cs" />
     <Compile Include="Ast\LoopStatement.cs" />
     <Compile Include="Ast\MethodCallExpression.cs" />
-    <Compile Include="Ast\ThrowStatement.cs" />
     <Compile Include="Ast\TryStatementBuilder.cs" />
     <Compile Include="Ast\UnboundAssignment.cs" />
     <Compile Include="Ast\UnboundExpression.cs" />
@@ -437,7 +431,6 @@
     <Compile Include="Runtime\OperationFailed.cs" />
     <Compile Include="Runtime\OperatorSlotAttribute.cs" />
     <Compile Include="Runtime\Operators.cs" />
-    <Compile Include="Runtime\OptimizedScriptCode.cs" />
     <Compile Include="Runtime\PropertyMethodAttribute.cs" />
     <Compile Include="Runtime\ReflectionCache.cs" />
     <Compile Include="Runtime\ScriptingRuntimeHelpers.cs" />
