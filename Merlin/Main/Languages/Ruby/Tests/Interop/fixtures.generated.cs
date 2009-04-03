@@ -71,6 +71,13 @@ public partial class DelegateConversionClass {
 public delegate void VoidVoidDelegate();
 #line 4 "./enum/mapping_spec.rb"
 public enum EnumInt : int { A, B, C}
+#line 4 "./events/mapping_spec.rb"
+#pragma warning disable 67
+  public delegate void EventHandler(object source, int count);
+  public partial class BasicEventClass {
+    public event EventHandler OnEvent;
+  }
+  #pragma warning restore 67
 #line 4 "./fields/access_spec.rb"
 #pragma warning disable 414
   public partial class ClassWithFields {
