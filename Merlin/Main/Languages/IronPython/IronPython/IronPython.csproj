@@ -175,7 +175,6 @@
     <Compile Include="Compiler\Ast\WhileStatement.cs" />
     <Compile Include="Compiler\Ast\WithStatement.cs" />
     <Compile Include="Compiler\Ast\YieldExpression.cs" />
-    <Compile Include="Compiler\FieldBuilderExpression.cs" />
     <Compile Include="Compiler\OnDiskScriptCode.cs" />
     <Compile Include="Runtime\Binding\FastBindResult.cs" />
     <Compile Include="Runtime\Binding\FastGetBase.cs" />

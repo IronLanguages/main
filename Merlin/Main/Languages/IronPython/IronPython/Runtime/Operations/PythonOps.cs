@@ -3397,6 +3397,10 @@ namespace IronPython.Runtime.Operations {
             return DoubleOps.Compare(self, other);
         }
 
+        public static Bytes MakeBytes(byte[] bytes) {
+            return new Bytes(bytes);
+        }
+
         public static byte[] MakeByteArray(this string s) {
             byte[] ret = new byte[s.Length];
             for (int i = 0; i < s.Length; i++) {
