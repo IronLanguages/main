@@ -585,8 +585,8 @@ namespace IronRuby.StandardLibrary.Zlib {
             protected int _outPos;
             protected int _inPos;
             protected bool _isClosed;
-            protected MutableString/*!*/ _originalName;
-            protected MutableString/*!*/ _comment;
+            protected MutableString _originalName;
+            protected MutableString _comment;
 
             public GZipFile(IOWrapper/*!*/ ioWrapper) {
                 Debug.Assert(ioWrapper != null);
@@ -656,7 +656,7 @@ namespace IronRuby.StandardLibrary.Zlib {
             }
 
             [RubyMethod("comment")]
-            public static MutableString/*!*/ Comment(GZipFile/*!*/ self) {
+            public static MutableString Comment(GZipFile/*!*/ self) {
                 if (self._isClosed) {
                     throw new Error("closed gzip stream");
                 }
@@ -670,7 +670,7 @@ namespace IronRuby.StandardLibrary.Zlib {
 
             [RubyMethod("orig_name")]
             [RubyMethod("original_name")]
-            public static MutableString/*!*/ OriginalName(GZipFile/*!*/ self) {
+            public static MutableString OriginalName(GZipFile/*!*/ self) {
                 if (self._isClosed) {
                     throw new Error("closed gzip stream");
                 }

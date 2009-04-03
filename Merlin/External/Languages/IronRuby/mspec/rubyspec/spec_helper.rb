@@ -12,10 +12,6 @@ unless ENV['MSPEC_RUNNER']
     require 'mspec/matchers/equal_element'
     require 'mspec/matchers/equal_utf16'
     require 'mspec/matchers/match_yaml'
-    def debugger
-	  require 'mscorlib'
-	  System::Diagnostics::Debugger.break if System::Diagnostics::Debugger.launch
-	end 
 
     # Code to setup HOME directory correctly on Windows
     # This duplicates Ruby 1.9 semantics for defining HOME

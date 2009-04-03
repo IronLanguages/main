@@ -34,7 +34,7 @@ describe 'Zlib::GzipFile#comment=' do
   end
   
   it 'raises TypeError if argument is not a String' do
-    m = mock("comment").should_receive(:to_s).any_number_of_times.and_return("comment")
+    m = mock("comment").should_not_receive(:to_s)
     lambda { @gzip_writer.comment = m }.should raise_error(TypeError)
   end
   

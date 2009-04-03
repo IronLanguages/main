@@ -237,10 +237,26 @@ namespace IronRuby.Builtins {
             return RubyStatOps.IsCharDevice(RubyStatOps.Create(self.Context, path));
         }
 
-        [RubyMethod("chmod", RubyMethodAttributes.PublicSingleton)]
-        public static int Chmod(RubyClass/*!*/ self, int permission, [DefaultProtocol, NotNull]MutableString/*!*/ path) {
-            // TODO: implement this correctly for windows
+        private static void Chmod(string path, int permission) {
+            FileAttributes oldAttributes = File.GetAttributes(path);
+            if ((permission & 0x80) == 0) {
+                File.SetAttributes(path, oldAttributes | FileAttributes.ReadOnly);
+            } else {
+                File.SetAttributes(path, oldAttributes & ~FileAttributes.ReadOnly);
+            }
+        }
+
+        [RubyMethod("chmod")]
+        public static int Chmod(RubyFile/*!*/ self, [DefaultProtocol]int permission) {
+            Chmod(self.Path, permission);
             return 0;
+        }
+
+        [RubyMethod("chmod", RubyMethodAttributes.PublicSingleton)]
+        public static int Chmod(RubyClass/*!*/ self, [DefaultProtocol]int permission, [DefaultProtocol, NotNull]MutableString/*!*/ path) {
+            // TODO: implement this correctly for windows
+            Chmod(path.ConvertToString(), permission);
+            return 1;
         }
 
         //chown
@@ -266,6 +282,11 @@ namespace IronRuby.Builtins {
                 throw new Errno.NoEntryError(String.Format("No such file or directory - {0}", strPath));
             }
 
+            FileAttributes oldAttributes = File.GetAttributes(strPath);
+            if ((oldAttributes & FileAttributes.ReadOnly) == FileAttributes.ReadOnly) {
+                // File.Delete throws UnauthorizedAccessException if the file is read-only
+                File.SetAttributes(strPath, oldAttributes & ~FileAttributes.ReadOnly);
+            }
             File.Delete(strPath);
             return 1;
         }
@@ -579,10 +600,19 @@ namespace IronRuby.Builtins {
             return RubyStatOps.IsPipe(RubyStatOps.Create(self.Context, path));
         }
 
+        private static bool IsReadableImpl(RubyContext/*!*/ context, string/*!*/ path) {
+            FileSystemInfo fsi;
+            if (RubyStatOps.TryCreate(context, path, out fsi)) {
+                return RubyStatOps.IsReadable(fsi);
+            } else {
+                return false;
+            }
+        }
+
         [RubyMethod("readable?", RubyMethodAttributes.PublicSingleton)]
         [RubyMethod("readable_real?", RubyMethodAttributes.PublicSingleton)]
         public static bool IsReadable(RubyClass/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ path) {
-            return RubyStatOps.IsReadable(RubyStatOps.Create(self.Context, path));
+            return IsReadableImpl(self.Context, path.ConvertToString());
         }
 
         [RubyMethod("readlink", RubyMethodAttributes.PublicSingleton)]

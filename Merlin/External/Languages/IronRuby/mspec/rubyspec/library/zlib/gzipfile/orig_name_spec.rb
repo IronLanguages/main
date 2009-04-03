@@ -34,7 +34,7 @@ describe 'Zlib::GzipFile#orig_name=' do
   end
   
   it 'raises TypeError if argument is not a String' do
-    m = mock("name").should_receive(:to_s).any_number_of_times.and_return("name")
+    m = mock("name").should_not_receive(:to_s)
     lambda { @gzip_writer.orig_name = m }.should raise_error(TypeError)
   end
   
