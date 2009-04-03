@@ -34,6 +34,10 @@ describe :dir_glob, :shared => true do
   it "returns empty array when empty pattern provided" do
     Dir.send(@method, '').should == []
   end
+  
+  it "returns empty array when nonexistent folder provided" do
+    Dir.send(@method, "#{DirSpecs.nonexistent}/*").should == []
+  end
 
   it "matches regexp special +" do
     Dir.send(@method, 'special/+').should == ['special/+']
@@ -250,5 +254,11 @@ describe :dir_glob_recursive, :shared => true do
     ]
 
     Dir.send(@method, 'a/**/b/**/z').sort.should == expected
+  end
+
+  platform_is :windows do
+    it "returns empty array for recursive match on root" do
+      Dir["C:\\**\\"].should == []
+    end
   end
 end

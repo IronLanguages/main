@@ -6,19 +6,19 @@ describe "Invoking a protected .NET method" do
   end
 
   it "works directly" do 
-    @obj.protected_method.to_s.should == "protected"
+    @obj.protected_method.should equal_clr_string("protected")
   end
 
   it "works via .send" do
-    @obj.send(:protected_method).to_s.should == "protected"
+    @obj.send(:protected_method).should equal_clr_string("protected")
   end
 
   it "works via .send" do
-    @obj.__send__(:protected_method).to_s.should == "protected"
+    @obj.__send__(:protected_method).should equal_clr_string("protected")
   end
 
   it "works via .instance_eval" do
-    @obj.instance_eval("protected_method").to_s.should == "protected"
+    @obj.instance_eval("protected_method").should equal_clr_string("protected")
   end
 end
 
@@ -30,18 +30,18 @@ describe "Invoking a protected .NET method on an inherited Ruby class" do
   end
 
   it "works directly" do 
-    @obj.protected_method.to_s.should == "protected"
+    @obj.protected_method.should equal_clr_string("protected")
   end
 
   it "works via .send" do
-    @obj.send(:protected_method).to_s.should == "protected"
+    @obj.send(:protected_method).should equal_clr_string("protected")
   end
 
   it "works via .send" do
-    @obj.__send__(:protected_method).to_s.should == "protected"
+    @obj.__send__(:protected_method).should equal_clr_string("protected")
   end
 
   it "works via .instance_eval" do
-    @obj.instance_eval("protected_method").to_s.should == "protected"
+    @obj.instance_eval("protected_method").should equal_clr_string("protected")
   end
 end

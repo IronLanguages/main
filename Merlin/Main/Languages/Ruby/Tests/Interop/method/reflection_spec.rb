@@ -72,15 +72,15 @@ describe "Reflecting on .NET method objects" do
   end
 
   it "can be called" do
-    @meth.call.to_s.should == "public"
-    @meth[].to_s.should == "public"
+    @meth.call.should equal_clr_string("public")
+    @meth[].should equal_clr_string("public")
   end
 
   it "can be unbound" do
     m = @meth.unbind
     m.should be_kind_of UnboundMethod
     m = m.bind(ClassWithMethods.new)
-    m.call.to_s.should == "public"
+    m.call.should equal_clr_string("public")
   end
 end
 
@@ -99,7 +99,7 @@ describe "Overloaded .NET methods" do
 
   it "act as a single Ruby method" do
     @methods.should be_kind_of Method
-    @methods.call.to_s.should == "empty"
+    @methods.call.should equal_clr_string("empty")
   end
 
   it "contain .NET method objects" do

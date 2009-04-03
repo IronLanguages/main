@@ -116,6 +116,7 @@ namespace IronRuby.Hosting {
                     break;
 
                 case "-e":
+                    LanguageSetup.Options["MainFile"] = "-e";
                     if (CommonConsoleOptions.Command == null) {
                         CommonConsoleOptions.Command = String.Empty;
                     } else {

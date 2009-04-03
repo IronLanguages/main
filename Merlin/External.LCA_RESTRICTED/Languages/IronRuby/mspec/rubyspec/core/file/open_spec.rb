@@ -520,4 +520,9 @@ describe "File.open" do
   it "raises an ArgumentError if passed an invalid string for mode" do
     lambda { File.open(@file, 'fake') }.should raise_error(ArgumentError)
   end
+
+  it "doesn't create internal caching issues if you use a integer then string" do
+    File.open(1) rescue nil
+    lambda { File.open(@file, 'w') }.should_not raise_error
+  end
 end

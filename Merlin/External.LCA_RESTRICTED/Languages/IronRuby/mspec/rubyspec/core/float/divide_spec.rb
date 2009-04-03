@@ -5,6 +5,7 @@ describe "Float#/" do
     (5.75 / -2).should be_close(-2.875,TOLERANCE)
     (451.0 / 9.3).should be_close(48.494623655914,TOLERANCE)
     (91.1 / -0xffffffff).should be_close(-2.12108716418061e-08, TOLERANCE)
+    (3.0 / 2.0).should be_close(1.5, TOLERANCE)
   end
   
   it "properly handles BigDecimal argument" do

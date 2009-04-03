@@ -17,51 +17,6 @@ require "../util/assert.rb"
 
 require "mscorlib"
 
-def test_stringbuilder
-    x = System::Text::StringBuilder.new
-    x.Append("abc")
-    x.Append("def")
-    x.Append(100)
-    x.Insert(3, "012")
-    
-    assert_equal(x.ToString, System::String::Concat("abc012def100"))
-    
-    x.Capacity = 20
-    assert_equal(x.Capacity, 20)
-    assert_equal(x.Length, 12)
-end
-
-def test_string
-    a = System::Char::Parse("a")
-    b = System::Char::Parse("b")
-    x = System::String.new(a, 2)
-    y = System::String.new(b, 3)
-    
-    str = System::String
-    assert_equal(str.Concat(x, y), System::String::Concat("aabbb"))
-    
-    assert_equal(str.Compare(x, y), -1)
-    assert_equal(str.Compare(y, x), 1)
-    assert_equal(str.Compare(x, x), 0)
-end 
-
-def test_field
-    # const field
-    assert_equal(System::Int32.MaxValue, 2147483647)
-    # enum
-    assert_equal(System::DayOfWeek.Sunday.ToString().to_str, 'Sunday')
-    # readonly field
-    assert_equal(System::DateTime.MaxValue.ToString().to_str, '12/31/9999 11:59:59 PM')
-    
-    assert_raise(NoMethodError) { print System::Int32.MaxValue2 }
-    
-    # setting to a read only field raises NoMethodError
-    assert_raise(NoMethodError) { System::Int32.MaxValue = 5 }
-    assert_raise(NoMethodError) { System::DayOfWeek.Sunday = 5 }
-    assert_raise(NoMethodError) { System::DateTime.MaxValue = 5 }
-    
-    # TODO: set field test (need a type with a writable static field)
-end 
 
 def test_event
     require "System, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"
