@@ -71,7 +71,20 @@ public partial class DelegateConversionClass {
 public delegate void VoidVoidDelegate();
 #line 4 "./enum/mapping_spec.rb"
 public enum EnumInt : int { A, B, C}
-#line 4 "./events/mapping_spec.rb"
+#line 4 "./events/invocation_spec.rb"
+public class ClassWithEvents {
+      public event EventHandler FullEvent;
+      public static event EventHandler StaticFullEvent; 
+
+      public void InvokeFullEvent(int count) {
+        if (FullEvent != null) FullEvent(this, count);
+      }
+
+      public static void InvokeStaticFullEvent(int count) {
+        if (StaticFullEvent != null) StaticFullEvent(new object(), count);
+      }
+    }
+#line 15 "./events/mapping_spec.rb"
 #pragma warning disable 67
   public delegate void EventHandler(object source, int count);
   public partial class BasicEventClass {
