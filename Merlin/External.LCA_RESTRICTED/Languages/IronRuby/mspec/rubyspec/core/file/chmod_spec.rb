@@ -44,7 +44,13 @@ describe "File#chmod" do
   end
 
   platform_is :windows do
-    it "with '0444' makes file readable and executable but not writable" do
+    it "maps to Windows file attribute" do
+      `attrib #{@filename}`.should =~ /^A            /
+      @file.chmod(0555)
+      `attrib #{@filename}`.should =~ /^A    R       /
+    end
+    
+   it "with '0444' makes file readable and executable but not writable" do
       @file.chmod(0444)
       File.readable?(@filename).should == true
       File.writable?(@filename).should == false
@@ -150,6 +156,12 @@ describe "File.chmod" do
   end
 
   platform_is :windows do
+    it "maps to Windows file attribute" do
+      `attrib #{@file}`.should =~ /^A            /
+      File.chmod(0555, @file)
+      `attrib #{@file}`.should =~ /^A    R       /
+    end
+    
     it "with '0444' makes file readable and executable but not writable" do
       File.chmod(0444, @file)
       File.readable?(@file).should == true

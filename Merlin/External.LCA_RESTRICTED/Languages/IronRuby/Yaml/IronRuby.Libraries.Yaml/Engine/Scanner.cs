@@ -294,7 +294,7 @@ namespace IronRuby.StandardLibrary.Yaml {
 
         private void ScanToNextToken() {
             while (true) {
-                while (Peek() == ' ') {
+                while (Peek() == ' ' || Peek() == '\t') {
                     Forward();
                 }
                 if (Peek() == '#') {

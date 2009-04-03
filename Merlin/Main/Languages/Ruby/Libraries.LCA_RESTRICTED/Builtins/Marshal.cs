@@ -283,9 +283,10 @@ namespace IronRuby.Builtins {
             }
 
             private void WriteRange(Range/*!*/ range) {
-                _writer.Write((byte)'o');
-                WriteSymbol("Range");
+                WriteObject(range);
                 WriteInt32(3);
+                // Write the attributes that are implemented in C#. Any user-defined attributes (for subtypes of Range)
+                // will be handled by the default handling of IRubyObject
                 WriteSymbol("begin");
                 WriteAnObject(range.Begin);
                 WriteSymbol("end");

@@ -16,7 +16,7 @@ describe "YAML.load" do
   
   it "loads strings" do
     strings = ["str",
-               " str", 
+               "\s\tstr\s\t",
                "'str'",
                "str",
                " str",
@@ -86,5 +86,9 @@ describe "YAML.load" do
     string = ":user name: This is the user name."
     expected = { :"user name" => "This is the user name."}
     YAML.load(string).should == expected
+  end
+  
+  it "ignores whitespace" do
+    YAML.load("!timestamp \s\t '\s\t 2009-03-22 \s\t 00:00:00 \s\t'").class.should == Time
   end
 end
