@@ -69,8 +69,7 @@ namespace System.Dynamic {
         /// </summary>
         /// <param name="handler">The handler to be added.</param>
         /// <returns>The original event with handler added.</returns>
-        [SpecialName]
-        public object InPlaceAdd(object handler) {
+        private object InPlaceAdd(object handler) {
             ContractUtils.RequiresNotNull(handler, "handler");
             VerifyHandler(handler);
 
@@ -84,8 +83,7 @@ namespace System.Dynamic {
         /// </summary>
         /// <param name="handler">The handler to be removed.</param>
         /// <returns>The original event with handler removed.</returns>
-        [SpecialName]
-        public object InPlaceSubtract(object handler) {
+        private object InPlaceSubtract(object handler) {
             ContractUtils.RequiresNotNull(handler, "handler");
             VerifyHandler(handler);
 

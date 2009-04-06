@@ -225,16 +225,6 @@
 		{
 			ret
 		}
-		.method public hidebysig specialname 
-			instance object InPlaceAdd(object 'handler')
-		{
-			ret
-		}
-		.method public hidebysig specialname 
-			instance object InPlaceSubtract(object 'handler')
-		{
-			ret
-		}
 	}
 	.class private abstract sealed CollectionExtensions
 		extends [mscorlib]System.Object

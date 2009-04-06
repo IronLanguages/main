@@ -18,50 +18,6 @@ require "../util/assert.rb"
 require "mscorlib"
 
 
-def test_event
-    require "System, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"
-    
-    t = System::Timers::Timer.new(1000)
-    $flag = 0
-    t.Elapsed do |sender, e|
-        $flag += 1
-        sender.Enabled = false
-    end 
-    t.Enabled = true
-    t.Start()
-    System::Threading::Thread.Sleep(3000)
-    t.Stop()
-    assert_equal($flag, 1)
-end
-
-def test_generictypes
-    # TODO: more interesting tests when more features of .NET interop are working
-    list = System::Collections::Generic::List
-    
-    IntList = list.of(System::Int32)
-    a = IntList.new
-    a.add 1
-    a.add 2
-    a.add 3
-    assert_equal(a.count, 3)
-
-    IntList2 = list[Fixnum]
-    assert_equal(IntList2.new.to_string, 'System.Collections.Generic.List`1[System.Int32]'.to_clr_string)
-
-    Dict = System::Collections::Generic::Dictionary[System::String, System::String]
-    assert_equal(Dict.new.to_string, 'System.Collections.Generic.Dictionary`2[System.String,System.String]'.to_clr_string)
-    
-    assert_raise(ArgumentError) { System::Type.of(Fixnum) }
-    assert_raise(ArgumentError) { list[System] }
-    assert_raise(ArgumentError) { list[1] }
-    assert_raise(ArgumentError) { list[] }
-    assert_raise(ArgumentError) { list.of(Fixnum, Fixnum) }
-    
-    #System::Nullable.of(System::Int32)
-    #System::IComparable.of(Fixnum)
-    System::Predicate.of(System::Int32)
-end
-
 
 def test_ienumerable
     # .NET types that implement IEnumerable should
@@ -213,11 +169,6 @@ def test_include_interface_after_type_creation
   end
 end
 
-test_event
-test_field
-test_string
-test_stringbuilder
-test_generictypes
 test_ienumerable
 # TODO: disabling this test until we figure out how to enable creating DateTime
 # objects using their ctors and not Time's RubyConstructors
