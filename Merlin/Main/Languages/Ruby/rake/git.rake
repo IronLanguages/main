@@ -14,7 +14,7 @@ namespace :git do
       puts "git add ."
       system "git add ."
       puts "git commit -a -m 'syncing to head of tfs'"
-      system "git commit -a -m 'syncing to head of tfs'"
+      system "git commit -a -m \"syncing to head of tfs\""
     end
   end
 end
