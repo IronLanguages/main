@@ -241,7 +241,10 @@ namespace IronRuby.Builtins {
 #endif
         #endregion
 
-        //abort
+        [RubyMethod("abort", RubyMethodAttributes.PrivateInstance)]
+        public static void Abort(object self) {
+            Exit(self, 1);
+        }
 
         [RubyMethod("at_exit", RubyMethodAttributes.PrivateInstance)]
         [RubyMethod("at_exit", RubyMethodAttributes.PublicSingleton)]

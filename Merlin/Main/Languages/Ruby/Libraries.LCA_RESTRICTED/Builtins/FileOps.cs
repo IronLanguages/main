@@ -254,7 +254,6 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("chmod", RubyMethodAttributes.PublicSingleton)]
         public static int Chmod(RubyClass/*!*/ self, [DefaultProtocol]int permission, [DefaultProtocol, NotNull]MutableString/*!*/ path) {
-            // TODO: implement this correctly for windows
             Chmod(path.ConvertToString(), permission);
             return 1;
         }
@@ -287,7 +286,12 @@ namespace IronRuby.Builtins {
                 // File.Delete throws UnauthorizedAccessException if the file is read-only
                 File.SetAttributes(strPath, oldAttributes & ~FileAttributes.ReadOnly);
             }
-            File.Delete(strPath);
+
+            try {
+                File.Delete(strPath);
+            } catch (IOException e) {
+                throw new UnauthorizedAccessException(e.Message, e);
+            }
             return 1;
         }
 

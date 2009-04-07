@@ -18,13 +18,12 @@ module Config
   RUBY_VERSION == "1.8.6" or
     raise "ruby lib version (1.8.6) doesn't match executable version (#{RUBY_VERSION})"
 
-  # TODO: Temporary hack to locate where we are based on relative MERLIN
-  # layout paths. We will replace this with just the path to this file when
-  # we build out the Ruby/libs directory to contain our own private copy of 
-  # the Ruby libraries
-  # Note that this symbol should be redefined by the packaging script for binary
-  # layouts
-  TOPDIR = File.dirname(__FILE__) + '/../../../../External/languages/ruby/ruby-1.8.6p287/'
+  if ENV["MERLIN_ROOT"] then
+    # This is a dev environment. See http://wiki.github.com/ironruby/ironruby
+    TOPDIR = ENV["MERLIN_ROOT"].tr("\\", "/") + "/bin/Debug/"
+  else
+    TOPDIR = File.dirname(__FILE__) + '/../../'
+  end
 
   DESTDIR = TOPDIR && TOPDIR[/\A[a-z]:/i] || '' unless defined? DESTDIR
   CONFIG = {}
@@ -35,10 +34,9 @@ module Config
   CONFIG["PATCHLEVEL"] = "0"
   CONFIG["prefix"] = (TOPDIR || DESTDIR + "")
   CONFIG["EXEEXT"] = ".exe"
-  # TODO: change back to ironruby
-  CONFIG["ruby_install_name"] = "ruby"
-  CONFIG["RUBY_INSTALL_NAME"] = "ruby"
-  # END TODO:
+  # This value is used by libraries to spawn new processes to run Ruby scripts. Hence it needs to match the ir.exe name
+  CONFIG["ruby_install_name"] = "ir"
+  CONFIG["RUBY_INSTALL_NAME"] = "ir"
   CONFIG["RUBY_SO_NAME"] = "msvcrt-ruby18"
   CONFIG["SHELL"] = "$(COMSPEC)"
   CONFIG["BUILD_FILE_SEPARATOR"] = "\\"
@@ -50,7 +48,11 @@ module Config
   CONFIG["LDFLAGS"] = ""
   CONFIG["LIBS"] = "oldnames.lib user32.lib advapi32.lib ws2_32.lib "
   CONFIG["exec_prefix"] = "$(prefix)"
-  CONFIG["bindir"] = "$(exec_prefix)/bin"
+  if ENV["MERLIN_ROOT"] then
+    CONFIG["bindir"] = "$(exec_prefix)"
+  else
+    CONFIG["bindir"] = "$(exec_prefix)/bin"
+  end
   CONFIG["sbindir"] = "$(exec_prefix)/sbin"
   CONFIG["libexecdir"] = "$(exec_prefix)/libexec"
   CONFIG["datadir"] = "$(prefix)/share"

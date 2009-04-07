@@ -210,8 +210,11 @@ namespace IronRuby.Builtins {
                     default:
                         // Try to read an argument index
                         int? argIndex = TryReadArgumentIndex();
-                        if (fFoundConversion = argIndex.HasValue)
+                        if (argIndex.HasValue) {
                             _opts.ArgIndex = argIndex;
+                        } else {
+                            fFoundConversion = false;
+                        }
                         break;
                 }
 
@@ -244,8 +247,8 @@ namespace IronRuby.Builtins {
         private int ReadNumberOrStar() {
             int res = 0; // default value
             if (_curCh == '*') {
-                int? argindex = TryReadArgumentIndex();
                 _curCh = _format[_index++];
+                int? argindex = TryReadArgumentIndex();
 
                 res = _siteStorage.CastToFixnum(GetData(argindex));
             } else {

@@ -353,7 +353,7 @@ namespace IronRuby.Builtins {
                         return new Errno.InvalidError(path);
                     }
                     if (ex is IOException) {
-                        return new Errno.AccessError(path);
+                        return new UnauthorizedAccessException(path);
                     }
                     break;
 

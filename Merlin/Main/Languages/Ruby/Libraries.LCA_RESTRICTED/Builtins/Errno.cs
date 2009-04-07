@@ -111,19 +111,14 @@ namespace IronRuby.Builtins {
 #endif
         }
 
-        [RubyClass("EACCES"), Serializable]
-        public class AccessError : ExternalException {
-            private const string/*!*/ M = "Permission denied";
-            
-            public AccessError() : this(null, null) { }
-            public AccessError(string message) : this(message, null) { }
-            public AccessError(string message, Exception inner) : base(MakeMessage(message, M), inner) { }
-            public AccessError(MutableString message) : base(MakeMessage(ref message, M)) { RubyExceptionData.InitializeException(this, message); }
-
-#if !SILVERLIGHT
-            protected AccessError(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context)
-                : base(info, context) { }
-#endif
+        [RubyClass("EACCES", Extends=typeof(System.UnauthorizedAccessException), Inherits=typeof(ExternalException))]
+        public class UnauthorizedAccessExceptionOps {
+            [RubyConstructor]
+            public static UnauthorizedAccessException/*!*/ Create(RubyClass/*!*/ self, [DefaultProtocol, DefaultParameterValue(null)]MutableString message) {
+                UnauthorizedAccessException result = new UnauthorizedAccessException(Errno.MakeMessage(ref message, "Permission denied"));
+                RubyExceptionData.InitializeException(result, message);
+                return result;
+            }
         }
 
         [RubyClass("EEXIST"), Serializable]
@@ -212,6 +207,21 @@ namespace IronRuby.Builtins {
 
 #if !SILVERLIGHT
             protected ConnectionAbortError(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context)
+                : base(info, context) { }
+#endif
+        }
+
+        [RubyClass("EXDEV"), Serializable]
+        public class ImproperLinkError : ExternalException {
+            private const string/*!*/ M = "Improper link";
+
+            public ImproperLinkError() : this(null, null) { }
+            public ImproperLinkError(string message) : this(message, null) { }
+            public ImproperLinkError(string message, Exception inner) : base(MakeMessage(message, M), inner) { }
+            public ImproperLinkError(MutableString message) : base(MakeMessage(ref message, M)) { RubyExceptionData.InitializeException(this, message); }
+
+#if !SILVERLIGHT
+            protected ImproperLinkError(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context)
                 : base(info, context) { }
 #endif
         }

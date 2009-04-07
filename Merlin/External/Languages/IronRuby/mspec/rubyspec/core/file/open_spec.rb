@@ -14,9 +14,9 @@ describe "File.open" do
   end
 
   after :each do
+    @fh.close if @fh and not @fh.closed?
     File.delete(@file) if File.exist?(@file)
     File.delete("fake") if File.exist?("fake")
-    @fh.close if @fh and not @fh.closed?
   end
 
   it "with block does not raise error when file is closed inside the block" do

@@ -29,7 +29,7 @@ namespace IronRuby.Builtins {
     /// 
     /// Note that for classes that inherit from some other class, RubyTypeDispenser gets used
     /// </summary>
-    [DebuggerDisplay("{ToString()}")]
+    [DebuggerDisplay("{_class.Context.Inspect(this).ConvertToString()}")]
     public partial class RubyObject : IRubyObject, IRubyObjectState, IDuplicable, ISerializable {
         internal const string ClassPropertyName = "Class";
 
