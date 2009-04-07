@@ -106,6 +106,8 @@
     <Compile Include="Compiler\ClosureExpression.cs" />
     <Compile Include="Compiler\ClosureInfo.cs" />
     <Compile Include="Compiler\CompilationMode.cs" />
+    <Compile Include="Compiler\GeneratorRewriter.cs" />
+    <Compile Include="Compiler\LazyCode.cs" />
     <Compile Include="Runtime\Profiler.cs" />
     <Compile Include="Compiler\GlobalAllocator.cs" />
     <Compile Include="Compiler\Ast\AugmentedAssignStatement.cs" />
@@ -173,7 +175,6 @@
     <Compile Include="Compiler\Ast\WhileStatement.cs" />
     <Compile Include="Compiler\Ast\WithStatement.cs" />
     <Compile Include="Compiler\Ast\YieldExpression.cs" />
-    <Compile Include="Compiler\FieldBuilderExpression.cs" />
     <Compile Include="Compiler\OnDiskScriptCode.cs" />
     <Compile Include="Runtime\Binding\FastBindResult.cs" />
     <Compile Include="Runtime\Binding\FastGetBase.cs" />

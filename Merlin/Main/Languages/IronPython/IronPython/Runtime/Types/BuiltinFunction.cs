@@ -1012,7 +1012,7 @@ namespace IronPython.Runtime.Types {
                     KeyValuePair<OptimizingCallDelegate, Type[]> call = MakeCall<T>(binder, args);
 
                     if (call.Key != null) {
-                        _data.FastCalls[callKey] = optInfo = new OptimizingInfo(call.Key, call.Value, binder);
+                        _data.FastCalls[callKey] = optInfo = new OptimizingInfo(call.Key, call.Value, binder.Signature);
                     }
                 }
 

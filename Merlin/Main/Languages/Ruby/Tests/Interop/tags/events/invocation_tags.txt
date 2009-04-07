@@ -1,0 +1,4 @@
+fails:Invoking events works with methods via +=
+fails:Invoking events works with multiple objects via +=
+fails:Invoking events works with multiple of one callback via +=
+fails:Invoking events registers adds and removes

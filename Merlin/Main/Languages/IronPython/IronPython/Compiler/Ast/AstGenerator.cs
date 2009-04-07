@@ -71,7 +71,7 @@ namespace IronPython.Compiler.Ast {
 
         private AstGenerator(string name, bool generator, string profilerName, bool print) {
             _print = print;
-            _generatorLabel = generator ? Ast.Label(typeof(object)) : null;
+            _generatorLabel = generator ? Ast.Label(typeof(object), "generatorLabel") : null;
 
             _name = name;
             _locals = new List<ParameterExpression>();

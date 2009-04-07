@@ -45,7 +45,7 @@ namespace Microsoft.Scripting.Actions {
             _manager = manager;
         }
 
-        public virtual Expression Bind(OldDynamicAction action, object[] args, ReadOnlyCollection<ParameterExpression> parameters, LabelTarget returnLabel) {
+        internal Expression Bind(OldDynamicAction action, object[] args, ReadOnlyCollection<ParameterExpression> parameters, LabelTarget returnLabel) {
             var builder = new RuleBuilder(parameters, returnLabel);
             MakeRule(action, args, builder);
             if (builder.Target != null) {

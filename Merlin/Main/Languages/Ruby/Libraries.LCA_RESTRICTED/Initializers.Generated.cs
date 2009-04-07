@@ -963,6 +963,10 @@ namespace IronRuby.Builtins {
                 new System.Func<IronRuby.Runtime.RubyContext, IronRuby.Builtins.RubyFile, System.DateTime>(IronRuby.Builtins.RubyFileOps.AccessTime)
             );
             
+            module.DefineLibraryMethod("chmod", 0x51, 
+                new System.Func<IronRuby.Builtins.RubyFile, System.Int32, System.Int32>(IronRuby.Builtins.RubyFileOps.Chmod)
+            );
+            
             module.DefineLibraryMethod("ctime", 0x51, 
                 new System.Func<IronRuby.Runtime.RubyContext, IronRuby.Builtins.RubyFile, System.DateTime>(IronRuby.Builtins.RubyFileOps.CreateTime)
             );

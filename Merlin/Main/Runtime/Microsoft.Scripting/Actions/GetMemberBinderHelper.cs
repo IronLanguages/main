@@ -123,10 +123,6 @@ namespace Microsoft.Scripting.Actions {
             MakeGenericBodyWorker(type, members[0], null);
         }
 
-        private void MakeGenericBody(Type type, MemberGroup members, Expression instance) {
-            MakeGenericBodyWorker(type, members[0], instance);
-        }
-
         private void MakeGenericBodyWorker(Type type, MemberTracker tracker, Expression instance) {
             if (!_isStatic) {
                 tracker = tracker.BindToInstance(instance ?? Instance);
@@ -184,33 +180,7 @@ namespace Microsoft.Scripting.Actions {
             }
         }
 
-        private MethodInfo[] GetCallableMethods(MemberGroup members) {
-            MethodInfo[] methods = new MethodInfo[members.Count];
-
-            for (int i = 0; i < members.Count; i++) {
-                methods[i] = CompilerHelpers.GetCallableMethod(((MethodTracker)members[i]).Method, Binder.PrivateBinding);
-            }
-            return methods;
-        }
-
         #region Error rules
-
-        private void MakeIncorrectArgumentCountError() {
-            AddToBody(
-                Rule.MakeError(
-                    MakeIncorrectArgumentExpression(0, 0)
-                )
-            );
-        }
-
-        private void MakeGenericPropertyError() {
-            // TODO: Better exception
-            AddToBody(
-                Rule.MakeError(
-                    MakeGenericPropertyExpression()
-                )
-            );
-        }
 
         private void MakeMissingMemberRuleForGet(Type type) {
             if (!Action.IsNoThrow) {

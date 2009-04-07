@@ -1,13 +1,35 @@
 require File.dirname(__FILE__) + '/../../spec_helper'
 
 describe "Overload resolution" do
+  csc <<-EOL
+  public partial class ClassWithOverloads {
+    public string PublicProtectedOverload(){
+      return "public overload";
+    }
+    
+    protected string PublicProtectedOverload(string str) {
+      return "protected overload";
+    }
+  }
+  EOL
   before(:each) do
-    @methods = ClassWithOverloads.new.method(:Overloaded)
+    @klass = ClassWithOverloads.new
+    @methods = @klass.method(:Overloaded)
   end
 
   it "is performed" do
-    @methods.call(100).to_s.should == "one arg"
-    @methods.call(100, 100).to_s.should == "two args"
+    @methods.call(100).should equal_clr_string("one arg")
+    @methods.call(100, 100).should equal_clr_string("two args")
+    @klass.overloaded(100).should equal_clr_string("one arg")
+    @klass.overloaded(100, 100).should equal_clr_string("two args")
+  end
+
+  it "correctly binds with methods of different visibility" do
+    method = @klass.method(:public_protected_overload)
+    @klass.public_protected_overload.should equal_clr_string("public overload")
+    @klass.public_protected_overload("abc").should equal_clr_string("protected overload")
+    method.call.should equal_clr_string("public overload")
+    method.call("abc").should equal_clr_string("protected overload")
   end
 end
 
@@ -17,7 +39,7 @@ describe "Selecting .NET overloads" do
   end
   
   it "is allowed" do
-    @methods.overloads(Fixnum,Fixnum).call(100,100).to_s.should == "two args"
+    @methods.overloads(Fixnum,Fixnum).call(100,100).should equal_clr_string("two args")
   end
 
   it "correctly reports error message" do

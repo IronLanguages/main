@@ -51,39 +51,42 @@ namespace IronPython.Modules {
         #region public API
 
         [Documentation("Transform list into a heap, in-place, in O(len(heap)) time.")]
-        public static void heapify(CodeContext/*!*/ context, object list) {
-            List l = GetList(list);
-
-            DoHeapify(l, context);
+        public static void heapify(CodeContext/*!*/ context, List list) {
+            lock (list) {
+                DoHeapify(context, list);
+            }
         }
 
         [Documentation("Pop the smallest item off the heap, maintaining the heap invariant.")]
-        public static object heappop(CodeContext/*!*/ context, object list) {
-            List l = GetList(list);
-
-            int last = l.Count - 1;
-            l.FastSwap(0, last);
-            object ret = l.pop();
-            SiftDown(l, context, 0, last - 1);
-            return ret;
+        public static object heappop(CodeContext/*!*/ context, List list) {
+            lock (list) {
+                int last = list._size - 1;
+                if (last < 0) {
+                    throw PythonOps.IndexError("index out of range");
+                }
+                list.FastSwap(0, last);
+                list._size--;
+                SiftDown(context, list, 0, last - 1);
+                return list._data[list._size];
+            }
         }
 
         [Documentation("Push item onto heap, maintaining the heap invariant.")]
-        public static void heappush(CodeContext/*!*/ context, object list, object item) {
-            List l = GetList(list);
-
-            l.append(item);
-            SiftUp(l, context, l.Count - 1);
+        public static void heappush(CodeContext/*!*/ context, List list, object item) {
+            lock (list) {
+                list.AddNoLock(item);
+                SiftUp(context, list, list._size - 1);
+            }
         }
 
         [Documentation("Push item on the heap, then pop and return the smallest item\n"
             + "from the heap. The combined action runs more efficiently than\n"
             + "heappush() followed by a separate call to heappop()."
             )]
-        public static object heappushpop(CodeContext/*!*/ context, object list, object item) {
-            List l = GetList(list);
-
-            return DoPushPop(l, item, context);
+        public static object heappushpop(CodeContext/*!*/ context, List list, object item) {
+            lock (list) {
+                return DoPushPop(context, list, item);
+            }
         }
 
         [Documentation("Pop and return the current smallest value, and add the new item.\n\n"
@@ -94,92 +97,82 @@ namespace IronPython.Modules {
             + "        if item > heap[0]:\n"
             + "            item = heapreplace(heap, item)\n"
             )]
-        public static object heapreplace(CodeContext/*!*/ context, object list, object item) {
-            List l = GetList(list);
-
-            object ret = l[0];
-            l[0] = item;
-            SiftDown(l, context, 0, l.Count - 1);
-            return ret;
+        public static object heapreplace(CodeContext/*!*/ context, List list, object item) {
+            lock (list) {
+                object ret = list._data[0];
+                list._data[0] = item;
+                SiftDown(context, list, 0, list._size - 1);
+                return ret;
+            }
         }
 
         [Documentation("Find the n largest elements in a dataset.\n\n"
             + "Equivalent to:  sorted(iterable, reverse=True)[:n]\n"
             )]
-        public static List nlargest(CodeContext/*!*/ context, object n, object iterable) {
-            int nInt = Converter.ConvertToInt32(n);
-            if (nInt <= 0) {
+        public static List nlargest(CodeContext/*!*/ context, int n, object iterable) {
+            if (n <= 0) {
                 return new List();
             }
 
-            List ret = new List(Math.Min(nInt, 4000)); // don't allocate anything too huge
+            List ret = new List(Math.Min(n, 4000)); // don't allocate anything too huge
             IEnumerator en = PythonOps.GetEnumerator(iterable);
 
             // populate list with first n items
-            for (int i = 0; i < nInt; i++) {
+            for (int i = 0; i < n; i++) {
                 if (!en.MoveNext()) {
                     // fewer than n items; finish up here
-                    HeapSort(ret, context, true);
+                    HeapSort(context, ret, true);
                     return ret;
                 }
                 ret.append(en.Current);
             }
 
             // go through the remainder of the iterator, maintaining a min-heap of the n largest values
-            DoHeapify(ret, context);
+            DoHeapify(context, ret);
             while (en.MoveNext()) {
-                DoPushPop(ret, en.Current, context);
+                DoPushPop(context, ret, en.Current);
             }
 
             // return the largest items, in descending order
-            HeapSort(ret, context, true);
+            HeapSort(context, ret, true);
             return ret;
         }
 
         [Documentation("Find the n smallest elements in a dataset.\n\n"
             + "Equivalent to:  sorted(iterable)[:n]\n"
             )]
-        public static List nsmallest(CodeContext/*!*/ context, object n, object iterable) {
-            int nInt = Converter.ConvertToInt32(n);
-            if (nInt <= 0) {
+        public static List nsmallest(CodeContext/*!*/ context, int n, object iterable) {
+            if (n <= 0) {
                 return new List();
             }
 
-            List ret = new List(Math.Min(nInt, 4000)); // don't allocate anything too huge
+            List ret = new List(Math.Min(n, 4000)); // don't allocate anything too huge
             IEnumerator en = PythonOps.GetEnumerator(iterable);
 
             // populate list with first n items
-            for (int i = 0; i < nInt; i++) {
+            for (int i = 0; i < n; i++) {
                 if (!en.MoveNext()) {
                     // fewer than n items; finish up here
-                    HeapSort(ret, context);
+                    HeapSort(context, ret);
                     return ret;
                 }
                 ret.append(en.Current);
             }
 
             // go through the remainder of the iterator, maintaining a max-heap of the n smallest values
-            DoHeapifyMax(ret, context);
+            DoHeapifyMax(context, ret);
             while (en.MoveNext()) {
-                DoPushPopMax(ret, en.Current, context);
+                DoPushPopMax(context, ret, en.Current);
             }
 
             // return the smallest items, in ascending order
-            HeapSort(ret, context);
+            HeapSort(context, ret);
             return ret;
         }
 
         #endregion
 
-        #region private implementation details
-
-        private static List GetList(object list) {
-            List ret = list as List;
-            if (Object.ReferenceEquals(ret, null)) {
-                throw PythonOps.TypeError("heap argument must be a list");
-            }
-            return ret;
-        }
+        #region private implementation details (NOTE: thread-unsafe)
 
         private static bool IsLessThan(CodeContext/*!*/ context, object x, object y) {
             object ret;
@@ -194,19 +187,19 @@ namespace IronPython.Modules {
             }
         }
 
-        private static void HeapSort(List list, CodeContext/*!*/ context) {
-            HeapSort(list, context, false);
+        private static void HeapSort(CodeContext/*!*/ context, List list) {
+            HeapSort(context, list, false);
         }
 
-        private static void HeapSort(List list, CodeContext/*!*/ context, bool reverse) {
+        private static void HeapSort(CodeContext/*!*/ context, List list, bool reverse) {
             // for an ascending sort (reverse = false), use a max-heap, and vice-versa
             if (reverse) {
-                DoHeapify(list, context);
+                DoHeapify(context, list);
             } else {
-                DoHeapifyMax(list, context);
+                DoHeapifyMax(context, list);
             }
 
-            int last = list.Count - 1;
+            int last = list._size - 1;
             while (last > 0) {
                 // put the root node (max if ascending, min if descending) at the end
                 list.FastSwap(0, last);
@@ -214,63 +207,63 @@ namespace IronPython.Modules {
                 last--;
                 // maintain heap invariant
                 if (reverse) {
-                    SiftDown(list, context, 0, last);
+                    SiftDown(context, list, 0, last);
                 } else {
-                    SiftDownMax(list, context, 0, last);
+                    SiftDownMax(context, list, 0, last);
                 }
             }
         }
 
-        private static void DoHeapify(List list, CodeContext/*!*/ context) {
-            int last = list.Count - 1;
+        private static void DoHeapify(CodeContext/*!*/ context, List list) {
+            int last = list._size - 1;
             int start = (last - 1) / 2; // index of last parent node
             // Sift down each parent node from right to left.
             while (start >= 0) {
-                SiftDown(list, context, start, last);
+                SiftDown(context, list, start, last);
                 start--;
             }
         }
 
-        private static void DoHeapifyMax(List list, CodeContext/*!*/ context) {
-            int last = list.Count - 1;
+        private static void DoHeapifyMax(CodeContext/*!*/ context, List list) {
+            int last = list._size - 1;
             int start = (last - 1) / 2; // index of last parent node
             // Sift down each parent node from right to left.
             while (start >= 0) {
-                SiftDownMax(list, context, start, last);
+                SiftDownMax(context, list, start, last);
                 start--;
             }
         }
 
-        private static object DoPushPop(List heap, object item, CodeContext/*!*/ context) {
+        private static object DoPushPop(CodeContext/*!*/ context, List heap, object item) {
             object first;
-            if (heap.Count == 0 || !IsLessThan(context, first = heap[0], item)) {
+            if (heap._size == 0 || !IsLessThan(context, first = heap._data[0], item)) {
                 return item;
             }
-            heap[0] = item;
-            SiftDown(heap, context, 0, heap.Count - 1);
+            heap._data[0] = item;
+            SiftDown(context, heap, 0, heap._size - 1);
             return first;
         }
 
-        private static object DoPushPopMax(List heap, object item, CodeContext/*!*/ context) {
+        private static object DoPushPopMax(CodeContext/*!*/ context, List heap, object item) {
             object first;
-            if (heap.Count == 0 || !IsLessThan(context, item, first = heap[0])) {
+            if (heap._size == 0 || !IsLessThan(context, item, first = heap._data[0])) {
                 return item;
             }
-            heap[0] = item;
-            SiftDownMax(heap, context, 0, heap.Count - 1);
+            heap._data[0] = item;
+            SiftDownMax(context, heap, 0, heap._size - 1);
             return first;
         }
 
-        private static void SiftDown(List heap, CodeContext/*!*/ context, int start, int stop) {
+        private static void SiftDown(CodeContext/*!*/ context, List heap, int start, int stop) {
             int parent = start;
             int child;
             while ((child = parent * 2 + 1) <= stop) {
                 // find the smaller sibling
-                if (child + 1 <= stop && IsLessThan(context, heap[child + 1], heap[child])) {
+                if (child + 1 <= stop && IsLessThan(context, heap._data[child + 1], heap._data[child])) {
                     child++;
                 }
                 // check if min-heap property is violated
-                if (IsLessThan(context, heap[child], heap[parent])) {
+                if (IsLessThan(context, heap._data[child], heap._data[parent])) {
                     heap.FastSwap(parent, child);
                     parent = child;
                 } else {
@@ -279,16 +272,16 @@ namespace IronPython.Modules {
             }
         }
 
-        private static void SiftDownMax(List heap, CodeContext/*!*/ context, int start, int stop) {
+        private static void SiftDownMax(CodeContext/*!*/ context, List heap, int start, int stop) {
             int parent = start;
             int child;
             while ((child = parent * 2 + 1) <= stop) {
                 // find the larger sibling
-                if (child + 1 <= stop && IsLessThan(context, heap[child], heap[child + 1])) {
+                if (child + 1 <= stop && IsLessThan(context, heap._data[child], heap._data[child + 1])) {
                     child++;
                 }
                 // check if max-heap property is violated
-                if (IsLessThan(context, heap[parent], heap[child])) {
+                if (IsLessThan(context, heap._data[parent], heap._data[child])) {
                     heap.FastSwap(parent, child);
                     parent = child;
                 } else {
@@ -297,10 +290,10 @@ namespace IronPython.Modules {
             }
         }
 
-        private static void SiftUp(List heap, CodeContext/*!*/ context, int index) {
+        private static void SiftUp(CodeContext/*!*/ context, List heap, int index) {
             while (index > 0) {
                 int parent = (index - 1) / 2;
-                if (IsLessThan(context, heap[index], heap[parent])) {
+                if (IsLessThan(context, heap._data[index], heap._data[parent])) {
                     heap.FastSwap(parent, index);
                     index = parent;
                 } else {
@@ -309,10 +302,10 @@ namespace IronPython.Modules {
             }
         }
 
-        private static void SiftUpMax(List heap, CodeContext/*!*/ context, int index) {
+        private static void SiftUpMax(CodeContext/*!*/ context, List heap, int index) {
             while (index > 0) {
                 int parent = (index - 1) / 2;
-                if (IsLessThan(context, heap[parent], heap[index])) {
+                if (IsLessThan(context, heap._data[parent], heap._data[index])) {
                     heap.FastSwap(parent, index);
                     index = parent;
                 } else {

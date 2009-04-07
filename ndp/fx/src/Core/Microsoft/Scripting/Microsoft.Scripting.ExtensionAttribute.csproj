@@ -98,7 +98,7 @@
     <Compile Include="Utils\Extension.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" Condition=" '$(SilverlightTreeBuild)' != 'true' " />
-  <Import Condition=" '$(Golden)' == 'True'" Project="..\..\..\..\..\..\Merlin\External\Build\Microsoft.VersionNumber.targets" />
+  <Import Condition=" '$(Golden)' == 'True'" Project="..\..\..\..\..\..\Merlin\Main\External\Build\Microsoft.VersionNumber.targets" />
   <!-- This task produces a list of Compile items. -->
   <Target Name="GetCompileItems" Outputs="@(CompileItems)">
     <CreateItem Include="%(Compile.Identity)">

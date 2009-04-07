@@ -64,13 +64,6 @@ namespace Microsoft.Scripting.Ast {
             ContractUtils.Requires(!name.IsInvalid && !name.IsEmpty, "name");
             return new DeleteUnboundExpression(name);
         }
-
-        [Obsolete("use Delete overload without SourceSpan")]
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "span")]
-        public static DeleteUnboundExpression Delete(SymbolId name, SourceSpan span) {
-            ContractUtils.Requires(!name.IsInvalid && !name.IsEmpty, "name");
-            return new DeleteUnboundExpression(name);
-        }
     }
 
     public static partial class ExpressionHelpers {

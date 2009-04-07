@@ -26,19 +26,6 @@ namespace Microsoft.Scripting.Ast {
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1506:AvoidExcessiveClassCoupling")]
     public static partial class Utils {
 
-        [Obsolete("use Expression.Call instead")]
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "span")]
-        public static MethodCallExpression Call(MethodInfo method, SourceSpan span, params Expression[] arguments) {
-            return Expression.Call(null, method, arguments);
-        }
-
-        [Obsolete("use Expression.Call instead")]
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "span")]
-        public static MethodCallExpression Call(Expression instance, MethodInfo method, SourceSpan span, params Expression[] arguments) {
-            return Expression.Call(instance, method, arguments);
-        }
-
-
         /// <summary>
         /// The helper to create the AST method call node. Will add conversions (Utils.Convert)
         /// to parameters and instance if necessary.

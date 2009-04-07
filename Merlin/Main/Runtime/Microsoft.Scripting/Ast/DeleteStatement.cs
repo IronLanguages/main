@@ -74,11 +74,5 @@ namespace Microsoft.Scripting.Ast {
                 "variable must be ParameterExpression or GlobalVariableExpression");
             return new DeleteStatement(variable);
         }
-
-        [Obsolete("use Delete overload without SourceSpan")]
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "span")]
-        public static DeleteStatement Delete(Expression variable, SourceSpan span) {
-            return Delete(variable);
-        }
     }
 }

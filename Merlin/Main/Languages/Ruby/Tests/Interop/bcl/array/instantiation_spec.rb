@@ -28,7 +28,7 @@ describe "Creating a .NET array" do
     end
 
     it "can be done with multi-dimnsion arrays via create_instance" do
-      @array.class.to_s.should == "System::Int32[,]"
+      @array.class.should equal_clr_string("System::Int32[,]")
     end
 
     it "can be referenced" do

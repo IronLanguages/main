@@ -554,13 +554,6 @@ namespace Microsoft.Scripting.Actions.Calls {
                 parameters);
         }
 
-        private void GetMinAndMaxArgs(out int minArgs, out int maxArgs) {
-            List<int> argCounts = new List<int>(_targetSets.Keys);
-            argCounts.Sort();
-            minArgs = argCounts[0];
-            maxArgs = argCounts[argCounts.Count - 1];
-        }
-
         private static bool IsUnsupported(MethodBase method) {
             return (method.CallingConvention & CallingConventions.VarArgs) != 0 || method.ContainsGenericParameters;
         }

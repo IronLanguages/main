@@ -132,7 +132,7 @@ namespace Microsoft.Scripting.Actions {
                 stubs = null;
             } else {
                 // create signature converting stub:
-                delegateHandler = BinderOps.GetDelegate(language, handler, _eventInfo.EventHandlerType);
+                delegateHandler = language.GetDelegate(handler, _eventInfo.EventHandlerType);
                 stubs = GetHandlerList(target);
             }
 
