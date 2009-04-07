@@ -1,25 +1,12 @@
 require File.dirname(__FILE__) + '/../../spec_helper'
+require File.dirname(__FILE__) + '/../shared/calling'
 
 describe "Invoking a protected .NET method" do
   before :each do 
     @obj = ClassWithMethods.new
+    @result = "protected"
   end
-
-  it "works directly" do 
-    @obj.protected_method.should equal_clr_string("protected")
-  end
-
-  it "works via .send" do
-    @obj.send(:protected_method).should equal_clr_string("protected")
-  end
-
-  it "works via .send" do
-    @obj.__send__(:protected_method).should equal_clr_string("protected")
-  end
-
-  it "works via .instance_eval" do
-    @obj.instance_eval("protected_method").should equal_clr_string("protected")
-  end
+  it_behaves_like :calling_a_method, "protected_method"
 end
 
 describe "Invoking a protected .NET method on an inherited Ruby class" do
@@ -27,21 +14,8 @@ describe "Invoking a protected .NET method on an inherited Ruby class" do
   end
   before :each do 
     @obj = RubyClassWithMethods.new
+    @result = "protected"
   end
 
-  it "works directly" do 
-    @obj.protected_method.should equal_clr_string("protected")
-  end
-
-  it "works via .send" do
-    @obj.send(:protected_method).should equal_clr_string("protected")
-  end
-
-  it "works via .send" do
-    @obj.__send__(:protected_method).should equal_clr_string("protected")
-  end
-
-  it "works via .instance_eval" do
-    @obj.instance_eval("protected_method").should equal_clr_string("protected")
-  end
+  it_behaves_like :calling_a_method, "protected_method"
 end
