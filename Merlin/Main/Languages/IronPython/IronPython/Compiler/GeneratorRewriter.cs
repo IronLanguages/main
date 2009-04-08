@@ -31,7 +31,7 @@ using IronPython.Runtime.Operations;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace IronPython.Compiler {
-    public delegate void PythonGeneratorNext(ref int curIndex, Tuple state, out object res);
+    public delegate void PythonGeneratorNext(ref int curIndex, Microsoft.Scripting.Tuple state, out object res);
 
     /// <summary>
     /// When finding a yield return or yield break, this rewriter flattens out
@@ -107,10 +107,10 @@ namespace IronPython.Compiler {
                 }
             }
 
-            Expression newTuple = Tuple.Create(tupleExprs);
+            Expression newTuple = Microsoft.Scripting.Tuple.Create(tupleExprs);
             Type tupleType = _tupleType.Value = newTuple.Type;
             ParameterExpression tupleExpr = _tupleExpr.Value = Expression.Parameter(tupleType, "tuple");
-            ParameterExpression tupleArg = Expression.Parameter(typeof(Tuple), "tupleArg");
+            ParameterExpression tupleArg = Expression.Parameter(typeof(Microsoft.Scripting.Tuple), "tupleArg");
             _temps.Add(_gotoRouter);
             _temps.Add(tupleExpr);
 
@@ -912,7 +912,7 @@ namespace IronPython.Compiler {
 
         public override Expression Reduce() {
             Expression res = _tupleExpr.Value;
-            foreach (PropertyInfo pi in Tuple.GetAccessPath(_tupleType.Value, Index)) {
+            foreach (PropertyInfo pi in Microsoft.Scripting.Tuple.GetAccessPath(_tupleType.Value, Index)) {
                 res = Expression.Property(res, pi);
             }
             return res;

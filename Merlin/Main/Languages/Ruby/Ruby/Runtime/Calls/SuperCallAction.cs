@@ -57,6 +57,10 @@ namespace IronRuby.Runtime.Calls {
             get { return _signature; }
         }
 
+        public override Type/*!*/ ResultType {
+            get { return typeof(object); }
+        }
+
         #region Rule Generation
 
         protected override void Build(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args) {

@@ -22,6 +22,8 @@ using System.Globalization;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Security;
+using System.Security.Permissions;
 using ComTypes = System.Runtime.InteropServices.ComTypes;
 
 namespace System.Dynamic {
@@ -105,11 +107,16 @@ namespace System.Dynamic {
         }
 
         public override string ToString() {
-            EnsureScanDefinedMethods();
+            ComTypeDesc ctd = _comTypeDesc;
+            string typeName = null;
 
-            string typeName = this._comTypeDesc.TypeName;
-            if (String.IsNullOrEmpty(typeName))
+            if (ctd != null) {
+                typeName = ctd.TypeName;
+            }
+
+            if (String.IsNullOrEmpty(typeName)) {
                 typeName = "IDispatch";
+            }
 
             return String.Format(CultureInfo.CurrentCulture, "{0} ({1})", RuntimeCallableWrapper.ToString(), typeName);
         }
@@ -321,6 +328,7 @@ namespace System.Dynamic {
         }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2201:DoNotRaiseReservedExceptionTypes")]
+        [SecurityCritical]
         private static void GetFuncDescForDescIndex(ComTypes.ITypeInfo typeInfo, int funcIndex, out ComTypes.FUNCDESC funcDesc, out IntPtr funcDescHandle) {
             IntPtr pFuncDesc = IntPtr.Zero;
             typeInfo.GetFuncDesc(funcIndex, out pFuncDesc);
@@ -334,12 +342,23 @@ namespace System.Dynamic {
             funcDescHandle = pFuncDesc;
         }
 
+#if MICROSOFT_DYNAMIC
+        [SecurityCritical, SecurityTreatAsSafe]
+#else
+        [SecuritySafeCritical]
+#endif
         private void EnsureScanDefinedEvents() {
             // _comTypeDesc.Events is null if we have not yet attempted
             // to scan the object for events.
             if (_comTypeDesc != null && _comTypeDesc.Events != null) {
                 return;
             }
+
+            //
+            // Demand Full Trust to proceed with the operation.
+            //
+
+            new PermissionSet(PermissionState.Unrestricted).Demand();
 
             // check type info in the type descriptions cache
             ComTypes.ITypeInfo typeInfo = ComRuntimeHelpers.GetITypeInfoFromIDispatch(_dispatchObject, true);
@@ -407,6 +426,7 @@ namespace System.Dynamic {
             }
         }
 
+        [SecurityCritical]
         private static void ScanSourceInterface(ComTypes.ITypeInfo sourceTypeInfo, ref Dictionary<string, ComEventDesc> events) {
             ComTypes.TYPEATTR sourceTypeAttribute = ComRuntimeHelpers.GetTypeAttrForTypeInfo(sourceTypeInfo);
 
@@ -446,6 +466,7 @@ namespace System.Dynamic {
             }
         }
 
+        [SecurityCritical]
         private static ComTypes.ITypeInfo GetCoClassTypeInfo(object rcw, ComTypes.ITypeInfo typeInfo) {
             Debug.Assert(typeInfo != null);
 
@@ -484,10 +505,21 @@ namespace System.Dynamic {
             return typeInfoCoClass;
         }
 
+#if MICROSOFT_DYNAMIC
+        [SecurityCritical, SecurityTreatAsSafe]
+#else
+        [SecuritySafeCritical]
+#endif
         private void EnsureScanDefinedMethods() {
             if (_comTypeDesc != null && _comTypeDesc.Funcs != null) {
                 return;
             }
+
+            //
+            // Demand Full Trust to proceed with the operation.
+            //
+
+            new PermissionSet(PermissionState.Unrestricted).Demand();
 
             ComTypes.ITypeInfo typeInfo = ComRuntimeHelpers.GetITypeInfoFromIDispatch(_dispatchObject, true);
             if (typeInfo == null) {

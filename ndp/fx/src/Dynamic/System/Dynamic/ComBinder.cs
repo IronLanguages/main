@@ -15,13 +15,14 @@
 
 #if !SILVERLIGHT
 
-using System;
-using System.Dynamic;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq.Expressions;
-using System.Dynamic.Utils;
+using System.Security;
+using System.Security.Permissions;
 
-[assembly: System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1020:AvoidNamespacesWithFewTypes", Scope = "namespace", Target = "System.Dynamic")]
+[assembly: SuppressMessage("Microsoft.Design", "CA1020:AvoidNamespacesWithFewTypes", Scope = "namespace", Target = "System.Dynamic")]
+
 namespace System.Dynamic {
 
     /// <summary>
@@ -46,8 +47,22 @@ namespace System.Dynamic {
         /// <param name="result">The new <see cref="DynamicMetaObject"/> representing the result of the binding.</param>
         /// <param name="delayInvocation">true if member evaluation may be delayed.</param>
         /// <returns>true if operation was bound successfully; otherwise, false.</returns>
+#if MICROSOFT_DYNAMIC
+        [SecurityCritical, SecurityTreatAsSafe]
+#else
+        [SecuritySafeCritical]
+#endif
         public static bool TryBindGetMember(GetMemberBinder binder, DynamicMetaObject instance, out DynamicMetaObject result, bool delayInvocation) {
+            ContractUtils.RequiresNotNull(binder, "binder");
+            ContractUtils.RequiresNotNull(instance, "instance");
+
             if (TryGetMetaObject(ref instance)) {
+                //
+                // Demand Full Trust to proceed with the binding.
+                //
+
+                new PermissionSet(PermissionState.Unrestricted).Demand();
+
                 var comGetMember = new ComGetMemberBinder(binder, delayInvocation);
                 result = instance.BindGetMember(comGetMember);
                 return true;
@@ -76,8 +91,23 @@ namespace System.Dynamic {
         /// <param name="value">The <see cref="DynamicMetaObject"/> representing the value for the set member operation.</param>
         /// <param name="result">The new <see cref="DynamicMetaObject"/> representing the result of the binding.</param>
         /// <returns>true if operation was bound successfully; otherwise, false.</returns>
+#if MICROSOFT_DYNAMIC
+        [SecurityCritical, SecurityTreatAsSafe]
+#else
+        [SecuritySafeCritical]
+#endif
         public static bool TryBindSetMember(SetMemberBinder binder, DynamicMetaObject instance, DynamicMetaObject value, out DynamicMetaObject result) {
+            ContractUtils.RequiresNotNull(binder, "binder");
+            ContractUtils.RequiresNotNull(instance, "instance");
+            ContractUtils.RequiresNotNull(value, "value");
+
             if (TryGetMetaObject(ref instance)) {
+                //
+                // Demand Full Trust to proceed with the binding.
+                //
+
+                new PermissionSet(PermissionState.Unrestricted).Demand();
+
                 result = instance.BindSetMember(binder, value);
                 return true;
             } else {
@@ -94,8 +124,23 @@ namespace System.Dynamic {
         /// <param name="args">An array of <see cref="DynamicMetaObject"/> instances - arguments to the invoke member operation.</param>
         /// <param name="result">The new <see cref="DynamicMetaObject"/> representing the result of the binding.</param>
         /// <returns>true if operation was bound successfully; otherwise, false.</returns>
+#if MICROSOFT_DYNAMIC
+        [SecurityCritical, SecurityTreatAsSafe]
+#else
+        [SecuritySafeCritical]
+#endif
         public static bool TryBindInvoke(InvokeBinder binder, DynamicMetaObject instance, DynamicMetaObject[] args, out DynamicMetaObject result) {
+            ContractUtils.RequiresNotNull(binder, "binder");
+            ContractUtils.RequiresNotNull(instance, "instance");
+            ContractUtils.RequiresNotNull(args, "args");
+            
             if (TryGetMetaObject(ref instance)) {
+                //
+                // Demand Full Trust to proceed with the binding.
+                //
+
+                new PermissionSet(PermissionState.Unrestricted).Demand();
+
                 result = instance.BindInvoke(binder, args);
                 return true;
             } else {
@@ -112,8 +157,23 @@ namespace System.Dynamic {
         /// <param name="args">An array of <see cref="DynamicMetaObject"/> instances - arguments to the invoke member operation.</param>
         /// <param name="result">The new <see cref="DynamicMetaObject"/> representing the result of the binding.</param>
         /// <returns>true if operation was bound successfully; otherwise, false.</returns>
+#if MICROSOFT_DYNAMIC
+        [SecurityCritical, SecurityTreatAsSafe]
+#else
+        [SecuritySafeCritical]
+#endif
         public static bool TryBindInvokeMember(InvokeMemberBinder binder, DynamicMetaObject instance, DynamicMetaObject[] args, out DynamicMetaObject result) {
+            ContractUtils.RequiresNotNull(binder, "binder");
+            ContractUtils.RequiresNotNull(instance, "instance");
+            ContractUtils.RequiresNotNull(args, "args");
+
             if (TryGetMetaObject(ref instance)) {
+                //
+                // Demand Full Trust to proceed with the binding.
+                //
+
+                new PermissionSet(PermissionState.Unrestricted).Demand();
+
                 result = instance.BindInvokeMember(binder, args);
                 return true;
             } else {
@@ -130,8 +190,23 @@ namespace System.Dynamic {
         /// <param name="args">An array of <see cref="DynamicMetaObject"/> instances - arguments to the invoke member operation.</param>
         /// <param name="result">The new <see cref="DynamicMetaObject"/> representing the result of the binding.</param>
         /// <returns>true if operation was bound successfully; otherwise, false.</returns>
+#if MICROSOFT_DYNAMIC
+        [SecurityCritical, SecurityTreatAsSafe]
+#else
+        [SecuritySafeCritical]
+#endif
         public static bool TryBindGetIndex(GetIndexBinder binder, DynamicMetaObject instance, DynamicMetaObject[] args, out DynamicMetaObject result) {
+            ContractUtils.RequiresNotNull(binder, "binder");
+            ContractUtils.RequiresNotNull(instance, "instance");
+            ContractUtils.RequiresNotNull(args, "args");
+
             if (TryGetMetaObject(ref instance)) {
+                //
+                // Demand Full Trust to proceed with the binding.
+                //
+
+                new PermissionSet(PermissionState.Unrestricted).Demand();
+
                 result = instance.BindGetIndex(binder, args);
                 return true;
             } else {
@@ -149,8 +224,24 @@ namespace System.Dynamic {
         /// <param name="value">The <see cref="DynamicMetaObject"/> representing the value for the set index operation.</param>
         /// <param name="result">The new <see cref="DynamicMetaObject"/> representing the result of the binding.</param>
         /// <returns>true if operation was bound successfully; otherwise, false.</returns>
+#if MICROSOFT_DYNAMIC
+        [SecurityCritical, SecurityTreatAsSafe]
+#else
+        [SecuritySafeCritical]
+#endif
         public static bool TryBindSetIndex(SetIndexBinder binder, DynamicMetaObject instance, DynamicMetaObject[] args, DynamicMetaObject value, out DynamicMetaObject result) {
+            ContractUtils.RequiresNotNull(binder, "binder");
+            ContractUtils.RequiresNotNull(instance, "instance");
+            ContractUtils.RequiresNotNull(args, "args");
+            ContractUtils.RequiresNotNull(value, "value");
+
             if (TryGetMetaObject(ref instance)) {
+                //
+                // Demand Full Trust to proceed with the binding.
+                //
+
+                new PermissionSet(PermissionState.Unrestricted).Demand();
+
                 result = instance.BindSetIndex(binder, args, value);
                 return true;
             } else {
@@ -166,9 +257,21 @@ namespace System.Dynamic {
         /// <param name="instance">The target of the dynamic operation.</param>
         /// <param name="result">The new <see cref="DynamicMetaObject"/> representing the result of the binding.</param>
         /// <returns>true if operation was bound successfully; otherwise, false.</returns>
+#if MICROSOFT_DYNAMIC
+        [SecurityCritical, SecurityTreatAsSafe]
+#else
+        [SecuritySafeCritical]
+#endif
         public static bool TryConvert(ConvertBinder binder, DynamicMetaObject instance, out DynamicMetaObject result) {
+            ContractUtils.RequiresNotNull(binder, "binder");
+            ContractUtils.RequiresNotNull(instance, "instance");
+
             if (IsComObject(instance.Value)) {
-                ContractUtils.RequiresNotNull(binder, "binder");
+                //
+                // Demand Full Trust to proceed with the binding.
+                //
+
+                new PermissionSet(PermissionState.Unrestricted).Demand(); 
 
                 // Converting a COM object to any interface is always considered possible - it will result in 
                 // a QueryInterface at runtime
@@ -193,16 +296,26 @@ namespace System.Dynamic {
             return false;
         }
 
-
         /// <summary>
         /// Gets the member names associated with the object.
         /// This function can operate only with objects for which <see cref="IsComObject"/> returns true.
         /// </summary>
         /// <param name="value">The object for which member names are requested.</param>
         /// <returns>The collection of member names.</returns>
+#if MICROSOFT_DYNAMIC
+        [SecurityCritical, SecurityTreatAsSafe]
+#else
+        [SecuritySafeCritical]
+#endif
         public static IEnumerable<string> GetDynamicMemberNames(object value) {
             ContractUtils.RequiresNotNull(value, "value");
             ContractUtils.Requires(IsComObject(value), "value", Strings.ComObjectExpected);
+
+            //
+            // Demand Full Trust to proceed with the binding.
+            //
+
+            new PermissionSet(PermissionState.Unrestricted).Demand(); 
 
             return ComObject.ObjectToComObject(value).GetMemberNames(false);
         }
@@ -213,10 +326,21 @@ namespace System.Dynamic {
         /// </summary>
         /// <param name="value">The object for which member names are requested.</param>
         /// <returns>The collection of member names.</returns>
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode")]
+#if MICROSOFT_DYNAMIC
+        [SecurityCritical, SecurityTreatAsSafe]
+#else
+        [SecuritySafeCritical]
+#endif
+        [SuppressMessage("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode")]
         internal static IList<string> GetDynamicDataMemberNames(object value) {
             ContractUtils.RequiresNotNull(value, "value");
             ContractUtils.Requires(IsComObject(value), "value", Strings.ComObjectExpected);
+
+            //
+            // Demand Full Trust to proceed with the binding.
+            //
+
+            new PermissionSet(PermissionState.Unrestricted).Demand(); 
 
             return ComObject.ObjectToComObject(value).GetMemberNames(true);
         }
@@ -228,11 +352,23 @@ namespace System.Dynamic {
         /// <param name="value">The object for which data members are requested.</param>
         /// <param name="names">The enumeration of names of data members for which to retrieve values.</param>
         /// <returns>The collection of pairs that represent data member's names and their data.</returns>
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode")]
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1006:DoNotNestGenericTypesInMemberSignatures")]
+        [SuppressMessage("Microsoft.Design", "CA1006:DoNotNestGenericTypesInMemberSignatures")]
+        [SuppressMessage("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode")]
+#if MICROSOFT_DYNAMIC
+        [SecurityCritical, SecurityTreatAsSafe]
+#else
+        [SecuritySafeCritical]
+#endif
         internal static IList<KeyValuePair<string, object>> GetDynamicDataMembers(object value, IEnumerable<string> names) {
             ContractUtils.RequiresNotNull(value, "value");
             ContractUtils.Requires(IsComObject(value), "value", Strings.ComObjectExpected);
+
+            //
+            // Demand Full Trust to proceed with the binding.
+            //
+
+            new PermissionSet(PermissionState.Unrestricted).Demand();
+
             return ComObject.ObjectToComObject(value).GetMembers(names);
         }
 

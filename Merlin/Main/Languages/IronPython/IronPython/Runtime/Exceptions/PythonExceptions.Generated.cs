@@ -271,7 +271,7 @@ namespace IronPython.Runtime.Exceptions {
         }
 
 
-        #if !SILVERLIGHT
+#if !SILVERLIGHT
         [MultiRuntimeAware]
         private static PythonType WindowsErrorStorage;
         public static PythonType WindowsError {
@@ -303,7 +303,7 @@ namespace IronPython.Runtime.Exceptions {
 
         }
 
-        #endif // !SILVERLIGHT
+#endif // !SILVERLIGHT
 
         [MultiRuntimeAware]
         private static PythonType VMSErrorStorage;
@@ -601,7 +601,7 @@ namespace IronPython.Runtime.Exceptions {
         }
 
 
-        #if !SILVERLIGHT
+#if !SILVERLIGHT
         [MultiRuntimeAware]
         private static PythonType UnicodeDecodeErrorStorage;
         public static PythonType UnicodeDecodeError {
@@ -673,10 +673,10 @@ namespace IronPython.Runtime.Exceptions {
 
         }
 
-        #endif // !SILVERLIGHT
+#endif // !SILVERLIGHT
 
 
-        #if !SILVERLIGHT
+#if !SILVERLIGHT
         [MultiRuntimeAware]
         private static PythonType UnicodeEncodeErrorStorage;
         public static PythonType UnicodeEncodeError {
@@ -748,7 +748,7 @@ namespace IronPython.Runtime.Exceptions {
 
         }
 
-        #endif // !SILVERLIGHT
+#endif // !SILVERLIGHT
 
         [MultiRuntimeAware]
         private static PythonType UnicodeTranslateErrorStorage;

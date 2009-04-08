@@ -16,10 +16,8 @@
 #if !SILVERLIGHT // ComObject
 
 using System.Collections.Generic;
-using System.Linq.Expressions;
-using System.Runtime.InteropServices;
-using System.Dynamic;
 using System.Globalization;
+using System.Security;
 using ComTypes = System.Runtime.InteropServices.ComTypes;
 
 namespace System.Dynamic {
@@ -44,6 +42,7 @@ namespace System.Dynamic {
             return String.Format(CultureInfo.CurrentCulture, "<type library {0}>", _typeLibName);
         }
 
+        [SecurityCritical]
         internal static ComTypeLibDesc GetFromTypeLib(ComTypes.ITypeLib typeLib) {
             // check whether we have already loaded this type library
             ComTypes.TYPELIBATTR typeLibAttr = ComRuntimeHelpers.GetTypeAttrForTypeLib(typeLib);

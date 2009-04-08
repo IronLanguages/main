@@ -112,6 +112,7 @@ namespace Microsoft.Scripting.Interpreter {
 
         private List<ExceptionHandler> _handlers = new List<ExceptionHandler>();
         private List<DebugInfo> _debugInfos = new List<DebugInfo>();
+        private List<UpdateStackTraceInstruction> _stackTraceUpdates = new List<UpdateStackTraceInstruction>();
 
         private Dictionary<LabelTarget, Label> _labels = new Dictionary<LabelTarget, Label>();
 
@@ -139,7 +140,10 @@ namespace Microsoft.Scripting.Interpreter {
         private Interpreter MakeInterpreter(LambdaExpression lambda) {
             var handlers = _handlers.ToArray();
             var debugInfos = _debugInfos.ToArray();
-            return new Interpreter(lambda, _localIsBoxed.ToArray(), _maxStackDepth, _instructions.ToArray(), handlers, debugInfos);
+            foreach (var stackTraceUpdate in _stackTraceUpdates) {
+                stackTraceUpdate._debugInfos = debugInfos;
+            }
+            return new Interpreter(lambda, _localIsBoxed.ToArray(), _maxStackDepth, _instructions.ToArray(), handlers);
         }
 
         class FinallyLabels {
@@ -1114,6 +1118,14 @@ namespace Microsoft.Scripting.Interpreter {
             var node = expr as Microsoft.Scripting.Ast.SymbolConstantExpression;
             if (node != null) {
                 PushConstant(node.Value);
+                return;
+            }
+
+            var updateStack = expr as LastFaultingLineExpression;
+            if (updateStack != null) {
+                var updateStackInstr = new UpdateStackTraceInstruction();
+                AddInstruction(updateStackInstr);
+                _stackTraceUpdates.Add(updateStackInstr);
                 return;
             }
 

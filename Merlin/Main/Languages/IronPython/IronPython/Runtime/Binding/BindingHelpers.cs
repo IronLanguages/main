@@ -396,6 +396,17 @@ namespace IronPython.Runtime.Binding {
 
             return true;
         }
+
+        internal static DynamicMetaObject AddPythonBoxing(DynamicMetaObject res) {
+            if (res.Expression.Type.IsValueType) {
+                // Use Python boxing rules if we're return a value type
+                res = new DynamicMetaObject(
+                    AstUtils.Convert(res.Expression, typeof(object)),
+                    res.Restrictions
+                );
+            }
+            return res;
+        }
     }
 
     internal class ValidationInfo {

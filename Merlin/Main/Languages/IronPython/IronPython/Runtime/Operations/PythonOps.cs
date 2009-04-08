@@ -2090,7 +2090,8 @@ namespace IronPython.Runtime.Operations {
         public static Exception MakeRethrownException(CodeContext/*!*/ context) {
             PythonTuple t = GetExceptionInfo(context);
             
-            Exception e = MakeException(context, t[0], t[1], t[2]);
+            Exception e = MakeExceptionWorker(context, t[0], t[1], t[2], true);
+            e.Data.Remove(typeof(TraceBack));
             ExceptionHelpers.UpdateForRethrow(e);
             return e;
         }
@@ -2105,6 +2106,10 @@ namespace IronPython.Runtime.Operations {
         /// a Tuple, or a single value.  This case is handled by EC.CreateThrowable.
         /// </summary>
         public static Exception MakeException(CodeContext/*!*/ context, object type, object value, object traceback) {
+            return MakeExceptionWorker(context, type, value, traceback, false);
+        }
+
+        private static Exception MakeExceptionWorker(CodeContext context, object type, object value, object traceback, bool forRethrow) {
             Exception throwable;
             PythonType pt;
 
@@ -2132,10 +2137,12 @@ namespace IronPython.Runtime.Operations {
             IDictionary dict = throwable.Data;
 
             if (traceback != null) {
-                TraceBack tb = traceback as TraceBack;
-                if (tb == null) throw PythonOps.TypeError("traceback argument must be a traceback object");
+                if (!forRethrow) {
+                    TraceBack tb = traceback as TraceBack;
+                    if (tb == null) throw PythonOps.TypeError("traceback argument must be a traceback object");
 
-                dict[typeof(TraceBack)] = tb;
+                    dict[typeof(TraceBack)] = tb;
+                }
             } else if (dict.Contains(typeof(TraceBack))) {
                 dict.Remove(typeof(TraceBack));
             }
@@ -2864,7 +2871,7 @@ namespace IronPython.Runtime.Operations {
 
         #region Function helpers
 
-        public static PythonGenerator MakeGenerator(PythonFunction function, Tuple data, object generatorCode) {
+        public static PythonGenerator MakeGenerator(PythonFunction function, Microsoft.Scripting.Tuple data, object generatorCode) {
             PythonGeneratorNext next = generatorCode as PythonGeneratorNext;
             if (next == null) {
                 next = ((LazyCode<PythonGeneratorNext>)generatorCode).EnsureDelegate();
@@ -3432,6 +3439,28 @@ namespace IronPython.Runtime.Operations {
                 b.Append((char)bytes[i]);
             }
             return b.ToString();
+        }
+
+        /// <summary>
+        /// Called from generated code, helper to remove a name
+        /// </summary>
+        public static object RemoveName(CodeContext context, SymbolId name) {
+            return context.LanguageContext.RemoveName(context.Scope, name);
+        }
+
+        /// <summary>
+        /// Called from generated code, helper to do name lookup
+        /// </summary>
+        public static object LookupName(CodeContext context, SymbolId name) {
+            return context.LanguageContext.LookupName(context.Scope, name);
+        }
+
+        /// <summary>
+        /// Called from generated code, helper to do name assignment
+        /// </summary>
+        public static object SetName(CodeContext context, SymbolId name, object value) {
+            context.LanguageContext.SetName(context.Scope, name, value);
+            return value;
         }
 
         #region Global Access

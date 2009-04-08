@@ -15,9 +15,6 @@
 
 #if !SILVERLIGHT // ComObject
 
-using System.Collections.Generic;
-using System.Dynamic;
-using System.Dynamic.Utils;
 using System.Linq.Expressions;
 
 namespace System.Dynamic {
@@ -141,7 +138,6 @@ namespace System.Dynamic {
 
         public override DynamicMetaObject BindGetIndex(GetIndexBinder binder, DynamicMetaObject[] indexes) {
             ContractUtils.RequiresNotNull(binder, "binder");
-
 
             ComMethodDesc getItem;
             if (_self.TryGetGetItem(out getItem)) {

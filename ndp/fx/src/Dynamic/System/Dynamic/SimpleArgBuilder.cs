@@ -16,9 +16,7 @@
 #if !SILVERLIGHT
 
 using System.Diagnostics;
-using System.Globalization;
 using System.Linq.Expressions;
-using System.Dynamic.Utils;
 
 namespace System.Dynamic {
     /// <summary>

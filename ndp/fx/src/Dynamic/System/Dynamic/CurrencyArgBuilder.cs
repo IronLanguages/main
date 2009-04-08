@@ -19,7 +19,6 @@
 using System.Diagnostics;
 using System.Linq.Expressions;
 using System.Runtime.InteropServices;
-using System.Dynamic.Utils;
 
 namespace System.Dynamic {
     internal sealed class CurrencyArgBuilder : SimpleArgBuilder {

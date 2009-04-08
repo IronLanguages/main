@@ -20,6 +20,7 @@ using Microsoft.Scripting;
 using Microsoft.Scripting.Runtime;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 using MSAst = System.Linq.Expressions;
+using IronPython.Runtime.Operations;
 
 namespace IronPython.Compiler.Ast {
     using Ast = System.Linq.Expressions.Expression;
@@ -55,7 +56,7 @@ namespace IronPython.Compiler.Ast {
             MSAst.Expression read;
             if (_reference.PythonVariable == null) {
                 read = Ast.Call(
-                    typeof(ScriptingRuntimeHelpers).GetMethod("LookupName"),
+                    typeof(PythonOps).GetMethod("LookupName"),
                     ag.LocalContext,
                     ag.Globals.GetSymbol(_name)
                 );
@@ -94,7 +95,7 @@ namespace IronPython.Compiler.Ast {
             } else {
                 assignment = Ast.Call(
                     null,
-                    typeof(ScriptingRuntimeHelpers).GetMethod("SetName"),
+                    typeof(PythonOps).GetMethod("SetName"),
                     new [] {
                         ag.LocalContext, 
                         ag.Globals.GetSymbol(_name),
@@ -131,7 +132,7 @@ namespace IronPython.Compiler.Ast {
             } else {
                 return ag.AddDebugInfo( 
                     Ast.Call(
-                        typeof(Microsoft.Scripting.Ast.ExpressionHelpers).GetMethod("RemoveName"),
+                        typeof(PythonOps).GetMethod("RemoveName"),
                         new [] {
                             ag.LocalContext,
                             ag.Globals.GetSymbol(_name)

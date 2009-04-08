@@ -25,7 +25,7 @@
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>..\..\..\..\..\..\Merlin\Main\Bin\FxCop\</OutputPath>
-    <DefineConstants>DEBUG;TRACE;$(SignedSym);MICROSOFT_SCRIPTING_CORE</DefineConstants>
+    <DefineConstants>DEBUG;TRACE;$(SignedSym);MICROSOFT_DYNAMIC</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
@@ -40,7 +40,7 @@
     <Optimize>false</Optimize>
     <OutputPath>..\..\..\..\..\..\Merlin\Main\Bin\Debug\</OutputPath>
     <DocumentationFile>..\..\..\..\..\..\Merlin\Main\Bin\Debug\Microsoft.Dynamic.xml</DocumentationFile>
-    <DefineConstants>DEBUG;TRACE;$(SignedSym);MICROSOFT_SCRIPTING_CORE</DefineConstants>
+    <DefineConstants>DEBUG;TRACE;$(SignedSym);MICROSOFT_DYNAMIC</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
@@ -53,7 +53,7 @@
     <Optimize>true</Optimize>
     <OutputPath>..\..\..\..\..\..\Merlin\Main\Bin\Release\</OutputPath>
     <DocumentationFile>..\..\..\..\..\..\Merlin\Main\Bin\Release\Microsoft.Dynamic.XML</DocumentationFile>
-    <DefineConstants>TRACE;$(SignedSym);MICROSOFT_SCRIPTING_CORE</DefineConstants>
+    <DefineConstants>TRACE;$(SignedSym);MICROSOFT_DYNAMIC</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>

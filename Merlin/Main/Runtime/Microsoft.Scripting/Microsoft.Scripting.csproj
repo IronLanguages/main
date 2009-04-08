@@ -2,7 +2,7 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProductVersion>9.0.30729</ProductVersion>
+    <ProductVersion>9.0.30703</ProductVersion>
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>{EB66B766-6354-4208-A3D4-AACBDCB5C3B3}</ProjectGuid>
     <OutputType>Library</OutputType>
@@ -184,6 +184,7 @@
     <Compile Include="Interpreter\LightCompiler.cs" />
     <Compile Include="Interpreter\RuntimeVariables.cs" />
     <Compile Include="Interpreter\StackFrame.cs" />
+    <Compile Include="Interpreter\LastFaultingLineExpression.cs" />
     <Compile Include="Runtime\BindingRestrictionsHelpers.cs" />
     <Compile Include="Runtime\DynamicNull.cs" />
     <Compile Include="Runtime\Generator.cs" />
@@ -234,20 +235,15 @@
     <Compile Include="Actions\OperatorInfo.cs" />
     <Compile Include="Actions\SetMemberBinderHelper.cs" />
     <Compile Include="Hosting\ExceptionOperations.cs" />
-    <Compile Include="Ast\AssignmentExpression.cs" />
     <Compile Include="Ast\BinaryExpression.cs" />
     <Compile Include="Ast\Block.cs" />
     <Compile Include="Ast\ConstantExpression.cs" />
-    <Compile Include="Ast\DeleteStatement.cs" />
-    <Compile Include="Ast\DeleteUnboundExpression.cs" />
     <Compile Include="Ast\EmptyStatements.cs" />
     <Compile Include="Ast\LambdaBuilder.cs" />
     <Compile Include="Ast\LambdaParameterRewriter.cs" />
     <Compile Include="Ast\LoopStatement.cs" />
     <Compile Include="Ast\MethodCallExpression.cs" />
     <Compile Include="Ast\TryStatementBuilder.cs" />
-    <Compile Include="Ast\UnboundAssignment.cs" />
-    <Compile Include="Ast\UnboundExpression.cs" />
     <Compile Include="MultiRuntimeAwareAttribute.cs" />
     <Compile Include="PerfTrack.cs" />
     <Compile Include="Runtime\CompilerContext.cs" />
@@ -390,15 +386,9 @@
     <Compile Include="Actions\TypeGroup.cs" />
     <Compile Include="Actions\TypeTracker.cs" />
     <Compile Include="Ast\DebugStatement.cs" />
-    <Compile Include="Ast\GlobalVariableExpression.cs" />
     <Compile Include="Ast\IfStatementBuilder.cs" />
     <Compile Include="Ast\IfStatementTest.cs" />
     <Compile Include="Generation\CompilerHelpers.cs" />
-    <Compile Include="Generation\GlobalArrayRewriter.cs" />
-    <Compile Include="Generation\GlobalLookupRewriter.cs" />
-    <Compile Include="Generation\GlobalOptimizedRewriter.cs" />
-    <Compile Include="Generation\GlobalRewriter.cs" />
-    <Compile Include="Generation\GlobalStaticFieldRewriter.cs" />
     <Compile Include="Generation\IExpressionSerializable.cs" />
     <Compile Include="Generation\ParameterInfoWrapper.cs" />
     <Compile Include="Generation\ToDiskRewriter.cs" />
