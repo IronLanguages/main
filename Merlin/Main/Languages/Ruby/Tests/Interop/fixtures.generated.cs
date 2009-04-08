@@ -565,6 +565,12 @@ public partial class Klass{
         return 1;
       }
     }
+#line 4 "./namespaces/mapping_spec.rb"
+namespace NotEmptyNamespace {
+    public class Foo {
+      public static int Bar() { return 1; }
+    }
+  }
 #line 4 "./struct/mapping_spec.rb"
 public struct EmptyStruct {}
     public struct Struct { public int m1() {return 1;}}
