@@ -17,8 +17,6 @@ require "../util/assert.rb"
 
 require "mscorlib"
 
-
-
 def test_ienumerable
     # .NET types that implement IEnumerable should
     # implement each & include Enumerable

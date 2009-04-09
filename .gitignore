@@ -20,3 +20,4 @@ sources
 *.sln.cache
 *.vshost.exe
 *.vshost.exe.manifest
+.eprj
