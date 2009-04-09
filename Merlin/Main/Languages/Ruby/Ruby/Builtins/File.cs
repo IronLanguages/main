@@ -62,8 +62,8 @@ namespace IronRuby.Builtins {
                 fileMode = FileMode.Open;
             }
 
-            if ((mode & RubyFileMode.EXCL) != 0) {
-                share = FileShare.None;
+            if ((mode & RubyFileMode.EXCL) != 0 && (mode & RubyFileMode.CREAT) != 0 && context.DomainManager.Platform.FileExists(path)) {
+                throw RubyExceptions.CreateIOError((String.Format("File exists - {0}", path)));
             }
 
             return context.DomainManager.Platform.OpenInputFileStream(path, fileMode, access, share);
