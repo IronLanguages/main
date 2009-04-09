@@ -24,10 +24,11 @@ using System.Text;
 using Microsoft.Scripting.Actions;
 using Microsoft.Scripting.Interpretation;
 using Microsoft.Scripting.Utils;
+using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace Microsoft.Scripting.Runtime {
     /// <summary>
-    /// Provides language specific facilities which are typicalled called by the runtime.
+    /// Provides language specific facilities which are typically called by the runtime.
     /// </summary>
     public abstract class LanguageContext {
         private readonly ScriptDomainManager _domainManager;
@@ -447,7 +448,7 @@ namespace Microsoft.Scripting.Runtime {
             public override DynamicMetaObject FallbackConvert(DynamicMetaObject self, DynamicMetaObject errorSuggestion) {
                 if (Type.IsAssignableFrom(self.GetLimitType())) {
                     return new DynamicMetaObject(
-                        self.Expression,
+                        AstUtils.Convert(self.Expression, Type),
                         BindingRestrictionsHelpers.GetRuntimeTypeRestriction(self.Expression, self.GetLimitType())
                     );
                 }
@@ -573,6 +574,66 @@ namespace Microsoft.Scripting.Runtime {
         public virtual CreateInstanceBinder CreateCreateBinder(CallInfo callInfo) {
             return new DefaultCreateAction(callInfo);
         }      
+
+        #endregion
+
+        #region CreateDelegate support
+
+        /// <summary> Table of dynamically generated delegates which are shared based upon method signature. </summary>
+        private Publisher<DelegateSignatureInfo, DelegateInfo> _dynamicDelegateCache = new Publisher<DelegateSignatureInfo, DelegateInfo>();
+
+        public T CreateDelegate<T>(object callable) {
+            return (T)(object)GetDelegate(callable, typeof(T));
+        }
+
+        /// <summary>
+        /// Creates a delegate with a given signature that could be used to invoke this object from non-dynamic code (w/o code context).
+        /// A stub is created that makes appropriate conversions/boxing and calls the object.
+        /// The stub should be executed within a context of this object's language.
+        /// </summary>
+        /// <returns>The delegate or a <c>null</c> reference if the object is not callable.</returns>
+        public Delegate GetDelegate(object callableObject, Type delegateType) {
+            ContractUtils.RequiresNotNull(delegateType, "delegateType");
+
+            Delegate result = callableObject as Delegate;
+            if (result != null) {
+                if (!delegateType.IsAssignableFrom(result.GetType())) {
+                    throw ScriptingRuntimeHelpers.SimpleTypeError(String.Format("Cannot cast {0} to {1}.", result.GetType(), delegateType));
+                }
+
+                return result;
+            }
+
+            IDynamicMetaObjectProvider dynamicObject = callableObject as IDynamicMetaObjectProvider;
+            if (dynamicObject != null) {
+
+                MethodInfo invoke;
+
+                if (!typeof(Delegate).IsAssignableFrom(delegateType) || (invoke = delegateType.GetMethod("Invoke")) == null) {
+                    throw ScriptingRuntimeHelpers.SimpleTypeError("A specific delegate type is required.");
+                }
+
+                ParameterInfo[] parameters = invoke.GetParameters();
+                DelegateSignatureInfo signatureInfo = new DelegateSignatureInfo(
+                    invoke.ReturnType,
+                    parameters
+                );
+
+                DelegateInfo delegateInfo = _dynamicDelegateCache.GetOrCreateValue(signatureInfo,
+                    delegate() {
+                        // creation code
+                        return signatureInfo.GenerateDelegateStub(this);
+                    });
+
+
+                result = delegateInfo.CreateDelegate(delegateType, dynamicObject);
+                if (result != null) {
+                    return result;
+                }
+            }
+
+            throw ScriptingRuntimeHelpers.SimpleTypeError("Object is not callable.");
+        }
 
         #endregion
 

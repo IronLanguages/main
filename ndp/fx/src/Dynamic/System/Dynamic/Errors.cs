@@ -1,4 +1,4 @@
-/* ****************************************************************************
+﻿/* ****************************************************************************
  *
  * Copyright (c) Microsoft Corporation. 
  *
@@ -16,7 +16,7 @@
 
 namespace System.Dynamic {
 
-#if MICROSOFT_SCRIPTING_CORE
+#if MICROSOFT_DYNAMIC
     internal static partial class Strings {
         private static string FormatString(string format, params object[] args) {
             return string.Format(System.Globalization.CultureInfo.CurrentCulture, format, args);

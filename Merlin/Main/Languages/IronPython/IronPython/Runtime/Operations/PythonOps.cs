@@ -1281,7 +1281,7 @@ namespace IronPython.Runtime.Operations {
         public static object MakeClass(object body, CodeContext/*!*/ parentContext, string name, object[] bases, string selfNames) {
             Func<CodeContext, CodeContext> func = body as Func<CodeContext, CodeContext>;
             if (func == null) {
-                func = ((Compiler.Ast.LazyClass)body).EnsureDelegate();
+                func = ((Compiler.LazyCode<Func<CodeContext, CodeContext>>)body).EnsureDelegate();
             }
             return MakeClass(parentContext, name, bases, selfNames, func(parentContext).Scope.Dict);
         }
@@ -2090,7 +2090,8 @@ namespace IronPython.Runtime.Operations {
         public static Exception MakeRethrownException(CodeContext/*!*/ context) {
             PythonTuple t = GetExceptionInfo(context);
             
-            Exception e = MakeException(context, t[0], t[1], t[2]);
+            Exception e = MakeExceptionWorker(context, t[0], t[1], t[2], true);
+            e.Data.Remove(typeof(TraceBack));
             ExceptionHelpers.UpdateForRethrow(e);
             return e;
         }
@@ -2105,6 +2106,10 @@ namespace IronPython.Runtime.Operations {
         /// a Tuple, or a single value.  This case is handled by EC.CreateThrowable.
         /// </summary>
         public static Exception MakeException(CodeContext/*!*/ context, object type, object value, object traceback) {
+            return MakeExceptionWorker(context, type, value, traceback, false);
+        }
+
+        private static Exception MakeExceptionWorker(CodeContext context, object type, object value, object traceback, bool forRethrow) {
             Exception throwable;
             PythonType pt;
 
@@ -2132,10 +2137,12 @@ namespace IronPython.Runtime.Operations {
             IDictionary dict = throwable.Data;
 
             if (traceback != null) {
-                TraceBack tb = traceback as TraceBack;
-                if (tb == null) throw PythonOps.TypeError("traceback argument must be a traceback object");
+                if (!forRethrow) {
+                    TraceBack tb = traceback as TraceBack;
+                    if (tb == null) throw PythonOps.TypeError("traceback argument must be a traceback object");
 
-                dict[typeof(TraceBack)] = tb;
+                    dict[typeof(TraceBack)] = tb;
+                }
             } else if (dict.Contains(typeof(TraceBack))) {
                 dict.Remove(typeof(TraceBack));
             }
@@ -2864,6 +2871,15 @@ namespace IronPython.Runtime.Operations {
 
         #region Function helpers
 
+        public static PythonGenerator MakeGenerator(PythonFunction function, Microsoft.Scripting.Tuple data, object generatorCode) {
+            PythonGeneratorNext next = generatorCode as PythonGeneratorNext;
+            if (next == null) {
+                next = ((LazyCode<PythonGeneratorNext>)generatorCode).EnsureDelegate();
+            }
+
+            return new PythonGenerator(function, next, data);
+        }
+
         public static FunctionInfo MakeFunctionInfo(string name, object documentation, string[] argNames, FunctionAttributes flags, int lineNumber, string path) {
             return new FunctionInfo(name, documentation, argNames, flags, lineNumber, path, null, false);
         }
@@ -3178,10 +3194,6 @@ namespace IronPython.Runtime.Operations {
             l.AddNoLock(o);
         }
 
-        public static void InitializePythonGenerator(PythonGenerator/*!*/ generator, IEnumerator/*!*/ enumerator) {
-            generator.Next = enumerator;
-        }
-        
         public static object GetUserDescriptorValue(object instance, PythonTypeSlot slot) {
             return GetUserDescriptor(((PythonTypeUserDescriptorSlot)slot).Value, instance, ((IPythonObject)instance).PythonType);
         }
@@ -3377,7 +3389,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         public static Delegate GetDelegate(CodeContext context, object target, Type type) {
-            return BinderOps.GetDelegate(context.LanguageContext, target, type);
+            return context.LanguageContext.GetDelegate(target, type);
         }
 
         public static int CompareLists(List self, List other) {
@@ -3390,6 +3402,10 @@ namespace IronPython.Runtime.Operations {
 
         public static int CompareFloats(double self, double other) {
             return DoubleOps.Compare(self, other);
+        }
+
+        public static Bytes MakeBytes(byte[] bytes) {
+            return new Bytes(bytes);
         }
 
         public static byte[] MakeByteArray(this string s) {
@@ -3423,6 +3439,28 @@ namespace IronPython.Runtime.Operations {
                 b.Append((char)bytes[i]);
             }
             return b.ToString();
+        }
+
+        /// <summary>
+        /// Called from generated code, helper to remove a name
+        /// </summary>
+        public static object RemoveName(CodeContext context, SymbolId name) {
+            return context.LanguageContext.RemoveName(context.Scope, name);
+        }
+
+        /// <summary>
+        /// Called from generated code, helper to do name lookup
+        /// </summary>
+        public static object LookupName(CodeContext context, SymbolId name) {
+            return context.LanguageContext.LookupName(context.Scope, name);
+        }
+
+        /// <summary>
+        /// Called from generated code, helper to do name assignment
+        /// </summary>
+        public static object SetName(CodeContext context, SymbolId name, object value) {
+            context.LanguageContext.SetName(context.Scope, name, value);
+            return value;
         }
 
         #region Global Access

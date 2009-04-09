@@ -31,11 +31,9 @@ namespace Microsoft.Scripting.Runtime {
 
         #region CreateDelegate support
 
-        /// <summary> Table of dynamicly generated delegates which are shared based upon method signature. </summary>
-        private static readonly Publisher<DelegateSignatureInfo, DelegateInfo> _dynamicDelegateCache = new Publisher<DelegateSignatureInfo, DelegateInfo>();
-
+        [Obsolete("Use LanguageContext.CreateDelegate instead")]
         public static T CreateDelegate<T>(LanguageContext context, object callable) {
-            return (T)(object)GetDelegate(context, callable, typeof(T));
+            return context.CreateDelegate<T>(callable);
         }
 
         /// <summary>
@@ -44,49 +42,9 @@ namespace Microsoft.Scripting.Runtime {
         /// The stub should be executed within a context of this object's language.
         /// </summary>
         /// <returns>The delegate or a <c>null</c> reference if the object is not callable.</returns>
+        [Obsolete("Use LanguageContext.GetDelegate instead")]
         public static Delegate GetDelegate(LanguageContext context, object callableObject, Type delegateType) {
-            ContractUtils.RequiresNotNull(context, "context");
-            ContractUtils.RequiresNotNull(delegateType, "delegateType");
-
-            Delegate result = callableObject as Delegate;
-            if (result != null) {
-                if (!delegateType.IsAssignableFrom(result.GetType())) {
-                    throw ScriptingRuntimeHelpers.SimpleTypeError(String.Format("Cannot cast {0} to {1}.", result.GetType(), delegateType));
-                }
-
-                return result;
-            }
-
-            IDynamicMetaObjectProvider dynamicObject = callableObject as IDynamicMetaObjectProvider;
-            if (dynamicObject != null) {
-
-                MethodInfo invoke;
-
-                if (!typeof(Delegate).IsAssignableFrom(delegateType) || (invoke = delegateType.GetMethod("Invoke")) == null) {
-                    throw ScriptingRuntimeHelpers.SimpleTypeError("A specific delegate type is required.");
-                }
-
-                ParameterInfo[] parameters = invoke.GetParameters();
-                DelegateSignatureInfo signatureInfo = new DelegateSignatureInfo(
-                    context,
-                    invoke.ReturnType,
-                    parameters
-                );
-
-                DelegateInfo delegateInfo = _dynamicDelegateCache.GetOrCreateValue(signatureInfo,
-                    delegate() {
-                        // creation code
-                        return signatureInfo.GenerateDelegateStub();
-                    });
-
-
-                result = delegateInfo.CreateDelegate(delegateType, dynamicObject);
-                if (result != null) {
-                    return result;
-                }
-            }
-
-            throw ScriptingRuntimeHelpers.SimpleTypeError("Object is not callable.");
+            return context.GetDelegate(callableObject, delegateType);
         }
 
         #endregion

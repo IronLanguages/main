@@ -52,13 +52,6 @@ namespace IronPython.Runtime {
                 Type funcType, callerType;
                 FunctionCaller fc;
                 string baseName = "";
-                if ((Flags & FunctionAttributes.Generator) != 0) {
-                    baseName = "Generator";
-                    if (args.Length != NormalArgumentCount) {
-                        // generators and defaults don't mix yet.
-                        return new Binding.FastBindResult<T>();
-                    }
-                }
 
                 if (args.Length != NormalArgumentCount) {
                     baseName = "Default" + (NormalArgumentCount - args.Length);
@@ -68,9 +61,6 @@ namespace IronPython.Runtime {
 
                 switch (args.Length) {
                     case 0:
-                        if ((Flags & FunctionAttributes.Generator) != 0) {
-                            return new Binding.FastBindResult<T>((T)(object)new Func<CallSite, CodeContext, object, object>(new FunctionCaller(funcCompat).GeneratorCall0), true);
-                        }
                         if (baseName != "") {
                             fc = new FunctionCaller(funcCompat);
                             mi = typeof(FunctionCaller).GetMethod(baseName + "Call0");
@@ -447,17 +437,6 @@ namespace IronPython.Runtime {
             // *** END GENERATED CODE ***
 
             #endregion
-
-            public object GeneratorCall0(CallSite site, CodeContext context, object func) {
-                PythonFunction pyfunc = func as PythonFunction;
-                if (pyfunc != null && pyfunc.FunctionCompatibility == _compat && pyfunc.Target.GetType() == typeof(GeneratorTarget0)) {
-                    PythonGenerator res = new PythonGenerator(pyfunc);
-                    PythonOps.InitializePythonGenerator(res, ((GeneratorTarget0)pyfunc.Target)(res));
-                    return res;
-                }
-
-                return ((CallSite<Func<CallSite, CodeContext, object, object>>)site).Update(site, context, func);
-            }
         }
 
         #region Generated Python Function Callers
@@ -475,20 +454,6 @@ namespace IronPython.Runtime {
                     var callTarget = pyfunc.Target as CallTarget1;
                     if (callTarget != null) {
                         return callTarget(pyfunc, arg0);
-                    }
-                }
-
-                return ((CallSite<Func<CallSite, CodeContext, object, T0, object>>)site).Update(site, context, func, arg0);
-            }
-
-            public object GeneratorCall1(CallSite site, CodeContext context, object func, T0 arg0) {
-                PythonFunction pyfunc = func as PythonFunction;
-                if (pyfunc != null && !EnforceRecursion && pyfunc._compat == _compat) {
-                    var callTarget = pyfunc.Target as GeneratorTarget1;
-                    if (callTarget != null) {
-                        PythonGenerator res = new PythonGenerator(pyfunc);
-                        PythonOps.InitializePythonGenerator(res, callTarget(res, arg0));
-                        return res;
                     }
                 }
 
@@ -667,20 +632,6 @@ namespace IronPython.Runtime {
                 return ((CallSite<Func<CallSite, CodeContext, object, T0, T1, object>>)site).Update(site, context, func, arg0, arg1);
             }
 
-            public object GeneratorCall2(CallSite site, CodeContext context, object func, T0 arg0, T1 arg1) {
-                PythonFunction pyfunc = func as PythonFunction;
-                if (pyfunc != null && !EnforceRecursion && pyfunc._compat == _compat) {
-                    var callTarget = pyfunc.Target as GeneratorTarget2;
-                    if (callTarget != null) {
-                        PythonGenerator res = new PythonGenerator(pyfunc);
-                        PythonOps.InitializePythonGenerator(res, callTarget(res, arg0, arg1));
-                        return res;
-                    }
-                }
-
-                return ((CallSite<Func<CallSite, CodeContext, object, T0, T1, object>>)site).Update(site, context, func, arg0, arg1);
-            }
-
             public object Default1Call2(CallSite site, CodeContext context, object func, T0 arg0, T1 arg1) {
                 PythonFunction pyfunc = func as PythonFunction;
                 if (pyfunc != null && !EnforceRecursion && pyfunc._compat == _compat) {
@@ -840,20 +791,6 @@ namespace IronPython.Runtime {
                 return ((CallSite<Func<CallSite, CodeContext, object, T0, T1, T2, object>>)site).Update(site, context, func, arg0, arg1, arg2);
             }
 
-            public object GeneratorCall3(CallSite site, CodeContext context, object func, T0 arg0, T1 arg1, T2 arg2) {
-                PythonFunction pyfunc = func as PythonFunction;
-                if (pyfunc != null && !EnforceRecursion && pyfunc._compat == _compat) {
-                    var callTarget = pyfunc.Target as GeneratorTarget3;
-                    if (callTarget != null) {
-                        PythonGenerator res = new PythonGenerator(pyfunc);
-                        PythonOps.InitializePythonGenerator(res, callTarget(res, arg0, arg1, arg2));
-                        return res;
-                    }
-                }
-
-                return ((CallSite<Func<CallSite, CodeContext, object, T0, T1, T2, object>>)site).Update(site, context, func, arg0, arg1, arg2);
-            }
-
             public object Default1Call3(CallSite site, CodeContext context, object func, T0 arg0, T1 arg1, T2 arg2) {
                 PythonFunction pyfunc = func as PythonFunction;
                 if (pyfunc != null && !EnforceRecursion && pyfunc._compat == _compat) {
@@ -1000,20 +937,6 @@ namespace IronPython.Runtime {
                 return ((CallSite<Func<CallSite, CodeContext, object, T0, T1, T2, T3, object>>)site).Update(site, context, func, arg0, arg1, arg2, arg3);
             }
 
-            public object GeneratorCall4(CallSite site, CodeContext context, object func, T0 arg0, T1 arg1, T2 arg2, T3 arg3) {
-                PythonFunction pyfunc = func as PythonFunction;
-                if (pyfunc != null && !EnforceRecursion && pyfunc._compat == _compat) {
-                    var callTarget = pyfunc.Target as GeneratorTarget4;
-                    if (callTarget != null) {
-                        PythonGenerator res = new PythonGenerator(pyfunc);
-                        PythonOps.InitializePythonGenerator(res, callTarget(res, arg0, arg1, arg2, arg3));
-                        return res;
-                    }
-                }
-
-                return ((CallSite<Func<CallSite, CodeContext, object, T0, T1, T2, T3, object>>)site).Update(site, context, func, arg0, arg1, arg2, arg3);
-            }
-
             public object Default1Call4(CallSite site, CodeContext context, object func, T0 arg0, T1 arg1, T2 arg2, T3 arg3) {
                 PythonFunction pyfunc = func as PythonFunction;
                 if (pyfunc != null && !EnforceRecursion && pyfunc._compat == _compat) {
@@ -1147,20 +1070,6 @@ namespace IronPython.Runtime {
                 return ((CallSite<Func<CallSite, CodeContext, object, T0, T1, T2, T3, T4, object>>)site).Update(site, context, func, arg0, arg1, arg2, arg3, arg4);
             }
 
-            public object GeneratorCall5(CallSite site, CodeContext context, object func, T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4) {
-                PythonFunction pyfunc = func as PythonFunction;
-                if (pyfunc != null && !EnforceRecursion && pyfunc._compat == _compat) {
-                    var callTarget = pyfunc.Target as GeneratorTarget5;
-                    if (callTarget != null) {
-                        PythonGenerator res = new PythonGenerator(pyfunc);
-                        PythonOps.InitializePythonGenerator(res, callTarget(res, arg0, arg1, arg2, arg3, arg4));
-                        return res;
-                    }
-                }
-
-                return ((CallSite<Func<CallSite, CodeContext, object, T0, T1, T2, T3, T4, object>>)site).Update(site, context, func, arg0, arg1, arg2, arg3, arg4);
-            }
-
             public object Default1Call5(CallSite site, CodeContext context, object func, T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4) {
                 PythonFunction pyfunc = func as PythonFunction;
                 if (pyfunc != null && !EnforceRecursion && pyfunc._compat == _compat) {
@@ -1281,20 +1190,6 @@ namespace IronPython.Runtime {
                 return ((CallSite<Func<CallSite, CodeContext, object, T0, T1, T2, T3, T4, T5, object>>)site).Update(site, context, func, arg0, arg1, arg2, arg3, arg4, arg5);
             }
 
-            public object GeneratorCall6(CallSite site, CodeContext context, object func, T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5) {
-                PythonFunction pyfunc = func as PythonFunction;
-                if (pyfunc != null && !EnforceRecursion && pyfunc._compat == _compat) {
-                    var callTarget = pyfunc.Target as GeneratorTarget6;
-                    if (callTarget != null) {
-                        PythonGenerator res = new PythonGenerator(pyfunc);
-                        PythonOps.InitializePythonGenerator(res, callTarget(res, arg0, arg1, arg2, arg3, arg4, arg5));
-                        return res;
-                    }
-                }
-
-                return ((CallSite<Func<CallSite, CodeContext, object, T0, T1, T2, T3, T4, T5, object>>)site).Update(site, context, func, arg0, arg1, arg2, arg3, arg4, arg5);
-            }
-
             public object Default1Call6(CallSite site, CodeContext context, object func, T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5) {
                 PythonFunction pyfunc = func as PythonFunction;
                 if (pyfunc != null && !EnforceRecursion && pyfunc._compat == _compat) {
@@ -1402,20 +1297,6 @@ namespace IronPython.Runtime {
                 return ((CallSite<Func<CallSite, CodeContext, object, T0, T1, T2, T3, T4, T5, T6, object>>)site).Update(site, context, func, arg0, arg1, arg2, arg3, arg4, arg5, arg6);
             }
 
-            public object GeneratorCall7(CallSite site, CodeContext context, object func, T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6) {
-                PythonFunction pyfunc = func as PythonFunction;
-                if (pyfunc != null && !EnforceRecursion && pyfunc._compat == _compat) {
-                    var callTarget = pyfunc.Target as GeneratorTarget7;
-                    if (callTarget != null) {
-                        PythonGenerator res = new PythonGenerator(pyfunc);
-                        PythonOps.InitializePythonGenerator(res, callTarget(res, arg0, arg1, arg2, arg3, arg4, arg5, arg6));
-                        return res;
-                    }
-                }
-
-                return ((CallSite<Func<CallSite, CodeContext, object, T0, T1, T2, T3, T4, T5, T6, object>>)site).Update(site, context, func, arg0, arg1, arg2, arg3, arg4, arg5, arg6);
-            }
-
             public object Default1Call7(CallSite site, CodeContext context, object func, T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6) {
                 PythonFunction pyfunc = func as PythonFunction;
                 if (pyfunc != null && !EnforceRecursion && pyfunc._compat == _compat) {
@@ -1510,20 +1391,6 @@ namespace IronPython.Runtime {
                 return ((CallSite<Func<CallSite, CodeContext, object, T0, T1, T2, T3, T4, T5, T6, T7, object>>)site).Update(site, context, func, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7);
             }
 
-            public object GeneratorCall8(CallSite site, CodeContext context, object func, T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7) {
-                PythonFunction pyfunc = func as PythonFunction;
-                if (pyfunc != null && !EnforceRecursion && pyfunc._compat == _compat) {
-                    var callTarget = pyfunc.Target as GeneratorTarget8;
-                    if (callTarget != null) {
-                        PythonGenerator res = new PythonGenerator(pyfunc);
-                        PythonOps.InitializePythonGenerator(res, callTarget(res, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7));
-                        return res;
-                    }
-                }
-
-                return ((CallSite<Func<CallSite, CodeContext, object, T0, T1, T2, T3, T4, T5, T6, T7, object>>)site).Update(site, context, func, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7);
-            }
-
             public object Default1Call8(CallSite site, CodeContext context, object func, T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7) {
                 PythonFunction pyfunc = func as PythonFunction;
                 if (pyfunc != null && !EnforceRecursion && pyfunc._compat == _compat) {
@@ -1605,20 +1472,6 @@ namespace IronPython.Runtime {
                 return ((CallSite<Func<CallSite, CodeContext, object, T0, T1, T2, T3, T4, T5, T6, T7, T8, object>>)site).Update(site, context, func, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8);
             }
 
-            public object GeneratorCall9(CallSite site, CodeContext context, object func, T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8) {
-                PythonFunction pyfunc = func as PythonFunction;
-                if (pyfunc != null && !EnforceRecursion && pyfunc._compat == _compat) {
-                    var callTarget = pyfunc.Target as GeneratorTarget9;
-                    if (callTarget != null) {
-                        PythonGenerator res = new PythonGenerator(pyfunc);
-                        PythonOps.InitializePythonGenerator(res, callTarget(res, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8));
-                        return res;
-                    }
-                }
-
-                return ((CallSite<Func<CallSite, CodeContext, object, T0, T1, T2, T3, T4, T5, T6, T7, T8, object>>)site).Update(site, context, func, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8);
-            }
-
             public object Default1Call9(CallSite site, CodeContext context, object func, T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8) {
                 PythonFunction pyfunc = func as PythonFunction;
                 if (pyfunc != null && !EnforceRecursion && pyfunc._compat == _compat) {
@@ -1687,20 +1540,6 @@ namespace IronPython.Runtime {
                 return ((CallSite<Func<CallSite, CodeContext, object, T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, object>>)site).Update(site, context, func, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9);
             }
 
-            public object GeneratorCall10(CallSite site, CodeContext context, object func, T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9) {
-                PythonFunction pyfunc = func as PythonFunction;
-                if (pyfunc != null && !EnforceRecursion && pyfunc._compat == _compat) {
-                    var callTarget = pyfunc.Target as GeneratorTarget10;
-                    if (callTarget != null) {
-                        PythonGenerator res = new PythonGenerator(pyfunc);
-                        PythonOps.InitializePythonGenerator(res, callTarget(res, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9));
-                        return res;
-                    }
-                }
-
-                return ((CallSite<Func<CallSite, CodeContext, object, T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, object>>)site).Update(site, context, func, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9);
-            }
-
             public object Default1Call10(CallSite site, CodeContext context, object func, T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9) {
                 PythonFunction pyfunc = func as PythonFunction;
                 if (pyfunc != null && !EnforceRecursion && pyfunc._compat == _compat) {
@@ -1756,20 +1595,6 @@ namespace IronPython.Runtime {
                 return ((CallSite<Func<CallSite, CodeContext, object, T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, object>>)site).Update(site, context, func, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10);
             }
 
-            public object GeneratorCall11(CallSite site, CodeContext context, object func, T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, T10 arg10) {
-                PythonFunction pyfunc = func as PythonFunction;
-                if (pyfunc != null && !EnforceRecursion && pyfunc._compat == _compat) {
-                    var callTarget = pyfunc.Target as GeneratorTarget11;
-                    if (callTarget != null) {
-                        PythonGenerator res = new PythonGenerator(pyfunc);
-                        PythonOps.InitializePythonGenerator(res, callTarget(res, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10));
-                        return res;
-                    }
-                }
-
-                return ((CallSite<Func<CallSite, CodeContext, object, T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, object>>)site).Update(site, context, func, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10);
-            }
-
             public object Default1Call11(CallSite site, CodeContext context, object func, T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, T10 arg10) {
                 PythonFunction pyfunc = func as PythonFunction;
                 if (pyfunc != null && !EnforceRecursion && pyfunc._compat == _compat) {
@@ -1812,20 +1637,6 @@ namespace IronPython.Runtime {
                 return ((CallSite<Func<CallSite, CodeContext, object, T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, object>>)site).Update(site, context, func, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11);
             }
 
-            public object GeneratorCall12(CallSite site, CodeContext context, object func, T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, T10 arg10, T11 arg11) {
-                PythonFunction pyfunc = func as PythonFunction;
-                if (pyfunc != null && !EnforceRecursion && pyfunc._compat == _compat) {
-                    var callTarget = pyfunc.Target as GeneratorTarget12;
-                    if (callTarget != null) {
-                        PythonGenerator res = new PythonGenerator(pyfunc);
-                        PythonOps.InitializePythonGenerator(res, callTarget(res, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11));
-                        return res;
-                    }
-                }
-
-                return ((CallSite<Func<CallSite, CodeContext, object, T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, object>>)site).Update(site, context, func, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11);
-            }
-
             public object Default1Call12(CallSite site, CodeContext context, object func, T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, T10 arg10, T11 arg11) {
                 PythonFunction pyfunc = func as PythonFunction;
                 if (pyfunc != null && !EnforceRecursion && pyfunc._compat == _compat) {
@@ -1849,20 +1660,6 @@ namespace IronPython.Runtime {
                     var callTarget = pyfunc.Target as CallTarget13;
                     if (callTarget != null) {
                         return callTarget(pyfunc, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12);
-                    }
-                }
-
-                return ((CallSite<Func<CallSite, CodeContext, object, T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, object>>)site).Update(site, context, func, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12);
-            }
-
-            public object GeneratorCall13(CallSite site, CodeContext context, object func, T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, T10 arg10, T11 arg11, T12 arg12) {
-                PythonFunction pyfunc = func as PythonFunction;
-                if (pyfunc != null && !EnforceRecursion && pyfunc._compat == _compat) {
-                    var callTarget = pyfunc.Target as GeneratorTarget13;
-                    if (callTarget != null) {
-                        PythonGenerator res = new PythonGenerator(pyfunc);
-                        PythonOps.InitializePythonGenerator(res, callTarget(res, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12));
-                        return res;
                     }
                 }
 

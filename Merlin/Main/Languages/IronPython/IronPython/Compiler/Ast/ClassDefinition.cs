@@ -171,8 +171,7 @@ namespace IronPython.Compiler.Ast {
                 )
             );
 
-            MSAst.LambdaExpression lambda = Ast.Lambda(
-                typeof(Func<CodeContext, CodeContext>),
+            var lambda = Ast.Lambda<Func<CodeContext, CodeContext>>(
                 classGen.MakeBody(_parentContextParam, init.ToArray(), bodyStmt, false),
                 classGen.Name + "$" + _classId++,
                 classGen.Parameters
@@ -182,7 +181,7 @@ namespace IronPython.Compiler.Ast {
                 AstGenerator.GetHelperMethod("MakeClass"),
                 ag.EmitDebugSymbols ? 
                     (MSAst.Expression)lambda : 
-                    (MSAst.Expression)Ast.Constant(new LazyClass(lambda, ag.ShouldInterpret), typeof(object)),
+                    (MSAst.Expression)Ast.Constant(new LazyCode<Func<CodeContext, CodeContext>>(lambda, ag.ShouldInterpret), typeof(object)),
                 ag.LocalContext,
                 AstUtils.Constant(SymbolTable.IdToString(_name)),
                 Ast.NewArrayInit(
@@ -295,40 +294,5 @@ namespace IronPython.Compiler.Ast {
                 return true;
             }
         }
-    }
-
-    sealed class LazyClass : IExpressionSerializable {
-        public readonly MSAst.LambdaExpression Code;
-        private Func<CodeContext, CodeContext> Delegate;
-        private bool _shouldInterpret;
-
-        public LazyClass(MSAst.LambdaExpression code, bool shouldInterpret) {
-            Code = code;
-            _shouldInterpret = shouldInterpret;
-        }
-
-        public Func<CodeContext, CodeContext> EnsureDelegate() {
-            if (Delegate == null) {
-                Delegate = Compile();
-            }
-
-            return Delegate;
-        }
-
-        private Func<CodeContext, CodeContext> Compile() {
-            if (_shouldInterpret) {
-                return (Func<CodeContext, CodeContext>)Microsoft.Scripting.Generation.CompilerHelpers.LightCompile(Code);
-            }
-
-            return (Func<CodeContext, CodeContext>)Code.Compile();
-        }
-
-        #region IExpressionSerializable Members
-
-        public System.Linq.Expressions.Expression CreateExpression() {
-            return Code;
-        }
-
-        #endregion
     }
 }

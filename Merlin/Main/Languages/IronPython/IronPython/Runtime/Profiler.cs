@@ -179,6 +179,19 @@ namespace IronPython.Runtime {
             return result;
         }
 
+        /// <summary>
+        /// Resets the current summary of profile data back to zero
+        /// </summary>
+        public void Reset() {
+            lock (_counters) {
+                // capture the current profile
+                int length = (_profileData.Length / 3);
+                long[,] newProfileData = new long[length, 3];
+                Interlocked.Exchange(ref _profileData, newProfileData);
+                _profiles.Clear();
+            }
+        }
+
         private static long DateTimeTicksFromTimeData(long elapsedStopwatchTicks) {
 #if !SILVERLIGHT
             if (Stopwatch.IsHighResolution) {

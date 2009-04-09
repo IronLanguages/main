@@ -30,9 +30,9 @@ namespace IronPython.Runtime.Exceptions {
         public FloatingPointException(string message, Exception innerException)
             : base(message, innerException) {
         }
-    #if !SILVERLIGHT // SerializationInfo
+#if !SILVERLIGHT // SerializationInfo
         protected FloatingPointException(SerializationInfo info, StreamingContext context) : base(info, context) { }
-    #endif
+#endif
     }
 
 

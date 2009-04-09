@@ -637,7 +637,7 @@ namespace IronPython.Runtime.Binding {
             /// </summary>
             private Expression/*!*/[]/*!*/ GetArgumentsForTargetType(Expression[] exprArgs) {
                 Type target = _func.Value.Target.GetType();
-                if (target == typeof(IronPython.Compiler.CallTargetN) || target == typeof(IronPython.Compiler.GeneratorTargetN)) {
+                if (target == typeof(IronPython.Compiler.CallTargetN)) {
                     exprArgs = new Expression[] {
                         AstUtils.NewArrayHelper(typeof(object), exprArgs) 
                     };
@@ -778,19 +778,6 @@ namespace IronPython.Runtime.Binding {
             }
 
             /// <summary>
-            /// Generators follow different calling convention than 'regular' Python functions.
-            /// When calling generator, we need to insert an additional argument to the call:
-            /// an instance of the PythonGenerator. This is also result of the call.
-            /// 
-            /// DLR only provides generator lambdas that return IEnumerator so we are essentially
-            /// wrapping it inside PythonGenerator.
-            /// </summary>
-            private bool IsGenerator(MethodInfo invoke) {
-                ParameterInfo[] pis = invoke.GetParameters();
-                return pis.Length > 0 && pis[0].ParameterType == typeof(PythonGenerator);
-            }
-
-            /// <summary>
             /// Creates the code to invoke the target delegate function w/ the specified arguments.
             /// </summary>
             private Expression/*!*/ MakeFunctionInvoke(Expression[] invokeArgs) {
@@ -799,14 +786,7 @@ namespace IronPython.Runtime.Binding {
 
                 // If calling generator, create the instance of PythonGenerator first
                 // and add it into the list of arguments
-                Expression pg = null;
-                if (IsGenerator(method)) {
-                    _temps.Add((ParameterExpression)(pg = Ast.Variable(typeof(PythonGenerator), "$gen")));
-
-                    invokeArgs = ArrayUtils.Insert(pg, invokeArgs);
-                } else {
-                    invokeArgs = ArrayUtils.Insert(GetFunctionParam(), invokeArgs);
-                }
+                invokeArgs = ArrayUtils.Insert(GetFunctionParam(), invokeArgs);
 
                 Expression invoke = AstUtils.SimpleCallHelper(
                     Ast.Convert(
@@ -820,39 +800,8 @@ namespace IronPython.Runtime.Binding {
                     invokeArgs
                 );
 
-                int count = 1;
-                if (_paramlessCheck != null) count++;
-                if (pg != null) count += 2;
-
-                if (count > 1) {
-                    Expression[] comma = new Expression[count];
-
-                    // Reset count for array fill
-                    count = 0;
-
-                    if (_paramlessCheck != null) {
-                        comma[count++] = _paramlessCheck;
-                    }
-
-                    if (pg != null) {
-                        // $gen = new PythonGenerator(context);
-                        comma[count++] = Expression.Assign(
-                            pg,
-                            Expression.New(
-                                TypeInfo._PythonGenerator.Ctor, 
-                                GetFunctionParam()
-                            )
-                        );
-                        // $gen.Next = <call DLR generator method>($gen, ....)
-                        comma[count++] = Expression.Call(typeof(PythonOps).GetMethod("InitializePythonGenerator"), pg, invoke);
-
-                        // $gen is the value
-                        comma[count++] = pg;
-                    } else {
-                        comma[count++] = invoke;
-                    }
-
-                    invoke = Expression.Block(comma);
+                if (_paramlessCheck != null) {
+                    invoke = Expression.Block(_paramlessCheck, invoke);
                 }
 
                 return invoke;

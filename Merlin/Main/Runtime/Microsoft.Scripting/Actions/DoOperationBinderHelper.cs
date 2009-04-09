@@ -251,41 +251,6 @@ namespace Microsoft.Scripting.Actions {
             return false;
         }
 
-        private void MakeIMembersListRule() {
-            _rule.Target =
-                _rule.MakeReturn(
-                    Binder, 
-                    Ast.Call(
-                        typeof(ScriptingRuntimeHelpers).GetMethod("GetStringMembers"),
-                        Ast.Call(
-                            AstUtils.Convert(_rule.Parameters[0], typeof(IMembersList)),
-                            typeof(IMembersList).GetMethod("GetMemberNames"),
-                            _rule.Context
-                        )
-                    )
-                );
-        }
-
-        private void MakeCallSignatureResult(MethodBase[] methods) {
-            List<string> arrres = new List<string>();
-            foreach (MethodBase mb in methods) {
-                StringBuilder res = new StringBuilder();
-                string comma = "";
-                foreach (ParameterInfo param in mb.GetParameters()) {
-                    if (param.ParameterType == typeof(CodeContext)) continue;
-
-                    res.Append(comma);
-                    res.Append(param.ParameterType.Name);
-                    res.Append(" ");
-                    res.Append(param.Name);
-                    comma = ", ";
-                }
-                arrres.Add(res.ToString());
-            }
-
-            _rule.Target = _rule.MakeReturn(Binder, AstUtils.Constant(arrres.ToArray()));
-        }
-
         #endregion
 
         #region Indexer Rule
@@ -384,18 +349,18 @@ namespace Microsoft.Scripting.Actions {
         #region Common helpers
 
         public Expression Param0 {
-            get { return GetParamater(0); }
+            get { return GetParameter(0); }
         }
 
         public Expression Param1 {
-            get { return GetParamater(1); }
+            get { return GetParameter(1); }
         }
         
         public Expression Param2 {
-            get { return GetParamater(2); }
+            get { return GetParameter(2); }
         }
 
-        private Expression GetParamater(int index) {
+        private Expression GetParameter(int index) {
             Expression expr = _rule.Parameters[index];
             if (_types[index].IsAssignableFrom(expr.Type)) return expr;
             return AstUtils.Convert(expr, _types[index]);
@@ -469,56 +434,6 @@ namespace Microsoft.Scripting.Actions {
 
             // filter down to just methods
             return FilterNonMethods(t, members);
-        }
-       
-        private void AddFallbackMemberTest(Type t, EventTracker et) {
-            if(t == typeof(EventTracker)){
-                //
-                // Test Generated:
-                //   ScriptingRuntimeHelpers.GetEventHandlerType(((EventTracker)args[0]).Event) == et.Event.EventHandlerType
-                //
-                _rule.AddTest(
-                    Ast.Equal(
-                        Ast.Call(
-                            typeof(ScriptingRuntimeHelpers).GetMethod("GetEventHandlerType"),
-                            Ast.Property(
-                                Ast.Convert(
-                                    _rule.Parameters[0],
-                                    typeof(EventTracker)
-                                ),
-                                typeof(EventTracker).GetProperty("Event")
-                            )
-                        ),
-                        AstUtils.Constant(et.Event.EventHandlerType)
-                    )
-                );
-            } else if( t == typeof(BoundMemberTracker)){
-                //
-                // Test Generated:
-                //   ScriptingRuntimeHelpers.GetEventHandlerType(((EventTracker)((BoundMemberTracker)args[0]).BountTo).Event) == et.Event.EventHandlerType
-                //
-                _rule.AddTest(
-                    Ast.Equal(
-                        Ast.Call(
-                            typeof(ScriptingRuntimeHelpers).GetMethod("GetEventHandlerType"),
-                            Ast.Property(
-                                Ast.Convert(
-                                    Ast.Property(
-                                        Ast.Convert(
-                                            _rule.Parameters[0],
-                                            typeof(BoundMemberTracker)
-                                        ),
-                                        typeof(BoundMemberTracker).GetProperty("BoundTo")
-                                    ),
-                                    typeof(EventTracker)
-                                ),
-                                typeof(EventTracker).GetProperty("Event")
-                            )
-                        ),
-                        AstUtils.Constant(et.Event.EventHandlerType)
-                    )
-                );
-            }
         }
 
         private static MethodInfo[] FilterNonMethods(Type t, MemberGroup members) {

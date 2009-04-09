@@ -30,9 +30,9 @@ namespace IronPython.Runtime.Exceptions {
         public UnicodeTranslateException(string message, Exception innerException)
             : base(message, innerException) {
         }
-    #if !SILVERLIGHT // SerializationInfo
+#if !SILVERLIGHT // SerializationInfo
         protected UnicodeTranslateException(SerializationInfo info, StreamingContext context) : base(info, context) { }
-    #endif
+#endif
     }
 
 

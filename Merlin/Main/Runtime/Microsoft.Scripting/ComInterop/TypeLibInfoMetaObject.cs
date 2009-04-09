@@ -61,16 +61,6 @@ namespace Microsoft.Scripting.ComInterop {
         private BindingRestrictions ComTypeLibInfoRestrictions(params DynamicMetaObject[] args) {
             return BindingRestrictions.Combine(args).Merge(BindingRestrictions.GetTypeRestriction(Expression, typeof(ComTypeLibInfo)));
         }
-
-        private DynamicMetaObject RestrictThisToType() {
-            return new DynamicMetaObject(
-                AstUtils.Convert(
-                    Expression,
-                    typeof(ComTypeLibInfo)
-                ),
-                BindingRestrictions.GetTypeRestriction(Expression, typeof(ComTypeLibInfo))
-            );
-        }
     }
 }
 

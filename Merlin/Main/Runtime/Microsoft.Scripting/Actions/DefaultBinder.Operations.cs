@@ -628,58 +628,6 @@ namespace Microsoft.Scripting.Actions {
             return FilterNonMethods(t, members);
         }
         
-        private static BindingRestrictions GetFallbackRestrictions(Type t, EventTracker et, DynamicMetaObject self) {
-            if (t == typeof(EventTracker)) {
-                //
-                // Test Generated:
-                //   BinderOps.GetEventHandlerType(((EventTracker)args[0]).Event) == et.Event.EventHandlerType
-                //
-                return BindingRestrictions.GetExpressionRestriction(
-                    Ast.Equal(
-                        Ast.Call(
-                            typeof(BinderOps).GetMethod("GetEventHandlerType"),
-                            Ast.Property(
-                                Ast.Convert(
-                                    self.Expression,
-                                    typeof(EventTracker)
-                                ),
-                                typeof(EventTracker).GetProperty("Event")
-                            )
-                        ),
-                        AstUtils.Constant(et.Event.EventHandlerType)
-                    )
-                );
-            } else if (t == typeof(BoundMemberTracker)) {
-                //
-                // Test Generated:
-                //   BinderOps.GetEventHandlerType(((EventTracker)((BoundMemberTracker)args[0]).BountTo).Event) == et.Event.EventHandlerType
-                //
-                return BindingRestrictions.GetExpressionRestriction(
-                    Ast.Equal(
-                        Ast.Call(
-                            typeof(BinderOps).GetMethod("GetEventHandlerType"),
-                            Ast.Property(
-                                Ast.Convert(
-                                    Ast.Property(
-                                        Ast.Convert(
-                                            self.Expression,
-                                            typeof(BoundMemberTracker)
-                                        ),
-                                        typeof(BoundMemberTracker).GetProperty("BoundTo")
-                                    ),
-                                    typeof(EventTracker)
-                                ),
-                                typeof(EventTracker).GetProperty("Event")
-                            )
-                        ),
-                        AstUtils.Constant(et.Event.EventHandlerType)
-                    )
-                );
-            }
-
-            return BindingRestrictions.Empty;
-        }
-
         private static MethodInfo[] FilterNonMethods(Type t, MemberGroup members) {
             Assert.NotNull(t, members);
 

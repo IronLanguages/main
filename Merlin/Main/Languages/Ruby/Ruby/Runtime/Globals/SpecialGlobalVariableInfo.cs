@@ -126,6 +126,9 @@ namespace IronRuby.Runtime {
                 case GlobalVariableId.ChildProcessExitStatus:
                     return context.ChildProcessExitStatus;
 
+                case GlobalVariableId.CommandLineProgramPath:
+                    return context.CommandLineProgramPath;
+
                 default:
                     throw Assert.Unreachable;
             }
@@ -223,6 +226,10 @@ namespace IronRuby.Runtime {
 
                 case GlobalVariableId.Verbose:
                     context.Verbose = value;
+                    return;
+
+                case GlobalVariableId.CommandLineProgramPath:
+                    context.CommandLineProgramPath = (value != null) ? RequireType<MutableString>(value, name, "String") : null;
                     return;
                 
                 case GlobalVariableId.KCode:

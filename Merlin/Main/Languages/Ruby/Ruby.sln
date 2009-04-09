@@ -17,7 +17,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IronRuby.Libraries.Scanner"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.Scripting", "..\..\Runtime\Microsoft.Scripting\Microsoft.Scripting.csproj", "{EB66B766-6354-4208-A3D4-AACBDCB5C3B3}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IronRuby.Libraries.Yaml", "..\..\..\External\Languages\IronRuby\yaml\IronRuby.Libraries.Yaml\IronRuby.Libraries.Yaml.csproj", "{AA18A245-E342-4368-A474-83178311A742}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IronRuby.Libraries.Yaml", "..\..\..\External.LCA_RESTRICTED\Languages\IronRuby\yaml\IronRuby.Libraries.Yaml\IronRuby.Libraries.Yaml.csproj", "{AA18A245-E342-4368-A474-83178311A742}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.Scripting.ExtensionAttribute", "..\..\..\..\ndp\fx\src\Core\Microsoft\Scripting\Microsoft.Scripting.ExtensionAttribute.csproj", "{8B0F1074-750E-4D64-BF23-A1E0F54261E5}"
 EndProject
@@ -62,9 +62,9 @@ Global
 		SccProjectUniqueName8 = ..\\..\\..\\..\\ndp\\fx\\src\\Core\\Microsoft\\Scripting\\Microsoft.Scripting.Core.csproj
 		SccProjectName8 = ../../../../ndp/fx/src/Core/Microsoft/Scripting
 		SccLocalPath8 = ..\\..\\..\\..\\ndp\\fx\\src\\Core\\Microsoft\\Scripting
-		SccProjectUniqueName9 = ..\\..\\..\\External\\Languages\\IronRuby\\yaml\\IronRuby.Libraries.Yaml\\IronRuby.Libraries.Yaml.csproj
-		SccProjectName9 = ../../../../../../../Merlin_External/Languages/IronRuby/yaml/IronRuby.Libraries.Yaml
-		SccLocalPath9 = ..\\..\\..\\External\\Languages\\IronRuby\\yaml\\IronRuby.Libraries.Yaml
+		SccProjectUniqueName9 = ..\\..\\..\\External.LCA_RESTRICTED\\Languages\\IronRuby\\yaml\\IronRuby.Libraries.Yaml\\IronRuby.Libraries.Yaml.csproj
+		SccProjectName9 = ../../../External.LCA_RESTRICTED/Languages/IronRuby/yaml/IronRuby.Libraries.Yaml
+		SccLocalPath9 = ..\\..\\..\\External.LCA_RESTRICTED\\Languages\\IronRuby\\yaml\\IronRuby.Libraries.Yaml
 		SccProjectUniqueName10 = ..\\..\\..\\..\\ndp\\fx\\src\\Core\\Microsoft\\Scripting\\Microsoft.Scripting.ExtensionAttribute.csproj
 		SccProjectName10 = ../../../../ndp/fx/src/Core/Microsoft/Scripting
 		SccLocalPath10 = ..\\..\\..\\..\\ndp\\fx\\src\\Core\\Microsoft\\Scripting

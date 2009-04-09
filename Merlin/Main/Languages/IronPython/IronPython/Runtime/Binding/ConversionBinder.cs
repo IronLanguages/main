@@ -60,6 +60,13 @@ namespace IronPython.Runtime.Binding {
             PerfTrack.NoteEvent(PerfTrack.Categories.Binding, "Convert " + Type.FullName + " " + self.LimitType);
             PerfTrack.NoteEvent(PerfTrack.Categories.BindingTarget, "Conversion");
 
+#if !SILVERLIGHT
+            DynamicMetaObject comConvert;
+            if (ComBinder.TryConvert(this, self, out comConvert)) {
+                return comConvert;
+            }
+#endif
+
             Type type = Type;
 
             DynamicMetaObject res = null;

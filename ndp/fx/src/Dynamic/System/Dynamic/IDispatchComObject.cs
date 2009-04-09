@@ -15,17 +15,15 @@
 
 #if !SILVERLIGHT // ComObject
 
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Dynamic;
-using System.Dynamic.Utils;
 using System.Globalization;
 using System.Linq.Expressions;
-using System.Linq.Expressions.Compiler;
 using System.Reflection;
 using System.Runtime.InteropServices;
-using System.Threading;
-using System.Collections;
+using System.Security;
+using System.Security.Permissions;
 using ComTypes = System.Runtime.InteropServices.ComTypes;
 
 namespace System.Dynamic {
@@ -109,11 +107,16 @@ namespace System.Dynamic {
         }
 
         public override string ToString() {
-            EnsureScanDefinedMethods();
+            ComTypeDesc ctd = _comTypeDesc;
+            string typeName = null;
 
-            string typeName = this._comTypeDesc.TypeName;
-            if (String.IsNullOrEmpty(typeName))
+            if (ctd != null) {
+                typeName = ctd.TypeName;
+            }
+
+            if (String.IsNullOrEmpty(typeName)) {
                 typeName = "IDispatch";
+            }
 
             return String.Format(CultureInfo.CurrentCulture, "{0} ({1})", RuntimeCallableWrapper.ToString(), typeName);
         }
@@ -275,47 +278,48 @@ namespace System.Dynamic {
             }
         }
 
-        internal override IEnumerable<string> MemberNames {
-            get {
-                EnsureScanDefinedMethods();
-                EnsureScanDefinedEvents();
+        internal override IList<string> GetMemberNames(bool dataOnly) {
+            EnsureScanDefinedMethods();
+            EnsureScanDefinedEvents();
 
-                return ComTypeDesc.GetMemberNames();
-            }
+            return ComTypeDesc.GetMemberNames(dataOnly);
         }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
-        internal override IEnumerable<KeyValuePair<string, object>> DataMembers {
-            get {
-                IEnumerable<string> names = MemberNames;
-                Type comType = RuntimeCallableWrapper.GetType();
+        internal override IList<KeyValuePair<string, object>> GetMembers(IEnumerable<string> names) {
+            if (names == null) {
+                names = GetMemberNames(true);
+            }
 
-                var members = new List<KeyValuePair<string, object>>();
-                foreach (string name in names) {
-                    ComMethodDesc method;
-                    if (ComTypeDesc.TryGetFunc(name, out method)){
-                        if (method.IsDataMember) {
-                            try {
-                                object value = comType.InvokeMember(
-                                    method.Name,
-                                    BindingFlags.GetProperty,
-                                    null,
-                                    RuntimeCallableWrapper,
-                                    new object[0],
-                                    CultureInfo.InvariantCulture
-                                );
-                                members.Add(new KeyValuePair<string, object>(method.Name, value));
+            Type comType = RuntimeCallableWrapper.GetType();
 
-                            //evaluation failed for some reason. pass exception out 
-                            } catch (System.Exception ex) {
-                                members.Add(new KeyValuePair<string, object>(method.Name, ex));
-                            }
-                        }
-                    }
+            var members = new List<KeyValuePair<string, object>>();
+            foreach (string name in names) {
+                if (name == null) {
+                    continue;
                 }
 
-                return members.ToArray();
+                ComMethodDesc method;
+                if (ComTypeDesc.TryGetFunc(name, out method) && method.IsDataMember) {
+                    try {
+                        object value = comType.InvokeMember(
+                            method.Name,
+                            BindingFlags.GetProperty,
+                            null,
+                            RuntimeCallableWrapper,
+                            new object[0],
+                            CultureInfo.InvariantCulture
+                        );
+                        members.Add(new KeyValuePair<string, object>(method.Name, value));
+
+                        //evaluation failed for some reason. pass exception out 
+                    } catch (Exception ex) {
+                        members.Add(new KeyValuePair<string, object>(method.Name, ex));
+                    }
+                }
             }
+
+            return members.ToArray();
         }
 
         DynamicMetaObject IDynamicMetaObjectProvider.GetMetaObject(Expression parameter) {
@@ -324,6 +328,7 @@ namespace System.Dynamic {
         }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2201:DoNotRaiseReservedExceptionTypes")]
+        [SecurityCritical]
         private static void GetFuncDescForDescIndex(ComTypes.ITypeInfo typeInfo, int funcIndex, out ComTypes.FUNCDESC funcDesc, out IntPtr funcDescHandle) {
             IntPtr pFuncDesc = IntPtr.Zero;
             typeInfo.GetFuncDesc(funcIndex, out pFuncDesc);
@@ -337,12 +342,23 @@ namespace System.Dynamic {
             funcDescHandle = pFuncDesc;
         }
 
+#if MICROSOFT_DYNAMIC
+        [SecurityCritical, SecurityTreatAsSafe]
+#else
+        [SecuritySafeCritical]
+#endif
         private void EnsureScanDefinedEvents() {
             // _comTypeDesc.Events is null if we have not yet attempted
             // to scan the object for events.
             if (_comTypeDesc != null && _comTypeDesc.Events != null) {
                 return;
             }
+
+            //
+            // Demand Full Trust to proceed with the operation.
+            //
+
+            new PermissionSet(PermissionState.Unrestricted).Demand();
 
             // check type info in the type descriptions cache
             ComTypes.ITypeInfo typeInfo = ComRuntimeHelpers.GetITypeInfoFromIDispatch(_dispatchObject, true);
@@ -410,6 +426,7 @@ namespace System.Dynamic {
             }
         }
 
+        [SecurityCritical]
         private static void ScanSourceInterface(ComTypes.ITypeInfo sourceTypeInfo, ref Dictionary<string, ComEventDesc> events) {
             ComTypes.TYPEATTR sourceTypeAttribute = ComRuntimeHelpers.GetTypeAttrForTypeInfo(sourceTypeInfo);
 
@@ -449,6 +466,7 @@ namespace System.Dynamic {
             }
         }
 
+        [SecurityCritical]
         private static ComTypes.ITypeInfo GetCoClassTypeInfo(object rcw, ComTypes.ITypeInfo typeInfo) {
             Debug.Assert(typeInfo != null);
 
@@ -487,11 +505,22 @@ namespace System.Dynamic {
             return typeInfoCoClass;
         }
 
+#if MICROSOFT_DYNAMIC
+        [SecurityCritical, SecurityTreatAsSafe]
+#else
+        [SecuritySafeCritical]
+#endif
         private void EnsureScanDefinedMethods() {
             if (_comTypeDesc != null && _comTypeDesc.Funcs != null) {
                 return;
             }
-            
+
+            //
+            // Demand Full Trust to proceed with the operation.
+            //
+
+            new PermissionSet(PermissionState.Unrestricted).Demand();
+
             ComTypes.ITypeInfo typeInfo = ComRuntimeHelpers.GetITypeInfoFromIDispatch(_dispatchObject, true);
             if (typeInfo == null) {
                 _comTypeDesc = ComTypeDesc.CreateEmptyTypeDesc();

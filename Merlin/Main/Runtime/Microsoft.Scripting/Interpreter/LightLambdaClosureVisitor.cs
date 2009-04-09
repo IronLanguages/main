@@ -52,9 +52,11 @@ namespace Microsoft.Scripting.Interpreter {
 
         private LightLambdaClosureVisitor(IList<ParameterExpression> closureVars, ParameterExpression closureArray) {
             _closureArray = closureArray;
-            _closureVars = new Dictionary<ParameterExpression, int>(closureVars.Count);
-            for (int i = 0, n = closureVars.Count; i < n; i++) {
-                _closureVars.Add(closureVars[i], i);
+            if (closureVars != null) {
+                _closureVars = new Dictionary<ParameterExpression, int>(closureVars.Count);
+                for (int i = 0, n = closureVars.Count; i < n; i++) {
+                    _closureVars.Add(closureVars[i], i);
+                }
             }
         }
 

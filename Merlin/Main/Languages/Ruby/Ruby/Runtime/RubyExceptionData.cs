@@ -58,7 +58,7 @@ namespace IronRuby.Runtime {
         // can be set explicitly by the user (even to nil):
         private RubyArray _backtrace;
 
-        private CallSite<Action<CallSite, RubyContext, Exception, RubyArray>>/*!*/ _setBacktraceCallSite;
+        private CallSite<Func<CallSite, RubyContext, Exception, RubyArray, object>>/*!*/ _setBacktraceCallSite;
 
         private RubyExceptionData(Exception/*!*/ exception) {
             _exception = exception;
@@ -111,7 +111,7 @@ namespace IronRuby.Runtime {
         /// </summary>
         private void SetBacktraceForRaise(RubyContext/*!*/ context, RubyArray backtrace) {
             if (_setBacktraceCallSite == null) {
-                Interlocked.CompareExchange(ref _setBacktraceCallSite, CallSite<Action<CallSite, RubyContext, Exception, RubyArray>>.
+                Interlocked.CompareExchange(ref _setBacktraceCallSite, CallSite<Func<CallSite, RubyContext, Exception, RubyArray, object>>.
                     Create(RubyCallAction.MakeShared("set_backtrace", RubyCallSignature.WithImplicitSelf(1))), null);
             }
             _setBacktraceCallSite.Target(_setBacktraceCallSite, context, _exception, backtrace);

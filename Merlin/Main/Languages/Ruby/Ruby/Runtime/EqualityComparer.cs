@@ -30,7 +30,7 @@ namespace IronRuby.Runtime {
         private readonly RubyContext/*!*/ _context;
 
         private readonly CallSite<Func<CallSite, object, object>>/*!*/ _hashSite;
-        private readonly CallSite<Func<CallSite, object, object, bool>>/*!*/ _eqlSite;
+        private readonly CallSite<Func<CallSite, object, object, object>>/*!*/ _eqlSite;
 
         // friend: RubyContext
         internal EqualityComparer(RubyContext/*!*/ context) {
@@ -39,13 +39,13 @@ namespace IronRuby.Runtime {
             _hashSite = CallSite<Func<CallSite, object, object>>.Create(
                 RubyCallAction.Make(context, "hash", RubyCallSignature.WithImplicitSelf(0))
              );
-            _eqlSite = CallSite<Func<CallSite, object, object, bool>>.Create(
+            _eqlSite = CallSite<Func<CallSite, object, object, object>>.Create(
                 RubyCallAction.Make(context, "eql?", RubyCallSignature.WithImplicitSelf(1))
             );
         }
 
         bool IEqualityComparer<object>.Equals(object x, object y) {
-            return x == y || _eqlSite.Target(_eqlSite, x, y);
+            return x == y || RubyOps.IsTrue(_eqlSite.Target(_eqlSite, x, y));
         }
 
         int IEqualityComparer<object>.GetHashCode(object obj) {

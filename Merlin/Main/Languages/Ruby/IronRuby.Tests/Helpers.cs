@@ -319,5 +319,31 @@ namespace IronRuby.Tests {
                 Debugger.Break();
             }
         }
+
+        #region Bugs
+        
+        // Helpers for tests which are currently failing. Using these helpers will ensure that when the bug is fixed, 
+        // you are forced to update the test case. In the meantime, it makes sure that the test can atleast be executed
+        // and documents the incorrect result
+
+        [DebuggerHiddenAttribute]
+        internal void AreEqualBug(object x, object y, object buggyResult) {
+            // Once the bug is fixed, the result should be "y".
+            AreEqual(x, buggyResult);
+        }
+
+        [DebuggerHiddenAttribute]
+        internal void AreEqualBug<T>(Action f, object y) where T : Exception {
+            // Once the bug is fixed, the result should be "y" and no exception should be thrown
+            AssertExceptionThrown<T>(f);
+        }
+
+        [DebuggerHiddenAttribute]
+        internal void AssertExceptionThrownBug<T>(Action f, object buggyResult) where T : Exception {
+            // f should throw an exception once the bug is fixed
+            f();
+        }
+
+        #endregion
     }
 }

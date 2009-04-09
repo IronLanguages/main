@@ -16,9 +16,9 @@
 #if !SILVERLIGHT // ComObject
 
 using System.Diagnostics;
-using System.Linq.Expressions;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Security;
 using ComTypes = System.Runtime.InteropServices.ComTypes;
 
 namespace System.Dynamic {
@@ -43,6 +43,8 @@ namespace System.Dynamic {
             Debug.Assert(Marshal.SizeOf(typeof(ExcepInfo)) == Marshal.SizeOf(typeof(ComTypes.EXCEPINFO)));
         }
 #endif
+
+        [SecurityCritical]
         private static string ConvertAndFreeBstr(ref IntPtr bstr) {
             if (bstr == IntPtr.Zero) {
                 return null;
@@ -69,6 +71,7 @@ namespace System.Dynamic {
         }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2201:DoNotRaiseReservedExceptionTypes")]
+        [SecurityCritical]
         internal Exception GetException() {
             Debug.Assert(pfnDeferredFillIn == IntPtr.Zero);
 #if DEBUG

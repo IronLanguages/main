@@ -51,7 +51,6 @@ namespace IronPython.Compiler.Ast {
         internal PythonVariable _nameVariable;          // the variable that refers to the global __name__
 
         private static MSAst.ParameterExpression _functionParam = Ast.Parameter(typeof(PythonFunction), "$function");
-        internal static MSAst.ParameterExpression _generatorParam = Ast.Parameter(typeof(PythonGenerator), "$generator");
 
         public bool IsLambda {
             get {
@@ -195,15 +194,6 @@ namespace IronPython.Compiler.Ast {
         /// Pulls the closure tuple from our function/generator which is flowed into each function call.
         /// </summary>
         public override MSAst.Expression/*!*/ GetClosureTuple() {
-            if (IsGenerator) {
-                return MSAst.Expression.Call(
-                    null,
-                    typeof(PythonOps).GetMethod("GetClosureTupleFromGenerator"),
-                    _generatorParam
-                );
-
-            }
-
             return MSAst.Expression.Call(
                 null,
                 typeof(PythonOps).GetMethod("GetClosureTupleFromFunction"),
@@ -304,11 +294,7 @@ namespace IronPython.Compiler.Ast {
 
             MSAst.Expression parentContext;
             
-            if (IsGenerator) {
-                parentContext = MSAst.Expression.Call(typeof(PythonOps).GetMethod("GetParentContextFromGenerator"), _generatorParam);
-            } else {
-                parentContext = MSAst.Expression.Call(typeof(PythonOps).GetMethod("GetParentContextFromFunction"), _functionParam);
-            }
+            parentContext = MSAst.Expression.Call(typeof(PythonOps).GetMethod("GetParentContextFromFunction"), _functionParam);
 
             bodyGen.AddHiddenVariable(ArrayGlobalAllocator._globalContext);
             init.Add(Ast.Assign(ArrayGlobalAllocator._globalContext, Ast.Call(typeof(PythonOps).GetMethod("GetGlobalContext"), parentContext)));
@@ -402,10 +388,9 @@ namespace IronPython.Compiler.Ast {
             MSAst.LambdaExpression code;
             Delegate originalDelegate;
             if (IsGenerator) {
-                code = AstUtils.GeneratorLambda(
-                    GetGeneratorDelegateType(_parameters, needsWrapperMethod, out originalDelegate),
-                    bodyGen.GeneratorLabel,
-                    bodyStmt,
+                code = Ast.Lambda(
+                    GetDelegateType(_parameters, needsWrapperMethod, out originalDelegate),
+                    new PythonGeneratorExpression(bodyGen.Name + "$" + _lambdaId++, bodyStmt, ag.ShouldInterpret, ag.EmitDebugSymbols, bodyGen.Parameters, bodyGen.GeneratorLabel),
                     bodyGen.Name + "$" + _lambdaId++,
                     bodyGen.Parameters
                 );
@@ -463,11 +448,7 @@ namespace IronPython.Compiler.Ast {
         }
 
         private void TransformParameters(AstGenerator outer, AstGenerator inner, List<MSAst.Expression> defaults, List<MSAst.Expression> names, bool needsWrapperMethod, List<MSAst.Expression> init) {
-            if (inner.IsGenerator) {
-                inner.Parameter(_generatorParam);
-            } else {
-                inner.Parameter(_functionParam);
-            }
+            inner.Parameter(_functionParam);
 
             if (needsWrapperMethod) {
                 // define a single parameter which takes all arguments
@@ -558,10 +539,6 @@ namespace IronPython.Compiler.Ast {
         /// </summary>
         private static Type GetDelegateType(Parameter[] parameters, bool wrapper, out Delegate originalTarget) {
             return PythonCallTargets.GetPythonTargetType(wrapper, parameters.Length, out originalTarget);
-        }
-
-        private static Type GetGeneratorDelegateType(Parameter[] parameters, bool wrapper, out Delegate originalTarget) {
-            return PythonCallTargets.GetGeneratorTargetType(wrapper, parameters.Length, out originalTarget);
         }
 
         internal override bool CanThrow {

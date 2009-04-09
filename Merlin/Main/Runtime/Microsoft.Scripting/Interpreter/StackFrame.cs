@@ -22,6 +22,7 @@ namespace Microsoft.Scripting.Interpreter {
         public int StackIndex;
         public StackFrame Parent;
         public int InstructionIndex;
+        public int FaultingInstruction;  // the last instruction to cause a fault
 
         public StackFrame(int numberOfLocals, int maxStackDepth) {
             StackIndex = numberOfLocals;

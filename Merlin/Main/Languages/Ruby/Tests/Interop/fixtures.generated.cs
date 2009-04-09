@@ -1,15 +1,38 @@
+using Microsoft.Scripting.Hosting;
+  using IronRuby.Runtime;
+  using IronRuby.Builtins;
 #line 4 "./bcl/array/conversion_spec.rb"
 public partial class Klass {
       public T[] ArrayAcceptingMethod<T>(T[] arg0) {
         return arg0;
       }
     }
+#line 4 "./bcl/numerics/decimal_spec.rb"
+public partial class Klass {
+    public decimal MyDecimal {get; set;}
+  }
 #line 14 "./class/instantiation/abstract_spec.rb"
 public partial class DerivedFromAbstract : AbstractClass {
     public override int m() {return 1;}
   }
 #line 32 "./class/instantiation/abstract_spec.rb"
 public abstract partial class AbstractDerived : Klass {}
+#line 9 "./class/instantiation/class_spec.rb"
+public partial class OverloadedConstructorClass {
+      public string val;
+
+      public OverloadedConstructorClass() {
+        val = "empty constructor";
+      }
+
+      public OverloadedConstructorClass(string str) {
+        val = "string constructor";
+      }
+
+      public OverloadedConstructorClass(string str, int i) {
+        val = "string int constructor";
+      }
+    }
 #line 4 "./class/mapping_spec.rb"
 public class EmptyClass {}
     public partial class Klass {public int m() {return 1;}}
@@ -23,10 +46,73 @@ public class EmptyClass {}
     public class GenericClass<T>{public int m() {return 1;}}
     public class EmptyGeneric2Class<T,U>{}
     public class Generic2Class<T,U>{public int m() {return 1;}}
+#line 10 "./delegate/conversion_spec.rb"
+#line 15 "./delegate/conversion_spec.rb"
+public partial class DelegateConversionClass {
+    public delegate int Delegate1(string str);
+    private ScriptEngine _engine;
+    private Proc _lambda;
+
+    public DelegateConversionClass(string lambdaExpr)  {
+      _engine = IronRuby.Ruby.CreateEngine();
+      _lambda = (Proc) _engine.Execute(lambdaExpr);
+    }
+
+    public int DirectInvoke() {
+      return (int) _engine.Operations.Invoke(_lambda, "1");
+    }
+
+    public int ConvertToDelegate() {
+      Delegate1 d = _engine.Operations.ConvertTo<Delegate1>(_lambda);
+      return d("1");
+    }
+  }
 #line 4 "./delegate/mapping_spec.rb"
 public delegate void VoidVoidDelegate();
 #line 4 "./enum/mapping_spec.rb"
 public enum EnumInt : int { A, B, C}
+#line 4 "./events/invocation_spec.rb"
+public class ClassWithEvents {
+      public event EventHandler FullEvent;
+      public static event EventHandler StaticFullEvent; 
+
+      public void InvokeFullEvent(int count) {
+        if (FullEvent != null) FullEvent(this, count);
+      }
+
+      public static void InvokeStaticFullEvent(int count) {
+        if (StaticFullEvent != null) StaticFullEvent(new object(), count);
+      }
+    }
+#line 15 "./events/mapping_spec.rb"
+#pragma warning disable 67
+  public delegate void EventHandler(object source, int count);
+  public partial class BasicEventClass {
+    public event EventHandler OnEvent;
+  }
+  #pragma warning restore 67
+#line 4 "./fields/access_spec.rb"
+#pragma warning disable 414
+  public partial class ClassWithFields {
+    public string field = "field";
+    public const string constField = "const";
+    public readonly string readOnlyField = "readonly";
+    public static string staticField = "static";
+    public static readonly string staticReadOnlyField = "static readonly";
+  
+    private string privateField = "private field";
+    private const string privateConstField = "private const";
+    private readonly string privateReadOnlyField = "private readonly";
+    private static string privateStaticField = "private static";
+    private static readonly string privateStaticReadOnlyField = "private static readonly";
+   
+    protected string protectedField = "protected field";
+    protected const string protectedConstField = "protected const";
+    protected readonly string protectedReadOnlyField = "protected readonly";
+    protected static string protectedStaticField = "protected static";
+    protected static readonly string protectedStaticReadOnlyField = "protected static readonly";
+  }
+  #pragma warning restore 414
 #line 4 "./interface/mapping_spec.rb"
 public interface IEmptyInterface {}
     public interface IInterface { void m();}
@@ -421,6 +507,25 @@ public partial class ClassWithMethods {
 
     }
     #pragma warning restore 693
+#line 4 "./method/invocation/indexers_spec.rb"
+public partial class ClassWithIndexer {
+      public int[,] Values = new int[,] { {0, 10}, {20, 30} };
+
+      public int this[int i, int j] { 
+        get { return Values[i,j]; } 
+        set { Values[i,j] = value; } 
+      }
+    }
+#line 4 "./method/invocation/overload_spec.rb"
+public partial class ClassWithOverloads {
+    public string PublicProtectedOverload(){
+      return "public overload";
+    }
+    
+    protected string PublicProtectedOverload(string str) {
+      return "protected overload";
+    }
+  }
 #line 4 "./method/modification/override_spec.rb"
 public partial class ClassWithMethods {
     public int SummingMethod(int a, int b){

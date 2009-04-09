@@ -2,7 +2,7 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProductVersion>9.0.21022</ProductVersion>
+    <ProductVersion>9.0.30729</ProductVersion>
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>{2AE75F5A-CD1F-4925-9647-AF4D1C282FB4}</ProjectGuid>
     <OutputType>Library</OutputType>
@@ -134,7 +134,6 @@
     <Compile Include="Actions\RuleCache.cs" />
     <Compile Include="Actions\SetIndexBinder.cs" />
     <Compile Include="Actions\SetMemberBinder.cs" />
-    <Compile Include="Actions\SmallRuleSet.cs" />
     <Compile Include="Ast\Expression.DebuggerProxy.cs" />
     <Compile Include="Ast\IArgumentProvider.cs" />
     <Compile Include="Ast\ListArgumentProvider.cs" />
@@ -248,7 +247,7 @@
     </Content>
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" Condition=" '$(SilverlightTreeBuild)' != 'true' " />
-  <Import Condition=" '$(Golden)' == 'True'" Project="..\..\..\..\..\..\Merlin\External\Build\Microsoft.VersionNumber.targets" />
+  <Import Condition=" '$(Golden)' == 'True'" Project="..\..\..\..\..\..\Merlin\Main\External\Build\Microsoft.VersionNumber.targets" />
   <!-- This task produces a list of Compile items. -->
   <Target Name="GetCompileItems" Outputs="@(CompileItems)">
     <CreateItem Include="%(Compile.Identity)">
