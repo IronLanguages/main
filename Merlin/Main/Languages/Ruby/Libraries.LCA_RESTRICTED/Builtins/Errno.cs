@@ -17,11 +17,24 @@ using System;
 using System.Runtime.InteropServices;
 using Microsoft.Scripting.Utils;
 using IronRuby.Runtime;
+using System.IO;
 
 namespace IronRuby.Builtins {
     [RubyModule("Errno")]
     public static class Errno {
         // Errno.constants.sort
+
+        internal static FileNotFoundException/*!*/ CreateENOENT(string message, Exception inner) {
+            return new FileNotFoundException(message, inner);
+        }
+
+        internal static FileNotFoundException/*!*/ CreateENOENT(string message) {
+            return new FileNotFoundException(message);
+        }
+
+        internal static UnauthorizedAccessException/*!*/ CreateEACCES(string message, Exception inner) {
+            return new UnauthorizedAccessException(message, inner);
+        }
 
         internal static string/*!*/ MakeMessage(string message, string/*!*/ baseMessage) {
             Assert.NotNull(baseMessage);
@@ -37,7 +50,7 @@ namespace IronRuby.Builtins {
 
         [RubyClass("EADDRINUSE"), Serializable]
         public class AddressInUseError : ExternalException {
-            private const string/*!*/ M = "Domain error";
+            private const string/*!*/ M = "Only one usage of each socket address (protocol/network address/port) is normally permitted.";
 
             public AddressInUseError() : this(null, null) { }
             public AddressInUseError(string message) : this(message, null) { }
@@ -80,35 +93,24 @@ namespace IronRuby.Builtins {
 #endif
         }
 
-        [RubyClass("ENOENT"), Serializable]
-        public class NoEntryError : ExternalException {
-            private const string/*!*/ M = "No such file or directory";
-
-            public NoEntryError() : this(null, null) { }
-            public NoEntryError(string message) : this(message, null) { }
-            public NoEntryError(string message, Exception inner) : base(MakeMessage(message, M), inner) { }
-            public NoEntryError(MutableString message) : base(MakeMessage(ref message, M)) { RubyExceptionData.InitializeException(this, message); }
-
-#if !SILVERLIGHT
-            protected NoEntryError(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context)
-                : base(info, context) { }
-#endif
+        [RubyClass("ENOENT", Extends = typeof(FileNotFoundException), Inherits = typeof(ExternalException))]
+        public class FileNotFoundExceptionOps {
+            [RubyConstructor]
+            public static FileNotFoundException/*!*/ Create(RubyClass/*!*/ self, [DefaultProtocol, DefaultParameterValue(null)]MutableString message) {
+                FileNotFoundException result = new FileNotFoundException(Errno.MakeMessage(ref message, "No such file or directory"));
+                RubyExceptionData.InitializeException(result, message);
+                return result;
+            }
         }
 
-
-        [RubyClass("ENOTDIR"), Serializable]
-        public class NotDirectoryError : ExternalException {
-            private const string/*!*/ M = "Not a directory";
-            
-            public NotDirectoryError() : this(null, null) { }
-            public NotDirectoryError(string message) : this(message, null) { }
-            public NotDirectoryError(string message, Exception inner) : base(MakeMessage(message, M), inner) { }
-            public NotDirectoryError(MutableString message) : base(MakeMessage(ref message, M)) { RubyExceptionData.InitializeException(this, message); }
-
-#if !SILVERLIGHT
-            protected NotDirectoryError(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context)
-                : base(info, context) { }
-#endif
+        [RubyClass("ENOTDIR", Extends = typeof(DirectoryNotFoundException), Inherits = typeof(ExternalException))]
+        public class DirectoryNotFoundExceptionOps {
+            [RubyConstructor]
+            public static DirectoryNotFoundException/*!*/ Create(RubyClass/*!*/ self, [DefaultProtocol, DefaultParameterValue(null)]MutableString message) {
+                DirectoryNotFoundException result = new DirectoryNotFoundException(Errno.MakeMessage(ref message, "Not a directory"));
+                RubyExceptionData.InitializeException(result, message);
+                return result;
+            }
         }
 
         [RubyClass("EACCES", Extends=typeof(System.UnauthorizedAccessException), Inherits=typeof(ExternalException))]

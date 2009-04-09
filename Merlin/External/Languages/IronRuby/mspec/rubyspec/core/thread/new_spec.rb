@@ -16,4 +16,8 @@ describe "Thread.new" do
     t.join
     arr.should == [a,b,c]
   end
+  
+  it "creates a thread that will not block the process from exiting" do
+    ruby_exe("Thread.new { sleep }; puts 'main thread exiting'").chomp.should == 'main thread exiting'
+  end
 end

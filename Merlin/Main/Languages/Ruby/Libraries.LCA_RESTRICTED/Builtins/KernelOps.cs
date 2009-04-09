@@ -165,7 +165,7 @@ namespace IronRuby.Builtins {
                 p.WaitForExit();
                 return p;
             } catch (Exception e) {
-                throw new Errno.NoEntryError(psi.FileName, e);
+                throw Errno.CreateENOENT(psi.FileName, e);
             }
         }
 
@@ -177,7 +177,7 @@ namespace IronRuby.Builtins {
             try {
                 return Process.Start(psi);
             } catch (Exception e) {
-                throw new Errno.NoEntryError(psi.FileName, e);
+                throw Errno.CreateENOENT(psi.FileName, e);
             }
         }
 

@@ -278,7 +278,7 @@ namespace IronRuby.Builtins {
         public static int Delete(RubyClass/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ path) {
             string strPath = path.ConvertToString();
             if (!FileExists(self.Context, strPath)) {
-                throw new Errno.NoEntryError(String.Format("No such file or directory - {0}", strPath));
+                throw Errno.CreateENOENT(String.Format("No such file or directory - {0}", strPath));
             }
 
             FileAttributes oldAttributes = File.GetAttributes(strPath);
@@ -630,11 +630,24 @@ namespace IronRuby.Builtins {
 
             string strOldPath = oldPath.ConvertToString();
             if (!FileExists(context, strOldPath) && !DirectoryExists(context, strOldPath)) {
-                throw new Errno.NoEntryError(String.Format("No such file or directory - {0}", oldPath));
+                throw Errno.CreateENOENT(String.Format("No such file or directory - {0}", oldPath));
             }
 
-            // TODO: Change to raise a SystemCallError instead of a native CLR error
-            File.Move(strOldPath, newPath.ToString());
+            if (ExpandPath(context, oldPath) == ExpandPath(context, newPath)) {
+                return 0;
+            }
+
+            string strNewPath = newPath.ConvertToString();
+            if (FileExists(context, strNewPath)) {
+                Delete(self, newPath);
+            }
+
+            try {
+                Directory.Move(strOldPath, strNewPath);
+            } catch (IOException e) {
+                throw Errno.CreateEACCES(e.Message, e);
+            }
+
             return 0;
         }
 
@@ -694,7 +707,7 @@ namespace IronRuby.Builtins {
         public static int UpdateTimes(RubyClass/*!*/ self, DateTime accessTime, DateTime modifiedTime, [NotNull]MutableString/*!*/ path) {
             string strPath = path.ConvertToString();
             if (!FileExists(self.Context, strPath)) {
-                throw new Errno.NoEntryError(String.Format("No such file or directory - {0}", strPath));
+                throw Errno.CreateENOENT(String.Format("No such file or directory - {0}", strPath));
             }
 
             FileInfo info = new FileInfo(strPath);
@@ -822,7 +835,7 @@ namespace IronRuby.Builtins {
                 if (TryCreate(context, path, out fsi)) {
                     return fsi;
                 } else {
-                    throw new Errno.NoEntryError(String.Format("No such file or directory - {0}", path));
+                    throw Errno.CreateENOENT(String.Format("No such file or directory - {0}", path));
                 }
             }
 

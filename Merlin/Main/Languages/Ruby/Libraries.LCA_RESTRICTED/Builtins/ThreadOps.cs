@@ -619,6 +619,10 @@ namespace IronRuby.Builtins {
             }
             ThreadGroup group = Group(Thread.CurrentThread);
             Thread result = new Thread(new ThreadStart(delegate() { RubyThreadStart(startRoutine, args, group); }));
+
+            // Ruby exits when the main thread exits. So all other threads need to be marked as background threads
+            result.IsBackground = true;
+
             result.Start();
             return result;
         }

@@ -346,7 +346,7 @@ namespace IronRuby.Builtins {
                     return new Errno.InvalidError(path);
 
                 case DirectoryOperation.Open:
-                    return new Errno.NoEntryError(path);
+                    return Errno.CreateENOENT(path);
 
                 case DirectoryOperation.Delete:
                     if (ex is ArgumentException) {

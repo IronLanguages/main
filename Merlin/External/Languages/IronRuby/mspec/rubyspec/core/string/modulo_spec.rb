@@ -101,6 +101,20 @@ describe "String#%" do
     lambda { "%*1$.*0$1$s" % [1, 2, 3] }.should raise_error(ArgumentError)
   end
 
+  it "raises an ArgumentError when flags are after width specifier" do
+    lambda { "%2 d" % [] }.should raise_error(ArgumentError)
+    lambda { "%2#d" % [] }.should raise_error(ArgumentError)
+    lambda { "%2+d" % [] }.should raise_error(ArgumentError)
+    lambda { "%2-d" % [] }.should raise_error(ArgumentError)
+  end
+  
+  it "raises an ArgumentError when flags are after positional argument" do
+    lambda { "%$2 d" % [] }.should raise_error(ArgumentError)
+    lambda { "%$2#d" % [] }.should raise_error(ArgumentError)
+    lambda { "%$2+d" % [] }.should raise_error(ArgumentError)
+    lambda { "%$2-d" % [] }.should raise_error(ArgumentError)
+  end
+
   it "raises an ArgumentError when multiple positional argument tokens are given for one format specifier" do
     lambda { "%1$1$s" % "foo" }.should raise_error(ArgumentError)
   end
@@ -142,7 +156,7 @@ describe "String#%" do
     ("%1$s %1$s" % "foo").should == "foo foo"
     ("%1$s %2$s %1$s %2$s" % ["foo", "bar"]).should == "foo bar foo bar"
   end
-
+  
   it "always interprets an array argument as a list of argument parameters" do
     lambda { "%p" % [] }.should raise_error(ArgumentError)
     ("%p" % [1]).should == "1"
@@ -159,6 +173,11 @@ describe "String#%" do
     ("%*1$.*2$3$d" % [10, 5, 1]).should == "     00001"
   end
 
+  it "allows positional argument to be before or after width star and precision star" do
+    ("%*1$2$d" % [10, 5]).should == ("%2$*1$d" % [10, 5])
+    ("%*1$.*2$3$d" % [10, 5, 1]).should == ("%3$*1$.*2$d" % [10, 5, 1])
+  end
+  
   it "calls to_int on width star and precision star tokens" do
     w = mock('10')
     def w.to_int() 10 end

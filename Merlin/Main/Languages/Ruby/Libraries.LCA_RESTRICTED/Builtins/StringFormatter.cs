@@ -152,6 +152,13 @@ namespace IronRuby.Builtins {
                 _index = modIndex + 1;
                 DoFormatCode();
             }
+
+            if (_context.DomainManager.Configuration.DebugMode) {
+                if ((!_useAbsolute.HasValue || !_useAbsolute.Value) && _relativeIndex != _data.Count) {
+                    throw RubyExceptions.CreateArgumentError("too many arguments for format string");
+                }
+            }
+
             _buf.Append(_format, _index, _format.Length - _index);
 
             MutableString result = MutableString.Create(_buf.ToString());
@@ -170,7 +177,7 @@ namespace IronRuby.Builtins {
         private void DoFormatCode() {
             // we already pulled the first %
 
-            if (_index == _format.Length) {
+            if (_index == _format.Length || _format[_index] == '\n' || _format[_index] == '\0') {
                 // '%' at the end of the string. Just print it and we are done.
                 _buf.Append('%');
                 return;
@@ -188,9 +195,13 @@ namespace IronRuby.Builtins {
 
             ReadConversionFlags();
 
+            ReadArgumentIndex(); // This can be before or after width and precision
+
             ReadMinimumFieldWidth();
 
             ReadPrecision();
+
+            ReadArgumentIndex(); // This can be before or after width and precision
 
             _opts.Value = GetData(_opts.ArgIndex);
 
@@ -198,9 +209,7 @@ namespace IronRuby.Builtins {
         }
 
         private void ReadConversionFlags() {
-            bool fFoundConversion;
-            do {
-                fFoundConversion = true;
+            while(true) {
                 switch (_curCh) {
                     case '#': _opts.AltForm = true; break;
                     case '-': _opts.LeftAdj = true; _opts.ZeroPad = false; break;
@@ -208,25 +217,25 @@ namespace IronRuby.Builtins {
                     case '+': _opts.SignChar = true; _opts.Space = false; break;
                     case ' ': if (!_opts.SignChar) _opts.Space = true; break;
                     default:
-                        // Try to read an argument index
-                        int? argIndex = TryReadArgumentIndex();
-                        if (argIndex.HasValue) {
-                            _opts.ArgIndex = argIndex;
-                        } else {
-                            fFoundConversion = false;
-                        }
-                        break;
+                        return;
                 }
 
-                // TODO: we need to rewrite how we parse these things to line up our error messages with MRI
-                if (fFoundConversion) {
-                    if (_index >= _format.Length)
-                        throw RubyExceptions.CreateArgumentError("illegal format character - %");
-
-                    _curCh = _format[_index++];
+                if (_index >= _format.Length) {
+                    throw RubyExceptions.CreateArgumentError("illegal format character - %");
                 }
 
-            } while (fFoundConversion);
+                _curCh = _format[_index++];
+            }
+        }
+
+        private void ReadArgumentIndex() {
+            int? argIndex = TryReadArgumentIndex();
+            if (argIndex.HasValue) {
+                if (_opts.ArgIndex.HasValue) {
+                    RubyExceptions.CreateArgumentError("value given twice");
+                }
+                _opts.ArgIndex = argIndex;
+            }
         }
 
         private int? TryReadArgumentIndex() {
@@ -237,7 +246,8 @@ namespace IronRuby.Builtins {
                 }
                 if (end < _format.Length && _format[end] == '$') {
                     int argIndex = int.Parse(_format.Substring(_index - 1, end - _index + 1));
-                    _index = end + 1;
+                    _index = end + 1; // Point past the '$'
+                    _curCh = _format[_index++];
                     return argIndex;
                 }
             }
@@ -247,7 +257,7 @@ namespace IronRuby.Builtins {
         private int ReadNumberOrStar() {
             int res = 0; // default value
             if (_curCh == '*') {
-                _curCh = _format[_index++];
+                _curCh = _format[_index++]; // Skip the '*'
                 int? argindex = TryReadArgumentIndex();
 
                 res = _siteStorage.CastToFixnum(GetData(argindex));
