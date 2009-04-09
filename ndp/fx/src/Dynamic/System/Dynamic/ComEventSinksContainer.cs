@@ -16,8 +16,8 @@
 #if !SILVERLIGHT // ComObject
 
 using System.Collections.Generic;
-using System.Linq.Expressions;
 using System.Runtime.InteropServices;
+using System.Security;
 
 namespace System.Dynamic {
     /// <summary>
@@ -33,6 +33,7 @@ namespace System.Dynamic {
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2201:DoNotRaiseReservedExceptionTypes")]
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1002:DoNotExposeGenericLists")]
+        [SecurityCritical]
         public static ComEventSinksContainer FromRuntimeCallableWrapper(object rcw, bool createIfNotFound) {
             // !!! Marshal.Get/SetComObjectData has a LinkDemand for UnmanagedCode which will turn into
             // a full demand. We need to avoid this by making this method SecurityCritical
@@ -58,6 +59,11 @@ namespace System.Dynamic {
 
         #region IDisposable Members
 
+#if MICROSOFT_DYNAMIC
+        [SecurityCritical, SecurityTreatAsSafe]
+#else
+        [SecuritySafeCritical]
+#endif
         public void Dispose() {
             DisposeAll();
             GC.SuppressFinalize(this);
@@ -65,12 +71,18 @@ namespace System.Dynamic {
 
         #endregion
 
+        [SecurityCritical]
         private void DisposeAll() {
             foreach (ComEventSink sink in this) {
                 sink.Dispose();
             }
         }
 
+#if MICROSOFT_DYNAMIC
+        [SecurityCritical, SecurityTreatAsSafe]
+#else
+        [SecuritySafeCritical]
+#endif
         ~ComEventSinksContainer() {
             DisposeAll();
         }

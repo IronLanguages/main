@@ -18,8 +18,7 @@
 import sys
 import time
 
-is_silverlight = sys.platform == 'silverlight'
-is_cli = sys.platform == 'cli' 
+from iptest.test_env import *
 
 if not is_silverlight:
     import nt
@@ -27,16 +26,7 @@ if not is_silverlight:
  
 from type_util import types
 
-is_cli32, is_cli64 = False, False
-if is_cli or is_silverlight: 
-    import System
-    is_cli32, is_cli64 = (System.IntPtr.Size == 4), (System.IntPtr.Size == 8)
-
-is_orcas = False
-if is_cli:
-    import clr, System
-    is_orcas = len(clr.GetClrType(System.Reflection.Emit.DynamicMethod).GetConstructors()) == 8
-
+#------------------------------------------------------------------------------
 def usage(code, msg=''):
     print sys.modules['__main__'].__doc__ or 'No doc provided'
     if msg: print 'Error message: "%s"' % msg
@@ -540,45 +530,6 @@ def run_test(mod_name, noOutputPlease=False):
 def run_class(mod_name, verbose=False): 
     pass
     
-is_32, is_64 = False, False    
-if sys.platform=="win32":
-    cpu = get_environ_variable("PROCESSOR_ARCHITECTURE")
-    if cpu.lower()=="x86":
-        is_32 = True
-    elif cpu.lower()=="amd64":
-        is_64 = True
-else:
-    is_32, is_64 = is_cli32, is_cli64
-    
-    
-if is_cli or is_silverlight:
-    newline = System.Environment.NewLine
-else:
-    import os
-    newline = os.linesep
-
-is_debug = False
-if is_cli:
-    is_debug = sys.exec_prefix.lower().endswith("debug")
-
-is_peverify_run = False
-if is_cli:    
-    is_peverify_run = is_debug and "-X:SaveAssemblies" in System.Environment.CommandLine    
-
-is_snap = False
-#If the 'THISISSNAP' env variable is set we're running tests under the SNAP harness.
-if not is_silverlight and get_environ_variable("THISISSNAP")!=None: 
-    is_snap = True
-
-is_stress = False
-#If the 'THISISSTRESS' env variable is set we're running tests in the stress lab.
-if not is_silverlight and get_environ_variable("THISISSTRESS")!=None: 
-    is_stress = True
-
-is_vista = False
-#ipy.bat sets IS_VISTA
-if not is_silverlight and get_environ_variable("IS_VISTA")=="1":
-    is_vista = True
 
 def add_clr_assemblies(*dlls):
     import clr

@@ -6,20 +6,20 @@
     <CreateMetaAssembly>true</CreateMetaAssembly>
     <GenerateAssemblyRefs>true</GenerateAssemblyRefs>
     <AllowPartialTrustedCalls>true</AllowPartialTrustedCalls>
+    <SecurityMigration>false</SecurityMigration>
     <PublishMetaAssemblyToSDK>true</PublishMetaAssemblyToSDK>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DefineConstants>$(DefineConstants)</DefineConstants>
     <RootNamespace>System.Dynamic</RootNamespace>
-    <NoWarn>0688</NoWarn><!-- mscorlib removed all link demands, so don't warn when overriding a method with no link demand -->
     <RunCodeAnalysis>true</RunCodeAnalysis>
     <DocumentationFile>System.Dynamic.xml</DocumentationFile>
     <CodeAnalysisTreatWarningsAsErrors>true</CodeAnalysisTreatWarningsAsErrors>
   </PropertyGroup>
   <ItemGroup>
     <CopyFile Include="$(OutputPath)$(AssemblyName).dll">
-        <DestFolder>$(BinariesDirectory)\SuiteBin\$(BuildArchitecture)\CSharp\</DestFolder>
-        <OverwriteReadonlyFiles>true</OverwriteReadonlyFiles>
+      <DestFolder>$(BinariesDirectory)\SuiteBin\$(BuildArchitecture)\CSharp\</DestFolder>
+      <OverwriteReadonlyFiles>true</OverwriteReadonlyFiles>
     </CopyFile>
   </ItemGroup>
   <ItemGroup>

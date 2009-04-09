@@ -168,8 +168,7 @@ namespace Microsoft.Scripting.Actions {
         }
 
         private bool IsSideEffectFree(Expression rewritten) {
-            if (rewritten is ParameterExpression ||
-                rewritten is GlobalVariableExpression) {
+            if (rewritten is ParameterExpression) {
                 return true;
             }
 

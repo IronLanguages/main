@@ -69,15 +69,23 @@ namespace Microsoft.Scripting.Runtime {
 #if !SILVERLIGHT
             List<StackTrace> prev;
 
-            StackTrace st = new StackTrace(rethrow, true);
+            if (rethrow.Data.Contains(typeof(DynamicStackFrame))) {
+                // we've saved the stack trace data in the exception, just continue
+                // appending to it.n2
+                _stackFrames = (List<DynamicStackFrame>)rethrow.Data[typeof(DynamicStackFrame)];
+                rethrow.Data.Remove(typeof(DynamicStackFrame));
+            } else {
+                // we don't have any dynamic stack trace data, capture the data we can
+                // from the raw exception object.
+                StackTrace st = new StackTrace(rethrow, true);
 
-            if (!TryGetAssociatedStackTraces(rethrow, out prev)) {
-                prev = new List<StackTrace>();
-                AssociateStackTraces(rethrow, prev);
+                if (!TryGetAssociatedStackTraces(rethrow, out prev)) {
+                    prev = new List<StackTrace>();
+                    AssociateStackTraces(rethrow, prev);
+                }
+
+                prev.Add(st);
             }
-
-            prev.Add(st);
-
 #endif
             return rethrow;
         }
@@ -100,12 +108,14 @@ namespace Microsoft.Scripting.Runtime {
         }
 
         public static void UpdateStackTrace(CodeContext context, MethodBase method, string funcName, string filename, int line) {
-            Debug.Assert(filename != null);
-            if (_stackFrames == null) _stackFrames = new List<DynamicStackFrame>();
-
-            Debug.Assert(line != SourceLocation.None.Line);
-
-            _stackFrames.Add(new DynamicStackFrame(context, method, funcName, filename, line));
+            if (line != -1) {
+                Debug.Assert(filename != null);
+                if (_stackFrames == null) _stackFrames = new List<DynamicStackFrame>();
+    
+                Debug.Assert(line != SourceLocation.None.Line);
+    
+                _stackFrames.Add(new DynamicStackFrame(context, method, funcName, filename, line));
+            }
         }
 
         public static List<DynamicStackFrame> AssociateDynamicStackFrames(Exception clrException) {

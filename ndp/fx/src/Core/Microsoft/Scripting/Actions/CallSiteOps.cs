@@ -81,11 +81,7 @@ namespace System.Runtime.CompilerServices {
         /// <param name="rule">An instance of the call site rule.</param>
         [Obsolete("do not use this method", true), EditorBrowsable(EditorBrowsableState.Never)]
         public static void AddRule<T>(CallSite<T> site, T rule) where T : class {
-            if (site.Rules == null) {
-                site.Rules = new SmallRuleSet<T>(new[] { rule });
-            } else {
-                site.Rules = site.Rules.AddRule(rule);
-            }
+            site.AddRule(rule);
         }
 
         /// <summary>
@@ -97,7 +93,7 @@ namespace System.Runtime.CompilerServices {
         [Obsolete("do not use this method", true), EditorBrowsable(EditorBrowsableState.Never)]
         public static void UpdateRules<T>(CallSite<T> @this, int matched) where T : class {
             if (matched > 1) {
-                @this.Rules.MoveRule(matched);
+                @this.MoveRule(matched);
             }
         }
 
@@ -109,7 +105,7 @@ namespace System.Runtime.CompilerServices {
         /// <returns>An array of dynamic binding rules.</returns>
         [Obsolete("do not use this method", true), EditorBrowsable(EditorBrowsableState.Never)]
         public static T[] GetRules<T>(CallSite<T> site) where T : class {
-            return (site.Rules == null) ? null : site.Rules.GetRules();
+            return site.Rules;
         }
 
 

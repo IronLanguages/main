@@ -106,6 +106,7 @@ namespace IronPython.Compiler.Ast {
             }
 
             MSAst.ParameterExpression exception;
+
             MSAst.Expression @catch = TransformHandlers(ag, out exception);
             MSAst.Expression result;
 
@@ -181,66 +182,70 @@ namespace IronPython.Compiler.Ast {
 
         private MSAst.Expression AddFinally(AstGenerator/*!*/ ag, MSAst.Expression/*!*/ body, MSAst.ParameterExpression noNestedException) {
             if (_finally != null) {
-                Debug.Assert(noNestedException != null);
+                bool isEmitting = ag._isEmittingFinally;
+                ag._isEmittingFinally = true;
+                try {
+                    Debug.Assert(noNestedException != null);
 
-                MSAst.ParameterExpression nestedFrames = ag.GetTemporary("$nestedFrames", typeof(List<DynamicStackFrame>));
+                    MSAst.ParameterExpression nestedFrames = ag.GetTemporary("$nestedFrames", typeof(List<DynamicStackFrame>));
 
-                bool inFinally = ag.InFinally;
-                ag.InFinally = true;
-                MSAst.Expression @finally = ag.Transform(_finally);
-                ag.InFinally = inFinally;
-                if (@finally == null) {
-                    // error reported during compilation
-                    return null;
-                }
+                    bool inFinally = ag.InFinally;
+                    ag.InFinally = true;
+                    MSAst.Expression @finally = ag.Transform(_finally);
+                    ag.InFinally = inFinally;
+                    if (@finally == null) {
+                        // error reported during compilation
+                        return null;
+                    }
 
-                // lots is going on here.  We need to consider:
-                //      1. Exceptions propagating out of try/except/finally.  Here we need to save the line #
-                //          from the exception block and not save the # from the finally block later.
-                //      2. Exceptions propagating out of the finally block.  Here we need to report the line number
-                //          from the finally block and leave the existing stack traces cleared.
-                //      3. Returning from the try block: Here we need to run the finally block and not update the
-                //          line numbers.
-                body = AstUtils.Try(// we use a fault to know when we have an exception and when control leaves normally (via
-                    // either a return or the body completing successfully).
-                    AstUtils.Try(
-                        ag.AddDebugInfo(AstUtils.Empty(), new SourceSpan(Span.Start, _header)),
-                        AstUtils.SkipInterpret(Ast.Assign(noNestedException, AstUtils.Constant(true))),
-                        body
-                    ).Fault(
+                    // lots is going on here.  We need to consider:
+                    //      1. Exceptions propagating out of try/except/finally.  Here we need to save the line #
+                    //          from the exception block and not save the # from the finally block later.
+                    //      2. Exceptions propagating out of the finally block.  Here we need to report the line number
+                    //          from the finally block and leave the existing stack traces cleared.
+                    //      3. Returning from the try block: Here we need to run the finally block and not update the
+                    //          line numbers.
+                    body = AstUtils.Try(// we use a fault to know when we have an exception and when control leaves normally (via
+                        // either a return or the body completing successfully).
+                        AstUtils.Try(
+                            ag.AddDebugInfo(AstUtils.Empty(), new SourceSpan(Span.Start, _header)),
+                            Ast.Assign(noNestedException, AstUtils.Constant(true)),
+                            body
+                        ).Fault(
                         // fault
-                        AstUtils.SkipInterpret(Ast.Assign(noNestedException, AstUtils.Constant(false)))
-                    )
-                ).Finally(
-                    // if we had an exception save the line # that was last executing during the try
-                    AstUtils.SkipInterpret(
+                            Ast.Assign(noNestedException, AstUtils.Constant(false))
+                        )
+                    ).Finally(
+                        // if we had an exception save the line # that was last executing during the try
                         AstUtils.If(
                             Ast.Not(noNestedException),
                             ag.GetLineNumberUpdateExpression(false)
-                        )
-                    ),
+                        ),
 
-                    // clear the frames incase thae finally throws, and allow line number
-                    // updates to proceed
-                    ag.UpdateLineUpdated(false),
-                    Ast.Assign(
-                        nestedFrames,
-                        Ast.Call(AstGenerator.GetHelperMethod("GetAndClearDynamicStackFrames"))
-                    ),
+                        // clear the frames incase thae finally throws, and allow line number
+                        // updates to proceed
+                        ag.UpdateLineUpdated(false),
+                        Ast.Assign(
+                            nestedFrames,
+                            Ast.Call(AstGenerator.GetHelperMethod("GetAndClearDynamicStackFrames"))
+                        ),
 
-                    // run the finally code
-                    @finally,
+                        // run the finally code
+                        @finally,
 
-                    // if the finally exits normally restore any previous exception info
-                    Ast.Call(
-                        AstGenerator.GetHelperMethod("SetDynamicStackFrames"),
-                        nestedFrames
-                    ),
-                    ag.UpdateLineUpdated(true)
-                );
+                        // if the finally exits normally restore any previous exception info
+                        Ast.Call(
+                            AstGenerator.GetHelperMethod("SetDynamicStackFrames"),
+                            nestedFrames
+                        ),
+                        ag.UpdateLineUpdated(true)
+                    );
 
-                ag.FreeTemp(nestedFrames);
-                ag.FreeTemp(noNestedException);
+                    ag.FreeTemp(nestedFrames);
+                    ag.FreeTemp(noNestedException);
+                } finally {
+                    ag._isEmittingFinally = isEmitting;
+                }
             }
             return body;
         }
@@ -257,146 +262,154 @@ namespace IronPython.Compiler.Ast {
                 variable = null;
                 return null;
             }
+            bool emittingFinally = ag._isEmittingFinally;
+            ag._isEmittingFinally = false;
+            try {
+                MSAst.ParameterExpression exception = ag.GetTemporary("exception", typeof(Exception));
+                MSAst.ParameterExpression extracted = ag.GetTemporary("extracted", typeof(object));
 
-            MSAst.ParameterExpression exception = ag.GetTemporary("exception", typeof(Exception));
-            MSAst.ParameterExpression extracted = ag.GetTemporary("extracted", typeof(object));
+                // The variable where the runtime will store the exception.
+                variable = exception;
 
-            // The variable where the runtime will store the exception.
-            variable = exception;
+                var tests = new List<Microsoft.Scripting.Ast.IfStatementTest>(_handlers.Length);
+                MSAst.ParameterExpression converted = null;
+                MSAst.Expression catchAll = null;
 
-            var tests = new List<Microsoft.Scripting.Ast.IfStatementTest>(_handlers.Length);
-            MSAst.ParameterExpression converted = null;
-            MSAst.Expression catchAll = null;
+                for (int index = 0; index < _handlers.Length; index++) {
+                    TryStatementHandler tsh = _handlers[index];
 
-            for (int index = 0; index < _handlers.Length; index++) {
-                TryStatementHandler tsh = _handlers[index];
+                    if (tsh.Test != null) {
+                        Microsoft.Scripting.Ast.IfStatementTest ist;
 
-                if (tsh.Test != null) {
-                    Microsoft.Scripting.Ast.IfStatementTest ist;
-
-                    //  translating:
-                    //      except Test ...
-                    //
-                    //  generate following AST for the Test (common part):
-                    //      CheckException(exception, Test)
-                    MSAst.Expression test =
-                        Ast.Call(
-                            AstGenerator.GetHelperMethod("CheckException"),
-                            extracted,
-                            ag.TransformAsObject(tsh.Test)
-                        );
-
-                    if (tsh.Target != null) {
                         //  translating:
-                        //      except Test, Target:
-                        //          <body>
-                        //  into:
-                        //      if ((converted = CheckException(exception, Test)) != null) {
-                        //          Target = converted;
-                        //          traceback-header
-                        //          <body>
-                        //      }
+                        //      except Test ...
+                        //
+                        //  generate following AST for the Test (common part):
+                        //      CheckException(exception, Test)
+                        MSAst.Expression test =
+                            Ast.Call(
+                                AstGenerator.GetHelperMethod("CheckException"),
+                                extracted,
+                                ag.TransformAsObject(tsh.Test)
+                            );
 
-                        if (converted == null) {
-                            converted = ag.GetTemporary("converted");
-                        }
+                        if (tsh.Target != null) {
+                            //  translating:
+                            //      except Test, Target:
+                            //          <body>
+                            //  into:
+                            //      if ((converted = CheckException(exception, Test)) != null) {
+                            //          Target = converted;
+                            //          traceback-header
+                            //          <body>
+                            //      }
 
-                        ist = AstUtils.IfCondition(
-                            Ast.NotEqual(
-                                Ast.Assign(converted, test),
-                                AstUtils.Constant(null)
-                            ),
-                            Ast.Block(
-                                tsh.Target.TransformSet(ag, SourceSpan.None, converted, PythonOperationKind.None),
+                            if (converted == null) {
+                                converted = ag.GetTemporary("converted");
+                            }
+
+                            ist = AstUtils.IfCondition(
+                                Ast.NotEqual(
+                                    Ast.Assign(converted, test),
+                                    AstUtils.Constant(null)
+                                ),
+                                Ast.Block(
+                                    tsh.Target.TransformSet(ag, SourceSpan.None, converted, PythonOperationKind.None),
+                                    GetTracebackHeader(
+                                        new SourceSpan(tsh.Start, tsh.Header),
+                                        ag,
+                                        exception,
+                                        ag.Transform(tsh.Body)
+                                    ),
+                                    AstUtils.Empty()
+                                )
+                            );
+                        } else {
+                            //  translating:
+                            //      except Test:
+                            //          <body>
+                            //  into:
+                            //      if (CheckException(exception, Test) != null) {
+                            //          traceback-header
+                            //          <body>
+                            //      }
+                            ist = AstUtils.IfCondition(
+                                Ast.NotEqual(
+                                    test,
+                                    AstUtils.Constant(null)
+                                ),
                                 GetTracebackHeader(
                                     new SourceSpan(tsh.Start, tsh.Header),
                                     ag,
                                     exception,
                                     ag.Transform(tsh.Body)
-                                ),
-                                AstUtils.Empty()
-                            )
-                        );
+                                )
+                            );
+                        }
+
+                        // Add the test to the if statement test cascade
+                        tests.Add(ist);
                     } else {
+                        Debug.Assert(index == _handlers.Length - 1);
+                        Debug.Assert(catchAll == null);
+
                         //  translating:
-                        //      except Test:
+                        //      except:
                         //          <body>
                         //  into:
-                        //      if (CheckException(exception, Test) != null) {
+                        //  {
                         //          traceback-header
                         //          <body>
-                        //      }
-                        ist = AstUtils.IfCondition(
-                            Ast.NotEqual(
-                                test,
-                                AstUtils.Constant(null)
-                            ),
-                            GetTracebackHeader(
-                                new SourceSpan(tsh.Start, tsh.Header),
-                                ag,
-                                exception,
-                                ag.Transform(tsh.Body)
-                            )
+                        //  }
+
+                        catchAll = GetTracebackHeader(new SourceSpan(tsh.Start, tsh.Header), ag, exception, ag.Transform(tsh.Body));
+                    }
+                }
+
+                MSAst.Expression body = null;
+
+                if (tests.Count > 0) {
+                    // rethrow the exception if we have no catch-all block
+                    if (catchAll == null) {
+                        catchAll = Ast.Block(
+                            ag.GetLineNumberUpdateExpression(true),
+                            Ast.Throw(exception)
                         );
                     }
 
-                    // Add the test to the if statement test cascade
-                    tests.Add(ist);
+                    body = AstUtils.If(
+                        tests.ToArray(),                        
+                        catchAll
+                    );
                 } else {
-                    Debug.Assert(index == _handlers.Length - 1);
-                    Debug.Assert(catchAll == null);
-
-                    //  translating:
-                    //      except:
-                    //          <body>
-                    //  into:
-                    //  {
-                    //          traceback-header
-                    //          <body>
-                    //  }
-
-                    catchAll = GetTracebackHeader(new SourceSpan(tsh.Start, tsh.Header), ag, exception, ag.Transform(tsh.Body));
-                }
-            }
-
-            MSAst.Expression body = null;
-
-            if (tests.Count > 0) {
-                // rethrow the exception if we have no catch-all block
-                if (catchAll == null) {
-                    catchAll = Ast.Throw(exception);
+                    Debug.Assert(catchAll != null);
+                    body = catchAll;
                 }
 
-                body = AstUtils.If(
-                    tests.ToArray(),
-                    catchAll
+                if (converted != null) {
+                    ag.FreeTemp(converted);
+                }
+                ag.FreeTemp(exception);
+                ag.FreeTemp(extracted);
+
+                // Codegen becomes:
+                //     extracted = PythonOps.SetCurrentException(exception)
+                //      < dynamic exception analysis >
+                return Ast.Block(
+                    Ast.Assign(
+                        extracted,
+                        Ast.Call(
+                            AstGenerator.GetHelperMethod("SetCurrentException"),
+                            ag.LocalContext,
+                            exception
+                        )
+                    ),
+                    body,
+                    AstUtils.Empty()
                 );
-            } else {
-                Debug.Assert(catchAll != null);
-                body = catchAll;
+            } finally {
+                ag._isEmittingFinally = emittingFinally;
             }
-
-            if (converted != null) {
-                ag.FreeTemp(converted);
-            }
-            ag.FreeTemp(exception);
-            ag.FreeTemp(extracted);
-
-            // Codegen becomes:
-            //     extracted = PythonOps.SetCurrentException(exception)
-            //      < dynamic exception analysis >
-            return Ast.Block(
-                Ast.Assign(
-                    extracted,
-                    Ast.Call(
-                        AstGenerator.GetHelperMethod("SetCurrentException"),
-                        ag.LocalContext,
-                        exception
-                    )
-                ),
-                body,
-                AstUtils.Empty()
-            );
         }
 
         /// <summary>

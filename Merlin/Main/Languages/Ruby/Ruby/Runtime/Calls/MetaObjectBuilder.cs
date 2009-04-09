@@ -79,14 +79,26 @@ namespace IronRuby.Runtime.Calls {
         private static int _ruleCounter;
 #endif
 
+        internal DynamicMetaObject/*!*/ CreateMetaObject(RubyMetaBinder/*!*/ action) {
+            return CreateMetaObject(action, action.ResultType);
+        }
+
+        internal DynamicMetaObject/*!*/ CreateMetaObject(ConvertBinder/*!*/ action) {
+            return CreateMetaObject(action, action.Type);
+        }
+
         internal DynamicMetaObject/*!*/ CreateMetaObject(DynamicMetaObjectBinder/*!*/ action) {
+            return CreateMetaObject(action, typeof(object));
+        }
+
+        private DynamicMetaObject/*!*/ CreateMetaObject(DynamicMetaObjectBinder/*!*/ action, Type/*!*/ returnType) {
             Debug.Assert(ControlFlowBuilder == null, "Control flow required but not built");
 
-            var expr = _error ? Ast.Throw(_result) : _result;
+            var expr = _error ? Ast.Throw(_result, returnType) : AstUtils.Convert(_result, returnType);
 
             if (_condition != null) {
-                var deferral = action.GetUpdateExpression(typeof(object));
-                expr = Ast.Condition(_condition, AstUtils.Convert(expr, typeof(object)), deferral);
+                var deferral = action.GetUpdateExpression(returnType);
+                expr = Ast.Condition(_condition, expr, deferral);
             }
 
             if (_temps != null) {

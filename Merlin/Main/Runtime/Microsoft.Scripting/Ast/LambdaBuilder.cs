@@ -46,7 +46,6 @@ namespace Microsoft.Scripting.Ast {
         private ParameterExpression _paramsArray;
         private Expression _body;
         private bool _dictionary;
-        private bool _global;
         private bool _visible = true;
         private bool _addCodeContext;
         private bool _completed;
@@ -135,19 +134,6 @@ namespace Microsoft.Scripting.Ast {
             }
             set {
                 _dictionary = value;
-            }
-        }
-
-        /// <summary>
-        /// The resulting lambda should be marked as global.
-        /// TODO: remove !!!
-        /// </summary>
-        public bool Global {
-            get {
-                return _global;
-            }
-            set {
-                _global = value;
             }
         }
 
@@ -262,11 +248,6 @@ namespace Microsoft.Scripting.Ast {
         /// TODO: simplify by pushing logic into callers
         /// </summary>
         public Expression ClosedOverVariable(Type type, string name) {
-            if (_global) {
-                // special treatment of lambdas marked as global
-                return Utils.GlobalVariable(type, name, true);
-            }
-
             ParameterExpression result = Expression.Variable(type, name);
             _locals.Add(result);
             _visibleVars.Add(new KeyValuePair<ParameterExpression, bool>(result, true));
@@ -278,11 +259,6 @@ namespace Microsoft.Scripting.Ast {
         /// TODO: simplify by pushing logic into callers
         /// </summary>
         public Expression Variable(Type type, string name) {
-            if (_global) {
-                // special treatment of lambdas marked as global
-                return Utils.GlobalVariable(type, name, true);
-            }
-
             ParameterExpression result = Expression.Variable(type, name);
             _locals.Add(result);
             _visibleVars.Add(new KeyValuePair<ParameterExpression, bool>(result, false));
@@ -564,7 +540,7 @@ namespace Microsoft.Scripting.Ast {
             Expression body = _body;
 
             // wrap a CodeContext scope if needed
-            if (!_global && AddCodeContext) {
+            if (AddCodeContext) {
 
                 var vars = GetVisibleVariables();
 

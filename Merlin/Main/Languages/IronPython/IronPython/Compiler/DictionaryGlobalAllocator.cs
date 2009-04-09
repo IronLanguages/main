@@ -65,11 +65,11 @@ namespace IronPython.Compiler.Ast {
 
 
             Func<Scope, LanguageContext, object> func;
-            // TODO: adaptive compilation should be eanbled
-            /*PythonContext pc = (PythonContext)context.SourceUnit.LanguageContext;
+
+            PythonContext pc = (PythonContext)context.SourceUnit.LanguageContext;
             if (pc.ShouldInterpret(pco, context.SourceUnit)) {
                 func = CompilerHelpers.LightCompile(lambda);
-            } else*/ {
+            } else {
                 func = lambda.Compile(context.SourceUnit.EmitDebugSymbols);
             }
 

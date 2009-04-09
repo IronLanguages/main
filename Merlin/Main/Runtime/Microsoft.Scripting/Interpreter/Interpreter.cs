@@ -17,6 +17,7 @@ using System;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Threading;
 
 using Microsoft.Scripting.Runtime;
 
@@ -36,7 +37,6 @@ namespace Microsoft.Scripting.Interpreter {
         private Instruction[] _instructions;
         private LambdaExpression _lambda;
         private ExceptionHandler[] _handlers;
-        private DebugInfo[] _debugInfos;
         private bool _onlyFaultHandlers;
 
         private bool AnyBoxedLocals(bool[] localIsBoxed) {
@@ -48,7 +48,7 @@ namespace Microsoft.Scripting.Interpreter {
 
         internal Interpreter(LambdaExpression lambda, bool[] localIsBoxed, int maxStackDepth, 
                            Instruction[] instructions, 
-                           ExceptionHandler[] handlers, DebugInfo[] debugInfos) {
+                           ExceptionHandler[] handlers) {
             this._lambda = lambda;
             this._numberOfLocals = localIsBoxed.Length;
             if (AnyBoxedLocals(localIsBoxed)) {
@@ -60,7 +60,6 @@ namespace Microsoft.Scripting.Interpreter {
             this._maxStackDepth = maxStackDepth;
             this._instructions = instructions;
             this._handlers = handlers;
-            this._debugInfos = debugInfos;
 
             _onlyFaultHandlers = true;
             foreach (var handler in handlers) {
@@ -92,7 +91,6 @@ namespace Microsoft.Scripting.Interpreter {
             }
         }
 
-        private static MethodInfo _runMethod = typeof(Interpreter).GetMethod("Run");
         public object Run(StackFrame frame) {
             BoxLocals(frame);
             if (_onlyFaultHandlers) {
@@ -103,6 +101,7 @@ namespace Microsoft.Scripting.Interpreter {
                     return frame.Pop();
                 } finally {
                     if (fault) {
+                        frame.FaultingInstruction = frame.InstructionIndex;
                         HandleFault(frame);
                     }
                 }
@@ -112,9 +111,9 @@ namespace Microsoft.Scripting.Interpreter {
                         RunInstructions(_instructions, frame);
                         return frame.Pop();
                     } catch (Exception exc) {
-                        ExceptionHelpers.AssociateDynamicStackFrames(exc);
+                        frame.FaultingInstruction = frame.InstructionIndex;
+
                         if (!HandleCatch(frame, exc)) {
-                            ExceptionHelpers.UpdateForRethrow(exc);
                             throw;
                         } else if (exc is System.Threading.ThreadAbortException) {
                             // we can't exit the catch block here or the CLR will forcibly rethrow
@@ -123,20 +122,6 @@ namespace Microsoft.Scripting.Interpreter {
                         }
                     }
                 }
-            }
-        }
-
-        private void UpdateStackTrace(StackFrame frame) {
-            DebugInfo info = DebugInfo.GetMatchingDebugInfo(_debugInfos, frame.InstructionIndex);
-            if (info != null && !info.IsClear) {
-                string name = _lambda.Name;
-                if (name != null) {
-                    int index = name.LastIndexOf('$');
-                    if (index >= 0) {
-                        name = name.Substring(0, index);
-                    }
-                }
-                ExceptionHelpers.UpdateStackTrace(null, _runMethod, name, info.FileName, info.StartLine);
             }
         }
 
@@ -153,8 +138,6 @@ namespace Microsoft.Scripting.Interpreter {
         }
 
         private bool HandleCatch(StackFrame frame, Exception exception) {
-            UpdateStackTrace(frame);
-
             Type exceptionType = exception.GetType();
             var handler = GetBestHandler(frame, exceptionType);
             if (handler == null) return false;
@@ -163,12 +146,8 @@ namespace Microsoft.Scripting.Interpreter {
             if (handler.IsFault) {
                 frame.InstructionIndex = handler.JumpToIndex;
 
-                //var savedFrames = ExceptionHelpers.DynamicStackFrames;
-                //ExceptionHelpers.DynamicStackFrames = null;
-
                 RunFaultHandlerWithCatch(frame, handler.EndHandlerIndex);
                 if (frame.InstructionIndex == handler.EndHandlerIndex) {
-                    //ExceptionHelpers.DynamicStackFrames = savedFrames;
                     frame.InstructionIndex -= 1; // push back into the right range
 
                     return HandleCatch(frame, exception);
@@ -190,9 +169,9 @@ namespace Microsoft.Scripting.Interpreter {
                     RunInstructions(_instructions, frame, endIndex);
                     return;
                 } catch (Exception exc) {
-                    ExceptionHelpers.AssociateDynamicStackFrames(exc);
+                    frame.FaultingInstruction = frame.InstructionIndex;
+
                     if (!HandleCatch(frame, exc)) {
-                        ExceptionHelpers.UpdateForRethrow(exc);
                         throw;
                     }
                 }
@@ -200,15 +179,19 @@ namespace Microsoft.Scripting.Interpreter {
         }
 
         private void HandleFault(StackFrame frame) {
-            UpdateStackTrace(frame);
-
             var handler = GetBestHandler(frame, null);
             if (handler == null) return;
             frame.StackIndex = _numberOfLocals;
+            bool wasFault = true;
             try {
                 frame.InstructionIndex = handler.JumpToIndex;
                 RunInstructions(_instructions, frame, handler.EndHandlerIndex);
+                wasFault = false;
             } finally {
+                if (wasFault) {
+                    frame.FaultingInstruction = frame.InstructionIndex;
+                }
+
                 // This assumes that finally faults are propogated always
                 //
                 // Go back one so we are scoped correctly

@@ -24,6 +24,7 @@ using System.Text;
 using Microsoft.Scripting.Actions;
 using Microsoft.Scripting.Interpretation;
 using Microsoft.Scripting.Utils;
+using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace Microsoft.Scripting.Runtime {
     /// <summary>
@@ -447,7 +448,7 @@ namespace Microsoft.Scripting.Runtime {
             public override DynamicMetaObject FallbackConvert(DynamicMetaObject self, DynamicMetaObject errorSuggestion) {
                 if (Type.IsAssignableFrom(self.GetLimitType())) {
                     return new DynamicMetaObject(
-                        self.Expression,
+                        AstUtils.Convert(self.Expression, Type),
                         BindingRestrictionsHelpers.GetRuntimeTypeRestriction(self.Expression, self.GetLimitType())
                     );
                 }

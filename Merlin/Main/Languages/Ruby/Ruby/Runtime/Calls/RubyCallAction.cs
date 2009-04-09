@@ -41,6 +41,10 @@ namespace IronRuby.Runtime.Calls {
             get { return _methodName; }
         }
 
+        public override Type/*!*/ ResultType {
+            get { return typeof(object); }
+        }
+
         internal protected RubyCallAction(RubyContext context, string/*!*/ methodName, RubyCallSignature signature) 
             : base(context) {
             Assert.NotNull(methodName);
@@ -208,7 +212,7 @@ namespace IronRuby.Runtime.Calls {
             var interopBinder = GetInteropBinder(args.RubyContext, callInfo);
             var result = interopBinder.Bind(args.MetaTarget, normalizedArgs);
             metaBuilder.SetMetaResult(result, args);
-            return metaBuilder.CreateMetaObject(interopBinder);
+            return metaBuilder.CreateMetaObject(this);
         }
 
         

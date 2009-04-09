@@ -69,11 +69,11 @@ namespace IronPython.Runtime {
             get { return PythonExceptions.OSError; }
         }
 
-        #if !SILVERLIGHT
+#if !SILVERLIGHT
         public static PythonType WindowsError {
             get { return PythonExceptions.WindowsError; }
         }
-        #endif // !SILVERLIGHT
+#endif // !SILVERLIGHT
 
         public static PythonType VMSError {
             get { return PythonExceptions.VMSError; }
@@ -133,18 +133,18 @@ namespace IronPython.Runtime {
             get { return PythonExceptions.UnicodeError; }
         }
 
-        #if !SILVERLIGHT
+#if !SILVERLIGHT
         public static PythonType UnicodeDecodeError {
             get { return PythonExceptions.UnicodeDecodeError; }
         }
-        #endif // !SILVERLIGHT
+#endif // !SILVERLIGHT
 
 
-        #if !SILVERLIGHT
+#if !SILVERLIGHT
         public static PythonType UnicodeEncodeError {
             get { return PythonExceptions.UnicodeEncodeError; }
         }
-        #endif // !SILVERLIGHT
+#endif // !SILVERLIGHT
 
         public static PythonType UnicodeTranslateError {
             get { return PythonExceptions.UnicodeTranslateError; }
