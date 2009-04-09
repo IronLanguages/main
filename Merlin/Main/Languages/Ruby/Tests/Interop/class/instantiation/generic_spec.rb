@@ -8,6 +8,10 @@ end
 
 describe "Generic .NET classes with type param" do
   it_behaves_like :instantiable_class, GenericClass[Object]
+
+  describe "of interface" do
+    it_behaves_like :instantiable_class, GenericClass[IInterface]
+  end
 end
 
 describe "Empty generic .NET classes" do
@@ -16,6 +20,10 @@ end
 
 describe "Empty generic .NET classes with type param" do
   it_behaves_like :instantiable_class, EmptyGenericClass[Object]
+
+  describe "of interface" do
+    it_behaves_like :instantiable_class, EmptyGenericClass[IInterface]
+  end
 end
 
 describe "Generic .NET classes with 2 params" do

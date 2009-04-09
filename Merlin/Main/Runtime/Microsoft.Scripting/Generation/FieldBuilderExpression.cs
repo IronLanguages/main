@@ -20,25 +20,25 @@ using System.Reflection;
 using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
 
-namespace IronPython.Compiler {
+namespace Microsoft.Scripting.Generation {
     /// <summary>
     /// Provides a simple expression which enables embedding FieldBuilder's
     /// in an AST before the type is complete.
     /// </summary>
-    class FieldBuilderExpression : Expression {
-        private readonly FieldBuilder/*!*/ _builder;
+    public class FieldBuilderExpression : Expression {
+        private readonly FieldBuilder _builder;
 
 #if SILVERLIGHT
-        private readonly StrongBox<Type>/*!*/ _finishedType;
+        private readonly StrongBox<Type> _finishedType;
 
         // Silverlight doesn't have ModuleInfo.ResolveField so we need to
         // get something which can be updated w/ the final type instead.
-        public FieldBuilderExpression(FieldBuilder/*!*/ builder, StrongBox<Type> finishedType) {
+        public FieldBuilderExpression(FieldBuilder builder, StrongBox<Type> finishedType) {
             _builder = builder;
             _finishedType = finishedType;
         }
 #else
-        public FieldBuilderExpression(FieldBuilder/*!*/ builder) {
+        public FieldBuilderExpression(FieldBuilder builder) {
             _builder = builder;
         }
 #endif
@@ -75,6 +75,10 @@ namespace IronPython.Compiler {
                 _builder.GetToken().Token
             );
 #endif
+        }
+
+        protected override Expression VisitChildren(Func<Expression, Expression> visitor) {
+            return this;
         }
     }
 }

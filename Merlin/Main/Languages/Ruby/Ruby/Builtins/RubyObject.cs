@@ -21,8 +21,15 @@ using IronRuby.Runtime;
 using IronRuby.Runtime.Calls;
 using System.Security.Permissions;
 using IronRuby.Compiler.Generation;
+using System.Diagnostics;
 
 namespace IronRuby.Builtins {
+    /// <summary>
+    /// The type to represent user objects that inherit from Object
+    /// 
+    /// Note that for classes that inherit from some other class, RubyTypeDispenser gets used
+    /// </summary>
+    [DebuggerDisplay("{ToString()}")]
     public partial class RubyObject : IRubyObject, IRubyObjectState, IDuplicable, ISerializable {
         internal const string ClassPropertyName = "Class";
 
@@ -32,6 +39,15 @@ namespace IronRuby.Builtins {
         public RubyObject(RubyClass/*!*/ cls) {
             Assert.NotNull(cls);
             _class = cls;
+        }
+
+        public override string ToString() {
+#if DEBUG // This can be made un-conditional after RubyTypeBuilder is also updated to override ToString
+            UnaryOpStorage unaryOpStorage = new UnaryOpStorage(_class.Context);
+            return RubyUtils.ObjectToMutableString(unaryOpStorage, this).ConvertToString();
+#else
+            return base.ToString();
+#endif
         }
 
 #if !SILVERLIGHT

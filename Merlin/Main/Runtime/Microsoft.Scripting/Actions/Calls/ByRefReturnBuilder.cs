@@ -58,11 +58,6 @@ namespace Microsoft.Scripting.Actions.Calls {
             return parameterBinder.Binder.GetByRefArrayExpression(retArray);
         }
 
-        private static object GetValue(object[] args, object ret, int index) {
-            if (index == -1) return ConvertToObject(ret);
-            return ConvertToObject(args[index]);
-        }
-
         public override int CountOutParams {
             get { return _returnArgs.Count; }
         }

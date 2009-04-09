@@ -656,6 +656,17 @@ import Namespace.")]
         }
 
         /// <summary>
+        /// Attempts to convert the provided object to the specified type.  Conversions that 
+        /// will be attempted include standard Python conversions as well as .NET implicit
+        /// and explicit conversions.
+        /// 
+        /// If the conversion cannot be performed a TypeError will be raised.
+        /// </summary>
+        public static object Convert(CodeContext/*!*/ context, object o, Type toType) {
+            return Converter.Convert(o, toType);
+        }
+
+        /// <summary>
         /// Provides a helper for compiling a group of modules into a single assembly.  The assembly can later be
         /// reloaded using the clr.AddReference API.
         /// </summary>
@@ -926,7 +937,27 @@ import Namespace.")]
         public static PythonTuple GetProfilerData(CodeContext/*!*/ context) {
             return new PythonTuple(Profiler.GetProfiler(PythonContext.GetContext(context)).GetProfile());
         }
-        
+
+        /// <summary>
+        /// Resets all profiler counters back to zero
+        /// </summary>
+        public static void ClearProfilerData(CodeContext/*!*/ context) {
+            Profiler.GetProfiler(PythonContext.GetContext(context)).Reset();
+        }
+
+        /// <summary>
+        /// Enable or disable profiling for the current ScriptEngine.  This will only affect code
+        /// that is compiled after the setting is changed; previously-compiled code will retain
+        /// whatever setting was active when the code was originally compiled.
+        /// 
+        /// The easiest way to recompile a module is to reload() it.
+        /// </summary>
+        public static void EnableProfiler(CodeContext/*!*/ context, bool enable) {
+            var pc = PythonContext.GetContext(context);
+            var po = pc.Options as PythonOptions;
+            po.EnableProfiler = enable;
+        }
+
 #if !SILVERLIGHT
         /// <summary>
         /// Serializes data using the .NET serialization formatter for complex

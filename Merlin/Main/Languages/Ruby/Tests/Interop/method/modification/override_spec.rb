@@ -14,18 +14,18 @@ describe "Overriding .NET methods" do
 
   it "is allowed via alias" do
     @obj.metaclass_temp_alias("_public_method","public_method") do
-      @obj._public_method.to_s.should == "public"
+      @obj._public_method.should equal_clr_string("public")
     end
-    @obj.public_method.to_s.should == "public"
+    @obj.public_method.should equal_clr_string("public")
   end
 
   it "is allowed via defining" do
     @obj.metaclass_temp_alias("_public_method", "public_method") do
       @obj.metaclass_def("public_method") {:not_public}
       @obj.public_method.should == :not_public
-      @obj._public_method.to_s.should == "public"
+      @obj._public_method.should equal_clr_string("public")
     end
-    @obj.public_method.to_s.should == "public"
+    @obj.public_method.should equal_clr_string("public")
   end
 
   it "maintains super method" do
@@ -58,11 +58,11 @@ describe "Overriding virtual methods" do
   end
 
   it "call the correct method" do
-    @meth.bind(VirtualMethodOverrideNew.new).call.to_s.should == "virtual"
+    @meth.bind(VirtualMethodOverrideNew.new).call.should equal_clr_string("virtual")
   end
 
   it "call the correct method for overrides" do
     #override methods cannot be rebound
-    @meth.bind(VirtualMethodOverrideOverride.new).call.to_s.should == "override"
+    @meth.bind(VirtualMethodOverrideOverride.new).call.should equal_clr_string("override")
   end
 end

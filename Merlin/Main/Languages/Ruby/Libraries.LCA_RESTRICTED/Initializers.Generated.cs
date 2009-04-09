@@ -963,6 +963,10 @@ namespace IronRuby.Builtins {
                 new System.Func<IronRuby.Runtime.RubyContext, IronRuby.Builtins.RubyFile, System.DateTime>(IronRuby.Builtins.RubyFileOps.AccessTime)
             );
             
+            module.DefineLibraryMethod("chmod", 0x51, 
+                new System.Func<IronRuby.Builtins.RubyFile, System.Int32, System.Int32>(IronRuby.Builtins.RubyFileOps.Chmod)
+            );
+            
             module.DefineLibraryMethod("ctime", 0x51, 
                 new System.Func<IronRuby.Runtime.RubyContext, IronRuby.Builtins.RubyFile, System.DateTime>(IronRuby.Builtins.RubyFileOps.CreateTime)
             );
@@ -4344,9 +4348,9 @@ namespace IronRuby.Builtins {
             );
             
             module.DefineLibraryMethod("gsub", 0x51, 
+                new System.Func<IronRuby.Runtime.RubyScope, IronRuby.Builtins.MutableString, IronRuby.Builtins.RubyRegex, IronRuby.Builtins.MutableString, IronRuby.Builtins.MutableString>(IronRuby.Builtins.MutableStringOps.ReplaceAll), 
                 new System.Func<IronRuby.Runtime.ConversionStorage<IronRuby.Builtins.MutableString>, IronRuby.Runtime.RubyScope, IronRuby.Runtime.BlockParam, IronRuby.Builtins.MutableString, IronRuby.Builtins.RubyRegex, System.Object>(IronRuby.Builtins.MutableStringOps.BlockReplaceAll), 
-                new System.Func<IronRuby.Runtime.ConversionStorage<IronRuby.Builtins.MutableString>, IronRuby.Runtime.RubyScope, IronRuby.Runtime.BlockParam, IronRuby.Builtins.MutableString, IronRuby.Builtins.MutableString, System.Object>(IronRuby.Builtins.MutableStringOps.BlockReplaceAll), 
-                new System.Func<IronRuby.Runtime.RubyScope, IronRuby.Builtins.MutableString, IronRuby.Builtins.RubyRegex, IronRuby.Builtins.MutableString, IronRuby.Builtins.MutableString>(IronRuby.Builtins.MutableStringOps.ReplaceAll)
+                new System.Func<IronRuby.Runtime.ConversionStorage<IronRuby.Builtins.MutableString>, IronRuby.Runtime.RubyScope, IronRuby.Runtime.BlockParam, IronRuby.Builtins.MutableString, IronRuby.Builtins.MutableString, System.Object>(IronRuby.Builtins.MutableStringOps.BlockReplaceAll)
             );
             
             module.DefineLibraryMethod("gsub!", 0x51, 
@@ -4507,9 +4511,9 @@ namespace IronRuby.Builtins {
             );
             
             module.DefineLibraryMethod("sub", 0x51, 
+                new System.Func<IronRuby.Runtime.RubyScope, IronRuby.Builtins.MutableString, IronRuby.Builtins.RubyRegex, IronRuby.Builtins.MutableString, IronRuby.Builtins.MutableString>(IronRuby.Builtins.MutableStringOps.ReplaceFirst), 
                 new System.Func<IronRuby.Runtime.ConversionStorage<IronRuby.Builtins.MutableString>, IronRuby.Runtime.RubyScope, IronRuby.Runtime.BlockParam, IronRuby.Builtins.MutableString, IronRuby.Builtins.RubyRegex, System.Object>(IronRuby.Builtins.MutableStringOps.BlockReplaceFirst), 
-                new System.Func<IronRuby.Runtime.ConversionStorage<IronRuby.Builtins.MutableString>, IronRuby.Runtime.RubyScope, IronRuby.Runtime.BlockParam, IronRuby.Builtins.MutableString, IronRuby.Builtins.MutableString, System.Object>(IronRuby.Builtins.MutableStringOps.BlockReplaceFirst), 
-                new System.Func<IronRuby.Runtime.RubyScope, IronRuby.Builtins.MutableString, IronRuby.Builtins.RubyRegex, IronRuby.Builtins.MutableString, IronRuby.Builtins.MutableString>(IronRuby.Builtins.MutableStringOps.ReplaceFirst)
+                new System.Func<IronRuby.Runtime.ConversionStorage<IronRuby.Builtins.MutableString>, IronRuby.Runtime.RubyScope, IronRuby.Runtime.BlockParam, IronRuby.Builtins.MutableString, IronRuby.Builtins.MutableString, System.Object>(IronRuby.Builtins.MutableStringOps.BlockReplaceFirst)
             );
             
             module.DefineLibraryMethod("sub!", 0x51, 
@@ -6881,6 +6885,18 @@ namespace IronRuby.StandardLibrary.Zlib {
                 new System.Func<IronRuby.StandardLibrary.Zlib.Zlib.GZipFile, System.Boolean>(IronRuby.StandardLibrary.Zlib.Zlib.GZipFile.IsClosed)
             );
             
+            module.DefineLibraryMethod("comment", 0x11, 
+                new System.Func<IronRuby.StandardLibrary.Zlib.Zlib.GZipFile, IronRuby.Builtins.MutableString>(IronRuby.StandardLibrary.Zlib.Zlib.GZipFile.Comment)
+            );
+            
+            module.DefineLibraryMethod("orig_name", 0x11, 
+                new System.Func<IronRuby.StandardLibrary.Zlib.Zlib.GZipFile, IronRuby.Builtins.MutableString>(IronRuby.StandardLibrary.Zlib.Zlib.GZipFile.OriginalName)
+            );
+            
+            module.DefineLibraryMethod("original_name", 0x11, 
+                new System.Func<IronRuby.StandardLibrary.Zlib.Zlib.GZipFile, IronRuby.Builtins.MutableString>(IronRuby.StandardLibrary.Zlib.Zlib.GZipFile.OriginalName)
+            );
+            
         }
         
         private static void LoadZlib__GzipFile_Class(IronRuby.Builtins.RubyModule/*!*/ module) {
@@ -6897,23 +6913,15 @@ namespace IronRuby.StandardLibrary.Zlib {
         
         private static void LoadZlib__GzipReader_Instance(IronRuby.Builtins.RubyModule/*!*/ module) {
             module.DefineLibraryMethod("close", 0x11, 
-                new System.Func<IronRuby.Runtime.UnaryOpStorage, IronRuby.StandardLibrary.Zlib.Zlib.GZipReader, IronRuby.StandardLibrary.Zlib.Zlib.GZipReader>(IronRuby.StandardLibrary.Zlib.Zlib.GZipReader.Close)
-            );
-            
-            module.DefineLibraryMethod("comment", 0x11, 
-                new System.Func<IronRuby.StandardLibrary.Zlib.Zlib.GZipReader, IronRuby.Builtins.MutableString>(IronRuby.StandardLibrary.Zlib.Zlib.GZipReader.Comment)
+                new System.Func<IronRuby.Runtime.UnaryOpStorage, IronRuby.Runtime.RubyContext, IronRuby.StandardLibrary.Zlib.Zlib.GZipReader, System.Object>(IronRuby.StandardLibrary.Zlib.Zlib.GZipReader.Close)
             );
             
             module.DefineLibraryMethod("finish", 0x11, 
-                new System.Func<IronRuby.Runtime.UnaryOpStorage, IronRuby.StandardLibrary.Zlib.Zlib.GZipReader, IronRuby.StandardLibrary.Zlib.Zlib.GZipReader>(IronRuby.StandardLibrary.Zlib.Zlib.GZipReader.Close)
+                new System.Func<IronRuby.Runtime.UnaryOpStorage, IronRuby.Runtime.RubyContext, IronRuby.StandardLibrary.Zlib.Zlib.GZipReader, System.Object>(IronRuby.StandardLibrary.Zlib.Zlib.GZipReader.Finish)
             );
             
             module.DefineLibraryMethod("open", 0x12, 
                 new System.Func<IronRuby.StandardLibrary.Zlib.Zlib.GZipReader, IronRuby.StandardLibrary.Zlib.Zlib.GZipReader>(IronRuby.StandardLibrary.Zlib.Zlib.GZipReader.Open)
-            );
-            
-            module.DefineLibraryMethod("original_name", 0x11, 
-                new System.Func<IronRuby.StandardLibrary.Zlib.Zlib.GZipReader, IronRuby.Builtins.MutableString>(IronRuby.StandardLibrary.Zlib.Zlib.GZipReader.OriginalName)
             );
             
             module.DefineLibraryMethod("read", 0x11, 
@@ -6941,16 +6949,24 @@ namespace IronRuby.StandardLibrary.Zlib {
             );
             
             module.DefineLibraryMethod("close", 0x11, 
-                new System.Action<IronRuby.Runtime.UnaryOpStorage, IronRuby.StandardLibrary.Zlib.Zlib.GzipWriter>(IronRuby.StandardLibrary.Zlib.Zlib.GzipWriter.Close)
+                new System.Func<IronRuby.Runtime.UnaryOpStorage, IronRuby.Runtime.RubyContext, IronRuby.StandardLibrary.Zlib.Zlib.GzipWriter, System.Object>(IronRuby.StandardLibrary.Zlib.Zlib.GzipWriter.Close)
+            );
+            
+            module.DefineLibraryMethod("comment=", 0x11, 
+                new System.Func<IronRuby.StandardLibrary.Zlib.Zlib.GzipWriter, IronRuby.Builtins.MutableString, IronRuby.Builtins.MutableString>(IronRuby.StandardLibrary.Zlib.Zlib.GzipWriter.Comment)
             );
             
             module.DefineLibraryMethod("finish", 0x11, 
-                new System.Action<IronRuby.Runtime.UnaryOpStorage, IronRuby.StandardLibrary.Zlib.Zlib.GzipWriter>(IronRuby.StandardLibrary.Zlib.Zlib.GzipWriter.Close)
+                new System.Func<IronRuby.Runtime.UnaryOpStorage, IronRuby.Runtime.RubyContext, IronRuby.StandardLibrary.Zlib.Zlib.GzipWriter, System.Object>(IronRuby.StandardLibrary.Zlib.Zlib.GzipWriter.Finish)
             );
             
             module.DefineLibraryMethod("flush", 0x11, 
                 new System.Func<IronRuby.Runtime.UnaryOpStorage, IronRuby.Runtime.RubyContext, IronRuby.StandardLibrary.Zlib.Zlib.GzipWriter, System.Object, IronRuby.StandardLibrary.Zlib.Zlib.GzipWriter>(IronRuby.StandardLibrary.Zlib.Zlib.GzipWriter.Flush), 
                 new System.Func<IronRuby.Runtime.UnaryOpStorage, IronRuby.Runtime.RubyContext, IronRuby.StandardLibrary.Zlib.Zlib.GzipWriter, System.Int32, IronRuby.StandardLibrary.Zlib.Zlib.GzipWriter>(IronRuby.StandardLibrary.Zlib.Zlib.GzipWriter.Flush)
+            );
+            
+            module.DefineLibraryMethod("orig_name=", 0x11, 
+                new System.Func<IronRuby.StandardLibrary.Zlib.Zlib.GzipWriter, IronRuby.Builtins.MutableString, IronRuby.Builtins.MutableString>(IronRuby.StandardLibrary.Zlib.Zlib.GzipWriter.OriginalName)
             );
             
             module.DefineLibraryMethod("write", 0x11, 

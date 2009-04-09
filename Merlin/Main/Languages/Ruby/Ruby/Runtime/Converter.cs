@@ -724,7 +724,7 @@ namespace IronRuby.Runtime {
 
         public static object ConvertToDelegate(object value, Type to) {
             if (value == null) return null;
-            return BinderOps.GetDelegate(RubyContext._Default, value, to);
+            return RubyContext._Default.GetDelegate(value, to);
         }
 
 

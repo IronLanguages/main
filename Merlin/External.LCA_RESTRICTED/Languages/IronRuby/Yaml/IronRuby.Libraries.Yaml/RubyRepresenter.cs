@@ -28,11 +28,11 @@ namespace IronRuby.StandardLibrary.Yaml {
     [RubyClass("Out")]
     public class RubyRepresenter : Representer {
         private readonly RubyContext/*!*/ _context;
-        private readonly CallSite<Func<CallSite, object, MutableString>> _TagUri;
-        private readonly CallSite<Func<CallSite, object, MutableString>> _ToYamlStyle;
-        private readonly CallSite<Func<CallSite, object, RubyRepresenter, Node>> _ToYamlNode;
-        private readonly CallSite<Func<CallSite, object, RubyRepresenter, Node>> _ToYaml;
-        private readonly CallSite<Func<CallSite, object, RubyArray>> _ToYamlProperties;
+        private readonly CallSite<Func<CallSite, object, object>> _TagUri;
+        private readonly CallSite<Func<CallSite, object, object>> _ToYamlStyle;
+        private readonly CallSite<Func<CallSite, object, RubyRepresenter, object>> _ToYamlNode;
+        private readonly CallSite<Func<CallSite, object, RubyRepresenter, object>> _ToYaml;
+        private readonly CallSite<Func<CallSite, object, object>> _ToYamlProperties;
 
         private RubyMemberInfo _objectToYamlMethod;
 
@@ -45,28 +45,28 @@ namespace IronRuby.StandardLibrary.Yaml {
             _context = context;
             _objectToYamlMethod = context.GetClass(typeof(object)).ResolveMethod("to_yaml", RubyClass.IgnoreVisibility).Info;
 
-             _TagUri = 
-                CallSite<Func<CallSite, object, MutableString>>.Create(
+             _TagUri =
+                CallSite<Func<CallSite, object, object>>.Create(
                 RubyCallAction.Make(context, "taguri", RubyCallSignature.WithImplicitSelf(0))
             );
 
             _ToYamlStyle =
-                CallSite<Func<CallSite, object, MutableString>>.Create(
+                CallSite<Func<CallSite, object, object>>.Create(
                 RubyCallAction.Make(context, "to_yaml_style", RubyCallSignature.WithImplicitSelf(0))
             );
 
-            _ToYamlNode = 
-                CallSite<Func<CallSite, object, RubyRepresenter, Node>>.Create(
+            _ToYamlNode =
+                CallSite<Func<CallSite, object, RubyRepresenter, object>>.Create(
                 RubyCallAction.Make(context, "to_yaml_node", RubyCallSignature.WithImplicitSelf(1))
             );
 
             _ToYaml =
-                CallSite<Func<CallSite, object, RubyRepresenter, Node>>.Create(
+                CallSite<Func<CallSite, object, RubyRepresenter, object>>.Create(
                 RubyCallAction.Make(context, "to_yaml", RubyCallSignature.WithImplicitSelf(0))
             );
 
             _ToYamlProperties = 
-                CallSite<Func<CallSite, object, RubyArray>>.Create(
+                CallSite<Func<CallSite, object, object>>.Create(
                 RubyCallAction.Make(context, "to_yaml_properties", RubyCallSignature.WithImplicitSelf(0))
             );
         }
@@ -74,15 +74,15 @@ namespace IronRuby.StandardLibrary.Yaml {
         #region dynamic sites
 
         internal MutableString GetTagUri(object obj) {
-            return _TagUri.Target(_TagUri, obj);
+            return (MutableString)_TagUri.Target(_TagUri, obj);
         }
 
         internal MutableString ToYamlStyle(object obj) {
-            return _ToYamlStyle.Target(_ToYamlStyle, obj);
+            return (MutableString)_ToYamlStyle.Target(_ToYamlStyle, obj);
         }
 
         internal RubyArray ToYamlProperties(object obj) {
-            return _ToYamlProperties.Target(_ToYamlProperties, obj);
+            return (RubyArray)_ToYamlProperties.Target(_ToYamlProperties, obj);
         }
 
         #endregion
@@ -91,10 +91,10 @@ namespace IronRuby.StandardLibrary.Yaml {
             RubyMemberInfo method = _context.GetImmediateClassOf(data).ResolveMethodForSite("to_yaml", RubyClass.IgnoreVisibility).Info;
 
             if (method == _objectToYamlMethod) {
-                return _ToYamlNode.Target(_ToYamlNode, data, this);
+                return (Node)_ToYamlNode.Target(_ToYamlNode, data, this);
             } else {
                 // TODO: this is not correct:
-                return _ToYaml.Target(_ToYaml, data, this);
+                return (Node)_ToYaml.Target(_ToYaml, data, this);
             }
         }
 

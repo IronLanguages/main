@@ -15,12 +15,12 @@
 
 #if !SILVERLIGHT // ComObject
 
-using System.Collections.Generic;
-using System.Linq.Expressions;
-using System.Runtime.InteropServices.ComTypes;
-using ComTypes = System.Runtime.InteropServices.ComTypes;
-using System.Threading;
 using System.Collections;
+using System.Collections.Generic;
+using System.Runtime.InteropServices.ComTypes;
+using System.Security;
+using System.Threading;
+using ComTypes = System.Runtime.InteropServices.ComTypes;
 
 namespace System.Dynamic {
 
@@ -28,7 +28,7 @@ namespace System.Dynamic {
         private string _typeName;
         private string _documentation;
         private Guid _guid;
-        
+
         //Hashtable is threadsafe for multiple readers single writer. 
         //Enumerating and writing is mutually exclusive so require locking.
         private Hashtable _funcs;
@@ -47,6 +47,7 @@ namespace System.Dynamic {
             }
         }
 
+        [SecurityCritical]
         internal static ComTypeDesc FromITypeInfo(ComTypes.ITypeInfo typeInfo, ComTypes.TYPEATTR typeAttr) {
             if (typeAttr.typekind == ComTypes.TYPEKIND.TKIND_COCLASS) {
                 return new ComTypeClassDesc(typeInfo);
@@ -93,9 +94,7 @@ namespace System.Dynamic {
             set { _events = value; }
         }
 
-        
-        
-        internal bool TryGetFunc(string name, out ComMethodDesc method){
+        internal bool TryGetFunc(string name, out ComMethodDesc method) {
             name = name.ToUpper(System.Globalization.CultureInfo.InvariantCulture);
             if (_funcs.ContainsKey(name)) {
                 method = _funcs[name] as ComMethodDesc;
@@ -104,13 +103,13 @@ namespace System.Dynamic {
             method = null;
             return false;
         }
+
         internal void AddFunc(string name, ComMethodDesc method) {
             name = name.ToUpper(System.Globalization.CultureInfo.InvariantCulture);
             lock (_funcs) {
                 _funcs[name] = method;
             }
         }
-        
 
         internal bool TryGetPut(string name, out ComMethodDesc method) {
             name = name.ToUpper(System.Globalization.CultureInfo.InvariantCulture);
@@ -121,13 +120,13 @@ namespace System.Dynamic {
             method = null;
             return false;
         }
+
         internal void AddPut(string name, ComMethodDesc method) {
             name = name.ToUpper(System.Globalization.CultureInfo.InvariantCulture);
             lock (_puts) {
                 _puts[name] = method;
             }
         }
-
 
         internal bool TryGetPutRef(string name, out ComMethodDesc method) {
             name = name.ToUpper(System.Globalization.CultureInfo.InvariantCulture);
@@ -150,40 +149,46 @@ namespace System.Dynamic {
             return _events.TryGetValue(name, out @event);
         }
 
-        internal IEnumerable<string> GetMemberNames() {
+        internal string[] GetMemberNames(bool dataOnly) {
             var names = new Dictionary<string, object>();
-            
+
             lock (_funcs) {
                 foreach (ComMethodDesc func in _funcs.Values) {
-                    names.Add(func.Name, null);
-                }
-            }
-
-            lock (_puts) {
-                foreach (ComMethodDesc func in _puts.Values) {
-                    if (!names.ContainsKey(func.Name)){
+                    if (!dataOnly || func.IsDataMember) {
                         names.Add(func.Name, null);
                     }
                 }
             }
 
-            lock (_putRefs) {
-                foreach (ComMethodDesc func in _putRefs.Values) {
-                    if (!names.ContainsKey(func.Name)) {
-                        names.Add(func.Name, null);
+            if (!dataOnly) {
+                lock (_puts) {
+                    foreach (ComMethodDesc func in _puts.Values) {
+                        if (!names.ContainsKey(func.Name)) {
+                            names.Add(func.Name, null);
+                        }
                     }
                 }
-            }
-            
-            if (_events != null && _events.Count > 0) {
-                foreach (string name in _events.Keys) {
-                    if (!names.ContainsKey(name)) {
-                        names.Add(name, null);
+
+                lock (_putRefs) {
+                    foreach (ComMethodDesc func in _putRefs.Values) {
+                        if (!names.ContainsKey(func.Name)) {
+                            names.Add(func.Name, null);
+                        }
+                    }
+                }
+
+                if (_events != null && _events.Count > 0) {
+                    foreach (string name in _events.Keys) {
+                        if (!names.ContainsKey(name)) {
+                            names.Add(name, null);
+                        }
                     }
                 }
             }
 
-            return names.Keys;
+            string[] result = new string[names.Keys.Count];
+            names.Keys.CopyTo(result, 0);
+            return result;
         }
 
         internal string TypeName {
@@ -198,18 +203,18 @@ namespace System.Dynamic {
         internal ComMethodDesc GetItem {
             get { return _getItem; }
         }
-        internal void EnsureGetItem(ComMethodDesc candidate){
+
+        internal void EnsureGetItem(ComMethodDesc candidate) {
             Interlocked.CompareExchange(ref _getItem, candidate, null);
         }
-
 
         internal ComMethodDesc SetItem {
             get { return _setItem; }
         }
+
         internal void EnsureSetItem(ComMethodDesc candidate) {
             Interlocked.CompareExchange(ref _setItem, candidate, null);
         }
-
     }
 }
 

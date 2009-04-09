@@ -21,6 +21,7 @@ using System.Diagnostics;
 using Microsoft.Scripting;
 using Microsoft.Scripting.Runtime;
 
+using IronPython.Compiler;
 using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Operations;
 
@@ -29,23 +30,12 @@ using Tuple = Microsoft.Scripting.Tuple;
 namespace IronPython.Runtime {
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1710:IdentifiersShouldHaveCorrectSuffix"), PythonType("generator")]
     public sealed class PythonGenerator : IEnumerator, IEnumerator<object>, IEnumerable, IEnumerable<object>, ICodeFormattable {
-        /// <summary>
-        /// The instance of the DLR generator.
-        /// </summary>
-        private IEnumerator/*!*/ _next;
-
-        /// <summary>
-        /// Current
-        /// </summary>
-        private object _current;
-
-        /// <summary>
-        /// Code context
-        /// </summary>
-        private readonly PythonFunction _function;
-
-        /// <summary> Flags capturing various state for the generator </summary>
-        private GeneratorFlags _flags;
+        private readonly PythonGeneratorNext/*!*/ _next;    // The delegate which contains the user code to perform the iteration.
+        private readonly PythonFunction _function;          // the function which created the generator
+        private readonly Tuple _data;                       // the closure data we need to pass into each iteration
+        private int _index = GeneratorRewriter.NotStarted;  // the current index during the iteration
+        private object _current;                            // the last value extracted from the iteration
+        private GeneratorFlags _flags;                      // Flags capturing various state for the generator
 
         /// <summary>
         /// Fields set by Throw() to communicate an exception to the yield point.
@@ -58,14 +48,11 @@ namespace IronPython.Runtime {
         /// Since send() could send an exception, we need to keep this different from throwable's value.
         /// </summary>
         private object _sendValue;
-        [PythonHidden]
-        public Tuple Closure;
 
-        private static object _notStarted = new object();
-
-        public PythonGenerator(PythonFunction function) {
+        internal PythonGenerator(PythonFunction function, PythonGeneratorNext next, Tuple data) {
             _function = function;
-            _current = _notStarted;
+            _next = next;
+            _data = data;
         }
 
         #region Python Public APIs
@@ -141,7 +128,7 @@ namespace IronPython.Runtime {
             // CPython2.5's behavior is that Send(non-null) on unstaretd generator should:
             // - throw a TypeError exception
             // - not change generator state. So leave as unstarted, and allow future calls to succeed.
-            if (value != null && _current == _notStarted) {
+            if (value != null && _index == GeneratorRewriter.NotStarted) {
                 throw PythonOps.TypeErrorForIllegalSend();
             }
 
@@ -221,12 +208,6 @@ namespace IronPython.Runtime {
             }
         }
 
-        internal IEnumerator Next {
-            set {
-                _next = value;
-            }
-        }
-
         // Silverlight doesn't allow finalizers in user code.
 #if !SILVERLIGHT
         // Pep 342 says generators now have finalizers (__del__) that call Close()
@@ -303,9 +284,7 @@ namespace IronPython.Runtime {
                 //    catch this and terminate the loop without propogating the exception.
                 // 4. Exit via some other unhandled exception: This will close the generator, but the exception still propogates.
                 //    _next does not return, so ret is left assigned to false (closed), which we detect in the finally.
-                if (ret = _next.MoveNext()) {
-                    next = _next.Current;
-                } else {
+                if (!(ret = GetNext(out next))) {
                     next = OperationFailed.Value;
                 }
             } finally {
@@ -421,6 +400,11 @@ namespace IronPython.Runtime {
             }
         }
 
+        private bool GetNext(out object res) {
+            _next(ref _index, _data, out res);
+            return _index != GeneratorRewriter.Finished;
+        }
+
         internal bool CanSetSysExcInfo {
             get {
                 return (_function.Flags & FunctionAttributes.CanSetSysExcInfo) != 0;
@@ -489,10 +473,6 @@ namespace IronPython.Runtime {
 
         void IDisposable.Dispose() {
             // nothing needed to dispose
-            IDisposable dn = _next as IDisposable;
-            if (dn != null) {
-                dn.Dispose();
-            }
             GC.SuppressFinalize(this);
         }
 

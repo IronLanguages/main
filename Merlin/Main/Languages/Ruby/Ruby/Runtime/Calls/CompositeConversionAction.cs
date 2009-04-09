@@ -46,6 +46,10 @@ namespace IronRuby.Runtime.Calls {
             _resultType = resultType;
         }
 
+        public override Type/*!*/ ResultType {
+            get { return _resultType; }
+        }
+
         public static CompositeConversionAction Make(RubyContext context, CompositeConversion conversion) {
             switch (conversion) {
                 case CompositeConversion.ToFixnumToStr:

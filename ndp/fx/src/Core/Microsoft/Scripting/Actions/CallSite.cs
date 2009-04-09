@@ -142,7 +142,7 @@ namespace System.Runtime.CompilerServices {
         /// <summary>
         /// The Level 1 cache - a history of the dynamic site.
         /// </summary>
-        internal SmallRuleSet<T> Rules;
+        internal T[] Rules;
 
 
         // Cached update delegate for all sites with a given T
@@ -207,6 +207,36 @@ namespace System.Runtime.CompilerServices {
                     cache.Clear();
                 }
             }
+        }
+
+        const int MaxRules = 10;
+        internal void AddRule(T newRule) {
+            T[] rules = Rules;
+            if (rules == null) {
+                Rules = new[] { newRule };
+                return;
+            }
+
+            T[] temp;
+            if (rules.Length < (MaxRules - 1)) {
+                temp = new T[rules.Length + 1];
+                Array.Copy(rules, 0, temp, 1, rules.Length);
+            } else {
+                temp = new T[MaxRules];
+                Array.Copy(rules, 0, temp, 1, MaxRules - 1);
+            }
+            temp[0] = newRule;
+            Rules = temp;
+        }
+
+        // moves rule +2 up.
+        internal void MoveRule(int i) {
+            var rules = Rules;
+            var rule = rules[i];
+
+            rules[i] = rules[i - 1];
+            rules[i - 1] = rules[i - 2];
+            rules[i - 2] = rule;
         }
 
         internal T MakeUpdateDelegate() {

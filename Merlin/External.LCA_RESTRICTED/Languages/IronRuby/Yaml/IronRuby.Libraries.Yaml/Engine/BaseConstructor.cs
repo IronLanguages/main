@@ -414,7 +414,52 @@ namespace IronRuby.StandardLibrary.Yaml {
             throw new ConstructorException("could not determine a constructor for the tag: " + node.Tag);
         }
 
-        private static Regex TIMESTAMP_REGEXP = new Regex("^(-?[0-9][0-9][0-9][0-9])-([0-9][0-9]?)-([0-9][0-9]?)(?:(?:[Tt]|[ \t]+)([0-9][0-9]?):([0-9][0-9]):([0-9][0-9])(?:\\.([0-9]*))?(?:[ \t]*(Z|([-+][0-9][0-9]?)(?::([0-9][0-9])?)?)))?$");
+        private static Regex TIMESTAMP_REGEXP = new Regex(@"
+            ^[ \t]*
+
+            (                               # Year
+                -? 
+                [0-9][0-9][0-9][0-9]
+            )
+            -
+            ([0-9][0-9]?)                   # Month
+            -
+            ([0-9][0-9]?)                   # Day
+
+            (?:
+                (?:
+                    [Tt]
+                    |
+                    [ \t]+
+                )
+            
+                ([0-9][0-9]?)               # Hour
+                :
+                ([0-9][0-9])                # Minute
+                :
+                ([0-9][0-9])                # Seconds
+
+                (?:
+                    \\.
+                    ([0-9]*)                # Fractional seconds
+                )?
+
+                (?:
+                    [ \t]*
+                    (                       # utc
+                        Z
+                        |
+                        ([-+][0-9][0-9]?)   # timezoneh
+                        (?:                 # timezonem
+                            :([0-9][0-9])?
+                        )?
+                    )?
+                )
+            )?
+
+            [ \t]*$", 
+            RegexOptions.IgnorePatternWhitespace);
+
         internal static Regex YMD_REGEXP = new Regex("^(-?[0-9][0-9][0-9][0-9])-([0-9][0-9]?)-([0-9][0-9]?)$");
 
         public static object ConstructYamlTimestampYMD(BaseConstructor ctor, Node node) {

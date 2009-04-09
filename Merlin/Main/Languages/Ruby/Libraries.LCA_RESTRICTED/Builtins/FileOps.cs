@@ -10,7 +10,7 @@
  *
  * You must not remove this notice, or any other, from this software.
  *
- *
+ *attrb
  * ***************************************************************************/
 
 using System;
@@ -237,10 +237,28 @@ namespace IronRuby.Builtins {
             return RubyStatOps.IsCharDevice(RubyStatOps.Create(self.Context, path));
         }
 
-        [RubyMethod("chmod", RubyMethodAttributes.PublicSingleton)]
-        public static int Chmod(RubyClass/*!*/ self, int permission, [DefaultProtocol, NotNull]MutableString/*!*/ path) {
-            // TODO: implement this correctly for windows
+        private static void Chmod(string path, int permission) {
+#if !SILVERLIGHT
+            FileAttributes oldAttributes = File.GetAttributes(path);
+            if ((permission & 0x80) == 0) {
+                File.SetAttributes(path, oldAttributes | FileAttributes.ReadOnly);
+            } else {
+                File.SetAttributes(path, oldAttributes & ~FileAttributes.ReadOnly);
+            }
+#endif
+        }
+
+        [RubyMethod("chmod")]
+        public static int Chmod(RubyFile/*!*/ self, [DefaultProtocol]int permission) {
+            Chmod(self.Path, permission);
             return 0;
+        }
+
+        [RubyMethod("chmod", RubyMethodAttributes.PublicSingleton)]
+        public static int Chmod(RubyClass/*!*/ self, [DefaultProtocol]int permission, [DefaultProtocol, NotNull]MutableString/*!*/ path) {
+            // TODO: implement this correctly for windows
+            Chmod(path.ConvertToString(), permission);
+            return 1;
         }
 
         //chown
@@ -265,7 +283,13 @@ namespace IronRuby.Builtins {
             if (!FileExists(self.Context, strPath)) {
                 throw new Errno.NoEntryError(String.Format("No such file or directory - {0}", strPath));
             }
-
+#if !SILVERLIGHT
+            FileAttributes oldAttributes = File.GetAttributes(strPath);
+            if ((oldAttributes & FileAttributes.ReadOnly) == FileAttributes.ReadOnly) {
+                // File.Delete throws UnauthorizedAccessException if the file is read-only
+                File.SetAttributes(strPath, oldAttributes & ~FileAttributes.ReadOnly);
+            }
+#endif
             File.Delete(strPath);
             return 1;
         }
@@ -502,20 +526,36 @@ namespace IronRuby.Builtins {
         private static MutableString/*!*/ ExpandPath(RubyContext/*!*/ context, MutableString/*!*/ path) {
             PlatformAdaptationLayer pal = context.DomainManager.Platform;
             int length = path.Length;
+            bool raisingRubyException = false;
             try {
                 if (path == null || length == 0)
                     return Glob.CanonicalizePath(MutableString.Create(Directory.GetCurrentDirectory()));
 
-                if (length == 1 && path.GetChar(0) == '~')
-                    return Glob.CanonicalizePath(MutableString.Create(Path.GetFullPath(pal.GetEnvironmentVariable("HOME"))));
+                if (path.GetChar(0) == '~') {
+                    if (length == 1 || (path.GetChar(1) == Path.DirectorySeparatorChar ||
+                                        path.GetChar(1) == Path.AltDirectorySeparatorChar)) {
 
-                if (path.GetChar(0) == '~' && (path.GetChar(1) == Path.DirectorySeparatorChar || path.GetChar(1) == Path.AltDirectorySeparatorChar)) {
-                    string homeDirectory = pal.GetEnvironmentVariable("HOME");
-                    return Glob.CanonicalizePath(length < 3 ? MutableString.Create(homeDirectory) : MutableString.Create(Path.Combine(homeDirectory, path.GetSlice(2).ConvertToString())));
+                        string homeDirectory = pal.GetEnvironmentVariable("HOME");
+                        if (homeDirectory == null) {
+                            raisingRubyException = true;
+                            throw RubyExceptions.CreateArgumentError("couldn't find HOME environment -- expanding `~'");
+                        }
+                        if (length <= 2) {
+                            path = MutableString.Create(homeDirectory);
+                        } else {
+                            path = MutableString.Create(Path.Combine(homeDirectory, path.GetSlice(2).ConvertToString()));
+                        }
+                        return Glob.CanonicalizePath(path);
+                    } else {
+                        return path;
+                    }
                 } else {
                     return Glob.CanonicalizePath(MutableString.Create(Path.GetFullPath(path.ConvertToString())));
                 }
             } catch (Exception e) {
+                if (raisingRubyException) {
+                    throw;
+                }
                 // Re-throw exception as a reasonable Ruby exception
                 throw new Errno.InvalidError(path.ConvertToString(), e);
             }
@@ -563,10 +603,19 @@ namespace IronRuby.Builtins {
             return RubyStatOps.IsPipe(RubyStatOps.Create(self.Context, path));
         }
 
+        private static bool IsReadableImpl(RubyContext/*!*/ context, string/*!*/ path) {
+            FileSystemInfo fsi;
+            if (RubyStatOps.TryCreate(context, path, out fsi)) {
+                return RubyStatOps.IsReadable(fsi);
+            } else {
+                return false;
+            }
+        }
+
         [RubyMethod("readable?", RubyMethodAttributes.PublicSingleton)]
         [RubyMethod("readable_real?", RubyMethodAttributes.PublicSingleton)]
         public static bool IsReadable(RubyClass/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ path) {
-            return RubyStatOps.IsReadable(RubyStatOps.Create(self.Context, path));
+            return IsReadableImpl(self.Context, path.ConvertToString());
         }
 
         [RubyMethod("readlink", RubyMethodAttributes.PublicSingleton)]

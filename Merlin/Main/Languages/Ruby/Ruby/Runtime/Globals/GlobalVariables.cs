@@ -61,6 +61,7 @@ namespace IronRuby.Runtime {
         public static readonly GlobalVariable CommandLineArguments = new SpecialGlobalVariableInfo(GlobalVariableId.CommandLineArguments);
         public static readonly GlobalVariable LastInputLine = new SpecialGlobalVariableInfo(GlobalVariableId.LastInputLine);
         public static readonly GlobalVariable InputFileName = new SpecialGlobalVariableInfo(GlobalVariableId.InputFileName);
+        public static readonly GlobalVariable CommandLineProgramPath = new SpecialGlobalVariableInfo(GlobalVariableId.CommandLineProgramPath);
         public static readonly GlobalVariable InputContent = new SpecialGlobalVariableInfo(GlobalVariableId.InputContent);
         public static readonly GlobalVariable LastInputLineNumber = new SpecialGlobalVariableInfo(GlobalVariableId.LastInputLineNumber);
 
@@ -75,7 +76,6 @@ namespace IronRuby.Runtime {
         public static readonly GlobalVariable OutputStream = new SpecialGlobalVariableInfo(GlobalVariableId.OutputStream);
         public static readonly GlobalVariable InputStream = new SpecialGlobalVariableInfo(GlobalVariableId.InputStream);
         public static readonly GlobalVariable ErrorOutputStream = new SpecialGlobalVariableInfo(GlobalVariableId.ErrorOutputStream);
-        public static readonly GlobalVariable CommandLineProgramPath = new SpecialGlobalVariableInfo(GlobalVariableId.CommandLineProgramPath);
 
         public static readonly GlobalVariable SafeLevel = new SpecialGlobalVariableInfo(GlobalVariableId.SafeLevel);
         public static readonly GlobalVariable Verbose = new SpecialGlobalVariableInfo(GlobalVariableId.Verbose);
@@ -99,6 +99,7 @@ namespace IronRuby.Runtime {
             context.DefineGlobalVariableNoLock(Symbols.LastInputLine, LastInputLine);
 
             // directly accessed variables provided by execution context:
+            context.DefineGlobalVariableNoLock(Symbols.CommandLineProgramPath, CommandLineProgramPath);
             context.DefineGlobalVariableNoLock(Symbols.CurrentException, CurrentException);
             context.DefineGlobalVariableNoLock(Symbols.CurrentExceptionBacktrace, CurrentExceptionBacktrace);
             context.DefineGlobalVariableNoLock(Symbols.CommandLineArguments, CommandLineArguments);
