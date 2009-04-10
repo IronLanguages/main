@@ -46,6 +46,16 @@ public class EmptyClass {}
     public class GenericClass<T>{public int m() {return 1;}}
     public class EmptyGeneric2Class<T,U>{}
     public class Generic2Class<T,U>{public int m() {return 1;}}
+#line 5 "./class/modification/addition_spec.rb"
+public partial class Klass {
+      public int BarI() {
+        return 1;
+      }
+      
+      public static int BarC() {
+        return 2;
+      }
+    }
 #line 10 "./delegate/conversion_spec.rb"
 #line 15 "./delegate/conversion_spec.rb"
 public partial class DelegateConversionClass {
