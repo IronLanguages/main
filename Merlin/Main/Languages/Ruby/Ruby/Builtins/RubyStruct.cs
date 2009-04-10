@@ -142,7 +142,7 @@ namespace IronRuby.Builtins {
             cls.SingletonClass.DefineRuleGenerator("new", (int)RubyMethodAttributes.PublicSingleton, newInstance);
 
             cls.SingletonClass.DefineLibraryMethod("members", (int)RubyMethodAttributes.PublicSingleton,
-                new Func<RubyClass, List<object>>(GetMembers)
+                new Func<RubyClass, RubyArray>(GetMembers)
             );
 
             for (int i = 0; i < structMembers.Length; i++) {
@@ -165,16 +165,14 @@ namespace IronRuby.Builtins {
 
         private static RuleGenerator/*!*/ CreateGetter(int index) {
             return delegate(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args, string/*!*/ name) {
-                
-                var actualArgs = RubyMethodGroupInfo.NormalizeArguments(metaBuilder, args, SelfCallConvention.NoSelf, false, false);
-                if (actualArgs.Length == 0) {
+
+                var actualArgs = RubyOverloadResolver.NormalizeArguments(metaBuilder, args, 0, 0);
+                if (!metaBuilder.Error) {
                     metaBuilder.Result = Ast.Call(
                         Ast.Convert(args.TargetExpression, typeof(RubyStruct)),
                         Methods.RubyStruct_GetValue,
                         AstUtils.Constant(index)
                     );
-                } else {
-                    metaBuilder.SetWrongNumberOfArgumentsError(actualArgs.Length, 0);
                 }
             };
         }
@@ -182,16 +180,14 @@ namespace IronRuby.Builtins {
         private static RuleGenerator/*!*/ CreateSetter(int index) {
             return delegate(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args, string/*!*/ name) {
 
-                var actualArgs = RubyMethodGroupInfo.NormalizeArguments(metaBuilder, args, SelfCallConvention.NoSelf, false, false);
-                if (actualArgs.Length == 1) {
+                var actualArgs = RubyOverloadResolver.NormalizeArguments(metaBuilder, args, 1, 1);
+                if (!metaBuilder.Error) {
                     metaBuilder.Result = Ast.Call(
                         Ast.Convert(args.TargetExpression, typeof(RubyStruct)),
                         Methods.RubyStruct_SetValue,
                         AstUtils.Constant(index),
                         AstFactory.Box(actualArgs[0].Expression)
                     );
-                } else {
-                    metaBuilder.SetWrongNumberOfArgumentsError(actualArgs.Length, 1);
                 }
             };
         }

@@ -24,7 +24,7 @@ using System.Dynamic.Utils;
 namespace System.Dynamic {
 
     internal class StringArgBuilder : SimpleArgBuilder {
-        private bool _isWrapper;
+        private readonly bool _isWrapper;
 
         internal StringArgBuilder(Type parameterType)
             : base(parameterType) {

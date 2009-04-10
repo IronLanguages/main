@@ -164,6 +164,7 @@
     <Compile Include="Runtime\Calls\RubyMetaBinderFactory.cs" />
     <Compile Include="Runtime\Calls\RubyMetaObject.cs" />
     <Compile Include="Runtime\Calls\RubyMethodGroupBase.cs" />
+    <Compile Include="Runtime\Calls\RubyOverloadResolver.cs" />
     <Compile Include="Runtime\CheckedMonitor.cs" />
     <Compile Include="Runtime\CustomTypeDescHelpers.cs" />
     <Compile Include="Compiler\Generation\OverriddenMembers.cs" />
@@ -191,7 +192,6 @@
     <Compile Include="Runtime\Calls\ProtocolConversionAction.cs" />
     <Compile Include="Runtime\Calls\RubyCallAction.cs" />
     <Compile Include="Runtime\Calls\RubyCallSignature.cs" />
-    <Compile Include="Runtime\Calls\RubyParameterBinder.cs" />
     <Compile Include="Runtime\Calls\SuperCallAction.cs" />
     <Compile Include="Runtime\Calls\RubyAccessorInfo.cs" />
     <Compile Include="Runtime\Calls\BlockDispatcher.cs" />

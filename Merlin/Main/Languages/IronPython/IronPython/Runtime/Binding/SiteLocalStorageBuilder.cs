@@ -19,8 +19,9 @@ using System.Dynamic;
 using System.Linq.Expressions;
 using System.Reflection;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
+using Microsoft.Scripting.Actions.Calls;
 
-namespace Microsoft.Scripting.Actions.Calls {
+namespace IronPython.Runtime.Binding {
     public sealed class SiteLocalStorageBuilder : ArgBuilder {
         public override int Priority {
             get { return -1; }
@@ -30,17 +31,11 @@ namespace Microsoft.Scripting.Actions.Calls {
             : base(info) {
         }
 
-        internal protected override Expression ToExpression(ParameterBinder parameterBinder, IList<Expression> parameters, bool[] hasBeenUsed) {
+        protected override Expression ToExpression(OverloadResolver resolver, IList<Expression> parameters, bool[] hasBeenUsed) {
             return AstUtils.Constant(Activator.CreateInstance(ParameterInfo.ParameterType));
         }
 
-        internal override bool CanGenerateDelegate {
-            get {
-                return true;
-            }
-        }
-
-        protected internal override Func<object[], object> ToDelegate(ParameterBinder parameterBinder, IList<DynamicMetaObject> knownTypes, bool[] hasBeenUsed) {
+        protected override Func<object[], object> ToDelegate(OverloadResolver resolver, IList<DynamicMetaObject> knownTypes, bool[] hasBeenUsed) {
             object value = Activator.CreateInstance(ParameterInfo.ParameterType);
             return (args) => value;
         }

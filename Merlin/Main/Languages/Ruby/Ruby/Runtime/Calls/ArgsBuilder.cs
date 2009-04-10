@@ -23,6 +23,7 @@ using Microsoft.Scripting.Utils;
 using AstFactory = IronRuby.Compiler.Ast.AstFactory;
 using IronRuby.Compiler;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
+using System.Collections;
 
 namespace IronRuby.Runtime.Calls {
     using Ast = System.Linq.Expressions.Expression;
@@ -149,7 +150,7 @@ namespace IronRuby.Runtime.Calls {
                         Add(
                             Ast.Call(
                                 listVariable,
-                                typeof(List<object>).GetMethod("get_Item"),
+                                typeof(IList).GetMethod("get_Item"),
                                 AstUtils.Constant(i)
                             )
                         );

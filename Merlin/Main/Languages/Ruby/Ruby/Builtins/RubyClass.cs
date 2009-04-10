@@ -735,12 +735,11 @@ namespace IronRuby.Builtins {
         }
 
         private MemberInfo[]/*!*/ GetDeclaredClrMethods(Type/*!*/ type, BindingFlags bindingFlags, string/*!*/ name) {
-            // GetMember uses prefix matching if the name ends with '*':
-            if (name.LastCharacter() != '*') {
-                return type.GetMember(name, MemberTypes.Method, bindingFlags | BindingFlags.InvokeMethod);
-            } else {
-                return new MemberInfo[0];
+            // GetMember uses prefix matching if the name ends with '*', add another * to match the original name:
+            if (name.LastCharacter() == '*') {
+                name += "*";
             }
+            return type.GetMember(name, MemberTypes.Method, bindingFlags | BindingFlags.InvokeMethod);
         }
 
         // Returns the number of methods newly added to the dictionary.
@@ -1042,13 +1041,11 @@ namespace IronRuby.Builtins {
                     ));
                 }
             } else {
-                var actualArgs = RubyMethodGroupBase.NormalizeArguments(metaBuilder, args, SelfCallConvention.NoSelf, false, false);
-                if (actualArgs.Length == 1) {
+                var actualArgs = RubyOverloadResolver.NormalizeArguments(metaBuilder, args, 1, 1);
+                if (!metaBuilder.Error) {
                     var convertBinder = args.RubyContext.CreateConvertBinder(type, true);
                     var converted = convertBinder.Bind(actualArgs[0], DynamicMetaObject.EmptyMetaObjects);
                     metaBuilder.SetMetaResult(converted, args);
-                } else {
-                    metaBuilder.SetWrongNumberOfArgumentsError(actualArgs.Length, 1);
                 }
             }
         }

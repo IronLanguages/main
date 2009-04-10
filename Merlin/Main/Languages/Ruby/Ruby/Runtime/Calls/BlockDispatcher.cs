@@ -27,6 +27,7 @@ using System.Collections.ObjectModel;
 namespace IronRuby.Runtime.Calls {
     using Ast = System.Linq.Expressions.Expression;
     using AstFactory = IronRuby.Compiler.Ast.AstFactory;
+    using System.Collections;
 
     [Flags]
     public enum BlockSignatureAttributes {
@@ -129,7 +130,7 @@ namespace IronRuby.Runtime.Calls {
 
             int i = Math.Min(initializedArgCount, parameterCount);
             int j = 0;
-            var list = splattee as List<object>;
+            var list = splattee as IList;
             if (list != null) {
                 while (i < parameterCount && j < list.Count) {
                     args[i++] = list[j++];
@@ -300,7 +301,7 @@ namespace IronRuby.Runtime.Calls {
                     // return the only item of the array:
                     return Ast.Call(
                         listVariable,
-                        typeof(List<object>).GetMethod("get_Item"),
+                        typeof(IList).GetMethod("get_Item"),
                         AstUtils.Constant(0)
                     );
                 } else {

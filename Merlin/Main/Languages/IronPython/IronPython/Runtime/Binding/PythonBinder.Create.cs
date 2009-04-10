@@ -21,12 +21,14 @@ using Microsoft.Scripting.Generation;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 using Microsoft.Scripting.Actions.Calls;
+using Microsoft.Scripting.Actions;
 
-namespace Microsoft.Scripting.Actions {
+namespace IronPython.Runtime.Binding {
     using Ast = System.Linq.Expressions.Expression;
 
-    public partial class DefaultBinder : ActionBinder {
-        public DynamicMetaObject Create(CallSignature signature, ParameterBinderWithCodeContext parameterBinder, DynamicMetaObject target, DynamicMetaObject[] args) {
+    public sealed partial class PythonBinder : DefaultBinder {
+        public DynamicMetaObject Create(CallSignature signature, DynamicMetaObject target, DynamicMetaObject[] args, Expression contextExpression) {
+
             Type t = GetTargetType(target.Value);
 
             if (t != null) {
@@ -36,12 +38,21 @@ namespace Microsoft.Scripting.Actions {
 
                     // BinderOps.CreateDelegate<T>(CodeContext context, object callable);
                     return new DynamicMetaObject(
-                        Ast.Call(null, dc, parameterBinder.ContextExpression, args[0].Expression),
+                        Ast.Call(null, dc, contextExpression, args[0].Expression),
                         target.Restrictions.Merge(BindingRestrictions.GetInstanceRestriction(target.Expression, target.Value))
                     );
                 }
 
-                return CallMethod(parameterBinder, CompilerHelpers.GetConstructors(t, PrivateBinding), args, signature);
+                return CallMethod(
+                    new PythonOverloadResolver(
+                        this,
+                        args,
+                        signature,
+                        contextExpression
+                    ), 
+                    CompilerHelpers.GetConstructors(t, PrivateBinding), 
+                    BindingRestrictions.Empty
+                );
             }
 
             return null;

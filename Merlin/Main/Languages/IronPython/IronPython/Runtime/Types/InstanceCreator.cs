@@ -172,7 +172,7 @@ namespace IronPython.Runtime.Types {
                 Interlocked.CompareExchange(
                     ref _ctorSite0,
                     CallSite<Func<CallSite, CodeContext, BuiltinFunction, object>>.Create(
-                        PythonContext.GetContext(context).DefaultBinderState.InvokeOne
+                        PythonContext.GetContext(context).DefaultBinderState.InvokeNone
                     ),
                     null
                 );
@@ -187,7 +187,7 @@ namespace IronPython.Runtime.Types {
                     ref _ctorSite1,
                     CallSite<Func<CallSite, CodeContext, BuiltinFunction, object, object>>.Create(
                         PythonContext.GetContext(context).DefaultBinderState.Invoke(
-                            new CallSignature(2)
+                            new CallSignature(1)
                         )
                     ),
                     null
@@ -203,7 +203,7 @@ namespace IronPython.Runtime.Types {
                     ref _ctorSite2,
                     CallSite<Func<CallSite, CodeContext, BuiltinFunction, object, object, object>>.Create(
                         PythonContext.GetContext(context).DefaultBinderState.Invoke(
-                            new CallSignature(3)
+                            new CallSignature(2)
                         )
                     ),
                     null
@@ -219,7 +219,7 @@ namespace IronPython.Runtime.Types {
                     ref _ctorSite3,
                     CallSite<Func<CallSite, CodeContext, BuiltinFunction, object, object, object, object>>.Create(
                         PythonContext.GetContext(context).DefaultBinderState.Invoke(
-                            new CallSignature(4)
+                            new CallSignature(3)
                         )
                     ),
                     null

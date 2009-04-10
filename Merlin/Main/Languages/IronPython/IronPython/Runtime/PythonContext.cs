@@ -40,6 +40,7 @@ using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
 
 using PyAst = IronPython.Compiler.Ast;
+using Tuple = Microsoft.Scripting.Tuple;
 
 namespace IronPython.Runtime {
     public delegate void CommandDispatcher(Delegate command);
@@ -130,13 +131,15 @@ namespace IronPython.Runtime {
         internal bool _importWarningThrows;
         private CommandDispatcher _commandDispatcher; // can be null
         private ClrModule.ReferencesList _referencesList;
-        private string _floatFormat, _doubleFormat;
+        private FloatFormat _floatFormat, _doubleFormat;
         private CultureInfo _collateCulture, _ctypeCulture, _timeCulture, _monetaryCulture, _numericCulture;
         private CodeContext _defaultContext;
         private readonly IEqualityComparer<object> _equalityComparer;
 
         private Dictionary<Type, CallSite<Func<CallSite, object, object, bool>>> _equalSites;
 
+        private Dictionary<Type, PythonSiteCache> _systemSiteCache;
+        private Dictionary<object, Delegate> _optimizedDelegates;
 
         /// <summary>
         /// Creates a new PythonContext not bound to Engine.
@@ -145,20 +148,18 @@ namespace IronPython.Runtime {
             : base(manager) {
             _options = new PythonOptions(options);
             _builtinsDict = CreateBuiltinTable();
-            
+            _optimizedDelegates = new Dictionary<object, Delegate>();
+
             DefaultContext.CreateContexts(manager, this);
 
             _defaultContext = new CodeContext(new Scope(), this);
             PythonBinder binder = new PythonBinder(manager, this, _defaultContext);
             Binder = binder;
-            _defaultBinderState = new BinderState(binder, DefaultContext.Default);
+            _defaultBinderState = new BinderState(binder, DefaultContext.CreateDefaultContext(this));
 
             DefaultContext.CreateClsContexts(manager, this);
 
-            _defaultClsBinderState = new BinderState(binder, DefaultContext.DefaultCLS);
-
-            // need to run PythonOps 1st so the type system is spun up...
-            System.Runtime.CompilerServices.RuntimeHelpers.RunClassConstructor(typeof(PythonOps).TypeHandle);
+            _defaultClsBinderState = new BinderState(binder, DefaultContext.CreateDefaultCLSContext(this));
 
             if (DefaultContext.Default.LanguageContext.Binder == null) {
                 // hack to fix the default language context binder, there's an order of 
@@ -216,8 +217,8 @@ namespace IronPython.Runtime {
 
 #if !SILVERLIGHT
             object asmResolve;
-            if (options == null || 
-                !options.TryGetValue("NoAssemblyResolveHook", out asmResolve) || 
+            if (options == null ||
+                !options.TryGetValue("NoAssemblyResolveHook", out asmResolve) ||
                 !System.Convert.ToBoolean(asmResolve)) {
                 HookAssemblyResolve();
             }
@@ -227,8 +228,8 @@ namespace IronPython.Runtime {
             _equalityComparer = new PythonEqualityComparer(this);
         }
 
-        public IEqualityComparer<object>/*!*/ EqualityComparer { 
-            get { return _equalityComparer; } 
+        public IEqualityComparer<object>/*!*/ EqualityComparer {
+            get { return _equalityComparer; }
         }
 
         private sealed class PythonEqualityComparer : IEqualityComparer<object> {
@@ -463,7 +464,7 @@ namespace IronPython.Runtime {
             return new AssemblyName(typeof(PythonContext).Assembly.FullName).Version;
         }
 
-        internal string FloatFormat {
+        internal FloatFormat FloatFormat {
             get {
                 return _floatFormat;
             }
@@ -472,7 +473,7 @@ namespace IronPython.Runtime {
             }
         }
 
-        internal string DoubleFormat {
+        internal FloatFormat DoubleFormat {
             get {
                 return _doubleFormat;
             }
@@ -556,8 +557,8 @@ namespace IronPython.Runtime {
                 return Compiler.CompilationMode.Collectable;
             }
 
-            return ((_options.Optimize || options.Optimized) && !_options.LightweightScopes) ? 
-                Compiler.CompilationMode.Uncollectable : 
+            return ((_options.Optimize || options.Optimized) && !_options.LightweightScopes) ?
+                Compiler.CompilationMode.Uncollectable :
                 Compiler.CompilationMode.Collectable;
         }
 
@@ -573,7 +574,7 @@ namespace IronPython.Runtime {
             ScriptCodeParseResult properties = ScriptCodeParseResult.Complete;
             bool propertiesSet = false;
             int errorCode = 0;
-            
+
             PyAst.PythonAst ast;
             using (Parser parser = Parser.CreateParser(context, PythonContext.GetPythonOptions(null))) {
                 switch (context.SourceUnit.Kind) {
@@ -804,7 +805,7 @@ namespace IronPython.Runtime {
 
         internal ScriptCode GetScriptCode(SourceUnit sourceCode, string moduleName, ModuleOptions options, Compiler.CompilationMode? mode) {
             PythonCompilerOptions compilerOptions = GetPythonCompilerOptions();
-            
+
             compilerOptions.SkipFirstLine = (options & ModuleOptions.SkipFirstLine) != 0;
             compilerOptions.ModuleName = moduleName;
             compilerOptions.Module = options;
@@ -1026,14 +1027,14 @@ namespace IronPython.Runtime {
                 // If so, we will not look up sys.path for module loads
             }
         }
-        
+
         class AssemblyResolveHolder {
             private readonly WeakReference _context;
-            
+
             public AssemblyResolveHolder(PythonContext context) {
                 _context = new WeakReference(context);
             }
-            
+
             internal Assembly AssemblyResolveEvent(object sender, ResolveEventArgs args) {
                 PythonContext context = (PythonContext)_context.Target;
                 if (context != null) {
@@ -1044,7 +1045,7 @@ namespace IronPython.Runtime {
                 }
             }
         }
-        
+
         private void UnhookAssemblyResolve() {
             try {
                 AppDomain.CurrentDomain.AssemblyResolve -= _resolveHolder.AssemblyResolveEvent;
@@ -1054,7 +1055,7 @@ namespace IronPython.Runtime {
             }
         }
 #endif
-#endregion
+        #endregion
 
         public override ICollection<string> GetSearchPaths() {
             List<string> result = new List<string>();
@@ -1345,7 +1346,7 @@ namespace IronPython.Runtime {
 
         public override TService GetService<TService>(params object[] args) {
             if (typeof(TService) == typeof(TokenizerService)) {
-                return (TService)(object)new Tokenizer();
+                return (TService)(object)new Tokenizer(ErrorSink.Null, GetPythonCompilerOptions(), true);
             }
 
             return base.GetService<TService>(args);
@@ -1763,7 +1764,7 @@ namespace IronPython.Runtime {
         public override UnaryOperationBinder CreateUnaryOperationBinder(ExpressionType operation) {
             return DefaultBinderState.UnaryOperation(operation);
         }
-        
+
         public override SetMemberBinder/*!*/ CreateSetMemberBinder(string/*!*/ name, bool ignoreCase) {
             if (ignoreCase) {
                 return new PythonSetMemberBinder(DefaultBinderState, name, ignoreCase);
@@ -2202,6 +2203,33 @@ namespace IronPython.Runtime {
                 );
             }
             return _docSite.Target(_docSite, obj);
+        }
+
+        internal PythonSiteCache GetSiteCacheForSystemType(Type type) {
+            if (_systemSiteCache == null) {
+                Interlocked.CompareExchange(ref _systemSiteCache, new Dictionary<Type, PythonSiteCache>(), null);
+            }
+            lock (_systemSiteCache) {
+                PythonSiteCache result;
+                if (!_systemSiteCache.TryGetValue(type, out result)) {
+                    _systemSiteCache[type] = result = new PythonSiteCache();
+                }
+                return result;
+            }
+        }
+
+        internal Delegate GetOptimizedDelegateForBuiltin(object info) {
+            Delegate result;
+            lock (_optimizedDelegates) {
+                _optimizedDelegates.TryGetValue(info, out result);
+                return result;
+            }
+        }
+
+        internal void SetOptimizedDelegateForBuiltin(object info, Delegate dlg) {
+            lock (_optimizedDelegates) {
+                _optimizedDelegates[info] = dlg;
+            }
         }
 
         #endregion

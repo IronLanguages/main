@@ -87,20 +87,20 @@ namespace IronPython.Runtime.Binding {
                 selfRestrict,
                 (newArgs) => {
                     BindingTarget target;
-
                     BinderState state = BinderState.GetBinderState(call);
 
                     DynamicMetaObject res = state.Binder.CallMethod(
-                        new ParameterBinderWithCodeContext(state.Binder, codeContext),
+                        new PythonOverloadResolver(
+                            state.Binder,
+                            newArgs,
+                            signature,
+                            codeContext
+                        ),
                         Value.Template.Targets,
-                        newArgs,
-                        signature,
                         selfRestrict,
-                        NarrowingLevel.None,
-                        Value.Template.IsBinaryOperator ?
-                            PythonNarrowing.BinaryOperator :
-                            NarrowingLevel.All,
                         Value.Template.Name,
+                        NarrowingLevel.None,
+                        Value.Template.IsBinaryOperator ? PythonNarrowing.BinaryOperator : NarrowingLevel.All,
                         out target
                     );
 

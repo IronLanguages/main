@@ -26,7 +26,7 @@ namespace Microsoft.Scripting.Actions.Calls {
     /// <summary>
     /// ArgBuilder which always produces null.  
     /// </summary>
-    internal class NullArgBuilder : ArgBuilder {
+    public sealed class NullArgBuilder : ArgBuilder {
         public NullArgBuilder() 
             : base(null) {
         }
@@ -35,18 +35,12 @@ namespace Microsoft.Scripting.Actions.Calls {
             get { return 0; }
         }
 
-        internal protected override Expression ToExpression(ParameterBinder parameterBinder, IList<Expression> parameters, bool[] hasBeenUsed) {
+        internal protected override Expression ToExpression(OverloadResolver resolver, IList<Expression> parameters, bool[] hasBeenUsed) {
             return AstUtils.Constant(null);
         }
 
-        protected internal override Func<object[], object> ToDelegate(ParameterBinder parameterBinder, IList<DynamicMetaObject> knownTypes, bool[] hasBeenUsed) {
+        protected internal override Func<object[], object> ToDelegate(OverloadResolver resolver, IList<DynamicMetaObject> knownTypes, bool[] hasBeenUsed) {
             return (args) => null;
-        }
-
-        internal override bool CanGenerateDelegate {
-            get {
-                return true;
-            }
         }
     }
 }

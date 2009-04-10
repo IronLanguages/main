@@ -604,19 +604,12 @@ namespace IronPython.Runtime.Operations {
                         digits = "0X" + digits;
                     }
                     break;
-                case 'x':                    
-                    digits = ToDigits(val, 16, true);
+                case 'x':
+                    digits = ToHex(val, spec.IncludeType);
 
-                    if (spec.IncludeType) {
-                        digits = "0x" + digits;
-                    }
                     break;
                 case 'b': // binary                    
-                    digits = ToDigits(val, 2, false);
-                    
-                    if (spec.IncludeType) {
-                        digits = "0b" + digits;
-                    }
+                    digits = ToBinary(val, spec.IncludeType);
                     break;
                 case 'c': // single char
                     int iVal;
@@ -644,6 +637,26 @@ namespace IronPython.Runtime.Operations {
             Debug.Assert(digits[0] != '-');
 
             return spec.AlignNumericText(digits, self.IsZero(), self.IsPositive());
+        }
+
+        internal static string ToHex(BigInteger val, bool includeType) {
+            string digits;
+            digits = ToDigits(val, 16, true);
+
+            if (includeType) {
+                digits = "0x" + digits;
+            }
+            return digits;
+        }
+
+        internal static string ToBinary(BigInteger val, bool includeType) {
+            string digits;
+            digits = ToDigits(val, 2, false);
+
+            if (includeType) {
+                digits = "0b" + digits;
+            }
+            return digits;
         }
 
         private static string/*!*/ ToCultureString(BigInteger/*!*/ val, CultureInfo/*!*/ ci) {

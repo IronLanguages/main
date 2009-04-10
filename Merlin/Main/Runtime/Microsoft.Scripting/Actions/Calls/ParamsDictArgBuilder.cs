@@ -47,7 +47,7 @@ namespace Microsoft.Scripting.Actions.Calls {
             get { return 3; }
         }
 
-        internal protected override Expression ToExpression(ParameterBinder parameterBinder, IList<Expression> parameters, bool[] hasBeenUsed) {
+        internal protected override Expression ToExpression(OverloadResolver resolver, IList<Expression> parameters, bool[] hasBeenUsed) {
             Expression res = Ast.Call(
                 typeof(BinderOps).GetMethod("MakeSymbolDictionary"),
                 Ast.NewArrayInit(typeof(string), ConstantNames()),
@@ -95,13 +95,7 @@ namespace Microsoft.Scripting.Actions.Calls {
             return res;
         }
 
-        internal override bool CanGenerateDelegate {
-            get {
-                return true;
-            }
-        }
-
-        protected internal override Func<object[], object> ToDelegate(ParameterBinder parameterBinder, IList<DynamicMetaObject> knownTypes, bool[] hasBeenUsed) {
+        protected internal override Func<object[], object> ToDelegate(OverloadResolver resolver, IList<DynamicMetaObject> knownTypes, bool[] hasBeenUsed) {
             string[] names = _names;
             int[] indexes = GetParameters(hasBeenUsed);
 

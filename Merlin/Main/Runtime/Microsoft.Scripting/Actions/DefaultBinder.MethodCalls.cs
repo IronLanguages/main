@@ -34,43 +34,41 @@ namespace Microsoft.Scripting.Actions {
         #region Public APIs
 
         /// <summary>
-        /// Performs binding against a set of overloaded methods using the specified arguments.  All arguments 
-        /// are treated as positional arguments.
+        /// Performs binding against a set of overloaded methods using the specified arguments.  The arguments are
+        /// consumed as specified by the CallSignature object.
         /// </summary>
-        /// <param name="parameterBinder">ParameterBinder used to map arguments to parameters.</param>
+        /// <param name="resolver">Overload resolver.</param>
         /// <param name="targets">The methods to be called</param>
-        /// <param name="args">The arguments for the call</param>
         /// <returns>A meta object which results from the call.</returns>
-        public DynamicMetaObject CallMethod(ParameterBinder parameterBinder, IList<MethodBase> targets, IList<DynamicMetaObject> args) {
+        public DynamicMetaObject CallMethod(DefaultOverloadResolver resolver, IList<MethodBase> targets) {
+            return CallMethod(resolver, targets, BindingRestrictions.Empty, null);
+        }
+
+        /// <summary>
+        /// Performs binding against a set of overloaded methods using the specified arguments.  The arguments are
+        /// consumed as specified by the CallSignature object.
+        /// </summary>
+        /// <param name="resolver">Overload resolver.</param>
+        /// <param name="targets">The methods to be called</param>
+        /// <param name="name">The name of the method or null to use the name from targets.</param>
+        /// <returns>A meta object which results from the call.</returns>
+        public DynamicMetaObject CallMethod(DefaultOverloadResolver resolver, IList<MethodBase> targets, string name) {
+            return CallMethod(resolver, targets, BindingRestrictions.Empty, name);
+        }
+
+        /// <summary>
+        /// Performs binding against a set of overloaded methods using the specified arguments.  The arguments are
+        /// consumed as specified by the CallSignature object.
+        /// </summary>
+        /// <param name="resolver">Overload resolver.</param>
+        /// <param name="targets">The methods to be called</param>
+        /// <param name="restrictions">Additional restrictions which should be applied to the resulting MetaObject.</param>
+        /// <returns>A meta object which results from the call.</returns>
+        public DynamicMetaObject CallMethod(DefaultOverloadResolver resolver, IList<MethodBase> targets, BindingRestrictions restrictions) {
             return CallMethod(
-                parameterBinder,
+                resolver,
                 targets,
-                args,
-                new CallSignature(args.Count),
-                BindingRestrictions.Empty
-            );
-        }
-
-        /// <summary>
-        /// Performs binding against a set of overloaded methods using the specified arguments.  All arguments 
-        /// are treated as positional arguments.
-        /// </summary>
-        /// <param name="parameterBinder">ParameterBinder used to map arguments to parameters.</param>
-        /// <param name="targets">The methods to be called</param>
-        /// <param name="args">The arguments for the call</param>
-        /// <param name="maxLevel">The maximum narrowing level for arguments.  The current narrowing level is flowed thorugh to the DefaultBinder.</param>
-        /// <param name="minLevel">The minimum narrowing level for the arguments.  The current narrowing level is flowed thorugh to the DefaultBinder.</param>        
-        /// <returns>A meta object which results from the call.</returns>
-        public DynamicMetaObject CallMethod(ParameterBinder parameterBinder, IList<MethodBase> targets, IList<DynamicMetaObject> args, NarrowingLevel minLevel, NarrowingLevel maxLevel) {
-            return CallWorker(
-                parameterBinder,
-                targets,
-                args,
-                new CallSignature(args.Count),
-                CallTypes.None,
-                BindingRestrictions.Empty,
-                minLevel,
-                maxLevel,
+                restrictions,
                 null
             );
         }
@@ -79,267 +77,84 @@ namespace Microsoft.Scripting.Actions {
         /// Performs binding against a set of overloaded methods using the specified arguments.  The arguments are
         /// consumed as specified by the CallSignature object.
         /// </summary>
-        /// <param name="parameterBinder">ParameterBinder used to map arguments to parameters.</param>
+        /// <param name="resolver">Overload resolver.</param>
         /// <param name="targets">The methods to be called</param>
-        /// <param name="args">The arguments for the call</param>
-        /// <param name="signature">The call signature which specified how the arguments will be consumed</param>
-        /// <returns>A meta object which results from the call.</returns>
-        public DynamicMetaObject CallMethod(ParameterBinder parameterBinder, IList<MethodBase> targets, IList<DynamicMetaObject> args, CallSignature signature) {
-            return CallMethod(parameterBinder, targets, args, signature, BindingRestrictions.Empty);
-        }
-
-        /// <summary>
-        /// Performs binding against a set of overloaded methods using the specified arguments.  The arguments are
-        /// consumed as specified by the CallSignature object.
-        /// </summary>
-        /// <param name="parameterBinder">ParameterBinder used to map arguments to parameters.</param>
-        /// <param name="targets">The methods to be called</param>
-        /// <param name="args">The arguments for the call</param>
-        /// <param name="signature">The call signature which specified how the arguments will be consumed</param>
-        /// <param name="name">The name of the method or null to use the name from targets.</param>
-        /// <returns>A meta object which results from the call.</returns>
-        public DynamicMetaObject CallMethod(ParameterBinder parameterBinder, IList<MethodBase> targets, IList<DynamicMetaObject> args, CallSignature signature, string name) {
-            return CallMethod(parameterBinder, targets, args, signature, BindingRestrictions.Empty, name);
-        }
-
-        /// <summary>
-        /// Performs binding against a set of overloaded methods using the specified arguments.  The arguments are
-        /// consumed as specified by the CallSignature object.
-        /// </summary>
-        /// <param name="parameterBinder">ParameterBinder used to map arguments to parameters.</param>
-        /// <param name="targets">The methods to be called</param>
-        /// <param name="args">The arguments for the call</param>
-        /// <param name="signature">The call signature which specified how the arguments will be consumed</param>
-        /// <param name="restrictions">Additional restrictions which should be applied to the resulting MetaObject.</param>
-        /// <returns>A meta object which results from the call.</returns>
-        public DynamicMetaObject CallMethod(ParameterBinder parameterBinder, IList<MethodBase> targets, IList<DynamicMetaObject> args, CallSignature signature, BindingRestrictions restrictions) {
-            return CallWorker(
-                parameterBinder,
-                targets,
-                args,
-                signature,
-                CallTypes.None,
-                restrictions,
-                NarrowingLevel.None,
-                NarrowingLevel.All,
-                null
-            );
-        }
-
-        /// <summary>
-        /// Performs binding against a set of overloaded methods using the specified arguments.  The arguments are
-        /// consumed as specified by the CallSignature object.
-        /// </summary>
-        /// <param name="parameterBinder">ParameterBinder used to map arguments to parameters.</param>
-        /// <param name="targets">The methods to be called</param>
-        /// <param name="args">The arguments for the call</param>
-        /// <param name="signature">The call signature which specified how the arguments will be consumed</param>
         /// <param name="restrictions">Additional restrictions which should be applied to the resulting MetaObject.</param>
         /// <param name="name">The name of the method or null to use the name from targets.</param>
         /// <returns>A meta object which results from the call.</returns>
-        public DynamicMetaObject CallMethod(ParameterBinder parameterBinder, IList<MethodBase> targets, IList<DynamicMetaObject> args, CallSignature signature, BindingRestrictions restrictions, string name) {
-            return CallWorker(
-                parameterBinder,
+        public DynamicMetaObject CallMethod(DefaultOverloadResolver resolver, IList<MethodBase> targets, BindingRestrictions restrictions, string name) {
+            BindingTarget target;
+            return CallMethod(
+                resolver,
                 targets,
-                args,
-                signature,
-                CallTypes.None,
                 restrictions,
-                NarrowingLevel.None,
-                NarrowingLevel.All,
-                name
-            );
-        }
-
-        /// <summary>
-        /// Performs binding against a set of overloaded methods using the specified arguments and the specified
-        /// instance argument.  The arguments are consumed as specified by the CallSignature object.
-        /// </summary>
-        /// <param name="parameterBinder">ParameterBinder used to map arguments to parameters.</param>
-        /// <param name="targets">The methods to be called</param>
-        /// <param name="args">The arguments for the call</param>
-        /// <param name="instance">The instance which will be provided for dispatching to an instance method.</param>
-        /// <param name="signature">The call signature which specified how the arguments will be consumed</param>
-        /// <param name="restrictions">Additional restrictions which should be applied to the resulting MetaObject.</param>
-        /// <returns>A meta object which results from the call.</returns>
-        public DynamicMetaObject CallInstanceMethod(ParameterBinder parameterBinder, IList<MethodBase> targets, DynamicMetaObject instance, IList<DynamicMetaObject> args, CallSignature signature, BindingRestrictions restrictions) {
-            ContractUtils.RequiresNotNull(instance, "instance");
-            ContractUtils.RequiresNotNull(parameterBinder, "parameterBinder");
-
-            return CallWorker(
-                parameterBinder,
-                targets,
-                ArrayUtils.Insert(instance, args),
-                signature,
-                CallTypes.ImplicitInstance,
-                restrictions,
-                NarrowingLevel.None,
-                NarrowingLevel.All,
-                null
-            );
-        }
-
-        /// <summary>
-        /// Performs binding against a set of overloaded methods using the specified arguments.  The arguments are
-        /// consumed as specified by the CallSignature object.
-        /// </summary>
-        /// <param name="parameterBinder">ParameterBinder used to map arguments to parameters.</param>
-        /// <param name="targets">The methods to be called</param>
-        /// <param name="args">The arguments for the call</param>
-        /// <param name="signature">The call signature which specified how the arguments will be consumed</param>
-        /// <param name="restrictions">Additional restrictions which should be applied to the resulting MetaObject.</param>
-        /// <param name="maxLevel">The maximum narrowing level for arguments.  The current narrowing level is flowed thorugh to the DefaultBinder.</param>
-        /// <param name="minLevel">The minimum narrowing level for the arguments.  The current narrowing level is flowed thorugh to the DefaultBinder.</param>        
-        /// <param name="target">The resulting binding target which can be used for producing error information.</param>
-        /// <returns>A meta object which results from the call.</returns>
-        public DynamicMetaObject CallMethod(ParameterBinder parameterBinder, IList<MethodBase> targets, IList<DynamicMetaObject> args, CallSignature signature, BindingRestrictions restrictions, NarrowingLevel minLevel, NarrowingLevel maxLevel, out BindingTarget target) {
-            return CallWorker(
-                parameterBinder,
-                targets,
-                args,
-                signature,
-                CallTypes.None,
-                restrictions,
-                minLevel,
-                maxLevel,
-                null,
-                out target
-            );
-        }
-
-        /// <summary>
-        /// Performs binding against a set of overloaded methods using the specified arguments.  The arguments are
-        /// consumed as specified by the CallSignature object.
-        /// </summary>
-        /// <param name="parameterBinder">ParameterBinder used to map arguments to parameters.</param>
-        /// <param name="targets">The methods to be called</param>
-        /// <param name="args">The arguments for the call</param>
-        /// <param name="signature">The call signature which specified how the arguments will be consumed</param>
-        /// <param name="restrictions">Additional restrictions which should be applied to the resulting MetaObject.</param>
-        /// <param name="maxLevel">The maximum narrowing level for arguments.  The current narrowing level is flowed thorugh to the DefaultBinder.</param>
-        /// <param name="minLevel">The minimum narrowing level for the arguments.  The current narrowing level is flowed thorugh to the DefaultBinder.</param>        
-        /// <param name="target">The resulting binding target which can be used for producing error information.</param>
-        /// <param name="name">The name of the method or null to use the name from targets.</param>
-        /// <returns>A meta object which results from the call.</returns>
-        public DynamicMetaObject CallMethod(ParameterBinder parameterBinder, IList<MethodBase> targets, IList<DynamicMetaObject> args, CallSignature signature, BindingRestrictions restrictions, NarrowingLevel minLevel, NarrowingLevel maxLevel, string name, out BindingTarget target) {
-            return CallWorker(
-                parameterBinder,
-                targets,
-                args,
-                signature,
-                CallTypes.None,
-                restrictions,
-                minLevel,
-                maxLevel,
                 name,
+                NarrowingLevel.None,
+                NarrowingLevel.All,
                 out target
             );
         }
 
         /// <summary>
-        /// Performs binding against a set of overloaded methods using the specified arguments and the specified
-        /// instance argument.  The arguments are consumed as specified by the CallSignature object.
+        /// Performs binding against a set of overloaded methods using the specified arguments.  The arguments are
+        /// consumed as specified by the CallSignature object.
         /// </summary>
-        /// <param name="parameterBinder">ParameterBinder used to map arguments to parameters.</param>
+        /// <param name="minLevel">TODO.</param>
+        /// <param name="maxLevel">TODO.</param>
+        /// <param name="resolver">Overload resolver.</param>
         /// <param name="targets">The methods to be called</param>
-        /// <param name="args">The arguments for the call</param>
-        /// <param name="signature">The call signature which specified how the arguments will be consumed</param>
         /// <param name="restrictions">Additional restrictions which should be applied to the resulting MetaObject.</param>
-        /// <param name="instance">The instance which will be provided for dispatching to an instance method.</param>
-        /// <param name="maxLevel">The maximum narrowing level for arguments.  The current narrowing level is flowed thorugh to the DefaultBinder.</param>
-        /// <param name="minLevel">The minimum narrowing level for the arguments.  The current narrowing level is flowed thorugh to the DefaultBinder.</param>        
-        /// <param name="target">The resulting binding target which can be used for producing error information.</param>
-        /// <returns>A meta object which results from the call.</returns>
-        public DynamicMetaObject CallInstanceMethod(ParameterBinder parameterBinder, IList<MethodBase> targets, DynamicMetaObject instance, IList<DynamicMetaObject> args, CallSignature signature, BindingRestrictions restrictions, NarrowingLevel minLevel, NarrowingLevel maxLevel, out BindingTarget target) {
-            return CallWorker(
-                parameterBinder,
-                targets,
-                ArrayUtils.Insert(instance, args),
-                signature,
-                CallTypes.ImplicitInstance,
-                restrictions,
-                minLevel,
-                maxLevel,
-                null,
-                out target
-            );
-        }
-
-        /// <summary>
-        /// Performs binding against a set of overloaded methods using the specified arguments and the specified
-        /// instance argument.  The arguments are consumed as specified by the CallSignature object.
-        /// </summary>
-        /// <param name="parameterBinder">ParameterBinder used to map arguments to parameters.</param>
-        /// <param name="targets">The methods to be called</param>
-        /// <param name="args">The arguments for the call</param>
-        /// <param name="signature">The call signature which specified how the arguments will be consumed</param>
-        /// <param name="restrictions">Additional restrictions which should be applied to the resulting MetaObject.</param>
-        /// <param name="instance">The instance which will be provided for dispatching to an instance method.</param>
-        /// <param name="maxLevel">The maximum narrowing level for arguments.  The current narrowing level is flowed thorugh to the DefaultBinder.</param>
-        /// <param name="minLevel">The minimum narrowing level for the arguments.  The current narrowing level is flowed thorugh to the DefaultBinder.</param>        
         /// <param name="target">The resulting binding target which can be used for producing error information.</param>
         /// <param name="name">The name of the method or null to use the name from targets.</param>
         /// <returns>A meta object which results from the call.</returns>
-        public DynamicMetaObject CallInstanceMethod(ParameterBinder parameterBinder, IList<MethodBase> targets, DynamicMetaObject instance, IList<DynamicMetaObject> args, CallSignature signature, BindingRestrictions restrictions, NarrowingLevel minLevel, NarrowingLevel maxLevel, string name, out BindingTarget target) {
-            return CallWorker(
-                parameterBinder,
-                targets,
-                ArrayUtils.Insert(instance, args),
-                signature,
-                CallTypes.ImplicitInstance,
-                restrictions,
-                minLevel,
-                maxLevel,
-                name,
-                out target
-            );
-        }
-
-        private DynamicMetaObject CallWorker(ParameterBinder parameterBinder, IList<MethodBase> targets, IList<DynamicMetaObject> args, CallSignature signature, CallTypes callType, BindingRestrictions restrictions, NarrowingLevel minLevel, NarrowingLevel maxLevel, string name) {
-            BindingTarget dummy;
-            return CallWorker(parameterBinder, targets, args, signature, callType, restrictions, minLevel, maxLevel, name, out dummy);
-        }
-
-        private DynamicMetaObject CallWorker(ParameterBinder parameterBinder, IList<MethodBase> targets, IList<DynamicMetaObject> args, CallSignature signature, CallTypes callType, BindingRestrictions restrictions, NarrowingLevel minLevel, NarrowingLevel maxLevel, string name, out BindingTarget target) {
-            ContractUtils.RequiresNotNull(parameterBinder, "parameterBinder");
-            ContractUtils.RequiresNotNullItems(args, "args");
+        public DynamicMetaObject CallMethod(DefaultOverloadResolver resolver, IList<MethodBase> targets, BindingRestrictions restrictions, string name, 
+            NarrowingLevel minLevel, NarrowingLevel maxLevel, out BindingTarget target) {
+            ContractUtils.RequiresNotNull(resolver, "resolver");
             ContractUtils.RequiresNotNullItems(targets, "targets");
             ContractUtils.RequiresNotNull(restrictions, "restrictions");
 
-            DynamicMetaObject[] finalArgs;
-            string[] argNames;
-
-            if (callType == CallTypes.ImplicitInstance) {
-                GetArgumentNamesAndTypes(signature, ArrayUtils.RemoveFirst(args), out argNames, out finalArgs);
-                finalArgs = ArrayUtils.Insert(args[0], finalArgs);
-            } else {
-                GetArgumentNamesAndTypes(signature, args, out argNames, out finalArgs);
-            }
-
             // attempt to bind to an individual method
-            MethodBinder binder = MethodBinder.MakeBinder(
-                this,
-                name ?? GetTargetName(targets),
-                targets,
-                argNames,
-                minLevel,
-                maxLevel);
-            target = binder.MakeBindingTarget(callType, finalArgs);
+            target = resolver.ResolveOverload(name ?? GetTargetName(targets), targets, minLevel, maxLevel);
 
             if (target.Success) {
                 // if we succeed make the target for the rule
                 return new DynamicMetaObject(
-                    target.MakeExpression(parameterBinder),
-                    restrictions.Merge(MakeSplatTests(callType, signature, args).Merge(BindingRestrictions.Combine(target.RestrictedArguments.Objects)))
+                    target.MakeExpression(),
+                    restrictions.Merge(
+                        MakeSplatTests(resolver.CallType, resolver.Signature, resolver.Arguments).
+                            Merge(BindingRestrictions.Combine(target.RestrictedArguments.Objects))
+                    )
                 );
             }
+
             // make an error rule
-            return MakeInvalidParametersRule(callType, signature, this, args, restrictions, target);
+            return MakeInvalidParametersRule(resolver, restrictions, target);
+        }
+
+        internal static string GetTargetName(IList<MethodBase> targets) {
+            return targets[0].IsConstructor ? targets[0].DeclaringType.Name : targets[0].Name;
+        }
+
+        // TODO: revisit
+        private DynamicMetaObject MakeInvalidParametersRule(DefaultOverloadResolver binder, BindingRestrictions restrictions, BindingTarget bt) {
+            var args = binder.Arguments;
+            
+            BindingRestrictions restriction = MakeSplatTests(binder.CallType, binder.Signature, true, args);
+
+            // restrict to the exact type of all parameters for errors
+            for (int i = 0; i < args.Count; i++) {
+                args[i] = args[i].Restrict(args[i].GetLimitType());
+            }
+
+            return MakeError(
+                binder.MakeInvalidParametersError(bt),
+                restrictions.Merge(BindingRestrictions.Combine(args).Merge(restriction))
+            );
         }
 
         #endregion
 
-        #region Restriction helpers
+        #region Restriction helpers (TODO: revisit)
 
         private static BindingRestrictions MakeSplatTests(CallTypes callType, CallSignature signature, IList<DynamicMetaObject> args) {
             return MakeSplatTests(callType, signature, false, args);
@@ -372,42 +187,50 @@ namespace Microsoft.Scripting.Actions {
                 listIndex++;
             }
 
-            return MakeParamsTest(args[listIndex].Value, args[listIndex].Expression, testTypes);
+            return MakeParamsTest(args[listIndex], testTypes);
         }
 
         /// <summary>
         /// Builds the restrictions for calling with a splatted argument array.  Ensures that the
         /// argument is still an ICollection of object and that it has the same number of arguments.
         /// </summary>
-        private static BindingRestrictions MakeParamsTest(object paramArg, Expression listArg, bool testTypes) {
-            IList<object> coll = (IList<object>)paramArg;
+        private static BindingRestrictions MakeParamsTest(DynamicMetaObject splattee, bool testTypes) {
+            IList<object> list = splattee.Value as IList<object>;
+
+            if (list == null) {
+                if (splattee.Value == null) {
+                    return BindingRestrictions.GetExpressionRestriction(Ast.Equal(splattee.Expression, AstUtils.Constant(null)));
+                } else {
+                   return BindingRestrictions.GetTypeRestriction(splattee.Expression, splattee.Value.GetType());
+                }
+            }
 
             BindingRestrictions res = BindingRestrictions.GetExpressionRestriction(
                 Ast.AndAlso(
-                    Ast.TypeIs(listArg, typeof(IList<object>)),
+                    Ast.TypeIs(splattee.Expression, typeof(IList<object>)),
                     Ast.Equal(
                         Ast.Property(
-                            Ast.Convert(listArg, typeof(IList<object>)),
+                            Ast.Convert(splattee.Expression, typeof(IList<object>)),
                             typeof(ICollection<object>).GetProperty("Count")
                         ),
-                        AstUtils.Constant(coll.Count)
+                        AstUtils.Constant(list.Count)
                     )
                 )
             );
 
             if (testTypes) {
-                for (int i = 0; i < coll.Count; i++) {
+                for (int i = 0; i < list.Count; i++) {
                     res = res.Merge(
                         BindingRestrictionsHelpers.GetRuntimeTypeRestriction(
                             Ast.Call(
                                 AstUtils.Convert(
-                                    listArg,
+                                    splattee.Expression,
                                     typeof(IList<object>)
                                 ),
                                 typeof(IList<object>).GetMethod("get_Item"),
                                 AstUtils.Constant(i)
                             ),
-                            CompilerHelpers.GetType(coll[i])
+                            CompilerHelpers.GetType(list[i])
                         )
                     );
                 }
@@ -452,132 +275,6 @@ namespace Microsoft.Scripting.Actions {
                     )
                 )
             );
-        }
-
-        #endregion
-
-        #region Misc. Helpers
-
-        /// <summary>
-        /// Gets all of the argument names and types. The instance argument is not included
-        /// </summary>
-        /// <param name="argNames">The names correspond to the end of argTypes.
-        /// ArgumentKind.Dictionary is unpacked in the return value.
-        /// This is set to an array of size 0 if there are no keyword arguments</param>
-        /// <param name="resultingArgs">Non named arguments are returned at the beginning.
-        /// ArgumentKind.List is unpacked in the return value. </param>
-        /// <param name="args">The MetaObject array which has the arguments for the call</param>
-        /// <param name="signature">The signature we're building the call for</param>
-        private static void GetArgumentNamesAndTypes(CallSignature signature, IList<DynamicMetaObject> args, out string[] argNames, out DynamicMetaObject[] resultingArgs) {
-            // Get names of named arguments
-            argNames = signature.GetArgumentNames();
-
-            resultingArgs = GetArgumentTypes(signature, args);
-
-            if (signature.HasDictionaryArgument()) {
-                // need to get names from dictionary argument...
-                GetDictionaryNamesAndTypes(args, ref argNames, ref resultingArgs);
-            }
-        }
-
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1000:DoNotDeclareStaticMembersOnGenericTypes")] // TODO: fix
-        private static DynamicMetaObject[] GetArgumentTypes(CallSignature signature, IList<DynamicMetaObject> args) {
-            List<DynamicMetaObject> res = new List<DynamicMetaObject>();
-            List<DynamicMetaObject> namedObjects = null;
-            for (int i = 0; i < args.Count; i++) {
-                switch (signature.GetArgumentKind(i)) {
-                    case ArgumentType.Named:
-                        if (namedObjects == null) {
-                            namedObjects = new List<DynamicMetaObject>();
-                        }
-                        namedObjects.Add(args[i]);
-                        break;
-                    case ArgumentType.Simple:
-                    case ArgumentType.Instance:
-                        res.Add(args[i]);
-                        break;
-                    case ArgumentType.List:
-                        IList<object> list = args[i].Value as IList<object>;
-                        if (list == null) return null;
-
-                        for (int j = 0; j < list.Count; j++) {
-                            res.Add(
-                                new DynamicMetaObject(
-                                        Ast.Call(
-                                            Ast.Convert(
-                                                args[i].Expression,
-                                                typeof(IList<object>)
-                                            ),
-                                            typeof(IList<object>).GetMethod("get_Item"),
-                                            AstUtils.Constant(j)
-                                        ),
-                                        args[i].Restrictions,
-                                        list[j]
-                                    )
-                            );
-                        }
-                        break;
-                    case ArgumentType.Dictionary:
-                        // caller needs to process these...
-                        break;
-                    default:
-                        throw new NotImplementedException();
-                }
-            }
-
-            if (namedObjects != null) {
-                res.AddRange(namedObjects);
-            }
-
-            return res.ToArray();
-        }
-
-        private static void GetDictionaryNamesAndTypes(IList<DynamicMetaObject> args, ref string[] argNames, ref DynamicMetaObject[] argTypes) {
-            List<string> names = new List<string>(argNames);
-            List<DynamicMetaObject> types = new List<DynamicMetaObject>(argTypes);
-
-            IDictionary dict = (IDictionary)args[args.Count - 1].Value;
-            DynamicMetaObject dictMo = args[args.Count - 1];
-            IDictionaryEnumerator dictEnum = dict.GetEnumerator();
-            while (dictEnum.MoveNext()) {
-                DictionaryEntry de = dictEnum.Entry;
-
-                if (de.Key is string) {
-                    names.Add((string)de.Key);
-                    types.Add(
-                        new DynamicMetaObject(
-                            Ast.Call(
-                                AstUtils.Convert(dictMo.Expression, typeof(IDictionary)),
-                                typeof(IDictionary).GetMethod("get_Item"),
-                                AstUtils.Constant(de.Key as string)
-                            ),
-                            dictMo.Restrictions,
-                            de.Value
-                        )
-                    );
-                }
-            }
-
-            argNames = names.ToArray();
-            argTypes = types.ToArray();
-        }
-
-        private static DynamicMetaObject MakeInvalidParametersRule(CallTypes callType, CallSignature signature, DefaultBinder binder, IList<DynamicMetaObject> args, BindingRestrictions restrictions, BindingTarget bt) {
-            BindingRestrictions restriction = MakeSplatTests(callType, signature, true, args);
-
-            // restrict to the exact type of all parameters for errors
-            for (int i = 0; i < args.Count; i++) {
-                args[i] = args[i].Restrict(args[i].GetLimitType());
-            }
-
-            return MakeError(
-                binder.MakeInvalidParametersError(bt),
-                restrictions.Merge(BindingRestrictions.Combine(args).Merge(restriction))
-            );
-        }
-
-        private static string GetTargetName(IList<MethodBase> targets) {
-            return targets[0].IsConstructor ? targets[0].DeclaringType.Name : targets[0].Name;
         }
 
         #endregion

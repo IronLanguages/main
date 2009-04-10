@@ -39,7 +39,8 @@ namespace IronRuby.Tests {
                 Scenario_RubyNameMangling1,
                 Scenario_RubyNameMangling2,
 
-                OverloadResolution_Block,
+                OverloadResolution_Block1,
+                OverloadResolution_ParamArrays1,
                 AmbiguousMatch,
 
                 Scenario_RubySimpleCall1,
@@ -280,6 +281,10 @@ namespace IronRuby.Tests {
                 Scenario_RubyArgSplatting1,
                 Scenario_RubyArgSplatting2,
                 Scenario_RubyArgSplatting3,
+                Scenario_RubyArgSplatting4,
+                Scenario_RubyArgSplatting5,
+                Scenario_RubyArgSplatting6,
+                Scenario_CaseSplatting1,
                 Scenario_RubyBoolExpressions1,
                 Scenario_RubyBoolExpressions2,
                 Scenario_RubyBoolExpressions3,
@@ -442,6 +447,7 @@ namespace IronRuby.Tests {
                 SuperParameterless2,
                 SuperParameterless3,
                 Super2,
+                SuperToAttribute1,
                 SuperAndMethodMissing1,
                 SuperAndMethodMissing2,
                 SuperCaching1,

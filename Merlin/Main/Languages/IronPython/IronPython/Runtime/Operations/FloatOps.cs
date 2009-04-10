@@ -17,6 +17,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Text;
+using System.Text.RegularExpressions;
 
 using Microsoft.Scripting.Math;
 using Microsoft.Scripting.Runtime;
@@ -29,6 +30,8 @@ using SpecialNameAttribute = System.Runtime.CompilerServices.SpecialNameAttribut
 namespace IronPython.Runtime.Operations {
 
     public static partial class DoubleOps {
+        private static Regex _fromHexRegex;
+
         [StaticExtensionMethod]
         public static object __new__(CodeContext/*!*/ context, PythonType cls) {
             if (cls == TypeCache.Double) return 0.0;
@@ -76,8 +79,306 @@ namespace IronPython.Runtime.Operations {
             return cls.CreateInstance(context, s);
         }
 
-        private static object ParseFloat(string x) {
+        public static PythonTuple as_integer_ratio(double self) {
+            if (Double.IsInfinity(self)) {
+                throw PythonOps.OverflowError("Cannot pass infinity to float.as_integer_ratio.");
+            } else if (Double.IsNaN(self)) {
+                throw PythonOps.ValueError("Cannot pass nan to float.as_integer_ratio.");
+            }
+
+            BigInteger dem = 1;
+            while ((self % 1) != 0.0) {
+                self *= 2;
+                dem *= 2;
+            }
+            return PythonTuple.MakeTuple((BigInteger)self, dem);
+        }
+
+        public static double conjugate(double self) {
+            return self;
+        }
+
+        [ClassMethod, StaticExtensionMethod]
+        public static object fromhex(CodeContext/*!*/ context, PythonType/*!*/ cls, string self) {
+            if (String.IsNullOrEmpty(self)) {
+                throw PythonOps.ValueError("expected non empty string");
+            }
+
+            // look for inf, infinity, nan, etc...
+            double? specialRes = TryParseSpecialFloat(self);
+            if (specialRes != null) {
+                return specialRes.Value;
+            }
+
+            // nothing special, parse the hex...
+            if (_fromHexRegex == null) {
+                _fromHexRegex = new Regex("\\A\\s*(?<sign>[-+])?(?:0[xX])?(?<integer>[0-9a-fA-F]+)?(?<fraction>\\.[0-9a-fA-F]*)?(?<exponent>[pP][-+]?[0-9]+)?\\s*\\z");
+            }
+            Match match = _fromHexRegex.Match(self);
+            if (!match.Success) {
+                throw InvalidHexString();
+            }
+
+            var sign = match.Groups["sign"];
+            var integer = match.Groups["integer"];
+            var fraction = match.Groups["fraction"];
+            var exponent = match.Groups["exponent"];
+
+            bool isNegative = sign.Success && sign.Value == "-";
+
+            BigInteger intVal;
+            if (integer.Success) {
+                intVal = LiteralParser.ParseBigInteger(integer.Value, 16);
+            } else {
+                intVal = BigInteger.Zero;
+            }
+
+            // combine the integer and fractional parts into one big int
+            BigInteger finalBits;
+            int decimalPointBit = 0;       // the number of bits of fractions that we have
+            if (fraction.Success) {
+                BigInteger fractionVal = 0;
+                // add the fractional bits to the integer value
+                for (int i = 1; i < fraction.Value.Length; i++) {
+                    char chr = fraction.Value[i];
+                    int val;
+                    if (chr >= '0' && chr <= '9') {
+                        val = chr - '0';
+                    } else if (chr >= 'a' && chr <= 'f') {
+                        val = 10 + chr - 'a';
+                    } else if (chr >= 'A' && chr <= 'Z') {
+                        val = 10 + chr - 'A';
+                    } else {
+                        // unreachable due to the regex
+                        throw new InvalidOperationException();
+                    }
+
+                    fractionVal = (fractionVal << 4) | val;
+                    decimalPointBit += 4;
+                }
+                finalBits = (intVal << decimalPointBit) | fractionVal;
+            } else {
+                // we only have the integer value
+                finalBits = intVal;
+            }
+
+            if (exponent.Success) {
+                int exponentVal = 0;
+                if (!Int32.TryParse(exponent.Value.Substring(1), out exponentVal)) {
+                    if (exponent.Value.lower().StartsWith("p-") || finalBits == BigInteger.Zero) {
+                        double zeroRes = isNegative ? NegativeZero : PositiveZero;
+
+                        if (cls == TypeCache.Double) {
+                            return zeroRes;
+                        }
+
+                        return PythonCalls.Call(cls, zeroRes);
+                    }
+                    // integer value is too big, no way we're fitting this in.
+                    throw HexStringOverflow();
+                }
+
+                // update the bits to truly reflect the exponent
+                if (exponentVal > 0) {
+                    finalBits = finalBits << exponentVal;
+                } else if (exponentVal < 0) {
+                    decimalPointBit -= exponentVal;
+                }
+            }
+
+            if ((!exponent.Success && !fraction.Success && !integer.Success) ||
+                (!integer.Success && fraction.Length == 1)) {
+                throw PythonOps.ValueError("invalid hexidecimal floating point string '{0}'", self);
+            }
+
+            if (finalBits == BigInteger.Zero) {
+                if (isNegative) {
+                    return NegativeZero;
+                } else {
+                    return PositiveZero;
+                }
+            }
+
+            int highBit = GetMostSignificantBit(finalBits);
+            // minus 1 because we'll discard the high bit as it's implicit
+            int finalExponent = highBit - decimalPointBit - 1;  
+
+            while (finalExponent < -1023) {
+                // if we have a number with a very negative exponent
+                // we'll throw away all of the insignificant bits even
+                // if it takes the number down to zero.
+                highBit++;
+                finalExponent++;
+            }
+
+            if (finalExponent == -1023) {
+                // the exponent bits will be all zero, we're going to be a denormalized number, so
+                // we need to keep the most significant bit.
+                highBit++;
+            }
+
+            // we have 52 bits to store the exponent.  In a normalized number the mantissa has an
+            // implied 1 bit, in denormalized mode it doesn't. 
+            int lostBits = highBit - 53;
+            bool rounded = false;
+            if (lostBits > 0) {
+                // we have more bits then we can stick in the double, we need to truncate or round the value.
+                BigInteger finalBitsAndRoundingBit = finalBits >> (lostBits - 1);
+
+                // check if we need to round up (round half even aka bankers rounding)
+                if ((finalBitsAndRoundingBit & BigInteger.One) != BigInteger.Zero) {
+                    // grab the bits we need and the least significant bit which we care about for rounding
+                    BigInteger discardedBits = finalBits & ((BigInteger.One << (lostBits - 1)) - 1);
+
+                    if (discardedBits != BigInteger.Zero ||                            // not exactly .5
+                        ((finalBits >> lostBits) & BigInteger.One) != BigInteger.Zero) { // or we're exactly .5 and odd and need to round up
+                        // round the value up by adding 1
+                        BigInteger roundedBits = finalBitsAndRoundingBit + 1;
+
+                        // now remove the least significant bit we kept for rounding
+                        finalBits = (roundedBits >> 1) & 0xfffffffffffff;
+
+                        // check to see if we overflowed into the next bit (e.g. we had a pattern like ffffff rounding to 1000000)
+                        if (GetMostSignificantBit(roundedBits) != GetMostSignificantBit(finalBitsAndRoundingBit)) {
+                            if (finalExponent != -1023) {
+                                // we overflowed and we're a normalized number.  Discard the new least significant bit so we have
+                                // the correct number of bits.  We need to raise the exponent to account for this division by 2.
+                                finalBits = finalBits >> 1;
+                                finalExponent++;
+                            } else if (finalBits == BigInteger.Zero) {
+                                // we overflowed and we're a denormalized number == 0.  Increase the exponent making us a normalized
+                                // number.  Don't adjust the bits because we're now gaining an implicit 1 bit.
+                                finalExponent++;
+                            } 
+                        }
+
+                        rounded = true;
+                    }
+                }
+            }
+
+            if (!rounded) {
+                // no rounding is necessary, just shift the bits to get the mantissa
+                finalBits = (finalBits >> (highBit - 53)) & 0xfffffffffffff;
+            }
+            if (finalExponent > 1023) {
+                throw HexStringOverflow();
+            }
+
+            // finally assemble the bits
+            long bits = finalBits.ToInt64();
+            bits |= (((long)finalExponent) + 1023) << 52;
+            if (isNegative) {
+                bits |= unchecked((long)0x8000000000000000);
+            }
+
+#if SILVERLIGHT
+            double res = BitConverter.ToDouble(BitConverter.GetBytes(bits), 0);
+#else
+            double res = BitConverter.Int64BitsToDouble(bits);
+#endif
+            if (cls == TypeCache.Double) {
+                return res;
+            }
+
+            return PythonCalls.Call(cls, res);
+        }
+
+        private static double? TryParseSpecialFloat(string self) {
+            switch (self.ToLower()) {
+                case "inf":
+                case "+inf":
+                case "infinity":
+                case "+infinity":
+                    return Double.PositiveInfinity;
+                case "-inf":
+                case "-infinity":
+                    return Double.NegativeInfinity;
+                case "nan":
+                case "+nan":
+                case "-nan":
+                    return Double.NaN;
+            }
+            return null;
+        }
+
+        private static Exception HexStringOverflow() {
+            return PythonOps.OverflowError("hexadecimal value too large to represent as a float");
+        }
+
+        private static int GetMostSignificantBit(BigInteger fractionVal) {
+            int highBit = fractionVal.Length * 32;
+            if (highBit != 0) {
+                BigInteger test = BigInteger.One << (highBit - 1);
+                while ((fractionVal & test) == 0 && test != BigInteger.Zero) {
+                    highBit--;
+                    test = test >> 1;
+                }
+            }
+            return highBit;
+        }
+
+        private static Exception InvalidHexString() {
+            return PythonOps.ValueError("invalid hexadecimal floating-point string");
+        }
+
+        [SpecialName, PropertyMethod]
+        public static double Getreal(double self) {
+            return self;
+        }
+
+        [SpecialName, PropertyMethod]
+        public static double Getimag(double self) {
+            return 0;
+        }
+
+        public static string hex(double self) {
+            if (Double.IsPositiveInfinity(self)) {
+                return "inf";
+            } else if (Double.IsNegativeInfinity(self)) {
+                return "-inf";
+            } else if (Double.IsNaN(self)) {
+                return "nan";
+            }
+
+#if SILVERLIGHT
+            ulong bits = BitConverter.ToUInt64(BitConverter.GetBytes(self), 0);
+#else
+            ulong bits = (ulong)BitConverter.DoubleToInt64Bits(self);
+#endif
+            int exponent = (int)((bits >> 52) & 0x7ff) - 1023;
+            long mantissa = (long)(bits & 0xfffffffffffff);
+
+            StringBuilder res = new StringBuilder();
+            if ((bits & 0x8000000000000000) != 0) {
+                // negative
+                res.Append('-');
+            }
+            if (exponent == -1023) {
+                res.Append("0x0.");
+                exponent++;
+            } else {
+                res.Append("0x1.");
+            }
+            res.Append(StringFormatSpec.FromString("013").AlignNumericText(BigIntegerOps.ToHex(mantissa, false), mantissa == 0, true));
+            res.Append("p");
+            if (exponent >= 0) {
+                res.Append('+');
+            }
+            res.Append(exponent.ToString());
+            return res.ToString();
+        }
+
+        public static bool is_integer(double self) {
+            return (self % 1.0) == 0.0;
+        }
+
+        private static double ParseFloat(string x) {
             try {
+                double? res = TryParseSpecialFloat(x);
+                if (res != null) {
+                    return res.Value;
+                }
                 return LiteralParser.ParseFloat(x);
             } catch (FormatException) {
                 throw PythonOps.ValueError("invalid literal for float(): {0}", x);
@@ -393,14 +694,30 @@ namespace IronPython.Runtime.Operations {
         }
 
         public static string __getformat__(CodeContext/*!*/ context, string typestr) {
+            FloatFormat res;
             switch (typestr) {
                 case "float":
-                    return PythonContext.GetContext(context).FloatFormat ?? DefaultFloatFormat();
+                    res = PythonContext.GetContext(context).FloatFormat;
+                    break;
                 case "double":
-                    return PythonContext.GetContext(context).DoubleFormat ?? DefaultFloatFormat();
-                default: throw PythonOps.ValueError("__getformat__() argument 1 must be 'double' or 'float'");
+                    res = PythonContext.GetContext(context).DoubleFormat;
+                    break;
+                default:
+                    throw PythonOps.ValueError("__getformat__() argument 1 must be 'double' or 'float'");
+            }
+
+            switch (res) {
+                case FloatFormat.Unknown:
+                    return "unknown";
+                case FloatFormat.IEEE_BigEndian:
+                    return "IEEE, big-endian";
+                case FloatFormat.IEEE_LittleEndian:
+                    return "IEEE, little-endian";
+                default:
+                    return DefaultFloatFormat();
             }
         }
+
 
         public static string __format__(CodeContext/*!*/ context, double self, [NotNull]string/*!*/ formatSpec) {
             StringFormatSpec spec = StringFormatSpec.FromString(formatSpec);
@@ -566,18 +883,22 @@ namespace IronPython.Runtime.Operations {
         }
 
         public static void __setformat__(CodeContext/*!*/ context, string typestr, string fmt) {
+            FloatFormat format;
             switch (fmt) {
                 case "unknown":
+                    format = FloatFormat.Unknown;
                     break;
                 case "IEEE, little-endian":
                     if (!BitConverter.IsLittleEndian) {
                         throw PythonOps.ValueError("can only set double format to 'unknown' or the detected platform value");
                     }
+                    format = FloatFormat.IEEE_LittleEndian;
                     break;
                 case "IEEE, big-endian":
                     if (BitConverter.IsLittleEndian) {
                         throw PythonOps.ValueError("can only set double format to 'unknown' or the detected platform value");
                     }
+                    format = FloatFormat.IEEE_BigEndian;
                     break;
                 default:
                     throw PythonOps.ValueError(" __setformat__() argument 2 must be 'unknown', 'IEEE, little-endian' or 'IEEE, big-endian'");
@@ -585,15 +906,22 @@ namespace IronPython.Runtime.Operations {
 
             switch (typestr) {
                 case "float":
-                    PythonContext.GetContext(context).FloatFormat = fmt;
+                    PythonContext.GetContext(context).FloatFormat = format;
                     break;
                 case "double":
-                    PythonContext.GetContext(context).DoubleFormat = fmt;
+                    PythonContext.GetContext(context).DoubleFormat = format;
                     break;
                 default:
                     throw PythonOps.ValueError("__setformat__() argument 1 must be 'double' or 'float'");
             }
         }
+    }
+
+    internal enum FloatFormat {
+        None,
+        Unknown,
+        IEEE_LittleEndian,
+        IEEE_BigEndian
     }
 
     public partial class SingleOps {
