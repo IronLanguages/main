@@ -466,43 +466,51 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("open", RubyMethodAttributes.PrivateInstance)]
         [RubyMethod("open", RubyMethodAttributes.PublicSingleton)]
-        public static RubyIO/*!*/ Open(RubyContext/*!*/ context, object self, 
-            [DefaultProtocol, NotNull]MutableString/*!*/ path, [DefaultProtocol, Optional]MutableString mode) {
+        public static RubyIO/*!*/ Open(RubyContext/*!*/ context, object self,
+            [DefaultProtocol, NotNull]MutableString/*!*/ path, [DefaultProtocol, Optional]MutableString mode, [DefaultProtocol, Optional]int permission) {
 
             string fileName = path.ConvertToString();
             if (fileName.Length > 0 && fileName[0] == '|') {
                 throw new NotImplementedError();
             }
-            return new RubyFile(context, fileName, (mode != null) ? mode.ToString() : "r");
+            RubyIO file = new RubyFile(context, fileName, (mode != null) ? mode.ToString() : "r");
+            if (permission > 0) {
+                RubyFileOps.Chmod(fileName, permission);
+            }
+            return file;
         }
 
         [RubyMethod("open", RubyMethodAttributes.PrivateInstance)]
         [RubyMethod("open", RubyMethodAttributes.PublicSingleton)]
-        public static object Open(RubyContext/*!*/ context, [NotNull]BlockParam/*!*/ block, object self, 
-            [DefaultProtocol, NotNull]MutableString/*!*/ path, [DefaultProtocol, Optional]MutableString mode) {
+        public static object Open(RubyContext/*!*/ context, [NotNull]BlockParam/*!*/ block, object self,
+            [DefaultProtocol, NotNull]MutableString/*!*/ path, [DefaultProtocol, Optional]MutableString mode, [DefaultProtocol, Optional]int permission) {
 
-            RubyIO file = Open(context, self, path, mode);
+            RubyIO file = Open(context, self, path, mode, permission);
             return OpenWithBlock(block, file);
         }
 
         [RubyMethod("open", RubyMethodAttributes.PrivateInstance)]
         [RubyMethod("open", RubyMethodAttributes.PublicSingleton)]
-        public static RubyIO/*!*/ Open(RubyContext/*!*/ context, object self, 
-            [DefaultProtocol, NotNull]MutableString/*!*/ path, int mode) {
+        public static RubyIO/*!*/ Open(RubyContext/*!*/ context, object self,
+            [DefaultProtocol, NotNull]MutableString/*!*/ path, int mode, [DefaultProtocol, Optional]int permission) {
 
             string fileName = path.ConvertToString();
             if (fileName.Length > 0 && fileName[0] == '|') {
                 throw new NotImplementedError();
             }
-            return new RubyFile(context, fileName, (RubyFileMode)mode);
+            RubyIO file = new RubyFile(context, fileName, (RubyFileMode)mode);
+            if (permission > 0) {
+                RubyFileOps.Chmod(fileName, permission);
+            }
+            return file;
         }
 
         [RubyMethod("open", RubyMethodAttributes.PrivateInstance)]
         [RubyMethod("open", RubyMethodAttributes.PublicSingleton)]
-        public static object Open(RubyContext/*!*/ context, [NotNull]BlockParam/*!*/ block, object self, 
-            [DefaultProtocol, NotNull]MutableString/*!*/ path, int mode) {
+        public static object Open(RubyContext/*!*/ context, [NotNull]BlockParam/*!*/ block, object self,
+            [DefaultProtocol, NotNull]MutableString/*!*/ path, int mode, [DefaultProtocol, Optional]int permission) {
 
-            RubyIO file = Open(context, self, path, mode);
+            RubyIO file = Open(context, self, path, mode, permission);
             return OpenWithBlock(block, file);
         }
 

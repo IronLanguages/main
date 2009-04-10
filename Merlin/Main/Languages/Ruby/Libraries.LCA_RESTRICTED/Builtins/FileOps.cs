@@ -237,7 +237,7 @@ namespace IronRuby.Builtins {
             return RubyStatOps.IsCharDevice(RubyStatOps.Create(self.Context, path));
         }
 
-        private static void Chmod(string path, int permission) {
+        internal static void Chmod(string path, int permission) {
 #if !SILVERLIGHT
             FileAttributes oldAttributes = File.GetAttributes(path);
             if ((permission & 0x80) == 0) {
