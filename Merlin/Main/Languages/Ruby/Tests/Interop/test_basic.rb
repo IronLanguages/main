@@ -17,25 +17,6 @@ require "../util/assert.rb"
 
 require "mscorlib"
 
-def test_ilist
-    a = System::Collections::ArrayList.new
-    a.Add(1)
-    a.Add(3)
-    a.Add(2)
-    a.Add(3)
-    assert_equal(a, [1, 3, 2, 3])
-    assert_equal(a[1], 3)
-    b = System::Collections::ArrayList.new
-    b.Add(5)
-    b.Add(4)
-    b.Add(3)
-    b.Add(4)
-    b.Add(6)
-    assert_equal(b, [5, 4, 3, 4, 6])
-    c = a | b
-    assert_equal(c, [1, 3, 2, 5, 4, 6])
-end
-
   # TODO: more interesting tests when more features of .NET interop are working
   class Bob_test_inherit < System::Collections::ArrayList
     def foo
