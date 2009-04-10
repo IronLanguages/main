@@ -18,11 +18,9 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
-using System.Linq.Expressions;
 using System.Reflection;
 using System.Runtime.InteropServices;
-using System.Dynamic;
-using System.Dynamic.Utils;
+using System.Security;
 using ComTypes = System.Runtime.InteropServices.ComTypes;
 
 namespace System.Dynamic {
@@ -67,12 +65,14 @@ namespace System.Dynamic {
 
         #region ctor
 
+        [SecurityCritical]
         private ComEventSink(object rcw, Guid sourceIid) {
             Initialize(rcw, sourceIid);
         }
 
         #endregion
 
+        [SecurityCritical]
         private void Initialize(object rcw, Guid sourceIid) {
             _sourceIid = sourceIid;
             _adviseCookie = -1;
@@ -94,6 +94,7 @@ namespace System.Dynamic {
 
         #region static methods
 
+        [SecurityCritical]
         public static ComEventSink FromRuntimeCallableWrapper(object rcw, Guid sourceIid, bool createIfNotFound) {
             List<ComEventSink> comEventSinks = ComEventSinksContainer.FromRuntimeCallableWrapper(rcw, createIfNotFound);
 
@@ -148,6 +149,7 @@ namespace System.Dynamic {
             }
         }
 
+        [SecurityCritical]
         public void RemoveHandler(int dispid, object func) {
 
             string name = String.Format(CultureInfo.InvariantCulture, "[DISPID={0}]", dispid);
@@ -270,6 +272,11 @@ namespace System.Dynamic {
 
         #region IDisposable
 
+#if MICROSOFT_DYNAMIC
+        [SecurityCritical, SecurityTreatAsSafe]
+#else
+        [SecuritySafeCritical]
+#endif
         public void Dispose() {
             DisposeAll();
             GC.SuppressFinalize(this);
@@ -277,10 +284,16 @@ namespace System.Dynamic {
 
         #endregion
 
+#if MICROSOFT_DYNAMIC
+        [SecurityCritical, SecurityTreatAsSafe]
+#else
+        [SecuritySafeCritical]
+#endif
         ~ComEventSink() {
             DisposeAll();
         }
 
+        [SecurityCritical]
         private void DisposeAll() {
             if (_connectionPoint == null) {
                 return;

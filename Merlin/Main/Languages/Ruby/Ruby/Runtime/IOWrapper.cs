@@ -26,9 +26,9 @@ namespace IronRuby.Runtime {
 
     public class IOWrapper : Stream {
         private readonly CallSite<Func<CallSite, object, MutableString, object>> _writeSite;
-        private readonly CallSite<Func<CallSite, object, int, MutableString>> _readSite;
+        private readonly CallSite<Func<CallSite, object, int, object>> _readSite;
         private readonly CallSite<Func<CallSite, object, long, int, object>> _seekSite;
-        private readonly CallSite<Func<CallSite, object, long>> _tellSite;
+        private readonly CallSite<Func<CallSite, object, object>> _tellSite;
             
 
         private readonly RubyContext/*!*/ _context;
@@ -53,13 +53,13 @@ namespace IronRuby.Runtime {
             _writeSite = CallSite<Func<CallSite, object, MutableString, object>>.Create(
                 RubyCallAction.Make(context, "write", RubyCallSignature.WithImplicitSelf(1))
             );
-            _readSite = CallSite<Func<CallSite, object, int, MutableString>>.Create(
+            _readSite = CallSite<Func<CallSite, object, int, object>>.Create(
                 RubyCallAction.Make(context, "read", RubyCallSignature.WithImplicitSelf(1))
             );
             _seekSite = CallSite<Func<CallSite, object, long, int, object>>.Create(
                 RubyCallAction.Make(context, "seek", RubyCallSignature.WithImplicitSelf(2))
             );
-            _tellSite = CallSite<Func<CallSite, object, long>>.Create(
+            _tellSite = CallSite<Func<CallSite, object, object>>.Create(
                 RubyCallAction.Make(context, "tell", RubyCallSignature.WithImplicitSelf(0))
             );
 
@@ -111,7 +111,8 @@ namespace IronRuby.Runtime {
                 if (!_canSeek) {
                     throw new NotSupportedException();
                 }
-                return _tellSite.Target(_tellSite, _obj);
+                // TODO: conversion
+                return (long)_tellSite.Target(_tellSite, _obj);
             }
             set {
                 if (!_canSeek) {
@@ -201,7 +202,8 @@ namespace IronRuby.Runtime {
         }
 
         private int ReadFromObject(byte[]/*!*/ buffer, int offset, int count) {
-            MutableString result = _readSite.Target(_readSite, _obj, count);
+            // TODO: conversion
+            MutableString result = (MutableString)_readSite.Target(_readSite, _obj, count);
             if (result == null) {
                 return 0;
             } else {

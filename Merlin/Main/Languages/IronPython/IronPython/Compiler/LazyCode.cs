@@ -24,6 +24,7 @@ using Microsoft.Scripting.Utils;
 using IronPython.Runtime;
 using IronPython.Runtime.Operations;
 using System.Linq.Expressions;
+using System.Threading;
 
 namespace IronPython.Compiler {
     /// <summary>
@@ -37,7 +38,7 @@ namespace IronPython.Compiler {
     /// turn into a normal pre-compiled method.
     /// </summary>
     sealed class LazyCode<T> : IExpressionSerializable where T : class {
-        public readonly Expression<T> Code;
+        public Expression<T> Code;
         private T Delegate;
         private bool _shouldInterpret;
 
@@ -48,7 +49,12 @@ namespace IronPython.Compiler {
 
         public T EnsureDelegate() {
             if (Delegate == null) {
-                Delegate = Compile();
+                lock (this) {
+                    if (Delegate == null) {
+                        Delegate = Compile();
+                        Code = null;
+                    }
+                }
             }
 
             return Delegate;

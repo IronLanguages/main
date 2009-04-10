@@ -77,7 +77,7 @@ namespace IronRuby.Runtime.Calls {
                 metaBuilder.SetWrongNumberOfArgumentsError(normalizedArgs.Length, 0);
             }
 
-            return metaBuilder.CreateMetaObject(interopBinder);
+            return metaBuilder.CreateMetaObject(this);
         }
 
         public static RubyConversionAction TryGetDefaultConversionAction(RubyContext/*!*/ context, Type/*!*/ parameterType) {
@@ -142,8 +142,14 @@ namespace IronRuby.Runtime.Calls {
 
         protected abstract bool TryImplicitConversion(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args);
 
+        public override Type/*!*/ ResultType {
+            get { 
+                return (ConversionResultValidator != null) ? ConversionResultValidator.ReturnType : typeof(object); 
+            }
+        }
+
         protected override void Build(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args) {
-            BuildConversion(metaBuilder, args, ConversionResultValidator != null ? ConversionResultValidator.ReturnType : typeof(object), this);
+            BuildConversion(metaBuilder, args, ResultType, this);
         }
 
         internal static void BuildConversion(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args, Type/*!*/ resultType, 

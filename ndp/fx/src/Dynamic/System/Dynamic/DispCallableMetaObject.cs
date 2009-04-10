@@ -15,11 +15,9 @@
 
 #if !SILVERLIGHT
 
-using System.Collections.Generic;
 using System.Linq.Expressions;
-using System.Dynamic;
-using System.Dynamic.Utils;
-using System.Runtime.CompilerServices;
+using System.Security;
+using System.Security.Permissions;
 
 namespace System.Dynamic {
     internal class DispCallableMetaObject : DynamicMetaObject {
@@ -40,11 +38,22 @@ namespace System.Dynamic {
                 base.BindInvoke(binder, args);
         }
 
+#if MICROSOFT_DYNAMIC
+        [SecurityCritical, SecurityTreatAsSafe]
+#else
+        [SecuritySafeCritical]
+#endif
         private DynamicMetaObject BindGetOrInvoke(DynamicMetaObject[] args, CallInfo callInfo) {
+            //
+            // Demand Full Trust to proceed with the binding.
+            //
+
+            new PermissionSet(PermissionState.Unrestricted).Demand();
+
             ComMethodDesc method;
             var target = _callable.DispatchComObject;
             var name = _callable.MemberName;
-            
+
             if (target.TryGetMemberMethod(name, out method) ||
                 target.TryGetMemberMethodExplicit(name, out method)) {
 
@@ -54,8 +63,18 @@ namespace System.Dynamic {
             return null;
         }
 
-
+#if MICROSOFT_DYNAMIC
+        [SecurityCritical, SecurityTreatAsSafe]
+#else
+        [SecuritySafeCritical]
+#endif
         public override DynamicMetaObject BindSetIndex(SetIndexBinder binder, DynamicMetaObject[] indexes, DynamicMetaObject value) {
+            //
+            // Demand Full Trust to proceed with the binding.
+            //
+
+            new PermissionSet(PermissionState.Unrestricted).Demand();
+
             ComMethodDesc method;
             var target = _callable.DispatchComObject;
             var name = _callable.MemberName;
@@ -72,6 +91,7 @@ namespace System.Dynamic {
             return base.BindSetIndex(binder, indexes, value);
         }
 
+        [SecurityCritical]
         private DynamicMetaObject BindComInvoke(ComMethodDesc method, DynamicMetaObject[] indexes, CallInfo callInfo, bool[] isByRef) {
             var callable = Expression;
             var dispCall = Helpers.Convert(callable, typeof(DispCallable));
@@ -90,6 +110,7 @@ namespace System.Dynamic {
             ).Invoke();
         }
 
+        [SecurityCritical]
         private BindingRestrictions DispCallableRestrictions() {
             var callable = Expression;
 

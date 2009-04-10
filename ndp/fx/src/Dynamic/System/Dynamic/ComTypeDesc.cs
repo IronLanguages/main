@@ -18,6 +18,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.InteropServices.ComTypes;
+using System.Security;
 using System.Threading;
 using ComTypes = System.Runtime.InteropServices.ComTypes;
 
@@ -46,6 +47,7 @@ namespace System.Dynamic {
             }
         }
 
+        [SecurityCritical]
         internal static ComTypeDesc FromITypeInfo(ComTypes.ITypeInfo typeInfo, ComTypes.TYPEATTR typeAttr) {
             if (typeAttr.typekind == ComTypes.TYPEKIND.TKIND_COCLASS) {
                 return new ComTypeClassDesc(typeInfo);
@@ -201,18 +203,18 @@ namespace System.Dynamic {
         internal ComMethodDesc GetItem {
             get { return _getItem; }
         }
+
         internal void EnsureGetItem(ComMethodDesc candidate) {
             Interlocked.CompareExchange(ref _getItem, candidate, null);
         }
 
-
         internal ComMethodDesc SetItem {
             get { return _setItem; }
         }
+
         internal void EnsureSetItem(ComMethodDesc candidate) {
             Interlocked.CompareExchange(ref _setItem, candidate, null);
         }
-
     }
 }
 

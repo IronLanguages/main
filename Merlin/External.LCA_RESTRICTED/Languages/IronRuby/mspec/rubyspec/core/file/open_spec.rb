@@ -523,6 +523,6 @@ describe "File.open" do
 
   it "doesn't create internal caching issues if you use a integer then string" do
     File.open(1) rescue nil
-    lambda { File.open(@file, 'w') }.should_not raise_error
+    lambda { File.open(@file, 'w') {} }.should_not raise_error
   end
 end

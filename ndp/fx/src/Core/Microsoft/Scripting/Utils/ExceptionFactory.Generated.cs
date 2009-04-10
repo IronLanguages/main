@@ -1440,11 +1440,11 @@ namespace System.Linq.Expressions {
         }
 
         /// <summary>
-        /// A string like  "The operation cannot be performed in heterogeneous app domain."
+        /// A string like  "Dynamic operations can only be performed in homogenous AppDomain."
         /// </summary>
         internal static string HomogenousAppDomainRequired {
             get {
-                return "The operation cannot be performed in heterogeneous app domain.";
+                return "Dynamic operations can only be performed in homogenous AppDomain.";
             }
         }
 
@@ -2442,7 +2442,7 @@ namespace System.Linq.Expressions {
         }
 
         /// <summary>
-        /// InvalidOperationException with message like "The operation cannot be performed in heterogeneous app domain."
+        /// InvalidOperationException with message like "Dynamic operations can only be performed in homogenous AppDomain."
         /// </summary>
         internal static Exception HomogenousAppDomainRequired() {
             return new InvalidOperationException(Strings.HomogenousAppDomainRequired);

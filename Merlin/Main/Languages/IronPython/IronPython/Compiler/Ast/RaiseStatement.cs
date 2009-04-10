@@ -41,12 +41,19 @@ namespace IronPython.Compiler.Ast {
         }
 
         internal override MSAst.Expression Transform(AstGenerator ag) {
-            MSAst.MethodCallExpression raiseExpression;
+            MSAst.Expression raiseExpression;
             if (_type == null && _value == null && _traceback == null) {
                 raiseExpression = Ast.Call(
                     AstGenerator.GetHelperMethod("MakeRethrownException"),
                     ag.LocalContext
                 );
+
+                if (!ag._isEmittingFinally) {
+                    raiseExpression = Ast.Block(
+                        ag.UpdateLineUpdated(true),
+                        raiseExpression
+                    );
+                }
             } else {
                 raiseExpression = Ast.Call(
                     AstGenerator.GetHelperMethod("MakeException"),

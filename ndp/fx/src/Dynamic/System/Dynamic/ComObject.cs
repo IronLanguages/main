@@ -17,11 +17,11 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Dynamic;
-using System.Dynamic.Utils;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Security;
+using System.Security.Permissions;
 
 namespace System.Dynamic {
     /// <summary>
@@ -51,6 +51,10 @@ namespace System.Dynamic {
         /// This is the factory method to get the ComObject corresponding to an RCW
         /// </summary>
         /// <returns></returns>
+#if MICROSOFT_DYNAMIC
+        [PermissionSet(SecurityAction.LinkDemand, Unrestricted = true)]
+#endif
+        [SecurityCritical]
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2201:DoNotRaiseReservedExceptionTypes")]
         public static ComObject ObjectToComObject(object rcw) {
             Debug.Assert(ComObject.IsComObject(rcw));
