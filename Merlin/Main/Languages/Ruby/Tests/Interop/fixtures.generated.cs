@@ -1,3 +1,4 @@
+using System;
 using Microsoft.Scripting.Hosting;
   using IronRuby.Runtime;
   using IronRuby.Builtins;
@@ -7,6 +8,17 @@ public partial class Klass {
         return arg0;
       }
     }
+#line 4 "./bcl/icomparable/comparable_spec.rb"
+#line 7 "./bcl/icomparable/comparable_spec.rb"
+public class IComparableConsumer {
+    public static int Consume(IComparable icomp) {
+      return icomp.CompareTo(1);
+    }
+  }
+  
+  public class IComparableProvider {
+  
+  }
 #line 4 "./bcl/numerics/decimal_spec.rb"
 public partial class Klass {
     public decimal MyDecimal {get; set;}
