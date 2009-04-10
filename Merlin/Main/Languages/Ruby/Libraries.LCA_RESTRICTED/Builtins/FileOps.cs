@@ -150,6 +150,9 @@ namespace IronRuby.Builtins {
 
         #endregion
 
+        internal const int WriteModeMask = 0x80; // Oct 0200
+        internal const int ReadWriteMode = 0x1B6; // Oct 0666
+
         #region Public Singleton Methods
 
         [RubyMethod("open", RubyMethodAttributes.PublicSingleton)]
@@ -240,7 +243,7 @@ namespace IronRuby.Builtins {
         internal static void Chmod(string path, int permission) {
 #if !SILVERLIGHT
             FileAttributes oldAttributes = File.GetAttributes(path);
-            if ((permission & 0x80) == 0) {
+            if ((permission & WriteModeMask) == 0) {
                 File.SetAttributes(path, oldAttributes | FileAttributes.ReadOnly);
             } else {
                 File.SetAttributes(path, oldAttributes & ~FileAttributes.ReadOnly);
@@ -267,7 +270,7 @@ namespace IronRuby.Builtins {
             return RubyStatOps.CreateTime(RubyStatOps.Create(self.Context, path));
         }
 
-        private static bool FileExists(RubyContext/*!*/ context, string/*!*/ path) {
+        internal static bool FileExists(RubyContext/*!*/ context, string/*!*/ path) {
             return context.DomainManager.Platform.FileExists(path);
         }
 

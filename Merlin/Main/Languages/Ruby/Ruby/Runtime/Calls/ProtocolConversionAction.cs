@@ -87,7 +87,7 @@ namespace IronRuby.Runtime.Calls {
                 return factory.Conversion<ConvertToStrAction>();
             }
 
-            // TODO: nullable int (see Array#fill, Sockets:ConvertToSocketFlag)
+            // TODO: nullable int (see Array#fill, Sockets:ConvertToSocketFlag, Kernel#open(perm=nil))
             if (parameterType == typeof(int)) {
                 return factory.Conversion<ConvertToFixnumAction>();
             }
