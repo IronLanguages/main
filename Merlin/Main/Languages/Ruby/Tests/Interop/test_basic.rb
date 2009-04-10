@@ -17,13 +17,6 @@ require "../util/assert.rb"
 
 require "mscorlib"
 
-def test_idictionary
-    d = System::Collections::Generic::Dictionary[Object, Object].new
-    d[:abc] = 'def'
-    assert_equal(d[:abc], 'def')
-    assert_equal(d.inspect, '{:abc=>"def"}')
-end
-
 def test_ilist
     a = System::Collections::ArrayList.new
     a.Add(1)
@@ -142,7 +135,6 @@ def test_include_interface_after_type_creation
   end
 end
 
-test_idictionary
 test_ilist
 test_inherit
 test_monkeypatch
