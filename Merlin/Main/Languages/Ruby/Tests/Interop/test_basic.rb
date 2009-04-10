@@ -17,31 +17,6 @@ require "../util/assert.rb"
 
 require "mscorlib"
 
-def test_ienumerable
-    # .NET types that implement IEnumerable should
-    # implement each & include Enumerable
-    a = System::Collections::ArrayList.new
-    a.add 1
-    a.add 2
-    a.add 3
-    b = []
-    a.each { |i| b << i }
-    assert_equal(b, [1, 2, 3])
-    c = a.collect { |i| i + 3 }
-    assert_equal(c, [4, 5, 6])
-end
-
-def test_icomparable
-    a = System::DateTime.new 1900, 1, 1
-    b = System::DateTime.new 1900, 1, 15
-    c = System::DateTime.new 1900, 2, 1
-    assert_true { a < b }
-    assert_true { b <= c }
-    assert_equal(a <=> c, -1)
-    assert_true { b.between?(a,c) }
-    assert_false { b.between?(c,a) }
-end
-
 def test_idictionary
     d = System::Collections::Generic::Dictionary[Object, Object].new
     d[:abc] = 'def'
@@ -95,15 +70,15 @@ class System::Collections::ArrayList
 end
 
 def test_monkeypatch
-    a = System::Collections::ArrayList.new
-    
-    b = System::Collections::ArrayList.new
-    a.add 3
-    a << 2 << 1
-    assert_equal(a.total, 6)
-    b.replace [4,5,6]
-    assert_equal(b.total, 15)
-  end
+  a = System::Collections::ArrayList.new
+  
+  b = System::Collections::ArrayList.new
+  a.add 3
+  a << 2 << 1
+  assert_equal(a.total, 6)
+  b.replace [4,5,6]
+  assert_equal(b.total, 15)
+end
   
 def test_unmangling
   max = 2147483647
@@ -167,10 +142,6 @@ def test_include_interface_after_type_creation
   end
 end
 
-test_ienumerable
-# TODO: disabling this test until we figure out how to enable creating DateTime
-# objects using their ctors and not Time's RubyConstructors
-#test_icomparable
 test_idictionary
 test_ilist
 test_inherit
