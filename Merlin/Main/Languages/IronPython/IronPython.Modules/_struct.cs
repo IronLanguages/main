@@ -1065,7 +1065,15 @@ namespace IronPython.Modules {
                 bytes[1] = (byte)ReadData(context, ref index, data);
                 bytes[0] = (byte)ReadData(context, ref index, data);
             }
-            return BitConverter.ToSingle(bytes, 0);
+            float res = BitConverter.ToSingle(bytes, 0);
+
+            if (PythonContext.GetContext(context).FloatFormat == FloatFormat.Unknown) {
+                if (Single.IsNaN(res) || Single.IsInfinity(res)) {
+                    throw PythonOps.ValueError("can't unpack IEEE 754 special value on non-IEEE platform");
+                }
+            }
+
+            return res;
         }
 
         internal static int CreateIntValue(CodeContext/*!*/ context, ref int index, bool fLittleEndian, string data) {
@@ -1148,7 +1156,15 @@ namespace IronPython.Modules {
                 bytes[1] = (byte)ReadData(context, ref index, data);
                 bytes[0] = (byte)ReadData(context, ref index, data);
             }
-            return BitConverter.ToDouble(bytes, 0);
+
+            double res = BitConverter.ToDouble(bytes, 0);
+            if (PythonContext.GetContext(context).DoubleFormat == FloatFormat.Unknown) {
+                if (Double.IsNaN(res) || Double.IsInfinity(res)) {
+                    throw PythonOps.ValueError("can't unpack IEEE 754 special value on non-IEEE platform");
+                }
+            }
+
+            return res;
         }
 
         internal static string CreateString(CodeContext/*!*/ context, ref int index, int count, string data) {

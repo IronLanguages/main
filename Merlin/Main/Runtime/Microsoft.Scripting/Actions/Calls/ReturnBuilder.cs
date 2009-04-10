@@ -21,7 +21,7 @@ using Microsoft.Scripting.Runtime;
 
 namespace Microsoft.Scripting.Actions.Calls {
 
-    class ReturnBuilder {
+    internal class ReturnBuilder {
         private readonly Type _returnType;
 
         /// <summary>
@@ -34,7 +34,7 @@ namespace Microsoft.Scripting.Actions.Calls {
             this._returnType = returnType;
         }
 
-        internal virtual Expression ToExpression(ParameterBinder parameterBinder, IList<ArgBuilder> args, IList<Expression> parameters, Expression ret) {
+        internal virtual Expression ToExpression(OverloadResolver resolver, IList<ArgBuilder> args, IList<Expression> parameters, Expression ret) {
             return ret;
         }
 

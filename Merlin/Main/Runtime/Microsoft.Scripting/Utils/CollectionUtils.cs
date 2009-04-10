@@ -93,7 +93,19 @@ namespace Microsoft.Scripting.Utils {
             return result;
         }
 
-        public static bool TrueForAll<T>(IList<T> collection, Predicate<T> predicate) {
+        public static int Max(this IEnumerable<int> values) {
+            ContractUtils.RequiresNotNull(values, "values");
+
+            int result = Int32.MinValue;
+            foreach (var value in values) {
+                if (value > result) {
+                    result = value;
+                }
+            }
+            return result;
+        }
+
+        public static bool TrueForAll<T>(IEnumerable<T> collection, Predicate<T> predicate) {
             ContractUtils.RequiresNotNull(collection, "collection");
             ContractUtils.RequiresNotNull(predicate, "predicate");
 

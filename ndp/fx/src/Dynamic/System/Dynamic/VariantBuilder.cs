@@ -15,12 +15,9 @@
 
 #if !SILVERLIGHT // ComObject
 
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq.Expressions;
-using System.Reflection;
 using System.Runtime.InteropServices;
-using System.Dynamic.Utils;
 
 namespace System.Dynamic {
 

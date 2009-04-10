@@ -34,8 +34,7 @@ namespace Microsoft.Scripting.Actions.Calls {
     /// </summary>
     public sealed class ParameterWrapper {
         private readonly Type _type;
-        private readonly bool _prohibitNull, _isParams, _isParamsDict;
-        private readonly ActionBinder _binder;
+        private readonly bool _prohibitNull, _isParams, _isParamsDict, _isHidden;
         private readonly string _name;
 
         // Type and other properties may differ from the values on the info; info could also be unspecified.
@@ -44,35 +43,35 @@ namespace Microsoft.Scripting.Actions.Calls {
         /// <summary>
         /// ParameterInfo is not available.
         /// </summary>
-        public ParameterWrapper(ActionBinder binder, Type type, string name, bool prohibitNull)
-            : this(binder, null, type, name, prohibitNull, false, false) {
+        public ParameterWrapper(Type type, string name, bool prohibitNull)
+            : this(null, type, name, prohibitNull, false, false, false) {
         }
 
-        public ParameterWrapper(ActionBinder binder, ParameterInfo info, Type type, string name, bool prohibitNull, bool isParams, bool isParamsDict) {
-            ContractUtils.RequiresNotNull(binder, "binder");
+        public ParameterWrapper(ParameterInfo info, Type type, string name, bool prohibitNull, bool isParams, bool isParamsDict, bool isHidden) {
             ContractUtils.RequiresNotNull(type, "type");
             
             _type = type;
             _prohibitNull = prohibitNull;
-            _binder = binder;
             _info = info;
-            _name = name;
             _isParams = isParams;
             _isParamsDict = isParamsDict;
+            _isHidden = isHidden;
+
+            // params arrays & dictionaries don't allow assignment by keyword
+            _name = (_isParams || _isParamsDict || name == null) ? "<unknown>" : name;
         }
 
-        public ParameterWrapper(ActionBinder binder, ParameterInfo info)
-            : this(binder, info, info.ParameterType, null, false, false, false) {
+        public ParameterWrapper(ParameterInfo info) 
+            : this(info, info.ParameterType, info.Name, 
+            CompilerHelpers.ProhibitsNull(info),  
+            CompilerHelpers.IsParamArray(info), 
+            BinderHelpers.IsParamDictionary(info),
+            false
+        ) {
+        }
 
-            _prohibitNull = CompilerHelpers.ProhibitsNull(info);
-            _isParams = CompilerHelpers.IsParamArray(info);
-            _isParamsDict = BinderHelpers.IsParamDictionary(info);
-            if (_isParams || _isParamsDict) {
-                // params arrays & dictionaries don't allow assignment by keyword
-                _name = "<unknown>";
-            } else {
-                _name = info.Name ?? "<unknown>";
-            }
+        public ParameterWrapper Clone(string name) {
+            return new ParameterWrapper(_info, _type, name, _prohibitNull, _isParams, _isParamsDict, _isHidden);
         }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1721:PropertyNamesShouldNotMatchGetMethods")]
@@ -88,171 +87,43 @@ namespace Microsoft.Scripting.Actions.Calls {
             get { return _info; }
         }
 
-        public bool HasConversionFrom(Type fromType, NarrowingLevel level) {
-            return _binder.CanConvertFrom(fromType, this, level);
-        }
-
-        // TODO: remove
-        internal static Candidate GetPreferredParameters(IList<ParameterWrapper> parameters1, IList<ParameterWrapper> parameters2, Type[] actualTypes) {
-            Debug.Assert(parameters1.Count == parameters2.Count);
-            Debug.Assert(parameters1.Count == actualTypes.Length);
-
-            Candidate result = Candidate.Equivalent;
-            for (int i = 0; i < actualTypes.Length; i++) {
-                Candidate preferred = GetPreferredParameter(parameters1[i], parameters2[i], actualTypes[i]);
-                
-                switch (result) {
-                    case Candidate.Equivalent:
-                        result = preferred; 
-                        break;
-
-                    case Candidate.One:
-                        if (preferred == Candidate.Two) return Candidate.Ambiguous;
-                        break;
-
-                    case Candidate.Two:
-                        if (preferred == Candidate.One) return Candidate.Ambiguous;
-                        break;
-
-                    case Candidate.Ambiguous:
-                        if (preferred != Candidate.Equivalent) {
-                            result = preferred;
-                        }
-                        break;
-
-                    default:
-                        throw new InvalidOperationException();
-                }
-            }
-
-            return result;
-        }
-
-        public static Candidate GetPreferredParameters(IList<ParameterWrapper> parameters1, IList<ParameterWrapper> parameters2, DynamicMetaObject[] actualTypes) {
-            Debug.Assert(parameters1.Count == parameters2.Count);
-            Debug.Assert(parameters1.Count == actualTypes.Length);
-
-            Candidate result = Candidate.Equivalent;
-            for (int i = 0; i < actualTypes.Length; i++) {
-                Candidate preferred = GetPreferredParameter(parameters1[i], parameters2[i], actualTypes[i]);
-
-                switch (result) {
-                    case Candidate.Equivalent:
-                        result = preferred; 
-                        break;
-
-                    case Candidate.One:
-                        if (preferred == Candidate.Two) return Candidate.Ambiguous;
-                        break;
-
-                    case Candidate.Two:
-                        if (preferred == Candidate.One) return Candidate.Ambiguous;
-                        break;
-
-                    case Candidate.Ambiguous:
-                        if (preferred != Candidate.Equivalent) {
-                            result = preferred;
-                        }
-                        break;
-
-                    default:
-                        throw new InvalidOperationException();
-                }
-            }
-
-            return result;
-        }
-
-        private static Candidate GetPreferredParameter(ParameterWrapper candidateOne, ParameterWrapper candidateTwo) {
-            Assert.NotNull(candidateOne, candidateTwo);
-
-            if (candidateOne._binder.ParametersEquivalent(candidateOne, candidateTwo)) {
-                return Candidate.Equivalent;
-            }
-
-            Type t1 = candidateOne.Type;
-            Type t2 = candidateTwo.Type;
-
-            if (candidateOne._binder.CanConvertFrom(t2, candidateOne, NarrowingLevel.None)) {
-                if (candidateOne._binder.CanConvertFrom(t1, candidateTwo, NarrowingLevel.None)) {
-                    return Candidate.Ambiguous;
-                } else {
-                    return Candidate.Two;
-                }
-            }
-
-            if (candidateOne._binder.CanConvertFrom(t1, candidateTwo, NarrowingLevel.None)) {
-                return Candidate.One;
-            }
-
-            // Special additional rules to order numeric value types
-            Candidate preferred = candidateOne._binder.PreferConvert(t1, t2);
-            if (preferred.Chosen()) {
-                return preferred;
-            }
-
-            preferred = candidateOne._binder.PreferConvert(t2, t1).TheOther();
-            if (preferred.Chosen()) {
-                return preferred;
-            }
-
-            return Candidate.Ambiguous;
-        }
-
-        private static Candidate GetPreferredParameter(ParameterWrapper candidateOne, ParameterWrapper candidateTwo, Type actualType) {
-            Assert.NotNull(candidateOne, candidateTwo, actualType);
-
-            if (candidateOne._binder.ParametersEquivalent(candidateOne, candidateTwo)) {
-                return Candidate.Equivalent;
-            }
-
-            for (NarrowingLevel curLevel = NarrowingLevel.None; curLevel <= NarrowingLevel.All; curLevel++) {
-                Candidate candidate = candidateOne._binder.SelectBestConversionFor(actualType, candidateOne, candidateTwo, curLevel);
-                if (candidate.Chosen()) {
-                    return candidate;
-                }
-            }
-
-            return GetPreferredParameter(candidateOne, candidateTwo);
-        }
-
-        private static Candidate GetPreferredParameter(ParameterWrapper candidateOne, ParameterWrapper candidateTwo, DynamicMetaObject actualType) {
-            Assert.NotNull(candidateOne, candidateTwo, actualType);
-
-            if (candidateOne._binder.ParametersEquivalent(candidateOne, candidateTwo)) {
-                return Candidate.Equivalent;
-            }
-
-            for (NarrowingLevel curLevel = NarrowingLevel.None; curLevel <= NarrowingLevel.All; curLevel++) {
-                Candidate candidate = candidateOne._binder.SelectBestConversionFor(actualType.GetLimitType(), candidateOne, candidateTwo, curLevel);
-                if (candidate.Chosen()) {
-                    return candidate;
-                }
-            }
-
-            return GetPreferredParameter(candidateOne, candidateTwo);
-        }
-
         public string Name {
-            get {
-                return _name;
-            }
+            get { return _name; }
         }
 
+        public bool IsHidden {
+            get { return _isHidden; }
+        }
+
+        /// <summary>
+        /// True if the wrapper represents a params-array parameter (false for parameters created by expansion of a params-array).
+        /// </summary>
         public bool IsParamsArray {
-            get {
-                return _isParams;
-            }
+            get { return _isParams; }
         }
 
+        /// <summary>
+        /// True if the wrapper represents a params-dict parameter (false for parameters created by expansion of a params-dict).
+        /// </summary>
         public bool IsParamsDict {
-            get {
-                return _isParamsDict;
-            }
+            get { return _isParamsDict; }
         }
 
-        public string ToSignatureString() {
-            return Type.Name;
+        internal static int IndexOfParamsArray(IList<ParameterWrapper> parameters) {
+            for (int i = 0; i < parameters.Count; i++) {
+                if (parameters[i].IsParamsArray) {
+                    return i;
+                }
+            }
+            return -1;
+        }
+
+        /// <summary>
+        /// Creates a parameter that represents an expanded item of params-array.
+        /// </summary>
+        internal ParameterWrapper Expand() {
+            Debug.Assert(_isParams);
+            return new ParameterWrapper(_info, _type.GetElementType(), null, CompilerHelpers.ProhibitsNullItems(_info), false, false, _isHidden);
         }
     }
 

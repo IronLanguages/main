@@ -121,8 +121,8 @@ namespace IronPython.Runtime.Binding {
             }
 
             return PythonProtocol.Call(this, target, args) ??
-                Binder.Binder.Create(Signature, new ParameterBinderWithCodeContext(Binder.Binder, codeContext), target, args) ??
-                Binder.Binder.Call(Signature, new ParameterBinderWithCodeContext(Binder.Binder, codeContext), target, args);
+                Binder.Binder.Create(Signature, target, args, codeContext) ??
+                Binder.Binder.Call(Signature, new PythonOverloadResolverFactory(Binder.Binder, codeContext), target, args);
         }
 
         #endregion

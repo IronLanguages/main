@@ -24,13 +24,11 @@ namespace Microsoft.Scripting.Actions.Calls {
     public sealed class ConversionResult {
         private readonly Type _fromType;
         private readonly Type _toType;
-        private readonly int _position;
         private readonly bool _failed;
 
-        public ConversionResult(Type fromType, Type toType, int position, bool failed) {
+        public ConversionResult(Type fromType, Type toType, bool failed) {
             _fromType = fromType;
             _toType = toType;
-            _position = position;
             _failed = failed;
         }
 
@@ -46,22 +44,16 @@ namespace Microsoft.Scripting.Actions.Calls {
             }
         }
 
-        public int Position {
-            get {
-                return _position;
-            }
-        }
-
         public bool Failed {
             get {
                 return _failed;
             }
         }
 
-        internal static void ReplaceLastFailure(IList<ConversionResult> failures, int newIndex, bool isFailure) {
+        internal static void ReplaceLastFailure(IList<ConversionResult> failures, bool isFailure) {
             ConversionResult failure = failures[failures.Count - 1];
             failures.RemoveAt(failures.Count - 1);
-            failures.Add(new ConversionResult(failure.From, failure.To, newIndex, isFailure));
+            failures.Add(new ConversionResult(failure.From, failure.To, isFailure));
         }
     }
 }

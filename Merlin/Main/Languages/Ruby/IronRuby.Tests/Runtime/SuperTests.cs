@@ -197,6 +197,35 @@ true
 ");
         }
 
+        public void SuperToAttribute1() {
+            AssertOutput(() => CompilerTest(@"
+class C
+  attr_accessor :foo
+end
+
+class D < C
+  def foo
+    super
+  end
+  
+  def foo= v
+    super
+  end
+end
+
+d = D.new
+p d.foo = 123
+p d.foo
+p d.foo {}
+p d.foo(1) rescue p $!
+"), @"
+123
+123
+123
+#<ArgumentError: wrong number of arguments (1 for 0)>
+");
+        }
+
         /// <summary>
         /// Super calls method_missing.
         /// </summary>

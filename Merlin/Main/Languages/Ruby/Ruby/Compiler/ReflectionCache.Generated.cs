@@ -382,6 +382,8 @@ namespace IronRuby.Compiler {
         private static MethodInfo _TraceMethodCall;
         public static MethodInfo/*!*/ TraceMethodReturn { get { return _TraceMethodReturn ?? (_TraceMethodReturn = GetMethod(typeof(RubyOps), "TraceMethodReturn")); } }
         private static MethodInfo _TraceMethodReturn;
+        public static MethodInfo/*!*/ ExistsUnsplat { get { return _ExistsUnsplat ?? (_ExistsUnsplat = GetMethod(typeof(RubyOps), "ExistsUnsplat")); } }
+        private static MethodInfo _ExistsUnsplat;
         public static MethodInfo/*!*/ TryGetClassVariable { get { return _TryGetClassVariable ?? (_TryGetClassVariable = GetMethod(typeof(RubyOps), "TryGetClassVariable")); } }
         private static MethodInfo _TryGetClassVariable;
         public static MethodInfo/*!*/ TryGetObjectClassVariable { get { return _TryGetObjectClassVariable ?? (_TryGetObjectClassVariable = GetMethod(typeof(RubyOps), "TryGetObjectClassVariable")); } }

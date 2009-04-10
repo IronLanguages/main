@@ -22,14 +22,17 @@ namespace Microsoft.Scripting.Actions.Calls {
         /// The binding succeeded.  Only one method was applicable or had the best conversion.  
         /// </summary>
         Success,
+
         /// <summary>
         /// More than one method was applicable for the provided parameters and no method was considered the best.
         /// </summary>
         AmbiguousMatch,
+
         /// <summary>
         /// There are no overloads that match the number of parameters required for the call
         /// </summary>
         IncorrectArgumentCount,
+
         /// <summary>
         /// None of the target method(s) can successfully be called.  The failure can be due to:
         ///     1. Arguments could not be successfully converted for the call
@@ -38,5 +41,10 @@ namespace Microsoft.Scripting.Actions.Calls {
         ///        multiple times (keyword and positional arguments conflit or dupliate keyword arguments).
         /// </summary>
         CallFailure,
+
+        /// <summary>
+        /// Actual arguments cannot be constructed.
+        /// </summary>
+        InvalidArguments,
     }
 }

@@ -138,7 +138,7 @@ namespace IronPython.Runtime {
         /// <summary>
         /// Gets the current summary of profile data
         /// </summary>
-        public List<Data>/*!*/ GetProfile() {
+        public List<Data>/*!*/ GetProfile(bool includeUnused) {
             var result = new List<Data>(_counters.Count);
             lock (_counters) {
                 // capture the current profile
@@ -165,7 +165,7 @@ namespace IronPython.Runtime {
                 _profiles.Add(totals);
 
                 for (int i = 0; i < _counters.Count; i++) {
-                    if (totals[i, NumberOfCalls] > 0) {
+                    if (includeUnused || totals[i, NumberOfCalls] > 0) {
                         result.Add(new Data(
                             _counters[i],
                             DateTimeTicksFromTimeData(totals[i, TimeInBody] + totals[i, TimeInChildMethods]),

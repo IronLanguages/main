@@ -18,6 +18,8 @@ using Microsoft.Scripting.Utils;
 using System.Diagnostics;
 using System.Text;
 using System.Reflection;
+using System.Collections;
+using System.Collections.Generic;
 
 namespace IronRuby.Runtime {
     public static class Utils {
@@ -314,6 +316,32 @@ namespace IronRuby.Runtime {
                 result[i] = converter(array[i]);
             }
             return result;
+        }
+
+        internal static void AddRange(this IList/*!*/ list, IEnumerable<object>/*!*/ range) {
+            Assert.NotNull(list, range);
+
+            List<object> objList;
+            if ((objList = list as List<object>) != null) {
+                objList.AddRange(range);
+            } else {
+                foreach (var item in range) {
+                    list.Add(item);
+                }
+            }
+        }
+
+        internal static void AddRange(this IList/*!*/ list, IEnumerable/*!*/ range) {
+            Assert.NotNull(list, range);
+
+            List<object> objList;
+            if ((objList = list as List<object>) != null) {
+                objList.AddRange(range);
+            } else {
+                foreach (var item in range) {
+                    list.Add(item);
+                }
+            }
         }
 
         [Conditional("DEBUG")]

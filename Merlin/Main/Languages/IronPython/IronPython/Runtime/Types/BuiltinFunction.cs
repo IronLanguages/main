@@ -1017,11 +1017,12 @@ namespace IronPython.Runtime.Types {
                 }
 
                 if (optInfo != null) {
-                    if (optInfo.OptimizedDelegate != null) {
+                    var optimizedDelegate = optInfo.GetOptimizedDelegate(state);
+                    if (optimizedDelegate != null) {
                         // if we've already produced an optimal rule don't go and produce an
                         // unoptimal rule (which will not hit any targets anyway - it's hit count
                         // has been exceeded and now it always fails).
-                        return new FastBindResult<T>((T)(object)optInfo.OptimizedDelegate, true);
+                        return new FastBindResult<T>((T)(object)optimizedDelegate, true);
                     }
 
                     ParameterInfo[] prms = typeof(T).GetMethod("Invoke").GetParameters();
@@ -1070,7 +1071,6 @@ namespace IronPython.Runtime.Types {
         private KeyValuePair<OptimizingCallDelegate, Type[]> MakeCall<T>(PythonInvokeBinder binder, object[] args) where T : class {
             Expression codeContext = Expression.Parameter(typeof(CodeContext), "context");
             var pybinder = BinderState.GetBinderState(binder).Binder;
-            var paramBinder = new ParameterBinderWithCodeContext(pybinder, codeContext);
             KeyValuePair<OptimizingCallDelegate, Type[]> call;
             if (IsUnbound) {
                 call = MakeBuiltinFunctionDelegate(
@@ -1079,22 +1079,25 @@ namespace IronPython.Runtime.Types {
                     GetMetaObjects<T>(args),
                     false,  // no self
                     (newArgs) => {
-                        BindingTarget target;
-                        DynamicMetaObject res = pybinder.CallMethod(
-                            paramBinder,
-                            Targets,
+                        var resolver = new PythonOverloadResolver(
+                            pybinder,
                             newArgs,
                             BindingHelpers.GetCallSignature(binder),
-                            BindingRestrictions.Empty,
-                            PythonNarrowing.None,
-                            IsBinaryOperator ?
-                                    PythonNarrowing.BinaryOperator :
-                                    NarrowingLevel.All,
+                            codeContext
+                        );
+
+                        BindingTarget target;
+                        DynamicMetaObject res = pybinder.CallMethod(
+                            resolver, 
+                            Targets, 
+                            BindingRestrictions.Empty, 
                             Name,
+                            PythonNarrowing.None,
+                            IsBinaryOperator ? PythonNarrowing.BinaryOperator : NarrowingLevel.All,
                             out target
                         );
 
-                        return new BuiltinFunction.BindingResult(target, res, target.Success ? target.MakeDelegate(paramBinder) : null);
+                        return new BuiltinFunction.BindingResult(target, res, target.Success ? target.MakeDelegate() : null);
                     }
                 );
             } else {
@@ -1109,38 +1112,35 @@ namespace IronPython.Runtime.Types {
                         CallSignature signature = BindingHelpers.GetCallSignature(binder);
                         DynamicMetaObject res;
                         BindingTarget target;
+                        PythonOverloadResolver resolver;
+
                         if (IsReversedOperator) {
-                            res = pybinder.CallMethod(
-                                paramBinder,
-                                Targets,
+                            resolver = new PythonOverloadResolver(
+                                pybinder,
                                 newArgs,
                                 MetaBuiltinFunction.GetReversedSignature(signature),
-                                self.Restrictions,
-                                NarrowingLevel.None,
-                                IsBinaryOperator ?
-                                    PythonNarrowing.BinaryOperator :
-                                    NarrowingLevel.All,
-                                Name,
-                                out target
+                                codeContext
                             );
                         } else {
-                            res = pybinder.CallInstanceMethod(
-                                paramBinder,
-                                Targets,
+                            resolver = new PythonOverloadResolver(
+                                pybinder,
                                 self,
                                 metaArgs,
                                 signature,
-                                self.Restrictions,
-                                NarrowingLevel.None,
-                                IsBinaryOperator ?
-                                    PythonNarrowing.BinaryOperator :
-                                    NarrowingLevel.All,
-                                Name,
-                                out target
+                                codeContext
                             );
                         }
 
-                        return new BuiltinFunction.BindingResult(target, res, target.Success ? target.MakeDelegate(paramBinder) : null);
+                        res = pybinder.CallMethod(
+                            resolver, 
+                            Targets, 
+                            self.Restrictions, 
+                            Name,
+                            NarrowingLevel.None,
+                            IsBinaryOperator ? PythonNarrowing.BinaryOperator : NarrowingLevel.All,
+                            out target
+                        );
+                        return new BuiltinFunction.BindingResult(target, res, target.Success ? target.MakeDelegate() : null);
                     }
                 );
             }

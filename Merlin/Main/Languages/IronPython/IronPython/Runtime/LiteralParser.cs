@@ -14,11 +14,14 @@
  * ***************************************************************************/
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.Text;
-using IronPython.Runtime.Operations;
+
 using Microsoft.Scripting.Math;
-using System.Collections.Generic; 
+
+using IronPython.Runtime.Operations;
 
 namespace IronPython.Runtime {
     /// <summary>
@@ -509,7 +512,8 @@ namespace IronPython.Runtime {
                 case "-inf":
                     return double.NegativeInfinity;
                 default:
-                    double res = double.Parse(s, System.Globalization.CultureInfo.InvariantCulture);
+                    // pass NumberStyles to disallow ,'s in float strings.
+                    double res = double.Parse(s, NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture);
                     return (res == 0.0 && text.lstrip().StartsWith("-")) ? DoubleOps.NegativeZero : res;
             }
         }

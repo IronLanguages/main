@@ -62,25 +62,15 @@ namespace Microsoft.Scripting.Actions.Calls {
             return (((SimpleArgBuilder)builder).Index == 0);
         }
 
-        internal protected override Expression ToExpression(ParameterBinder parameterBinder, IList<Expression> parameters, bool[] hasBeenUsed) {
+        internal protected override Expression ToExpression(OverloadResolver resolver, IList<Expression> parameters, bool[] hasBeenUsed) {
             Debug.Assert(BuilderExpectsSingleParameter(_builder));
             int index = GetKeywordIndex(parameters.Count);
             hasBeenUsed[index] = true;
-            return _builder.ToExpression(parameterBinder, new Expression[] { parameters[index] }, new bool[1]);
-        }
-        
-        protected internal override Func<object[], object> ToDelegate(ParameterBinder parameterBinder, IList<DynamicMetaObject> knownTypes, bool[] hasBeenUsed) {
-            int index = GetKeywordIndex(knownTypes.Count);
-            hasBeenUsed[index] = true;
-
-            var target = _builder.ToDelegate(parameterBinder, new DynamicMetaObject[] { knownTypes[index] }, new bool[1]);
-            return (args) => target(new object[] { args[index] });
+            return _builder.ToExpression(resolver, new Expression[] { parameters[index] }, new bool[1]);
         }
 
-        internal override bool CanGenerateDelegate {
-            get {
-                return base.CanGenerateDelegate;
-            }
+        protected internal override Func<object[], object> ToDelegate(OverloadResolver resolver, IList<DynamicMetaObject> knownTypes, bool[] hasBeenUsed) {
+            return null;
         }
 
         public override Type Type {
@@ -89,12 +79,12 @@ namespace Microsoft.Scripting.Actions.Calls {
             }
         }
 
-        internal override Expression ToReturnExpression(ParameterBinder parameterBinder) {
-            return _builder.ToReturnExpression(parameterBinder);
+        internal override Expression ToReturnExpression(OverloadResolver resolver) {
+            return _builder.ToReturnExpression(resolver);
         }
 
-        internal override Expression UpdateFromReturn(ParameterBinder parameterBinder, IList<Expression> parameters) {
-            return _builder.UpdateFromReturn(parameterBinder, new Expression[] { parameters[GetKeywordIndex(parameters.Count)] });
+        internal override Expression UpdateFromReturn(OverloadResolver resolver, IList<Expression> parameters) {
+            return _builder.UpdateFromReturn(resolver, new Expression[] { parameters[GetKeywordIndex(parameters.Count)] });
         }
 
         private int GetKeywordIndex(int paramCount) {
