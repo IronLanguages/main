@@ -12,17 +12,24 @@ describe "Kernel#open" do
   end
   
   after :each do
-    File.delete(@file) rescue nil
+    File.delete(@file) 
   end
   
   it "opens a file when given a valid filename" do
-    @file = open("test.txt")
-    @file.class.should == File
+    @output = open("test.txt")
+    @output.class.should == File
+    @output.close
   end
   
   it "opens a file when called with a block" do
     @output = open("test.txt", "r") { |f| f.gets }
     @output.should == "This is a test\n"
+  end
+  
+  it "opens a file to write with permission" do
+	open("test.txt", "w", 0644){ |f| f.puts "This is a test2" }
+	File.readable?(@file).should == true
+    File.writable?(@file).should == true
   end
   
   platform_is_not :windows do

@@ -10,7 +10,7 @@
  *
  * You must not remove this notice, or any other, from this software.
  *
- *
+ *attrb
  * ***************************************************************************/
 
 using System;
@@ -237,13 +237,15 @@ namespace IronRuby.Builtins {
             return RubyStatOps.IsCharDevice(RubyStatOps.Create(self.Context, path));
         }
 
-        private static void Chmod(string path, int permission) {
+        internal static void Chmod(string path, int permission) {
+#if !SILVERLIGHT
             FileAttributes oldAttributes = File.GetAttributes(path);
             if ((permission & 0x80) == 0) {
                 File.SetAttributes(path, oldAttributes | FileAttributes.ReadOnly);
             } else {
                 File.SetAttributes(path, oldAttributes & ~FileAttributes.ReadOnly);
             }
+#endif
         }
 
         [RubyMethod("chmod")]
@@ -281,12 +283,13 @@ namespace IronRuby.Builtins {
             if (!FileExists(self.Context, strPath)) {
                 throw new Errno.NoEntryError(String.Format("No such file or directory - {0}", strPath));
             }
-
+#if !SILVERLIGHT
             FileAttributes oldAttributes = File.GetAttributes(strPath);
             if ((oldAttributes & FileAttributes.ReadOnly) == FileAttributes.ReadOnly) {
                 // File.Delete throws UnauthorizedAccessException if the file is read-only
                 File.SetAttributes(strPath, oldAttributes & ~FileAttributes.ReadOnly);
             }
+#endif
             File.Delete(strPath);
             return 1;
         }
