@@ -49,6 +49,16 @@ namespace Microsoft.Scripting.Ast {
             }
         }
 
+        private sealed class LabelInfo {
+            internal readonly LabelTarget NewLabel;
+            internal readonly ParameterExpression Temp;
+
+            internal LabelInfo(LabelTarget old) {
+                NewLabel = Expression.Label(old.Name);
+                Temp = Expression.Parameter(old.Type, old.Name);
+            }
+        }
+
         private readonly GeneratorExpression _generator;
         private readonly ParameterExpression _current;
         private readonly ParameterExpression _state;
@@ -67,6 +77,9 @@ namespace Microsoft.Scripting.Ast {
         // Possible optimization: reuse temps. Requires scoping them correctly,
         // and then storing them back in a free list
         private readonly List<ParameterExpression> _temps = new List<ParameterExpression>();
+
+        // Variables used to support goto-with-value
+        private Dictionary<LabelTarget, LabelInfo> _labelTemps;
 
         internal GeneratorRewriter(GeneratorExpression generator) {
             _generator = generator;
@@ -96,12 +109,21 @@ namespace Microsoft.Scripting.Ast {
             var allVars = new List<ParameterExpression>(_vars);
             allVars.AddRange(_temps);
 
+            // Collect temps that don't have to be closed over
+            var innerTemps = new ReadOnlyCollectionBuilder<ParameterExpression>(1 + (_labelTemps != null ? _labelTemps.Count : 0));
+            innerTemps.Add(_gotoRouter);
+            if (_labelTemps != null) {
+                foreach (LabelInfo info in _labelTemps.Values) {
+                    innerTemps.Add(info.Temp);
+                }
+            }
+
             body = Expression.Block(
                 allVars,
                 Expression.Lambda(
                     generatorNextOfT,
                     Expression.Block(
-                        new ParameterExpression[] { _gotoRouter },
+                        innerTemps,
                         Expression.Switch(Expression.Assign(_gotoRouter, _state), cases),
                         body,
                         Expression.Assign(_state, AstUtils.Constant(Finished)),
@@ -546,6 +568,48 @@ namespace Microsoft.Scripting.Ast {
             // don't recurse into nested lambdas
             return node;
         }
+
+        #region goto with value support
+
+        protected override Expression VisitLabel(LabelExpression node) {
+            if (node.Target.Type == typeof(void)) {
+                return base.VisitLabel(node);
+            }
+
+            LabelInfo info = GetLabelInfo(node.Target);
+            return Expression.Block(
+                MakeAssign(info.Temp, Visit(node.DefaultValue)),
+                Expression.Label(info.NewLabel),
+                info.Temp
+            );
+        }
+
+        protected override Expression VisitGoto(GotoExpression node) {
+            if (node.Target.Type == typeof(void)) {
+                return base.VisitGoto(node);
+            }
+
+            LabelInfo info = GetLabelInfo(node.Target);
+            return Expression.Block(
+                MakeAssign(info.Temp, Visit(node.Value)),
+                Expression.MakeGoto(node.Kind, info.NewLabel, null, node.Type)
+            );
+        }
+
+        private LabelInfo GetLabelInfo(LabelTarget label) {
+            if (_labelTemps == null) {
+                _labelTemps = new Dictionary<LabelTarget, LabelInfo>();
+            }
+
+            LabelInfo temp;
+            if (!_labelTemps.TryGetValue(label, out temp)) {
+                _labelTemps[label] = temp = new LabelInfo(label);
+            }
+
+            return temp;
+        }
+
+        #endregion
 
         #region stack spilling (to permit yield in the middle of an expression)
 
