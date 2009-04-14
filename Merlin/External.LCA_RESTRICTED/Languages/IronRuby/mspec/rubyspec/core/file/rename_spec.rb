@@ -1,4 +1,3 @@
-require "fileutils"
 require File.dirname(__FILE__) + '/../../spec_helper'
 
 describe "File.rename" do
@@ -10,8 +9,8 @@ describe "File.rename" do
     
     File.delete(@old) if File.exist?(@old)
     File.delete(@new) if File.exist?(@new)
-    FileUtils.remove_dir(@dir) if File.exist?(@dir)
-    FileUtils.remove_dir(@new_dir) if File.exist?(@new_dir)
+    FileUtils.rm_rf(@dir) if File.exist?(@dir)
+    FileUtils.rm_rf(@new_dir) if File.exist?(@new_dir)
 
     File.open(@old,"w+") {|f| f.puts "hello" }
     FileUtils.mkdir(@dir)
@@ -20,8 +19,8 @@ describe "File.rename" do
   after :each do
     File.delete(@old) if File.exist?(@old)
     File.delete(@new) if File.exist?(@new)
-    FileUtils.remove_dir(@dir) if File.exist?(@dir)
-    FileUtils.remove_dir(@new_dir) if File.exist?(@new_dir)
+    FileUtils.rm_rf(@dir) if File.exist?(@dir)
+    FileUtils.rm_rf(@new_dir) if File.exist?(@new_dir)
   end
 
   it "renames a file " do
@@ -39,7 +38,6 @@ describe "File.rename" do
   it "raises an Errno::ENOENT if the source does not exist" do
     File.delete(@old)
     lambda { File.rename(@old, @new) }.should raise_error(Errno::ENOENT)
-    lambda { File.rename("non-existent", "non-existent") }.should raise_error(Errno::ENOENT)
   end
 
   it "overwrites destination if the destination already exists" do
@@ -94,6 +92,11 @@ describe "File.rename" do
     File.exists?(@old).should == true
   end
   
+  it "raises Errno::ENOENT if filename is empty" do
+    lambda { File.rename(@old, "") }.should raise_error(Errno::ENOENT)
+    lambda { File.rename("", @new) }.should raise_error(Errno::ENOENT)
+  end
+
   it "raises an ArgumentError if not passed two arguments" do
     lambda { File.rename        }.should raise_error(ArgumentError)
     lambda { File.rename(@file) }.should raise_error(ArgumentError)

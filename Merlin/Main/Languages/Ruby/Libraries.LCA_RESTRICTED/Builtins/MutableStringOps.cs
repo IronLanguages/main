@@ -2079,6 +2079,12 @@ namespace IronRuby.Builtins {
                 }
             }
 
+            if (self.IsEmpty) {
+                // If self is "", the result is always []. This is special cased because the code will
+                // return [""].
+                return new RubyArray();
+            }
+
             if (limit == 0) {
                 // suppress trailing empty fields
                 RubyArray array = InternalSplit(self, separator, StringSplitOptions.None, Int32.MaxValue);
@@ -2102,6 +2108,12 @@ namespace IronRuby.Builtins {
             
             if (regexp.IsEmpty) {
                 return Split(stringCast, scope, self, MutableString.Empty, limit);
+            }
+
+            if (self.IsEmpty) {
+                // If self is "", the result is always []. This is special cased because the code will
+                // return [""].
+                return new RubyArray();
             }
 
             if (limit == 0) {

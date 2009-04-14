@@ -242,7 +242,17 @@ namespace IronRuby.Builtins {
         #endregion
 
         [RubyMethod("abort", RubyMethodAttributes.PrivateInstance)]
-        public static void Abort(object self) {
+        [RubyMethod("abort", RubyMethodAttributes.PublicSingleton)]
+        public static void Abort(object/*!*/ self) {
+            Exit(self, 1);
+        }
+
+        [RubyMethod("abort", RubyMethodAttributes.PrivateInstance)]
+        [RubyMethod("abort", RubyMethodAttributes.PublicSingleton)]
+        public static void Abort(BinaryOpStorage/*!*/ writeStorage, object/*!*/ self, [NotNull]MutableString/*!*/ message) {
+            var site = writeStorage.GetCallSite("write", 1);
+            site.Target(site, writeStorage.Context.StandardErrorOutput, message);
+
             Exit(self, 1);
         }
 
@@ -473,6 +483,10 @@ namespace IronRuby.Builtins {
             [DefaultProtocol, Optional]MutableString mode, 
             [DefaultProtocol, DefaultParameterValue(RubyFileOps.ReadWriteMode)]int permission) {
 
+            if (path.IsEmpty) {
+                throw new Errno.InvalidError();
+            }
+
             string fileName = path.ConvertToString();
             if (fileName.Length > 0 && fileName[0] == '|') {
                 throw new NotImplementedError();
@@ -511,6 +525,10 @@ namespace IronRuby.Builtins {
             [DefaultProtocol, NotNull]MutableString/*!*/ path, 
             int mode,
             [DefaultProtocol, DefaultParameterValue(RubyFileOps.ReadWriteMode)]int permission) {
+
+            if (path.IsEmpty) {
+                throw new Errno.InvalidError();
+            }
 
             string fileName = path.ConvertToString();
             if (fileName.Length > 0 && fileName[0] == '|') {

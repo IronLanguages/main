@@ -24,6 +24,10 @@ namespace IronRuby.Builtins {
     public static class Errno {
         // Errno.constants.sort
 
+        internal static FileNotFoundException/*!*/ CreateENOENT() {
+            return new FileNotFoundException();
+        }
+
         internal static FileNotFoundException/*!*/ CreateENOENT(string message, Exception inner) {
             return new FileNotFoundException(message, inner);
         }
@@ -179,6 +183,21 @@ namespace IronRuby.Builtins {
 
 #if !SILVERLIGHT
             protected NotConnectedError(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context)
+                : base(info, context) { }
+#endif
+        }
+
+        [RubyClass("ECONNREFUSED"), Serializable]
+        public class ConnectionRefusedError : ExternalException {
+            private const string/*!*/ M = "No connection could be made because the target machine actively refused it.";
+
+            public ConnectionRefusedError() : this(null, null) { }
+            public ConnectionRefusedError(string message) : this(message, null) { }
+            public ConnectionRefusedError(string message, Exception inner) : base(MakeMessage(message, M), inner) { }
+            public ConnectionRefusedError(MutableString message) : base(MakeMessage(ref message, M)) { RubyExceptionData.InitializeException(this, message); }
+
+#if !SILVERLIGHT
+            protected ConnectionRefusedError(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context)
                 : base(info, context) { }
 #endif
         }

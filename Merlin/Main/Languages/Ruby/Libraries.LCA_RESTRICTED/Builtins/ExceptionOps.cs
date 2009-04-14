@@ -151,14 +151,15 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("message")]
-        public static object GetMessage(Exception/*!*/ self) {
-            return RubyExceptionData.GetInstance(self).Message;
+        public static object GetMessage(UnaryOpStorage/*!*/ stringReprStorage, Exception/*!*/ self) {
+            var site = stringReprStorage.GetCallSite("to_s");
+            return site.Target(site, self);
         }
 
         [RubyMethod("to_s")]
         [RubyMethod("to_str")]
-        public static MutableString/*!*/ GetMessage(ConversionStorage<MutableString>/*!*/ tosStorage, Exception/*!*/ self) {
-            return Protocols.ConvertToString(tosStorage, GetMessage(self));
+        public static object StringRepresentation(Exception/*!*/ self) {
+            return RubyExceptionData.GetInstance(self).Message;
         }
 
         [RubyMethod("inspect", RubyMethodAttributes.PublicInstance)]

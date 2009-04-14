@@ -62,16 +62,28 @@ namespace IronRuby.Builtins {
 
         [RubyConstructor]
         public static RubyFile/*!*/ CreateFile(RubyClass/*!*/ self, MutableString/*!*/ path) {
+            if (path.IsEmpty) {
+                throw new Errno.InvalidError();
+            }
+
             return new RubyFile(self.Context, path.ConvertToString(), "r");
         }
 
         [RubyConstructor]
         public static RubyFile/*!*/ CreateFile(RubyClass/*!*/ self, MutableString/*!*/ path, MutableString mode) {
+            if (path.IsEmpty) {
+                throw new Errno.InvalidError();
+            }
+
             return new RubyFile(self.Context, path.ConvertToString(), (mode != null) ? mode.ConvertToString() : "r");
         }
 
         [RubyConstructor]
         public static RubyFile/*!*/ CreateFile(RubyClass/*!*/ self, MutableString/*!*/ path, int mode) {
+            if (path.IsEmpty) {
+                throw new Errno.InvalidError();
+            }
+
             return new RubyFile(self.Context, path.ConvertToString(), (RubyFileMode)mode);
         }
 
@@ -558,7 +570,18 @@ namespace IronRuby.Builtins {
                         return path;
                     }
                 } else {
-                    return Glob.CanonicalizePath(MutableString.Create(Path.GetFullPath(path.ConvertToString())));
+                    string pathStr = path.ConvertToString();
+                    MutableString result = Glob.CanonicalizePath(MutableString.Create(Path.GetFullPath(pathStr)));
+
+                    // Path.GetFullPath("c:/winDOWS/foo") returns "c:/winDOWS/foo", but Path.GetFullPath("c:/winDOWS/~") returns "c:/Windows/~".
+                    // So we special-case it as this is not the Ruby behavior. Also, the Ruby behavior is very complicated about when it
+                    // matches the case of the input argument, and when it matches the case of the file system. It can match the file system case
+                    // for part of the result and not the rest. So we restrict the special-case to a very limited scenarios that unblock real-world code.
+                    if (pathStr[pathStr.Length - 1] == '~' && String.Compare(pathStr, result.ConvertToString(), true) == 0) {
+                        result = path.Clone();
+                    }
+
+                    return result;
                 }
             } catch (Exception e) {
                 if (raisingRubyException) {
@@ -634,6 +657,10 @@ namespace IronRuby.Builtins {
         [RubyMethod("rename", RubyMethodAttributes.PublicSingleton)]
         public static int Rename(RubyContext/*!*/ context, RubyClass/*!*/ self,
             [DefaultProtocol, NotNull]MutableString/*!*/ oldPath, [DefaultProtocol, NotNull]MutableString/*!*/ newPath) {
+
+            if (oldPath.IsEmpty || newPath.IsEmpty) {
+                throw Errno.CreateENOENT();
+            }
 
             string strOldPath = oldPath.ConvertToString();
             if (!FileExists(context, strOldPath) && !DirectoryExists(context, strOldPath)) {

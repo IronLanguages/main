@@ -88,7 +88,7 @@ describe "Kernel#open" do
   it "accepts String-like objects for path" do
     file = mock('filename')
     file.should_receive(:to_str).and_return(@file)
-    open(file) { :in_block }.should == :in_block
+    open(file) { }
   end
   
   it "allows nil for mode" do
@@ -98,7 +98,7 @@ describe "Kernel#open" do
   it "allows String-like objects for mode" do
     mode = mock('mode')
     mode.should_receive(:to_str).and_return("r")
-    open(@file, mode) { :in_block }.should == :in_block
+    open(@file, mode) { }
   end
   
   it "allows nil for perm" do
