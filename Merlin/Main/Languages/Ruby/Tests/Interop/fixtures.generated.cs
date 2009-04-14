@@ -136,7 +136,40 @@ public class ClassWithEvents {
   }
   #pragma warning restore 414
 #line 4 "./interface/implementation_spec.rb"
-
+public interface IDoFoo {
+      int Foo(string str);
+      int Foo(int i);
+      int Foo(string str, int i);
+    }
+    
+    public interface IDoStuff {
+      int StuffFoo(int foo);
+      string StuffBar(int bar);
+    }
+    
+    public class ConsumeIDoFoo {
+      public static int ConsumeFoo1(IDoFoo foo) {
+        return foo.Foo("hello");
+      }
+      
+      public static int ConsumeFoo2(IDoFoo foo) {
+        return foo.Foo(1);
+      }
+      
+      public static int ConsumeFoo3(IDoFoo foo) {
+        return foo.Foo("hello", 1);
+      }
+    }
+    
+    public class ConsumeIDoStuff {
+      public static int ConsumeStuffFoo(IDoStuff stuff) {
+        return stuff.StuffFoo(1);
+      }
+      
+      public static string ConsumeStuffBar(IDoStuff stuff) {
+        return stuff.StuffBar(2);
+      }
+    }
 #line 4 "./interface/mapping_spec.rb"
 public interface IEmptyInterface {}
     public interface IInterface { void m();}
