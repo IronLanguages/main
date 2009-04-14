@@ -1,5 +1,1 @@
-fails:Array#[]= inserts the given elements with [range] which the range is zero-width
-fails:Array#[]= inserts the given elements with [start, length] which length is zero
-fails:Array#[]= inserts the given elements with [range] which the range has negative width
 fails:Array#[]= calls to_ary on its rhs argument for multi-element sets
-fails:Array#[]= with [index, count] inserts other section in place defined by idx
