@@ -8,8 +8,8 @@ public partial class Klass {
         return arg0;
       }
     }
-#line 4 "./bcl/icomparable/comparable_spec.rb"
-#line 7 "./bcl/icomparable/comparable_spec.rb"
+#line 10 "./bcl/icomparable/comparable_spec.rb"
+#line 13 "./bcl/icomparable/comparable_spec.rb"
 public class IComparableConsumer {
     public static int Consume(IComparable icomp) {
       return icomp.CompareTo(1);
@@ -135,9 +135,17 @@ public class ClassWithEvents {
     protected static readonly string protectedStaticReadOnlyField = "protected static readonly";
   }
   #pragma warning restore 414
+#line 4 "./interface/implementation_spec.rb"
+
 #line 4 "./interface/mapping_spec.rb"
 public interface IEmptyInterface {}
     public interface IInterface { void m();}
+#line 4 "./interface/reflection_spec.rb"
+public class ImplementsIInterface : IInterface {
+      public void m() {
+        return;
+      }
+    }
 #line 4 "./interfacegroup/mapping_spec.rb"
 public interface IEmptyInterfaceGroup { }
     public interface IEmptyInterfaceGroup<T> { }
