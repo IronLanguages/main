@@ -358,17 +358,25 @@ Python + Ruby
             py.Execute(@"
 def get_python_class():
   class C(object): 
+    x = 123  
     def __str__(self):
       return 'this is C'
+    
 
   return C()
 ", scope);
 
-            AssertOutput(() => Engine.Execute(@"
-p get_python_class.call
-", scope), @"
-this is C
-");
+            Engine.Execute(@"self.c = get_python_class.call", scope);
+
+            var s = Engine.Execute<MutableString>(@"c.to_str", scope);
+            Assert(s.ToString() == @"this is C");
+
+            var i = Engine.Execute<int>(@"c.x", scope);
+            Assert(i == 123);
+
+            // TODO: test
+            // c.y, where y is a delegate
+            // c.p, where p is a Ruby Proc
         }
 
         public void PythonInterop5() {

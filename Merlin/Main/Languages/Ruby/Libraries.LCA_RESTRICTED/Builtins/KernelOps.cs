@@ -1380,12 +1380,21 @@ namespace IronRuby.Builtins {
         // thread-safe:
         [RubyMethod("methods")]
         public static RubyArray/*!*/ GetMethods(RubyContext/*!*/ context, object self, [DefaultParameterValue(true)]bool inherited) {
+            var foreignMembers = context.GetForeignDynamicMemberNames(self);
+
             RubyClass immediateClass = context.GetImmediateClassOf(self);
             if (!inherited && !immediateClass.IsSingletonClass) {
-                return new RubyArray();
+                var result = new RubyArray();
+                if (foreignMembers.Count > 0) {
+                    var symbolicNames = context.RubyOptions.Compatibility > RubyCompatibility.Ruby18;
+                    foreach (var name in foreignMembers) {
+                        result.Add(ModuleOps.CreateMethodName(name, symbolicNames));
+                    }
+                }
+                return result;
             }
 
-            return ModuleOps.GetMethods(immediateClass, inherited, RubyMethodAttributes.Public | RubyMethodAttributes.Protected);
+            return ModuleOps.GetMethods(immediateClass, inherited, RubyMethodAttributes.Public | RubyMethodAttributes.Protected, foreignMembers);
         }
 
         // thread-safe:

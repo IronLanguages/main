@@ -22,6 +22,7 @@ using IronRuby.Compiler.Generation;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 using Ast = System.Linq.Expressions.Expression;
+using System.Diagnostics;
 
 namespace IronRuby.Runtime.Calls {
     public enum CompositeConversion {
@@ -86,8 +87,10 @@ namespace IronRuby.Runtime.Calls {
             return Methods.GetMethod(GetType(), "MakeShared").OpCall(Ast.Constant(_conversion));
         }
 
-        protected override void Build(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args) {
+        protected override bool Build(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args, bool defaultFallback) {
+            Debug.Assert(defaultFallback, "custom fallback not supported");
             ProtocolConversionAction.BuildConversion(metaBuilder, args, _resultType, _conversions);
+            return true;
         }
 
         public override string/*!*/ ToString() {

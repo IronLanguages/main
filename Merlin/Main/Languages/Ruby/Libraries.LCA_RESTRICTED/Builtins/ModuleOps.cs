@@ -786,19 +786,29 @@ namespace IronRuby.Builtins {
         }
 
         internal static RubyArray/*!*/ GetMethods(RubyModule/*!*/ self, bool inherited, RubyMethodAttributes attributes) {
+            return GetMethods(self, inherited, attributes, null);
+        }
+
+        internal static RubyArray/*!*/ GetMethods(RubyModule/*!*/ self, bool inherited, RubyMethodAttributes attributes,
+            IEnumerable<string> foreignMembers) {
+
             var result = new RubyArray();
             var symbolicNames = self.Context.RubyOptions.Compatibility > RubyCompatibility.Ruby18;
 
             using (self.Context.ClassHierarchyLocker()) {
-                self.ForEachMember(inherited, attributes, delegate(string/*!*/ name, RubyMemberInfo member) {
-                    if (symbolicNames) {
-                        result.Add(SymbolTable.StringToId(name));
-                    } else {
-                        result.Add(MutableString.Create(name));
-                    }
+                self.ForEachMember(inherited, attributes, foreignMembers, delegate(string/*!*/ name, RubyMemberInfo member) {
+                    result.Add(CreateMethodName(name, symbolicNames));
                 });
             }
             return result;
+        }
+
+        internal static object CreateMethodName(string/*!*/ name, bool symbolicNames) {
+            if (symbolicNames) {
+                return SymbolTable.StringToId(name);
+            } else {
+                return MutableString.Create(name);
+            }
         }
 
         #endregion

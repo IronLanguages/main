@@ -63,7 +63,7 @@ namespace IronRuby.Runtime.Calls {
 
         #region Rule Generation
 
-        protected override void Build(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args) {
+        protected override bool Build(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args, bool defaultFallback) {
             RubyModule currentDeclaringModule;
             string currentMethodName;
 
@@ -111,16 +111,10 @@ namespace IronRuby.Runtime.Calls {
             if (method != null) {
                 method.BuildSuperCall(metaBuilder, args, currentMethodName, currentDeclaringModule);
             } else {
-                RubyCallAction.BindToMethodMissing(metaBuilder, args, currentMethodName, methodMissing, RubyMethodVisibility.None, true, true);
+                return RubyCallAction.BindToMethodMissing(metaBuilder, args, currentMethodName, methodMissing, RubyMethodVisibility.None, true, defaultFallback);
             }
-        }
 
-        protected override DynamicMetaObject/*!*/ InteropBind(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args) {
-            metaBuilder.SetError(Ast.New(
-                typeof(NotSupportedException).GetConstructor(new[] { typeof(string) }),
-                Ast.Constant("Super call not supported on foreign meta-objects")
-            ));
-            return metaBuilder.CreateMetaObject(this);
+            return true;
         }
 
         #endregion

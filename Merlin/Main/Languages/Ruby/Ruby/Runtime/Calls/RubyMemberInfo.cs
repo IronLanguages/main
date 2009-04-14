@@ -30,6 +30,9 @@ namespace IronRuby.Runtime.Calls {
         // Singleton used to hide CLR methods: method resolution skips all CLR methods since encountering a hidden method.
         internal static readonly RubyMemberInfo/*!*/ HiddenMethod = new RubyMemberInfo();
 
+        // Singleton used to represent foreign members (these are not in method tables):
+        internal static readonly RubyMemberInfo/*!*/ ForeignMember = new RubyMemberInfo();
+
         private readonly RubyMemberFlags _flags;
 
         // Null for dummy methods.

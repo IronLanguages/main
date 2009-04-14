@@ -24,6 +24,8 @@ using AstFactory = IronRuby.Compiler.Ast.AstFactory;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 using System.Dynamic;
 using System.Reflection;
+using System.Diagnostics;
+using System.Collections.Generic;
 
 namespace IronRuby.Runtime.Calls {
 
@@ -48,12 +50,19 @@ namespace IronRuby.Runtime.Calls {
             return Methods.GetMethod(GetType(), "MakeShared").OpCall();
         }
 
-        protected override ConvertBinder/*!*/ GetInteropBinder(RubyContext/*!*/ context, out MethodInfo postConverter) {
-            postConverter = Methods.ToMutableString;
-            return new InteropBinder.Convert(context, typeof(string), false);
+        protected override DynamicMetaObjectBinder/*!*/ GetInteropBinder(RubyContext/*!*/ context, IList<DynamicMetaObject/*!*/>/*!*/ args, 
+            out MethodInfo postConverter) {
+            postConverter = Methods.StringToMutableString;
+            return new InteropBinder.InvokeMember(context, "ToString", new CallInfo(0));
         }
 
-        protected override void Build(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args) {
+        protected override bool Build(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args, bool defaultFallback) {
+            Debug.Assert(defaultFallback, "custom fallback not supported");
+            BuildConversion(metaBuilder, args);
+            return true;
+        }
+
+        internal static void BuildConversion(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args) {
             const string ToS = "to_s";
 
             // no conversion for a subclass of string:
@@ -89,8 +98,8 @@ namespace IronRuby.Runtime.Calls {
             }
 
             metaBuilder.Result = Methods.ToSDefaultConversion.OpCall(
-                AstUtils.Convert(args.MetaContext.Expression, typeof(RubyContext)), 
-                AstFactory.Box(args.TargetExpression), 
+                AstUtils.Convert(args.MetaContext.Expression, typeof(RubyContext)),
+                AstFactory.Box(args.TargetExpression),
                 AstFactory.Box(metaBuilder.Result)
             );
         }

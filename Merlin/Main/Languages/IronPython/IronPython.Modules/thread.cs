@@ -262,7 +262,7 @@ namespace IronPython.Modules {
             /// the thread.
             /// </summary>
             private class ThreadLocalDictionaryStorage : DictionaryStorage {
-                private readonly ThreadLocal<CommonDictionaryStorage> _storage = new ThreadLocal<CommonDictionaryStorage>();
+                private readonly Microsoft.Scripting.Utils.ThreadLocal<CommonDictionaryStorage> _storage = new Microsoft.Scripting.Utils.ThreadLocal<CommonDictionaryStorage>();
 
                 public override void Add(object key, object value) {
                     GetStorage().Add(key, value);
