@@ -15,9 +15,9 @@
 //#define DUMP_TOKENS
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Dynamic;
 using System.Text;
 using IronPython.Hosting;
 using IronPython.Runtime;
@@ -26,7 +26,6 @@ using Microsoft.Scripting;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 using Microsoft.Scripting.Math;
-using System.Collections.Generic;
 
 namespace IronPython.Compiler {
 
@@ -34,7 +33,7 @@ namespace IronPython.Compiler {
     /// IronPython tokenizer
     /// </summary>
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", MessageId = "Tokenizer")]
-    public sealed partial class Tokenizer : TokenizerService { 
+    public sealed partial class Tokenizer : TokenizerService {
         private State _state;
         private readonly bool _verbatim, _dontImplyDedent, _python26;
         private bool _disableLineFeedLineSeparator;
@@ -53,6 +52,7 @@ namespace IronPython.Compiler {
             _verbatim = true;
             _state = new State(null);
             _dontImplyDedent = true;
+            _python26 = true;
         }
 
         public Tokenizer(ErrorSink errorSink) {
@@ -60,6 +60,7 @@ namespace IronPython.Compiler {
             _verbatim = false;
             _state = new State(null);
             _dontImplyDedent = true;
+            _python26 = true;
         }
 
         [Obsolete("Use the overload that takes a PythonCompilerOptions instead")]
@@ -75,6 +76,7 @@ namespace IronPython.Compiler {
             _verbatim = verbatim;
             _state = new State(null);
             _dontImplyDedent = dontImplyDedent;
+            _python26 = true;
         }
 
         public Tokenizer(ErrorSink errorSink, PythonCompilerOptions options) {
@@ -97,12 +99,12 @@ namespace IronPython.Compiler {
 
             _verbatim = verbatim || options.Verbatim;
         }
-        
+
         // TODO:
         public override bool IsRestartable {
             get { return false; }
         }
-        
+
         public override object CurrentState {
             get {
                 return _state;
@@ -119,17 +121,17 @@ namespace IronPython.Compiler {
             }
         }
 
-        public override ErrorSink ErrorSink { 
-            get { return _errors; } 
+        public override ErrorSink ErrorSink {
+            get { return _errors; }
             set {
                 ContractUtils.RequiresNotNull(value, "value");
-                _errors = value; 
-            } 
+                _errors = value;
+            }
         }
-        
+
         public Severity IndentationInconsistencySeverity {
             get { return _indentationInconsistencySeverity; }
-            set { 
+            set {
                 _indentationInconsistencySeverity = value;
 
                 if (value != Severity.Ignore && _state.IndentFormat == null) {
@@ -160,7 +162,7 @@ namespace IronPython.Compiler {
             get {
                 return new SourceSpan(TokenStart, TokenEnd);
             }
-        }        
+        }
 
         public void Initialize(SourceUnit sourceUnit) {
             ContractUtils.RequiresNotNull(sourceUnit, "sourceUnit");
@@ -336,7 +338,7 @@ namespace IronPython.Compiler {
             bool at_beginning = _buffer.AtBeginning;
             _buffer.DiscardToken();
             int ch = NextChar();
-                    
+
             while (true) {
                 switch (ch) {
                     case EOF:
@@ -353,7 +355,7 @@ namespace IronPython.Compiler {
                     case '#':
                         if (_verbatim)
                             return ReadSingleLineComment();
-                        
+
                         ch = SkipSingleLineComment();
                         break;
 
@@ -372,7 +374,7 @@ namespace IronPython.Compiler {
                             _buffer.Back();
                             goto default;
                         }
-                    
+
                     case '\"': case '\'':
                         return ReadString((char)ch, false, false, false);
 
@@ -399,7 +401,7 @@ namespace IronPython.Compiler {
                         _buffer.MarkSingleLineTokenEnd();
                         return Tokens.DotToken;
 
-                    case '0': case '1': case '2': case '3': case '4': 
+                    case '0': case '1': case '2': case '3': case '4':
                     case '5': case '6': case '7': case '8': case '9':
                         return ReadNumber(ch);
 
@@ -414,7 +416,7 @@ namespace IronPython.Compiler {
                             ch = NextChar();
                             break;
                         }
-                        
+
                         Token res = NextOperator(ch);
                         if (res != null) {
                             _buffer.MarkSingleLineTokenEnd();
@@ -495,7 +497,7 @@ namespace IronPython.Compiler {
 
         private Token ReadEof() {
             _buffer.MarkSingleLineTokenEnd();
-            
+
             if (_state.PendingNewlines-- > 0) {
                 if (!_dontImplyDedent) {
                     // if the input doesn't end in a EOLN or we're in an indented block then add a newline to the end
@@ -554,9 +556,9 @@ namespace IronPython.Compiler {
 
                 if (ch == EOF) {
 
-                    if (_verbatim) { 
-                        complete = !isTriple; 
-                        break; 
+                    if (_verbatim) {
+                        complete = !isTriple;
+                        break;
                     }
 
                     _buffer.MarkTokenEnd(multi_line);
@@ -567,11 +569,11 @@ namespace IronPython.Compiler {
 
                     if (isTriple) {
                         if (NextChar(quote) && NextChar(quote)) {
-                            end_add += 3; 
+                            end_add += 3;
                             break;
                         }
                     } else {
-                        end_add++; 
+                        end_add++;
                         break;
                     }
 
@@ -581,10 +583,10 @@ namespace IronPython.Compiler {
 
                     if (ch == EOF) {
                         _buffer.Back();
-                        
-                        if (_verbatim) { 
-                            complete = false; 
-                            break; 
+
+                        if (_verbatim) {
+                            complete = false;
+                            break;
                         }
 
                         _buffer.MarkTokenEnd(multi_line);
@@ -598,7 +600,7 @@ namespace IronPython.Compiler {
 
                             // backup over the eoln:
                             _buffer.SeekRelative(-eol_size);
-                        
+
                             // incomplete string in the form "abc\
                             _buffer.MarkTokenEnd(multi_line);
                             UnexpectedEndOfString(isTriple, true);
@@ -606,7 +608,7 @@ namespace IronPython.Compiler {
                         }
 
                         multi_line = true;
-                        
+
                     } else if (ch != quote && ch != '\\') {
                         _buffer.Back();
                     }
@@ -616,7 +618,7 @@ namespace IronPython.Compiler {
 
                         // backup over the eoln:
                         _buffer.SeekRelative(-eol_size);
-                        
+
                         if (_verbatim) {
                             complete = false;
                             break;
@@ -632,7 +634,7 @@ namespace IronPython.Compiler {
             }
 
             _buffer.MarkTokenEnd(multi_line);
-            
+
             // TODO: do not create a string, parse in place
             string contents = _buffer.GetTokenSubstring(startAdd, _buffer.TokenLength - startAdd - end_add); //.Substring(_start + startAdd, end - _start - (startAdd + eadd));
 
@@ -690,7 +692,7 @@ namespace IronPython.Compiler {
                 int ch = NextChar();
 
                 switch (ch) {
-                    case '.': 
+                    case '.':
                         return ReadFraction();
 
                     case 'e': case 'E':
@@ -708,7 +710,7 @@ namespace IronPython.Compiler {
                         // TODO: parse in place
                         return new ConstantValueToken(LiteralParser.ParseBigInteger(_buffer.GetTokenString(), b));
 
-                    case '0': case '1': case '2': case '3': case '4': 
+                    case '0': case '1': case '2': case '3': case '4':
                     case '5': case '6': case '7': case '8': case '9':
                         break;
 
@@ -728,7 +730,7 @@ namespace IronPython.Compiler {
             BigInteger bigInt = null;
             while (true) {
                 int ch = NextChar();
-                switch(ch) {
+                switch (ch) {
                     case '0':
                         if (iVal != 0) {
                             // ignore leading 0's...
@@ -790,7 +792,7 @@ namespace IronPython.Compiler {
                 int ch = NextChar();
 
                 switch (ch) {
-                    case '0': case '1': case '2': case '3': case '4': 
+                    case '0': case '1': case '2': case '3': case '4':
                     case '5': case '6': case '7': case '8': case '9':
                     case 'a': case 'b': case 'c': case 'd': case 'e': case 'f':
                     case 'A': case 'B': case 'C': case 'D': case 'E': case 'F':
@@ -817,7 +819,7 @@ namespace IronPython.Compiler {
                 int ch = NextChar();
 
                 switch (ch) {
-                    case '0': case '1': case '2': case '3': case '4': 
+                    case '0': case '1': case '2': case '3': case '4':
                     case '5': case '6': case '7': case '8': case '9':
                         break;
 
@@ -849,7 +851,7 @@ namespace IronPython.Compiler {
 
             while (true) {
                 switch (ch) {
-                    case '0': case '1': case '2': case '3': case '4': 
+                    case '0': case '1': case '2': case '3': case '4':
                     case '5': case '6': case '7': case '8': case '9':
                         ch = NextChar();
                         break;
@@ -872,7 +874,7 @@ namespace IronPython.Compiler {
 
         private Token ReadName() {
             int ch;
-            
+
             do { ch = NextChar(); } while (IsNamePart(ch));
             _buffer.Back();
 
@@ -917,14 +919,14 @@ namespace IronPython.Compiler {
                 return ReadNewlineWithChecks();
 
             int spaces = 0;
-            while (true) {                          
+            while (true) {
                 int ch = NextChar();
 
                 switch (ch) {
                     case ' ': spaces += 1; break;
                     case '\t': spaces += 8 - (spaces % 8); break;
                     case '\f': spaces = 0; break;
-                    
+
                     case '#':
                         if (_verbatim) {
                             _buffer.Back();
@@ -955,9 +957,9 @@ namespace IronPython.Compiler {
                         }
 
                         _buffer.MarkMultiLineTokenEnd();
-                        
+
                         SetIndent(spaces, null);
-                        
+
                         return true;
                 }
             }
@@ -979,7 +981,7 @@ namespace IronPython.Compiler {
                     case ' ': spaces += 1; sb.Append(' '); break;
                     case '\t': spaces += 8 - (spaces % 8); sb.Append('\t'); break;
                     case '\f': spaces = 0; sb.Append('\f'); break;
-                    
+
                     case '#':
                         if (_verbatim) {
                             _buffer.Back();
@@ -1010,7 +1012,7 @@ namespace IronPython.Compiler {
                         }
 
                         _buffer.MarkMultiLineTokenEnd();
-                        
+
                         // We've captured a line of significant identation (i.e. not pure whitespace).
                         // Check that any of this indentation that's in common with the current indent
                         // level is constructed in exactly the same way (i.e. has the same mix of spaces
@@ -1032,7 +1034,7 @@ namespace IronPython.Compiler {
                     if (sb[i] != previousIndent[i]) {
 
                         SourceLocation eoln_token_end = _buffer.TokenEnd;
-                        
+
                         // We've hit a difference in the way we're indenting, report it.
                         _errors.Add(_sourceUnit, Resources.InconsistentWhitespace,
                             new SourceSpan(eoln_token_end, eoln_token_end), // TODO: we can report better span - starting at the beginning of the line

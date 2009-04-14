@@ -75,21 +75,18 @@ namespace IronRuby.Runtime {
             }
         }
 
-        public static string/*!*/ GetClassName(RubyContext/*!*/ context, object self) {
-            return context.GetClassOf(self).Name;
-        }
+        public static MutableString/*!*/ InspectObject(UnaryOpStorage/*!*/ inspectStorage, ConversionStorage<MutableString>/*!*/ tosConversion, 
+            object obj) {
 
-        public static MutableString/*!*/ InspectObject(UnaryOpStorage/*!*/ inspectStorage, ConversionStorage<MutableString>/*!*/ tosStorage, object obj) {
-            var context = tosStorage.Context;
+            var context = tosConversion.Context;
             using (IDisposable handle = RubyUtils.InfiniteInspectTracker.TrackObject(obj)) {
                 if (handle == null) {
                     return MutableString.Create("...");
                 }
 
-                RubyClass objClass = context.GetClassOf(obj);
                 MutableString str = MutableString.CreateMutable();
                 str.Append("#<");
-                str.Append(objClass.GetName(context));
+                str.Append(context.GetClassName(obj));
 
                 // Ruby prints 2*object_id for objects
                 str.Append(':');
@@ -112,7 +109,7 @@ namespace IronRuby.Runtime {
                         var inspectSite = inspectStorage.GetCallSite("inspect");
                         object inspectedValue = inspectSite.Target(inspectSite, var.Value);
 
-                        var tosSite = tosStorage.GetSite(ConvertToSAction.Make(context));
+                        var tosSite = tosConversion.GetSite(ConvertToSAction.Make(context));
                         str.Append(tosSite.Target(tosSite, inspectedValue));
 
                         str.TaintBy(var.Value, context);
@@ -125,25 +122,23 @@ namespace IronRuby.Runtime {
             }
         }
 
-        public static MutableString/*!*/ ObjectToMutableString(RubyContext/*!*/ context, object obj) {
-            RubyClass objClass = context.GetClassOf(obj);
+        internal static MutableString/*!*/ FormatObject(string/*!*/ className, int objectId, bool isTainted) {
             MutableString str = MutableString.CreateMutable();
             str.Append("#<");
-            str.Append(objClass.GetName(context));
+            str.Append(className);
 
             // Ruby prints 2*object_id for objects
             str.Append(':');
-            AppendFormatHexObjectId(str, GetObjectId(context, obj));
+            AppendFormatHexObjectId(str, objectId);
 
             str.Append(">");
 
-            str.TaintBy(obj, context);
+            str.IsTainted |= isTainted;
             return str;
         }
 
-        public static MutableString/*!*/ ObjectToMutableString(UnaryOpStorage/*!*/ tosStorage, object obj) {
-            var site = tosStorage.GetCallSite("to_s");
-            return site.Target(site, obj) as MutableString ?? ObjectToMutableString(tosStorage.Context, obj);
+        public static MutableString/*!*/ ObjectToMutableString(RubyContext/*!*/ context, object obj) {
+            return FormatObject(context.GetClassName(obj), GetObjectId(context, obj), context.IsObjectTainted(obj));
         }
 
         public static MutableString/*!*/ AppendFormatHexObjectId(MutableString/*!*/ str, int objectId) {
@@ -183,56 +178,6 @@ namespace IronRuby.Runtime {
             return true;
         }        
 
-#if FALSE
-        [MultiRuntimeAware]
-        private static RecursionTracker/*!*/ _infiniteCopyTracker = new RecursionTracker();
-
-        public static object DeepCopy(RubyContext/*!*/ context, object obj) {
-            using (IDisposable handle = _infiniteCopyTracker.TrackObject(obj)) {
-                if (handle == null) {
-                    return RubyExceptions.CreateArgumentError("unable to deep copy recursive structure");
-                } else {
-                    RubyContext ec = RubyUtils.GetExecutionContext(context);
-
-                    if (RubyUtils.IsRubyValueType(obj)) {
-                        return obj;
-                    }
-
-                    object copy;
-
-                    // TODO: special case class objects:
-                    RubyClass classObject = obj as RubyClass;
-                    if (classObject != null) {
-                        copy = classObject.Duplicate();
-                    } else {
-                        copy = RubySites.Allocate(context, ec.GetClassOf(obj));
-                    }
-
-                    SymbolId[] names = ec.GetInstanceVariableNames(obj);
-                    RubyInstanceData newVars = (names.Length > 0) ? ec.GetInstanceData(copy) : null;
-                    foreach (SymbolId name in names) {
-                        object value;
-                        if (!ec.TryGetInstanceVariable(obj, name, out value)) {
-                            value = null;
-                        } else {
-                            value = DeepCopy(context, value);
-                        }
-                        newVars.SetInstanceVariable(name, value);
-                    }
-
-                    if (classObject == null) {
-                        // do any special copying needed for library types
-                        // TODO: we still need to implement copy semantics for .NET types in general
-                        IDuplicable duplicable = copy as IDuplicable;
-                        if (duplicable != null) {
-                            duplicable.InitializeFrom(obj);
-                        }
-                    }
-                    return copy;
-                }
-            }
-        }
-#endif
         public static int GetFixnumId(int number) {
             return number * 2 + 1;
         }

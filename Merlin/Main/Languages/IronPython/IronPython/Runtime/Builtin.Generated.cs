@@ -41,6 +41,9 @@ namespace IronPython.Runtime {
         public static PythonType StandardError {
             get { return PythonExceptions.StandardError; }
         }
+        public static PythonType BufferError {
+            get { return PythonExceptions.BufferError; }
+        }
         public static PythonType ArithmeticError {
             get { return PythonExceptions.ArithmeticError; }
         }

@@ -106,35 +106,22 @@ namespace IronRuby.Builtins {
         }
         #endregion
 
-        #region inspect
+        #region inspect, to_s
 
         /// <summary>
         /// Convert this range object to a printable form (using inspect to convert the start and end objects). 
         /// </summary>
         [RubyMethod("inspect")]
-        public static MutableString/*!*/ Inspect(UnaryOpStorage/*!*/ inspectStorage, ConversionStorage<MutableString>/*!*/ tosStorage, 
-            RubyContext/*!*/ context, Range/*!*/ self) {
-
-            var result = MutableString.CreateMutable();
-            result.Append(context.Inspect(self.Begin));
-            result.Append(self.ExcludeEnd ? "..." : "..");
-            result.Append(context.Inspect(self.End));
-            return result;
+        public static MutableString/*!*/ Inspect(RubyContext/*!*/ context, Range/*!*/ self) {
+            return self.Inspect(context);
         }
-
-        #endregion
-
-        #region to_s
 
         /// <summary>
         /// Convert this range object to a printable form (using to_s to convert the start and end objects).
         /// </summary>
         [RubyMethod("to_s")]
-        public static MutableString/*!*/ ToS(UnaryOpStorage/*!*/ tosStorage, Range/*!*/ self) {
-            MutableString str = RubyUtils.ObjectToMutableString(tosStorage, self.Begin);
-            str.Append(self.ExcludeEnd ? "..." : "..");
-            str.Append(RubyUtils.ObjectToMutableString(tosStorage, self.End));
-            return str;
+        public static MutableString/*!*/ ToS(ConversionStorage<MutableString>/*!*/ tosConversion, Range/*!*/ self) {
+            return self.ToMutableString(tosConversion);
         }
 
         #endregion
@@ -533,7 +520,7 @@ namespace IronRuby.Builtins {
         /// </summary>
         private static void CheckBegin(RespondToStorage/*!*/ respondToStorage, object begin) {
             if (!Protocols.RespondTo(respondToStorage, begin, "succ")) {
-                throw RubyExceptions.CreateTypeError(String.Format("can't iterate from {0}", RubyUtils.GetClassName(respondToStorage.Context, begin)));
+                throw RubyExceptions.CreateTypeError(String.Format("can't iterate from {0}", respondToStorage.Context.GetClassName(begin)));
             }
         }
 

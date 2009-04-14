@@ -18,49 +18,112 @@ using System.Collections.Generic;
 using System.Dynamic;
 using System.Linq.Expressions;
 using System.Reflection;
+using System.Diagnostics;
 using Microsoft.Scripting.Utils;
+using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace Microsoft.Scripting.Actions.Calls {
     using Ast = System.Linq.Expressions.Expression;
 
     internal sealed class ParamsArgBuilder : ArgBuilder {
         private readonly int _start;
-        private readonly int _count;
+        private readonly int _expandedCount;
         private readonly Type _elementType;
 
-        public ParamsArgBuilder(ParameterInfo info, Type elementType, int start, int count) 
+        internal ParamsArgBuilder(ParameterInfo info, Type elementType, int start, int expandedCount) 
             : base(info) {
 
-            ContractUtils.RequiresNotNull(elementType, "elementType");
-            ContractUtils.Requires(start >= 0, "start");
-            ContractUtils.Requires(count >= 0, "count");
+            Assert.NotNull(elementType);
+            Debug.Assert(start >= 0);
+            Debug.Assert(expandedCount >= 0);
 
             _start = start;
-            _count = count;
+            _expandedCount = expandedCount;
             _elementType = elementType;
+        }
+
+        // Consumes all expanded arguments. 
+        // Collapsed arguments are fetched from resolver provided storage, not from actual argument expressions.
+        public override int ConsumedArgumentCount {
+            get { return _expandedCount; }
         }
 
         public override int Priority {
             get { return 4; }
         }
 
-        internal protected override Expression ToExpression(ParameterBinder parameterBinder, IList<Expression> parameters, bool[] hasBeenUsed) {
-            List<Expression> elems = new List<Expression>(_count);
-            for (int i = _start; i < _start + _count; i++) {
-                if (!hasBeenUsed[i]) {
-                    elems.Add(parameterBinder.ConvertExpression(parameters[i], ParameterInfo, _elementType));
-                    hasBeenUsed[i] = true;
+        internal protected override Expression ToExpression(OverloadResolver resolver, IList<Expression> parameters, bool[] hasBeenUsed) {
+            var args = resolver.GetActualArguments();
+            int splatIndex = args.SplatIndex;
+            int collapsedCount = args.CollapsedCount;
+            int firstSplatted = args.FirstSplattedArg;
+
+            var result = new Expression[2 + _expandedCount + (collapsedCount > 0 ? 2 : 0)];
+            var arrayVariable = resolver.GetTemporary(_elementType.MakeArrayType(), "a");
+            int e = 0;
+            result[e++] = Ast.Assign(arrayVariable, Ast.NewArrayBounds(_elementType, Ast.Constant(_expandedCount + collapsedCount)));
+
+            int itemIndex = 0;
+            int i = _start;
+            while (true) {
+                // inject loop copying collapsed items:
+                if (i == splatIndex) {
+                    var indexVariable = resolver.GetTemporary(typeof(int), "t");
+
+                    // for (int t = 0; t <= {collapsedCount}; t++) {
+                    //   a[{itemIndex} + t] = CONVERT<ElementType>(list.get_Item({splatIndex - firstSplatted} + t))
+                    // }
+                    result[e++] = Ast.Assign(indexVariable, AstUtils.Constant(0));
+                    result[e++] = AstUtils.Loop(
+                        Ast.LessThan(indexVariable, Ast.Constant(collapsedCount)),
+                        // TODO: not implemented in the old interpreter
+                        // Ast.PostIncrementAssign(indexVariable),
+                        Ast.Assign(indexVariable, Ast.Add(indexVariable, AstUtils.Constant(1))),
+                        Ast.Assign(
+                            Ast.ArrayAccess(arrayVariable, Ast.Add(AstUtils.Constant(itemIndex), indexVariable)),
+                            resolver.ConvertExpression(
+                                resolver.GetSplattedItemExpression(Ast.Add(AstUtils.Constant(splatIndex - firstSplatted), indexVariable)), 
+                                ParameterInfo, 
+                                _elementType
+                            )
+                        ),
+                        null
+                    );
+
+                    itemIndex += collapsedCount;
                 }
+
+                if (i >= _start + _expandedCount) {
+                    break;
+                }
+
+                Debug.Assert(!hasBeenUsed[i]);
+                hasBeenUsed[i] = true;                
+
+                result[e++] = Ast.Assign(
+                    Ast.ArrayAccess(arrayVariable, AstUtils.Constant(itemIndex++)),
+                    resolver.ConvertExpression(parameters[i], ParameterInfo, _elementType)
+                );
+
+                i++;
             }
 
-            return Ast.NewArrayInit(_elementType, elems);
+            result[e++] = arrayVariable;
+
+            Debug.Assert(e == result.Length);
+            return Ast.Block(result);
         }
 
-        protected internal override Func<object[], object> ToDelegate(ParameterBinder parameterBinder, IList<DynamicMetaObject> knownTypes, bool[] hasBeenUsed) {
-            List<Func<object[], object>> indexes = new List<Func<object[], object>>(_count);
-            for (int i = _start; i < _start + _count; i++) {
+        protected internal override Func<object[], object> ToDelegate(OverloadResolver resolver, IList<DynamicMetaObject> knownTypes, bool[] hasBeenUsed) {
+            if (resolver.GetActualArguments().CollapsedCount > 0) {
+                return null;
+            }
+            
+            var indexes = new List<Func<object[], object>>(_expandedCount);
+
+            for (int i = _start; i < _start + _expandedCount; i++) {
                 if (!hasBeenUsed[i]) {
-                    indexes.Add(parameterBinder.ConvertObject(i + 1, knownTypes[i], ParameterInfo, _elementType));
+                    indexes.Add(resolver.ConvertObject(i + 1, knownTypes[i], ParameterInfo, _elementType));
                     hasBeenUsed[i] = true;
                 }
             }
@@ -96,12 +159,6 @@ namespace Microsoft.Scripting.Actions.Calls {
                 }
 
                 return res;
-            }
-        }
-
-        internal override bool CanGenerateDelegate {
-            get {
-                return true;
             }
         }
 

@@ -42,21 +42,16 @@ namespace Microsoft.Scripting.Actions.Calls {
             return new ReferenceArgBuilder(ParameterInfo, Type, newIndex);
         }
 
-        internal override bool CanGenerateDelegate {
-            get {
-                return false;
-            }
-        }
-
         public override int Priority {
             get { return 5; }
         }
 
-        internal protected override Expression ToExpression(ParameterBinder parameterBinder, IList<Expression> parameters, bool[] hasBeenUsed) {
+        internal protected override Expression ToExpression(OverloadResolver resolver, IList<Expression> parameters, bool[] hasBeenUsed) {
             if (_tmp == null) {
-                _tmp = parameterBinder.GetTemporary(_elementType, "outParam");
+                _tmp = resolver.GetTemporary(_elementType, "outParam");
             }
 
+            Debug.Assert(!hasBeenUsed[Index]);
             hasBeenUsed[Index] = true;
             Type boxType = typeof(StrongBox<>).MakeGenericType(_elementType);
             return Expression.Condition(
@@ -75,7 +70,11 @@ namespace Microsoft.Scripting.Actions.Calls {
             );
         }
 
-        internal override Expression UpdateFromReturn(ParameterBinder parameterBinder, IList<Expression> parameters) {
+        protected internal override Func<object[], object> ToDelegate(OverloadResolver resolver, IList<System.Dynamic.DynamicMetaObject> knownTypes, bool[] hasBeenUsed) {
+            return null;
+        }
+
+        internal override Expression UpdateFromReturn(OverloadResolver resolver, IList<Expression> parameters) {
             return Expression.Assign(
                 Expression.Field(
                     Expression.Convert(parameters[Index], Type),

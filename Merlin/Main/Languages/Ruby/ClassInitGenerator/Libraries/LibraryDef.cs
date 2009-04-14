@@ -44,7 +44,6 @@ internal class LibraryDef {
     public static readonly string/*!*/ TypeRubyModule = TypeName(typeof(RubyModule));
     public static readonly string/*!*/ TypeRubyClass = TypeName(typeof(RubyClass));
     public static readonly string/*!*/ TypeActionOfRubyModule = TypeName(typeof(Action<RubyModule>));
-    public static readonly string/*!*/ TypeRubyExecutionContext = TypeName(typeof(RubyContext));
     public static readonly string/*!*/ TypeLibraryInitializer = TypeName(typeof(LibraryInitializer));
     public static readonly string/*!*/ TypeRubyLibraryAttribute = TypeName(typeof(RubyLibraryAttribute));
 

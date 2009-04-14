@@ -1122,6 +1122,25 @@
 			ret
 		}
 	}
+	.class private ConvertArgBuilder
+		extends System.Dynamic.SimpleArgBuilder
+	{
+		.method assembly hidebysig specialname 
+			instance void .ctor(class [mscorlib]System.Type parameterType, class [mscorlib]System.Type marshalType)
+		{
+			ret
+		}
+		.method assembly virtual hidebysig strict 
+			instance class [System.Core]System.Linq.Expressions.Expression Marshal(class [System.Core]System.Linq.Expressions.Expression parameter)
+		{
+			ret
+		}
+		.method assembly virtual hidebysig strict 
+			instance class [System.Core]System.Linq.Expressions.Expression UnmarshalFromRef(class [System.Core]System.Linq.Expressions.Expression newValue)
+		{
+			ret
+		}
+	}
 	.class private ConvertibleArgBuilder
 		extends System.Dynamic.ArgBuilder
 	{
@@ -1766,6 +1785,11 @@
 		{
 			ret
 		}
+		.method assembly hidebysig specialname 
+			instance class [mscorlib]System.Type get_ParameterType()
+		{
+			ret
+		}
 		.method assembly virtual hidebysig strict 
 			instance class [System.Core]System.Linq.Expressions.Expression Marshal(class [System.Core]System.Linq.Expressions.Expression parameter)
 		{
@@ -1775,6 +1799,10 @@
 			instance class [System.Core]System.Linq.Expressions.Expression UnmarshalFromRef(class [System.Core]System.Linq.Expressions.Expression newValue)
 		{
 			ret
+		}
+		.property instance class [mscorlib]System.Type ParameterType()
+		{
+			.get instance class [mscorlib]System.Type System.Dynamic.SimpleArgBuilder::get_ParameterType()
 		}
 	}
 	.class private sealed SplatCallSite

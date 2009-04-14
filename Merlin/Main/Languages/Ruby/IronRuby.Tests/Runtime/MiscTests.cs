@@ -20,6 +20,13 @@ using IronRuby.Compiler;
 using IronRuby.Compiler.Ast;
 using IronRuby.Builtins;
 using Microsoft.Scripting.Math;
+using System.Reflection;
+using System.Reflection.Emit;
+using Microsoft.Scripting.Utils;
+using Microsoft.Scripting.Generation;
+using System.Collections.Generic;
+using IronRuby.Runtime;
+using IronRuby.Runtime.Calls;
 
 namespace IronRuby.Tests {
 
@@ -756,51 +763,7 @@ puts foo
             },
             "foo");
         }
-
-        public void Scenario_RubyArgSplatting1() {
-            AssertOutput(delegate() {
-                CompilerTest(@"
-def foo(a,b,c)
-  print a,b,c
-end
-
-foo(*[1,2,3])
-");
-            }, @"123");
-        }
-
-        public void Scenario_RubyArgSplatting2() {
-            AssertOutput(delegate() {
-                CompilerTest(@"
-class C
-    def []=(a,b,c)
-      print a,b,c
-    end
-end
-
-x = [1,2]
-C.new[*x] = 3
-C.new[1, *[2]] = 3
-");
-            }, @"123123");
-        }
-
-        public void Scenario_RubyArgSplatting3() {
-            AssertOutput(delegate() {
-                CompilerTest(@"
-def foo(a,b,c)
-  print a,b,c
-  puts
-end
-
-foo(1,2,*3)
-foo(1,2,*nil)
-");
-            }, @"
-123
-12nil");
-        }
-
+        
         public void ClassVariables1() {
             AssertOutput(delegate() {
                 CompilerTest(@"

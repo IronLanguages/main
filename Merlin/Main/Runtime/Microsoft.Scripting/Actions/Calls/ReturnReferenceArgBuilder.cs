@@ -32,19 +32,19 @@ namespace Microsoft.Scripting.Actions.Calls {
             : base(info, info.ParameterType.GetElementType(), index, false, false) {
         }
 
-        internal protected override Expression ToExpression(ParameterBinder parameterBinder, IList<Expression> parameters, bool[] hasBeenUsed) {
+        internal protected override Expression ToExpression(OverloadResolver resolver, IList<Expression> parameters, bool[] hasBeenUsed) {
             if (_tmp == null) {
-                _tmp = parameterBinder.GetTemporary(Type, "outParam");
+                _tmp = resolver.GetTemporary(Type, "outParam");
             }
 
-            return Ast.Block(Ast.Assign(_tmp, base.ToExpression(parameterBinder, parameters, hasBeenUsed)), _tmp);
+            return Ast.Block(Ast.Assign(_tmp, base.ToExpression(resolver, parameters, hasBeenUsed)), _tmp);
         }
 
         protected override SimpleArgBuilder Copy(int newIndex) {
             return new ReturnReferenceArgBuilder(ParameterInfo, newIndex);
         }
 
-        internal override Expression ToReturnExpression(ParameterBinder parameterBinder) {
+        internal override Expression ToReturnExpression(OverloadResolver resolver) {
             return _tmp;
         }
 

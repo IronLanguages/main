@@ -102,11 +102,11 @@ namespace IronRuby.Builtins {
             return self;
         }
 
-        private static object CreateArray([NotNull]BlockParam/*!*/ block, int size) {
+        private static object CreateArray(BlockParam/*!*/ block, int size) {
             return Reinitialize(block, new RubyArray(), size);
         }
 
-        private static object Reinitialize([NotNull]BlockParam/*!*/ block, RubyArray/*!*/ self, int size) {
+        private static object Reinitialize(BlockParam/*!*/ block, RubyArray/*!*/ self, int size) {
             if (size < 0) {
                 throw RubyExceptions.CreateArgumentError("negative array size");
             }

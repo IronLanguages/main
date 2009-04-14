@@ -595,7 +595,7 @@ namespace IronPython.Runtime.Binding {
             }
 
             if (typeof(IMembersList).IsAssignableFrom(self.GetLimitType())) {
-                return BinderState.GetBinderState(operation).Binder.GetMemberNames(self, BinderState.GetCodeContext(operation));
+                return MakeIMembersListRule(BinderState.GetCodeContext(operation), self);
             }
 
             PythonType pt = DynamicHelpers.GetPythonType(self.Value);
@@ -611,6 +611,20 @@ namespace IronPython.Runtime.Binding {
             return new DynamicMetaObject(
                 AstUtils.Constant(strNames),
                 BindingRestrictions.GetInstanceRestriction(self.Expression, self.Value).Merge(self.Restrictions)
+            );
+        }
+
+        private static DynamicMetaObject MakeIMembersListRule(Expression codeContext, DynamicMetaObject target) {
+            return new DynamicMetaObject(
+                Ast.Call(
+                    typeof(BinderOps).GetMethod("GetStringMembers"),
+                    Ast.Call(
+                        AstUtils.Convert(target.Expression, typeof(IMembersList)),
+                        typeof(IMembersList).GetMethod("GetMemberNames"),
+                        codeContext
+                    )
+                ),
+                BindingRestrictionsHelpers.GetRuntimeTypeRestriction(target.Expression, target.GetLimitType()).Merge(target.Restrictions)
             );
         }
 
@@ -1669,17 +1683,22 @@ namespace IronPython.Runtime.Binding {
                 Assert.NotNullItems(args);
 
                 BindingTarget target;
-                
-                DynamicMetaObject res = Binder.CallInstanceMethod(
-                    new ParameterBinderWithCodeContext(Binder, AstUtils.Constant(BinderState.Context)),
-                    _bf.Targets,
+
+                var resolver = new PythonOverloadResolver(
+                    Binder, 
                     args[0],
                     ArrayUtils.RemoveFirst(args),
                     new CallSignature(args.Length - 1),
+                    AstUtils.Constant(BinderState.Context)
+                );
+
+                DynamicMetaObject res = Binder.CallMethod(
+                    resolver,
+                    _bf.Targets,
                     BindingRestrictions.Combine(args),
+                    _bf.Name,
                     PythonNarrowing.None,
                     PythonNarrowing.IndexOperator,
-                    _bf.Name,
                     out target
                 );
 
@@ -1691,7 +1710,7 @@ namespace IronPython.Runtime.Binding {
                         );
                     }
                 } else if (customFailure == null || (res = customFailure()) == null) {
-                    res = DefaultBinder.MakeError(Binder.MakeInvalidParametersError(target), BindingRestrictions.Combine(ConvertArgs(args)));
+                    res = DefaultBinder.MakeError(resolver.MakeInvalidParametersError(target), BindingRestrictions.Combine(ConvertArgs(args)));
                 }
 
                 return res;

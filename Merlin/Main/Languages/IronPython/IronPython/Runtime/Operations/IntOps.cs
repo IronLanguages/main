@@ -428,46 +428,10 @@ namespace IronPython.Runtime.Operations {
                     }
                     break;
                 case 'x':
-                    if (self != Int32.MinValue) {
-                        int val = self;
-                        if (self < 0) {
-                            val = -self;
-                        }
-                        digits = val.ToString("x", CultureInfo.InvariantCulture);
-                    } else {
-                        digits = "80000000";
-                    }
-
-                    if (spec.IncludeType) {
-                        digits = "0x" + digits;
-                    }
+                    digits = ToHex(self, spec.IncludeType);
                     break;
                 case 'b': // binary
-                    if (self == 0) {
-                        digits = "0";
-                    } else if (self != Int32.MinValue) {
-                        StringBuilder sbb = new StringBuilder();
-
-                        int val = self;
-                        if (self < 0) {
-                            val = -self;
-                        }
-
-                        for (int i = 31; i >= 0; i--) {
-                            if ((val & (1 << i)) != 0) {
-                                sbb.Append('1');
-                            } else if (sbb.Length != 0) {
-                                sbb.Append('0');
-                            }
-                        }
-                        digits = sbb.ToString();
-                    } else {
-                        digits = "10000000000000000000000000000000";
-                    }
-
-                    if (spec.IncludeType) {
-                        digits = "0b" + digits;
-                    }
+                    digits = ToBinary(self, spec.IncludeType);
                     break;
                 case 'c': // single char
                     if (spec.Sign != null) {
@@ -518,6 +482,54 @@ namespace IronPython.Runtime.Operations {
 
         public static string/*!*/ __repr__(int self) {
             return self.ToString(CultureInfo.InvariantCulture);
+        }
+
+        internal static string ToHex(int self, bool includeType) {
+            string digits;
+            if (self != Int32.MinValue) {
+                int val = self;
+                if (self < 0) {
+                    val = -self;
+                }
+                digits = val.ToString("x", CultureInfo.InvariantCulture);
+            } else {
+                digits = "80000000";
+            }
+
+            if (includeType) {
+                digits = "0x" + digits;
+            }
+            return digits;
+        }
+
+        internal static string ToBinary(int self, bool includeType) {
+            string digits;
+            if (self == 0) {
+                digits = "0";
+            } else if (self != Int32.MinValue) {
+                StringBuilder sbb = new StringBuilder();
+
+                int val = self;
+                if (self < 0) {
+                    val = -self;
+                }
+
+                for (int i = 31; i >= 0; i--) {
+                    if ((val & (1 << i)) != 0) {
+                        sbb.Append('1');
+                    } else if (sbb.Length != 0) {
+                        sbb.Append('0');
+                    }
+                }
+                digits = sbb.ToString();
+            } else {
+                digits = "10000000000000000000000000000000";
+            }
+
+            if (includeType) {
+                digits = "0b" + digits;
+            }
+            return digits;
         }
     }
 }

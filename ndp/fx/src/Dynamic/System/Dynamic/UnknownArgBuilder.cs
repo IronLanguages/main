@@ -23,7 +23,7 @@ using System.Dynamic.Utils;
 
 namespace System.Dynamic {
     internal class UnknownArgBuilder : SimpleArgBuilder {
-        private bool _isWrapper;
+        private readonly bool _isWrapper;
 
         internal UnknownArgBuilder(Type parameterType)
             : base(parameterType) {

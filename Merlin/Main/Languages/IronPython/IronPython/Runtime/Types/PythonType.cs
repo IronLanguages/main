@@ -70,15 +70,11 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
         private OldClass _oldClass;                         // the associated OldClass or null for new-style types  
         private int _originalSlotCount;                     // the number of slots when the type was created
         private InstanceCreator _instanceCtor;              // creates instances
-        private CallSite<Func<CallSite, CodeContext, object, object>> _dirSite;
-        private CallSite<Func<CallSite, CodeContext, object, string, object>> _getAttributeSite;
-        private CallSite<Func<CallSite, CodeContext, object, object, string, object, object>> _setAttrSite;
         private CallSite<Func<CallSite, object, int>> _hashSite;
-        private CallSite<Func<CallSite, CodeContext, object, object>> _lenSite;
         private CallSite<Func<CallSite, object, object, bool>> _eqSite;
         private CallSite<Func<CallSite, object, object, int>> _compareSite;
-        private Dictionary<SymbolId, CallSite<Func<CallSite, object, CodeContext, object>>> _tryGetMemSite;
-        private Dictionary<SymbolId, CallSite<Func<CallSite, object, CodeContext, object>>> _tryGetMemSiteShowCls;
+
+        private PythonSiteCache _siteCache = new PythonSiteCache();
 
         private PythonTypeSlot _lenSlot;                    // cached length slot, cleared when the type is mutated
 
@@ -664,23 +660,27 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
             return _hashSite.Target(_hashSite, o);
         }
 
-        internal bool TryGetLength(object o, out int length) {
-            EnsureLengthSite();
+        internal bool TryGetLength(CodeContext context, object o, out int length) {
+            CallSite<Func<CallSite, CodeContext, object, object>> lenSite;
+            if (IsSystemType) {
+                lenSite = PythonContext.GetContext(context).GetSiteCacheForSystemType(UnderlyingSystemType).GetLenSite(context);
+            } else {
+                lenSite = _siteCache.GetLenSite(context);
+            }
 
             PythonTypeSlot lenSlot = _lenSlot;
-            CodeContext ctx = Context.DefaultBinderState.Context;
-            if (lenSlot == null && !PythonOps.TryResolveTypeSlot(ctx, this, Symbols.Length, out lenSlot)) {
+            if (lenSlot == null && !PythonOps.TryResolveTypeSlot(context, this, Symbols.Length, out lenSlot)) {
                 length = 0;
                 return false;                
             }
 
             object func;
-            if (!lenSlot.TryGetValue(ctx, o, this, out func)) {
+            if (!lenSlot.TryGetValue(context, o, this, out func)) {
                 length = 0;
                 return false;
             }
 
-            object res = _lenSite.Target(_lenSite, ctx, func);
+            object res = lenSite.Target(lenSite, context, func);
             if (!(res is int)) {
                 throw PythonOps.ValueError("__len__ must return int");
             }
@@ -714,7 +714,12 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
         }
 
         internal bool TryGetBoundAttr(CodeContext context, object o, SymbolId name, out object ret) {
-            CallSite<Func<CallSite, object, CodeContext, object>> site = GetTryGetMemberSite(context, name);
+            CallSite<Func<CallSite, object, CodeContext, object>> site;
+            if (IsSystemType) {
+                site = PythonContext.GetContext(context).GetSiteCacheForSystemType(UnderlyingSystemType).GetTryGetMemberSite(context, name);
+            } else {
+                site = _siteCache.GetTryGetMemberSite(context, name);
+            }
 
             try {
                 ret = site.Target(site, o, context);
@@ -723,50 +728,6 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
                 ret = null;
                 return false;
             }
-        }
-
-        private CallSite<Func<CallSite, object, CodeContext, object>> GetTryGetMemberSite(CodeContext context, SymbolId name) {
-            CallSite<Func<CallSite, object, CodeContext, object>> site;
-            if (PythonOps.IsClsVisible(context)) {
-                if (_tryGetMemSiteShowCls == null) {
-                    Interlocked.CompareExchange(
-                        ref _tryGetMemSiteShowCls,
-                        new Dictionary<SymbolId, CallSite<Func<CallSite, object, CodeContext, object>>>(),
-                        null
-                    );
-                }
-
-                lock (_tryGetMemSiteShowCls) {
-                    if (!_tryGetMemSiteShowCls.TryGetValue(name, out site)) {
-                        _tryGetMemSiteShowCls[name] = site = CallSite<Func<CallSite, object, CodeContext, object>>.Create(
-                            PythonContext.GetContext(context).DefaultClsBinderState.GetMember(
-                                SymbolTable.IdToString(name),
-                                true
-                            )
-                        );
-                    }
-                }
-            } else {
-                if (_tryGetMemSite == null) {
-                    Interlocked.CompareExchange(
-                        ref _tryGetMemSite,
-                        new Dictionary<SymbolId, CallSite<Func<CallSite, object, CodeContext, object>>>(),
-                        null
-                    );
-                }
-
-                lock (_tryGetMemSite) {
-                    if (!_tryGetMemSite.TryGetValue(name, out site)) {
-                        _tryGetMemSite[name] = site = CallSite<Func<CallSite, object, CodeContext, object>>.Create(
-                            PythonContext.GetContext(context).DefaultBinderState.GetMember(
-                                SymbolTable.IdToString(name),
-                                true
-                            )
-                        );
-                    }
-                }
-            }
-            return site;
         }
 
         internal CallSite<Func<CallSite, object, int>>  HashSite {
@@ -785,18 +746,6 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
                         Context.DefaultBinderState.Operation(
                             PythonOperationKind.Hash
                         )
-                    ),
-                    null
-                );
-            }
-        }
-
-        private void EnsureLengthSite() {
-            if (_lenSite == null) {
-                Interlocked.CompareExchange(
-                    ref _lenSite,
-                    CallSite<Func<CallSite, CodeContext, object, object>>.Create(
-                        Context.DefaultBinderState.InvokeNone
                     ),
                     null
                 );
@@ -1595,21 +1544,14 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
         }
 
         private object InvokeGetAttributeMethod(CodeContext context, SymbolId name, object getattr) {
-            EnsureGetAttributeSite(context);
-
-            return _getAttributeSite.Target(_getAttributeSite, context, getattr, SymbolTable.IdToString(name));
-        }
-
-        private void EnsureGetAttributeSite(CodeContext context) {
-            if (_getAttributeSite == null) {
-                Interlocked.CompareExchange(
-                    ref _getAttributeSite,
-                    CallSite<Func<CallSite, CodeContext, object, string, object>>.Create(
-                        PythonContext.GetContext(context).DefaultBinderState.InvokeOne
-                    ),
-                    null
-                );
+            CallSite<Func<CallSite, CodeContext, object, string, object>> getAttributeSite;
+            if (IsSystemType) {
+                getAttributeSite = PythonContext.GetContext(context).GetSiteCacheForSystemType(UnderlyingSystemType).GetGetAttributeSite(context);
+            } else {
+                getAttributeSite = _siteCache.GetGetAttributeSite(context);
             }
+
+            return getAttributeSite.Target(getAttributeSite, context, getattr, SymbolTable.IdToString(name));
         }
 
         /// <summary>
@@ -1684,19 +1626,14 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
         internal bool TrySetMember(CodeContext context, object instance, SymbolId name, object value) {
             object setattr;
             if (TryResolveNonObjectSlot(context, instance, Symbols.SetAttr, out setattr)) {
-                if (_setAttrSite == null) {
-                    Interlocked.CompareExchange(
-                        ref _setAttrSite,
-                        CallSite<Func<CallSite, CodeContext, object, object, string, object, object>>.Create(
-                            PythonContext.GetContext(context).DefaultBinderState.Invoke(
-                                new CallSignature(4)
-                            )
-                        ),
-                        null
-                    );
+                CallSite<Func<CallSite, CodeContext, object, object, string, object, object>> setAttrSite;
+                if (IsSystemType) {
+                    setAttrSite = PythonContext.GetContext(context).GetSiteCacheForSystemType(UnderlyingSystemType).GetSetAttrSite(context);
+                } else {
+                    setAttrSite = _siteCache.GetSetAttrSite(context);
                 }
 
-                _setAttrSite.Target(_setAttrSite, context, setattr, instance, SymbolTable.IdToString(name), value);
+                setAttrSite.Target(setAttrSite, context, setattr, instance, SymbolTable.IdToString(name), value);
                 return true;                              
             }
 
@@ -1821,24 +1758,18 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
             if (self != null) {
                 object dir;
                 if (TryResolveNonObjectSlot(context, self, SymbolTable.StringToId("__dir__"), out dir)) {
-                    EnsureDirSite(context);
+                    CallSite<Func<CallSite, CodeContext, object, object>> dirSite;
+                    if (IsSystemType) {
+                        dirSite = PythonContext.GetContext(context).GetSiteCacheForSystemType(UnderlyingSystemType).GetDirSite(context);
+                    } else {
+                        dirSite = _siteCache.GetDirSite(context);
+                    }
 
-                    return new List(_dirSite.Target(_dirSite, context, dir));
+                    return new List(dirSite.Target(dirSite, context, dir));
                 }
             }
 
             return null;
-        }
-
-        private void EnsureDirSite(CodeContext context) {
-            if (_dirSite == null) {
-                Interlocked.CompareExchange(
-                    ref _dirSite,
-                    CallSite<Func<CallSite, CodeContext, object, object>>.Create(
-                        PythonContext.GetContext(context).DefaultBinderState.InvokeNone
-                    ),
-                    null);
-            }
         }
 
         /// <summary>

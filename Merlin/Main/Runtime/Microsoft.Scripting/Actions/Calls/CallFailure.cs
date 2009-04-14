@@ -18,7 +18,7 @@ using System.Dynamic;
 
 namespace Microsoft.Scripting.Actions.Calls {
     /// <summary>
-    /// Represents the reason why a call to a specific method could not be performed by the MethodBinder.
+    /// Represents the reason why a call to a specific method could not be performed by the OverloadResolver.
     /// 
     /// The reason for the failure is specified by the CallFailureReason property.  Once this property
     /// has been consulted the other properties can be consulted for more detailed information regarding
@@ -34,29 +34,29 @@ namespace Microsoft.Scripting.Actions.Calls {
     /// MethodTarget is always set and indicates the method which failed to bind.
     /// </summary>
     public sealed class CallFailure {
-        private CallFailureReason _reason;      // the reason the call failed
-        private MethodTarget _target;
-        private ConversionResult[] _results;
-        private string[] _keywordArgs;
+        private readonly CallFailureReason _reason;      // the reason the call failed
+        private readonly MethodCandidate _candidate;
+        private readonly ConversionResult[] _results;
+        private readonly string[] _keywordArgs;
 
-        internal CallFailure(MethodTarget target, ConversionResult[] results) {
-            _target = target;
+        internal CallFailure(MethodCandidate candidate, ConversionResult[] results) {
+            _candidate = candidate;
             _results = results;
             _reason = CallFailureReason.ConversionFailure;
         }
 
-        internal CallFailure(MethodTarget target, string[] keywordArgs, bool unassignable) {
+        internal CallFailure(MethodCandidate candidate, string[] keywordArgs, bool unassignable) {
             _reason = unassignable ? CallFailureReason.UnassignableKeyword : CallFailureReason.DuplicateKeyword;
-            _target = target;
+            _candidate = candidate;
             _keywordArgs = keywordArgs;
         }
 
         /// <summary>
         /// Gets the MethodTarget which the call failed for.
         /// </summary>
-        public MethodTarget Target {
+        public MethodCandidate Candidate {
             get {
-                return _target;
+                return _candidate;
             }
         }
 

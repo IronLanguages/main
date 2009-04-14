@@ -19,6 +19,7 @@ using System.Text;
 using Microsoft.Scripting.Utils;
 using System.Diagnostics;
 using IronRuby.Builtins;
+using System.Collections;
 
 namespace IronRuby.Runtime.Calls {
     // L(n, *)
@@ -132,7 +133,7 @@ namespace IronRuby.Runtime.Calls {
 
         // R(N, *, =)
         public override object InvokeSplatRhs(BlockParam/*!*/ param, object self, object[]/*!*/ args, object splattee, object rhs) {
-            var list = splattee as List<object>;
+            var list = splattee as IList;
             if (list != null) {
                 var l = new RubyArray(list.Count + 1);
                 l.AddRange(list);
@@ -146,10 +147,10 @@ namespace IronRuby.Runtime.Calls {
         }
 
         private object InvokeSplatInternal(BlockParam/*!*/ param, object self, object[]/*!*/ args, object splattee) {
-            return InvokeSplatInternal(param, self, args, splattee, splattee as List<object>);
+            return InvokeSplatInternal(param, self, args, splattee, splattee as IList);
         }
 
-        private object InvokeSplatInternal(BlockParam/*!*/ param, object self, object[]/*!*/ args, object splattee, List<object> list) {
+        private object InvokeSplatInternal(BlockParam/*!*/ param, object self, object[]/*!*/ args, object splattee, IList list) {
             int argsLength = args.Length;
 
             int nextArg, nextItem;

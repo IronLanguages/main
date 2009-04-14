@@ -40,7 +40,7 @@ namespace IronRuby.Builtins {
             // TODO: to_s overridden
             MutableString result = MutableString.CreateMutable();
             result.Append("#<");
-            result.Append(RubyUtils.GetClassName(context, self));
+            result.Append(context.GetClassName(self));
             result.Append(':');
             result.Append(self.Name);
             result.Append(">");

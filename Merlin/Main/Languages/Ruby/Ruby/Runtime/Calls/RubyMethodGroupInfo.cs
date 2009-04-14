@@ -44,7 +44,8 @@ namespace IronRuby.Runtime.Calls {
         private MethodBase/*!*/[] _staticDispatchMethods;
         private bool? _hasVirtuals;
 
-        // remove call site type object (CLR static methods don't accept self type):
+        // True: The group contains only static methods and can only be called statically (with no receiver).
+        // False: The group contain instance methods and/or extension methods, or operators.
         private readonly bool _isStatic;
 
         // A method group that owns each overload or null if all overloads are owned by this group.
@@ -62,7 +63,7 @@ namespace IronRuby.Runtime.Calls {
         /// Creates a CLR method group.
         /// </summary>
         internal RubyMethodGroupInfo(MethodBase/*!*/[]/*!*/ methods, RubyModule/*!*/ declaringModule,
-            RubyMethodGroupInfo/*!*/[] overloadOwners,  bool isStatic)
+            RubyMethodGroupInfo/*!*/[] overloadOwners, bool isStatic)
             : base(methods, RubyMemberFlags.Public, declaringModule) {
             Debug.Assert(overloadOwners == null || methods.Length == overloadOwners.Length);
 

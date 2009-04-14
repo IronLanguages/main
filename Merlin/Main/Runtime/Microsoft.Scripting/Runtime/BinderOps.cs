@@ -220,6 +220,10 @@ namespace Microsoft.Scripting.Runtime {
             return new ArgumentTypeException(message);
         }
 
+        public static ArgumentTypeException InvalidSplatteeError(string name, string typeName) {
+            return new ArgumentTypeException(String.Format("{0}() argument after * must be a sequence, not {1}", name, typeName));
+        }
+
         public static object InvokeMethod(MethodBase mb, object obj, object[] args) {
             try {
                 return mb.Invoke(obj, args);

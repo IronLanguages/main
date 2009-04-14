@@ -25,10 +25,14 @@ namespace System.Dynamic {
     /// methods for params arrays and param dictionary functions.
     /// </summary>
     internal class SimpleArgBuilder : ArgBuilder {
-        private Type _parameterType;
+        private readonly Type _parameterType;
 
         internal SimpleArgBuilder(Type parameterType) {
             _parameterType = parameterType;
+        }
+
+        internal Type ParameterType {
+            get { return _parameterType; }
         }
 
         internal override Expression Marshal(Expression parameter) {

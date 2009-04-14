@@ -58,23 +58,19 @@ namespace IronRuby.Runtime.Calls {
         }
 
         protected override DynamicMetaObject/*!*/ InteropBind(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args) {
-            // TODO: pass block as the last parameter (before RHS arg?):
-            var normalizedArgs = RubyMethodGroupBase.NormalizeArguments(metaBuilder, args, SelfCallConvention.NoSelf, false, false);
-
-            MethodInfo postConverter;
-            ConvertBinder interopBinder = GetInteropBinder(args.RubyContext, out postConverter);
-
-            if (normalizedArgs.Length == 0) {
+            var normalizedArgs = RubyOverloadResolver.NormalizeArguments(metaBuilder, args, 0, 0);
+            if (!metaBuilder.Error) {
+                MethodInfo postConverter;
+                ConvertBinder interopBinder = GetInteropBinder(args.RubyContext, out postConverter);
+                
                 // TODO: the type of result.Expression (and LimitType) should be the type of the conversion.
-                var result = interopBinder.Bind(args.MetaTarget, normalizedArgs);
+                var result = interopBinder.Bind(args.MetaTarget, ArrayUtils.MakeArray(normalizedArgs));
                 metaBuilder.SetMetaResult(result, args);
 
                 if (postConverter != null) {
                     metaBuilder.Result = postConverter.OpCall(AstUtils.Convert(metaBuilder.Result, interopBinder.Type));
                 }
-
-            } else {
-                metaBuilder.SetWrongNumberOfArgumentsError(normalizedArgs.Length, 0);
+                return metaBuilder.CreateMetaObject(this);
             }
 
             return metaBuilder.CreateMetaObject(this);

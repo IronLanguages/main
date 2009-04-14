@@ -480,7 +480,6 @@ namespace IronPython.Runtime {
         private static SymbolId _Division;
         private static SymbolId _NestedScopes;
         private static SymbolId _Generators;
-        private static SymbolId _As;
         private static SymbolId _Star;
         private static SymbolId _StarStar;
         private static SymbolId _Locals;
@@ -503,7 +502,6 @@ namespace IronPython.Runtime {
         private static SymbolId _RealPart;
         private static SymbolId _ImaginaryPart;
         private static SymbolId _Missing;
-        private static SymbolId _With;
         private static SymbolId _WithStmt;
         private static SymbolId _Append;
         private static SymbolId _Extend;
@@ -1045,13 +1043,6 @@ namespace IronPython.Runtime {
                 return _Generators;
             }
         }
-        ///<summary>Symbol for 'as'</summary> 
-        public static SymbolId As {
-            get {
-                if (_As == SymbolId.Empty) _As = MakeSymbolId("as");
-                return _As;
-            }
-        }
         ///<summary>Symbol for '*'</summary> 
         public static SymbolId Star {
             get {
@@ -1204,13 +1195,6 @@ namespace IronPython.Runtime {
             get {
                 if (_Missing == SymbolId.Empty) _Missing = MakeSymbolId("__missing__");
                 return _Missing;
-            }
-        }
-        ///<summary>Symbol for 'with'</summary> 
-        public static SymbolId With {
-            get {
-                if (_With == SymbolId.Empty) _With = MakeSymbolId("with");
-                return _With;
             }
         }
         ///<summary>Symbol for 'with_statement'</summary> 

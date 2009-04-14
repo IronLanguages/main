@@ -68,6 +68,7 @@
       <Compile Include="System\Dynamic\ComTypeLibDesc.cs" />
       <Compile Include="System\Dynamic\ContractUtils.cs" />
       <Compile Include="System\Dynamic\ConversionArgBuilder.cs" />
+      <Compile Include="System\Dynamic\ConvertArgBuilder.cs" />
       <Compile Include="System\Dynamic\ConvertibleArgBuilder.cs" />
       <Compile Include="System\Dynamic\CurrencyArgBuilder.cs" />
       <Compile Include="System\Dynamic\DateTimeArgBuilder.cs" />

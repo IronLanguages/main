@@ -716,10 +716,19 @@ namespace IronRuby.Runtime {
 
             List<RubyModule> interfaces = new List<RubyModule>();
             
-            if (type.IsArray && type.GetArrayRank() > 1) {
-                RubyModule mdaModule;
-                if (TryGetModuleNoLock(typeof(MultiDimensionalArray), out mdaModule)) {
-                    interfaces.Add(mdaModule);
+            if (type.IsArray) {
+                if (type.GetArrayRank() > 1) {
+                    RubyModule module;
+                    if (TryGetModuleNoLock(typeof(MultiDimensionalArray), out module)) {
+                        interfaces.Add(module);
+                    }
+                }
+            } else if (type.IsEnum) {
+                if (type.IsDefined(typeof(FlagsAttribute), false)) {
+                    RubyModule module;
+                    if (TryGetModuleNoLock(typeof(FlagEnumeration), out module)) {
+                        interfaces.Add(module);
+                    }
                 }
             }
 
@@ -965,9 +974,12 @@ namespace IronRuby.Runtime {
         /// <summary>
         /// Gets a class of the specified object (skips any singletons).
         /// </summary>
-        public RubyClass/*!*/ GetClassOf(object obj)
-            //^ ensures !result.IsSingletonClass;
-        {
+        public RubyClass/*!*/ GetClassOf(object obj) {
+            ContractUtils.Ensures(!ContractUtils.Result<RubyClass>().IsSingletonClass);
+            return TryGetClassOfRubyObject(obj) ?? GetOrCreateClass(obj.GetType());
+        }
+
+        private RubyClass TryGetClassOfRubyObject(object obj) {
             if (obj == null) {
                 return _nilClass;
             }
@@ -983,7 +995,7 @@ namespace IronRuby.Runtime {
                 return result;
             }
 
-            return GetOrCreateClass(obj.GetType());
+            return null;
         }
 
         /// <summary>
@@ -1053,6 +1065,25 @@ namespace IronRuby.Runtime {
             }
 
             return false;
+        }
+
+        public string/*!*/ GetTypeName(Type/*!*/ type) {
+            RubyModule module;
+            return TryGetModule(type, out module) ? module.Name : RubyUtils.GetQualifiedName(type);
+        }
+
+        /// <summary>
+        /// Gets the Ruby name of the class of the given object.
+        /// </summary>
+        public string/*!*/ GetClassName(object obj) {
+            // doesn't create a RubyClass for .NET types
+
+            RubyClass cls = TryGetClassOfRubyObject(obj);
+            if (cls != null) {
+                return cls.Name;
+            }
+
+            return GetTypeName(obj.GetType());
         }
 
         #endregion

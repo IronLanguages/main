@@ -17,7 +17,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Dynamic;
 using IronPython.Compiler.Ast;
 using IronPython.Hosting;
 using IronPython.Runtime;
@@ -142,8 +141,9 @@ namespace IronPython.Compiler {
         }
 
         private bool AllowWithStatement {
-            get { return Python26 ||
-                        (_languageFeatures & PythonLanguageFeatures.AllowWithStatement) == PythonLanguageFeatures.AllowWithStatement; 
+            get {
+                return Python26 ||
+                      (_languageFeatures & PythonLanguageFeatures.AllowWithStatement) == PythonLanguageFeatures.AllowWithStatement;
             }
         }
 
@@ -378,7 +378,7 @@ namespace IronPython.Compiler {
         public PythonAst ParseFile(bool makeModule) {
             return ParseFile(makeModule, false);
         }
-        
+
         //single_input: Newline | simple_stmt | compound_stmt Newline
         //eval_input: testlist Newline* ENDMARKER
         //file_input: (Newline | stmt)* ENDMARKER
@@ -556,20 +556,13 @@ namespace IronPython.Compiler {
                 case TokenKind.At:
                 case TokenKind.KeywordDef:
                 case TokenKind.KeywordClass:
-                    //              case TokenKind.KeywordWith: Provisioning for Python 2.6 
+                case TokenKind.KeywordWith:
                     parsingMultiLineCmpdStmt = true;
                     s = ParseStmt();
                     EatEndOfInput();
                     break;
 
                 default:
-                    if (AllowWithStatement && PeekName(Symbols.With)) {
-                        parsingMultiLineCmpdStmt = true;
-                        s = ParseStmt();
-                        EatEndOfInput();
-                        break;
-                    }
-
                     //  parseSimpleStmt takes care of one or more simple_stmts and the Newline
                     s = ParseSimpleStmt();
                     EatOptionalNewlines();
@@ -641,10 +634,9 @@ namespace IronPython.Compiler {
                     return ParseFuncDef();
                 case TokenKind.KeywordClass:
                     return ParseClassDef();
+                case TokenKind.KeywordWith:
+                    return ParseWithStmt();
                 default:
-                    if (AllowWithStatement && PeekName(Symbols.With)) {
-                        return ParseWithStmt();
-                    }
                     return ParseSimpleStmt();
             }
         }
@@ -671,7 +663,7 @@ namespace IronPython.Compiler {
                 ret.SetLoc(start, GetEnd());
                 return ret;
             } else {
-                if(!Eat(TokenKind.NewLine)) {
+                if (!Eat(TokenKind.NewLine)) {
                     // error handling, make sure we're making forward progress
                     NextToken();
                 }
@@ -855,7 +847,7 @@ namespace IronPython.Compiler {
                 if (op != PythonOperator.None) {
                     NextToken();
                     Expression rhs;
-                    
+
                     if (MaybeEat(TokenKind.KeywordYield)) {
                         rhs = ParseYieldExpression();
                     } else {
@@ -974,7 +966,7 @@ namespace IronPython.Compiler {
                 }
                 ret = new ModuleName(names);
             }
-            
+
             ret.SetLoc(start, GetEnd());
             return ret;
         }
@@ -1011,7 +1003,7 @@ namespace IronPython.Compiler {
                 asNames = null;
 
                 if (dname is RelativeModuleName) {
-                    ReportSyntaxError("'import *' not allowed with 'from .'");                         
+                    ReportSyntaxError("'import *' not allowed with 'from .'");
                 }
             } else {
                 List<SymbolId> l = new List<SymbolId>();
@@ -1088,9 +1080,7 @@ namespace IronPython.Compiler {
         //import_as_name: NAME [NAME NAME]
         //dotted_as_name: dotted_name [NAME NAME]
         private SymbolId MaybeParseAsName() {
-            NameToken t = PeekToken() as NameToken;
-            if (t != null && t.Name == Symbols.As) {
-                NextToken();
+            if (MaybeEat(TokenKind.KeywordAs)) {
                 return ReadName();
             }
             return SymbolId.Empty;
@@ -1213,7 +1203,7 @@ namespace IronPython.Compiler {
         //classdef: 'class' NAME ['(' testlist ')'] ':' suite
         private ClassDefinition ParseClassDef() {
             Eat(TokenKind.KeywordClass);
-            
+
             SourceLocation start = GetStart();
             SymbolId name = ReadName();
             if (name == SymbolId.Empty) {
@@ -1224,7 +1214,7 @@ namespace IronPython.Compiler {
             Expression[] bases = new Expression[0];
             if (MaybeEat(TokenKind.LeftParenthesis)) {
                 List<Expression> l = ParseTestList();
-                
+
                 if (l.Count == 1 && l[0] is ErrorExpression) {
                     // error handling, classes is incomplete.
                     return new ClassDefinition(name, new Expression[0], new ExpressionStatement(new ErrorExpression()));
@@ -1302,7 +1292,7 @@ namespace IronPython.Compiler {
                     res = cls;
                 } else {
                     res = new EmptyStatement();
-                    ReportSyntaxError("expected class or def");
+                    ReportSyntaxError(_lookahead);
                 }
             } else {
                 FunctionDefinition fnc = ParseFuncDef();
@@ -1613,12 +1603,11 @@ namespace IronPython.Compiler {
 
         //with_stmt: 'with' expression [ 'as' with_var ] ':' suite
         private WithStatement ParseWithStmt() {
-            SkipName(Symbols.With);
+            Eat(TokenKind.KeywordWith);
             SourceLocation start = GetStart();
             Expression contextManager = ParseExpression();
             Expression var = null;
-            if (PeekName(Symbols.As)) {
-                SkipName(Symbols.As);
+            if (MaybeEat(TokenKind.KeywordAs)) {
                 var = ParseExpression();
             }
 
@@ -1781,7 +1770,7 @@ namespace IronPython.Compiler {
             Expression test1 = null, test2 = null;
             if (PeekToken().Kind != TokenKind.Colon) {
                 test1 = ParseExpression();
-                if (MaybeEat(TokenKind.Comma) || (Python26 && MaybeEat(Symbols.As))) {
+                if (MaybeEat(TokenKind.Comma) || MaybeEat(TokenKind.KeywordAs)) {
                     test2 = ParseExpression();
                 }
             }
@@ -1988,9 +1977,9 @@ namespace IronPython.Compiler {
 
         private Expression FinishUnaryNegate() {
             // Special case to ensure that System.Int32.MinValue is an int and not a BigInteger
-            if (PeekToken().Kind == TokenKind.Constant) {                
+            if (PeekToken().Kind == TokenKind.Constant) {
                 Token t = PeekToken();
-                
+
                 BigInteger bi = t.Value as BigInteger;
                 uint iVal;
                 if (!Object.ReferenceEquals(bi, null) && bi.AsUInt32(out iVal) && iVal == 0x80000000) {
@@ -2068,7 +2057,7 @@ namespace IronPython.Compiler {
                             cv = FinishBytesPlus(bytes);
                         }
                     }
-                    
+
                     ret = new ConstantExpression(cv);
                     ret.SetLoc(start, GetEnd());
                     return ret;
@@ -2461,7 +2450,7 @@ namespace IronPython.Compiler {
 
                     bool trailingComma;
                     Expression res = MakeTupleOrExpr(ParseTargetList(out trailingComma), trailingComma);
-                    
+
                     if (t.Kind == TokenKind.LeftParenthesis) {
                         Eat(TokenKind.RightParenthesis);
                     } else {
@@ -2725,7 +2714,7 @@ namespace IronPython.Compiler {
             if (MaybeEat(TokenKind.RightBracket)) {
                 ret = new ListExpression();
             } else {
-                bool prevAllow = _allowIncomplete;                
+                bool prevAllow = _allowIncomplete;
                 try {
                     _allowIncomplete = true;
                     Expression t0 = ParseExpression();

@@ -38,14 +38,18 @@ namespace Microsoft.Scripting.Actions.Calls {
             _isRef = info.ParameterType.IsByRef;
         }
 
+        public override int ConsumedArgumentCount {
+            get { return 0; }
+        }
+
         public override int Priority {
             get { return 5; }
         }
 
-        internal protected override Expression ToExpression(ParameterBinder parameterBinder, IList<Expression> parameters, bool[] hasBeenUsed) {
+        internal protected override Expression ToExpression(OverloadResolver resolver, IList<Expression> parameters, bool[] hasBeenUsed) {
             if (_isRef) {
                 if (_tmp == null) {
-                    _tmp = parameterBinder.GetTemporary(_parameterType, "outParam");
+                    _tmp = resolver.GetTemporary(_parameterType, "outParam");
                 }
                 return _tmp;
             }
@@ -53,7 +57,7 @@ namespace Microsoft.Scripting.Actions.Calls {
             return GetDefaultValue();
         }
 
-        internal override Expression ToReturnExpression(ParameterBinder parameterBinder) {
+        internal override Expression ToReturnExpression(OverloadResolver resolver) {
             if (_isRef) {
                 return _tmp;
             }

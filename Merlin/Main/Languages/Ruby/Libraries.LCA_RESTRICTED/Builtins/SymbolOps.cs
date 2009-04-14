@@ -22,6 +22,7 @@ using IronRuby.Compiler;
 namespace IronRuby.Builtins {
 
     [RubyClass("Symbol", Extends = typeof(SymbolId), Inherits = typeof(Object))]
+    [HideMethod("==")]
     public static class SymbolOps {
 
         #region Public Instance Methods
