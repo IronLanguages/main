@@ -36,6 +36,10 @@ namespace Microsoft.Scripting.Actions.Calls {
             get { return 2; }
         }
 
+        public override int ConsumedArgumentCount {
+            get { return 0; }
+        }
+
         internal protected override Expression ToExpression(OverloadResolver resolver, IList<Expression> parameters, bool[] hasBeenUsed) {
             object val = ParameterInfo.DefaultValue;
             if (val is Missing) {

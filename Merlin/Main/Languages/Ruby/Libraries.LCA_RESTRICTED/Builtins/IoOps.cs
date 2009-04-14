@@ -338,7 +338,7 @@ namespace IronRuby.Builtins {
         private static RubyIO/*!*/ ToIo(RubyContext/*!*/ context, object obj) {
             RubyIO io = obj as RubyIO;
             if (io == null) {
-                throw RubyExceptions.CreateTypeConversionError(RubyUtils.GetClassName(context, obj), "IO");
+                throw RubyExceptions.CreateTypeConversionError(context.GetClassName(obj), "IO");
             }
             return io;
         }
@@ -581,11 +581,11 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("print")]
-        public static void Print(BinaryOpStorage/*!*/ writeStorage, UnaryOpStorage/*!*/ tosStorage, object self, 
+        public static void Print(BinaryOpStorage/*!*/ writeStorage, ConversionStorage<MutableString>/*!*/ tosConversion, object self, 
             [NotNull]params object[]/*!*/ args) {
             MutableString delimiter = writeStorage.Context.OutputSeparator;
             for (int i = 0; i < args.Length; i++) {
-                MutableString str = ToPrintedString(tosStorage, args[i]);
+                MutableString str = ToPrintedString(tosConversion, args[i]);
                 if (delimiter != null) {
                     str.Append(delimiter);
                 }
@@ -614,15 +614,15 @@ namespace IronRuby.Builtins {
 
         private static readonly MutableString NewLine = MutableString.CreateMutable("\n").Freeze();
 
-        public static MutableString/*!*/ ToPrintedString(UnaryOpStorage/*!*/ tosStorage, object obj) {
+        public static MutableString/*!*/ ToPrintedString(ConversionStorage<MutableString>/*!*/ tosConversion, object obj) {
             IDictionary<object, object> hash;
             List<object> list;
             MutableString str;
 
             if ((list = obj as List<object>) != null) {
-                return IListOps.Join(tosStorage, list, NewLine);
+                return IListOps.Join(tosConversion, list, NewLine);
             } else if ((hash = obj as IDictionary<object, object>) != null) {
-                return IDictionaryOps.ToString(tosStorage, hash);
+                return IDictionaryOps.ToMutableString(tosConversion, hash);
             } else if (obj == null) {
                 return MutableString.Create("nil");
             } else if (obj is bool) {
@@ -636,7 +636,7 @@ namespace IronRuby.Builtins {
             } else if ((str = obj as MutableString) != null) {
                 return str;
             } else {
-                return RubyUtils.ObjectToMutableString(tosStorage, obj);
+                return Protocols.ConvertToString(tosConversion, obj);
             }
         }
 
@@ -655,14 +655,18 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("puts")]
-        public static void Puts(BinaryOpStorage/*!*/ writeStorage, UnaryOpStorage/*!*/ tosStorage, object self, [NotNull]object/*!*/ val) {
-            Puts(writeStorage, self, ToPrintedString(tosStorage, val));
+        public static void Puts(BinaryOpStorage/*!*/ writeStorage, ConversionStorage<MutableString>/*!*/ tosConversion, 
+            object self, [NotNull]object/*!*/ val) {
+
+            Puts(writeStorage, self, ToPrintedString(tosConversion, val));
         }
 
         [RubyMethod("puts")]
-        public static void Puts(BinaryOpStorage/*!*/ writeStorage, UnaryOpStorage/*!*/ tosStorage, object self, [NotNull]params object[]/*!*/ vals) {
+        public static void Puts(BinaryOpStorage/*!*/ writeStorage, ConversionStorage<MutableString>/*!*/ tosConversion, 
+            object self, [NotNull]params object[]/*!*/ vals) {
+
             for (int i = 0; i < vals.Length; i++) {
-                Puts(writeStorage, tosStorage, self, vals[i]);
+                Puts(writeStorage, tosConversion, self, vals[i]);
             }
         }
 
@@ -691,8 +695,8 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("write")]
-        public static int Write(ConversionStorage<MutableString>/*!*/ tosStorage, RubyIO/*!*/ self, object obj) {
-            return Write(self, Protocols.ConvertToString(tosStorage, obj));
+        public static int Write(ConversionStorage<MutableString>/*!*/ tosConversion, RubyIO/*!*/ self, object obj) {
+            return Write(self, Protocols.ConvertToString(tosConversion, obj));
         }
 
         //write_nonblock

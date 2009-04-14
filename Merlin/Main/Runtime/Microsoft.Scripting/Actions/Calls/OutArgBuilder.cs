@@ -38,6 +38,10 @@ namespace Microsoft.Scripting.Actions.Calls {
             _isRef = info.ParameterType.IsByRef;
         }
 
+        public override int ConsumedArgumentCount {
+            get { return 0; }
+        }
+
         public override int Priority {
             get { return 5; }
         }

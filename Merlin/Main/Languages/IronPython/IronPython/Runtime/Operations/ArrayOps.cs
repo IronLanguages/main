@@ -235,7 +235,7 @@ namespace IronPython.Runtime.Operations {
         /// Multiply two object[] arrays - internal version used for objects backed by arrays
         /// </summary>
         internal static object[] Multiply(object[] data, int size, int count) {
-            int newCount = size * count;
+            int newCount = checked(size * count);
 
             object[] ret = ArrayOps.CopyArray(data, newCount);
             if (count > 0) {

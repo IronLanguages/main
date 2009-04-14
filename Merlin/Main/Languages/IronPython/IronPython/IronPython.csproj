@@ -112,6 +112,7 @@
     <Compile Include="Compiler\CompilationMode.cs" />
     <Compile Include="Compiler\GeneratorRewriter.cs" />
     <Compile Include="Compiler\LazyCode.cs" />
+    <Compile Include="Runtime\Exceptions\BufferException.Generated.cs" />
     <Compile Include="Runtime\Profiler.cs" />
     <Compile Include="Compiler\GlobalAllocator.cs" />
     <Compile Include="Compiler\Ast\AugmentedAssignStatement.cs" />

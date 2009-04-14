@@ -162,7 +162,7 @@ namespace IronRuby.Runtime.Calls {
             // TODO: 
             // Should NormalizeArguments return a struct that provides us an information whether to treat particular argument's restrictions as conditions?
             // The splatted array is stored in a local. Therefore we cannot apply restrictions on it.
-            SetMetaResult(metaResult, args.SimpleArgumentCount == 0 && args.Signature.HasSplattedArgument);
+            SetMetaResult(metaResult, args.Signature.HasSplattedArgument);
         }
 
         public void SetMetaResult(DynamicMetaObject/*!*/ metaResult, bool treatRestrictionsAsConditions) {

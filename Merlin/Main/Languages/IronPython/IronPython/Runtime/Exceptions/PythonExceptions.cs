@@ -164,7 +164,9 @@ namespace IronPython.Runtime.Exceptions {
             }
 
             public PythonTuple/*!*/ __getslice__(int start, int stop) {
-                return PythonTuple.MakeTuple(ArrayOps.GetSlice(((PythonTuple)args)._data, start, stop));
+                PythonTuple argTuple = (PythonTuple)args;
+                Slice.FixSliceArguments(argTuple._data.Length, ref start, ref stop);
+                return PythonTuple.MakeTuple(ArrayOps.GetSlice(argTuple._data, start, stop));
             }
 
             /// <summary>

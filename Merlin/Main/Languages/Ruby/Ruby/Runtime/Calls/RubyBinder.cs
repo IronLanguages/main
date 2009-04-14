@@ -48,8 +48,7 @@ namespace IronRuby.Runtime.Calls {
         }
 
         public override string GetTypeName(Type t) {
-            RubyModule module;
-            return _context.TryGetModule(t, out module) ? module.Name : RubyUtils.GetQualifiedName(t);
+            return _context.GetTypeName(t);
         }
 
 

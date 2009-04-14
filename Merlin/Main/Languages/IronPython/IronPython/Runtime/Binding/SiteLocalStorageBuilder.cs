@@ -23,12 +23,16 @@ using Microsoft.Scripting.Actions.Calls;
 
 namespace IronPython.Runtime.Binding {
     public sealed class SiteLocalStorageBuilder : ArgBuilder {
+        public SiteLocalStorageBuilder(ParameterInfo info) 
+            : base(info) {
+        }
+
         public override int Priority {
             get { return -1; }
         }
-                
-        public SiteLocalStorageBuilder(ParameterInfo info) 
-            : base(info) {
+
+        public override int ConsumedArgumentCount {
+            get { return 0; }
         }
 
         protected override Expression ToExpression(OverloadResolver resolver, IList<Expression> parameters, bool[] hasBeenUsed) {

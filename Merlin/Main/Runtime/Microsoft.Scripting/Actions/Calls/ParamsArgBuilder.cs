@@ -42,6 +42,12 @@ namespace Microsoft.Scripting.Actions.Calls {
             _elementType = elementType;
         }
 
+        // Consumes all expanded arguments. 
+        // Collapsed arguments are fetched from resolver provided storage, not from actual argument expressions.
+        public override int ConsumedArgumentCount {
+            get { return _expandedCount; }
+        }
+
         public override int Priority {
             get { return 4; }
         }

@@ -36,6 +36,7 @@ namespace IronRuby.Builtins {
     /// IO builtin class. Wraps a BCL Stream object. Implementation of Ruby methods is in IoOps.cs in IronRuby.Libraries assembly.
     /// </summary>
     public class RubyIO : IDisposable {
+        private RubyContext/*!*/ _context;
         private Encoding/*!*/ _externalEncoding;
         private Encoding _internalEncoding;
 
@@ -55,7 +56,9 @@ namespace IronRuby.Builtins {
 
         #region Construction
 
-        protected RubyIO() {
+        public RubyIO(RubyContext/*!*/ context) {
+            _context = context;
+            _fileDescriptor = context.AddDescriptor(this);
             _disposed = false;
             _closed = false;
             _peekAhead = -1;
@@ -64,12 +67,6 @@ namespace IronRuby.Builtins {
             // TODO: enable setting
             _externalEncoding = BinaryEncoding.Instance;
             _internalEncoding = null;
-        }
-
-        public RubyIO(RubyContext/*!*/ context) 
-            : this() {
-            ContractUtils.RequiresNotNull(context, "context");
-            _fileDescriptor = context.AddDescriptor(this);
         }
 
         public RubyIO(RubyContext/*!*/ context, Stream/*!*/ stream, string/*!*/ modeString)
@@ -530,5 +527,9 @@ namespace IronRuby.Builtins {
         }
 
         #endregion
+
+        public override string/*!*/ ToString() {
+            return RubyUtils.ObjectToMutableString(_context, this).ToString();
+        }
     }
 }

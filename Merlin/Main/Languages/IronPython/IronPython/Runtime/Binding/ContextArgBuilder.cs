@@ -36,6 +36,10 @@ namespace IronPython.Runtime.Binding {
             get { return -1; }
         }
 
+        public override int ConsumedArgumentCount {
+            get { return 0; }
+        }
+
         protected override Expression ToExpression(OverloadResolver resolver, IList<Expression> parameters, bool[] hasBeenUsed) {
             return ((PythonOverloadResolver)resolver).ContextExpression;
         }

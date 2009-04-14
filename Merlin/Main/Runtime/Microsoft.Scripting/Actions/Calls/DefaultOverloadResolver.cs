@@ -83,13 +83,18 @@ namespace Microsoft.Scripting.Actions {
             get { return _callType; }
         }
 
-        protected override ArgBuilder MakeInstanceBuilder(MethodBase method, List<ParameterWrapper> parameters, ref int argIndex) {
-            if (!CompilerHelpers.IsStatic(method)) {
-                parameters.Add(new ParameterWrapper(null, method.DeclaringType, null, true, false, false, _callType == CallTypes.ImplicitInstance));
-                return new SimpleArgBuilder(method.DeclaringType, argIndex++, false, false);
-            } else {
-                return new NullArgBuilder();
+        protected internal override BitArray MapSpecialParameters(ParameterMapping mapping) {
+            //  CallType        call-site   m static                  m instance         m operator/extension
+            //  implicit inst.  T.m(a,b)    Ast.Call(null, [a, b])    Ast.Call(a, [b])   Ast.Call(null, [a, b])   
+            //  none            a.m(b)      Ast.Call(null, [b])       Ast.Call(a, [b])   Ast.Call(null, [a, b])
+
+            if (!CompilerHelpers.IsStatic(mapping.Method)) {
+                var type = mapping.Method.DeclaringType;
+                mapping.AddParameter(new ParameterWrapper(null, type, null, true, false, false, _callType == CallTypes.ImplicitInstance));
+                mapping.AddInstanceBuilder(new SimpleArgBuilder(type, mapping.ArgIndex, false, false));
             }
+
+            return null;
         }
 
         internal protected override Candidate CompareEquivalentCandidates(ApplicableCandidate one, ApplicableCandidate two) {

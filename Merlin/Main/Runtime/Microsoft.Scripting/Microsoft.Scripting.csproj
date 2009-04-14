@@ -125,6 +125,7 @@
     <Compile Include="Actions\Calls\OutArgBuilder.cs" />
     <Compile Include="Actions\Calls\OverloadResolver.cs" />
     <Compile Include="Actions\Calls\OverloadResolverFactory.cs" />
+    <Compile Include="Actions\Calls\ParameterMapping.cs" />
     <Compile Include="Actions\Calls\ParameterWrapper.cs" />
     <Compile Include="Actions\Calls\ParamsArgBuilder.cs" />
     <Compile Include="Actions\Calls\ParamsDictArgBuilder.cs" />
@@ -328,6 +329,7 @@
     <Compile Include="Utils\CollectionExtensions.cs" />
     <Compile Include="Utils\CopyOnWriteList.cs" />
     <Compile Include="Utils\DynamicUtils.cs" />
+    <Compile Include="Utils\EnumUtils.cs" />
     <Compile Include="Utils\ListEqualityComparer.cs" />
     <Compile Include="Utils\MathUtils.cs" />
     <Compile Include="Utils\Publisher.cs" />

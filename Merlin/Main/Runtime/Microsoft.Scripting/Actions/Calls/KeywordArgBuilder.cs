@@ -42,6 +42,7 @@ namespace Microsoft.Scripting.Actions.Calls {
             : base(builder.ParameterInfo) {
 
             Debug.Assert(BuilderExpectsSingleParameter(builder));
+            Debug.Assert(builder.ConsumedArgumentCount == 1);
             _builder = builder;
 
             Debug.Assert(kwArgIndex < kwArgCount);
@@ -51,6 +52,10 @@ namespace Microsoft.Scripting.Actions.Calls {
 
         public override int Priority {
             get { return _builder.Priority; }
+        }
+
+        public override int ConsumedArgumentCount {
+            get { return 1; }
         }
 
         /// <summary>
@@ -64,7 +69,9 @@ namespace Microsoft.Scripting.Actions.Calls {
 
         internal protected override Expression ToExpression(OverloadResolver resolver, IList<Expression> parameters, bool[] hasBeenUsed) {
             Debug.Assert(BuilderExpectsSingleParameter(_builder));
+
             int index = GetKeywordIndex(parameters.Count);
+            Debug.Assert(!hasBeenUsed[index]);
             hasBeenUsed[index] = true;
             return _builder.ToExpression(resolver, new Expression[] { parameters[index] }, new bool[1]);
         }

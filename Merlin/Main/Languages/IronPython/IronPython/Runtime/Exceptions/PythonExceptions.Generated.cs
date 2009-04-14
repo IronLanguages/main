@@ -124,6 +124,19 @@ namespace IronPython.Runtime.Exceptions {
         }
 
         [MultiRuntimeAware]
+        private static PythonType BufferErrorStorage;
+        public static PythonType BufferError {
+            get {
+                if (BufferErrorStorage == null) {
+                    lock (typeof(PythonExceptions)) {
+                        BufferErrorStorage = CreateSubType(StandardError, "BufferError");
+                    }
+                }
+                return BufferErrorStorage;
+            }
+        }
+
+        [MultiRuntimeAware]
         private static PythonType ArithmeticErrorStorage;
         public static PythonType ArithmeticError {
             get {
@@ -985,6 +998,7 @@ namespace IronPython.Runtime.Exceptions {
             if (clrException is System.ApplicationException) return new BaseException(StandardError);
             if (clrException is Microsoft.Scripting.ArgumentTypeException) return new BaseException(TypeError);
             if (clrException is IronPython.Runtime.Exceptions.AssertionException) return new BaseException(AssertionError);
+            if (clrException is IronPython.Runtime.Exceptions.BufferException) return new BaseException(BufferError);
             if (clrException is IronPython.Runtime.Exceptions.FloatingPointException) return new BaseException(FloatingPointError);
             if (clrException is IronPython.Runtime.Exceptions.GeneratorExitException) return new BaseException(GeneratorExit);
             if (clrException is IronPython.Runtime.Exceptions.ImportException) return new BaseException(ImportError);
@@ -1040,6 +1054,7 @@ namespace IronPython.Runtime.Exceptions {
             if (type == StandardError) return new System.ApplicationException(message);
             if (type == TypeError) return new Microsoft.Scripting.ArgumentTypeException(message);
             if (type == AssertionError) return new IronPython.Runtime.Exceptions.AssertionException(message);
+            if (type == BufferError) return new IronPython.Runtime.Exceptions.BufferException(message);
             if (type == FloatingPointError) return new IronPython.Runtime.Exceptions.FloatingPointException(message);
             if (type == GeneratorExit) return new IronPython.Runtime.Exceptions.GeneratorExitException(message);
             if (type == ImportError) return new IronPython.Runtime.Exceptions.ImportException(message);
