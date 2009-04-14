@@ -114,7 +114,7 @@ describe "String#%" do
     lambda { "%$2+d" % [] }.should raise_error(ArgumentError)
     lambda { "%$2-d" % [] }.should raise_error(ArgumentError)
   end
-  
+
   it "raises an ArgumentError when multiple positional argument tokens are given for one format specifier" do
     lambda { "%1$1$s" % "foo" }.should raise_error(ArgumentError)
   end
@@ -156,7 +156,7 @@ describe "String#%" do
     ("%1$s %1$s" % "foo").should == "foo foo"
     ("%1$s %2$s %1$s %2$s" % ["foo", "bar"]).should == "foo bar foo bar"
   end
-
+  
   it "always interprets an array argument as a list of argument parameters" do
     lambda { "%p" % [] }.should raise_error(ArgumentError)
     ("%p" % [1]).should == "1"
@@ -351,15 +351,6 @@ describe "String#%" do
     ("%-7e" % 10).should == "1.000000e+01"
     ("%05e" % 10).should == "1.000000e+01"
     ("%*e" % [10, 9]).should == "9.000000e+00"
-  end
-
-  it "rounds floating point numbers with %f" do
-    float = 78.54534
-    ("%2.2f" % float).should == "78.55"
-    ("%2.4f" % float).should == "78.5453"
-    ("%3.2f" % float).should == "78.55"
-    ("%1.2f" % float).should == "78.55"
-    ("%2.0f" % float).should == "79"
   end
 
   compliant_on :ruby do

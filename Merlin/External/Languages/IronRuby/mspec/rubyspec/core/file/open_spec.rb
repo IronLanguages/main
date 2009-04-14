@@ -58,7 +58,6 @@ describe "File.open" do
       class << f
         alias_method(:close_orig, :close)
         def close
-          close_orig
           raise IOError
         end
       end
@@ -509,10 +508,6 @@ describe "File.open" do
     lambda { File.open(false) }.should raise_error(TypeError)
     lambda { File.open(nil)   }.should raise_error(TypeError)
   end
-  
-  it "raises Errno::EINVAL if filename is empty" do
-    lambda { File.open("") }.should raise_error(Errno::EINVAL)
-  end
 
   it "raises a SystemCallError if passed an invalid Integer type" do
     lambda { File.open(-1)    }.should raise_error(SystemCallError)
@@ -524,10 +519,5 @@ describe "File.open" do
 
   it "raises an ArgumentError if passed an invalid string for mode" do
     lambda { File.open(@file, 'fake') }.should raise_error(ArgumentError)
-  end
-
-  it "doesn't create internal caching issues if you use a integer then string" do
-    File.open(1) rescue nil
-    lambda { File.open(@file, 'w') {} }.should_not raise_error
   end
 end
