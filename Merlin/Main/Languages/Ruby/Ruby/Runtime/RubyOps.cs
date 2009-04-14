@@ -1440,11 +1440,16 @@ namespace IronRuby.Runtime {
             return result;
         }
 
-        // TODO: (interop conversion)
-        // Used for implicit conversions from System.String to MutableString.
+        // Used for implicit conversions from System.String to MutableString (to_str conversion like).
         [Emitted]
-        public static MutableString/*!*/ ToMutableString(string/*!*/ str) {
+        public static MutableString/*!*/ StringToMutableString(string/*!*/ str) {
             return MutableString.Create(str, RubyEncoding.UTF8);
+        }
+
+        // Used for implicit conversions from System.Object to MutableString (to_s conversion like).
+        [Emitted]
+        public static MutableString/*!*/ ObjectToMutableString(object/*!*/ value) {
+            return (value != null) ? MutableString.Create(value.ToString(), RubyEncoding.UTF8) : MutableString.Empty;
         }
 
         [Emitted] // ProtocolConversionAction
