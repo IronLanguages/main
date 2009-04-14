@@ -790,7 +790,7 @@ namespace IronRuby.Builtins {
         /// <exception cref="InvalidOperationException">For any value of other.</exception>
         [RubyMethod("coerce")]
         public static RubyArray Coerce(RubyContext/*!*/ context, BigInteger/*!*/ self, object other) {
-            throw RubyExceptions.CreateTypeError(String.Format("can't coerce {0} to Bignum", RubyUtils.GetClassName(context, other)));
+            throw RubyExceptions.CreateTypeError(String.Format("can't coerce {0} to Bignum", context.GetClassName(other)));
         }
 
         #endregion

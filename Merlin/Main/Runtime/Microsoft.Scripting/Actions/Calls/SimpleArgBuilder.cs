@@ -29,7 +29,9 @@ namespace Microsoft.Scripting.Actions.Calls {
     /// methods for params arrays and param dictionary functions.
     /// </summary>
     public class SimpleArgBuilder : ArgBuilder {
+        // Index of actual argument expression.
         private int _index;
+
         private readonly Type _parameterType;
         private readonly bool _isParams, _isParamsDict;
 
@@ -69,6 +71,10 @@ namespace Microsoft.Scripting.Actions.Calls {
             return new SimpleArgBuilder(ParameterInfo, _parameterType, newIndex, _isParams, _isParamsDict);
         }
 
+        public override int ConsumedArgumentCount {
+            get { return 1; }
+        }
+
         public override int Priority {
             get { return 0; }
         }
@@ -85,16 +91,18 @@ namespace Microsoft.Scripting.Actions.Calls {
             }
         }
 
-        internal protected override Expression ToExpression(ParameterBinder parameterBinder, IList<Expression> parameters, bool[] hasBeenUsed) {
+        internal protected override Expression ToExpression(OverloadResolver resolver, IList<Expression> parameters, bool[] hasBeenUsed) {
+            Debug.Assert(hasBeenUsed.Length == parameters.Count);
             Debug.Assert(_index < parameters.Count);
-            Debug.Assert(_index < hasBeenUsed.Length);
             Debug.Assert(parameters[_index] != null);
+            Debug.Assert(!hasBeenUsed[Index]);
+            
             hasBeenUsed[_index] = true;
-            return parameterBinder.ConvertExpression(parameters[_index], ParameterInfo, _parameterType);
+            return resolver.ConvertExpression(parameters[_index], ParameterInfo, _parameterType);
         }
 
-        protected internal override Func<object[], object> ToDelegate(ParameterBinder parameterBinder, IList<DynamicMetaObject> knownTypes, bool[] hasBeenUsed) {
-            Func<object[], object> conv = parameterBinder.ConvertObject(_index + 1, knownTypes[_index], ParameterInfo, _parameterType);
+        protected internal override Func<object[], object> ToDelegate(OverloadResolver resolver, IList<DynamicMetaObject> knownTypes, bool[] hasBeenUsed) {
+            Func<object[], object> conv = resolver.ConvertObject(_index + 1, knownTypes[_index], ParameterInfo, _parameterType);
             if (conv != null) {
                 return conv;
             }
@@ -103,12 +111,6 @@ namespace Microsoft.Scripting.Actions.Calls {
                 typeof(Func<object[], object>), 
                 _index + 1, 
                 typeof(ArgBuilder).GetMethod("ArgumentRead"));
-        }
-
-        internal override bool CanGenerateDelegate {
-            get {
-                return true;
-            }
         }
 
         public int Index {

@@ -18,6 +18,7 @@ using System.Collections.Generic;
 using System.Dynamic;
 using System.Linq.Expressions;
 using System.Reflection;
+using Microsoft.Scripting.Utils;
 
 namespace Microsoft.Scripting.Actions.Calls {
     public class RestrictionInfo {
@@ -25,6 +26,9 @@ namespace Microsoft.Scripting.Actions.Calls {
         public readonly Type[] Types;
 
         public RestrictionInfo(DynamicMetaObject[] objects, Type[] types) {
+            Assert.NotNullItems(objects);
+            Assert.NotNull(types);
+
             Objects = objects;
             Types = types;
         }

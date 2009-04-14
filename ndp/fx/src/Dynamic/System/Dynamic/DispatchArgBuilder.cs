@@ -24,7 +24,7 @@ using System.Dynamic.Utils;
 namespace System.Dynamic {
 
     internal class DispatchArgBuilder : SimpleArgBuilder {
-        private bool _isWrapper;
+        private readonly bool _isWrapper;
 
         internal DispatchArgBuilder(Type parameterType)
             : base(parameterType) {

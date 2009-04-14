@@ -19,6 +19,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Text;
 
 using Microsoft.Scripting;
@@ -934,8 +935,8 @@ import Namespace.")]
         /// 
         /// All times are expressed in the same unit of measure as DateTime.Ticks
         /// </summary>
-        public static PythonTuple GetProfilerData(CodeContext/*!*/ context) {
-            return new PythonTuple(Profiler.GetProfiler(PythonContext.GetContext(context)).GetProfile());
+        public static PythonTuple GetProfilerData(CodeContext/*!*/ context, [DefaultParameterValue(false)]bool includeUnused) {
+            return new PythonTuple(Profiler.GetProfiler(PythonContext.GetContext(context)).GetProfile(includeUnused));
         }
 
         /// <summary>

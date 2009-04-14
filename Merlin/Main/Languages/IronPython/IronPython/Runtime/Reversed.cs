@@ -51,7 +51,7 @@ namespace IronPython.Runtime {
             }
 
             int length;
-            if (!DynamicHelpers.GetPythonType(o).TryGetLength(o, out length)) {
+            if (!DynamicHelpers.GetPythonType(o).TryGetLength(context, o, out length)) {
                 throw PythonOps.TypeError("object of type '{0}' has no len()", DynamicHelpers.GetPythonType(o).Name);
             }
 

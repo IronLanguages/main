@@ -19,10 +19,9 @@ using System.Diagnostics;
 using System.Reflection;
 using System;
 using System.Dynamic;
+using Microsoft.Scripting.Actions.Calls;
 
-namespace Microsoft.Scripting.Actions.Calls {
-
-    // TODO: Move to Pyhton
+namespace IronPython.Runtime.Binding {
 
     /// <summary>
     /// ArgBuilder which provides the CodeContext parameter to a method.
@@ -37,18 +36,16 @@ namespace Microsoft.Scripting.Actions.Calls {
             get { return -1; }
         }
 
-        internal protected override Expression ToExpression(ParameterBinder parameterBinder, IList<Expression> parameters, bool[] hasBeenUsed) {
-            return ((ParameterBinderWithCodeContext)parameterBinder).ContextExpression;
+        public override int ConsumedArgumentCount {
+            get { return 0; }
         }
 
-        protected internal override Func<object[], object> ToDelegate(ParameterBinder parameterBinder, IList<DynamicMetaObject> knownTypes, bool[] hasBeenUsed) {
+        protected override Expression ToExpression(OverloadResolver resolver, IList<Expression> parameters, bool[] hasBeenUsed) {
+            return ((PythonOverloadResolver)resolver).ContextExpression;
+        }
+
+        protected override Func<object[], object> ToDelegate(OverloadResolver resolver, IList<DynamicMetaObject> knownTypes, bool[] hasBeenUsed) {
             return _readFunc;
-        }
-
-        internal override bool CanGenerateDelegate {
-            get {
-                return true;
-            }
         }
     }
 }

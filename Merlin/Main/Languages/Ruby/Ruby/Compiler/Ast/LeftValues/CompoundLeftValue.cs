@@ -25,6 +25,7 @@ using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace IronRuby.Compiler.Ast {
     using Ast = System.Linq.Expressions.Expression;
+    using System.Collections;
 
     public partial class CompoundLeftValue : LeftValue {
         /// <summary>
@@ -157,10 +158,10 @@ namespace IronRuby.Compiler.Ast {
             ];
 
             int writeIndex = 0;
-            MSA.Expression result = gen.CurrentScope.DefineHiddenVariable("#rhs", typeof(List<object>));
+            MSA.Expression result = gen.CurrentScope.DefineHiddenVariable("#rhs", typeof(IList));
             writes[writeIndex++] = Ast.Assign(result, resultExpression);
 
-            MethodInfo itemGetter = typeof(List<object>).GetMethod("get_Item");
+            MethodInfo itemGetter = typeof(IList).GetMethod("get_Item");
             for (int i = 0; i < _leftValues.Count; i++) {
                 MSA.Expression rvalue;
 

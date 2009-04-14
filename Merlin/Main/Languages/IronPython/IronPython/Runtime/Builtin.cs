@@ -169,6 +169,22 @@ namespace IronPython.Runtime {
             }
         }
 
+        public static string bin(int number) {
+            return Int32Ops.ToBinary(number, true);
+        }
+
+        public static string bin(Index number) {
+            return Int32Ops.ToBinary(Converter.ConvertToIndex(number), true);
+        }
+
+        public static string bin(BigInteger number) {
+            return BigIntegerOps.ToBinary(number, true);
+        }
+
+        public static string bin(double number) {
+            throw PythonOps.TypeError("'float' object cannot be interpreted as an index");
+        }
+
         public static PythonType @bool {
             get {
                 return DynamicHelpers.GetPythonTypeFromType(typeof(bool));

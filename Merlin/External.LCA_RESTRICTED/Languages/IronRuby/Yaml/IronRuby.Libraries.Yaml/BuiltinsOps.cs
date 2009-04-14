@@ -61,7 +61,7 @@ namespace IronRuby.StandardLibrary.Yaml {
         [RubyMethod("taguri")]
         public static MutableString TagUri(RubyContext/*!*/ context, object self) {
             MutableString str = MutableString.Create("!ruby/object:");
-            str.Append(RubyUtils.GetClassName(context, self));
+            str.Append(context.GetClassName(self));
             str.Append(' ');
             return str;
         }
@@ -71,7 +71,7 @@ namespace IronRuby.StandardLibrary.Yaml {
     public static class YamlClassOps {
         [RubyMethod("to_yaml_node", RubyMethodAttributes.PrivateInstance)]
         public static Node ToYamlNode(RubyContext/*!*/ context, object self, RubyRepresenter rep) {
-            throw RubyExceptions.CreateTypeError("can't dump anonymous class " + RubyUtils.GetClassName(context, self));
+            throw RubyExceptions.CreateTypeError("can't dump anonymous class " + context.GetClassName(self));
         }
     }
 
@@ -156,7 +156,7 @@ namespace IronRuby.StandardLibrary.Yaml {
         [RubyMethod("taguri")]
         public static MutableString TagUri(RubyContext/*!*/ context, object self) {
             MutableString str = MutableString.Create("!ruby/exception:");
-            str.Append(RubyUtils.GetClassName(context, self));
+            str.Append(context.GetClassName(self));
             return str;
         }
     }
@@ -236,8 +236,8 @@ namespace IronRuby.StandardLibrary.Yaml {
     [RubyModule(Extends = typeof(Integer))]
     public static class YamlIntegerOps {
         [RubyMethod("to_yaml_node", RubyMethodAttributes.PrivateInstance)]
-        public static Node/*!*/ ToYaml(ConversionStorage<MutableString>/*!*/ tosStorage, object self, [NotNull]RubyRepresenter/*!*/ rep) {
-            return rep.Scalar(self, Protocols.ConvertToString(tosStorage, self));
+        public static Node/*!*/ ToYaml(ConversionStorage<MutableString>/*!*/ tosConversion, object self, [NotNull]RubyRepresenter/*!*/ rep) {
+            return rep.Scalar(self, Protocols.ConvertToString(tosConversion, self));
         }          
 
         [RubyMethod("taguri")]
@@ -249,8 +249,8 @@ namespace IronRuby.StandardLibrary.Yaml {
     [RubyModule(Extends = typeof(BigInteger))]
     public static class YamlBigIntegerOps {
         [RubyMethod("to_yaml_node", RubyMethodAttributes.PrivateInstance)]
-        public static Node/*!*/ ToYaml(ConversionStorage<MutableString>/*!*/ tosStorage, [NotNull]BigInteger self, [NotNull]RubyRepresenter/*!*/ rep) {
-            return YamlIntegerOps.ToYaml(tosStorage, self, rep);
+        public static Node/*!*/ ToYaml(ConversionStorage<MutableString>/*!*/ tosConversion, [NotNull]BigInteger self, [NotNull]RubyRepresenter/*!*/ rep) {
+            return YamlIntegerOps.ToYaml(tosConversion, self, rep);
         } 
 
         [RubyMethod("taguri")]
@@ -262,8 +262,8 @@ namespace IronRuby.StandardLibrary.Yaml {
     [RubyModule(Extends = typeof(double))]
     public static class YamlDoubleOps {
         [RubyMethod("to_yaml_node", RubyMethodAttributes.PrivateInstance)]
-        public static Node/*!*/ ToYaml(ConversionStorage<MutableString>/*!*/ tosStorage, double self, [NotNull]RubyRepresenter/*!*/ rep) {
-            MutableString str = Protocols.ConvertToString(tosStorage, self);
+        public static Node/*!*/ ToYaml(ConversionStorage<MutableString>/*!*/ tosConversion, double self, [NotNull]RubyRepresenter/*!*/ rep) {
+            MutableString str = Protocols.ConvertToString(tosConversion, self);
             if (str != null) {
                 if (str.Equals("Infinity")) {
                     str = MutableString.Create(".Inf");
@@ -350,8 +350,8 @@ namespace IronRuby.StandardLibrary.Yaml {
     [RubyModule(Extends = typeof(TrueClass))]
     public static class YamlTrueOps {
         [RubyMethod("to_yaml_node", RubyMethodAttributes.PrivateInstance)]
-        public static Node/*!*/ ToYaml(ConversionStorage<MutableString>/*!*/ tosStorage, object self, [NotNull]RubyRepresenter/*!*/ rep) {
-            return rep.Scalar(self, Protocols.ConvertToString(tosStorage, self));
+        public static Node/*!*/ ToYaml(ConversionStorage<MutableString>/*!*/ tosConversion, object self, [NotNull]RubyRepresenter/*!*/ rep) {
+            return rep.Scalar(self, Protocols.ConvertToString(tosConversion, self));
         }
 
         [RubyMethod("taguri")]
@@ -363,8 +363,8 @@ namespace IronRuby.StandardLibrary.Yaml {
     [RubyModule(Extends = typeof(FalseClass))]
     public static class YamlFalseOps {
         [RubyMethod("to_yaml_node", RubyMethodAttributes.PrivateInstance)]
-        public static Node/*!*/ ToYaml(ConversionStorage<MutableString>/*!*/ tosStorage, object self, [NotNull]RubyRepresenter/*!*/ rep) {
-            return rep.Scalar(self, Protocols.ConvertToString(tosStorage, self));
+        public static Node/*!*/ ToYaml(ConversionStorage<MutableString>/*!*/ tosConversion, object self, [NotNull]RubyRepresenter/*!*/ rep) {
+            return rep.Scalar(self, Protocols.ConvertToString(tosConversion, self));
         }
 
         [RubyMethod("taguri")]

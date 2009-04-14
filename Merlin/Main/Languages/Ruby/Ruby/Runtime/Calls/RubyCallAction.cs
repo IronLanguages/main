@@ -206,12 +206,15 @@ namespace IronRuby.Runtime.Calls {
 
         protected override DynamicMetaObject/*!*/ InteropBind(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args) {
             // TODO: pass block as the last parameter (before RHS arg?):
-            var normalizedArgs = RubyMethodGroupBase.NormalizeArguments(metaBuilder, args, SelfCallConvention.NoSelf, false, false);
-            var callInfo = new CallInfo(normalizedArgs.Length);
+            var normalizedArgs = RubyOverloadResolver.NormalizeArguments(metaBuilder, args, 0, Int32.MaxValue);
+            if (!metaBuilder.Error) {
+                var callInfo = new CallInfo(normalizedArgs.Count);
 
-            var interopBinder = GetInteropBinder(args.RubyContext, callInfo);
-            var result = interopBinder.Bind(args.MetaTarget, normalizedArgs);
-            metaBuilder.SetMetaResult(result, args);
+                var interopBinder = GetInteropBinder(args.RubyContext, callInfo);
+                var result = interopBinder.Bind(args.MetaTarget, ArrayUtils.MakeArray(normalizedArgs));
+                metaBuilder.SetMetaResult(result, args);
+                return metaBuilder.CreateMetaObject(this);
+            }
             return metaBuilder.CreateMetaObject(this);
         }
 

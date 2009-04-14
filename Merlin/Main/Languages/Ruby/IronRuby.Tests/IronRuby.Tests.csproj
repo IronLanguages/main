@@ -2,7 +2,7 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProductVersion>9.0.30729</ProductVersion>
+    <ProductVersion>9.0.21022</ProductVersion>
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>{8103D91B-89D8-4A18-9A40-426992602EA2}</ProjectGuid>
     <OutputType>Exe</OutputType>
@@ -74,6 +74,7 @@
     <Compile Include="Runtime\ProtocolTests.cs" />
     <Compile Include="Runtime\RangeTests.cs" />
     <Compile Include="Runtime\RegexTests.cs" />
+    <Compile Include="Runtime\SplattingTests.cs" />
     <Compile Include="Runtime\StringTests.cs" />
     <Compile Include="Runtime\SuperTests.cs" />
     <Compile Include="Runtime\UndefTests.cs" />

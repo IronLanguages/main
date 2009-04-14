@@ -62,10 +62,10 @@ namespace IronPython.Runtime.Binding {
         }
 
         internal DynamicMetaObject/*!*/ InvokeFallback(DynamicMetaObject/*!*/ target, DynamicMetaObject/*!*/[]/*!*/ args, CallSignature sig) {
-            var parameterBinder = new ParameterBinderWithCodeContext(Binder.Binder, AstUtils.Constant(_state.Context));
-            return PythonProtocol.Call(this, target, args) ??
-               Binder.Binder.Create(sig, parameterBinder, target, args) ??
-               Binder.Binder.Call(sig, parameterBinder, target, args);
+            return
+                PythonProtocol.Call(this, target, args) ??
+                Binder.Binder.Create(sig, target, args, AstUtils.Constant(_state.Context)) ??
+                Binder.Binder.Call(sig, new PythonOverloadResolverFactory(Binder.Binder, AstUtils.Constant(_state.Context)), target, args);
         }
 
         public override int GetHashCode() {

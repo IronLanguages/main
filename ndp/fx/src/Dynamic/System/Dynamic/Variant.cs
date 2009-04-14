@@ -540,7 +540,7 @@ namespace System.Dynamic {
         }
 
         // VT_BOOL
-        public bool AsBool {
+        public Boolean AsBool {
             get {
                 Debug.Assert(VariantType == VarEnum.VT_BOOL);
                 return _typeUnion._unionTypes._bool != 0;

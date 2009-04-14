@@ -516,12 +516,14 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("to_s")]
-        public static MutableString ToString(UnaryOpStorage/*!*/ tosStorage, IDictionary<object, object>/*!*/ self) {
+        public static MutableString/*!*/ ToMutableString(ConversionStorage<MutableString>/*!*/ tosConversion, 
+            IDictionary<object, object>/*!*/ self) {
+
             using (IDisposable handle = RubyUtils.InfiniteToSTracker.TrackObject(self)) {
                 if (handle == null) {
                     return MutableString.Create("{...}");
                 } else {
-                    return IListOps.Join(tosStorage, ToArray(self));
+                    return IListOps.Join(tosConversion, ToArray(self));
                 }
             }
         }

@@ -119,20 +119,21 @@ namespace IronPython.Runtime.Binding {
                 (newArgs) => {
                     BindingTarget target;
                     var binder = BinderState.GetBinderState(call).Binder;
+
                     DynamicMetaObject res = binder.CallMethod(
-                        new ParameterBinderWithCodeContext(binder, codeContext),
-                        Value.Targets,
-                        newArgs,
-                        BindingHelpers.GetCallSignature(call),
-                        selfRestrict,
-                        PythonNarrowing.None,
-                        Value.IsBinaryOperator ?
-                                PythonNarrowing.BinaryOperator :
-                                NarrowingLevel.All,
+                        new PythonOverloadResolver(
+                            binder,
+                            newArgs,
+                            BindingHelpers.GetCallSignature(call),
+                            codeContext
+                        ), 
+                        Value.Targets, 
+                        selfRestrict, 
                         Value.Name,
+                        PythonNarrowing.None,
+                        Value.IsBinaryOperator ? PythonNarrowing.BinaryOperator : NarrowingLevel.All,
                         out target
                     );
-
                     return new BuiltinFunction.BindingResult(target, res);
                 }
             );
@@ -173,38 +174,33 @@ namespace IronPython.Runtime.Binding {
                     DynamicMetaObject res;
                     BinderState state = BinderState.GetBinderState(call);
                     BindingTarget target;
-                    var mc = new ParameterBinderWithCodeContext(state.Binder, codeContext);
+                    PythonOverloadResolver resolver;
                     if (Value.IsReversedOperator) {
-                        res = state.Binder.CallMethod(
-                            mc,
-                            Value.Targets,
+                        resolver = new PythonOverloadResolver(
+                            state.Binder,
                             newArgs,
                             GetReversedSignature(signature),
-                            self.Restrictions,
-                            NarrowingLevel.None,
-                            Value.IsBinaryOperator ?
-                                PythonNarrowing.BinaryOperator :
-                                NarrowingLevel.All,
-                            Value.Name,
-                            out target
+                            codeContext
                         );
                     } else {
-                        res = state.Binder.CallInstanceMethod(
-                            mc,
-                            Value.Targets,
+                        resolver = new PythonOverloadResolver(
+                            state.Binder,
                             self,
                             args,
                             signature,
-                            self.Restrictions,
-                            NarrowingLevel.None,
-                            Value.IsBinaryOperator ?
-                                PythonNarrowing.BinaryOperator :
-                                NarrowingLevel.All,
-                            Value.Name,
-                            out target
+                            codeContext
                         );
                     }
 
+                    res = state.Binder.CallMethod(
+                        resolver, 
+                        Value.Targets, 
+                        self.Restrictions, 
+                        Value.Name,
+                        NarrowingLevel.None,
+                        Value.IsBinaryOperator ? PythonNarrowing.BinaryOperator : NarrowingLevel.All,
+                        out target
+                    );
                     return new BuiltinFunction.BindingResult(target, res);
                 }
             );

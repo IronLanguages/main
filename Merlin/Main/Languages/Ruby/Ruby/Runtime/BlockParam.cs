@@ -43,13 +43,24 @@ namespace IronRuby.Runtime {
     }
 
     internal sealed class MissingBlockParam {
-        internal static readonly DynamicMetaObject MetaObject;
+        /// <remarks>
+        /// LimitType must be MissingBlockParam (overload resolution, <see cref="RubyParameterBinder.PrepareParametersBinding"/>).
+        /// Restriction should be empty: used only for !HasBlock call-sites => the site will never be reused for a call with a block.
+        /// </remarks>
+        internal sealed class Meta : DynamicMetaObject, IRestrictedMetaObject {
+            internal static readonly DynamicMetaObject Instance = new Meta();
 
-        static MissingBlockParam() {
-            var value = new MissingBlockParam();
-            var constant = Ast.Constant(value);
-            MetaObject = new DynamicMetaObject(constant, BindingRestrictions.GetTypeRestriction(constant, typeof(MissingBlockParam)), value);
+            private Meta()
+                : base(AstUtils.Constant(null, typeof(MissingBlockParam)), BindingRestrictions.Empty) {
+                Debug.Assert(LimitType == typeof(MissingBlockParam));
+            }
+
+            public DynamicMetaObject Restrict(Type/*!*/ type) {
+                Debug.Assert(type == typeof(BlockParam) || type == typeof(MissingBlockParam));
+                return this;
+            }
         }
+
     }
 
     public sealed partial class BlockParam {

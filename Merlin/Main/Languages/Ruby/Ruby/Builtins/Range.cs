@@ -21,6 +21,7 @@ using System.Security.Permissions;
 using Microsoft.Scripting.Generation;
 using System.Runtime.CompilerServices;
 using IronRuby.Runtime.Calls;
+using System.Text;
 
 namespace IronRuby.Builtins {
 
@@ -120,6 +121,33 @@ namespace IronRuby.Builtins {
             var result = Copy();
             context.CopyInstanceData(this, result, copySingletonMembers);
             return result;
+        }
+
+        private string/*!*/ Separator {
+            get { return _excludeEnd ? "..." : ".."; }
+        }
+
+        public override string/*!*/ ToString() {
+            var result = new StringBuilder();
+            result.Append(_begin.ToString());
+            result.Append(Separator);
+            result.Append(_end.ToString());
+            return result.ToString();
+        }
+
+        public MutableString/*!*/ Inspect(RubyContext/*!*/ context) {
+            var result = MutableString.CreateMutable();
+            result.Append(context.Inspect(_begin));
+            result.Append(Separator);
+            result.Append(context.Inspect(_end));
+            return result;
+        }
+
+        public MutableString/*!*/ ToMutableString(ConversionStorage<MutableString>/*!*/ tosConversion) {
+            MutableString str = Protocols.ConvertToString(tosConversion, _begin);
+            str.Append(Separator);
+            str.Append(Protocols.ConvertToString(tosConversion, _end));
+            return str;
         }
     }
 }

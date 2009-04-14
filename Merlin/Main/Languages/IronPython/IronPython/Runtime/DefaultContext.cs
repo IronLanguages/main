@@ -74,14 +74,14 @@ namespace IronPython.Runtime {
             }
         }
 
-        private static CodeContext/*!*/ CreateDefaultContext(PythonContext/*!*/ context) {
+        internal static CodeContext/*!*/ CreateDefaultContext(PythonContext/*!*/ context) {
             PythonModule module = new PythonModule(new Scope());
             module.Scope.SetExtension(context.ContextId, module);
             return new CodeContext(module.Scope, context);
         }
 
 
-        private static CodeContext/*!*/ CreateDefaultCLSContext(PythonContext/*!*/ context) {
+        internal static CodeContext/*!*/ CreateDefaultCLSContext(PythonContext/*!*/ context) {
             PythonModule globalMod = context.CreateModule(ModuleOptions.ShowClsMethods | ModuleOptions.NoBuiltins);
             return new CodeContext(globalMod.Scope, context);
         }

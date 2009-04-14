@@ -29,7 +29,7 @@ namespace IronRuby.Builtins {
     /// 
     /// Note that for classes that inherit from some other class, RubyTypeDispenser gets used
     /// </summary>
-    [DebuggerDisplay("{_class.Context.Inspect(this).ConvertToString()}")]
+    [DebuggerDisplay("{Inspect()}")]
     public partial class RubyObject : IRubyObject, IRubyObjectState, IDuplicable, ISerializable {
         internal const string ClassPropertyName = "Class";
 
@@ -41,13 +41,19 @@ namespace IronRuby.Builtins {
             _class = cls;
         }
 
-        public override string ToString() {
-#if DEBUG // This can be made un-conditional after RubyTypeBuilder is also updated to override ToString
-            UnaryOpStorage unaryOpStorage = new UnaryOpStorage(_class.Context);
-            return RubyUtils.ObjectToMutableString(unaryOpStorage, this).ConvertToString();
-#else
-            return base.ToString();
-#endif
+        public override string/*!*/ ToString() {
+            // Translate ToString to to_s conversion for .NET callers.
+            // 
+            var site = _class.StringConversionSite;
+            return site.Target(site, this).ToString();
+        }
+
+        public MutableString/*!*/ ToMutableString() {
+            return RubyUtils.FormatObject(_class.Name, GetInstanceData().ObjectId, ((IRubyObjectState)this).IsTainted);
+        }
+
+        public MutableString/*!*/ Inspect() {
+            return _class.Context.Inspect(this);
         }
 
 #if !SILVERLIGHT

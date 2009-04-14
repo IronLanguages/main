@@ -23,8 +23,11 @@ namespace IronRuby.StandardLibrary.StringIO {
 
     [RubyClass("StringIO")]
     public class StringIO : RubyIO {
+        public StringIO(RubyContext/*!*/ context)
+            : base(context) {
+        }
 
-        protected StringIO(RubyContext/*!*/ context, MutableStringStream/*!*/ stream, string/*!*/ mode)
+        public StringIO(RubyContext/*!*/ context, MutableStringStream/*!*/ stream, string/*!*/ mode)
             : base(context, stream, mode) {
         }
 
@@ -37,9 +40,6 @@ namespace IronRuby.StandardLibrary.StringIO {
                 return stream;
             }
         }
-
-        // for derivation
-        protected StringIO() { }
 
         #region Public Singleton Methods
 
