@@ -1,1 +1,0 @@
-fails:Array#compact keeps tainted status even if all elements are removed

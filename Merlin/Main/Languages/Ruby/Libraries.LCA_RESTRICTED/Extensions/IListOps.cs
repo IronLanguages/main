@@ -572,6 +572,8 @@ namespace IronRuby.Builtins {
                 }
             }
 
+            allocateStorage.Context.TaintObjectBy<IList>(result, self);
+
             return result;
         }
 
@@ -620,7 +622,7 @@ namespace IronRuby.Builtins {
         public static object Delete(BinaryOpStorage/*!*/ equals, BlockParam block, IList/*!*/ self, object item) {
             bool removed = Remove(equals, self, item);
 
-            if (block != null) {
+            if (!removed && block != null) {
                 object result;
                 block.Yield(out result);
                 return result;
@@ -732,24 +734,37 @@ namespace IronRuby.Builtins {
         #region fetch
 
         [RubyMethod("fetch")]
-        public static object Fetch(RubyContext/*!*/ context, BlockParam outOfRangeValueProvider, IList/*!*/ list, [DefaultProtocol]int index, [Optional]object defaultValue) {
-            int oldIndex = index;
-            if (InRangeNormalized(list, ref index)) {
-                return list[index];
+        public static object Fetch(
+            RespondToStorage/*!*/ respondToStorage, 
+            CallSiteStorage<Func<CallSite, object, int>>/*!*/ toIntStorage, 
+            BlockParam outOfRangeValueProvider, 
+            IList/*!*/ list, 
+            object/*!*/ index, 
+            [Optional]object defaultValue) {
+
+            if (!Protocols.RespondTo(respondToStorage, index, "to_int")) {
+                throw RubyExceptions.CannotConvertTypeToTargetType(respondToStorage.Context, index, "Integer");
+            }
+
+            var toInt = toIntStorage.GetCallSite("to_int", 0);
+            int convertedIndex = toInt.Target(toInt, index);
+
+            if (InRangeNormalized(list, ref convertedIndex)) {
+                return list[convertedIndex];
             }
 
             if (outOfRangeValueProvider != null) {
                 if (defaultValue != Missing.Value) {
-                    context.ReportWarning("block supersedes default value argument");
+                    respondToStorage.Context.ReportWarning("block supersedes default value argument");
                 }
 
                 object result;
-                outOfRangeValueProvider.Yield(oldIndex, out result);
+                outOfRangeValueProvider.Yield(index, out result);
                 return result;
             }
-            
+
             if (defaultValue == Missing.Value) {
-                throw RubyExceptions.CreateIndexError("index " + index + " out of array");
+                throw RubyExceptions.CreateIndexError("index " + convertedIndex + " out of array");
             }
             return defaultValue;
         }
@@ -879,7 +894,7 @@ namespace IronRuby.Builtins {
             }
 
             count = count > self.Count ? self.Count : count;
-            return GetResultRange(allocateStorage, self, 0, count);
+            return RubyArray.Create(self as IList<object>, 0, count);
         }
 
         [RubyMethod("last")]
@@ -895,7 +910,7 @@ namespace IronRuby.Builtins {
             }
 
             count = count > self.Count ? self.Count : count;
-            return GetResultRange(allocateStorage, self, self.Count - count, count);
+            return RubyArray.Create(self as IList<object>, self.Count - count, count);
         }
 
         #endregion
@@ -906,12 +921,11 @@ namespace IronRuby.Builtins {
         private static RubyUtils.RecursionTracker _infiniteFlattenTracker = new RubyUtils.RecursionTracker();
 
         public static bool TryFlattenArray(
-            CallSiteStorage<Func<CallSite, IList, object>>/*!*/ flattenStorage, 
+            CallSiteStorage<Func<CallSite, RubyClass, object>>/*!*/ allocateStorage, 
             ConversionStorage<IList>/*!*/ tryToAry, 
             IList list, out IList/*!*/ result) {
 
-            // TODO: create correct subclass of RubyArray rather than RubyArray directly
-            result = new RubyArray();
+            result = CreateResultArray(allocateStorage, list);
 
             using (IDisposable handle = _infiniteFlattenTracker.TrackObject(list)) {
                 if (handle == null) {
@@ -922,14 +936,13 @@ namespace IronRuby.Builtins {
                     IList item = Protocols.TryCastToArray(tryToAry, list[i]);
                     if (item != null) {
                         flattened = true;
-                        var flatten = flattenStorage.GetCallSite("flatten", 0);
+                        IList flattenedList;
 
-                        object flattenedItem = flatten.Target(flatten, item);
-                        IList flattenedList = Protocols.TryCastToArray(tryToAry, flattenedItem);
+                        TryFlattenArray(allocateStorage, tryToAry, item, out flattenedList);
                         if (flattenedList != null) {
                             AddRange(result, flattenedList);
                         } else {
-                            result.Add(flattenedItem);
+                            result.Add(item);
                         }
                     } else {
                         result.Add(list[i]);
@@ -941,21 +954,21 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("flatten")]
         public static IList/*!*/ Flatten(
-            CallSiteStorage<Func<CallSite, IList, object>>/*!*/ flattenStorage, 
+            CallSiteStorage<Func<CallSite, RubyClass, object>>/*!*/ allocateStorage, 
             ConversionStorage<IList>/*!*/ tryToAry, 
             RubyContext/*!*/ context, IList/*!*/ self) {
             IList result;
-            TryFlattenArray(flattenStorage, tryToAry, self, out result);
+            TryFlattenArray(allocateStorage, tryToAry, self, out result);
             return result;
         }
 
         [RubyMethod("flatten!")]
         public static IList FlattenInPlace(
-            CallSiteStorage<Func<CallSite, IList, object>>/*!*/ flattenStorage, 
+            CallSiteStorage<Func<CallSite, RubyClass, object>>/*!*/ allocateStorage, 
             ConversionStorage<IList>/*!*/ tryToAry, 
             RubyContext/*!*/ context, IList/*!*/ self) {
             IList result;
-            if (!TryFlattenArray(flattenStorage, tryToAry, self, out result)) {
+            if (!TryFlattenArray(allocateStorage, tryToAry, self, out result)) {
                 return null;
             }
 
