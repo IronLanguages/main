@@ -310,11 +310,7 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("dirname", RubyMethodAttributes.PublicSingleton)]
-        public static MutableString/*!*/ DirName(RubyClass/*!*/ self, MutableString/*!*/ path) {
-            if (path == null) {
-                throw RubyExceptions.CreateTypeConversionError("nil", "String");
-            }
-
+        public static MutableString/*!*/ DirName(RubyClass/*!*/ self, [NotNull]MutableString/*!*/ path) {
             string strPath = path.ConvertToString();
             string directoryName = strPath;
 
