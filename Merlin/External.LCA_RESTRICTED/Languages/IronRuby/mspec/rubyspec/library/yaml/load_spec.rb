@@ -91,4 +91,18 @@ describe "YAML.load" do
   it "ignores whitespace" do
     YAML.load("!timestamp \s\t '\s\t 2009-03-22 \s\t 00:00:00 \s\t'").class.should == Time
   end
+
+  ### http://ironruby.codeplex.com/WorkItem/View.aspx?WorkItemId=375
+  it 'accepts symbols in an array' do
+    string   = ['[:a]', '[:a, :b, :c, :d]' ]
+    expected = [ [:a] ,  [:a, :b, :c, :d]  ]
+    string.size.times do |i|
+      YAML.load(string[i]).should == expected[i]
+    end
+  end
+
+  ### http://ironruby.codeplex.com/WorkItem/View.aspx?WorkItemId=375
+  it 'accepts symbols in value' do
+    YAML.load('foo: [:a, :b]').should == {'foo', [:a, :b]}
+  end
 end

@@ -330,22 +330,32 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("dirname", RubyMethodAttributes.PublicSingleton)]
-        public static MutableString/*!*/ DirName(RubyClass/*!*/ self, MutableString/*!*/ path) {
-            string directoryName = path.ConvertToString();
+        public static MutableString/*!*/ DirName(RubyClass/*!*/ self, [NotNull]MutableString/*!*/ path) {
+            string strPath = path.ConvertToString();
+            string directoryName = strPath;
 
-            if (IsValidPath(path.ConvertToString())) {
-                directoryName = Path.GetDirectoryName(path.ConvertToString());
-                string fileName = Path.GetFileName(path.ConvertToString());
+            if (IsValidPath(strPath)) {
+
+                strPath = StripPathCharacters(strPath);
+
+                // handle top-level UNC paths
+                directoryName = Path.GetDirectoryName(strPath);
+                if (directoryName == null) {
+                    return MutableString.Create(strPath);
+                }
+
+                string fileName = Path.GetFileName(strPath);
                 if (!String.IsNullOrEmpty(fileName)) {
-                    string p = path.ConvertToString();
-                    p = p.Substring(0, p.LastIndexOf(fileName));
-                    directoryName = StripPathCharacters(p);
+                    directoryName = StripPathCharacters(strPath.Substring(0, strPath.LastIndexOf(fileName)));
                 }
             } else {
-                if (directoryName.Length > 1)
+                if (directoryName.Length > 1) {
                     directoryName = "//";
+                }
             }
-            return Glob.CanonicalizePath(MutableString.Create(String.IsNullOrEmpty(directoryName) ? "." : directoryName));
+
+            directoryName = String.IsNullOrEmpty(directoryName) ? "." : directoryName;
+            return MutableString.Create(directoryName);
         }
 
         private static bool IsValidPath(string path) {
@@ -368,6 +378,7 @@ namespace IronRuby.Builtins {
             }
             if (limit > 0) {
                 limit--;
+                if (path.Length == 3 && path[1] == ':') limit--;
                 return path.Substring(0, path.Length - limit - 1);
             }
             return path;
