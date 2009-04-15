@@ -115,6 +115,10 @@ namespace IronRuby.Compiler.Ast {
                 moduleVariable = null;
             }
 
+            if (_statements.Count == 0) {
+                return Ast.Lambda<T>(AstUtils.Constant(null), parameters);
+            }
+
             gen.EnterSourceUnit(
                 scope,
                 selfVariable,
@@ -198,14 +202,14 @@ namespace IronRuby.Compiler.Ast {
             body = gen.AddReturnTarget(scope.CreateScope(body));
             gen.LeaveSourceUnit();
 
-            return Ast.Lambda<T>(
-                body,
-                RubyExceptionData.EncodeMethodName(gen.SourceUnit, RubyExceptionData.TopLevelMethodName, SourceSpan.None),
-                parameters
-            );
+            return Ast.Lambda<T>(body, GetEncodedName(gen), parameters);
         }
 
-        private static MSA.Expression GenerateCheckForAsyncException(ScopeBuilder scope, MSA.Expression runtimeScopeVariable, MSA.Expression body) {
+        private static string/*!*/ GetEncodedName(AstGenerator/*!*/ gen) {
+            return RubyExceptionData.EncodeMethodName(gen.SourceUnit, RubyExceptionData.TopLevelMethodName, SourceSpan.None);
+        }
+
+        private static MSA.Expression/*!*/ GenerateCheckForAsyncException(ScopeBuilder scope, MSA.Expression runtimeScopeVariable, MSA.Expression body) {
             MSA.ParameterExpression exception = scope.DefineHiddenVariable("#exception", typeof(System.Threading.ThreadAbortException));
             MSA.CatchBlock handler = Ast.Catch(exception,
                 Ast.Call(

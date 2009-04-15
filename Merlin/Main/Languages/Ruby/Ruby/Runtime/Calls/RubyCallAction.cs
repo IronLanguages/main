@@ -26,6 +26,8 @@ using IronRuby.Compiler;
 using Ast = System.Linq.Expressions.Expression;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 using IronRuby.Compiler.Generation;
+using System.Collections.Generic;
+using System.Reflection;
 
 namespace IronRuby.Runtime.Calls {
 
@@ -93,11 +95,12 @@ namespace IronRuby.Runtime.Calls {
 
         #endregion
 
-        protected override void Build(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args) {
-            Build(metaBuilder, _methodName, args, true);
+        protected override bool Build(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args, bool defaultFallback) {
+            return BuildCall(metaBuilder, _methodName, args, defaultFallback);
         }
 
-        internal static bool Build(MetaObjectBuilder/*!*/ metaBuilder, string/*!*/ methodName, CallArguments/*!*/ args, bool defaultFallback) {
+        // Returns true if the call was bound (with success or failure), false if fallback should be performed.
+        internal static bool BuildCall(MetaObjectBuilder/*!*/ metaBuilder, string/*!*/ methodName, CallArguments/*!*/ args, bool defaultFallback) {
             RubyMemberInfo methodMissing;
             var method = Resolve(metaBuilder, methodName, args, out methodMissing);
 
@@ -178,46 +181,70 @@ namespace IronRuby.Runtime.Calls {
             return true;
         }
 
-        private DynamicMetaObjectBinder/*!*/ GetInteropBinder(RubyContext/*!*/ context, CallInfo/*!*/ callInfo) {
+        protected override DynamicMetaObjectBinder GetInteropBinder(RubyContext/*!*/ context, IList<DynamicMetaObject/*!*/>/*!*/ args,
+            out MethodInfo postConverter) {
+
             switch (_methodName) {
                 case "new":
-                    return new InteropBinder.CreateInstance(context, callInfo);
+                    postConverter = null;
+                    return new InteropBinder.CreateInstance(context, new CallInfo(args.Count));
 
                 case "call":
-                    return new InteropBinder.Invoke(context, callInfo);
+                    postConverter = null; 
+                    return new InteropBinder.Invoke(context, "call", new CallInfo(args.Count));
 
                 case "to_s":
-                    return new InteropBinder.Convert(context, typeof(string), true);
+                    postConverter = Methods.ObjectToMutableString;
+                    return new InteropBinder.InvokeMember(context, "ToString", new CallInfo(args.Count));
 
                 case "to_str":
+                    postConverter = Methods.StringToMutableString;
                     return new InteropBinder.Convert(context, typeof(string), false);
 
-                // TODO: other ops
+                case "[]":
+                    // TODO: or invoke?
+                    postConverter = null;
+                    return new InteropBinder.GetIndex(context, new CallInfo(args.Count));
+
+                case "[]=":
+                    postConverter = null;
+                    return new InteropBinder.SetIndex(context, new CallInfo(args.Count));
+
+                // BinaryOps:
+                case "+": // ExpressionType.Add
+                case "-": // ExpressionType.Subtract
+                case "/": // ExpressionType.Divide
+                case "*": // ExpressionType.Multiply
+                case "%": // ExpressionType.Modulo
+                case "==": // ExpressionType.Equal
+                case "!=": // ExpressionType.NotEqual
+                case ">": // ExpressionType.GreaterThan
+                case ">=": // ExpressionType.GreaterThanOrEqual
+                case "<":  // ExpressionType.LessThan
+                case "<=": // ExpressionType.LessThanOrEqual
+
+                case "**": // ExpressionType.Power
+                case "<<": // ExpressionType.LeftShift
+                case ">>": // ExpressionType.RightShift
+                case "&": // ExpressionType.And
+                case "|": // ExpressionType.Or
+                case "^": // ExpressionType.ExclusiveOr;
+
+                // UnaryOp:
+                case "-@":
+                case "+@":
+                case "~":
+                    postConverter = null;
+                    return null;
 
                 default:
+                    postConverter = null;
                     if (_methodName.EndsWith("=")) {
-                        // TODO: SetMemberBinder
-                        throw new NotSupportedException();
+                        return new InteropBinder.SetMember(context, _methodName.Substring(0, _methodName.Length - 1));
                     } else {
-                        return new InteropBinder.InvokeMember(context, _methodName, callInfo);
+                        return new InteropBinder.InvokeMember(context, _methodName, new CallInfo(args.Count));
                     }
             }
         }
-
-        protected override DynamicMetaObject/*!*/ InteropBind(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args) {
-            // TODO: pass block as the last parameter (before RHS arg?):
-            var normalizedArgs = RubyOverloadResolver.NormalizeArguments(metaBuilder, args, 0, Int32.MaxValue);
-            if (!metaBuilder.Error) {
-                var callInfo = new CallInfo(normalizedArgs.Count);
-
-                var interopBinder = GetInteropBinder(args.RubyContext, callInfo);
-                var result = interopBinder.Bind(args.MetaTarget, ArrayUtils.MakeArray(normalizedArgs));
-                metaBuilder.SetMetaResult(result, args);
-                return metaBuilder.CreateMetaObject(this);
-            }
-            return metaBuilder.CreateMetaObject(this);
-        }
-
-        
     }
 }

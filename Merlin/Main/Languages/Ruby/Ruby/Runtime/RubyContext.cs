@@ -187,6 +187,7 @@ namespace IronRuby.Runtime {
         private RubyClass/*!*/ _falseClass;
         private RubyClass/*!*/ _exceptionClass;
         private RubyClass _standardErrorClass;
+        private RubyClass _comObjectClass;
 
         private Action<RubyModule>/*!*/ _classSingletonTrait;
         private Action<RubyModule>/*!*/ _singletonSingletonTrait;
@@ -202,6 +203,17 @@ namespace IronRuby.Runtime {
         public RubyClass/*!*/ FalseClass { get { return _falseClass; } set { _falseClass = value; } }
         public RubyClass ExceptionClass { get { return _exceptionClass; } set { _exceptionClass = value; } }
         public RubyClass StandardErrorClass { get { return _standardErrorClass; } set { _standardErrorClass = value; } }
+        
+        internal RubyClass ComObjectClass {
+            get {
+#if !SILVERLIGHT
+                if (_comObjectClass == null) {
+                    GetOrCreateClass(Utils.ComObjectType);
+                }
+#endif
+                return _comObjectClass;
+            }
+        }
 
         internal Action<RubyModule>/*!*/ ClassSingletonTrait { get { return _classSingletonTrait; } }
         internal Action<RubyModule>/*!*/ SingletonSingletonTrait { get { return _singletonSingletonTrait; } }
@@ -703,6 +715,10 @@ namespace IronRuby.Runtime {
             }
 
             result = CreateClass(RubyUtils.GetQualifiedName(type), type, null, null, null, null, null, baseClass, expandedMixins, tracker, null, false, false);
+
+            if (Utils.IsComObjectType(type)) {
+                _comObjectClass = result;
+            }
 
             _moduleCache[type] = result;
             return result;
@@ -2103,6 +2119,19 @@ namespace IronRuby.Runtime {
             }
 
             return new InteropBinder.CreateInstance(this, callInfo);
+        }
+
+        // TODO: override GetMemberNames?
+        public IList<string>/*!*/ GetForeignDynamicMemberNames(object obj) {
+            if (obj is IRubyDynamicMetaObjectProvider) {
+                return ArrayUtils.EmptyStrings;
+            }
+#if !SILVERLIGHT
+            if (Utils.IsComObject(obj)) {
+                return new List<string>(System.Dynamic.ComBinder.GetDynamicMemberNames(obj));
+            }
+#endif
+            return GetMemberNames(obj);
         }
 
         #endregion
