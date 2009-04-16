@@ -2,7 +2,7 @@ color 47
 
 path=%path%;c:\vsl\Merlin\Main\External\Tools
 path=%path%;%ProgramFiles%\Windows Resource Kits\Tools
-path=%path%;c:\Ruby\bin
+path=%path%;c:\vsl\Merlin\External.LCA_RESTRICTED\languages\ruby\ruby-1.8.6p287\bin
 path=%path%;c:\vsl\Merlin\External.LCA_RESTRICTED\languages\ruby\jruby-1.1.6\bin
 
 doskey n2=Notepad2.exe $*
