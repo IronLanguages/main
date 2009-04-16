@@ -119,7 +119,7 @@ class MSpecScript
   #combination tasks
   set :core, get(:core1) + get(:core2)
   set :lib, get(:lib1) + get(:lib2)
-
+  set :ci_files, get(:core) + get(:lang) + get(:cli) + get(:lib) + get(:netinterop)
 
 
   # The set of substitutions to transform a spec filename
