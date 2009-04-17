@@ -41,13 +41,16 @@ describe "Array#eql?" do
   ruby_bug "#", "1.8.6.277" do
     it "properly handles recursive arrays" do
       empty = ArraySpecs.empty_recursive_array
-      empty2 = []; empty2 << empty2
       empty.should eql(empty.dup)
-      empty.should_not eql(empty2)
+      empty.should_not eql(ArraySpecs.empty_recursive_array)
 
       array = ArraySpecs.recursive_array
       array.should eql(array)
       array.should eql(array.dup)
+      array.should_not eql(ArraySpecs.recursive_array)
+      
+      array1, array2 = ArraySpecs.recursive_arrays
+      array1.should_not eql(array2)
 
       array.should_not eql(empty)
       array.should_not eql([1, 2])

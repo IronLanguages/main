@@ -251,7 +251,10 @@ namespace IronRuby.Builtins {
         public static bool Equals(IList/*!*/ self, object other) {
             return false;
         }
-        
+
+        [MultiRuntimeAware]
+        private static RubyUtils.RecursionTracker _EqualsTracker = new RubyUtils.RecursionTracker();
+
         [RubyMethod("==")]
         public static bool Equals(BinaryOpStorage/*!*/ equals, IList/*!*/ self, [NotNull]IList/*!*/ other) {
             Assert.NotNull(self, other);
@@ -264,12 +267,20 @@ namespace IronRuby.Builtins {
                 return false;
             }
 
-            for (int i = 0; i < self.Count; ++i) {
-                bool result = Protocols.IsEqual(equals, self[i], other[i]);
-                if (!result) {
+            using (IDisposable handle = _EqualsTracker.TrackObject(self)) {
+                if (handle == null) {
+                    // hashing of recursive array
                     return false;
                 }
+
+                for (int i = 0; i < self.Count; ++i) {
+                    bool result = Protocols.IsEqual(equals, self[i], other[i]);
+                    if (!result) {
+                        return false;
+                    }
+                }
             }
+
             return true;
         }
 

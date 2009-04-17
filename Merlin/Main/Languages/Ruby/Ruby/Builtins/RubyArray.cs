@@ -13,12 +13,14 @@
  *
  * ***************************************************************************/
 
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using Microsoft.Scripting.Utils;
 using IronRuby.Runtime;
 using System.Diagnostics;
 using System.Text;
+using Microsoft.Scripting;
 using Microsoft.Scripting.Runtime;
 
 namespace IronRuby.Builtins {
@@ -103,28 +105,48 @@ namespace IronRuby.Builtins {
             return GetHashCode(this);
         }
 
+        [MultiRuntimeAware]
+        private static RubyUtils.RecursionTracker _HashTracker = new RubyUtils.RecursionTracker();
+
         public static int GetHashCode(IList/*!*/ self) {
             int hash = self.Count;
-            foreach (object obj in self) {
-                hash <<= 1;
-                hash ^= RubyUtils.GetHashCode(obj);
+            using (IDisposable handle = _HashTracker.TrackObject(self)) {
+                if (handle == null) {
+                    // hashing of recursive array
+                    return 0;
+                }
+
+                foreach (object obj in self) {
+                    hash <<= 1;
+                    hash ^= RubyUtils.GetHashCode(obj);
+                }
             }
             return hash;
         }
 
+        [MultiRuntimeAware]
+        private static RubyUtils.RecursionTracker _EqualsTracker = new RubyUtils.RecursionTracker();
+
         public static bool Equals(IList/*!*/ self, object obj) {
-            if (self == obj) {
+            if (object.ReferenceEquals(self, obj)) {
                 return true;
             }
 
-            IList other = obj as IList;
-            if (other == null || self.Count != other.Count) {
-                return false;
-            }
-
-            for (int i = 0; i < self.Count; ++i) {
-                if (!RubyUtils.ValueEquals(self[i], other[i])) {
+            using (IDisposable handle = _EqualsTracker.TrackObject(self)) {
+                if (handle == null) {
+                    // hashing of recursive array
                     return false;
+                }
+
+                IList other = obj as IList;
+                if (other == null || self.Count != other.Count) {
+                    return false;
+                }
+
+                for (int i = 0; i < self.Count; ++i) {
+                    if (!RubyUtils.ValueEquals(self[i], other[i])) {
+                        return false;
+                    }
                 }
             }
             return true;

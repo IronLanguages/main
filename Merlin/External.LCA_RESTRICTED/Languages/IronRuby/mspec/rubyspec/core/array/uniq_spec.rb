@@ -12,7 +12,7 @@ describe "Array#uniq" do
       empty.uniq.should == [empty]
 
       array = ArraySpecs.recursive_array
-      array.uniq.should == [1, 'two', 3.0, array]
+      array.uniq.should == [1, 'two', 3.0, [array]]
     end
   end
 

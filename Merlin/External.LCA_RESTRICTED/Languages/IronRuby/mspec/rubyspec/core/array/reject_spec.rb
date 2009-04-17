@@ -18,7 +18,7 @@ describe "Array#reject" do
     empty.reject { true }.should == []
 
     array = ArraySpecs.recursive_array
-    array.reject { false }.should == [1, 'two', 3.0, array, array, array, array, array]
+    array.reject { false }.should == [1, 'two', 3.0, [array]]
     array.reject { true }.should == []
   end
   
