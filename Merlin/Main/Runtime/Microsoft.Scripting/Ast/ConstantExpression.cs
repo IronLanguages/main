@@ -15,6 +15,7 @@
 
 using System;
 using System.Linq.Expressions;
+using System.Reflection;
 using Microsoft.Scripting.Math;
 
 namespace Microsoft.Scripting.Ast {
@@ -50,11 +51,24 @@ namespace Microsoft.Scripting.Ast {
             if (value is SymbolId) {
                 return new SymbolConstantExpression((SymbolId)value);
             }
+
             BigInteger bi = value as BigInteger;
             if ((object)bi != null) {
                 return BigIntegerConstant(bi);
             } else if (value is Complex64) {
                 return ComplexConstant((Complex64)value);
+            } else if (value is Type) {
+                return Expression.Constant(value, typeof(Type));
+            } else if (value is ConstructorInfo) {
+                return Expression.Constant(value, typeof(ConstructorInfo));
+            } else if (value is EventInfo) {
+                return Expression.Constant(value, typeof(EventInfo));
+            } else if (value is FieldInfo) {
+                return Expression.Constant(value, typeof(FieldInfo));
+            } else if (value is MethodInfo) {
+                return Expression.Constant(value, typeof(MethodInfo));
+            } else if (value is PropertyInfo) {
+                return Expression.Constant(value, typeof(PropertyInfo));
             } else {
                 Type t = value.GetType();
                 if (!t.IsEnum) {

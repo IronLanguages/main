@@ -822,6 +822,13 @@ namespace IronPython.Runtime {
         }
 
         public override void Clear() {
+            foreach (var x in GetItems()) {
+                string key = x.Key as string;
+                if (key != null) {
+                    Environment.SetEnvironmentVariable(key, string.Empty);
+                }
+            }
+
             _storage.Clear();
         }
 

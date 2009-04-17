@@ -1,1 +1,2 @@
 fails:Thread#kill can be rescued by outer rescue clause when inner ensure clause raises exception
+critical:Thread#kill killing dying sleeping thread wakes up thread

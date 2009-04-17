@@ -22,7 +22,7 @@ using System.Threading;
 using Microsoft.Scripting.Generation;
 
 namespace Microsoft.Scripting.Interpretation {
-    public static partial class Interpreter {
+    internal static partial class Interpreter {
         internal delegate object MatchCallerTarget(CallSite site, object[] args);
 
         /// <summary>

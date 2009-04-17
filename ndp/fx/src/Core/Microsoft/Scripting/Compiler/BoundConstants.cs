@@ -38,8 +38,6 @@ namespace System.Linq.Expressions.Compiler {
             internal readonly Type Type;
 
             internal TypedConstant(object value, Type type) {
-                Debug.Assert(type == TypeUtils.GetConstantType(type));
-
                 Value = value;
                 Type = type;
             }
@@ -89,8 +87,6 @@ namespace System.Linq.Expressions.Compiler {
         /// and increases the reference count by one
         /// </summary>
         internal void AddReference(object value, Type type) {
-            type = TypeUtils.GetConstantType(type);
-
             if (!_indexes.ContainsKey(value)) {
                 _indexes.Add(value, _values.Count);
                 _values.Add(value);
@@ -103,8 +99,6 @@ namespace System.Linq.Expressions.Compiler {
         /// </summary>
         internal void EmitConstant(LambdaCompiler lc, object value, Type type) {
             Debug.Assert(!ILGen.CanEmitConstant(value, type));
-
-            type = TypeUtils.GetConstantType(type);
 
             LocalBuilder local;
             if (_cache.TryGetValue(new TypedConstant(value, type), out local)) {

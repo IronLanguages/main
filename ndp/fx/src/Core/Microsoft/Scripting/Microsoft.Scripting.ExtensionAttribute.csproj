@@ -65,7 +65,10 @@
     <NoStdLib>true</NoStdLib>
     <NoWarn>1591,618</NoWarn>
     <SilverlightBuild>true</SilverlightBuild>
-    <SilverlightSdkPath>..\..\..\..\..\..\Merlin\Main\Utilities\Silverlight\x86ret\</SilverlightSdkPath>
+    <TfsSilverlightPath>..\..\..\..\..\..\Merlin\Main\Utilities\Silverlight\x86ret\</TfsSilverlightPath>
+    <SilverlightInstallPath>C:\Program Files\Microsoft Silverlight\2.0.40115.0</SilverlightInstallPath>
+    <SilverlightSdkPath Condition="Exists('$(TfsSilverlightPath)')">$(TfsSilverlightPath)</SilverlightSdkPath>
+    <SilverlightSdkPath Condition="!Exists('$(TfsSilverlightPath)')">$(SilverlightInstallPath)</SilverlightSdkPath>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Silverlight Release|AnyCPU' ">
     <OutputPath>..\..\..\..\..\..\Merlin\Main\Bin\Silverlight Release\</OutputPath>
@@ -77,7 +80,10 @@
     <PlatformTarget>AnyCPU</PlatformTarget>
     <ErrorReport>prompt</ErrorReport>
     <SilverlightBuild>true</SilverlightBuild>
-    <SilverlightSdkPath>..\..\..\..\..\..\Merlin\Main\Utilities\Silverlight\x86ret\</SilverlightSdkPath>
+    <TfsSilverlightPath>..\..\..\..\..\..\Merlin\Main\Utilities\Silverlight\x86ret\</TfsSilverlightPath>
+    <SilverlightInstallPath>C:\Program Files\Microsoft Silverlight\2.0.40115.0</SilverlightInstallPath>
+    <SilverlightSdkPath Condition="Exists('$(TfsSilverlightPath)')">$(TfsSilverlightPath)</SilverlightSdkPath>
+    <SilverlightSdkPath Condition="!Exists('$(TfsSilverlightPath)')">$(SilverlightInstallPath)</SilverlightSdkPath>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" Condition=" $(SilverlightBuild) != 'true' " />

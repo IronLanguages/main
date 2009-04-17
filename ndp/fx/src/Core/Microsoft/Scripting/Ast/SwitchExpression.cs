@@ -94,7 +94,7 @@ namespace System.Linq.Expressions {
             get {
                 if (_switchValue.Type.IsNullableType()) {
                     return (_comparison == null) ||
-                        _switchValue.Type != _comparison.GetParametersCached()[0].ParameterType.GetNonRefType();
+                        !TypeUtils.AreEquivalent(_switchValue.Type, _comparison.GetParametersCached()[0].ParameterType.GetNonRefType());
                 }
                 return false;
             }
@@ -225,7 +225,7 @@ namespace System.Linq.Expressions {
                     ValidateSwitchCaseType(c.Body, customType, resultType, "cases");
                     // When no comparison method is provided, require all test values to have the same type.
                     for (int i = 0; i < c.TestValues.Count; i++) {
-                        if (firstTestValue.Type != c.TestValues[i].Type) {
+                        if (!TypeUtils.AreEquivalent(firstTestValue.Type, c.TestValues[i].Type)) {
                             throw new ArgumentException(Strings.AllTestValuesMustHaveSameType, "cases");
                         }
                     }
@@ -267,7 +267,7 @@ namespace System.Linq.Expressions {
                     }
                 }
             } else {
-                if (resultType != @case.Type) {
+                if (!TypeUtils.AreEquivalent(resultType, @case.Type)) {
                     throw new ArgumentException(Strings.AllCaseBodiesMustHaveSameType, parameterName);
                 }
             }

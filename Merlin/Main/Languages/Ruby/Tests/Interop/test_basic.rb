@@ -17,59 +17,6 @@ require "../util/assert.rb"
 
 require "mscorlib"
 
-
-
-def test_ienumerable
-    # .NET types that implement IEnumerable should
-    # implement each & include Enumerable
-    a = System::Collections::ArrayList.new
-    a.add 1
-    a.add 2
-    a.add 3
-    b = []
-    a.each { |i| b << i }
-    assert_equal(b, [1, 2, 3])
-    c = a.collect { |i| i + 3 }
-    assert_equal(c, [4, 5, 6])
-end
-
-def test_icomparable
-    a = System::DateTime.new 1900, 1, 1
-    b = System::DateTime.new 1900, 1, 15
-    c = System::DateTime.new 1900, 2, 1
-    assert_true { a < b }
-    assert_true { b <= c }
-    assert_equal(a <=> c, -1)
-    assert_true { b.between?(a,c) }
-    assert_false { b.between?(c,a) }
-end
-
-def test_idictionary
-    d = System::Collections::Generic::Dictionary[Object, Object].new
-    d[:abc] = 'def'
-    assert_equal(d[:abc], 'def')
-    assert_equal(d.inspect, '{:abc=>"def"}')
-end
-
-def test_ilist
-    a = System::Collections::ArrayList.new
-    a.Add(1)
-    a.Add(3)
-    a.Add(2)
-    a.Add(3)
-    assert_equal(a, [1, 3, 2, 3])
-    assert_equal(a[1], 3)
-    b = System::Collections::ArrayList.new
-    b.Add(5)
-    b.Add(4)
-    b.Add(3)
-    b.Add(4)
-    b.Add(6)
-    assert_equal(b, [5, 4, 3, 4, 6])
-    c = a | b
-    assert_equal(c, [1, 3, 2, 5, 4, 6])
-end
-
   # TODO: more interesting tests when more features of .NET interop are working
   class Bob_test_inherit < System::Collections::ArrayList
     def foo
@@ -97,15 +44,15 @@ class System::Collections::ArrayList
 end
 
 def test_monkeypatch
-    a = System::Collections::ArrayList.new
-    
-    b = System::Collections::ArrayList.new
-    a.add 3
-    a << 2 << 1
-    assert_equal(a.total, 6)
-    b.replace [4,5,6]
-    assert_equal(b.total, 15)
-  end
+  a = System::Collections::ArrayList.new
+  
+  b = System::Collections::ArrayList.new
+  a.add 3
+  a << 2 << 1
+  assert_equal(a.total, 6)
+  b.replace [4,5,6]
+  assert_equal(b.total, 15)
+end
   
 def test_unmangling
   max = 2147483647
@@ -169,12 +116,6 @@ def test_include_interface_after_type_creation
   end
 end
 
-test_ienumerable
-# TODO: disabling this test until we figure out how to enable creating DateTime
-# objects using their ctors and not Time's RubyConstructors
-#test_icomparable
-test_idictionary
-test_ilist
 test_inherit
 test_monkeypatch
 test_unmangling

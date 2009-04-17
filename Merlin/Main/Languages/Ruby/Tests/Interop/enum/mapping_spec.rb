@@ -9,7 +9,7 @@ end
 
 describe "Enum values" do
   it "map to instances of the enum's class" do
-    EnumInt.get_names(EnumInt.A.get_type).each do |e|
+    System::Enum.get_names(EnumInt.to_clr_type).each do |e|
       EnumInt.send(e.to_s).should be_kind_of EnumInt
     end
   end

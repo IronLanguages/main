@@ -339,24 +339,6 @@ namespace IronPython.Modules {
                 }
             }
 
-            [Documentation("ioctl(cmd, option) -> long\n\n"
-                + "Control the socket with WSAIoctl syscall. Currently only socket.SIO_RCVALL\n"
-                + "is supported as control. Options must be one of the socket.RCVALL_*\n"
-                + "constants."
-                )]
-            public static BigInteger ioctl(socket s, object cmd, object option) {
-                return s.ioctl(cmd, option);
-            }
-
-            [Documentation("ioctl(cmd, option) -> long\n\n"
-            + "Control the socket with WSAIoctl syscall. Currently only socket.SIO_RCVALL\n"
-            + "is supported as control. Options must be one of the socket.RCVALL_*\n"
-            + "constants."
-            )]
-            public BigInteger ioctl(object cmd, object option) {
-                throw PythonOps.NotImplementedError("ioctl(): not implemented");
-            }
-
             [Documentation("listen(backlog) -> None\n\n"
                 + "Listen for connections on the socket. Backlog is the maximum length of the\n"
                 + "pending connections queue. The maximum value is system-dependent."
@@ -795,8 +777,13 @@ namespace IronPython.Modules {
                 get { return (int)_socket.ProtocolType; }
             }
 
+            public int ioctl(BigInteger cmd, int option) {
+                return _socket.IOControl((IOControlCode)cmd.ToInt64(), BitConverter.GetBytes(option), null);
+            }
+
             public override string ToString() {
                 try {
+                    
                     return String.Format("<socket object, fd={0}, family={1}, type={2}, protocol={3}>", 
                         fileno(), family, type, proto);
                 } catch {
@@ -1567,6 +1554,12 @@ namespace IronPython.Modules {
         public const int SO_TYPE = (int)SocketOptionName.Type;
         public const int SO_USELOOPBACK = (int)SocketOptionName.UseLoopback;
         public const int TCP_NODELAY = (int)SocketOptionName.NoDelay;
+
+        public static readonly BigInteger SIO_RCVALL = (long)IOControlCode.ReceiveAll;
+        public const int RCVALL_ON = 1;
+        public const int RCVALL_OFF = 0;
+        public const int RCVALL_SOCKETLEVELONLY = 2;
+        public const int RCVALL_MAX = 3;
 
         public const int has_ipv6 = (int)1;
 
