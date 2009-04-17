@@ -61,10 +61,7 @@
     <ErrorReport>prompt</ErrorReport>
     <NoStdLib>true</NoStdLib>
     <SilverlightBuild>true</SilverlightBuild>
-    <TfsSilverlightPath>..\..\..\Utilities\Silverlight\x86ret\</TfsSilverlightPath>
-    <SilverlightInstallPath>C:\Program Files\Microsoft Silverlight\2.0.40115.0</SilverlightInstallPath>
-    <SilverlightSdkPath Condition="Exists('$(TfsSilverlightPath)')">$(TfsSilverlightPath)</SilverlightSdkPath>
-    <SilverlightSdkPath Condition="!Exists('$(TfsSilverlightPath)')">$(SilverlightInstallPath)</SilverlightSdkPath>
+    <SilverlightSdkPath>..\..\..\Utilities\Silverlight\x86ret\</SilverlightSdkPath>
     <NoWarn>414,219</NoWarn>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Silverlight Release|AnyCPU' ">
@@ -75,10 +72,7 @@
     <PlatformTarget>AnyCPU</PlatformTarget>
     <ErrorReport>prompt</ErrorReport>
     <SilverlightBuild>true</SilverlightBuild>
-    <TfsSilverlightPath>..\..\..\Utilities\Silverlight\x86ret\</TfsSilverlightPath>
-    <SilverlightInstallPath>C:\Program Files\Microsoft Silverlight\2.0.40115.0</SilverlightInstallPath>
-    <SilverlightSdkPath Condition="Exists('$(TfsSilverlightPath)')">$(TfsSilverlightPath)</SilverlightSdkPath>
-    <SilverlightSdkPath Condition="!Exists('$(TfsSilverlightPath)')">$(SilverlightInstallPath)</SilverlightSdkPath>
+    <SilverlightSdkPath>..\..\..\Utilities\Silverlight\x86ret\</SilverlightSdkPath>
     <NoWarn>414,219</NoWarn>
   </PropertyGroup>
   <ItemGroup>
@@ -170,6 +164,19 @@
     <Compile Include="Compiler\Ast\Walkers\Walker.cs" />
     <Compile Include="Compiler\Errors.cs" />
     <Compile Include="Compiler\Parser\ParserStack.cs" />
+    <Compile Include="OldInterpreter\CommaAddress.cs" />
+    <Compile Include="OldInterpreter\ControlFlow.cs" />
+    <Compile Include="OldInterpreter\EvaluationAddress.cs" />
+    <Compile Include="OldInterpreter\InterpretedScriptCode.cs" />
+    <Compile Include="OldInterpreter\Interpreter.Block.cs" />
+    <Compile Include="OldInterpreter\Interpreter.Generated.cs" />
+    <Compile Include="OldInterpreter\Interpreter.MatchCaller.cs" />
+    <Compile Include="OldInterpreter\Interpreter.cs" />
+    <Compile Include="OldInterpreter\InterpreterHelpers.cs" />
+    <Compile Include="OldInterpreter\InterpreterState.cs" />
+    <Compile Include="OldInterpreter\InterpreterVariables.cs" />
+    <Compile Include="OldInterpreter\LambdaInvoker.cs" />
+    <Compile Include="OldInterpreter\VariableAddress.cs" />
     <Compile Include="Runtime\BinaryContentProvider.cs" />
     <Compile Include="Runtime\CallSiteStorages.cs" />
     <Compile Include="Runtime\Calls\CompositeConversionAction.cs" />

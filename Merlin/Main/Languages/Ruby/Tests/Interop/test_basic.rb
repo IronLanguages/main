@@ -116,7 +116,6 @@ def test_include_interface_after_type_creation
   end
 end
 
-test_ilist
 test_inherit
 test_monkeypatch
 test_unmangling

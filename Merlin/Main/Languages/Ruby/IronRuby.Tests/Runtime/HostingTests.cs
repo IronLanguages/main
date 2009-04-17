@@ -94,11 +94,15 @@ py_add
             string tmpDefined = Engine.Execute<MutableString>("defined?(tmp)", scope).ToString();
             Assert(tmpDefined == "local-variable");
 
+            // The code is eval'd against the existing top-level local scope created by the first execution.
+            // tmp2 local is looked up dynamically:
+            Engine.Execute("tmp2 = 10", scope);
+
             // result= is turned into a scope variable assignment in method_missing:
-            Engine.Execute("self.result = tmp", scope);
+            Engine.Execute("self.result = tmp + tmp2", scope);
 
             int result = scope.GetVariable<int>("result");
-            Assert(result == 3);
+            Assert(result == 13);
 
             // Ruby local variables are not exposed:
             Assert(scope.ContainsVariable("tmp") == false);

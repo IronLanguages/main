@@ -27,7 +27,6 @@ using System.Text;
 using IronRuby.Runtime;
 
 namespace IronRuby.Hosting {
-
     public sealed class RubyOptionsParser : OptionsParser<ConsoleOptions> {
         private readonly List<string>/*!*/ _loadPaths = new List<string>();
 
@@ -195,6 +194,11 @@ namespace IronRuby.Hosting {
                         break;
                     }
 #endif
+                    if (arg == "-X:Interpret") {
+                        LanguageSetup.Options["InterpretedMode"] = ScriptingRuntimeHelpers.True;
+                        break;
+                    }
+
                     base.ParseArgument(arg);
                     if (ConsoleOptions.FileName != null) {
                         LanguageSetup.Options["MainFile"] = ConsoleOptions.FileName;

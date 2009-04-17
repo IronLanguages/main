@@ -70,10 +70,7 @@
     <DocumentationFile>..\..\Bin\Silverlight Debug\Microsoft.Scripting.xml</DocumentationFile>
     <NoWarn>1591,618</NoWarn>
     <SilverlightBuild>true</SilverlightBuild>
-    <TfsSilverlightPath>..\..\Utilities\Silverlight\x86ret\</TfsSilverlightPath>
-    <SilverlightInstallPath>C:\Program Files\Microsoft Silverlight\2.0.40115.0</SilverlightInstallPath>
-    <SilverlightSdkPath Condition="Exists('$(TfsSilverlightPath)')">$(TfsSilverlightPath)</SilverlightSdkPath>
-    <SilverlightSdkPath Condition="!Exists('$(TfsSilverlightPath)')">$(SilverlightInstallPath)</SilverlightSdkPath>
+    <SilverlightSdkPath>..\..\Utilities\Silverlight\x86ret\</SilverlightSdkPath>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Silverlight Release|AnyCPU' ">
     <OutputPath>..\..\Bin\Silverlight Release\</OutputPath>
@@ -86,10 +83,7 @@
     <PlatformTarget>AnyCPU</PlatformTarget>
     <ErrorReport>prompt</ErrorReport>
     <SilverlightBuild>true</SilverlightBuild>
-    <TfsSilverlightPath>..\..\Utilities\Silverlight\x86ret\</TfsSilverlightPath>
-    <SilverlightInstallPath>C:\Program Files\Microsoft Silverlight\2.0.40115.0</SilverlightInstallPath>
-    <SilverlightSdkPath Condition="Exists('$(TfsSilverlightPath)')">$(TfsSilverlightPath)</SilverlightSdkPath>
-    <SilverlightSdkPath Condition="!Exists('$(TfsSilverlightPath)')">$(SilverlightInstallPath)</SilverlightSdkPath>
+    <SilverlightSdkPath>..\..\Utilities\Silverlight\x86ret\</SilverlightSdkPath>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" Condition=" $(SilverlightBuild) != 'true' " />
@@ -291,19 +285,6 @@
     <Compile Include="Hosting\Configuration\Section.cs" />
     <Compile Include="Hosting\Providers\HostingHelpers.cs" />
     <Compile Include="GlobalSuppressions.cs" />
-    <Compile Include="Interpretation\CommaAddress.cs" />
-    <Compile Include="Interpretation\ControlFlow.cs" />
-    <Compile Include="Interpretation\EvaluationAddress.cs" />
-    <Compile Include="Interpretation\InterpretedScriptCode.cs" />
-    <Compile Include="Interpretation\Interpreter.Block.cs" />
-    <Compile Include="Interpretation\Interpreter.Generated.cs" />
-    <Compile Include="Interpretation\Interpreter.MatchCaller.cs" />
-    <Compile Include="Interpretation\Interpreter.cs" />
-    <Compile Include="Interpretation\InterpreterHelpers.cs" />
-    <Compile Include="Interpretation\InterpreterState.cs" />
-    <Compile Include="Interpretation\InterpreterVariables.cs" />
-    <Compile Include="Interpretation\LambdaInvoker.cs" />
-    <Compile Include="Interpretation\VariableAddress.cs" />
     <Compile Include="Math\BigInteger.cs" />
     <Compile Include="Math\Complex64.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

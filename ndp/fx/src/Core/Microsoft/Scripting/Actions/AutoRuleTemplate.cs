@@ -132,7 +132,7 @@ namespace System.Dynamic {
 
                 int i = 0;
                 foreach(var cur in constToTemplate) {
-                    Type curConstType = TypeUtils.GetConstantType(cur.Key.Type);
+                    Type curConstType = cur.Key.Type;
                     var local = Expression.Parameter(curConstType, null);
                     locals.Add(local);
                     statements.Add(

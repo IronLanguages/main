@@ -133,7 +133,7 @@ namespace System.Linq.Expressions {
             if (test.Type != typeof(bool)) {
                 throw Error.ArgumentMustBeBoolean();
             }
-            if (ifTrue.Type != ifFalse.Type) {
+            if (!TypeUtils.AreEquivalent(ifTrue.Type, ifFalse.Type)) {
                 throw Error.ArgumentTypesMustMatch();
             }
 

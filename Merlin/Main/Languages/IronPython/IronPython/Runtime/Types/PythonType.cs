@@ -995,10 +995,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
                 if (dt.OldClass != null) {
                     object ret;
                     if (dt.OldClass.TryLookupSlot(name, out ret)) {
-                        slot = ret as PythonTypeSlot;
-                        if (slot == null) {
-                            slot = new PythonTypeUserDescriptorSlot(ret);
-                        }
+                        slot = ToTypeSlot(ret);
                         return true;
                     }
                 }
@@ -1037,17 +1034,25 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
                 throw new MissingMemberException(String.Format("'{0}' object has no attribute '{1}'", Name, SymbolTable.IdToString(name)));
             }
 
-            dts = value as PythonTypeSlot;
-            if (dts != null) {
-                _dict[name] = dts;
-            } else if (IsSystemType) {
-                _dict[name] = new PythonTypeValueSlot(value);
-            } else {
-                _dict[name] = new PythonTypeUserDescriptorSlot(value);
-            }
+            _dict[name] = ToTypeSlot(value);
 
             UpdateVersion();
         }
+
+        internal static PythonTypeSlot ToTypeSlot(object value) {
+            PythonTypeSlot pts = value as PythonTypeSlot;
+            if (pts != null) {
+                return pts;
+            }
+
+            // We could do more checks for things which aren't descriptors
+            if (value != null) { 
+                return new PythonTypeUserDescriptorSlot(value);
+            } 
+                
+            return new PythonTypeValueSlot(value);
+        }
+
 
         internal bool DeleteCustomMember(CodeContext/*!*/ context, SymbolId name) {
             Debug.Assert(context != null);
@@ -2046,12 +2051,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
         }
 
         private void PopulateSlot(SymbolId key, object value) {
-            PythonTypeSlot pts = value as PythonTypeSlot;
-            if (pts == null) {
-                pts = new PythonTypeUserDescriptorSlot(value);
-            }
-
-            AddSlot(key, pts);
+            AddSlot(key, ToTypeSlot(value));
         }
 
         private static List<PythonType> GetBasesAsList(PythonTuple bases) {

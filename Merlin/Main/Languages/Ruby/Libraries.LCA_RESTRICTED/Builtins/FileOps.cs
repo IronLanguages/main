@@ -10,7 +10,7 @@
  *
  * You must not remove this notice, or any other, from this software.
  *
- *attrb
+ *
  * ***************************************************************************/
 
 using System;
@@ -359,13 +359,12 @@ namespace IronRuby.Builtins {
         }
 
         private static bool IsValidPath(string path) {
-            int length = 0;
-            foreach (char c in path.ToCharArray()) {
-                if ((c == '/') || (c == '\\'))
-                    continue;
-                length++;
+            foreach (char c in path) {
+                if (c != '/' && c != '\\') {
+                    return true;
+                }
             }
-            return (length > 0);
+            return false;
 
         }
 
@@ -677,11 +676,11 @@ namespace IronRuby.Builtins {
             if (!FileExists(context, strOldPath) && !DirectoryExists(context, strOldPath)) {
                 throw Errno.CreateENOENT(String.Format("No such file or directory - {0}", oldPath));
             }
-
+#if !SILVERLIGHT
             if (ExpandPath(context, oldPath) == ExpandPath(context, newPath)) {
                 return 0;
             }
-
+#endif
             string strNewPath = newPath.ConvertToString();
             if (FileExists(context, strNewPath)) {
                 Delete(self, newPath);

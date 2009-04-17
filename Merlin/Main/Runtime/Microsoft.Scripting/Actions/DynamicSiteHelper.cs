@@ -41,7 +41,7 @@ namespace Microsoft.Scripting.Actions {
 
 
         // TODO: remove in favor of Expression.GetDelegateType
-        internal static Type MakeCallSiteDelegate(params Type[] types) {
+        public static Type MakeCallSiteDelegate(params Type[] types) {
             Debug.Assert(types != null);
             return MakeDelegate(types.AddFirst(typeof(CallSite)));
         }

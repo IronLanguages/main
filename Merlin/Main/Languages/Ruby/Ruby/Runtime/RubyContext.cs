@@ -1628,23 +1628,20 @@ namespace IronRuby.Runtime {
 #if DEBUG
             if (RubyOptions.LoadFromDisk) {
                 string code;
-                Utils.Log(String.Format("{0} {1}", Options.InterpretedMode ? "interpreting" : "compiling", sourceUnit.Path ??
+                Utils.Log(String.Format("{0} {1}", RubyOptions.InterpretedMode ? "interpreting" : "compiling", sourceUnit.Path ??
                     ((code = sourceUnit.GetCode()).Length < 100 ? code : code.Substring(0, 100))
                     .Replace('\r', ' ').Replace('\n', ' ')
                 ), "COMPILER");
             }
 #endif
+            var rubyOptions = (RubyCompilerOptions)options;
 
-            var lambda = ParseSourceCode<Func<Scope, LanguageContext, object>>(sourceUnit, (RubyCompilerOptions)options, errorSink);
+            var lambda = ParseSourceCode<Func<RubyScope, RuntimeFlowControl, object, object>>(sourceUnit, rubyOptions, errorSink);
             if (lambda == null) {
                 return null;
             }
 
-            if (Options.InterpretedMode) {
-                return new InterpretedScriptCode(lambda, sourceUnit);
-            } else {
-                return new RubyScriptCode(lambda, sourceUnit);
-            }
+            return new RubyScriptCode(lambda, sourceUnit, rubyOptions.FactoryKind);
         }
 
 #if MEASURE_AST
@@ -1731,9 +1728,9 @@ namespace IronRuby.Runtime {
         }
 
         protected override ScriptCode/*!*/ LoadCompiledCode(Delegate/*!*/ method, string path) {
-            // TODO:
+            // TODO: we need to save the kind of the scope factory:
             SourceUnit su = new SourceUnit(this, NullTextContentProvider.Null, path, SourceCodeKind.File);
-            return new RubyScriptCode((Func<Scope, LanguageContext, object>)method, su);
+            return new RubyScriptCode((Func<RubyScope, RuntimeFlowControl, object, object>)method, su, TopScopeFactoryKind.Default);
         }
 
         public void CheckConstantName(string name) {
@@ -2278,7 +2275,23 @@ namespace IronRuby.Runtime {
 
         #region Interpretation
 
-        protected override void InterpretExceptionThrow(InterpreterState state, Exception exception, bool isInterpretedThrow) {
+
+        /// <summary>
+        /// Called by an interpreter when an exception is about to be thrown by an interpreted or
+        /// when a CLR method is called that threw an exception.
+        /// </summary>
+        /// <param name="state">
+        /// The current interpreted frame state. The frame is either throwing the exception or 
+        /// is the interpreted frame that is calling a CLR method that threw or propagated the exception. 
+        /// </param>
+        /// <param name="exception">The exception to be (re)thrown.</param>
+        /// <param name="isInterpretedThrow">Whether the exception is thrown by an interpreted code.</param>
+        /// <remarks>
+        /// The method can be called multiple times for a single exception if the interpreted code calls some CLR code that
+        /// calls an interpreted code that throws an exception. The method is called at each interpeted/non-interpreted frame boundary
+        /// and in the frame that raised the exception.
+        /// </remarks>
+        internal void InterpretExceptionThrow(InterpreterState state, Exception exception, bool isInterpretedThrow) {
             Assert.NotNull(state, exception);
             if (RubyExceptionData.TryGetInstance(exception) == null) {
                 RubyExceptionData.AssociateInstance(exception).SetInterpretedTrace(state);

@@ -472,7 +472,7 @@ namespace IronRuby.Runtime {
 
                 AddCompiledFile(fullPath, compiledCode);
 
-                CompileAndRun(globalScope, compiledCode, _context.Options.InterpretedMode);
+                CompileAndRun(globalScope, compiledCode, _context.RubyOptions.InterpretedMode);
             }
         }
 
