@@ -26,7 +26,10 @@ describe "File.expand_path" do
     File.expand_path('.a').should == File.join(@base, '.a')
     File.expand_path('..a').should == File.join(@base, '..a')
     File.expand_path('a../b').should == File.join(@base, 'a../b')
-    platform_is_not :windows do
+  end
+  
+  platform_is_not :windows do
+    it "converts a pathname with trailing . to an absolute pathname, Ruby-Talk:18512 " do
       File.expand_path('a.').should == File.join(@base, 'a.')
       File.expand_path('a..').should == File.join(@base, 'a..')
     end

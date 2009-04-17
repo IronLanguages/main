@@ -9,6 +9,7 @@ all_test_files = Dir.glob("#{test_dir}/test_*.rb")
 # Do some sanity checks
 abort("Did not find enough RubyGems tests files...") unless all_test_files.size > 50
 abort("Did not find some expected files...") unless all_test_files.select { |f| f =~ /test_gem_config/ }.size > 0
+warn("Some tests are expected to fail with 'ir.exe -D'. Do not use -D...") if $DEBUG
 
 # Note that the tests are registered using Kernel#at_exit, and will run during shutdown
 # The "require" statement just registers the tests for being run later...
