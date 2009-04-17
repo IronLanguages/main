@@ -1098,8 +1098,8 @@ namespace IronRuby.StandardLibrary.Zlib {
             // Zlib::GzipWriter.open(filename, level=nil, strategy=nil) { |gz| ... }
 
             [RubyMethod("<<")]
-            public static GzipWriter Output(ConversionStorage<MutableString>/*!*/ tosStorage, RubyContext/*!*/ context, GzipWriter/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ str) {
-                Write(tosStorage, context, self, str);
+            public static GzipWriter Output(ConversionStorage<MutableString>/*!*/ tosConversion, RubyContext/*!*/ context, GzipWriter/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ str) {
+                Write(tosConversion, context, self, str);
                 return self;
             }
 
@@ -1178,7 +1178,7 @@ namespace IronRuby.StandardLibrary.Zlib {
             // puts(...) 
             // tell() 
             [RubyMethod("write")]
-            public static int Write(ConversionStorage<MutableString>/*!*/ tosStorage, RubyContext/*!*/ context, GzipWriter/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ str) {
+            public static int Write(ConversionStorage<MutableString>/*!*/ tosConversion, RubyContext/*!*/ context, GzipWriter/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ str) {
                 byte[] bytes = str.ToByteArray();
                 self._gzipStream.Write(bytes, 0, bytes.Length);
                 return bytes.Length;

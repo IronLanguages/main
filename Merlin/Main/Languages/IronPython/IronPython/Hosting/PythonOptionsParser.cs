@@ -61,13 +61,13 @@ namespace IronPython.Hosting {
 
                 case "-m":
                     ConsoleOptions.ModuleToRun = PeekNextArg();
-                    LanguageSetup.Options["Arguments"] = PopRemainingArgs(); 
+                    LanguageSetup.Options["Arguments"] = PopRemainingArgs();
                     break;
 
                 case "-x":
                     ConsoleOptions.SkipFirstSourceLine = true;
                     break;
-                
+
                 // TODO: unbuffered stdout?
                 case "-u": break;
 
@@ -106,9 +106,9 @@ namespace IronPython.Hosting {
                     LanguageSetup.Options["DivisionOptions"] = ToDivisionOptions(PopNextArg());
                     break;
 
-                case "-Qold": 
-                case "-Qnew": 
-                case "-Qwarn": 
+                case "-Qold":
+                case "-Qnew":
+                case "-Qwarn":
                 case "-Qwarnall":
                     LanguageSetup.Options["DivisionOptions"] = ToDivisionOptions(arg.Substring(2));
                     break;
@@ -126,7 +126,7 @@ namespace IronPython.Hosting {
 
                     _warningFilters.Add(PopNextArg());
                     break;
-                
+
                 case "-3":
                     LanguageSetup.Options["WarnPy3k"] = ScriptingRuntimeHelpers.True;
                     break;
@@ -148,7 +148,7 @@ namespace IronPython.Hosting {
                 case "-X:EnableProfiler":
                     LanguageSetup.Options["EnableProfiler"] = ScriptingRuntimeHelpers.True;
                     break;
-                
+
                 case "-X:LightweightScopes":
                     LanguageSetup.Options["LightweightScopes"] = ScriptingRuntimeHelpers.True;
                     break;
@@ -174,7 +174,7 @@ namespace IronPython.Hosting {
                         LanguageSetup.Options["Arguments"] = PopRemainingArgs();
                     }
                     break;
-            }            
+            }
         }
 
         protected override void AfterParse() {
@@ -185,17 +185,17 @@ namespace IronPython.Hosting {
 
         private static PythonDivisionOptions ToDivisionOptions(string/*!*/ value) {
             switch (value) {
-                case "old": return PythonDivisionOptions.Old; 
-                case "new": return PythonDivisionOptions.New; 
+                case "old": return PythonDivisionOptions.Old;
+                case "new": return PythonDivisionOptions.New;
                 case "warn": return PythonDivisionOptions.Warn;
-                case "warnall": return PythonDivisionOptions.WarnAll; 
+                case "warnall": return PythonDivisionOptions.WarnAll;
                 default:
                     throw InvalidOptionValue("-Q", value);
             }
         }
 
         public override void GetHelp(out string commandLine, out string[,] options, out string[,] environmentVariables, out string comments) {
-            string [,] standardOptions;
+            string[,] standardOptions;
             base.GetHelp(out commandLine, out standardOptions, out environmentVariables, out comments);
 #if !IRONPYTHON_WINDOW
             commandLine = "Usage: ipy [options] [file.py|- [arguments]]";
@@ -203,7 +203,7 @@ namespace IronPython.Hosting {
             commandLine = "Usage: ipyw [options] [file.py|- [arguments]]";
 #endif
 
-            string [,] pythonOptions = new string[,] {
+            string[,] pythonOptions = new string[,] {
 #if !IRONPYTHON_WINDOW
                 { "-v",                     "Verbose (trace import statements) (also PYTHONVERBOSE=x)" },
 #endif
@@ -220,7 +220,7 @@ namespace IronPython.Hosting {
 
                 { "-X:MaxRecursion",        "Set the maximum recursion level" },
                 { "-X:MTA",                 "Run in multithreaded apartment" },
-                { "-X:Python26",            "Enable Python 2.6 features" },
+                { "-X:Python25",            "Disable some Python 2.6 features" },
                 { "-X:EnableProfiler",      "Enables profiling support in the compiler" },
                 { "-X:LightweightScopes",   "Generate optimized scopes that can be garbage collected" },
             };

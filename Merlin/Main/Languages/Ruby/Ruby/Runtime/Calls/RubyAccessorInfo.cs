@@ -51,15 +51,13 @@ namespace IronRuby.Runtime.Calls {
         }
 
         internal override void BuildCallNoFlow(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args, string/*!*/ name) {
-            var actualArgs = RubyMethodGroupInfo.NormalizeArguments(metaBuilder, args, SelfCallConvention.NoSelf, false, false);
-            if (actualArgs.Length == 0) {
+            var actualArgs = RubyOverloadResolver.NormalizeArguments(metaBuilder, args, 0, 0);
+            if (!metaBuilder.Error) {
                 metaBuilder.Result = Methods.GetInstanceVariable.OpCall(
                     AstUtils.Convert(args.MetaScope.Expression, typeof(RubyScope)),
                     AstFactory.Box(args.TargetExpression),
                     AstUtils.Constant(InstanceVariableName)
                 );
-            } else {
-                metaBuilder.SetWrongNumberOfArgumentsError(actualArgs.Length, 0);
             }
         }
 
@@ -78,16 +76,14 @@ namespace IronRuby.Runtime.Calls {
         }
 
         internal override void BuildCallNoFlow(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args, string/*!*/ name) {
-            var actualArgs = RubyMethodGroupInfo.NormalizeArguments(metaBuilder, args, SelfCallConvention.NoSelf, false, false);
-            if (actualArgs.Length == 1) {
+            var actualArgs = RubyOverloadResolver.NormalizeArguments(metaBuilder, args, 1, 1);
+            if (!metaBuilder.Error) {
                 metaBuilder.Result = Methods.SetInstanceVariable.OpCall(
                     AstFactory.Box(args.TargetExpression),
                     AstFactory.Box(actualArgs[0].Expression),
                     AstUtils.Convert(args.MetaScope.Expression, typeof(RubyScope)),
                     AstUtils.Constant(InstanceVariableName)
                 );
-            } else {
-                metaBuilder.SetWrongNumberOfArgumentsError(actualArgs.Length, 1);
             }
         }
 

@@ -138,7 +138,7 @@ namespace System.Runtime.CompilerServices {
 #if DEBUG
             // put the AST into the constant pool for debugging purposes
             updLabel = Expression.Block(
-                Expression.Constant(binding),
+                Expression.Constant(binding, typeof(Expression)),
                 updLabel
             );
 #endif

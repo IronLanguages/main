@@ -226,7 +226,12 @@ namespace IronPython.Runtime.Binding {
                 xBf = null;
             }
 
-            var mc = new ParameterBinderWithCodeContext(state.Binder, AstUtils.Constant(state.Context));
+            var mc = new PythonOverloadResolver(
+                state.Binder, 
+                types,
+                new CallSignature(types.Length),                
+                AstUtils.Constant(state.Context)
+            );
 
             if (xBf == null) {
                 if (yBf == null) {
@@ -234,30 +239,12 @@ namespace IronPython.Runtime.Binding {
                     bt = null;
                 } else {
                     declaringType = DynamicHelpers.GetPythonTypeFromType(yBf.DeclaringType);
-                    binder = state.Binder.CallMethod(
-                        mc,
-                        yBf.Targets,
-                        types,
-                        new CallSignature(types.Length),
-                        BindingRestrictions.Empty,
-                        PythonNarrowing.None,
-                        PythonNarrowing.BinaryOperator,
-                        out bt
-                    );
+                    binder = state.Binder.CallMethod(mc, yBf.Targets, BindingRestrictions.Empty, null, PythonNarrowing.None, PythonNarrowing.BinaryOperator, out bt);
                 }
             } else {
                 if (yBf == null) {
                     declaringType = DynamicHelpers.GetPythonTypeFromType(xBf.DeclaringType);
-                    binder = state.Binder.CallMethod(
-                        mc,
-                        xBf.Targets,
-                        types,
-                        new CallSignature(types.Length),
-                        BindingRestrictions.Empty,
-                        PythonNarrowing.None,
-                        PythonNarrowing.BinaryOperator,
-                        out bt
-                    );
+                    binder = state.Binder.CallMethod(mc, xBf.Targets, BindingRestrictions.Empty, null, PythonNarrowing.None, PythonNarrowing.BinaryOperator, out bt);
                 } else {
                     List<MethodBase> targets = new List<MethodBase>();
                     targets.AddRange(xBf.Targets);
@@ -265,16 +252,7 @@ namespace IronPython.Runtime.Binding {
                         if (!ContainsMethodSignature(targets, mb)) targets.Add(mb);
                     }
 
-                    binder = state.Binder.CallMethod(
-                        mc,
-                        targets.ToArray(),
-                        types,
-                        new CallSignature(types.Length),
-                        BindingRestrictions.Empty,
-                        PythonNarrowing.None,
-                        PythonNarrowing.BinaryOperator,
-                        out bt
-                    );
+                    binder = state.Binder.CallMethod(mc, targets.ToArray(), BindingRestrictions.Empty, null, PythonNarrowing.None, PythonNarrowing.BinaryOperator, out bt);
 
                     foreach (MethodBase mb in yBf.Targets) {
                         if (bt.Method == mb) {

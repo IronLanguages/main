@@ -18,6 +18,8 @@ using Microsoft.Scripting.Utils;
 using System.Diagnostics;
 using System.Text;
 using System.Reflection;
+using System.Collections;
+using System.Collections.Generic;
 
 namespace IronRuby.Runtime {
     public static class Utils {
@@ -32,7 +34,27 @@ namespace IronRuby.Runtime {
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2105:ArrayFieldsShouldNotBeReadOnly")]
         public static readonly Delegate[] EmptyDelegates = new Delegate[0];
-        
+
+#if !SILVERLIGHT
+        internal static Type ComObjectType = typeof(object).Assembly.GetType("System.__ComObject");
+#endif
+
+        public static bool IsComObjectType(Type/*!*/ type) {
+#if SILVERLIGHT
+            return false;
+#else
+            return ComObjectType.IsAssignableFrom(type);
+#endif
+        }
+
+        public static bool IsComObject(object obj) {
+#if SILVERLIGHT
+            return false;
+#else
+            return obj != null && IsComObjectType(obj.GetType());
+#endif
+        }
+
         public static int IndexOf(this string[]/*!*/ array, string/*!*/ value, StringComparer/*!*/ comparer) {
             ContractUtils.RequiresNotNull(array, "array");
             ContractUtils.RequiresNotNull(value, "value");
@@ -314,6 +336,32 @@ namespace IronRuby.Runtime {
                 result[i] = converter(array[i]);
             }
             return result;
+        }
+
+        internal static void AddRange(this IList/*!*/ list, IEnumerable<object>/*!*/ range) {
+            Assert.NotNull(list, range);
+
+            List<object> objList;
+            if ((objList = list as List<object>) != null) {
+                objList.AddRange(range);
+            } else {
+                foreach (var item in range) {
+                    list.Add(item);
+                }
+            }
+        }
+
+        internal static void AddRange(this IList/*!*/ list, IEnumerable/*!*/ range) {
+            Assert.NotNull(list, range);
+
+            List<object> objList;
+            if ((objList = list as List<object>) != null) {
+                objList.AddRange(range);
+            } else {
+                foreach (var item in range) {
+                    list.Add(item);
+                }
+            }
         }
 
         [Conditional("DEBUG")]

@@ -56,20 +56,11 @@ namespace Microsoft.Scripting.Actions {
             ContractUtils.RequiresNotNull(callerContext, "callerContext");
 
             switch (action.Kind) {
-                case DynamicActionKind.Call:
-                    new CallBinderHelper<OldCallAction>(callerContext, (OldCallAction)action, extracted, rule).MakeRule();
-                    return;
                 case DynamicActionKind.GetMember:
                     new GetMemberBinderHelper(callerContext, (OldGetMemberAction)action, extracted, rule).MakeNewRule();
                     return;
                 case DynamicActionKind.SetMember:
                     new SetMemberBinderHelper(callerContext, (OldSetMemberAction)action, extracted, rule).MakeNewRule();
-                    return;
-                case DynamicActionKind.CreateInstance:
-                    new CreateInstanceBinderHelper(callerContext, (OldCreateInstanceAction)action, extracted, rule).MakeRule();
-                    return;
-                case DynamicActionKind.DoOperation:
-                    new DoOperationBinderHelper(callerContext, (OldDoOperationAction)action, extracted, rule).MakeRule();
                     return;
                 case DynamicActionKind.DeleteMember:
                     new DeleteMemberBinderHelper(callerContext, (OldDeleteMemberAction)action, extracted, rule).MakeRule();
@@ -91,104 +82,6 @@ namespace Microsoft.Scripting.Actions {
                 extracted = args;
             }
             return cc;
-        }
-
-        public virtual ErrorInfo MakeInvalidParametersError(BindingTarget target) {
-            switch (target.Result) {
-                case BindingResult.CallFailure: return MakeCallFailureError(target);
-                case BindingResult.AmbiguousMatch: return MakeAmbiguousCallError(target);
-                case BindingResult.IncorrectArgumentCount: return MakeIncorrectArgumentCountError(target);
-                default: throw new InvalidOperationException();
-            }
-        }
-
-        private static ErrorInfo MakeIncorrectArgumentCountError(BindingTarget target) {
-            int minArgs = Int32.MaxValue;
-            int maxArgs = Int32.MinValue;
-            foreach (int argCnt in target.ExpectedArgumentCount) {
-                minArgs = System.Math.Min(minArgs, argCnt);
-                maxArgs = System.Math.Max(maxArgs, argCnt);
-            }
-
-            return ErrorInfo.FromException(
-                Ast.Call(
-                    typeof(BinderOps).GetMethod("TypeErrorForIncorrectArgumentCount", new Type[] {
-                                typeof(string), typeof(int), typeof(int) , typeof(int), typeof(int), typeof(bool), typeof(bool)
-                            }),
-                    AstUtils.Constant(target.Name, typeof(string)),  // name
-                    AstUtils.Constant(minArgs),                      // min formal normal arg cnt
-                    AstUtils.Constant(maxArgs),                      // max formal normal arg cnt
-                    AstUtils.Constant(0),                            // default cnt
-                    AstUtils.Constant(target.ActualArgumentCount),   // args provided
-                    AstUtils.Constant(false),                        // hasArgList
-                    AstUtils.Constant(false)                         // kwargs provided
-                )
-            );
-        }
-
-        private ErrorInfo MakeAmbiguousCallError(BindingTarget target) {
-            StringBuilder sb = new StringBuilder("Multiple targets could match: ");
-            string outerComma = "";
-            foreach (MethodTarget mt in target.AmbiguousMatches) {
-                Type[] types = mt.GetParameterTypes();
-                string innerComma = "";
-
-                sb.Append(outerComma);
-                sb.Append(target.Name);
-                sb.Append('(');
-                foreach (Type t in types) {
-                    sb.Append(innerComma);
-                    sb.Append(GetTypeName(t));
-                    innerComma = ", ";
-                }
-
-                sb.Append(')');
-                outerComma = ", ";
-            }
-
-            return ErrorInfo.FromException(
-                Ast.Call(
-                    typeof(BinderOps).GetMethod("SimpleTypeError"),
-                    AstUtils.Constant(sb.ToString(), typeof(string))
-                )
-            );
-        }
-
-        private ErrorInfo MakeCallFailureError(BindingTarget target) {
-            foreach (CallFailure cf in target.CallFailures) {
-                switch (cf.Reason) {
-                    case CallFailureReason.ConversionFailure:
-                        foreach (ConversionResult cr in cf.ConversionResults) {
-                            if (cr.Failed) {
-                                return ErrorInfo.FromException(
-                                    Ast.Call(
-                                        typeof(BinderOps).GetMethod("SimpleTypeError"),
-                                        AstUtils.Constant(String.Format("expected {0}, got {1}", GetTypeName(cr.To), GetTypeName(cr.From)))
-                                    )
-                                );
-                            }
-                        }
-                        break;
-                    case CallFailureReason.DuplicateKeyword:
-                        return ErrorInfo.FromException(
-                                Ast.Call(
-                                    typeof(BinderOps).GetMethod("TypeErrorForDuplicateKeywordArgument"),
-                                    AstUtils.Constant(target.Name, typeof(string)),
-                                    AstUtils.Constant(cf.KeywordArguments[0], typeof(string))    // TODO: Report all bad arguments?
-                            )
-                        );
-                    case CallFailureReason.UnassignableKeyword:
-                        return ErrorInfo.FromException(
-                                Ast.Call(
-                                    typeof(BinderOps).GetMethod("TypeErrorForExtraKeywordArgument"),
-                                    AstUtils.Constant(target.Name, typeof(string)),
-                                    AstUtils.Constant(cf.KeywordArguments[0], typeof(string))    // TODO: Report all bad arguments?
-                            )
-                        );
-                    default: throw new InvalidOperationException();
-                }
-            }
-            throw new InvalidOperationException();
         }
 
         /// <summary>
@@ -251,14 +144,6 @@ namespace Microsoft.Scripting.Actions {
                     value
                 )
             );
-        }
-
-        /// <summary>
-        /// Checks to see if the language allows keyword arguments to be bound to instance fields or
-        /// properties and turned into sets.  By default this is only allowed on contructors.
-        /// </summary>
-        protected internal virtual bool AllowKeywordArgumentSetting(MethodBase method) {
-            return CompilerHelpers.IsConstructor(method);
         }
 
         public static Expression MakeError(ErrorInfo error) {

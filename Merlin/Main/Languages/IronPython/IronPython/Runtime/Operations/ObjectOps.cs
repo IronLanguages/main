@@ -162,6 +162,10 @@ namespace IronPython.Runtime.Operations {
             return PythonOps.Repr(context, o);
         }
 
+        public static NotImplementedType __subclasshook__(params object[] args) {
+            return NotImplementedType.Value;
+        }
+
         public static string __format__(CodeContext/*!*/ context, object self, [NotNull]string/*!*/ formatSpec) {
             string text = PythonOps.ToString(context, self);
 

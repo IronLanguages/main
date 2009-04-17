@@ -29,7 +29,7 @@ using IronRuby.Compiler;
 using System.Reflection;
     
 namespace IronRuby.Runtime {
-    public sealed partial class BlockParam : IDynamicMetaObjectProvider {
+    public sealed partial class BlockParam : IRubyDynamicMetaObjectProvider {
         public DynamicMetaObject/*!*/ GetMetaObject(Expression/*!*/ parameter) {
             return new Meta(parameter, BindingRestrictions.Empty, this);
         }

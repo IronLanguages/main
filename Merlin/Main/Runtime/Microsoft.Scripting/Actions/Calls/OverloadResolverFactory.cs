@@ -13,19 +13,15 @@
  *
  * ***************************************************************************/
 
-namespace Microsoft.Scripting.Generation {
-    public abstract class SiteLocalStorage {
-    }
+using System;
+using System.Collections.Generic;
+using System.Text;
+using System.Dynamic;
+using Microsoft.Scripting.Runtime;
+using Microsoft.Scripting.Utils;
 
-    /// <summary>
-    /// Provides storage which is flowed into a callers site.  The same storage object is 
-    /// flowed for multiple calls enabling the callee to cache data that can be re-used
-    /// across multiple calls.
-    /// 
-    /// Data is a public field so that this works properly with DynamicSite's as the reference
-    /// type (and EnsureInitialize)
-    /// </summary>
-    public class SiteLocalStorage<T> : SiteLocalStorage {
-        public T Data;
+namespace Microsoft.Scripting.Actions.Calls {
+    public abstract class OverloadResolverFactory {
+        public abstract DefaultOverloadResolver CreateOverloadResolver(IList<DynamicMetaObject> args, CallSignature signature, CallTypes callType);
     }
 }

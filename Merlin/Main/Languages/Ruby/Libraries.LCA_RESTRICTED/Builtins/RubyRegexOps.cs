@@ -161,54 +161,7 @@ namespace IronRuby.Builtins {
             // puts(/#{nil}#{/a/}#{nil}/) 
             // We don't do that.
 
-            return Append(self, MutableString.CreateMutable());
-        }
-
-        private static MutableString/*!*/ Append(RubyRegex/*!*/ self, MutableString/*!*/ result) {
-            Assert.NotNull(self, result);
-
-            result.Append("(?");
-            if (AppendOptionString(result, self.Options, true, false) < 3) {
-                result.Append('-');
-            }
-            AppendOptionString(result, self.Options, false, false);
-            result.Append(':');
-            AppendEscapeForwardSlash(result, self.GetPattern());
-            result.Append(')');
-            return result;
-        }
-
-        private static int SkipToUnescapedForwardSlash(MutableString/*!*/ pattern, int i) {
-            while (i < pattern.Length) {
-                i = pattern.IndexOf('/', i);
-                if (i <= 0) {
-                    return i;
-                }
-
-                if (pattern.GetChar(i - 1) != '\\') {
-                    return i;
-                }
-
-                i++;
-            }
-            return -1;
-        }
-
-        internal static MutableString/*!*/ AppendEscapeForwardSlash(MutableString/*!*/ result, MutableString/*!*/ pattern) {
-            int first = 0;
-            int i = SkipToUnescapedForwardSlash(pattern, 0);
-            while (i >= 0) {
-                Debug.Assert(i < pattern.Length);
-                Debug.Assert(pattern.GetChar(i) == '/' && (i == 0 || pattern.GetChar(i - 1) != '\\'));
-
-                result.Append(pattern, first, i - first);
-                result.Append('\\');
-                first = i; // include forward slash in the next append
-                i = SkipToUnescapedForwardSlash(pattern, i + 1);
-            }
-
-            result.Append(pattern, first, pattern.Length - first);
-            return result;
+            return self.ToMutableString();
         }
 
         /// <summary>
@@ -217,12 +170,7 @@ namespace IronRuby.Builtins {
         /// </summary>
         [RubyMethod("inspect")]
         public static MutableString/*!*/ Inspect(RubyRegex/*!*/ self) {
-            MutableString result = MutableString.CreateMutable();
-            result.Append('/');
-            AppendEscapeForwardSlash(result, self.GetPattern());
-            result.Append('/');
-            AppendOptionString(result, self.Options, true, true);
-            return result;
+            return self.Inspect();
         }
 
         [RubyMethod("options")]
@@ -245,37 +193,6 @@ namespace IronRuby.Builtins {
         [RubyMethod("casefold?")]
         public static bool IsCaseInsensitive(RubyRegex/*!*/ self) {
             return (self.Options & RubyRegexOptions.IgnoreCase) != 0;
-        }
-
-        private static int AppendOptionString(MutableString/*!*/ result, RubyRegexOptions options, bool enabled, bool includeEncoding) {
-            int count = 0;
-
-            if (((options & RubyRegexOptions.Multiline) != 0) == enabled) {
-                result.Append('m');
-                count++;
-            }
-
-            if (((options & RubyRegexOptions.IgnoreCase) != 0) == enabled) {
-                result.Append('i');
-                count++;
-            }
-
-            if (((options & RubyRegexOptions.Extended) != 0) == enabled) {
-                result.Append('x');
-                count++;
-            }
-
-            if (includeEncoding) {
-                switch (options & RubyRegexOptions.EncodingMask) {
-                    case RubyRegexOptions.NONE: break;
-                    case RubyRegexOptions.EUC: result.Append('e'); break;
-                    case RubyRegexOptions.FIXED: result.Append('n'); break;
-                    case RubyRegexOptions.UTF8: result.Append('u'); break;
-                    case RubyRegexOptions.SJIS: result.Append('s'); break;
-                    default: throw Assert.Unreachable;
-                }
-            }
-            return count;
         }
 
         [RubyMethod("match")]
@@ -360,7 +277,7 @@ namespace IronRuby.Builtins {
                         return regex;
                     }
 
-                    Append(regex, result);
+                    regex.AppendTo(result);
                 } else {
                     result.Append(RubyRegex.Escape(Protocols.CastToString(stringCast, strings[i])));
                 }

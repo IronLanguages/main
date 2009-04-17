@@ -81,7 +81,7 @@ namespace IronPython.Compiler {
         At = 75,
 
         FirstKeyword = KeywordAnd,
-        LastKeyword = KeywordYield,
+        LastKeyword = KeywordWith,
         KeywordAnd = 76,
         KeywordAssert = 77,
         KeywordBreak = 78,
@@ -111,6 +111,8 @@ namespace IronPython.Compiler {
         KeywordTry = 102,
         KeywordWhile = 103,
         KeywordYield = 104,
+        KeywordAs = 105,
+        KeywordWith = 106,
 
         // *** END GENERATED CODE ***
 
@@ -356,6 +358,7 @@ namespace IronPython.Compiler {
         }
 
         private static readonly Token kwAndToken = new SymbolToken(TokenKind.KeywordAnd, "and");
+        private static readonly Token kwAsToken = new SymbolToken(TokenKind.KeywordAs, "as");
         private static readonly Token kwAssertToken = new SymbolToken(TokenKind.KeywordAssert, "assert");
         private static readonly Token kwBreakToken = new SymbolToken(TokenKind.KeywordBreak, "break");
         private static readonly Token kwClassToken = new SymbolToken(TokenKind.KeywordClass, "class");
@@ -383,11 +386,16 @@ namespace IronPython.Compiler {
         private static readonly Token kwReturnToken = new SymbolToken(TokenKind.KeywordReturn, "return");
         private static readonly Token kwTryToken = new SymbolToken(TokenKind.KeywordTry, "try");
         private static readonly Token kwWhileToken = new SymbolToken(TokenKind.KeywordWhile, "while");
+        private static readonly Token kwWithToken = new SymbolToken(TokenKind.KeywordWith, "with");
         private static readonly Token kwYieldToken = new SymbolToken(TokenKind.KeywordYield, "yield");
 
 
         public static Token KeywordAndToken {
             get { return kwAndToken; }
+        }
+
+        public static Token KeywordAsToken {
+            get { return kwAsToken; }
         }
 
         public static Token KeywordAssertToken {
@@ -498,6 +506,10 @@ namespace IronPython.Compiler {
             get { return kwWhileToken; }
         }
 
+        public static Token KeywordWithToken {
+            get { return kwWithToken; }
+        }
+
         public static Token KeywordYieldToken {
             get { return kwYieldToken; }
         }
@@ -510,6 +522,7 @@ namespace IronPython.Compiler {
         }
         static Tokens() {
             Keywords[SymbolTable.StringToId("and")] = kwAndToken;
+            Keywords[SymbolTable.StringToId("as")] = kwAsToken;
             Keywords[SymbolTable.StringToId("assert")] = kwAssertToken;
             Keywords[SymbolTable.StringToId("break")] = kwBreakToken;
             Keywords[SymbolTable.StringToId("class")] = kwClassToken;
@@ -537,6 +550,7 @@ namespace IronPython.Compiler {
             Keywords[SymbolTable.StringToId("return")] = kwReturnToken;
             Keywords[SymbolTable.StringToId("try")] = kwTryToken;
             Keywords[SymbolTable.StringToId("while")] = kwWhileToken;
+            Keywords[SymbolTable.StringToId("with")] = kwWithToken;
             Keywords[SymbolTable.StringToId("yield")] = kwYieldToken;
         }
 

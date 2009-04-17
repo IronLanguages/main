@@ -27,6 +27,8 @@ using Microsoft.Scripting.Utils;
 using Microsoft.Scripting.Interpreter;
 using System.Linq.Expressions.Compiler;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
+using System.Collections;
+using System.Diagnostics;
 
 namespace Microsoft.Scripting.Generation {
     // TODO: keep this?
@@ -155,6 +157,10 @@ namespace Microsoft.Scripting.Generation {
 
         public static bool IsStatic(MethodBase mi) {
             return mi.IsConstructor || mi.IsStatic;
+        }
+
+        public static bool IsExtension(MemberInfo memberInfo) {
+            return memberInfo.IsDefined(typeof(ExtensionAttribute), false);
         }
 
         /// <summary>
@@ -304,6 +310,20 @@ namespace Microsoft.Scripting.Generation {
                 types[i] = args[i].Type;
             }
             return types;
+        }
+
+        /// <summary>
+        /// EMITTED
+        /// Used by default method binder to check types of splatted arguments.
+        /// </summary>
+        public static bool TypesEqual(IList args, int start, Type[] types) {
+            for (int i = 0; i < types.Length; i++) {
+                object arg = args[start + i];
+                if (types[i] != (arg != null ? arg.GetType() : null)) {
+                    return false;
+                }
+            }
+            return true;
         }
 
         public static bool CanOptimizeMethod(MethodBase method) {
@@ -776,12 +796,13 @@ namespace Microsoft.Scripting.Generation {
         /// <returns>the compiled delegate</returns>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1011:ConsiderPassingBaseTypesAsParameters")]
         public static T CompileToMethod<T>(Expression<T> lambda, DebugInfoGenerator debugInfoGenerator, bool emitDebugSymbols) {
-            var type = Snippets.Shared.DefineType(lambda.Name, typeof(object), false, emitDebugSymbols).TypeBuilder;
+            string methodName = String.IsNullOrEmpty(lambda.Name) ? GetUniqueMethodName() : lambda.Name;
+
+            var type = Snippets.Shared.DefineType(methodName, typeof(object), false, emitDebugSymbols).TypeBuilder;
             var rewriter = new BoundConstantsRewriter(type);
             lambda = (Expression<T>)rewriter.Visit(lambda);
 
             //Create a unique method name when the lambda doesn't have a name or the name is empty.
-            string methodName = String.IsNullOrEmpty(lambda.Name) ? GetUniqueMethodName() : lambda.Name;
             var method = type.DefineMethod(methodName, CompilerHelpers.PublicStatic);
             lambda.CompileToMethod(method, debugInfoGenerator);
 

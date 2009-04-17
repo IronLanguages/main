@@ -157,21 +157,21 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("to_s")]
         [RubyMethod("to_str")]
-        public static MutableString/*!*/ GetMessage(ConversionStorage<MutableString>/*!*/ tosStorage, Exception/*!*/ self) {
-            return Protocols.ConvertToString(tosStorage, GetMessage(self));
+        public static MutableString/*!*/ GetMessage(ConversionStorage<MutableString>/*!*/ tosConversion, Exception/*!*/ self) {
+            return Protocols.ConvertToString(tosConversion, GetMessage(self));
         }
 
         [RubyMethod("inspect", RubyMethodAttributes.PublicInstance)]
-        public static MutableString/*!*/ Inspect(UnaryOpStorage/*!*/ inspectStorage, ConversionStorage<MutableString>/*!*/ tosStorage, Exception/*!*/ self) {
+        public static MutableString/*!*/ Inspect(UnaryOpStorage/*!*/ inspectStorage, ConversionStorage<MutableString>/*!*/ tosConversion, Exception/*!*/ self) {
             object message = RubyExceptionData.GetInstance(self).Message;
-            string className = RubyUtils.GetClassName(inspectStorage.Context, self);
+            string className = inspectStorage.Context.GetClassName(self);
 
             MutableString result = MutableString.CreateMutable();
             result.Append("#<");
             result.Append(className);
             result.Append(": ");
             if (message != null) {
-                result.Append(KernelOps.Inspect(inspectStorage, tosStorage, message));
+                result.Append(KernelOps.Inspect(inspectStorage, tosConversion, message));
             } else {
                 result.Append(className);
             }

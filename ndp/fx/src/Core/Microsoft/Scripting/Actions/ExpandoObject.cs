@@ -687,7 +687,7 @@ namespace System.Dynamic {
                 Expression tryGetValue = Expression.Call(
                     typeof(RuntimeOps).GetMethod(methodName),
                     GetLimitedSelf(),
-                    Expression.Constant(klass),
+                    Expression.Constant(klass, typeof(object)),
                     Expression.Constant(index),
                     Expression.Constant(name),
                     value
@@ -754,7 +754,7 @@ namespace System.Dynamic {
                             Expression.Call(
                                 typeof(RuntimeOps).GetMethod(methodName),
                                 GetLimitedSelf(),
-                                Expression.Constant(klass),
+                                Expression.Constant(klass, typeof(object)),
                                 Expression.Constant(index),
                                 Expression.Convert(value.Expression, typeof(object)),
                                 Expression.Constant(binder.Name)
@@ -775,7 +775,7 @@ namespace System.Dynamic {
                 Expression tryDelete = Expression.Call(
                     typeof(RuntimeOps).GetMethod(methodName),
                     GetLimitedSelf(),
-                    Expression.Constant(Value.Class),
+                    Expression.Constant(Value.Class, typeof(object)),
                     Expression.Constant(index),
                     Expression.Constant(binder.Name)
                 );
@@ -823,8 +823,8 @@ namespace System.Dynamic {
                             null,
                             typeof(RuntimeOps).GetMethod("ExpandoPromoteClass"),
                             GetLimitedSelf(),
-                            Expression.Constant(originalClass),
-                            Expression.Constant(klass)
+                            Expression.Constant(originalClass, typeof(object)),
+                            Expression.Constant(klass, typeof(object))
                         ),
                         succeeds.Expression
                     );
@@ -837,7 +837,7 @@ namespace System.Dynamic {
                                 null,
                                 typeof(RuntimeOps).GetMethod("ExpandoCheckVersion"),
                                 GetLimitedSelf(),
-                                Expression.Constant(originalClass ?? klass)
+                                Expression.Constant(originalClass ?? klass, typeof(object))
                             ),
                             ifTestSucceeds,
                             binder.GetUpdateExpression(ifTestSucceeds.Type)

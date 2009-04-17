@@ -45,18 +45,18 @@ namespace IronRuby.Runtime {
         }
 
         public static Exception/*!*/ CreateUnexpectedTypeError(RubyContext/*!*/ context, object param, string/*!*/ type) {
-            return CreateTypeError(String.Format("wrong argument type {0} (expected {1})", RubyUtils.GetClassName(context, param), type));
+            return CreateTypeError(String.Format("wrong argument type {0} (expected {1})", context.GetClassName(param), type));
         }
 
         public static Exception/*!*/ CannotConvertTypeToTargetType(RubyContext/*!*/ context, object param, string/*!*/ toType) {
             Assert.NotNull(context, toType);
-            return CreateTypeConversionError(RubyUtils.GetClassName(context, param), toType);
+            return CreateTypeConversionError(context.GetClassName(param), toType);
         }
 
         public static Exception/*!*/ MethodShouldReturnType(RubyContext/*!*/ context, object param, string/*!*/ method, string/*!*/ targetType) {
             Assert.NotNull(context, method, targetType);
             return new InvalidOperationException(String.Format("{0}#{1} should return {2}",
-                RubyUtils.GetClassName(context, param), method, targetType
+                context.GetClassName(param), method, targetType
             ));
         }
 
@@ -152,7 +152,7 @@ namespace IronRuby.Runtime {
                 strObject = (site.Target(site, self) as MutableString ?? RubyUtils.ObjectToMutableString(context, self)).ConvertToString();
 
                 if (!strObject.StartsWith("#")) {
-                    strObject += ":" + RubyUtils.GetClassName(context, self);
+                    strObject += ":" + context.GetClassName(self);
                 }
             }
 

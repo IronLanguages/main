@@ -24,7 +24,7 @@ using IronRuby.Compiler;
 
 namespace IronRuby.Builtins {
 
-    public partial class RubyObject : IDynamicMetaObjectProvider {
+    public partial class RubyObject : IRubyDynamicMetaObjectProvider {
         public virtual DynamicMetaObject/*!*/ GetMetaObject(Expression/*!*/ parameter) {
             return new Meta(parameter, BindingRestrictions.Empty, this);
         }

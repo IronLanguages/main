@@ -281,7 +281,7 @@ namespace IronRuby.Builtins {
 
             MutableString result = MutableString.CreateMutable();
             result.Append("#<");
-            result.Append(RubyUtils.GetClassName(context, self));
+            result.Append(context.GetClassName(self));
             result.Append(':');
             RubyUtils.AppendFormatHexObjectId(result, RubyUtils.GetObjectId(context, self));
             result.Append(' ');

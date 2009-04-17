@@ -53,33 +53,6 @@ namespace IronRuby.Runtime.Calls {
             return GetType().Name + (Context != null ? " @" + Context.RuntimeId.ToString() : null);
         }
 
-        protected virtual ConvertBinder/*!*/ GetInteropBinder(RubyContext/*!*/ context, out MethodInfo postConverter) {
-            throw new NotImplementedException("TODO");
-        }
-
-        protected override DynamicMetaObject/*!*/ InteropBind(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args) {
-            // TODO: pass block as the last parameter (before RHS arg?):
-            var normalizedArgs = RubyMethodGroupBase.NormalizeArguments(metaBuilder, args, SelfCallConvention.NoSelf, false, false);
-
-            MethodInfo postConverter;
-            ConvertBinder interopBinder = GetInteropBinder(args.RubyContext, out postConverter);
-
-            if (normalizedArgs.Length == 0) {
-                // TODO: the type of result.Expression (and LimitType) should be the type of the conversion.
-                var result = interopBinder.Bind(args.MetaTarget, normalizedArgs);
-                metaBuilder.SetMetaResult(result, args);
-
-                if (postConverter != null) {
-                    metaBuilder.Result = postConverter.OpCall(AstUtils.Convert(metaBuilder.Result, interopBinder.Type));
-                }
-
-            } else {
-                metaBuilder.SetWrongNumberOfArgumentsError(normalizedArgs.Length, 0);
-            }
-
-            return metaBuilder.CreateMetaObject(this);
-        }
-
         public static RubyConversionAction TryGetDefaultConversionAction(RubyContext/*!*/ context, Type/*!*/ parameterType) {
             var factory = context.MetaBinderFactory;
 
@@ -148,8 +121,10 @@ namespace IronRuby.Runtime.Calls {
             }
         }
 
-        protected override void Build(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args) {
+        protected override bool Build(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args, bool defaultFallback) {
+            Debug.Assert(defaultFallback, "custom fallback not supported");
             BuildConversion(metaBuilder, args, ResultType, this);
+            return true;
         }
 
         internal static void BuildConversion(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args, Type/*!*/ resultType, 
@@ -374,8 +349,9 @@ namespace IronRuby.Runtime.Calls {
         protected override string/*!*/ TargetTypeName { get { return "String"; } }
         protected override MethodInfo ConversionResultValidator { get { return Methods.ToStringValidator; } }
 
-        protected override ConvertBinder/*!*/ GetInteropBinder(RubyContext/*!*/ context, out MethodInfo postConverter) {
-            postConverter = Methods.ToMutableString;
+        protected override DynamicMetaObjectBinder/*!*/ GetInteropBinder(RubyContext/*!*/ context, IList<DynamicMetaObject/*!*/>/*!*/ args, 
+            out MethodInfo postConverter) {
+            postConverter = Methods.StringToMutableString;
             return new InteropBinder.Convert(context, typeof(string), true);
         }
     }

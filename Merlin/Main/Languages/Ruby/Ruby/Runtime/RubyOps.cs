@@ -813,10 +813,14 @@ namespace IronRuby.Runtime {
         #region Array
 
         [Emitted]
-        public static List<object>/*!*/ SplatAppend(List<object>/*!*/ array, object splattee) {
-            List<object> list = splattee as List<object>;
-            if (list != null) {
-                array.AddRange(list);
+        public static IList/*!*/ SplatAppend(IList/*!*/ array, object splattee) {
+            IEnumerable<object> objList;
+            IEnumerable iList;
+
+            if ((objList = splattee as IEnumerable<object>) != null) {
+                array.AddRange(objList);
+            } else if ((iList = splattee as IEnumerable) != null) {
+                array.AddRange(iList);
             } else {
                 array.Add(splattee);
             }
@@ -825,7 +829,7 @@ namespace IronRuby.Runtime {
 
         [Emitted]
         public static object Splat(object/*!*/ value) {
-            List<object> list = value as List<object>;
+            var list = value as IList;
             if (list == null) {
                 return value;
             }
@@ -839,7 +843,7 @@ namespace IronRuby.Runtime {
 
         [Emitted]
         public static object SplatPair(object value, object array) {
-            List<object> list = array as List<object>;
+            var list = array as IList;
             if (list != null) {
                 if (list.Count == 0) {
                     return value;
@@ -855,23 +859,39 @@ namespace IronRuby.Runtime {
         }
 
         [Emitted]
-        public static RubyArray/*!*/ Unsplat(object/*!*/ value) {
-            RubyArray list = value as RubyArray;
+        public static IList/*!*/ Unsplat(object/*!*/ splattee) {
+            var list = splattee as IList;
             if (list == null) {
                 list = new RubyArray(1);
-                list.Add(value);
+                list.Add(splattee);
             }
             return list;
         }
 
+        // CaseExpression
+        [Emitted]
+        public static bool ExistsUnsplat(CallSite<Func<CallSite, object, object, object>>/*!*/ comparisonSite, object splattee, object value) {
+            var list = splattee as IList;
+            if (list != null) {
+                foreach (var item in list) {
+                    if (IsTrue(comparisonSite.Target(comparisonSite, item, value))) {
+                        return true;
+                    }
+                }
+                return false;
+            } else {
+                return IsTrue(comparisonSite.Target(comparisonSite, splattee, value)); 
+            }
+        }
+
         [Emitted] // parallel assignment:
-        public static object GetArrayItem(List<object>/*!*/ array, int index) {
+        public static object GetArrayItem(IList/*!*/ array, int index) {
             Debug.Assert(index >= 0);
             return index < array.Count ? array[index] : null;
         }
 
         [Emitted] // parallel assignment:
-        public static List<object>/*!*/ GetArraySuffix(List<object>/*!*/ array, int startIndex) {
+        public static RubyArray/*!*/ GetArraySuffix(IList/*!*/ array, int startIndex) {
             int size = array.Count - startIndex;
             if (size > 0) {
                 RubyArray result = new RubyArray(size);
@@ -1420,11 +1440,16 @@ namespace IronRuby.Runtime {
             return result;
         }
 
-        // TODO: (interop conversion)
-        // Used for implicit conversions from System.String to MutableString.
+        // Used for implicit conversions from System.String to MutableString (to_str conversion like).
         [Emitted]
-        public static MutableString/*!*/ ToMutableString(string/*!*/ str) {
+        public static MutableString/*!*/ StringToMutableString(string/*!*/ str) {
             return MutableString.Create(str, RubyEncoding.UTF8);
+        }
+
+        // Used for implicit conversions from System.Object to MutableString (to_s conversion like).
+        [Emitted]
+        public static MutableString/*!*/ ObjectToMutableString(object/*!*/ value) {
+            return (value != null) ? MutableString.Create(value.ToString(), RubyEncoding.UTF8) : MutableString.Empty;
         }
 
         [Emitted] // ProtocolConversionAction

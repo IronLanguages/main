@@ -24,7 +24,7 @@ using System.Reflection;
 
 namespace System.Dynamic {
     internal class VariantArgBuilder : SimpleArgBuilder {
-        private bool _isWrapper;
+        private readonly bool _isWrapper;
 
         internal VariantArgBuilder(Type parameterType)
             : base(parameterType) {

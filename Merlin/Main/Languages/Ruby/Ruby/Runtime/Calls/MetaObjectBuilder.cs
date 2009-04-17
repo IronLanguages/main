@@ -26,6 +26,7 @@ using Microsoft.Scripting.Actions;
 using Microsoft.Scripting.Utils;
 using Ast = System.Linq.Expressions.Expression;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
+using System.Collections;
 
 namespace IronRuby.Runtime.Calls {
     public sealed class MetaObjectBuilder {
@@ -39,18 +40,26 @@ namespace IronRuby.Runtime.Calls {
         private bool _error;
         private bool _treatRestrictionsAsConditions;
 
-        internal MetaObjectBuilder(RubyMetaBinder/*!*/ rubyBinder, DynamicMetaObject/*!*/[]/*!*/ arguments) 
-            : this((DynamicMetaObject)null, arguments) {
-            _siteContext = rubyBinder.Context;
+        internal MetaObjectBuilder(RubyMetaBinder/*!*/ binder, DynamicMetaObject/*!*/[]/*!*/ arguments)
+            : this(binder.Context, (DynamicMetaObject)null, arguments) {
         }
 
-        internal MetaObjectBuilder(DynamicMetaObject target, params DynamicMetaObject/*!*/[]/*!*/ arguments) {
+        internal MetaObjectBuilder(IInteropBinder/*!*/ binder, DynamicMetaObject target, params DynamicMetaObject/*!*/[]/*!*/ arguments)
+            : this(binder.Context, target, arguments) {
+        }
+
+        internal MetaObjectBuilder(DynamicMetaObject target, params DynamicMetaObject/*!*/[]/*!*/ arguments)
+            : this((RubyContext)null, target, arguments) {
+        }
+
+        private MetaObjectBuilder(RubyContext siteContext, DynamicMetaObject target, DynamicMetaObject/*!*/[]/*!*/ arguments) {
             var restrictions = BindingRestrictions.Combine(arguments);
             if (target != null) {
                 restrictions = target.Restrictions.Merge(restrictions);
             }
 
             _restrictions = restrictions;
+            _siteContext = siteContext;
         }
 
         public bool Error {
@@ -91,7 +100,7 @@ namespace IronRuby.Runtime.Calls {
             return CreateMetaObject(action, typeof(object));
         }
 
-        private DynamicMetaObject/*!*/ CreateMetaObject(DynamicMetaObjectBinder/*!*/ action, Type/*!*/ returnType) {
+        internal DynamicMetaObject/*!*/ CreateMetaObject(DynamicMetaObjectBinder/*!*/ action, Type/*!*/ returnType) {
             Debug.Assert(ControlFlowBuilder == null, "Control flow required but not built");
 
             var expr = _error ? Ast.Throw(_result, returnType) : AstUtils.Convert(_result, returnType);
@@ -124,11 +133,14 @@ namespace IronRuby.Runtime.Calls {
         }
 
         public ParameterExpression/*!*/ GetTemporary(Type/*!*/ type, string/*!*/ name) {
+            return AddTemporary(Ast.Variable(type, name));
+        }
+
+        private ParameterExpression/*!*/ AddTemporary(ParameterExpression/*!*/ variable) {
             if (_temps == null) {
                 _temps = new List<ParameterExpression>();
             }
 
-            var variable = Ast.Variable(type, name);
             _temps.Add(variable);
             return variable;
         }
@@ -158,7 +170,7 @@ namespace IronRuby.Runtime.Calls {
             // TODO: 
             // Should NormalizeArguments return a struct that provides us an information whether to treat particular argument's restrictions as conditions?
             // The splatted array is stored in a local. Therefore we cannot apply restrictions on it.
-            SetMetaResult(metaResult, args.SimpleArgumentCount == 0 && args.Signature.HasSplattedArgument);
+            SetMetaResult(metaResult, args.Signature.HasSplattedArgument);
         }
 
         public void SetMetaResult(DynamicMetaObject/*!*/ metaResult, bool treatRestrictionsAsConditions) {
@@ -195,6 +207,14 @@ namespace IronRuby.Runtime.Calls {
                 AddCondition(restriction);
             } else {
                 Add(BindingRestrictions.GetExpressionRestriction(restriction));
+            }
+        }
+
+        public void AddRestriction(BindingRestrictions/*!*/ restriction) {
+            if (_treatRestrictionsAsConditions) {
+                AddCondition(restriction.ToExpression());
+            } else {
+                Add(restriction);
             }
         }
 
@@ -335,13 +355,13 @@ namespace IronRuby.Runtime.Calls {
                 // test exact type:
                 AddTypeRestriction(value.GetType(), expression);
 
-                List<object> list = value as List<object>;
+                IList list = value as IList;
                 if (list != null) {
-                    Type type = typeof(List<object>);
+                    Type type = typeof(IList);
                     listLength = list.Count;
                     listVariable = GetTemporary(type, "#list");
                     AddCondition(Ast.Equal(
-                        Ast.Property(Ast.Assign(listVariable, Ast.Convert(expression, type)), type.GetProperty("Count")),
+                        Ast.Property(Ast.Assign(listVariable, Ast.Convert(expression, type)), typeof(ICollection).GetProperty("Count")),
                         AstUtils.Constant(list.Count))
                     );
                     return true;

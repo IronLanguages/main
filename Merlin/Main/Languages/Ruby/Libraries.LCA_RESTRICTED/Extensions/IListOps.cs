@@ -198,17 +198,17 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("*")]
-        public static MutableString Repetition(UnaryOpStorage/*!*/ tosStorage, IList/*!*/ self, [NotNull]MutableString/*!*/ separator) {
-            return Join(tosStorage, self, separator);
+        public static MutableString Repetition(ConversionStorage<MutableString>/*!*/ tosConversion, IList/*!*/ self, [NotNull]MutableString/*!*/ separator) {
+            return Join(tosConversion, self, separator);
         }
 
         [RubyMethod("*")]
-        public static object Repetition(UnaryOpStorage/*!*/ tosStorage, IList/*!*/ self, [DefaultProtocol]Union<MutableString, int> repeat) {
+        public static object Repetition(ConversionStorage<MutableString>/*!*/ tosConversion, IList/*!*/ self, [DefaultProtocol]Union<MutableString, int> repeat) {
 
             if (repeat.IsFixnum()) {
                 return Repetition(self, repeat.Fixnum());
             } else {
-                return Repetition(tosStorage, self, repeat.String());
+                return Repetition(tosConversion, self, repeat.String());
             }
         }
 
@@ -1038,7 +1038,7 @@ namespace IronRuby.Builtins {
 
         #region join, to_s, inspect
 
-        public static void RecursiveJoin(UnaryOpStorage/*!*/ tosStorage, 
+        public static void RecursiveJoin(ConversionStorage<MutableString>/*!*/ tosConversion, 
             IList/*!*/ list, MutableString/*!*/ separator, MutableString/*!*/ result, Dictionary<object, bool>/*!*/ seen) {
 
             Assert.NotNull(list, separator, result, seen);
@@ -1056,15 +1056,15 @@ namespace IronRuby.Builtins {
                 object item = list[i];
 
                 if (item is ValueType) {
-                    result.Append(RubyUtils.ObjectToMutableString(tosStorage, item));
+                    result.Append(Protocols.ConvertToString(tosConversion, item));
                 } else if (item == null) {
                     // append nothing
                 } else {
                     IList listItem = item as IList;
                     if (listItem != null) {
-                        RecursiveJoin(tosStorage, listItem, separator, result, seen);
+                        RecursiveJoin(tosConversion, listItem, separator, result, seen);
                     } else {
-                        result.Append(RubyUtils.ObjectToMutableString(tosStorage, item));
+                        result.Append(Protocols.ConvertToString(tosConversion, item));
                     }
                 }
 
@@ -1078,14 +1078,14 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("join")]
         [RubyMethod("to_s")]
-        public static MutableString/*!*/ Join(UnaryOpStorage/*!*/ tosStorage, IList/*!*/ self) {
-            return Join(tosStorage, self, tosStorage.Context.ItemSeparator);
+        public static MutableString/*!*/ Join(ConversionStorage<MutableString>/*!*/ tosConversion, IList/*!*/ self) {
+            return Join(tosConversion, self, tosConversion.Context.ItemSeparator);
         }
 
         [RubyMethod("join")]
-        public static MutableString/*!*/ Join(UnaryOpStorage/*!*/ tosStorage, IList/*!*/ self, MutableString separator) {
+        public static MutableString/*!*/ Join(ConversionStorage<MutableString>/*!*/ tosConversion, IList/*!*/ self, MutableString separator) {
             MutableString result = MutableString.CreateMutable();
-            RecursiveJoin(tosStorage, self, separator ?? MutableString.Empty, result, 
+            RecursiveJoin(tosConversion, self, separator ?? MutableString.Empty, result, 
                 new Dictionary<object, bool>(ReferenceEqualityComparer<object>.Instance)
             );
             return result;
