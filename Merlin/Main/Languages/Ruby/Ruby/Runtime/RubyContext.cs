@@ -1822,6 +1822,9 @@ namespace IronRuby.Runtime {
         private void ExecuteShutdownHandlers() {
             var handlers = new List<BlockParam>();
 
+            SystemExit lastSystemExit = null;
+            Exception lastUncaughtException = null;
+
             while (true) {
                 lock (ShutdownHandlersLock) {
                     if (_shutdownHandlers.Count == 0) {
@@ -1835,12 +1838,25 @@ namespace IronRuby.Runtime {
                     try {
                         object result;
                         handlers[i].Yield(out result);
-                    } catch (SystemExit) {
-                        // ignored
+                    } catch (SystemExit e) {
+                        // Kernel#at_exit can call exit and set the exitcode. Furthermore, exit can be called 
+                        // from multiple blocks registered with Kernel#at_exit.
+                        lastSystemExit = e;
+                    } catch (Exception e) {
+                        RubyOps.SetCurrentExceptionAndStackTrace(this, e);
+                        lastUncaughtException = e;
                     }
                 }
 
                 handlers.Clear();
+            }
+
+            if (lastSystemExit != null) {
+                throw lastSystemExit;
+            }
+
+            if (lastUncaughtException != null) {
+                throw lastUncaughtException;
             }
         }
 

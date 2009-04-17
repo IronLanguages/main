@@ -1268,10 +1268,14 @@ namespace IronRuby.Runtime {
             return scope.RubyContext.CurrentException;
         }
 
+        internal static void SetCurrentExceptionAndStackTrace(RubyContext/*!*/ context, Exception/*!*/ exception) {
+            RubyExceptionData.GetInstance(exception).SetCompiledTrace(context);
+            context.CurrentException = exception;
+        }
+
         [Emitted] //Body:
         public static void SetCurrentExceptionAndStackTrace(RubyScope/*!*/ scope, Exception/*!*/ exception) {
-            RubyExceptionData.GetInstance(exception).SetCompiledTrace(scope.RubyContext);
-            scope.RubyContext.CurrentException = exception;
+            SetCurrentExceptionAndStackTrace(scope.RubyContext, exception);
         }
 
         [Emitted] //Body:

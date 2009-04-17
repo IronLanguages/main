@@ -104,7 +104,14 @@ namespace IronRuby.Builtins {
                 default:
                     throw RubyIO.IllegalMode(modeString);
             }
-            return context.DomainManager.Platform.OpenInputFileStream(path, mode, access, FileShare.ReadWrite);
+
+            try {
+                return context.DomainManager.Platform.OpenInputFileStream(path, mode, access, FileShare.ReadWrite);
+            } catch (DirectoryNotFoundException e) {
+                throw new FileNotFoundException(e.Message, e);
+            } catch (PathTooLongException e) {
+                throw new FileNotFoundException(e.Message, e);
+            }
         }
 
         public RubyFile(RubyContext/*!*/ context, string/*!*/ path, string/*!*/ modeString)

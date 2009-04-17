@@ -8,28 +8,43 @@ describe "Kernel#open" do
   
   before :each do
     @file = "test.txt"
+    @newfile = "test.new"
+    @fh = nil
     File.open(@file, "w"){ |f| f.puts "This is a test" }
   end
   
   after :each do
-    File.delete(@file) 
+    @fh.close if @fh and not @fh.closed?
+    File.delete(@file)
+    File.delete(@newfile) if File.exist? @newfile
   end
   
   it "opens a file when given a valid filename" do
-    @output = open("test.txt")
-    @output.class.should == File
-    @output.close
+    @fh = open(@file)
+    @fh.class.should == File
   end
   
   it "opens a file when called with a block" do
-    @output = open("test.txt", "r") { |f| f.gets }
-    @output.should == "This is a test\n"
+    open(@file, "r") { |f| f.gets }.should == "This is a test\n"
   end
   
-  it "opens a file to write with permission" do
-	open("test.txt", "w", 0644){ |f| f.puts "This is a test2" }
-	File.readable?(@file).should == true
-    File.writable?(@file).should == true
+  it "sets a default permission of writable" do
+    File.writable?(@file).should be_true  
+  end
+  
+  it "sets permissions of newly created file" do
+	open(@newfile, "w", 0444){ }
+    File.writable?(@newfile).should be_false
+  end
+  
+  it "sets the file as writable if perm is nil" do
+	open(@newfile, "w", nil){ }
+    File.writable?(@newfile).should be_true
+  end
+  
+  it "ignores perm for existing file" do
+    open(@file, "r", 0444) { }
+    File.writable?(@file).should be_true  
   end
   
   platform_is_not :windows do
@@ -40,8 +55,7 @@ describe "Kernel#open" do
     end
     
     it "opens an io when called with a block" do
-      @output = open("|date") { |f| f.gets }
-      @output.should_not == ''
+      open("|date") { |f| f.gets }.should_not == ''
     end
   
   end
@@ -54,21 +68,49 @@ describe "Kernel#open" do
     end
     
     it "opens an io when called with a block" do
-      @output = open("|date /t") { |f| f.gets }
-      @output.should_not == ''
+      open("|date /t") { |f| f.gets }.should_not == ''
     end
   
   end
     
-  
+  it "returns block return value" do
+    open(@file) { :end_of_block }.should == :end_of_block
+  end
+    
   it "raises an ArgumentError if not passed one argument" do
     lambda { open }.should raise_error(ArgumentError)
   end
   
-  it "raises a TypeError if not passed a String type" do
-    lambda { open(nil)       }.should raise_error(TypeError)
-    lambda { open(7)         }.should raise_error(TypeError)
-    lambda { open(mock('x')) }.should raise_error(TypeError)
+  it "raises a TypeError if passed nil for path" do
+    lambda { open(nil) }.should raise_error(TypeError)
+  end
+  
+  it "accepts String-like objects for path" do
+    file = mock('filename')
+    file.should_receive(:to_str).and_return(@file)
+    open(file) { }
+  end
+  
+  it "allows nil for mode" do
+    open(@file, nil) { |f| lambda { f << "some output" }.should raise_error(IOError) }
+  end
+  
+  it "allows String-like objects for mode" do
+    mode = mock('mode')
+    mode.should_receive(:to_str).and_return("r")
+    open(@file, mode) { }
+  end
+  
+  it "allows nil for perm" do
+    open(@newfile, "w", nil) { }
+    File.writable?(@file).should be_true
+  end
+  
+  it "allows Integer-like objects for perm" do
+    perm = mock('perm')
+    perm.should_receive(:to_int).and_return(0444)
+    open(@newfile, "w", perm) { }
+    File.writable?(@newfile).should be_false
   end
 end
 

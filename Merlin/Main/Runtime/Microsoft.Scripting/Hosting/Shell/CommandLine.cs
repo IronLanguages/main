@@ -34,11 +34,13 @@ namespace Microsoft.Scripting.Hosting.Shell {
         private ScriptEngine _engine;
         private ICommandDispatcher _commandDispatcher;
         private int? _terminatingExitCode;
+        private int _exitCode = 1;
 
         protected IConsole Console { get { return _console; } }
         protected ConsoleOptions Options { get { return _options; } }
         protected ScriptEngine Engine { get { return _engine; } }
         public ScriptScope ScriptScope { get { return _scope; } protected set { _scope = value; } }
+        public int ExitCode { get { return _exitCode; } protected set { _exitCode = value; } }
 
         /// <summary>
         /// Scope is not remotable, and this only works in the same AppDomain.
@@ -95,7 +97,7 @@ namespace Microsoft.Scripting.Hosting.Shell {
         /// Executes the comand line - depending upon the options provided we will
         /// either run a single file, a single command, or enter the interactive loop.
         /// </summary>
-        public int Run(ScriptEngine engine, IConsole console, ConsoleOptions options) {
+        public void Run(ScriptEngine engine, IConsole console, ConsoleOptions options) {
             ContractUtils.RequiresNotNull(engine, "engine");
             ContractUtils.RequiresNotNull(console, "console");
             ContractUtils.RequiresNotNull(options, "options");
@@ -107,13 +109,13 @@ namespace Microsoft.Scripting.Hosting.Shell {
             Initialize();
 
             try {
-                return Run();
+                _exitCode = Run();
 
 #if !SILVERLIGHT // ThreadAbortException.ExceptionState
             } catch (System.Threading.ThreadAbortException tae) {
                 if (tae.ExceptionState is KeyboardInterruptException) {
                     Thread.ResetAbort();
-                    return -1;
+                    _exitCode = -1;
                 } else {
                     throw;
                 }
