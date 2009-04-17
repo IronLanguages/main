@@ -31,4 +31,11 @@ namespace IronRuby.Builtins {
     public static class MultiDimensionalArray {
         // stub
     }
+
+    /// <summary>
+    /// Represents a module mixed into all flag enums.
+    /// </summary>
+    public static class FlagEnumeration {
+        // stub
+    }
 }

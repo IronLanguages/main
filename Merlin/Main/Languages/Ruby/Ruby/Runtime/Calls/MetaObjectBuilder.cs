@@ -40,18 +40,26 @@ namespace IronRuby.Runtime.Calls {
         private bool _error;
         private bool _treatRestrictionsAsConditions;
 
-        internal MetaObjectBuilder(RubyMetaBinder/*!*/ rubyBinder, DynamicMetaObject/*!*/[]/*!*/ arguments) 
-            : this((DynamicMetaObject)null, arguments) {
-            _siteContext = rubyBinder.Context;
+        internal MetaObjectBuilder(RubyMetaBinder/*!*/ binder, DynamicMetaObject/*!*/[]/*!*/ arguments)
+            : this(binder.Context, (DynamicMetaObject)null, arguments) {
         }
 
-        internal MetaObjectBuilder(DynamicMetaObject target, params DynamicMetaObject/*!*/[]/*!*/ arguments) {
+        internal MetaObjectBuilder(IInteropBinder/*!*/ binder, DynamicMetaObject target, params DynamicMetaObject/*!*/[]/*!*/ arguments)
+            : this(binder.Context, target, arguments) {
+        }
+
+        internal MetaObjectBuilder(DynamicMetaObject target, params DynamicMetaObject/*!*/[]/*!*/ arguments)
+            : this((RubyContext)null, target, arguments) {
+        }
+
+        private MetaObjectBuilder(RubyContext siteContext, DynamicMetaObject target, DynamicMetaObject/*!*/[]/*!*/ arguments) {
             var restrictions = BindingRestrictions.Combine(arguments);
             if (target != null) {
                 restrictions = target.Restrictions.Merge(restrictions);
             }
 
             _restrictions = restrictions;
+            _siteContext = siteContext;
         }
 
         public bool Error {
@@ -92,7 +100,7 @@ namespace IronRuby.Runtime.Calls {
             return CreateMetaObject(action, typeof(object));
         }
 
-        private DynamicMetaObject/*!*/ CreateMetaObject(DynamicMetaObjectBinder/*!*/ action, Type/*!*/ returnType) {
+        internal DynamicMetaObject/*!*/ CreateMetaObject(DynamicMetaObjectBinder/*!*/ action, Type/*!*/ returnType) {
             Debug.Assert(ControlFlowBuilder == null, "Control flow required but not built");
 
             var expr = _error ? Ast.Throw(_result, returnType) : AstUtils.Convert(_result, returnType);
@@ -162,7 +170,7 @@ namespace IronRuby.Runtime.Calls {
             // TODO: 
             // Should NormalizeArguments return a struct that provides us an information whether to treat particular argument's restrictions as conditions?
             // The splatted array is stored in a local. Therefore we cannot apply restrictions on it.
-            SetMetaResult(metaResult, args.SimpleArgumentCount == 0 && args.Signature.HasSplattedArgument);
+            SetMetaResult(metaResult, args.Signature.HasSplattedArgument);
         }
 
         public void SetMetaResult(DynamicMetaObject/*!*/ metaResult, bool treatRestrictionsAsConditions) {

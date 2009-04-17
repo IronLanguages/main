@@ -754,7 +754,7 @@ namespace System.Linq.Expressions {
                 }
             }
 
-            if (type != last.Type) {
+            if (!TypeUtils.AreEquivalent(type, last.Type)) {
                 return new ScopeWithType(variableList, expressionList, type);
             } else {
                 if (expressionList.Count == 1) {

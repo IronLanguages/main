@@ -39,6 +39,5 @@ describe "Ruby classes derived from .NET classes with overloaded constructors" d
   it "properly selects overloaded constructors for super" do
     RubyOverloadedConstructorClass.new("hello").should be_kind_of(RubyOverloadedConstructorClass)
     OverloadedConstructorClass.new("hello").val.should equal_clr_string("string constructor")
-end
-
+  end
 end

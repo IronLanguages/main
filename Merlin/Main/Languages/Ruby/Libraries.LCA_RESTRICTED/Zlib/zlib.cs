@@ -847,6 +847,8 @@ namespace IronRuby.StandardLibrary.Zlib {
                 return blockResult;
             }
 
+            // pos() 
+
             [RubyMethod("close")]
             public static object/*!*/ Close(UnaryOpStorage/*!*/ closeStorage, RubyContext/*!*/ context, GZipReader/*!*/ self) {
                 GZipFile.Close(closeStorage, self, true);
@@ -1085,7 +1087,7 @@ namespace IronRuby.StandardLibrary.Zlib {
                 RubyClass/*!*/ self,
                 object io,
                 [DefaultParameterValue(0)]int level,
-                [DefaultParameterValue(0)]int strategy) {
+                [DefaultParameterValue(DEFAULT_STRATEGY)]int strategy) {
 
                 IOWrapper ioWrapper = RubyIOOps.CreateIOWrapper(respondToStorage, io, FileAccess.Write);
                 if (ioWrapper == null || !ioWrapper.CanWrite) {
@@ -1098,8 +1100,8 @@ namespace IronRuby.StandardLibrary.Zlib {
             // Zlib::GzipWriter.open(filename, level=nil, strategy=nil) { |gz| ... }
 
             [RubyMethod("<<")]
-            public static GzipWriter Output(ConversionStorage<MutableString>/*!*/ tosStorage, RubyContext/*!*/ context, GzipWriter/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ str) {
-                Write(tosStorage, context, self, str);
+            public static GzipWriter Output(ConversionStorage<MutableString>/*!*/ tosConversion, RubyContext/*!*/ context, GzipWriter/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ str) {
+                Write(tosConversion, context, self, str);
                 return self;
             }
 
@@ -1159,7 +1161,53 @@ namespace IronRuby.StandardLibrary.Zlib {
             }
 
             // mtime=(p1) 
-            
+
+            [RubyMethod("open", RubyMethodAttributes.PublicSingleton)]
+            public static object Open(
+                RespondToStorage/*!*/ respondToStorage, 
+                UnaryOpStorage/*!*/ closeStorage, 
+                BlockParam block, 
+                RubyClass/*!*/ self, 
+                [NotNull]MutableString filename, 
+                [DefaultParameterValue(0)]int level, 
+                [DefaultParameterValue(DEFAULT_STRATEGY)]int strategy) {
+
+                RubyFile file = new RubyFile(self.Context, filename.ConvertToString(), RubyFileMode.CREAT | RubyFileMode.TRUNC | RubyFileMode.WRONLY | RubyFileMode.BINARY);
+                GzipWriter gzipFile = Create(respondToStorage, self, file, level, strategy);
+
+                if (block == null) {
+                    return gzipFile;
+                }
+
+                try {
+                    object blockResult;
+                    block.Yield(gzipFile, out blockResult);
+                    return blockResult;
+                } finally {
+                    Close(closeStorage, self.Context, gzipFile);
+                }
+            }
+
+            [RubyMethod("open", RubyMethodAttributes.PublicSingleton)]
+            public static object Open(
+                RespondToStorage/*!*/ respondToStorage,
+                UnaryOpStorage/*!*/ closeStorage,
+                BlockParam block,
+                RubyClass/*!*/ self,
+                [NotNull]MutableString filename,
+                object level,
+                object strategy) {
+
+                if (level != null) {
+                    throw RubyExceptions.CreateUnexpectedTypeError(self.Context, level, "Fixnum");
+                }
+                if (strategy != null) {
+                    throw RubyExceptions.CreateUnexpectedTypeError(self.Context, strategy, "Fixnum");
+                }
+
+                return Open(respondToStorage, closeStorage, block, self, filename, 0, 0);
+            }
+
             [RubyMethod("orig_name=")]
             public static MutableString/*!*/ OriginalName(GzipWriter/*!*/ self, [NotNull]MutableString/*!*/ originalName) {
                 if (self._isClosed) {
@@ -1178,7 +1226,7 @@ namespace IronRuby.StandardLibrary.Zlib {
             // puts(...) 
             // tell() 
             [RubyMethod("write")]
-            public static int Write(ConversionStorage<MutableString>/*!*/ tosStorage, RubyContext/*!*/ context, GzipWriter/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ str) {
+            public static int Write(ConversionStorage<MutableString>/*!*/ tosConversion, RubyContext/*!*/ context, GzipWriter/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ str) {
                 byte[] bytes = str.ToByteArray();
                 self._gzipStream.Write(bytes, 0, bytes.Length);
                 return bytes.Length;

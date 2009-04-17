@@ -181,23 +181,21 @@ namespace Microsoft.Scripting.Actions.Calls {
         }
 
         /// <summary>
-        /// Handles binding of special parameters.
-        /// </summary>
-        /// <returns>True if the argument is handled by this method.</returns>
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1045:DoNotPassTypesByReference", MessageId = "3#")]
-        protected virtual bool BindSpecialParameter(ParameterInfo parameterInfo, List<ArgBuilder> arguments,
-            List<ParameterWrapper> parameters, ref int index) {
-            return false;
-        }
-
-        /// <summary>
         /// Called before arguments binding.
         /// </summary>
-        /// <returns>The number of parameter infos to skip.</returns>
+        /// <returns>
+        /// A bitmask that indicates (set bits) the parameters that were mapped by this method.
+        /// A default mapping will be constructed for the remaining parameters (cleared bits).
+        /// </returns>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1045:DoNotPassTypesByReference", MessageId = "3#")]
-        protected virtual int PrepareParametersBinding(ParameterInfo[] parameterInfos, List<ArgBuilder> arguments,
-            List<ParameterWrapper> parameters, ref int index) {
-            return 0;
+        internal protected virtual BitArray MapSpecialParameters(ParameterMapping mapping) {
+            if (!CompilerHelpers.IsStatic(mapping.Method)) {
+                var type = mapping.Method.DeclaringType;
+                mapping.AddParameter(new ParameterWrapper(null, type, null, true, false, false, false));
+                mapping.AddInstanceBuilder(new SimpleArgBuilder(type, mapping.ArgIndex, false, false));
+            }
+
+            return null;
         }
 
         private void BuildCandidateSets(IList<MethodBase> methods) {
@@ -281,227 +279,23 @@ namespace Microsoft.Scripting.Actions.Calls {
             }
         }
 
-        // TODO: revisit
-        protected virtual ArgBuilder MakeInstanceBuilder(MethodBase method, List<ParameterWrapper> parameters, ref int argIndex) {
-            if (!CompilerHelpers.IsStatic(method)) {
-                parameters.Add(new ParameterWrapper(null, method.DeclaringType, null, true, false, false, false));
-                return new SimpleArgBuilder(method.DeclaringType, argIndex++, false, false);
-            } else {
-                return new NullArgBuilder();
-            }
-        }
-
         private void AddBasicMethodTargets(MethodBase method) {
             Assert.NotNull(method);
 
-            var parameterInfos = method.GetParameters();
-            var parameters = new List<ParameterWrapper>();
-            ParameterWrapper paramsDict = null;
-            var arguments = new List<ArgBuilder>(parameterInfos.Length);
-            var defaultArguments = new List<ArgBuilder>();
-            int argIndex = 0;
-            var instanceBuilder = MakeInstanceBuilder(method, parameters, ref argIndex);
+            var mapping = new ParameterMapping(this, method, null, _argNames);
 
-            bool hasByRefOrOut = false;
-            bool hasDefaults = false;
+            mapping.MapParameters(false);
 
-            var infoIndex = PrepareParametersBinding(parameterInfos, arguments, parameters, ref argIndex);
-            for (; infoIndex < parameterInfos.Length; infoIndex++) {
-                var pi = parameterInfos[infoIndex];
-
-                if (BindSpecialParameter(pi, arguments, parameters, ref argIndex)) {
-                    continue;
-                }
-
-                int indexForArgBuilder, kwIndex = GetKeywordIndex(pi);
-                if (kwIndex == ParameterNotPassedByKeyword) {
-                    // positional argument, we simply consume the next argument
-                    indexForArgBuilder = argIndex++;
-                } else {
-                    // keyword argument, we just tell the simple arg builder to consume arg 0.
-                    // KeywordArgBuilder will then pass in the correct single argument based 
-                    // upon the actual argument number provided by the user.
-                    indexForArgBuilder = 0;
-                }
-
-                // if the parameter is default we need to build a default arg builder and then
-                // build a reduced method at the end.  
-                if (!CompilerHelpers.IsMandatoryParameter(pi)) {
-                    // We need to build the default builder even if we have a parameter for it already to
-                    // get good consistency of our error messages.  But consider a method like 
-                    // def foo(a=1, b=2) and the user calls it as foo(b=3). Then adding the default
-                    // value breaks an otherwise valid call.  This is because we only generate MethodCandidates
-                    // filling in the defaults from right to left (so the method - 1 arg requires a,
-                    // and the method minus 2 args requires b).  So we only add the default if it's 
-                    // a positional arg or we don't already have a default value.
-                    if (kwIndex == -1 || !hasDefaults) {
-                        defaultArguments.Add(new DefaultArgBuilder(pi));
-                        hasDefaults = true;
-                    } else {
-                        defaultArguments.Add(null);
-                    }
-                } else if (defaultArguments.Count > 0) {
-                    // non-contigious default parameter
-                    defaultArguments.Add(null);
-                }
-
-                ArgBuilder ab;
-                if (pi.ParameterType.IsByRef) {
-                    hasByRefOrOut = true;
-                    Type refType = typeof(StrongBox<>).MakeGenericType(pi.ParameterType.GetElementType());
-                    parameters.Add(new ParameterWrapper(pi, refType, pi.Name, true, false, false, false));
-                    ab = new ReferenceArgBuilder(pi, refType, indexForArgBuilder);
-                } else if (BinderHelpers.IsParamDictionary(pi)) {
-                    paramsDict = new ParameterWrapper(pi);
-                    ab = new SimpleArgBuilder(pi, indexForArgBuilder);
-                } else if (infoIndex == 0 && CompilerHelpers.IsExtension(pi.Member)) {
-                    parameters.Add(new ParameterWrapper(pi, pi.ParameterType, pi.Name, true, false, false, true));
-                    ab = new SimpleArgBuilder(pi, indexForArgBuilder);
-                } else {
-                    hasByRefOrOut |= CompilerHelpers.IsOutParameter(pi);
-                    parameters.Add(new ParameterWrapper(pi));
-                    ab = new SimpleArgBuilder(pi, indexForArgBuilder);
-                }
-
-                if (kwIndex == ParameterNotPassedByKeyword) {
-                    arguments.Add(ab);
-                } else {
-                    Debug.Assert(KeywordArgBuilder.BuilderExpectsSingleParameter(ab));
-                    arguments.Add(new KeywordArgBuilder(ab, _argNames.Count, kwIndex));
-                }
+            foreach (var defaultCandidate in mapping.CreateDefaultCandidates()) {
+                AddSimpleTarget(defaultCandidate);
             }
 
-            ReturnBuilder returnBuilder = MakeKeywordReturnBuilder(
-                new ReturnBuilder(CompilerHelpers.GetReturnType(method)),
-                parameterInfos,
-                parameters,
-                AllowKeywordArgumentSetting(method)
-            );
-
-            if (hasDefaults) {
-                for (int defaultsUsed = 1; defaultsUsed < defaultArguments.Count + 1; defaultsUsed++) {
-                    // if the left most default we'll use is not present then don't add a default.  This happens in cases such as:
-                    // a(a=1, b=2, c=3) and then call with a(a=5, c=3).  We'll come through once for c (no default, skip),
-                    // once for b (default present, emit) and then a (no default, skip again).  W/o skipping we'd generate the same
-                    // method multiple times.  This also happens w/ non-contigious default values, e.g. foo(a, b=3, c) where we don't want
-                    // to generate a default candidate for just c which matches the normal method.
-                    if (defaultArguments[defaultArguments.Count - defaultsUsed] != null) {
-                        AddSimpleTarget(MakeDefaultCandidate(
-                            method,
-                            parameters,
-                            paramsDict,
-                            instanceBuilder,
-                            arguments,
-                            defaultArguments,
-                            returnBuilder,
-                            defaultsUsed));
-                    }
-                }
+            var byRefReducedCandidate = mapping.CreateByRefReducedCandidate();
+            if (byRefReducedCandidate != null) {
+                AddSimpleTarget(byRefReducedCandidate);
             }
 
-            if (hasByRefOrOut) {
-                AddSimpleTarget(MakeByRefReducedMethodTarget(parameterInfos, method));
-            }
-
-            AddSimpleTarget(new MethodCandidate(this, method, parameters, paramsDict, returnBuilder, instanceBuilder, arguments));
-        }
-
-        private MethodCandidate MakeDefaultCandidate(MethodBase method, List<ParameterWrapper> parameters, ParameterWrapper paramsDict,
-            ArgBuilder instanceBuilder, List<ArgBuilder> argBuilders, List<ArgBuilder> defaultBuilders, ReturnBuilder returnBuilder, int defaultsUsed) {
-            List<ArgBuilder> defaultArgBuilders = new List<ArgBuilder>(argBuilders);
-            List<ParameterWrapper> necessaryParams = parameters.GetRange(0, parameters.Count - defaultsUsed);
-
-            for (int curDefault = 0; curDefault < defaultsUsed; curDefault++) {
-                int readIndex = defaultBuilders.Count - defaultsUsed + curDefault;
-                int writeIndex = defaultArgBuilders.Count - defaultsUsed + curDefault;
-
-                if (defaultBuilders[readIndex] != null) {
-                    defaultArgBuilders[writeIndex] = defaultBuilders[readIndex];
-                } else {
-                    necessaryParams.Add(parameters[parameters.Count - defaultsUsed + curDefault]);
-                }
-            }
-
-            // shift any arguments forward that need to be...
-            int curArg = CompilerHelpers.IsStatic(method) ? 0 : 1;
-            for (int i = 0; i < defaultArgBuilders.Count; i++) {
-                SimpleArgBuilder sab = defaultArgBuilders[i] as SimpleArgBuilder;
-                if (sab != null) {
-                    defaultArgBuilders[i] = sab.MakeCopy(curArg++);
-                }
-            }
-
-            return new MethodCandidate(this, method, necessaryParams, paramsDict, returnBuilder, instanceBuilder, defaultArgBuilders);
-        }
-
-        private MethodCandidate MakeByRefReducedMethodTarget(ParameterInfo[] parameterInfos, MethodBase method) {
-            Assert.NotNull(parameterInfos, method);
-
-            var parameters = new List<ParameterWrapper>();
-            ParameterWrapper paramsDict = null;
-            var arguments = new List<ArgBuilder>();
-            int argIndex = 0;
-            var instanceBuilder = MakeInstanceBuilder(method, parameters, ref argIndex);            
-            
-            List<int> returnArgs = new List<int>();
-            if (CompilerHelpers.GetReturnType(method) != typeof(void)) {
-                returnArgs.Add(-1);
-            }
-
-            var infoIndex = PrepareParametersBinding(parameterInfos, arguments, parameters, ref argIndex);
-            for (; infoIndex < parameterInfos.Length; infoIndex++) {
-                var pi = parameterInfos[infoIndex];
-
-                if (BindSpecialParameter(pi, arguments, parameters, ref argIndex)) {
-                    continue;
-                }
-                
-                // See KeywordArgBuilder.BuilderExpectsSingleParameter
-                int indexForArgBuilder = 0;
-
-                int kwIndex = ParameterNotPassedByKeyword;
-                if (!CompilerHelpers.IsOutParameter(pi)) {
-                    kwIndex = GetKeywordIndex(pi);
-                    if (kwIndex == ParameterNotPassedByKeyword) {
-                        indexForArgBuilder = argIndex++;
-                    }
-                }
-
-                ArgBuilder ab;
-                if (CompilerHelpers.IsOutParameter(pi)) {
-                    returnArgs.Add(arguments.Count);
-                    ab = new OutArgBuilder(pi);
-                } else if (pi.ParameterType.IsByRef) {
-                    // if the parameter is marked as [In] it is not returned.
-                    if ((pi.Attributes & (ParameterAttributes.In | ParameterAttributes.Out)) != ParameterAttributes.In) {
-                        returnArgs.Add(arguments.Count);
-                    }
-                    parameters.Add(new ParameterWrapper(pi, pi.ParameterType.GetElementType(), pi.Name, false, false, false, false));
-                    ab = new ReturnReferenceArgBuilder(pi, indexForArgBuilder);
-                } else if (BinderHelpers.IsParamDictionary(pi)) {
-                    paramsDict = new ParameterWrapper(pi);
-                    ab = new SimpleArgBuilder(pi, indexForArgBuilder);
-                } else {
-                    parameters.Add(new ParameterWrapper(pi));
-                    ab = new SimpleArgBuilder(pi, indexForArgBuilder);
-                }
-
-                if (kwIndex == ParameterNotPassedByKeyword) {
-                    arguments.Add(ab);
-                } else {
-                    Debug.Assert(KeywordArgBuilder.BuilderExpectsSingleParameter(ab));
-                    arguments.Add(new KeywordArgBuilder(ab, _argNames.Count, kwIndex));
-                }
-            }
-
-            ReturnBuilder returnBuilder = MakeKeywordReturnBuilder(
-                new ByRefReturnBuilder(returnArgs),
-                parameterInfos,
-                parameters,
-                AllowKeywordArgumentSetting(method)
-            );
-
-            return new MethodCandidate(this, method, parameters, paramsDict, returnBuilder, instanceBuilder, arguments);
+            AddSimpleTarget(mapping.CreateCandidate());
         }
 
         private static bool IsUnsupported(MethodBase method) {
@@ -1261,105 +1055,6 @@ namespace Microsoft.Scripting.Actions.Calls {
             } else {
                 return null;
             }
-        }
-
-        #endregion
-
-        #region Keyword arg binding support
-
-        private ReturnBuilder MakeKeywordReturnBuilder(ReturnBuilder returnBuilder, ParameterInfo[] methodParams, List<ParameterWrapper> parameters, bool isConstructor) {
-            if (isConstructor) {
-                List<string> unusedNames = GetUnusedKeywordParameters(methodParams);
-                List<MemberInfo> bindableMembers = GetBindableMembers(returnBuilder, unusedNames);
-                List<int> kwArgIndexs = new List<int>();
-                if (unusedNames.Count == bindableMembers.Count) {
-
-                    foreach (MemberInfo mi in bindableMembers) {
-                        ParameterWrapper pw = new ParameterWrapper(
-                            mi.MemberType == MemberTypes.Property ? 
-                                ((PropertyInfo)mi).PropertyType :
-                                ((FieldInfo)mi).FieldType,
-                            mi.Name,
-                            false);
-
-                        parameters.Add(pw);
-                        kwArgIndexs.Add(GetKeywordIndex(mi.Name));
-                    }
-
-                    KeywordConstructorReturnBuilder kwBuilder = new KeywordConstructorReturnBuilder(returnBuilder,
-                        _argNames.Count,
-                        kwArgIndexs.ToArray(),
-                        bindableMembers.ToArray(),
-                        _binder.PrivateBinding);
-
-                    return kwBuilder;
-                }
-
-            }
-            return returnBuilder;
-        }
-
-        private static List<MemberInfo> GetBindableMembers(ReturnBuilder returnBuilder, List<string> unusedNames) {
-            List<MemberInfo> bindableMembers = new List<MemberInfo>();
-
-            foreach (string name in unusedNames) {
-                Type curType = returnBuilder.ReturnType;
-                MemberInfo[] mis = curType.GetMember(name);
-                while (mis.Length != 1 && curType != null) {
-                    // see if we have a single member defined as the closest level
-                    mis = curType.GetMember(name, BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.SetField | BindingFlags.SetProperty | BindingFlags.Instance);
-
-                    if (mis.Length > 1) {
-                        break;
-                    }
-
-                    curType = curType.BaseType;
-                }
-
-                if (mis.Length == 1) {
-                    switch (mis[0].MemberType) {
-                        case MemberTypes.Property:
-                        case MemberTypes.Field:
-                            bindableMembers.Add(mis[0]);
-                            break;
-                    }
-                }
-            }
-            return bindableMembers;
-        }
-
-        private List<string> GetUnusedKeywordParameters(ParameterInfo[] methodParams) {
-            List<string> unusedNames = new List<string>();
-            foreach (string name in _argNames) {
-                bool found = false;
-                foreach (ParameterInfo pi in methodParams) {
-                    if (pi.Name == name) {
-                        found = true;
-                        break;
-                    }
-                }
-                if (!found) {
-                    unusedNames.Add(name);
-                }
-            }
-            return unusedNames;
-        }
-
-        private const int ParameterNotPassedByKeyword = -1;
-
-        // Check if the given parameter from the candidate's signature matches a keyword argument from the callsite.
-        // Return ParameterNotPassedByKeyword if no match. Else returns index into callsite's keyword arglist if there is a match.
-        private int GetKeywordIndex(ParameterInfo pi) {
-            return GetKeywordIndex(pi.Name);
-        }
-
-        private int GetKeywordIndex(string kwName) {
-            for (int i = 0; i < _argNames.Count; i++) {
-                if (kwName == _argNames[i]) {
-                    return i;
-                }
-            }
-            return ParameterNotPassedByKeyword;
         }
 
         #endregion

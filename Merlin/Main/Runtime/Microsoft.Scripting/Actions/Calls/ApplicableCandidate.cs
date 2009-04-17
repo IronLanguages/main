@@ -32,5 +32,9 @@ namespace Microsoft.Scripting.Actions.Calls {
         public ParameterWrapper GetParameter(int argumentIndex) {
             return Method.GetParameter(argumentIndex, ArgumentBinding);
         }
+
+        public override string ToString() {
+            return Method.ToString();
+        }
     }
 }

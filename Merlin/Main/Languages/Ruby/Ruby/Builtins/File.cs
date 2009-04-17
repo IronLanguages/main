@@ -62,8 +62,8 @@ namespace IronRuby.Builtins {
                 fileMode = FileMode.Open;
             }
 
-            if ((mode & RubyFileMode.EXCL) != 0) {
-                share = FileShare.None;
+            if ((mode & RubyFileMode.EXCL) != 0 && (mode & RubyFileMode.CREAT) != 0 && context.DomainManager.Platform.FileExists(path)) {
+                throw RubyExceptions.CreateIOError((String.Format("File exists - {0}", path)));
             }
 
             return context.DomainManager.Platform.OpenInputFileStream(path, fileMode, access, share);
@@ -104,7 +104,14 @@ namespace IronRuby.Builtins {
                 default:
                     throw RubyIO.IllegalMode(modeString);
             }
-            return context.DomainManager.Platform.OpenInputFileStream(path, mode, access, FileShare.ReadWrite);
+
+            try {
+                return context.DomainManager.Platform.OpenInputFileStream(path, mode, access, FileShare.ReadWrite);
+            } catch (DirectoryNotFoundException e) {
+                throw new FileNotFoundException(e.Message, e);
+            } catch (PathTooLongException e) {
+                throw new FileNotFoundException(e.Message, e);
+            }
         }
 
         public RubyFile(RubyContext/*!*/ context, string/*!*/ path, string/*!*/ modeString)

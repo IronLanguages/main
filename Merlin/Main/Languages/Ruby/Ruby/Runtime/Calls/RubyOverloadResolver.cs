@@ -63,30 +63,47 @@ namespace IronRuby.Runtime.Calls {
 
         #region Step 1: Special Parameters
 
-        protected override int PrepareParametersBinding(ParameterInfo/*!*/[]/*!*/ parameterInfos, List<ArgBuilder>/*!*/ arguments,
-            List<ParameterWrapper>/*!*/ parameters, ref int index) {
+        protected override BitArray MapSpecialParameters(ParameterMapping/*!*/ mapping) {
+            var infos = mapping.ParameterInfos;
+            var method = mapping.Method;
+            var special = new BitArray(infos.Length);
 
-            // Ruby library method signatures:
-            // static/factories: [(CallSiteStorage)*, (RubyContext|RubyScope)?, (BlockParam)?, self, args]
+            // Method signatures                                                                                  SelfCallConvention
+            // RubyMethod/RubyCtor:   [(CallSiteStorage)*, (RubyContext|RubyScope)?, (BlockParam)?, self, args]  SelfIsParameter
+            // static:                [(CallSiteStorage)*, (RubyContext|RubyScope)?, (BlockParam)?, args]        NoSelf
+            // instance/extension/op: [self, (CallSiteStorage)*, (RubyContext|RubyScope)?, (BlockParam)?, args]  SelfIsInstace
 
             var i = 0;
 
-            while (i < parameterInfos.Length
-                && parameterInfos[i].ParameterType.IsSubclassOf(typeof(RubyCallSiteStorage))) {
+            if (_callConvention == SelfCallConvention.SelfIsInstance) {
+                if (CompilerHelpers.IsStatic(method)) {
+                    Debug.Assert(RubyClass.IsOperator(method) || CompilerHelpers.IsExtension(method));
 
-                arguments.Add(new RubyCallSiteStorageBuilder(parameterInfos[i]));
-                i++;
+                    // receiver maps to the first parameter:
+                    mapping.AddParameter(new ParameterWrapper(infos[i], infos[i].ParameterType, null, true, false, false, true));
+                    mapping.AddBuilder(new SimpleArgBuilder(infos[i], mapping.ArgIndex));
+                    special[i++] = true;
+                } else {
+                    // receiver maps to the instance (no parameter info represents it):
+                    mapping.AddParameter(new ParameterWrapper(null, method.DeclaringType, null, true, false, false, true));
+                    mapping.AddInstanceBuilder(new SimpleArgBuilder(method.DeclaringType, mapping.ArgIndex, false, false));
+                }
             }
 
-            if (i < parameterInfos.Length) {
-                var parameterInfo = parameterInfos[i];
+            while (i < infos.Length && infos[i].ParameterType.IsSubclassOf(typeof(RubyCallSiteStorage))) {
+                mapping.AddBuilder(new RubyCallSiteStorageBuilder(infos[i]));
+                special[i++] = true;
+            }
 
-                if (parameterInfo.ParameterType == typeof(RubyScope)) {
-                    arguments.Add(new RubyScopeArgBuilder(parameterInfo));
-                    i++;
-                } else if (parameterInfo.ParameterType == typeof(RubyContext)) {
-                    arguments.Add(new RubyContextArgBuilder(parameterInfo));
-                    i++;
+            if (i < infos.Length) {
+                var info = infos[i];
+
+                if (info.ParameterType == typeof(RubyScope)) {
+                    mapping.AddBuilder(new RubyScopeArgBuilder(info));
+                    special[i++] = true;
+                } else if (info.ParameterType == typeof(RubyContext)) {
+                    mapping.AddBuilder(new RubyContextArgBuilder(info));
+                    special[i++] = true;
                 }
             }
 
@@ -106,29 +123,29 @@ namespace IronRuby.Runtime.Calls {
             // (implicit, BP,  ... )      MBP -> BP  (2)            BP -> BP  (2)               BP -> BP  (1)
             // (implicit, BP!, ... )          N/A                   BP -> BP! (1)                  N/A    
             //
-            if (i < parameterInfos.Length && parameterInfos[i].ParameterType == typeof(BlockParam)) {
-                var info = parameterInfos[i];
-                arguments.Add(new SimpleArgBuilder(info, index++));
-                parameters.Add(new ParameterWrapper(info, info.ParameterType, info.Name, CompilerHelpers.ProhibitsNull(info), false, false, true));
-                i++;
-            } else if (i >= parameterInfos.Length || parameterInfos[i].ParameterType != typeof(BlockParam)) {
-                arguments.Add(new MissingBlockArgBuilder(index++));
-                parameters.Add(new ParameterWrapper(null, typeof(MissingBlockParam), null, false, false, false, true));
+            if (i < infos.Length && infos[i].ParameterType == typeof(BlockParam)) {
+                var info = infos[i];
+                mapping.AddBuilder(new SimpleArgBuilder(info, mapping.ArgIndex));
+                mapping.AddParameter(new ParameterWrapper(info, info.ParameterType, null, CompilerHelpers.ProhibitsNull(info), false, false, true));
+                special[i++] = true;
+            } else if (i >= infos.Length || infos[i].ParameterType != typeof(BlockParam)) {
+                mapping.AddBuilder(new MissingBlockArgBuilder(mapping.ArgIndex));
+                mapping.AddParameter(new ParameterWrapper(null, typeof(MissingBlockParam), null, false, false, false, true));
             }
 
-            // TODO: wrong error messages
-            //if (_callConvention == SelfCallConvention.SelfIsParameter) {
-            //    Debug.Assert(i < parameterInfos.Length);
+            if (_callConvention == SelfCallConvention.SelfIsParameter) {
+                // Ruby library methods only:
+                Debug.Assert(CompilerHelpers.IsStatic(method));
+                Debug.Assert(i < infos.Length);
+                var info = infos[i];
 
-            //    var info = parameterInfos[i];
-            //    var method = (MethodBase)info.Member;
-            //    Debug.Assert(method.IsStatic);
-            //    arguments.Add(new SimpleArgBuilder(info, index++));
-            //    parameters.Add(new ParameterWrapper(info, info.ParameterType, info.Name, true, false, false, true));
-            //    i++;
-            //}
+                // receiver maps to the first visible parameter:
+                mapping.AddParameter(new ParameterWrapper(info, info.ParameterType, null, CompilerHelpers.ProhibitsNull(info), false, false, true));
+                mapping.AddBuilder(new SimpleArgBuilder(info, mapping.ArgIndex));
+                special[i++] = true;
+            }
 
-            return i;
+            return special;
         }
 
         internal static void GetParameterCount(ParameterInfo/*!*/[]/*!*/ parameterInfos, out int mandatory, out int optional, out bool acceptsBlock) {
@@ -446,6 +463,10 @@ namespace IronRuby.Runtime.Calls {
                 get { return -1; }
             }
 
+            public override int ConsumedArgumentCount {
+                get { return 0; }
+            }
+
             protected override Expression ToExpression(OverloadResolver/*!*/ resolver, IList<Expression>/*!*/ parameters, bool[]/*!*/ hasBeenUsed) {
                 return ((RubyOverloadResolver)resolver).ContextExpression;
             }
@@ -458,6 +479,10 @@ namespace IronRuby.Runtime.Calls {
 
             public override int Priority {
                 get { return -1; }
+            }
+
+            public override int ConsumedArgumentCount {
+                get { return 0; }
             }
 
             protected override Expression ToExpression(OverloadResolver/*!*/ resolver, IList<Expression>/*!*/ parameters, bool[]/*!*/ hasBeenUsed) {
@@ -474,6 +499,10 @@ namespace IronRuby.Runtime.Calls {
                 get { return -1; }
             }
 
+            public override int ConsumedArgumentCount {
+                get { return 0; }
+            }
+
             protected override Expression ToExpression(OverloadResolver/*!*/ resolver, IList<Expression>/*!*/ parameters, bool[]/*!*/ hasBeenUsed) {
                 return ((RubyOverloadResolver)resolver).ScopeExpression;
             }
@@ -486,6 +515,10 @@ namespace IronRuby.Runtime.Calls {
 
             public override int Priority {
                 get { return -1; }
+            }
+
+            public override int ConsumedArgumentCount {
+                get { return 1; }
             }
 
             protected override SimpleArgBuilder/*!*/ Copy(int newIndex) {

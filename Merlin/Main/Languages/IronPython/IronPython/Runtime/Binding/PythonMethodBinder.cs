@@ -24,6 +24,7 @@ using Microsoft.Scripting.Utils;
 using Microsoft.Scripting.Generation;
 using IronPython.Runtime.Operations;
 using Microsoft.Scripting.Runtime;
+using System.Collections;
 
 namespace IronPython.Runtime.Binding {
     internal sealed class PythonOverloadResolverFactory : OverloadResolverFactory {
@@ -68,19 +69,31 @@ namespace IronPython.Runtime.Binding {
             _context = codeContext;
         }
 
-        protected override bool BindSpecialParameter(ParameterInfo parameterInfo, List<ArgBuilder> arguments,
-            List<ParameterWrapper> parameters, ref int index) {
+        protected override BitArray MapSpecialParameters(ParameterMapping/*!*/ mapping) {
+            var infos = mapping.ParameterInfos;
+            BitArray special = base.MapSpecialParameters(mapping);
 
-            // CodeContext is implicitly provided at runtime, the user cannot provide it.
-            if (parameterInfo.ParameterType == typeof(CodeContext) && arguments.Count == 0) {
-                arguments.Add(new ContextArgBuilder(parameterInfo));
-                return true;
-            } else if (parameterInfo.ParameterType.IsSubclassOf(typeof(SiteLocalStorage))) {
-                arguments.Add(new SiteLocalStorageBuilder(parameterInfo));
-                return true;
+            if (infos.Length > 0) {
+                bool normalSeen = false;
+                for (int i = 0; i < infos.Length; i++) {
+                    bool isSpecial = false;
+                    if (infos[i].ParameterType.IsSubclassOf(typeof(SiteLocalStorage))) {
+                        mapping.AddBuilder(new SiteLocalStorageBuilder(infos[i]));
+                        isSpecial = true;
+                    } else if (infos[i].ParameterType == typeof(CodeContext) && !normalSeen) {
+                        mapping.AddBuilder(new ContextArgBuilder(infos[i]));
+                        isSpecial = true;
+                    } else {
+                        normalSeen = true;
+                    }
+
+                    if (isSpecial) {
+                        (special = special ?? new BitArray(infos.Length))[i] = true;
+                    }
+                }
             }
 
-            return base.BindSpecialParameter(parameterInfo, arguments, parameters, ref index);
+            return special;
         }
 
         protected override Expression GetByRefArrayExpression(Expression argumentArrayExpression) {

@@ -20,6 +20,7 @@ using System.Linq.Expressions;
 using System.Dynamic;
 using Microsoft.Scripting.Ast;
 using Microsoft.Scripting.Utils;
+using IronRuby.Runtime;
 
 namespace Microsoft.Scripting.Interpretation {
 
@@ -27,12 +28,12 @@ namespace Microsoft.Scripting.Interpretation {
         internal Dictionary<Expression, object> SpilledStack;
         internal YieldExpression CurrentYield;
 
-        internal readonly InterpretedScriptCode ScriptCode;
+        internal readonly IInterpretedScriptCode ScriptCode;
         internal readonly LambdaExpression Lambda;
         internal readonly InterpreterState Caller;
         internal SourceLocation CurrentLocation;
 
-        public LambdaState(InterpretedScriptCode scriptCode, LambdaExpression lambda, InterpreterState caller) {
+        public LambdaState(IInterpretedScriptCode scriptCode, LambdaExpression lambda, InterpreterState caller) {
             Assert.NotNull(scriptCode, lambda);
             ScriptCode = scriptCode;
             Lambda = lambda;
@@ -44,7 +45,7 @@ namespace Microsoft.Scripting.Interpretation {
     /// Represents variable storage for one lambda/scope expression in the
     /// interpreter.
     /// </summary>
-    public sealed class InterpreterState {
+    internal sealed class InterpreterState {
         // Current thread's interpreted method frame.
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2104:DoNotDeclareReadOnlyMutableReferenceTypes")]
         public static readonly ThreadLocal<InterpreterState> Current = new ThreadLocal<InterpreterState>();
@@ -61,7 +62,7 @@ namespace Microsoft.Scripting.Interpretation {
             _lambdaState = lambdaState;
         }
 
-        internal static InterpreterState CreateForTopLambda(InterpretedScriptCode scriptCode, LambdaExpression lambda, InterpreterState caller, params object[] args) {
+        internal static InterpreterState CreateForTopLambda(IInterpretedScriptCode scriptCode, LambdaExpression lambda, InterpreterState caller, params object[] args) {
             return CreateForLambda(scriptCode, lambda, null, caller, args);
         }
 
@@ -73,7 +74,7 @@ namespace Microsoft.Scripting.Interpretation {
             return new InterpreterState(this, new LambdaState(_lambdaState.ScriptCode, caller.Lambda, caller));
         }
 
-        private static InterpreterState CreateForLambda(InterpretedScriptCode scriptCode, LambdaExpression lambda, 
+        private static InterpreterState CreateForLambda(IInterpretedScriptCode scriptCode, LambdaExpression lambda, 
             InterpreterState lexicalParent, InterpreterState caller, object[] args) {
 
             InterpreterState state = new InterpreterState(lexicalParent, new LambdaState(scriptCode, lambda, caller));
@@ -113,7 +114,7 @@ namespace Microsoft.Scripting.Interpretation {
             get { return _lambdaState.Lambda; }
         }
 
-        public ScriptCode ScriptCode {
+        public IInterpretedScriptCode ScriptCode {
             get { return _lambdaState.ScriptCode; }
         }
 

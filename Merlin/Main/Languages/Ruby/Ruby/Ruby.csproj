@@ -61,10 +61,7 @@
     <ErrorReport>prompt</ErrorReport>
     <NoStdLib>true</NoStdLib>
     <SilverlightBuild>true</SilverlightBuild>
-    <TfsSilverlightPath>..\..\..\Utilities\Silverlight\x86ret\</TfsSilverlightPath>
-    <SilverlightInstallPath>C:\Program Files\Microsoft Silverlight\2.0.40115.0</SilverlightInstallPath>
-    <SilverlightSdkPath Condition="Exists('$(TfsSilverlightPath)')">$(TfsSilverlightPath)</SilverlightSdkPath>
-    <SilverlightSdkPath Condition="!Exists('$(TfsSilverlightPath)')">$(SilverlightInstallPath)</SilverlightSdkPath>
+    <SilverlightSdkPath>..\..\..\Utilities\Silverlight\x86ret\</SilverlightSdkPath>
     <NoWarn>414,219</NoWarn>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Silverlight Release|AnyCPU' ">
@@ -75,19 +72,18 @@
     <PlatformTarget>AnyCPU</PlatformTarget>
     <ErrorReport>prompt</ErrorReport>
     <SilverlightBuild>true</SilverlightBuild>
-    <TfsSilverlightPath>..\..\..\Utilities\Silverlight\x86ret\</TfsSilverlightPath>
-    <SilverlightInstallPath>C:\Program Files\Microsoft Silverlight\2.0.40115.0</SilverlightInstallPath>
-    <SilverlightSdkPath Condition="Exists('$(TfsSilverlightPath)')">$(TfsSilverlightPath)</SilverlightSdkPath>
-    <SilverlightSdkPath Condition="!Exists('$(TfsSilverlightPath)')">$(SilverlightInstallPath)</SilverlightSdkPath>
+    <SilverlightSdkPath>..\..\..\Utilities\Silverlight\x86ret\</SilverlightSdkPath>
     <NoWarn>414,219</NoWarn>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" Condition=" '$(SilverlightBuild)' != 'true' " />
+    <Reference Include="System.Data" Condition=" $(SilverlightBuild) != 'true' " />
+    <Reference Include="System.Xml" Condition=" $(SilverlightBuild) != 'true' " />
+    <Reference Include="System.Configuration" />
     <Reference Include="mscorlib, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e" Condition=" '$(SilverlightBuild)' == 'true' ">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>$(SilverlightSdkPath)\mscorlib.dll</HintPath>
     </Reference>
-    <Reference Include="System.configuration" />
     <Reference Include="System.Net, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e" Condition=" '$(SilverlightBuild)' == 'true' ">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>$(SilverlightSdkPath)\System.Net.dll</HintPath>
@@ -96,8 +92,23 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>$(SilverlightSdkPath)\System.dll</HintPath>
     </Reference>
-    <Reference Include="System.Data" Condition=" $(SilverlightBuild) != 'true' " />
-    <Reference Include="System.Xml" Condition=" $(SilverlightBuild) != 'true' " />
+    <ProjectReference Include="..\..\..\..\..\ndp\fx\src\Dynamic\System\Dynamic\Microsoft.Dynamic.csproj" Condition=" '$(SilverlightBuild)' != 'true' ">
+      <Project>{D4AE44AD-07B9-41DC-BB3B-1FDCDE3C987D}</Project>
+      <Name>System.Dynamic</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\..\..\ndp\fx\src\Core\Microsoft\Scripting\Microsoft.Scripting.Core.csproj">
+      <Project>{2AE75F5A-CD1F-4925-9647-AF4D1C282FB4}</Project>
+      <Name>Microsoft.Scripting.Core</Name>
+      <Private>False</Private>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\..\..\ndp\fx\src\Core\Microsoft\Scripting\Microsoft.Scripting.ExtensionAttribute.csproj">
+      <Project>{8B0F1074-750E-4D64-BF23-A1E0F54261E5}</Project>
+      <Name>Microsoft.Scripting.ExtensionAttribute</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\Runtime\Microsoft.Scripting\Microsoft.Scripting.csproj">
+      <Project>{EB66B766-6354-4208-A3D4-AACBDCB5C3B3}</Project>
+      <Name>Microsoft.Scripting</Name>
+    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="..\..\..\Hosts\Silverlight\SilverlightVersion.cs" Condition=" '$(SilverlightBuild)' == 'true' ">
@@ -113,6 +124,7 @@
     <Compile Include="Builtins\RegexpTransformer.cs" />
     <Compile Include="Builtins\RubyArray.Subclass.cs" />
     <Compile Include="Builtins\RubyEvent.cs" />
+    <Compile Include="Builtins\RubyIO.cs" />
     <Compile Include="Builtins\RubyRegex.Subclass.cs" />
     <Compile Include="Builtins\MutableString.Content.cs">
       <SubType>Code</SubType>
@@ -127,7 +139,6 @@
     <Compile Include="Builtins\RubyMethod.Meta.cs" />
     <Compile Include="Builtins\File.cs" />
     <Compile Include="Builtins\Glob.cs" />
-    <Compile Include="Builtins\IO.cs" />
     <Compile Include="Builtins\MatchData.cs" />
     <Compile Include="Builtins\MutableStringStream.cs" />
     <Compile Include="Builtins\Proc.Meta.cs" />
@@ -153,6 +164,19 @@
     <Compile Include="Compiler\Ast\Walkers\Walker.cs" />
     <Compile Include="Compiler\Errors.cs" />
     <Compile Include="Compiler\Parser\ParserStack.cs" />
+    <Compile Include="OldInterpreter\CommaAddress.cs" />
+    <Compile Include="OldInterpreter\ControlFlow.cs" />
+    <Compile Include="OldInterpreter\EvaluationAddress.cs" />
+    <Compile Include="OldInterpreter\InterpretedScriptCode.cs" />
+    <Compile Include="OldInterpreter\Interpreter.Block.cs" />
+    <Compile Include="OldInterpreter\Interpreter.Generated.cs" />
+    <Compile Include="OldInterpreter\Interpreter.MatchCaller.cs" />
+    <Compile Include="OldInterpreter\Interpreter.cs" />
+    <Compile Include="OldInterpreter\InterpreterHelpers.cs" />
+    <Compile Include="OldInterpreter\InterpreterState.cs" />
+    <Compile Include="OldInterpreter\InterpreterVariables.cs" />
+    <Compile Include="OldInterpreter\LambdaInvoker.cs" />
+    <Compile Include="OldInterpreter\VariableAddress.cs" />
     <Compile Include="Runtime\BinaryContentProvider.cs" />
     <Compile Include="Runtime\CallSiteStorages.cs" />
     <Compile Include="Runtime\Calls\CompositeConversionAction.cs" />
@@ -218,6 +242,7 @@
     <Compile Include="Builtins\Proc.cs" />
     <Compile Include="Builtins\Range.cs" />
     <Compile Include="Runtime\KCoding.cs" />
+    <Compile Include="Runtime\Protocols.cs" />
     <Compile Include="Runtime\ReferenceEqualityComparer.cs" />
     <Compile Include="Compiler\Ast\Expressions\RangeExpression.cs" />
     <Compile Include="Runtime\Converter.cs" />
@@ -348,21 +373,6 @@
     <Compile Include="Builtins\RubyModule.Subclass.cs" />
     <Compile Include="Runtime\IOWrapper.cs" />
     <None Include="Compiler\Parser\Parser.y" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\..\..\..\..\ndp\fx\src\Core\Microsoft\Scripting\Microsoft.Scripting.Core.csproj">
-      <Project>{2AE75F5A-CD1F-4925-9647-AF4D1C282FB4}</Project>
-      <Name>Microsoft.Scripting.Core</Name>
-      <Private>False</Private>
-    </ProjectReference>
-    <ProjectReference Include="..\..\..\..\..\ndp\fx\src\Core\Microsoft\Scripting\Microsoft.Scripting.ExtensionAttribute.csproj">
-      <Project>{8B0F1074-750E-4D64-BF23-A1E0F54261E5}</Project>
-      <Name>Microsoft.Scripting.ExtensionAttribute</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\..\..\Runtime\Microsoft.Scripting\Microsoft.Scripting.csproj">
-      <Project>{EB66B766-6354-4208-A3D4-AACBDCB5C3B3}</Project>
-      <Name>Microsoft.Scripting</Name>
-    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" Condition=" $(SilverlightTreeBuild) != 'true' " />
   <Target Name="BeforeBuild">

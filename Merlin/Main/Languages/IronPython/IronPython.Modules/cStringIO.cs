@@ -151,7 +151,7 @@ namespace IronPython.Modules {
             if (size > _data.Length) {
                 size = _data.Length;
             } else if (size < 0) {
-                size = 0;
+                throw PythonOps.IOError("(22, 'Negative size not allowed')");
             }
             _data = _data.Substring(0, size);
             _position = size;

@@ -29,7 +29,9 @@ namespace Microsoft.Scripting.Actions.Calls {
     /// methods for params arrays and param dictionary functions.
     /// </summary>
     public class SimpleArgBuilder : ArgBuilder {
+        // Index of actual argument expression.
         private int _index;
+
         private readonly Type _parameterType;
         private readonly bool _isParams, _isParamsDict;
 
@@ -69,6 +71,10 @@ namespace Microsoft.Scripting.Actions.Calls {
             return new SimpleArgBuilder(ParameterInfo, _parameterType, newIndex, _isParams, _isParamsDict);
         }
 
+        public override int ConsumedArgumentCount {
+            get { return 1; }
+        }
+
         public override int Priority {
             get { return 0; }
         }
@@ -86,9 +92,11 @@ namespace Microsoft.Scripting.Actions.Calls {
         }
 
         internal protected override Expression ToExpression(OverloadResolver resolver, IList<Expression> parameters, bool[] hasBeenUsed) {
+            Debug.Assert(hasBeenUsed.Length == parameters.Count);
             Debug.Assert(_index < parameters.Count);
-            Debug.Assert(_index < hasBeenUsed.Length);
             Debug.Assert(parameters[_index] != null);
+            Debug.Assert(!hasBeenUsed[Index]);
+            
             hasBeenUsed[_index] = true;
             return resolver.ConvertExpression(parameters[_index], ParameterInfo, _parameterType);
         }

@@ -16,6 +16,11 @@
 using System.Dynamic;
 using System.Diagnostics;
 using System;
+using Microsoft.Scripting.Utils;
+using System.Collections.Generic;
+using Ast = System.Linq.Expressions.Expression;
+using AstUtils = Microsoft.Scripting.Ast.Utils;
+using System.Reflection;
 
 namespace IronRuby.Runtime.Calls {
     public abstract class RubyMetaBinder : DynamicMetaObjectBinder {
@@ -37,25 +42,65 @@ namespace IronRuby.Runtime.Calls {
         }
         
         public abstract RubyCallSignature Signature { get; }
-        protected abstract void Build(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args);
-        protected abstract DynamicMetaObject/*!*/ InteropBind(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args);
+        protected abstract bool Build(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args, bool defaultFallback);
         public abstract Type/*!*/ ResultType { get; }
+
+        protected virtual DynamicMetaObjectBinder GetInteropBinder(RubyContext/*!*/ context, IList<DynamicMetaObject/*!*/>/*!*/ args, 
+            out MethodInfo postProcessor) {
+
+            postProcessor = null;
+            return null;
+        }
 
         public override DynamicMetaObject/*!*/ Bind(DynamicMetaObject/*!*/ scopeOrContextOrTarget, DynamicMetaObject/*!*/[]/*!*/ args) {
             var callArgs = new CallArguments(_context, scopeOrContextOrTarget, args, Signature);
             var metaBuilder = new MetaObjectBuilder(this, args);
 
-            // TODO: COM interop
             if (IsForeignMetaObject(callArgs.MetaTarget)) {
                 return InteropBind(metaBuilder, callArgs);
-            }
+            } 
 
-            Build(metaBuilder, callArgs);
+            Build(metaBuilder, callArgs, true);
+            return metaBuilder.CreateMetaObject(this);
+        }
+
+
+        private DynamicMetaObject/*!*/ InteropBind(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args) {
+            // TODO: argument count limit depends on the binder!
+
+            // TODO: pass block as the last (before RHS arg?) parameter/ignore block if args not accepting block:
+            var normalizedArgs = RubyOverloadResolver.NormalizeArguments(metaBuilder, args, 0, Int32.MaxValue);
+            if (!metaBuilder.Error) {
+                MethodInfo postConverter;
+                var interopBinder = GetInteropBinder(args.RubyContext, normalizedArgs, out postConverter);
+                if (interopBinder != null) {
+                    Type resultType;
+                    var result = interopBinder.Bind(args.MetaTarget, ArrayUtils.MakeArray(normalizedArgs));
+
+                    metaBuilder.SetMetaResult(result, args);
+                    if (postConverter != null) {
+                        // TODO: do better?
+                        var paramType = postConverter.GetParameters()[0].ParameterType;
+
+                        metaBuilder.Result = Ast.Call(null, postConverter, AstUtils.Convert(metaBuilder.Result, paramType));
+                        resultType = postConverter.ReturnType;
+                    } else {
+                        resultType = ((IInteropBinder)interopBinder).ResultType;
+                    }
+
+                    return metaBuilder.CreateMetaObject(interopBinder, resultType);
+                } else {
+                    metaBuilder.SetError(Ast.New(
+                       typeof(NotSupportedException).GetConstructor(new[] { typeof(string) }),
+                       Ast.Constant(String.Format("{0} not supported on foreign meta-objects", this))
+                    ));
+                }
+            }
             return metaBuilder.CreateMetaObject(this);
         }
 
         internal static bool IsForeignMetaObject(DynamicMetaObject/*!*/ metaObject) {
-            return metaObject.Value is IDynamicMetaObjectProvider && !(metaObject is RubyMetaObject);
+            return metaObject.Value is IDynamicMetaObjectProvider && !(metaObject is RubyMetaObject) || Utils.IsComObjectType(metaObject.LimitType);
         }
     }
 }

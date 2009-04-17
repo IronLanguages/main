@@ -187,6 +187,7 @@ namespace IronRuby.Runtime {
         private RubyClass/*!*/ _falseClass;
         private RubyClass/*!*/ _exceptionClass;
         private RubyClass _standardErrorClass;
+        private RubyClass _comObjectClass;
 
         private Action<RubyModule>/*!*/ _classSingletonTrait;
         private Action<RubyModule>/*!*/ _singletonSingletonTrait;
@@ -202,6 +203,17 @@ namespace IronRuby.Runtime {
         public RubyClass/*!*/ FalseClass { get { return _falseClass; } set { _falseClass = value; } }
         public RubyClass ExceptionClass { get { return _exceptionClass; } set { _exceptionClass = value; } }
         public RubyClass StandardErrorClass { get { return _standardErrorClass; } set { _standardErrorClass = value; } }
+        
+        internal RubyClass ComObjectClass {
+            get {
+#if !SILVERLIGHT
+                if (_comObjectClass == null) {
+                    GetOrCreateClass(Utils.ComObjectType);
+                }
+#endif
+                return _comObjectClass;
+            }
+        }
 
         internal Action<RubyModule>/*!*/ ClassSingletonTrait { get { return _classSingletonTrait; } }
         internal Action<RubyModule>/*!*/ SingletonSingletonTrait { get { return _singletonSingletonTrait; } }
@@ -704,6 +716,10 @@ namespace IronRuby.Runtime {
 
             result = CreateClass(RubyUtils.GetQualifiedName(type), type, null, null, null, null, null, baseClass, expandedMixins, tracker, null, false, false);
 
+            if (Utils.IsComObjectType(type)) {
+                _comObjectClass = result;
+            }
+
             _moduleCache[type] = result;
             return result;
         }
@@ -716,10 +732,19 @@ namespace IronRuby.Runtime {
 
             List<RubyModule> interfaces = new List<RubyModule>();
             
-            if (type.IsArray && type.GetArrayRank() > 1) {
-                RubyModule mdaModule;
-                if (TryGetModuleNoLock(typeof(MultiDimensionalArray), out mdaModule)) {
-                    interfaces.Add(mdaModule);
+            if (type.IsArray) {
+                if (type.GetArrayRank() > 1) {
+                    RubyModule module;
+                    if (TryGetModuleNoLock(typeof(MultiDimensionalArray), out module)) {
+                        interfaces.Add(module);
+                    }
+                }
+            } else if (type.IsEnum) {
+                if (type.IsDefined(typeof(FlagsAttribute), false)) {
+                    RubyModule module;
+                    if (TryGetModuleNoLock(typeof(FlagEnumeration), out module)) {
+                        interfaces.Add(module);
+                    }
                 }
             }
 
@@ -965,9 +990,12 @@ namespace IronRuby.Runtime {
         /// <summary>
         /// Gets a class of the specified object (skips any singletons).
         /// </summary>
-        public RubyClass/*!*/ GetClassOf(object obj)
-            //^ ensures !result.IsSingletonClass;
-        {
+        public RubyClass/*!*/ GetClassOf(object obj) {
+            ContractUtils.Ensures(!ContractUtils.Result<RubyClass>().IsSingletonClass);
+            return TryGetClassOfRubyObject(obj) ?? GetOrCreateClass(obj.GetType());
+        }
+
+        private RubyClass TryGetClassOfRubyObject(object obj) {
             if (obj == null) {
                 return _nilClass;
             }
@@ -983,7 +1011,7 @@ namespace IronRuby.Runtime {
                 return result;
             }
 
-            return GetOrCreateClass(obj.GetType());
+            return null;
         }
 
         /// <summary>
@@ -1053,6 +1081,25 @@ namespace IronRuby.Runtime {
             }
 
             return false;
+        }
+
+        public string/*!*/ GetTypeName(Type/*!*/ type) {
+            RubyModule module;
+            return TryGetModule(type, out module) ? module.Name : RubyUtils.GetQualifiedName(type);
+        }
+
+        /// <summary>
+        /// Gets the Ruby name of the class of the given object.
+        /// </summary>
+        public string/*!*/ GetClassName(object obj) {
+            // doesn't create a RubyClass for .NET types
+
+            RubyClass cls = TryGetClassOfRubyObject(obj);
+            if (cls != null) {
+                return cls.Name;
+            }
+
+            return GetTypeName(obj.GetType());
         }
 
         #endregion
@@ -1581,23 +1628,20 @@ namespace IronRuby.Runtime {
 #if DEBUG
             if (RubyOptions.LoadFromDisk) {
                 string code;
-                Utils.Log(String.Format("{0} {1}", Options.InterpretedMode ? "interpreting" : "compiling", sourceUnit.Path ??
+                Utils.Log(String.Format("{0} {1}", RubyOptions.InterpretedMode ? "interpreting" : "compiling", sourceUnit.Path ??
                     ((code = sourceUnit.GetCode()).Length < 100 ? code : code.Substring(0, 100))
                     .Replace('\r', ' ').Replace('\n', ' ')
                 ), "COMPILER");
             }
 #endif
+            var rubyOptions = (RubyCompilerOptions)options;
 
-            var lambda = ParseSourceCode<Func<Scope, LanguageContext, object>>(sourceUnit, (RubyCompilerOptions)options, errorSink);
+            var lambda = ParseSourceCode<Func<RubyScope, RuntimeFlowControl, object, object>>(sourceUnit, rubyOptions, errorSink);
             if (lambda == null) {
                 return null;
             }
 
-            if (Options.InterpretedMode) {
-                return new InterpretedScriptCode(lambda, sourceUnit);
-            } else {
-                return new RubyScriptCode(lambda, sourceUnit);
-            }
+            return new RubyScriptCode(lambda, sourceUnit, rubyOptions.FactoryKind);
         }
 
 #if MEASURE_AST
@@ -1684,9 +1728,9 @@ namespace IronRuby.Runtime {
         }
 
         protected override ScriptCode/*!*/ LoadCompiledCode(Delegate/*!*/ method, string path) {
-            // TODO:
+            // TODO: we need to save the kind of the scope factory:
             SourceUnit su = new SourceUnit(this, NullTextContentProvider.Null, path, SourceCodeKind.File);
-            return new RubyScriptCode((Func<Scope, LanguageContext, object>)method, su);
+            return new RubyScriptCode((Func<RubyScope, RuntimeFlowControl, object, object>)method, su, TopScopeFactoryKind.Default);
         }
 
         public void CheckConstantName(string name) {
@@ -2074,6 +2118,19 @@ namespace IronRuby.Runtime {
             return new InteropBinder.CreateInstance(this, callInfo);
         }
 
+        // TODO: override GetMemberNames?
+        public IList<string>/*!*/ GetForeignDynamicMemberNames(object obj) {
+            if (obj is IRubyDynamicMetaObjectProvider) {
+                return ArrayUtils.EmptyStrings;
+            }
+#if !SILVERLIGHT
+            if (Utils.IsComObject(obj)) {
+                return new List<string>(System.Dynamic.ComBinder.GetDynamicMemberNames(obj));
+            }
+#endif
+            return GetMemberNames(obj);
+        }
+
         #endregion
 
         #region Dynamic Sites (thread-safe)
@@ -2218,7 +2275,23 @@ namespace IronRuby.Runtime {
 
         #region Interpretation
 
-        protected override void InterpretExceptionThrow(InterpreterState state, Exception exception, bool isInterpretedThrow) {
+
+        /// <summary>
+        /// Called by an interpreter when an exception is about to be thrown by an interpreted or
+        /// when a CLR method is called that threw an exception.
+        /// </summary>
+        /// <param name="state">
+        /// The current interpreted frame state. The frame is either throwing the exception or 
+        /// is the interpreted frame that is calling a CLR method that threw or propagated the exception. 
+        /// </param>
+        /// <param name="exception">The exception to be (re)thrown.</param>
+        /// <param name="isInterpretedThrow">Whether the exception is thrown by an interpreted code.</param>
+        /// <remarks>
+        /// The method can be called multiple times for a single exception if the interpreted code calls some CLR code that
+        /// calls an interpreted code that throws an exception. The method is called at each interpeted/non-interpreted frame boundary
+        /// and in the frame that raised the exception.
+        /// </remarks>
+        internal void InterpretExceptionThrow(InterpreterState state, Exception exception, bool isInterpretedThrow) {
             Assert.NotNull(state, exception);
             if (RubyExceptionData.TryGetInstance(exception) == null) {
                 RubyExceptionData.AssociateInstance(exception).SetInterpretedTrace(state);

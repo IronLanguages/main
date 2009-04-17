@@ -88,12 +88,8 @@ namespace IronRuby.Compiler {
         private static MethodInfo _CreateInclusiveIntegerRange;
         public static MethodInfo/*!*/ CreateInclusiveRange { get { return _CreateInclusiveRange ?? (_CreateInclusiveRange = GetMethod(typeof(RubyOps), "CreateInclusiveRange")); } }
         private static MethodInfo _CreateInclusiveRange;
-        public static MethodInfo/*!*/ CreateMainTopLevelScope { get { return _CreateMainTopLevelScope ?? (_CreateMainTopLevelScope = GetMethod(typeof(RubyOps), "CreateMainTopLevelScope")); } }
-        private static MethodInfo _CreateMainTopLevelScope;
         public static MethodInfo/*!*/ CreateMethodScope { get { return _CreateMethodScope ?? (_CreateMethodScope = GetMethod(typeof(RubyOps), "CreateMethodScope")); } }
         private static MethodInfo _CreateMethodScope;
-        public static MethodInfo/*!*/ CreateModuleEvalScope { get { return _CreateModuleEvalScope ?? (_CreateModuleEvalScope = GetMethod(typeof(RubyOps), "CreateModuleEvalScope")); } }
-        private static MethodInfo _CreateModuleEvalScope;
         public static MethodInfo/*!*/ CreateModuleScope { get { return _CreateModuleScope ?? (_CreateModuleScope = GetMethod(typeof(RubyOps), "CreateModuleScope")); } }
         private static MethodInfo _CreateModuleScope;
         public static MethodInfo/*!*/ CreateMutableStringL { get { return _CreateMutableStringL ?? (_CreateMutableStringL = GetMethod(typeof(RubyOps), "CreateMutableStringL")); } }
@@ -136,18 +132,12 @@ namespace IronRuby.Compiler {
         private static MethodInfo _CreateSymbolMM;
         public static MethodInfo/*!*/ CreateSymbolN { get { return _CreateSymbolN ?? (_CreateSymbolN = GetMethod(typeof(RubyOps), "CreateSymbolN")); } }
         private static MethodInfo _CreateSymbolN;
-        public static MethodInfo/*!*/ CreateTopLevelHostedScope { get { return _CreateTopLevelHostedScope ?? (_CreateTopLevelHostedScope = GetMethod(typeof(RubyOps), "CreateTopLevelHostedScope")); } }
-        private static MethodInfo _CreateTopLevelHostedScope;
-        public static MethodInfo/*!*/ CreateTopLevelScope { get { return _CreateTopLevelScope ?? (_CreateTopLevelScope = GetMethod(typeof(RubyOps), "CreateTopLevelScope")); } }
-        private static MethodInfo _CreateTopLevelScope;
         public static MethodInfo/*!*/ CreateTypeConversionError { get { return _CreateTypeConversionError ?? (_CreateTypeConversionError = GetMethod(typeof(RubyOps), "CreateTypeConversionError")); } }
         private static MethodInfo _CreateTypeConversionError;
         public static MethodInfo/*!*/ CreateVector { get { return _CreateVector ?? (_CreateVector = GetMethod(typeof(RubyOps), "CreateVector")); } }
         private static MethodInfo _CreateVector;
         public static MethodInfo/*!*/ CreateVectorWithValues { get { return _CreateVectorWithValues ?? (_CreateVectorWithValues = GetMethod(typeof(RubyOps), "CreateVectorWithValues")); } }
         private static MethodInfo _CreateVectorWithValues;
-        public static MethodInfo/*!*/ CreateWrappedTopLevelScope { get { return _CreateWrappedTopLevelScope ?? (_CreateWrappedTopLevelScope = GetMethod(typeof(RubyOps), "CreateWrappedTopLevelScope")); } }
-        private static MethodInfo _CreateWrappedTopLevelScope;
         public static MethodInfo/*!*/ DefineBlock { get { return _DefineBlock ?? (_DefineBlock = GetMethod(typeof(RubyOps), "DefineBlock")); } }
         private static MethodInfo _DefineBlock;
         public static MethodInfo/*!*/ DefineClass { get { return _DefineClass ?? (_DefineClass = GetMethod(typeof(RubyOps), "DefineClass")); } }
@@ -180,6 +170,8 @@ namespace IronRuby.Compiler {
         private static MethodInfo _EvalReturn;
         public static MethodInfo/*!*/ EvalYield { get { return _EvalYield ?? (_EvalYield = GetMethod(typeof(RubyOps), "EvalYield")); } }
         private static MethodInfo _EvalYield;
+        public static MethodInfo/*!*/ ExistsUnsplat { get { return _ExistsUnsplat ?? (_ExistsUnsplat = GetMethod(typeof(RubyOps), "ExistsUnsplat")); } }
+        private static MethodInfo _ExistsUnsplat;
         public static MethodInfo/*!*/ GetArrayItem { get { return _GetArrayItem ?? (_GetArrayItem = GetMethod(typeof(RubyOps), "GetArrayItem")); } }
         private static MethodInfo _GetArrayItem;
         public static MethodInfo/*!*/ GetArraySuffix { get { return _GetArraySuffix ?? (_GetArraySuffix = GetMethod(typeof(RubyOps), "GetArraySuffix")); } }
@@ -240,6 +232,8 @@ namespace IronRuby.Compiler {
         private static MethodInfo _HookupEvent;
         public static MethodInfo/*!*/ InitializeBlock { get { return _InitializeBlock ?? (_InitializeBlock = GetMethod(typeof(RubyOps), "InitializeBlock")); } }
         private static MethodInfo _InitializeBlock;
+        public static MethodInfo/*!*/ InitializeScope { get { return _InitializeScope ?? (_InitializeScope = GetMethod(typeof(RubyOps), "InitializeScope")); } }
+        private static MethodInfo _InitializeScope;
         public static MethodInfo/*!*/ IsDefinedClassVariable { get { return _IsDefinedClassVariable ?? (_IsDefinedClassVariable = GetMethod(typeof(RubyOps), "IsDefinedClassVariable")); } }
         private static MethodInfo _IsDefinedClassVariable;
         public static MethodInfo/*!*/ IsDefinedGlobalConstant { get { return _IsDefinedGlobalConstant ?? (_IsDefinedGlobalConstant = GetMethod(typeof(RubyOps), "IsDefinedGlobalConstant")); } }
@@ -320,6 +314,8 @@ namespace IronRuby.Compiler {
         private static MethodInfo _MethodRetry;
         public static MethodInfo/*!*/ MethodYield { get { return _MethodYield ?? (_MethodYield = GetMethod(typeof(RubyOps), "MethodYield")); } }
         private static MethodInfo _MethodYield;
+        public static MethodInfo/*!*/ ObjectToMutableString { get { return _ObjectToMutableString ?? (_ObjectToMutableString = GetMethod(typeof(RubyOps), "ObjectToMutableString")); } }
+        private static MethodInfo _ObjectToMutableString;
         public static MethodInfo/*!*/ PrintInteractiveResult { get { return _PrintInteractiveResult ?? (_PrintInteractiveResult = GetMethod(typeof(RubyOps), "PrintInteractiveResult")); } }
         private static MethodInfo _PrintInteractiveResult;
         public static MethodInfo/*!*/ PropagateRetrySingleton { get { return _PropagateRetrySingleton ?? (_PropagateRetrySingleton = GetMethod(typeof(RubyOps), "PropagateRetrySingleton")); } }
@@ -332,6 +328,8 @@ namespace IronRuby.Compiler {
         private static MethodInfo _SetCurrentException;
         public static MethodInfo/*!*/ SetCurrentExceptionAndStackTrace { get { return _SetCurrentExceptionAndStackTrace ?? (_SetCurrentExceptionAndStackTrace = GetMethod(typeof(RubyOps), "SetCurrentExceptionAndStackTrace")); } }
         private static MethodInfo _SetCurrentExceptionAndStackTrace;
+        public static MethodInfo/*!*/ SetDataConstant { get { return _SetDataConstant ?? (_SetDataConstant = GetMethod(typeof(RubyOps), "SetDataConstant")); } }
+        private static MethodInfo _SetDataConstant;
         public static MethodInfo/*!*/ SetGlobalConstant { get { return _SetGlobalConstant ?? (_SetGlobalConstant = GetMethod(typeof(RubyOps), "SetGlobalConstant")); } }
         private static MethodInfo _SetGlobalConstant;
         public static MethodInfo/*!*/ SetGlobalVariable { get { return _SetGlobalVariable ?? (_SetGlobalVariable = GetMethod(typeof(RubyOps), "SetGlobalVariable")); } }
@@ -352,6 +350,8 @@ namespace IronRuby.Compiler {
         private static MethodInfo _SplatAppend;
         public static MethodInfo/*!*/ SplatPair { get { return _SplatPair ?? (_SplatPair = GetMethod(typeof(RubyOps), "SplatPair")); } }
         private static MethodInfo _SplatPair;
+        public static MethodInfo/*!*/ StringToMutableString { get { return _StringToMutableString ?? (_StringToMutableString = GetMethod(typeof(RubyOps), "StringToMutableString")); } }
+        private static MethodInfo _StringToMutableString;
         public static MethodInfo/*!*/ ToArrayValidator { get { return _ToArrayValidator ?? (_ToArrayValidator = GetMethod(typeof(RubyOps), "ToArrayValidator")); } }
         private static MethodInfo _ToArrayValidator;
         public static MethodInfo/*!*/ ToFixnumValidator { get { return _ToFixnumValidator ?? (_ToFixnumValidator = GetMethod(typeof(RubyOps), "ToFixnumValidator")); } }
@@ -362,8 +362,6 @@ namespace IronRuby.Compiler {
         private static MethodInfo _ToHashValidator;
         public static MethodInfo/*!*/ ToIntegerValidator { get { return _ToIntegerValidator ?? (_ToIntegerValidator = GetMethod(typeof(RubyOps), "ToIntegerValidator")); } }
         private static MethodInfo _ToIntegerValidator;
-        public static MethodInfo/*!*/ ToMutableString { get { return _ToMutableString ?? (_ToMutableString = GetMethod(typeof(RubyOps), "ToMutableString")); } }
-        private static MethodInfo _ToMutableString;
         public static MethodInfo/*!*/ ToProcValidator { get { return _ToProcValidator ?? (_ToProcValidator = GetMethod(typeof(RubyOps), "ToProcValidator")); } }
         private static MethodInfo _ToProcValidator;
         public static MethodInfo/*!*/ ToRegexValidator { get { return _ToRegexValidator ?? (_ToRegexValidator = GetMethod(typeof(RubyOps), "ToRegexValidator")); } }
@@ -382,8 +380,6 @@ namespace IronRuby.Compiler {
         private static MethodInfo _TraceMethodCall;
         public static MethodInfo/*!*/ TraceMethodReturn { get { return _TraceMethodReturn ?? (_TraceMethodReturn = GetMethod(typeof(RubyOps), "TraceMethodReturn")); } }
         private static MethodInfo _TraceMethodReturn;
-        public static MethodInfo/*!*/ ExistsUnsplat { get { return _ExistsUnsplat ?? (_ExistsUnsplat = GetMethod(typeof(RubyOps), "ExistsUnsplat")); } }
-        private static MethodInfo _ExistsUnsplat;
         public static MethodInfo/*!*/ TryGetClassVariable { get { return _TryGetClassVariable ?? (_TryGetClassVariable = GetMethod(typeof(RubyOps), "TryGetClassVariable")); } }
         private static MethodInfo _TryGetClassVariable;
         public static MethodInfo/*!*/ TryGetObjectClassVariable { get { return _TryGetObjectClassVariable ?? (_TryGetObjectClassVariable = GetMethod(typeof(RubyOps), "TryGetObjectClassVariable")); } }

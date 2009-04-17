@@ -34,7 +34,27 @@ namespace IronRuby.Runtime {
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2105:ArrayFieldsShouldNotBeReadOnly")]
         public static readonly Delegate[] EmptyDelegates = new Delegate[0];
-        
+
+#if !SILVERLIGHT
+        internal static Type ComObjectType = typeof(object).Assembly.GetType("System.__ComObject");
+#endif
+
+        public static bool IsComObjectType(Type/*!*/ type) {
+#if SILVERLIGHT
+            return false;
+#else
+            return ComObjectType.IsAssignableFrom(type);
+#endif
+        }
+
+        public static bool IsComObject(object obj) {
+#if SILVERLIGHT
+            return false;
+#else
+            return obj != null && IsComObjectType(obj.GetType());
+#endif
+        }
+
         public static int IndexOf(this string[]/*!*/ array, string/*!*/ value, StringComparer/*!*/ comparer) {
             ContractUtils.RequiresNotNull(array, "array");
             ContractUtils.RequiresNotNull(value, "value");

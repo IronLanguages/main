@@ -126,7 +126,9 @@ namespace IronPython.Runtime.Exceptions {
             /// during creation or an empty string.
             /// </summary>
             public object message {
+                [Python3Warning("BaseException.message has been deprecated as of Python 2.6")]
                 get { return _message; }
+                [Python3Warning("BaseException.message has been deprecated as of Python 2.6")]
                 set { _message = value; }
             }
 
@@ -156,15 +158,19 @@ namespace IronPython.Runtime.Exceptions {
 
             /// <summary>
             /// Gets the nth member of the args property
-            /// </summary>
+            /// </summary>            
             public object this[int index] {
+                [Python3Warning("__getitem__ not supported for exception classes in 3.x; use args attribute")]
                 get {
                     return ((PythonTuple)args)[index];
                 }
             }
 
+            [Python3Warning("__getslice__ not supported for exception classes in 3.x; use args attribute")]
             public PythonTuple/*!*/ __getslice__(int start, int stop) {
-                return PythonTuple.MakeTuple(ArrayOps.GetSlice(((PythonTuple)args)._data, start, stop));
+                PythonTuple argTuple = (PythonTuple)args;
+                Slice.FixSliceArguments(argTuple._data.Length, ref start, ref stop);
+                return PythonTuple.MakeTuple(ArrayOps.GetSlice(argTuple._data, start, stop));
             }
 
             /// <summary>

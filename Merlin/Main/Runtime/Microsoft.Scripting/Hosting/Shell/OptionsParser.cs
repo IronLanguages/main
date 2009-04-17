@@ -211,7 +211,7 @@ namespace Microsoft.Scripting.Hosting.Shell {
                     SetDlrOption(arg.Substring(3));
                     break;
 #endif
-
+                // TODO: remove
                 case "-X:Interpret":
                     LanguageSetup.Options["InterpretedMode"] = ScriptingRuntimeHelpers.True;
                     break;
@@ -275,7 +275,6 @@ namespace Microsoft.Scripting.Hosting.Shell {
 
                 { "-X:AutoIndent",               "" },
                 { "-X:ExceptionDetail",          "Enable ExceptionDetail mode" },
-                { "-X:Interpret",                "Enable interpreted mode" },
                 { "-X:AdaptiveCompilation",      "Enable adaptive compilation" },
                 { "-X:MaxRecursion",             "Set the maximum recursion level" },
                 { "-X:PassExceptions",           "Do not catch exceptions that are unhandled by script code" },

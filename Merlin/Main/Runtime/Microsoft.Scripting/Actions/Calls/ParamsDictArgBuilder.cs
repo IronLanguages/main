@@ -43,6 +43,10 @@ namespace Microsoft.Scripting.Actions.Calls {
             _nameIndexes = nameIndexes;
         }
 
+        public override int ConsumedArgumentCount {
+            get { return AllArguments; }
+        }
+
         public override int Priority {
             get { return 3; }
         }

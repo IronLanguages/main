@@ -22,6 +22,8 @@ using Microsoft.Scripting;
 using Microsoft.Scripting.Math;
 using Microsoft.Scripting.Runtime;
 using IronPython.Runtime.Binding;
+using Microsoft.Scripting.Generation;
+using IronPython.Runtime.Types;
 
 [assembly: PythonModule("operator", typeof(IronPython.Modules.PythonOperator))]
 namespace IronPython.Modules {
@@ -62,29 +64,61 @@ namespace IronPython.Modules {
         }
 
         public class itemgetter {
-            private readonly object _item;
-            public itemgetter(object item) {
-                this._item = item;
-            }
+            private readonly object[] _items;
 
-            public override string ToString() {
-                return String.Format("<operator.itemgetter: {0}>", _item == null ? "None" : _item);
+            public itemgetter([NotNull]params object[] items) {
+                if (items.Length == 0) {
+                    throw PythonOps.TypeError("itemgetter needs at least one argument");
+                }
+                _items = items;
             }
 
             [SpecialName]
             public object Call(CodeContext/*!*/ context, object param) {
-                try {
-                    return PythonOps.GetIndex(context, param, _item);
-                } catch (IndexOutOfRangeException) {
-                    throw;
-                } catch (KeyNotFoundException) {
-                    throw;
-                } catch {
-                    throw PythonOps.TypeError("invalid parameter for itemgetter");
+                if (_items.Length == 1) {
+                    return PythonOps.GetIndex(context, param, _items[0]);
                 }
+
+                object[] res = new object[_items.Length];
+                for (int i = 0; i < _items.Length; i++) {
+                    res[i] = PythonOps.GetIndex(context, param, _items[i]);
+                }
+
+                return PythonTuple.MakeTuple(res);
             }
         }
 
+        public class methodcaller {
+            private readonly SymbolId _name;
+            private readonly object[] _args;
+            private readonly IAttributesCollection _dict;
+
+            public methodcaller(string name, params object[] args) {
+                _name = SymbolTable.StringToId(name);
+                _args = args;
+            }
+
+            public methodcaller(string name, [ParamDictionary]IAttributesCollection kwargs, params object[] args) {
+                _name = SymbolTable.StringToId(name);
+                _args = args;
+                _dict = kwargs;
+            }
+
+            public override string ToString() {
+                return String.Format("<operator.methodcaller: {0}>", _name);
+            }
+
+            [SpecialName]
+            public object Call(CodeContext/*!*/ context, object param) {
+                object method = PythonOps.GetBoundAttr(context, param, _name);
+                if (_dict == null) {
+                    return PythonOps.CallWithContext(context, method, _args);
+                } else {
+                    return PythonCalls.CallWithKeywordArgs(context, method, _args, _dict);
+                }
+            }
+        }
+        
         public static object lt(CodeContext/*!*/ context, object a, object b) {
             return PythonContext.GetContext(context).Operation(PythonOperationKind.LessThan, a, b);
         }
@@ -436,11 +470,13 @@ namespace IronPython.Modules {
 
         public static bool isSequenceType(object o) {
             return
+                   CompilerHelpers.GetType(o) != typeof(PythonType) &&
+                   !(o is PythonDictionary) && (
                    o is System.Collections.ICollection ||
                    o is System.Collections.IEnumerable ||
                    o is System.Collections.IEnumerator ||
                    o is System.Collections.IList ||
-                   PythonOps.HasAttr(DefaultContext.Default, o, Symbols.GetItem);
+                   PythonOps.HasAttr(DefaultContext.Default, o, Symbols.GetItem));
         }
 
         private static int SliceToInt(object o) {

@@ -9,6 +9,7 @@ Merlin/External/Languages/Ruby/ruby-1.8.6
 Merlin/Main/bin
 Merlin/Main/Bin
 Merlin/Main/External
+Merlin/External.LCA_RESTRICTED/Languages/Ruby/redist-libs/ironruby
 *.csproj.vspscc
 *.csproj.user
 *.vssscc
@@ -20,3 +21,4 @@ sources
 *.sln.cache
 *.vshost.exe
 *.vshost.exe.manifest
+.eprj

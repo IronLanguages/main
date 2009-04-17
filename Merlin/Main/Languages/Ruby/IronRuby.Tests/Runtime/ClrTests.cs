@@ -37,7 +37,7 @@ namespace InteropTests.Generics1 {
 }
 
 namespace IronRuby.Tests {
-    public partial class Tests {
+    public partial class Tests {        
 #pragma warning disable 169 // private field not used
         public class ClassWithFields {
             public int Field = 1;
@@ -798,13 +798,13 @@ puts $type.to_class.static_method
 puts $type.static_method rescue puts $!.class
 ");
             }, String.Format(@"
-#<{0}:0x*>
-#<{0}:0x*>
+{0}
+{0}
 {1}
 {1}
 2
 NoMethodError
-", RubyUtils.GetQualifiedName(type.GetType()), RubyUtils.GetQualifiedName(typeof(ClassWithMethods1))), OutputFlags.Match);
+", type, RubyUtils.GetQualifiedName(typeof(ClassWithMethods1))), OutputFlags.Match);
         }
         
         public void ClrGenerics1() {
@@ -902,29 +902,65 @@ puts a.count");
                 Foo = 1, Bar = 2, Baz = 3
             }
 
-            public MyEnum MyProperty { get { return MyEnum.Baz; } set { _p = value; } }
-            private MyEnum _p;
+            public MyEnum MyProperty { get; set; }
         }
 
-        /// <summary>
-        /// Enums.
-        /// </summary>
         public void ClrEnums1() {
-            // TODO:            
             Context.DefineGlobalVariable("obj", new ClassWithEnum());
             Context.DefineGlobalVariable("enum", typeof(ClassWithEnum.MyEnum));
 
-            XAssertOutput(delegate() {
+            AssertOutput(delegate() {
                 CompilerTest(@"
 E = $enum.to_class
 
 $obj.my_property = E.foo
 puts $obj.my_property
 
-$obj.my_property = 1
+$obj.my_property = E.bar
 puts $obj.my_property
 ");
-            }, "TODO");
+            }, @"
+Foo
+Bar        
+");
+        }
+
+        [Flags]
+        public enum FlagsInt { A = 1, B = 2 }
+
+        [Flags]
+        public enum FlagsULong : ulong { C = Int64.MaxValue, D = 2 }
+
+        [Flags]
+        public enum FlagsByte : byte { N = 0, E = 4, F = 8 }
+        
+        public void ClrEnums2() {
+            Context.ObjectClass.SetConstant("A", FlagsInt.A);
+            Context.ObjectClass.SetConstant("B", FlagsInt.B);
+            Context.ObjectClass.SetConstant("C", FlagsULong.C);
+            Context.ObjectClass.SetConstant("D", FlagsULong.D);
+            Context.ObjectClass.SetConstant("E", FlagsByte.E);
+            Context.ObjectClass.SetConstant("F", FlagsByte.F);
+
+            AssertOutput(delegate() {
+                CompilerTest(@"
+p(x = A | B, x.class)
+p(x = A | E, x.class) rescue puts $!
+p(x = C ^ D, x.class) 
+p(x = E & F, x.class) 
+p(x = ~C, x.class)
+");
+            }, @"
+A, B
+*::FlagsInt
+wrong argument type *::FlagsByte (expected *::FlagsInt)
+9223372036854775805
+*::FlagsULong
+N
+*::FlagsByte
+9223372036854775808
+*::FlagsULong
+", OutputFlags.Match);
         }
 
         public delegate int Delegate1(string foo, int bar);
@@ -1264,6 +1300,63 @@ p System::Char.new('9').to_i
 'foo'
 true
 9
+");
+        }
+
+        public void ClrOperators1() {
+            AssertOutput(delegate() {
+                CompilerTest(@"
+a = System::Decimal.new(16)
+b = System::Decimal.new(4)
+p a + b
+p a - b
+p a / b 
+p a * b
+p a % b
+p a == b
+p a != b
+p a > b
+p a >= b
+p a < b
+p a <= b
+p(-a)
+p(+a)
+");
+            }, @"
+20
+12
+4
+64
+0
+false
+true
+true
+true
+false
+false
+-16
+16
+");
+        }
+
+        public void ClrOperators2() {
+            AssertOutput(delegate() {
+                CompilerTest(@"
+p :b == true                # Symbol hides SymbolId::op_Equality
+p String == Fixnum          # Only instance operator calls are allowed (MutableString::op_Equality shound be ignored)
+
+class C < Numeric
+  def to_f
+    1.2
+  end
+end
+
+p C.new.ceil                 # Numeric#ceil uses self with DefaultProtocol attribute
+");
+            }, @"
+false
+false
+2
 ");
         }
     }

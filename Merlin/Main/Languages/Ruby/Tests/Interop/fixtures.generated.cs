@@ -1,3 +1,4 @@
+using System;
 using Microsoft.Scripting.Hosting;
   using IronRuby.Runtime;
   using IronRuby.Builtins;
@@ -7,6 +8,17 @@ public partial class Klass {
         return arg0;
       }
     }
+#line 10 "./bcl/icomparable/comparable_spec.rb"
+#line 13 "./bcl/icomparable/comparable_spec.rb"
+public class IComparableConsumer {
+    public static int Consume(IComparable icomp) {
+      return icomp.CompareTo(1);
+    }
+  }
+  
+  public class IComparableProvider {
+  
+  }
 #line 4 "./bcl/numerics/decimal_spec.rb"
 public partial class Klass {
     public decimal MyDecimal {get; set;}
@@ -46,6 +58,16 @@ public class EmptyClass {}
     public class GenericClass<T>{public int m() {return 1;}}
     public class EmptyGeneric2Class<T,U>{}
     public class Generic2Class<T,U>{public int m() {return 1;}}
+#line 5 "./class/modification/addition_spec.rb"
+public partial class Klass {
+      public int BarI() {
+        return 1;
+      }
+      
+      public static int BarC() {
+        return 2;
+      }
+    }
 #line 10 "./delegate/conversion_spec.rb"
 #line 15 "./delegate/conversion_spec.rb"
 public partial class DelegateConversionClass {
@@ -113,9 +135,50 @@ public class ClassWithEvents {
     protected static readonly string protectedStaticReadOnlyField = "protected static readonly";
   }
   #pragma warning restore 414
+#line 4 "./interface/implementation_spec.rb"
+public interface IDoFoo {
+      int Foo(string str);
+      int Foo(int i);
+      int Foo(string str, int i);
+    }
+    
+    public interface IDoStuff {
+      int StuffFoo(int foo);
+      string StuffBar(int bar);
+    }
+    
+    public class ConsumeIDoFoo {
+      public static int ConsumeFoo1(IDoFoo foo) {
+        return foo.Foo("hello");
+      }
+      
+      public static int ConsumeFoo2(IDoFoo foo) {
+        return foo.Foo(1);
+      }
+      
+      public static int ConsumeFoo3(IDoFoo foo) {
+        return foo.Foo("hello", 1);
+      }
+    }
+    
+    public class ConsumeIDoStuff {
+      public static int ConsumeStuffFoo(IDoStuff stuff) {
+        return stuff.StuffFoo(1);
+      }
+      
+      public static string ConsumeStuffBar(IDoStuff stuff) {
+        return stuff.StuffBar(2);
+      }
+    }
 #line 4 "./interface/mapping_spec.rb"
 public interface IEmptyInterface {}
     public interface IInterface { void m();}
+#line 4 "./interface/reflection_spec.rb"
+public class ImplementsIInterface : IInterface {
+      public void m() {
+        return;
+      }
+    }
 #line 4 "./interfacegroup/mapping_spec.rb"
 public interface IEmptyInterfaceGroup { }
     public interface IEmptyInterfaceGroup<T> { }
@@ -565,6 +628,12 @@ public partial class Klass{
         return 1;
       }
     }
+#line 4 "./namespaces/mapping_spec.rb"
+namespace NotEmptyNamespace {
+    public class Foo {
+      public static int Bar() { return 1; }
+    }
+  }
 #line 4 "./struct/mapping_spec.rb"
 public struct EmptyStruct {}
     public struct Struct { public int m1() {return 1;}}

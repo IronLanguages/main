@@ -57,6 +57,8 @@ namespace IronPython.Runtime.Operations {
         [ThreadStatic]
         internal static Exception RawException;
 
+        public static readonly PythonTuple EmptyTuple = PythonTuple.EMPTY;
+
         #endregion
 
         public static BigInteger MakeIntegerFromHex(string s) {
@@ -556,7 +558,7 @@ namespace IronPython.Runtime.Operations {
             return res <= 0 ? ScriptingRuntimeHelpers.True : ScriptingRuntimeHelpers.False;
         }
 
-        public static bool CompareTypesEqual(object x, object y) {
+        public static bool CompareTypesEqual(CodeContext/*!*/ context, object x, object y) {
             if (x == null && y == null) return true;
             if (x == null) return false;
             if (y == null) return false;
@@ -566,30 +568,30 @@ namespace IronPython.Runtime.Operations {
                 return x == y;
             }
 
-            return PythonOps.CompareTypes(x, y) == 0;
+            return PythonOps.CompareTypesWorker(context, false, x, y) == 0;
         }
 
-        public static bool CompareTypesNotEqual(object x, object y) {
-            return PythonOps.CompareTypes(x, y) != 0;
+        public static bool CompareTypesNotEqual(CodeContext/*!*/ context, object x, object y) {
+            return PythonOps.CompareTypesWorker(context, false, x, y) != 0;
         }
 
-        public static bool CompareTypesGreaterThan(object x, object y) {
-            return PythonOps.CompareTypes(x, y) > 0;
+        public static bool CompareTypesGreaterThan(CodeContext/*!*/ context, object x, object y) {
+            return PythonOps.CompareTypes(context, x, y) > 0;
         }
 
-        public static bool CompareTypesLessThan(object x, object y) {
-            return PythonOps.CompareTypes(x, y) < 0;
+        public static bool CompareTypesLessThan(CodeContext/*!*/ context, object x, object y) {
+            return PythonOps.CompareTypes(context, x, y) < 0;
         }
 
-        public static bool CompareTypesGreaterThanOrEqual(object x, object y) {
-            return PythonOps.CompareTypes(x, y) >= 0;
+        public static bool CompareTypesGreaterThanOrEqual(CodeContext/*!*/ context, object x, object y) {
+            return PythonOps.CompareTypes(context, x, y) >= 0;
         }
 
-        public static bool CompareTypesLessThanOrEqual(object x, object y) {
-            return PythonOps.CompareTypes(x, y) <= 0;
+        public static bool CompareTypesLessThanOrEqual(CodeContext/*!*/ context, object x, object y) {
+            return PythonOps.CompareTypes(context, x, y) <= 0;
         }
 
-        public static int CompareTypes(object x, object y) {
+        public static int CompareTypesWorker(CodeContext/*!*/ context, bool shouldWarn, object x, object y) {
             if (x == null && y == null) return 0;
             if (x == null) return -1;
             if (y == null) return 1;
@@ -598,6 +600,10 @@ namespace IronPython.Runtime.Operations {
             int diff;
 
             if (DynamicHelpers.GetPythonType(x) != DynamicHelpers.GetPythonType(y)) {
+                if (shouldWarn && PythonContext.GetContext(context).PythonOptions.WarnPy3k) {
+                    PythonOps.Warn(context, PythonExceptions.DeprecationWarning, "comparing unequal types not supported in 3.x");
+                }
+
                 if (x.GetType() == typeof(OldInstance)) {
                     name1 = ((OldInstance)x)._class.__name__;
                     if (y.GetType() == typeof(OldInstance)) {
@@ -625,6 +631,10 @@ namespace IronPython.Runtime.Operations {
             if (diff < 0) return -1;
             if (diff == 0) return 0;
             return 1;
+        }
+
+        public static int CompareTypes(CodeContext/*!*/ context, object x, object y) {
+            return CompareTypesWorker(context, true, x, y);
         }
 
         public static object GreaterThanHelper(CodeContext/*!*/ context, object self, object other) {
@@ -3812,6 +3822,10 @@ namespace IronPython.Runtime.Operations {
         // If hash is called on an instance of an unhashable type
         public static Exception TypeErrorForUnhashableType(string typeName) {
             return TypeError(typeName + " objects are unhashable");
+        }
+
+        public static Exception TypeErrorForUnhashableObject(object obj) {
+            return TypeErrorForUnhashableType(DynamicHelpers.GetPythonType(obj).Name);
         }
 
         internal static Exception TypeErrorForIncompatibleObjectLayout(string prefix, PythonType type, Type newType) {

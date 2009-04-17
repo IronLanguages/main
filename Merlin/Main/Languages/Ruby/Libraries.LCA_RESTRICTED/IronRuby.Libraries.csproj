@@ -131,6 +131,7 @@
     <None Include="Extensions\ClrInteger.Generator.rb" />
     <Compile Include="Extensions\ClrInteger.Generated.cs" />
     <Compile Include="Extensions\ClrStringOps.cs" />
+    <Compile Include="Extensions\FlagEnumOps.cs" />
     <Compile Include="Extensions\IComparableOps.cs" />
     <Compile Include="Extensions\IDictionaryOps.cs" />
     <Compile Include="Extensions\IEnumerableOps.cs" />
@@ -147,7 +148,6 @@
     <Compile Include="OpenSSL\OpenSSL.cs" />
     <Compile Include="ParseTree\IronRubyParseTreeOps.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Protocols.cs" />
     <Compile Include="Socket\BasicSocket.cs" />
     <Compile Include="Socket\IPSocket.cs" />
     <Compile Include="Socket\Socket.cs" />

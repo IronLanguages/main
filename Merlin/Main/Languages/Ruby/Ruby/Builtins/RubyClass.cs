@@ -595,10 +595,16 @@ namespace IronRuby.Builtins {
             }
 
             // We look only for members directly declared on the type and handle method overloads inheritance manually.  
-            BindingFlags bindingFlags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly;
-            bindingFlags |= (_isSingletonClass) ? BindingFlags.Static : BindingFlags.Instance;
+            BindingFlags basicBindingFlags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly;
+            BindingFlags bindingFlags = basicBindingFlags | ((_isSingletonClass) ? BindingFlags.Static : BindingFlags.Instance);
 
-            if (name == "[]" || name == "[]=") {
+            string operatorName;
+            if (!_isSingletonClass && (operatorName = MapOperator(name)) != null) {
+                // instance invocation of an operator:
+                if (TryGetClrMethod(type, basicBindingFlags | BindingFlags.Static, true, name, operatorName, out method)) {
+                    return true;
+                }
+            } else if (name == "[]" || name == "[]=") {
                 object[] attrs = type.GetCustomAttributes(typeof(DefaultMemberAttribute), false);
                 if (attrs.Length == 1) {
                     // default indexer accessor:
@@ -620,9 +626,9 @@ namespace IronRuby.Builtins {
                 if (unmangled != null && TryGetClrField(type, bindingFlags, unmangled, true, out method)) return true;
             } else {
                 // method:
-                if (TryGetClrMethod(type, bindingFlags, name, name, out method)) return true;
+                if (TryGetClrMethod(type, bindingFlags, false, name, name, out method)) return true;
                 unmangled = RubyUtils.TryUnmangleName(name);
-                if (unmangled != null && TryGetClrMethod(type, bindingFlags, name, unmangled, out method)) return true;
+                if (unmangled != null && TryGetClrMethod(type, bindingFlags, false, name, unmangled, out method)) return true;
 
                 // getter:
                 if (TryGetClrProperty(type, bindingFlags, name, name, false, out method)) return true;
@@ -641,6 +647,73 @@ namespace IronRuby.Builtins {
 
             method = null;
             return false;
+        }
+
+        private static string MapOperator(string/*!*/ name) {
+            switch (name) {
+                case "+": return "op_Addition";
+                case "-": return "op_Subtraction";
+                case "/": return "op_Division";
+                case "*": return "op_Multiply";
+                case "%": return "op_Modulus";
+                case "==": return "op_Equality";
+                case "!=": return "op_Inequality";
+                case ">": return "op_GreaterThan";
+                case ">=": return "op_GreaterThanOrEqual";
+                case "<": return "op_LessThan";
+                case "<=": return "op_LessThanOrEqual";
+                case "-@": return "op_UnaryNegation";
+                case "+@": return "op_UnaryPlus";
+
+                // TODO:
+                case "**": return "Power"; 
+                case "<<": return "LeftShift";  
+                case ">>": return "RightShift"; 
+                case "&": return "BitwiseAnd";  
+                case "|": return "BitwiseOr";   
+                case "^": return "ExclusiveOr"; 
+                case "<=>": return "Compare";
+                case "~": return "OnesComplement";
+
+                default:
+                    return null;
+            }
+        }
+
+        internal static bool IsOperator(MethodBase/*!*/ method) {
+            if (!method.IsStatic || !method.IsSpecialName) {
+                return false;
+            }
+
+            switch (method.Name) {
+                case "op_Addition": 
+                case "op_Subtraction":
+                case "op_Division": 
+                case "op_Multiply": 
+                case "op_Modulus":
+                case "op_Equality": 
+                case "op_Inequality": 
+                case "op_GreaterThan":
+                case "op_GreaterThanOrEqual":
+                case "op_LessThan":
+                case "op_LessThanOrEqual":
+                case "op_UnaryNegation":
+                case "op_UnaryPlus": 
+
+                // TODO:
+                case "Power":
+                case "LeftShift": 
+                case "RightShift":
+                case "BitwiseAnd":
+                case "BitwiseOr": 
+                case "ExclusiveOr":
+                case "Compare": 
+                case "OnesComplement":
+                    return true;
+
+                default:
+                    return false;
+            }
         }
 
         private sealed class ClrOverloadInfo {
@@ -662,10 +735,12 @@ namespace IronRuby.Builtins {
         ///        2) C.HidesInheritedOverloads == false
         ///           All overloads of the method we look for are in [type..C) and in the RubyMemberInfo.
         /// </summary>
-        private bool TryGetClrMethod(Type/*!*/ type, BindingFlags bindingFlags, string/*!*/ name, string/*!*/ clrName, out RubyMemberInfo method) {
+        private bool TryGetClrMethod(Type/*!*/ type, BindingFlags bindingFlags, bool specialNameOnly, string/*!*/ name, string/*!*/ clrName, 
+            out RubyMemberInfo method) {
+
             // declared only:
             MemberInfo[] initialMembers = GetDeclaredClrMethods(type, bindingFlags, clrName);
-            int initialVisibleMemberCount = GetVisibleMethodCount(initialMembers);
+            int initialVisibleMemberCount = GetVisibleMethodCount(initialMembers, specialNameOnly);
             if (initialVisibleMemberCount == 0) {
                 // case [1]
                 method = null;
@@ -700,14 +775,14 @@ namespace IronRuby.Builtins {
                 // case [2.2.2]: add CLR methods from the Ruby member:
                 var inheritedGroup = inheritedRubyMember as RubyMethodGroupInfo;
                 if (inheritedGroup != null) {
-                    AddMethodsOverwriteExisting(ref allMethods, inheritedGroup.MethodBases, inheritedGroup.OverloadOwners);
+                    AddMethodsOverwriteExisting(ref allMethods, inheritedGroup.MethodBases, inheritedGroup.OverloadOwners, specialNameOnly);
                 }
             }
 
             // populate classes in (type..Kernel] or (type..C) with method groups:
             for (int i = ancestors.Count - 1; i >= 0; i--) {
                 var declared = GetDeclaredClrMethods(ancestors[i].Tracker.Type, bindingFlags, clrName);
-                if (declared.Length != 0 && AddMethodsOverwriteExisting(ref allMethods, declared, null)) {
+                if (declared.Length != 0 && AddMethodsOverwriteExisting(ref allMethods, declared, null, specialNameOnly)) {
                     // There is no cached method that needs to be invalidated.
                     //
                     // Proof:
@@ -723,12 +798,12 @@ namespace IronRuby.Builtins {
 
             if (allMethods != null) {
                 // add members declared in self:
-                AddMethodsOverwriteExisting(ref allMethods, initialMembers, null);
+                AddMethodsOverwriteExisting(ref allMethods, initialMembers, null, specialNameOnly);
 
                 // return the group, it will be stored in the method table by the caller:
                 method = MakeGroup(allMethods);
             } else {
-                method = MakeGroup(initialMembers, initialVisibleMemberCount);
+                method = MakeGroup(initialMembers, initialVisibleMemberCount, specialNameOnly);
             }
 
             return true;
@@ -744,12 +819,12 @@ namespace IronRuby.Builtins {
 
         // Returns the number of methods newly added to the dictionary.
         private static bool AddMethodsOverwriteExisting(ref Dictionary<ValueArray<Type>, ClrOverloadInfo> methods,
-            MemberInfo/*!*/[]/*!*/ newOverloads, RubyMethodGroupInfo/*!*/[] overloadOwners) {
+            MemberInfo/*!*/[]/*!*/ newOverloads, RubyMethodGroupInfo/*!*/[] overloadOwners, bool specialNameOnly) {
 
             bool anyChange = false;
             for (int i = 0; i < newOverloads.Length; i++) {
                 var method = (MethodBase)newOverloads[i];
-                if (!method.IsPrivate) {
+                if (IsVisible(method, specialNameOnly)) {
                     var paramTypes = new ValueArray<Type>(ReflectionUtils.GetParameterTypes(method.GetParameters()));
                     if (methods == null) {
                         methods = new Dictionary<ValueArray<Type>, ClrOverloadInfo>();
@@ -766,10 +841,14 @@ namespace IronRuby.Builtins {
             return anyChange;
         }
 
-        private static int GetVisibleMethodCount(MemberInfo[]/*!*/ members) {
+        private static bool IsVisible(MethodBase/*!*/ method, bool specialNameOnly) {
+            return !method.IsPrivate && (method.IsSpecialName || !specialNameOnly);
+        }
+
+        private static int GetVisibleMethodCount(MemberInfo[]/*!*/ members, bool specialNameOnly) {
             int count = 0;
-            foreach (var member in members) {
-                if (!((MethodBase)member).IsPrivate) {
+            foreach (MethodBase method in members) {
+                if (IsVisible(method, specialNameOnly)) {
                     count++;
                 }
             }
@@ -800,11 +879,11 @@ namespace IronRuby.Builtins {
             return result;
         }
 
-        private RubyMethodGroupInfo/*!*/ MakeGroup(MemberInfo[]/*!*/ members, int visibleMemberCount) {
+        private RubyMethodGroupInfo/*!*/ MakeGroup(MemberInfo[]/*!*/ members, int visibleMemberCount, bool specialNameOnly) {
             var allMethods = new MethodBase[visibleMemberCount];
             for (int i = 0, j = 0; i < members.Length; i++) {
                 var method = (MethodBase)members[i];
-                if (!method.IsPrivate) {
+                if (IsVisible(method, specialNameOnly)) {
                     allMethods[j++] = method;
                 }
             }
@@ -831,7 +910,7 @@ namespace IronRuby.Builtins {
         //}
 
         private bool TryGetClrProperty(Type/*!*/ type, BindingFlags bindingFlags, string/*!*/ name, string/*!*/ clrName, bool isWrite, out RubyMemberInfo method) {
-            return TryGetClrMethod(type, bindingFlags, name, (isWrite ? "set_" : "get_") + clrName, out method);
+            return TryGetClrMethod(type, bindingFlags, true, name, (isWrite ? "set_" : "get_") + clrName, out method);
         }
 
         private bool TryGetClrField(Type/*!*/ type, BindingFlags bindingFlags, string/*!*/ name, bool isWrite, out RubyMemberInfo method) {

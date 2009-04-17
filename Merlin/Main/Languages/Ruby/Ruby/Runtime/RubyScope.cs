@@ -27,6 +27,7 @@ using System.Reflection;
 using IronRuby.Compiler.Generation;
 using System.Runtime.CompilerServices;
 using System.Collections.ObjectModel;
+using System.IO;
 
 namespace IronRuby.Runtime {
 
@@ -54,16 +55,16 @@ namespace IronRuby.Runtime {
 
         internal static readonly LocalsDictionary _EmptyLocals = new LocalsDictionary(new EmptyRuntimeVariables(), new SymbolId[0]);
 
-        private readonly IAttributesCollection/*!*/ _frame;
+        private IAttributesCollection/*!*/ _frame;
         private readonly RubyTopLevelScope/*!*/ _top;
         private readonly RubyScope _parent;
 
-        private object _selfObject;
+        private readonly object _selfObject;
 
         // cached ImmediateClassOf(_selfObject):
         private RubyClass _selfImmediateClass;
 
-        private RuntimeFlowControl/*!*/ _runtimeFlowControl; // TODO: merge?
+        private readonly RuntimeFlowControl/*!*/ _runtimeFlowControl; // TODO: merge?
 
         // set by private/public/protected/module_function
         private RubyMethodAttributes _methodAttributes;
@@ -77,7 +78,6 @@ namespace IronRuby.Runtime {
 
         public object SelfObject {
             get { return _selfObject; }
-            internal set { _selfObject = value; }
         }
 
         internal RubyClass/*!*/ SelfImmediateClass {
@@ -116,7 +116,14 @@ namespace IronRuby.Runtime {
         }
 
         public IAttributesCollection/*!*/ Frame {
-            get { return _frame; }
+            get {
+                // TODO: Debug.Assert(_frame != null);
+                return _frame; 
+            }
+            internal set {
+                Debug.Assert(_frame == null && value != null);
+                _frame = value;
+            }
         }
 
         public RubyScope Parent {
@@ -124,27 +131,22 @@ namespace IronRuby.Runtime {
         }
 
         // top scope:
-        protected RubyScope(IAttributesCollection/*!*/ frame) {
-            Assert.NotNull(frame);
-            _frame = frame;
+        protected RubyScope(RuntimeFlowControl/*!*/ runtimeFlowControl, object selfObject) {
             _top = (RubyTopLevelScope)this;
             _parent = null;
+            _selfObject = selfObject;
+            _runtimeFlowControl = runtimeFlowControl;
+            _methodAttributes = RubyMethodAttributes.PrivateInstance;
         }
 
         // other scopes:
-        protected RubyScope(RubyScope/*!*/ parent, IAttributesCollection/*!*/ frame) {
-            Assert.NotNull(parent, frame);
-            _frame = frame;
+        protected RubyScope(RubyScope/*!*/ parent, RuntimeFlowControl/*!*/ runtimeFlowControl, object selfObject) {
+            Assert.NotNull(parent);
             _parent = parent;
             _top = parent.Top;
-        }
-        
-        internal void Initialize(RuntimeFlowControl/*!*/ runtimeFlowControl, RubyMethodAttributes methodAttributes, object selfObject) {
-            Assert.NotNull(runtimeFlowControl);
-
             _selfObject = selfObject;
             _runtimeFlowControl = runtimeFlowControl;
-            _methodAttributes = methodAttributes;
+            _methodAttributes = RubyMethodAttributes.PrivateInstance;
         }
 
         public bool IsEmpty {
@@ -476,13 +478,13 @@ namespace IronRuby.Runtime {
         private object _lastInputLine; // TODO: per method scope and top level scope, not block scope
 
         // top scope:
-        protected RubyClosureScope(IAttributesCollection/*!*/ frame)
-            : base(frame) {
+        protected RubyClosureScope(RuntimeFlowControl/*!*/ runtimeFlowControl, object selfObject)
+            : base(runtimeFlowControl, selfObject) {
         }
 
         // other scopes:
-        protected RubyClosureScope(RubyScope/*!*/ parent, IAttributesCollection/*!*/ frame)
-            : base(parent, frame) {
+        protected RubyClosureScope(RubyScope/*!*/ parent, RuntimeFlowControl/*!*/ runtimeFlowControl, object selfObject)
+            : base(parent, runtimeFlowControl, selfObject) {
         }
 
         protected override bool IsClosureScope {
@@ -567,10 +569,12 @@ var closureScope = scope as RubyClosureScope;
             get { return _blockParameter; }
         }
 
-        internal RubyMethodScope(RubyScope/*!*/ parent, IAttributesCollection/*!*/ frame, RubyMethodInfo/*!*/ method, Proc blockParameter)
-            : base(parent, frame) {
+        internal RubyMethodScope(RubyScope/*!*/ parent, RubyMethodInfo/*!*/ method, Proc blockParameter, RuntimeFlowControl/*!*/ runtimeFlowControl, 
+            object selfObject)
+            : base(parent, runtimeFlowControl, selfObject) {
             _method = method;
             _blockParameter = blockParameter;
+            MethodAttributes = RubyMethodAttributes.PublicInstance;
         }
     }
 
@@ -586,10 +590,12 @@ var closureScope = scope as RubyClosureScope;
 
         internal void SetModule(RubyModule/*!*/ module) { _module = module; }
 
-        internal RubyModuleScope(RubyScope/*!*/ parent, IAttributesCollection/*!*/ frame, RubyModule module, bool isEval)
-            : base(parent, frame) {
+        internal RubyModuleScope(RubyScope/*!*/ parent, RubyModule module, bool isEval,
+            RuntimeFlowControl/*!*/ runtimeFlowControl, object selfObject)
+            : base(parent, runtimeFlowControl, selfObject) {
             _module = module;
             _isEval = isEval;
+            MethodAttributes = RubyMethodAttributes.PublicInstance;
         }
     }
 
@@ -605,8 +611,8 @@ var closureScope = scope as RubyClosureScope;
             internal set { _blockParam = value; }
         }
         
-        internal RubyBlockScope(RubyScope/*!*/ parent, IAttributesCollection/*!*/ frame)
-            : base(parent, frame) {
+        internal RubyBlockScope(RubyScope/*!*/ parent, RuntimeFlowControl/*!*/ runtimeFlowControl, object selfObject)
+            : base(parent, runtimeFlowControl, selfObject) {
         }
     }
 
@@ -645,17 +651,70 @@ var closureScope = scope as RubyClosureScope;
 
         // empty scope:
         internal RubyTopLevelScope(RubyContext/*!*/ context)
-            : base(_EmptyLocals) {
+            : base(new RuntimeFlowControl(), null) {
             _context = context;
+            Frame = _EmptyLocals;
         }
 
-        internal RubyTopLevelScope(RubyGlobalScope/*!*/ globalScope, RubyModule definitionsModule, IAttributesCollection/*!*/ frame) 
-            : base(frame) {
+        internal RubyTopLevelScope(RubyGlobalScope/*!*/ globalScope, RubyModule definitionsModule, RuntimeFlowControl/*!*/ runtimeFlowControl, object selfObject)
+            : base(runtimeFlowControl, selfObject) {
             Assert.NotNull(globalScope);
             _globalScope = globalScope;
             _context = globalScope.Context;
             _definitionsModule = definitionsModule;
         }
+
+        #region Factories
+
+        internal static RubyTopLevelScope/*!*/ CreateMainTopLevelScope(Scope/*!*/ globalScope, RubyContext/*!*/ context) {
+            RubyGlobalScope rubyGlobalScope = context.InitializeGlobalScope(globalScope, false);
+
+            RubyTopLevelScope scope = new RubyTopLevelScope(rubyGlobalScope, null, new RuntimeFlowControl(), rubyGlobalScope.MainObject);
+            scope.SetDebugName("top-main");
+            context.ObjectClass.SetConstant("TOPLEVEL_BINDING", new Binding(scope));
+
+            return scope;
+        }
+
+        internal static RubyTopLevelScope/*!*/ CreateTopLevelHostedScope(Scope/*!*/ globalScope, RubyContext/*!*/ context) {
+            RubyGlobalScope rubyGlobalScope = context.InitializeGlobalScope(globalScope, true);
+
+            // Reuse existing top-level scope if available:
+            RubyTopLevelScope scope = rubyGlobalScope.TopLocalScope;
+            if (scope == null) {
+                scope = new RubyTopLevelScope(rubyGlobalScope, null, new RuntimeFlowControl(), rubyGlobalScope.MainObject);
+                scope.SetDebugName("top-level-hosted");
+                rubyGlobalScope.TopLocalScope = scope;
+            } else {
+                // If we reuse a local scope from previous execution all local variables are accessed dynamically.
+                // Therefore we shouldn't have any new static local variables.
+            }
+
+            return scope;
+        }
+
+        internal static RubyTopLevelScope/*!*/ CreateTopLevelScope(Scope/*!*/ globalScope, RubyContext/*!*/ context) {
+            RubyGlobalScope rubyGlobalScope = context.InitializeGlobalScope(globalScope, false);
+
+            RubyTopLevelScope scope = new RubyTopLevelScope(rubyGlobalScope, null, new RuntimeFlowControl(), rubyGlobalScope.MainObject);
+            scope.SetDebugName("top-level");
+
+            return scope;
+        }
+
+        internal static RubyTopLevelScope/*!*/ CreateWrappedTopLevelScope(Scope/*!*/ globalScope, RubyContext/*!*/ context) {
+            RubyModule module = context.CreateModule(null, null, null, null, null, null, null);
+            object mainObject = new Object();
+            RubyClass mainSingleton = context.CreateMainSingleton(mainObject, new[] { module });
+
+            RubyGlobalScope rubyGlobalScope = context.InitializeGlobalScope(globalScope, false);
+            RubyTopLevelScope scope = new RubyTopLevelScope(rubyGlobalScope, module, new RuntimeFlowControl(), mainObject);
+            scope.SetDebugName("top-level-wrapped");
+
+            return scope;
+        }
+
+        #endregion
 
         // method_missing on main singleton in DLR Scope bound code.
         // Might be called via a site -> needs to be public in partial trust.

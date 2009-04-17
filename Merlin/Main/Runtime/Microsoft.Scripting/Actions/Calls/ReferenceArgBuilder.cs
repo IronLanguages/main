@@ -51,6 +51,7 @@ namespace Microsoft.Scripting.Actions.Calls {
                 _tmp = resolver.GetTemporary(_elementType, "outParam");
             }
 
+            Debug.Assert(!hasBeenUsed[Index]);
             hasBeenUsed[Index] = true;
             Type boxType = typeof(StrongBox<>).MakeGenericType(_elementType);
             return Expression.Condition(

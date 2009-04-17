@@ -10,7 +10,7 @@
  *
  * You must not remove this notice, or any other, from this software.
  *
- *attrb
+ *
  * ***************************************************************************/
 
 using System;
@@ -62,16 +62,28 @@ namespace IronRuby.Builtins {
 
         [RubyConstructor]
         public static RubyFile/*!*/ CreateFile(RubyClass/*!*/ self, MutableString/*!*/ path) {
+            if (path.IsEmpty) {
+                throw new Errno.InvalidError();
+            }
+
             return new RubyFile(self.Context, path.ConvertToString(), "r");
         }
 
         [RubyConstructor]
         public static RubyFile/*!*/ CreateFile(RubyClass/*!*/ self, MutableString/*!*/ path, MutableString mode) {
+            if (path.IsEmpty) {
+                throw new Errno.InvalidError();
+            }
+
             return new RubyFile(self.Context, path.ConvertToString(), (mode != null) ? mode.ConvertToString() : "r");
         }
 
         [RubyConstructor]
         public static RubyFile/*!*/ CreateFile(RubyClass/*!*/ self, MutableString/*!*/ path, int mode) {
+            if (path.IsEmpty) {
+                throw new Errno.InvalidError();
+            }
+
             return new RubyFile(self.Context, path.ConvertToString(), (RubyFileMode)mode);
         }
 
@@ -149,6 +161,9 @@ namespace IronRuby.Builtins {
         }
 
         #endregion
+
+        internal const int WriteModeMask = 0x80; // Oct 0200
+        internal const int ReadWriteMode = 0x1B6; // Oct 0666
 
         #region Public Singleton Methods
 
@@ -237,10 +252,10 @@ namespace IronRuby.Builtins {
             return RubyStatOps.IsCharDevice(RubyStatOps.Create(self.Context, path));
         }
 
-        private static void Chmod(string path, int permission) {
+        internal static void Chmod(string path, int permission) {
 #if !SILVERLIGHT
             FileAttributes oldAttributes = File.GetAttributes(path);
-            if ((permission & 0x80) == 0) {
+            if ((permission & WriteModeMask) == 0) {
                 File.SetAttributes(path, oldAttributes | FileAttributes.ReadOnly);
             } else {
                 File.SetAttributes(path, oldAttributes & ~FileAttributes.ReadOnly);
@@ -256,7 +271,6 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("chmod", RubyMethodAttributes.PublicSingleton)]
         public static int Chmod(RubyClass/*!*/ self, [DefaultProtocol]int permission, [DefaultProtocol, NotNull]MutableString/*!*/ path) {
-            // TODO: implement this correctly for windows
             Chmod(path.ConvertToString(), permission);
             return 1;
         }
@@ -268,7 +282,7 @@ namespace IronRuby.Builtins {
             return RubyStatOps.CreateTime(RubyStatOps.Create(self.Context, path));
         }
 
-        private static bool FileExists(RubyContext/*!*/ context, string/*!*/ path) {
+        internal static bool FileExists(RubyContext/*!*/ context, string/*!*/ path) {
             return context.DomainManager.Platform.FileExists(path);
         }
 
@@ -281,13 +295,19 @@ namespace IronRuby.Builtins {
         public static int Delete(RubyClass/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ path) {
             string strPath = path.ConvertToString();
             if (!FileExists(self.Context, strPath)) {
-                throw new Errno.NoEntryError(String.Format("No such file or directory - {0}", strPath));
+                throw Errno.CreateENOENT(String.Format("No such file or directory - {0}", strPath));
             }
 #if !SILVERLIGHT
             FileAttributes oldAttributes = File.GetAttributes(strPath);
             if ((oldAttributes & FileAttributes.ReadOnly) == FileAttributes.ReadOnly) {
                 // File.Delete throws UnauthorizedAccessException if the file is read-only
                 File.SetAttributes(strPath, oldAttributes & ~FileAttributes.ReadOnly);
+            }
+
+            try {
+                File.Delete(strPath);
+            } catch (IOException e) {
+                throw Errno.CreateEACCES(e.Message, e);
             }
 #endif
             File.Delete(strPath);
@@ -339,13 +359,12 @@ namespace IronRuby.Builtins {
         }
 
         private static bool IsValidPath(string path) {
-            int length = 0;
-            foreach (char c in path.ToCharArray()) {
-                if ((c == '/') || (c == '\\'))
-                    continue;
-                length++;
+            foreach (char c in path) {
+                if (c != '/' && c != '\\') {
+                    return true;
+                }
             }
-            return (length > 0);
+            return false;
 
         }
 
@@ -561,7 +580,18 @@ namespace IronRuby.Builtins {
                         return path;
                     }
                 } else {
-                    return Glob.CanonicalizePath(MutableString.Create(Path.GetFullPath(path.ConvertToString())));
+                    string pathStr = path.ConvertToString();
+                    MutableString result = Glob.CanonicalizePath(MutableString.Create(Path.GetFullPath(pathStr)));
+
+                    // Path.GetFullPath("c:/winDOWS/foo") returns "c:/winDOWS/foo", but Path.GetFullPath("c:/winDOWS/~") returns "c:/Windows/~".
+                    // So we special-case it as this is not the Ruby behavior. Also, the Ruby behavior is very complicated about when it
+                    // matches the case of the input argument, and when it matches the case of the file system. It can match the file system case
+                    // for part of the result and not the rest. So we restrict the special-case to a very limited scenarios that unblock real-world code.
+                    if (pathStr[pathStr.Length - 1] == '~' && String.Compare(pathStr, result.ConvertToString(), true) == 0) {
+                        result = path.Clone();
+                    }
+
+                    return result;
                 }
             } catch (Exception e) {
                 if (raisingRubyException) {
@@ -638,13 +668,30 @@ namespace IronRuby.Builtins {
         public static int Rename(RubyContext/*!*/ context, RubyClass/*!*/ self,
             [DefaultProtocol, NotNull]MutableString/*!*/ oldPath, [DefaultProtocol, NotNull]MutableString/*!*/ newPath) {
 
-            string strOldPath = oldPath.ConvertToString();
-            if (!FileExists(context, strOldPath) && !DirectoryExists(context, strOldPath)) {
-                throw new Errno.NoEntryError(String.Format("No such file or directory - {0}", oldPath));
+            if (oldPath.IsEmpty || newPath.IsEmpty) {
+                throw Errno.CreateENOENT();
             }
 
-            // TODO: Change to raise a SystemCallError instead of a native CLR error
-            File.Move(strOldPath, newPath.ToString());
+            string strOldPath = oldPath.ConvertToString();
+            if (!FileExists(context, strOldPath) && !DirectoryExists(context, strOldPath)) {
+                throw Errno.CreateENOENT(String.Format("No such file or directory - {0}", oldPath));
+            }
+#if !SILVERLIGHT
+            if (ExpandPath(context, oldPath) == ExpandPath(context, newPath)) {
+                return 0;
+            }
+#endif
+            string strNewPath = newPath.ConvertToString();
+            if (FileExists(context, strNewPath)) {
+                Delete(self, newPath);
+            }
+
+            try {
+                Directory.Move(strOldPath, strNewPath);
+            } catch (IOException e) {
+                throw Errno.CreateEACCES(e.Message, e);
+            }
+
             return 0;
         }
 
@@ -704,7 +751,7 @@ namespace IronRuby.Builtins {
         public static int UpdateTimes(RubyClass/*!*/ self, DateTime accessTime, DateTime modifiedTime, [NotNull]MutableString/*!*/ path) {
             string strPath = path.ConvertToString();
             if (!FileExists(self.Context, strPath)) {
-                throw new Errno.NoEntryError(String.Format("No such file or directory - {0}", strPath));
+                throw Errno.CreateENOENT(String.Format("No such file or directory - {0}", strPath));
             }
 
             FileInfo info = new FileInfo(strPath);
@@ -832,7 +879,7 @@ namespace IronRuby.Builtins {
                 if (TryCreate(context, path, out fsi)) {
                     return fsi;
                 } else {
-                    throw new Errno.NoEntryError(String.Format("No such file or directory - {0}", path));
+                    throw Errno.CreateENOENT(String.Format("No such file or directory - {0}", path));
                 }
             }
 

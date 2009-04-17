@@ -73,10 +73,7 @@ namespace IronRuby.Compiler.Ast {
             MSA.ParameterExpression[] parameters;
             MSA.Expression selfVariable;
             MSA.Expression rfcVariable;
-            MSA.Expression parentScope;
-            MSA.Expression language;
             MSA.Expression runtimeScopeVariable;
-            MSA.Expression moduleVariable;
             MSA.Expression blockParameter;
             MSA.Expression currentMethodVariable;
 
@@ -84,35 +81,25 @@ namespace IronRuby.Compiler.Ast {
                 gen.CompilerOptions.FactoryKind == TopScopeFactoryKind.Module) {
                 parameters = new MSA.ParameterExpression[6];
 
-                parameters[0] = Ast.Parameter(typeof(RubyScope), "#scope");
+                runtimeScopeVariable = parameters[0] = Ast.Parameter(typeof(RubyScope), "#scope");
                 selfVariable = parameters[1] = Ast.Parameter(typeof(object), "#self");
                 parameters[2] = Ast.Parameter(typeof(RubyModule), "#module");
                 blockParameter = parameters[3] = Ast.Parameter(typeof(Proc), "#block");
                 currentMethodVariable = parameters[4] = Ast.Parameter(typeof(RubyMethodInfo), "#method");
                 rfcVariable = parameters[5] = Ast.Parameter(typeof(RuntimeFlowControl), "#rfc");
-
-                if (gen.CompilerOptions.FactoryKind == TopScopeFactoryKind.Module) {
-                    runtimeScopeVariable = scope.DefineHiddenVariable("#scope", typeof(RubyScope));
-                    parentScope = parameters[0];
-                    moduleVariable = parameters[2];
-                } else {
-                    runtimeScopeVariable = parameters[0];
-                    moduleVariable = null;
-                    parentScope = null;
-                }
-
-                language = null;
             } else {
-                parameters = new MSA.ParameterExpression[2];
-                parentScope = parameters[0] = Ast.Parameter(typeof(Scope), "#globalScope");
-                language = parameters[1] = Ast.Parameter(typeof(LanguageContext), "#language");
+                parameters = new MSA.ParameterExpression[3];
 
-                selfVariable = scope.DefineHiddenVariable("#self", typeof(object));
-                rfcVariable = scope.DefineHiddenVariable("#rfc", typeof(RuntimeFlowControl));
-                runtimeScopeVariable = scope.DefineHiddenVariable("#scope", typeof(RubyScope));
+                runtimeScopeVariable = parameters[0] = Ast.Parameter(typeof(RubyScope), "#scope");
+                rfcVariable = parameters[1] = Ast.Parameter(typeof(RuntimeFlowControl), "#rfc");
+                selfVariable = parameters[2] = Ast.Parameter(typeof(object), "#self");
+
                 blockParameter = null;
                 currentMethodVariable = null;
-                moduleVariable = null;
+            }
+
+            if (_statements.Count == 0) {
+                return Ast.Lambda<T>(AstUtils.Constant(null), parameters);
             }
 
             gen.EnterSourceUnit(
@@ -128,54 +115,36 @@ namespace IronRuby.Compiler.Ast {
 
             _definedScope.TransformLocals(scope);
 
-            MSA.Expression scopeFactoryCall;
+            MSA.Expression prologue, body;
 
             switch (gen.CompilerOptions.FactoryKind) {
-                case TopScopeFactoryKind.Default:
-                    scopeFactoryCall = Methods.CreateTopLevelScope.OpCall(
-                        scope.VisibleVariables(), parentScope, language, selfVariable, rfcVariable
-                    );
+                case TopScopeFactoryKind.None:
+                    prologue = null;
                     break;
 
+                case TopScopeFactoryKind.Default:
                 case TopScopeFactoryKind.GlobalScopeBound:
-                    scopeFactoryCall = Methods.CreateTopLevelHostedScope.OpCall(
-                        scope.VisibleVariables(), parentScope, language, selfVariable, rfcVariable
-                    );
+                case TopScopeFactoryKind.Module:
+                case TopScopeFactoryKind.WrappedFile:
+                    prologue = Methods.InitializeScope.OpCall(runtimeScopeVariable, scope.VisibleVariables());
                     break;
 
                 case TopScopeFactoryKind.Main:
-                    scopeFactoryCall = Methods.CreateMainTopLevelScope.OpCall(
-                        scope.VisibleVariables(), parentScope, language, selfVariable, rfcVariable,
-                        AstUtils.Constant(gen.SourceUnit.Path, typeof(string)), AstUtils.Constant(_dataOffset)
-                    );
-                    break;
-
-                case TopScopeFactoryKind.None:
-                    scopeFactoryCall = null;
-                    break;
-
-                case TopScopeFactoryKind.Module:
-                    scopeFactoryCall = Methods.CreateModuleEvalScope.OpCall(
-                        scope.VisibleVariables(), parentScope, selfVariable, moduleVariable
-                    );
-                    break;
-
-                case TopScopeFactoryKind.WrappedFile:
-                    scopeFactoryCall = Methods.CreateWrappedTopLevelScope.OpCall(
-                        scope.VisibleVariables(), parentScope, language, selfVariable, rfcVariable
-                    );
+                    prologue = Methods.InitializeScope.OpCall(runtimeScopeVariable, scope.VisibleVariables());
+                    if (_dataOffset >= 0) {
+                        prologue = Ast.Block(
+                            prologue, 
+                            Methods.SetDataConstant.OpCall(
+                                runtimeScopeVariable,
+                                AstUtils.Constant(gen.SourceUnit.Path, typeof(string)),
+                                AstUtils.Constant(_dataOffset)
+                            )
+                        );
+                    }
                     break;
 
                 default:
                     throw Assert.Unreachable;
-            }
-
-            MSA.Expression prologue, body;
-
-            if (scopeFactoryCall != null) {
-                prologue = Ast.Assign(runtimeScopeVariable, scopeFactoryCall);
-            } else {
-                prologue = null;
             }
 
             if (gen.SourceUnit.Kind == SourceCodeKind.InteractiveCode) {
@@ -198,14 +167,14 @@ namespace IronRuby.Compiler.Ast {
             body = gen.AddReturnTarget(scope.CreateScope(body));
             gen.LeaveSourceUnit();
 
-            return Ast.Lambda<T>(
-                body,
-                RubyExceptionData.EncodeMethodName(gen.SourceUnit, RubyExceptionData.TopLevelMethodName, SourceSpan.None),
-                parameters
-            );
+            return Ast.Lambda<T>(body, GetEncodedName(gen), parameters);
         }
 
-        private static MSA.Expression GenerateCheckForAsyncException(ScopeBuilder scope, MSA.Expression runtimeScopeVariable, MSA.Expression body) {
+        private static string/*!*/ GetEncodedName(AstGenerator/*!*/ gen) {
+            return RubyExceptionData.EncodeMethodName(gen.SourceUnit, RubyExceptionData.TopLevelMethodName, SourceSpan.None);
+        }
+
+        private static MSA.Expression/*!*/ GenerateCheckForAsyncException(ScopeBuilder scope, MSA.Expression runtimeScopeVariable, MSA.Expression body) {
             MSA.ParameterExpression exception = scope.DefineHiddenVariable("#exception", typeof(System.Threading.ThreadAbortException));
             MSA.CatchBlock handler = Ast.Catch(exception,
                 Ast.Call(

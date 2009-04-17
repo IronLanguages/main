@@ -262,12 +262,12 @@ namespace IronPython.Runtime {
         }
 
         [Documentation("compile a unit of source code.\n\nThe source can be compiled either as exec, eval, or single.\nexec compiles the code as if it were a file\neval compiles the code as if were an expression\nsingle compiles a single statement\n\n")]
-        public static object compile(CodeContext/*!*/ context, string source, string filename, string kind, object flags, object dontInherit) {
+        public static object compile(CodeContext/*!*/ context, string source, string filename, string mode, [DefaultParameterValue(null)]object flags, [DefaultParameterValue(null)]object dont_inherit) {
             if (source.IndexOf('\0') != -1) {
                 throw PythonOps.TypeError("compile() expected string without null bytes");
             }
 
-            bool inheritContext = GetCompilerInheritance(dontInherit);
+            bool inheritContext = GetCompilerInheritance(dont_inherit);
             CompileFlags cflags = GetCompilerFlags(flags);
             PythonCompilerOptions opts = GetRuntimeGeneratedCodeCompilerOptions(context, inheritContext, cflags);
             if ((cflags & CompileFlags.CO_DONT_IMPLY_DEDENT) != 0) {
@@ -278,7 +278,7 @@ namespace IronPython.Runtime {
             SourceUnit sourceUnit;
             string unitPath = String.IsNullOrEmpty(filename) ? null : filename;
 
-            switch (kind) {
+            switch (mode) {
                 case "exec": sourceUnit = context.LanguageContext.CreateSnippet(source, unitPath, SourceCodeKind.Statements); break;
                 case "eval": sourceUnit = context.LanguageContext.CreateSnippet(source, unitPath, SourceCodeKind.Expression); break;
                 case "single": sourceUnit = context.LanguageContext.CreateSnippet(source, unitPath, SourceCodeKind.InteractiveCode); break;
@@ -291,16 +291,6 @@ namespace IronPython.Runtime {
             FunctionCode res = new FunctionCode(compiledCode, cflags);
             res.SetFilename(filename);
             return res;
-        }
-
-        [Documentation("compile a unit of source code.\n\nThe source can be compiled either as exec, eval, or single.\nexec compiles the code as if it were a file\neval compiles the code as if were an expression\nsingle compiles a single statement\n\n")]
-        public static object compile(CodeContext/*!*/ context, string source, string filename, string kind, object flags) {
-            return compile(context, source, filename, kind, flags, null);
-        }
-
-        [Documentation("compile a unit of source code.\n\nThe source can be compiled either as exec, eval, or single.\nexec compiles the code as if it were a file\neval compiles the code as if were an expression\nsingle compiles a single statement\n\n")]
-        public static object compile(CodeContext/*!*/ context, string source, string filename, string kind) {
-            return compile(context, source, filename, kind, null, null);
         }
 
         public static PythonType classmethod {

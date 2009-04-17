@@ -27,6 +27,10 @@ namespace IronRuby.Builtins {
     /// While Fixnum values are immediate, Bignum objects are notassignment and parameter passing work with references to objects, not the objects themselves. 
     /// </summary>
     [RubyClass("Bignum", Extends = typeof(BigInteger), Inherits = typeof(Integer)), Includes(typeof(ClrBigInteger), Copy = true)]
+    [HideMethod(">")]
+    [HideMethod(">=")]
+    [HideMethod("<")]
+    [HideMethod("<=")]
     public static partial class BignumOps {
         /// <summary>
         /// Returns the number of bytes in the machine representation of self. 

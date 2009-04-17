@@ -49,145 +49,62 @@ namespace IronRuby.Runtime {
         #region Scopes
 
         [Emitted]
-        public static RubyTopLevelScope/*!*/ CreateMainTopLevelScope(LocalsDictionary/*!*/ locals, Scope/*!*/ globalScope, LanguageContext/*!*/ language,
-            out object self, out RuntimeFlowControl/*!*/ rfc, string dataPath, int dataOffset) {
-            Assert.NotNull(locals, globalScope, language);
+        public static RubyScope/*!*/ InitializeScope(RubyScope/*!*/ scope, LocalsDictionary/*!*/ locals) {
+            if (scope.Frame == null) {
+                scope.Frame = locals;
+            }
+            return scope;
+        }
 
-            RubyContext context = (RubyContext)language;
-            RubyGlobalScope rubyGlobalScope = context.InitializeGlobalScope(globalScope, false);
-
-            RubyTopLevelScope scope = new RubyTopLevelScope(rubyGlobalScope, null, locals);
-            scope.Initialize(new RuntimeFlowControl(), RubyMethodAttributes.PrivateInstance, rubyGlobalScope.MainObject);
-            scope.SetDebugName("top-main");
-
-            var objectClass = context.ObjectClass;
-            objectClass.SetConstant("TOPLEVEL_BINDING", new Binding(scope));
-            if (dataOffset >= 0) {
-                RubyFile dataFile;
-                if (context.DomainManager.Platform.FileExists(dataPath)) {
-                    dataFile = new RubyFile(context, dataPath, RubyFileMode.RDONLY);
-                    dataFile.Seek(dataOffset, SeekOrigin.Begin);
-                } else {
-                    dataFile = null;
-                }
-
-                objectClass.SetConstant("DATA", dataFile);
+        [Emitted]
+        public static void SetDataConstant(RubyScope/*!*/ scope, string/*!*/ dataPath, int dataOffset) {
+            Debug.Assert(dataOffset >= 0);
+            RubyFile dataFile;
+            RubyContext context = scope.RubyContext;
+            if (context.DomainManager.Platform.FileExists(dataPath)) {
+                dataFile = new RubyFile(context, dataPath, RubyFileMode.RDONLY);
+                dataFile.Seek(dataOffset, SeekOrigin.Begin);
+            } else {
+                dataFile = null;
             }
 
-            self = scope.SelfObject;
-            rfc = scope.RuntimeFlowControl;
-
-            return scope;
+            context.ObjectClass.SetConstant("DATA", dataFile);
         }
 
-        [Emitted]
-        public static RubyTopLevelScope/*!*/ CreateTopLevelHostedScope(LocalsDictionary/*!*/ locals, Scope/*!*/ globalScope, LanguageContext/*!*/ language,
-            out object self, out RuntimeFlowControl/*!*/ rfc) {
-
-            RubyContext context = (RubyContext)language;
-            RubyGlobalScope rubyGlobalScope = context.InitializeGlobalScope(globalScope, true);
-
-            // reuse existing top-level scope if available:
-            RubyTopLevelScope scope = rubyGlobalScope.TopLocalScope;
-            if (scope == null) {
-                scope = new RubyTopLevelScope(rubyGlobalScope, null, locals);
-                scope.Initialize(new RuntimeFlowControl(), RubyMethodAttributes.PrivateInstance, rubyGlobalScope.MainObject);
-                scope.SetDebugName("top-level-hosted");
-                rubyGlobalScope.TopLocalScope = scope;
-            }
-
-            self = scope.SelfObject;
-            rfc = scope.RuntimeFlowControl;
-            return scope;
-        }
 
         [Emitted]
-        public static RubyTopLevelScope/*!*/ CreateTopLevelScope(LocalsDictionary/*!*/ locals, Scope/*!*/ globalScope, LanguageContext/*!*/ language,
-            out object self, out RuntimeFlowControl/*!*/ rfc) {
-
-            RubyContext context = (RubyContext)language;
-            RubyGlobalScope rubyGlobalScope = context.InitializeGlobalScope(globalScope, false);
-
-            RubyTopLevelScope scope = new RubyTopLevelScope(rubyGlobalScope, null, locals);
-            scope.Initialize(new RuntimeFlowControl(), RubyMethodAttributes.PrivateInstance, rubyGlobalScope.MainObject);
-            scope.SetDebugName("top-level");
-
-            self = scope.SelfObject;
-            rfc = scope.RuntimeFlowControl;
-            return scope;
-        }
-
-        [Emitted]
-        public static RubyTopLevelScope/*!*/ CreateWrappedTopLevelScope(LocalsDictionary/*!*/ locals, Scope/*!*/ globalScope, LanguageContext/*!*/ language,
-            out object self, out RuntimeFlowControl/*!*/ rfc) {
-
-            RubyContext context = (RubyContext)language;
-
-            RubyModule module = context.CreateModule(null, null, null, null, null, null, null);
-            object mainObject = new Object();
-            RubyClass mainSingleton = context.CreateMainSingleton(mainObject, new[] { module });
-
-            RubyGlobalScope rubyGlobalScope = context.InitializeGlobalScope(globalScope, false);
-            RubyTopLevelScope scope = new RubyTopLevelScope(rubyGlobalScope, null, locals);
-            scope.Initialize(new RuntimeFlowControl(), RubyMethodAttributes.PrivateInstance, rubyGlobalScope.MainObject);
-            scope.SetDebugName("top-level-wrapped");
-            scope.SelfObject = mainObject;
-            scope.SetModule(module);
-
-            self = scope.SelfObject;
-            rfc = scope.RuntimeFlowControl;
-            return scope;
-        }
-
-        [Emitted]
-        public static RubyModuleScope/*!*/ CreateModuleEvalScope(LocalsDictionary/*!*/ locals, RubyScope/*!*/ parent, object self, RubyModule module) {
-            RubyModuleScope scope = new RubyModuleScope(parent, locals, module, true);
-            scope.Initialize(parent.RuntimeFlowControl, RubyMethodAttributes.PublicInstance, self);
-            scope.SetDebugName("top-module/instance-eval");                
-            return scope;
-        }
-        
-        [Emitted]
-        public static RubyModuleScope/*!*/ CreateModuleScope(LocalsDictionary/*!*/ locals, RubyScope/*!*/ parent, 
+        public static RubyModuleScope/*!*/ CreateModuleScope(LocalsDictionary/*!*/ locals, RubyScope/*!*/ parent,
             RuntimeFlowControl/*!*/ rfc, RubyModule/*!*/ module) {
             Assert.NotNull(locals, parent, rfc, module);
 
-            // TODO:
-            RubyModuleScope scope = new RubyModuleScope(parent, locals, null, false);
-            scope.Initialize(rfc, RubyMethodAttributes.PublicInstance, module);
-            scope.SetModule(module);
+            RubyModuleScope scope = new RubyModuleScope(parent, module, false, rfc, module);
             scope.SetDebugName((module.IsClass ? "class" : "module") + " " + module.Name);
 
+            scope.Frame = locals;
             return scope;
         }
 
         [Emitted]
-        public static RubyMethodScope/*!*/ CreateMethodScope(LocalsDictionary/*!*/ locals, RubyScope/*!*/ parent, 
+        public static RubyMethodScope/*!*/ CreateMethodScope(LocalsDictionary/*!*/ locals, RubyScope/*!*/ parent,
             RubyMethodInfo/*!*/ methodDefinition, RuntimeFlowControl/*!*/ rfc, object selfObject, Proc blockParameter) {
 
-            Assert.NotNull(locals, parent, methodDefinition, rfc);
+            RubyMethodScope scope = new RubyMethodScope(parent, methodDefinition, blockParameter, rfc, selfObject);
+            scope.SetDebugName("method " + methodDefinition.DefinitionName + ((blockParameter != null) ? "&" : null));
 
-            RubyMethodScope scope = new RubyMethodScope(parent, locals, methodDefinition, blockParameter);
-            scope.Initialize(rfc, RubyMethodAttributes.PublicInstance, selfObject);
-
-            scope.SetDebugName("method " + 
-                methodDefinition.DefinitionName +
-                ((blockParameter != null) ? "&" : null)
-            );
-
+            scope.Frame = locals;
             return scope;
         }
 
         [Emitted]
-        public static RubyBlockScope/*!*/ CreateBlockScope(LocalsDictionary/*!*/ locals, RubyScope/*!*/ parent, 
+        public static RubyBlockScope/*!*/ CreateBlockScope(LocalsDictionary/*!*/ locals, RubyScope/*!*/ parent,
             BlockParam/*!*/ blockParam, object selfObject) {
             Assert.NotNull(locals, parent, blockParam);
 
-            RubyBlockScope scope = new RubyBlockScope(parent, locals);
-            // TODO: used to inherit parent.MethodAttributes
-            scope.Initialize(parent.RuntimeFlowControl, RubyMethodAttributes.PublicInstance, selfObject); 
+            RubyBlockScope scope = new RubyBlockScope(parent, parent.RuntimeFlowControl, selfObject);
+            scope.MethodAttributes = RubyMethodAttributes.PublicInstance;
             scope.BlockParameter = blockParam;
 
+            scope.Frame = locals;
             return scope;
         }
 
@@ -1440,11 +1357,16 @@ namespace IronRuby.Runtime {
             return result;
         }
 
-        // TODO: (interop conversion)
-        // Used for implicit conversions from System.String to MutableString.
+        // Used for implicit conversions from System.String to MutableString (to_str conversion like).
         [Emitted]
-        public static MutableString/*!*/ ToMutableString(string/*!*/ str) {
+        public static MutableString/*!*/ StringToMutableString(string/*!*/ str) {
             return MutableString.Create(str, RubyEncoding.UTF8);
+        }
+
+        // Used for implicit conversions from System.Object to MutableString (to_s conversion like).
+        [Emitted]
+        public static MutableString/*!*/ ObjectToMutableString(object/*!*/ value) {
+            return (value != null) ? MutableString.Create(value.ToString(), RubyEncoding.UTF8) : MutableString.Empty;
         }
 
         [Emitted] // ProtocolConversionAction

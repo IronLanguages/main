@@ -24,6 +24,7 @@ using MSAst = System.Linq.Expressions;
 
 namespace IronPython.Compiler.Ast {
     using Ast = System.Linq.Expressions.Expression;
+    using IronPython.Runtime.Operations;
 
     public class TupleExpression : SequenceExpression {
         private bool _expandable;
@@ -47,6 +48,13 @@ namespace IronPython.Compiler.Ast {
                 return Ast.NewArrayInit(
                     typeof(object),
                     ag.TransformAndConvert(Items, typeof(object))
+                );
+            }
+
+            if (Items.Length == 0) {
+                return Ast.Field(
+                    null,
+                    typeof(PythonOps).GetField("EmptyTuple")
                 );
             }
 
