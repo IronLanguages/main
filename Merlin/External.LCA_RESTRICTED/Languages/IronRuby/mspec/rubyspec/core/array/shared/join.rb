@@ -26,17 +26,10 @@ describe :array_join, :shared => true do
     [1, [2, ArraySpecs::MyArray[3, 4], 5], 6].send(@method, ":").should == "1:2:3:4:5:6"
   end
 
-  it "tries to convert the passed seperator to a String using #to_str" do
+  it "tries to convert the passed separator to a String using #to_str" do
     obj = mock('::')
     obj.should_receive(:to_str).and_return("::")
     [1, 2, 3, 4].send(@method, obj).should == '1::2::3::4'
-  end
-
-  it "checks whether the passed seperator responds to #to_str" do
-    obj = mock('.')
-    obj.should_receive(:respond_to?).with(:to_str).any_number_of_times.and_return(true)
-    obj.should_receive(:method_missing).with(:to_str).and_return(".")
-    [1, 2].send(@method, obj).should == "1.2"
   end
 
   # detail of joining recursive arrays is implementation depended. [ruby-dev:37021]

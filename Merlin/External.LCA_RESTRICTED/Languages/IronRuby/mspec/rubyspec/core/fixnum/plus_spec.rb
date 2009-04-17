@@ -2,11 +2,11 @@ require File.dirname(__FILE__) + '/../../spec_helper'
 
 describe "Fixnum#+" do
   it "returns self plus the given Integer" do
-    (491 + 2).should eql(493)
-    (90210 + 10).should eql(90220)
+    (491 + 2).should == 493
+    (90210 + 10).should == 90220
 
-    (9 + bignum_value).should eql(9223372036854775817)
-    (1001 + 5.219).should eql(1006.219)
+    (9 + bignum_value).should == 9223372036854775817
+    (1001 + 5.219).should == 1006.219
   end
 
   it "raises a TypeError when given a non-Integer" do

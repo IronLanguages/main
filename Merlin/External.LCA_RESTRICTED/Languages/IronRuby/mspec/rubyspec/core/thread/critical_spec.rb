@@ -20,7 +20,7 @@ describe "Thread.critical=" do
     Thread.critical = nil
     ThreadSpecs.critical_is_reset.should == true
   end
-      
+
   it "functions as a critical section" do
     ThreadSpecs.counter = 0
     iters = 50
@@ -29,7 +29,7 @@ describe "Thread.critical=" do
     t.join
     ThreadSpecs.counter.should == iters * 2
   end
-  
+
   it "does not change status of other existing threads" do
     t = ThreadSpecs.create_critical_thread { ScratchPad.record Thread.main.status }
     Thread.pass while t.status != false
@@ -39,20 +39,22 @@ describe "Thread.critical=" do
   it "is reentrant" do
     Thread.critical = true
     Thread.critical = true
-    Thread.critical.should == true  
+    Thread.critical.should == true
     Thread.critical = false
     Thread.critical = false
-    ThreadSpecs.critical_is_reset.should == true    
+    ThreadSpecs.critical_is_reset.should == true
   end
-    
+
   it "can be mismatched" do
     Thread.critical = true
     Thread.critical = true
     Thread.critical.should == true
     Thread.critical = false
-    ThreadSpecs.critical_is_reset.should == true    
+    ThreadSpecs.critical_is_reset.should == true
   end
-    
+
+  # Hangs on 1.8.6.114 OS X, possibly also on Linux
+  quarantine! do
   it "schedules other threads on Thread.pass" do
     ThreadSpecs.critical_thread_yields_to_main_thread { Thread.pass }
   end
@@ -60,12 +62,13 @@ describe "Thread.critical=" do
   it "schedules other threads on sleep" do
     ThreadSpecs.critical_thread_yields_to_main_thread(true) { sleep }
   end
-    
+  end
+
   it "schedules other threads on Thread.stop" do
     # Note that Thread.Stop resets Thread.critical, whereas sleep does not
     ThreadSpecs.critical_thread_yields_to_main_thread(false, true) { Thread.stop }
   end
-    
+
   it "defers exit" do
     critical_thread = ThreadSpecs.create_and_kill_critical_thread()
     Thread.pass while critical_thread.status != false
@@ -85,7 +88,7 @@ describe "Thread.critical=" do
       Thread.critical.should == true
 
       Thread.critical = false
-      ThreadSpecs.critical_is_reset.should == true  
+      ThreadSpecs.critical_is_reset.should == true
     end
   end
 end

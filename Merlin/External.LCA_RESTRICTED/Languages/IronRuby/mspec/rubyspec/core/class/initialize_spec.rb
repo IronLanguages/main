@@ -33,9 +33,7 @@ describe "Class#new" do
       end
     end
 
-    #TODO: replace with private method matcher when RubySpec is updated
     klass.method(:initialize).should be_kind_of Method
-    klass.private_methods.should include("initialize")
-    lambda { klass.initialize }.should raise_error(NoMethodError)
+    klass.should have_private_method(:initialize)
   end
 end

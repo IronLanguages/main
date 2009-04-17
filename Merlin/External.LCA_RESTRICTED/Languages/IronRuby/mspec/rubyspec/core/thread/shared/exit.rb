@@ -28,6 +28,28 @@ describe :thread_exit, :shared => true do
     thread.join
     ScratchPad.recorded.should == :in_ensure_clause
   end
+
+  it "runs nested ensure clauses" do
+    ScratchPad.record []
+    outer = Thread.new do
+      begin
+        inner = Thread.new do
+          begin
+          ensure
+            ScratchPad << :inner_ensure_clause
+          end
+        end
+        Thread.current.send(@method)
+      ensure
+        ScratchPad << :outer_ensure_clause
+        inner.send(@method)
+        inner.join
+      end
+    end
+    outer.join
+    ScratchPad.recorded.should include(:inner_ensure_clause)
+    ScratchPad.recorded.should include(:outer_ensure_clause)
+  end
   
   it "does not set $!" do
     thread = ThreadSpecs.dying_thread_ensures(@method) { ScratchPad.record $! }
@@ -110,12 +132,16 @@ describe :thread_exit, :shared => true do
     ThreadSpecs.wakeup_dying_sleeping_thread(@method) { Thread.stop; ScratchPad.record :after_sleep }
     ScratchPad.recorded.should == :after_sleep
   end
-  
+
+  # Hangs on 1.8.6.114 OS X, possibly also on Linux
+  # FIX: There is no such thing as not_compliant_on(:ruby)!!!
+  quarantine! do
   not_compliant_on(:ruby) do # Doing a sleep in the ensure block hangs the process
     it "is deferred if ensure clause sleeps" do
       ThreadSpecs.wakeup_dying_sleeping_thread(@method) { sleep; ScratchPad.record :after_sleep }
       ScratchPad.recorded.should == :after_sleep
     end
+  end
   end
   
   # This case occurred in JRuby where native threads are used to provide

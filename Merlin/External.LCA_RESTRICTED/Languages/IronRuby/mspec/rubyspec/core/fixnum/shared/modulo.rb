@@ -16,7 +16,7 @@ describe :fixnum_modulo, :shared => true do
     (1000).send(@method, -512).should == -24    
 
     1.send(@method, 2.0).should == 1.0
-    200.send(@method, bignum_value).should eql(200)
+    200.send(@method, bignum_value).should == 200
   end
 
   it "raises a ZeroDivisionError when the given argument is 0" do

@@ -2,6 +2,7 @@ require File.dirname(__FILE__) + '/../spec_helper'
 require 'mspec/helpers/tmp'
 require 'mspec/matchers/base'
 require 'mspec/runner/mspec'
+require 'mspec/runner/example'
 
 describe MSpec, ".register_files" do
   it "records which spec files to run" do
@@ -227,6 +228,37 @@ describe MSpec, ".clear_modes" do
   end
 end
 
+describe MSpec, ".guarded?" do
+  before :each do
+    MSpec.instance_variable_set :@guarded, []
+  end
+
+  it "returns false if no guard has run" do
+    MSpec.guarded?.should == false
+  end
+
+  it "returns true if a single guard has run" do
+    MSpec.guard
+    MSpec.guarded?.should == true
+  end
+
+  it "returns true if more than one guard has run" do
+    MSpec.guard
+    MSpec.guard
+    MSpec.guarded?.should == true
+  end
+
+  it "returns true until all guards have finished" do
+    MSpec.guard
+    MSpec.guard
+    MSpec.guarded?.should == true
+    MSpec.unguard
+    MSpec.guarded?.should == true
+    MSpec.unguard
+    MSpec.guarded?.should == false
+  end
+end
+
 describe MSpec, ".describe" do
   before :each do
     MSpec.clear_current
@@ -415,6 +447,7 @@ describe MSpec, ".write_tags" do
     IO.read(tmp("tags.txt")).should == %[fail(broken):Some#method? works
 incomplete(20%):The#best method ever
 benchmark(0.01825):The#fastest method today
+extended():\"Multi-line\\ntext\\ntag\"
 ]
     MSpec.write_tags [@tag1, @tag2]
     IO.read(tmp("tags.txt")).should == %[check(broken):Tag#rewrite works
@@ -461,6 +494,15 @@ describe MSpec, ".delete_tag" do
     MSpec.delete_tag(@tag).should == true
     IO.read(tmp("tags.txt")).should == %[incomplete(20%):The#best method ever
 benchmark(0.01825):The#fastest method today
+extended():\"Multi-line\\ntext\\ntag\"
+]
+  end
+
+  it "deletes a tag with escaped newlines" do
+    MSpec.delete_tag(SpecTag.new('extended:"Multi-line\ntext\ntag"')).should == true
+    IO.read(tmp("tags.txt")).should == %[fail(broken):Some#method? works
+incomplete(20%):The#best method ever
+benchmark(0.01825):The#fastest method today
 ]
   end
 
@@ -470,6 +512,7 @@ benchmark(0.01825):The#fastest method today
     IO.read(tmp("tags.txt")).should == %[fail(broken):Some#method? works
 incomplete(20%):The#best method ever
 benchmark(0.01825):The#fastest method today
+extended():\"Multi-line\\ntext\\ntag\"
 ]
   end
 
@@ -477,6 +520,7 @@ benchmark(0.01825):The#fastest method today
     MSpec.delete_tag(@tag).should == true
     MSpec.delete_tag(SpecTag.new("incomplete:The#best method ever")).should == true
     MSpec.delete_tag(SpecTag.new("benchmark:The#fastest method today")).should == true
+    MSpec.delete_tag(SpecTag.new("extended:\"Multi-line\ntext\ntag\"")).should == true
     File.exist?(tmp("tags.txt")).should == false
   end
 end
