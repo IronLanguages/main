@@ -360,7 +360,19 @@ namespace IronPython.Runtime.Binding {
             SlotOrFunction func = SlotOrFunction.GetSlotOrFunction(state, Symbols.Hash, self);
             DynamicMetaObject res = func.Target;
 
-            if (func.ReturnType != typeof(int)) {
+            if (func.IsNull) {
+                // Python 2.6 setting __hash__ = None makes the type unhashable
+                res = new DynamicMetaObject(
+                    Expression.Throw(
+                        Expression.Call(
+                            typeof(PythonOps).GetMethod("TypeErrorForUnhashableObject"),
+                            self.Expression
+                        ),
+                        typeof(object)                        
+                    ),
+                    res.Restrictions
+                );
+            } else if (func.ReturnType != typeof(int)) {
                 if (func.ReturnType == typeof(BigInteger)) {
                     // Python 2.5 defines the result of returning a long as hashing the long
                     res = new DynamicMetaObject(
@@ -1158,7 +1170,7 @@ namespace IronPython.Runtime.Binding {
                                 MakeCompareTest(op, builder, retCond, expr, reverse);
                             },
                             bodyBuilder)) {
-                            bodyBuilder.FinishCondition(MakeFallbackCompare(op, types));
+                            bodyBuilder.FinishCondition(MakeFallbackCompare(operation, op, types));
                         }
                     }
                 }
@@ -1286,7 +1298,7 @@ namespace IronPython.Runtime.Binding {
 
             if (more) {
                 // fall back to compare types
-                bodyBuilder.FinishCondition(MakeFallbackCompare(op, types));
+                bodyBuilder.FinishCondition(MakeFallbackCompare(operation, op, types));
             }
 
             return bodyBuilder.GetMetaObject(types);
@@ -1392,9 +1404,10 @@ namespace IronPython.Runtime.Binding {
             MakeCompareReturn(bodyBuilder, retCond, GetCompareTest(op, expr, reverse), reverse);
         }
 
-        private static Expression/*!*/ MakeFallbackCompare(PythonOperationKind op, DynamicMetaObject[] types) {
+        private static Expression/*!*/ MakeFallbackCompare(DynamicMetaObjectBinder/*!*/ binder, PythonOperationKind op, DynamicMetaObject[] types) {
             return Ast.Call(
                 GetComparisonFallbackMethod(op),
+                BinderState.GetCodeContext(binder),
                 AstUtils.Convert(types[0].Expression, typeof(object)),
                 AstUtils.Convert(types[1].Expression, typeof(object))
             );
@@ -1708,6 +1721,11 @@ namespace IronPython.Runtime.Binding {
                             Ast.Block(res.Expression, args[args.Length - 1].Expression),
                             res.Restrictions
                         );
+                    }
+                    
+                    WarningInfo info;
+                    if (BindingWarnings.ShouldWarn(Binder, target.Method, out info)) {
+                        res = info.AddWarning(Ast.Constant(BinderState.Context), res);
                     }
                 } else if (customFailure == null || (res = customFailure()) == null) {
                     res = DefaultBinder.MakeError(resolver.MakeInvalidParametersError(target), BindingRestrictions.Combine(ConvertArgs(args)));

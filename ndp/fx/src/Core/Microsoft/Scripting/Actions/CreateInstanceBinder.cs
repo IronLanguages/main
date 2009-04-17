@@ -14,7 +14,6 @@
  * ***************************************************************************/
 
 using System.Dynamic.Utils;
-using System.Linq.Expressions;
 using Microsoft.Contracts;
 
 namespace System.Dynamic {
@@ -29,6 +28,7 @@ namespace System.Dynamic {
         /// </summary>
         /// <param name="callInfo">The signature of the arguments at the call site.</param>
         protected CreateInstanceBinder(CallInfo callInfo) {
+            ContractUtils.RequiresNotNull(callInfo, "callInfo");
             _callInfo = callInfo;
         }
 

@@ -27,15 +27,16 @@ using Microsoft.Scripting.Generation;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
+using IronRuby.Runtime;
 
 [assembly: System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1020:AvoidNamespacesWithFewTypes", Scope = "namespace", Target = "Microsoft.Scripting.Interpretation")]
 
 namespace Microsoft.Scripting.Interpretation {
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1506:AvoidExcessiveClassCoupling")]
-    public static partial class Interpreter {
+    internal static partial class Interpreter {
         #region Entry points
 
-        public static object TopLevelExecute(InterpretedScriptCode scriptCode, params object[] args) {
+        public static object TopLevelExecute(IInterpretedScriptCode scriptCode, params object[] args) {
             ContractUtils.RequiresNotNull(scriptCode, "scriptCode");
 
             var state = InterpreterState.Current.Update(
@@ -143,7 +144,7 @@ namespace Microsoft.Scripting.Interpretation {
                 // Note that this should be called for any exception caused by any Expression node
                 // (for example, integer division by zero). For now, doing it for method calls
                 // catches a large portion of the interesting cases (including calls into the language's library assembly).
-                state.ScriptCode.LanguageContext.InterpretExceptionThrow(state, e, false);
+                ((RubyContext)state.ScriptCode.SourceUnit.LanguageContext).InterpretExceptionThrow(state, e, false);
                 throw;
             }
         }
@@ -791,7 +792,7 @@ namespace Microsoft.Scripting.Interpretation {
                 try {
                     return callSiteInfo.CallerTarget(callSiteInfo.CallSite, argValues);
                 } catch(Exception e) {
-                    state.ScriptCode.LanguageContext.InterpretExceptionThrow(state, e, false);
+                    ((RubyContext)state.ScriptCode.SourceUnit.LanguageContext).InterpretExceptionThrow(state, e, false);
                     throw;
                 }
             }
@@ -1376,7 +1377,7 @@ namespace Microsoft.Scripting.Interpretation {
                 return ControlFlow.NextForYield;
             }
 
-            state.LambdaState.ScriptCode.LanguageContext.InterpretExceptionThrow(state, ex, true);
+            ((RubyContext)state.LambdaState.ScriptCode.SourceUnit.LanguageContext).InterpretExceptionThrow(state, ex, true);
             throw ex;
         }
 
@@ -1494,6 +1495,8 @@ namespace Microsoft.Scripting.Interpretation {
         }
 
         private static object InterpretGenerator<T>(InterpreterState state, GeneratorExpression generator) {
+            throw new NotImplementedException();
+#if FALSE
             var caller = InterpreterState.Current.Value;
             if (generator.IsEnumerable) {
                 return new GeneratorEnumerable<T>(
@@ -1504,6 +1507,7 @@ namespace Microsoft.Scripting.Interpretation {
                     new GeneratorInvoker(generator, state.CreateForGenerator(caller)).Invoke
                 );
             }
+#endif
         }
 
         private static object InterpretExtensionExpression(InterpreterState state, Expression expr) {

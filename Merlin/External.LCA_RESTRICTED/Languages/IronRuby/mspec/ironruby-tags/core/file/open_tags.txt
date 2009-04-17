@@ -49,7 +49,6 @@ fails:File.open opens a file when use File::WRONLY|File::TRUNC mode
 fails:File.open can't write in a block when call open with File::TRUNC mode
 fails:File.open raises an Errorno::EEXIST if the file exists when open with File::RDONLY|File::TRUNC
 fails:File.open raises an Errno::EACCES when opening non-permitted file
-fails:File.open raises an Errno::EACCES when opening read-only file
 fails:File.open opens a file for binary read
 fails:File.open opens a file for binary write
 fails:File.open opens a file for read-write and truncate the file

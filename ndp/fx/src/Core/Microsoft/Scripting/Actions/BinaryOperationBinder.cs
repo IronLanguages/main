@@ -69,10 +69,13 @@ namespace System.Dynamic {
         /// <returns>The <see cref="DynamicMetaObject"/> representing the result of the binding.</returns>
         public sealed override DynamicMetaObject Bind(DynamicMetaObject target, DynamicMetaObject[] args) {
             ContractUtils.RequiresNotNull(target, "target");
-            ContractUtils.RequiresNotNullItems(args, "args");
-            ContractUtils.Requires(args.Length == 1);
+            ContractUtils.RequiresNotNull(args, "args");
+            ContractUtils.Requires(args.Length == 1, "args");
 
-            return target.BindBinaryOperation(this, args[0]);
+            var arg0 = args[0];
+            ContractUtils.RequiresNotNull(arg0, "args");
+
+            return target.BindBinaryOperation(this, arg0);
         }
 
         // this is a standard DynamicMetaObjectBinder

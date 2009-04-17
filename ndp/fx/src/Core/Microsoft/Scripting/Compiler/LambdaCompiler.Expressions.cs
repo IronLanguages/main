@@ -126,7 +126,7 @@ namespace System.Linq.Expressions.Compiler {
             } else {
                 // if the node is emitted as a different type, CastClass IL is emitted at the end,
                 // should not emit with tail calls.
-                if (node.Type != type) {
+                if (!TypeUtils.AreEquivalent(node.Type, type)) {
                     EmitExpression(node);
                     Debug.Assert(TypeUtils.AreReferenceAssignable(type, node.Type));
                     _ilg.Emit(OpCodes.Castclass, type);
@@ -895,7 +895,7 @@ namespace System.Linq.Expressions.Compiler {
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity")]
         private void EmitLift(ExpressionType nodeType, Type resultType, MethodCallExpression mc, ParameterExpression[] paramList, Expression[] argList) {
-            Debug.Assert(TypeUtils.GetNonNullableType(resultType) == TypeUtils.GetNonNullableType(mc.Type));
+            Debug.Assert(TypeUtils.AreEquivalent(TypeUtils.GetNonNullableType(resultType), TypeUtils.GetNonNullableType(mc.Type)));
 
             switch (nodeType) {
                 default:
@@ -934,13 +934,13 @@ namespace System.Linq.Expressions.Compiler {
                             _ilg.Emit(OpCodes.Brtrue, exitNull);
                         }
                         EmitMethodCallExpression(mc);
-                        if (TypeUtils.IsNullableType(resultType) && resultType != mc.Type) {
+                        if (TypeUtils.IsNullableType(resultType) && !TypeUtils.AreEquivalent(resultType, mc.Type)) {
                             ConstructorInfo ci = resultType.GetConstructor(new Type[] { mc.Type });
                             _ilg.Emit(OpCodes.Newobj, ci);
                         }
                         _ilg.Emit(OpCodes.Br_S, exit);
                         _ilg.MarkLabel(exitNull);
-                        if (resultType == TypeUtils.GetNullableType(mc.Type)) {
+                        if (TypeUtils.AreEquivalent(resultType, TypeUtils.GetNullableType(mc.Type))) {
                             if (resultType.IsValueType) {
                                 LocalBuilder result = GetLocal(resultType);
                                 _ilg.Emit(OpCodes.Ldloca, result);
@@ -967,7 +967,7 @@ namespace System.Linq.Expressions.Compiler {
                     }
                 case ExpressionType.Equal:
                 case ExpressionType.NotEqual: {
-                        if (resultType == TypeUtils.GetNullableType(mc.Type)) {
+                        if (TypeUtils.AreEquivalent(resultType, TypeUtils.GetNullableType(mc.Type))) {
                             goto default;
                         }
                         Label exit = _ilg.DefineLabel();
@@ -1025,7 +1025,7 @@ namespace System.Linq.Expressions.Compiler {
                         _ilg.Emit(OpCodes.Brtrue, exitAnyNull);
 
                         EmitMethodCallExpression(mc);
-                        if (TypeUtils.IsNullableType(resultType) && resultType != mc.Type) {
+                        if (TypeUtils.IsNullableType(resultType) && !TypeUtils.AreEquivalent(resultType, mc.Type)) {
                             ConstructorInfo ci = resultType.GetConstructor(new Type[] { mc.Type });
                             _ilg.Emit(OpCodes.Newobj, ci);
                         }

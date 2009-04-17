@@ -30,9 +30,7 @@ namespace Microsoft.Scripting {
         private readonly bool _perfStats;
         private readonly ReadOnlyCollection<string> _searchPaths;
 
-        /// <summary>
-        /// Interpret code instead of emitting it.
-        /// </summary>
+        // TODO: remove
         public bool InterpretedMode {
             get { return _interpretedMode; }
             set { _interpretedMode = value; }

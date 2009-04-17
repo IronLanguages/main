@@ -141,7 +141,7 @@ namespace System.Linq.Expressions.Compiler {
                 // emit call to invoke
                 _ilg.Emit(OpCodes.Callvirt, b.Conversion.Type.GetMethod("Invoke"));
 
-            } else if (b.Type != nnLeftType) {
+            } else if (!TypeUtils.AreEquivalent(b.Type, nnLeftType)) {
                 _ilg.Emit(OpCodes.Ldloca, loc);
                 _ilg.EmitGetValueOrDefault(b.Left.Type);
                 _ilg.EmitConvertToType(nnLeftType, b.Type, true);
@@ -154,7 +154,7 @@ namespace System.Linq.Expressions.Compiler {
             _ilg.Emit(OpCodes.Br, labEnd);
             _ilg.MarkLabel(labIfNull);
             EmitExpression(b.Right);
-            if (b.Right.Type != b.Type) {
+            if (!TypeUtils.AreEquivalent(b.Right.Type, b.Type)) {
                 _ilg.EmitConvertToType(b.Right.Type, b.Type, true);
             }
             _ilg.MarkLabel(labEnd);
@@ -203,7 +203,7 @@ namespace System.Linq.Expressions.Compiler {
             _ilg.Emit(OpCodes.Brfalse, labCast);
             _ilg.Emit(OpCodes.Pop);
             EmitExpression(b.Right);
-            if (b.Right.Type != b.Type) {
+            if (!TypeUtils.AreEquivalent(b.Right.Type, b.Type)) {
                 if (b.Right.Type.IsValueType) {
                     _ilg.Emit(OpCodes.Box, b.Right.Type);
                 }
@@ -211,7 +211,7 @@ namespace System.Linq.Expressions.Compiler {
             }
             _ilg.Emit(OpCodes.Br_S, labEnd);
             _ilg.MarkLabel(labCast);
-            if (b.Left.Type != b.Type) {
+            if (!TypeUtils.AreEquivalent(b.Left.Type, b.Type)) {
                 Debug.Assert(!b.Left.Type.IsValueType);
                 _ilg.Emit(OpCodes.Castclass, b.Type);
             }

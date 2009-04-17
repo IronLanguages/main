@@ -46,6 +46,10 @@ describe :file_unlink, :shared => true do
     lambda { File.send(@method, 'bogus') }.should raise_error(Errno::ENOENT)
   end
 
+  it "raises Errno::ENOENT if filename is empty" do
+    lambda { File.send(@method, "") }.should raise_error(Errno::ENOENT)
+  end
+
   it "coerces a given parameter into a string if possible" do
     class Coercable
       def to_str

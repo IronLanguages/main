@@ -119,7 +119,7 @@ namespace System.Linq.Expressions {
             : base(method) {
             _arguments = args;
         }
-        
+
         Expression IArgumentProvider.GetArgument(int index) {
             return _arguments[index];
         }
@@ -399,7 +399,7 @@ namespace System.Linq.Expressions {
         }
 
         Expression IArgumentProvider.GetArgument(int index) {
-            switch(index) {
+            switch (index) {
                 case 0: return ReturnObject<Expression>(_arg0);
                 case 1: return _arg1;
                 default: throw new InvalidOperationException();
@@ -492,17 +492,17 @@ namespace System.Linq.Expressions {
         ///<param name="arg0">The <see cref="Expression" /> that represents the first argument.</param>
         ///<exception cref="T:System.ArgumentNullException">
         ///<paramref name="method" /> is null.</exception>
-        public static MethodCallExpression Call(MethodInfo method, Expression arg0) {            
+        public static MethodCallExpression Call(MethodInfo method, Expression arg0) {
             ContractUtils.RequiresNotNull(method, "method");
-            ContractUtils.RequiresNotNull(arg0, "arg0");            
+            ContractUtils.RequiresNotNull(arg0, "arg0");
 
             ParameterInfo[] pis = ValidateMethodAndGetParameters(null, method);
 
             ValidateArgumentCount(method, ExpressionType.Call, 1, pis);
 
-            arg0 = ValidateOneArgument(method, ExpressionType.Call, arg0, pis[0]);            
+            arg0 = ValidateOneArgument(method, ExpressionType.Call, arg0, pis[0]);
 
-            return new MethodCallExpression1(method, arg0); 
+            return new MethodCallExpression1(method, arg0);
         }
 
         ///<summary>Creates a <see cref="T:System.Linq.Expressions.MethodCallExpression" /> that represents a call to a static method that takes two arguments.</summary>
@@ -982,12 +982,14 @@ namespace System.Linq.Expressions {
             ContractUtils.RequiresNotNull(indexes, "indexes");
 
             Type arrayType = array.Type;
-            if (!arrayType.IsArray)
+            if (!arrayType.IsArray) {
                 throw Error.ArgumentMustBeArray();
+            }
 
             ReadOnlyCollection<Expression> indexList = indexes.ToReadOnly();
-            if (arrayType.GetArrayRank() != indexList.Count)
+            if (arrayType.GetArrayRank() != indexList.Count) {
                 throw Error.IncorrectNumberOfIndexes();
+            }
 
             foreach (Expression e in indexList) {
                 RequiresCanRead(e, "indexes");
