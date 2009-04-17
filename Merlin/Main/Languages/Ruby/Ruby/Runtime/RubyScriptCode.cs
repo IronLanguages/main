@@ -13,7 +13,12 @@
  *
  * ***************************************************************************/
 
-using ScriptCodeFunc = System.Func<Microsoft.Scripting.Runtime.Scope, Microsoft.Scripting.Runtime.LanguageContext, object>;
+using ScriptCodeFunc = System.Func<
+    IronRuby.Runtime.RubyScope, 
+    IronRuby.Runtime.RuntimeFlowControl,
+    object, 
+    object
+>;
 
 using System;
 using System.Collections.Generic;
@@ -28,9 +33,11 @@ using System.Reflection;
 using Microsoft.Scripting.Utils;
 using System.Runtime.CompilerServices;
 using System.Security;
+using IronRuby.Compiler;
+using Microsoft.Scripting.Interpretation;
 
 namespace IronRuby.Runtime {
-    internal sealed class RubyScriptCode : ScriptCode {
+    internal class RubyScriptCode : ScriptCode, IInterpretedScriptCode {
         private sealed class CustomGenerator : DebugInfoGenerator {
             public override void MarkSequencePoint(LambdaExpression method, int ilOffset, DebugInfoExpression node) {
                 RubyMethodDebugInfo.GetOrCreate(method.Name).AddMapping(ilOffset, node.StartLine);
@@ -38,24 +45,31 @@ namespace IronRuby.Runtime {
         }
 
         private readonly Expression<ScriptCodeFunc> _code;
+        private readonly TopScopeFactoryKind _kind;
         private ScriptCodeFunc _target;
 
-        public RubyScriptCode(Expression<ScriptCodeFunc>/*!*/ code, SourceUnit/*!*/ sourceUnit)
+        public RubyScriptCode(Expression<ScriptCodeFunc>/*!*/ code, SourceUnit/*!*/ sourceUnit, TopScopeFactoryKind kind)
             : base(sourceUnit) {
             Assert.NotNull(code);
             _code = code;
+            _kind = kind;
         }
 
-        internal RubyScriptCode(ScriptCodeFunc/*!*/ target, SourceUnit/*!*/ sourceUnit)
+        internal RubyScriptCode(ScriptCodeFunc/*!*/ target, SourceUnit/*!*/ sourceUnit, TopScopeFactoryKind kind)
             : base(sourceUnit) {
             Assert.NotNull(target);
             _target = target;
+            _kind = kind;
         }
 
+        internal Expression<ScriptCodeFunc> Code {
+            get { return _code; }
+        }
+        
         private ScriptCodeFunc/*!*/ Target {
             get {
                 if (_target == null) {
-                    var compiledMethod = CompileLambda<ScriptCodeFunc>(_code, SourceUnit.LanguageContext.DomainManager.Configuration.DebugMode);
+                    var compiledMethod = CompileLambda(_code, SourceUnit.LanguageContext.DomainManager.Configuration.DebugMode);
                     Interlocked.CompareExchange(ref _target, compiledMethod, null);
                 }
                 return _target;
@@ -63,12 +77,100 @@ namespace IronRuby.Runtime {
         }
 
         public override object Run() {
-            return Target(CreateScope(), SourceUnit.LanguageContext);
+            return Run(CreateScope());
         }
 
         public override object Run(Scope/*!*/ scope) {
-            return Target(scope, SourceUnit.LanguageContext);
+            RubyScope localScope;
+            RubyContext context = (RubyContext)LanguageContext;
+
+            switch (_kind) {
+                case TopScopeFactoryKind.Default:
+                    localScope = RubyTopLevelScope.CreateTopLevelScope(scope, context);
+                    break;
+
+                case TopScopeFactoryKind.GlobalScopeBound:
+                    localScope = RubyTopLevelScope.CreateTopLevelHostedScope(scope, context);
+                    break;
+
+                case TopScopeFactoryKind.Main:
+                    localScope = RubyTopLevelScope.CreateMainTopLevelScope(scope, context);
+                    break;
+
+                case TopScopeFactoryKind.WrappedFile:
+                    localScope = RubyTopLevelScope.CreateWrappedTopLevelScope(scope, context);
+                    break;
+
+                default:
+                    throw Assert.Unreachable;                
+            }
+
+            if (context.RubyOptions.InterpretedMode) {
+                return Interpreter.TopLevelExecute(this, localScope, localScope.RuntimeFlowControl, localScope.SelfObject);
+            } else {
+                return Target(localScope, localScope.RuntimeFlowControl, localScope.SelfObject);
+            }
         }
+
+        #region // TODO: remove (old interpreter)
+
+        internal class Evaled : IInterpretedScriptCode {
+            // call sites allocated for the tree:
+            private Dictionary<Expression, CallSiteInfo> _callSites;
+
+            SourceUnit IInterpretedScriptCode.SourceUnit {
+                get { return _source; }
+            }
+
+            LambdaExpression IInterpretedScriptCode.Code {
+                get { return _code; }
+            }
+
+            Dictionary<Expression, CallSiteInfo> IInterpretedScriptCode.CallSites {
+                get {
+                    if (_callSites == null) {
+                        Interlocked.CompareExchange(ref _callSites, new Dictionary<Expression, CallSiteInfo>(), null);
+                    }
+
+                    return _callSites;
+                }
+            }
+
+            private readonly LambdaExpression _code;
+            private readonly SourceUnit _source;
+
+            public Evaled(LambdaExpression code, SourceUnit source) {
+                _code = code;
+                _source = source;
+            }
+        }
+        
+        // call sites allocated for the tree:
+        private Dictionary<Expression, CallSiteInfo> _callSites;
+
+        SourceUnit IInterpretedScriptCode.SourceUnit {
+            get { return SourceUnit; }
+        }
+
+        LambdaExpression IInterpretedScriptCode.Code {
+            get { return _code; }
+        }
+
+        Dictionary<Expression, CallSiteInfo> IInterpretedScriptCode.CallSites {
+            get {
+                if (_callSites == null) {
+                    Interlocked.CompareExchange(ref _callSites, new Dictionary<Expression, CallSiteInfo>(), null);
+                }
+
+                return _callSites;
+            }
+        }
+
+        internal bool HasCallSites {
+            get { return _callSites != null; }
+        }
+
+        #endregion
 
         private static bool _HasPdbPermissions = true;
 

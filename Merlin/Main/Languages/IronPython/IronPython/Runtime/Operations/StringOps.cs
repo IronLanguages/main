@@ -1060,8 +1060,10 @@ namespace IronPython.Runtime.Operations {
         //for unicode, the table argument is actually a dictionary with
         //character ordinals as keys and the replacement strings as values
         public static string translate(this string self, PythonDictionary table) {
-            if (table == null) throw PythonOps.TypeError("expected dictionary or string, got NoneType");
-            if (self.Length == 0) return self;
+            if (table == null || self.Length == 0) {
+                return self;
+            }
+
             StringBuilder ret = new StringBuilder();
             for (int i = 0, idx = 0; i < self.Length; i++) {
                 idx = (int)self[i];

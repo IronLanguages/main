@@ -79,11 +79,11 @@ namespace System.Dynamic {
         /// <returns>The <see cref="DynamicMetaObject"/> representing the result of the binding.</returns>
         public sealed override DynamicMetaObject Bind(DynamicMetaObject target, params DynamicMetaObject[] args) {
             ContractUtils.RequiresNotNull(target, "target");
-            ContractUtils.Requires(args.Length == 0);
+            ContractUtils.Requires(args == null || args.Length == 0, "args");
 
             return target.BindGetMember(this);
         }
-        
+
         // this is a standard DynamicMetaObjectBinder
         internal override sealed bool IsStandardBinder {
             get {

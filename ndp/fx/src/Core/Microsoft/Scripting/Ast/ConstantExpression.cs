@@ -46,7 +46,7 @@ namespace System.Linq.Expressions {
         /// </summary>
         /// <returns>The <see cref="Type"/> that represents the static type of the expression.</returns>
         protected override Type TypeImpl() {
-            if(_value == null) {
+            if (_value == null) {
                 return typeof(object);
             }
             return _value.GetType();

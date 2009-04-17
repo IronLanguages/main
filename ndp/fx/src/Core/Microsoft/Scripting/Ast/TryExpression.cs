@@ -194,7 +194,7 @@ namespace System.Linq.Expressions {
                 //Body of every catch must have the same type of body of try.
                 type = tryBody.Type;
                 foreach (CatchBlock cb in handlers) {
-                    if (cb.Body == null || cb.Body.Type != type) {
+                    if (cb.Body == null || !TypeUtils.AreEquivalent(cb.Body.Type, type)) {
                         throw Error.BodyOfCatchMustHaveSameTypeAsBodyOfTry();
                     }
                 }

@@ -17,7 +17,7 @@ using System.Linq.Expressions;
 using Microsoft.Scripting.Utils;
 
 namespace Microsoft.Scripting.Interpretation {
-    public partial class Interpreter {
+    internal partial class Interpreter {
 
         private delegate object InterpretDelegate(InterpreterState state, Expression expression);
 

@@ -30,6 +30,7 @@ namespace System.Dynamic {
         /// </summary>
         /// <param name="callInfo">The signature of the arguments at the call site.</param>
         protected GetIndexBinder(CallInfo callInfo) {
+            ContractUtils.RequiresNotNull(callInfo, "callInfo");
             _callInfo = callInfo;
         }
 
