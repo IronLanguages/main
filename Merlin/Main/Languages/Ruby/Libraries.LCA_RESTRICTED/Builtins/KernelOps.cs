@@ -165,7 +165,7 @@ namespace IronRuby.Builtins {
                 p.WaitForExit();
                 return p;
             } catch (Exception e) {
-                throw new Errno.NoEntryError(psi.FileName, e);
+                throw Errno.CreateENOENT(psi.FileName, e);
             }
         }
 
@@ -177,7 +177,7 @@ namespace IronRuby.Builtins {
             try {
                 return Process.Start(psi);
             } catch (Exception e) {
-                throw new Errno.NoEntryError(psi.FileName, e);
+                throw Errno.CreateENOENT(psi.FileName, e);
             }
         }
 
@@ -241,7 +241,20 @@ namespace IronRuby.Builtins {
 #endif
         #endregion
 
-        //abort
+        [RubyMethod("abort", RubyMethodAttributes.PrivateInstance)]
+        [RubyMethod("abort", RubyMethodAttributes.PublicSingleton)]
+        public static void Abort(object/*!*/ self) {
+            Exit(self, 1);
+        }
+
+        [RubyMethod("abort", RubyMethodAttributes.PrivateInstance)]
+        [RubyMethod("abort", RubyMethodAttributes.PublicSingleton)]
+        public static void Abort(BinaryOpStorage/*!*/ writeStorage, object/*!*/ self, [NotNull]MutableString/*!*/ message) {
+            var site = writeStorage.GetCallSite("write", 1);
+            site.Target(site, writeStorage.Context.StandardErrorOutput, message);
+
+            Exit(self, 1);
+        }
 
         [RubyMethod("at_exit", RubyMethodAttributes.PrivateInstance)]
         [RubyMethod("at_exit", RubyMethodAttributes.PublicSingleton)]
@@ -463,43 +476,86 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("open", RubyMethodAttributes.PrivateInstance)]
         [RubyMethod("open", RubyMethodAttributes.PublicSingleton)]
-        public static RubyIO/*!*/ Open(RubyContext/*!*/ context, object self, 
-            [DefaultProtocol, NotNull]MutableString/*!*/ path, [DefaultProtocol, Optional]MutableString mode) {
+        public static RubyIO/*!*/ Open(
+            RubyContext/*!*/ context, 
+            object self,
+            [DefaultProtocol, NotNull]MutableString/*!*/ path, 
+            [DefaultProtocol, Optional]MutableString mode, 
+            [DefaultProtocol, DefaultParameterValue(RubyFileOps.ReadWriteMode)]int permission) {
+
+            if (path.IsEmpty) {
+                throw new Errno.InvalidError();
+            }
 
             string fileName = path.ConvertToString();
             if (fileName.Length > 0 && fileName[0] == '|') {
                 throw new NotImplementedError();
             }
-            return new RubyFile(context, fileName, (mode != null) ? mode.ToString() : "r");
+
+            bool existingFile = RubyFileOps.FileExists(context, path.ConvertToString());
+
+            RubyIO file = new RubyFile(context, fileName, (mode != null) ? mode.ToString() : "r");
+
+            if (!existingFile) {
+                RubyFileOps.Chmod(fileName, permission);
+            }
+
+            return file;
         }
 
         [RubyMethod("open", RubyMethodAttributes.PrivateInstance)]
         [RubyMethod("open", RubyMethodAttributes.PublicSingleton)]
-        public static object Open(RubyContext/*!*/ context, [NotNull]BlockParam/*!*/ block, object self, 
-            [DefaultProtocol, NotNull]MutableString/*!*/ path, [DefaultProtocol, Optional]MutableString mode) {
+        public static object Open(
+            RubyContext/*!*/ context, 
+            [NotNull]BlockParam/*!*/ block, 
+            object self,
+            [DefaultProtocol, NotNull]MutableString/*!*/ path, 
+            [DefaultProtocol, Optional]MutableString mode, 
+            [DefaultProtocol, DefaultParameterValue(RubyFileOps.ReadWriteMode)]int permission) {
 
-            RubyIO file = Open(context, self, path, mode);
+            RubyIO file = Open(context, self, path, mode, permission);
             return OpenWithBlock(block, file);
         }
 
         [RubyMethod("open", RubyMethodAttributes.PrivateInstance)]
         [RubyMethod("open", RubyMethodAttributes.PublicSingleton)]
-        public static RubyIO/*!*/ Open(RubyContext/*!*/ context, object self, 
-            [DefaultProtocol, NotNull]MutableString/*!*/ path, int mode) {
+        public static RubyIO/*!*/ Open(
+            RubyContext/*!*/ context, 
+            object self,
+            [DefaultProtocol, NotNull]MutableString/*!*/ path, 
+            int mode,
+            [DefaultProtocol, DefaultParameterValue(RubyFileOps.ReadWriteMode)]int permission) {
+
+            if (path.IsEmpty) {
+                throw new Errno.InvalidError();
+            }
 
             string fileName = path.ConvertToString();
             if (fileName.Length > 0 && fileName[0] == '|') {
                 throw new NotImplementedError();
             }
-            return new RubyFile(context, fileName, (RubyFileMode)mode);
+
+            bool existingFile = RubyFileOps.FileExists(context, path.ConvertToString());
+
+            RubyIO file = new RubyFile(context, fileName, (RubyFileMode)mode);
+
+            if (!existingFile) {
+                RubyFileOps.Chmod(fileName, permission);
+            }
+            return file;
         }
 
         [RubyMethod("open", RubyMethodAttributes.PrivateInstance)]
         [RubyMethod("open", RubyMethodAttributes.PublicSingleton)]
-        public static object Open(RubyContext/*!*/ context, [NotNull]BlockParam/*!*/ block, object self, 
-            [DefaultProtocol, NotNull]MutableString/*!*/ path, int mode) {
+        public static object Open(
+            RubyContext/*!*/ context, 
+            [NotNull]BlockParam/*!*/ block, 
+            object self,
+            [DefaultProtocol, NotNull]MutableString/*!*/ path, 
+            int mode,
+            [DefaultProtocol, DefaultParameterValue(RubyFileOps.ReadWriteMode)]int permission) {
 
-            RubyIO file = Open(context, self, path, mode);
+            RubyIO file = Open(context, self, path, mode, permission);
             return OpenWithBlock(block, file);
         }
 
@@ -1380,12 +1436,21 @@ namespace IronRuby.Builtins {
         // thread-safe:
         [RubyMethod("methods")]
         public static RubyArray/*!*/ GetMethods(RubyContext/*!*/ context, object self, [DefaultParameterValue(true)]bool inherited) {
+            var foreignMembers = context.GetForeignDynamicMemberNames(self);
+
             RubyClass immediateClass = context.GetImmediateClassOf(self);
             if (!inherited && !immediateClass.IsSingletonClass) {
-                return new RubyArray();
+                var result = new RubyArray();
+                if (foreignMembers.Count > 0) {
+                    var symbolicNames = context.RubyOptions.Compatibility > RubyCompatibility.Ruby18;
+                    foreach (var name in foreignMembers) {
+                        result.Add(ModuleOps.CreateMethodName(name, symbolicNames));
+                    }
+                }
+                return result;
             }
 
-            return ModuleOps.GetMethods(immediateClass, inherited, RubyMethodAttributes.Public | RubyMethodAttributes.Protected);
+            return ModuleOps.GetMethods(immediateClass, inherited, RubyMethodAttributes.Public | RubyMethodAttributes.Protected, foreignMembers);
         }
 
         // thread-safe:

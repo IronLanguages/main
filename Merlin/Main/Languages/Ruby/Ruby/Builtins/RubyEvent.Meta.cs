@@ -28,8 +28,8 @@ using System.Reflection;
 
 namespace IronRuby.Builtins {
     using Ast = System.Linq.Expressions.Expression;
-    
-    public partial class RubyEvent : IDynamicMetaObjectProvider {
+
+    public partial class RubyEvent : IRubyDynamicMetaObjectProvider {
         public DynamicMetaObject/*!*/ GetMetaObject(Expression/*!*/ parameter) {
             return new Meta(parameter, BindingRestrictions.Empty, this);
         }

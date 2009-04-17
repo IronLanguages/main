@@ -796,12 +796,13 @@ namespace Microsoft.Scripting.Generation {
         /// <returns>the compiled delegate</returns>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1011:ConsiderPassingBaseTypesAsParameters")]
         public static T CompileToMethod<T>(Expression<T> lambda, DebugInfoGenerator debugInfoGenerator, bool emitDebugSymbols) {
-            var type = Snippets.Shared.DefineType(lambda.Name, typeof(object), false, emitDebugSymbols).TypeBuilder;
+            string methodName = String.IsNullOrEmpty(lambda.Name) ? GetUniqueMethodName() : lambda.Name;
+
+            var type = Snippets.Shared.DefineType(methodName, typeof(object), false, emitDebugSymbols).TypeBuilder;
             var rewriter = new BoundConstantsRewriter(type);
             lambda = (Expression<T>)rewriter.Visit(lambda);
 
             //Create a unique method name when the lambda doesn't have a name or the name is empty.
-            string methodName = String.IsNullOrEmpty(lambda.Name) ? GetUniqueMethodName() : lambda.Name;
             var method = type.DefineMethod(methodName, CompilerHelpers.PublicStatic);
             lambda.CompileToMethod(method, debugInfoGenerator);
 

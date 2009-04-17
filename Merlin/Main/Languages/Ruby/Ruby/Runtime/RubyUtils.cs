@@ -593,8 +593,13 @@ namespace IronRuby.Runtime {
                 methodDefinition = null;
             }
 
-            if (context.Options.InterpretedMode) {
-                return Interpreter.TopLevelExecute(new InterpretedScriptCode(lambda, source),
+            // module-eval:
+            if (module != null) {
+                targetScope = CreateModuleEvalScope(targetScope, self, module);
+            }
+
+            if (context.RubyOptions.InterpretedMode) {
+                return Interpreter.TopLevelExecute(new RubyScriptCode.Evaled(lambda, source),
                     targetScope,
                     self,
                     module,
@@ -614,6 +619,12 @@ namespace IronRuby.Runtime {
             }
         }
 
+        private static RubyModuleScope/*!*/ CreateModuleEvalScope(RubyScope/*!*/ parent, object self, RubyModule module) {
+            RubyModuleScope scope = new RubyModuleScope(parent, module, true, parent.RuntimeFlowControl, self);
+            scope.SetDebugName("top-module/instance-eval");
+            return scope;
+        }
+        
         public static object EvaluateInModule(RubyModule/*!*/ self, BlockParam/*!*/ block) {
             Assert.NotNull(self, block);
 

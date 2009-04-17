@@ -249,7 +249,7 @@ namespace System.Dynamic {
 
             public override bool Equals(object obj) {
                 var other = obj as TypeRestriction;
-                return other != null && other._type == _type && other._expression == _expression;
+                return other != null && TypeUtils.AreEquivalent(other._type, _type) && other._expression == _expression;
             }
 
             public override int GetHashCode() {

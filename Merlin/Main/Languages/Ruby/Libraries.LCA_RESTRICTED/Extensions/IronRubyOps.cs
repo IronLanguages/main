@@ -31,39 +31,6 @@ namespace IronRuby.Builtins {
 
         [RubyModule("Clr")]
         public static class ClrOps {
-            
-            //[RubyConstant("String")]
-            //public static RubyModule/*!*/ GetClrStringModule(RubyModule/*!*/ module) {
-            //    return GetModule(module, typeof(ClrString));
-            //}
-
-            //[RubyConstant("Float")]
-            //public static RubyModule/*!*/ GetClrFloatModule(RubyModule/*!*/ module) {
-            //    return GetModule(module, typeof(ClrFloat));
-            //}
-
-            //[RubyConstant("Integer")]
-            //public static RubyModule/*!*/ GetClrIntegerModule(RubyModule/*!*/ module) {
-            //    return GetModule(module, typeof(ClrInteger));
-            //}
-
-            //[RubyConstant("BigInteger")]
-            //public static RubyModule/*!*/ GetClrBigIntegerModule(RubyModule/*!*/ module) {
-            //    return GetModule(module, typeof(ClrBigInteger));
-            //}
-
-            //[RubyConstant("MultiDimensionalArray")]
-            //public static RubyModule/*!*/ GetMultiDimensionalArrayModule(RubyModule/*!*/ module) {
-            //    return GetModule(module, typeof(MultiDimensionalArray));
-            //}
-
-            //private static RubyModule/*!*/ GetModule(RubyModule/*!*/ declaringModule, Type/*!*/ type) {
-            //    RubyModule result;
-            //    declaringModule.Context.TryGetModule(type, out result);
-            //    Debug.Assert(result != null);
-            //    return result;
-            //}
-
             [RubyMethod("profile", RubyMethodAttributes.PublicSingleton)]
             public static Hash/*!*/ GetProfile(RubyContext/*!*/ context, object self) {
                 if (!((RubyOptions)context.Options).Profile) {

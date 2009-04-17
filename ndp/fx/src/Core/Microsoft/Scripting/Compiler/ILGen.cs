@@ -490,6 +490,9 @@ namespace System.Linq.Expressions.Compiler {
             Type t = value as Type;
             if (t != null && ShouldLdtoken(t)) {
                 il.EmitType(t);
+                if (type != typeof(Type)) {
+                    il.Emit(OpCodes.Castclass, type);
+                }
                 return;
             }
 
@@ -503,7 +506,6 @@ namespace System.Linq.Expressions.Compiler {
                 } else {
                     il.Emit(OpCodes.Call, typeof(MethodBase).GetMethod("GetMethodFromHandle", new Type[] { typeof(RuntimeMethodHandle) }));
                 }
-                type = TypeUtils.GetConstantType(type);
                 if (type != typeof(MethodBase)) {
                     il.Emit(OpCodes.Castclass, type);
                 }
@@ -582,7 +584,7 @@ namespace System.Linq.Expressions.Compiler {
         #region Linq Conversions
 
         internal static void EmitConvertToType(this ILGenerator il, Type typeFrom, Type typeTo, bool isChecked) {
-            if (typeFrom == typeTo) {
+            if (TypeUtils.AreEquivalent(typeFrom, typeTo)) {
                 return;
             }
 
@@ -934,7 +936,7 @@ namespace System.Linq.Expressions.Compiler {
                 for (int i = 0; i < rank; i++) {
                     types[i] = typeof(int);
                 }
-                il. EmitNew(arrayType, types);
+                il.EmitNew(arrayType, types);
             }
         }
 

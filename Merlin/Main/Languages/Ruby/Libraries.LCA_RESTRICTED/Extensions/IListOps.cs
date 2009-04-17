@@ -408,8 +408,17 @@ namespace IronRuby.Builtins {
                 DeleteItems(self, index, length);
             } else {
                 if (valueAsList == null) {
-                    SetElement(context, self, index, value);
+                    Insert(context, self, index, value);
+                    
+                    if (length > 0) {
+                        RemoveRange(self, index + 1, Math.Min(length, self.Count - index - 1));
+                    }
                 } else {
+                    if (value == self) {
+                        valueAsList = new object[self.Count];
+                        self.CopyTo(valueAsList as object[], 0);
+                    }
+
                     ExpandList(self, index);
 
                     int limit = length > valueAsList.Count ? valueAsList.Count : length;
@@ -420,7 +429,8 @@ namespace IronRuby.Builtins {
 
                     if (length < valueAsList.Count) {
                         InsertRange(self, index + limit, EnumerateRange(valueAsList, limit, valueAsList.Count - limit));
-                    } else {
+                    }
+                    else {
                         RemoveRange(self, index + limit, Math.Min(length - valueAsList.Count, self.Count - (index + limit)));
                     }
                 }

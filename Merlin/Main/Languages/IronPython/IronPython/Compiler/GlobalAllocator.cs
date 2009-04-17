@@ -102,7 +102,7 @@ namespace IronPython.Compiler.Ast {
             Assert.NotNull(ag, variable);
 
             Debug.Assert(variable.Kind != VariableKind.Parameter);
-
+            
             string name = SymbolTable.IdToString(variable.Name);
             switch (variable.Kind) {
                 case VariableKind.Global:

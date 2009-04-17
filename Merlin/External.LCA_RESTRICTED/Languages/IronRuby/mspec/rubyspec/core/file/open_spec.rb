@@ -14,9 +14,9 @@ describe "File.open" do
   end
 
   after :each do
+    @fh.close if @fh and not @fh.closed?
     File.delete(@file) if File.exist?(@file)
     File.delete("fake") if File.exist?("fake")
-    @fh.close if @fh and not @fh.closed?
   end
 
   it "with block does not raise error when file is closed inside the block" do
@@ -58,6 +58,7 @@ describe "File.open" do
       class << f
         alias_method(:close_orig, :close)
         def close
+          close_orig
           raise IOError
         end
       end
@@ -507,6 +508,10 @@ describe "File.open" do
     lambda { File.open(true)  }.should raise_error(TypeError)
     lambda { File.open(false) }.should raise_error(TypeError)
     lambda { File.open(nil)   }.should raise_error(TypeError)
+  end
+  
+  it "raises Errno::EINVAL if filename is empty" do
+    lambda { File.open("") }.should raise_error(Errno::EINVAL)
   end
 
   it "raises a SystemCallError if passed an invalid Integer type" do
