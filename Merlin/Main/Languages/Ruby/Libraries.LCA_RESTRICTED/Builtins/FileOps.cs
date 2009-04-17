@@ -84,7 +84,13 @@ namespace IronRuby.Builtins {
                 throw new Errno.InvalidError();
             }
 
-            return new RubyFile(self.Context, path.ConvertToString(), (RubyFileMode)mode);
+            try {
+                return new RubyFile(self.Context, path.ConvertToString(), (RubyFileMode)mode);
+            } catch (IOException e) {
+                throw new Errno.ExistError(e.Message, e);
+            } catch (ArgumentException e) {
+                throw new Errno.InvalidError(e.Message, e);
+            }
         }
 
         #endregion

@@ -49,7 +49,7 @@ namespace IronRuby.Builtins {
             } else if (readWriteFlags == RubyFileMode.RDWR) {
                 access = FileAccess.ReadWrite;
             } else {
-                throw new ArgumentException("file open mode must be one of RDONLY WRONLY or RDWR");
+                throw new ArgumentException(String.Format("File exists - {0}", path));
             }
 
             if ((mode & RubyFileMode.APPEND) != 0) {
@@ -63,7 +63,7 @@ namespace IronRuby.Builtins {
             }
 
             if ((mode & RubyFileMode.EXCL) != 0 && (mode & RubyFileMode.CREAT) != 0 && context.DomainManager.Platform.FileExists(path)) {
-                throw RubyExceptions.CreateIOError((String.Format("File exists - {0}", path)));
+                throw new IOException(String.Format("No such file or directory - {0}", path));
             }
 
             return context.DomainManager.Platform.OpenInputFileStream(path, fileMode, access, share);
