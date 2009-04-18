@@ -16,7 +16,7 @@ describe "Array#reverse" do
     empty.reverse.should == empty
 
     array = ArraySpecs.recursive_array
-    array.reverse.should == [array, array, array, array, array, 3.0, 'two', 1]
+    array.reverse.should == [[array], 3.0, 'two', 1]
   end
 end
 
@@ -33,7 +33,7 @@ describe "Array#reverse!" do
     empty.reverse!.should == [empty]
 
     array = ArraySpecs.recursive_array
-    array.reverse!.should == [array, array, array, array, array, 3.0, 'two', 1]
+    array.reverse!.should == [[array], 3.0, 'two', 1]
   end
 
   compliant_on :ruby, :jruby, :ir do

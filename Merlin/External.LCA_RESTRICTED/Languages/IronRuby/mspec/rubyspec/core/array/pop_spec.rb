@@ -27,7 +27,7 @@ describe "Array#pop" do
     empty.pop.should == []
 
     array = ArraySpecs.recursive_array
-    array.pop.should == [1, 'two', 3.0, array, array, array, array]
+    array.pop.should == [[1, 'two', 3.0]]
   end
 
   it "keeps taint status" do
