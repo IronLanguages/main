@@ -62,35 +62,17 @@ namespace IronRuby.Builtins {
 
         [RubyConstructor]
         public static RubyFile/*!*/ CreateFile(RubyClass/*!*/ self, MutableString/*!*/ path) {
-            if (path.IsEmpty) {
-                throw new Errno.InvalidError();
-            }
-
             return new RubyFile(self.Context, path.ConvertToString(), "r");
         }
 
         [RubyConstructor]
         public static RubyFile/*!*/ CreateFile(RubyClass/*!*/ self, MutableString/*!*/ path, MutableString mode) {
-            if (path.IsEmpty) {
-                throw new Errno.InvalidError();
-            }
-
             return new RubyFile(self.Context, path.ConvertToString(), (mode != null) ? mode.ConvertToString() : "r");
         }
 
         [RubyConstructor]
         public static RubyFile/*!*/ CreateFile(RubyClass/*!*/ self, MutableString/*!*/ path, int mode) {
-            if (path.IsEmpty) {
-                throw new Errno.InvalidError();
-            }
-
-            try {
-                return new RubyFile(self.Context, path.ConvertToString(), (RubyFileMode)mode);
-            } catch (IOException e) {
-                throw new Errno.ExistError(e.Message, e);
-            } catch (ArgumentException e) {
-                throw new Errno.InvalidError(e.Message, e);
-            }
+            return new RubyFile(self.Context, path.ConvertToString(), (RubyFileMode)mode);
         }
 
         #endregion
@@ -301,7 +283,7 @@ namespace IronRuby.Builtins {
         public static int Delete(RubyClass/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ path) {
             string strPath = path.ConvertToString();
             if (!FileExists(self.Context, strPath)) {
-                throw Errno.CreateENOENT(String.Format("No such file or directory - {0}", strPath));
+                throw RubyErrno.CreateENOENT(String.Format("No such file or directory - {0}", strPath));
             }
 #if !SILVERLIGHT
             FileAttributes oldAttributes = File.GetAttributes(strPath);
@@ -604,7 +586,7 @@ namespace IronRuby.Builtins {
                     throw;
                 }
                 // Re-throw exception as a reasonable Ruby exception
-                throw new Errno.InvalidError(path.ConvertToString(), e);
+                throw RubyErrno.CreateEINVAL(path.ConvertToString(), e);
             }
         }
 
@@ -675,12 +657,12 @@ namespace IronRuby.Builtins {
             [DefaultProtocol, NotNull]MutableString/*!*/ oldPath, [DefaultProtocol, NotNull]MutableString/*!*/ newPath) {
 
             if (oldPath.IsEmpty || newPath.IsEmpty) {
-                throw Errno.CreateENOENT();
+                throw RubyErrno.CreateENOENT();
             }
 
             string strOldPath = oldPath.ConvertToString();
             if (!FileExists(context, strOldPath) && !DirectoryExists(context, strOldPath)) {
-                throw Errno.CreateENOENT(String.Format("No such file or directory - {0}", oldPath));
+                throw RubyErrno.CreateENOENT(String.Format("No such file or directory - {0}", oldPath));
             }
 #if !SILVERLIGHT
             if (ExpandPath(context, oldPath) == ExpandPath(context, newPath)) {
@@ -757,7 +739,7 @@ namespace IronRuby.Builtins {
         public static int UpdateTimes(RubyClass/*!*/ self, DateTime accessTime, DateTime modifiedTime, [NotNull]MutableString/*!*/ path) {
             string strPath = path.ConvertToString();
             if (!FileExists(self.Context, strPath)) {
-                throw Errno.CreateENOENT(String.Format("No such file or directory - {0}", strPath));
+                throw RubyErrno.CreateENOENT(String.Format("No such file or directory - {0}", strPath));
             }
 
             FileInfo info = new FileInfo(strPath);
@@ -885,7 +867,7 @@ namespace IronRuby.Builtins {
                 if (TryCreate(context, path, out fsi)) {
                     return fsi;
                 } else {
-                    throw Errno.CreateENOENT(String.Format("No such file or directory - {0}", path));
+                    throw RubyErrno.CreateENOENT(String.Format("No such file or directory - {0}", path));
                 }
             }
 

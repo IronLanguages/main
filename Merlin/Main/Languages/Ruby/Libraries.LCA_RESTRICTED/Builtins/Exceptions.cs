@@ -207,7 +207,7 @@ namespace IronRuby.Builtins {
     public static class SystemCallErrorOps {
         [RubyConstructor]
         public static ExternalException/*!*/ Factory(RubyClass/*!*/ self, [DefaultProtocol]MutableString message) {
-            ExternalException result = new ExternalException(Errno.MakeMessage(ref message, "unknown error"));
+            ExternalException result = new ExternalException(RubyErrno.MakeMessage(ref message, "unknown error"));
             RubyExceptionData.InitializeException(result, message);
             return result;
         }
@@ -217,7 +217,7 @@ namespace IronRuby.Builtins {
             // TODO:
             var message = MutableString.Create("system error #" + errorCode);
 
-            ExternalException result = new ExternalException(Errno.MakeMessage(ref message, "unknown error"));
+            ExternalException result = new ExternalException(RubyErrno.MakeMessage(ref message, "unknown error"));
             RubyExceptionData.InitializeException(result, message);
             return result;
         }

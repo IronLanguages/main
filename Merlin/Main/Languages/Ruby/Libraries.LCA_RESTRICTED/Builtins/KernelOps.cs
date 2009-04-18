@@ -165,7 +165,7 @@ namespace IronRuby.Builtins {
                 p.WaitForExit();
                 return p;
             } catch (Exception e) {
-                throw Errno.CreateENOENT(psi.FileName, e);
+                throw RubyErrno.CreateENOENT(psi.FileName, e);
             }
         }
 
@@ -177,7 +177,7 @@ namespace IronRuby.Builtins {
             try {
                 return Process.Start(psi);
             } catch (Exception e) {
-                throw Errno.CreateENOENT(psi.FileName, e);
+                throw RubyErrno.CreateENOENT(psi.FileName, e);
             }
         }
 
@@ -484,7 +484,7 @@ namespace IronRuby.Builtins {
             [DefaultProtocol, DefaultParameterValue(RubyFileOps.ReadWriteMode)]int permission) {
 
             if (path.IsEmpty) {
-                throw new Errno.InvalidError();
+                throw new RubyErrno.InvalidError();
             }
 
             string fileName = path.ConvertToString();
@@ -527,7 +527,7 @@ namespace IronRuby.Builtins {
             [DefaultProtocol, DefaultParameterValue(RubyFileOps.ReadWriteMode)]int permission) {
 
             if (path.IsEmpty) {
-                throw new Errno.InvalidError();
+                throw RubyErrno.CreateEINVAL();
             }
 
             string fileName = path.ConvertToString();
