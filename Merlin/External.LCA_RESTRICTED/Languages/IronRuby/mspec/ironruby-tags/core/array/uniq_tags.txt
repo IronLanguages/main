@@ -1,2 +1,0 @@
-critical:Array#uniq properly handles recursive arrays
-critical:Array#uniq! properly handles recursive arrays

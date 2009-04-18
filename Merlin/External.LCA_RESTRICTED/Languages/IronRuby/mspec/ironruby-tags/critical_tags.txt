@@ -16,12 +16,8 @@ core\argf\path_tags.txt:0:critical:ARGF.path it sets the $FILENAME global variab
 core\argf\rewind_tags.txt:0:critical:ARGF.rewind goes back to beginning of current file
 core\argf\to_i_tags.txt:0:critical:ARGF.to_i returns the current file number on each file
 core\argf\to_io_tags.txt:0:critical:ARGF.to_io returns the IO of the current file
-core\array\intersection_tags.txt:0:critical:Array#& properly handles recursive arrays
 core\array\join_tags.txt:0:critical:Array#join raises a NoMethodError if an element does not respond to #to_s 
 core\array\join_tags.txt:0:critical:Array#join does not separates elements when the passed separator is nil
-core\array\union_tags.txt:0:critical:Array#| properly handles recursive arrays
-core\array\uniq_tags.txt:0:critical:Array#uniq properly handles recursive arrays
-core\array\uniq_tags.txt:0:critical:Array#uniq! properly handles recursive arrays
 core\kernel\sleep_tags.txt:3:critical:Kernel#sleep pauses execution indefinitely if not given a duration
 core\process\times_tags.txt:0:unstable:Process.times returns current cpu times
 core\string\process\wait_tags.txt:0:critical:Process.wait
