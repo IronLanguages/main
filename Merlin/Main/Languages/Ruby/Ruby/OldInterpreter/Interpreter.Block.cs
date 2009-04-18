@@ -27,7 +27,7 @@ namespace Microsoft.Scripting.Interpretation {
     /// <summary>
     /// Interpreter partial class. This part contains interpretation code for lambdas.
     /// </summary>
-    public static partial class Interpreter {
+    internal static partial class Interpreter {
         private static int _DelegateCounter;
         private static WeakDictionary<LambdaExpression, MethodInfo> _Delegates;
 

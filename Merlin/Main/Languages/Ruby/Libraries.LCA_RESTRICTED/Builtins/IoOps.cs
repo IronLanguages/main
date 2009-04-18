@@ -203,7 +203,7 @@ namespace IronRuby.Builtins {
             try {
                 process = Process.Start(startInfo);
             } catch (Exception e) {
-                throw new Errno.NoEntryError(startInfo.FileName, e);
+                throw Errno.CreateENOENT(startInfo.FileName, e);
             }
 
             context.ChildProcessExitStatus = new RubyProcess.Status(process);
@@ -709,7 +709,7 @@ namespace IronRuby.Builtins {
         private static RubyIO/*!*/ OpenFileForRead(RubyContext/*!*/ context, MutableString/*!*/ path) {
             string strPath = path.ConvertToString();
             if (!File.Exists(strPath)) {
-                throw new Errno.NoEntryError(String.Format("No such file or directory - {0}", strPath));
+                throw Errno.CreateENOENT(String.Format("No such file or directory - {0}", strPath));
             }
             return new RubyIO(context, File.OpenRead(strPath), "r");
         }

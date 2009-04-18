@@ -791,15 +791,19 @@ namespace IronPython.Compiler {
             // 1) empty, in which case it becomes 'yield None'
             // 2) a single expression
             // 3) multiple expression, in which case it's wrapped in a tuple.
-            const bool allowEmptyExpr = true;
-            Expression yieldResult = ParseTestListAsExpr(allowEmptyExpr);
+            Expression yieldResult;
 
-            // Check empty expression and convert to 'none'
-            TupleExpression t = yieldResult as TupleExpression;
-            if (t != null) {
-                if (t.Items.Length == 0) {
-                    yieldResult = new ConstantExpression(null);
-                }
+            bool trailingComma;
+            List<Expression> l = ParseExpressionList(out trailingComma);
+            if (l.Count == 0) {
+                // Check empty expression and convert to 'none'
+                yieldResult = new ConstantExpression(null);
+            } else if (l.Count != 1) {
+                // make a tuple
+                yieldResult = MakeTupleOrExpr(l, trailingComma);
+            } else {
+                // just take the single expression
+                yieldResult = l[0];
             }
 
             Expression yieldExpression = new YieldExpression(yieldResult);

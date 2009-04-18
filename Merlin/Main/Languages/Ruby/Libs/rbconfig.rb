@@ -18,27 +18,15 @@ module Config
   RUBY_VERSION == "1.8.6" or
     raise "ruby lib version (1.8.6) doesn't match executable version (#{RUBY_VERSION})"
 
-  # TODO: Temporary hack to locate where we are based on relative MERLIN
-  # layout paths. We will replace this with just the path to this file when
-  # we build out the Ruby/libs directory to contain our own private copy of 
-  # the Ruby libraries
-  # Note that this symbol should be redefined by the packaging script for binary
-  # layouts
-  TOPDIR = File.dirname(__FILE__) + '/../../../../External.LCA_RESTRICTED/languages/ruby/ruby-1.8.6p287/'
-
-  DESTDIR = TOPDIR && TOPDIR[/\A[a-z]:/i] || '' unless defined? DESTDIR
   CONFIG = {}
-  CONFIG["DESTDIR"] = DESTDIR
   CONFIG["MAJOR"] = "1"
   CONFIG["MINOR"] = "8"
   CONFIG["TEENY"] = "6"
   CONFIG["PATCHLEVEL"] = "0"
-  CONFIG["prefix"] = (TOPDIR || DESTDIR + "")
   CONFIG["EXEEXT"] = ".exe"
-  # TODO: change back to ironruby
-  CONFIG["ruby_install_name"] = "ruby"
-  CONFIG["RUBY_INSTALL_NAME"] = "ruby"
-  # END TODO:
+  # This value is used by libraries to spawn new processes to run Ruby scripts. Hence it needs to match the ir.exe name
+  CONFIG["ruby_install_name"] = "ir"
+  CONFIG["RUBY_INSTALL_NAME"] = "ir"
   CONFIG["RUBY_SO_NAME"] = "msvcrt-ruby18"
   CONFIG["SHELL"] = "$(COMSPEC)"
   CONFIG["BUILD_FILE_SEPARATOR"] = "\\"
@@ -49,19 +37,35 @@ module Config
   CONFIG["FFLAGS"] = ""
   CONFIG["LDFLAGS"] = ""
   CONFIG["LIBS"] = "oldnames.lib user32.lib advapi32.lib ws2_32.lib "
+  
+  # Set up paths
+  if ENV["MERLIN_ROOT"] then
+    # This is a dev environment. See http://wiki.github.com/ironruby/ironruby
+    TOPDIR = File.expand_path("bin/Debug", ENV["MERLIN_ROOT"])
+    CONFIG["bindir"] = TOPDIR
+    CONFIG["libdir"] = File.expand_path("../External.LCA_RESTRICTED/Languages/Ruby/redist-libs", ENV["MERLIN_ROOT"])
+  else
+    TOPDIR = File.dirname(__FILE__) + '/../../'
+    CONFIG["bindir"] = TOPDIR + "/bin"
+    CONFIG["libdir"] = TOPDIR + "/lib"
+  end
+  DESTDIR = TOPDIR && TOPDIR[/\A[a-z]:/i] || '' unless defined? DESTDIR
+  CONFIG["DESTDIR"] = DESTDIR
+  CONFIG["prefix"] = (TOPDIR || DESTDIR + "")
   CONFIG["exec_prefix"] = "$(prefix)"
-  CONFIG["bindir"] = "$(exec_prefix)/bin"
   CONFIG["sbindir"] = "$(exec_prefix)/sbin"
   CONFIG["libexecdir"] = "$(exec_prefix)/libexec"
   CONFIG["datadir"] = "$(prefix)/share"
   CONFIG["sysconfdir"] = "$(prefix)/etc"
   CONFIG["sharedstatedir"] = "$(DESTDIR)/etc"
   CONFIG["localstatedir"] = "$(DESTDIR)/var"
-  CONFIG["libdir"] = "$(exec_prefix)/lib"
   CONFIG["includedir"] = "$(prefix)/include"
-  CONFIG["oldincludedir"] = "/usr/include"
   CONFIG["infodir"] = "$(prefix)/info"
   CONFIG["mandir"] = "$(prefix)/man"
+  CONFIG["rubylibdir"] = "$(libdir)/ruby/$(ruby_version)"
+  CONFIG["sitedir"] = "$(libdir)/ruby/site_ruby"
+
+  CONFIG["oldincludedir"] = "/usr/include"
   CONFIG["build"] = "i686-pc-mswin32"
   CONFIG["build_alias"] = "i686-mswin32"
   CONFIG["build_cpu"] = "i686"
@@ -140,10 +144,8 @@ module Config
   CONFIG["EXPORT_PREFIX"] = " "
   CONFIG["arch"] = "i386-mswin32"
   CONFIG["sitearch"] = "i386-msvcrt"
-  CONFIG["sitedir"] = "$(prefix)/lib/ruby/site_ruby"
   CONFIG["configure_args"] = "--with-make-prog=nmake --enable-shared --with-winsock2"
   CONFIG["ruby_version"] = "$(MAJOR).$(MINOR)"
-  CONFIG["rubylibdir"] = "$(libdir)/ruby/$(ruby_version)"
   CONFIG["archdir"] = "$(rubylibdir)/$(arch)"
   CONFIG["sitelibdir"] = "$(sitedir)/$(ruby_version)"
   CONFIG["sitearchdir"] = "$(sitelibdir)/$(sitearch)"

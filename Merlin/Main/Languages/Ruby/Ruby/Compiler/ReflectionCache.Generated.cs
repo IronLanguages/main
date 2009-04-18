@@ -88,12 +88,8 @@ namespace IronRuby.Compiler {
         private static MethodInfo _CreateInclusiveIntegerRange;
         public static MethodInfo/*!*/ CreateInclusiveRange { get { return _CreateInclusiveRange ?? (_CreateInclusiveRange = GetMethod(typeof(RubyOps), "CreateInclusiveRange")); } }
         private static MethodInfo _CreateInclusiveRange;
-        public static MethodInfo/*!*/ CreateMainTopLevelScope { get { return _CreateMainTopLevelScope ?? (_CreateMainTopLevelScope = GetMethod(typeof(RubyOps), "CreateMainTopLevelScope")); } }
-        private static MethodInfo _CreateMainTopLevelScope;
         public static MethodInfo/*!*/ CreateMethodScope { get { return _CreateMethodScope ?? (_CreateMethodScope = GetMethod(typeof(RubyOps), "CreateMethodScope")); } }
         private static MethodInfo _CreateMethodScope;
-        public static MethodInfo/*!*/ CreateModuleEvalScope { get { return _CreateModuleEvalScope ?? (_CreateModuleEvalScope = GetMethod(typeof(RubyOps), "CreateModuleEvalScope")); } }
-        private static MethodInfo _CreateModuleEvalScope;
         public static MethodInfo/*!*/ CreateModuleScope { get { return _CreateModuleScope ?? (_CreateModuleScope = GetMethod(typeof(RubyOps), "CreateModuleScope")); } }
         private static MethodInfo _CreateModuleScope;
         public static MethodInfo/*!*/ CreateMutableStringL { get { return _CreateMutableStringL ?? (_CreateMutableStringL = GetMethod(typeof(RubyOps), "CreateMutableStringL")); } }
@@ -136,18 +132,12 @@ namespace IronRuby.Compiler {
         private static MethodInfo _CreateSymbolMM;
         public static MethodInfo/*!*/ CreateSymbolN { get { return _CreateSymbolN ?? (_CreateSymbolN = GetMethod(typeof(RubyOps), "CreateSymbolN")); } }
         private static MethodInfo _CreateSymbolN;
-        public static MethodInfo/*!*/ CreateTopLevelHostedScope { get { return _CreateTopLevelHostedScope ?? (_CreateTopLevelHostedScope = GetMethod(typeof(RubyOps), "CreateTopLevelHostedScope")); } }
-        private static MethodInfo _CreateTopLevelHostedScope;
-        public static MethodInfo/*!*/ CreateTopLevelScope { get { return _CreateTopLevelScope ?? (_CreateTopLevelScope = GetMethod(typeof(RubyOps), "CreateTopLevelScope")); } }
-        private static MethodInfo _CreateTopLevelScope;
         public static MethodInfo/*!*/ CreateTypeConversionError { get { return _CreateTypeConversionError ?? (_CreateTypeConversionError = GetMethod(typeof(RubyOps), "CreateTypeConversionError")); } }
         private static MethodInfo _CreateTypeConversionError;
         public static MethodInfo/*!*/ CreateVector { get { return _CreateVector ?? (_CreateVector = GetMethod(typeof(RubyOps), "CreateVector")); } }
         private static MethodInfo _CreateVector;
         public static MethodInfo/*!*/ CreateVectorWithValues { get { return _CreateVectorWithValues ?? (_CreateVectorWithValues = GetMethod(typeof(RubyOps), "CreateVectorWithValues")); } }
         private static MethodInfo _CreateVectorWithValues;
-        public static MethodInfo/*!*/ CreateWrappedTopLevelScope { get { return _CreateWrappedTopLevelScope ?? (_CreateWrappedTopLevelScope = GetMethod(typeof(RubyOps), "CreateWrappedTopLevelScope")); } }
-        private static MethodInfo _CreateWrappedTopLevelScope;
         public static MethodInfo/*!*/ DefineBlock { get { return _DefineBlock ?? (_DefineBlock = GetMethod(typeof(RubyOps), "DefineBlock")); } }
         private static MethodInfo _DefineBlock;
         public static MethodInfo/*!*/ DefineClass { get { return _DefineClass ?? (_DefineClass = GetMethod(typeof(RubyOps), "DefineClass")); } }
@@ -242,6 +232,8 @@ namespace IronRuby.Compiler {
         private static MethodInfo _HookupEvent;
         public static MethodInfo/*!*/ InitializeBlock { get { return _InitializeBlock ?? (_InitializeBlock = GetMethod(typeof(RubyOps), "InitializeBlock")); } }
         private static MethodInfo _InitializeBlock;
+        public static MethodInfo/*!*/ InitializeScope { get { return _InitializeScope ?? (_InitializeScope = GetMethod(typeof(RubyOps), "InitializeScope")); } }
+        private static MethodInfo _InitializeScope;
         public static MethodInfo/*!*/ IsDefinedClassVariable { get { return _IsDefinedClassVariable ?? (_IsDefinedClassVariable = GetMethod(typeof(RubyOps), "IsDefinedClassVariable")); } }
         private static MethodInfo _IsDefinedClassVariable;
         public static MethodInfo/*!*/ IsDefinedGlobalConstant { get { return _IsDefinedGlobalConstant ?? (_IsDefinedGlobalConstant = GetMethod(typeof(RubyOps), "IsDefinedGlobalConstant")); } }
@@ -336,6 +328,8 @@ namespace IronRuby.Compiler {
         private static MethodInfo _SetCurrentException;
         public static MethodInfo/*!*/ SetCurrentExceptionAndStackTrace { get { return _SetCurrentExceptionAndStackTrace ?? (_SetCurrentExceptionAndStackTrace = GetMethod(typeof(RubyOps), "SetCurrentExceptionAndStackTrace")); } }
         private static MethodInfo _SetCurrentExceptionAndStackTrace;
+        public static MethodInfo/*!*/ SetDataConstant { get { return _SetDataConstant ?? (_SetDataConstant = GetMethod(typeof(RubyOps), "SetDataConstant")); } }
+        private static MethodInfo _SetDataConstant;
         public static MethodInfo/*!*/ SetGlobalConstant { get { return _SetGlobalConstant ?? (_SetGlobalConstant = GetMethod(typeof(RubyOps), "SetGlobalConstant")); } }
         private static MethodInfo _SetGlobalConstant;
         public static MethodInfo/*!*/ SetGlobalVariable { get { return _SetGlobalVariable ?? (_SetGlobalVariable = GetMethod(typeof(RubyOps), "SetGlobalVariable")); } }

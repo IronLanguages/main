@@ -59,6 +59,8 @@ namespace IronRuby.StandardLibrary.Yaml {
         private int _count = 0;
         private int _pointer = 0;
 
+        private bool _inFlowSequence = false;
+
         public Scanner(TextReader reader) {
             _reader = reader;
             FetchStreamStart();
@@ -241,7 +243,11 @@ namespace IronRuby.StandardLibrary.Yaml {
                 case '\'': return FetchSingle();
                 case '"': return FetchDouble();
                 case '?': if (_flowLevel != 0 || NULL_BL_T_LINEBR(Peek(1))) { return FetchKey(); } break;
-                case ':': if (_flowLevel != 0 || NULL_BL_T_LINEBR(Peek(1))) { return FetchValue(); } break;
+                case ':':
+                    if ( !_inFlowSequence && ( _flowLevel != 0 || NULL_BL_T_LINEBR(Peek(1)) ) ) {
+                        return FetchValue();
+                    }
+                    break;
                 case '%': if (colz) { return FetchDirective(); } break;
                 case '-':
                     if ((colz || _docStart) && IsEnding()) {
@@ -782,6 +788,7 @@ namespace IronRuby.StandardLibrary.Yaml {
         }
 
         private Token FetchFlowSequenceStart() {
+            _inFlowSequence = true;
             return FetchFlowCollectionStart(FlowSequenceStartToken.Instance);
         }
 
@@ -804,6 +811,7 @@ namespace IronRuby.StandardLibrary.Yaml {
         }
 
         private Token FetchFlowSequenceEnd() {
+            _inFlowSequence = false;
             return FetchFlowCollectionEnd(FlowSequenceEndToken.Instance);
         }
 

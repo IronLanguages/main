@@ -212,7 +212,7 @@ namespace System.Linq.Expressions {
                     RequiresCanRead(arg, "argument");
                     MemberInfo member = members[i];
                     ContractUtils.RequiresNotNull(member, "member");
-                    if (member.DeclaringType != constructor.DeclaringType) {
+                    if (!TypeUtils.AreEquivalent(member.DeclaringType, constructor.DeclaringType)) {
                         throw Error.ArgumentMemberNotDeclOnType(member.Name, constructor.DeclaringType.Name);
                     }
                     Type memberType;

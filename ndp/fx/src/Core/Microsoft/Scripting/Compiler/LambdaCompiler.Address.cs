@@ -73,7 +73,7 @@ namespace System.Linq.Expressions.Compiler {
         private void AddressOf(BinaryExpression node, Type type) {
             Debug.Assert(node.NodeType == ExpressionType.ArrayIndex && node.Method == null);
 
-            if (type == node.Type) {
+            if (TypeUtils.AreEquivalent(type, node.Type)) {
                 EmitExpression(node.Left);
                 EmitExpression(node.Right);
                 Type rightType = node.Right.Type;
@@ -95,7 +95,7 @@ namespace System.Linq.Expressions.Compiler {
         }
 
         private void AddressOf(ParameterExpression node, Type type) {
-            if (type == node.Type) {
+            if (TypeUtils.AreEquivalent(type, node.Type)) {
                 if (node.IsByRef) {
                     _scope.EmitGet(node);
                 } else {
@@ -108,7 +108,7 @@ namespace System.Linq.Expressions.Compiler {
 
 
         private void AddressOf(MemberExpression node, Type type) {
-            if (type == node.Type) {
+            if (TypeUtils.AreEquivalent(type, node.Type)) {
                 // emit "this", if any
                 Type objectType = null;
                 if (node.Expression != null) {
@@ -174,7 +174,7 @@ namespace System.Linq.Expressions.Compiler {
         }
 
         private void AddressOf(IndexExpression node, Type type) {
-            if (type != node.Type || node.Indexer != null) {
+            if (!TypeUtils.AreEquivalent(type, node.Type) || node.Indexer != null) {
                 EmitExpressionAddress(node, type);
                 return;
             }
@@ -216,7 +216,7 @@ namespace System.Linq.Expressions.Compiler {
             CompilationFlags startEmitted = EmitExpressionStart(node);
 
             WriteBack result = null;
-            if (type == node.Type) {
+            if (TypeUtils.AreEquivalent(type, node.Type)) {
                 switch (node.NodeType) {
                     case ExpressionType.MemberAccess:
                         result = AddressOfWriteBack((MemberExpression)node);
