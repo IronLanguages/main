@@ -2,16 +2,16 @@ require File.dirname(__FILE__) + '/../../spec_helper'
 
 describe "File.new" do
   before :all do
-	@file = tmp('test.txt')
-	@flags = File::CREAT | File::TRUNC | File::WRONLY
-	File.delete(@file) if File.exist?(@file)
+    @file = tmp('test.txt')
+    @flags = File::CREAT | File::TRUNC | File::WRONLY
+    File.delete(@file) if File.exist?(@file)
   end
-  
+
   before :each do
     @fh = nil
     File.open(@file, "w") {} # touch
   end
-
+  
   after :each do
     @fh.close if @fh and not @fh.closed?
     File.delete(@file) if File.exists?(@file)
@@ -91,8 +91,8 @@ describe "File.new" do
 
   it "raises an Errorno::EEXIST if the file exists when create a new file with File::CREAT|File::EXCL" do
     lambda { 
-		@fh = File.new(@file, File::CREAT|File::EXCL) 
-	}.should raise_error(Errno::EEXIST)
+       @fh = File.new(@file, File::CREAT|File::EXCL) 
+    }.should raise_error(Errno::EEXIST)
   end
 
   it "create a new file when use File::WRONLY|File::APPEND mode" do
@@ -103,14 +103,14 @@ describe "File.new" do
 
   it "raises an Errno::EINVAL error with File::APPEND" do
     lambda { 
-		@fh = File.new(@file, File::APPEND) 
-	}.should raise_error(Errno::EINVAL)
+       @fh = File.new(@file, File::APPEND) 
+    }.should raise_error(Errno::EINVAL)
   end
 
   it "raises an Errno::EINVAL error with File::RDONLY|File::APPEND" do
     lambda { 
-		@fh = File.new(@file, File::RDONLY|File::APPEND) 
-	}.should raise_error(Errno::EINVAL)
+      @fh = File.new(@file, File::RDONLY|File::APPEND) 
+    }.should raise_error(Errno::EINVAL)
   end
 
   it "raises an Errno::EINVAL error with File::RDONLY|File::WRONLY" do
