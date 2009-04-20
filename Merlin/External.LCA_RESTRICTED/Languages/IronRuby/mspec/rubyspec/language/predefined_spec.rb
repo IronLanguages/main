@@ -152,6 +152,21 @@ describe "Predefined globals $0 and $PROGRAM_NAME" do
       $0 = old_program_name
     end
   end
+
+  platform_is :windows do
+    it 'is always a canonicalized path' do
+      # Does not use the "fixtures" method since the test
+      # depends on the type of path separator used.
+      fixture_file = File.dirname(__FILE__) + '\\fixtures/file.rb'
+      @output = ruby_exe(fixture_file).split
+
+      @base_prgm = @output[1] # file.rb's $0
+      @sub_prgm = @output[3]  # sub.rb's $0
+
+      @base_prgm.split(File::SEPARATOR).each{ |p| p.include?('\\').should == false }
+      @base_prgm.should == @sub_prgm
+    end
+  end
 end
 
 describe "Predefined globals $1..N" do
