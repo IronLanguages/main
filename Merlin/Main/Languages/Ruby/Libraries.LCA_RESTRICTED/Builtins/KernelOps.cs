@@ -474,6 +474,14 @@ namespace IronRuby.Builtins {
             }
         }
 
+        private static void SetPermission(RubyContext/*!*/ context, string/*!*/ fileName, int/*!*/ permission) {
+            bool existingFile = context.DomainManager.Platform.FileExists(fileName);
+
+            if (!existingFile) {
+                RubyFileOps.Chmod(fileName, permission);
+            }
+        }
+
         [RubyMethod("open", RubyMethodAttributes.PrivateInstance)]
         [RubyMethod("open", RubyMethodAttributes.PublicSingleton)]
         public static RubyIO/*!*/ Open(
@@ -483,22 +491,14 @@ namespace IronRuby.Builtins {
             [DefaultProtocol, Optional]MutableString mode, 
             [DefaultProtocol, DefaultParameterValue(RubyFileOps.ReadWriteMode)]int permission) {
 
-            if (path.IsEmpty) {
-                throw new RubyErrno.InvalidError();
-            }
-
             string fileName = path.ConvertToString();
             if (fileName.Length > 0 && fileName[0] == '|') {
                 throw new NotImplementedError();
             }
 
-            bool existingFile = RubyFileOps.FileExists(context, path.ConvertToString());
-
             RubyIO file = new RubyFile(context, fileName, (mode != null) ? mode.ToString() : "r");
 
-            if (!existingFile) {
-                RubyFileOps.Chmod(fileName, permission);
-            }
+            SetPermission(context, fileName, permission);
 
             return file;
         }
@@ -526,22 +526,15 @@ namespace IronRuby.Builtins {
             int mode,
             [DefaultProtocol, DefaultParameterValue(RubyFileOps.ReadWriteMode)]int permission) {
 
-            if (path.IsEmpty) {
-                throw RubyErrno.CreateEINVAL();
-            }
-
             string fileName = path.ConvertToString();
             if (fileName.Length > 0 && fileName[0] == '|') {
                 throw new NotImplementedError();
             }
 
-            bool existingFile = RubyFileOps.FileExists(context, path.ConvertToString());
-
             RubyIO file = new RubyFile(context, fileName, (RubyFileMode)mode);
 
-            if (!existingFile) {
-                RubyFileOps.Chmod(fileName, permission);
-            }
+            SetPermission(context, fileName, permission);
+
             return file;
         }
 

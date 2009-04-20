@@ -66,11 +66,11 @@ namespace IronRuby.Builtins {
 #endif
         }
 
-        [RubyClass("EINVAL", Extends = typeof(RubyErrno.InvalidError), Inherits = typeof(ExternalException))]
+        [RubyClass("EINVAL", Extends = typeof(InvalidError), Inherits = typeof(ExternalException))]
         public class InvalidErrorOps {
             [RubyConstructor]
-            public static RubyErrno.InvalidError/*!*/ Create(RubyClass/*!*/ self, [DefaultProtocol, DefaultParameterValue(null)]MutableString message) {
-                RubyErrno.InvalidError result = new RubyErrno.InvalidError(RubyErrno.MakeMessage(ref message, "File exists"));
+            public static InvalidError/*!*/ Create(RubyClass/*!*/ self, [DefaultProtocol, DefaultParameterValue(null)]MutableString message) {
+                InvalidError result = new InvalidError(RubyErrno.MakeMessage(ref message, "File exists"));
                 RubyExceptionData.InitializeException(result, message);
                 return result;
             }
@@ -106,11 +106,11 @@ namespace IronRuby.Builtins {
             }
         }
 
-        [RubyClass("EEXIST", Extends = typeof(RubyErrno.ExistError), Inherits = typeof(ExternalException))]
+        [RubyClass("EEXIST", Extends = typeof(ExistError), Inherits = typeof(ExternalException))]
         public class ExistErrorOps {
             [RubyConstructor]
-            public static RubyErrno.ExistError/*!*/ Create(RubyClass/*!*/ self, [DefaultProtocol, DefaultParameterValue(null)]MutableString message) {
-                RubyErrno.ExistError result = new RubyErrno.ExistError(RubyErrno.MakeMessage(ref message, "No such file or directory"));
+            public static ExistError/*!*/ Create(RubyClass/*!*/ self, [DefaultProtocol, DefaultParameterValue(null)]MutableString message) {
+                ExistError result = new ExistError(RubyErrno.MakeMessage(ref message, "No such file or directory"));
                 RubyExceptionData.InitializeException(result, message);
                 return result;
             }

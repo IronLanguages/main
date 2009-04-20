@@ -14,13 +14,13 @@
  * ***************************************************************************/
 
 using System;
-using System.Runtime.InteropServices;
-using Microsoft.Scripting.Utils;
-using IronRuby.Runtime;
 using System.IO;
+using Microsoft.Scripting.Utils;
 
 namespace IronRuby.Builtins {
-
+    /// <summary>
+    /// Helper class for creating the corresponding .NET exceptions from the Ruby Errno
+    /// </summary>
     public static class RubyErrno {
 
         public static string/*!*/ MakeMessage(string message, string/*!*/ baseMessage) {
@@ -70,36 +70,5 @@ namespace IronRuby.Builtins {
         public static FileNotFoundException/*!*/ CreateENOENT(string message) {
             return new FileNotFoundException(message);
         }
-
-        [Serializable]
-        public class ExistError : ExternalException {
-            private const string/*!*/ M = "File exists";
-
-            public ExistError() : this(null, null) { }
-            public ExistError(string message) : this(message, null) { }
-            public ExistError(string message, Exception inner) : base(MakeMessage(message, M), inner) { }
-            public ExistError(MutableString message) : base(MakeMessage(ref message, M)) { RubyExceptionData.InitializeException(this, message); }
-
-#if !SILVERLIGHT
-            protected ExistError(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context)
-                : base(info, context) { }
-#endif
-        }
-
-        [Serializable]
-        public class InvalidError : ExternalException {
-            private const string/*!*/ M = "Invalid argument";
-
-            public InvalidError() : this(null, null) { }
-            public InvalidError(string message) : this(message, null) { }
-            public InvalidError(string message, Exception inner) : base(MakeMessage(message, M), inner) { }
-            public InvalidError(MutableString message) : base(MakeMessage(ref message, M)) { RubyExceptionData.InitializeException(this, message); }
-
-#if !SILVERLIGHT
-            protected InvalidError(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context)
-                : base(info, context) { }
-#endif
-        }
-
     }
 }
