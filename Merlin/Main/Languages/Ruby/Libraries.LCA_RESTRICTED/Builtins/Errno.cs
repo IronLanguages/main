@@ -127,6 +127,21 @@ namespace IronRuby.Builtins {
             }
         }
 
+        [RubyClass("ECHILD"), Serializable]
+        public class ChildError : ExternalException {
+            private const string/*!*/ M = "No child processes";
+
+            public ChildError() : this(null, null) { }
+            public ChildError(string message) : this(message, null) { }
+            public ChildError(string message, Exception inner) : base(MakeMessage(message, M), inner) { }
+            public ChildError(MutableString message) : base(MakeMessage(ref message, M)) { RubyExceptionData.InitializeException(this, message); }
+
+#if !SILVERLIGHT
+            protected ChildError(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context)
+                : base(info, context) { }
+#endif
+        }
+
         [RubyClass("EEXIST"), Serializable]
         public class ExistError : ExternalException {
             private const string/*!*/ M = "File exists";

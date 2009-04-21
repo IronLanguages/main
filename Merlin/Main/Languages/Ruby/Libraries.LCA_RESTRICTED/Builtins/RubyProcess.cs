@@ -159,10 +159,26 @@ namespace IronRuby.Builtins {
             return 0; // always 0 on Windows?
         }
 
-        // uid=
-        // wait
-        // wait2
-        // waitall
+        [RubyMethod("uid=", RubyMethodAttributes.PublicSingleton)]
+        public static void SetUserId(RubyModule/*!*/ self, object temp) {
+            throw new NotImplementedError("uid=() function is unimplemented on this machine");
+        }
+
+        [RubyMethod("wait", RubyMethodAttributes.PublicSingleton)]
+        public static void Wait(RubyModule/*!*/ self) {
+            throw new Errno.ChildError();
+        }
+
+        [RubyMethod("wait2", RubyMethodAttributes.PublicSingleton)]
+        public static void Wait2(RubyModule/*!*/ self) {
+            throw new Errno.ChildError();
+        }
+
+        [RubyMethod("waitall", RubyMethodAttributes.PublicSingleton)]
+        public static RubyArray Waitall(RubyModule/*!*/ self) {
+            return new RubyArray(); //Process.waitall always returns an empty array on Windows?
+        }
+
         // waitpid
         // waitpid2  
     }
