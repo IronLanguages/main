@@ -55,6 +55,14 @@ namespace IronPython.Runtime.Binding {
         }
 
         public override T BindDelegate<T>(CallSite<T> site, object[] args) {
+            IFastSettable fastSet = args[0] as IFastSettable;
+            if (fastSet != null) {
+                T res = fastSet.MakeSetBinding<T>(site, this);
+                if (res != null) {
+                    return res;
+                }
+            }
+
             IPythonObject ipo = args[0] as IPythonObject;
             if (ipo != null && !(ipo is IProxyObject)) {
                 FastBindResult<T> res = UserTypeOps.MakeSetBinding<T>(Binder.Context, site, ipo, args[1], this);
@@ -68,7 +76,7 @@ namespace IronPython.Runtime.Binding {
                     return res.Target;
                 }
 
-                PerfTrack.NoteEvent(PerfTrack.Categories.BindingSlow, "IPythonObject");
+                PerfTrack.NoteEvent(PerfTrack.Categories.BindingSlow, "IPythonObject Set");
             }
 
             return base.BindDelegate(site, args);

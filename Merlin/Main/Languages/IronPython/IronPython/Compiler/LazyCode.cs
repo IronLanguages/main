@@ -61,8 +61,7 @@ namespace IronPython.Compiler {
         }
 
         private T Compile() {
-            // can't light compile generators due to ref args and void return type
-            if (_shouldInterpret && typeof(T) != typeof(PythonGeneratorNext)) {
+            if (_shouldInterpret) {
                 return (T)(object)Microsoft.Scripting.Generation.CompilerHelpers.LightCompile(Code);
             }
 

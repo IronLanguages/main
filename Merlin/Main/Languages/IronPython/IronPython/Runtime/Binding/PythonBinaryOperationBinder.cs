@@ -50,6 +50,8 @@ namespace IronPython.Runtime.Binding {
                     case ExpressionType.Add:
                     case ExpressionType.AddAssign:
                         return BindAdd<T>(site, args);
+                    case ExpressionType.And:
+                        return BindAnd<T>(site, args);
                     case ExpressionType.Subtract:
                     case ExpressionType.SubtractAssign:
                         return BindSubtract<T>(site, args);
@@ -63,10 +65,33 @@ namespace IronPython.Runtime.Binding {
             return base.BindDelegate<T>(site, args);
         }
 
+        private T BindAnd<T>(CallSite<T> site, object[] args) where T : class {
+            if (CompilerHelpers.GetType(args[0]) == typeof(int) &&
+                CompilerHelpers.GetType(args[1]) == typeof(int)) {
+                if (typeof(T) == typeof(Func<CallSite, object, object, object>)) {
+                    return (T)(object)new Func<CallSite, object, object, object>(IntAnd);
+                } else if (typeof(T) == typeof(Func<CallSite, int, object, object>)) {
+                    return (T)(object)new Func<CallSite, int, object, object>(IntAnd);
+                } else if (typeof(T) == typeof(Func<CallSite, object, int, object>)) {
+                    return (T)(object)new Func<CallSite, object, int, object>(IntAnd);
+                }
+            }
+
+            return base.BindDelegate(site, args);
+        }
+
         private T BindAdd<T>(CallSite<T> site, object[] args) where T : class {
             Type t = args[0].GetType();
-            if (!t.IsEnum) {                
-                switch (Type.GetTypeCode(args[0].GetType())) {
+            if (t == typeof(string)) {
+                if (typeof(T) == typeof(Func<CallSite, object, object, object>)) {
+                    return (T)(object)new Func<CallSite, object, object, object>(StringAdd);
+                } else if (typeof(T) == typeof(Func<CallSite, object, string, object>)) {
+                    return (T)(object)new Func<CallSite, object, string, object>(StringAdd);
+                } else if (typeof(T) == typeof(Func<CallSite, string, object, object>)) {
+                    return (T)(object)new Func<CallSite, string, object, object>(StringAdd);
+                }
+            }else if (!t.IsEnum) {                
+                switch (Type.GetTypeCode(t)) {
                     case TypeCode.Double:
                         if(typeof(T) == typeof(Func<CallSite, object, object, object>)) {
                             return (T)(object)new Func<CallSite, object, object, object>(DoubleAdd);
@@ -81,12 +106,6 @@ namespace IronPython.Runtime.Binding {
                             return (T)(object)new Func<CallSite, int, object, object>(IntAdd);
                         }
                         break;
-                    case TypeCode.String:
-                        if (typeof(T) == typeof(Func<CallSite, object, object, object>)) {
-                            return (T)(object)new Func<CallSite, object, object, object>(StringAdd);
-                        }
-                        break;
-
                 }
             }
             return base.BindDelegate(site, args);
@@ -95,7 +114,7 @@ namespace IronPython.Runtime.Binding {
         private T BindSubtract<T>(CallSite<T> site, object[] args) where T : class {
             Type t = args[0].GetType();
             if (!t.IsEnum) {
-                switch (Type.GetTypeCode(args[0].GetType())) {
+                switch (Type.GetTypeCode(t)) {
                     case TypeCode.Double:
                         if (typeof(T) == typeof(Func<CallSite, object, object, object>)) {
                             return (T)(object)new Func<CallSite, object, object, object>(DoubleSubtract);
@@ -117,15 +136,20 @@ namespace IronPython.Runtime.Binding {
 
         private T BindEqual<T>(CallSite<T> site, object[] args) where T : class {
             Type t = args[0].GetType();
-            if (!t.IsEnum && typeof(T) == typeof(Func<CallSite, object, object, object>)) {
-                switch (Type.GetTypeCode(args[0].GetType())) {
+            if (t == typeof(string)) {
+                if (typeof(T) == typeof(Func<CallSite, object, object, object>)) {
+                    return (T)(object)new Func<CallSite, object, object, object>(StringEqual);
+                } else if (typeof(T) == typeof(Func<CallSite, string, object, object>)) {
+                    return (T)(object)new Func<CallSite, string, object, object>(StringEqual);
+                } else if (typeof(T) == typeof(Func<CallSite, object, string, object>)) {
+                    return (T)(object)new Func<CallSite, object, string, object>(StringEqual);
+                }
+            } else if (!t.IsEnum && typeof(T) == typeof(Func<CallSite, object, object, object>)) {
+                switch (Type.GetTypeCode(t)) {
                     case TypeCode.Double:
                         return (T)(object)new Func<CallSite, object, object, object>(DoubleEqual);
                     case TypeCode.Int32:
                         return (T)(object)new Func<CallSite, object, object, object>(IntEqual);
-                    case TypeCode.String:
-                        return (T)(object)new Func<CallSite, object, object, object>(StringEqual);
-
                 }
             }
             return base.BindDelegate(site, args);
@@ -133,15 +157,22 @@ namespace IronPython.Runtime.Binding {
 
         private T BindNotEqual<T>(CallSite<T> site, object[] args) where T : class {
             Type t = args[0].GetType();
-            if (!t.IsEnum && typeof(T) == typeof(Func<CallSite, object, object, object>)) {
-                switch (Type.GetTypeCode(args[0].GetType())) {
+            if (t == typeof(string)) {
+                if (typeof(T) == typeof(Func<CallSite, object, object, object>)) {
+                    return (T)(object)new Func<CallSite, object, object, object>(StringNotEqual);
+                } else if (typeof(T) == typeof(Func<CallSite, object, string, object>)) {
+                    return (T)(object)new Func<CallSite, object, string, object>(StringNotEqual);
+                } else if (typeof(T) == typeof(Func<CallSite, string, object, object>)) {
+                    return (T)(object)new Func<CallSite, string, object, object>(StringNotEqual);
+                }
+            }else if (!t.IsEnum && typeof(T) == typeof(Func<CallSite, object, object, object>)) {
+                switch (Type.GetTypeCode(t)) {
                     case TypeCode.Double:
                         return (T)(object)new Func<CallSite, object, object, object>(DoubleNotEqual);
                     case TypeCode.Int32:
                         return (T)(object)new Func<CallSite, object, object, object>(IntNotEqual);
                     case TypeCode.String:
                         return (T)(object)new Func<CallSite, object, object, object>(StringNotEqual);
-
                 }
             }
             return base.BindDelegate(site, args);
@@ -181,6 +212,31 @@ namespace IronPython.Runtime.Binding {
             return ((CallSite<Func<CallSite, int, object, object>>)site).Update(site, self, other);
         }
 
+        private object IntAnd(CallSite site, object self, object other) {
+            if (self != null && self.GetType() == typeof(int) &&
+                other != null && other.GetType() == typeof(int)) {
+                return Int32Ops.BitwiseAnd((int)self, (int)other);
+            }
+
+            return ((CallSite<Func<CallSite, object, object, object>>)site).Update(site, self, other);
+        }
+
+        private object IntAnd(CallSite site, object self, int other) {
+            if (self != null && self.GetType() == typeof(int)) {
+                return Int32Ops.BitwiseAnd((int)self, other);
+            }
+
+            return ((CallSite<Func<CallSite, object, int, object>>)site).Update(site, self, other);
+        }
+
+        private object IntAnd(CallSite site, int self, object other) {
+            if (other != null && other.GetType() == typeof(int)) {
+                return Int32Ops.BitwiseAnd(self, (int)other);
+            }
+
+            return ((CallSite<Func<CallSite, int, object, object>>)site).Update(site, self, other);
+        }
+
         private object StringAdd(CallSite site, object self, object other) {
             if (self != null && self.GetType() == typeof(string) && 
                 other != null && other.GetType() == typeof(string)) {
@@ -190,6 +246,24 @@ namespace IronPython.Runtime.Binding {
             return ((CallSite<Func<CallSite, object, object, object>>)site).Update(site, self, other);
         }
 
+        private object StringAdd(CallSite site, string self, object other) {
+            if (self != null && 
+                other != null && other.GetType() == typeof(string)) {
+                return StringOps.Add(self, (string)other);
+            }
+
+            return ((CallSite<Func<CallSite, string, object, object>>)site).Update(site, self, other);
+        }
+
+        private object StringAdd(CallSite site, object self, string other) {
+            if (self != null && self.GetType() == typeof(string) &&
+                other != null) {
+                return StringOps.Add((string)self, other);
+            }
+
+            return ((CallSite<Func<CallSite, object, string, object>>)site).Update(site, self, other);
+        }
+        
         private object DoubleSubtract(CallSite site, object self, object other) {
             if (self != null && self.GetType() == typeof(double) &&
                 other != null && other.GetType() == typeof(double)) {
@@ -251,6 +325,24 @@ namespace IronPython.Runtime.Binding {
             return ((CallSite<Func<CallSite, object, object, object>>)site).Update(site, self, other);
         }
 
+        private object StringEqual(CallSite site, string self, object other) {
+            if (self != null &&
+                other != null && other.GetType() == typeof(string)) {
+                return StringOps.Equals(self, (string)other) ? ScriptingRuntimeHelpers.True : ScriptingRuntimeHelpers.False;
+            }
+
+            return ((CallSite<Func<CallSite, string, object, object>>)site).Update(site, self, other);
+        }
+
+        private object StringEqual(CallSite site, object self, string other) {
+            if (self != null && self.GetType() == typeof(string) &&
+                other != null) {
+                return StringOps.Equals((string)self, other) ? ScriptingRuntimeHelpers.True : ScriptingRuntimeHelpers.False;
+            }
+
+            return ((CallSite<Func<CallSite, object, string, object>>)site).Update(site, self, other);
+        }
+        
         private object DoubleNotEqual(CallSite site, object self, object other) {
             if (self != null && self.GetType() == typeof(double) &&
                 other != null && other.GetType() == typeof(double)) {
@@ -276,6 +368,24 @@ namespace IronPython.Runtime.Binding {
             }
 
             return ((CallSite<Func<CallSite, object, object, object>>)site).Update(site, self, other);
+        }
+
+        private object StringNotEqual(CallSite site, string self, object other) {
+            if (self != null &&
+                other != null && other.GetType() == typeof(string)) {
+                return StringOps.NotEquals(self, (string)other) ? ScriptingRuntimeHelpers.True : ScriptingRuntimeHelpers.False;
+            }
+
+            return ((CallSite<Func<CallSite, string, object, object>>)site).Update(site, self, other);
+        }
+
+        private object StringNotEqual(CallSite site, object self, string other) {
+            if (self != null && self.GetType() == typeof(string) &&
+                other != null) {
+                return StringOps.NotEquals((string)self, other) ? ScriptingRuntimeHelpers.True : ScriptingRuntimeHelpers.False;
+            }
+
+            return ((CallSite<Func<CallSite, object, string, object>>)site).Update(site, self, other);
         }
 
         public override int GetHashCode() {

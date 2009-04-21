@@ -182,11 +182,12 @@ namespace IronPython.Modules {
         }
 
         public static string strftime(CodeContext/*!*/ context, string format) {
-            return strftime(context, format, DateTime.Now);
+
+            return strftime(context, format, DateTime.Now, null);
         }
 
         public static string strftime(CodeContext/*!*/ context, string format, PythonTuple dateTime) {
-            return strftime(context, format, GetDateTimeFromTupleNoDst(context, dateTime));
+            return strftime(context, format, GetDateTimeFromTupleNoDst(context, dateTime), null);
         }
 
         public static object strptime(CodeContext/*!*/ context, string @string) {
@@ -255,7 +256,7 @@ namespace IronPython.Modules {
             return GetDateTimeTuple(res);
         }
 
-        internal static string strftime(CodeContext/*!*/ context, string format, DateTime dt) {
+        internal static string strftime(CodeContext/*!*/ context, string format, DateTime dt, int? microseconds) {
             bool postProc;
             FoundDateComponents found;
             List<FormatInfo> formatInfo = PythonFormatToCLIFormat(format, false, out postProc, out found);
@@ -273,6 +274,8 @@ namespace IronPython.Modules {
             }
 
             if (postProc) {
+                res = res.Replace("%f", microseconds != null ? System.String.Format("{0:D6}", microseconds) : "");
+
                 res = res.Replace("%j", dt.DayOfYear.ToString("D03"));  // day of the year (001 - 366)
 
                 // figure out first day of the year...
@@ -461,7 +464,11 @@ namespace IronPython.Modules {
                         case 'j': // day of year
                             newFormat.Add(new FormatInfo("\\%j")); 
                             postProcess = true; 
-                            break; 
+                            break;
+                        case 'f':
+                            postProcess = true;
+                            newFormat.Add(new FormatInfo(FormatInfoType.UserText, "%f")); 
+                            break;
                         case 'W': newFormat.Add(new FormatInfo("\\%W")); postProcess = true; break;
                         case 'U': newFormat.Add(new FormatInfo("\\%U")); postProcess = true; break; // week number
                         case 'w': newFormat.Add(new FormatInfo("\\%w")); postProcess = true; break; // weekday number

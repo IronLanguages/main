@@ -87,8 +87,8 @@ namespace IronRuby.Tests {
 
         private Tests _tests;
 
-        private readonly List<Tuple<string, StackFrame, string, object>>/*!*/ _failedAssertions = new List<Tuple<string, StackFrame, string, object>>();
-        private readonly List<Tuple<string, Exception>>/*!*/ _unexpectedExceptions = new List<Tuple<string, Exception>>();
+        private readonly List<MutableTuple<string, StackFrame, string, object>>/*!*/ _failedAssertions = new List<MutableTuple<string, StackFrame, string, object>>();
+        private readonly List<MutableTuple<string, Exception>>/*!*/ _unexpectedExceptions = new List<MutableTuple<string, Exception>>();
 
         private TestRuntime _testRuntime; 
         private static bool _excludeSelectedCases;
@@ -104,11 +104,11 @@ namespace IronRuby.Tests {
             get { return _testRuntime; }
         }
 
-        public List<Tuple<string, StackFrame, string, object>>/*!*/ FailedAssertions {
+        public List<MutableTuple<string, StackFrame, string, object>>/*!*/ FailedAssertions {
             get { return _failedAssertions; }
         }
 
-        public List<Tuple<string, Exception>>/*!*/ UnexpectedExceptions {
+        public List<MutableTuple<string, Exception>>/*!*/ UnexpectedExceptions {
             get { return _unexpectedExceptions; }
         }
 
@@ -453,7 +453,7 @@ namespace IronRuby.Tests {
                 testCase.TestMethod();
             } catch (Exception e) {
                 PrintTestCaseFailed();
-                _unexpectedExceptions.Add(new Tuple<string, Exception>(testCase.Name, e));
+                _unexpectedExceptions.Add(new MutableTuple<string, Exception>(testCase.Name, e));
             } finally {
                 Snippets.SaveAndVerifyAssemblies();
             }
@@ -487,7 +487,7 @@ namespace IronRuby.Tests {
 
             Debug.Assert(frame != null);
 
-            _failedAssertions.Add(new Tuple<string, StackFrame, string, object>(_testRuntime.TestName, frame, msg, null));
+            _failedAssertions.Add(new MutableTuple<string, StackFrame, string, object>(_testRuntime.TestName, frame, msg, null));
             PrintTestCaseFailed();
         }
 

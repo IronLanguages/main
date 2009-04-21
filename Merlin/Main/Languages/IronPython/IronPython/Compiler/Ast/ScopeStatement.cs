@@ -179,7 +179,7 @@ namespace IronPython.Compiler.Ast {
 
                     // get the closure cell from the tuple
                     MSAst.Expression tuplePath = localTuple;
-                    foreach (var v in Microsoft.Scripting.Tuple.GetAccessPath(tupleType, index)) {
+                    foreach (var v in MutableTuple.GetAccessPath(tupleType, index)) {
                         tuplePath = MSAst.Expression.Property(tuplePath, v);
                     }
 
