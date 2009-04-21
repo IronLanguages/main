@@ -1,31 +1,33 @@
 require File.dirname(__FILE__) + '/../../spec_helper'
 
 describe "File.new" do
-  before :each do
+  before :all do
     @file = tmp('test.txt')
-    @fh = nil
     @flags = File::CREAT | File::TRUNC | File::WRONLY
-    File.open(@file, "w") {} # touch
+    File.delete(@file) if File.exist?(@file)
   end
 
+  before :each do
+    @fh = nil
+    File.open(@file, "w") {} # touch
+  end
+  
   after :each do
-   @fh.close if @fh 
+    @fh.close if @fh and not @fh.closed?
     File.delete(@file) if File.exists?(@file)
-    @fh    = nil
-    @file  = nil
-    @flags = nil
+    @fh = nil
   end
 
   it "return a new File with mode string" do
     @fh = File.new(@file, 'w')
     @fh.class.should == File
-    File.exists?(@file).should == true
+    File.exists?(@file).should be_true
   end
 
   it "return a new File with mode num" do
     @fh = File.new(@file, @flags)
     @fh.class.should == File
-    File.exists?(@file).should == true
+    File.exists?(@file).should be_true
   end
 
   it "return a new File with modus num and permissions" do
@@ -34,7 +36,7 @@ describe "File.new" do
     @fh = File.new(@file, @flags, 0755)
     @fh.class.should == File
     File.stat(@file).mode.to_s(8).should == "100744"
-    File.exists?(@file).should == true
+    File.exists?(@file).should be_true
   end
 
   it "creates the file and returns writable descriptor when called with 'w' mode and r-o permissions" do
@@ -48,7 +50,7 @@ describe "File.new" do
     ensure
       f.close
     end
-    File.exist?(@file).should == true
+    File.exist?(@file).should be_true
     File.read(@file).should == "test\n"
   end
 
@@ -72,7 +74,7 @@ describe "File.new" do
       @fh_orig = File.new(@file)
       @fh = File.new(@fh_orig.fileno)
       @fh.class.should == File
-      File.exists?(@file).should == true
+      File.exists?(@file).should be_true
     ensure
       @fh.close rescue nil if @fh
       @fh = nil
@@ -84,45 +86,50 @@ describe "File.new" do
   it "create a new file when use File::EXCL mode " do
     @fh = File.new(@file, File::EXCL)
     @fh.class.should == File
-    File.exists?(@file).should == true
+    File.exists?(@file).should be_true
   end
 
   it "raises an Errorno::EEXIST if the file exists when create a new file with File::CREAT|File::EXCL" do
-    lambda { @fh = File.new(@file, File::CREAT|File::EXCL) }.should raise_error(Errno::EEXIST)
+    lambda { 
+       @fh = File.new(@file, File::CREAT|File::EXCL) 
+    }.should raise_error(Errno::EEXIST)
   end
 
   it "create a new file when use File::WRONLY|File::APPEND mode" do
     @fh = File.new(@file, File::WRONLY|File::APPEND)
     @fh.class.should == File
-    File.exists?(@file).should == true
+    File.exists?(@file).should be_true
   end
 
   it "raises an Errno::EINVAL error with File::APPEND" do
-    lambda { @fh = File.new(@file, File::APPEND) }.should raise_error(Errno::EINVAL)
+    lambda { 
+       @fh = File.new(@file, File::APPEND) 
+    }.should raise_error(Errno::EINVAL)
   end
 
   it "raises an Errno::EINVAL error with File::RDONLY|File::APPEND" do
-    lambda { @fh = File.new(@file, File::RDONLY|File::APPEND) }.should raise_error(Errno::EINVAL)
+    lambda { 
+      @fh = File.new(@file, File::RDONLY|File::APPEND) 
+    }.should raise_error(Errno::EINVAL)
   end
 
   it "raises an Errno::EINVAL error with File::RDONLY|File::WRONLY" do
     @fh = File.new(@file, File::RDONLY|File::WRONLY)
     @fh.class.should == File
-    File.exists?(@file).should == true
+    File.exists?(@file).should be_true
   end
-
 
   it "create a new file when use File::WRONLY|File::TRUNC mode" do
     @fh = File.new(@file, File::WRONLY|File::TRUNC)
     @fh.class.should == File
-    File.exists?(@file).should == true
+    File.exists?(@file).should be_true
   end
 
   it "coerces filename using to_str" do
     name = mock("file")
     name.should_receive(:to_str).and_return(@file)
     File.new(name, "w") { }
-    File.exists?(@file).should == true
+    File.exists?(@file).should be_true
   end
 
   specify  "expected errors " do
@@ -134,7 +141,6 @@ describe "File.new" do
   end
 
   # You can't alter mode or permissions when opening a file descriptor
-  #
   it "can't alter mode or permissions when opening a file" do
     @fh = File.new(@file)
     lambda { File.new(@fh.fileno, @flags) }.should raise_error(Errno::EINVAL)
