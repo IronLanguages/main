@@ -27,14 +27,8 @@ module ArraySpecs
 
   def self.recursive_array
     a = [1, 'two', 3.0]
-    5.times { a << a }
-    a
-  end
-
-  def self.head_recursive_array
-    a =  []
-    5.times { a << a }
-    a << 1 << 'two' << 3.0
+    tmp = [ a ]
+    a << tmp
     a
   end
 
@@ -42,6 +36,15 @@ module ArraySpecs
     a = []
     a << a
     a
+  end
+
+  def self.recursive_arrays
+    a = [1, 'two', 3.0]
+    tmp1 = [ a ]
+    b = [ tmp1 ]
+    tmp2 = [ b ]
+    a << tmp2
+    return a, b
   end
 
   class MyArray < Array; end

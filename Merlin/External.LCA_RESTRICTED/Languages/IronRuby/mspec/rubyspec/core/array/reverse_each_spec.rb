@@ -17,7 +17,7 @@ describe "Array#reverse_each" do
     res = []
     array = ArraySpecs.recursive_array
     array.reverse_each { |i| res << i }
-    res.should == [array, array, array, array, array, 3.0, 'two', 1]
+    res.should == [[array], 3.0, 'two', 1]
   end
 
 # Is this a valid requirement? -rue

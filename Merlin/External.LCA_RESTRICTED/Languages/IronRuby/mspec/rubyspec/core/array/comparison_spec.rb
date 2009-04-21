@@ -70,14 +70,19 @@ describe "Array#<=>" do
       (empty <=> empty).should == 0
       (empty <=> []).should == 1
       ([] <=> empty).should == -1
+      (empty <=> ArraySpecs.empty_recursive_array).should == 0
 
       (ArraySpecs.recursive_array <=> []).should == 1
       ([] <=> ArraySpecs.recursive_array).should == -1
+      (ArraySpecs.recursive_array <=> ArraySpecs.recursive_array).should == 0
 
       (ArraySpecs.recursive_array <=> ArraySpecs.empty_recursive_array).should == nil
 
       array = ArraySpecs.recursive_array
       (array <=> array).should == 0
+      
+      array1, array2 = ArraySpecs.recursive_arrays
+      (array1 <=> array2).should == nil
     end
   end
 

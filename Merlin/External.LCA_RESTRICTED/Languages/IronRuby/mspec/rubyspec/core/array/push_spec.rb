@@ -22,7 +22,7 @@ describe "Array#push" do
     empty.push(:last).should == [empty, :last]
 
     array = ArraySpecs.recursive_array
-    array.push(:last).should == [1, 'two', 3.0, array, array, array, array, array, :last]
+    array.push(:last).should == [1, 'two', 3.0, [array], :last]
   end
 
   compliant_on :ruby, :jruby, :ir do

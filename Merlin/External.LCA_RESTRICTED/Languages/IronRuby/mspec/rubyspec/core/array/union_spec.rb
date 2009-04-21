@@ -23,10 +23,10 @@ describe "Array#|" do
       (empty | empty).should == empty
 
       array = ArraySpecs.recursive_array
-      (array | []).should == [1, 'two', 3.0, array]
-      ([] | array).should == [1, 'two', 3.0, array]
-      (array | array).should == [1, 'two', 3.0, array]
-      (array | empty).should == [1, 'two', 3.0, array, empty]
+      (array | []).should == [1, 'two', 3.0, [array]]
+      ([] | array).should == [1, 'two', 3.0, [array]]
+      (array | array).should == [1, 'two', 3.0, [array]]
+      (array | empty).should == [1, 'two', 3.0, [array], empty]
     end
   end
 

@@ -51,8 +51,8 @@ describe "Array#first" do
     empty = ArraySpecs.empty_recursive_array
     empty.first.should equal(empty)
 
-    ary = ArraySpecs.head_recursive_array
-    ary.first.should equal(ary)
+    empty = ArraySpecs.recursive_array
+    empty.first.should == 1
   end
 
   it "tries to convert the passed argument to an Integer using #to_int" do

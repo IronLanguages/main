@@ -628,8 +628,9 @@ namespace IronRuby.Builtins {
             } else if (obj is bool) {
                 return MutableString.Create((bool)obj ? "true" : "false");
             } else if (obj is double) {
-                var result = MutableString.Create(obj.ToString());
-                if ((double)(int)(double)obj == (double)obj) {
+                double value = (double)obj;
+                var result = MutableString.Create(value.ToString(System.Globalization.CultureInfo.InvariantCulture));
+                if ((double)(int)value == value) {
                     result.Append(".0");
                 }
                 return result;

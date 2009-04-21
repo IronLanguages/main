@@ -1,2 +1,0 @@
-fails:Array#flatten does not call flatten on elements
-fails:Array#flatten returns subclass instance for Array subclasses

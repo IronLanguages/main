@@ -25,10 +25,10 @@ describe "Array#+" do
     (empty + empty).should == [empty, empty]
 
     array = ArraySpecs.recursive_array
-    (empty + array).should == [empty, 1, 'two', 3.0, array, array, array, array, array]
+    (empty + array).should == [empty, 1, 'two', 3.0, [array]]
     (array + array).should == [
-      1, 'two', 3.0, array, array, array, array, array,
-      1, 'two', 3.0, array, array, array, array, array]
+      1, 'two', 3.0, [array],
+      1, 'two', 3.0, [array]]
   end
 
   it "checks whether the passed argument responds to #to_ary" do

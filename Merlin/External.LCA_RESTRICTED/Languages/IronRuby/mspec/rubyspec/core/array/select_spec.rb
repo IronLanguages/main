@@ -16,7 +16,7 @@ describe "Array#select" do
     empty.select { false }.should == []
 
     array = ArraySpecs.recursive_array
-    array.select { true }.should == [1, 'two', 3.0, array, array, array, array, array]
+    array.select { true }.should == [1, 'two', 3.0, [array]]
     array.select { false }.should == []
   end
 
