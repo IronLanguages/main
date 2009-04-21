@@ -1,3 +1,0 @@
-fails:Timeout.timeout shouldn't wait too long
-fails:Timeout.timeout raises Timeout::Error when it times out
-fails:Timeout.timeout shouldn't return too quickly

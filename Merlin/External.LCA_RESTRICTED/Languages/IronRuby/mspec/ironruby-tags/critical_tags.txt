@@ -1,21 +1,4 @@
-core\argf\close_tags.txt:0:critical:ARGF.close reads one line from the first file, closes it and read the next one
-core\argf\eof_tags.txt:0:critical:ARGF.eof? returns true when reaching the end of a file
-core\argf\eof_tags.txt:0:critical:ARGF.eof returns true when reaching the end of a file
-core\argf\file_tags.txt:0:critical:ARGF.file returns the current file object on each file
-core\argf\filename_tags.txt:0:critical:ARGF.filename returns the current file name on each file 
-core\argf\filename_tags.txt:0:critical:ARGF.filename it sets the $FILENAME global variable with the current file name on each file
-core\argf\fileno_tags.txt:0:critical:ARGF.fileno returns the current file number on each file
-core\argf\gets_tags.txt:0:critical:ARGF.gets reads one line of a file
-core\argf\gets_tags.txt:0:critical:ARGF.gets reads all lines of a file
-core\argf\gets_tags.txt:0:critical:ARGF.gets reads all lines of two files
-core\argf\gets_tags.txt:0:critical:ARGF.gets returns nil when reaching end of files
-core\argf\gets_tags.txt:0:critical:ARGF.gets sets $_ global variable with each line read
-core\argf\lineno_tags.txt:0:critical:ARGF.lineno returns the current line number on each file
-core\argf\path_tags.txt:0:critical:ARGF.path returns the current file name on each file
-core\argf\path_tags.txt:0:critical:ARGF.path it sets the $FILENAME global variable with the current file name on each file
-core\argf\rewind_tags.txt:0:critical:ARGF.rewind goes back to beginning of current file
-core\argf\to_i_tags.txt:0:critical:ARGF.to_i returns the current file number on each file
-core\argf\to_io_tags.txt:0:critical:ARGF.to_io returns the IO of the current file
+core\argf\gets_tags.txt:0:critical:ARGF.gets
 core\array\comparison_tags.txt:0:critical:Array#<=> properly handles recursive arrays
 core\array\eql_tags.txt:0:critical:Array#eql? properly handles recursive arrays
 core\array\equal_value_tags.txt:0:critical:Array#== properly handles recursive arrays
@@ -23,28 +6,14 @@ core\array\hash_tags.txt:0:critical:Array#hash properly handles recursive arrays
 core\array\hash_tags.txt:0:critical:Array#hash properly handles recursive arrays
 core\array\intersection_tags.txt:0:critical:Array#& properly handles recursive arrays
 core\array\join_tags.txt:0:critical:Array#join raises a NoMethodError if an element does not respond to #to_s 
-core\array\join_tags.txt:0:critical:Array#join does not separates elements when the passed separator is nil
+core\array\multiply_tags.txt:0:critical:Array#* raises a NoMethodError if an element does not respond to #to_s
 core\array\union_tags.txt:0:critical:Array#| properly handles recursive arrays
 core\array\uniq_tags.txt:0:critical:Array#uniq properly handles recursive arrays
 core\array\uniq_tags.txt:0:critical:Array#uniq! properly handles recursive arrays
-core\kernel\sleep_tags.txt:3:critical:Kernel#sleep pauses execution indefinitely if not given a duration
-core\process\times_tags.txt:0:unstable:Process.times returns current cpu times
-core\string\process\wait_tags.txt:0:critical:Process.wait
-core\string\process\wait2_tags.txt:0:critical:Process.wait2
-core\string\process\waitall_tags.txt:0:critical:Process.waitall
-core\string\to_i_tags.txt:3:critical:String#to_i requires that the sign if any appears before the base specifier
-core\string\hex_tags.txt:3:critical:String#hex takes an optional sign
-core\string\hex_tags.txt:3:critical:String#hex returns 0 on error
-core\string\oct_tags.txt:3:critical:String#oct takes an optional sign
-core\string\oct_tags.txt:3:critical:String#oct returns 0 on error
-core\thread\critical_tags.txt:0:unstable:Thread.critical= does not change status of other existing threads
 core\thread\critical_tags.txt:0:critical:Thread.critical= defers exit until Thread.pass
 core\thread\critical_tags.txt:0:critical:Thread.critical= can be mismatched
-core\thread\critical_tags.txt:0:critical:Thread.critical= schedules other threads on Thread.stop
 core\thread\raise_tags.txt:0:critical:Thread#raise on another thread re-raises active exception
 language\method_tags.txt:0:critical:Calling a method fails with both lambda and block argument
-library\mathn\rational\power2_tags.txt:0:critical:Rational#power2 when passed [Rational] returns Rational.new!(1, 1) when the passed argument is 0
-library\mathn\rational\power2_tags.txt:0:critical:Rational#power2 when passed [Rational] returns the Rational value of self raised to the passed argument
 library\net\ftp\get_tags.txt:0:critical:Net::FTP#get (binary mode)
 library\net\ftp\getbinaryfile_tags.txt:0:critical:Net::FTP#getbinaryfile
 library\net\ftp\retrbinary_tags.txt:0:critical:Net::FTP#retrbinary
@@ -59,8 +28,6 @@ library\net\http\http\put_tags.txt:0:critical:Net::HTTP#put
 library\net\http\http\request_tags.txt:0:critical:Net::HTTP#request
 library\net\http\http\send_request_tags.txt:0:critical:Net::HTTP#send_request
 library\net\http\http\unlock_tags.txt:0:critical:Net::HTTP#unlock
-library\openstruct\inspect_tags.txt:0:critical:OpenStruct#inspect correctly handles self-referential OpenStructs
-library\openstruct\to_s_tags.txt:0:critical:OpenStruct#to_s correctly handles self-referential OpenStructs
 library\resolv\get_address_tags.txt:0:critical:Resolv#getaddress
 library\resolv\get_addresses_tags.txt:0:critical:Resolv#getaddresses
 library\resolv\get_name_tags.txt:0:critical:Resolv#getname

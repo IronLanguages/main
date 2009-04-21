@@ -9,7 +9,12 @@ class MSpecScript
   # config[:prefix] must be set before filtered is used
   set :prefix, "#{ENV['MERLIN_ROOT']}\\..\\External.LCA_RESTRICTED\\Languages\\IronRuby\\mspec\\rubyspec"
   
-  set :core1, filtered("core","[a-i]")
+  set :core1sub1,filtered("core","[ac-i]")
+  set :core1sub2,[ #want to keep basicobject out of the 1.8 list
+    "core\\bignum",
+    "core\\binding",
+    "core\\builtin_constants"
+  ]
   set :core2, filtered("core", "[j-z]")
   set :lang, [
     "language"
@@ -17,7 +22,7 @@ class MSpecScript
   set :cli, [
     "command_line"
     ]
-  set :lib1, filtered("library", "[a-o]")
+  set :lib1, filtered("library", "[a-o]").reject {|el| el =~ /basicobject/ }
   set :lib2, filtered("library", "[p-z]")
   #.NET interop
   set :netinterop, [
@@ -30,6 +35,7 @@ class MSpecScript
     ]
 
   #combination tasks
+  set :core1, get(:core1sub1) + get(:core1sub2)
   set :core, get(:core1) + get(:core2)
   set :lib, get(:lib1) + get(:lib2)
   set :ci_files, get(:core) + get(:lang) + get(:cli) + get(:lib) + get(:netinterop)

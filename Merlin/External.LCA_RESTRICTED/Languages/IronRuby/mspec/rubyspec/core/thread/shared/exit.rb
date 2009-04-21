@@ -84,7 +84,7 @@ describe :thread_exit, :shared => true do
     exit_loop = true
     t = ThreadSpecs.dying_thread_ensures do
       in_ensure_clause = true
-      loop { if exit_loop then break end }
+      loop { break if exit_loop }
       ScratchPad.record :after_stop
     end
     

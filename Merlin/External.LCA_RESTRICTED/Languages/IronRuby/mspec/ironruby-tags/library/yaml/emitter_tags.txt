@@ -1,2 +1,1 @@
-fails:YAML.emitter is of type Emitter
 fails:YAML.emitter has a default level of 0

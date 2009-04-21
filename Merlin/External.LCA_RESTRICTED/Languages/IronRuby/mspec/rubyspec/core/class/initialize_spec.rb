@@ -33,7 +33,6 @@ describe "Class#new" do
       end
     end
 
-    klass.method(:initialize).should be_kind_of Method
-    klass.should have_private_method(:initialize)
+    klass.should have_private_instance_method(:initialize)
   end
 end
