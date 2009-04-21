@@ -209,6 +209,15 @@ describe "Module#autoload" do
       end
     end
   end
+
+  platform_is :windows do
+    it 'joins the load path and autoload path with a File::SEPARATOR' do
+      $:.unshift File.expand_path(File.dirname(__FILE__)) + '/fixtures'
+      autoload :ZZZ, 'autoload_join.rb'
+      ZZZ.___file___.split(File::SEPARATOR).last.should == 'autoload_join.rb' 
+      $:.shift
+    end
+  end
 end
 
 describe "Module#autoload?" do
