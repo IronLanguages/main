@@ -31,7 +31,7 @@ using IronPython.Runtime.Operations;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace IronPython.Compiler {
-    public delegate void PythonGeneratorNext(ref int curIndex, Microsoft.Scripting.Tuple state, out object res);
+    public delegate void PythonGeneratorNext(MutableTuple state);
 
     /// <summary>
     /// When finding a yield return or yield break, this rewriter flattens out
@@ -42,7 +42,6 @@ namespace IronPython.Compiler {
     internal sealed class GeneratorRewriter : ExpressionVisitor {
         private readonly Expression _body;
         private readonly string _name;
-        private readonly ParameterExpression _state, _current;
         private readonly StrongBox<Type> _tupleType = new StrongBox<Type>();
         private readonly StrongBox<ParameterExpression> _tupleExpr = new StrongBox<ParameterExpression>();
 
@@ -54,12 +53,12 @@ namespace IronPython.Compiler {
         private readonly List<YieldMarker> _yields = new List<YieldMarker>();
 
         private readonly Dictionary<ParameterExpression, DelayedTupleExpression> _vars = new Dictionary<ParameterExpression, DelayedTupleExpression>();
-
+        private readonly List<KeyValuePair<ParameterExpression, DelayedTupleExpression>> _orderedVars = new List<KeyValuePair<ParameterExpression, DelayedTupleExpression>>();
 
         // Possible optimization: reuse temps. Requires scoping them correctly,
         // and then storing them back in a free list
         private readonly List<ParameterExpression> _temps = new List<ParameterExpression>();
-
+        private Expression _state, _current;
         // These two constants are used internally. They should not conflict
         // with valid yield states.
         private const int GotoRouterYielding = 0;
@@ -72,13 +71,14 @@ namespace IronPython.Compiler {
         internal GeneratorRewriter(string name, Expression body) {
             _body = body;
             _name = name;
-            _state = Expression.Parameter(typeof(int).MakeByRefType(), "state");
-            _current = Expression.Parameter(typeof(object).MakeByRefType(), "current");
             _returnLabels.Push(Expression.Label("retLabel"));
             _gotoRouter = Expression.Variable(typeof(int), "$gotoRouter");
         }
 
         internal Expression Reduce(bool shouldInterpret, bool emitDebugSymbols, IList<ParameterExpression> parameters, LabelTarget generatorLabel) {
+            _state = LiftVariable(Expression.Parameter(typeof(int), "state"));
+            _current = LiftVariable(Expression.Parameter(typeof(object), "current"));
+
             // lift the parameters into the tuple
             foreach (ParameterExpression pe in parameters) {
                 LiftVariable(pe);
@@ -99,18 +99,19 @@ namespace IronPython.Compiler {
             // Create the lambda for the PythonGeneratorNext, hoisting variables
             // into a tuple outside the lambda
             Expression[] tupleExprs = new Expression[_vars.Count];
-            foreach (var variable in _vars) {
-                if (variable.Value.Index < parameters.Count) {
-                    tupleExprs[variable.Value.Index] = parameters[variable.Value.Index];
+            foreach (var variable in _orderedVars) {
+                // first 2 are our state & out var
+                if (variable.Value.Index >= 2 && variable.Value.Index < (parameters.Count + 2)) {
+                    tupleExprs[variable.Value.Index] = parameters[variable.Value.Index - 2];
                 } else {
                     tupleExprs[variable.Value.Index] = Expression.Default(variable.Key.Type);
                 }
             }
 
-            Expression newTuple = Microsoft.Scripting.Tuple.Create(tupleExprs);
+            Expression newTuple = MutableTuple.Create(tupleExprs);
             Type tupleType = _tupleType.Value = newTuple.Type;
             ParameterExpression tupleExpr = _tupleExpr.Value = Expression.Parameter(tupleType, "tuple");
-            ParameterExpression tupleArg = Expression.Parameter(typeof(Microsoft.Scripting.Tuple), "tupleArg");
+            ParameterExpression tupleArg = Expression.Parameter(typeof(MutableTuple), "tupleArg");
             _temps.Add(_gotoRouter);
             _temps.Add(tupleExpr);
 
@@ -130,11 +131,11 @@ namespace IronPython.Compiler {
                     ),
                     Expression.Switch(Expression.Assign(_gotoRouter, _state), cases),
                     body,
-                    Expression.Assign(_state, AstUtils.Constant(Finished)),
+                    MakeAssign(_state, AstUtils.Constant(Finished)),
                     Expression.Label(_returnLabels.Peek())
                 ),
                 _name,
-                new ParameterExpression[] { _state, tupleArg, _current }
+                new ParameterExpression[] { tupleArg }
             );
 
             // Generate a call to PythonOps.MakeGeneratorClosure(Tuple data, object generatorCode)
@@ -526,7 +527,7 @@ namespace IronPython.Compiler {
             var block = new List<Expression>();
             if (value == null) {
                 // Yield break
-                block.Add(Expression.Assign(_state, AstUtils.Constant(Finished)));
+                block.Add(MakeAssign(_state, AstUtils.Constant(Finished)));
                 if (_inTryWithFinally) {
                     block.Add(Expression.Assign(_gotoRouter, AstUtils.Constant(GotoRouterYielding)));
                 }
@@ -537,7 +538,7 @@ namespace IronPython.Compiler {
             // Yield return
             block.Add(MakeAssign(_current, value));
             YieldMarker marker = GetYieldMarker(node);
-            block.Add(Expression.Assign(_state, AstUtils.Constant(marker.State)));
+            block.Add(MakeAssign(_state, AstUtils.Constant(marker.State)));
             if (_inTryWithFinally) {
                 block.Add(Expression.Assign(_gotoRouter, AstUtils.Constant(GotoRouterYielding)));
             }
@@ -574,6 +575,7 @@ namespace IronPython.Compiler {
             DelayedTupleExpression res;
             if (!_vars.TryGetValue(param, out res)) {
                 _vars[param] = res = new DelayedTupleExpression(_vars.Count, _tupleExpr, _tupleType, param.Type);
+                _orderedVars.Add(new KeyValuePair<ParameterExpression, DelayedTupleExpression>(param, res));
             }
 
             return res;
@@ -912,7 +914,7 @@ namespace IronPython.Compiler {
 
         public override Expression Reduce() {
             Expression res = _tupleExpr.Value;
-            foreach (PropertyInfo pi in Microsoft.Scripting.Tuple.GetAccessPath(_tupleType.Value, Index)) {
+            foreach (PropertyInfo pi in MutableTuple.GetAccessPath(_tupleType.Value, Index)) {
                 res = Expression.Property(res, pi);
             }
             return res;
@@ -979,6 +981,7 @@ namespace IronPython.Compiler {
         private readonly bool _shouldInterpret, _emitDebugSymbols;
         private readonly IList<ParameterExpression> _args;
         private readonly LabelTarget _generatorLabel;
+        private Expression _reduced;
 
         public PythonGeneratorExpression(string name, Expression body, bool shouldInterpret, bool emitDebugSymbols, IList<ParameterExpression> args, LabelTarget generatorLabel) {
             _name = name;
@@ -990,7 +993,12 @@ namespace IronPython.Compiler {
         }
 
         public override Expression Reduce() {
-            return new GeneratorRewriter(_name, _body).Reduce(_shouldInterpret, _emitDebugSymbols, _args, _generatorLabel);
+            // Reduce only once so only 1 LazyCode is created
+            if (_reduced == null) {
+                _reduced = new GeneratorRewriter(_name, _body).Reduce(_shouldInterpret, _emitDebugSymbols, _args, _generatorLabel);
+            }
+
+            return _reduced;
         }
 
         protected override ExpressionType NodeTypeImpl() {

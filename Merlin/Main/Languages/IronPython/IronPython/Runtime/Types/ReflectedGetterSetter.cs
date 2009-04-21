@@ -114,7 +114,10 @@ namespace IronPython.Runtime.Types {
                 }
 
                 foreach (MethodInfo mi in mis) {
-                    if (!mi.IsStatic) {
+                    if (!mi.IsStatic || 
+                        (mi.IsDefined(typeof(PropertyMethodAttribute), true) && 
+                        !mi.IsDefined(typeof(StaticExtensionMethodAttribute), true)) &&
+                        !mi.IsDefined(typeof(WrapperDescriptorAttribute), true)) {
                         return true;
                     }
                 }

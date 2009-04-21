@@ -2881,7 +2881,7 @@ namespace IronPython.Runtime.Operations {
 
         #region Function helpers
 
-        public static PythonGenerator MakeGenerator(PythonFunction function, Microsoft.Scripting.Tuple data, object generatorCode) {
+        public static PythonGenerator MakeGenerator(PythonFunction function, MutableTuple data, object generatorCode) {
             PythonGeneratorNext next = generatorCode as PythonGeneratorNext;
             if (next == null) {
                 next = ((LazyCode<PythonGeneratorNext>)generatorCode).EnsureDelegate();
@@ -3475,7 +3475,7 @@ namespace IronPython.Runtime.Operations {
 
         #region Global Access
 
-        public static CodeContext/*!*/ CreateLocalContext(CodeContext/*!*/ outerContext, Microsoft.Scripting.Tuple boxes, SymbolId[] args, bool isVisible) {
+        public static CodeContext/*!*/ CreateLocalContext(CodeContext/*!*/ outerContext, MutableTuple boxes, SymbolId[] args, bool isVisible) {
             return new CodeContext(
                 new Scope(
                     outerContext.Scope,
@@ -3505,15 +3505,15 @@ namespace IronPython.Runtime.Operations {
             return new ClosureCell(initialValue);
         }
 
-        public static Microsoft.Scripting.Tuple/*!*/ GetClosureTupleFromFunction(PythonFunction/*!*/ function) {
+        public static MutableTuple/*!*/ GetClosureTupleFromFunction(PythonFunction/*!*/ function) {
             return GetClosureTupleFromContext(function.Context);
         }
 
-        public static Microsoft.Scripting.Tuple/*!*/ GetClosureTupleFromGenerator(PythonGenerator/*!*/ generator) {
+        public static MutableTuple/*!*/ GetClosureTupleFromGenerator(PythonGenerator/*!*/ generator) {
             return GetClosureTupleFromContext(generator.Context);
         }
 
-        public static Microsoft.Scripting.Tuple/*!*/ GetClosureTupleFromContext(CodeContext/*!*/ context) {
+        public static MutableTuple/*!*/ GetClosureTupleFromContext(CodeContext/*!*/ context) {
             return ((context.Scope.Dict as PythonDictionary)._storage as RuntimeVariablesDictionaryStorage).Tuple;
         }
 

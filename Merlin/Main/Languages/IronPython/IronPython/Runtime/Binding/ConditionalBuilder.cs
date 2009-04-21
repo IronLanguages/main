@@ -30,7 +30,7 @@ namespace IronPython.Runtime.Binding {
     /// branch must be added.
     /// </summary>
     class ConditionalBuilder {
-        private readonly DynamicMetaObjectBinder/*!*/ _action;
+        private readonly DynamicMetaObjectBinder _action;
         private readonly List<Expression/*!*/>/*!*/ _conditions = new List<Expression>();
         private readonly List<Expression/*!*/>/*!*/ _bodies = new List<Expression>();
         private readonly List<ParameterExpression/*!*/>/*!*/ _variables = new List<ParameterExpression>();
@@ -41,6 +41,9 @@ namespace IronPython.Runtime.Binding {
 
         public ConditionalBuilder(DynamicMetaObjectBinder/*!*/ action) {
             _action = action;
+        }
+
+        public ConditionalBuilder() {
         }
 
         /// <summary>
@@ -54,25 +57,26 @@ namespace IronPython.Runtime.Binding {
         }
 
         /// <summary>
+        /// Adds a new condition to the last added body / condition.
+        /// </summary>
+        public void AddCondition(Expression condition) {
+            if (_body != null) {
+                AddCondition(condition, _body);
+                _body = null;
+            } else {
+                _conditions[_conditions.Count - 1] = Ast.AndAlso(
+                    _conditions[_conditions.Count - 1],
+                    condition);
+            }
+        }
+        
+        /// <summary>
         /// Adds the non-conditional terminating node.
         /// </summary>
         public void FinishCondition(Expression/*!*/ body) {
             if (_body != null) throw new InvalidOperationException();
 
-            for (int i = _bodies.Count - 1; i >= 0; i--) {
-                Type t = _bodies[i].Type;
-                Type otherType = body.Type;
-
-                t = BindingHelpers.GetCompatibleType(t, otherType);
-
-                body = Ast.Condition(
-                    _conditions[i],
-                    AstUtils.Convert(_bodies[i], t),
-                    AstUtils.Convert(body, t)
-                );
-            }
-
-            _body = Ast.Block(_variables, body);
+            _body = body;
         }
 
         public ParameterExpression CompareRetBool {
@@ -104,7 +108,7 @@ namespace IronPython.Runtime.Binding {
             }
         }
 
-        public DynamicMetaObjectBinder/*!*/ Action {
+        public DynamicMetaObjectBinder Action {
             get {
                 return _action;
             }
@@ -137,8 +141,24 @@ namespace IronPython.Runtime.Binding {
                 throw new InvalidOperationException("FinishCondition not called before GetMetaObject");
             }
 
+            Expression body = _body;
+            for (int i = _bodies.Count - 1; i >= 0; i--) {
+                Type t = _bodies[i].Type;
+                Type otherType = body.Type;
+
+                t = BindingHelpers.GetCompatibleType(t, otherType);
+
+                body = Ast.Condition(
+                    _conditions[i],
+                    AstUtils.Convert(_bodies[i], t),
+                    AstUtils.Convert(body, t)
+                );
+            }
+
+            body = Ast.Block(_variables, body);
+
             return new DynamicMetaObject(
-                _body,
+                body,
                 BindingRestrictions.Combine(types)
             );
         }

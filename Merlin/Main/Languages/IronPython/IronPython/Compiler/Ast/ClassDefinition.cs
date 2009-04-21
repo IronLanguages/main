@@ -139,7 +139,7 @@ namespace IronPython.Compiler.Ast {
             init.Add(Ast.Assign(ArrayGlobalAllocator._globalContext, Ast.Call(typeof(PythonOps).GetMethod("GetGlobalContext"), _parentContextParam)));
             init.AddRange(classGen.Globals.PrepareScope(classGen));
 
-            CreateVariables(classGen, _parentContextParam, init, true, NeedsLocalsDictionary);
+            CreateVariables(classGen, _parentContextParam, init, true, false);
 
             List<MSAst.Expression> statements = new List<MSAst.Expression>();
             // Create the body

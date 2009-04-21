@@ -68,6 +68,14 @@ namespace IronPython.Runtime.Binding {
                     } else if (typeof(T) == typeof(Func<CallSite, PythonTuple, object, object>)) {
                         return (T)(object)new Func<CallSite, PythonTuple, object, object>(TupleIndex);
                     }
+                } else if (CompilerHelpers.GetType(args[0]) == typeof(string)) {
+                    if (typeof(T) == typeof(Func<CallSite, object, object, object>)) {
+                        return (T)(object)new Func<CallSite, object, object, object>(StringIndex);
+                    } else if (typeof(T) == typeof(Func<CallSite, object, int, object>)) {
+                        return (T)(object)new Func<CallSite, object, int, object>(StringIndex);
+                    } else if (typeof(T) == typeof(Func<CallSite, string, object, object>)) {
+                        return (T)(object)new Func<CallSite, string, object, object>(StringIndex);
+                    }
                 }
             }
 
@@ -123,6 +131,32 @@ namespace IronPython.Runtime.Binding {
             PythonTuple lst = target as PythonTuple;
             if (lst != null) {
                 return lst[index];
+            }
+
+            return ((CallSite<Func<CallSite, object, int, object>>)site).Update(site, target, index);
+        }
+
+        private object StringIndex(CallSite site, string target, object index) {
+            if (target != null && index != null && index.GetType() == typeof(int)) {
+                return StringOps.GetItem(target, (int)index);
+            }
+
+            return ((CallSite<Func<CallSite, string, object, object>>)site).Update(site, target, index);
+        }
+
+        private object StringIndex(CallSite site, object target, object index) {
+            string str = target as string;
+            if (str != null && index != null && index.GetType() == typeof(int)) {
+                return StringOps.GetItem(str, (int)index);
+            }
+
+            return ((CallSite<Func<CallSite, object, object, object>>)site).Update(site, target, index);
+        }
+
+        private object StringIndex(CallSite site, object target, int index) {
+            string str = target as string;
+            if (str != null) {
+                return StringOps.GetItem(str, index);
             }
 
             return ((CallSite<Func<CallSite, object, int, object>>)site).Update(site, target, index);
