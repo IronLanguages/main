@@ -186,14 +186,20 @@ namespace IronRuby.Builtins {
         #region *, +, concat
 
         [RubyMethod("*")]
-        public static RubyArray/*!*/ Repetition(IList/*!*/ self, int repeat) {
+        public static IList/*!*/ Repetition(CallSiteStorage<Func<CallSite, RubyClass, object>>/*!*/ allocateStorage, IList/*!*/ self, int repeat) {
             if (repeat < 0) {
                 throw RubyExceptions.CreateArgumentError("negative argument");
             }
-            RubyArray result = new RubyArray(self.Count * repeat);
+
+            IList result = CreateResultArray(allocateStorage, self);
+            if (result is RubyArray) {
+                (result as RubyArray).Capacity = self.Count * repeat;
+            }
             for (int i = 0; i < repeat; ++i) {
                 AddRange(result, self);
             }
+
+            allocateStorage.Context.TaintObjectBy<IList>(result, self);
             return result;
         }
 
@@ -203,10 +209,10 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("*")]
-        public static object Repetition(ConversionStorage<MutableString>/*!*/ tosConversion, IList/*!*/ self, [DefaultProtocol]Union<MutableString, int> repeat) {
+        public static object Repetition(CallSiteStorage<Func<CallSite, RubyClass, object>>/*!*/ allocateStorage, ConversionStorage<MutableString>/*!*/ tosConversion, IList/*!*/ self, [DefaultProtocol]Union<MutableString, int> repeat) {
 
             if (repeat.IsFixnum()) {
-                return Repetition(self, repeat.Fixnum());
+                return Repetition(allocateStorage, self, repeat.Fixnum());
             } else {
                 return Repetition(tosConversion, self, repeat.String());
             }
@@ -230,13 +236,25 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("-")]
-        public static RubyArray/*!*/ Difference(BinaryOpStorage/*!*/ equals, IList/*!*/ self, [DefaultProtocol, NotNull]IList/*!*/ other) {
+        public static RubyArray/*!*/ Difference(RubyContext/*!*/ context, IList/*!*/ self, [DefaultProtocol, NotNull]IList/*!*/ other) {
+            // MRI follows hashing semantics here, so doesn't actually call eql?/hash for Fixnum/Symbol
+            IEqualityComparer<object> comparer = context.EqualityComparer;
             RubyArray result = new RubyArray();
-        
+
             // TODO: optimize this
-            foreach (object element in self) {
-                if (!Include(equals, other, element)) {
-                    result.Add(element);
+            foreach (object selfElement in self) {
+                bool found = false;
+                foreach (object otherElement in other) {
+                    bool sameHashcode = comparer.GetHashCode(selfElement) == comparer.GetHashCode(otherElement);
+                    bool isEql = comparer.Equals(selfElement, otherElement);
+                    if (sameHashcode && isEql) {
+                        found = true;
+                        break;
+                    }
+                }
+
+                if (!found) {
+                    result.Add(selfElement);
                 }
             }
 
@@ -248,8 +266,9 @@ namespace IronRuby.Builtins {
         #region ==, <=>, eql?, hash
 
         [RubyMethod("==")]
-        public static bool Equals(IList/*!*/ self, object other) {
-            return false;
+        public static bool Equals(ConversionStorage<IList>/*!*/ arrayTryCast, BinaryOpStorage/*!*/ equals, IList/*!*/ self, object other) {
+            IList otherAsArray = Protocols.TryCastToArray(arrayTryCast, other);
+            return otherAsArray != null ? Equals(equals, self, otherAsArray) : false;
         }
 
         [MultiRuntimeAware]
@@ -409,8 +428,9 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("[]=")]
-        public static object SetElement(RubyContext/*!*/ context, IList/*!*/ self, [DefaultProtocol]int index, [DefaultProtocol]int length, object value) {
-            RubyUtils.RequiresNotFrozen(context, self);
+        public static object SetElement(ConversionStorage<IList>/*!*/ arrayTryCast, IList/*!*/ self, 
+            [DefaultProtocol]int index, [DefaultProtocol]int length, object value) {
+            RubyUtils.RequiresNotFrozen(arrayTryCast.Context, self);
 
             if (length < 0) {
                 throw RubyExceptions.CreateIndexError(String.Format("negative length ({0})", length));
@@ -422,12 +442,15 @@ namespace IronRuby.Builtins {
             }
 
             IList valueAsList = value as IList;
+            if (valueAsList == null) {
+                valueAsList = Protocols.TryCastToArray(arrayTryCast, value);
+            }
 
             if (value == null || (valueAsList != null && valueAsList.Count == 0)) {
                 DeleteItems(self, index, length);
             } else {
                 if (valueAsList == null) {
-                    Insert(context, self, index, value);
+                    Insert(arrayTryCast.Context, self, index, value);
                     
                     if (length > 0) {
                         RemoveRange(self, index + 1, Math.Min(length, self.Count - index - 1));
@@ -459,7 +482,8 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("[]=")]
-        public static object SetElement(ConversionStorage<int>/*!*/ fixnumCast, IList/*!*/ self, [NotNull]Range/*!*/ range, object value) {
+        public static object SetElement(ConversionStorage<IList>/*!*/ arrayTryCast, ConversionStorage<int>/*!*/ fixnumCast, 
+            IList/*!*/ self, [NotNull]Range/*!*/ range, object value) {
             RubyUtils.RequiresNotFrozen(fixnumCast.Context, self);
             
             int begin = Protocols.CastToFixnum(fixnumCast, range.Begin);
@@ -473,7 +497,7 @@ namespace IronRuby.Builtins {
             end = end < 0 ? end + self.Count : end;
 
             int count = range.ExcludeEnd ? end - begin : end - begin + 1;
-            return SetElement(fixnumCast.Context, self, begin, Math.Max(count, 0), value);
+            return SetElement(arrayTryCast, self, begin, Math.Max(count, 0), value);
         }
 
         #endregion
@@ -1010,9 +1034,12 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("rindex")]
         public static object ReverseIndex(BinaryOpStorage/*!*/ equals, IList/*!*/ self, object item) {
-            for (int i = self.Count - 1; i >= 0; i--) {
+            for (int originalSize = self.Count, i = originalSize - 1; i >= 0; i--) {
                 if (Protocols.IsEqual(equals, self[i], item)) {
                     return i;
+                }
+                if (self.Count < originalSize) {
+                    i = originalSize - i - 1 + self.Count;
                 }
             }
             return null;
@@ -1083,6 +1110,7 @@ namespace IronRuby.Builtins {
             IList/*!*/ list, MutableString/*!*/ separator, MutableString/*!*/ result, Dictionary<object, bool>/*!*/ seen) {
 
             Assert.NotNull(list, separator, result, seen);
+            RubyContext context = tosConversion.Context;
             // TODO: can we get by only tracking List<> ?
             // (inspect needs to track everything)
             bool found;
@@ -1109,6 +1137,12 @@ namespace IronRuby.Builtins {
                     }
                 }
 
+                if (!result.IsTainted){
+                    if (context.IsObjectTainted(list) || context.IsObjectTainted(item) || separator.IsTainted) {
+                        result.IsTainted = true;
+                    }
+                }
+
                 if (i < list.Count - 1) {
                     result.Append(separator);
                 }
@@ -1124,9 +1158,16 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("join")]
-        public static MutableString/*!*/ Join(ConversionStorage<MutableString>/*!*/ tosConversion, IList/*!*/ self, MutableString separator) {
+        public static MutableString/*!*/ Join(ConversionStorage<MutableString>/*!*/ tosConversion, ConversionStorage<MutableString>/*!*/ tostrConversion, IList/*!*/ self, Object separator) {
+            if (self.Count == 0) {
+                return MutableString.Empty;
+            }
+            return Join(tosConversion, self, separator != null ? Protocols.CastToString(tostrConversion, separator) : MutableString.Empty);
+        }
+
+        public static MutableString/*!*/ Join(ConversionStorage<MutableString>/*!*/ tosConversion, IList/*!*/ self, MutableString/*!*/ separator) {
             MutableString result = MutableString.CreateMutable();
-            RecursiveJoin(tosConversion, self, separator ?? MutableString.Empty, result, 
+            RecursiveJoin(tosConversion, self, separator ?? MutableString.Empty, result,
                 new Dictionary<object, bool>(ReferenceEqualityComparer<object>.Instance)
             );
             return result;
@@ -1270,12 +1311,12 @@ namespace IronRuby.Builtins {
         #region slice!
 
         [RubyMethod("slice!")]
-        public static object SliceInPlace(RubyContext/*!*/ context, IList/*!*/ self, [DefaultProtocol]int index) {
-            RubyUtils.RequiresNotFrozen(context, self);
+        public static object SliceInPlace(ConversionStorage<IList>/*!*/ arrayTryCast, IList/*!*/ self, [DefaultProtocol]int index) {
+            RubyUtils.RequiresNotFrozen(arrayTryCast.Context, self);
             index = index < 0 ? index + self.Count : index;
             if (index >= 0 && index < self.Count) {
                 object result = self[index];
-                SetElement(context, self, index, 1, null);
+                SetElement(arrayTryCast, self, index, 1, null);
                 return result;
             } else {
                 return null;
@@ -1283,21 +1324,23 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("slice!")]
-        public static object SliceInPlace(ConversionStorage<int>/*!*/ fixnumCast, 
+        public static object SliceInPlace(ConversionStorage<IList>/*!*/ arrayTryCast, 
+            ConversionStorage<int>/*!*/ fixnumCast, 
             CallSiteStorage<Func<CallSite, RubyClass, object>>/*!*/ allocateStorage, 
             IList/*!*/ self, [NotNull]Range/*!*/ range) {
             RubyUtils.RequiresNotFrozen(fixnumCast.Context, self);
             object result = GetElement(fixnumCast, allocateStorage, self, range);
-            SetElement(fixnumCast, self, range, null);
+            SetElement(arrayTryCast, fixnumCast, self, range, null);
             return result;
         }
 
         [RubyMethod("slice!")]
-        public static IList/*!*/ SliceInPlace(CallSiteStorage<Func<CallSite, RubyClass, object>>/*!*/ allocateStorage, 
+        public static IList/*!*/ SliceInPlace(ConversionStorage<IList>/*!*/ arrayTryCast, 
+            CallSiteStorage<Func<CallSite, RubyClass, object>>/*!*/ allocateStorage, 
             IList/*!*/ self, [DefaultProtocol]int start, [DefaultProtocol]int length) {
             RubyUtils.RequiresNotFrozen(allocateStorage.Context, self);
             IList result = GetElements(allocateStorage, self, start, length);
-            SetElement(allocateStorage.Context, self, start, length, null);
+            SetElement(arrayTryCast, self, start, length, null);
             return result;
         }
 
@@ -1342,8 +1385,11 @@ namespace IronRuby.Builtins {
         #region reverse, reverse!, transpose, uniq, uniq!
 
         [RubyMethod("reverse")]
-        public static RubyArray/*!*/ Reverse(IList/*!*/ self) {
-            RubyArray reversedList = new RubyArray(self.Count);
+        public static IList/*!*/ Reverse(CallSiteStorage<Func<CallSite, RubyClass, object>>/*!*/ allocateStorage, IList/*!*/ self) {
+            IList reversedList = CreateResultArray(allocateStorage, self);
+            if (reversedList is RubyArray) {
+                (reversedList as RubyArray).Capacity = self.Count;
+            }
             for (int i = 0; i < self.Count; i++) {
                 reversedList.Add(self[self.Count - i - 1]);
             }
@@ -1411,7 +1457,6 @@ namespace IronRuby.Builtins {
         [RubyMethod("uniq!")]
         public static IList UniqueSelf(RubyContext/*!*/ context, IList/*!*/ self) {
             var seen = new Dictionary<object, bool>(context.EqualityComparer);
-            bool frozen = context.IsObjectFrozen(self);
             bool modified = false;
             int i = 0;
             while (i < self.Count) {
@@ -1420,7 +1465,7 @@ namespace IronRuby.Builtins {
                     seen.Add(key, true);
                     i++;
                 } else {
-                    if (frozen) {
+                    if (context.IsObjectFrozen(self)) {
                         throw RubyExceptions.CreateTypeError("can't modify frozen array");
                     }
                     self.RemoveAt(i);
