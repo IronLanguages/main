@@ -1040,6 +1040,7 @@ namespace IronRuby.Builtins {
                 }
                 if (self.Count < originalSize) {
                     i = originalSize - i - 1 + self.Count;
+                    originalSize = self.Count;
                 }
             }
             return null;
