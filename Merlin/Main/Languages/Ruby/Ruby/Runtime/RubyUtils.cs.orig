@@ -850,6 +850,23 @@ namespace IronRuby.Runtime {
 
 #endif
 
+<<<<<<< HEAD:Merlin/Main/Languages/Ruby/Ruby/Runtime/RubyUtils.cs
+        #endregion
+
+        #region Paths
+        public static MutableString CanonicalizePath(MutableString path) {
+            for (int i = 0; i < path.Length; i++) {
+                if (path.GetChar(i) == '\\')
+                    path.SetChar(i, '/');
+            }
+            return path;
+        }
+
+        public static String CanonicalizePath(string path) {
+            return path.Replace('\\', '/');
+        }
+        #endregion
+=======
         #endregion
 
         #region Paths
@@ -872,5 +889,6 @@ namespace IronRuby.Runtime {
         }
 
         #endregion
+>>>>>>> 43514f8f9e980ba22dfb5b8661e5633661f50d1f:Merlin/Main/Languages/Ruby/Ruby/Runtime/RubyUtils.cs
     }
 }

@@ -529,7 +529,7 @@ namespace IronRuby.Runtime {
 
             foreach (var dir in loadPaths) {
                 try {
-                    ResolvedFile result = ResolveFile(dir + "/" + path, extension, appendExtensions, sourceFileExtensions);
+                    ResolvedFile result = ResolveFile(RubyUtils.CombinePaths(dir, path), extension, appendExtensions, sourceFileExtensions);
                     if (result != null) {
                         return result;
                     }
