@@ -864,6 +864,13 @@ namespace IronRuby.Runtime {
         public static String CanonicalizePath(string path) {
             return path.Replace('\\', '/');
         }
+
+        public static String CombinePaths(string basePath, string path) {
+            return (basePath.EndsWith("\\") || basePath.EndsWith("/")) ? 
+                basePath + path :
+                basePath + "/" + path;
+        }
+
         #endregion
     }
 }
