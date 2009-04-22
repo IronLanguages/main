@@ -236,3 +236,15 @@ fails:Array#pack with '@' concatenates successing formats at the position '@' mo
 fails:Array#pack with '@' does not recover lost bytes when shorten the string and then extends it again
 fails:Array#pack with '@' is able to work with 'X'
 fails:String#unpack with 'w' directive produces a BER-compressed integer
+fails:Array#pack with format 'l_' returns a string containing 4 bytes for an integer
+fails:Array#pack with format 'l_' raises a RangeError when a pack argument is >= 2**32
+fails:Array#pack with format 'l_' regards negative values as 2's complement in order to converts it to positive
+fails:Array#pack with format 'l_' tries to convert the pack argument to an Integer using #to_int
+fails:Array#pack with format 'l_' processes count number of array elements if count given
+fails:Array#pack with format 'l_' with star parameter processes all remaining array items
+fails:Array#pack with format 'L_' returns a string containing 4 bytes for an integer
+fails:Array#pack with format 'L_' raises a RangeError when a pack argument is >= 2**32
+fails:Array#pack with format 'L_' regards negative values as 2's complement in order to converts it to positive
+fails:Array#pack with format 'L_' tries to convert the pack argument to an Integer using #to_int
+fails:Array#pack with format 'L_' processes count number of array elements if count given
+fails:Array#pack with format 'L_' with star parameter processes all remaining array items
