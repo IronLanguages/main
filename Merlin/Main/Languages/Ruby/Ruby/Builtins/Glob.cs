@@ -522,10 +522,6 @@ namespace IronRuby.Builtins {
             return matcher.DoGlob();
         }
 
-        public static MutableString/*!*/ CanonicalizePath(MutableString/*!*/ path) {
-            return RubyUtils.CanonicalizePath(path);
-        }
-
         public static IEnumerable<string>/*!*/ GlobResults(RubyContext/*!*/ context, string/*!*/ pattern, int flags) {
             if (pattern.Length == 0) {
                 yield break;
