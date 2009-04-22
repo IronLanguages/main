@@ -523,11 +523,7 @@ namespace IronRuby.Builtins {
         }
 
         public static MutableString/*!*/ CanonicalizePath(MutableString/*!*/ path) {
-            for (int i = 0; i < path.Length; i++) {
-                if (path.GetChar(i) == '\\')
-                    path.SetChar(i, '/');
-            }
-            return path;
+            return RubyUtils.CanonicalizePath(path);
         }
 
         public static IEnumerable<string>/*!*/ GlobResults(RubyContext/*!*/ context, string/*!*/ pattern, int flags) {

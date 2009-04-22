@@ -15,8 +15,8 @@ describe "The __FILE__ constant" do
     it 'is not canonicalized via require or load' do
       # Does not use the "fixtures" method since the test
       # depends on the type of path separator used.
-      sub_prgm = ruby_exe(File.dirname(__FILE__) + '\\fixtures/file.rb').split[2]
-
+      sub_prgm = ruby_exe(File.dirname(__FILE__) + '\\../fixtures/file.rb').split[2]
+      
       # ensures that the \\ separator is still there
       sub_prgm.split(File::SEPARATOR)[-2].should == 'fixtures\\file'
     end

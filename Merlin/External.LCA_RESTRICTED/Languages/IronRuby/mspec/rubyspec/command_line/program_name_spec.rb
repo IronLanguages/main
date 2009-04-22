@@ -5,7 +5,7 @@ describe 'The Program Name' do
     before :each do
       # does not use "fixture" method since tests
       # depend on path separators
-      fixture_file = File.dirname(__FILE__) + '\\fixtures/file.rb'
+      fixture_file = File.dirname(__FILE__) + '\\../fixtures/file.rb'
 
       @output = ruby_exe(fixture_file).split
       @base_file = @output[0] # file.rb's __FILE__
