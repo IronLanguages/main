@@ -16,6 +16,9 @@ set IRTESTS_ERRORS=Results:
 :==============================================================================
 : Builds
 
+for /L %%i in (1,1,3) do kill /f ir.exe
+for /L %%i in (1,1,3) do kill /f ipy.exe
+
 if "%1" == "-nocompile" (
     shift
     echo Skipping compile step...

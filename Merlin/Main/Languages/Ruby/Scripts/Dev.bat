@@ -13,6 +13,8 @@ set RUBY18_BIN=
 set RUBY18_EXE=ruby.exe
 set RUBY19_EXE=c:\ruby19\bin\ruby.exe
 set RUBYOPT=
+REM Optimistically set GEM_PATH so that IronRuby can find gems installed by MRI. Users can override this from Merlin\Users\%username%\Dev.bat
+set GEM_PATH=c:\Ruby\lib\ruby\gems\1.8
 
 if exist "%PROGRAM_FILES_x86%" set PROGRAM_FILES_32=%PROGRAM_FILES_x86%
 

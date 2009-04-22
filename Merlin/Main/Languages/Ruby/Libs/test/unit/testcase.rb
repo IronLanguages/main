@@ -10,6 +10,7 @@ require 'test/unit/error'
 require 'test/unit/testsuite'
 require 'test/unit/assertionfailederror'
 require 'test/unit/util/backtracefilter'
+require File.dirname(__FILE__) + '/../../hacks'
 
 module Test
   module Unit

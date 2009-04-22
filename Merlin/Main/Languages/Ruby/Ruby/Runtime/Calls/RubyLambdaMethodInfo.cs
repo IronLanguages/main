@@ -63,8 +63,6 @@ namespace IronRuby.Runtime.Calls {
         }
 
         internal override void BuildCallNoFlow(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args, string/*!*/ name) {
-            Debug.Assert(!args.Signature.HasBlock);
-
             Proc.BuildCall(
                 metaBuilder,
                 AstUtils.Constant(_lambda),            // proc object
