@@ -1,6 +1,7 @@
 require File.dirname(__FILE__) + '/../spec_helper'
 require 'mspec/utils/options'
 require 'mspec/version'
+require 'mspec/guards/guard'
 require 'mspec/runner/mspec'
 require 'mspec/runner/formatters'
 
@@ -235,48 +236,49 @@ end
 describe MSpecOptions, "#parse" do
   before :each do
     @opt = MSpecOptions.new
-    @prc = lambda { |o| ScratchPad.record [:parsed, o] }
+    @prc = lambda { ScratchPad.record :parsed }
+    @arg_prc = lambda { |o| ScratchPad.record [:parsed, o] }
     ScratchPad.clear
   end
 
   it "parses a short option" do
     @opt.on "-a", "desc", &@prc
     @opt.parse ["-a"]
-    ScratchPad.recorded.should == [:parsed, nil]
+    ScratchPad.recorded.should == :parsed
   end
 
   it "parse a long option" do
     @opt.on "--abdc", "desc", &@prc
     @opt.parse ["--abdc"]
-    ScratchPad.recorded.should == [:parsed, nil]
+    ScratchPad.recorded.should == :parsed
   end
 
   it "parses a short option group" do
-    @opt.on "-a", "ARG", "desc", &@prc
+    @opt.on "-a", "ARG", "desc", &@arg_prc
     @opt.parse ["-a", "ARG"]
     ScratchPad.recorded.should == [:parsed, "ARG"]
   end
 
   it "parses a short option with an argument" do
-    @opt.on "-a", "ARG", "desc", &@prc
+    @opt.on "-a", "ARG", "desc", &@arg_prc
     @opt.parse ["-a", "ARG"]
     ScratchPad.recorded.should == [:parsed, "ARG"]
   end
 
   it "parses a short option with connected argument" do
-    @opt.on "-a", "ARG", "desc", &@prc
+    @opt.on "-a", "ARG", "desc", &@arg_prc
     @opt.parse ["-aARG"]
     ScratchPad.recorded.should == [:parsed, "ARG"]
   end
 
   it "parses a long option with an argument" do
-    @opt.on "--abdc", "ARG", "desc", &@prc
+    @opt.on "--abdc", "ARG", "desc", &@arg_prc
     @opt.parse ["--abdc", "ARG"]
     ScratchPad.recorded.should == [:parsed, "ARG"]
   end
 
   it "parses a long option with an '=' argument" do
-    @opt.on "--abdc", "ARG", "desc", &@prc
+    @opt.on "--abdc", "ARG", "desc", &@arg_prc
     @opt.parse ["--abdc=ARG"]
     ScratchPad.recorded.should == [:parsed, "ARG"]
   end
@@ -299,7 +301,7 @@ describe MSpecOptions, "#parse" do
   end
 
   it "returns the unprocessed entries" do
-    @opt.on "-a", "ARG", "desc", &@prc
+    @opt.on "-a", "ARG", "desc", &@arg_prc
     @opt.parse(["abdc", "-a", "ilny"]).should == ["abdc"]
   end
 
@@ -549,11 +551,11 @@ describe "The -t, --target TARGET option" do
     end
   end
 
-  it "sets the target to 'ruby19' with TARGET 'r19' or 'ruby19'" do
+  it "sets the target to 'ruby1.9' with TARGET 'r19', 'ruby19' or 'ruby1.9'" do
     ["-t", "--target"].each do |opt|
-      ["r19", "ruby19"].each do |t|
+      ["r19", "ruby19", "ruby1.9"].each do |t|
         @options.parse [opt, t]
-        @config[:target].should == "ruby19"
+        @config[:target].should == "ruby1.9"
       end
     end
   end
@@ -698,6 +700,16 @@ describe "The -f, --format FORMAT option" do
         @config[:formatter] = nil
         @options.parse [opt, f]
         @config[:formatter].should == DottedFormatter
+      end
+    end
+  end
+
+  it "sets the DescribeFormatter with FORMAT 'b' or 'describe'" do
+    ["-f", "--format"].each do |opt|
+      ["b", "describe"].each do |f|
+        @config[:formatter] = nil
+        @options.parse [opt, f]
+        @config[:formatter].should == DescribeFormatter
       end
     end
   end
@@ -1004,6 +1016,7 @@ describe "The --unguarded option" do
   end
 
   it "is enabled with #unguarded" do
+    @options.stub!(:on)
     @options.should_receive(:on).with("--unguarded", an_instance_of(String))
     @options.unguarded
   end
@@ -1011,6 +1024,24 @@ describe "The --unguarded option" do
   it "registers the MSpec unguarded mode" do
     MSpec.should_receive(:register_mode).with(:unguarded)
     @options.parse "--unguarded"
+  end
+end
+
+describe "The --no-ruby_guard option" do
+  before :each do
+    @options, @config = new_option
+    @options.unguarded
+  end
+
+  it "is enabled with #unguarded" do
+    @options.stub!(:on)
+    @options.should_receive(:on).with("--no-ruby_bug", an_instance_of(String))
+    @options.unguarded
+  end
+
+  it "registers the MSpec no_ruby_bug mode" do
+    MSpec.should_receive(:register_mode).with(:no_ruby_bug)
+    @options.parse "--no-ruby_bug"
   end
 end
 
@@ -1130,6 +1161,45 @@ describe "The -O, --report option" do
     ["-O", "--report"].each do |m|
       @options.parse m
     end
+  end
+end
+
+describe "The --report-on GUARD option" do
+  before :all do
+    MSpec.stub!(:register_mode)
+  end
+
+  before :each do
+    @options, @config = new_option
+    @options.verify
+
+    SpecGuard.clear_guards
+  end
+
+  after :each do
+    SpecGuard.clear_guards
+  end
+
+  it "is enabled with #interrupt" do
+    @options.stub!(:on)
+    @options.should_receive(:on).with("--report-on", "GUARD", an_instance_of(String))
+    @options.verify
+  end
+
+  it "sets the MSpec mode to :report_on" do
+    MSpec.should_receive(:register_mode).with(:report_on)
+    @options.parse ["--report-on", "ruby_bug"]
+  end
+
+  it "converts the guard name to a symbol" do
+    name = mock("ruby_bug")
+    name.should_receive(:to_sym)
+    @options.parse ["--report-on", name]
+  end
+
+  it "saves the name of the guard" do
+    @options.parse ["--report-on", "ruby_bug"]
+    SpecGuard.guards.should == [:ruby_bug]
   end
 end
 

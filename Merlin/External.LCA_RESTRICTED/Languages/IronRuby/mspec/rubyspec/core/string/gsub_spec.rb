@@ -157,6 +157,28 @@ describe "String#gsub with pattern and replacement" do
     hello.gsub(//.taint, "foo").tainted?.should == false
   end
 
+  ruby_version_is "1.9" do
+    it "untrusts the result if the original string or replacement is untrusted" do
+      hello = "hello"
+      hello_t = "hello"
+      a = "a"
+      a_t = "a"
+      empty = ""
+      empty_t = ""
+
+      hello_t.untrust; a_t.untrust; empty_t.untrust
+
+      hello_t.gsub(/./, a).untrusted?.should == true
+      hello_t.gsub(/./, empty).untrusted?.should == true
+
+      hello.gsub(/./, a_t).untrusted?.should == true
+      hello.gsub(/./, empty_t).untrusted?.should == true
+      hello.gsub(//, empty_t).untrusted?.should == true
+
+      hello.gsub(//.untrust, "foo").untrusted?.should == false
+    end
+  end
+
   it "tries to convert pattern to a string using to_str" do
     pattern = mock('.')
     def pattern.to_str() "." end
@@ -280,26 +302,28 @@ describe "String#gsub with pattern and block" do
     
     "hello".gsub(/.+/) { obj }.should == "ok"
   end
-  
-  it "taints the result if the original string or replacement is tainted" do
-    hello = "hello"
-    hello_t = "hello"
-    a = "a"
-    a_t = "a"
-    empty = ""
-    empty_t = ""
-    
-    hello_t.taint; a_t.taint; empty_t.taint
-    
-    hello_t.gsub(/./) { a }.tainted?.should == true
-    hello_t.gsub(/./) { empty }.tainted?.should == true
 
-    hello.gsub(/./) { a_t }.tainted?.should == true
-    hello.gsub(/./) { empty_t }.tainted?.should == true
-    hello.gsub(//) { empty_t }.tainted?.should == true
-    
-    hello.gsub(//.taint) { "foo" }.tainted?.should == false
-  end  
+  ruby_version_is "1.9" do
+    it "untrusts the result if the original string or replacement is untrusted" do
+      hello = "hello"
+      hello_t = "hello"
+      a = "a"
+      a_t = "a"
+      empty = ""
+      empty_t = ""
+
+      hello_t.untrust; a_t.untrust; empty_t.untrust
+
+      hello_t.gsub(/./) { a }.untrusted?.should == true
+      hello_t.gsub(/./) { empty }.untrusted?.should == true
+
+      hello.gsub(/./) { a_t }.untrusted?.should == true
+      hello.gsub(/./) { empty_t }.untrusted?.should == true
+      hello.gsub(//) { empty_t }.untrusted?.should == true
+
+      hello.gsub(//.untrust) { "foo" }.untrusted?.should == false
+    end
+  end
 end
 
 describe "String#gsub! with pattern and replacement" do
@@ -314,6 +338,14 @@ describe "String#gsub! with pattern and replacement" do
     a.gsub!(/./.taint, "foo").tainted?.should == false
     a.gsub!(/./, "foo".taint).tainted?.should == true
   end
+
+  ruby_version_is "1.9" do
+    it "untrusts self if replacement is untrusted" do
+      a = "hello"
+      a.gsub!(/./.untrust, "foo").untrusted?.should == false
+      a.gsub!(/./, "foo".untrust).untrusted?.should == true
+    end
+  end
   
   it "returns nil if no modifications were made" do
     a = "hello"
@@ -322,15 +354,13 @@ describe "String#gsub! with pattern and replacement" do
     a.should == "hello"
   end
   
-  compliant_on :ruby, :jruby, :ironruby do
-    it "raises a TypeError when self is frozen" do
-      s = "hello"
-      s.freeze
-    
-      s.gsub!(/ROAR/, "x") # ok
-      lambda { s.gsub!(/e/, "e")       }.should raise_error(TypeError)
-      lambda { s.gsub!(/[aeiou]/, '*') }.should raise_error(TypeError)
-    end
+  it "raises a TypeError when self is frozen" do
+    s = "hello"
+    s.freeze
+  
+    s.gsub!(/ROAR/, "x") # ok
+    lambda { s.gsub!(/e/, "e")       }.should raise_error(TypeError)
+    lambda { s.gsub!(/[aeiou]/, '*') }.should raise_error(TypeError)
   end
 end
 
@@ -346,6 +376,14 @@ describe "String#gsub! with pattern and block" do
     a.gsub!(/./.taint) { "foo" }.tainted?.should == false
     a.gsub!(/./) { "foo".taint }.tainted?.should == true
   end
+
+  ruby_version_is "1.9" do
+    it "untrusts self if block's result is untrusted" do
+      a = "hello"
+      a.gsub!(/./.untrust) { "foo" }.untrusted?.should == false
+      a.gsub!(/./) { "foo".untrust }.untrusted?.should == true
+    end
+  end
   
   it "returns nil if no modifications were made" do
     a = "hello"
@@ -354,14 +392,12 @@ describe "String#gsub! with pattern and block" do
     a.should == "hello"
   end
   
-  compliant_on :ruby, :jruby, :ironruby do
-    it "raises a RuntimeError when self is frozen" do
-      s = "hello"
-      s.freeze
-  
-      s.gsub!(/ROAR/) { "x" } # ok
-      lambda { s.gsub!(/e/) { "e" }       }.should raise_error(RuntimeError)
-      lambda { s.gsub!(/[aeiou]/) { '*' } }.should raise_error(RuntimeError)
-    end
+  it "raises a RuntimeError when self is frozen" do
+    s = "hello"
+    s.freeze
+
+    s.gsub!(/ROAR/) { "x" } # ok
+    lambda { s.gsub!(/e/) { "e" }       }.should raise_error(RuntimeError)
+    lambda { s.gsub!(/[aeiou]/) { '*' } }.should raise_error(RuntimeError)
   end
 end

@@ -9,13 +9,13 @@ class EqlMatcher
   end
 
   def failure_message
-    ["Expected #{PP.singleline_pp(@actual, '')} (#{PP.singleline_pp(@actual.class, '')})",
-     "to have same value and type as #{PP.singleline_pp(@expected, '')} (#{PP.singleline_pp(@expected.class, '')})"]
+    ["Expected #{@actual.pretty_inspect}",
+     "to have same value and type as #{@expected.pretty_inspect}"]
   end
 
   def negative_failure_message
-    ["Expected #{PP.singleline_pp(@actual, '')} (#{PP.singleline_pp(@actual.class, '')})",
-     "not to have same value and type as #{PP.singleline_pp(@expected, '')} (#{PP.singleline_pp(@expected.class, '')})"]
+    ["Expected #{@actual.pretty_inspect}",
+     "not to have same value or type as #{@expected.pretty_inspect}"]
   end
 end
 

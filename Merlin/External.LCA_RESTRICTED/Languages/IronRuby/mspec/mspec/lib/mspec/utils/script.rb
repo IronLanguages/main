@@ -37,6 +37,15 @@ class MSpecScript
     config[key]
   end
 
+  # Filters the items in the 'config[:prefix]' direcotry to a set 
+  # of files.
+  #
+  # Looks in +path+ for all files and filters with +filter+ as a part
+  # of a regular expression (/^#{filter}.*/i)
+  def self.filtered(path, filter="")
+    Dir.chdir(config[:prefix] || ".") { Dir.entries(path).grep(/^#{filter}.*/i) }.map {|e| File.join(path, e)}
+  end
+
   def initialize
     config[:formatter] = nil
     config[:includes]  = []
@@ -96,12 +105,24 @@ class MSpecScript
     load "#{engine}.#{SpecGuard.ruby_version}.mspec"
   end
 
+  # Callback for enabling custom options. This version is a no-op.
+  # Provide an implementation specific version in a config file.
+  # Called by #options after the MSpec-provided options are added.
+  def custom_options(options)
+    options.doc "   No custom options registered"
+  end
+
   # Registers all filters and actions.
   def register
     if config[:formatter].nil?
       config[:formatter] = @files.size < 50 ? DottedFormatter : FileFormatter
     end
-    config[:formatter].new(config[:output]).register if config[:formatter]
+
+    if config[:formatter]
+      formatter = config[:formatter].new(config[:output])
+      formatter.register
+      MSpec.store :formatter, formatter
+    end
 
     MatchFilter.new(:include, *config[:includes]).register    unless config[:includes].empty?
     MatchFilter.new(:exclude, *config[:excludes]).register    unless config[:excludes].empty?
@@ -114,6 +135,14 @@ class MSpecScript
 
     DebugAction.new(config[:atags], config[:astrings]).register if config[:debugger]
     GdbAction.new(config[:atags], config[:astrings]).register   if config[:gdb]
+
+    custom_register
+  end
+
+  # Callback for enabling custom actions, etc. This version is a
+  # no-op. Provide an implementation specific version in a config
+  # file. Called by #register.
+  def custom_register
   end
 
   # Sets up signal handlers. Only a handler for SIGINT is
@@ -151,7 +180,7 @@ class MSpecScript
 
     patterns.each do |pattern|
       expanded = File.expand_path(pattern)
-      return [pattern] if File.file?(expanded)
+      return [expanded] if File.file?(expanded)
 
       specs = File.join(pattern, "/**/*_spec.rb")
       specs = File.expand_path(specs) rescue specs

@@ -1,12 +1,12 @@
 require File.dirname(__FILE__) + '/../../spec_helper'
 require "stringio"
 
-describe "StringIO#gets when passed [seperator]" do
+describe "StringIO#gets when passed [separator]" do
   before(:each) do
     @io = StringIO.new("this>is>an>example")
   end
 
-  it "returns the data read till the next occurence of the passed seperator" do
+  it "returns the data read till the next occurence of the passed separator" do
     @io.gets(">").should == "this>"
     @io.gets(">").should == "is>"
     @io.gets(">").should == "an>"
@@ -37,7 +37,7 @@ describe "StringIO#gets when passed [seperator]" do
     @io.lineno.should eql(3)
   end
   
-  it "returns the next paragraph when the passed seperator is an empty String" do
+  it "returns the next paragraph when the passed separator is an empty String" do
     io = StringIO.new("this is\n\nan example")
     io.gets("").should == "this is\n"
     io.gets("").should == "an example"
@@ -49,16 +49,9 @@ describe "StringIO#gets when passed [seperator]" do
     io.gets(nil).should == "is\n\nan example"
   end
 
-  it "tries to convert the passed seperator to a String using #to_str" do
+  it "tries to convert the passed separator to a String using #to_str" do
     obj = mock('to_str')
     obj.should_receive(:to_str).and_return(">")
-    @io.gets(obj).should == "this>"
-  end
-
-  it "checks whether the passed seperator responds to #to_str" do
-    obj = mock('method_missing to_str')
-    obj.should_receive(:respond_to?).with(:to_str).any_number_of_times.and_return(true)
-    obj.should_receive(:method_missing).with(:to_str).and_return(">")
     @io.gets(obj).should == "this>"
   end
 end

@@ -1,13 +1,2 @@
-critical:Array#join raises a NoMethodError if an element does not respond to #to_s
-critical:Array#join raises a NoMethodError if an element does not respond to #to_s
-critical:Array#join raises a NoMethodError if an element does not respond to #to_s
-critical:Array#join raises a NoMethodError if an element does not respond to #to_s
-critical:Array#join raises a NoMethodError if an element does not respond to #to_s
-critical:Array#join raises a NoMethodError if an element does not respond to #to_s
-critical:Array#join raises a NoMethodError if an element does not respond to #to_s
-critical:Array#join raises a NoMethodError if an element does not respond to #to_s
-critical:Array#join raises a NoMethodError if an element does not respond to #to_s
-critical:Array#join raises a NoMethodError if an element does not respond to #to_s
-critical:Array#join raises a NoMethodError if an element does not respond to #to_s
-critical:Array#join raises a NoMethodError if an element does not respond to #to_s
-critical:Array#join raises a NoMethodError if an element does not respond to #to_s
+critical:Array#join raises a NoMethodError if an element does not respond to
+#tos

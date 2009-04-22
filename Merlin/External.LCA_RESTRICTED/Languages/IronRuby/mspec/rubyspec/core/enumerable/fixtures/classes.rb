@@ -113,4 +113,13 @@ module EnumerableSpecs
     end
   end
 
+  class YieldsMulti
+    include Enumerable
+    def each
+      yield 1,2
+      yield 3,4,5
+      yield 6,7,8,9
+    end
+  end
+
 end # EnumerableSpecs utility classes

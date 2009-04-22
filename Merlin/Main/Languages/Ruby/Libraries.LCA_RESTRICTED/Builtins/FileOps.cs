@@ -84,6 +84,7 @@ namespace IronRuby.Builtins {
             SEPARATOR = MutableString.Create(DirectorySeparatorChar.ToString()).Freeze();
             Separator = SEPARATOR;
             PATH_SEPARATOR = MutableString.Create(PathSeparatorChar.ToString()).Freeze();
+            _tracker = new UmaskTracker();
         }
 
         private const char AltDirectorySeparatorChar = '\\';
@@ -107,6 +108,7 @@ namespace IronRuby.Builtins {
         public readonly static MutableString Separator = SEPARATOR;
 
         private const string NUL_VALUE = "NUL";
+        private static UmaskTracker _tracker;
 
         [RubyModule("Constants")]
         public static class Constants {
@@ -722,7 +724,18 @@ namespace IronRuby.Builtins {
         }
 
         //truncate
-        //umask
+        [RubyMethod("umask", RubyMethodAttributes.PublicSingleton)]
+        public static int GetUmask(RubyClass/*!*/ self, [DefaultProtocol]int pid) {
+            int result = _tracker.Umask;
+            _tracker.CalculateUmask(pid);
+            return result;
+        }
+
+        [RubyMethod("umask", RubyMethodAttributes.PublicSingleton)]
+        public static int GetUmask(RubyClass/*!*/ self) {
+            return _tracker.Umask;
+        }
+
         
 #if !SILVERLIGHT
         [RubyMethod("symlink", RubyMethodAttributes.PublicSingleton, BuildConfig = "!SILVERLIGHT")]
@@ -1108,5 +1121,19 @@ namespace IronRuby.Builtins {
         }
 
         #endregion
+    }
+
+    internal struct UmaskTracker {
+        private int _umask;
+
+        internal int Umask {
+            get {
+                return _umask;
+            }
+        }
+
+        internal void CalculateUmask(int pid) {
+            _umask = (pid % 512) / 128 * 128;
+        }
     }
 }

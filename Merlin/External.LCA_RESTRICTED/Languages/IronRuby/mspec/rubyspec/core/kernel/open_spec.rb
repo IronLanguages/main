@@ -3,7 +3,7 @@ require File.dirname(__FILE__) + '/fixtures/classes'
 
 describe "Kernel#open" do
   it "is a private method" do
-    Kernel.private_instance_methods.should include("open")
+    Kernel.should have_private_instance_method(:open)
   end
   
   before :each do
@@ -55,7 +55,8 @@ describe "Kernel#open" do
     end
     
     it "opens an io when called with a block" do
-      open("|date") { |f| f.gets }.should_not == ''
+      @output = open("|date") { |f| f.gets }
+      @output.should_not == ''
     end
   
   end
@@ -68,7 +69,8 @@ describe "Kernel#open" do
     end
     
     it "opens an io when called with a block" do
-      open("|date /t") { |f| f.gets }.should_not == ''
+      @output = open("|date /t") { |f| f.gets }
+      @output.should_not == ''
     end
   
   end

@@ -3,4 +3,3 @@ fails:Object#to_yaml returns the YAML representation of a Date object
 fails:Object#to_yaml returns the YAML representation of a Time object
 fails:Object#to_yaml returns the YAML representation of numeric constants
 fails:Object#to_yaml calls to_yaml on nested objects
-fails:Object#to_yaml calls to_yaml on nested objects with Emitter

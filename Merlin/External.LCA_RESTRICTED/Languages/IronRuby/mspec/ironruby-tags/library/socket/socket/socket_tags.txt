@@ -1,0 +1,2 @@
+fails:The socket class hierarchy has a UNIXSocket in parallel to Socket
+fails:Server class hierarchy contains UNIXServer
