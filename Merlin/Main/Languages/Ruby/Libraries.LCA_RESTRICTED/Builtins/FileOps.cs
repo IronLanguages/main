@@ -239,7 +239,7 @@ namespace IronRuby.Builtins {
             string basename = Path.GetFileNameWithoutExtension(filename);
 
             string strResult = WildcardExtensionMatch(fileExtension, extensionFilter.ConvertToString()) ? basename : filename;
-            return Glob.CanonicalizePath(MutableString.Create(strResult)).TaintBy(path);
+            return RubyUtils.CanonicalizePath(MutableString.Create(strResult)).TaintBy(path);
         }
 
         [RubyMethod("blockdev?", RubyMethodAttributes.PublicSingleton)]
@@ -559,7 +559,7 @@ namespace IronRuby.Builtins {
             bool raisingRubyException = false;
             try {
                 if (path == null || length == 0)
-                    return Glob.CanonicalizePath(MutableString.Create(Directory.GetCurrentDirectory()));
+                    return RubyUtils.CanonicalizePath(MutableString.Create(Directory.GetCurrentDirectory()));
 
                 if (path.GetChar(0) == '~') {
                     if (length == 1 || (path.GetChar(1) == Path.DirectorySeparatorChar ||
@@ -575,13 +575,13 @@ namespace IronRuby.Builtins {
                         } else {
                             path = MutableString.Create(Path.Combine(homeDirectory, path.GetSlice(2).ConvertToString()));
                         }
-                        return Glob.CanonicalizePath(path);
+                        return RubyUtils.CanonicalizePath(path);
                     } else {
                         return path;
                     }
                 } else {
                     string pathStr = path.ConvertToString();
-                    MutableString result = Glob.CanonicalizePath(MutableString.Create(Path.GetFullPath(pathStr)));
+                    MutableString result = RubyUtils.CanonicalizePath(MutableString.Create(Path.GetFullPath(pathStr)));
 
                     // Path.GetFullPath("c:/winDOWS/foo") returns "c:/winDOWS/foo", but Path.GetFullPath("c:/winDOWS/~") returns "c:/Windows/~".
                     // So we special-case it as this is not the Ruby behavior. Also, the Ruby behavior is very complicated about when it
@@ -610,7 +610,7 @@ namespace IronRuby.Builtins {
             if (basePath == null || path.GetFirstChar() == '~') {
                 return ExpandPath(context, path);
             } else {
-                return Glob.CanonicalizePath(MutableString.Create(
+                return RubyUtils.CanonicalizePath(MutableString.Create(
                     Path.GetFullPath(Path.Combine(ExpandPath(context, basePath).ConvertToString(), path.ConvertToString()))
                 ));
             }
