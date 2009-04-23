@@ -18,19 +18,17 @@ using System.Collections.Generic;
 using Microsoft.Scripting;
 using Microsoft.Scripting.Runtime;
 
-using Tuple = Microsoft.Scripting.Tuple;
-
 namespace IronPython.Runtime {
     class RuntimeVariablesDictionaryStorage : CustomDictionaryStorage {
-        private readonly Tuple _boxes;
+        private readonly MutableTuple _boxes;
         private readonly SymbolId[] _args;
 
-        public RuntimeVariablesDictionaryStorage(Tuple boxes, SymbolId[] args) {
+        public RuntimeVariablesDictionaryStorage(MutableTuple boxes, SymbolId[] args) {
             _boxes = boxes;
             _args = args;
         }
 
-        internal Tuple Tuple {
+        internal MutableTuple Tuple {
             get {
                 return _boxes;
             }

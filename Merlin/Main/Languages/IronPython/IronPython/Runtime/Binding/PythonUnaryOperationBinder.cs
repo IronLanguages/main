@@ -16,13 +16,12 @@
 using System;
 using System.Dynamic;
 using System.Linq.Expressions;
+using System.Runtime.CompilerServices;
 
-using Microsoft.Scripting.Actions;
+using Microsoft.Scripting.Generation;
 using Microsoft.Scripting.Runtime;
-using Microsoft.Scripting.Utils;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 
-using IronPython.Runtime.Binding;
 using IronPython.Runtime.Operations;
 
 namespace IronPython.Runtime.Binding {
@@ -53,6 +52,56 @@ namespace IronPython.Runtime.Binding {
             return ob._state.Binder == _state.Binder && base.Equals(obj);
         }
 
+        public override T BindDelegate<T>(CallSite<T> site, object[] args) {
+            switch (Operation) {
+                case ExpressionType.Negate:
+                    if (CompilerHelpers.GetType(args[0]) == typeof(int)) {
+                        if (typeof(T) == typeof(Func<CallSite, object, object>)) {
+                            return (T)(object)new Func<CallSite, object, object>(IntNegate);
+                        }
+                    }
+                    break;
+                case ExpressionType.IsFalse:
+                    if (CompilerHelpers.GetType(args[0]) == typeof(string)) {
+                        if (typeof(T) == typeof(Func<CallSite, object, object>)) {
+                            return (T)(object)new Func<CallSite, object, object>(StringIsFalse);
+                        }
+                    } else if (CompilerHelpers.GetType(args[0]) == typeof(bool)) {
+                        if (typeof(T) == typeof(Func<CallSite, object, object>)) {
+                            return (T)(object)new Func<CallSite, object, object>(BoolIsFalse);
+                        }
+                    }
+                    break;
+            }
+
+            return base.BindDelegate(site, args);
+        }
+
+        private object IntNegate(CallSite site, object value) {
+            if (value is int) {
+                return Int32Ops.Negate((int)value);
+            }
+
+            return ((CallSite<Func<CallSite, object, object>>)site).Update(site, value);
+        }
+
+        private object StringIsFalse(CallSite site, object value) {
+            string strVal = value as string;
+            if (strVal != null) {
+                return strVal.Length == 0 ? ScriptingRuntimeHelpers.True : ScriptingRuntimeHelpers.False;
+            }
+
+            return ((CallSite<Func<CallSite, object, object>>)site).Update(site, value);
+        }
+
+        private object BoolIsFalse(CallSite site, object value) {
+            if (value is bool) {
+                return !(bool)value ? ScriptingRuntimeHelpers.True : ScriptingRuntimeHelpers.False;
+            }
+
+            return ((CallSite<Func<CallSite, object, object>>)site).Update(site, value);
+        }
+        
         public BinderState/*!*/ Binder {
             get {
                 return _state;

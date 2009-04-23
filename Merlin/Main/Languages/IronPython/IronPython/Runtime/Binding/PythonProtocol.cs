@@ -234,7 +234,6 @@ namespace IronPython.Runtime.Binding {
 
             ValidationInfo valInfo = BindingHelpers.GetValidationInfo(target);
             PythonType pt = DynamicHelpers.GetPythonType(target.Value);
-            Expression body = GetCallError(self);
             BinderState state = BinderState.GetBinderState(call);
 
             // look for __call__, if it's present dispatch to it.  Otherwise fall back to the
@@ -242,15 +241,24 @@ namespace IronPython.Runtime.Binding {
             PythonTypeSlot callSlot;
             if (!typeof(Delegate).IsAssignableFrom(target.GetLimitType()) &&
                 pt.TryResolveSlot(state.Context, Symbols.Call, out callSlot)) {
+                ConditionalBuilder cb = new ConditionalBuilder(call);
+                Expression body;
+
+                callSlot.MakeGetExpression(
+                    state.Binder,
+                    BinderState.GetCodeContext(call),
+                    self.Expression,
+                    GetPythonType(self),
+                    cb
+                );
+                
+                if (!cb.IsFinal) {
+                    cb.FinishCondition(GetCallError(self));
+                }
+
                 Expression[] callArgs = ArrayUtils.Insert(
                     BinderState.GetCodeContext(call),
-                    callSlot.MakeGetExpression(
-                        state.Binder,
-                        BinderState.GetCodeContext(call),
-                        self.Expression,
-                        GetPythonType(self),
-                        AstUtils.Convert(body, typeof(object))
-                    ), 
+                    cb.GetMetaObject().Expression, 
                     DynamicUtils.GetExpressions(args)
                 );
 

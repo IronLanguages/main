@@ -14,6 +14,7 @@
  * ***************************************************************************/
 
 using System;
+using System.Diagnostics;
 using System.Dynamic;
 using System.Linq.Expressions;
 using System.Runtime.CompilerServices;
@@ -351,7 +352,9 @@ namespace IronPython.Runtime.Operations {
         #endregion
 
         internal static Binding.FastBindResult<T> MakeGetBinding<T>(CodeContext codeContext, CallSite<T> site, IPythonObject self, Binding.PythonGetMemberBinder getBinder) where T : class {
-            if (typeof(IDynamicMetaObjectProvider).IsAssignableFrom(self.GetType().BaseType)) {
+            Type finalType = PythonTypeOps.GetFinalSystemType(self.PythonType.UnderlyingSystemType);
+            if (typeof(IDynamicMetaObjectProvider).IsAssignableFrom(finalType) &&
+                !(self is IFastGettable)) {
                 // very tricky, user is inheriting from a class which implements IDO, we
                 // don't optimize this yet.
                 return new Binding.FastBindResult<T>();

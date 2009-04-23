@@ -332,8 +332,8 @@ namespace IronPython.Runtime.Types {
             }
         }
 
-        internal override Expression/*!*/ MakeGetExpression(PythonBinder/*!*/ binder, Expression/*!*/ codeContext, Expression instance, Expression/*!*/ owner, Expression/*!*/ error) {
-            return AstUtils.Constant(this);
+        internal override void MakeGetExpression(PythonBinder/*!*/ binder, Expression/*!*/ codeContext, Expression instance, Expression/*!*/ owner, ConditionalBuilder/*!*/ builder) {
+            builder.FinishCondition(Ast.Constant(this));
         }
 
         #endregion                

@@ -16,14 +16,9 @@
 using System;
 using System.Runtime.CompilerServices;
 
-
-using Microsoft.Scripting.Runtime;
-using Microsoft.Scripting.Utils;
-
 namespace IronPython.Runtime.Binding {
     class FastSetBase {
         internal Delegate _func;
-        internal Delegate _optimizedDelegate;
         internal int _version;
         internal int _hitCount;
 
@@ -43,18 +38,7 @@ namespace IronPython.Runtime.Binding {
     /// delegate and provides the Update and Optimize functions.
     /// </summary>
     class FastSetBase<TValue> : FastSetBase {
-        private readonly PythonSetMemberBinder/*!*/ _binder;
-
-        public FastSetBase(PythonSetMemberBinder/*!*/ binder, int version) : base(version) {
-            Assert.NotNull(binder);
-
-            _binder = binder;
-        }
-
-        protected PythonSetMemberBinder Binder {
-            get {
-                return _binder;
-            }
+        public FastSetBase(int version) : base(version) {
         }
 
         /// <summary>
@@ -62,18 +46,6 @@ namespace IronPython.Runtime.Binding {
         /// </summary>
         protected static object Update(CallSite site, object self, TValue value) {
             return ((CallSite<Func<CallSite, object, TValue, object>>)site).Update(site, self, value);
-        }
-
-        /// <summary>
-        /// Replaces the pre-compiled call site target with an optimized call site delegate
-        /// which is always compiled into a DynamicMethod.
-        /// </summary>
-        public Func<CallSite, object, TValue, object> Optimize(CallSite<Func<CallSite, object, TValue, object>> site, object self, TValue value) {
-            if (_optimizedDelegate == null) {
-                _optimizedDelegate = _binder.OptimizeDelegate(site, self, value);
-            }
-
-            return (Func<CallSite, object, TValue, object>)_optimizedDelegate;
         }
     }
 }

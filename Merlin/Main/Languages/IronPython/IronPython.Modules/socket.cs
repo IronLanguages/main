@@ -56,7 +56,7 @@ namespace IronPython.Modules {
             context.SetModuleState(_defaultBufsizeKey, DefaultBufferSize);
 
             context.EnsureModuleException("sslerror", dict, "sslerror", "socket");
-            PythonType socketErr = context.EnsureModuleException("socketerror", dict, "error", "socket");
+            PythonType socketErr = context.EnsureModuleException("socketerror", PythonExceptions.IOError, dict, "error", "socket");
             context.EnsureModuleException("socketherror", socketErr, dict, "herror", "socket");
             context.EnsureModuleException("socketgaierror", socketErr, dict, "gaierror", "socket");
             context.EnsureModuleException("sockettimeout", socketErr, dict, "timeout", "socket");

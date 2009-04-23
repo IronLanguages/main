@@ -146,10 +146,26 @@ namespace IronPython.Runtime.Binding {
             T res = null;
             if (typeof(T) == typeof(Func<CallSite, object, string>) && target is string) {
                 res = (T)(object)new Func<CallSite, object, string>(StringConversion);
-            } else if (typeof(T) == typeof(Func<CallSite, object, int>) && target is int) {
-                res = (T)(object)new Func<CallSite, object, int>(IntConversion);
-            } else if (typeof(T) == typeof(Func<CallSite, object, bool>) && target is bool) {
-                res = (T)(object)new Func<CallSite, object, bool>(BoolConversion);
+            } else if (typeof(T) == typeof(Func<CallSite, object, int>)) {
+                if (target is int) {
+                    res = (T)(object)new Func<CallSite, object, int>(IntConversion);
+                } else if (target is bool) {
+                    res = (T)(object)new Func<CallSite, object, int>(BoolToIntConversion);
+                }
+            } else if (typeof(T) == typeof(Func<CallSite, bool, int>)) {
+                res = (T)(object)new Func<CallSite, bool, int>(BoolToIntConversion);
+            } else if (typeof(T) == typeof(Func<CallSite, object, bool>)) {
+                if (target is bool) {
+                    res = (T)(object)new Func<CallSite, object, bool>(BoolConversion);
+                } else if (target is string) {
+                    res = (T)(object)new Func<CallSite, object, bool>(StringToBoolConversion);
+                } else if (target is int) {
+                    res = (T)(object)new Func<CallSite, object, bool>(IntToBoolConversion);
+                } else if (target == null) {
+                    res = (T)(object)new Func<CallSite, object, bool>(NullToBoolConversion);
+                } else if (target.GetType() == typeof(object)) {
+                    res = (T)(object)new Func<CallSite, object, bool>(ObjectToBoolConversion);
+                }
             } else if (target != null) {
                 if (target.GetType() == Type || Type.IsAssignableFrom(target.GetType())) {
                     if (typeof(T) == typeof(Func<CallSite, object, object>)) {
@@ -192,6 +208,18 @@ namespace IronPython.Runtime.Binding {
             return ((CallSite<Func<CallSite, object, int>>)site).Update(site, value);
         }
 
+        public int BoolToIntConversion(CallSite site, object value) {
+            if (value is bool) {
+                return (bool)value ? 1 : 0;
+            }
+
+            return ((CallSite<Func<CallSite, object, int>>)site).Update(site, value);
+        }
+
+        public int BoolToIntConversion(CallSite site, bool value) {
+            return (bool)value ? 1 : 0;
+        }
+
         public bool BoolConversion(CallSite site, object value) {
             if (value is bool) {
                 return (bool)value;
@@ -199,7 +227,39 @@ namespace IronPython.Runtime.Binding {
 
             return ((CallSite<Func<CallSite, object, bool>>)site).Update(site, value);
         }
-        
+
+        public bool IntToBoolConversion(CallSite site, object value) {
+            if (value is int) {
+                return (int)value != 0;
+            }
+
+            return ((CallSite<Func<CallSite, object, bool>>)site).Update(site, value);
+        }
+
+        public bool StringToBoolConversion(CallSite site, object value) {
+            if (value is string) {
+                return ((string)value).Length > 0;
+            }
+
+            return ((CallSite<Func<CallSite, object, bool>>)site).Update(site, value);
+        }
+
+        public bool NullToBoolConversion(CallSite site, object value) {
+            if (value == null) {
+                return false;
+            }
+
+            return ((CallSite<Func<CallSite, object, bool>>)site).Update(site, value);
+        }
+
+        public bool ObjectToBoolConversion(CallSite site, object value) {
+            if (value != null && value.GetType() == typeof(Object)) {
+                return true;
+            }
+
+            return ((CallSite<Func<CallSite, object, bool>>)site).Update(site, value);
+        }
+
         class IdentityConversion {
             private readonly Type _type;
 

@@ -135,7 +135,11 @@ namespace IronPython.Runtime.Binding {
         }
 
         public static DynamicMetaObject/*!*/ Index(DynamicMetaObjectBinder/*!*/ operation, PythonIndexType index, params DynamicMetaObject[] args) {
-            PerfTrack.NoteEvent(PerfTrack.Categories.Binding, "Fallback Index " + " " + index + " " + args[0].LimitType + ", " + args[1].LimitType + args.Length);
+            if (args.Length >= 3) {
+                PerfTrack.NoteEvent(PerfTrack.Categories.Binding, "Fallback Index " + " " + index + " " + args[0].LimitType + ", " + args[1].LimitType + ", " + args[2].LimitType + args.Length);
+            } else {
+                PerfTrack.NoteEvent(PerfTrack.Categories.Binding, "Fallback Index " + " " + index + " " + args[0].LimitType + ", " + args[1].LimitType + args.Length);
+            }
             PerfTrack.NoteEvent(PerfTrack.Categories.BindingTarget, index.ToString());
             if (BindingHelpers.NeedsDeferral(args)) {
                 return operation.Defer(args);
@@ -1748,7 +1752,8 @@ namespace IronPython.Runtime.Binding {
             }
 
             public override DynamicMetaObject/*!*/ CompleteRuleTarget(DynamicMetaObject/*!*/[]/*!*/ args, Func<DynamicMetaObject> customFailure) {
-                Expression callable = _slot.MakeGetExpression(
+                ConditionalBuilder cb = new ConditionalBuilder();
+                _slot.MakeGetExpression(
                     Binder,
                     AstUtils.Constant(BinderState.Context),
                     args[0].Expression,
@@ -1756,9 +1761,13 @@ namespace IronPython.Runtime.Binding {
                         typeof(DynamicHelpers).GetMethod("GetPythonType"),
                         AstUtils.Convert(args[0].Expression, typeof(object))
                     ),
-                    Ast.Throw(Ast.New(typeof(InvalidOperationException)))
+                    cb
                 );
+                if (!cb.IsFinal) {
+                    cb.FinishCondition(Ast.Throw(Ast.New(typeof(InvalidOperationException))));
+                }
 
+                Expression callable = cb.GetMetaObject().Expression;
                 Expression[] exprArgs = new Expression[args.Length - 1];
                 for (int i = 1; i < args.Length; i++) {
                     exprArgs[i - 1] = args[i].Expression;

@@ -16,28 +16,33 @@
 using System;
 using System.Runtime.CompilerServices;
 
-
 using Microsoft.Scripting.Runtime;
-using Microsoft.Scripting.Utils;
-using System.Collections.Generic;
+
+using IronPython.Runtime.Types;
 
 namespace IronPython.Runtime.Binding {
     /// <summary>
     /// Base class for all of our fast get delegates.  This holds onto the
     /// delegate and provides the Update function.
     /// </summary>
-    class FastGetBase {
-        private readonly PythonGetMemberBinder/*!*/ _binder;
+    abstract class FastGetBase {
+        internal Func<CallSite, object, CodeContext, object> _func;
+        internal int _hitCount;
 
-        public FastGetBase(PythonGetMemberBinder/*!*/ binder) {
-            Assert.NotNull(binder);
-
-            _binder = binder;
+        public FastGetBase() {
         }
 
-        protected PythonGetMemberBinder Binder {
+        public abstract bool IsValid(PythonType type);
+
+        internal virtual bool ShouldCache {
             get {
-                return _binder;
+                return true;
+            }
+        }
+
+        internal bool ShouldUseNonOptimizedSite {
+            get {
+                return _hitCount < 100;
             }
         }
 

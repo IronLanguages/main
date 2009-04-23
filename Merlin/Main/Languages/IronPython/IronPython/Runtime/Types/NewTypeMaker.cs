@@ -1762,10 +1762,12 @@ namespace IronPython.Runtime.Types {
                         List<MethodInfo> methodList;
                         if (methods.TryGetValue(name, out methodList)) {
                             if (res == null) {
-                                res = methodList;
-                            } else {
-                                res = new List<MethodInfo>(res);
-                                res.AddRange(methodList);
+                                res = new List<MethodInfo>(methodList.Count);
+                            }
+                            foreach (MethodInfo method in methodList) {
+                                if (type.IsAssignableFrom(method.DeclaringType)) {
+                                    res.Add(method);
+                                }
                             }
                         }
                     }

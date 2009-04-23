@@ -66,7 +66,7 @@ namespace IronPython.Compiler.Ast {
 
         private static readonly Dictionary<string, MethodInfo> _HelperMethods = new Dictionary<string, MethodInfo>(); // cache of helper methods
         private static readonly MethodInfo _UpdateStackTrace = typeof(ExceptionHelpers).GetMethod("UpdateStackTrace");
-        private static readonly MethodInfo _GetCurrentMethod = typeof(MethodBase).GetMethod("GetCurrentMethod");
+        private static readonly MSAst.Expression _GetCurrentMethod = Ast.Call(typeof(MethodBase).GetMethod("GetCurrentMethod"));
         internal static readonly MSAst.Expression[] EmptyExpression = new MSAst.Expression[0];
         internal static readonly MSAst.BlockExpression EmptyBlock = Ast.Block(AstUtils.Empty());
         private const string NameForExec = "module: <exec>";
@@ -323,7 +323,7 @@ namespace IronPython.Compiler.Ast {
             Debug.Assert(_parent != null);
             Debug.Assert(_parent._liftedVars != null);
 
-            return Microsoft.Scripting.Tuple.MakeTupleType(ArrayUtils.ConvertAll<ClosureInfo, Type>(_parent._liftedVars.ToArray(), x => typeof(ClosureCell)));
+            return MutableTuple.MakeTupleType(ArrayUtils.ConvertAll<ClosureInfo, Type>(_parent._liftedVars.ToArray(), x => typeof(ClosureCell)));
         }
 
         internal MSAst.ParameterExpression/*!*/ Parameter(Type/*!*/ type, string name) {
@@ -371,8 +371,8 @@ namespace IronPython.Compiler.Ast {
                 typeof(PythonOps).GetMethod("CreateLocalContext"),
                 parentContext,
                 _liftedVars != null ?
-                    Microsoft.Scripting.Tuple.Create(ArrayUtils.ConvertAll<ClosureInfo, MSAst.Expression>(_liftedVars.ToArray(), x => x.GetClosureCellExpression())) :
-                    Microsoft.Scripting.Tuple.Create(),
+                    MutableTuple.Create(ArrayUtils.ConvertAll<ClosureInfo, MSAst.Expression>(_liftedVars.ToArray(), x => x.GetClosureCellExpression())) :
+                    MutableTuple.Create(),
                 _liftedVars != null ?
                 Ast.Constant(ArrayUtils.ConvertAll<ClosureInfo, SymbolId>(_liftedVars.ToArray(), x => (x.IsClosedOver ? x.Name : SymbolId.Empty))) :
                     Ast.Constant(new SymbolId[0]),
@@ -569,40 +569,58 @@ namespace IronPython.Compiler.Ast {
                 return Ast.Call(
                     _UpdateStackTrace,
                     LocalContext,
-                    Ast.Call(_GetCurrentMethod),
+                    _GetCurrentMethod,
                     AstUtils.Constant(Name),
                     AstUtils.Constant(Context.SourceUnit.Path ?? "<string>"),
                     new LastFaultingLineExpression(LineNumberExpression)
                 );
             }
 
-            return GetLineNumberUpdateExpression(true);
+            return GetSaveLineNumberExpression(true);
         }
 
+        private MSAst.Expression _saveLineNumberAdds, _saveLineNumberNoAdds;
         /// <summary>
         /// Gets the expression for the actual updating of the line number for stack traces to be available
         /// </summary>
-        internal MSAst.Expression GetLineNumberUpdateExpression(bool preventAdditionalAdds) {
-            return Ast.Block(
-                AstUtils.If(
-                    Ast.Not(
-                        LineNumberUpdated
-                    ),                
-                    Ast.Call(
-                        typeof(ExceptionHelpers).GetMethod("UpdateStackTrace"),
-                        LocalContext,
-                        Ast.Call(typeof(MethodBase).GetMethod("GetCurrentMethod")),
-                        AstUtils.Constant(Name),
-                        AstUtils.Constant(Context.SourceUnit.Path ?? "<string>"),
-                        new LastFaultingLineExpression(LineNumberExpression)
-                    )
-                ),
-                Ast.Assign(
-                    LineNumberUpdated,
-                    AstUtils.Constant(preventAdditionalAdds)
-                ),
-                AstUtils.Empty()
-            );            
+        internal MSAst.Expression GetSaveLineNumberExpression(bool preventAdditionalAdds) {
+            MSAst.Expression res;
+            if (preventAdditionalAdds) {
+                res = _saveLineNumberNoAdds;
+            } else {
+                res = _saveLineNumberAdds;
+            }
+
+            if (res == null) {
+                res = Ast.Block(
+                    AstUtils.If(
+                        Ast.Not(
+                            LineNumberUpdated
+                        ),
+                        Ast.Call(
+                            typeof(ExceptionHelpers).GetMethod("UpdateStackTrace"),
+                            LocalContext,
+                            _GetCurrentMethod,
+                            AstUtils.Constant(Name),
+                            AstUtils.Constant(Context.SourceUnit.Path ?? "<string>"),
+                            new LastFaultingLineExpression(LineNumberExpression)
+                        )
+                    ),
+                    Ast.Assign(
+                        LineNumberUpdated,
+                        AstUtils.Constant(preventAdditionalAdds)
+                    ),
+                    AstUtils.Empty()
+                );
+
+                if (preventAdditionalAdds) {
+                    _saveLineNumberNoAdds = res;
+                } else {
+                    _saveLineNumberAdds = res;
+                }
+            }
+
+            return res;
         }
 
         #endregion

@@ -80,7 +80,7 @@ namespace IronPython.Runtime.Types {
         /// The default implementation just calls the TryGetValue method.  Subtypes of PythonTypeSlot can override
         /// this and provide a more optimal implementation.
         /// </summary>
-        internal virtual Expression/*!*/ MakeGetExpression(PythonBinder/*!*/ binder, Expression/*!*/ codeContext, Expression instance, Expression/*!*/ owner, Expression/*!*/ error) {
+        internal virtual void MakeGetExpression(PythonBinder/*!*/ binder, Expression/*!*/ codeContext, Expression instance, Expression/*!*/ owner, ConditionalBuilder/*!*/ builder) {
             ParameterExpression tmp = Ast.Variable(typeof(object), "slotTmp");
             Expression call = Ast.Call(
                  typeof(PythonOps).GetMethod("SlotTryGetValue"),
@@ -91,22 +91,17 @@ namespace IronPython.Runtime.Types {
                  tmp
             );
 
+            builder.AddVariable(tmp);
             if (!GetAlwaysSucceeds) {
-                call = Ast.Condition(
+                builder.AddCondition(
                     call,
-                    tmp,
-                    AstUtils.Convert(error, typeof(object))
+                    tmp
                 );
             } else {
-                call = Ast.Block(call, tmp);
+                builder.FinishCondition(Ast.Block(call, tmp));
             }
-
-            return Ast.Block(
-                new ParameterExpression[] { tmp },
-                call
-            );
         }
-
+        
         /// <summary>
         /// True if TryGetValue will always succeed, false if it may fail.
         /// 

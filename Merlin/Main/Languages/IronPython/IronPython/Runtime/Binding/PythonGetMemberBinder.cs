@@ -21,9 +21,9 @@ using System.Runtime.CompilerServices;
 
 using Microsoft.Scripting;
 using Microsoft.Scripting.Actions;
+using Microsoft.Scripting.Generation;
 using Microsoft.Scripting.Runtime;
 
-using IronPython.Runtime.Binding;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
 
@@ -106,10 +106,38 @@ namespace IronPython.Runtime.Binding {
                     return res.Target;
                 }
 
-                PerfTrack.NoteEvent(PerfTrack.Categories.BindingSlow, "IPythonObject");
+                PerfTrack.NoteEvent(PerfTrack.Categories.BindingSlow, "IPythonObject Get");
             }
 
+            if (args[0] != null && args[0].GetType() == typeof(Scope)) {
+                if (!IsNoThrow) {
+                    return (T)(object)new Func<CallSite, object, CodeContext, object>(new ScopeDelegate(_name).Target);
+                }
+
+            }
+
+            PerfTrack.NoteEvent(PerfTrack.Categories.BindingSlow, "GetNoFast " + CompilerHelpers.GetType(args[0]));
             return base.BindDelegate<T>(site, args);
+        }
+
+        class ScopeDelegate : FastGetBase {
+            private readonly string _name;
+
+            public ScopeDelegate(string name) {
+                _name = name;
+            }
+
+            public object Target(CallSite site, object self, CodeContext context) {
+                if(self != null && self.GetType() == typeof(Scope)) {
+                    return ScopeOps.__getattribute__(context, (Scope)self, _name);
+                }
+
+                return Update(site, self, context);
+            }
+
+            public override bool IsValid(PythonType type) {
+                return true;
+            }
         }
 
         public Func<CallSite, object, CodeContext, object> OptimizeDelegate(CallSite<Func<CallSite, object, CodeContext, object>> site, object self, CodeContext context) {

@@ -2,7 +2,7 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProductVersion>9.0.21022</ProductVersion>
+    <ProductVersion>9.0.30729</ProductVersion>
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>{EB66B766-6354-4208-A3D4-AACBDCB5C3B3}</ProjectGuid>
     <OutputType>Library</OutputType>
@@ -335,7 +335,7 @@
     <Compile Include="Utils\WeakHandle.cs" />
     <Compile Include="DebugOptions.cs" />
     <Compile Include="SpecSharp.cs" />
-    <Compile Include="Tuple.cs" />
+    <Compile Include="MutableTuple.cs" />
     <Compile Include="Actions\Old\OldCallAction.cs" />
     <Compile Include="Actions\Old\OldConvertToAction.cs" />
     <Compile Include="Actions\Old\OldCreateInstanceAction.cs" />
