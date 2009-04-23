@@ -443,7 +443,7 @@ namespace IronRuby.Builtins {
             );
             
             module.DefineLibraryMethod("to_ary", 0x51, 
-                new System.Func<IronRuby.Builtins.RubyArray, IronRuby.Builtins.RubyArray>(IronRuby.Builtins.ArrayOps.ToArray)
+                new System.Func<IronRuby.Builtins.RubyArray, IronRuby.Builtins.RubyArray>(IronRuby.Builtins.ArrayOps.ToExplicitArray)
             );
             
         }

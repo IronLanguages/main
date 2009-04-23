@@ -440,8 +440,8 @@ namespace IronPython.Runtime.Operations {
             throw PythonOps.TypeError("bad operand type for unary ~");
         }
 
-        public static object Not(object o) {
-            return IsTrue(o) ? ScriptingRuntimeHelpers.False : ScriptingRuntimeHelpers.True;
+        public static bool Not(object o) {
+            return !IsTrue(o);
         }
 
         public static object Is(object x, object y) {
@@ -1965,7 +1965,6 @@ namespace IronPython.Runtime.Operations {
         public static object CheckException(object exception, object test) {
             Debug.Assert(exception != null);
 
-            StringException strex;
             ObjectException objex;
 
             if (test is PythonTuple) {
@@ -1975,14 +1974,6 @@ namespace IronPython.Runtime.Operations {
                     object res = CheckException(exception, tt[i]);
                     if (res != null) return res;
                 }
-            } else if ((strex = exception as StringException) != null) {
-                // catching a string
-                if (test.GetType() != typeof(string)) return null;
-                if (strex.Message == (string)test) {
-                    if (strex.Value == null) return strex.Message;
-                    return strex.Value;
-                }
-                return null;
             } else if ((objex = exception as ObjectException) != null) {
                 if (PythonOps.IsSubClass(objex.Type, test)) {
                     return objex.Instance;
@@ -2070,27 +2061,13 @@ namespace IronPython.Runtime.Operations {
             PythonContext pc = PythonContext.GetContext(context);
             pc.SystemExceptionTraceBack = tb;
 
-            StringException se = pyExcep as StringException;
-            if (se == null) {
-                object excType = PythonOps.GetBoundAttr(context, pyExcep, Symbols.Class);
-                pc.SystemExceptionType = excType;
-                pc.SystemExceptionValue = pyExcep;
-
-                return PythonTuple.MakeTuple(
-                    excType,
-                    pyExcep,
-                    tb);
-            }
-
-            // string exceptions are special...  there tuple looks
-            // like string, argument, traceback instead of
-            //      type,   instance, traceback
-            pc.SystemExceptionType = pyExcep;
-            pc.SystemExceptionValue = se.Value;
+            object excType = PythonOps.GetBoundAttr(context, pyExcep, Symbols.Class);
+            pc.SystemExceptionType = excType;
+            pc.SystemExceptionValue = pyExcep;
 
             return PythonTuple.MakeTuple(
+                excType,
                 pyExcep,
-                se.Value,
                 tb);
         }
 
@@ -2129,9 +2106,6 @@ namespace IronPython.Runtime.Operations {
                 throwable = PythonExceptions.ToClr(type);
             } else if ((pt = type as PythonType) != null && typeof(PythonExceptions.BaseException).IsAssignableFrom(pt.UnderlyingSystemType)) {
                 throwable = PythonExceptions.CreateThrowableForRaise(context, pt, value);
-            } else if (type is string) {
-                PythonOps.Warn(context, PythonExceptions.DeprecationWarning, "raising a string exception is deprecated");
-                throwable = new StringException(type.ToString(), value);
             } else if (type is OldClass) {
                 if (value == null) {
                     throwable = new OldInstanceException((OldInstance)PythonCalls.Call(context, type));
@@ -2805,6 +2779,7 @@ namespace IronPython.Runtime.Operations {
         #endregion
 
         public static bool SlotTryGetBoundValue(CodeContext/*!*/ context, PythonTypeSlot/*!*/ slot, object instance, PythonType owner, out object value) {
+            Debug.Assert(slot != null);
             return slot.TryGetValue(context, instance, owner, out value);
         }
 
@@ -3074,20 +3049,24 @@ namespace IronPython.Runtime.Operations {
             return null;
         }
 
-        public static void OldClassSetBases(OldClass oc, object value) {
+        public static object OldClassSetBases(OldClass oc, object value) {
             oc.SetBases(value);
+            return value;
         }
         
-        public static void OldClassSetName(OldClass oc, object value) {
+        public static object OldClassSetName(OldClass oc, object value) {
             oc.SetName(value);
+            return value;
         }
 
-        public static void OldClassSetDictionary(OldClass oc, object value) {
+        public static object OldClassSetDictionary(OldClass oc, object value) {
             oc.SetDictionary(value);
+            return value;
         }
 
-        public static void OldClassSetNameHelper(OldClass oc, SymbolId name, object value) {
+        public static object OldClassSetNameHelper(OldClass oc, SymbolId name, object value) {
             oc.SetNameHelper(name, value);
+            return value;
         }
 
         public static bool OldClassTryLookupInit(OldClass oc, object inst, out object ret) {
@@ -3135,12 +3114,14 @@ namespace IronPython.Runtime.Operations {
             return instance.GetBoundMember(context, name);
         }
         
-        public static void OldInstanceDictionarySetExtraValue(object dict, int index, object value) {
+        public static object OldInstanceDictionarySetExtraValue(object dict, int index, object value) {
             ((CustomOldClassDictionaryStorage)dict).SetExtraValue(index, value);
+            return value;
         }
 
-        public static bool OldClassDeleteMember(CodeContext context, OldClass self, SymbolId name) {
-            return self.DeleteCustomMember(context, name);
+        public static object OldClassDeleteMember(CodeContext context, OldClass self, SymbolId name) {
+            self.DeleteCustomMember(context, name);
+            return null;
         }
 
         public static bool OldClassTryLookupOneSlot(OldClass self, SymbolId name, out object value) {
@@ -3151,22 +3132,26 @@ namespace IronPython.Runtime.Operations {
             return self.TryGetBoundCustomMember(context, name, out value);
         }
 
-        public static void OldInstanceSetCustomMember(CodeContext context, OldInstance self, SymbolId name, object value) {
+        public static object OldInstanceSetCustomMember(CodeContext context, OldInstance self, SymbolId name, object value) {
             self.SetCustomMember(context, name, value);
+            return value;
         }
 
-        public static bool OldInstanceDeleteCustomMember(CodeContext context, OldInstance self, SymbolId name) {
-            return self.DeleteCustomMember(context, name);
+        public static object OldInstanceDeleteCustomMember(CodeContext context, OldInstance self, SymbolId name) {
+            self.DeleteCustomMember(context, name);
+            return null;
         }
 
         #endregion
 
-        public static void PythonTypeSetCustomMember(CodeContext context, PythonType self, SymbolId name, object value) {
+        public static object PythonTypeSetCustomMember(CodeContext context, PythonType self, SymbolId name, object value) {
             self.SetCustomMember(context, name, value);
+            return value;
         }
 
-        public static bool PythonTypeDeleteCustomMember(CodeContext context, PythonType self, SymbolId name) {
-            return self.DeleteCustomMember(context, name);
+        public static object PythonTypeDeleteCustomMember(CodeContext context, PythonType self, SymbolId name) {
+            self.DeleteCustomMember(context, name);
+            return null;
         }
 
         public static bool IsPythonType(PythonType type) {
@@ -3294,7 +3279,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         public static DynamicMetaObjectBinder MakeComboAction(CodeContext/*!*/ context, DynamicMetaObjectBinder opBinder, DynamicMetaObjectBinder convBinder) {
-            return GetBinderState(context).BinaryOperationRetType((PythonBinaryOperationBinder)opBinder, (ConversionBinder)convBinder);
+            return GetBinderState(context).BinaryOperationRetType((PythonBinaryOperationBinder)opBinder, (PythonConversionBinder)convBinder);
         }
 
         public static DynamicMetaObjectBinder MakeInvokeAction(CodeContext/*!*/ context, CallSignature signature) {
@@ -3314,6 +3299,10 @@ namespace IronPython.Runtime.Operations {
         }
 
         public static DynamicMetaObjectBinder MakeConversionAction(CodeContext/*!*/ context, Type type, ConversionResultKind kind) {
+            return GetBinderState(context).Convert(type, kind);
+        }
+
+        public static DynamicMetaObjectBinder MakeTryConversionAction(CodeContext/*!*/ context, Type type, ConversionResultKind kind) {
             return GetBinderState(context).Convert(type, kind);
         }
 
@@ -3888,7 +3877,7 @@ namespace IronPython.Runtime.Operations {
         /// <param name="type">original type of exception requested</param>
         /// <returns>a TypeEror exception</returns>
         internal static Exception MakeExceptionTypeError(object type) {
-            return PythonOps.TypeError("exceptions must be classes, instances, or strings (deprecated), not {0}", DynamicHelpers.GetPythonType(type));
+            return PythonOps.TypeError("exceptions must be classes or instances, not {0}", DynamicHelpers.GetPythonType(type).Name);
         }
 
         public static Exception AttributeErrorForMissingAttribute(string typeName, SymbolId attributeName) {

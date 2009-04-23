@@ -1,0 +1,16 @@
+--- !ruby/object:RI::MethodDescription 
+aliases: []
+
+block_params: 
+comment: 
+- !ruby/struct:SM::Flow::P 
+  body: Returns number which represents type.
+- !ruby/struct:SM::Flow::VERB 
+  body: "  tobj = WIN32OLE_TYPE.new('Microsoft Word 10.0 Object Library', 'Documents')\n  puts tobj.typekind # =&gt; 4\n"
+full_name: WIN32OLE_TYPE#typekind
+is_singleton: false
+name: typekind
+params: |
+  WIN32OLE_TYPE#typekind #=> number of type.
+
+visibility: public

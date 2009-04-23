@@ -1,0 +1,16 @@
+--- !ruby/object:RI::MethodDescription 
+aliases: []
+
+block_params: 
+comment: 
+- !ruby/struct:SM::Flow::P 
+  body: Returns help string of OLE method. If the help string is not found, then the method returns nil.
+- !ruby/struct:SM::Flow::VERB 
+  body: "   tobj = WIN32OLE_TYPE.new('Microsoft Internet Controls', 'IWebBrowser')\n   method = WIN32OLE_METHOD.new(tobj, 'Navigate')\n   puts method.helpstring # =&gt; Navigates to a URL or file.\n"
+full_name: WIN32OLE_METHOD#helpstring
+is_singleton: false
+name: helpstring
+params: |
+  WIN32OLE_METHOD#helpstring
+
+visibility: public

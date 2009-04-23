@@ -67,16 +67,14 @@ namespace IronPython.Runtime.Binding {
 
         internal static DynamicMetaObject/*!*/ FilterShowCls(Expression/*!*/ codeContext, DynamicMetaObjectBinder/*!*/ action, DynamicMetaObject/*!*/ res, Expression/*!*/ failure) {
             if (action is IPythonSite) {
-                Type resType = BindingHelpers.GetCompatibleType(res.Expression.Type, failure.Type);
-
                 return new DynamicMetaObject(
                     Ast.Condition(
                         Ast.Call(
                             typeof(PythonOps).GetMethod("IsClsVisible"),
                             codeContext
                         ),
-                        AstUtils.Convert(res.Expression, resType),
-                        AstUtils.Convert(failure, resType)
+                        AstUtils.Convert(res.Expression, typeof(object)),
+                        AstUtils.Convert(failure, typeof(object))
 
                     ),
                     res.Restrictions
@@ -190,10 +188,10 @@ namespace IronPython.Runtime.Binding {
 
         internal static Type/*!*/ GetCompatibleType(/*!*/Type t, Type/*!*/ otherType) {
             if (t != otherType) {
-                if (t.IsSubclassOf(otherType)) {
+                if (t.IsAssignableFrom(otherType)) {
                     // subclass
                     t = otherType;
-                } else if (otherType.IsSubclassOf(t)) {
+                } else if (otherType.IsAssignableFrom(t)) {
                     // keep t
                 } else {
                     // incompatible, both go to object
@@ -372,7 +370,8 @@ namespace IronPython.Runtime.Binding {
                     typeof(PythonOps).GetMethod("TypeErrorForProtectedMember"),
                     AstUtils.Constant(type),
                     AstUtils.Constant(name)
-                )
+                ),
+                typeof(object)
             );
         }
 
@@ -383,7 +382,8 @@ namespace IronPython.Runtime.Binding {
                         typeof(PythonOps).GetMethod("TypeErrorForGenericMethod"),
                         AstUtils.Constant(type),
                         AstUtils.Constant(name)
-                    )
+                    ),
+                    typeof(object)
                 ),
                 restrictions
             );
@@ -401,11 +401,15 @@ namespace IronPython.Runtime.Binding {
             if (res.Expression.Type.IsValueType) {
                 // Use Python boxing rules if we're return a value type
                 res = new DynamicMetaObject(
-                    AstUtils.Convert(res.Expression, typeof(object)),
+                    AddPythonBoxing(res.Expression),
                     res.Restrictions
                 );
             }
             return res;
+        }
+
+        internal static Expression AddPythonBoxing(Expression res) {
+            return AstUtils.Convert(res, typeof(object));
         }
     }
 

@@ -205,7 +205,7 @@ namespace IronPython.Compiler.Ast {
                     //          from the finally block and leave the existing stack traces cleared.
                     //      3. Returning from the try block: Here we need to run the finally block and not update the
                     //          line numbers.
-                    body = AstUtils.Try(// we use a fault to know when we have an exception and when control leaves normally (via
+                    body = AstUtils.Try( // we use a fault to know when we have an exception and when control leaves normally (via
                         // either a return or the body completing successfully).
                         AstUtils.Try(
                             ag.AddDebugInfo(AstUtils.Empty(), new SourceSpan(Span.Start, _header)),
@@ -215,7 +215,7 @@ namespace IronPython.Compiler.Ast {
                         // fault
                             Ast.Assign(nestedException, AstUtils.Constant(true))
                         )
-                    ).Finally(
+                    ).FinallyWithJumps(
                         // if we had an exception save the line # that was last executing during the try
                         AstUtils.If(
                             nestedException,
@@ -247,7 +247,6 @@ namespace IronPython.Compiler.Ast {
                             ag.UpdateLineUpdated(true)
                         )
                     );
-
                     ag.FreeTemp(nestedFrames);
                     ag.FreeTemp(nestedException);
                 } finally {
@@ -380,7 +379,12 @@ namespace IronPython.Compiler.Ast {
                     if (catchAll == null) {
                         catchAll = Ast.Block(
                             ag.GetSaveLineNumberExpression(true),
-                            Ast.Throw(exception)
+                            Ast.Throw(
+                                Ast.Call(
+                                    typeof(ExceptionHelpers).GetMethod("UpdateForRethrow"),
+                                    exception
+                                )
+                            )
                         );
                     }
 

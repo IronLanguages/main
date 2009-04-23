@@ -1,0 +1,17 @@
+--- !ruby/object:RI::MethodDescription 
+aliases: 
+- !ruby/object:RI::AliasName 
+  name: to_s
+block_params: 
+comment: 
+- !ruby/struct:SM::Flow::P 
+  body: Returns the name of variable.
+- !ruby/struct:SM::Flow::VERB 
+  body: "   tobj = WIN32OLE_TYPE.new('Microsoft Excel 9.0 Object Library', 'XlSheetType')\n   variables = tobj.variables\n   variables.each do |variable|\n     puts &quot;#{variable.name}&quot;\n   end\n\n   The result of above script is following:\n     xlChart\n     xlDialogSheet\n     xlExcel4IntlMacroSheet\n     xlExcel4MacroSheet\n     xlWorksheet\n"
+full_name: WIN32OLE_VARIABLE#name
+is_singleton: false
+name: name
+params: |
+  WIN32OLE_VARIABLE#name
+
+visibility: public

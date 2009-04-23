@@ -165,7 +165,7 @@ namespace IronPython.Compiler.Ast {
                 types[types.Length - 1] = retType;
                 delegateType = GetFuncType(types) ?? MakeNewCustomDelegate(typeGen, types);
             } else {
-                Type[] types = new Type[args.Length + 2];
+                Type[] types = new Type[args.Length + 1];
                 types[0] = typeof(CallSite);
 
                 for (int i = 0; i < args.Length; i++) {

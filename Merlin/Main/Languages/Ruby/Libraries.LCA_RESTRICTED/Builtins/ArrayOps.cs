@@ -171,9 +171,13 @@ namespace IronRuby.Builtins {
         #endregion
 
         [RubyMethod("to_a")]
-        [RubyMethod("to_ary")]
         public static RubyArray/*!*/ ToArray(RubyArray/*!*/ self) {
             return self is RubyArray.Subclass ? new RubyArray(self) : self;
+        }
+
+        [RubyMethod("to_ary")]
+        public static RubyArray/*!*/ ToExplicitArray(RubyArray/*!*/ self) {
+            return self;
         }
 
         #region class FormatDirective is used by Array.pack and String.unpack

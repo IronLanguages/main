@@ -36,6 +36,15 @@ namespace IronPython.Runtime.Binding {
             : base(expression, restrictions, value) {
         }
 
+        public DynamicMetaObject/*!*/ FallbackConvert(DynamicMetaObjectBinder/*!*/ binder) {
+            PythonConversionBinder pyBinder = binder as PythonConversionBinder;
+            if (pyBinder != null) {
+                return pyBinder.FallbackConvert(this);
+            }
+
+            return ((ConvertBinder)binder).FallbackConvert(this);
+        }
+
         internal static MethodCallExpression MakeTryGetTypeMember(BinderState/*!*/ binderState, PythonTypeSlot dts, Expression self, ParameterExpression tmp) {
             return MakeTryGetTypeMember(
                 binderState,
@@ -101,11 +110,14 @@ namespace IronPython.Runtime.Binding {
             }
             
             return new DynamicMetaObject(
-                Ast.Call(
-                    typeof(PythonOps).GetMethod("GetDelegate"),
-                    AstUtils.Constant(context),
-                    arg.Expression,
-                    AstUtils.Constant(toType)
+                Ast.Convert(
+                    Ast.Call(
+                        typeof(PythonOps).GetMethod("GetDelegate"),
+                        AstUtils.Constant(context),
+                        arg.Expression,
+                        AstUtils.Constant(toType)
+                    ),
+                    toType
                 ),
                 arg.Restrictions
             );

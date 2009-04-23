@@ -1,0 +1,10 @@
+--- !ruby/object:RI::MethodDescription 
+aliases: []
+
+block_params: 
+comment: 
+full_name: Exception2MessageMapper#fail
+is_singleton: false
+name: fail
+params: (err = nil, *rest)
+visibility: public

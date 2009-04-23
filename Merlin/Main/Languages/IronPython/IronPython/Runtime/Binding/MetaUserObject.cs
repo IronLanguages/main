@@ -32,7 +32,7 @@ namespace IronPython.Runtime.Binding {
     using Ast = System.Linq.Expressions.Expression;
     using AstUtils = Microsoft.Scripting.Ast.Utils;
 
-    partial class MetaUserObject : MetaPythonObject, IPythonInvokable {
+    partial class MetaUserObject : MetaPythonObject, IPythonInvokable, IPythonConvertible {
         private readonly DynamicMetaObject _baseMetaObject;            // if we're a subtype of MetaObject this is the base class MO
 
         public MetaUserObject(Expression/*!*/ expression, BindingRestrictions/*!*/ restrictions, DynamicMetaObject baseMetaObject, IPythonObject value)
@@ -54,18 +54,25 @@ namespace IronPython.Runtime.Binding {
             return new InvokeBinderHelper(this, action, args, BinderState.GetCodeContext(action)).Bind(BinderState.GetBinderState(action).Context, action.Name);
         }
 
-        public override DynamicMetaObject/*!*/ BindConvert(ConvertBinder/*!*/ conversion) {
-            Type type = conversion.Type;
-            PerfTrack.NoteEvent(PerfTrack.Categories.Binding, "Conversion " + conversion.Type.FullName);
+        public override DynamicMetaObject BindConvert(ConvertBinder/*!*/ conversion) {
+            return ConvertWorker(conversion, conversion.Type, conversion.Type, conversion.Explicit ? ConversionResultKind.ExplicitCast : ConversionResultKind.ImplicitCast);
+        }
+
+        public DynamicMetaObject BindConvert(PythonConversionBinder binder) {
+            return ConvertWorker(binder, binder.Type, binder.ReturnType, binder.ResultKind);
+        }
+
+        public DynamicMetaObject ConvertWorker(DynamicMetaObjectBinder binder, Type type, Type retType, ConversionResultKind kind) {
+            PerfTrack.NoteEvent(PerfTrack.Categories.Binding, "Conversion " + type.FullName);
             PerfTrack.NoteEvent(PerfTrack.Categories.BindingTarget, "Conversion");
             ValidationInfo typeTest = BindingHelpers.GetValidationInfo(this, Value.PythonType);
 
             return BindingHelpers.AddDynamicTestAndDefer(
-                conversion,
-                TryPythonConversion(conversion, type) ?? base.BindConvert(conversion),
+                binder,
+                TryPythonConversion(binder, type) ?? FallbackConvert(binder),
                 new DynamicMetaObject[] { this },
                 typeTest,
-                type
+                retType
             );
         }
 
@@ -132,30 +139,30 @@ namespace IronPython.Runtime.Binding {
 
         #region Conversions
 
-        private DynamicMetaObject TryPythonConversion(ConvertBinder conversion, Type type) {
+        private DynamicMetaObject TryPythonConversion(DynamicMetaObjectBinder conversion, Type type) {
             if (!type.IsEnum) {
                 switch (Type.GetTypeCode(type)) {
                     case TypeCode.Object:
                         if (type == typeof(Complex64)) {
-                            return MakeConvertRuleForCall(conversion, this, Symbols.ConvertToComplex, "ConvertToComplex",
-                                (() => MakeConvertRuleForCall(conversion, this, Symbols.ConvertToFloat, "ConvertToFloat",
-                                    (() => conversion.FallbackConvert(this)),
+                            return MakeConvertRuleForCall(conversion, type, this, Symbols.ConvertToComplex, "ConvertToComplex",
+                                (() => MakeConvertRuleForCall(conversion, type, this, Symbols.ConvertToFloat, "ConvertToFloat",
+                                    (() => FallbackConvert(conversion)),
                                     (x) => Ast.Call(null, typeof(PythonOps).GetMethod("ConvertFloatToComplex"), x))),
                                 (x) => x);
                         } else if (type == typeof(BigInteger)) {
-                            return MakeConvertRuleForCall(conversion, this, Symbols.ConvertToLong, "ConvertToLong");
+                            return MakeConvertRuleForCall(conversion, type, this, Symbols.ConvertToLong, "ConvertToLong");
                         } else if (type == typeof(IEnumerable)) {
                             return PythonProtocol.ConvertToIEnumerable(conversion, Restrict(Value.GetType()));
                         } else if (type == typeof(IEnumerator)){
                             return PythonProtocol.ConvertToIEnumerator(conversion, Restrict(Value.GetType()));
-                        } else if (conversion.Type.IsSubclassOf(typeof(Delegate))) {
-                            return MakeDelegateTarget(conversion, conversion.Type, Restrict(Value.GetType()));
+                        } else if (type.IsSubclassOf(typeof(Delegate))) {
+                            return MakeDelegateTarget(conversion, type, Restrict(Value.GetType()));
                         }
                         break;
                     case TypeCode.Int32:
-                        return MakeConvertRuleForCall(conversion, this, Symbols.ConvertToInt, "ConvertToInt");
+                        return MakeConvertRuleForCall(conversion, type, this, Symbols.ConvertToInt, "ConvertToInt");
                     case TypeCode.Double:
-                        return MakeConvertRuleForCall(conversion, this, Symbols.ConvertToFloat, "ConvertToFloat");
+                        return MakeConvertRuleForCall(conversion, type, this, Symbols.ConvertToFloat, "ConvertToFloat");
                     case TypeCode.Boolean:
                         return PythonProtocol.ConvertToBool(
                             conversion,
@@ -163,7 +170,7 @@ namespace IronPython.Runtime.Binding {
                         );
                     case TypeCode.String:
                         if (!typeof(Extensible<string>).IsAssignableFrom(this.LimitType)) {
-                            return MakeConvertRuleForCall(conversion, this, Symbols.String, "ConvertToString");
+                            return MakeConvertRuleForCall(conversion, type, this, Symbols.String, "ConvertToString");
                         }
                         break;
                 }
@@ -172,7 +179,7 @@ namespace IronPython.Runtime.Binding {
             return null;
         }
 
-        private DynamicMetaObject/*!*/ MakeConvertRuleForCall(ConvertBinder/*!*/ convertToAction, DynamicMetaObject/*!*/ self, SymbolId symbolId, string returner, Func<DynamicMetaObject> fallback, Func<Expression, Expression> resultConverter) {
+        private DynamicMetaObject/*!*/ MakeConvertRuleForCall(DynamicMetaObjectBinder/*!*/ convertToAction, Type toType, DynamicMetaObject/*!*/ self, SymbolId symbolId, string returner, Func<DynamicMetaObject> fallback, Func<Expression, Expression> resultConverter) {
             PythonType pt = ((IPythonObject)self.Value).PythonType;
             PythonTypeSlot pts;
             CodeContext context = BinderState.GetBinderState(convertToAction).Context;
@@ -193,7 +200,7 @@ namespace IronPython.Runtime.Binding {
                     )
                 );
 
-                if (typeof(Extensible<>).MakeGenericType(convertToAction.Type).IsAssignableFrom(self.GetLimitType())) {
+                if (typeof(Extensible<>).MakeGenericType(toType).IsAssignableFrom(self.GetLimitType())) {
                     // if we're doing a conversion to the underlying type and we're an 
                     // Extensible<T> of that type:
 
@@ -201,7 +208,7 @@ namespace IronPython.Runtime.Binding {
                     // to actually return the underlying value.  If an extensible just keeps 
                     // returning more instances  of it's self a stack overflow occurs - both 
                     // behaviors match CPython.
-                    callExpr = AstUtils.Convert(AddExtensibleSelfCheck(convertToAction, self, callExpr), typeof(object));
+                    callExpr = AstUtils.Convert(AddExtensibleSelfCheck(convertToAction, toType, self, callExpr), typeof(object));
                 }
 
                 return BindingHelpers.AddDynamicTestAndDefer(
@@ -231,11 +238,11 @@ namespace IronPython.Runtime.Binding {
             return fallback();
         }
 
-        private DynamicMetaObject/*!*/ MakeConvertRuleForCall(ConvertBinder/*!*/ convertToAction, DynamicMetaObject/*!*/ self, SymbolId symbolId, string returner) {
-            return MakeConvertRuleForCall(convertToAction, self, symbolId, returner, () => convertToAction.FallbackConvert(this), (x) => x);
+        private DynamicMetaObject/*!*/ MakeConvertRuleForCall(DynamicMetaObjectBinder/*!*/ convertToAction, Type toType, DynamicMetaObject/*!*/ self, SymbolId symbolId, string returner) {
+            return MakeConvertRuleForCall(convertToAction, toType, self, symbolId, returner, () => FallbackConvert(convertToAction), (x) => x);
         }
 
-        private static Expression/*!*/ AddExtensibleSelfCheck(ConvertBinder/*!*/ convertToAction, DynamicMetaObject/*!*/ self, Expression/*!*/ callExpr) {
+        private static Expression/*!*/ AddExtensibleSelfCheck(DynamicMetaObjectBinder/*!*/ convertToAction, Type toType, DynamicMetaObject/*!*/ self, Expression/*!*/ callExpr) {
             ParameterExpression tmp = Ast.Variable(callExpr.Type, "tmp");
             callExpr = Ast.Block(
                 new ParameterExpression[] { tmp },
@@ -248,12 +255,12 @@ namespace IronPython.Runtime.Binding {
                             self.GetLimitType().GetProperty("Value")
                         ),
                         Ast.Dynamic(
-                            new ConversionBinder(
+                            new PythonConversionBinder(
                                 BinderState.GetBinderState(convertToAction),
-                                convertToAction.Type,
+                                toType,
                                 ConversionResultKind.ExplicitCast
                             ),
-                            convertToAction.Type,
+                            toType,
                             tmp
                         )
                     )
@@ -262,21 +269,21 @@ namespace IronPython.Runtime.Binding {
             return callExpr;
         }
 
-        private ConversionResultKind GetResultKind(ConvertBinder convertToAction) {
-            ConversionBinder cb = convertToAction as ConversionBinder;
+        private ConversionResultKind GetResultKind(DynamicMetaObjectBinder convertToAction) {
+            PythonConversionBinder cb = convertToAction as PythonConversionBinder;
             if (cb != null) {
                 return cb.ResultKind;
             }
 
-            if (convertToAction.Explicit) {
+            if (((ConvertBinder)convertToAction).Explicit) {
                 return ConversionResultKind.ExplicitCast;
             } else {
                 return ConversionResultKind.ImplicitCast;
             }
         }
 
-        private Expression ConversionFallback(ConvertBinder/*!*/ convertToAction) {
-            ConversionBinder cb = convertToAction as ConversionBinder;
+        private Expression ConversionFallback(DynamicMetaObjectBinder/*!*/ convertToAction) {
+            PythonConversionBinder cb = convertToAction as PythonConversionBinder;
             if (cb != null) {
                 return GetConversionFailedReturnValue(cb, this);
             }
@@ -307,7 +314,7 @@ namespace IronPython.Runtime.Binding {
         /// <summary>
         ///  Various helpers related to calling Python __*__ conversion methods 
         /// </summary>
-        private Expression/*!*/ GetConversionFailedReturnValue(ConversionBinder/*!*/ convertToAction, DynamicMetaObject/*!*/ self) {
+        private Expression/*!*/ GetConversionFailedReturnValue(PythonConversionBinder/*!*/ convertToAction, DynamicMetaObject/*!*/ self) {
             switch (convertToAction.ResultKind) {
                 case ConversionResultKind.ImplicitTry:
                 case ConversionResultKind.ExplicitTry:
@@ -319,7 +326,8 @@ namespace IronPython.Runtime.Binding {
                         db.MakeConversionError(
                             convertToAction.Type,
                             self.Expression
-                        )
+                        ), 
+                        typeof(object)
                     );
                 default:
                     throw new InvalidOperationException(convertToAction.ResultKind.ToString());

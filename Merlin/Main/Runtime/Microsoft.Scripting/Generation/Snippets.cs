@@ -226,6 +226,11 @@ namespace Microsoft.Scripting.Generation {
             );
         }
 
+        internal bool IsSnippetsAssembly(Assembly asm) {
+            return (_assembly != null && asm == _assembly.AssemblyBuilder) ||
+                   (_debugAssembly != null && asm == _debugAssembly.AssemblyBuilder);
+        }
+
         private static DynamicMethod RawCreateDynamicMethod(string name, Type returnType, Type[] parameterTypes) {
 #if SILVERLIGHT // Module-hosted DynamicMethod is not available in SILVERLIGHT
             return new DynamicMethod(name, returnType, parameterTypes);

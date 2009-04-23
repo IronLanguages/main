@@ -1,0 +1,16 @@
+--- !ruby/object:RI::MethodDescription 
+aliases: []
+
+block_params: 
+comment: 
+- !ruby/struct:SM::Flow::P 
+  body: Runs the early binding method to get property. The 1st argument specifies dispatch ID, the 2nd argument specifies the array of arguments, the 3rd argument specifies the array of the type of arguments.
+- !ruby/struct:SM::Flow::VERB 
+  body: "   excel = WIN32OLE.new('Excel.Application')\n   puts excel._getproperty(558, [], []) # same effect as puts excel.visible\n"
+full_name: WIN32OLE#_getproperty
+is_singleton: false
+name: _getproperty
+params: |
+  WIN32OLE#_getproperty(dispid, args, types)
+
+visibility: public

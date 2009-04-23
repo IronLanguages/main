@@ -37,11 +37,22 @@ namespace Microsoft.Scripting.Actions {
             // restricted type.
             BindingRestrictions typeRestrictions = arg.Restrictions.Merge(BindingRestrictionsHelpers.GetRuntimeTypeRestriction(arg.Expression, arg.GetLimitType()));
 
-            return
+            DynamicMetaObject res = 
                 TryConvertToObject(toType, arg.Expression.Type, arg, typeRestrictions) ??
                 TryAllConversions(toType, kind, arg.Expression.Type, typeRestrictions, arg) ??
                 TryAllConversions(toType, kind, arg.GetLimitType(), typeRestrictions, arg) ??
                 MakeErrorTarget(toType, kind, typeRestrictions, arg);
+
+            if ((kind == ConversionResultKind.ExplicitTry || kind == ConversionResultKind.ImplicitTry) && toType.IsValueType) {
+                res = new DynamicMetaObject(
+                    AstUtils.Convert(
+                        res.Expression,
+                        typeof(object)
+                    ),
+                    res.Restrictions
+                );
+            }
+            return res;
         }
 
         #region Conversion attempt helpers
@@ -241,7 +252,8 @@ namespace Microsoft.Scripting.Actions {
                 case ConversionResultKind.ExplicitCast:
                     target = MakeError(
                         MakeConversionError(toType, arg.Expression),
-                        restrictions
+                        restrictions,
+                        toType
                     );
                     break;
                 case ConversionResultKind.ImplicitTry:

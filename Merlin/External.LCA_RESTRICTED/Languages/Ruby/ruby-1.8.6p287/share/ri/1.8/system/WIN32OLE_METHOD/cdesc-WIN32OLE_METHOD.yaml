@@ -1,0 +1,53 @@
+--- !ruby/object:RI::ClassDescription 
+attributes: []
+
+class_methods: 
+- !ruby/object:RI::MethodSummary 
+  name: new
+comment: 
+- !ruby/struct:SM::Flow::P 
+  body: <tt>WIN32OLE_METHOD</tt> objects represent OLE method information.
+constants: []
+
+full_name: WIN32OLE_METHOD
+includes: []
+
+instance_methods: 
+- !ruby/object:RI::MethodSummary 
+  name: dispid
+- !ruby/object:RI::MethodSummary 
+  name: event?
+- !ruby/object:RI::MethodSummary 
+  name: event_interface
+- !ruby/object:RI::MethodSummary 
+  name: helpcontext
+- !ruby/object:RI::MethodSummary 
+  name: helpfile
+- !ruby/object:RI::MethodSummary 
+  name: helpstring
+- !ruby/object:RI::MethodSummary 
+  name: invkind
+- !ruby/object:RI::MethodSummary 
+  name: invoke_kind
+- !ruby/object:RI::MethodSummary 
+  name: name
+- !ruby/object:RI::MethodSummary 
+  name: offset_vtbl
+- !ruby/object:RI::MethodSummary 
+  name: params
+- !ruby/object:RI::MethodSummary 
+  name: return_type
+- !ruby/object:RI::MethodSummary 
+  name: return_type_detail
+- !ruby/object:RI::MethodSummary 
+  name: return_vtype
+- !ruby/object:RI::MethodSummary 
+  name: size_opt_params
+- !ruby/object:RI::MethodSummary 
+  name: size_params
+- !ruby/object:RI::MethodSummary 
+  name: to_s
+- !ruby/object:RI::MethodSummary 
+  name: visible?
+name: WIN32OLE_METHOD
+superclass: Object

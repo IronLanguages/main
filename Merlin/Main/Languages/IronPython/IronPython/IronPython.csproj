@@ -106,7 +106,7 @@
     <Compile Include="Runtime\Binding\ContextArgBuilder.cs" />
     <Compile Include="Runtime\Binding\IFastSettable.cs" />
     <Compile Include="Runtime\Binding\PythonBinder.Create.cs" />
-    <Compile Include="Runtime\Binding\PythonMethodBinder.cs" />
+    <Compile Include="Runtime\Binding\PythonOverloadResolver.cs" />
     <Compile Include="Runtime\Binding\SiteLocalStorageBuilder.cs" />
     <Compile Include="Compiler\ClosureExpression.cs" />
     <Compile Include="Compiler\ClosureInfo.cs" />
@@ -115,6 +115,7 @@
     <Compile Include="Compiler\LazyCode.cs" />
     <Compile Include="Runtime\Exceptions\BufferException.Generated.cs" />
     <Compile Include="Runtime\FutureBuiltins.cs" />
+    <Compile Include="Runtime\Binding\IPythonConvertible.cs" />
     <Compile Include="Runtime\Profiler.cs" />
     <Compile Include="Compiler\GlobalAllocator.cs" />
     <Compile Include="Compiler\Ast\AugmentedAssignStatement.cs" />
@@ -238,6 +239,7 @@
     <Compile Include="Runtime\NewStringFormatter.cs" />
     <Compile Include="Runtime\Operations\ByteOps.cs" />
     <Compile Include="Runtime\Operations\IListOfByteOps.cs" />
+    <Compile Include="Runtime\ProhibitGenericListConversion.cs" />
     <Compile Include="Runtime\Python3Warning.cs" />
     <Compile Include="Runtime\PythonFunction.Generated.cs" />
     <Compile Include="Runtime\PythonOptions.cs" />
@@ -306,7 +308,6 @@
     <Compile Include="Runtime\Exceptions\RuntimeException.Generated.cs" />
     <Compile Include="Runtime\Exceptions\RuntimeWarningException.Generated.cs" />
     <Compile Include="Runtime\Exceptions\StopIterationException.Generated.cs" />
-    <Compile Include="Runtime\Exceptions\StringException.cs" />
     <Compile Include="Runtime\Exceptions\SyntaxWarningException.Generated.cs" />
     <Compile Include="Runtime\Exceptions\SystemExitException.cs" />
     <Compile Include="Runtime\Exceptions\TabException.cs" />

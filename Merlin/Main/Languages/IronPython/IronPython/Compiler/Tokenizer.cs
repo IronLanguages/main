@@ -100,9 +100,8 @@ namespace IronPython.Compiler {
             _verbatim = verbatim || options.Verbatim;
         }
 
-        // TODO:
         public override bool IsRestartable {
-            get { return false; }
+            get { return true; }
         }
 
         public override object CurrentState {
@@ -336,7 +335,15 @@ namespace IronPython.Compiler {
 
         private Token Next() {
             bool at_beginning = _buffer.AtBeginning;
+
+            if (_state.IncompleteString != null && _buffer.Peek() != EOF) {
+                IncompleteStringToken prev = _state.IncompleteString;
+                _state.IncompleteString = null;
+                return ContinueString(prev.IsSingleTickQuote ? '\'' : '"', prev.IsRaw, prev.IsUnicode, false, prev.IsTripleQuoted, 0);
+            }
+
             _buffer.DiscardToken();
+
             int ch = NextChar();
 
             while (true) {
@@ -650,7 +657,8 @@ namespace IronPython.Compiler {
                 if (complete) {
                     return new ConstantValueToken(contents);
                 } else {
-                    return new IncompleteStringToken(contents, quote == '\'', isRaw, isUnicode, isTriple);
+                    _state.IncompleteString = new IncompleteStringToken(contents, quote == '\'', isRaw, isUnicode, isTriple);
+                    return _state.IncompleteString;
                 }
             } else {
                 List<byte> data = LiteralParser.ParseBytes(contents, isRaw, complete);
@@ -661,7 +669,8 @@ namespace IronPython.Compiler {
 
                     return new ConstantValueToken(new Bytes(data));
                 } else {
-                    return new IncompleteStringToken(data, quote == '\'', isRaw, false, isTriple);
+                    _state.IncompleteString = new IncompleteStringToken(data, quote == '\'', isRaw, false, isTriple);
+                    return _state.IncompleteString;
                 }
             }
         }
@@ -1148,15 +1157,15 @@ namespace IronPython.Compiler {
             Console.WriteLine("{0} `{1}`", token.Kind, token.Image.Replace("\r", "\\r").Replace("\n", "\\n").Replace("\t", "\\t"));
         }
 
+        // TODO: Make this private after two of these objects can be compared from Python code.
         [Serializable]
-        private struct State {
+        public struct State : IEquatable<State> {
             // indentation state
             public int[] Indent;
             public int IndentLevel;
             public int PendingDedents;
             public int PendingNewlines;
-
-            // TODO: remember incomplete tokens
+            public IncompleteStringToken IncompleteString;
 
             // Indentation state used only when we're reporting on inconsistent identation format.
             public StringBuilder[] IndentFormat;
@@ -1173,6 +1182,7 @@ namespace IronPython.Compiler {
                 PendingDedents = state.PendingDedents;
                 IndentLevel = state.IndentLevel;
                 IndentFormat = (state.IndentFormat != null) ? (StringBuilder[])state.IndentFormat.Clone() : null;
+                IncompleteString = state.IncompleteString;
             }
 
             public State(object dummy) {
@@ -1180,7 +1190,49 @@ namespace IronPython.Compiler {
                 PendingNewlines = 1;
                 BracketLevel = ParenLevel = BraceLevel = PendingDedents = IndentLevel = 0;
                 IndentFormat = null;
+                IncompleteString = null;
             }
+
+            public override bool Equals(object obj) {
+                if (obj is State) {
+                    State other = (State)obj;
+                    return other == this;
+                } else {
+                    return false;
+                }
+            }
+
+            public override int GetHashCode() {
+                return base.GetHashCode();
+            }
+
+            public static bool operator ==(State left, State right) {
+                if (left == null) return right == null;
+
+                return left.BraceLevel == right.BraceLevel &&
+                       left.BracketLevel == right.BracketLevel &&
+                       ((left.IncompleteString == null || right.IncompleteString == null) ||
+                       (left.IncompleteString.IsRaw == right.IncompleteString.IsRaw &&
+                       left.IncompleteString.IsSingleTickQuote == right.IncompleteString.IsSingleTickQuote &&
+                       left.IncompleteString.IsTripleQuoted == right.IncompleteString.IsTripleQuoted &&
+                       left.IncompleteString.IsUnicode == right.IncompleteString.IsUnicode)) &&
+                       left.IndentLevel == right.IndentLevel &&
+                       left.ParenLevel == right.ParenLevel &&
+                       left.PendingDedents == right.PendingDedents &&
+                       left.PendingNewlines == right.PendingNewlines;
+            }
+
+            public static bool operator !=(State left, State right) {
+                return !(left == right);
+            }
+
+            #region IEquatable<State> Members
+
+            public bool Equals(State other) {
+                return this.Equals(other);
+            }
+
+            #endregion
         }
     }
 }

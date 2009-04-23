@@ -86,9 +86,9 @@ namespace Microsoft.Scripting.Actions {
                         }
                     }
 
-                    delInfo.Body.FinishCondition(MakeError(MakeUndeletableMemberError(GetDeclaringMemberType(group), delInfo.Name)));
+                    delInfo.Body.FinishCondition(MakeError(MakeUndeletableMemberError(GetDeclaringMemberType(group), delInfo.Name), typeof(object)));
                 } else {
-                    delInfo.Body.FinishCondition(MakeError(MakeMissingMemberError(type, delInfo.Name)));
+                    delInfo.Body.FinishCondition(MakeError(MakeMissingMemberError(type, delInfo.Name), typeof(object)));
                 }
             }
 

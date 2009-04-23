@@ -46,9 +46,12 @@ namespace Microsoft.Scripting.ComInterop {
             }
 
             return new DynamicMetaObject(
-                Expression.Property(
-                    AstUtils.Convert(Expression, typeof(ComTypeLibInfo)),
-                    typeof(ComTypeLibInfo).GetProperty(name)
+                Expression.Convert(
+                    Expression.Property(
+                        AstUtils.Convert(Expression, typeof(ComTypeLibInfo)),
+                        typeof(ComTypeLibInfo).GetProperty(name)
+                    ),
+                    typeof(object)
                 ),
                 ComTypeLibInfoRestrictions(this)
             );

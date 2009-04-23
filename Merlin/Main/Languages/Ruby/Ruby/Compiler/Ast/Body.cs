@@ -225,7 +225,7 @@ namespace IronRuby.Compiler.Ast {
                         Ast.Assign(exceptionRethrowVariable, AstUtils.Constant(true)),
                         AstUtils.Empty()
                     )
-                ).Finally(
+                ).FinallyWithJumps(
                     AstUtils.Unless(retryingVariable, transformedEnsure)
                 ),
 

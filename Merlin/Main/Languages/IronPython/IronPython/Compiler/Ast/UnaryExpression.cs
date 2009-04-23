@@ -43,11 +43,17 @@ namespace IronPython.Compiler.Ast {
         }
 
         internal override MSAst.Expression Transform(AstGenerator ag, Type type) {
-            return ag.Operation(
-                type,
+            MSAst.Expression res = ag.Operation(
+                Op == PythonOperator.Not ? typeof(bool) : type,
                 PythonOperatorToOperatorString(_op),
                 ag.Transform(_expression)
             );
+
+            if (Op == PythonOperator.Not && type != typeof(bool)) {
+                res = BindingHelpers.AddPythonBoxing(res);
+            }
+
+            return res;
         }
 
         public override void Walk(PythonWalker walker) {

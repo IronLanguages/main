@@ -33,17 +33,34 @@ using System.Reflection;
 using System.Diagnostics;
 
 namespace IronPython.Runtime.Binding {
-    
-    class ConversionBinder : ConvertBinder, IPythonSite, IExpressionSerializable  {
+
+    class PythonConversionBinder : DynamicMetaObjectBinder, IPythonSite, IExpressionSerializable {
         private readonly BinderState/*!*/ _state;
         private readonly ConversionResultKind/*!*/ _kind;
+        private readonly Type _type;
+        private readonly bool _retObject;
 
-        public ConversionBinder(BinderState/*!*/ state, Type/*!*/ type, ConversionResultKind resultKind)
-            : base(type, resultKind == ConversionResultKind.ExplicitCast || resultKind == ConversionResultKind.ExplicitTry) {
+        public PythonConversionBinder(BinderState/*!*/ state, Type/*!*/ type, ConversionResultKind resultKind) {
             Assert.NotNull(state, type);
 
             _state = state;
             _kind = resultKind;
+            _type = type;
+        }
+
+        public PythonConversionBinder(BinderState/*!*/ state, Type/*!*/ type, ConversionResultKind resultKind, bool retObject) {
+            Assert.NotNull(state, type);
+
+            _state = state;
+            _kind = resultKind;
+            _type = type;
+            _retObject = retObject;
+        }
+
+        public Type Type {
+            get {
+                return _type;
+            }
         }
 
         public ConversionResultKind ResultKind {
@@ -52,23 +69,69 @@ namespace IronPython.Runtime.Binding {
             }
         }
 
-        public override DynamicMetaObject FallbackConvert(DynamicMetaObject self, DynamicMetaObject errorSuggestion) {
+        public override DynamicMetaObject Bind(DynamicMetaObject target, DynamicMetaObject[] args) {
+            DynamicMetaObject self = target;
+
+            DynamicMetaObject res = null;
             if (self.NeedsDeferral()) {
-                return Defer(self);
+                return MyDefer(self);
             }
 
+
+            IPythonConvertible convertible = target as IPythonConvertible;
+            if (convertible != null) {
+                res = convertible.BindConvert(this);
+            } else if (res == null) {
+                res = FallbackConvert(self);
+            }
+
+            if (_retObject) {
+                res = new DynamicMetaObject(
+                    AstUtils.Convert(res.Expression, typeof(object)),
+                    res.Restrictions
+                );
+            }
+
+            return res;
+        }
+
+        public /*override*/ Type ReturnType {
+            get {
+                if (_retObject) {
+                    return typeof(object);
+                }
+
+                return (_kind == ConversionResultKind.ExplicitCast || _kind == ConversionResultKind.ImplicitCast) ?
+                    Type :
+                    _type.IsValueType ?
+                        typeof(object) :
+                        _type;
+            }
+        }
+
+        private DynamicMetaObject MyDefer(DynamicMetaObject self) {
+            return new DynamicMetaObject(
+                Expression.Dynamic(
+                    this,
+                    ReturnType,
+                    self.Expression
+                ),
+                self.Restrictions
+            );
+        }
+
+        internal DynamicMetaObject FallbackConvert(DynamicMetaObject self) {
             PerfTrack.NoteEvent(PerfTrack.Categories.Binding, "Convert " + Type.FullName + " " + self.LimitType);
             PerfTrack.NoteEvent(PerfTrack.Categories.BindingTarget, "Conversion");
 
 #if !SILVERLIGHT
             DynamicMetaObject comConvert;
-            if (ComBinder.TryConvert(this, self, out comConvert)) {
+            if (ComBinder.TryConvert(new CompatConversionBinder(_state, Type, _kind == ConversionResultKind.ExplicitCast || _kind == ConversionResultKind.ExplicitTry), self, out comConvert)) {
                 return comConvert;
             }
 #endif
-
+            
             Type type = Type;
-
             DynamicMetaObject res = null;
             switch (Type.GetTypeCode(type)) {
                 case TypeCode.Boolean:
@@ -105,8 +168,8 @@ namespace IronPython.Runtime.Binding {
                         } else if (!typeof(IEnumerable).IsAssignableFrom(self.GetLimitType()) && IsIndexless(self)) {
                             res = PythonProtocol.ConvertToIEnumerable(this, self.Restrict(self.GetLimitType()));
                         }
-                    } else if (type == typeof(IEnumerator) ) {
-                        if (!typeof(IEnumerator).IsAssignableFrom(self.GetLimitType()) && 
+                    } else if (type == typeof(IEnumerator)) {
+                        if (!typeof(IEnumerator).IsAssignableFrom(self.GetLimitType()) &&
                             !typeof(IEnumerable).IsAssignableFrom(self.GetLimitType()) &&
                             IsIndexless(self)) {
                             res = PythonProtocol.ConvertToIEnumerator(this, self.Restrict(self.GetLimitType()));
@@ -136,7 +199,21 @@ namespace IronPython.Runtime.Binding {
                 );
             }
 
-            return res ?? Binder.Binder.ConvertTo(Type, ResultKind, self);
+            return res ?? EnsureReturnType(Binder.Binder.ConvertTo(Type, ResultKind, self));
+        }
+
+        private DynamicMetaObject EnsureReturnType(DynamicMetaObject dynamicMetaObject) {
+            if (dynamicMetaObject.Expression.Type != ReturnType) {
+                dynamicMetaObject = new DynamicMetaObject(
+                    AstUtils.Convert(
+                        dynamicMetaObject.Expression,
+                        ReturnType
+                    ),
+                    dynamicMetaObject.Restrictions
+                );
+            }
+
+            return dynamicMetaObject;
         }
 
         public override T BindDelegate<T>(CallSite<T> site, object[] args) {
@@ -181,7 +258,7 @@ namespace IronPython.Runtime.Binding {
                     }
                 }
             }
-            
+
             if (res != null) {
                 CacheTarget(res);
                 return res;
@@ -302,12 +379,14 @@ namespace IronPython.Runtime.Binding {
         }
 
         public override bool Equals(object obj) {
-            ConversionBinder ob = obj as ConversionBinder;
+            PythonConversionBinder ob = obj as PythonConversionBinder;
             if (ob == null) {
                 return false;
             }
 
-            return ob._state.Binder == _state.Binder && _kind == ob._kind && base.Equals(obj);
+            return ob._state.Binder == _state.Binder && 
+                _kind == ob._kind && base.Equals(obj) &&
+                _retObject == ob._retObject;
         }
 
         public BinderState/*!*/ Binder {
@@ -400,7 +479,8 @@ namespace IronPython.Runtime.Binding {
                                 typeof(PythonOps).GetMethod("TypeError"),
                                 AstUtils.Constant("expected string of length 1 when converting to char, got '{0}'"),
                                 Ast.NewArrayInit(typeof(object), self.Expression)
-                            )
+                            ),
+                            ReturnType
                         ),
                         self.Restrictions.Merge(BindingRestrictions.GetExpressionRestriction(Ast.NotEqual(getLen, AstUtils.Constant(1))))
                     );
@@ -414,47 +494,43 @@ namespace IronPython.Runtime.Binding {
         }
 
         private DynamicMetaObject/*!*/ MakeToBoolConversion(DynamicMetaObject/*!*/ self) {
-            DynamicMetaObject res = null;
-            if (self.NeedsDeferral()) {
-                res = Defer(self);
+            DynamicMetaObject res;
+            if (self.HasValue) {
+                self = self.Restrict(self.GetRuntimeType());
+            }
+
+            // Optimization: if we already boxed it to a bool, and now
+            // we're unboxing it, remove the unnecessary box.
+            if (self.Expression.NodeType == ExpressionType.Convert && self.Expression.Type == typeof(object)) {
+                var convert = (UnaryExpression)self.Expression;
+                if (convert.Operand.Type == typeof(bool)) {
+                    return new DynamicMetaObject(convert.Operand, self.Restrictions);
+                }
+            }
+
+            if (self.GetLimitType() == typeof(DynamicNull)) {
+                // None has no __nonzero__ and no __len__ but it's always false
+                res = MakeNoneToBoolConversion(self);
+            } else if (self.GetLimitType() == typeof(bool)) {
+                // nothing special to convert from bool to bool
+                res = self;
+            } else if (typeof(IStrongBox).IsAssignableFrom(self.GetLimitType())) {
+                // Explictly block conversion of References to bool
+                res = MakeStrongBoxToBoolConversionError(self);
+            } else if (self.GetLimitType().IsPrimitive || self.GetLimitType().IsEnum) {
+                // optimization - rather than doing a method call for primitives and enums generate
+                // the comparison to zero directly.
+                res = MakePrimitiveToBoolComparison(self);
             } else {
-                if (self.HasValue) {
-                    self = self.Restrict(self.GetRuntimeType());
-                }
-
-                // Optimization: if we already boxed it to a bool, and now
-                // we're unboxing it, remove the unnecessary box.
-                if (self.Expression.NodeType == ExpressionType.Convert && self.Expression.Type == typeof(object)) {
-                    var convert = (UnaryExpression)self.Expression;
-                    if (convert.Operand.Type == typeof(bool)) {
-                        return new DynamicMetaObject(convert.Operand, self.Restrictions);
-                    }
-                }
-
-                if (self.GetLimitType() == typeof(DynamicNull)) {
-                    // None has no __nonzero__ and no __len__ but it's always false
-                    res = MakeNoneToBoolConversion(self);
-                } else if (self.GetLimitType() == typeof(bool)) {
-                    // nothing special to convert from bool to bool
-                    res = self;
-                } else if (typeof(IStrongBox).IsAssignableFrom(self.GetLimitType())) {
-                    // Explictly block conversion of References to bool
-                    res = MakeStrongBoxToBoolConversionError(self);
-                } else if (self.GetLimitType().IsPrimitive || self.GetLimitType().IsEnum) {
-                    // optimization - rather than doing a method call for primitives and enums generate
-                    // the comparison to zero directly.
-                    res = MakePrimitiveToBoolComparison(self);
-                } else {
-                    // anything non-null that doesn't fall under one of the above rules is true.  So we
-                    // fallback to the base Python conversion which will check for __nonzero__ and
-                    // __len__.  The fallback is handled by our ConvertTo site binder.
-                    return
-                        PythonProtocol.ConvertToBool(this, self) ??
-                        new DynamicMetaObject(
-                            AstUtils.Constant(true),
-                            self.Restrictions
-                        );
-                }
+                // anything non-null that doesn't fall under one of the above rules is true.  So we
+                // fallback to the base Python conversion which will check for __nonzero__ and
+                // __len__.  The fallback is handled by our ConvertTo site binder.
+                return
+                    PythonProtocol.ConvertToBool(this, self) ??
+                    new DynamicMetaObject(
+                        AstUtils.Constant(true),
+                        self.Restrictions
+                    );
             }
 
             return res;
@@ -480,13 +556,14 @@ namespace IronPython.Runtime.Binding {
             );
         }
 
-        private static DynamicMetaObject/*!*/ MakeStrongBoxToBoolConversionError(DynamicMetaObject/*!*/ self) {
+        private DynamicMetaObject/*!*/ MakeStrongBoxToBoolConversionError(DynamicMetaObject/*!*/ self) {
             return new DynamicMetaObject(
                 Ast.Throw(
                     Ast.Call(
                         typeof(ScriptingRuntimeHelpers).GetMethod("SimpleTypeError"),
                         AstUtils.Constant("Can't convert a Reference<> instance to a bool")
-                    )
+                    ),
+                    ReturnType
                 ),
                 self.Restrictions
             );
@@ -510,5 +587,18 @@ namespace IronPython.Runtime.Binding {
         }
 
         #endregion
+    }
+
+    class CompatConversionBinder : ConvertBinder {
+        private readonly BinderState _bs;
+
+        public CompatConversionBinder(BinderState/*!*/ bs, Type toType, bool isExplicit)
+            : base(toType, isExplicit) {
+            _bs = bs;
+        }
+
+        public override DynamicMetaObject FallbackConvert(DynamicMetaObject target, DynamicMetaObject errorSuggestion) {
+            return new PythonConversionBinder(_bs, Type, Explicit ? ConversionResultKind.ExplicitCast : ConversionResultKind.ImplicitCast).FallbackConvert(target);
+        }
     }
 }

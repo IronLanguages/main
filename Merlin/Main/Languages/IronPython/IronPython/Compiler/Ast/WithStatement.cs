@@ -182,7 +182,7 @@ namespace IronPython.Compiler.Ast {
                                 typeof(bool),
                                 ConversionResultKind.ExplicitCast,
                                 ag.Operation(
-                                    typeof(object),
+                                    typeof(bool),
                                     PythonOperationKind.Not,
                                     MakeExitCall(ag, exit, exception)
                                 )

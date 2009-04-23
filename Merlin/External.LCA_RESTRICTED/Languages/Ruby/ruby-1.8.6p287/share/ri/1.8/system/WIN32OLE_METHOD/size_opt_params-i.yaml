@@ -1,0 +1,16 @@
+--- !ruby/object:RI::MethodDescription 
+aliases: []
+
+block_params: 
+comment: 
+- !ruby/struct:SM::Flow::P 
+  body: Returns the size of optional parameters.
+- !ruby/struct:SM::Flow::VERB 
+  body: "   tobj = WIN32OLE_TYPE.new('Microsoft Excel 9.0 Object Library', 'Workbook')\n   method = WIN32OLE_METHOD.new(tobj, 'SaveAs')\n   puts method.size_opt_params # =&gt; 4\n"
+full_name: WIN32OLE_METHOD#size_opt_params
+is_singleton: false
+name: size_opt_params
+params: |
+  WIN32OLE_METHOD#size_opt_params
+
+visibility: public

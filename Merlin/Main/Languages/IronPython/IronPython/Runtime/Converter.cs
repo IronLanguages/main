@@ -282,7 +282,7 @@ namespace IronPython.Runtime {
             lock (_siteDict) {
                 if (!_siteDict.TryGetValue(to, out site)) {
                     _siteDict[to] = site = CallSite<Func<CallSite, object, object>>.Create(
-                        DefaultContext.DefaultPythonContext.DefaultBinderState.Convert(
+                        DefaultContext.DefaultPythonContext.DefaultBinderState.ConvertRetObject(
                             to, 
                             ConversionResultKind.ExplicitCast
                         )

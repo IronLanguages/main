@@ -37,8 +37,9 @@ namespace IronPython.Hosting {
             switch (arg) {
                 case "-B": break; // dont_write_bytecode always true in IronPython
                 case "-U": break; // unicode always true in IronPython
+                case "-d": break; // debug output from parser, always False in IronPython
 
-                case "-b":
+                case "-b": // Not shown in help on CPython
                     LanguageSetup.Options["BytesWarning"] = ScriptingRuntimeHelpers.True;
                     break;
 
@@ -160,7 +161,6 @@ namespace IronPython.Hosting {
                     LanguageSetup.Options["PythonVersion"] = new Version(2, 5);
                     break;
 
-                case "-d":
                 case "-X:Debug":
                     RuntimeSetup.DebugMode = true;
                     LanguageSetup.Options["Debug"] = ScriptingRuntimeHelpers.True;
@@ -210,23 +210,42 @@ namespace IronPython.Hosting {
                 { "-m module",              "run library module as a script"},
                 { "-x",                     "Skip first line of the source" },
                 { "-u",                     "Unbuffered stdout & stderr" },
+                { "-O",                     "generate optimized code" },
+                { "-OO",                    "remove doc strings and apply -O optimizations" },
                 { "-E",                     "Ignore environment variables" },
                 { "-Q arg",                 "Division options: -Qold (default), -Qwarn, -Qwarnall, -Qnew" },
                 { "-S",                     "Don't imply 'import site' on initialization" },
+                { "-s",                     "Don't add user site directory to sys.path" },
                 { "-t",                     "Issue warnings about inconsistent tab usage" },
                 { "-tt",                    "Issue errors for inconsistent tab usage" },
                 { "-W arg",                 "Warning control (arg is action:message:category:module:lineno)" },
                 { "-3",                     "Warn about Python 3.x incompatibilities" },
 
                 { "-X:MaxRecursion",        "Set the maximum recursion level" },
+                { "-X:Debug",               "Enable application debugging (preferred over -D)" },
                 { "-X:MTA",                 "Run in multithreaded apartment" },
                 { "-X:Python25",            "Disable some Python 2.6 features" },
                 { "-X:EnableProfiler",      "Enables profiling support in the compiler" },
                 { "-X:LightweightScopes",   "Generate optimized scopes that can be garbage collected" },
             };
 
-            // Append the Python-specific options and the standard options
-            options = ArrayUtils.Concatenate(pythonOptions, standardOptions);
+            // Ensure the combined options come out sorted
+            string[,] allOptions = ArrayUtils.Concatenate(pythonOptions, standardOptions);
+            List<string> optName = new List<string>();
+            List<int> indiciesList = new List<int>();
+            for (int i = 0; i < allOptions.Length / 2; i++) {
+                optName.Add(allOptions[i, 0]);
+                indiciesList.Add(i);
+            }
+            
+            int[] indicies = indiciesList.ToArray();
+            Array.Sort(optName.ToArray(), indicies, StringComparer.InvariantCulture);
+
+            options = new string[allOptions.Length / 2, 2];
+            for (int i = 0; i < indicies.Length; i++) {
+                options[i, 0] = allOptions[indicies[i], 0];
+                options[i, 1] = allOptions[indicies[i], 1];
+            }
 
             Debug.Assert(environmentVariables.GetLength(0) == 0); // No need to append if the default is empty
             environmentVariables = new string[,] {

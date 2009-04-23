@@ -330,7 +330,10 @@ namespace IronPython.Compiler.Ast {
             }
 
             // Transform the body and add the resulting statements into the list
-            TransformBody(bodyGen, statements);
+            if (!TryTransformBody(bodyGen, statements)) {
+                // there's an error in the body
+                return null;
+            }
 
             if (ag.DebugMode) {
                 // add beginning and ending break points for the function.
@@ -496,7 +499,7 @@ namespace IronPython.Compiler.Ast {
             }
         }
 
-        private void TransformBody(AstGenerator ag, List<MSAst.Expression> statements) {
+        private bool TryTransformBody(AstGenerator ag, List<MSAst.Expression> statements) {
             SuiteStatement suite = _body as SuiteStatement;
 
             // Special case suite statement to avoid unnecessary allocation of extra node.
@@ -505,14 +508,20 @@ namespace IronPython.Compiler.Ast {
                     MSAst.Expression transforned = ag.Transform(one);
                     if (transforned != null) {
                         statements.Add(transforned);
+                    } else {
+                        return false;
                     }
                 }
             } else {
                 MSAst.Expression transformed = ag.Transform(_body);
                 if (transformed != null) {
                     statements.Add(transformed);
+                } else {
+                    return false;
                 }
             }
+
+            return true;
         }
 
         public override void Walk(PythonWalker walker) {
