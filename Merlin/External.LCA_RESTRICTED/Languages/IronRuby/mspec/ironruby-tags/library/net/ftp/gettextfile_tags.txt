@@ -1,3 +1,0 @@
-fails:Net::FTP#gettextfile sends the RETR command to the server
-fails:Net::FTP#gettextfile returns nil
-fails:Net::FTP#gettextfile saves the contents of the passed remote file to the passed local file

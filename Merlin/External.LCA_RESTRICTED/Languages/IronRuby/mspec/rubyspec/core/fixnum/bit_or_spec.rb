@@ -6,11 +6,11 @@ describe "Fixnum#|" do
     (5 | 4).should == 5
     (5 | 6).should == 7
     (248 | 4096).should == 4344
-    (0xffff | bignum_value + 0xf0f0).should eql(0x8000_0000_0000_ffff)
+    (0xffff | bignum_value + 0xf0f0).should == 0x8000_0000_0000_ffff
   end
 
   it "should be able to AND a bignum with a fixnum" do
-    (-1 | 2**64).should eql(-1)
+    (-1 | 2**64).should == -1
   end
 
   ruby_version_is "" ... "1.9" do
@@ -42,7 +42,7 @@ describe "Fixnum#|" do
   ruby_bug "#", "1.8.6" do # Fixed at MRI 1.8.7
     it "coerces arguments correctly even if it is a Bignum" do
       (obj = mock('large value')).should_receive(:to_int).and_return(8000_0000_0000_0000_0000)
-      (3 | obj).should eql(80000000000000000003)
+      (3 | obj).should == 80000000000000000003
     end
   end
 end

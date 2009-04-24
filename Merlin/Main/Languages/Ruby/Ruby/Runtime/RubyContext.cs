@@ -1615,6 +1615,15 @@ namespace IronRuby.Runtime {
             }
         }
 
+        public void TrySetLibraryData(object key, object value) {
+            EnsureLibraryData();
+
+            lock (_libraryData) {
+                _libraryData[key] = value;
+            }
+        }
+
+
         #endregion
 
         #region Parsing, Compilation (thread-safe)

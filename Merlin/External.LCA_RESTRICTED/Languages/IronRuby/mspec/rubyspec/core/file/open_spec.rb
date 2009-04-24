@@ -101,10 +101,9 @@ describe "File.open" do
     File.exist?(@file).should == true
   end
 
-  # I do not think this should be valid on MRI either--File.new yes.
-  compliant_on :ruby do
+  platform_is_not :windows do
     # For this test we delete the file first to reset the perms
-    it "opens the file when call with mode, num and permissions" do
+    it "opens the file when passed mode, num and permissions" do
       File.delete(@file)
       File.umask(0011)
       @fh = File.open(@file, @flags, 0755)
@@ -112,14 +111,39 @@ describe "File.open" do
       @fh.lstat.mode.to_s(8).should == "100744"
       File.exist?(@file).should == true
     end
+  end
 
+  platform_is :windows do
+    it "opens the file when passed mode, num and permissions" do
+      File.delete(@file)
+      @fh = File.open(@file, @flags, 0666)
+      @fh.should be_kind_of(File)
+      @fh.lstat.mode.to_s(8).should == "100666"
+      File.exist?(@file).should == true
+    end
+  end
+
+
+  platform_is_not :windows do
     # For this test we delete the file first to reset the perms
-    it "opens the flie when call with mode, num, permissions and block" do
+    it "opens the file when passed mode, num, permissions and block" do
       File.delete(@file)
       File.umask(0022)
       File.open(@file, "w", 0755){ |fh| @fd = fh.fileno }
       lambda { File.open(@fd) }.should raise_error(SystemCallError)
       File.stat(@file).mode.to_s(8).should == "100755"
+      File.exist?(@file).should == true
+    end
+  end
+
+  platform_is :windows do
+    # For this test we delete the file first to reset the perms
+    it "opens the file when passed mode, num, permissions and block" do
+      File.delete(@file)
+      File.umask(0022)
+      File.open(@file, "w", 0644){ |fh| @fd = fh.fileno }
+      lambda { File.open(@fd) }.should raise_error(SystemCallError)
+      File.stat(@file).mode.to_s(8).should == "100644"
       File.exist?(@file).should == true
     end
   end
@@ -136,24 +160,28 @@ describe "File.open" do
     File.read(@file).should == "test\n"
   end
 
-  it "opens the existing file, does not change permissions even when they are specified" do
-    File.chmod(0664, @file)           # r-w perms
-    orig_perms = File.stat(@file).mode.to_s(8)
-    File.open(@file, "w", 0444){ |f|  # r-o perms, but they should be ignored
-      lambda { f.puts("test") }.should_not raise_error(IOError)
-    }
-    # check that original permissions preserved
-    File.stat(@file).mode.to_s(8).should == orig_perms
+  platform_is_not :windows do
+    it "opens the existing file, does not change permissions even when they are specified" do
+      File.chmod(0664, @file)           # r-w perms
+      orig_perms = File.stat(@file).mode.to_s(8)
+      File.open(@file, "w", 0444){ |f|  # r-o perms, but they should be ignored
+        lambda { f.puts("test") }.should_not raise_error(IOError)
+      }
+      # check that original permissions preserved
+      File.stat(@file).mode.to_s(8).should == orig_perms
 
-    # it should be still possible to read from the file
-    File.read(@file).should == "test\n"
+      # it should be still possible to read from the file
+      File.read(@file).should == "test\n"
+    end
   end
 
-  it "creates a new write-only file when invoked with 'w' and '0222'" do
-    File.delete(@file) if File.exists?(@file)
-    File.open(@file, 'w', 0222) {}
-    File.readable?(@file).should == false
-    File.writable?(@file).should == true
+  platform_is_not :windows do
+    it "creates a new write-only file when invoked with 'w' and '0222'" do
+      File.delete(@file) if File.exists?(@file)
+      File.open(@file, 'w', 0222) {}
+      File.readable?(@file).should == false
+      File.writable?(@file).should == true
+    end
   end
 
   it "opens the file when call with fd" do
@@ -191,20 +219,22 @@ describe "File.open" do
     lambda { File.open("fake", File::NONBLOCK) }.should raise_error(Errno::ENOENT)
   end
 
-  platform_is_not :openbsd do
+  platform_is_not :openbsd, :windows do
     it "opens a file that no exists when use File::TRUNC mode" do
       lambda { File.open("fake", File::TRUNC) }.should raise_error(Errno::ENOENT)
     end
   end
 
-  platform_is :openbsd do
+  platform_is :openbsd, :windows do
     it "opens a file that no exists when use File::TRUNC mode" do
       lambda { File.open("fake", File::TRUNC) }.should raise_error(Errno::EINVAL)
     end
   end
 
-  it "opens a file that no exists when use File::NOCTTY mode" do
-    lambda { File.open("fake", File::NOCTTY) }.should raise_error(Errno::ENOENT)
+  platform_is_not :windows do
+    it "opens a file that no exists when use File::NOCTTY mode" do
+      lambda { File.open("fake", File::NOCTTY) }.should raise_error(Errno::ENOENT)
+    end
   end
 
   it "opens a file that no exists when use File::CREAT mode" do
@@ -280,49 +310,74 @@ describe "File.open" do
     end
   end
 
-  it "raises an IO exception when read in a block opened with WRONLY mode" do
+  it "raises an IOError when read in a block opened with WRONLY mode" do
     File.open(@file, File::WRONLY) do |f|
       lambda { f.gets  }.should raise_error(IOError)
     end
   end
 
-  it "raises an IO exception when read in a block opened with 'w' mode" do
+  it "raises an IOError when read in a block opened with 'w' mode" do
     File.open(@file, "w") do |f|
       lambda { f.gets   }.should raise_error(IOError)
     end
   end
 
-  it "raises an IO exception when read in a block opened with 'a' mode" do
+  it "raises an IOError when read in a block opened with 'a' mode" do
     File.open(@file, "a") do |f|
       lambda { f.gets  }.should raise_error(IOError)
     end
   end
 
-  it "raises an IO exception when read in a block opened with 'a' mode" do
+  it "raises an IOError when read in a block opened with 'a' mode" do
     File.open(@file, "a") do |f|
       f.puts("writing").should == nil
       lambda { f.gets }.should raise_error(IOError)
     end
   end
 
-  it "raises an IO exception when read in a block opened with 'a' mode" do
+  it "raises an IOError when read in a block opened with 'a' mode" do
     File.open(@file, File::WRONLY|File::APPEND ) do |f|
       lambda { f.gets }.should raise_error(IOError)
     end
   end
 
-  it "raises an IO exception when read in a block opened with File::WRONLY|File::APPEND mode" do
+  it "raises an IOError when read in a block opened with File::WRONLY|File::APPEND mode" do
     File.open(@file, File::WRONLY|File::APPEND ) do |f|
       f.puts("writing").should == nil
+      lambda { f.gets }.should raise_error(IOError)
     end
   end
 
-  it "raises an IO exception when read in a block opened with File::RDONLY|File::APPEND mode" do
-    lambda {
-      File.open(@file, File::RDONLY|File::APPEND ) do |f|
-        f.puts("writing")
+  ruby_version_is "" ... "1.9" do
+    platform_is_not :windows do
+      it "raises an Errno::EINVAL when read in a block opened with File::RDONLY|File::APPEND mode" do
+        lambda {
+          File.open(@file, File::RDONLY|File::APPEND ) do |f|
+            f.puts("writing")
+          end
+        }.should raise_error(Errno::EINVAL)
       end
-    }.should raise_error(Errno::EINVAL)
+    end
+
+    platform_is :windows do
+      it "raises an IOError when read in a block opened with File::RDONLY|File::APPEND mode" do
+        lambda {
+          File.open(@file, File::RDONLY|File::APPEND ) do |f|
+            f.puts("writing")
+          end
+        }.should raise_error(IOError)
+      end
+    end
+  end
+
+  ruby_version_is "1.9" do
+    it "raises an IOError when read in a block opened with File::RDONLY|File::APPEND mode" do
+      lambda {
+        File.open(@file, File::RDONLY|File::APPEND ) do |f|
+          f.puts("writing")
+        end
+      }.should raise_error(IOError)
+    end
   end
 
   it "can read and write in a block when call open with RDWR mode" do
@@ -384,15 +439,39 @@ describe "File.open" do
     end
   end
 
-  it "raises an Errorno::EEXIST if the file exists when open with File::RDONLY|File::APPEND" do
-    lambda {
-      File.open(@file, File::RDONLY|File::APPEND) do |f|
-        f.puts("writing").should == nil
+  ruby_version_is "" ... "1.9" do
+    platform_is_not :windows do
+      it "raises an Errno::EEXIST if the file exists when open with File::RDONLY|File::APPEND" do
+        lambda {
+          File.open(@file, File::RDONLY|File::APPEND) do |f|
+            f.puts("writing").should == nil
+          end
+        }.should raise_error(Errno::EINVAL)
       end
-    }.should raise_error(Errno::EINVAL)
+    end
+
+    platform_is :windows do
+      it "raises an IOError if the file exists when open with File::RDONLY|File::APPEND" do
+        lambda {
+          File.open(@file, File::RDONLY|File::APPEND) do |f|
+            f.puts("writing").should == nil
+          end
+        }.should raise_error(IOError)
+      end
+    end
   end
 
-  platform_is_not :openbsd do
+  ruby_version_is "1.9" do
+    it "raises an IOError if the file exists when open with File::RDONLY|File::APPEND" do
+      lambda {
+        File.open(@file, File::RDONLY|File::APPEND) do |f|
+          f.puts("writing").should == nil
+        end
+      }.should raise_error(IOError)
+    end
+  end
+
+  platform_is_not :openbsd, :windows do
 
     it "truncates the file when passed File::TRUNC mode" do
       File.open(@file, File::RDWR) { |f| f.puts "hello file" }
@@ -409,13 +488,12 @@ describe "File.open" do
   end
 
   it "opens a file when use File::WRONLY|File::TRUNC mode" do
-    File.open(@file, "w")
     @fh = File.open(@file, File::WRONLY|File::TRUNC)
     @fh.should be_kind_of(File)
     File.exist?(@file).should == true
   end
 
-  platform_is_not :openbsd do
+  platform_is_not :windows, :openbsd do
     it "can't write in a block when call open with File::TRUNC mode" do
       lambda {
         File.open(@file, File::TRUNC) do |f|
@@ -433,7 +511,7 @@ describe "File.open" do
     end
   end
 
-  platform_is :openbsd do
+  platform_is :windows, :openbsd do
     it "can't write in a block when call open with File::TRUNC mode" do
       lambda {
         File.open(@file, File::TRUNC) do |f|
@@ -451,16 +529,18 @@ describe "File.open" do
     end
   end
 
-  it "raises an Errno::EACCES when opening non-permitted file" do
-    @fh = File.open(@file, "w")
-    @fh.chmod(000)
-    lambda { File.open(@file) }.should raise_error(Errno::EACCES)
+  platform_is_not :windows do
+    it "raises an Errno::EACCES when opening non-permitted file" do
+      @fh = File.open(@file, "w")
+      @fh.chmod(000)
+      lambda { File.open(@file) {} }.should raise_error(Errno::EACCES)
+    end
   end
 
   it "raises an Errno::EACCES when opening read-only file" do
     @fh = File.open(@file, "w")
     @fh.chmod(0444)
-    lambda { File.open(@file, "w") }.should raise_error(Errno::EACCES)
+    lambda { File.open(@file, "w") {} }.should raise_error(Errno::EACCES)
   end
 
   it "opens a file for binary read" do

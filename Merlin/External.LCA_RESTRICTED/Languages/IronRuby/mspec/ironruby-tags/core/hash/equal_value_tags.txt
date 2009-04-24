@@ -1,1 +1,0 @@
-critical:Hash#== computes equality for recursive hashes

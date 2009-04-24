@@ -17,16 +17,18 @@ describe "File.umask" do
     File.umask.class.should == Fixnum
   end
 
-  it "umask should return the current umask value for the process" do
-    File.umask(022)
-    File.umask(006).should == 022
-    File.umask.should == 006
+  platform_is_not :windows do
+    it "umask should return the current umask value for the process" do
+      File.umask(022)
+      File.umask(006).should == 022
+      File.umask.should == 006
+    end
   end
 
   it "invokes to_int on non-integer argument" do
-    (obj = mock(022)).should_receive(:to_int).any_number_of_times.and_return(022)
+    (obj = mock(0200)).should_receive(:to_int).any_number_of_times.and_return(0200)
     File.umask(obj)
-    File.umask(obj).should == 022
+    File.umask(obj).should == 0200
   end
 
   it "always succeeds with any integer values" do

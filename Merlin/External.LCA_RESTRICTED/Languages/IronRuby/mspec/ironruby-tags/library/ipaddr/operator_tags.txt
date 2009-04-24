@@ -1,2 +1,0 @@
-fails:IPAddr Operator should be able to bitwise or
-fails:IPAddr Operator should be able to bitwise and

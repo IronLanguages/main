@@ -1,20 +1,2 @@
-critical:Array#join raises a NoMethodError if an element does not respond to #to_s
-critical:Array#join raises a NoMethodError if an element does not respond to #to_s
-fails:Array#join tries to convert the passed seperator to a String using #to_str
-fails:Array#join checks whether the passed seperator responds to #to_str
-fails:Array#join handles recursive arrays
-fails:Array#join does not consider taint of either the array or the separator when the array is empty
-fails:Array#join returns a string which would be infected with taint of the array, its elements or the separator when the array is not empty
-fails:Array#join does not process the separator if the array is empty
-fails:Array#join raises a TypeError if the passed separator is not a string and does not respond to #to_str
-critical:Array#join raises a NoMethodError if an element does not respond to #to_s
-critical:Array#join raises a NoMethodError if an element does not respond to #to_s
-critical:Array#join raises a NoMethodError if an element does not respond to #to_s
-critical:Array#join raises a NoMethodError if an element does not respond to #to_s
-critical:Array#join raises a NoMethodError if an element does not respond to #to_s
-critical:Array#join raises a NoMethodError if an element does not respond to #to_s
-critical:Array#join raises a NoMethodError if an element does not respond to #to_s
-critical:Array#join raises a NoMethodError if an element does not respond to #to_s
-critical:Array#join raises a NoMethodError if an element does not respond to #to_s
-critical:Array#join raises a NoMethodError if an element does not respond to #to_s
-critical:Array#join raises a NoMethodError if an element does not respond to #to_s
+critical:Array#join raises a NoMethodError if an element does not respond to
+#tos

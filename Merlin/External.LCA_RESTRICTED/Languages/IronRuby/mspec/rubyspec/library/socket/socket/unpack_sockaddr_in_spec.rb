@@ -8,10 +8,9 @@ describe "Socket#unpack_sockaddr_in" do
     Socket.unpack_sockaddr_in(sockaddr).should == [SocketSpecs.port, '127.0.0.1']
   end
 
-  not_supported_on :windows do
-    it "raises an ArgumentError when the sin_family is not AF_INET" do
-      sockaddr = Socket.sockaddr_un '/tmp/x'
-      lambda { Socket.unpack_sockaddr_in sockaddr }.should raise_error(ArgumentError)
-    end
+  it "raises an ArgumentError when the sin_family is not AF_INET" do
+    sockaddr = Socket.sockaddr_un '/tmp/x'
+    lambda { Socket.unpack_sockaddr_in sockaddr }.should raise_error(ArgumentError)
   end
+
 end

@@ -1,8 +1,7 @@
-fails:StringIO#readline when passed [seperator] returns the data read till the next occurence of the passed seperator
-fails:StringIO#readline when passed [seperator] sets $_ to the read content
-fails:StringIO#readline when passed [seperator] updates self's lineno by one
-fails:StringIO#readline when passed [seperator] returns the next paragraph when the passed seperator is an empty String
-fails:StringIO#readline when passed [seperator] returns the remaining content starting at the current position when passed nil
-fails:StringIO#readline when passed [seperator] tries to convert the passed seperator to a String using #to_str
-fails:StringIO#readline when passed [seperator] checks whether the passed seperator responds to #to_str
+fails:StringIO#readline when passed [separator] returns the data read till the next occurence of the passed separator
+fails:StringIO#readline when passed [separator] sets $_ to the read content
+fails:StringIO#readline when passed [separator] updates self's lineno by one
+fails:StringIO#readline when passed [separator] returns the next paragraph when the passed separator is an empty String
+fails:StringIO#readline when passed [separator] returns the remaining content starting at the current position when passed nil
+fails:StringIO#readline when passed [separator] tries to convert the passed separator to a String using #to_str
 fails:StringIO#readline when in write-only mode raises an IOError

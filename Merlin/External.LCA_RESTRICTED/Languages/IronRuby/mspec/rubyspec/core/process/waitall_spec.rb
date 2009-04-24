@@ -2,7 +2,7 @@ require File.dirname(__FILE__) + '/../../spec_helper'
 
 describe "Process.waitall" do
   before :all do
-    Process.waitall rescue nil
+    Process.waitall
   end
 
   it "returns an empty array when there are no children" do
@@ -13,7 +13,7 @@ describe "Process.waitall" do
     lambda { Process.waitall(0) }.should raise_error(ArgumentError)
   end
 
-  not_supported_on :windows do
+  platform_is_not :windows do
     it "waits for all children" do
       pids = []
       pids << Process.fork { Process.exit! 2 }
@@ -24,7 +24,7 @@ describe "Process.waitall" do
         lambda { Process.kill(0, pid) }.should raise_error(Errno::ESRCH)
       }
     end
-  
+
     it "returns an array of pid/status pairs" do
       pids = []
       pids << Process.fork { Process.exit! 2 }
