@@ -866,7 +866,7 @@ namespace IronRuby.Runtime {
         }
 
         public static String CombinePaths(string basePath, string path) {
-            return (basePath.EndsWith("\\") || basePath.EndsWith("/")) ? 
+            return (basePath.EndsWith("\\") || basePath.EndsWith("/") || basePath == string.Empty) ? 
                 basePath + path :
                 basePath + "/" + path;
         }
