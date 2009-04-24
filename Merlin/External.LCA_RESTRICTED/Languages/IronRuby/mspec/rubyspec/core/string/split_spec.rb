@@ -44,7 +44,6 @@ describe "String#split with String" do
     "1,2,,3,4,,".split(',', -5).should == ["1", "2", "", "3", "4", "", ""]
     "  a  b  c\nd  ".split("  ", -1).should == ["", "a", "b", "c\nd", ""]
     ",".split(",", -1).should == ["", ""]
-    "".split("x", -1).should == []
   end
   
   it "defaults to $; when string isn't given or nil" do
@@ -203,7 +202,6 @@ describe "String#split with Regexp" do
     "1,2,,3,4,,".split(/,/, -5).should == ["1", "2", "", "3", "4", "", ""]
     "  a  b  c\nd  ".split(/\s+/, -1).should == ["", "a", "b", "c", "d", ""]
     ",".split(/,/, -1).should == ["", ""]
-    "".split(/x/, -1).should == []
   end
   
   it "defaults to $; when regexp isn't given or nil" do
