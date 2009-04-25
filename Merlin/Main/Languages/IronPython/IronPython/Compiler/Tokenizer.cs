@@ -355,7 +355,8 @@ namespace IronPython.Compiler {
                         _buffer.DiscardToken();
                         ch = NextChar();
                         break;
-                    case ' ': case '\t':
+                    case ' ':
+                    case '\t':
                         ch = SkipWhiteSpace(at_beginning);
                         break;
 
@@ -382,15 +383,19 @@ namespace IronPython.Compiler {
                             goto default;
                         }
 
-                    case '\"': case '\'':
+                    case '\"':
+                    case '\'':
                         return ReadString((char)ch, false, false, false);
 
-                    case 'u': case 'U':
+                    case 'u':
+                    case 'U':
                         return ReadNameOrUnicodeString();
 
-                    case 'r': case 'R':
+                    case 'r':
+                    case 'R':
                         return ReadNameOrRawString();
-                    case 'b': case 'B':
+                    case 'b':
+                    case 'B':
                         if (_python26) {
                             return ReadNameOrBytes();
                         }
@@ -408,8 +413,16 @@ namespace IronPython.Compiler {
                         _buffer.MarkSingleLineTokenEnd();
                         return Tokens.DotToken;
 
-                    case '0': case '1': case '2': case '3': case '4':
-                    case '5': case '6': case '7': case '8': case '9':
+                    case '0':
+                    case '1':
+                    case '2':
+                    case '3':
+                    case '4':
+                    case '5':
+                    case '6':
+                    case '7':
+                    case '8':
+                    case '9':
                         return ReadNumber(ch);
 
                     default:
@@ -704,23 +717,34 @@ namespace IronPython.Compiler {
                     case '.':
                         return ReadFraction();
 
-                    case 'e': case 'E':
+                    case 'e':
+                    case 'E':
                         return ReadExponent();
 
-                    case 'j': case 'J':
+                    case 'j':
+                    case 'J':
                         _buffer.MarkSingleLineTokenEnd();
 
                         // TODO: parse in place
                         return new ConstantValueToken(LiteralParser.ParseImaginary(_buffer.GetTokenString()));
 
-                    case 'l': case 'L':
+                    case 'l':
+                    case 'L':
                         _buffer.MarkSingleLineTokenEnd();
 
                         // TODO: parse in place
                         return new ConstantValueToken(LiteralParser.ParseBigInteger(_buffer.GetTokenString(), b));
 
-                    case '0': case '1': case '2': case '3': case '4':
-                    case '5': case '6': case '7': case '8': case '9':
+                    case '0':
+                    case '1':
+                    case '2':
+                    case '3':
+                    case '4':
+                    case '5':
+                    case '6':
+                    case '7':
+                    case '8':
+                    case '9':
                         break;
 
                     default:
@@ -758,7 +782,8 @@ namespace IronPython.Compiler {
                             iVal = iVal << 1 | (ch - '0');
                         }
                         break;
-                    case 'l': case 'L':
+                    case 'l':
+                    case 'L':
                         _buffer.MarkSingleLineTokenEnd();
 
                         return new ConstantValueToken(bigInt ?? ((BigInteger)iVal));
@@ -776,11 +801,18 @@ namespace IronPython.Compiler {
                 int ch = NextChar();
 
                 switch (ch) {
-                    case '0': case '1': case '2': case '3':
-                    case '4': case '5': case '6': case '7':
+                    case '0':
+                    case '1':
+                    case '2':
+                    case '3':
+                    case '4':
+                    case '5':
+                    case '6':
+                    case '7':
                         break;
 
-                    case 'l': case 'L':
+                    case 'l':
+                    case 'L':
                         _buffer.MarkSingleLineTokenEnd();
 
                         // TODO: parse in place
@@ -801,13 +833,32 @@ namespace IronPython.Compiler {
                 int ch = NextChar();
 
                 switch (ch) {
-                    case '0': case '1': case '2': case '3': case '4':
-                    case '5': case '6': case '7': case '8': case '9':
-                    case 'a': case 'b': case 'c': case 'd': case 'e': case 'f':
-                    case 'A': case 'B': case 'C': case 'D': case 'E': case 'F':
+                    case '0':
+                    case '1':
+                    case '2':
+                    case '3':
+                    case '4':
+                    case '5':
+                    case '6':
+                    case '7':
+                    case '8':
+                    case '9':
+                    case 'a':
+                    case 'b':
+                    case 'c':
+                    case 'd':
+                    case 'e':
+                    case 'f':
+                    case 'A':
+                    case 'B':
+                    case 'C':
+                    case 'D':
+                    case 'E':
+                    case 'F':
                         break;
 
-                    case 'l': case 'L':
+                    case 'l':
+                    case 'L':
                         _buffer.MarkSingleLineTokenEnd();
 
                         // TODO: parse in place
@@ -828,15 +879,25 @@ namespace IronPython.Compiler {
                 int ch = NextChar();
 
                 switch (ch) {
-                    case '0': case '1': case '2': case '3': case '4':
-                    case '5': case '6': case '7': case '8': case '9':
+                    case '0':
+                    case '1':
+                    case '2':
+                    case '3':
+                    case '4':
+                    case '5':
+                    case '6':
+                    case '7':
+                    case '8':
+                    case '9':
                         break;
 
-                    case 'e': case 'E':
+                    case 'e':
+                    case 'E':
                         return ReadExponent();
 
-                    case 'j': case 'J':
-                        _buffer.MarkSingleLineTokenEnd(); 
+                    case 'j':
+                    case 'J':
+                        _buffer.MarkSingleLineTokenEnd();
 
                         // TODO: parse in place
                         return new ConstantValueToken(LiteralParser.ParseImaginary(_buffer.GetTokenString()));
@@ -860,12 +921,21 @@ namespace IronPython.Compiler {
 
             while (true) {
                 switch (ch) {
-                    case '0': case '1': case '2': case '3': case '4':
-                    case '5': case '6': case '7': case '8': case '9':
+                    case '0':
+                    case '1':
+                    case '2':
+                    case '3':
+                    case '4':
+                    case '5':
+                    case '6':
+                    case '7':
+                    case '8':
+                    case '9':
                         ch = NextChar();
                         break;
 
-                    case 'j': case 'J':
+                    case 'j':
+                    case 'J':
                         _buffer.MarkSingleLineTokenEnd();
 
                         // TODO: parse in place
@@ -1211,8 +1281,9 @@ namespace IronPython.Compiler {
 
                 return left.BraceLevel == right.BraceLevel &&
                        left.BracketLevel == right.BracketLevel &&
-                       ((left.IncompleteString == null || right.IncompleteString == null) ||
-                       (left.IncompleteString.IsRaw == right.IncompleteString.IsRaw &&
+                       ((left.IncompleteString == null && right.IncompleteString == null) ||
+                       (left.IncompleteString != null && right.IncompleteString != null &&
+                       left.IncompleteString.IsRaw == right.IncompleteString.IsRaw &&
                        left.IncompleteString.IsSingleTickQuote == right.IncompleteString.IsSingleTickQuote &&
                        left.IncompleteString.IsTripleQuoted == right.IncompleteString.IsTripleQuoted &&
                        left.IncompleteString.IsUnicode == right.IncompleteString.IsUnicode)) &&

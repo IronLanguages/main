@@ -268,6 +268,7 @@ module MSpec
       File.open(file, "r") do |f|
         f.each_line do |line|
           line.chomp!
+          line.strip!
           next if line.empty?
           tag = SpecTag.new line.chomp
           tags << tag if keys.include? tag.tag
@@ -297,7 +298,7 @@ module MSpec
     FileUtils.mkdir_p path unless File.exist? path
     if File.exist? file
       File.open(file, "r") do |f|
-        f.each_line { |line| return false if line.chomp == string }
+        f.each_line { |line| return false if line.chomp.strip == string }
       end
     end
     File.open(file, "a") { |f| f.puts string }
@@ -309,13 +310,13 @@ module MSpec
   # file if it is empty.
   def self.delete_tag(tag)
     deleted = false
-    pattern = /#{tag.tag}.*#{Regexp.escape(tag.escape(tag.description))}/
+    pattern = /#{tag.tag}.*#{Regexp.escape(tag.escape(tag.description.strip))}/
     file = tags_file
     if File.exist? file
       lines = IO.readlines(file)
       File.open(file, "w") do |f|
         lines.each do |line|
-          unless pattern =~ line.chomp
+          unless pattern =~ line.chomp.strip
             f.puts line unless line.empty?
           else
             deleted = true

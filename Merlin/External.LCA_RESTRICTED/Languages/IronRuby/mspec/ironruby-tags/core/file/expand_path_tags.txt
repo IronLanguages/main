@@ -2,3 +2,4 @@ fails:File.expand_path expand_path for commoms unix path  give a full path
 fails:File.expand_path sometimes returns file system case with one argument
 fails:File.expand_path sometimes returns file system case with two arguments
 fails:File.expand_path expands /./dir to /dir
+fails:File.expand_path converts a pathname to an absolute pathname, Ruby-Talk:18512 

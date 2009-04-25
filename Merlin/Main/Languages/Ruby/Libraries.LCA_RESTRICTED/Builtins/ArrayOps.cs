@@ -175,6 +175,7 @@ namespace IronRuby.Builtins {
             return self is RubyArray.Subclass ? new RubyArray(self) : self;
         }
 
+        [RubyMethod("to_ary")]
         public static RubyArray/*!*/ ToExplicitArray(RubyArray/*!*/ self) {
             return self;
         }

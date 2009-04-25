@@ -70,7 +70,7 @@ namespace IronRuby.Builtins {
         public class InvalidErrorOps {
             [RubyConstructor]
             public static InvalidError/*!*/ Create(RubyClass/*!*/ self, [DefaultProtocol, DefaultParameterValue(null)]MutableString message) {
-                InvalidError result = new InvalidError(RubyErrno.MakeMessage(ref message, "File exists"));
+                InvalidError result = new InvalidError(RubyErrno.MakeMessage(ref message, "Invalid Argument"));
                 RubyExceptionData.InitializeException(result, message);
                 return result;
             }
@@ -121,19 +121,14 @@ namespace IronRuby.Builtins {
 #endif
         }
 
-        [RubyClass("EEXIST"), Serializable]
-        public class ExistError : ExternalException {
-            private const string/*!*/ M = "File exists";
-
-            public ExistError() : this(null, null) { }
-            public ExistError(string message) : this(message, null) { }
-            public ExistError(string message, Exception inner) : base(RubyErrno.MakeMessage(message, M), inner) { }
-            public ExistError(MutableString message) : base(RubyErrno.MakeMessage(ref message, M)) { RubyExceptionData.InitializeException(this, message); }
-
-#if !SILVERLIGHT
-            protected ExistError(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context)
-                : base(info, context) { }
-#endif
+        [RubyClass("EEXIST", Extends=typeof(ExistError), Inherits=typeof(ExternalException))]
+        public class ExistErrorOps {
+            [RubyConstructor]
+            public static ExistError/*!*/ Create(RubyClass/*!*/ self, [DefaultProtocol, DefaultParameterValue(null)]MutableString message) {
+                ExistError result = new ExistError(RubyErrno.MakeMessage(ref message, "File exists"));
+                RubyExceptionData.InitializeException(result, message);
+                return result;
+            }
         }
 
         [RubyClass("EBADF"), Serializable]
