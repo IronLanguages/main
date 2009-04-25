@@ -167,11 +167,11 @@ namespace IronPython.Modules {
             return gt(context, a, b);
         }
 
-        public static object not_(object o) {
+        public static bool not_(object o) {
             return PythonOps.Not(o);
         }
 
-        public static object __not__(object o) {
+        public static bool __not__(object o) {
             return PythonOps.Not(o);
         }
 

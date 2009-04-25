@@ -451,6 +451,19 @@ end
             }, @"foo");
         }
 
+        public void JumpFromEnsure1() {
+            AssertOutput(delegate() {
+                CompilerTest(@"
+def foo
+ensure
+  return 1
+end
+
+p foo
+");
+            }, @"1");
+        }
+
         public void Scenario_RubyExceptions_Globals() {
             AssertOutput(delegate() {
                 CompilerTest(@"

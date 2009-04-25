@@ -36,7 +36,7 @@ describe "Array#unshift" do
 
     array = ArraySpecs.recursive_array
     array.unshift(:new)
-    array[0..5].should == [:new, 1, 'two', 3.0, array, array]
+    array[0..4].should == [:new, 1, 'two', 3.0, [array]]
   end
 
   compliant_on :ruby, :jruby, :ir do

@@ -171,22 +171,29 @@ namespace IronPython.Runtime.Types {
                     DefaultBinder.MakeError(
                         binder.MakeContainsGenericParametersError(
                             MemberTracker.FromMemberInfo(_info)
-                        )
+                        ),
+                        typeof(object)
                     )
                 );
             } else if (instance != null) {
                 builder.FinishCondition(
-                    binder.MakeCallExpression(
-                        codeContext,
-                        Getter[0],
-                        instance
+                    AstUtils.Convert(
+                        binder.MakeCallExpression(
+                            codeContext,
+                            Getter[0],
+                            instance
+                        ),
+                        typeof(object)
                     )
                 );
             } else {
                 builder.FinishCondition(
-                    binder.MakeCallExpression(
-                        codeContext,
-                        Getter[0]
+                    AstUtils.Convert(
+                        binder.MakeCallExpression(
+                            codeContext,
+                            Getter[0]
+                        ),
+                        typeof(object)
                     )
                 );                
             }

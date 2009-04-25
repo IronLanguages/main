@@ -19,6 +19,7 @@ using System.Diagnostics;
 using System.Reflection;
 using System.Threading;
 using Microsoft.Scripting.Actions;
+using Microsoft.Scripting.Generation;
 
 namespace Microsoft.Scripting.Runtime {
     /// <summary>
@@ -257,7 +258,9 @@ namespace Microsoft.Scripting.Runtime {
                     continue;
                 }
 
-                yield return GetStackFrame(frame);
+                if (method.DeclaringType != null && Snippets.Shared.IsSnippetsAssembly(method.DeclaringType.Assembly)) {
+                    yield return GetStackFrame(frame);
+                }
             }
         }
 

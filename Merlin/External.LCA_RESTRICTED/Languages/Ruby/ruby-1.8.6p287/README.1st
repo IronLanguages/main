@@ -1,0 +1,35 @@
+The first part of this document is written in English, and the other
+part is written in Japanese (Shift_JIS).
+
+
+* ABOUT THIS DISTRIBUTION
+
+This is a distribution of mswin64_80 binary of ruby.
+You can use/modify/re-distribute this distribution under the term of
+GPL (see GPL file).
+Most of sources of ruby are covered by Ruby's license (see COPYING
+file), but this distribution includes some code and scripts which is
+covered by other licenses (see LEGAL file).
+
+If you have some question about this distribution, please mail to
+<usa@ruby-lang.org> .
+If you need the source code, please mail to me, too.
+
+
+* この配布物について
+
+この配布物はrubyのmswin64_80版バイナリです。
+あなたはこの配布物をGPL(GPLファイルを参照)に従って使用/変更/再配布でき
+ます。
+rubyのほとんどのソースはRubyのライセンス(COPYINGファイルを参照)によって
+配布されていますが、この配布物はそれ以外のライセンス(LEGALファイル参照)
+によるソースから生成されたコードあるいはスクリプトをも含んでいます。
+
+なにか質問があれば <usa@ruby-lang.org> までメールしてください。
+ソースコードの提供を求める場合も同様です。
+
+
+* ドキュメントの文字コードについて
+
+この配布物に含まるファイルのうち、*.jaとなっているものは日本語で書かれ
+ていますが、文字コードはEUC-JPとなっていますので注意してください。

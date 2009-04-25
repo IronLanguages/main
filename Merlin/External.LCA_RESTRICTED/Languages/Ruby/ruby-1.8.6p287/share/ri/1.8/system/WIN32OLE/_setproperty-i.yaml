@@ -1,0 +1,16 @@
+--- !ruby/object:RI::MethodDescription 
+aliases: []
+
+block_params: 
+comment: 
+- !ruby/struct:SM::Flow::P 
+  body: Runs the early binding method to set property. The 1st argument specifies dispatch ID, the 2nd argument specifies the array of arguments, the 3rd argument specifies the array of the type of arguments.
+- !ruby/struct:SM::Flow::VERB 
+  body: "   excel = WIN32OLE.new('Excel.Application')\n   excel._setproperty(558, [true], [WIN32OLE::VARIANT::VT_BOOL]) # same effect as excel.visible = true\n"
+full_name: WIN32OLE#_setproperty
+is_singleton: false
+name: _setproperty
+params: |
+  WIN32OLE#_setproperty(dispid, args, types)
+
+visibility: public

@@ -1,0 +1,16 @@
+--- !ruby/object:RI::MethodDescription 
+aliases: []
+
+block_params: 
+comment: 
+- !ruby/struct:SM::Flow::P 
+  body: Displays helpfile. The 1st argument specifies WIN32OLE_TYPE object or WIN32OLE_METHOD object or helpfile.
+- !ruby/struct:SM::Flow::VERB 
+  body: "   excel = WIN32OLE.new('Excel.Application')\n   typeobj = excel.ole_type\n   WIN32OLE.ole_show_help(typeobj)\n"
+full_name: WIN32OLE::ole_show_help
+is_singleton: true
+name: ole_show_help
+params: |
+  WIN32OLE.ole_show_help(obj [,helpcontext])
+
+visibility: public

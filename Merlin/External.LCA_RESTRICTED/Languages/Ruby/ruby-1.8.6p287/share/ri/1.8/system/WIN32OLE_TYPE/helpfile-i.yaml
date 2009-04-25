@@ -1,0 +1,16 @@
+--- !ruby/object:RI::MethodDescription 
+aliases: []
+
+block_params: 
+comment: 
+- !ruby/struct:SM::Flow::P 
+  body: Returns helpfile path. If helpfile is not found, then returns nil.
+- !ruby/struct:SM::Flow::VERB 
+  body: "   tobj = WIN32OLE_TYPE.new('Microsoft Excel 9.0 Object Library', 'Worksheet')\n   puts tobj.helpfile # =&gt; C:\\...\\VBAXL9.CHM\n"
+full_name: WIN32OLE_TYPE#helpfile
+is_singleton: false
+name: helpfile
+params: |
+  WIN32OLE_TYPE#helpfile
+
+visibility: public

@@ -106,7 +106,7 @@ namespace IronPython.Runtime.Binding {
             return Ast.NotEqual(callAsInt, AstUtils.Constant(0));
         }
 
-        internal static DynamicMetaObject ConvertToIEnumerable(ConvertBinder/*!*/ conversion, DynamicMetaObject/*!*/ metaUserObject) {
+        internal static DynamicMetaObject ConvertToIEnumerable(DynamicMetaObjectBinder/*!*/ conversion, DynamicMetaObject/*!*/ metaUserObject) {
             PythonType pt = MetaPythonObject.GetPythonType(metaUserObject);
             BinderState state = BinderState.GetBinderState(conversion);
             CodeContext context = state.Context;

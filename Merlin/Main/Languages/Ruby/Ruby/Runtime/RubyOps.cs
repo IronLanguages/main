@@ -49,11 +49,10 @@ namespace IronRuby.Runtime {
         #region Scopes
 
         [Emitted]
-        public static RubyScope/*!*/ InitializeScope(RubyScope/*!*/ scope, LocalsDictionary/*!*/ locals) {
+        public static void InitializeScope(RubyScope/*!*/ scope, LocalsDictionary/*!*/ locals) {
             if (scope.Frame == null) {
                 scope.Frame = locals;
             }
-            return scope;
         }
 
         [Emitted]
@@ -1162,19 +1161,6 @@ namespace IronRuby.Runtime {
 
         #region Exceptions
 
-        [Emitted]
-        public static void CheckForAsyncRaiseViaThreadAbort(RubyScope scope, System.Threading.ThreadAbortException exception) {
-            Exception visibleException = RubyUtils.GetVisibleException(exception);
-            if (exception == visibleException || visibleException == null) {
-                return;
-            } else {
-                RubyOps.SetCurrentExceptionAndStackTrace(scope, exception);
-                // We are starting a new exception throw here (with the downside that we will lose the full stack trace)
-                RubyExceptionData.ActiveExceptionHandled(visibleException);
-
-                throw visibleException;
-            }
-        }
         //
         // NOTE:
         // Exception Ops go directly to the current exception object. MRI ignores potential aliases.
@@ -1185,10 +1171,14 @@ namespace IronRuby.Runtime {
             return scope.RubyContext.CurrentException;
         }
 
+        internal static void SetCurrentExceptionAndStackTrace(RubyContext/*!*/ context, Exception/*!*/ exception) {
+            RubyExceptionData.GetInstance(exception).SetCompiledTrace(context);
+            context.CurrentException = exception;
+        }
+
         [Emitted] //Body:
         public static void SetCurrentExceptionAndStackTrace(RubyScope/*!*/ scope, Exception/*!*/ exception) {
-            RubyExceptionData.GetInstance(exception).SetCompiledTrace(scope.RubyContext);
-            scope.RubyContext.CurrentException = exception;
+            SetCurrentExceptionAndStackTrace(scope.RubyContext, exception);
         }
 
         [Emitted] //Body:

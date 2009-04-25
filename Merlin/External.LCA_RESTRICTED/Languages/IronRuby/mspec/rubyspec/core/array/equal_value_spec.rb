@@ -54,15 +54,21 @@ describe "Array#==" do
   ruby_bug "#", "1.8.6.277" do
     it "properly handles recursive arrays" do
       empty = ArraySpecs.empty_recursive_array
-      empty2 = []; empty2 << empty2
+      (empty == empty).should be_true
       (empty == empty.dup).should be_true
+      empty2 = ArraySpecs.empty_recursive_array
       (empty == empty2).should be_false
 
       array = ArraySpecs.recursive_array
       (array == array).should be_true
+      array2 = ArraySpecs.recursive_array
+      (array == array2).should be_false
       (array == array.dup).should be_true
       (array == empty).should be_false
       (array == [1, 2]).should be_false
+      
+      array1, array2 = ArraySpecs.recursive_arrays
+      (array1 == array2).should be_false
     end
   end
 

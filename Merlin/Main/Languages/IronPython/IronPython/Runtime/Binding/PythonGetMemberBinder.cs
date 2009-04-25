@@ -238,7 +238,8 @@ namespace IronPython.Runtime.Binding {
                     BinderState.GetBinderState(action).Binder.MakeMissingMemberError(
                         limitType,
                         name
-                    )
+                    ), 
+                    typeof(object)
                 );
         }
 

@@ -1,0 +1,16 @@
+--- !ruby/object:RI::MethodDescription 
+aliases: []
+
+block_params: 
+comment: 
+- !ruby/struct:SM::Flow::P 
+  body: Returns true if the method is event.
+- !ruby/struct:SM::Flow::VERB 
+  body: "   tobj = WIN32OLE_TYPE.new('Microsoft Excel 9.0 Object Library', 'Workbook')\n   method = WIN32OLE_METHOD.new(tobj, 'SheetActivate')\n   puts method.event? # =&gt; true\n"
+full_name: WIN32OLE_METHOD#event?
+is_singleton: false
+name: event?
+params: |
+  WIN32OLE_METHOD#event?
+
+visibility: public

@@ -1,0 +1,16 @@
+--- !ruby/object:RI::MethodDescription 
+aliases: []
+
+block_params: 
+comment: 
+- !ruby/struct:SM::Flow::P 
+  body: Returns true if argument is output.
+- !ruby/struct:SM::Flow::VERB 
+  body: "   tobj = WIN32OLE_TYPE.new('Microsoft Internet Controls', 'DWebBrowserEvents')\n   method = WIN32OLE_METHOD.new(tobj, 'NewWindow')\n   method.params.each do |param|\n     puts &quot;#{param.name} #{param.output?}&quot;\n   end\n\n   The result of above script is following:\n     URL false\n     Flags false\n     TargetFrameName false\n     PostData false\n     Headers false\n     Processed true\n"
+full_name: WIN32OLE_PARAM#output?
+is_singleton: false
+name: output?
+params: |
+  WIN32OLE#output?
+
+visibility: public

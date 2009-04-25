@@ -442,7 +442,8 @@ namespace IronPython.Runtime.Types {
             
             il.EmitLoadArg(typeArg);
             il.EmitCall(init);
-            
+
+            Debug.Assert(_slotsField != null);
             il.EmitFieldSet(_slotsField);
 
             CallBaseConstructor(parentConstructor, pis, overrideParams, il);
@@ -649,14 +650,13 @@ namespace IronPython.Runtime.Types {
         }
 
         private void ImplementIPythonObject() {
+            ILGen il;
+            MethodInfo decl;
+            MethodBuilder impl;
+
             if (NeedsPythonObject) {
                 _typeField = _tg.DefineField(ClassFieldName, typeof(PythonType), FieldAttributes.Public);
                 _dictField = _tg.DefineField(DictFieldName, typeof(IAttributesCollection), FieldAttributes.Public);
-                _slotsField = _tg.DefineField(SlotsAndWeakRefFieldName, typeof(object[]), FieldAttributes.Public);
-
-                ILGen il;
-                MethodInfo decl;
-                MethodBuilder impl;
 
                 ImplementInterface(typeof(IPythonObject));
 
@@ -696,21 +696,25 @@ namespace IronPython.Runtime.Types {
                 il.EmitFieldSet(_typeField);
                 il.Emit(OpCodes.Ret);
                 _tg.DefineMethodOverride(impl, decl);
-
-                il = DefineMethodOverride(MethodAttributes.Private, typeof(IPythonObject), "GetSlots", out decl, out impl);
-                il.EmitLoadArg(0);
-                il.EmitFieldGet(_slotsField);
-                il.Emit(OpCodes.Ret);
-                _tg.DefineMethodOverride(impl, decl);
-
-                il = DefineMethodOverride(MethodAttributes.Private, typeof(IPythonObject), "GetSlotsCreate", out decl, out impl);
-                il.EmitLoadArg(0);
-                il.EmitLoadArg(0);
-                il.EmitFieldAddress(_slotsField);
-                il.EmitCall(typeof(UserTypeOps).GetMethod("GetSlotsCreate"));
-                il.Emit(OpCodes.Ret);
-                _tg.DefineMethodOverride(impl, decl);
             }
+            
+            // Types w/ DynamicBaseType attribute still need new slots implementation
+
+            _slotsField = _tg.DefineField(SlotsAndWeakRefFieldName, typeof(object[]), FieldAttributes.Public);
+            il = DefineMethodOverride(MethodAttributes.Private, typeof(IPythonObject), "GetSlots", out decl, out impl);
+            il.EmitLoadArg(0);
+            il.EmitFieldGet(_slotsField);
+            il.Emit(OpCodes.Ret);
+            _tg.DefineMethodOverride(impl, decl);
+
+            il = DefineMethodOverride(MethodAttributes.Private, typeof(IPythonObject), "GetSlotsCreate", out decl, out impl);
+            il.EmitLoadArg(0);
+            il.EmitLoadArg(0);
+            il.EmitFieldAddress(_slotsField);
+            il.EmitCall(typeof(UserTypeOps).GetMethod("GetSlotsCreate"));
+            il.Emit(OpCodes.Ret);
+            _tg.DefineMethodOverride(impl, decl);
+
         }
 
         /// <summary>

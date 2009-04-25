@@ -38,6 +38,7 @@ namespace IronPython.Runtime.Binding {
         private bool _testCoercionRecursionCheck;
         private BindingRestrictions/*!*/ _restrictions = BindingRestrictions.Empty;
         private ParameterExpression _compareRetBool;
+        private Type _retType;
 
         public ConditionalBuilder(DynamicMetaObjectBinder/*!*/ action) {
             _action = action;
@@ -74,9 +75,14 @@ namespace IronPython.Runtime.Binding {
         /// Adds the non-conditional terminating node.
         /// </summary>
         public void FinishCondition(Expression/*!*/ body) {
+            FinishCondition(body, typeof(object));
+        }
+
+        public void FinishCondition(Expression/*!*/ body, Type retType) {
             if (_body != null) throw new InvalidOperationException();
 
             _body = body;
+            _retType = retType;
         }
 
         public ParameterExpression CompareRetBool {
@@ -143,15 +149,11 @@ namespace IronPython.Runtime.Binding {
 
             Expression body = _body;
             for (int i = _bodies.Count - 1; i >= 0; i--) {
-                Type t = _bodies[i].Type;
-                Type otherType = body.Type;
-
-                t = BindingHelpers.GetCompatibleType(t, otherType);
 
                 body = Ast.Condition(
                     _conditions[i],
-                    AstUtils.Convert(_bodies[i], t),
-                    AstUtils.Convert(body, t)
+                    AstUtils.Convert(_bodies[i], _retType),
+                    AstUtils.Convert(body, _retType)
                 );
             }
 

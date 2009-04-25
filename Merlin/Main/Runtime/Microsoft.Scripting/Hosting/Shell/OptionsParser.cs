@@ -215,11 +215,6 @@ namespace Microsoft.Scripting.Hosting.Shell {
                 case "-X:Interpret":
                     LanguageSetup.Options["InterpretedMode"] = ScriptingRuntimeHelpers.True;
                     break;
-
-                // Depending on the language, it can either be on or off by default.
-                case "-X:AdaptiveCompilation":                
-                    LanguageSetup.Options["AdaptiveCompilation"] = true;
-                    break;
                 
                 case "-X:NoAdaptiveCompilation":
                     LanguageSetup.Options["AdaptiveCompilation"] = false;
@@ -227,7 +222,9 @@ namespace Microsoft.Scripting.Hosting.Shell {
 
                 case "-X:ExceptionDetail":
                 case "-X:ShowClrExceptions":
+#if DEBUG
                 case "-X:PerfStats":
+#endif
                     // TODO: separate options dictionary?
                     LanguageSetup.Options[arg.Substring(3)] = ScriptingRuntimeHelpers.True; 
                     break;
@@ -273,10 +270,9 @@ namespace Microsoft.Scripting.Hosting.Shell {
                 { "-V",                          "Print the version number and exit" },
                 { "-D",                          "Enable application debugging" },
 
-                { "-X:AutoIndent",               "" },
+                { "-X:AutoIndent",               "Enable auto-indenting in the REPL loop" },
                 { "-X:ExceptionDetail",          "Enable ExceptionDetail mode" },
-                { "-X:AdaptiveCompilation",      "Enable adaptive compilation" },
-                { "-X:MaxRecursion",             "Set the maximum recursion level" },
+                { "-X:NoAdaptiveCompilation",    "Disable adaptive compilation" },
                 { "-X:PassExceptions",           "Do not catch exceptions that are unhandled by script code" },
                 { "-X:PrivateBinding",           "Enable binding to private members" },
                 { "-X:ShowClrExceptions",        "Display CLS Exception information" },
@@ -286,9 +282,10 @@ namespace Microsoft.Scripting.Hosting.Shell {
                 { "-X:ColorfulConsole",          "Enable ColorfulConsole" },
 #endif
 #if DEBUG
-                { "-X:AssembliesDir <dir>",      "Set the directory for saving generated assemblies" },
-                { "-X:SaveAssemblies",           "Save generated assemblies" },
-                { "-X:TrackPerformance",         "Track performance sensitive areas" },
+                { "-X:AssembliesDir <dir>",      "Set the directory for saving generated assemblies [debug only]" },
+                { "-X:SaveAssemblies",           "Save generated assemblies [debug only]" },
+                { "-X:TrackPerformance",         "Track performance sensitive areas [debug only]" },
+                { "-X:PerfStats",                "Print performance stats when the process exists [debug only]" },
 #if !SILVERLIGHT // Remote console
                 { Remote.RemoteRuntimeServer.RemoteRuntimeArg + " <channel_name>", 
                                                  "Start a remoting server for a remote console session." },

@@ -89,7 +89,7 @@ namespace IronPython.Runtime {
 
         private CallSite<Func<CallSite, object, object, int>> _compareSite;
         private Dictionary<AttrKey, CallSite<Func<CallSite, object, object, object>>> _setAttrSites;
-        private Dictionary<AttrKey, CallSite<Func<CallSite, object, object>>> _deleteAttrSites;
+        private Dictionary<AttrKey, CallSite<Action<CallSite, object>>> _deleteAttrSites;
         private CallSite<Func<CallSite, CodeContext, object, string, PythonTuple, IAttributesCollection, object>> _metaClassSite;
         private CallSite<Func<CallSite, CodeContext, object, string, object>> _writeSite;
         private CallSite<Func<CallSite, object, object, object>> _getIndexSite, _equalSite, _delIndexSite;
@@ -1196,8 +1196,6 @@ namespace IronPython.Runtime {
                 string str = pythonException as string;
                 if (str != null) {
                     result += str;
-                } else if (pythonException is StringException) {
-                    result += pythonException.ToString();
                 } else {
                     result += GetPythonExceptionClassName(pythonException);
 
@@ -1735,7 +1733,7 @@ namespace IronPython.Runtime {
         #region Object Operations
 
         public override ConvertBinder/*!*/ CreateConvertBinder(Type/*!*/ toType, bool explicitCast) {
-            return DefaultBinderState.Convert(toType, explicitCast ? ConversionResultKind.ExplicitCast : ConversionResultKind.ImplicitCast);
+            return DefaultBinderState.CompatConvert(toType, explicitCast);
         }
 
         public override DeleteMemberBinder/*!*/ CreateDeleteMemberBinder(string/*!*/ name, bool ignoreCase) {
@@ -1946,13 +1944,13 @@ namespace IronPython.Runtime {
             AttrKey key = new AttrKey(CompilerHelpers.GetType(o), name);
 
             if (_deleteAttrSites == null) {
-                Interlocked.CompareExchange(ref _deleteAttrSites, new Dictionary<AttrKey, CallSite<Func<CallSite, object, object>>>(), null);
+                Interlocked.CompareExchange(ref _deleteAttrSites, new Dictionary<AttrKey, CallSite<Action<CallSite, object>>>(), null);
             }
 
-            CallSite<Func<CallSite, object, object>> site;
+            CallSite<Action<CallSite, object>> site;
             lock (_deleteAttrSites) {
                 if (!_deleteAttrSites.TryGetValue(key, out site)) {
-                    _deleteAttrSites[key] = site = CallSite<Func<CallSite, object, object>>.Create(
+                    _deleteAttrSites[key] = site = CallSite<Action<CallSite, object>>.Create(
                         DefaultBinderState.DeleteMember(SymbolTable.IdToString(name))
                     );
                 }
@@ -2307,6 +2305,7 @@ namespace IronPython.Runtime {
             return site.Target(site, value);
         }
 
+
         /*
                 public static String ConvertToString(object value) { return _stringSite.Invoke(DefaultContext.Default, value); }
                 public static BigInteger ConvertToBigInteger(object value) { return _bigIntSite.Invoke(DefaultContext.Default, value); }
@@ -2321,7 +2320,7 @@ namespace IronPython.Runtime {
 
         private CallSite<Func<CallSite, object, object>> MakeImplicitConvertSite<T>() {
             return CallSite<Func<CallSite, object, object>>.Create(
-                DefaultBinderState.Convert(
+                DefaultBinderState.ConvertRetObject(
                     typeof(T),
                     ConversionResultKind.ImplicitCast
                 )
@@ -2764,11 +2763,7 @@ namespace IronPython.Runtime {
             private CallSite<Func<CallSite, object, object, int>> _site;
             public DefaultPythonComparer(PythonContext context) {
                 _site = CallSite<Func<CallSite, object, object, int>>.Create(
-                    Binders.BinaryOperationRetType(
-                        context.DefaultBinderState,
-                        PythonOperationKind.Compare,
-                        typeof(int)
-                    )
+                    context.DefaultBinderState.Operation(PythonOperationKind.Compare)
                 );
             }
 

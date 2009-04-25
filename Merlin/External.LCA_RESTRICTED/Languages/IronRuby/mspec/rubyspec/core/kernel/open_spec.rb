@@ -33,12 +33,12 @@ describe "Kernel#open" do
   end
   
   it "sets permissions of newly created file" do
-	open(@newfile, "w", 0444){ }
+    open(@newfile, "w", 0444){ }
     File.writable?(@newfile).should be_false
   end
   
   it "sets the file as writable if perm is nil" do
-	open(@newfile, "w", nil){ }
+    open(@newfile, "w", nil){ }
     File.writable?(@newfile).should be_true
   end
   

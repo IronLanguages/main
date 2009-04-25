@@ -27,7 +27,7 @@ describe "Array#shift" do
 
     array = ArraySpecs.recursive_array
     array.shift.should == 1
-    array[0..2].should == ['two', 3.0, array]
+    array[0..2].should == ['two', 3.0, [array]]
   end
 
   compliant_on :ruby, :jruby, :ir do

@@ -1,0 +1,16 @@
+--- !ruby/object:RI::MethodDescription 
+aliases: []
+
+block_params: 
+comment: 
+- !ruby/struct:SM::Flow::P 
+  body: Returns the array of WIN32OLE_METHOD object . The element of the array is functional method of WIN32OLE object.
+- !ruby/struct:SM::Flow::VERB 
+  body: "   excel = WIN32OLE.new('Excel.Application')\n   properties = excel.ole_func_methods\n"
+full_name: WIN32OLE#ole_func_methods
+is_singleton: false
+name: ole_func_methods
+params: |
+  WIN32OLE#ole_func_methods
+
+visibility: public

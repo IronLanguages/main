@@ -797,7 +797,7 @@ namespace System.Linq.Expressions {
 
         private static void ValidateCallInstanceType(Type instanceType, MethodInfo method) {
             if (!TypeUtils.IsValidInstanceType(method, instanceType)) {
-                throw Error.MethodNotDefinedForType(method, instanceType);
+                throw Error.InstanceAndMethodTypeMismatch(method, method.DeclaringType, instanceType);
             }
         }
 

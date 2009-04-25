@@ -46,7 +46,7 @@ namespace System.Linq.Expressions.Compiler {
         private static CompilationFlags UpdateEmitAsTailCallFlag(CompilationFlags flags, CompilationFlags newValue) {
             Debug.Assert(newValue == CompilationFlags.EmitAsTail || newValue == CompilationFlags.EmitAsMiddle || newValue == CompilationFlags.EmitAsNoTail);
             var oldValue = flags & CompilationFlags.EmitAsTailCallMask;
-            return flags ^ oldValue | newValue; 
+            return flags ^ oldValue | newValue;
         }
 
         /// <summary>
@@ -256,7 +256,7 @@ namespace System.Linq.Expressions.Compiler {
             EmitSetIndexCall(index, objectType);
 
             // Restore the value
-            if (emitAs !=  CompilationFlags.EmitAsVoidType) {
+            if (emitAs != CompilationFlags.EmitAsVoidType) {
                 _ilg.Emit(OpCodes.Ldloc, temp);
                 FreeLocal(temp);
             }
@@ -316,7 +316,7 @@ namespace System.Linq.Expressions.Compiler {
             }
             // if the obj has a value type, its address is passed to the method call so we cannot destroy the 
             // stack by emitting a tail call
-            if (obj!= null && obj.Type.IsValueType) {
+            if (obj != null && obj.Type.IsValueType) {
                 EmitMethodCall(method, methodCallExpr, objectType);
             } else {
                 EmitMethodCall(method, methodCallExpr, objectType, flags);
@@ -359,7 +359,7 @@ namespace System.Linq.Expressions.Compiler {
         }
 
         private static bool MethodHasByRefParameter(MethodInfo mi) {
-            foreach (var pi in mi.GetParametersCached()){
+            foreach (var pi in mi.GetParametersCached()) {
                 if (pi.IsByRefParameter()) {
                     return true;
                 }
@@ -796,11 +796,7 @@ namespace System.Linq.Expressions.Compiler {
             } else {
                 EmitMemberGet(binding.Member, binding.Member.DeclaringType);
             }
-            if (binding.Bindings.Count == 0) {
-                _ilg.Emit(OpCodes.Pop);
-            } else {
-                EmitMemberInit(binding.Bindings, false, type);
-            }
+            EmitMemberInit(binding.Bindings, false, type);
         }
 
         private void EmitMemberListBinding(MemberListBinding binding) {
@@ -830,12 +826,22 @@ namespace System.Linq.Expressions.Compiler {
             }
         }
 
+        // This method assumes that the instance is on the stack and is expected, based on "keepOnStack" flag
+        // to either leave the instance on the stack, or pop it.
         private void EmitMemberInit(ReadOnlyCollection<MemberBinding> bindings, bool keepOnStack, Type objectType) {
-            for (int i = 0, n = bindings.Count; i < n; i++) {
-                if (keepOnStack || i < n - 1) {
-                    _ilg.Emit(OpCodes.Dup);
+            int n = bindings.Count;
+            if (n == 0) {
+                // If there are no initializers and instance is not to be kept on the stack, we must pop explicitly.
+                if (!keepOnStack) {
+                    _ilg.Emit(OpCodes.Pop);
                 }
-                EmitBinding(bindings[i], objectType);
+            } else {
+                for (int i = 0; i < n; i++) {
+                    if (keepOnStack || i < n - 1) {
+                        _ilg.Emit(OpCodes.Dup);
+                    }
+                    EmitBinding(bindings[i], objectType);
+                }
             }
         }
 
@@ -853,16 +859,27 @@ namespace System.Linq.Expressions.Compiler {
             }
         }
 
+        // This method assumes that the list instance is on the stack and is expected, based on "keepOnStack" flag
+        // to either leave the list instance on the stack, or pop it.
         private void EmitListInit(ReadOnlyCollection<ElementInit> initializers, bool keepOnStack, Type objectType) {
-            for (int i = 0, n = initializers.Count; i < n; i++) {
-                if (keepOnStack || i < n - 1) {
-                    _ilg.Emit(OpCodes.Dup);
-                }
-                EmitMethodCall(initializers[i].AddMethod, initializers[i], objectType);
+            int n = initializers.Count;
 
-                // Aome add methods, ArrayList.Add for example, return non-void
-                if (initializers[i].AddMethod.ReturnType != typeof(void)) {
+            if (n == 0) {
+                // If there are no initializers and instance is not to be kept on the stack, we must pop explicitly.
+                if (!keepOnStack) {
                     _ilg.Emit(OpCodes.Pop);
+                }
+            } else {
+                for (int i = 0; i < n; i++) {
+                    if (keepOnStack || i < n - 1) {
+                        _ilg.Emit(OpCodes.Dup);
+                    }
+                    EmitMethodCall(initializers[i].AddMethod, initializers[i], objectType);
+
+                    // Aome add methods, ArrayList.Add for example, return non-void
+                    if (initializers[i].AddMethod.ReturnType != typeof(void)) {
+                        _ilg.Emit(OpCodes.Pop);
+                    }
                 }
             }
         }

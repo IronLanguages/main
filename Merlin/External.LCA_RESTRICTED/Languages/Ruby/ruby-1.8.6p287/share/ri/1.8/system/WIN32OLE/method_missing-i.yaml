@@ -1,0 +1,14 @@
+--- !ruby/object:RI::MethodDescription 
+aliases: []
+
+block_params: 
+comment: 
+- !ruby/struct:SM::Flow::P 
+  body: Calls WIN32OLE#invoke method.
+full_name: WIN32OLE#method_missing
+is_singleton: false
+name: method_missing
+params: |
+  WIN32OLE#method_missing(id [,arg1, arg2, ...])
+
+visibility: public

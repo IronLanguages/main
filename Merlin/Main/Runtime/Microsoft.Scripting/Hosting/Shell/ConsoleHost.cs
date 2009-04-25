@@ -383,31 +383,35 @@ namespace Microsoft.Scripting.Hosting.Shell {
                 _console = CreateConsole(Engine, _commandLine, consoleOptions);
             }
 
-            int exitCode = 0;
+            int? exitCodeOverride = null;
+
             try {
                 if (consoleOptions.HandleExceptions) {
                     try {
-                        exitCode = _commandLine.Run(Engine, _console, consoleOptions);
+                        _commandLine.Run(Engine, _console, consoleOptions);
                     } catch (Exception e) {
                         if (CommandLine.IsFatalException(e)) {
                             // Some exceptions are too dangerous to try to catch
                             throw;
                         }
                         UnhandledException(Engine, e);
-                        exitCode = 1;
                     }
                 } else {
-                    exitCode = _commandLine.Run(Engine, _console, consoleOptions);
+                    _commandLine.Run(Engine, _console, consoleOptions);
                 }
             } finally {
                 try {
                     Snippets.SaveAndVerifyAssemblies();
                 } catch (Exception) {
-                    exitCode = 1;
+                    exitCodeOverride = 1;
                 }
             }
 
-            return exitCode;
+            if (exitCodeOverride == null) {
+                return _commandLine.ExitCode;
+            } else {
+                return exitCodeOverride.Value;
+            }
         }
 
         private void PrintUsage()

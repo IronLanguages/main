@@ -1,0 +1,17 @@
+--- !ruby/object:RI::MethodDescription 
+aliases: 
+- !ruby/object:RI::AliasName 
+  name: to_s
+block_params: 
+comment: 
+- !ruby/struct:SM::Flow::P 
+  body: Returns OLE type name.
+- !ruby/struct:SM::Flow::VERB 
+  body: "   tobj = WIN32OLE_TYPE.new('Microsoft Excel 9.0 Object Library', 'Application')\n   puts tobj.name  # =&gt; Application\n"
+full_name: WIN32OLE_TYPE#name
+is_singleton: false
+name: name
+params: |
+  WIN32OLE_TYPE#name #=> OLE type name
+
+visibility: public

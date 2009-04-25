@@ -1,0 +1,16 @@
+--- !ruby/object:RI::MethodDescription 
+aliases: []
+
+block_params: 
+comment: 
+- !ruby/struct:SM::Flow::P 
+  body: Runs the early binding method. The 1st argument specifies dispatch ID, the 2nd argument specifies the array of arguments, the 3rd argument specifies the array of the type of arguments.
+- !ruby/struct:SM::Flow::VERB 
+  body: "   excel = WIN32OLE.new('Excel.Application')\n   excel._invoke(302, [], []) #  same effect as excel.Quit\n"
+full_name: WIN32OLE#_invoke
+is_singleton: false
+name: _invoke
+params: |
+  WIN32OLE#_invoke(dispid, args, types)
+
+visibility: public
