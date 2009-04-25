@@ -6741,6 +6741,14 @@ namespace IronRuby.StandardLibrary.OpenSsl {
         }
         
         private static void LoadOpenSSL__Random_Class(IronRuby.Builtins.RubyModule/*!*/ module) {
+            module.DefineLibraryMethod("pseudo_bytes", 0x21, 
+                new System.Func<IronRuby.Builtins.RubyModule, System.Int32, IronRuby.Builtins.MutableString>(IronRuby.StandardLibrary.OpenSsl.OpenSsl.RandomModule.RandomBytes)
+            );
+            
+            module.DefineLibraryMethod("random_bytes", 0x21, 
+                new System.Func<IronRuby.Builtins.RubyModule, System.Int32, IronRuby.Builtins.MutableString>(IronRuby.StandardLibrary.OpenSsl.OpenSsl.RandomModule.RandomBytes)
+            );
+            
             module.DefineLibraryMethod("seed", 0x21, 
                 new System.Func<IronRuby.Builtins.RubyModule, IronRuby.Builtins.MutableString, IronRuby.Builtins.MutableString>(IronRuby.StandardLibrary.OpenSsl.OpenSsl.RandomModule.Seed)
             );
