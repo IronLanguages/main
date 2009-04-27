@@ -28,6 +28,7 @@ namespace IronRuby.Rack {
         private static FileStream _logStream;
         
         internal const string LogOptionName = "Log";
+        internal const string AppRootOptionName = "AppRoot";
 
         internal static string FindFile(string file, ScriptEngine rubyEngine) {
             foreach (var path in rubyEngine.GetSearchPaths()) {
@@ -91,6 +92,23 @@ namespace IronRuby.Rack {
                 _logStream = File.Open(logPath, FileMode.Append, FileAccess.Write, FileShare.ReadWrite);
                 _LogWriter = new StreamWriter(_logStream);
             }
+        }
+        
+        internal static string/*!*/ GetAppRoot(HttpContext/*!*/ context) {
+            var root = ConfigurationManager.AppSettings[AppRootOptionName];
+            if (root == null) {
+                root = context.Request.PhysicalApplicationPath;
+            } else {
+                if (!Path.IsPathRooted(root)) {
+                    root = Path.Combine(context.Request.PhysicalApplicationPath, root);
+                }
+                if (!Directory.Exists(root)) {
+                    throw new ConfigurationErrorsException(String.Format(
+                        "Directory '{0}' specified by '{1}' setting in configuration doesn't exist",
+                        root, Utils.AppRootOptionName));
+                }
+            }
+            return root;
         }
 
         public static void Log(string/*!*/ message) {

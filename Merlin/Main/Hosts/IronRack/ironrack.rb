@@ -1,12 +1,6 @@
 require 'rubygems'
 require 'rack'
 
-$app = Rack::Builder.new do
-  # config.ru
-  require 'myapp'
-  run MyApp.new
-end
+$LOAD_PATH.unshift APP_ROOT
 
-if __FILE__ == $0
-  load 'run.rb'
-end
+$app = eval "Rack::Builder.new { #{File.read APP_ROOT + '/config.ru'} }"

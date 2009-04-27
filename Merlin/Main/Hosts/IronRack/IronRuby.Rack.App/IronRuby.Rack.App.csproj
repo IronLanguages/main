@@ -70,6 +70,10 @@
       <Name>IronRuby.Rack</Name>
     </ProjectReference>
   </ItemGroup>
+  <ItemGroup>
+    <None Include="config.ru" />
+    <None Include="test_rack.rb" />
+  </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <!-- Import the version VS laid down or the one with the samples -->
   <Import Condition="'$(BuildingInsideVisualStudio)'=='true'" Project="$(MSBuildExtensionsPath)\Microsoft\VisualStudio\v9.0\WebApplications\Microsoft.WebApplication.targets" />
