@@ -31,7 +31,10 @@ describe "File.expand_path" do
   platform_is_not :windows do
     it "converts a pathname with trailing . to an absolute pathname, Ruby-Talk:18512 " do
       File.expand_path('a.').should == File.join(@base, 'a.')
+      File.expand_path('.a').should == File.join(@base, '.a')
       File.expand_path('a..').should == File.join(@base, 'a..')
+      File.expand_path('..a').should == File.join(@base, '..a')
+      File.expand_path('a../b').should == File.join(@base, 'a../b')
     end
   end
 
@@ -139,5 +142,9 @@ describe "File.expand_path" do
     lambda { File.expand_path(1)    }.should raise_error(TypeError)
     lambda { File.expand_path(nil)  }.should raise_error(TypeError)
     lambda { File.expand_path(true) }.should raise_error(TypeError)
+  end
+
+  it "expands /./dir to /dir" do
+    File.expand_path("/./dir").should == "/dir"
   end
 end

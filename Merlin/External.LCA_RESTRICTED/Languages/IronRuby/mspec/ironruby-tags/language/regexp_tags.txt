@@ -1,8 +1,7 @@
-fails:Literal Regexps throws NoMethodError on missing to_s
+critical:Literal Regexps throws NoMethodError on missing to_s
 fails:Literal Regexps does not treat {m,n}+ as possessive
-fails:Literal Regexps does not treat {m,n}+ as possessive
-fails:Literal Regexps does not match ^ after trailing \n
-fails:Literal Regexps does not match ^ after trailing \n
-fails:Literal Regexps supports /e
-fails:Literal Regexps supports /u
 fails:Literal Regexps invokes substitutions for /o only once
+fails:Literal Regexps supports /e (EUC encoding)
+fails:Literal Regexps supports /u (UTF8 encoding)
+fails:Literal Regexps will not clobber capture variables across threads
+fails:Literal Regexps does not match ^ after trailing

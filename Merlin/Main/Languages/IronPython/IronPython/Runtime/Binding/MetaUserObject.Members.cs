@@ -848,7 +848,7 @@ namespace IronPython.Runtime.Binding {
 
             protected override SetMemberDelegates<TValue> Finish() {
                 if (_unsupported) {
-                    return null;
+                    return new SetMemberDelegates<TValue>(_context, OptimizedSetKind.None, _site, SymbolTable.StringToId(_binder.Name), _version, _setattrSlot, null);
                 } else if (_setattrSlot != null) {
                     return new SetMemberDelegates<TValue>(_context, OptimizedSetKind.SetAttr, _site, SymbolTable.StringToId(_binder.Name), _version, _setattrSlot, null);
                 } else if (_slotProp != null) {
@@ -871,7 +871,7 @@ namespace IronPython.Runtime.Binding {
                     }
                 }
 
-                if (dlg != null && dlg.ShouldUseNonOptimizedSite) {
+                if (dlg.ShouldUseNonOptimizedSite) {
                     return new FastBindResult<Func<CallSite, object, TValue, object>>((Func<CallSite, object, TValue, object>)(object)dlg._func, false);
                 }
                 return new FastBindResult<Func<CallSite, object, TValue, object>>();

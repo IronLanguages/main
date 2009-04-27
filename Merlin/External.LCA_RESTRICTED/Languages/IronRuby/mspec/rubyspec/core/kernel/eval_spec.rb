@@ -12,7 +12,7 @@ A.new.c
 
 describe "Kernel#eval" do
   it "is a private method" do
-    Kernel.private_instance_methods.should include("eval")
+    Kernel.should have_private_instance_method(:eval)
   end
 
   it "is a module function" do
@@ -147,6 +147,15 @@ describe "Kernel#eval" do
     class Object
       remove_const :Const
     end
+  end
+
+  it "uses the filename of the binding if none is provided" do
+    eval("__FILE__").should == "(eval)"
+    eval("__FILE__", binding).should == __FILE__
+    eval("__FILE__", binding, "success").should == "success"
+    eval("eval '__FILE__', binding").should == "(eval)"
+    eval("eval '__FILE__', binding", binding).should == __FILE__
+    eval("eval '__FILE__', binding", binding, 'success').should == 'success'
   end
 end
 

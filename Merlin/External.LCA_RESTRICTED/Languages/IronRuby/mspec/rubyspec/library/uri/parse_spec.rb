@@ -54,8 +54,7 @@ describe "URI.parse" do
     URI.parse("https://example.com/").port.should == 443
   end
 
-  compliant_on :ruby do
-  ruby_version_is "".."1.8.5" do
+  ruby_version_is "".."1.8.6" do
     it "populates the components of a parsed URI::FTP object" do
       # generic, empty password.
       url = URI.parse("ftp://anonymous@ruby-lang.org/pub/ruby/1.8/ruby-1.8.6.tar.bz2;type=i")
@@ -96,9 +95,8 @@ describe "URI.parse" do
 
     end
   end
-  end
 
-  ruby_bug "", "1.8.5" do
+  ruby_version_is "1.8.7".."" do
     it "populates the components of a parsed URI::FTP object" do
       # generic, empty password.
       url = URI.parse("ftp://anonymous@ruby-lang.org/pub/ruby/1.8/ruby-1.8.6.tar.bz2;type=i")

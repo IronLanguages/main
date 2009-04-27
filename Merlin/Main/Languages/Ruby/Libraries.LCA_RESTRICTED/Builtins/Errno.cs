@@ -70,7 +70,7 @@ namespace IronRuby.Builtins {
         public class InvalidErrorOps {
             [RubyConstructor]
             public static InvalidError/*!*/ Create(RubyClass/*!*/ self, [DefaultProtocol, DefaultParameterValue(null)]MutableString message) {
-                InvalidError result = new InvalidError(RubyErrno.MakeMessage(ref message, "File exists"));
+                InvalidError result = new InvalidError(RubyErrno.MakeMessage(ref message, "Invalid Argument"));
                 RubyExceptionData.InitializeException(result, message);
                 return result;
             }
@@ -106,11 +106,26 @@ namespace IronRuby.Builtins {
             }
         }
 
-        [RubyClass("EEXIST", Extends = typeof(ExistError), Inherits = typeof(ExternalException))]
+        [RubyClass("ECHILD"), Serializable]
+        public class ChildError : ExternalException {
+            private const string/*!*/ M = "No child processes";
+
+            public ChildError() : this(null, null) { }
+            public ChildError(string message) : this(message, null) { }
+            public ChildError(string message, Exception inner) : base(RubyErrno.MakeMessage(message, M), inner) { }
+            public ChildError(MutableString message) : base(RubyErrno.MakeMessage(ref message, M)) { RubyExceptionData.InitializeException(this, message); }
+
+#if !SILVERLIGHT
+            protected ChildError(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context)
+                : base(info, context) { }
+#endif
+        }
+
+        [RubyClass("EEXIST", Extends=typeof(ExistError), Inherits=typeof(ExternalException))]
         public class ExistErrorOps {
             [RubyConstructor]
             public static ExistError/*!*/ Create(RubyClass/*!*/ self, [DefaultProtocol, DefaultParameterValue(null)]MutableString message) {
-                ExistError result = new ExistError(RubyErrno.MakeMessage(ref message, "No such file or directory"));
+                ExistError result = new ExistError(RubyErrno.MakeMessage(ref message, "File exists"));
                 RubyExceptionData.InitializeException(result, message);
                 return result;
             }

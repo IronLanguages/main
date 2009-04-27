@@ -1,6 +1,5 @@
 fails:IO#readlines when passed no arguments updates self's position
 fails:IO#readlines when passed no arguments returns an empty Array when self is at the end
-fails:IO#readlines when passed [seperator] returns an empty Array when self is at the end
-fails:IO#readlines when passed [seperator] updates self's position based on the number of characters read
+fails:IO#readlines when passed [separator] returns an empty Array when self is at the end
+fails:IO#readlines when passed [separator] updates self's position based on the number of characters read
 fails:IO#readlines when in write-only mode raises an IOError
-fails:IO.readlines when passed [file_name] raises an Errno::ENOENT error when the passed file_name does not exist

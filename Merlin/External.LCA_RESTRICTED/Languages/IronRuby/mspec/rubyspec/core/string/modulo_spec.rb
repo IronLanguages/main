@@ -177,21 +177,12 @@ describe "String#%" do
     ("%*1$2$d" % [10, 5]).should == ("%2$*1$d" % [10, 5])
     ("%*1$.*2$3$d" % [10, 5, 1]).should == ("%3$*1$.*2$d" % [10, 5, 1])
   end
-  
   it "calls to_int on width star and precision star tokens" do
     w = mock('10')
-    def w.to_int() 10 end
-    p = mock('5')
-    def p.to_int() 5 end
+    w.should_receive(:to_int).and_return(10)
 
-    ("%*.*f" % [w, p, 1]).should == "   1.00000"
-
-    w = mock('10')
-    w.should_receive(:respond_to?).with(:to_int).any_number_of_times.and_return(true)
-    w.should_receive(:method_missing).with(:to_int).and_return(10)
     p = mock('5')
-    p.should_receive(:respond_to?).with(:to_int).any_number_of_times.and_return(true)
-    p.should_receive(:method_missing).with(:to_int).and_return(5)
+    p.should_receive(:to_int).and_return(5)
 
     ("%*.*f" % [w, p, 1]).should == "   1.00000"
   end
@@ -308,23 +299,13 @@ describe "String#%" do
       obj = mock('65')
       obj.should_receive(:to_ary).and_return([65])
       ("%c" % obj).should == ("%c" % [65])
-
-      obj = mock('65')
-      obj.should_receive(:respond_to?).with(:to_ary).any_number_of_times.and_return(true)
-      obj.should_receive(:method_missing).with(:to_ary).and_return([65])
-      ("%c" % obj).should == "A"
     end
 
     it "calls #to_int on argument for %c formats, if the argument does not respond to #to_ary" do
       obj = mock('65')
-      def obj.to_int() 65 end
-      ("%c" % obj).should == ("%c" % obj.to_int)
+      obj.should_receive(:to_int).and_return(65)
 
-      obj = mock('65')
-      obj.should_receive(:respond_to?).with(:to_ary).and_return(false)
-      obj.should_receive(:respond_to?).with(:to_int).any_number_of_times.and_return(true)
-      obj.should_receive(:method_missing).with(:to_int).and_return(65)
-      ("%c" % obj).should == "A"
+      ("%c" % obj).should == ("%c" % 65)
     end
   end
 
@@ -362,7 +343,7 @@ describe "String#%" do
     ("%2.0f" % float).should == "79"
   end
 
-  compliant_on :ruby do
+  not_compliant_on :rubinius, :jruby do
     it "supports float formats using %e, and downcases -Inf, Inf, and NaN" do
       ("%e" % 1e1020).should == "inf"
       ("%e" % -1e1020).should == "-inf"
@@ -406,7 +387,7 @@ describe "String#%" do
     ("%*E" % [10, 9]).should == "9.000000E+00"
   end
 
-  compliant_on :ruby do
+  not_compliant_on :rubinius, :jruby do
     it "supports float formats using %E, and upcases Inf, -Inf, and NaN" do
       ("%E" % 1e1020).should == "INF"
       ("%E" % -1e1020).should == "-INF"
@@ -566,27 +547,33 @@ describe "String#%" do
     ("%-7u" % 10).should == "10     "
     ("%04u" % 10).should == "0010"
     ("%*u" % [10, 4]).should == "         4"
-
-  platform_is :wordsize => 64 do
-    ("%u" % -5).should == "..#{2**64 - 5}"
-    ("%0u" % -5).should == (2**64 - 5).to_s
-    ("%.1u" % -5).should == (2**64 - 5).to_s
-    ("%.7u" % -5).should == (2**64 - 5).to_s
-    ("%.10u" % -5).should == (2**64 - 5).to_s
   end
 
-  platform_is_not :wordsize => 64 do
-    ("%u" % -5).should == "..#{2**32 - 5}"
-    ("%0u" % -5).should == (2**32 - 5).to_s
-    ("%.1u" % -5).should == (2**32 - 5).to_s
-    ("%.7u" % -5).should == (2**32 - 5).to_s
-    ("%.10u" % -5).should == (2**32 - 5).to_s
-  end
-
-    deviates_on :ruby do
-      ("% u" % -26).should == "-26"
-      ("%+u" % -26).should == "-26"
+  ruby_version_is "" ... "1.9" do
+    platform_is :wordsize => 64 do
+      it "supports unsigned formats using %u on 64-bit" do
+        ("%u" % -5).should == "..#{2**64 - 5}"
+        ("%0u" % -5).should == (2**64 - 5).to_s
+        ("%.1u" % -5).should == (2**64 - 5).to_s
+        ("%.7u" % -5).should == (2**64 - 5).to_s
+        ("%.10u" % -5).should == (2**64 - 5).to_s
+      end
     end
+
+    platform_is :wordsize => 32 do
+      it "supports unsigned formats using %u on 32-bit" do
+        ("%u" % -5).should == "..#{2**32 - 5}"
+        ("%0u" % -5).should == (2**32 - 5).to_s
+        ("%.1u" % -5).should == (2**32 - 5).to_s
+        ("%.7u" % -5).should == (2**32 - 5).to_s
+        ("%.10u" % -5).should == (2**32 - 5).to_s
+      end
+    end
+  end
+
+  it "formats negative values with a leading sign using %u" do
+    ("% u" % -26).should == "-26"
+    ("%+u" % -26).should == "-26"
   end
 
   not_compliant_on :rubinius do
@@ -648,6 +635,26 @@ describe "String#%" do
     ("%X" % -(2 ** 64 + 5)).should == "..FEFFFFFFFFFFFFFFFB"
   end
 
+  ruby_version_is "1.9" do
+    it 'formats zero without prefix using %#x' do
+      ("%#x" % 0).should == "0"
+    end
+
+    it 'formats zero without prefix using %#X' do
+      ("%#X" % 0).should == "0"
+    end
+  end
+
+  ruby_version_is "" ... "1.9" do
+    it 'formats zero with prefix using %#x' do
+      ("%#x" % 0).should == "0x0"
+    end
+
+    it 'formats zero without prefix using %#X' do
+      ("%#X" % 0).should == "0X0"
+    end
+  end
+
   %w(b d i o u x X).each do |f|
     format = "%" + f
 
@@ -676,34 +683,10 @@ describe "String#%" do
       obj.should_receive(:to_i).and_return(5)
       (format % obj).should == (format % 5)
 
-      obj = mock('5')
-      obj.should_receive(:to_int).and_return(5)
-      (format % obj).should == (format % 5)
-
-      obj = mock('4')
-      def obj.to_int() 4 end
-      def obj.to_i() 0 end
-      (format % obj).should == (format % 4)
-
-      obj = mock('65')
-      obj.should_receive(:respond_to?).with(:to_ary).any_number_of_times.and_return(false)
-      obj.should_receive(:respond_to?).with(:to_int).any_number_of_times.and_return(true)
-      obj.should_receive(:method_missing).with(:to_int).and_return(65)
-      (format % obj).should == (format % 65)
-
-      obj = mock('65')
-      obj.should_receive(:respond_to?).with(:to_ary).any_number_of_times.and_return(false)
-      obj.should_receive(:respond_to?).with(:to_int).any_number_of_times.and_return(false)
-      obj.should_receive(:respond_to?).with(:to_i).any_number_of_times.and_return(true)
-      obj.should_receive(:method_missing).with(:to_i).any_number_of_times.and_return(65)
-      (format % obj).should == (format % 65)
-
-      obj = mock('4')
-      def obj.respond_to?(arg) [:to_i, :to_int].include?(arg) end
-      def obj.method_missing(name, *args)
-        name == :to_int ? 4 : 0 unless name == :to_ary
-      end
-      (format % obj).should == (format % 4)
+      obj = mock('6')
+      obj.stub!(:to_i).and_return(5)
+      obj.should_receive(:to_int).and_return(6)
+      (format % obj).should == (format % 6)
     end
 
     it "doesn't taint the result for #{format} when argument is tainted" do
@@ -717,8 +700,7 @@ describe "String#%" do
     ruby_version_is "1.8.6.278" do
       it "tries to convert the passed argument to an Array using #to_ary" do
         obj = mock('3.14')
-        obj.should_receive(:respond_to?).with(:to_ary).any_number_of_times.and_return(true)
-        obj.should_receive(:method_missing).with(:to_ary).and_return([3.14])
+        obj.should_receive(:to_ary).and_return([3.14])
         (format % obj).should == (format % [3.14])
       end
     end
@@ -748,12 +730,6 @@ describe "String#%" do
       obj = mock('5.0')
       obj.should_receive(:to_f).and_return(5.0)
       (format % obj).should == (format % 5.0)
-
-      obj = mock('3.14')
-      obj.should_receive(:respond_to?).with(:to_ary).any_number_of_times.and_return(false)
-      obj.should_receive(:respond_to?).with(:to_f).any_number_of_times.and_return(true)
-      obj.should_receive(:method_missing).with(:to_f).and_return(3.14)
-      (format % obj).should == (format % 3.14)
     end
 
     it "doesn't taint the result for #{format} when argument is tainted" do

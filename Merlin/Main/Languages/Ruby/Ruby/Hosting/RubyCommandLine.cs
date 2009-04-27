@@ -62,7 +62,7 @@ namespace IronRuby.Hosting {
 
         // overridden to set the default encoding to KCODE/BINARY
         protected override int RunFile(string fileName) {
-            return RunFile(Engine.CreateScriptSourceFromFile(fileName, (((RubyContext)Language).RubyOptions.KCode ?? RubyEncoding.Binary).Encoding));
+            return RunFile(Engine.CreateScriptSourceFromFile(RubyUtils.CanonicalizePath(fileName), (((RubyContext)Language).RubyOptions.KCode ?? RubyEncoding.Binary).Encoding));
         }
 
         protected override Scope/*!*/ CreateScope() {

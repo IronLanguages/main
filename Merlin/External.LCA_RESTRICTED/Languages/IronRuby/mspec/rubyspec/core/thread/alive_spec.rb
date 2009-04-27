@@ -38,9 +38,7 @@ describe "Thread#alive?" do
     ThreadSpecs.status_of_dying_sleeping_thread.alive?.should == true
   end
 
-  compliant_on(:ruby) do
-    it "reports aborting on a killed thread" do
-      ThreadSpecs.status_of_aborting_thread.alive?.should == true
-    end
+  it "reports aborting on a killed thread" do
+    ThreadSpecs.status_of_aborting_thread.alive?.should == true
   end
 end

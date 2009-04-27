@@ -1,2 +1,1 @@
 fails:Kernel#require produces __FILE__ as the given filename and __LINE__ as the source line number
-fails:Kernel#require only accepts strings

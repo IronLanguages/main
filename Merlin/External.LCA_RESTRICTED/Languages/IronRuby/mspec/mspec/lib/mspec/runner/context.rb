@@ -1,6 +1,3 @@
-require 'mspec/runner/mspec'
-require 'mspec/runner/example'
-
 # Holds the state of the +describe+ block that is being
 # evaluated. Every example (i.e. +it+ block) is evaluated
 # in a context, which may include state set up in <tt>before
@@ -37,7 +34,7 @@ class ContextState
 
     @mock_verify         = lambda { Mock.verify_count }
     @mock_cleanup        = lambda { Mock.cleanup }
-    @expectation_missing = lambda { raise ExpectationNotFoundError }
+    @expectation_missing = lambda { raise SpecExpectationNotFoundError }
   end
 
   # Returns true if this is a shared +ContextState+. Essentially, when
@@ -82,18 +79,23 @@ class ContextState
 
   # Records before(:each) and before(:all) blocks.
   def before(what, &block)
+    return if MSpec.guarded?
     block ? @before[what].push(block) : @before[what]
   end
 
   # Records after(:each) and after(:all) blocks.
   def after(what, &block)
+    return if MSpec.guarded?
     block ? @after[what].unshift(block) : @after[what]
   end
 
   # Creates an ExampleState instance for the block and stores it
   # in a list of examples to evaluate unless the example is filtered.
   def it(desc, &block)
-    @examples << ExampleState.new(self, desc, block)
+    example = ExampleState.new(self, desc, block)
+    MSpec.actions :add, example
+    return if MSpec.guarded?
+    @examples << example
   end
 
   # Evaluates the block and resets the toplevel +ContextState+ to #parent.
@@ -111,6 +113,8 @@ class ContextState
   # Injects the before/after blocks and examples from the shared
   # describe block into this +ContextState+ instance.
   def it_should_behave_like(desc)
+    return if MSpec.guarded?
+
     unless state = MSpec.retrieve_shared(desc)
       raise Exception, "Unable to find shared 'describe' for #{desc}"
     end
