@@ -124,6 +124,9 @@ namespace IronRuby.Rack {
                         Utils.Log("=> Booting IronRack"); 
 
                         var rubyEngine = Ruby.CreateEngine();
+                        
+                        string appRoot = Utils.GetAppRoot(context);
+                        rubyEngine.Runtime.Globals.SetVariable("APP_ROOT", appRoot);
 
                         // HACK Load gems from default MRI installation. This shouldn't be needed.
                         Environment.SetEnvironmentVariable("GEM_PATH", @"C:\ruby\lib\ruby\gems\1.8");
@@ -132,7 +135,8 @@ namespace IronRuby.Rack {
                             var stopWatch = new Stopwatch();
                             stopWatch.Start();
 
-                            // ironrack.rb should load the config.ru file, resulting in an Rack application
+                            // ironrack.rb should add APP_ROOT to the path, and load the config.ru file, 
+                            // resulting in an Rack application
                             rubyEngine.CreateScriptSourceFromFile(Utils.FindFile("ironrack.rb", rubyEngine)).Execute();
 
                             stopWatch.Stop();
