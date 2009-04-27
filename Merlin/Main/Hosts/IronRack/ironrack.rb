@@ -1,4 +1,6 @@
 require 'rubygems'
+
+gem 'rack', RACK_VERSION
 require 'rack'
 
 $LOAD_PATH.unshift APP_ROOT
