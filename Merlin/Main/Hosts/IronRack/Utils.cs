@@ -29,6 +29,7 @@ namespace IronRuby.Rack {
         
         internal const string LogOptionName = "Log";
         internal const string AppRootOptionName = "AppRoot";
+        internal const string RackVersionOptionName = "RackVersion";
 
         internal static string FindFile(string file, ScriptEngine rubyEngine) {
             foreach (var path in rubyEngine.GetSearchPaths()) {
@@ -109,6 +110,10 @@ namespace IronRuby.Rack {
                 }
             }
             return root;
+        }
+
+        internal static string GetRackVersion() {
+            return ConfigurationManager.AppSettings[RackVersionOptionName] ?? "1.0.0";
         }
 
         public static void Log(string/*!*/ message) {

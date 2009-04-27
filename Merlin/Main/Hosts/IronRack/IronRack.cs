@@ -29,7 +29,7 @@ using System.Collections.Generic;
 namespace IronRuby.Rack {
 
     /// <summary>
-    /// A IIS HttpHandler which delegates all requests to Rack.
+    /// A HttpHandler which delegates all requests to Rack.
     /// See http://rack.rubyforge.org/doc/SPEC.html for exactly 
     /// what this handler needs to delegate between IIS and Rack.
     /// </summary>
@@ -48,16 +48,16 @@ namespace IronRuby.Rack {
         }
 
         public void ProcessRequest(HttpContext/*!*/ context) {
-            
+
             // TODO is Rack thread-safe? Can this lock go away?
             lock (this) {
                 RubyArray response;
 
                 _watch.Reset();
                 _watch.Start();
-                
+
                 try {
-                    
+
                     Utils.Log("Request Start: " + context.Request.Url);
 
                     // Prepare the webserver's environment
@@ -71,8 +71,8 @@ namespace IronRuby.Rack {
                     response = source.Execute<RubyArray>(scope);
 
                 } catch (Exception e) {
-                    
-                    Utils.Log(String.Format("Request Finished: {0}\nERROR: {1}", context.Request.Url, e));                    
+
+                    Utils.Log(String.Format("Request Finished: {0}\nERROR: {1}", context.Request.Url, e));
                     Utils.ReportError(_engine, context, e);
 
                     context.Response.StatusCode = 200;
@@ -82,16 +82,16 @@ namespace IronRuby.Rack {
                 _watch.Stop();
 
                 Utils.Log(String.Format("Request Finished: {0}\nOK in {1}", context.Request.Url, _watch.Elapsed));
-                
+
                 //
                 // The response is always an Array, structured as follows:
                 //
-                
+
                 // 0 - (int)  status
                 context.Response.StatusCode = (int) response[0];
-                
+
                 // 1 - (Hash) headers
-                foreach (var header in ((Hash)response[1])) {
+                foreach (var header in ((Hash) response[1])) {
                     context.Response.Headers[header.Key.ToString()] = header.Value.ToString();
                 }
 
@@ -109,10 +109,18 @@ namespace IronRuby.Rack {
         }
     }
 
+    /// <summary>
+    /// Builds a HttpHandler capable of serving requests through Rack
+    /// </summary>
     public class HandlerFactory : IHttpHandlerFactory {
         private static readonly object _GlobalLock = new object();
         private static Handler _Handler;
 
+        /// <summary>
+        /// Sets up the environment. This is only run when the server starts up, not
+        /// for each request, so as much as possible should be done here. Returns a
+        /// HttpHandler capable of serving Rack requests.
+        /// </summary>
         public IHttpHandler GetHandler(HttpContext/*!*/ context, string/*!*/ requestType, string/*!*/ url, string/*!*/ pathTranslated) {
 
             // TODO is this lock needed?
@@ -121,12 +129,14 @@ namespace IronRuby.Rack {
                     if (_Handler == null) {
 
                         Utils.InitializeLog();
-                        Utils.Log("=> Booting IronRack"); 
+                        Utils.Log("=> Booting IronRack");
 
                         var rubyEngine = Ruby.CreateEngine();
-                        
+
                         string appRoot = Utils.GetAppRoot(context);
+                        string rackVersion = Utils.GetRackVersion();
                         rubyEngine.Runtime.Globals.SetVariable("APP_ROOT", appRoot);
+                        rubyEngine.Runtime.Globals.SetVariable("RACK_VERSION", rackVersion);
 
                         // HACK Load gems from default MRI installation. This shouldn't be needed.
                         Environment.SetEnvironmentVariable("GEM_PATH", @"C:\ruby\lib\ruby\gems\1.8");
