@@ -1511,7 +1511,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
                         //??? why check for DTVS?
                         object val;
                         if (dts.TryGetValue(context, null, this, out val)) {
-                            if ((dts is PythonTypeValueSlot) || (dts is PythonTypeUserDescriptorSlot)) {
+                            if (dts is IValueSlot) {
                                 ((IAttributesCollection)iac)[x] = val;
                             } else {
                                 ((IAttributesCollection)iac)[x] = dts;

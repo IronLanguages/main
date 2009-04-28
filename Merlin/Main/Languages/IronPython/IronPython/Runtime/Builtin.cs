@@ -1900,8 +1900,18 @@ namespace IronPython.Runtime {
             IEnumerator i0 = PythonOps.GetEnumerator(s0);
             IEnumerator i1 = PythonOps.GetEnumerator(s1);
             List ret = new List();
-            while (i0.MoveNext() && i1.MoveNext()) {
-                ret.AddNoLock(PythonTuple.MakeTuple(i0.Current, i1.Current));
+            while(true) {
+                object obj0, obj1;
+                if(!i0.MoveNext()) {
+                    break;
+                }
+                obj0 = i0.Current;
+                if(!i1.MoveNext()) {
+                    break;
+                }
+
+                obj1 = i1.Current;
+                ret.AddNoLock(PythonTuple.MakeTuple(obj0, obj1));
             }
             return ret;
         }
@@ -1925,7 +1935,7 @@ namespace IronPython.Runtime {
                     if (!iters[i].MoveNext()) return ret;
                     items[i] = iters[i].Current;
                 }
-                ret.AddNoLock(PythonTuple.Make(items));
+                ret.AddNoLock(PythonTuple.MakeTuple(items));
             }
         }
 

@@ -136,10 +136,74 @@ namespace IronPython.Runtime.Binding {
                         }
                     }
                     break;
+                case PythonOperationKind.NotRetObject:
+                    if (CompilerHelpers.GetType(args[0]) == typeof(string)) {
+                        if (typeof(T) == typeof(Func<CallSite, object, object>)) {
+                            return (T)(object)new Func<CallSite, object, object>(StringIsFalse);
+                        }
+                    } else if (CompilerHelpers.GetType(args[0]) == typeof(bool)) {
+                        if (typeof(T) == typeof(Func<CallSite, object, object>)) {
+                            return (T)(object)new Func<CallSite, object, object>(BoolIsFalse);
+                        }
+                    } else if (CompilerHelpers.GetType(args[0]) == typeof(List)) {
+                        if (typeof(T) == typeof(Func<CallSite, object, object>)) {
+                            return (T)(object)new Func<CallSite, object, object>(ListIsFalse);
+                        }
+                    } else if (CompilerHelpers.GetType(args[0]) == typeof(PythonTuple)) {
+                        if (typeof(T) == typeof(Func<CallSite, object, object>)) {
+                            return (T)(object)new Func<CallSite, object, object>(TupleIsFalse);
+                        }
+                    } else if (args[0] == null) {
+                        if (typeof(T) == typeof(Func<CallSite, object, object>)) {
+                            return (T)(object)new Func<CallSite, object, object>(NoneIsFalse);
+                        }
+                    }
+                    break;
             }
             return base.BindDelegate<T>(site, args);
         }
 
+        private object StringIsFalse(CallSite site, object value) {
+            string strVal = value as string;
+            if (strVal != null) {
+                return strVal.Length == 0 ? ScriptingRuntimeHelpers.True : ScriptingRuntimeHelpers.False;
+            }
+
+            return ((CallSite<Func<CallSite, object, object>>)site).Update(site, value);
+        }
+
+        private object ListIsFalse(CallSite site, object value) {
+            if (value != null && value.GetType() == typeof(List)) {
+                return ((List)value).Count == 0 ? ScriptingRuntimeHelpers.True : ScriptingRuntimeHelpers.False;
+            }
+
+            return ((CallSite<Func<CallSite, object, object>>)site).Update(site, value);
+        }
+
+        private object NoneIsFalse(CallSite site, object value) {
+            if (value == null) {
+                return ScriptingRuntimeHelpers.True;
+            }
+
+            return ((CallSite<Func<CallSite, object, object>>)site).Update(site, value);
+        }
+
+        private object TupleIsFalse(CallSite site, object value) {
+            if (value != null && value.GetType() == typeof(PythonTuple)) {
+                return ((PythonTuple)value).Count == 0 ? ScriptingRuntimeHelpers.True : ScriptingRuntimeHelpers.False;
+            }
+
+            return ((CallSite<Func<CallSite, object, object>>)site).Update(site, value);
+        }
+
+        private object BoolIsFalse(CallSite site, object value) {
+            if (value is bool) {
+                return !(bool)value ? ScriptingRuntimeHelpers.True : ScriptingRuntimeHelpers.False;
+            }
+
+            return ((CallSite<Func<CallSite, object, object>>)site).Update(site, value);
+        }
+        
         private IEnumerator GetListEnumerator(CallSite site, List value) {
             return new listiterator(value);
         }

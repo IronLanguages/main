@@ -822,7 +822,12 @@ namespace IronPython.Compiler {
                 if (MaybeEat(TokenKind.KeywordYield)) {
                     right = ParseYieldExpression();
                 } else {
-                    right = ParseTestListAsExpr(false);
+                    bool trailingComma;
+                    var exprs = ParseExpressionList(out trailingComma);
+                    if (exprs.Count == 0) {
+                        ReportSyntaxError(left[0].Start, left[0].End, "invalid syntax");
+                    }
+                    right = MakeTupleOrExpr(exprs, trailingComma);
                 }
             }
 

@@ -321,11 +321,13 @@ namespace IronPython.Compiler.Ast {
                                 ),
                                 Ast.Block(
                                     tsh.Target.TransformSet(ag, SourceSpan.None, converted, PythonOperationKind.None),
-                                    GetTracebackHeader(
-                                        new SourceSpan(tsh.Start, tsh.Header),
-                                        ag,
-                                        exception,
-                                        ag.Transform(tsh.Body)
+                                    ag.AddDebugInfo(
+                                        GetTracebackHeader(
+                                            ag,
+                                            exception,
+                                            ag.Transform(tsh.Body)
+                                        ),
+                                        new SourceSpan(tsh.Start, tsh.Header)
                                     ),
                                     AstUtils.Empty()
                                 )
@@ -344,11 +346,13 @@ namespace IronPython.Compiler.Ast {
                                     test,
                                     AstUtils.Constant(null)
                                 ),
-                                GetTracebackHeader(
-                                    new SourceSpan(tsh.Start, tsh.Header),
-                                    ag,
-                                    exception,
-                                    ag.Transform(tsh.Body)
+                                ag.AddDebugInfo(
+                                    GetTracebackHeader(
+                                        ag,
+                                        exception,
+                                        ag.Transform(tsh.Body)
+                                    ),
+                                    new SourceSpan(tsh.Start, tsh.Header)
                                 )
                             );
                         }
@@ -368,7 +372,10 @@ namespace IronPython.Compiler.Ast {
                         //          <body>
                         //  }
 
-                        catchAll = GetTracebackHeader(new SourceSpan(tsh.Start, tsh.Header), ag, exception, ag.Transform(tsh.Body));
+                        catchAll = ag.AddDebugInfo(
+                            GetTracebackHeader(ag, exception, ag.Transform(tsh.Body)),
+                            new SourceSpan(tsh.Start, tsh.Header)
+                        );
                     }
                 }
 
@@ -426,24 +433,21 @@ namespace IronPython.Compiler.Ast {
         /// <summary>
         /// Surrounds the body of an except block w/ the appropriate code for maintaining the traceback.
         /// </summary>
-        private static MSAst.Expression GetTracebackHeader(SourceSpan span, AstGenerator ag, MSAst.ParameterExpression exception, MSAst.Expression body) {
+        internal static MSAst.Expression GetTracebackHeader(AstGenerator ag, MSAst.ParameterExpression exception, MSAst.Expression body) {
             // we are about to enter a except block.  We need to emit the line number update so we track
             // the line that the exception was thrown from.  We then need to build exc_info() so that
             // it's available.  Finally we clear the list of dynamic stack frames because they've all
             // been associated with this exception.
-            return ag.AddDebugInfo(
-                Ast.Block(
-                    // pass false so if we take another exception we'll add it to the frame list
-                    ag.GetSaveLineNumberExpression(false),
-                    Ast.Call(
-                        AstGenerator.GetHelperMethod("BuildExceptionInfo"),
-                        ag.LocalContext,
-                        exception
-                    ),
-                    body,
-                    AstUtils.Empty()
+            return Ast.Block(
+                // pass false so if we take another exception we'll add it to the frame list
+                ag.GetSaveLineNumberExpression(false),
+                Ast.Call(
+                    AstGenerator.GetHelperMethod("BuildExceptionInfo"),
+                    ag.LocalContext,
+                    exception
                 ),
-                span
+                body,
+                AstUtils.Empty()
             );
         }
 

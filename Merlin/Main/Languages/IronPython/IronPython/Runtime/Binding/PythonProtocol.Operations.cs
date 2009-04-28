@@ -120,7 +120,7 @@ namespace IronPython.Runtime.Binding {
                     res = BindingHelpers.AddPythonBoxing(MakeUnaryOperation(operation, arg, Symbols.OperatorOnesComplement));
                     break;
                 case ExpressionType.IsFalse:
-                    res = MakeUnaryNotOperation(operation, arg);
+                    res = MakeUnaryNotOperation(operation, arg, typeof(bool));
                     retType = typeof(bool);
                     break;
                 case ExpressionType.IsTrue:
@@ -190,9 +190,6 @@ namespace IronPython.Runtime.Binding {
                 case PythonOperationKind.Hash:
                     res = MakeHashOperation(operation, args[0]);
                     break;
-                case PythonOperationKind.Not:
-                    res = BindingHelpers.AddPythonBoxing(MakeUnaryNotOperation(operation, args[0]));
-                    break;
                 case PythonOperationKind.Contains:
                     res = MakeContainsOperation(operation, args);
                     break;
@@ -205,6 +202,9 @@ namespace IronPython.Runtime.Binding {
                     break;
                 case PythonOperationKind.GetEnumeratorForIteration:
                     res = BindingHelpers.AddPythonBoxing(MakeEnumeratorOperation(operation, args[0]));
+                    break;
+                case PythonOperationKind.NotRetObject:
+                    res = MakeUnaryNotOperation(operation, args[0], typeof(object));
                     break;
                 default:
                     res = BindingHelpers.AddPythonBoxing(MakeBinaryOperation(operation, args, operation.Operation, null));
@@ -553,7 +553,7 @@ namespace IronPython.Runtime.Binding {
             );
         }
 
-        private static DynamicMetaObject/*!*/ MakeUnaryNotOperation(DynamicMetaObjectBinder/*!*/ operation, DynamicMetaObject/*!*/ self) {
+        private static DynamicMetaObject/*!*/ MakeUnaryNotOperation(DynamicMetaObjectBinder/*!*/ operation, DynamicMetaObject/*!*/ self, Type/*!*/ retType) {
             self = self.Restrict(self.GetLimitType());
 
             SlotOrFunction nonzero = SlotOrFunction.GetSlotOrFunction(BinderState.GetBinderState(operation), Symbols.NonZero, self);
@@ -601,6 +601,11 @@ namespace IronPython.Runtime.Binding {
             }
 
             Debug.Assert(notExpr.Type == typeof(bool));
+
+            if (retType == typeof(object)) {
+                notExpr = BindingHelpers.AddPythonBoxing(notExpr);
+            }
+
             return new DynamicMetaObject(
                 notExpr,
                 self.Restrictions.Merge(nonzero.Target.Restrictions.Merge(length.Target.Restrictions))

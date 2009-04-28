@@ -63,14 +63,26 @@ namespace IronPython.Runtime.Binding {
                     break;
                 case ExpressionType.IsFalse:
                     if (CompilerHelpers.GetType(args[0]) == typeof(string)) {
-                        if (typeof(T) == typeof(Func<CallSite, object, object>)) {
-                            return (T)(object)new Func<CallSite, object, object>(StringIsFalse);
+                        if (typeof(T) == typeof(Func<CallSite, object, bool>)) {
+                            return (T)(object)new Func<CallSite, object, bool>(StringIsFalse);
                         }
                     } else if (CompilerHelpers.GetType(args[0]) == typeof(bool)) {
-                        if (typeof(T) == typeof(Func<CallSite, object, object>)) {
-                            return (T)(object)new Func<CallSite, object, object>(BoolIsFalse);
+                        if (typeof(T) == typeof(Func<CallSite, object, bool>)) {
+                            return (T)(object)new Func<CallSite, object, bool>(BoolIsFalse);
                         }
-                    }
+                    } else if (CompilerHelpers.GetType(args[0]) == typeof(List)) {
+                        if (typeof(T) == typeof(Func<CallSite, object, bool>)) {
+                            return (T)(object)new Func<CallSite, object, bool>(ListIsFalse);
+                        }
+                    } else if (CompilerHelpers.GetType(args[0]) == typeof(PythonTuple)) {
+                        if (typeof(T) == typeof(Func<CallSite, object, bool>)) {
+                            return (T)(object)new Func<CallSite, object, bool>(TupleIsFalse);
+                        }
+                    } else if (args[0] == null) {
+                        if (typeof(T) == typeof(Func<CallSite, object, bool>)) {
+                            return (T)(object)new Func<CallSite, object, bool>(NoneIsFalse);
+                        }
+                    } 
                     break;
             }
 
@@ -85,21 +97,45 @@ namespace IronPython.Runtime.Binding {
             return ((CallSite<Func<CallSite, object, object>>)site).Update(site, value);
         }
 
-        private object StringIsFalse(CallSite site, object value) {
+        private bool StringIsFalse(CallSite site, object value) {
             string strVal = value as string;
             if (strVal != null) {
-                return strVal.Length == 0 ? ScriptingRuntimeHelpers.True : ScriptingRuntimeHelpers.False;
+                return strVal.Length == 0;
             }
 
-            return ((CallSite<Func<CallSite, object, object>>)site).Update(site, value);
+            return ((CallSite<Func<CallSite, object, bool>>)site).Update(site, value);
         }
 
-        private object BoolIsFalse(CallSite site, object value) {
-            if (value is bool) {
-                return !(bool)value ? ScriptingRuntimeHelpers.True : ScriptingRuntimeHelpers.False;
+        private bool ListIsFalse(CallSite site, object value) {
+            if (value != null && value.GetType() == typeof(List)) {
+                return ((List)value).Count == 0;
             }
 
-            return ((CallSite<Func<CallSite, object, object>>)site).Update(site, value);
+            return ((CallSite<Func<CallSite, object, bool>>)site).Update(site, value);
+        }
+
+        private bool NoneIsFalse(CallSite site, object value) {
+            if (value == null) {
+                return true;
+            }
+
+            return ((CallSite<Func<CallSite, object, bool>>)site).Update(site, value);
+        }
+
+        private bool TupleIsFalse(CallSite site, object value) {
+            if (value != null && value.GetType() == typeof(PythonTuple)) {
+                return ((PythonTuple)value).Count == 0;
+            }
+
+            return ((CallSite<Func<CallSite, object, bool>>)site).Update(site, value);
+        }
+
+        private bool BoolIsFalse(CallSite site, object value) {
+            if (value is bool) {
+                return !(bool)value;
+            }
+
+            return ((CallSite<Func<CallSite, object, bool>>)site).Update(site, value);
         }
         
         public BinderState/*!*/ Binder {
