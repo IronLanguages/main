@@ -37,7 +37,8 @@
       <Parameterize>true</Parameterize>
     </TextStringResource>
   </ItemGroup>
-  <!-- Begin Generated Project Items By GenerateSystemCoreCsproj.py -->     <ItemGroup>
+  <!-- Begin Generated Project Items By GenerateSystemCoreCsproj.py -->
+    <ItemGroup>
       <!--                                   -->
       <!--          System.Dynamic.          -->
       <!--                                   -->

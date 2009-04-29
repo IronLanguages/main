@@ -59,6 +59,7 @@ namespace Microsoft.Scripting.Actions {
                     next = new DynamicMetaObject(visitor.Visit(next.Expression), next.Restrictions);
                 }
 
+                restrictions = restrictions.Merge(next.Restrictions);
                 if (next.Expression.NodeType == ExpressionType.Throw) {
                     // end of the line... the expression is throwing, none of the other 
                     // binders will have an opportunity to run.
@@ -71,7 +72,6 @@ namespace Microsoft.Scripting.Actions {
 
                 steps.Add(Expression.Assign(tmp, next.Expression));
                 results.Add(new DynamicMetaObject(tmp, next.Restrictions));
-                restrictions = restrictions.Merge(next.Restrictions);
             }
 
             return new DynamicMetaObject(
@@ -81,6 +81,13 @@ namespace Microsoft.Scripting.Actions {
                 ),
                 restrictions
             );
+        }
+
+        public virtual/*override*/ System.Type ReturnType {
+            get {
+                return typeof(object);
+                //return _metaBinders[_metaBinders.Length - 1].Binder.ReturnType;
+            }
         }
 
         private sealed class ReplaceUpdateVisitor : ExpressionVisitor {

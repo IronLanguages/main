@@ -85,13 +85,13 @@ module ClassSpecs
   class L; end
 
   class M < L; end
+#TODO: Can this be replaced with thie IO helper?  
 
   class StubWriter
     def write(s)
       s && s.size || 0
     end    
   end
-  
   class StubWriterWithClose < StubWriter    
     def close(*args)
     end

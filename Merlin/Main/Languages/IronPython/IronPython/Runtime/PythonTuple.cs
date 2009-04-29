@@ -390,19 +390,19 @@ namespace IronPython.Runtime {
             return PythonOps.CompareArrays(_data, _data.Length, other._data, other._data.Length);
         }
 
-        public static bool operator >(PythonTuple self, PythonTuple other) {
+        public static bool operator >([NotNull]PythonTuple self, [NotNull]PythonTuple other) {
             return self.CompareTo(other) > 0;
         }
 
-        public static bool operator <(PythonTuple self, PythonTuple other) {
+        public static bool operator <([NotNull]PythonTuple self, [NotNull]PythonTuple other) {
             return self.CompareTo(other) < 0;
         }
 
-        public static bool operator >=(PythonTuple self, PythonTuple other) {
+        public static bool operator >=([NotNull]PythonTuple self, [NotNull]PythonTuple other) {
             return self.CompareTo(other) >= 0;
         }
 
-        public static bool operator <=(PythonTuple self, PythonTuple other) {
+        public static bool operator <=([NotNull]PythonTuple self, [NotNull]PythonTuple other) {
             return self.CompareTo(other) <= 0;
         }
 

@@ -1,0 +1,34 @@
+--- !ruby/object:RI::ClassDescription 
+attributes: []
+
+class_methods: []
+
+comment: 
+- !ruby/struct:SM::Flow::P 
+  body: <tt>WIN32OLE_PARAM</tt> objects represent param information of the OLE method.
+constants: []
+
+full_name: WIN32OLE_PARAM
+includes: []
+
+instance_methods: 
+- !ruby/object:RI::MethodSummary 
+  name: default
+- !ruby/object:RI::MethodSummary 
+  name: input?
+- !ruby/object:RI::MethodSummary 
+  name: name
+- !ruby/object:RI::MethodSummary 
+  name: ole_type
+- !ruby/object:RI::MethodSummary 
+  name: ole_type_detail
+- !ruby/object:RI::MethodSummary 
+  name: optional?
+- !ruby/object:RI::MethodSummary 
+  name: output?
+- !ruby/object:RI::MethodSummary 
+  name: retval?
+- !ruby/object:RI::MethodSummary 
+  name: to_s
+name: WIN32OLE_PARAM
+superclass: Object

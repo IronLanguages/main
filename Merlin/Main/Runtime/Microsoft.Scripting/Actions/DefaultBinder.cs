@@ -146,13 +146,13 @@ namespace Microsoft.Scripting.Actions {
             );
         }
 
-        public static Expression MakeError(ErrorInfo error) {
+        public static Expression MakeError(ErrorInfo error, Type type) {
             switch (error.Kind) {
                 case ErrorInfoKind.Error:
                     // error meta objecT?
-                    return error.Expression;
+                    return AstUtils.Convert(error.Expression, type);
                 case ErrorInfoKind.Exception:
-                    return Expression.Throw(error.Expression);
+                    return AstUtils.Convert(Expression.Throw(error.Expression), type);
                 case ErrorInfoKind.Success:
                     return error.Expression;
                 default:
@@ -160,8 +160,26 @@ namespace Microsoft.Scripting.Actions {
             }
         }
 
-        public static DynamicMetaObject MakeError(ErrorInfo error, BindingRestrictions restrictions) {
-            return new DynamicMetaObject(MakeError(error), restrictions);
+        public static DynamicMetaObject MakeError(ErrorInfo error, BindingRestrictions restrictions, Type type) {
+            return new DynamicMetaObject(MakeError(error, type), restrictions);
+        }
+
+        private static Expression MakeAmbiguousMatchError(MemberGroup members) {
+            StringBuilder sb = new StringBuilder();
+            foreach (MemberTracker mi in members) {
+                if (sb.Length != 0) sb.Append(", ");
+                sb.Append(mi.MemberType);
+                sb.Append(" : ");
+                sb.Append(mi.ToString());
+            }
+
+            return Ast.Throw(
+                Ast.New(
+                    typeof(AmbiguousMatchException).GetConstructor(new Type[] { typeof(string) }),
+                    AstUtils.Constant(sb.ToString())
+                ),
+                typeof(object)
+            );
         }
 
         protected TrackerTypes GetMemberType(MemberGroup members, out Expression error) {
@@ -178,23 +196,6 @@ namespace Microsoft.Scripting.Actions {
                 }
             }
             return memberType;
-        }
-
-        private static Expression MakeAmbiguousMatchError(MemberGroup members) {
-            StringBuilder sb = new StringBuilder();
-            foreach (MemberTracker mi in members) {
-                if (sb.Length != 0) sb.Append(", ");
-                sb.Append(mi.MemberType);
-                sb.Append(" : ");
-                sb.Append(mi.ToString());
-            }
-
-            return Ast.Throw(
-                Ast.New(
-                    typeof(AmbiguousMatchException).GetConstructor(new Type[] { typeof(string) }),
-                    AstUtils.Constant(sb.ToString())
-                )
-            );
         }
 
         internal MethodInfo GetMethod(Type type, string name) {

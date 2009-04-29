@@ -95,6 +95,12 @@ namespace IronPython.Runtime.Binding {
         /// Boolean negation
         /// </summary>
         Not,
+        /// <summary>
+        /// Unary operator.
+        /// 
+        /// Boolean negation
+        /// </summary>
+        NotRetObject,
 
         /// <summary>
         /// Get enumerator for iteration binder

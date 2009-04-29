@@ -74,7 +74,7 @@ namespace IronPython.Runtime.Types {
         public object values(CodeContext context) {
             List res = new List();
             foreach (KeyValuePair<object, object> kvp in _dt.GetMemberDictionary(context, false)) {
-                PythonTypeUserDescriptorSlot dts = kvp.Value as PythonTypeUserDescriptorSlot;
+                IValueSlot dts = kvp.Value as IValueSlot;
 
                 if (dts != null) {
                     res.AddNoLock(dts.Value);
@@ -89,7 +89,7 @@ namespace IronPython.Runtime.Types {
         public List items(CodeContext context) {
             List res = new List();
             foreach (KeyValuePair<object, object> kvp in _dt.GetMemberDictionary(context, false)) {
-                PythonTypeUserDescriptorSlot dts = kvp.Value as PythonTypeUserDescriptorSlot;
+                IValueSlot dts = kvp.Value as IValueSlot;
 
                 object val;
                 if (dts != null) {
@@ -309,15 +309,11 @@ namespace IronPython.Runtime.Types {
             if (strIndex != null) {
                 PythonTypeSlot dts;
                 if (_dt.TryLookupSlot(context, SymbolTable.StringToId(strIndex), out dts)) {
-                    object res;
-                    PythonTypeUserDescriptorSlot uds = dts as PythonTypeUserDescriptorSlot;
+                    IValueSlot uds = dts as IValueSlot;
                     if (uds != null) {
                         return uds.Value;
                     }
 
-                    if ((dts is PythonTypeValueSlot) && dts.TryGetValue(context, null, _dt, out res)) {
-                        return res;
-                    }
                     return dts;
                 }
             }
@@ -330,7 +326,7 @@ namespace IronPython.Runtime.Types {
             if (strIndex != null) {
                 PythonTypeSlot dts;
                 if (_dt.TryLookupSlot(context, SymbolTable.StringToId(strIndex), out dts)) {
-                    PythonTypeUserDescriptorSlot uds = dts as PythonTypeUserDescriptorSlot;
+                    IValueSlot uds = dts as IValueSlot;
                     if (uds != null) {
                         value = uds.Value;
                         return true;

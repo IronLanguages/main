@@ -474,7 +474,8 @@ namespace Microsoft.Scripting.Actions {
 
                 return MakeError(
                     resolver.MakeInvalidParametersError(target),
-                    restrictions
+                    restrictions,
+                    typeof(object)
                 );
             }
 

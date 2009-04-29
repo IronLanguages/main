@@ -1,2 +1,4 @@
 fails:Thread#raise on a sleeping thread re-raises active exception
+fails:Thread#raise on a running thread can go unhandled
+fails:Thread#raise on a sleeping thread can go unhandled
 critical:Thread#raise on a running thread re-raises active exception

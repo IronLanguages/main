@@ -39,6 +39,7 @@ namespace IronPython.Runtime.Operations {
             return new String(self, 1).GetHashCode();
         }
 
+        [return: MaybeNotImplemented]
         public static object __cmp__(char self, object other) {
             string strOther;
 

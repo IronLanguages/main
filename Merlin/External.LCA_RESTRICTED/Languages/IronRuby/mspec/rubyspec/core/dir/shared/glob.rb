@@ -205,7 +205,7 @@ describe :dir_glob, :shared => true do
   end
 
   it "recursively matches directories with '**/<characters>'" do
-    Dir.send(@method, '**/*fil?{,.}*').sort.should ==
+    Dir.send(@method, '**/*fil?{,.}*').uniq.sort.should ==
       %w[deeply/nested/directory/structure/file_one
          deeply/nested/directory/structure/file_one.ext
          deeply/nondotfile
@@ -220,7 +220,6 @@ describe :dir_glob, :shared => true do
 
          subdir_one/nondotfile
          subdir_two/nondotfile
-         subdir_two/nondotfile.ext
          subdir_two/nondotfile.ext]
   end
 end
@@ -231,8 +230,8 @@ describe :dir_glob_recursive, :shared => true do
     @mock_dir = File.expand_path tmp('dir_glob_mock')
 
     %w[
-      a/x/b/y/z
-      a/x/b/y/b/z/zz
+      a/x/b/y/e
+      a/x/b/y/b/z/e
     ].each do |path|
       file = File.join @mock_dir, path
       FileUtils.mkdir_p File.dirname(file)
@@ -249,11 +248,11 @@ describe :dir_glob_recursive, :shared => true do
 
   it "matches multiple recursives" do
     expected = %w[
-      a/x/b/y/b/z/zz
-      a/x/b/y/z
+      a/x/b/y/b/z/e
+      a/x/b/y/e
     ]
 
-    Dir.send(@method, 'a/**/b/**/z').sort.should == expected
+    Dir.send(@method, 'a/**/b/**/e').uniq.sort.should == expected
   end
 
   platform_is :windows do

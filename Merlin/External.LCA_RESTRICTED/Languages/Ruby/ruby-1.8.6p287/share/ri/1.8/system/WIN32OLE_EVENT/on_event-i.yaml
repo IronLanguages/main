@@ -1,0 +1,16 @@
+--- !ruby/object:RI::MethodDescription 
+aliases: []
+
+block_params: 
+comment: 
+- !ruby/struct:SM::Flow::P 
+  body: Defines the callback event. If argument is omitted, this method defines the callback of all events.
+- !ruby/struct:SM::Flow::VERB 
+  body: "  ie = WIN32OLE.new('InternetExplorer.Application')\n  ev = WIN32OLE_EVENT.new(ie, 'DWebBrowserEvents')\n  ev.on_event(&quot;NavigateComplete&quot;) {|url| puts url}\n"
+full_name: WIN32OLE_EVENT#on_event
+is_singleton: false
+name: on_event
+params: |
+  WIN32OLE_EVENT#on_event([event]){...}
+
+visibility: public

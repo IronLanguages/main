@@ -206,7 +206,7 @@ namespace IronRuby.Hosting {
 
                     base.ParseArgument(arg);
                     if (ConsoleOptions.FileName != null) {
-                        LanguageSetup.Options["MainFile"] = RubyCommandLine.CanonicalizePath(ConsoleOptions.FileName);
+                        LanguageSetup.Options["MainFile"] = RubyUtils.CanonicalizePath(ConsoleOptions.FileName);
                         LanguageSetup.Options["Arguments"] = PopRemainingArgs();
                         CommonConsoleOptions.Exit = false;
                     } 

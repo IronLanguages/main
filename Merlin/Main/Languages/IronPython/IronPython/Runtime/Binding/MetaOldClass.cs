@@ -31,7 +31,7 @@ using AstUtils = Microsoft.Scripting.Ast.Utils;
 namespace IronPython.Runtime.Binding {
     using Ast = System.Linq.Expressions.Expression;
 
-    class MetaOldClass : MetaPythonObject, IPythonInvokable, IPythonGetable, IPythonOperable {
+    class MetaOldClass : MetaPythonObject, IPythonInvokable, IPythonGetable, IPythonOperable, IPythonConvertible {
         public MetaOldClass(Expression/*!*/ expression, BindingRestrictions/*!*/ restrictions, OldClass/*!*/ value)
             : base(expression, BindingRestrictions.Empty, value) {
             Assert.NotNull(value);
@@ -81,12 +81,20 @@ namespace IronPython.Runtime.Binding {
         }
 
         public override DynamicMetaObject BindConvert(ConvertBinder/*!*/ conversion) {
+            return ConvertWorker(conversion, conversion.Type, conversion.Explicit ? ConversionResultKind.ExplicitCast : ConversionResultKind.ImplicitCast);
+        }
+
+        public DynamicMetaObject BindConvert(PythonConversionBinder binder) {
+            return ConvertWorker(binder, binder.Type, binder.ResultKind);
+        }
+
+        public DynamicMetaObject ConvertWorker(DynamicMetaObjectBinder binder, Type toType, ConversionResultKind kind) {        
             PerfTrack.NoteEvent(PerfTrack.Categories.Binding, "OldClass Convert");
             PerfTrack.NoteEvent(PerfTrack.Categories.BindingTarget, "OldClass Convert");
-            if (conversion.Type.IsSubclassOf(typeof(Delegate))) {
-                return MakeDelegateTarget(conversion, conversion.Type, Restrict(typeof(OldClass)));
+            if (toType.IsSubclassOf(typeof(Delegate))) {
+                return MakeDelegateTarget(binder, toType, Restrict(typeof(OldClass)));
             }
-            return conversion.FallbackConvert(this);
+            return FallbackConvert(binder);
         }
 
         public override System.Collections.Generic.IEnumerable<string> GetDynamicMemberNames() {

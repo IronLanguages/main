@@ -3,7 +3,7 @@ require File.dirname(__FILE__) + '/fixtures/classes'
 
 describe "Kernel#`" do
   it "is a private method" do
-    Kernel.private_instance_methods.should include("`")
+    Kernel.should have_private_instance_method(:`)
   end
   
   it "returns the standard output of the executed sub-process" do
@@ -16,13 +16,6 @@ describe "Kernel#`" do
     Kernel.`(obj).should == "test\n"
   end
 
-  it "checks whether the passed argument responds to #to_str" do
-    obj = mock('echo another test')
-    obj.should_receive(:respond_to?).with(:to_str).any_number_of_times.and_return(true)
-    obj.should_receive(:method_missing).with(:to_str).and_return("echo another test")
-    Kernel.`(obj).should == "another test\n"
-  end
-  
   platform_is_not :windows do
     it "sets $? to the exit status of the executed sub-process" do
       ip = 'world'

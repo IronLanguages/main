@@ -36,8 +36,6 @@ namespace IronRuby.Compiler {
         private static MethodInfo _BlockYield;
         public static MethodInfo/*!*/ CanRescue { get { return _CanRescue ?? (_CanRescue = GetMethod(typeof(RubyOps), "CanRescue")); } }
         private static MethodInfo _CanRescue;
-        public static MethodInfo/*!*/ CheckForAsyncRaiseViaThreadAbort { get { return _CheckForAsyncRaiseViaThreadAbort ?? (_CheckForAsyncRaiseViaThreadAbort = GetMethod(typeof(RubyOps), "CheckForAsyncRaiseViaThreadAbort")); } }
-        private static MethodInfo _CheckForAsyncRaiseViaThreadAbort;
         public static MethodInfo/*!*/ CompareDefaultException { get { return _CompareDefaultException ?? (_CompareDefaultException = GetMethod(typeof(RubyOps), "CompareDefaultException")); } }
         private static MethodInfo _CompareDefaultException;
         public static MethodInfo/*!*/ CompareException { get { return _CompareException ?? (_CompareException = GetMethod(typeof(RubyOps), "CompareException")); } }

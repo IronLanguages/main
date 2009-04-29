@@ -56,9 +56,10 @@ namespace IronRuby.Compiler.Ast {
 
                 Ast.Assign(bfcVariable, Methods.CreateBfcForYield.OpCall(gen.MakeMethodBlockParameterRead())),
 
-                Ast.Assign(resultVariable, (Arguments ?? Arguments.Empty).TransformToYield(gen, bfcVariable,
-                    Ast.Property(AstUtils.Convert(gen.MakeMethodBlockParameterRead(), typeof(Proc)), Proc.SelfProperty)
-                )),
+                Ast.Assign(
+                    resultVariable, 
+                    (Arguments ?? Arguments.Empty).TransformToYield(gen, bfcVariable, gen.MakeMethodBlockParameterSelfRead())
+                ),
 
                 AstUtils.IfThen(postYield, gen.Return(resultVariable)),
 

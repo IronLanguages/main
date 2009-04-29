@@ -363,7 +363,7 @@ namespace IronPython.Runtime.Binding {
                     return;
                 }
 
-                PythonTypeUserDescriptorSlot slot = dts as PythonTypeUserDescriptorSlot;
+                IValueSlot slot = dts as IValueSlot;
                 if (slot != null && !(slot.Value is PythonTypeSlot)) {
                     PythonType slottype = DynamicHelpers.GetPythonType(slot.Value);
                     if (slottype.IsSystemType) {
@@ -747,7 +747,8 @@ namespace IronPython.Runtime.Binding {
                     typeof(PythonOps).GetMethod("AttributeErrorForMissingAttribute", new Type[] { typeof(string), typeof(SymbolId) }),
                     AstUtils.Constant(type.Name),
                     AstUtils.Constant(SymbolTable.StringToId(name))
-                )
+                ),
+                typeof(object)
             );
         }
 
@@ -847,7 +848,7 @@ namespace IronPython.Runtime.Binding {
 
             protected override SetMemberDelegates<TValue> Finish() {
                 if (_unsupported) {
-                    return null;
+                    return new SetMemberDelegates<TValue>(_context, OptimizedSetKind.None, _site, SymbolTable.StringToId(_binder.Name), _version, _setattrSlot, null);
                 } else if (_setattrSlot != null) {
                     return new SetMemberDelegates<TValue>(_context, OptimizedSetKind.SetAttr, _site, SymbolTable.StringToId(_binder.Name), _version, _setattrSlot, null);
                 } else if (_slotProp != null) {
@@ -866,11 +867,14 @@ namespace IronPython.Runtime.Binding {
                 lock (cachedSets) {
                     var kvp = new SetMemberKey(typeof(TValue), _binder.Name);
                     if (!cachedSets.TryGetValue(kvp, out dlg) || dlg._version != Instance.PythonType.Version) {
-                        dlg = cachedSets[kvp] = Bind(_binder.Name);
+                        dlg = Bind(_binder.Name);
+                        if (dlg != null) {
+                            cachedSets[kvp] = dlg;
+                        }
                     }
                 }
 
-                if (dlg != null && dlg.ShouldUseNonOptimizedSite) {
+                if (dlg.ShouldUseNonOptimizedSite) {
                     return new FastBindResult<Func<CallSite, object, TValue, object>>((Func<CallSite, object, TValue, object>)(object)dlg._func, false);
                 }
                 return new FastBindResult<Func<CallSite, object, TValue, object>>();
@@ -974,6 +978,8 @@ namespace IronPython.Runtime.Binding {
                     _result.Expression,
                     _target.Restrict(Instance.GetType()).Restrictions.Merge(_result.Restrictions)
                 );
+                
+                Debug.Assert(!_result.Expression.Type.IsValueType);
 
                 return BindingHelpers.AddDynamicTestAndDefer(
                     _info.Action,
@@ -1125,9 +1131,12 @@ namespace IronPython.Runtime.Binding {
                                     info.Args[0].Expression,
                                     AstUtils.Convert(tmp, typeof(object))
                                 ),
-                                tmp
+                                Ast.Convert(
+                                    tmp,
+                                    typeof(object)
+                                )
                             ),
-                            Ast.Throw(Ast.Call(typeof(PythonOps).GetMethod("UnsetableProperty")), tmp.Type)
+                            Ast.Throw(Ast.Call(typeof(PythonOps).GetMethod("UnsetableProperty")), typeof(object))
                         )
                     )
                 );
@@ -1157,7 +1166,7 @@ namespace IronPython.Runtime.Binding {
                         AstUtils.Convert(tmp, typeof(object))
                     )
                 ),
-                tmp
+                AstUtils.Convert(tmp, typeof(object))
             );
             return null;
         }
@@ -1177,7 +1186,8 @@ namespace IronPython.Runtime.Binding {
                         Ast.New(
                             typeof(ArgumentTypeException).GetConstructor(new Type[] { typeof(string) }),
                             AstUtils.Constant("can't delete __class__ attribute")
-                        )
+                        ),
+                        typeof(object)
                     ),
                     self.Restrictions
                 );

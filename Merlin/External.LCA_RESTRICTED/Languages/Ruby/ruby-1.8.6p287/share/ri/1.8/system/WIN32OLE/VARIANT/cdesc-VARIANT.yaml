@@ -1,0 +1,104 @@
+--- !ruby/object:RI::ClassDescription 
+attributes: []
+
+class_methods: []
+
+comment: 
+- !ruby/struct:SM::Flow::P 
+  body: support setproperty method much like Perl ;-)
+constants: 
+- !ruby/object:RI::Constant 
+  comment: 
+  name: VT_I2
+  value: INT2FIX(VT_I2)
+- !ruby/object:RI::Constant 
+  comment: 
+  name: VT_I4
+  value: INT2FIX(VT_I4)
+- !ruby/object:RI::Constant 
+  comment: 
+  name: VT_R4
+  value: INT2FIX(VT_R4)
+- !ruby/object:RI::Constant 
+  comment: 
+  name: VT_R8
+  value: INT2FIX(VT_R8)
+- !ruby/object:RI::Constant 
+  comment: 
+  name: VT_CY
+  value: INT2FIX(VT_CY)
+- !ruby/object:RI::Constant 
+  comment: 
+  name: VT_DATE
+  value: INT2FIX(VT_DATE)
+- !ruby/object:RI::Constant 
+  comment: 
+  name: VT_BSTR
+  value: INT2FIX(VT_BSTR)
+- !ruby/object:RI::Constant 
+  comment: 
+  name: VT_USERDEFINED
+  value: INT2FIX(VT_USERDEFINED)
+- !ruby/object:RI::Constant 
+  comment: 
+  name: VT_PTR
+  value: INT2FIX(VT_PTR)
+- !ruby/object:RI::Constant 
+  comment: 
+  name: VT_DISPATCH
+  value: INT2FIX(VT_DISPATCH)
+- !ruby/object:RI::Constant 
+  comment: 
+  name: VT_ERROR
+  value: INT2FIX(VT_ERROR)
+- !ruby/object:RI::Constant 
+  comment: 
+  name: VT_BOOL
+  value: INT2FIX(VT_BOOL)
+- !ruby/object:RI::Constant 
+  comment: 
+  name: VT_VARIANT
+  value: INT2FIX(VT_VARIANT)
+- !ruby/object:RI::Constant 
+  comment: 
+  name: VT_UNKNOWN
+  value: INT2FIX(VT_UNKNOWN)
+- !ruby/object:RI::Constant 
+  comment: 
+  name: VT_I1
+  value: INT2FIX(VT_I1)
+- !ruby/object:RI::Constant 
+  comment: 
+  name: VT_UI1
+  value: INT2FIX(VT_UI1)
+- !ruby/object:RI::Constant 
+  comment: 
+  name: VT_UI2
+  value: INT2FIX(VT_UI2)
+- !ruby/object:RI::Constant 
+  comment: 
+  name: VT_UI4
+  value: INT2FIX(VT_UI4)
+- !ruby/object:RI::Constant 
+  comment: 
+  name: VT_INT
+  value: INT2FIX(VT_INT)
+- !ruby/object:RI::Constant 
+  comment: 
+  name: VT_UINT
+  value: INT2FIX(VT_UINT)
+- !ruby/object:RI::Constant 
+  comment: 
+  name: VT_ARRAY
+  value: INT2FIX(VT_ARRAY)
+- !ruby/object:RI::Constant 
+  comment: 
+  name: VT_BYREF
+  value: INT2FIX(VT_BYREF)
+full_name: WIN32OLE::VARIANT
+includes: []
+
+instance_methods: []
+
+name: VARIANT
+superclass: 

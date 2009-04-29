@@ -151,15 +151,9 @@ describe "String#sub with pattern, replacement" do
 
   it "tries to convert pattern to a string using to_str" do
     pattern = mock('.')
-    def pattern.to_str() "." end
+    pattern.should_receive(:to_str).and_return(".")
 
     "hello.".sub(pattern, "!").should == "hello!"
-
-    obj = mock('.')
-    obj.should_receive(:respond_to?).with(:to_str).any_number_of_times.and_return(true)
-    obj.should_receive(:method_missing).with(:to_str).and_return(".")
-
-    "hello.".sub(obj, "!").should == "hello!"
   end
 
   it "raises a TypeError when pattern can't be converted to a string" do
@@ -169,14 +163,9 @@ describe "String#sub with pattern, replacement" do
 
   it "tries to convert replacement to a string using to_str" do
     replacement = mock('hello_replacement')
-    def replacement.to_str() "hello_replacement" end
+    replacement.should_receive(:to_str).and_return("hello_replacement")
 
     "hello".sub(/hello/, replacement).should == "hello_replacement"
-
-    obj = mock('ok')
-    obj.should_receive(:respond_to?).with(:to_str).any_number_of_times.and_return(true)
-    obj.should_receive(:method_missing).with(:to_str).and_return("ok")
-    "hello".sub(/hello/, obj).should == "ok"
   end
 
   it "raises a TypeError when replacement can't be converted to a string" do
@@ -334,15 +323,13 @@ describe "String#sub! with pattern, replacement" do
     a.should == "hello"
   end
 
-  compliant_on :ruby, :jruby do
-    it "raises a TypeError when self is frozen" do
-      s = "hello"
-      s.freeze
+  it "raises a TypeError when self is frozen" do
+    s = "hello"
+    s.freeze
 
-      s.sub!(/ROAR/, "x") # ok
-      lambda { s.sub!(/e/, "e")       }.should raise_error(TypeError)
-      lambda { s.sub!(/[aeiou]/, '*') }.should raise_error(TypeError)
-    end
+    s.sub!(/ROAR/, "x") # ok
+    lambda { s.sub!(/e/, "e")       }.should raise_error(TypeError)
+    lambda { s.sub!(/[aeiou]/, '*') }.should raise_error(TypeError)
   end
 end
 
@@ -373,14 +360,12 @@ describe "String#sub! with pattern and block" do
     end
   end
 
-  compliant_on :ruby, :jruby do
-    it "raises a RuntimeError when self is frozen" do
-      s = "hello"
-      s.freeze
+  it "raises a RuntimeError when self is frozen" do
+    s = "hello"
+    s.freeze
 
-      s.sub!(/ROAR/) { "x" } # ok
-      lambda { s.sub!(/e/) { "e" } }.should raise_error(RuntimeError)
-      lambda { s.sub!(/[aeiou]/) { '*' } }.should raise_error(RuntimeError)
-    end
+    s.sub!(/ROAR/) { "x" } # ok
+    lambda { s.sub!(/e/) { "e" } }.should raise_error(RuntimeError)
+    lambda { s.sub!(/[aeiou]/) { '*' } }.should raise_error(RuntimeError)
   end
 end

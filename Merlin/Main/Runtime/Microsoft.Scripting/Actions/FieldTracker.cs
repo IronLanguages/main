@@ -89,7 +89,7 @@ namespace Microsoft.Scripting.Actions {
 
         public override Expression GetValue(Expression context, ActionBinder binder, Type type) {
             if (Field.IsLiteral) {
-                return AstUtils.Constant(Field.GetValue(null));
+                return AstUtils.Constant(Field.GetValue(null), typeof(object));
             }
 
             if (!IsStatic) {
@@ -102,7 +102,7 @@ namespace Microsoft.Scripting.Actions {
             }
 
             if (IsPublic && DeclaringType.IsPublic) {
-                return Ast.Field(null, Field);
+                return Ast.Convert(Ast.Field(null, Field), typeof(object));
             }
 
             return Ast.Call(
@@ -126,13 +126,16 @@ namespace Microsoft.Scripting.Actions {
 
         protected internal override Expression GetBoundValue(Expression context, ActionBinder binder, Type type, Expression instance) {
             if (IsPublic && DeclaringType.IsVisible) {
-                return Ast.Field(
-                    AstUtils.Convert(instance, Field.DeclaringType),
-                    Field
+                return AstUtils.Convert(
+                    Ast.Field(
+                        AstUtils.Convert(instance, Field.DeclaringType),
+                        Field
+                    ),
+                    typeof(object)                    
                 );
             }
 
-            return DefaultBinder.MakeError(((DefaultBinder)binder).MakeNonPublicMemberGetError(context, this, type, instance));
+            return DefaultBinder.MakeError(((DefaultBinder)binder).MakeNonPublicMemberGetError(context, this, type, instance), typeof(object));
         }
 
         public override MemberTracker BindToInstance(Expression instance) {

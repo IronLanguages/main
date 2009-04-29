@@ -1,0 +1,16 @@
+--- !ruby/object:RI::MethodDescription 
+aliases: []
+
+block_params: 
+comment: 
+- !ruby/struct:SM::Flow::P 
+  body: Returns current codepage.
+- !ruby/struct:SM::Flow::VERB 
+  body: "   WIN32OLE.codepage # =&gt; WIN32OLE::CP_ACP\n"
+full_name: WIN32OLE::codepage
+is_singleton: true
+name: codepage
+params: |
+  WIN32OLE.codepage
+
+visibility: public

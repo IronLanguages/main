@@ -1,0 +1,76 @@
+--- !ruby/object:RI::ClassDescription 
+attributes: []
+
+class_methods: 
+- !ruby/object:RI::MethodSummary 
+  name: codepage
+- !ruby/object:RI::MethodSummary 
+  name: codepage=
+- !ruby/object:RI::MethodSummary 
+  name: connect
+- !ruby/object:RI::MethodSummary 
+  name: const_load
+- !ruby/object:RI::MethodSummary 
+  name: new
+- !ruby/object:RI::MethodSummary 
+  name: ole_free
+- !ruby/object:RI::MethodSummary 
+  name: ole_reference_count
+- !ruby/object:RI::MethodSummary 
+  name: ole_show_help
+comment: 
+- !ruby/struct:SM::Flow::P 
+  body: <tt>WIN32OLE</tt> objects represent OLE Automation object in Ruby.
+constants: 
+- !ruby/object:RI::Constant 
+  comment: 
+  name: VERSION
+  value: rb_str_new2(WIN32OLE_VERSION)
+- !ruby/object:RI::Constant 
+  comment: 
+  name: ARGV
+  value: rb_ary_new()
+- !ruby/object:RI::Constant 
+  comment: 
+  name: CP_THREAD_ACP
+  value: INT2FIX(CP_THREAD_ACP)
+full_name: WIN32OLE
+includes: []
+
+instance_methods: 
+- !ruby/object:RI::MethodSummary 
+  name: "[]"
+- !ruby/object:RI::MethodSummary 
+  name: "[]="
+- !ruby/object:RI::MethodSummary 
+  name: _getproperty
+- !ruby/object:RI::MethodSummary 
+  name: _invoke
+- !ruby/object:RI::MethodSummary 
+  name: _setproperty
+- !ruby/object:RI::MethodSummary 
+  name: each
+- !ruby/object:RI::MethodSummary 
+  name: invoke
+- !ruby/object:RI::MethodSummary 
+  name: method_missing
+- !ruby/object:RI::MethodSummary 
+  name: ole_free
+- !ruby/object:RI::MethodSummary 
+  name: ole_func_methods
+- !ruby/object:RI::MethodSummary 
+  name: ole_get_methods
+- !ruby/object:RI::MethodSummary 
+  name: ole_method
+- !ruby/object:RI::MethodSummary 
+  name: ole_method_help
+- !ruby/object:RI::MethodSummary 
+  name: ole_methods
+- !ruby/object:RI::MethodSummary 
+  name: ole_obj_help
+- !ruby/object:RI::MethodSummary 
+  name: ole_put_methods
+- !ruby/object:RI::MethodSummary 
+  name: setproperty
+name: WIN32OLE
+superclass: Object

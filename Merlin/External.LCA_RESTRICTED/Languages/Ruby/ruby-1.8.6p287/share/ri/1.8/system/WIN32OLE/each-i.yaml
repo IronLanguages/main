@@ -1,0 +1,16 @@
+--- !ruby/object:RI::MethodDescription 
+aliases: []
+
+block_params: 
+comment: 
+- !ruby/struct:SM::Flow::P 
+  body: Iterates over each item of OLE collection which has IEnumVARIANT interface.
+- !ruby/struct:SM::Flow::VERB 
+  body: "   excel = WIN32OLE.new('Excel.Application')\n   book = excel.workbooks.add\n   sheets = book.worksheets(1)\n   cells = sheets.cells(&quot;A1:A5&quot;)\n   cells.each do |cell|\n     cell.value = 10\n   end\n"
+full_name: WIN32OLE#each
+is_singleton: false
+name: each
+params: |
+  WIN32OLE#each {|i|...}
+
+visibility: public

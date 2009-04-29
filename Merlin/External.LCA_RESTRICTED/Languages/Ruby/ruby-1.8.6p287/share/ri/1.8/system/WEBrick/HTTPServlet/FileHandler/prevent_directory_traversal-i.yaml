@@ -1,0 +1,10 @@
+--- !ruby/object:RI::MethodDescription 
+aliases: []
+
+block_params: 
+comment: 
+full_name: WEBrick::HTTPServlet::FileHandler#prevent_directory_traversal
+is_singleton: false
+name: prevent_directory_traversal
+params: (req, res)
+visibility: private

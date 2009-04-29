@@ -148,7 +148,8 @@ namespace Microsoft.Scripting.Actions {
 
             return MakeError(
                 binder.MakeInvalidParametersError(bt),
-                restrictions.Merge(BindingRestrictions.Combine(args).Merge(restriction))
+                restrictions.Merge(BindingRestrictions.Combine(args).Merge(restriction)),
+                typeof(object)
             );
         }
 

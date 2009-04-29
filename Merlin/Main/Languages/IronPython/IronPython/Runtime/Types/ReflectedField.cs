@@ -168,20 +168,23 @@ namespace IronPython.Runtime.Types {
                 base.MakeGetExpression(binder, codeContext, instance, owner, builder);
             } else if (instance == null) {
                 if (_info.IsStatic) {
-                    builder.FinishCondition(Ast.Field(null, _info));
+                    builder.FinishCondition(AstUtils.Convert(Ast.Field(null, _info), typeof(object)));
                 } else {
                     builder.FinishCondition(Ast.Constant(this));
                 }
             } else {
                 builder.FinishCondition(
-                    Ast.Field(
-                        binder.ConvertExpression(
-                            instance,
-                            _info.DeclaringType,
-                            ConversionResultKind.ExplicitCast,
-                            codeContext
+                    AstUtils.Convert(
+                        Ast.Field(
+                            binder.ConvertExpression(
+                                instance,
+                                _info.DeclaringType,
+                                ConversionResultKind.ExplicitCast,
+                                codeContext
+                            ),
+                            _info
                         ),
-                        _info
+                        typeof(object)
                     )
                 );
             }

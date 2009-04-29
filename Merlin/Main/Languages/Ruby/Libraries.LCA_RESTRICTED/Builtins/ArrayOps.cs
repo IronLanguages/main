@@ -106,6 +106,18 @@ namespace IronRuby.Builtins {
             return Reinitialize(block, new RubyArray(), size);
         }
 
+        [RubyConstructor]
+        public static RubyArray/*!*/ CreateArray(BlockParam/*!*/ block, RubyClass/*!*/ self, [DefaultProtocol]int size, object value) {
+            return Reinitialize(block, new RubyArray(), size, value);
+        }
+
+        [RubyMethod("initialize", RubyMethodAttributes.PrivateInstance)]
+        public static RubyArray/*!*/ Reinitialize(BlockParam/*!*/ block, RubyArray/*!*/ self, int size, object value) {
+            block.RubyContext.ReportWarning("block supersedes default value argument");
+            Reinitialize(block, self, size);
+            return self;
+        }
+
         private static object Reinitialize(BlockParam/*!*/ block, RubyArray/*!*/ self, int size) {
             if (size < 0) {
                 throw RubyExceptions.CreateArgumentError("negative array size");
@@ -159,8 +171,12 @@ namespace IronRuby.Builtins {
         #endregion
 
         [RubyMethod("to_a")]
-        [RubyMethod("to_ary")]
         public static RubyArray/*!*/ ToArray(RubyArray/*!*/ self) {
+            return self is RubyArray.Subclass ? new RubyArray(self) : self;
+        }
+
+        [RubyMethod("to_ary")]
+        public static RubyArray/*!*/ ToExplicitArray(RubyArray/*!*/ self) {
             return self;
         }
 

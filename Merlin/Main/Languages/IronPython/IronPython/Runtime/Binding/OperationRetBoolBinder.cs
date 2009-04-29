@@ -27,9 +27,9 @@ namespace IronPython.Runtime.Binding {
 
     partial class OperationRetBoolBinder : ComboBinder, IExpressionSerializable {
         private readonly PythonBinaryOperationBinder _opBinder;
-        private readonly ConversionBinder _convBinder;
+        private readonly PythonConversionBinder _convBinder;
 
-        public OperationRetBoolBinder(PythonBinaryOperationBinder operationBinder, ConversionBinder conversionBinder) :
+        public OperationRetBoolBinder(PythonBinaryOperationBinder operationBinder, PythonConversionBinder conversionBinder) :
             base(new BinderMappingInfo(
                     operationBinder,
                     ParameterMappingInfo.Parameter(0),
@@ -42,6 +42,12 @@ namespace IronPython.Runtime.Binding {
             ) {
             _opBinder = operationBinder;
             _convBinder = conversionBinder;
+        }
+
+        public override Type ReturnType {
+            get {
+                return typeof(bool);
+            }
         }
 
         #region IExpressionSerializable Members

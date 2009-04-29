@@ -48,9 +48,9 @@ namespace IronRuby.Runtime {
         public static readonly string/*!*/ MriReleaseDate = "2008-05-28";
 
         // IronRuby:
-        public const string/*!*/ IronRubyVersionString = "0.3.0.0";
-        public static readonly Version IronRubyVersion = new Version(0, 3, 0, 0);
-        internal const string/*!*/ IronRubyDisplayName = "IronRuby 0.3";
+        public const string/*!*/ IronRubyVersionString = "0.4.0.0";
+        public static readonly Version IronRubyVersion = new Version(0, 4, 0, 0);
+        internal const string/*!*/ IronRubyDisplayName = "IronRuby";
         internal const string/*!*/ IronRubyNames = "IronRuby;Ruby;rb";
         internal const string/*!*/ IronRubyFileExtensions = ".rb";
 
@@ -1614,6 +1614,15 @@ namespace IronRuby.Runtime {
                 return true;
             }
         }
+
+        public void TrySetLibraryData(object key, object value) {
+            EnsureLibraryData();
+
+            lock (_libraryData) {
+                _libraryData[key] = value;
+            }
+        }
+
 
         #endregion
 

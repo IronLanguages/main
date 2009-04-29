@@ -2,15 +2,24 @@ require File.dirname(__FILE__) + '/../../spec_helper'
 require File.dirname(__FILE__) + '/fixtures/classes'
 
 describe "Array#to_s" do
-  it "is equivalent to #join without a separator string" do
-    old = $,
-    begin
+  ruby_version_is "" .. "1.9" do
+    it "is equivalent to #join without a separator string" do
+      old = $,
+      begin
+        a = [1, 2, 3, 4]
+        a.to_s.should == a.join
+        $, = '-'
+        a.to_s.should == a.join
+      ensure
+        $, = old
+      end
+    end
+  end
+
+  ruby_version_is "1.9" do
+    it "is equivalent to Array#inspect" do
       a = [1, 2, 3, 4]
-      a.to_s.should == a.join
-      $, = '-'
-      a.to_s.should == a.join
-    ensure
-      $, = old
+      a.to_s.should == a.inspect
     end
   end
 

@@ -157,7 +157,7 @@ describe "Predefined globals $0 and $PROGRAM_NAME" do
     it 'is always a canonicalized path' do
       # Does not use the "fixtures" method since the test
       # depends on the type of path separator used.
-      fixture_file = File.dirname(__FILE__) + '\\fixtures/file.rb'
+      fixture_file = File.dirname(__FILE__) + '\\../fixtures/file.rb'
       @output = ruby_exe(fixture_file).split
 
       @base_prgm = @output[1] # file.rb's $0
@@ -225,7 +225,7 @@ describe "Predefined global $stdout" do
     obj = mock('object')
     lambda { $stdout = obj }.should raise_error(TypeError)
 
-    obj.should_receive(:respond_to?).with(:write).and_return(true);
+    obj.stub!(:write)
     lambda { $stdout = obj }.should_not raise_error()
   end
 end

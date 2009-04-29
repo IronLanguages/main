@@ -1,0 +1,14 @@
+--- !ruby/object:RI::MethodDescription 
+aliases: []
+
+block_params: 
+comment: 
+- !ruby/struct:SM::Flow::P 
+  body: Defines the callback of event. If you want modify argument in callback, you should use this method instead of WIN32OLE_EVENT#on_event.
+full_name: WIN32OLE_EVENT#on_event_with_outargs
+is_singleton: false
+name: on_event_with_outargs
+params: |
+  WIN32OLE_EVENT#on_event_with_outargs([event]){...}
+
+visibility: public

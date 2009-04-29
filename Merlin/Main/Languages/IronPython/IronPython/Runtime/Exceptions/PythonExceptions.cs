@@ -362,7 +362,7 @@ namespace IronPython.Runtime.Exceptions {
                     return _clrException;
                 }
 
-                System.Exception newExcep = CreateClrException(_message != null ? _message.ToString() : String.Empty);
+                System.Exception newExcep = CreateClrException(_message as string ?? ("Python Exception: " + _type.Name));
                 AssociateException(newExcep, this);
 
                 Interlocked.CompareExchange<System.Exception>(ref _clrException, newExcep, null);

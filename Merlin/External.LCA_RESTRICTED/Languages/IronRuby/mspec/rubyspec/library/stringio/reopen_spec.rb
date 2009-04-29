@@ -11,7 +11,7 @@ describe "StringIO#reopen when passed [Object, Integer]" do
     @io.closed_read?.should be_false
     @io.closed_write?.should be_true
     @io.string.should == "reopened"
-    
+
     @io.reopen("reopened, twice", IO::WRONLY)
     @io.closed_read?.should be_true
     @io.closed_write?.should be_false
@@ -22,7 +22,7 @@ describe "StringIO#reopen when passed [Object, Integer]" do
     @io.closed_write?.should be_false
     @io.string.should == "reopened, another time"
   end
-  
+
   # NOTE: WEIRD!
   it "does not taint self when the passed Object was tainted" do
     @io.reopen("reopened".taint, IO::RDONLY)
@@ -31,40 +31,30 @@ describe "StringIO#reopen when passed [Object, Integer]" do
     @io.reopen("reopened".taint, IO::WRONLY)
     @io.tainted?.should be_false
   end
-  
+
   it "tries to convert the passed Object to a String using #to_str" do
     obj = mock("to_str")
     obj.should_receive(:to_str).and_return("to_str")
     @io.reopen(obj, IO::RDWR)
     @io.string.should == "to_str"
   end
-  
+
   it "raises a TypeError when the passed Object can't be converted to a String" do
     lambda { @io.reopen(Object.new, IO::RDWR) }.should raise_error(TypeError)
   end
-  
-  it "checks whether the passed Object responds to #to_str" do
-    obj = mock('method_missing to_str')
-    obj.should_receive(:respond_to?).with(:to_str).any_number_of_times.and_return(true)
-    obj.should_receive(:method_missing).with(:to_str).and_return("reopened")
-    @io.reopen(obj, IO::RDONLY)
-    @io.string.should == "reopened"
+
+  it "raises an Errno::EACCES when trying to reopen self with a frozen String in write-mode" do
+    lambda { @io.reopen("burn".freeze, IO::WRONLY) }.should raise_error(Errno::EACCES)
+    lambda { @io.reopen("burn".freeze, IO::WRONLY | IO::APPEND) }.should raise_error(Errno::EACCES)
   end
-  
-  not_compliant_on :rubinius do
-    it "raises an Errno::EACCES when trying to reopen self with a frozen String in write-mode" do
-      lambda { @io.reopen("burn".freeze, IO::WRONLY) }.should raise_error(Errno::EACCES)
-      lambda { @io.reopen("burn".freeze, IO::WRONLY | IO::APPEND) }.should raise_error(Errno::EACCES)
-    end
 
-    it "raises a TypeError when trying to reopen self with a frozen String in truncate-mode" do
-      lambda { @io.reopen("burn".freeze, IO::RDONLY | IO::TRUNC) }.should raise_error(TypeError)
-    end
+  it "raises a TypeError when trying to reopen self with a frozen String in truncate-mode" do
+    lambda { @io.reopen("burn".freeze, IO::RDONLY | IO::TRUNC) }.should raise_error(TypeError)
+  end
 
-    it "does not raise IOError when passed a frozen String in read-mode" do
-      @io.reopen("burn".freeze, IO::RDONLY)
-      @io.string.should == "burn"
-    end
+  it "does not raise IOError when passed a frozen String in read-mode" do
+    @io.reopen("burn".freeze, IO::RDONLY)
+    @io.string.should == "burn"
   end
 end
 
@@ -72,18 +62,18 @@ describe "StringIO#reopen when passed [Object, Object]" do
   before(:each) do
     @io = StringIO.new("example")
   end
-  
+
   it "reopens self with the passed Object in the passed mode" do
     @io.reopen("reopened", "r")
     @io.closed_read?.should be_false
     @io.closed_write?.should be_true
     @io.string.should == "reopened"
-    
+
     @io.reopen("reopened, twice", "r+")
     @io.closed_read?.should be_false
     @io.closed_write?.should be_false
     @io.string.should == "reopened, twice"
-    
+
     @io.reopen("reopened, another", "w+")
     @io.closed_read?.should be_false
     @io.closed_write?.should be_false
@@ -108,24 +98,16 @@ describe "StringIO#reopen when passed [Object, Object]" do
     @io.reopen("reopened".taint, "w")
     @io.tainted?.should be_false
   end
-  
+
   it "tries to convert the passed Object to a String using #to_str" do
     obj = mock("to_str")
     obj.should_receive(:to_str).and_return("to_str")
     @io.reopen(obj, "r")
     @io.string.should == "to_str"
   end
-  
+
   it "raises a TypeError when the passed Object can't be converted to a String using #to_str" do
     lambda { @io.reopen(Object.new, "r") }.should raise_error(TypeError)
-  end
-  
-  it "checks whether the passed Object responds to #to_str" do
-    obj = mock('method_missing to_str')
-    obj.should_receive(:respond_to?).with(:to_str).any_number_of_times.and_return(true)
-    obj.should_receive(:method_missing).with(:to_str).and_return("reopened")
-    @io.reopen(obj, "r")
-    @io.string.should == "reopened"
   end
 
   ruby_bug "#", "1.8.7" do
@@ -134,7 +116,7 @@ describe "StringIO#reopen when passed [Object, Object]" do
       @io.reopen("reopened")
       @io.pos.should eql(0)
     end
-    
+
     it "resets self's line number to 0" do
       @io.gets
       @io.reopen("reopened")
@@ -150,26 +132,17 @@ describe "StringIO#reopen when passed [Object, Object]" do
     @io.closed_write?.should be_true
     @io.string.should == "reopened"
   end
-  
-  it "checks whether the passed mode-Object responds to #to_str" do
-    obj = mock('method_missing to_str')
-    obj.should_receive(:respond_to?).any_number_of_times.with(:to_str).and_return(true)
-    obj.should_receive(:method_missing).with(:to_str).and_return("r")
-    @io.reopen("reopened", obj)
+
+  it "raises an Errno::EACCES error when trying to reopen self with a frozen String in write-mode" do
+    lambda { @io.reopen("burn".freeze, 'w') }.should raise_error(Errno::EACCES)
+    lambda { @io.reopen("burn".freeze, 'w+') }.should raise_error(Errno::EACCES)
+    lambda { @io.reopen("burn".freeze, 'a') }.should raise_error(Errno::EACCES)
+    lambda { @io.reopen("burn".freeze, "r+") }.should raise_error(Errno::EACCES)
   end
 
-  not_compliant_on :rubinius do
-    it "raises an Errno::EACCES error when trying to reopen self with a frozen String in write-mode" do
-      lambda { @io.reopen("burn".freeze, 'w') }.should raise_error(Errno::EACCES)
-      lambda { @io.reopen("burn".freeze, 'w+') }.should raise_error(Errno::EACCES)
-      lambda { @io.reopen("burn".freeze, 'a') }.should raise_error(Errno::EACCES)
-      lambda { @io.reopen("burn".freeze, "r+") }.should raise_error(Errno::EACCES)
-    end
-
-    it "does not raise IOError if a frozen string is passed in read mode" do
-      @io.reopen("burn".freeze, "r")
-      @io.string.should == "burn"
-    end
+  it "does not raise IOError if a frozen string is passed in read mode" do
+    @io.reopen("burn".freeze, "r")
+    @io.string.should == "burn"
   end
 end
 
@@ -180,12 +153,12 @@ describe "StringIO#reopen when passed [String]" do
 
   it "reopens self with the passed String in read-write mode" do
     @io.close
-    
+
     @io.reopen("reopened")
-    
+
     @io.closed_write?.should be_false
     @io.closed_read?.should be_false
-    
+
     @io.string.should == "reopened"
   end
 
@@ -201,7 +174,7 @@ describe "StringIO#reopen when passed [String]" do
       @io.reopen("reopened")
       @io.pos.should eql(0)
     end
-    
+
     it "resets self's line number to 0" do
       @io.gets
       @io.reopen("reopened")
@@ -237,35 +210,27 @@ describe "StringIO#reopen when passed [Object]" do
     @io.reopen(StringIO.new("reopened").taint)
     @io.tainted?.should be_true
   end
-
-  it "checks whether the passed Object responds to #to_strio" do
-    obj = mock('method_missing to_str')
-    obj.should_receive(:respond_to?).with(:to_strio).any_number_of_times.and_return(true)
-    obj.should_receive(:method_missing).with(:to_strio).and_return(StringIO.new("reopened"))
-    @io.reopen(obj)
-    @io.string.should == "reopened"
-  end
 end
 
 describe "StringIO#reopen when passed no arguments" do
   before(:each) do
     @io = StringIO.new("example\nsecond line")
   end
-  
+
   it "resets self's mode to read-write" do
     @io.close
     @io.reopen
     @io.closed_read?.should be_false
     @io.closed_write?.should be_false
   end
-  
+
   ruby_bug "#", "1.8.7" do
     it "resets self's position to 0" do
       @io.read(5)
       @io.reopen
       @io.pos.should eql(0)
     end
-    
+
     it "resets self's line number to 0" do
       @io.gets
       @io.reopen

@@ -35,7 +35,7 @@ using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace IronPython.Runtime.Binding {
 
-    class MetaBuiltinFunction : MetaPythonObject, IPythonInvokable, IPythonOperable {
+    class MetaBuiltinFunction : MetaPythonObject, IPythonInvokable, IPythonOperable, IPythonConvertible {
         public MetaBuiltinFunction(Expression/*!*/ expression, BindingRestrictions/*!*/ restrictions, BuiltinFunction/*!*/ value)
             : base(expression, BindingRestrictions.Empty, value) {
             Assert.NotNull(value);
@@ -49,13 +49,22 @@ namespace IronPython.Runtime.Binding {
         }
 
         public override DynamicMetaObject BindConvert(ConvertBinder/*!*/ conversion) {
-            PerfTrack.NoteEvent(PerfTrack.Categories.Binding, "BuiltinFunc Convert " + conversion.Type);
-            PerfTrack.NoteEvent(PerfTrack.Categories.BindingTarget, "BuiltinFunc Convert");            
+            return ConvertWorker(conversion, conversion.Type, conversion.Explicit ? ConversionResultKind.ExplicitCast : ConversionResultKind.ImplicitCast);
+        }
 
-            if (conversion.Type.IsSubclassOf(typeof(Delegate))) {
-                return MakeDelegateTarget(conversion, conversion.Type, Restrict(typeof(BuiltinFunction)));
+        public DynamicMetaObject BindConvert(PythonConversionBinder binder) {
+            return ConvertWorker(binder, binder.Type, binder.ResultKind);
+        }
+
+        public DynamicMetaObject ConvertWorker(DynamicMetaObjectBinder binder, Type toType, ConversionResultKind kind) {
+            PerfTrack.NoteEvent(PerfTrack.Categories.Binding, "BuiltinFunc Convert " + toType);
+            PerfTrack.NoteEvent(PerfTrack.Categories.BindingTarget, "BuiltinFunc Convert");
+
+            if (toType.IsSubclassOf(typeof(Delegate))) {
+                return MakeDelegateTarget(binder, toType, Restrict(typeof(BuiltinFunction)));
             }
-            return conversion.FallbackConvert(this);
+
+            return FallbackConvert(binder);
         }
 
         DynamicMetaObject IPythonOperable.BindOperation(PythonOperationBinder action, DynamicMetaObject[] args) {
