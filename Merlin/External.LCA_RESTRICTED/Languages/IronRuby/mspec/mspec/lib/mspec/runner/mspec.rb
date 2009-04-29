@@ -20,6 +20,7 @@ module MSpec
   @current = nil
   @modes   = []
   @shared  = {}
+  @guarded = []
   @exception    = nil
   @randomize    = nil
   @expectation  = nil
@@ -72,6 +73,20 @@ module MSpec
       actions :exception, ExceptionState.new(current && current.state, location, exc)
       return false
     end
+  end
+
+  # Guards can be nested, so a stack is necessary to know when we have
+  # exited the toplevel guard.
+  def self.guard
+    @guarded << true
+  end
+
+  def self.unguard
+    @guarded.pop
+  end
+
+  def self.guarded?
+    not @guarded.empty?
   end
 
   # Sets the toplevel ContextState to +state+.
@@ -161,6 +176,7 @@ module MSpec
   #   :load         before a spec file is loaded
   #   :enter        before a describe block is run
   #   :before       before a single spec is run
+  #   :add          while a describe block is adding examples to run later
   #   :expectation  before a 'should', 'should_receive', etc.
   #   :example      after an example block is run, passed the block
   #   :exception    after an exception is rescued
@@ -252,6 +268,7 @@ module MSpec
       File.open(file, "r") do |f|
         f.each_line do |line|
           line.chomp!
+          line.strip!
           next if line.empty?
           tag = SpecTag.new line.chomp
           tags << tag if keys.include? tag.tag
@@ -281,7 +298,7 @@ module MSpec
     FileUtils.mkdir_p path unless File.exist? path
     if File.exist? file
       File.open(file, "r") do |f|
-        f.each_line { |line| return false if line.chomp == string }
+        f.each_line { |line| return false if line.chomp.strip == string }
       end
     end
     File.open(file, "a") { |f| f.puts string }
@@ -293,13 +310,13 @@ module MSpec
   # file if it is empty.
   def self.delete_tag(tag)
     deleted = false
-    pattern = /#{tag.tag}.*#{Regexp.escape tag.description}/
+    pattern = /#{tag.tag}.*#{Regexp.escape(tag.escape(tag.description.strip))}/
     file = tags_file
     if File.exist? file
       lines = IO.readlines(file)
       File.open(file, "w") do |f|
         lines.each do |line|
-          unless pattern =~ line.chomp
+          unless pattern =~ line.chomp.strip
             f.puts line unless line.empty?
           else
             deleted = true

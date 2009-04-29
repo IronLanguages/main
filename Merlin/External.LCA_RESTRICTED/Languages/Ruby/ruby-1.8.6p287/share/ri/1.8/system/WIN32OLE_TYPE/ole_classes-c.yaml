@@ -1,0 +1,14 @@
+--- !ruby/object:RI::MethodDescription 
+aliases: []
+
+block_params: 
+comment: 
+- !ruby/struct:SM::Flow::P 
+  body: Returns array of WIN32OLE_TYPE objects defined by the <em>typelib</em> type library.
+full_name: WIN32OLE_TYPE::ole_classes
+is_singleton: true
+name: ole_classes
+params: |
+  WIN32OLE_TYPE.ole_classes(typelib)
+
+visibility: public

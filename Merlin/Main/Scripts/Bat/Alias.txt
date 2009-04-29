@@ -26,11 +26,6 @@ geninit   =%MERLIN_ROOT%\Languages\Ruby\Libraries.LCA_RESTRICTED\GenerateInitial
 geninity  =%MERLIN_ROOT%\..\External.LCA_RESTRICTED\Languages\IronRuby\yaml\IronRuby.Libraries.Yaml\GenerateInitializers.cmd
 gencache  =%MERLIN_ROOT%\Languages\Ruby\Ruby\Compiler\GenerateReflectionCache.cmd
 
-bsrbd       =msbuild.exe %MERLIN_ROOT%\Languages\Ruby\Ruby.sln /p:Configuration="Silverlight Debug" $*
-bsrbr       =msbuild.exe %MERLIN_ROOT%\Languages\Ruby\Ruby.sln /p:Configuration="Silverlight Release" $*
-bsipd       =msbuild.exe %MERLIN_ROOT%\Languages\IronPython\IronPython.sln /p:Configuration="Silverlight Debug" $*
-bsipr       =msbuild.exe %MERLIN_ROOT%\Languages\IronPython\IronPython.sln /p:Configuration="Silverlight Release" $*
-
 ;==============================================================================
 ;= [Iron]Python program aliases
 ;=

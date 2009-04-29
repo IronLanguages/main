@@ -405,8 +405,9 @@ namespace System.Linq.Expressions {
             System.Diagnostics.Debug.Assert(method != null);
             ValidateOperator(method);
             ParameterInfo[] pms = method.GetParametersCached();
-            if (pms.Length != 1)
+            if (pms.Length != 1) {
                 throw Error.IncorrectNumberOfMethodCallArguments(method);
+            }
             if (ParameterIsAssignable(pms[0], operand.Type) && TypeUtils.AreEquivalent(method.ReturnType, convertToType)) {
                 return new UnaryExpression(unaryType, operand, method.ReturnType, method);
             }
@@ -634,6 +635,8 @@ namespace System.Linq.Expressions {
         public static UnaryExpression TypeAs(Expression expression, Type type) {
             RequiresCanRead(expression, "expression");
             ContractUtils.RequiresNotNull(type, "type");
+            TypeUtils.ValidateType(type);
+
             if (type.IsValueType && !TypeUtils.IsNullableType(type)) {
                 throw Error.IncorrectTypeForTypeAs(type);
             }
@@ -654,6 +657,7 @@ namespace System.Linq.Expressions {
                 "expression", Strings.InvalidUnboxType
             );
             ContractUtils.Requires(type.IsValueType, "type", Strings.InvalidUnboxType);
+            TypeUtils.ValidateType(type);
             return new UnaryExpression(ExpressionType.Unbox, expression, type, null);
         }
 
@@ -681,8 +685,10 @@ namespace System.Linq.Expressions {
         ///<exception cref="T:System.InvalidOperationException">No conversion operator is defined between <paramref name="expression" />.Type and <paramref name="type" />.-or-<paramref name="expression" />.Type is not assignable to the argument type of the method represented by <paramref name="method" />.-or-The return type of the method represented by <paramref name="method" /> is not assignable to <paramref name="type" />.-or-<paramref name="expression" />.Type or <paramref name="type" /> is a nullable value type and the corresponding non-nullable value type does not equal the argument type or the return type, respectively, of the method represented by <paramref name="method" />.</exception>
         public static UnaryExpression Convert(Expression expression, Type type, MethodInfo method) {
             RequiresCanRead(expression, "expression");
+            ContractUtils.RequiresNotNull(type, "type");
+            TypeUtils.ValidateType(type);
+
             if (method == null) {
-                ContractUtils.RequiresNotNull(type, "type");
                 if (TypeUtils.HasIdentityPrimitiveOrNullableConversion(expression.Type, type) ||
                     TypeUtils.HasReferenceConversion(expression.Type, type)) {
                     return new UnaryExpression(ExpressionType.Convert, expression, type, null);
@@ -716,8 +722,10 @@ namespace System.Linq.Expressions {
         ///<exception cref="T:System.InvalidOperationException">No conversion operator is defined between <paramref name="expression" />.Type and <paramref name="type" />.-or-<paramref name="expression" />.Type is not assignable to the argument type of the method represented by <paramref name="method" />.-or-The return type of the method represented by <paramref name="method" /> is not assignable to <paramref name="type" />.-or-<paramref name="expression" />.Type or <paramref name="type" /> is a nullable value type and the corresponding non-nullable value type does not equal the argument type or the return type, respectively, of the method represented by <paramref name="method" />.</exception>
         public static UnaryExpression ConvertChecked(Expression expression, Type type, MethodInfo method) {
             RequiresCanRead(expression, "expression");
+            ContractUtils.RequiresNotNull(type, "type");
+            TypeUtils.ValidateType(type);
+
             if (method == null) {
-                ContractUtils.RequiresNotNull(type, "type");
                 if (TypeUtils.HasIdentityPrimitiveOrNullableConversion(expression.Type, type)) {
                     return new UnaryExpression(ExpressionType.ConvertChecked, expression, type, null);
                 }
@@ -792,6 +800,7 @@ namespace System.Linq.Expressions {
         /// <returns>A <see cref="T:System.Linq.Expressions.UnaryExpression"/> that represents the exception.</returns>
         public static UnaryExpression Throw(Expression value, Type type) {
             ContractUtils.RequiresNotNull(type, "type");
+            TypeUtils.ValidateType(type);
 
             if (value != null) {
                 RequiresCanRead(value, "value");

@@ -1,0 +1,53 @@
+--- !ruby/object:RI::ClassDescription 
+attributes: []
+
+class_methods: 
+- !ruby/object:RI::MethodSummary 
+  name: new
+- !ruby/object:RI::MethodSummary 
+  name: ole_classes
+- !ruby/object:RI::MethodSummary 
+  name: progids
+- !ruby/object:RI::MethodSummary 
+  name: typelibs
+comment: 
+- !ruby/struct:SM::Flow::P 
+  body: <tt>WIN32OLE_TYPE</tt> objects represent OLE type libarary information.
+constants: []
+
+full_name: WIN32OLE_TYPE
+includes: []
+
+instance_methods: 
+- !ruby/object:RI::MethodSummary 
+  name: guid
+- !ruby/object:RI::MethodSummary 
+  name: helpcontext
+- !ruby/object:RI::MethodSummary 
+  name: helpfile
+- !ruby/object:RI::MethodSummary 
+  name: helpstring
+- !ruby/object:RI::MethodSummary 
+  name: major_version
+- !ruby/object:RI::MethodSummary 
+  name: minor_version
+- !ruby/object:RI::MethodSummary 
+  name: name
+- !ruby/object:RI::MethodSummary 
+  name: ole_methods
+- !ruby/object:RI::MethodSummary 
+  name: ole_type
+- !ruby/object:RI::MethodSummary 
+  name: progid
+- !ruby/object:RI::MethodSummary 
+  name: src_type
+- !ruby/object:RI::MethodSummary 
+  name: to_s
+- !ruby/object:RI::MethodSummary 
+  name: typekind
+- !ruby/object:RI::MethodSummary 
+  name: variables
+- !ruby/object:RI::MethodSummary 
+  name: visible?
+name: WIN32OLE_TYPE
+superclass: Object

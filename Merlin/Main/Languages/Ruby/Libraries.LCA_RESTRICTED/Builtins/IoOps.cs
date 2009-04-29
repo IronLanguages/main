@@ -203,7 +203,7 @@ namespace IronRuby.Builtins {
             try {
                 process = Process.Start(startInfo);
             } catch (Exception e) {
-                throw Errno.CreateENOENT(startInfo.FileName, e);
+                throw RubyErrno.CreateENOENT(startInfo.FileName, e);
             }
 
             context.ChildProcessExitStatus = new RubyProcess.Status(process);
@@ -268,7 +268,7 @@ namespace IronRuby.Builtins {
                         return null;
                     }
                 } catch (Exception e) {
-                    throw new Errno.InvalidError(e.Message, e);
+                    throw RubyErrno.CreateEINVAL(e.Message, e);
                 }
 
                 result = new RubyArray();
@@ -628,8 +628,9 @@ namespace IronRuby.Builtins {
             } else if (obj is bool) {
                 return MutableString.Create((bool)obj ? "true" : "false");
             } else if (obj is double) {
-                var result = MutableString.Create(obj.ToString());
-                if ((double)(int)(double)obj == (double)obj) {
+                double value = (double)obj;
+                var result = MutableString.Create(value.ToString(System.Globalization.CultureInfo.InvariantCulture));
+                if ((double)(int)value == value) {
                     result.Append(".0");
                 }
                 return result;
@@ -708,7 +709,7 @@ namespace IronRuby.Builtins {
         private static RubyIO/*!*/ OpenFileForRead(RubyContext/*!*/ context, MutableString/*!*/ path) {
             string strPath = path.ConvertToString();
             if (!File.Exists(strPath)) {
-                throw Errno.CreateENOENT(String.Format("No such file or directory - {0}", strPath));
+                throw RubyErrno.CreateENOENT(String.Format("No such file or directory - {0}", strPath));
             }
             return new RubyIO(context, File.OpenRead(strPath), "r");
         }
@@ -780,7 +781,7 @@ namespace IronRuby.Builtins {
             [DefaultProtocol, NotNull]MutableString/*!*/ path, [DefaultProtocol]int length, [DefaultProtocol, Optional]int offset) {
 
             if (offset < 0) {
-                throw new Errno.InvalidError();
+                throw RubyErrno.CreateEINVAL();
             }
 
             if (length < 0) {

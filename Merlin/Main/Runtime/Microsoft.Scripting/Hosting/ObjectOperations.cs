@@ -123,11 +123,10 @@ namespace Microsoft.Scripting.Hosting {
         }
 
         /// <summary>
-        /// Removes the member name from the object obj.  Returns true if the member was successfully removed
-        /// or false if the member does not exist.
+        /// Removes the member name from the object obj.  
         /// </summary>
-        public bool RemoveMember(object obj, string name) {
-            return _ops.RemoveMember(obj, name);
+        public void RemoveMember(object obj, string name) {
+            _ops.RemoveMember(obj, name);
         }
 
         /// <summary>
@@ -176,11 +175,10 @@ namespace Microsoft.Scripting.Hosting {
         }
 
         /// <summary>
-        /// Removes the member name from the object obj.  Returns true if the member was successfully removed
-        /// or false if the member does not exist.
+        /// Removes the member name from the object obj.  
         /// </summary>
-        public bool RemoveMember(object obj, string name, bool ignoreCase) {
-            return _ops.RemoveMember(obj, name, ignoreCase);
+        public void RemoveMember(object obj, string name, bool ignoreCase) {
+            _ops.RemoveMember(obj, name, ignoreCase);
         }
 
         /// <summary>
@@ -384,7 +382,7 @@ namespace Microsoft.Scripting.Hosting {
         /// Throws an exception if hte comparison cannot be performed.
         /// </summary>
         public bool LessThan(object self, object other) {
-            return _ops.DoOperation<object, object, bool>(ExpressionType.LessThan, self, other);
+            return ConvertTo<bool>(_ops.DoOperation<object, object, object>(ExpressionType.LessThan, self, other));
         }
 
         /// <summary>
@@ -392,7 +390,7 @@ namespace Microsoft.Scripting.Hosting {
         /// Throws an exception if hte comparison cannot be performed.
         /// </summary>
         public bool GreaterThan(object self, object other) {
-            return _ops.DoOperation<object, object, bool>(ExpressionType.GreaterThan, self, other);
+            return ConvertTo<bool>(_ops.DoOperation<object, object, object>(ExpressionType.GreaterThan, self, other));
         }
 
         /// <summary>
@@ -400,7 +398,7 @@ namespace Microsoft.Scripting.Hosting {
         /// Throws an exception if hte comparison cannot be performed.
         /// </summary>
         public bool LessThanOrEqual(object self, object other) {
-            return _ops.DoOperation<object, object, bool>(ExpressionType.LessThanOrEqual, self, other);
+            return ConvertTo<bool>(_ops.DoOperation<object, object, object>(ExpressionType.LessThanOrEqual, self, other));
         }
 
         /// <summary>
@@ -408,7 +406,7 @@ namespace Microsoft.Scripting.Hosting {
         /// Throws an exception if hte comparison cannot be performed.
         /// </summary>
         public bool GreaterThanOrEqual(object self, object other) {
-            return _ops.DoOperation<object, object, bool>(ExpressionType.GreaterThanOrEqual, self, other);
+            return ConvertTo<bool>(_ops.DoOperation<object, object, object>(ExpressionType.GreaterThanOrEqual, self, other));
         }
 
         /// <summary>
@@ -416,7 +414,7 @@ namespace Microsoft.Scripting.Hosting {
         /// Throws an exception if the comparison cannot be performed.
         /// </summary>
         public bool Equal(object self, object other) {
-            return _ops.DoOperation<object, object, bool>(ExpressionType.Equal, self, other);
+            return ConvertTo<bool>(_ops.DoOperation<object, object, object>(ExpressionType.Equal, self, other));
         }
 
         /// <summary>
@@ -424,7 +422,7 @@ namespace Microsoft.Scripting.Hosting {
         /// Throws an exception if hte comparison cannot be performed.
         /// </summary>
         public bool NotEqual(object self, object other) {
-            return _ops.DoOperation<object, object, bool>(ExpressionType.NotEqual, self, other);
+            return ConvertTo<bool>(_ops.DoOperation<object, object, object>(ExpressionType.NotEqual, self, other));
         }
 
         /// <summary>
@@ -711,8 +709,8 @@ namespace Microsoft.Scripting.Hosting {
         /// <summary>
         /// Removes the member from the remote object
         /// </summary>
-        public bool RemoveMember([NotNull]ObjectHandle obj, string name) {
-            return RemoveMember(GetLocalObject(obj), name);
+        public void RemoveMember([NotNull]ObjectHandle obj, string name) {
+            RemoveMember(GetLocalObject(obj), name);
         }
 
         /// <summary>

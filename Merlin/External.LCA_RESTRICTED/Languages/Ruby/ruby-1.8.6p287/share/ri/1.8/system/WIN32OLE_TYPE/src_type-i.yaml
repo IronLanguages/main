@@ -1,0 +1,16 @@
+--- !ruby/object:RI::MethodDescription 
+aliases: []
+
+block_params: 
+comment: 
+- !ruby/struct:SM::Flow::P 
+  body: Returns source class when the OLE class is 'Alias'.
+- !ruby/struct:SM::Flow::VERB 
+  body: "   tobj =  WIN32OLE_TYPE.new('Microsoft Office 9.0 Object Library', 'MsoRGBType')\n   puts tobj.src_type # =&gt; I4\n"
+full_name: WIN32OLE_TYPE#src_type
+is_singleton: false
+name: src_type
+params: |
+  WIN32OLE_TYPE#src_type #=> OLE source class
+
+visibility: public

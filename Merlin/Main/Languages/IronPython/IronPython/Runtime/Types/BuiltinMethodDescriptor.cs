@@ -51,16 +51,18 @@ namespace IronPython.Runtime.Types {
             return true;
         }
 
-        internal override Expression/*!*/ MakeGetExpression(PythonBinder/*!*/ binder, Expression/*!*/ codeContext, Expression instance, Expression/*!*/ owner, Expression/*!*/ error) {
+        internal override void MakeGetExpression(PythonBinder/*!*/ binder, Expression/*!*/ codeContext, Expression instance, Expression/*!*/ owner, ConditionalBuilder/*!*/ builder) {
             if (instance != null) {
-                return Ast.Call(
-                    typeof(PythonOps).GetMethod("MakeBoundBuiltinFunction"),
-                    AstUtils.Constant(_template),
-                    instance
+                builder.FinishCondition(
+                    Ast.Call(
+                        typeof(PythonOps).GetMethod("MakeBoundBuiltinFunction"),
+                        AstUtils.Constant(_template),
+                        instance
+                    )
                 );
+            } else {
+                builder.FinishCondition(AstUtils.Constant(this));
             }
-
-            return AstUtils.Constant(this);
         }
 
         internal override bool GetAlwaysSucceeds {

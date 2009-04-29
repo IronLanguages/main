@@ -51,20 +51,13 @@ describe "Array#first" do
     empty = ArraySpecs.empty_recursive_array
     empty.first.should equal(empty)
 
-    ary = ArraySpecs.head_recursive_array
-    ary.first.should equal(ary)
+    empty = ArraySpecs.recursive_array
+    empty.first.should == 1
   end
 
   it "tries to convert the passed argument to an Integer using #to_int" do
     obj = mock('to_int')
     obj.should_receive(:to_int).and_return(2)
-    [1, 2, 3, 4, 5].first(obj).should == [1, 2]
-  end
-  
-  it "checks whether the passed argument responds to #to_int" do
-    obj = mock('method_missing to_int')
-    obj.should_receive(:respond_to?).with(:to_int).any_number_of_times.and_return(true)
-    obj.should_receive(:method_missing).with(:to_int).and_return(2)
     [1, 2, 3, 4, 5].first(obj).should == [1, 2]
   end
 
@@ -73,7 +66,6 @@ describe "Array#first" do
     lambda { [1,2].first("a") }.should raise_error(TypeError)
 
     obj = mock("nonnumeric")
-    obj.should_receive(:respond_to?).with(:to_int).and_return(false)
     lambda { [1,2].first(obj) }.should raise_error(TypeError)
   end
 

@@ -15,6 +15,7 @@
 
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.Dynamic;
 using System.Linq.Expressions;
 using System.Runtime.CompilerServices;
@@ -24,6 +25,7 @@ using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 
 using IronPython.Runtime.Operations;
+using IronPython.Runtime.Types;
 
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 
@@ -53,6 +55,25 @@ namespace IronPython.Runtime.Binding {
 
         public override T BindDelegate<T>(CallSite<T> site, object[] args) {
             switch(_operation) {
+                case PythonOperationKind.Hash:
+                    if (CompilerHelpers.GetType(args[0]) == typeof(PythonType)) {
+                        if (typeof(T) == typeof(Func<CallSite, object, int>)) {
+                            return (T)(object)new Func<CallSite, object, int>(HashPythonType);
+                        }
+                    } else if (args[0] is OldClass) {
+                        if (typeof(T) == typeof(Func<CallSite, object, int>)) {
+                            return (T)(object)new Func<CallSite, object, int>(HashOldClass);
+                        }
+                    }
+                    break;
+                case PythonOperationKind.Compare:
+                    if (CompilerHelpers.GetType(args[0]) == typeof(string) &&
+                        CompilerHelpers.GetType(args[1]) == typeof(string)) {
+                        if (typeof(T) == typeof(Func<CallSite, object, object, object>)) {
+                            return (T)(object)new Func<CallSite, object, object, object>(CompareStrings);
+                        }
+                    }
+                    break;
                 case PythonOperationKind.GetEnumeratorForIteration:
                     if (CompilerHelpers.GetType(args[0]) == typeof(List)) {
                         if (typeof(T) == typeof(Func<CallSite, List, IEnumerator>)) {
@@ -100,7 +121,7 @@ namespace IronPython.Runtime.Binding {
                         }
                     } else if (CompilerHelpers.GetType(args[0]) == typeof(string) && CompilerHelpers.GetType(args[1]) == typeof(string)) {
                         Type tType = typeof(T);
-                        if(tType == typeof(Func<CallSite, object, object, bool>)) {
+                        if (tType == typeof(Func<CallSite, object, object, bool>)) {
                             return (T)(object)new Func<CallSite, object, object, bool>(StringContains);
                         } else if(tType == typeof(Func<CallSite, string, object, bool>)) {
                             return (T)(object)new Func<CallSite, string, object, bool>(StringContains);
@@ -109,12 +130,80 @@ namespace IronPython.Runtime.Binding {
                         } else if (tType == typeof(Func<CallSite, string, string, bool>)) {
                             return (T)(object)new Func<CallSite, string, string, bool>(StringContains);
                         }
+                    } else if (CompilerHelpers.GetType(args[1]) == typeof(SetCollection)) {
+                        if (typeof(T) == typeof(Func<CallSite, object, object, bool>)) {
+                            return (T)(object)new Func<CallSite, object, object, bool>(SetContains);
+                        }
+                    }
+                    break;
+                case PythonOperationKind.NotRetObject:
+                    if (CompilerHelpers.GetType(args[0]) == typeof(string)) {
+                        if (typeof(T) == typeof(Func<CallSite, object, object>)) {
+                            return (T)(object)new Func<CallSite, object, object>(StringIsFalse);
+                        }
+                    } else if (CompilerHelpers.GetType(args[0]) == typeof(bool)) {
+                        if (typeof(T) == typeof(Func<CallSite, object, object>)) {
+                            return (T)(object)new Func<CallSite, object, object>(BoolIsFalse);
+                        }
+                    } else if (CompilerHelpers.GetType(args[0]) == typeof(List)) {
+                        if (typeof(T) == typeof(Func<CallSite, object, object>)) {
+                            return (T)(object)new Func<CallSite, object, object>(ListIsFalse);
+                        }
+                    } else if (CompilerHelpers.GetType(args[0]) == typeof(PythonTuple)) {
+                        if (typeof(T) == typeof(Func<CallSite, object, object>)) {
+                            return (T)(object)new Func<CallSite, object, object>(TupleIsFalse);
+                        }
+                    } else if (args[0] == null) {
+                        if (typeof(T) == typeof(Func<CallSite, object, object>)) {
+                            return (T)(object)new Func<CallSite, object, object>(NoneIsFalse);
+                        }
                     }
                     break;
             }
             return base.BindDelegate<T>(site, args);
         }
 
+        private object StringIsFalse(CallSite site, object value) {
+            string strVal = value as string;
+            if (strVal != null) {
+                return strVal.Length == 0 ? ScriptingRuntimeHelpers.True : ScriptingRuntimeHelpers.False;
+            }
+
+            return ((CallSite<Func<CallSite, object, object>>)site).Update(site, value);
+        }
+
+        private object ListIsFalse(CallSite site, object value) {
+            if (value != null && value.GetType() == typeof(List)) {
+                return ((List)value).Count == 0 ? ScriptingRuntimeHelpers.True : ScriptingRuntimeHelpers.False;
+            }
+
+            return ((CallSite<Func<CallSite, object, object>>)site).Update(site, value);
+        }
+
+        private object NoneIsFalse(CallSite site, object value) {
+            if (value == null) {
+                return ScriptingRuntimeHelpers.True;
+            }
+
+            return ((CallSite<Func<CallSite, object, object>>)site).Update(site, value);
+        }
+
+        private object TupleIsFalse(CallSite site, object value) {
+            if (value != null && value.GetType() == typeof(PythonTuple)) {
+                return ((PythonTuple)value).Count == 0 ? ScriptingRuntimeHelpers.True : ScriptingRuntimeHelpers.False;
+            }
+
+            return ((CallSite<Func<CallSite, object, object>>)site).Update(site, value);
+        }
+
+        private object BoolIsFalse(CallSite site, object value) {
+            if (value is bool) {
+                return !(bool)value ? ScriptingRuntimeHelpers.True : ScriptingRuntimeHelpers.False;
+            }
+
+            return ((CallSite<Func<CallSite, object, object>>)site).Update(site, value);
+        }
+        
         private IEnumerator GetListEnumerator(CallSite site, List value) {
             return new listiterator(value);
         }
@@ -195,11 +284,62 @@ namespace IronPython.Runtime.Binding {
             return ((CallSite<Func<CallSite, object, object, bool>>)site).Update(site, other, value);
         }
 
+        private bool SetContains(CallSite site, object other, object value) {
+            if (value != null && value.GetType() == typeof(SetCollection)) {
+                return ((SetCollection)value).__contains__(other);
+            }
+
+            return ((CallSite<Func<CallSite, object, object, bool>>)site).Update(site, other, value);
+        }
+
+        private int HashPythonType(CallSite site, object value) {
+            if (value != null && value.GetType() == typeof(PythonType)) {
+                return value.GetHashCode();
+            }
+
+            return ((CallSite<Func<CallSite, object, int>>)site).Update(site, value);
+        }
+
+        private int HashOldClass(CallSite site, object value) {
+            // OldClass is sealed, an is check is good enough.
+            if (value is OldClass) {
+                return value.GetHashCode();
+            }
+
+            return ((CallSite<Func<CallSite, object, int>>)site).Update(site, value);
+        }
+
+        private object CompareStrings(CallSite site, object arg0, object arg1) {
+            if (arg0 != null && arg0.GetType() == typeof(string) &&
+                arg1 != null && arg1.GetType() == typeof(string)) {
+                return ScriptingRuntimeHelpers.Int32ToObject(StringOps.__cmp__((string)arg0, (string)arg1));
+            }
+
+            return ((CallSite<Func<CallSite, object, object, object>>)site).Update(site, arg0, arg1);
+        }
+
         public PythonOperationKind Operation {
             get {
                 return _operation;
             }
         }
+
+        /// <summary>
+        /// The result type of the operation.
+        /// </summary>
+        public /*override*/ Type ReturnType {
+            get {
+                switch (Operation & (~PythonOperationKind.DisableCoerce)) {
+                    case PythonOperationKind.Compare: return typeof(int);
+                    case PythonOperationKind.MemberNames: return typeof(IList<string>);
+                    case PythonOperationKind.IsCallable: return typeof(bool);
+                    case PythonOperationKind.Hash: return typeof(int);
+                    case PythonOperationKind.Contains: return typeof(bool);
+                }
+                return typeof(object); 
+            }
+        }
+
 
         public override int GetHashCode() {
             return base.GetHashCode() ^ _state.Binder.GetHashCode() ^ _operation.GetHashCode();

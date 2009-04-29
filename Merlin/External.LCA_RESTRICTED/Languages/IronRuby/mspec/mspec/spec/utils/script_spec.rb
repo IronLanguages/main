@@ -19,6 +19,25 @@ describe MSpecScript, ".set" do
   end
 end
 
+describe MSpecScript, ".filtered" do
+  before(:each) do
+    Dir.stub!(:entries).and_return(["abc","def","xyz"])
+  end
+  
+  it "creates an unfiltered array of file entries if the second param is omitted" do
+    MSpecScript.filtered("core").should == ["core/abc","core/def","core/xyz"]
+  end
+  
+  it "creates an array of file entries filtered by the second param" do
+    MSpecScript.filtered("core", "[a-d]").should == ["core/abc", "core/def"]  
+  end
+  
+  it "uses config[:prefix]" do
+    MSpecScript.config.should_receive(:[]).with(:prefix)
+    MSpecScript.filtered("core")
+  end
+end
+
 describe MSpecScript, ".get" do
   it "gets the config hash value for a key" do
     MSpecScript.set :a, 10
@@ -193,6 +212,21 @@ describe MSpecScript, "#load" do
   end
 end
 
+describe MSpecScript, "#custom_options" do
+  before :each do
+    @script = MSpecScript.new
+  end
+
+  after :each do
+  end
+
+  it "prints 'None'" do
+    options = mock("options")
+    options.should_receive(:doc).with("   No custom options registered")
+    @script.custom_options options
+  end
+end
+
 describe MSpecScript, "#register" do
   before :each do
     @script = MSpecScript.new
@@ -209,6 +243,23 @@ describe MSpecScript, "#register" do
 
   it "does not register the formatter if config[:formatter] is false" do
     @script.config[:formatter] = false
+    @script.register
+  end
+
+  it "calls #custom_register" do
+    @script.should_receive(:custom_register)
+    @script.register
+  end
+
+  it "registers :formatter with the formatter instance" do
+    @formatter.stub!(:new).and_return(@formatter)
+    MSpec.should_receive(:store).with(:formatter, @formatter)
+    @script.register
+  end
+
+  it "does not register :formatter if config[:formatter] is false" do
+    @script.config[:formatter] = false
+    MSpec.should_not_receive(:store)
     @script.register
   end
 end
@@ -324,13 +375,14 @@ describe MSpecScript, "#entries" do
   end
 
   it "returns the pattern in an array if it is a file" do
-    File.should_receive(:expand_path).with("file").and_return("file")
-    File.should_receive(:file?).with("file").and_return(true)
-    @script.entries("file").should == ["file"]
+    File.should_receive(:expand_path).with("file").and_return("file/expanded")
+    File.should_receive(:file?).with("file/expanded").and_return(true)
+    @script.entries("file").should == ["file/expanded"]
   end
 
   it "returns Dir['pattern/**/*_spec.rb'] if pattern is a directory" do
     File.should_receive(:directory?).with("name").and_return(true)
+    File.stub!(:expand_path).and_return("name","name/**/*_spec.rb")
     Dir.should_receive(:[]).with("name/**/*_spec.rb").and_return(["dir1", "dir2"])
     @script.entries("name").should == ["dir1", "dir2"]
   end
@@ -354,7 +406,7 @@ describe MSpecScript, "#entries" do
     end
 
     it "returns Dir['pattern/**/*_spec.rb'] if pattern is a directory" do
-      File.should_receive(:expand_path).with(@name).and_return(@name)
+      File.stub!(:expand_path).and_return(@name, @name+"/**/*_spec.rb")
       File.should_receive(:directory?).with(@name).and_return(true)
       Dir.should_receive(:[]).with(@name + "/**/*_spec.rb").and_return(["dir1", "dir2"])
       @script.entries("name").should == ["dir1", "dir2"]
@@ -401,10 +453,10 @@ describe MSpecScript, "#files" do
 
   it "looks up items with leading ':' in the config object" do
     @script.should_receive(:entries).and_return(["file1"], ["file2"])
-    @script.files(":files").should == ["file1", "file2"]
+    @script.files([":files"]).should == ["file1", "file2"]
   end
 
   it "returns an empty list if the config key is not set" do
-    @script.files(":all_files").should == []
+    @script.files([":all_files"]).should == []
   end
 end

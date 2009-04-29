@@ -6,7 +6,7 @@ describe "StringIO#puts when passed [Array, ...]" do
     @io = StringIO.new
   end
   
-  it "writes each element of the passed Array to self, seperated by a newline" do
+  it "writes each element of the passed Array to self, separated by a newline" do
     @io.puts([1, 2, 3, 4])
     @io.string.should == "1\n2\n3\n4\n"
   
@@ -26,7 +26,7 @@ describe "StringIO#puts when passed [Array, ...]" do
     @io.string.should == "5\n[...]\n"
   end
 
-  it "does not honor the global output record seperator $\\" do
+  it "does not honor the global output record separator $\\" do
     begin
       old_rs, $\ = $\, "test"
       @io.puts([1, 2, 3, 4])
@@ -49,21 +49,6 @@ describe "StringIO#puts when passed [Array, ...]" do
     @io.puts([obj])
     @io.string.should == "to_s\n"
   end
-  
-  it "checks each Array element whether it responds to #to_ary" do
-    obj = mock('method_missing to_ary')
-    obj.should_receive(:respond_to?).with(:to_ary).any_number_of_times.and_return(true)
-    obj.should_receive(:method_missing).with(:to_ary).and_return(["to_ary"])
-    @io.puts([obj])
-    @io.string.should == "to_ary\n"
-  end
-
-  it "does not check each Array element whether it responds to #to_s if it does not respond to #to_ary" do
-    obj = mock('method_missing to_s')
-    obj.should_receive(:respond_to?).with(:to_ary).any_number_of_times.and_return(false)
-    obj.should_not_receive(:respond_to?).with(:to_s)
-    @io.puts([obj])
-  end
 end
 
 describe "StringIO#puts when passed [Object, ...]" do
@@ -71,7 +56,7 @@ describe "StringIO#puts when passed [Object, ...]" do
     @io = StringIO.new
   end
 
-  it "does not honor the global output record seperator $\\" do
+  it "does not honor the global output record separator $\\" do
     begin
       old_rs, $\ = $\, "test"
       @io.puts(1, 2, 3, 4)
@@ -99,21 +84,6 @@ describe "StringIO#puts when passed [Object, ...]" do
     @io.puts(obj)
     @io.string.should == "to_s\n"
   end
-  
-  it "checks each Object whether it responds to #to_ary" do
-    obj = mock('method_missing to_ary')
-    obj.should_receive(:respond_to?).with(:to_ary).any_number_of_times.and_return(true)
-    obj.should_receive(:method_missing).with(:to_ary).and_return(["to_ary"])
-    @io.puts(obj)
-    @io.string.should == "to_ary\n"
-  end
-
-  it "does not check each Object whether it responds to #to_s if it does not respond to #to_ary" do
-    obj = mock('method_missing to_s')
-    obj.should_receive(:respond_to?).with(:to_ary).any_number_of_times.and_return(false)
-    obj.should_not_receive(:respond_to?).with(:to_s)
-    @io.puts(obj)
-  end
 end
 
 describe "StringIO#puts when passed no arguments" do
@@ -130,7 +100,7 @@ describe "StringIO#puts when passed no arguments" do
     @io.string.should == "\n"
   end
   
-  it "does not honor the global output record seperator $\\" do
+  it "does not honor the global output record separator $\\" do
     begin
       old_rs, $\ = $\, "test"
       @io.puts
@@ -168,5 +138,15 @@ describe "StringIO#puts when self is not writable" do
     io = StringIO.new("test")
     io.close_write
     lambda { io.puts }.should raise_error(IOError)
+  end
+end
+
+describe "StringIO#puts when passed an encoded string" do
+  it "stores the bytes unmodified" do
+    io = StringIO.new
+    io.puts "\x00\x01\x02"
+    io.puts "жеш"
+
+    io.string.should == "\x00\x01\x02\nжеш\n"
   end
 end

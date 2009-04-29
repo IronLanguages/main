@@ -18,7 +18,7 @@ ruby_version_is '' ... '1.9' do
       empty.nitems.should == 1
 
       array = ArraySpecs.recursive_array
-      array.nitems.should == 8
+      array.nitems.should == 4
 
       [nil, empty, array].nitems.should == 2
     end

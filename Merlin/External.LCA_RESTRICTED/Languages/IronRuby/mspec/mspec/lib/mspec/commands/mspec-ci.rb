@@ -13,6 +13,7 @@ class MSpecCI < MSpecScript
 
     options.doc " Ask yourself:"
     options.doc "  1. How to run the specs?"
+    options.doc "  2. How to modify the guard behavior?"
     options.doc "  2. How to display the output?"
     options.doc "  3. What action to perform?"
     options.doc "  4. When to perform it?"
@@ -24,8 +25,11 @@ class MSpecCI < MSpecScript
     options.name
     options.pretend
     options.background
-    options.unguarded
     options.interrupt
+
+    options.doc "\n How to modify the guard behavior"
+    options.unguarded
+    options.verify
 
     options.doc "\n How to display their output"
     options.formatters
@@ -40,6 +44,9 @@ class MSpecCI < MSpecScript
     options.doc "\n Help!"
     options.version MSpec::VERSION
     options.help
+
+    options.doc "\n Custom options"
+    custom_options options
 
     options.doc "\n How might this work in the real world?"
     options.doc "\n   1. To simply run the known good specs"

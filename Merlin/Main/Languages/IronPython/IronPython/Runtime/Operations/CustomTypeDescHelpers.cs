@@ -147,7 +147,7 @@ namespace IronPython.Runtime.Operations {
                 if ((rp = attrSlot as ReflectedProperty) != null && rp.Info != null) {
                     include &= rp.Info.IsDefined(attr.GetType(), true);
                 } else if (attr.GetType() == typeof(BrowsableAttribute)) {
-                    PythonTypeUserDescriptorSlot userSlot = attrSlot as PythonTypeUserDescriptorSlot;
+                    IValueSlot userSlot = attrSlot as IValueSlot;
                     if (userSlot == null) {
                         if (!(attrSlot is PythonProperty)) {
                             include = false;

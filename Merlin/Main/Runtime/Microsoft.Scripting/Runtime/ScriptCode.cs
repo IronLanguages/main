@@ -21,6 +21,7 @@ using System.Reflection;
 using System.Reflection.Emit;
 using System.Threading;
 using Microsoft.Contracts;
+using Microsoft.Scripting;
 using Microsoft.Scripting.Generation;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
@@ -112,7 +113,7 @@ namespace Microsoft.Scripting {
             MethodBuilder mb = tb.DefineMethod(
                 "GetScriptCodeInfo",
                 MethodAttributes.SpecialName | MethodAttributes.Public | MethodAttributes.Static,
-                typeof(Tuple<Type[], Delegate[][], string[][], object>),
+                typeof(MutableTuple<Type[], Delegate[][], string[][], object>),
                 Type.EmptyTypes);
 
             ILGen ilgen = new ILGen(mb.GetILGenerator());
@@ -152,7 +153,7 @@ namespace Microsoft.Scripting {
             ilgen.EmitNull();
 
             ilgen.EmitNew(
-                typeof(Tuple<Type[], Delegate[][], string[][], object>),
+                typeof(MutableTuple<Type[], Delegate[][], string[][], object>),
                 new[] { typeof(Type[]), typeof(Delegate[][]), typeof(string[][]), typeof(object) }
             );
             ilgen.Emit(OpCodes.Ret);
@@ -190,7 +191,7 @@ namespace Microsoft.Scripting {
 
             MethodInfo mi = t.GetMethod("GetScriptCodeInfo");
             if (mi.IsSpecialName && mi.IsDefined(typeof(DlrCachedCodeAttribute), false)) {
-                var infos = (Tuple<Type[], Delegate[][], string[][], object>)mi.Invoke(null, ArrayUtils.EmptyObjects);
+                var infos = (MutableTuple<Type[], Delegate[][], string[][], object>)mi.Invoke(null, ArrayUtils.EmptyObjects);
 
                 for (int i = 0; i < infos.Item000.Length; i++) {
                     Type curType = infos.Item000[i];

@@ -44,6 +44,6 @@ describe "Array#rindex" do
 
     array = ArraySpecs.recursive_array
     array.rindex(1).should == 0
-    array.rindex(array).should == 7
+    array.rindex([array]).should == 3
   end
 end

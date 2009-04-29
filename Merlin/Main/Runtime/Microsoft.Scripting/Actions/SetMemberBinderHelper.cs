@@ -244,9 +244,9 @@ namespace Microsoft.Scripting.Actions {
                 Expression ret;
 
                 if (setMem.ReturnType == typeof(bool)) {
-                    ret = AstUtils.If(call, Rule.MakeReturn(Binder, Rule.Parameters[1]));
+                    ret = AstUtils.If(call, Rule.MakeReturn(Binder, AstUtils.Convert(Rule.Parameters[1], typeof(object))));
                 } else {
-                    ret = Rule.MakeReturn(Binder, Ast.Block(call, Rule.Parameters[1]));
+                    ret = Rule.MakeReturn(Binder, Ast.Block(call, AstUtils.Convert(Rule.Parameters[1], typeof(object))));
                 }
                 AddToBody(ret);
                 return setMem.ReturnType != typeof(bool);

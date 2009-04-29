@@ -248,13 +248,16 @@ namespace IronPython.Runtime.Binding {
             EventTracker ev = (EventTracker)members[0];
 
             return ErrorInfo.FromValueNoError(
-               Ast.Call(
-                   typeof(PythonOps).GetMethod("SlotTrySetValue"),
-                   codeContext,
-                   AstUtils.Constant(PythonTypeOps.GetReflectedEvent(ev)),
-                   eventObject != null ? AstUtils.Convert(eventObject, typeof(object)) : AstUtils.Constant(null),
-                   AstUtils.Constant(null, typeof(PythonType)),
-                   AstUtils.Convert(value, typeof(object))
+               Ast.Block(
+                   Ast.Call(
+                       typeof(PythonOps).GetMethod("SlotTrySetValue"),
+                       codeContext,
+                       AstUtils.Constant(PythonTypeOps.GetReflectedEvent(ev)),
+                       eventObject != null ? AstUtils.Convert(eventObject, typeof(object)) : AstUtils.Constant(null),
+                       AstUtils.Constant(null, typeof(PythonType)),
+                       AstUtils.Convert(value, typeof(object))
+                   ),
+                   Ast.Constant(null)
                )
             );
         }
@@ -263,13 +266,16 @@ namespace IronPython.Runtime.Binding {
             EventTracker ev = (EventTracker)members[0];
 
             return ErrorInfo.FromValueNoError(
-               Ast.Call(
-                   typeof(PythonOps).GetMethod("SlotTrySetValue"),
-                   rule.Context,
-                   AstUtils.Constant(PythonTypeOps.GetReflectedEvent(ev)),
-                   AstUtils.Convert(rule.Parameters[0], typeof(object)),
-                   AstUtils.Constant(null, typeof(PythonType)),
-                   AstUtils.Convert(rule.Parameters[1], typeof(object))
+               Ast.Block(
+                   Ast.Call(
+                       typeof(PythonOps).GetMethod("SlotTrySetValue"),
+                       rule.Context,
+                       AstUtils.Constant(PythonTypeOps.GetReflectedEvent(ev)),
+                       AstUtils.Convert(rule.Parameters[0], typeof(object)),
+                       AstUtils.Constant(null, typeof(PythonType)),
+                       AstUtils.Convert(rule.Parameters[1], typeof(object))
+                   ),
+                   Ast.Constant(null)
                )
             );
         }

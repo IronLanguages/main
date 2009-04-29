@@ -65,34 +65,28 @@ namespace IronPython.Runtime.Operations {
                 } else {
                     return BigInteger.Create(val);
                 }
-            }
-            if (o is UInt32) {
+            } else if (o is UInt32) {
                 UInt32 val = (UInt32)o;
                 if (val <= Int32.MaxValue) {
                     return (Int32)val;
                 } else {
                     return BigInteger.Create(val);
                 }
-            }
-            if (o is UInt64) {
+            } else if (o is UInt64) {
                 UInt64 val = (UInt64)o;
                 if (val <= Int32.MaxValue) {
                     return (Int32)val;
                 } else {
                     return BigInteger.Create(val);
                 }
-            }
-
-            if (o is Decimal) {
+            } else if (o is Decimal) {
                 Decimal val = (Decimal)o;
                 if (Int32.MinValue <= val && val <= Int32.MaxValue) {
                     return (Int32)val;
                 } else {
                     return BigInteger.Create(val);
                 }
-            }
-
-            if (o is Enum) {
+            } else if (o is Enum) {
                 return ((IConvertible)o).ToInt32(null);
             }
 
@@ -114,6 +108,18 @@ namespace IronPython.Runtime.Operations {
         [StaticExtensionMethod]
         public static object __new__(CodeContext context, object o) {
             return __new__(context, TypeCache.Int32, o);
+        }
+
+        [StaticExtensionMethod]
+        public static object __new__(CodeContext context, PythonType cls, Extensible<double> o) {
+            object value;
+            // always succeeds as float defines __int__
+            PythonTypeOps.TryInvokeUnaryOperator(context, o, Symbols.ConvertToInt, out value);
+            if (cls == TypeCache.Int32) {
+                return (int)value;
+            } else {
+                return cls.CreateInstance(context, value);
+            }
         }
 
         private static void ValidateType(PythonType cls) {

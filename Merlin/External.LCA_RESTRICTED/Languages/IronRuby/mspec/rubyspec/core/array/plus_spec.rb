@@ -25,17 +25,10 @@ describe "Array#+" do
     (empty + empty).should == [empty, empty]
 
     array = ArraySpecs.recursive_array
-    (empty + array).should == [empty, 1, 'two', 3.0, array, array, array, array, array]
+    (empty + array).should == [empty, 1, 'two', 3.0, [array]]
     (array + array).should == [
-      1, 'two', 3.0, array, array, array, array, array,
-      1, 'two', 3.0, array, array, array, array, array]
-  end
-
-  it "checks whether the passed argument responds to #to_ary" do
-    obj = mock('[:x]')
-    obj.should_receive(:respond_to?).with(:to_ary).any_number_of_times.and_return(true)
-    obj.should_receive(:method_missing).with(:to_ary).and_return([:x])
-    ([1, 2, 3] + obj).should == [1, 2, 3, :x]
+      1, 'two', 3.0, [array],
+      1, 'two', 3.0, [array]]
   end
 
   it "does return subclass instances with Array subclasses" do

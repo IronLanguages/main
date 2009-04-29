@@ -211,6 +211,19 @@ namespace IronPythonTest.BinderTest {
         public void M855(out Boolean arg) { Flag.Value = 855; arg = true; }
 
         public void M860(ref Int32 arg1, Int32 arg2, out Int32 arg3) { arg3 = arg1 + arg2; arg1 = 100; }
+
+    }
+
+    public struct SOtherConcern {
+        private short _p100;
+        public short P100 {
+            get {
+                return _p100;
+            }
+            set {
+                _p100 = value;
+            }
+        }
     }
 
     public class GOtherConcern<T> {

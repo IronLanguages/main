@@ -343,26 +343,26 @@ namespace IronRuby.Builtins {
 
             switch (op) {
                 case DirectoryOperation.ChangeDir:
-                    return new Errno.InvalidError(path);
+                    return RubyErrno.CreateEINVAL(path);
 
                 case DirectoryOperation.Open:
-                    return Errno.CreateENOENT(path);
+                    return RubyErrno.CreateENOENT(path);
 
                 case DirectoryOperation.Delete:
                     if (ex is ArgumentException) {
-                        return new Errno.InvalidError(path);
+                        return RubyErrno.CreateEINVAL(path);
                     }
                     if (ex is IOException) {
-                        return new UnauthorizedAccessException(path);
+                        return Errno.CreateEACCES(path);
                     }
                     break;
 
                 case DirectoryOperation.Create:
                     if (ex is ArgumentException) {
-                        return new Errno.InvalidError(path);
+                        return RubyErrno.CreateEINVAL(path);
                     }
                     if (ex is IOException) {
-                        return new Errno.ExistError(path);
+                        return RubyErrno.CreateEEXIST(path);
                     }
                     break;
             }

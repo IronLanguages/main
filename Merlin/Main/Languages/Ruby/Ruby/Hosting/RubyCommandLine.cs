@@ -71,5 +71,23 @@ namespace IronRuby.Hosting {
             return scope;
         }
 
+        protected override void UnhandledException(Exception e) {
+            // Kernel#at_exit can access $!. So we need to publish the uncaught exception
+            RubyOps.SetCurrentExceptionAndStackTrace(Ruby.GetExecutionContext(Engine), e);
+
+            base.UnhandledException(e);
+        }
+
+        protected override void Shutdown() {
+            try {
+                Engine.Runtime.Shutdown();
+            } catch (SystemExit e) {
+                // Kernel#at_exit runs during shutdown, and it can set the exitcode by calling exit
+                ExitCode = e.Status;
+            } catch (Exception e) {
+                UnhandledException(e);
+                ExitCode = 1;
+            }
+        }
     }
 }

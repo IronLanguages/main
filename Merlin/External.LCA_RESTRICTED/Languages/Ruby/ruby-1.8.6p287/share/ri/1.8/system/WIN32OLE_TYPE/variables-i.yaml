@@ -1,0 +1,16 @@
+--- !ruby/object:RI::MethodDescription 
+aliases: []
+
+block_params: 
+comment: 
+- !ruby/struct:SM::Flow::P 
+  body: Returns array of WIN32OLE_VARIABLE objects which represent variables defined in OLE class.
+- !ruby/struct:SM::Flow::VERB 
+  body: "   tobj = WIN32OLE_TYPE.new('Microsoft Excel 9.0 Object Library', 'XlSheetType')\n   vars = tobj.variables\n   vars.each do |v|\n     puts &quot;#{v.name} = #{v.value}&quot;\n   end\n\n   The result of above sample script is follows:\n     xlChart = -4109\n     xlDialogSheet = -4116\n     xlExcel4IntlMacroSheet = 4\n     xlExcel4MacroSheet = 3\n     xlWorksheet = -4167\n"
+full_name: WIN32OLE_TYPE#variables
+is_singleton: false
+name: variables
+params: |
+  WIN32OLE_TYPE#variables
+
+visibility: public

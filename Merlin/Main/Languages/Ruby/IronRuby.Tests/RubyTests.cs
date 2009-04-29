@@ -402,6 +402,7 @@ namespace IronRuby.Tests {
                 Scenario_RubyExceptions14,
                 Scenario_RubyExceptions15,
                 Scenario_RubyExceptions16,
+                JumpFromEnsure1,
                 Scenario_RubyExceptions_Globals,
                 Scenario_RubyRescueStatement1,
                 Scenario_RubyRescueExpression1,

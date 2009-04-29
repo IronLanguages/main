@@ -48,9 +48,9 @@ namespace IronRuby.Runtime {
         public static readonly string/*!*/ MriReleaseDate = "2008-05-28";
 
         // IronRuby:
-        public const string/*!*/ IronRubyVersionString = "0.3.0.0";
-        public static readonly Version IronRubyVersion = new Version(0, 3, 0, 0);
-        internal const string/*!*/ IronRubyDisplayName = "IronRuby 0.3";
+        public const string/*!*/ IronRubyVersionString = "0.4.0.0";
+        public static readonly Version IronRubyVersion = new Version(0, 4, 0, 0);
+        internal const string/*!*/ IronRubyDisplayName = "IronRuby";
         internal const string/*!*/ IronRubyNames = "IronRuby;Ruby;rb";
         internal const string/*!*/ IronRubyFileExtensions = ".rb";
 
@@ -1615,6 +1615,15 @@ namespace IronRuby.Runtime {
             }
         }
 
+        public void TrySetLibraryData(object key, object value) {
+            EnsureLibraryData();
+
+            lock (_libraryData) {
+                _libraryData[key] = value;
+            }
+        }
+
+
         #endregion
 
         #region Parsing, Compilation (thread-safe)
@@ -1819,6 +1828,9 @@ namespace IronRuby.Runtime {
         private void ExecuteShutdownHandlers() {
             var handlers = new List<BlockParam>();
 
+            SystemExit lastSystemExit = null;
+            Exception lastUncaughtException = null;
+
             while (true) {
                 lock (ShutdownHandlersLock) {
                     if (_shutdownHandlers.Count == 0) {
@@ -1832,12 +1844,25 @@ namespace IronRuby.Runtime {
                     try {
                         object result;
                         handlers[i].Yield(out result);
-                    } catch (SystemExit) {
-                        // ignored
+                    } catch (SystemExit e) {
+                        // Kernel#at_exit can call exit and set the exitcode. Furthermore, exit can be called 
+                        // from multiple blocks registered with Kernel#at_exit.
+                        lastSystemExit = e;
+                    } catch (Exception e) {
+                        RubyOps.SetCurrentExceptionAndStackTrace(this, e);
+                        lastUncaughtException = e;
                     }
                 }
 
                 handlers.Clear();
+            }
+
+            if (lastSystemExit != null) {
+                throw lastSystemExit;
+            }
+
+            if (lastUncaughtException != null) {
+                throw lastUncaughtException;
             }
         }
 

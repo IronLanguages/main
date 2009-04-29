@@ -7,17 +7,17 @@ describe "Array#==" do
     a.should == a
   end
 
-  it "returns true if each element is == to the corresponding element in the other array" do
+  it "returns true if corresponding elements are #==" do
     [].should == []
     ["a", "c", 7].should == ["a", "c", 7]
 
     [1, 2, 3].should == [1.0, 2.0, 3.0]
 
     obj = mock('5')
-    def obj.==(other) true end
+    obj.should_receive(:==).and_return(true)
     [obj].should == [5]
     #obj not returning a true bool
-    def obj.==(other) end
+    obj.should_receive(:==).and_return(1)
     [obj].should_not == [5]
   end
 
@@ -26,27 +26,27 @@ describe "Array#==" do
     b = [1, 2]
     a.should_not == b
   end
-  
+
   it "returns false if the other is longer than self" do
     a = [1, 2, 3]
     b = [1, 2, 3, 4]
     a.should_not == b
   end
-  
-  it "returns false if any element is not == to the corresponding element in the other the array" do
+
+  it "returns false if any corresponding elements are not #==" do
     a = ["a", "b", "c"]
     b = ["a", "b", "not equal value"]
     a.should_not == b
 
-    c = "c"
-    def c.==(x); false end
+    c = mock("c")
+    c.should_receive(:==).and_return(false)
     ["a", "b", c].should_not == a
   end
-  
+
   it "returns false immediately when sizes of the arrays differ" do
     obj = mock('1')
     obj.should_not_receive(:==)
-    
+
     [].should_not == [obj]
     [obj].should_not == []
   end
@@ -54,31 +54,35 @@ describe "Array#==" do
   ruby_bug "#", "1.8.6.277" do
     it "properly handles recursive arrays" do
       empty = ArraySpecs.empty_recursive_array
-      empty2 = []; empty2 << empty2
+      (empty == empty).should be_true
       (empty == empty.dup).should be_true
+      empty2 = ArraySpecs.empty_recursive_array
       (empty == empty2).should be_false
 
       array = ArraySpecs.recursive_array
       (array == array).should be_true
+      array2 = ArraySpecs.recursive_array
+      (array == array2).should be_false
       (array == array.dup).should be_true
       (array == empty).should be_false
       (array == [1, 2]).should be_false
+      
+      array1, array2 = ArraySpecs.recursive_arrays
+      (array1 == array2).should be_false
     end
   end
 
-  # Broken in MRI as well. See MRI bug #11585:
-  # http://rubyforge.org/tracker/index.php?func=detail&aid=11585&group_id=426&atid=1698
-  ruby_bug "#11585", "1.8" do
-    it "calls to_ary on its argument" do
-      obj = mock('to_ary')
-      obj.should_receive(:to_ary).and_return([1, 2, 3])
-    
-      [1, 2, 3].should == obj
-    end
+  it "does not call #to_ary on its argument" do
+    obj = mock('to_ary')
+    obj.should_not_receive(:to_ary)
+
+    [1, 2, 3].should_not == obj
   end
-  
-  it "does not call to_ary on array subclasses" do
-    [5, 6, 7].should == ArraySpecs::ToAryArray[5, 6, 7]
+
+  it "does not call #to_ary on Array subclasses" do
+    ary = ArraySpecs::ToAryArray[5, 6, 7]
+    ary.should_not_receive(:to_ary)
+    [5, 6, 7].should == ary
   end
 
   it "ignores array class differences" do
@@ -87,10 +91,10 @@ describe "Array#==" do
     [1, 2, 3].should == ArraySpecs::MyArray[1, 2, 3]
   end
 
-  it "can be assymetric (but should not)" do
+  it "does not call #== on its argument" do
     bad_array = ArraySpecs::MyArray[1, 2, 3]
-    def bad_array.==(x) false end
+    bad_array.should_not_receive(:==)
+
     [1, 2, 3].should == bad_array
-    bad_array.should_not == [1, 2, 3]
   end
 end

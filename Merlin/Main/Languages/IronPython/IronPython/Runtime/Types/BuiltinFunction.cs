@@ -332,8 +332,8 @@ namespace IronPython.Runtime.Types {
             }
         }
 
-        internal override Expression/*!*/ MakeGetExpression(PythonBinder/*!*/ binder, Expression/*!*/ codeContext, Expression instance, Expression/*!*/ owner, Expression/*!*/ error) {
-            return AstUtils.Constant(this);
+        internal override void MakeGetExpression(PythonBinder/*!*/ binder, Expression/*!*/ codeContext, Expression instance, Expression/*!*/ owner, ConditionalBuilder/*!*/ builder) {
+            builder.FinishCondition(Ast.Constant(this));
         }
 
         #endregion                
@@ -471,7 +471,7 @@ namespace IronPython.Runtime.Types {
                     ),
                     res.Restrictions
                 );
-            } else if (IsBinaryOperator && args.Length == 2 && res.Expression.NodeType == ExpressionType.Throw) {
+            } else if (IsBinaryOperator && args.Length == 2 && IsThrowException(res.Expression)) {
                 // Binary Operators return NotImplemented on failure.
                 res = new DynamicMetaObject(
                     Ast.Property(null, typeof(PythonOps), "NotImplemented"),
@@ -508,14 +508,34 @@ namespace IronPython.Runtime.Types {
 
             // The function can return something typed to boolean or int.
             // If that happens, we need to apply Python's boxing rules.
-            if (res.Expression.Type == typeof(bool) || res.Expression.Type == typeof(int)) {
+            if (res.Expression.Type.IsValueType) {
+                res = BindingHelpers.AddPythonBoxing(res);
+            } else if (res.Expression.Type == typeof(void)) {
                 res = new DynamicMetaObject(
-                    AstUtils.Convert(res.Expression, typeof(object)),
+                    Expression.Block(
+                        res.Expression,
+                        Expression.Constant(null)
+                    ),
                     res.Restrictions
                 );
             }
 
             return res;
+        }
+
+        private static bool IsThrowException(Expression expr) {
+            if (expr.NodeType == ExpressionType.Throw) {
+                return true;
+            } else if (expr.NodeType == ExpressionType.Convert) {
+                return IsThrowException(((UnaryExpression)expr).Operand);
+            } else if (expr.NodeType == ExpressionType.Block) {
+                foreach (Expression e in ((BlockExpression)expr).Expressions) {
+                    if (IsThrowException(e)) {
+                        return true;
+                    }
+                }
+            }
+            return false;
         }
 
         internal KeyValuePair<OptimizingCallDelegate, Type[]> MakeBuiltinFunctionDelegate(DynamicMetaObjectBinder/*!*/ call, Expression/*!*/ codeContext, DynamicMetaObject/*!*/[] args, bool hasSelf, Func<DynamicMetaObject/*!*/[]/*!*/, BindingResult/*!*/> bind) {
@@ -1097,7 +1117,9 @@ namespace IronPython.Runtime.Types {
                             out target
                         );
 
-                        return new BuiltinFunction.BindingResult(target, res, target.Success ? target.MakeDelegate() : null);
+                        return new BuiltinFunction.BindingResult(target, 
+                            BindingHelpers.AddPythonBoxing(res), 
+                            target.Success ? target.MakeDelegate() : null);
                     }
                 );
             } else {
@@ -1140,7 +1162,7 @@ namespace IronPython.Runtime.Types {
                             IsBinaryOperator ? PythonNarrowing.BinaryOperator : NarrowingLevel.All,
                             out target
                         );
-                        return new BuiltinFunction.BindingResult(target, res, target.Success ? target.MakeDelegate() : null);
+                        return new BuiltinFunction.BindingResult(target, BindingHelpers.AddPythonBoxing(res), target.Success ? target.MakeDelegate() : null);
                     }
                 );
             }

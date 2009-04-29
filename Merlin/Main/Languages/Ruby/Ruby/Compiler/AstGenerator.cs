@@ -620,6 +620,21 @@ namespace IronRuby.Compiler.Ast {
             }
         }
 
+        /// <summary>
+        /// Makes a read of the Self property of the current method's block parameter. 
+        /// Returns Null constant in top-level code.
+        /// </summary>
+        internal MSA.Expression/*!*/ MakeMethodBlockParameterSelfRead() {
+            Debug.Assert(CurrentMethod != null);
+
+            if (CurrentMethod.BlockVariable != null) {
+                return Ast.Property(AstUtils.Convert(CurrentMethod.BlockVariable, typeof(Proc)), Proc.SelfProperty);
+            } else {
+                // no block -> error is reported before this value is used:
+                return AstUtils.Constant(null, typeof(object));
+            }
+        }
+
         internal List<MSA.Expression>/*!*/ TranformExpressions(IList<Expression>/*!*/ arguments) {
             Assert.NotNull(arguments);
             return TranformExpressions(arguments, new List<MSA.Expression>(arguments.Count));

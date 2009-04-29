@@ -49,7 +49,7 @@ namespace IronRuby.Builtins {
             } else if (readWriteFlags == RubyFileMode.RDWR) {
                 access = FileAccess.ReadWrite;
             } else {
-                throw new ArgumentException("file open mode must be one of RDONLY WRONLY or RDWR");
+                throw RubyErrno.CreateEINVAL(String.Format("illegal access mode {0}", mode));
             }
 
             if ((mode & RubyFileMode.APPEND) != 0) {
@@ -63,10 +63,18 @@ namespace IronRuby.Builtins {
             }
 
             if ((mode & RubyFileMode.EXCL) != 0 && (mode & RubyFileMode.CREAT) != 0 && context.DomainManager.Platform.FileExists(path)) {
-                throw RubyExceptions.CreateIOError((String.Format("File exists - {0}", path)));
+                throw RubyErrno.CreateEEXIST(String.Format("No such file or directory - {0}", path));
             }
 
-            return context.DomainManager.Platform.OpenInputFileStream(path, fileMode, access, share);
+            try {
+                return context.DomainManager.Platform.OpenInputFileStream(path, fileMode, access, share);
+            } catch (DirectoryNotFoundException e) {
+                throw RubyErrno.CreateENOENT(e.Message, e);
+            } catch (PathTooLongException e) {
+                throw RubyErrno.CreateENOENT(e.Message, e);
+            } catch (ArgumentException e) {
+                throw RubyErrno.CreateEINVAL(e.Message, e);
+            }
         }
 
         private static Stream/*!*/ OpenFileStream(RubyContext/*!*/ context, string/*!*/ path, string/*!*/ modeString) {
@@ -102,25 +110,35 @@ namespace IronRuby.Builtins {
                     break;
 
                 default:
-                    throw RubyIO.IllegalMode(modeString);
+                    throw RubyErrno.CreateEINVAL(String.Format("illegal access mode {0}", modeString));
             }
 
             try {
                 return context.DomainManager.Platform.OpenInputFileStream(path, mode, access, FileShare.ReadWrite);
             } catch (DirectoryNotFoundException e) {
-                throw new FileNotFoundException(e.Message, e);
+                throw RubyErrno.CreateENOENT(e.Message, e);
             } catch (PathTooLongException e) {
-                throw new FileNotFoundException(e.Message, e);
+                throw RubyErrno.CreateENOENT(e.Message, e);
+            } catch (ArgumentException e) {
+                throw RubyErrno.CreateEINVAL(e.Message, e);
             }
         }
 
         public RubyFile(RubyContext/*!*/ context, string/*!*/ path, string/*!*/ modeString)
             : base(context, OpenFileStream(context, path, modeString), modeString) {
+            if (string.IsNullOrEmpty(path)) {
+                throw RubyErrno.CreateEINVAL();
+            }
+
             _path = path;
         }
 
         public RubyFile(RubyContext/*!*/ context, string/*!*/ path, RubyFileMode mode)
             : base(context, OpenFileStream(context, path, mode), mode) {
+            if (string.IsNullOrEmpty(path)) {
+                throw RubyErrno.CreateEINVAL();
+            }
+
             _path = path;
         }
 

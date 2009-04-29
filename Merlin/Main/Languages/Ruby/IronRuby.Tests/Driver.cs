@@ -87,11 +87,12 @@ namespace IronRuby.Tests {
 
         private Tests _tests;
 
-        private readonly List<Tuple<string, StackFrame, string, object>>/*!*/ _failedAssertions = new List<Tuple<string, StackFrame, string, object>>();
-        private readonly List<Tuple<string, Exception>>/*!*/ _unexpectedExceptions = new List<Tuple<string, Exception>>();
+        private readonly List<MutableTuple<string, StackFrame, string, object>>/*!*/ _failedAssertions = new List<MutableTuple<string, StackFrame, string, object>>();
+        private readonly List<MutableTuple<string, Exception>>/*!*/ _unexpectedExceptions = new List<MutableTuple<string, Exception>>();
 
         private TestRuntime _testRuntime; 
         private static bool _excludeSelectedCases;
+        private static bool _verbose;
         private static bool _isDebug;
         private static bool _saveToAssemblies;
         private static bool _runTokenizerDriver;
@@ -104,12 +105,16 @@ namespace IronRuby.Tests {
             get { return _testRuntime; }
         }
 
-        public List<Tuple<string, StackFrame, string, object>>/*!*/ FailedAssertions {
+        public List<MutableTuple<string, StackFrame, string, object>>/*!*/ FailedAssertions {
             get { return _failedAssertions; }
         }
 
-        public List<Tuple<string, Exception>>/*!*/ UnexpectedExceptions {
+        public List<MutableTuple<string, Exception>>/*!*/ UnexpectedExceptions {
             get { return _unexpectedExceptions; }
+        }
+
+        public bool Verbose {
+            get { return _verbose; }
         }
 
         public bool IsDebug {
@@ -134,6 +139,7 @@ namespace IronRuby.Tests {
 
         private static bool ParseArguments(List<string>/*!*/ args) {
             if (args.Contains("/help") || args.Contains("-?") || args.Contains("/?") || args.Contains("-help")) {
+                Console.WriteLine("Verbose                      : /verbose");
                 Console.WriteLine("Partial trust                : /partial");
                 Console.WriteLine("Interpret                    : /interpret");
                 Console.WriteLine("Save to assemblies           : /save");
@@ -149,6 +155,11 @@ namespace IronRuby.Tests {
             if (args.Contains("/list")) {
                 _displayList = true;
                 return true;
+            }
+
+            if (args.Contains("/verbose")) {
+                args.Remove("/verbose");
+                _verbose = true;
             }
 
             if (args.Contains("/debug")) {
@@ -447,23 +458,24 @@ namespace IronRuby.Tests {
         private void RunTestCase(TestCase/*!*/ testCase) {
             _testRuntime = new TestRuntime(this, testCase);
 
-            Console.WriteLine("Executing {0}", testCase.Name);
+            if (_verbose) {
+                Console.WriteLine("Executing {0}", testCase.Name);
+            } else {
+                Console.Write('.');
+            }
 
             try {
                 testCase.TestMethod();
             } catch (Exception e) {
                 PrintTestCaseFailed();
-                _unexpectedExceptions.Add(new Tuple<string, Exception>(testCase.Name, e));
+                _unexpectedExceptions.Add(new MutableTuple<string, Exception>(testCase.Name, e));
             } finally {
                 Snippets.SaveAndVerifyAssemblies();
             }
         }
 
         private void PrintTestCaseFailed() {
-            var oldColor = Console.ForegroundColor;
-            Console.ForegroundColor = ConsoleColor.Red;
-            Console.WriteLine("> FAILED");
-            Console.ForegroundColor = oldColor;
+            WriteError("\n> FAILED: {0}", _testRuntime.TestName);
         }
 
         private void WriteError(string/*!*/ str, params object[] args) {
@@ -487,7 +499,7 @@ namespace IronRuby.Tests {
 
             Debug.Assert(frame != null);
 
-            _failedAssertions.Add(new Tuple<string, StackFrame, string, object>(_testRuntime.TestName, frame, msg, null));
+            _failedAssertions.Add(new MutableTuple<string, StackFrame, string, object>(_testRuntime.TestName, frame, msg, null));
             PrintTestCaseFailed();
         }
 

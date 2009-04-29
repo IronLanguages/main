@@ -1,0 +1,17 @@
+--- !ruby/object:RI::ClassDescription 
+attributes: []
+
+class_methods: []
+
+comment: 
+- !ruby/struct:SM::Flow::P 
+  body: support setproperty method much like Perl ;-)
+constants: []
+
+full_name: WIN32OLERuntimeError
+includes: []
+
+instance_methods: []
+
+name: WIN32OLERuntimeError
+superclass: RuntimeError

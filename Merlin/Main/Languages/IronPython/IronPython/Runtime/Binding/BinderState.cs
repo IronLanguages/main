@@ -43,7 +43,10 @@ namespace IronPython.Runtime.Binding {
         private Dictionary<ExpressionType, PythonUnaryOperationBinder/*!*/> _unaryBinders;
         private Dictionary<ExpressionType, PythonBinaryOperationBinder/*!*/> _binaryBinders;
         private Dictionary<BinaryOperationRetTypeKey, OperationRetBoolBinder/*!*/> _binaryRetTypeBinders;
-        private Dictionary<Type/*!*/, ConversionBinder/*!*/>[] _conversionBinders;
+        private Dictionary<Type/*!*/, PythonConversionBinder/*!*/>[] _conversionBinders;
+        private Dictionary<Type/*!*/, ConvertBinder/*!*/> _explicitCompatConvertBinders;
+        private Dictionary<Type/*!*/, ConvertBinder/*!*/> _implicitCompatConvertBinders;
+        private Dictionary<Type/*!*/, DynamicMetaObjectBinder/*!*/>[] _convertRetObjectBinders;
         private Dictionary<CallSignature, CreateFallback/*!*/> _createBinders;
         private Dictionary<CallSignature, CompatibilityInvokeBinder/*!*/> _compatInvokeBinders;
         private PythonGetSliceBinder _getSlice;
@@ -118,11 +121,12 @@ namespace IronPython.Runtime.Binding {
             }
         }
 
-        internal ConversionBinder/*!*/ Convert(Type/*!*/ type, ConversionResultKind resultKind) {
+       
+        internal PythonConversionBinder/*!*/ Convert(Type/*!*/ type, ConversionResultKind resultKind) {
             if (_conversionBinders == null) {
                 Interlocked.CompareExchange(
                     ref _conversionBinders,
-                    new Dictionary<Type, ConversionBinder>[(int)ConversionResultKind.ExplicitTry + 1], // max conversion result kind
+                    new Dictionary<Type, PythonConversionBinder>[(int)ConversionResultKind.ExplicitTry + 1], // max conversion result kind
                     null
                 );
             }
@@ -130,16 +134,78 @@ namespace IronPython.Runtime.Binding {
             if (_conversionBinders[(int)resultKind] == null) {
                 Interlocked.CompareExchange(
                     ref _conversionBinders[(int)resultKind],
-                    new Dictionary<Type, ConversionBinder>(),
+                    new Dictionary<Type, PythonConversionBinder>(),
                     null
                 );
             }
 
-            Dictionary<Type, ConversionBinder> dict = _conversionBinders[(int)resultKind];
+            Dictionary<Type, PythonConversionBinder> dict = _conversionBinders[(int)resultKind];
             lock (dict) {
-                ConversionBinder res;
+                PythonConversionBinder res;
                 if (!dict.TryGetValue(type, out res)) {
-                    dict[type] = res = new ConversionBinder(this, type, resultKind);
+                    dict[type] = res = new PythonConversionBinder(this, type, resultKind);
+                }
+
+                return res;
+            }
+        }
+
+        internal ConvertBinder/*!*/ CompatConvert(Type/*!*/ toType, bool isExplicit) {
+            Dictionary<Type, ConvertBinder> binders;
+            if (isExplicit) {
+                if (_explicitCompatConvertBinders == null) {
+                    Interlocked.CompareExchange(
+                        ref _explicitCompatConvertBinders,
+                        new Dictionary<Type, ConvertBinder>(), 
+                        null
+                    );
+                }
+
+                binders = _explicitCompatConvertBinders;
+            } else {
+                if (_implicitCompatConvertBinders == null) {
+                    Interlocked.CompareExchange(
+                        ref _implicitCompatConvertBinders,
+                        new Dictionary<Type, ConvertBinder>(), 
+                        null
+                    );
+                }
+
+                binders = _implicitCompatConvertBinders;
+            }
+
+            ConvertBinder res;
+            lock (binders) {
+                if (!binders.TryGetValue(toType, out res)) {
+                    binders[toType] = res = new CompatConversionBinder(this, toType, isExplicit);
+                }
+            }
+
+            return res;
+        }
+
+        internal DynamicMetaObjectBinder/*!*/ ConvertRetObject(Type/*!*/ type, ConversionResultKind resultKind) {
+            if (_convertRetObjectBinders == null) {
+                Interlocked.CompareExchange(
+                    ref _convertRetObjectBinders,
+                    new Dictionary<Type, DynamicMetaObjectBinder>[(int)ConversionResultKind.ExplicitTry + 1], // max conversion result kind
+                    null
+                );
+            }
+
+            if (_convertRetObjectBinders[(int)resultKind] == null) {
+                Interlocked.CompareExchange(
+                    ref _convertRetObjectBinders[(int)resultKind],
+                    new Dictionary<Type, DynamicMetaObjectBinder>(),
+                    null
+                );
+            }
+
+            Dictionary<Type, DynamicMetaObjectBinder> dict = _convertRetObjectBinders[(int)resultKind];
+            lock (dict) {
+                DynamicMetaObjectBinder res;
+                if (!dict.TryGetValue(type, out res)) {
+                    dict[type] = res = new PythonConversionBinder(this, type, resultKind, true);
                 }
 
                 return res;
@@ -358,7 +424,7 @@ namespace IronPython.Runtime.Binding {
             }
         }
 
-        internal OperationRetBoolBinder/*!*/ BinaryOperationRetType(PythonBinaryOperationBinder opBinder, ConversionBinder convBinder) {
+        internal OperationRetBoolBinder/*!*/ BinaryOperationRetType(PythonBinaryOperationBinder opBinder, PythonConversionBinder convBinder) {
             if (_binaryRetTypeBinders == null) {
                 Interlocked.CompareExchange(
                     ref _binaryRetTypeBinders,

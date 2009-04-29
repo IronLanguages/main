@@ -217,10 +217,9 @@ namespace System.Linq.Expressions {
         /// <summary>
         /// Writes a <see cref="String"/> representation of the <see cref="Expression"/> to a <see cref="TextWriter"/>.
         /// </summary>
-        /// <param name="descr">A description for the root Expression.</param>
         /// <param name="writer">A <see cref="TextWriter"/> that will be used to build the string representation.</param>
-        public void DumpExpression(string descr, TextWriter writer) {
-            ExpressionWriter.Dump(this, descr, writer);
+        public void DumpExpression(TextWriter writer) {
+            ExpressionWriter.Dump(this, writer);
         }
 
         /// <summary>
@@ -233,7 +232,7 @@ namespace System.Linq.Expressions {
 #endif
             get {
                 using (System.IO.StringWriter writer = new System.IO.StringWriter(CultureInfo.CurrentCulture)) {
-                    ExpressionWriter.Dump(this, GetType().Name, writer);
+                    ExpressionWriter.Dump(this, writer);
                     return writer.ToString();
                 }
             }

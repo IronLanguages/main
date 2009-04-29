@@ -47,7 +47,15 @@ namespace Microsoft.Scripting.Actions {
 
             if (targetInfo != null) {
                 // we're calling a well-known MethodBase
-                return MakeMetaMethodCall(signature, resolverFactory, targetInfo);
+                DynamicMetaObject res =  MakeMetaMethodCall(signature, resolverFactory, targetInfo);
+                if (res.Expression.Type.IsValueType) {
+                    res = new DynamicMetaObject(
+                        AstUtils.Convert(res.Expression, typeof(object)),
+                        res.Restrictions
+                    );
+                }
+
+                return res;
             } else {
                 // we can't call this object
                 return MakeCannotCallRule(target, target.GetLimitType());
@@ -236,7 +244,8 @@ namespace Microsoft.Scripting.Actions {
                         AstUtils.Constant(type.Name + " is not callable")
                     )
                 ),
-                self.Restrictions.Merge(BindingRestrictionsHelpers.GetRuntimeTypeRestriction(self.Expression, type))
+                self.Restrictions.Merge(BindingRestrictionsHelpers.GetRuntimeTypeRestriction(self.Expression, type)),
+                typeof(object)
             );
         }
 

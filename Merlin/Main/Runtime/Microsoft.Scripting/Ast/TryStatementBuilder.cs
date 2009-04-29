@@ -24,6 +24,7 @@ namespace Microsoft.Scripting.Ast {
         private readonly List<CatchBlock> _catchBlocks = new List<CatchBlock>();
         private Expression _try;
         private Expression _finally, _fault;
+        private bool _enableJumpsFromFinally;
 
         internal TryStatementBuilder(Expression body) {
             _try = body;
@@ -102,6 +103,16 @@ namespace Microsoft.Scripting.Ast {
             return this;
         }
 
+        public TryStatementBuilder FinallyWithJumps(params Expression[] body) {
+            _enableJumpsFromFinally = true;
+            return Finally(body);
+        }
+
+        public TryStatementBuilder FinallyWithJumps(Expression body) {
+            _enableJumpsFromFinally = true;
+            return Finally(body);
+        }
+
         public TryStatementBuilder Fault(params Expression[] body) {
             ContractUtils.RequiresNotNullItems(body, "body");
 
@@ -162,7 +173,7 @@ namespace Microsoft.Scripting.Ast {
             }
 
             var result = Expression.MakeTry(null, _try, _finally, null, handlers);
-            if (_finally != null) {
+            if (_enableJumpsFromFinally) {
                 return Utils.FinallyFlowControl(result);
             }
             return result;

@@ -30,7 +30,7 @@ using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace IronPython.Runtime.Binding {
 
-    class MetaMethod : MetaPythonObject, IPythonInvokable {
+    class MetaMethod : MetaPythonObject, IPythonInvokable, IPythonConvertible {
         public MetaMethod(Expression/*!*/ expression, BindingRestrictions/*!*/ restrictions, Method/*!*/ value)
             : base(expression, BindingRestrictions.Empty, value) {
             Assert.NotNull(value);
@@ -54,12 +54,20 @@ namespace IronPython.Runtime.Binding {
             return InvokeWorker(callAction, args);
         }
 
-        public override DynamicMetaObject BindConvert(ConvertBinder action) {
-            if (action.Type.IsSubclassOf(typeof(Delegate))) {
-                return MakeDelegateTarget(action, action.Type, Restrict(typeof(Method)));
+        public override DynamicMetaObject BindConvert(ConvertBinder/*!*/ conversion) {
+            return ConvertWorker(conversion, conversion.Type, conversion.Explicit ? ConversionResultKind.ExplicitCast : ConversionResultKind.ImplicitCast);
+        }
+
+        public DynamicMetaObject BindConvert(PythonConversionBinder binder) {
+            return ConvertWorker(binder, binder.Type, binder.ResultKind);
+        }
+
+        public DynamicMetaObject ConvertWorker(DynamicMetaObjectBinder binder, Type toType, ConversionResultKind kind) {
+            if (toType.IsSubclassOf(typeof(Delegate))) {
+                return MakeDelegateTarget(binder, toType, Restrict(typeof(Method)));
             }
 
-            return base.BindConvert(action);
+            return FallbackConvert(binder);
         }
 
         #endregion

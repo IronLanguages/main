@@ -1,8 +1,8 @@
-critical:IO#close closes the stream
-critical:IO#close returns nil
-critical:IO#close makes the stream unavailable for any further data operations
-critical:IO#close raises an IOError on subsequent invocations
-critical:IO#close raises when a file descriptor is closed twice
-critical:IO#close on an IO.popen stream clears #pid
-critical:IO#close on an IO.popen stream sets $?
-critical:IO#close on an IO.popen stream waits for the child to exit
+fails:IO#close closes the stream
+fails:IO#close returns nil
+fails:IO#close makes the stream unavailable for any further data operations
+fails:IO#close raises an IOError on subsequent invocations
+fails:IO#close raises when a file descriptor is closed twice
+fails:IO#close on an IO.popen stream clears #pid
+fails:IO#close on an IO.popen stream sets $?
+fails:IO#close on an IO.popen stream waits for the child to exit

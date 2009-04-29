@@ -138,7 +138,9 @@ namespace IronPython.Runtime {
         [SpecialName]
         public static object NotEqual(IDictionary<object, object> self, object other) {
             object res = Equal(self, other);
-            if (res != NotImplementedType.Value) return PythonOps.Not(res);
+            if (res != NotImplementedType.Value) {
+                return ScriptingRuntimeHelpers.BooleanToObject(PythonOps.Not(res));
+            }
 
             return res;
         }

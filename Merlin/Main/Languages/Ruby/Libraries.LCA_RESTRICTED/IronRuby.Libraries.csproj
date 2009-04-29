@@ -47,10 +47,7 @@
     <ErrorReport>prompt</ErrorReport>
     <NoStdLib>true</NoStdLib>
     <SilverlightBuild>true</SilverlightBuild>
-    <TfsSilverlightPath>..\..\..\Utilities\Silverlight\x86ret\</TfsSilverlightPath>
-    <SilverlightInstallPath>C:\Program Files\Microsoft Silverlight\2.0.40115.0</SilverlightInstallPath>
-    <SilverlightSdkPath Condition="Exists('$(TfsSilverlightPath)')">$(TfsSilverlightPath)</SilverlightSdkPath>
-    <SilverlightSdkPath Condition="!Exists('$(TfsSilverlightPath)')">$(SilverlightInstallPath)</SilverlightSdkPath>
+    <SilverlightSdkPath>..\..\..\Utilities\Silverlight\x86ret\</SilverlightSdkPath>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Silverlight Release|AnyCPU' ">
     <OutputPath>..\..\..\Bin\Silverlight Release</OutputPath>
@@ -60,10 +57,7 @@
     <PlatformTarget>AnyCPU</PlatformTarget>
     <ErrorReport>prompt</ErrorReport>
     <SilverlightBuild>true</SilverlightBuild>
-    <TfsSilverlightPath>..\..\..\Utilities\Silverlight\x86ret\</TfsSilverlightPath>
-    <SilverlightInstallPath>C:\Program Files\Microsoft Silverlight\2.0.40115.0</SilverlightInstallPath>
-    <SilverlightSdkPath Condition="Exists('$(TfsSilverlightPath)')">$(TfsSilverlightPath)</SilverlightSdkPath>
-    <SilverlightSdkPath Condition="!Exists('$(TfsSilverlightPath)')">$(SilverlightInstallPath)</SilverlightSdkPath>
+    <SilverlightSdkPath>..\..\..\Utilities\Silverlight\x86ret\</SilverlightSdkPath>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="..\..\..\Hosts\Silverlight\SilverlightVersion.cs" Condition=" '$(SilverlightBuild)' == 'true' ">

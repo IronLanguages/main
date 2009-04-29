@@ -3,7 +3,9 @@ require File.dirname(__FILE__) + '/fixtures/classes'
 
 describe "Array#fill" do
   before(:all) do
-    @never_passed = proc{|i| raise ExpectationNotMetError, "the control path should not pass here" }
+    @never_passed = lambda do |i|
+      raise ExpectationNotMetError, "the control path should not pass here"
+    end
   end
 
   it "returns self" do
@@ -41,16 +43,15 @@ describe "Array#fill" do
     [nil, nil, nil, nil].fill { |i| i * 2 }.should == [0, 2, 4, 6]
   end
 
-  compliant_on :ruby, :jruby, :ir do
-    ruby_version_is '' ... '1.9' do
-      it "raises a TypeError on a frozen array" do
-        lambda { ArraySpecs.frozen_array.fill('x') }.should raise_error(TypeError)
-      end
+  ruby_version_is '' ... '1.9' do
+    it "raises a TypeError on a frozen array" do
+      lambda { ArraySpecs.frozen_array.fill('x') }.should raise_error(TypeError)
     end
-    ruby_version_is '1.9' do
-      it "raises a RuntimeError on a frozen array" do
-        lambda { ArraySpecs.frozen_array.fill('x') }.should raise_error(RuntimeError)
-      end
+  end
+
+  ruby_version_is '1.9' do
+    it "raises a RuntimeError on a frozen array" do
+      lambda { ArraySpecs.frozen_array.fill('x') }.should raise_error(RuntimeError)
     end
   end
 
@@ -210,18 +211,10 @@ describe "Array#fill with (filler, index, length)" do
     [1, 2, 3, 4, 5].fill(filler, obj, obj).should == [1, 2, filler, filler, 5]
   end
 
-  it "checks whether the passed arguments respond to #to_int" do
-    obj = mock('method_missing to_int')
-    obj.should_receive(:respond_to?).with(:to_int).any_number_of_times.and_return(true)
-    obj.should_receive(:method_missing).with(:to_int).twice.and_return(2)
-    [1, 2, 3, 4, 5].fill('a', obj, obj).should == [1, 2, "a", "a", 5]
-  end
-
   it "raises a TypeError if the index is not numeric" do
     lambda { [].fill 'a', true }.should raise_error(TypeError)
 
     obj = mock('nonnumeric')
-    obj.should_receive(:respond_to?).with(:to_int).and_return(false)
     lambda { [].fill('a', obj) }.should raise_error(TypeError)
   end
 
@@ -337,18 +330,9 @@ describe "Array#fill with (filler, range)" do
     [1, 2, 3, 4, 5].fill(filler, obj..obj).should == [1, 2, filler, 4, 5]
   end
 
-  it "checks whether the start and end of the passed range respond to #to_int" do
-    obj = mock('method_missing to_int')
-    def obj.<=>(rhs); rhs == self ? 0 : nil end
-    obj.should_receive(:respond_to?).with(:to_int).any_number_of_times.and_return(true)
-    obj.should_receive(:method_missing).with(:to_int).twice.and_return(2)
-    [1, 2, 3, 4, 5].fill('a', obj..obj).should == [1, 2, "a", 4, 5]
-  end
-
   it "raises a TypeError if the start or end of the passed range is not numeric" do
     obj = mock('nonnumeric')
     def obj.<=>(rhs); rhs == self ? 0 : nil end
-    obj.should_receive(:respond_to?).with(:to_int).and_return(false)
     lambda { [].fill('a', obj..obj) }.should raise_error(TypeError)
   end
 end

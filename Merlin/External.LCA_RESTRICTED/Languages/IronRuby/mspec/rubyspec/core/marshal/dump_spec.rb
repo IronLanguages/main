@@ -77,6 +77,12 @@ describe "Marshal.dump" do
     Marshal.dump(obj).should == "#{mv+nv}o:\x0BObject\x06:\x09@str[\x09:\x07so;\x07\"\x07hi@\x07"
   end
 
+  it "dumps an extended_user_regexp having ivar" do
+    r = UserRegexp.new('').extend(Meths)
+    r.instance_variable_set(:@noise, 'much')
+    Marshal.dump(r).should == "#{mv+nv}Ie:\x0AMethsC:\x0FUserRegexp/\x00\x00\x06:\x0B@noise\"\x09much"
+  end
+
   it "raises a TypeError with hash having default proc" do
     lambda { Marshal.dump(Hash.new {}) }.should raise_error(TypeError)
   end
@@ -84,7 +90,7 @@ describe "Marshal.dump" do
   it "dumps an extended_user_hash_default" do
     h = UserHash.new(:Meths).extend(Meths)
     h['three'] = 3
-    Marshal.dump(h).should == "#{mv+nv}Ie:\x0AMethsC:\x0DUserHash}\x06\"\x0Athreei\x08;\x00\006:\a@ai\006"
+    Marshal.dump(h).should == "#{mv+nv}e:\x0AMethsC:\x0DUserHash}\x06\"\x0Athreei\x08;\x00"
   end
 
   it "dumps an extended_user_hash with a parameter to initialize" do

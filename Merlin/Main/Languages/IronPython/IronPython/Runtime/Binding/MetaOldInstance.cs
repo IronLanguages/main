@@ -36,7 +36,7 @@ namespace IronPython.Runtime.Binding {
     /// 
     /// TODO: Lots of CodeConetxt references, need to move CodeContext onto OldClass and pull it from there.
     /// </summary>
-    class MetaOldInstance : MetaPythonObject, IPythonInvokable, IPythonGetable, IPythonOperable {        
+    class MetaOldInstance : MetaPythonObject, IPythonInvokable, IPythonGetable, IPythonOperable, IPythonConvertible {        
         public MetaOldInstance(Expression/*!*/ expression, BindingRestrictions/*!*/ restrictions, OldInstance/*!*/ value)
             : base(expression, BindingRestrictions.Empty, value) {
             Assert.NotNull(value);
@@ -107,39 +107,45 @@ namespace IronPython.Runtime.Binding {
             return PythonProtocol.Index(binder, PythonIndexType.DeleteItem, ArrayUtils.Insert(this, indexes));
         }
         
-        public override DynamicMetaObject/*!*/ BindConvert(ConvertBinder/*!*/ conversion) {
-            Type type = conversion.Type;
+        public override DynamicMetaObject BindConvert(ConvertBinder/*!*/ conversion) {
+            return ConvertWorker(conversion, conversion.Type, conversion.Type, conversion.Explicit ? ConversionResultKind.ExplicitCast : ConversionResultKind.ImplicitCast);
+        }
 
+        public DynamicMetaObject BindConvert(PythonConversionBinder binder) {
+            return ConvertWorker(binder, binder.Type, binder.ReturnType, binder.ResultKind);
+        }
+
+        public DynamicMetaObject ConvertWorker(DynamicMetaObjectBinder binder, Type type, Type retType, ConversionResultKind kind) {
             if (!type.IsEnum) {
                 switch (Type.GetTypeCode(type)) {
                     case TypeCode.Boolean:
-                        return MakeConvertToBool(conversion);
+                        return MakeConvertToBool(binder);
                     case TypeCode.Int32:
-                        return MakeConvertToCommon(conversion, Symbols.ConvertToInt);
+                        return MakeConvertToCommon(binder, type, retType, Symbols.ConvertToInt);
                     case TypeCode.Double:
-                        return MakeConvertToCommon(conversion, Symbols.ConvertToFloat);
+                        return MakeConvertToCommon(binder, type, retType, Symbols.ConvertToFloat);
                     case TypeCode.String:
-                        return MakeConvertToCommon(conversion, Symbols.String);
+                        return MakeConvertToCommon(binder, type, retType, Symbols.String);
                     case TypeCode.Object:
                         if (type == typeof(BigInteger)) {
-                            return MakeConvertToCommon(conversion, Symbols.ConvertToLong);
+                            return MakeConvertToCommon(binder, type, retType, Symbols.ConvertToLong);
                         } else if (type == typeof(Complex64)) {
-                            return MakeConvertToCommon(conversion, Symbols.ConvertToComplex);
+                            return MakeConvertToCommon(binder, type, retType, Symbols.ConvertToComplex);
                         } else if (type == typeof(IEnumerable)) {
-                            return MakeConvertToIEnumerable(conversion);
+                            return MakeConvertToIEnumerable(binder);
                         } else if (type == typeof(IEnumerator)) {
-                            return MakeConvertToIEnumerator(conversion);
+                            return MakeConvertToIEnumerator(binder);
                         } else if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(IEnumerable<>)) {
-                            return MakeConvertToIEnumerable(conversion, type.GetGenericArguments()[0]);
-                        } else if (conversion.Type.IsSubclassOf(typeof(Delegate))) {
-                            return MakeDelegateTarget(conversion, conversion.Type, Restrict(typeof(OldInstance)));
+                            return MakeConvertToIEnumerable(binder, type, type.GetGenericArguments()[0]);
+                        } else if (type.IsSubclassOf(typeof(Delegate))) {
+                            return MakeDelegateTarget(binder, type, Restrict(typeof(OldInstance)));
                         }
 
                         break;
                 }
             }
 
-            return base.BindConvert(conversion);
+            return FallbackConvert(binder);
         }
 
         public override DynamicMetaObject/*!*/ BindInvoke(InvokeBinder/*!*/ invoke, params DynamicMetaObject/*!*/[]/*!*/ args) {
@@ -216,8 +222,8 @@ namespace IronPython.Runtime.Binding {
         #endregion
 
         #region Conversions
-       
-        private DynamicMetaObject/*!*/ MakeConvertToIEnumerable(ConvertBinder/*!*/ conversion) {
+
+        private DynamicMetaObject/*!*/ MakeConvertToIEnumerable(DynamicMetaObjectBinder/*!*/ conversion) {
             ParameterExpression tmp = Ast.Variable(typeof(IEnumerable), "res");
             DynamicMetaObject self = Restrict(typeof(OldInstance));
 
@@ -239,7 +245,7 @@ namespace IronPython.Runtime.Binding {
                         tmp,
                         AstUtils.Convert(
                             AstUtils.Convert(  // first to object (incase it's a throw), then to IEnumerable
-                                conversion.FallbackConvert(this).Expression,
+                                FallbackConvert(conversion).Expression,
                                 typeof(object)
                             ),
                             typeof(IEnumerable)
@@ -250,7 +256,7 @@ namespace IronPython.Runtime.Binding {
             );
         }
 
-        private DynamicMetaObject/*!*/ MakeConvertToIEnumerator(ConvertBinder/*!*/ conversion) {
+        private DynamicMetaObject/*!*/ MakeConvertToIEnumerator(DynamicMetaObjectBinder/*!*/ conversion) {
             ParameterExpression tmp = Ast.Variable(typeof(IEnumerator), "res");
             DynamicMetaObject self = Restrict(typeof(OldInstance));
 
@@ -272,7 +278,7 @@ namespace IronPython.Runtime.Binding {
                         tmp,
                         AstUtils.Convert(
                             AstUtils.Convert(
-                                conversion.FallbackConvert(this).Expression,
+                                FallbackConvert(conversion).Expression,
                                 typeof(object)
                             ),
                             typeof(IEnumerator)
@@ -283,8 +289,8 @@ namespace IronPython.Runtime.Binding {
             );            
         }
 
-        private DynamicMetaObject/*!*/ MakeConvertToIEnumerable(ConvertBinder/*!*/ conversion, Type genericType) {
-            ParameterExpression tmp = Ast.Variable(conversion.Type, "res");
+        private DynamicMetaObject/*!*/ MakeConvertToIEnumerable(DynamicMetaObjectBinder/*!*/ conversion, Type toType, Type genericType) {
+            ParameterExpression tmp = Ast.Variable(toType, "res");
             DynamicMetaObject self = Restrict(typeof(OldInstance));
 
             return new DynamicMetaObject(
@@ -305,10 +311,10 @@ namespace IronPython.Runtime.Binding {
                         tmp,
                         AstUtils.Convert(
                             AstUtils.Convert(
-                                conversion.FallbackConvert(this).Expression,
+                                FallbackConvert(conversion).Expression,
                                 typeof(object)
                             ),
-                            conversion.Type
+                            toType
                         )
                     )
                 ),
@@ -316,7 +322,8 @@ namespace IronPython.Runtime.Binding {
             );                       
         }
 
-        private DynamicMetaObject/*!*/ MakeConvertToCommon(ConvertBinder/*!*/ conversion, SymbolId symbolId) {
+        private DynamicMetaObject/*!*/ MakeConvertToCommon(DynamicMetaObjectBinder/*!*/ conversion, Type toType, Type retType, SymbolId symbolId) {
+            // TODO: support trys
             ParameterExpression tmp = Ast.Variable(typeof(object), "convertResult");
             DynamicMetaObject self = Restrict(typeof(OldInstance));
             return new DynamicMetaObject(
@@ -324,18 +331,18 @@ namespace IronPython.Runtime.Binding {
                     new ParameterExpression[] { tmp },
                     Ast.Condition(
                         MakeOneConvert(conversion, self, symbolId, tmp),
-                        tmp,
-                        AstUtils.Convert(
-                            conversion.FallbackConvert(this).Expression,
-                            typeof(object)
-                        )
+                        Expression.Convert(
+                            tmp,
+                            retType
+                        ),
+                        FallbackConvert(conversion).Expression
                     )
                 ),
                 self.Restrictions
             );
         }
 
-        private static BinaryExpression/*!*/ MakeOneConvert(ConvertBinder/*!*/ conversion, DynamicMetaObject/*!*/ self, SymbolId symbolId, ParameterExpression/*!*/ tmp) {
+        private static BinaryExpression/*!*/ MakeOneConvert(DynamicMetaObjectBinder/*!*/ conversion, DynamicMetaObject/*!*/ self, SymbolId symbolId, ParameterExpression/*!*/ tmp) {
             return Ast.NotEqual(
                 Ast.Assign(
                     tmp,
@@ -349,12 +356,12 @@ namespace IronPython.Runtime.Binding {
                 AstUtils.Constant(null)
             );
         }
-        
-        private DynamicMetaObject/*!*/ MakeConvertToBool(ConvertBinder/*!*/ conversion) {
+
+        private DynamicMetaObject/*!*/ MakeConvertToBool(DynamicMetaObjectBinder/*!*/ conversion) {
             DynamicMetaObject self = Restrict(typeof(OldInstance));
 
             ParameterExpression tmp = Ast.Variable(typeof(bool?), "tmp");
-            DynamicMetaObject fallback = conversion.FallbackConvert(this);
+            DynamicMetaObject fallback = FallbackConvert(conversion);
             Type resType = BindingHelpers.GetCompatibleType(typeof(bool), fallback.Expression.Type);
 
             return new DynamicMetaObject(
