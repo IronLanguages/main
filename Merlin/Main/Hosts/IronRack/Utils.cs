@@ -28,29 +28,9 @@ namespace IronRuby.Rack {
         private static FileStream _logStream;
         
         internal const string LogOptionName = "Log";
-        internal const string AppRootOptionName = "AppRoot";
-        internal const string RackVersionOptionName = "RackVersion";
 
-        internal static string FindFile(string file, ScriptEngine rubyEngine) {
-            foreach (var path in rubyEngine.GetSearchPaths()) {
-                var fullPath = TryGetFullPath(path, file);
-                if (File.Exists(fullPath)) {
-                    return fullPath;
-                }
-            }
-            return null;
-        }
-
-        private static string TryGetFullPath(string/*!*/ dir, string/*!*/ file) {
-            try {
-                return Path.GetFullPath(Path.Combine(dir, file));
-            } catch {
-                return null;
-            }
-        }
-
-        internal static void ReportError(ScriptEngine/*!*/ engine, HttpContext/*!*/ context, Exception/*!*/ e) {
-            var trace = engine.GetService<ExceptionOperations>().FormatException(e);
+        internal static void ReportError(HttpContext/*!*/ context, Exception/*!*/ e) {
+            var trace = RubyEngine.Engine.GetService<ExceptionOperations>().FormatException(e);
 
             context.Response.Write("<html>\r\n");
             context.Response.Write(String.Format(@"
@@ -62,7 +42,7 @@ namespace IronRuby.Rack {
 
             context.Response.Write("<h4>Search paths</h4>\r\n");
             context.Response.Write("<pre>\r\n");
-            foreach (var path in engine.GetSearchPaths()) {
+            foreach (var path in RubyEngine.Engine.GetSearchPaths()) {
                 context.Response.Write(HttpUtility.HtmlEncode(path));
                 context.Response.Write("\r\n");
             }
@@ -70,8 +50,8 @@ namespace IronRuby.Rack {
             context.Response.Write("</html>\r\n");
         }
 
-        internal static Hash/*!*/ CreateEnv(ScriptEngine/*!*/ engine, HttpContext/*!*/ context) {
-            var result = new Hash((RubyContext)HostingHelpers.GetLanguageContext(engine));
+        internal static Hash CreateEnv(HttpContext/*!*/ context) {
+            var result = new Hash((RubyContext)HostingHelpers.GetLanguageContext(RubyEngine.Engine));
 
             var vars = context.Request.ServerVariables;
 
@@ -95,27 +75,6 @@ namespace IronRuby.Rack {
             }
         }
         
-        internal static string/*!*/ GetAppRoot(HttpContext/*!*/ context) {
-            var root = ConfigurationManager.AppSettings[AppRootOptionName];
-            if (root == null) {
-                root = context.Request.PhysicalApplicationPath;
-            } else {
-                if (!Path.IsPathRooted(root)) {
-                    root = Path.Combine(context.Request.PhysicalApplicationPath, root);
-                }
-                if (!Directory.Exists(root)) {
-                    throw new ConfigurationErrorsException(String.Format(
-                        "Directory '{0}' specified by '{1}' setting in configuration doesn't exist",
-                        root, Utils.AppRootOptionName));
-                }
-            }
-            return root;
-        }
-
-        internal static string GetRackVersion() {
-            return ConfigurationManager.AppSettings[RackVersionOptionName] ?? "1.0.0";
-        }
-
         public static void Log(string/*!*/ message) {
             if (_LogWriter != null) {
                 lock (_LogWriter) {
