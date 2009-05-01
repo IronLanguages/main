@@ -9,6 +9,8 @@ namespace IronRuby.Rack {
 
     /// <summary>
     /// Builds a HttpHandler capable of serving requests through Rack
+    /// See http://rack.rubyforge.org/doc/SPEC.html for exactly 
+    /// what the handler needs to delegate between IIS and Rack.
     /// </summary>
     public class HttpHandlerFactory : IHttpHandlerFactory {
         private static readonly object _GlobalLock = new object();
@@ -36,7 +38,6 @@ namespace IronRuby.Rack {
                             stopWatch.Start();
 
                             app = new Application(context);
-
                             Handler.IIS.Run(app);
                             _Handler = new HttpHandler();
 

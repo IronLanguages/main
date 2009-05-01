@@ -30,12 +30,14 @@ namespace IronRuby.Rack {
             _app = Rackup();
         }
 
-        public RubyArray Call(HttpContext context) {
-           return RubyEngine.ExecuteMethod<RubyArray>(_app, "call", Utils.CreateEnv(context));
+        public RubyArray Call(IDictionary<object, object> env) {
+            return RubyEngine.ExecuteMethod<RubyArray>(_app, "call", new Hash(env));
         }
 
         private void InitRack() {
-            RubyEngine.Init();
+            // HACK Load gems from default MRI installation. This shouldn't be needed.
+            Environment.SetEnvironmentVariable("GEM_PATH", @"C:\ruby\lib\ruby\gems\1.8");
+            
             RubyEngine.Require("rubygems");
             RubyEngine.Require("rack", _rackVersion);
             RubyEngine.AddLoadPath(_appRoot);

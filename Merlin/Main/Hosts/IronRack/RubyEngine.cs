@@ -5,15 +5,17 @@ using System.Text;
 using System.IO;
 using Microsoft.Scripting.Hosting;
 using IronRuby.Builtins;
+using IronRuby.Runtime;
 
 namespace IronRuby.Rack {
     public static class RubyEngine {
         public static readonly ScriptEngine Engine = Ruby.CreateEngine();
         private static readonly ScriptScope scope = Engine.CreateScope();
 
-        public static void Init() {
-            // HACK Load gems from default MRI installation. This shouldn't be needed.
-            Environment.SetEnvironmentVariable("GEM_PATH", @"C:\ruby\lib\ruby\gems\1.8");
+        public static RubyContext Context {
+            get {
+                return Ruby.GetExecutionContext(Engine);
+            }
         }
 
         public static object Require(string file) {
@@ -34,7 +36,11 @@ namespace IronRuby.Rack {
         }
 
         public static object Execute(string code) {
-            return Engine.CreateScriptSourceFromString(code).Execute(scope);
+            return Execute(code, scope);
+        }
+
+        public static object Execute(string code, ScriptScope aScope) {
+            return Engine.CreateScriptSourceFromString(code).Execute(aScope);
         }
         
         public static T ExecuteMethod<T>(object instance, string methodName, params object[] args)
