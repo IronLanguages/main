@@ -73,7 +73,7 @@ namespace Microsoft.Scripting.Interpreter {
         public override int ProducedStack { get { return _isVoid ? 0 : 1; } }
         public override int ConsumedStack { get { return _argCount-1; } }
 
-        public override int Run(StackFrame frame) {
+        public override int Run(InterpretedFrame frame) {
             var targetDelegate = _targetField.GetValue(_site);
 
             object[] args = new object[_argCount];

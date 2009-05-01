@@ -449,20 +449,6 @@ namespace IronPython.Runtime.Operations {
             return false;
         }
 
-        public static object GetMethod(CodeContext context, object self, object instance, [Optional]object typeContext) {
-            PythonTypeSlot dts = self as PythonTypeSlot;
-            PythonType dt = typeContext as PythonType;
-
-            Debug.Assert(dts != null);
-
-            object res;
-            if (dts.TryGetValue(context, instance, dt, out res))
-                return res;
-
-            // context is hiding __get__
-            throw PythonOps.AttributeErrorForMissingAttribute(dt == null ? "?" : dt.Name, Symbols.GetDescriptor);
-        }
-
 #if !SILVERLIGHT
         /// <summary>
         /// Implements __reduce_ex__ for .NET types which are serializable.  This uses the .NET

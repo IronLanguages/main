@@ -77,24 +77,28 @@ namespace IronRuby.Runtime {
         }
 
         public override object Run() {
-            return Run(CreateScope());
+            return Run(CreateScope(), false);
         }
 
         public override object Run(Scope/*!*/ scope) {
+            return Run(scope, true);
+        }
+
+        private object Run(Scope/*!*/ scope, bool bindGlobals) {
             RubyScope localScope;
             RubyContext context = (RubyContext)LanguageContext;
 
             switch (_kind) {
-                case TopScopeFactoryKind.Default:
-                    localScope = RubyTopLevelScope.CreateTopLevelScope(scope, context);
-                    break;
-
-                case TopScopeFactoryKind.GlobalScopeBound:
-                    localScope = RubyTopLevelScope.CreateTopLevelHostedScope(scope, context);
+                case TopScopeFactoryKind.Hosted:
+                    localScope = RubyTopLevelScope.CreateHostedTopLevelScope(scope, context, bindGlobals);
                     break;
 
                 case TopScopeFactoryKind.Main:
-                    localScope = RubyTopLevelScope.CreateMainTopLevelScope(scope, context);
+                    localScope = RubyTopLevelScope.CreateTopLevelScope(scope, context, true);
+                    break;
+
+                case TopScopeFactoryKind.File:
+                    localScope = RubyTopLevelScope.CreateTopLevelScope(scope, context, false);
                     break;
 
                 case TopScopeFactoryKind.WrappedFile:
@@ -189,7 +193,7 @@ namespace IronRuby.Runtime {
 #endif
                 return CompilerHelpers.CompileToMethod(lambda, new CustomGenerator(), false);
             } else {
-                return lambda.Compile();
+                return lambda.LightCompile();
             }
         }
     }

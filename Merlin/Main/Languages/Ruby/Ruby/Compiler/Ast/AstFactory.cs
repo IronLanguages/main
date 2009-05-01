@@ -43,56 +43,6 @@ namespace IronRuby.Compiler.Ast {
         public static readonly MSA.Expression NullOfProc = AstUtils.Constant(null, typeof(Proc));
         internal static readonly MSA.Expression BlockReturnReasonBreak = AstUtils.Constant(BlockReturnReason.Break);
 
-        #region Control Flow
-
-        internal static MSA.Expression/*!*/ MakeUserMethodBody(AstGenerator gen, int lastLine,
-            MSA.Expression/*!*/ blockParameter, MSA.Expression/*!*/ rfcVariable,
-            MSA.ParameterExpression/*!*/ methodUnwinder, MSA.Expression/*!*/ bodyStatement, ResultOperation resultOperation, 
-            int profileTickIndex, MSA.ParameterExpression stampVariable, MSA.LabelTarget returnLabel) {
-
-            Assert.NotNull(blockParameter, rfcVariable, bodyStatement, methodUnwinder);
-            Debug.Assert(!resultOperation.IsIgnore, "return value should not be ignored");
-            Debug.Assert(returnLabel != null || resultOperation.Variable != null, "return label needed");
-
-            MSA.Expression resultExpression = Ast.Field(methodUnwinder, MethodUnwinder.ReturnValueField);
-            if (resultOperation.Variable != null) {
-                resultExpression = Ast.Assign(resultOperation.Variable, resultExpression);
-            } else {
-                resultExpression = Ast.Return(returnLabel, resultExpression);
-            }
-
-            // TODO: move this to the caller:
-            MSA.Expression profileStart, profileEnd;
-            if (stampVariable != null) {
-                profileStart = Ast.Assign(stampVariable, Methods.Stopwatch_GetTimestamp.OpCall());
-                profileEnd = Methods.UpdateProfileTicks.OpCall(AstUtils.Constant(profileTickIndex), stampVariable);
-            } else {
-                profileStart = profileEnd = AstUtils.Empty();
-            }
-
-            return AstUtils.Try(
-                // initialize frame (RFC):
-                profileStart,
-                Ast.Assign(rfcVariable, Methods.CreateRfcForMethod.OpCall(AstUtils.Convert(blockParameter, typeof(Proc)))),
-                bodyStatement
-            ).Filter(methodUnwinder, Ast.Equal(Ast.Field(methodUnwinder, MethodUnwinder.TargetFrameField), rfcVariable),
-
-                // return unwinder.ReturnValue;
-                resultExpression
-
-            ).Finally(
-                Ast.Assign(Ast.Field(rfcVariable, RuntimeFlowControl.IsActiveMethodField), AstUtils.Constant(false)),
-                profileEnd,
-                gen != null && gen.TraceEnabled ? Methods.TraceMethodReturn.OpCall(
-                    gen.CurrentScopeVariable, 
-                    Ast.Convert(AstUtils.Constant(gen.SourceUnit.Path), typeof(string)),
-                    AstUtils.Constant(lastLine)
-                ) : AstUtils.Empty()
-            );
-        }
-
-        #endregion
-
         public static MSA.Expression/*!*/ Infinite(MSA.LabelTarget @break, MSA.LabelTarget @continue, params MSA.Expression[]/*!*/ body) {
             return AstUtils.Infinite(Ast.Block(body), @break, @continue);
         }

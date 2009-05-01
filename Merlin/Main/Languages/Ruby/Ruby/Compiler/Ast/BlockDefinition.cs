@@ -13,6 +13,7 @@
  *
  * ***************************************************************************/
 
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
@@ -107,7 +108,7 @@ namespace IronRuby.Compiler.Ast {
             MSA.Expression blockParameter, selfParameter;
             MSA.ParameterExpression[] parameters = DefineParameters(out selfParameter, out blockParameter);
 
-            MSA.Expression scopeVariable = scope.DefineHiddenVariable("#scope", typeof(RubyBlockScope));
+            MSA.ParameterExpression scopeVariable = scope.DefineHiddenVariable("#scope", typeof(RubyBlockScope));
             MSA.LabelTarget redoLabel = Ast.Label();
 
             gen.EnterBlockDefinition(
@@ -124,42 +125,44 @@ namespace IronRuby.Compiler.Ast {
 
             MSA.Expression paramInit = MakeParametersInitialization(gen, parameters);
             MSA.ParameterExpression blockUnwinder = scope.DefineHiddenVariable("#unwinder", typeof(BlockUnwinder));
-            
-			MSA.Expression loop = AstFactory.Infinite(null, redoLabel,
-                AstUtils.Try(
-                    gen.TransformStatements(_body, ResultOperation.Return)
-                ).Catch(blockUnwinder,
-                    // redo:
-                    AstUtils.IfThen(Ast.Field(blockUnwinder, BlockUnwinder.IsRedoField), Ast.Continue(redoLabel)),
+            MSA.ParameterExpression filterVariable = scope.DefineHiddenVariable("#e", typeof(Exception));
 
-                    // next:
-                    gen.Return(Ast.Field(blockUnwinder, BlockUnwinder.ReturnValueField))
-                ) 
-            );
-                
+            MSA.Expression traceCall, traceReturn;
 			if (gen.TraceEnabled) {
                 int firstStatementLine = _body.Count > 0 ? _body.First.Location.Start.Line : Location.End.Line;
                 int lastStatementLine = _body.Count > 0 ? _body.Last.Location.End.Line : Location.End.Line;
 
-                loop = Ast.TryFinally(
-                    Ast.Block(
-                        Methods.TraceBlockCall.OpCall(scopeVariable, blockParameter, Ast.Convert(AstUtils.Constant(gen.SourceUnit.Path), typeof(string)), AstUtils.Constant(firstStatementLine)),
-                        loop
-                    ), 
-                    Methods.TraceBlockReturn.OpCall(scopeVariable, blockParameter, Ast.Convert(AstUtils.Constant(gen.SourceUnit.Path), typeof(string)), AstUtils.Constant(lastStatementLine))
-                );
+                traceCall = Methods.TraceBlockCall.OpCall(scopeVariable, blockParameter, Ast.Convert(AstUtils.Constant(gen.SourceUnit.Path), typeof(string)), AstUtils.Constant(firstStatementLine));
+                traceReturn = Methods.TraceBlockReturn.OpCall(scopeVariable, blockParameter, Ast.Convert(AstUtils.Constant(gen.SourceUnit.Path), typeof(string)), AstUtils.Constant(lastStatementLine));
+            } else {
+                traceCall = traceReturn = Ast.Empty();
             }
-			
-            MSA.Expression body = Ast.Block(
+
+            MSA.Expression body = AstUtils.Try(
                 Ast.Assign(scopeVariable,
-                    Methods.CreateBlockScope.OpCall(scope.VisibleVariables(), parentScope, blockParameter, selfParameter)
+                    Methods.CreateBlockScope.OpCall(
+                        scope.VisibleVariables(), parentScope, blockParameter, selfParameter, EnterInterpretedFrameExpression.Instance
+                    )
                 ),
 
                 paramInit,
-				
-				loop,
+                traceCall,
+                Ast.Label(redoLabel),
+                AstUtils.Try(
+                    gen.TransformStatements(_body, ResultOperation.Return)
+                ).Catch(blockUnwinder,
+                    // redo:
+                    AstUtils.IfThen(Ast.Field(blockUnwinder, BlockUnwinder.IsRedoField), Ast.Goto(redoLabel)),
 
-                AstUtils.Empty()
+                    // next:
+                    gen.Return(Ast.Field(blockUnwinder, BlockUnwinder.ReturnValueField))
+                )
+            ).Filter(filterVariable,
+                Methods.FilterBlockException.OpCall(scopeVariable, filterVariable)
+            ).Finally(
+                traceReturn,
+                Methods.LeaveBlockFrame.OpCall(scopeVariable),
+                LeaveInterpretedFrameExpression.Instance
             );
 
             body = gen.AddReturnTarget(scope.CreateScope(body));

@@ -320,52 +320,5 @@ namespace System.Dynamic {
                 return new DynamicMetaObject(expression, BindingRestrictions.Empty, value);
             }
         }
-
-        /// <summary>
-        /// Creates a <see cref="DynamicMetaObject"/> to represent a binding exception.
-        /// </summary>
-        /// <param name="target">The target of dynamic operation whose binding failed.</param>
-        /// <param name="args">An array of arguments for the dynamic operation whose binding failed.</param>
-        /// <param name="exception">A type of the exception to be thrown to signal the binding failure.</param>
-        /// <param name="exceptionArgs">A list of arguments for the exception constructor.</param>
-        /// <returns>The new instance of <see cref="DynamicMetaObject"/> representing the binding error.</returns>
-        public static DynamicMetaObject CreateThrow(DynamicMetaObject target, DynamicMetaObject[] args, Type exception, params object[] exceptionArgs) {
-            return CreateThrow(
-                target,
-                args,
-                exception,
-                exceptionArgs != null ? exceptionArgs.Map<object, Expression>((arg) => Expression.Constant(arg)) : null
-            );
-        }
-
-        /// <summary>
-        /// Creates a <see cref="DynamicMetaObject"/> to represent a binding exception.
-        /// </summary>
-        /// <param name="target">The target of dynamic operation whose binding failed.</param>
-        /// <param name="args">An array of arguments for the dynamic operation whose binding failed.</param>
-        /// <param name="exception">A type of the exception to be thrown to signal the binding failure.</param>
-        /// <param name="exceptionArgs">A list of arguments for the exception constructor.</param>
-        /// <returns>The new instance of <see cref="DynamicMetaObject"/> representing the binding error.</returns>
-        public static DynamicMetaObject CreateThrow(DynamicMetaObject target, DynamicMetaObject[] args, Type exception, params Expression[] exceptionArgs) {
-            ContractUtils.RequiresNotNull(target, "target");
-            ContractUtils.RequiresNotNull(exception, "exception");
-
-            Type[] argTypes = exceptionArgs != null ? exceptionArgs.Map((arg) => arg.Type) : Type.EmptyTypes;
-            ConstructorInfo constructor = exception.GetConstructor(argTypes);
-
-            if (constructor == null) {
-                throw new ArgumentException(Strings.TypeDoesNotHaveConstructorForTheSignature);
-            }
-
-            return new DynamicMetaObject(
-                Expression.Throw(
-                    Expression.New(
-                        exception.GetConstructor(argTypes),
-                        exceptionArgs
-                    )
-                ),
-                target.Restrictions.Merge(BindingRestrictions.Combine(args))
-            );
-        }
     }
 }

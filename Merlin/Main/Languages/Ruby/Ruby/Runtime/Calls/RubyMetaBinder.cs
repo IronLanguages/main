@@ -43,7 +43,6 @@ namespace IronRuby.Runtime.Calls {
         
         public abstract RubyCallSignature Signature { get; }
         protected abstract bool Build(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args, bool defaultFallback);
-        public abstract Type/*!*/ ResultType { get; }
 
         protected virtual DynamicMetaObjectBinder GetInteropBinder(RubyContext/*!*/ context, IList<DynamicMetaObject/*!*/>/*!*/ args, 
             out MethodInfo postProcessor) {

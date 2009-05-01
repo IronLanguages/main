@@ -156,6 +156,10 @@ namespace IronRuby.Compiler {
         private static MethodInfo _DefineSingletonClass;
         public static MethodInfo/*!*/ DeserializeObject { get { return _DeserializeObject ?? (_DeserializeObject = GetMethod(typeof(RubyOps), "DeserializeObject")); } }
         private static MethodInfo _DeserializeObject;
+        public static MethodInfo/*!*/ EnterLoop { get { return _EnterLoop ?? (_EnterLoop = GetMethod(typeof(RubyOps), "EnterLoop")); } }
+        private static MethodInfo _EnterLoop;
+        public static MethodInfo/*!*/ EnterRescue { get { return _EnterRescue ?? (_EnterRescue = GetMethod(typeof(RubyOps), "EnterRescue")); } }
+        private static MethodInfo _EnterRescue;
         public static MethodInfo/*!*/ EvalBreak { get { return _EvalBreak ?? (_EvalBreak = GetMethod(typeof(RubyOps), "EvalBreak")); } }
         private static MethodInfo _EvalBreak;
         public static MethodInfo/*!*/ EvalNext { get { return _EvalNext ?? (_EvalNext = GetMethod(typeof(RubyOps), "EvalNext")); } }
@@ -170,6 +174,8 @@ namespace IronRuby.Compiler {
         private static MethodInfo _EvalYield;
         public static MethodInfo/*!*/ ExistsUnsplat { get { return _ExistsUnsplat ?? (_ExistsUnsplat = GetMethod(typeof(RubyOps), "ExistsUnsplat")); } }
         private static MethodInfo _ExistsUnsplat;
+        public static MethodInfo/*!*/ FilterBlockException { get { return _FilterBlockException ?? (_FilterBlockException = GetMethod(typeof(RubyOps), "FilterBlockException")); } }
+        private static MethodInfo _FilterBlockException;
         public static MethodInfo/*!*/ GetArrayItem { get { return _GetArrayItem ?? (_GetArrayItem = GetMethod(typeof(RubyOps), "GetArrayItem")); } }
         private static MethodInfo _GetArrayItem;
         public static MethodInfo/*!*/ GetArraySuffix { get { return _GetArraySuffix ?? (_GetArraySuffix = GetMethod(typeof(RubyOps), "GetArraySuffix")); } }
@@ -216,6 +222,8 @@ namespace IronRuby.Compiler {
         private static MethodInfo _GetLocalVariable;
         public static MethodInfo/*!*/ GetMetaObject { get { return _GetMetaObject ?? (_GetMetaObject = GetMethod(typeof(RubyOps), "GetMetaObject")); } }
         private static MethodInfo _GetMetaObject;
+        public static MethodInfo/*!*/ GetMethodUnwinderReturnValue { get { return _GetMethodUnwinderReturnValue ?? (_GetMethodUnwinderReturnValue = GetMethod(typeof(RubyOps), "GetMethodUnwinderReturnValue")); } }
+        private static MethodInfo _GetMethodUnwinderReturnValue;
         public static MethodInfo/*!*/ GetObjectClassVariable { get { return _GetObjectClassVariable ?? (_GetObjectClassVariable = GetMethod(typeof(RubyOps), "GetObjectClassVariable")); } }
         private static MethodInfo _GetObjectClassVariable;
         public static MethodInfo/*!*/ GetQualifiedConstant { get { return _GetQualifiedConstant ?? (_GetQualifiedConstant = GetMethod(typeof(RubyOps), "GetQualifiedConstant")); } }
@@ -232,6 +240,8 @@ namespace IronRuby.Compiler {
         private static MethodInfo _InitializeBlock;
         public static MethodInfo/*!*/ InitializeScope { get { return _InitializeScope ?? (_InitializeScope = GetMethod(typeof(RubyOps), "InitializeScope")); } }
         private static MethodInfo _InitializeScope;
+        public static MethodInfo/*!*/ InitializeScopeNoLocals { get { return _InitializeScopeNoLocals ?? (_InitializeScopeNoLocals = GetMethod(typeof(RubyOps), "InitializeScopeNoLocals")); } }
+        private static MethodInfo _InitializeScopeNoLocals;
         public static MethodInfo/*!*/ IsDefinedClassVariable { get { return _IsDefinedClassVariable ?? (_IsDefinedClassVariable = GetMethod(typeof(RubyOps), "IsDefinedClassVariable")); } }
         private static MethodInfo _IsDefinedClassVariable;
         public static MethodInfo/*!*/ IsDefinedGlobalConstant { get { return _IsDefinedGlobalConstant ?? (_IsDefinedGlobalConstant = GetMethod(typeof(RubyOps), "IsDefinedGlobalConstant")); } }
@@ -250,6 +260,8 @@ namespace IronRuby.Compiler {
         private static MethodInfo _IsDefinedUnqualifiedConstant;
         public static MethodInfo/*!*/ IsFalse { get { return _IsFalse ?? (_IsFalse = GetMethod(typeof(RubyOps), "IsFalse")); } }
         private static MethodInfo _IsFalse;
+        public static MethodInfo/*!*/ IsMethodUnwinderTargetFrame { get { return _IsMethodUnwinderTargetFrame ?? (_IsMethodUnwinderTargetFrame = GetMethod(typeof(RubyOps), "IsMethodUnwinderTargetFrame")); } }
+        private static MethodInfo _IsMethodUnwinderTargetFrame;
         public static MethodInfo/*!*/ IsProcConverterTarget { get { return _IsProcConverterTarget ?? (_IsProcConverterTarget = GetMethod(typeof(RubyOps), "IsProcConverterTarget")); } }
         private static MethodInfo _IsProcConverterTarget;
         public static MethodInfo/*!*/ IsRetrySingleton { get { return _IsRetrySingleton ?? (_IsRetrySingleton = GetMethod(typeof(RubyOps), "IsRetrySingleton")); } }
@@ -258,8 +270,16 @@ namespace IronRuby.Compiler {
         private static MethodInfo _IsSuperCallTarget;
         public static MethodInfo/*!*/ IsTrue { get { return _IsTrue ?? (_IsTrue = GetMethod(typeof(RubyOps), "IsTrue")); } }
         private static MethodInfo _IsTrue;
+        public static MethodInfo/*!*/ LeaveBlockFrame { get { return _LeaveBlockFrame ?? (_LeaveBlockFrame = GetMethod(typeof(RubyOps), "LeaveBlockFrame")); } }
+        private static MethodInfo _LeaveBlockFrame;
+        public static MethodInfo/*!*/ LeaveLoop { get { return _LeaveLoop ?? (_LeaveLoop = GetMethod(typeof(RubyOps), "LeaveLoop")); } }
+        private static MethodInfo _LeaveLoop;
+        public static MethodInfo/*!*/ LeaveMethodFrame { get { return _LeaveMethodFrame ?? (_LeaveMethodFrame = GetMethod(typeof(RubyOps), "LeaveMethodFrame")); } }
+        private static MethodInfo _LeaveMethodFrame;
         public static MethodInfo/*!*/ LeaveProcConverter { get { return _LeaveProcConverter ?? (_LeaveProcConverter = GetMethod(typeof(RubyOps), "LeaveProcConverter")); } }
         private static MethodInfo _LeaveProcConverter;
+        public static MethodInfo/*!*/ LeaveRescue { get { return _LeaveRescue ?? (_LeaveRescue = GetMethod(typeof(RubyOps), "LeaveRescue")); } }
+        private static MethodInfo _LeaveRescue;
         public static MethodInfo/*!*/ MakeAllocatorUndefinedError { get { return _MakeAllocatorUndefinedError ?? (_MakeAllocatorUndefinedError = GetMethod(typeof(RubyOps), "MakeAllocatorUndefinedError")); } }
         private static MethodInfo _MakeAllocatorUndefinedError;
         public static MethodInfo/*!*/ MakeAmbiguousMatchError { get { return _MakeAmbiguousMatchError ?? (_MakeAmbiguousMatchError = GetMethod(typeof(RubyOps), "MakeAmbiguousMatchError")); } }
@@ -324,8 +344,6 @@ namespace IronRuby.Compiler {
         private static MethodInfo _SetClassVariable;
         public static MethodInfo/*!*/ SetCurrentException { get { return _SetCurrentException ?? (_SetCurrentException = GetMethod(typeof(RubyOps), "SetCurrentException")); } }
         private static MethodInfo _SetCurrentException;
-        public static MethodInfo/*!*/ SetCurrentExceptionAndStackTrace { get { return _SetCurrentExceptionAndStackTrace ?? (_SetCurrentExceptionAndStackTrace = GetMethod(typeof(RubyOps), "SetCurrentExceptionAndStackTrace")); } }
-        private static MethodInfo _SetCurrentExceptionAndStackTrace;
         public static MethodInfo/*!*/ SetDataConstant { get { return _SetDataConstant ?? (_SetDataConstant = GetMethod(typeof(RubyOps), "SetDataConstant")); } }
         private static MethodInfo _SetDataConstant;
         public static MethodInfo/*!*/ SetGlobalConstant { get { return _SetGlobalConstant ?? (_SetGlobalConstant = GetMethod(typeof(RubyOps), "SetGlobalConstant")); } }
@@ -378,6 +396,8 @@ namespace IronRuby.Compiler {
         private static MethodInfo _TraceMethodCall;
         public static MethodInfo/*!*/ TraceMethodReturn { get { return _TraceMethodReturn ?? (_TraceMethodReturn = GetMethod(typeof(RubyOps), "TraceMethodReturn")); } }
         private static MethodInfo _TraceMethodReturn;
+        public static MethodInfo/*!*/ TraceTopLevelCodeFrame { get { return _TraceTopLevelCodeFrame ?? (_TraceTopLevelCodeFrame = GetMethod(typeof(RubyOps), "TraceTopLevelCodeFrame")); } }
+        private static MethodInfo _TraceTopLevelCodeFrame;
         public static MethodInfo/*!*/ TryGetClassVariable { get { return _TryGetClassVariable ?? (_TryGetClassVariable = GetMethod(typeof(RubyOps), "TryGetClassVariable")); } }
         private static MethodInfo _TryGetClassVariable;
         public static MethodInfo/*!*/ TryGetObjectClassVariable { get { return _TryGetObjectClassVariable ?? (_TryGetObjectClassVariable = GetMethod(typeof(RubyOps), "TryGetObjectClassVariable")); } }

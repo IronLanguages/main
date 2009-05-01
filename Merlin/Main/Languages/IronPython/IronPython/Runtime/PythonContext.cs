@@ -92,7 +92,8 @@ namespace IronPython.Runtime {
         private Dictionary<AttrKey, CallSite<Action<CallSite, object>>> _deleteAttrSites;
         private CallSite<Func<CallSite, CodeContext, object, string, PythonTuple, IAttributesCollection, object>> _metaClassSite;
         private CallSite<Func<CallSite, CodeContext, object, string, object>> _writeSite;
-        private CallSite<Func<CallSite, object, object, object>> _getIndexSite, _equalSite, _delIndexSite;
+        private CallSite<Func<CallSite, object, object, object>> _getIndexSite, _equalSite;
+        private CallSite<Action<CallSite, object, object>> _delIndexSite;
         private CallSite<Func<CallSite, CodeContext, object, IList<string>>> _memberNamesSite;
         private CallSite<Func<CallSite, object, IList<string>>> _getMemberNamesSite;
         private CallSite<Func<CallSite, CodeContext, object, object>> _finalizerSite;
@@ -149,26 +150,17 @@ namespace IronPython.Runtime {
             _builtinsDict = CreateBuiltinTable();
             _optimizedDelegates = new Dictionary<object, Delegate>();
 
-            DefaultContext.CreateContexts(manager, this);
-
-            _defaultContext = new CodeContext(new Scope(), this);
+            Scope defaultScope = new Scope();
+            _defaultContext = new CodeContext(defaultScope, this);
             PythonBinder binder = new PythonBinder(manager, this, _defaultContext);
             Binder = binder;
-            _defaultBinderState = new BinderState(binder, DefaultContext.CreateDefaultContext(this));
+            _defaultBinderState = new BinderState(binder, _defaultContext);
 
-            DefaultContext.CreateClsContexts(manager, this);
+            CodeContext defaultClsContext = DefaultContext.CreateDefaultCLSContext(this);
+            _defaultClsBinderState = new BinderState(binder, defaultClsContext);
 
-            _defaultClsBinderState = new BinderState(binder, DefaultContext.CreateDefaultCLSContext(this));
-
-            if (DefaultContext.Default.LanguageContext.Binder == null) {
-                // hack to fix the default language context binder, there's an order of 
-                // initialization issue w/ the binder & the default context.
-                ((PythonContext)DefaultContext.Default.LanguageContext).Binder = Binder;
-            }
-            if (DefaultContext.DefaultCLS.LanguageContext.Binder == null) {
-                // hack to fix the default language context binder, there's an order of 
-                // initialization issue w/ the binder & the default context.
-                ((PythonContext)DefaultContext.DefaultCLS.LanguageContext).Binder = Binder;
+            if (DefaultContext._default == null) {
+                DefaultContext.InitializeDefaults(_defaultContext, defaultClsContext);
             }
 
             InitializeBuiltins();
@@ -225,6 +217,9 @@ namespace IronPython.Runtime {
 
             _collateCulture = _ctypeCulture = _timeCulture = _monetaryCulture = _numericCulture = CultureInfo.InvariantCulture;
             _equalityComparer = new PythonEqualityComparer(this);
+
+            PythonModule module = EnsureModule(_defaultContext);
+            module.BinderState = _defaultBinderState;
         }
 
         public IEqualityComparer<object>/*!*/ EqualityComparer {
@@ -642,9 +637,9 @@ namespace IronPython.Runtime {
             return CompilePythonCode(null, sourceUnit, options, errorSink);
         }
 
-        protected override ScriptCode/*!*/ LoadCompiledCode(Delegate/*!*/ method, string path) {
+        protected override ScriptCode/*!*/ LoadCompiledCode(Delegate/*!*/ method, string path, string customData) {
             SourceUnit su = new SourceUnit(this, NullTextContentProvider.Null, path, SourceCodeKind.File);
-            return new OnDiskScriptCode((Func<Scope, LanguageContext, object>)method, su);
+            return new OnDiskScriptCode((Func<Scope, LanguageContext, object>)method, su, customData);
         }
 
         public override SourceCodeReader/*!*/ GetSourceReader(Stream/*!*/ stream, Encoding/*!*/ defaultEncoding) {
@@ -2015,7 +2010,7 @@ namespace IronPython.Runtime {
             if (_delIndexSite == null) {
                 Interlocked.CompareExchange(
                     ref _delIndexSite,
-                    CallSite<Func<CallSite, object, object, object>>.Create(
+                    CallSite<Action<CallSite, object, object>>.Create(
                         _defaultBinderState.DeleteIndex(
                             1
                         )

@@ -69,10 +69,10 @@ namespace IronRuby.Runtime {
         private readonly BlockCallerKind _callerKind;
 
         // filled by define_method, module_eval, load: if not null than method definition and method alias uses the module
-        private RubyModule _moduleDeclaration;
+        private RubyModule _methodLookupModule;
 
         // filled by define_method: if not null then injects a scope in super call method lookup:
-        private readonly string _superMethodName;
+        private readonly string _methodName;
         
         // Is the library method call taking this BlockParam a proc converter?
         // Used only for BlockParams that are passed to library method calls.
@@ -84,12 +84,16 @@ namespace IronRuby.Runtime {
         private RuntimeFlowControl _targetFrame;
         private ProcKind _sourceProcKind;
 
+        private void ObjectInvariant() {
+            ContractUtils.Invariant(_methodName == null || _methodLookupModule != null);
+        }
+
         internal BlockCallerKind CallerKind { get { return _callerKind; } }
         internal ProcKind SourceProcKind { get { return _sourceProcKind; } }
         internal BlockReturnReason ReturnReason { get { return _returnReason; } set { _returnReason = value; } }
         internal RuntimeFlowControl TargetFrame { get { return _targetFrame; } }
-        internal RubyModule ModuleDeclaration { get { return _moduleDeclaration; } set { _moduleDeclaration = value; } }
-        internal string SuperMethodName { get { return _superMethodName; } }
+        internal RubyModule MethodLookupModule { get { return _methodLookupModule; } set { _methodLookupModule = value; } }
+        internal string MethodName { get { return _methodName; } }
         internal bool IsLibProcConverter { get { return _isLibProcConverter; } }
         
         public Proc/*!*/ Proc { get { return _proc; } }
@@ -101,15 +105,23 @@ namespace IronRuby.Runtime {
             get { return _proc.LocalScope.RubyContext; }
         }
 
+        public bool IsMethod {
+            get {
+                ObjectInvariant();
+                return _methodName != null; 
+            }
+        }
+
         internal static PropertyInfo/*!*/ SelfProperty { get { return typeof(BlockParam).GetProperty("Self"); } }
 
         // friend: RubyOps
-        internal BlockParam(Proc/*!*/ proc, BlockCallerKind callerKind, bool isLibProcConverter, RubyModule moduleDeclaration, string superName) {
+        internal BlockParam(Proc/*!*/ proc, BlockCallerKind callerKind, bool isLibProcConverter, RubyModule moduleDeclaration, string methodName) {
             _callerKind = callerKind;
             _proc = proc;
             _isLibProcConverter = isLibProcConverter;
-            _moduleDeclaration = moduleDeclaration;
-            _superMethodName = superName;
+            _methodLookupModule = moduleDeclaration;
+            _methodName = methodName;
+            ObjectInvariant();
         }
 
         internal void SetFlowControl(BlockReturnReason reason, RuntimeFlowControl targetFrame, ProcKind sourceProcKind) {

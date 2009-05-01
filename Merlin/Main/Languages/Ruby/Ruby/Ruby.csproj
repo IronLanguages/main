@@ -155,7 +155,9 @@
     <Compile Include="Compiler\Ast\Expressions\RescueExpression.cs" />
     <Compile Include="Compiler\Ast\Expressions\UnlessExpression.cs" />
     <Compile Include="Compiler\Ast\Identifier.cs" />
+    <Compile Include="Compiler\Ast\Instructions\FrameTracking.cs" />
     <Compile Include="Compiler\Ast\LeftValues\Placeholder.cs" />
+    <Compile Include="Compiler\Ast\Instructions\ReducibleEmptyExpression.cs" />
     <Compile Include="Compiler\Ast\ScopeBuilder.cs" />
     <Compile Include="Compiler\Ast\Statements.cs" />
     <Compile Include="Compiler\Ast\Statements\ConditionalStatement.cs" />

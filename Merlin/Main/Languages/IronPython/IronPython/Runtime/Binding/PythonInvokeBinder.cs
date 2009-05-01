@@ -168,7 +168,7 @@ namespace IronPython.Runtime.Binding {
         /// <summary>
         /// Creates a nested dynamic site which uses the unpacked arguments.
         /// </summary>
-        protected DynamicMetaObject InvokeForeignObject(DynamicMetaObject target, DynamicMetaObject[] args) {
+        internal DynamicMetaObject InvokeForeignObject(DynamicMetaObject target, DynamicMetaObject[] args) {
             // need to unpack any dict / list arguments...
             CallInfo callInfo;
             List<Expression> metaArgs;

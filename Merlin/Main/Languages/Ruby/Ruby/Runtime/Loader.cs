@@ -462,7 +462,7 @@ namespace IronRuby.Runtime {
                 Utils.Log(String.Format("{0}: {1}", ++_compiledFileCount, sourceUnit.Path), "LOAD_COMPILED");
 
                 RubyCompilerOptions options = new RubyCompilerOptions(_context.RubyOptions) {
-                    FactoryKind = (flags & LoadFlags.LoadIsolated) != 0 ? TopScopeFactoryKind.WrappedFile : TopScopeFactoryKind.Default
+                    FactoryKind = (flags & LoadFlags.LoadIsolated) != 0 ? TopScopeFactoryKind.WrappedFile : TopScopeFactoryKind.File
                 };
 
                 long ts1 = Stopwatch.GetTimestamp();

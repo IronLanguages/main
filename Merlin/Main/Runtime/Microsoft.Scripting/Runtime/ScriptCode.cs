@@ -54,8 +54,11 @@ namespace Microsoft.Scripting {
             return new Scope();
         }
 
+        public virtual object Run() {
+            return Run(CreateScope());
+        }
+
         public abstract object Run(Scope scope);
-        public abstract object Run();
 
         class CodeInfo {
             public readonly MethodBuilder Builder;
@@ -113,7 +116,7 @@ namespace Microsoft.Scripting {
             MethodBuilder mb = tb.DefineMethod(
                 "GetScriptCodeInfo",
                 MethodAttributes.SpecialName | MethodAttributes.Public | MethodAttributes.Static,
-                typeof(MutableTuple<Type[], Delegate[][], string[][], object>),
+                typeof(MutableTuple<Type[], Delegate[][], string[][], string[][]>),
                 Type.EmptyTypes);
 
             ILGen ilgen = new ILGen(mb.GetILGenerator());
@@ -149,12 +152,23 @@ namespace Microsoft.Scripting {
                 });
             });
 
-            // 4th element in tuple - always null...
-            ilgen.EmitNull();
+            // 4th element in tuple - custom per-language data
+            ilgen.EmitArray(typeof(string[]), langsWithBuilders.Length, (index) => {
+                List<CodeInfo> builders = langsWithBuilders[index].Value;
+
+                ilgen.EmitArray(typeof(string), builders.Count, (innerIndex) => {
+                    ICustomScriptCodeData data = builders[innerIndex].Code as ICustomScriptCodeData;
+                    if (data != null) {
+                        ilgen.EmitString(data.GetCustomScriptCodeData());
+                    } else {
+                        ilgen.Emit(OpCodes.Ldnull);
+                    }
+                });
+            });
 
             ilgen.EmitNew(
-                typeof(MutableTuple<Type[], Delegate[][], string[][], object>),
-                new[] { typeof(Type[]), typeof(Delegate[][]), typeof(string[][]), typeof(object) }
+                typeof(MutableTuple<Type[], Delegate[][], string[][], string[][]>),
+                new[] { typeof(Type[]), typeof(Delegate[][]), typeof(string[][]), typeof(string[][]) }
             );
             ilgen.Emit(OpCodes.Ret);
 
@@ -191,7 +205,7 @@ namespace Microsoft.Scripting {
 
             MethodInfo mi = t.GetMethod("GetScriptCodeInfo");
             if (mi.IsSpecialName && mi.IsDefined(typeof(DlrCachedCodeAttribute), false)) {
-                var infos = (MutableTuple<Type[], Delegate[][], string[][], object>)mi.Invoke(null, ArrayUtils.EmptyObjects);
+                var infos = (MutableTuple<Type[], Delegate[][], string[][], string[][]>)mi.Invoke(null, ArrayUtils.EmptyObjects);
 
                 for (int i = 0; i < infos.Item000.Length; i++) {
                     Type curType = infos.Item000[i];
@@ -201,9 +215,10 @@ namespace Microsoft.Scripting {
 
                     Delegate[] methods = infos.Item001[i];
                     string[] names = infos.Item002[i];
+                    string[] customData = infos.Item003[i];
 
                     for (int j = 0; j < methods.Length; j++) {
-                        codes.Add(lc.LoadCompiledCode(methods[j], names[j]));
+                        codes.Add(lc.LoadCompiledCode(methods[j], names[j], customData[j]));
                     }
                 }
             }

@@ -89,7 +89,7 @@ namespace IronRuby.Runtime.Calls {
 #endif
 
         internal DynamicMetaObject/*!*/ CreateMetaObject(RubyMetaBinder/*!*/ action) {
-            return CreateMetaObject(action, action.ResultType);
+            return CreateMetaObject(action, action.ReturnType);
         }
 
         internal DynamicMetaObject/*!*/ CreateMetaObject(ConvertBinder/*!*/ action) {

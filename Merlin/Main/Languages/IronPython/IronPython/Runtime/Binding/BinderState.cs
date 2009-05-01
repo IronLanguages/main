@@ -31,7 +31,6 @@ namespace IronPython.Runtime.Binding {
     public class BinderState : IExpressionSerializable {
         private readonly PythonBinder/*!*/ _binder;
         private CodeContext _context;
-        private static readonly BinderState Default = new BinderState(DefaultContext.DefaultPythonBinder, DefaultContext.Default);
         private PythonInvokeBinder _invokeNoArgs, _invokeOneArg;
         private Dictionary<CallSignature, PythonInvokeBinder/*!*/> _invokeBinders;
         private Dictionary<string/*!*/, PythonGetMemberBinder/*!*/> _getMemberBinders;
@@ -91,8 +90,7 @@ namespace IronPython.Runtime.Binding {
                 return pySite.Binder;
             }
 
-            Debug.Assert(Default != null);
-            return Default;
+            return DefaultContext.DefaultPythonContext.DefaultBinderState;
         }
 
         public static Expression/*!*/ GetCodeContext(DynamicMetaObjectBinder/*!*/ action) {

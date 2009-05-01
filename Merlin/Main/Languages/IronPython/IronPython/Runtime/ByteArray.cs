@@ -1135,16 +1135,6 @@ namespace IronPython.Runtime {
             return new ByteArray(new List<byte>(_bytes));
         }
 
-        private static int GetIntValue(object/*!*/ value) {
-            if (value is IList<byte>) {
-                return ((IList<byte>)value).ToByte("__setitem__", 2);
-            }
-            if (!(value is int)) {
-                throw PythonOps.TypeError("expected integer when assigning slice to bytearray, got {0}", DynamicHelpers.GetPythonType(value).Name);
-            }
-            return (int)value;
-        }
-
         private void SliceNoStep(int start, int stop, IList<byte>/*!*/ value) {
             // always copy from a List object, even if it's a copy of some user defined enumerator.  This
             // makes it easy to hold the lock for the duration fo the copy.

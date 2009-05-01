@@ -30,14 +30,16 @@ namespace IronPython.Compiler {
     /// A ScriptCode which can be saved to disk.  We only create this when called via
     /// the clr.CompileModules API.  This ScriptCode does not support running.
     /// </summary>
-    class SavableScriptCode : ScriptCode {
+    class SavableScriptCode : ScriptCode, ICustomScriptCodeData {
         private readonly Expression<Func<Scope, LanguageContext, object>> _code;
         private readonly string[] _names;
+        private readonly string _moduleName;
         
-        public SavableScriptCode(Expression<Func<Scope, LanguageContext, object>> code, SourceUnit sourceUnit, string[] names)
+        public SavableScriptCode(Expression<Func<Scope, LanguageContext, object>> code, SourceUnit sourceUnit, string[] names, string moduleName)
             : base(sourceUnit) {
             _code = code;
             _names = names;
+            _moduleName = moduleName;
         }
 
         protected override KeyValuePair<MethodBuilder, Type> CompileForSave(TypeGen typeGen, Dictionary<SymbolId, FieldBuilder> symbolDict) {
@@ -82,6 +84,14 @@ namespace IronPython.Compiler {
 
         public override Scope CreateScope() {
             throw new NotSupportedException();
-        }        
+        }
+
+        #region ICustomScriptCodeData Members
+
+        string ICustomScriptCodeData.GetCustomScriptCodeData() {
+            return _moduleName;
+        }
+
+        #endregion
     }
 }

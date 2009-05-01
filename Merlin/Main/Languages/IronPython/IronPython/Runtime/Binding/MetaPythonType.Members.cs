@@ -16,6 +16,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Dynamic;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -742,7 +743,50 @@ namespace IronPython.Runtime.Binding {
         #region Sets
 
         private DynamicMetaObject/*!*/ MakeSetMember(SetMemberBinder/*!*/ member, DynamicMetaObject/*!*/ value) {
-            DynamicMetaObject self = Restrict(typeof(PythonType));
+            BinderState state = BinderState.GetBinderState(member);
+            DynamicMetaObject self = Restrict(Value.GetType());
+
+            if (Value.GetType() != typeof(PythonType) && DynamicHelpers.GetPythonType(Value).IsSystemType) {
+                // built-in subclass of .NET type.  Usually __setattr__ is handled by MetaUserObject
+                // but we can have a built-in subtype that's not a user type.
+                PythonTypeSlot pts;
+                if (Value.TryGetCustomSetAttr(state.Context, out pts)) {
+                    
+                    Debug.Assert(pts.GetAlwaysSucceeds);
+                    
+                    ParameterExpression tmp = Ast.Variable(typeof(object), "boundVal");
+
+                    return BindingHelpers.AddDynamicTestAndDefer(
+                        member,
+                        new DynamicMetaObject(
+                            Ast.Block(
+                                new[] { tmp },
+                                Ast.Dynamic(
+                                    state.Invoke(new CallSignature(2)),
+                                    typeof(object),
+                                    AstUtils.Constant(state.Context),
+                                    Ast.Block(
+                                        Ast.Call(
+                                            typeof(PythonOps).GetMethod("SlotTryGetValue"),
+                                            AstUtils.Constant(state.Context),
+                                            AstUtils.Convert(AstUtils.WeakConstant(pts), typeof(PythonTypeSlot)),
+                                            AstUtils.Convert(Expression, typeof(object)),
+                                            AstUtils.Convert(AstUtils.WeakConstant(DynamicHelpers.GetPythonType(Value)), typeof(PythonType)),
+                                            tmp
+                                        ),
+                                        tmp
+                                    ),
+                                    Ast.Constant(member.Name),
+                                    value.Expression
+                                )
+                            ),
+                            self.Restrictions
+                        ),
+                        new DynamicMetaObject[] { this, value },
+                        TestUserType()
+                    );
+                }
+            }
 
             return BindingHelpers.AddDynamicTestAndDefer(
                 member,
@@ -786,7 +830,7 @@ namespace IronPython.Runtime.Binding {
         #region Deletes
 
         private DynamicMetaObject/*!*/ MakeDeleteMember(DeleteMemberBinder/*!*/ member) {
-            DynamicMetaObject self = Restrict(typeof(PythonType));
+            DynamicMetaObject self = Restrict(Value.GetType());
             return BindingHelpers.AddDynamicTestAndDefer(
                 member,
                 new DynamicMetaObject(

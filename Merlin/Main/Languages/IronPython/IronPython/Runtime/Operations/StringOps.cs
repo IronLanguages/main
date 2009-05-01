@@ -440,7 +440,7 @@ namespace IronPython.Runtime.Operations {
             return ((Extensible<string>)o).Value;
         }
 
-        private static string AsString(object o) {
+        internal static string AsString(object o) {
             string res = o as string;
             if (res != null) {
                 return res;

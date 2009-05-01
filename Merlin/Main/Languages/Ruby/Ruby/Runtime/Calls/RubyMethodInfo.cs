@@ -180,7 +180,7 @@ namespace IronRuby.Runtime.Calls {
 
                 ).Finally(
                     // we need to mark the RFC dead snce the block might escape and break later:
-                    Ast.Assign(Ast.Field(rfcVariable, RuntimeFlowControl.IsActiveMethodField), AstUtils.Constant(false))
+                    Methods.LeaveMethodFrame.OpCall(rfcVariable)
                 ), 
                 resultVariable
             );
