@@ -28,11 +28,6 @@ using System.Collections.Generic;
 
 namespace IronRuby.Rack {
 
-    /// <summary>
-    /// A HttpHandler which delegates all requests to Rack.
-    /// See http://rack.rubyforge.org/doc/SPEC.html for exactly 
-    /// what this handler needs to delegate between IIS and Rack.
-    /// </summary>
     internal sealed class HttpHandler : IHttpHandler {
 
         private readonly Stopwatch _watch = new Stopwatch();
@@ -43,7 +38,8 @@ namespace IronRuby.Rack {
 
         public void ProcessRequest(HttpContext context) {
             lock (this) {
-                Handler.IIS.Current.Handle(context);
+                Handler.IIS.Current.Handle(new Request(new HttpRequestWrapper(context.Request)),
+                                           new Response(new HttpResponseWrapper(context.Response)));
             }
         }
     }
