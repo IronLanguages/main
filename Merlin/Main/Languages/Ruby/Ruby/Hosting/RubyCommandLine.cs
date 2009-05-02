@@ -62,7 +62,7 @@ namespace IronRuby.Hosting {
 
         // overridden to set the default encoding to KCODE/BINARY
         protected override int RunFile(string fileName) {
-            return RunFile(Engine.CreateScriptSourceFromFile(fileName, (((RubyContext)Language).RubyOptions.KCode ?? RubyEncoding.Binary).Encoding));
+            return RunFile(Engine.CreateScriptSourceFromFile(RubyUtils.CanonicalizePath(fileName), (((RubyContext)Language).RubyOptions.KCode ?? RubyEncoding.Binary).Encoding));
         }
 
         protected override Scope/*!*/ CreateScope() {
@@ -73,7 +73,7 @@ namespace IronRuby.Hosting {
 
         protected override void UnhandledException(Exception e) {
             // Kernel#at_exit can access $!. So we need to publish the uncaught exception
-            RubyOps.SetCurrentExceptionAndStackTrace(Ruby.GetExecutionContext(Engine), e);
+            Ruby.GetExecutionContext(Engine).CurrentException = e;
 
             base.UnhandledException(e);
         }

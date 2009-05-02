@@ -30,10 +30,12 @@ namespace IronPython.Compiler {
     class OnDiskScriptCode : ScriptCode {
         private readonly Func<Scope, LanguageContext, object> _code;
         private Scope _optimizedScope;
+        private readonly string _moduleName;
 
-        public OnDiskScriptCode(Func<Scope, LanguageContext, object> code, SourceUnit sourceUnit) :
+        public OnDiskScriptCode(Func<Scope, LanguageContext, object> code, SourceUnit sourceUnit, string moduleName) :
             base(sourceUnit) {
             _code = code;
+            _moduleName = moduleName;
         }
 
         public override object Run() {
@@ -46,6 +48,12 @@ namespace IronPython.Compiler {
             }
 
             throw new NotSupportedException();
+        }
+
+        public string ModuleName {
+            get {
+                return _moduleName;
+            }
         }
 
         public override Scope CreateScope() {

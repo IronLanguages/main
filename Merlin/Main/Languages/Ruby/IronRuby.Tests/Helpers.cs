@@ -91,6 +91,11 @@ namespace IronRuby.Tests {
             }
         }
 
+        public void UsingEval(Action<bool>/*!*/ test) {
+            test(true);
+            test(false);
+        }
+
         public void LoadTestLibrary() {
             Context.ObjectClass.SetConstant("TestHelpers", Context.GetClass(typeof(TestHelpers)));
         }
@@ -197,6 +202,26 @@ namespace IronRuby.Tests {
             Console.WriteLine("Assertion check skipped.");
             // just run the code
             f();
+        }
+
+        [DebuggerHiddenAttribute]
+        private void TestOutput(string code, string expectedOutput) {
+            AssertOutput(() => CompilerTest(code), expectedOutput);
+        }
+
+        [DebuggerHiddenAttribute]
+        private void XTestOutput(string code, string expectedOutput) {
+            XAssertOutput(() => CompilerTest(code), expectedOutput);
+        }
+
+        [DebuggerHiddenAttribute]
+        private void TestOutputWithEval(string code, string expectedOutput) {
+            UsingEval((eval) => AssertOutput(() => CompilerTest(Eval(eval, code)), expectedOutput));
+        }
+
+        [DebuggerHiddenAttribute]
+        private void XTestOutputWithEval(string code, string expectedOutput) {
+            UsingEval((eval) => XAssertOutput(() => CompilerTest(Eval(eval, code)), expectedOutput));
         }
 
         [DebuggerHiddenAttribute]

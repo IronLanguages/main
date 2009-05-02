@@ -1,8 +1,8 @@
-﻿<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion='3.5'>
+﻿<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="3.5">
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProductVersion>9.0.21022</ProductVersion>
+    <ProductVersion>9.0.30729</ProductVersion>
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>{95289EA9-5778-489D-AB48-F81F2CE2DA32}</ProjectGuid>
     <OutputType>Library</OutputType>
@@ -63,10 +63,7 @@
     <NoStdLib>true</NoStdLib>
     <NoWarn>618</NoWarn>
     <SilverlightBuild>true</SilverlightBuild>
-    <TfsSilverlightPath>..\..\..\Utilities\Silverlight\x86ret\</TfsSilverlightPath>
-    <SilverlightInstallPath>C:\Program Files\Microsoft Silverlight\2.0.40115.0</SilverlightInstallPath>
-    <SilverlightSdkPath Condition="Exists('$(TfsSilverlightPath)')">$(TfsSilverlightPath)</SilverlightSdkPath>
-    <SilverlightSdkPath Condition="!Exists('$(TfsSilverlightPath)')">$(SilverlightInstallPath)</SilverlightSdkPath>
+    <SilverlightSdkPath>..\..\..\Utilities\Silverlight\x86ret\</SilverlightSdkPath>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Silverlight Release|AnyCPU' ">
     <OutputPath>..\..\..\Bin\Silverlight Release\</OutputPath>
@@ -77,10 +74,7 @@
     <PlatformTarget>AnyCPU</PlatformTarget>
     <ErrorReport>prompt</ErrorReport>
     <SilverlightBuild>true</SilverlightBuild>
-    <TfsSilverlightPath>..\..\..\Utilities\Silverlight\x86ret\</TfsSilverlightPath>
-    <SilverlightInstallPath>C:\Program Files\Microsoft Silverlight\2.0.40115.0</SilverlightInstallPath>
-    <SilverlightSdkPath Condition="Exists('$(TfsSilverlightPath)')">$(TfsSilverlightPath)</SilverlightSdkPath>
-    <SilverlightSdkPath Condition="!Exists('$(TfsSilverlightPath)')">$(SilverlightInstallPath)</SilverlightSdkPath>
+    <SilverlightSdkPath>..\..\..\Utilities\Silverlight\x86ret\</SilverlightSdkPath>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DocumentationFile>..\..\..\Bin\Debug\IronPython.XML</DocumentationFile>
@@ -110,8 +104,9 @@
     <Compile Include="Compiler\Ast\AssignmentStatement.cs" />
     <Compile Include="Compiler\Ast\AstGenerator.cs" />
     <Compile Include="Runtime\Binding\ContextArgBuilder.cs" />
+    <Compile Include="Runtime\Binding\IFastSettable.cs" />
     <Compile Include="Runtime\Binding\PythonBinder.Create.cs" />
-    <Compile Include="Runtime\Binding\PythonMethodBinder.cs" />
+    <Compile Include="Runtime\Binding\PythonOverloadResolver.cs" />
     <Compile Include="Runtime\Binding\SiteLocalStorageBuilder.cs" />
     <Compile Include="Compiler\ClosureExpression.cs" />
     <Compile Include="Compiler\ClosureInfo.cs" />
@@ -119,6 +114,8 @@
     <Compile Include="Compiler\GeneratorRewriter.cs" />
     <Compile Include="Compiler\LazyCode.cs" />
     <Compile Include="Runtime\Exceptions\BufferException.Generated.cs" />
+    <Compile Include="Runtime\FutureBuiltins.cs" />
+    <Compile Include="Runtime\Binding\IPythonConvertible.cs" />
     <Compile Include="Runtime\Profiler.cs" />
     <Compile Include="Compiler\GlobalAllocator.cs" />
     <Compile Include="Compiler\Ast\AugmentedAssignStatement.cs" />
@@ -242,6 +239,7 @@
     <Compile Include="Runtime\NewStringFormatter.cs" />
     <Compile Include="Runtime\Operations\ByteOps.cs" />
     <Compile Include="Runtime\Operations\IListOfByteOps.cs" />
+    <Compile Include="Runtime\ProhibitGenericListConversion.cs" />
     <Compile Include="Runtime\Python3Warning.cs" />
     <Compile Include="Runtime\PythonFunction.Generated.cs" />
     <Compile Include="Runtime\PythonOptions.cs" />
@@ -310,7 +308,6 @@
     <Compile Include="Runtime\Exceptions\RuntimeException.Generated.cs" />
     <Compile Include="Runtime\Exceptions\RuntimeWarningException.Generated.cs" />
     <Compile Include="Runtime\Exceptions\StopIterationException.Generated.cs" />
-    <Compile Include="Runtime\Exceptions\StringException.cs" />
     <Compile Include="Runtime\Exceptions\SyntaxWarningException.Generated.cs" />
     <Compile Include="Runtime\Exceptions\SystemExitException.cs" />
     <Compile Include="Runtime\Exceptions\TabException.cs" />
@@ -368,7 +365,6 @@
     <Compile Include="Runtime\Interfaces.cs" />
     <Compile Include="Runtime\List.cs" />
     <Compile Include="Runtime\LiteralParser.cs" />
-    <Compile Include="Runtime\LocalScopeDictionaryStorage.cs" />
     <Compile Include="Runtime\ObjectAttributesAdapter.cs" />
     <Compile Include="Runtime\Operations\ArrayOps.cs" />
     <Compile Include="Runtime\Operations\BoolOps.cs" />

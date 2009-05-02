@@ -1,0 +1,10 @@
+--- !ruby/object:RI::MethodDescription 
+aliases: []
+
+block_params: 
+comment: 
+full_name: WEBrick::HTTPServlet::FileHandler#windows_ambiguous_name?
+is_singleton: false
+name: windows_ambiguous_name?
+params: (name)
+visibility: private

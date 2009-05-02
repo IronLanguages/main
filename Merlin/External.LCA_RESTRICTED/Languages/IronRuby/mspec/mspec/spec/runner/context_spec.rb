@@ -4,6 +4,7 @@ require 'mspec/matchers/base'
 require 'mspec/runner/mspec'
 require 'mspec/mocks/mock'
 require 'mspec/runner/context'
+require 'mspec/runner/example'
 
 describe ContextState, "#describe" do
   before :each do
@@ -90,13 +91,26 @@ describe ContextState, "#it" do
   before :each do
     @state = ContextState.new ""
     @proc = lambda { }
+
+    @ex = ExampleState.new("", "", &@proc)
   end
 
   it "creates an ExampleState instance for the block" do
-    ex = ExampleState.new("", "", &@proc)
-    ExampleState.should_receive(:new).with(@state, "it", @proc).and_return(ex)
+    ExampleState.should_receive(:new).with(@state, "it", @proc).and_return(@ex)
     @state.describe(&@proc)
     @state.it("it", &@proc)
+  end
+
+  it "calls registered :add actions" do
+    ExampleState.should_receive(:new).with(@state, "it", @proc).and_return(@ex)
+
+    add_action = mock("add")
+    add_action.should_receive(:add).with(@ex).and_return { ScratchPad.record :add }
+    MSpec.register :add, add_action
+
+    @state.it("it", &@proc)
+    ScratchPad.recorded.should == :add
+    MSpec.unregister :add, add_action
   end
 end
 
@@ -492,7 +506,7 @@ describe ContextState, "#process" do
 
     action = mock("action")
     def action.exception(exc)
-      ScratchPad.record :exception if exc.exception.is_a? ExpectationNotFoundError
+      ScratchPad.record :exception if exc.exception.is_a? SpecExpectationNotFoundError
     end
     MSpec.register :exception, action
 
@@ -504,19 +518,19 @@ describe ContextState, "#process" do
     MSpec.store :exception, nil
   end
 
-  it "raises an ExpectationNotFoundError if an #it block does not contain an expectation" do
+  it "raises an SpecExpectationNotFoundError if an #it block does not contain an expectation" do
     @state.it("it") { }
     @state.process
     ScratchPad.recorded.should == :exception
   end
 
-  it "does not raise an ExpectationNotFoundError if an #it block does contain an expectation" do
+  it "does not raise an SpecExpectationNotFoundError if an #it block does contain an expectation" do
     @state.it("it") { MSpec.expectation }
     @state.process
     ScratchPad.recorded.should be_nil
   end
 
-  it "does not raise an ExpectationNotFoundError if the #it block causes a failure" do
+  it "does not raise an SpecExpectationNotFoundError if the #it block causes a failure" do
     @state.it("it") { raise Exception, "Failed!" }
     @state.process
     ScratchPad.recorded.should be_nil
@@ -543,7 +557,7 @@ describe ContextState, "#process" do
     MSpec.store :example, nil
   end
 
-  it "calls registered example actions with the current ExampleState and block" do
+  it "calls registered :example actions with the current ExampleState and block" do
     @state.it("") { MSpec.expectation }
     @state.process
 
@@ -573,7 +587,7 @@ describe ContextState, "#process" do
     MSpec.store :after, nil
   end
 
-  it "calls registered before actions with the current ExampleState instance" do
+  it "calls registered :before actions with the current ExampleState instance" do
     before = mock("before")
     before.should_receive(:before).and_return {
       ScratchPad.record :before
@@ -585,7 +599,7 @@ describe ContextState, "#process" do
     @spec_state.should be_kind_of(ExampleState)
   end
 
-  it "calls registered after actions with the current ExampleState instance" do
+  it "calls registered :after actions with the current ExampleState instance" do
     after = mock("after")
     after.should_receive(:after).and_return {
       ScratchPad.record :after
@@ -613,7 +627,7 @@ describe ContextState, "#process" do
     MSpec.store :leave, nil
   end
 
-  it "calls registered enter actions with the current #describe string" do
+  it "calls registered :enter actions with the current #describe string" do
     enter = mock("enter")
     enter.should_receive(:enter).with("C#m").and_return { ScratchPad.record :enter }
     MSpec.register :enter, enter
@@ -621,7 +635,7 @@ describe ContextState, "#process" do
     ScratchPad.recorded.should == :enter
   end
 
-  it "calls registered leave actions" do
+  it "calls registered :leave actions" do
     leave = mock("leave")
     leave.should_receive(:leave).and_return { ScratchPad.record :leave }
     MSpec.register :leave, leave
@@ -754,7 +768,7 @@ describe ContextState, "#process in pretend mode" do
     MSpec.store :after, nil
   end
 
-  it "calls registered before actions with the current ExampleState instance" do
+  it "calls registered :before actions with the current ExampleState instance" do
     before = mock("before")
     before.should_receive(:before).and_return {
       ScratchPad.record :before
@@ -766,7 +780,7 @@ describe ContextState, "#process in pretend mode" do
     @spec_state.should be_kind_of(ExampleState)
   end
 
-  it "calls registered after actions with the current ExampleState instance" do
+  it "calls registered :after actions with the current ExampleState instance" do
     after = mock("after")
     after.should_receive(:after).and_return {
       ScratchPad.record :after
@@ -877,7 +891,7 @@ describe ContextState, "#process in pretend mode" do
     MSpec.store :leave, nil
   end
 
-  it "calls registered enter actions with the current #describe string" do
+  it "calls registered :enter actions with the current #describe string" do
     enter = mock("enter")
     enter.should_receive(:enter).and_return { ScratchPad.record :enter }
     MSpec.register :enter, enter
@@ -885,7 +899,7 @@ describe ContextState, "#process in pretend mode" do
     ScratchPad.recorded.should == :enter
   end
 
-  it "calls registered leave actions" do
+  it "calls registered :leave actions" do
     leave = mock("leave")
     leave.should_receive(:leave).and_return { ScratchPad.record :leave }
     MSpec.register :leave, leave

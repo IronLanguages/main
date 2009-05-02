@@ -32,7 +32,7 @@ namespace IronRuby.Compiler.Ast {
 
             // eval:
             if (gen.CompilerOptions.IsEval) {
-                return Methods.EvalNext.OpCall(gen.CurrentRfcVariable, AstFactory.Box(transformedReturnValue));
+                return Methods.EvalNext.OpCall(gen.CurrentScopeVariable, AstFactory.Box(transformedReturnValue));
             }
             
             // loop:
@@ -50,7 +50,7 @@ namespace IronRuby.Compiler.Ast {
             }
 
             // method:
-            return Methods.MethodNext.OpCall(gen.CurrentRfcVariable, AstFactory.Box(transformedReturnValue));
+            return Methods.MethodNext.OpCall(gen.CurrentScopeVariable, AstFactory.Box(transformedReturnValue));
         }
     }
 }

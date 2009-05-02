@@ -267,7 +267,7 @@ namespace Microsoft.Scripting.Actions {
                 if (ei.Kind != ErrorInfoKind.Success && getMemInfo.IsNoThrow) {
                     getMemInfo.Body.FinishCondition(MakeOperationFailed());
                 } else {
-                    getMemInfo.Body.FinishCondition(MakeError(tracker.GetError(this)));
+                    getMemInfo.Body.FinishCondition(MakeError(tracker.GetError(this), typeof(object)));
                 }
             }
         }
@@ -302,7 +302,7 @@ namespace Microsoft.Scripting.Actions {
                 getMemInfo.Body.FinishCondition(MakeOperationFailed());
             } else {
                 getMemInfo.Body.FinishCondition(
-                    MakeError(MakeMissingMemberError(type, getMemInfo.Name))
+                    MakeError(MakeMissingMemberError(type, getMemInfo.Name), typeof(object))
                 );
             }
         }

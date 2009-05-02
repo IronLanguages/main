@@ -452,10 +452,17 @@ namespace System.Linq.Expressions {
         }
 
         /// <summary>
-        /// A string like  "Cannot convert the result type '{0}' of the dynamic binding to the result type '{1}' expected by the call site."
+        /// A string like  "The result type '{0}' of the dynamic binding produced by binder '{1}' is not compatible with the result type '{2}' expected by the call site."
         /// </summary>
-        internal static string CannotConvertDynamicResult(object p0, object p1) {
-            return FormatString("Cannot convert the result type '{0}' of the dynamic binding to the result type '{1}' expected by the call site.", p0, p1);
+        internal static string DynamicResultNotAssignable(object p0, object p1, object p2) {
+            return FormatString("The result type '{0}' of the dynamic binding produced by binder '{1}' is not compatible with the result type '{2}' expected by the call site.", p0, p1, p2);
+        }
+
+        /// <summary>
+        /// A string like  "The result type '{0}' of the binder '{1}' is not compatible with the result type '{2}' expected by the call site."
+        /// </summary>
+        internal static string BinderNotCompatibleWithCallSite(object p0, object p1, object p2) {
+            return FormatString("The result type '{0}' of the binder '{1}' is not compatible with the result type '{2}' expected by the call site.", p0, p1, p2);
         }
 
         /// <summary>
@@ -880,10 +887,10 @@ namespace System.Linq.Expressions {
         }
 
         /// <summary>
-        /// A string like  "Method '{0}' is not defined for type '{1}'"
+        /// A string like  "Method '{0}' declared on type '{1}' cannot be called with instance of type '{2}'"
         /// </summary>
-        internal static string MethodNotDefinedForType(object p0, object p1) {
-            return FormatString("Method '{0}' is not defined for type '{1}'", p0, p1);
+        internal static string InstanceAndMethodTypeMismatch(object p0, object p1, object p2) {
+            return FormatString("Method '{0}' declared on type '{1}' cannot be called with instance of type '{2}'", p0, p1, p2);
         }
 
         /// <summary>
@@ -1117,12 +1124,10 @@ namespace System.Linq.Expressions {
         }
 
         /// <summary>
-        /// A string like  "More than one matching member is found in the ExpandoObject."
+        /// A string like  "More than one key matching '{0}' was found in the ExpandoObject."
         /// </summary>
-        internal static string AmbiguousMatchInExpandoObject {
-            get {
-                return "More than one matching member is found in the ExpandoObject.";
-            }
+        internal static string AmbiguousMatchInExpandoObject(object p0) {
+            return FormatString("More than one key matching '{0}' was found in the ExpandoObject.", p0);
         }
 
         /// <summary>
@@ -1546,10 +1551,17 @@ namespace System.Linq.Expressions {
         }
 
         /// <summary>
-        /// InvalidCastException with message like "Cannot convert the result type '{0}' of the dynamic binding to the result type '{1}' expected by the call site."
+        /// InvalidCastException with message like "The result type '{0}' of the dynamic binding produced by binder '{1}' is not compatible with the result type '{2}' expected by the call site."
         /// </summary>
-        internal static Exception CannotConvertDynamicResult(object p0, object p1) {
-            return new InvalidCastException(Strings.CannotConvertDynamicResult(p0, p1));
+        internal static Exception DynamicResultNotAssignable(object p0, object p1, object p2) {
+            return new InvalidCastException(Strings.DynamicResultNotAssignable(p0, p1, p2));
+        }
+
+        /// <summary>
+        /// InvalidOperationException with message like "The result type '{0}' of the binder '{1}' is not compatible with the result type '{2}' expected by the call site."
+        /// </summary>
+        internal static Exception BinderNotCompatibleWithCallSite(object p0, object p1, object p2) {
+            return new InvalidOperationException(Strings.BinderNotCompatibleWithCallSite(p0, p1, p2));
         }
 
         /// <summary>
@@ -1938,10 +1950,10 @@ namespace System.Linq.Expressions {
         }
 
         /// <summary>
-        /// ArgumentException with message like "Method '{0}' is not defined for type '{1}'"
+        /// ArgumentException with message like "Method '{0}' declared on type '{1}' cannot be called with instance of type '{2}'"
         /// </summary>
-        internal static Exception MethodNotDefinedForType(object p0, object p1) {
-            return new ArgumentException(Strings.MethodNotDefinedForType(p0, p1));
+        internal static Exception InstanceAndMethodTypeMismatch(object p0, object p1, object p2) {
+            return new ArgumentException(Strings.InstanceAndMethodTypeMismatch(p0, p1, p2));
         }
 
         /// <summary>
@@ -2155,10 +2167,10 @@ namespace System.Linq.Expressions {
         }
 
         /// <summary>
-        /// System.Reflection.AmbiguousMatchException with message like "More than one matching member is found in the ExpandoObject."
+        /// System.Reflection.AmbiguousMatchException with message like "More than one key matching '{0}' was found in the ExpandoObject."
         /// </summary>
-        internal static Exception AmbiguousMatchInExpandoObject() {
-            return new System.Reflection.AmbiguousMatchException(Strings.AmbiguousMatchInExpandoObject);
+        internal static Exception AmbiguousMatchInExpandoObject(object p0) {
+            return new System.Reflection.AmbiguousMatchException(Strings.AmbiguousMatchInExpandoObject(p0));
         }
 
         /// <summary>

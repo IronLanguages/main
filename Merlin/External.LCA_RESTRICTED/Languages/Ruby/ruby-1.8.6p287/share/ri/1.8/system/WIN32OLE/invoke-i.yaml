@@ -1,0 +1,16 @@
+--- !ruby/object:RI::MethodDescription 
+aliases: []
+
+block_params: 
+comment: 
+- !ruby/struct:SM::Flow::P 
+  body: Runs OLE method. The first argument specifies the method name of OLE Automation object. The others specify argument of the <em>method</em>. If you can not execute <em>method</em> directly, then use this method instead.
+- !ruby/struct:SM::Flow::VERB 
+  body: "  excel = WIN32OLE.new('Excel.Application')\n  excel.invoke('Quit')  # =&gt; same as excel.Quit\n"
+full_name: WIN32OLE#invoke
+is_singleton: false
+name: invoke
+params: |
+  WIN32OLE#invoke(method, [arg1,...])  => return value of method.
+
+visibility: public

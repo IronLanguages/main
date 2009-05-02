@@ -102,8 +102,10 @@ class MSpecOptions
       if option.arg?
         arg = argv.shift if arg.nil?
         raise ParseError, "No argument provided for #{opt}" unless arg
+        option.block[arg] if option.block
+      else
+        option.block[] if option.block
       end
-      option.block[arg] if option.block
     end
     option
   end
@@ -210,7 +212,7 @@ class MSpecOptions
       when 'r', 'ruby'
         config[:target] = 'ruby'
       when 'r19', 'ruby19'
-        config[:target] = 'ruby19'
+        config[:target] = 'ruby1.9'
       when 'x', 'rubinius'
         config[:target] = './bin/rbx'
       when 'X', 'rbx'
@@ -225,12 +227,12 @@ class MSpecOptions
     end
 
     doc ""
-    doc "     r or ruby     invokes ruby in PATH"
-    doc "     r19 or ruby19 invokes ruby19 in PATH"
-    doc "     x or rubinius invokes ./bin/rbx"
-    doc "     X or rbx      invokes rbx in PATH"
-    doc "     j or jruby    invokes jruby in PATH"
-    doc "     i or ironruby invokes ir in PATH\n"
+    doc "     r or ruby              invokes ruby in PATH"
+    doc "     r19, ruby19 or ruby1.9 invokes ruby1.9 in PATH"
+    doc "     x or rubinius          invokes ./bin/rbx"
+    doc "     X or rbx               invokes rbx in PATH"
+    doc "     j or jruby             invokes jruby in PATH"
+    doc "     i or ironruby          invokes ir in PATH\n"
 
     on("-T", "--target-opt", "OPT",
        "Pass OPT as a flag to the target implementation") do |t|
@@ -256,6 +258,8 @@ class MSpecOptions
         config[:formatter] = HtmlFormatter
       when 'd', 'dot', 'dotted'
         config[:formatter] = DottedFormatter
+      when 'b', 'describe'
+        config[:formatter] = DescribeFormatter
       when 'f', 'file'
         config[:formatter] = FileFormatter
       when 'u', 'unit', 'unitdiff'
@@ -358,6 +362,9 @@ class MSpecOptions
     on("--unguarded", "Turn off all guards") do
       MSpec.register_mode :unguarded
     end
+    on("--no-ruby_bug", "Turn off the ruby_bug guard") do
+      MSpec.register_mode :no_ruby_bug
+    end
   end
 
   def randomize
@@ -399,12 +406,16 @@ class MSpecOptions
   end
 
   def verify
-    on("-Y", "--verify",
-       "Verify that guarded specs pass and fail as expected") do
-      MSpec.register_mode :verify
+    on("--report-on", "GUARD", "Report specs guarded by GUARD") do |g|
+      MSpec.register_mode :report_on
+      SpecGuard.guards << g.to_sym
     end
     on("-O", "--report", "Report guarded specs") do
       MSpec.register_mode :report
+    end
+    on("-Y", "--verify",
+       "Verify that guarded specs pass and fail as expected") do
+      MSpec.register_mode :verify
     end
   end
 

@@ -14,10 +14,14 @@
  * ***************************************************************************/
 
 using System;
-using IronPython.Runtime.Binding;
+using System.Collections.Generic;
+
 using Microsoft.Scripting;
 using Microsoft.Scripting.Actions;
 using Microsoft.Scripting.Runtime;
+
+using IronPython.Runtime.Binding;
+
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 using MSAst = System.Linq.Expressions;
 
@@ -75,7 +79,8 @@ namespace IronPython.Compiler.Ast {
         ///         exit(None, None, None)
         /// 
         /// </summary>
-        internal override MSAst.Expression Transform(AstGenerator ag) {
+        internal override MSAst.Expression Transform(AstGenerator ag) {            
+            MSAst.ParameterExpression lineUpdated = ag.GetTemporary("$lineUpdated_with", typeof(bool));
             // Five statements in the result...
             MSAst.Expression[] statements = new MSAst.Expression[6];
 
@@ -106,17 +111,20 @@ namespace IronPython.Compiler.Ast {
             // 3. value = mgr.__enter__()
             //******************************************************************
             MSAst.ParameterExpression value = ag.GetTemporary("with_value");
-            statements[2] = ag.MakeAssignment(
-                value,
-                ag.Invoke(
-                    typeof(object),
-                    new CallSignature(0),
-                    ag.Get(
+            statements[2] = ag.AddDebugInfo(
+                ag.MakeAssignment(
+                    value,
+                    ag.Invoke(
                         typeof(object),
-                        "__enter__",
-                        manager
+                        new CallSignature(0),
+                        ag.Get(
+                            typeof(object),
+                            "__enter__",
+                            manager
+                        )
                     )
-                )
+                ),
+                new SourceSpan(Start, _header)
             );
 
             //******************************************************************
@@ -147,51 +155,72 @@ namespace IronPython.Compiler.Ast {
             //******************************************************************
 
             MSAst.ParameterExpression exception = ag.GetTemporary("exception", typeof(Exception));
-
+            MSAst.ParameterExpression nestedFrames = ag.GetTemporary("$nestedFrames", typeof(List<DynamicStackFrame>));
             statements[4] =
                 // try:
-                AstUtils.Try(// try statement body
-                    _var != null ?
-                        ag.AddDebugInfo(
-                            Ast.Block(
-                // VAR = value
-                                _var.TransformSet(ag, SourceSpan.None, value, PythonOperationKind.None),
-                // BLOCK
-                                ag.Transform(_body),
-                                AstUtils.Empty()
-                            ),
-                            _body.Span
-                        ) :
-                // BLOCK
-                        ag.Transform(_body) // except:, // try statement location
-                ).Catch(exception,
-                    Ast.Block(
-                // Python specific exception handling code
+                AstUtils.Try(
+                    AstUtils.Try(// try statement body
+                        ag.PushLineUpdated(false, lineUpdated),
+                        _var != null ?
+                            ag.AddDebugInfo(
+                                Ast.Block(
+                    // VAR = value
+                                    _var.TransformSet(ag, SourceSpan.None, value, PythonOperationKind.None),
+                    // BLOCK
+                                    ag.Transform(_body),
+                                    AstUtils.Empty()
+                                ),
+                                _body.Span
+                            ) :
+                    // BLOCK
+                            ag.Transform(_body) // except:, // try statement location
+                    ).Catch(exception,
+                    // Python specific exception handling code
+                        TryStatement.GetTracebackHeader(                        
+                            ag,
+                            exception,
+                            ag.AddDebugInfo(
+                                Ast.Block(
+                                    // exc = False
+                                    ag.MakeAssignment(
+                                        exc,
+                                        AstUtils.Constant(false)
+                                    ),
+                                    Ast.Assign(
+                                        nestedFrames,
+                                        Ast.Call(AstGenerator.GetHelperMethod("GetAndClearDynamicStackFrames"))
+                                    ),
+                                    //  if not exit(*sys.exc_info()):
+                                    //      raise
+                                    AstUtils.IfThen(
+                                        ag.Convert(
+                                            typeof(bool),
+                                            ConversionResultKind.ExplicitCast,
+                                            ag.Operation(
+                                                typeof(bool),
+                                                PythonOperationKind.Not,
+                                                MakeExitCall(ag, exit, exception)
+                                            )
+                                        ),
+                                        ag.UpdateLineUpdated(true),
+                                        Ast.Call(
+                                            AstGenerator.GetHelperMethod("SetDynamicStackFrames"),
+                                            nestedFrames
+                                        ),
+                                        Ast.Rethrow()
+                                    )
+                                ),
+                                _body.Span
+                            )
+                        ),
                         Ast.Call(
-                            AstGenerator.GetHelperMethod("ClearDynamicStackFrames")
+                            AstGenerator.GetHelperMethod("SetDynamicStackFrames"),
+                            nestedFrames
                         ),
-                // exc = False
-                        ag.MakeAssignment(
-                            exc,
-                            AstUtils.Constant(false)
-                        ),
-                //  if not exit(*sys.exc_info()):
-                //      raise
-                        AstUtils.IfThen(
-                            ag.Convert(
-                                typeof(bool),
-                                ConversionResultKind.ExplicitCast,
-                                ag.Operation(
-                                    typeof(object),
-                                    PythonOperationKind.Not,
-                                    MakeExitCall(ag, exit, exception)
-                                )
-                            ),
-                            Ast.Rethrow()
-                        ),
-                        AstUtils.Empty()
+                        ag.PopLineUpdated(lineUpdated),
+                        Ast.Empty()
                     )
-                // finally:
+                // finally:                    
                 ).Finally(
                 //  if exc:
                 //      exit(None, None, None)
@@ -211,7 +240,7 @@ namespace IronPython.Compiler.Ast {
                                         AstUtils.Constant(null),
                                         AstUtils.Constant(null)
                                     }
-                                ),
+                                ),                                    
                                 Ast.Empty()
                             ),
                             _contextManager.Span

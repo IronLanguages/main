@@ -1,0 +1,16 @@
+--- !ruby/object:RI::MethodDescription 
+aliases: []
+
+block_params: 
+comment: 
+- !ruby/struct:SM::Flow::P 
+  body: Returns running OLE Automation object or WIN32OLE object from moniker. 1st argument should be OLE program id or class id or moniker.
+- !ruby/struct:SM::Flow::VERB 
+  body: "   WIN32OLE.connect('Excel.Application') # =&gt; WIN32OLE object which represents running Excel.\n"
+full_name: WIN32OLE::connect
+is_singleton: true
+name: connect
+params: |
+  WIN32OLE.connect( ole ) --> aWIN32OLE
+
+visibility: public

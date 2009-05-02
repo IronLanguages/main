@@ -129,12 +129,12 @@ namespace Microsoft.Scripting.Actions {
                     case TrackerTypes.Type:
                     case TrackerTypes.Constructor:
                         memInfo.Body.FinishCondition(
-                            MakeError(MakeReadOnlyMemberError(type, memInfo.Name))
+                            MakeError(MakeReadOnlyMemberError(type, memInfo.Name), typeof(object))
                         );
                         break;
                     case TrackerTypes.Event:
                         memInfo.Body.FinishCondition(
-                            MakeError(MakeEventValidation(members, self, target.Expression, memInfo.CodeContext))
+                            MakeError(MakeEventValidation(members, self, target.Expression, memInfo.CodeContext), typeof(object))
                         );
                         break;
                     case TrackerTypes.Field:
@@ -153,7 +153,7 @@ namespace Microsoft.Scripting.Actions {
                         }
 
                         memInfo.Body.FinishCondition(
-                            MakeError(MakeMissingMemberError(type, memInfo.Name))
+                            MakeError(MakeMissingMemberError(type, memInfo.Name), typeof(object))
                         );
                         break;
                     default:
@@ -175,7 +175,7 @@ namespace Microsoft.Scripting.Actions {
                 memInfo.Body.FinishCondition(val);
             } else {
                 memInfo.Body.FinishCondition(
-                    MakeError(tracker.GetError(this))
+                    MakeError(tracker.GetError(this), typeof(object))
                 );
             }
         }
@@ -203,13 +203,15 @@ namespace Microsoft.Scripting.Actions {
                                 true,
                                 instance,
                                 target.Expression
-                            )
+                            ), 
+                            typeof(object)
                         )
                     );
                 } else if (info.IsStatic && info.DeclaringType != targetType) {
                     memInfo.Body.FinishCondition(
                         MakeError(
-                            MakeStaticAssignFromDerivedTypeError(targetType, info, target.Expression, memInfo.CodeContext)
+                            MakeStaticAssignFromDerivedTypeError(targetType, info, target.Expression, memInfo.CodeContext), 
+                            typeof(object)
                         )
                     );
                 } else if (setter.ContainsGenericParameters) {
@@ -219,14 +221,17 @@ namespace Microsoft.Scripting.Actions {
                 } else if (setter.IsPublic && !setter.DeclaringType.IsValueType) {
                     if (instance == null) {
                         memInfo.Body.FinishCondition(
-                            AstUtils.SimpleCallHelper(
-                                setter,
-                                ConvertExpression(
-                                    target.Expression,
-                                    setter.GetParameters()[0].ParameterType,
-                                    ConversionResultKind.ExplicitCast,
-                                    memInfo.CodeContext
-                                )
+                            Ast.Block(
+                                AstUtils.SimpleCallHelper(
+                                    setter,
+                                    ConvertExpression(
+                                        target.Expression,
+                                        setter.GetParameters()[0].ParameterType,
+                                        ConversionResultKind.ExplicitCast,
+                                        memInfo.CodeContext
+                                    )
+                                ),
+                                Ast.Constant(null)
                             )
                         );
                     } else {
@@ -245,7 +250,15 @@ namespace Microsoft.Scripting.Actions {
                                 AstUtils.Constant(((ReflectedPropertyTracker)info).Property), // TODO: Private binding on extension properties
                                 typeof(PropertyInfo).GetMethod("SetValue", new Type[] { typeof(object), typeof(object), typeof(object[]) }),
                                 instance == null ? AstUtils.Constant(null) : AstUtils.Convert(instance, typeof(object)),
-                                AstUtils.Convert(target.Expression, typeof(object)),
+                                AstUtils.Convert(
+                                    ConvertExpression(
+                                        target.Expression,
+                                        setter.GetParameters()[0].ParameterType,
+                                        ConversionResultKind.ExplicitCast,
+                                        memInfo.CodeContext
+                                    ),
+                                    typeof(object)
+                                ),
                                 Ast.NewArrayInit(typeof(object))
                             ),
                             target
@@ -255,7 +268,7 @@ namespace Microsoft.Scripting.Actions {
             } else {
                 memInfo.Body.FinishCondition(
                     MakeError(
-                        MakeMissingMemberError(targetType, memInfo.Name)
+                        MakeMissingMemberError(targetType, memInfo.Name), typeof(object)
                     )
                 );
             }
@@ -283,13 +296,15 @@ namespace Microsoft.Scripting.Actions {
             } else if (field.IsInitOnly || field.IsLiteral) {
                 memInfo.Body.FinishCondition(
                     MakeError(
-                        MakeReadOnlyMemberError(targetType, memInfo.Name)
+                        MakeReadOnlyMemberError(targetType, memInfo.Name), 
+                        typeof(object)
                     )
                 );
             } else if (field.IsStatic && targetType != field.DeclaringType) {
                 memInfo.Body.FinishCondition(
                     MakeError(
-                        MakeStaticAssignFromDerivedTypeError(targetType, field, target.Expression, memInfo.CodeContext)
+                        MakeStaticAssignFromDerivedTypeError(targetType, field, target.Expression, memInfo.CodeContext), 
+                        typeof(object)
                     )
                 );
             } else if (field.DeclaringType.IsValueType && !field.IsStatic) {
@@ -298,7 +313,8 @@ namespace Microsoft.Scripting.Actions {
                         Ast.New(
                             typeof(ArgumentException).GetConstructor(new Type[] { typeof(string) }),
                             AstUtils.Constant("cannot assign to value types")
-                        )
+                        ),
+                        typeof(object)
                     )
                 );
             } else if (field.IsPublic && field.DeclaringType.IsVisible) {
@@ -336,7 +352,7 @@ namespace Microsoft.Scripting.Actions {
         private Expression MakeReturnValue(Expression expression, DynamicMetaObject target) {
             return Ast.Block(
                 expression,
-                target.Expression
+                Expression.Convert(target.Expression, typeof(object))
             );
         }
 
@@ -358,7 +374,7 @@ namespace Microsoft.Scripting.Actions {
                             tmp
                         );
                     } else {
-                        memInfo.Body.FinishCondition(Ast.Block(call, tmp));
+                        memInfo.Body.FinishCondition(Ast.Block(call, AstUtils.Convert(tmp, typeof(object))));
                     }
 
                     return setMem.ReturnType != typeof(bool);

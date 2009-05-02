@@ -176,7 +176,7 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("to_ary")]
-        public static RubyArray/*!*/ ToAry(RubyArray/*!*/ self) {
+        public static RubyArray/*!*/ ToExplicitArray(RubyArray/*!*/ self) {
             return self;
         }
 

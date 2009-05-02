@@ -24,7 +24,9 @@ using MSA = System.Linq.Expressions;
 using System;
 using Microsoft.Scripting.Actions;
 using System.Collections.ObjectModel;
-
+using System.Diagnostics;
+using Microsoft.Scripting.Interpreter;
+    
 namespace IronRuby.Compiler.Ast {
     using Ast = System.Linq.Expressions.Expression;
     
@@ -90,7 +92,7 @@ namespace IronRuby.Compiler.Ast {
             MSA.ParameterExpression[] parameters = DefineParameters(gen, scope);
             MSA.Expression currentMethodVariable = scope.DefineHiddenVariable("#method", typeof(RubyMethodInfo));
             MSA.Expression rfcVariable = scope.DefineHiddenVariable("#rfc", typeof(RuntimeFlowControl));
-            MSA.Expression scopeVariable = scope.DefineHiddenVariable("#scope", typeof(RubyMethodScope));
+            MSA.ParameterExpression scopeVariable = scope.DefineHiddenVariable("#scope", typeof(RubyMethodScope));
             MSA.Expression selfParameter = parameters[0];
             MSA.Expression blockParameter = parameters[1];
 
@@ -107,39 +109,65 @@ namespace IronRuby.Compiler.Ast {
 
             DefinedScope.TransformLocals(scope);
 
-            MSA.ParameterExpression unwinder = scope.DefineHiddenVariable("#unwinder", typeof(MethodUnwinder));
+            // profiling:
+            MSA.Expression profileStart, profileEnd;
+            if (gen.Profiler != null) {
+                int profileTickIndex = gen.Profiler.GetTickIndex(encodedName);
+                var stampVariable = scope.DefineHiddenVariable("#stamp", typeof(long));
+                profileStart = Ast.Assign(stampVariable, Methods.Stopwatch_GetTimestamp.OpCall());
+                profileEnd = Methods.UpdateProfileTicks.OpCall(AstUtils.Constant(profileTickIndex), stampVariable);
+            } else {
+                profileStart = profileEnd = AstUtils.Empty();
+            }
 
-            MSA.Expression body = AstFactory.MakeUserMethodBody(
-                gen, Location.End.Line,
-                blockParameter,
-                rfcVariable,
-                unwinder,
-                Ast.Block(
-                    Ast.Assign(currentMethodVariable, methodDefinitionVariable),
+            // tracing:
+            MSA.Expression traceCall, traceReturn;
+            if (gen.TraceEnabled) {
+                traceCall = Methods.TraceMethodCall.OpCall(
+                    scopeVariable, 
+                    Ast.Convert(AstUtils.Constant(gen.SourceUnit.Path), typeof(string)), 
+                    AstUtils.Constant(Location.Start.Line)
+                );
 
-                    Ast.Assign(scopeVariable, Methods.CreateMethodScope.OpCall(
-                        scope.VisibleVariables(), parentScope, currentMethodVariable, rfcVariable, selfParameter, blockParameter)
-                    ),
-                
-                    _parameters.TransformOptionalsInitialization(gen),
-                    gen.TraceEnabled ? Methods.TraceMethodCall.OpCall(scopeVariable, Ast.Convert(AstUtils.Constant(gen.SourceUnit.Path), typeof(string)), AstUtils.Constant(Location.Start.Line)) : AstUtils.Empty(),
-                    Body.TransformResult(gen, ResultOperation.Return),
-                    AstUtils.Empty()
-                ),
-                ResultOperation.Return,
-                (gen.Profiler != null) ? gen.Profiler.GetTickIndex(encodedName) : -1,
-                (gen.Profiler != null) ? scope.DefineHiddenVariable("#stamp", typeof(long)) : null,
-                gen.ReturnLabel
+                traceReturn = Methods.TraceMethodReturn.OpCall(
+                    gen.CurrentScopeVariable,
+                    Ast.Convert(AstUtils.Constant(gen.SourceUnit.Path), typeof(string)),
+                    AstUtils.Constant(Location.End.Line)
+                );
+            } else {
+                traceCall = traceReturn = AstUtils.Empty();
+            }
+
+            MSA.ParameterExpression unwinder = scope.DefineHiddenVariable("#unwinder", typeof(Exception));
+            
+            MSA.Expression body = AstUtils.Try(
+                profileStart,
+
+                // scope initialization:
+                Ast.Assign(currentMethodVariable, methodDefinitionVariable),
+                Ast.Assign(rfcVariable, Methods.CreateRfcForMethod.OpCall(AstUtils.Convert(blockParameter, typeof(Proc)))),
+                Ast.Assign(scopeVariable, Methods.CreateMethodScope.OpCall(
+                    scope.VisibleVariables(), parentScope, currentMethodVariable, rfcVariable, selfParameter, blockParameter,
+                    EnterInterpretedFrameExpression.Instance
+                )),
+            
+                _parameters.TransformOptionalsInitialization(gen),
+                traceCall,
+                Body.TransformResult(gen, ResultOperation.Return)
+            ).Filter(unwinder, Methods.IsMethodUnwinderTargetFrame.OpCall(scopeVariable, unwinder),
+                Ast.Return(gen.ReturnLabel, Methods.GetMethodUnwinderReturnValue.OpCall(unwinder))
+            ).Finally(  
+                // leave frame:
+                Methods.LeaveMethodFrame.OpCall(rfcVariable),
+                LeaveInterpretedFrameExpression.Instance,
+                profileEnd,
+                traceReturn
             );
 
             body = gen.AddReturnTarget(scope.CreateScope(body));
             gen.LeaveMethodDefinition();
 
-            return CreateLambda(
-                encodedName, 
-                parameters, 
-                body
-            );
+            return CreateLambda(encodedName, parameters, body);
         }
 
         private static MSA.LambdaExpression/*!*/ CreateLambda(string/*!*/ name, MSA.ParameterExpression/*!*/[]/*!*/ parameters, MSA.Expression/*!*/ body) {

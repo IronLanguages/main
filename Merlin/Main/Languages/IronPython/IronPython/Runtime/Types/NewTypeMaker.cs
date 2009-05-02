@@ -442,7 +442,8 @@ namespace IronPython.Runtime.Types {
             
             il.EmitLoadArg(typeArg);
             il.EmitCall(init);
-            
+
+            Debug.Assert(_slotsField != null);
             il.EmitFieldSet(_slotsField);
 
             CallBaseConstructor(parentConstructor, pis, overrideParams, il);
@@ -649,14 +650,13 @@ namespace IronPython.Runtime.Types {
         }
 
         private void ImplementIPythonObject() {
+            ILGen il;
+            MethodInfo decl;
+            MethodBuilder impl;
+
             if (NeedsPythonObject) {
                 _typeField = _tg.DefineField(ClassFieldName, typeof(PythonType), FieldAttributes.Public);
                 _dictField = _tg.DefineField(DictFieldName, typeof(IAttributesCollection), FieldAttributes.Public);
-                _slotsField = _tg.DefineField(SlotsAndWeakRefFieldName, typeof(object[]), FieldAttributes.Public);
-
-                ILGen il;
-                MethodInfo decl;
-                MethodBuilder impl;
 
                 ImplementInterface(typeof(IPythonObject));
 
@@ -696,21 +696,25 @@ namespace IronPython.Runtime.Types {
                 il.EmitFieldSet(_typeField);
                 il.Emit(OpCodes.Ret);
                 _tg.DefineMethodOverride(impl, decl);
-
-                il = DefineMethodOverride(MethodAttributes.Private, typeof(IPythonObject), "GetSlots", out decl, out impl);
-                il.EmitLoadArg(0);
-                il.EmitFieldGet(_slotsField);
-                il.Emit(OpCodes.Ret);
-                _tg.DefineMethodOverride(impl, decl);
-
-                il = DefineMethodOverride(MethodAttributes.Private, typeof(IPythonObject), "GetSlotsCreate", out decl, out impl);
-                il.EmitLoadArg(0);
-                il.EmitLoadArg(0);
-                il.EmitFieldAddress(_slotsField);
-                il.EmitCall(typeof(UserTypeOps).GetMethod("GetSlotsCreate"));
-                il.Emit(OpCodes.Ret);
-                _tg.DefineMethodOverride(impl, decl);
             }
+            
+            // Types w/ DynamicBaseType attribute still need new slots implementation
+
+            _slotsField = _tg.DefineField(SlotsAndWeakRefFieldName, typeof(object[]), FieldAttributes.Public);
+            il = DefineMethodOverride(MethodAttributes.Private, typeof(IPythonObject), "GetSlots", out decl, out impl);
+            il.EmitLoadArg(0);
+            il.EmitFieldGet(_slotsField);
+            il.Emit(OpCodes.Ret);
+            _tg.DefineMethodOverride(impl, decl);
+
+            il = DefineMethodOverride(MethodAttributes.Private, typeof(IPythonObject), "GetSlotsCreate", out decl, out impl);
+            il.EmitLoadArg(0);
+            il.EmitLoadArg(0);
+            il.EmitFieldAddress(_slotsField);
+            il.EmitCall(typeof(UserTypeOps).GetMethod("GetSlotsCreate"));
+            il.Emit(OpCodes.Ret);
+            _tg.DefineMethodOverride(impl, decl);
+
         }
 
         /// <summary>
@@ -1380,10 +1384,6 @@ namespace IronPython.Runtime.Types {
 
         private const MethodAttributes MethodAttributesToEraseInOveride = MethodAttributes.Abstract | MethodAttributes.ReservedMask;
 
-        private ILGen DefineMethodOverride(Type type, string name, out MethodInfo decl, out MethodBuilder impl) {
-            return DefineMethodOverride(MethodAttributes.PrivateScope, type, name, out decl, out impl);
-        }
-
         private ILGen DefineMethodOverride(MethodAttributes extra, Type type, string name, out MethodInfo decl, out MethodBuilder impl) {
             decl = type.GetMethod(name);
             return DefineMethodOverride(extra, decl, out impl);
@@ -1633,7 +1633,7 @@ namespace IronPython.Runtime.Types {
                     }
 
                     if (newProp.GetSetMethod(true) != null) {
-                        rg.AddGetter(newProp.GetSetMethod(true));
+                        rg.AddSetter(newProp.GetSetMethod(true));
                     }
                 }
             }
@@ -1762,10 +1762,12 @@ namespace IronPython.Runtime.Types {
                         List<MethodInfo> methodList;
                         if (methods.TryGetValue(name, out methodList)) {
                             if (res == null) {
-                                res = methodList;
-                            } else {
-                                res = new List<MethodInfo>(res);
-                                res.AddRange(methodList);
+                                res = new List<MethodInfo>(methodList.Count);
+                            }
+                            foreach (MethodInfo method in methodList) {
+                                if (type.IsAssignableFrom(method.DeclaringType)) {
+                                    res.Add(method);
+                                }
                             }
                         }
                     }

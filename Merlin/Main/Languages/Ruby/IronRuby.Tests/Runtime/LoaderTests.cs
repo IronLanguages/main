@@ -41,14 +41,14 @@ namespace IronRuby.Tests {
             b = Loader.TryParseAssemblyName(str, out type, out assembly);
             Assert(b == false);
             
-            str = "IronRuby.Runtime.RubyContext, IronRuby, Version=0.3.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35";
+            str = "IronRuby.Runtime.RubyContext, IronRuby, Version=0.4.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35";
             b = Loader.TryParseAssemblyName(str, out type, out assembly);
             Assert(b == true && 
-                assembly == "IronRuby, Version=0.3.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35" &&
+                assembly == "IronRuby, Version=0.4.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35" &&
                 type == "IronRuby.Runtime.RubyContext"
             );
             
-            str = "IronRuby, Version=0.3.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35";
+            str = "IronRuby, Version=0.4.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35";
             b = Loader.TryParseAssemblyName(str, out type, out assembly);
             Assert(b == true && assembly == str && type == null);
 
@@ -56,7 +56,7 @@ namespace IronRuby.Tests {
             b = Loader.TryParseAssemblyName(str, out type, out assembly);
             Assert(b == true && assembly == str && type == null);
 
-            str = "IronRuby, Version=0.3.0.0";
+            str = "IronRuby, Version=0.4.0.0";
             b = Loader.TryParseAssemblyName(str, out type, out assembly);
             Assert(b == true && assembly == str && type == null);
         }

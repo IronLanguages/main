@@ -160,35 +160,43 @@ namespace IronPython.Runtime.Types {
             return true;
         }
 
-        internal override Expression/*!*/ MakeGetExpression(PythonBinder/*!*/ binder, Expression/*!*/ codeContext, Expression instance, Expression/*!*/ owner, Expression/*!*/ error) {
+        internal override void MakeGetExpression(PythonBinder/*!*/ binder, Expression/*!*/ codeContext, Expression instance, Expression/*!*/ owner, ConditionalBuilder/*!*/ builder) {
             if (Getter.Length != 0 && !Getter[0].IsPublic) {
                 // fallback to runtime call
-                return base.MakeGetExpression(binder, codeContext, instance, owner, error);
+                base.MakeGetExpression(binder, codeContext, instance, owner, builder);
             } else if (NeedToReturnProperty(instance, Getter)) {
-                return AstUtils.Constant(this);
+                builder.FinishCondition(AstUtils.Constant(this));
             } else if (Getter[0].ContainsGenericParameters) {
-                return DefaultBinder.MakeError(
-                    binder.MakeContainsGenericParametersError(
-                        MemberTracker.FromMemberInfo(_info)
+                builder.FinishCondition(
+                    DefaultBinder.MakeError(
+                        binder.MakeContainsGenericParametersError(
+                            MemberTracker.FromMemberInfo(_info)
+                        ),
+                        typeof(object)
                     )
                 );
-            }
-
-            Expression res;
-            if (instance != null) {
-                res = binder.MakeCallExpression(
-                    codeContext,
-                    Getter[0],
-                    instance
+            } else if (instance != null) {
+                builder.FinishCondition(
+                    AstUtils.Convert(
+                        binder.MakeCallExpression(
+                            codeContext,
+                            Getter[0],
+                            instance
+                        ),
+                        typeof(object)
+                    )
                 );
             } else {
-                res = binder.MakeCallExpression(
-                    codeContext,
-                    Getter[0]
-                );
+                builder.FinishCondition(
+                    AstUtils.Convert(
+                        binder.MakeCallExpression(
+                            codeContext,
+                            Getter[0]
+                        ),
+                        typeof(object)
+                    )
+                );                
             }
-            Debug.Assert(res != null);
-            return res;
         }
 
         internal override bool IsAlwaysVisible {

@@ -35,7 +35,7 @@ namespace IronPython.Runtime.Types {
         }
 
         internal override bool TryGetValue(CodeContext context, object instance, PythonType owner, out object value) {
-            if (Getter.Length == 0 || instance == null) {
+            if (Getter.Length == 0 || (instance == null && Getter[0].IsDefined(typeof(WrapperDescriptorAttribute), false))) {
                 value = null;
                 return false;
             }
@@ -60,7 +60,20 @@ namespace IronPython.Runtime.Types {
         }
 
         internal override bool IsSetDescriptor(CodeContext context, PythonType owner) {
-            return true;
+            return Setter.Length > 0;
+        }
+
+        internal override bool GetAlwaysSucceeds {
+            get {
+                // wrapper descriptors need to not work so we can pass the call onto the types wrapper descriptor
+                return Getter.Length != 0 && !Getter[0].IsDefined(typeof(WrapperDescriptorAttribute), false);
+            }
+        }
+
+        internal override bool CanOptimizeGets {
+            get {
+                return true;
+            }
         }
 
         public void __set__(CodeContext context, object instance, object value) {

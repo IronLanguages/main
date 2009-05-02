@@ -787,23 +787,9 @@ al_getattributeinst = MyArrayList_getattribute()
             }
 
             foreach (object inst in convertableObjects) {
+                // These may be invalid according to the DLR (wrong ret type) but currently work today.
                 site = CallSite<Func<CallSite, object, object>>.Create(new MyConvertBinder(typeof(string)));
                 AreEqual(site.Target(site, inst), "Python");
-
-                site = CallSite<Func<CallSite, object, object>>.Create(new MyConvertBinder(typeof(int), 23));
-                AreEqual(site.Target(site, inst), 42);
-
-                site = CallSite<Func<CallSite, object, object>>.Create(new MyConvertBinder(typeof(double), 23.0));
-                AreEqual(site.Target(site, inst), 42.0);
-
-                site = CallSite<Func<CallSite, object, object>>.Create(new MyConvertBinder(typeof(bool), true));
-                AreEqual(site.Target(site, inst), false);
-
-                site = CallSite<Func<CallSite, object, object>>.Create(new MyConvertBinder(typeof(Complex64), new Complex64(0, 23)));
-                AreEqual(site.Target(site, inst), new Complex64(0, 42));
-                
-                site = CallSite<Func<CallSite, object, object>>.Create(new MyConvertBinder(typeof(BigInteger), (BigInteger)23));
-                AreEqual(site.Target(site, inst), (Microsoft.Scripting.Math.BigInteger)42);
 
                 var dlgsiteo = CallSite<Func<CallSite, object, object>>.Create(new MyConvertBinder(typeof(Func<object, object>), null));
                 VerifyFunction(new[] { "foo" }, new string[0], ((Func<object, object>)(dlgsiteo.Target(dlgsiteo, inst)))("foo"));
@@ -838,20 +824,9 @@ al_getattributeinst = MyArrayList_getattribute()
             }
 
             foreach (object inst in unconvertableObjects) {
+                // These may be invalid according to the DLR (wrong ret type) but currently work today.
                 site = CallSite<Func<CallSite, object, object>>.Create(new MyConvertBinder(typeof(string)));
                 AreEqual(site.Target(site, inst), "Converted");
-
-                site = CallSite<Func<CallSite, object, object>>.Create(new MyConvertBinder(typeof(int), 23));
-                AreEqual(site.Target(site, inst), 23);
-
-                site = CallSite<Func<CallSite, object, object>>.Create(new MyConvertBinder(typeof(double), 23.0));
-                AreEqual(site.Target(site, inst), 23.0);
-
-                site = CallSite<Func<CallSite, object, object>>.Create(new MyConvertBinder(typeof(Complex64), new Complex64(0, 23.0)));
-                AreEqual(site.Target(site, inst), new Complex64(0, 23.0));
-
-                site = CallSite<Func<CallSite, object, object>>.Create(new MyConvertBinder(typeof(bool), true));
-                AreEqual(site.Target(site, inst), true);
 
                 site = CallSite<Func<CallSite, object, object>>.Create(new MyConvertBinder(typeof(Microsoft.Scripting.Math.BigInteger), (BigInteger)23));
                 AreEqual(site.Target(site, inst), (BigInteger)23);
@@ -1537,6 +1512,8 @@ instOC = TestOC()
             source = engine.CreateScriptSourceFromString(@"
 import sys
 for mod in sys.builtin_module_names:
+    if mod.startswith('_ctypes'):
+        continue
     x = __import__(mod)
     dir(x)
 ", SourceCodeKind.Statements);
@@ -1607,7 +1584,7 @@ if id(a) == id(b):
             try {
                 scope.Engine.ExecuteFile(Common.InputTestDirectory + "\\raise.py", scope);
                 throw new Exception("We should not get here");
-            } catch (StringException e2) {
+            } catch (StopIterationException e2) {
                 if (scope.Engine.Runtime.Setup.DebugMode != e2.StackTrace.Contains(lineNumber))
                     throw new Exception("Debugging is enabled even though Options.DebugMode is not specified");
             }

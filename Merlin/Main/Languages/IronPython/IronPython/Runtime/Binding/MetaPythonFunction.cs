@@ -32,8 +32,8 @@ using IronPython.Runtime.Types;
 namespace IronPython.Runtime.Binding {
     using Ast = System.Linq.Expressions.Expression;
     using AstUtils = Microsoft.Scripting.Ast.Utils;
-    
-    class MetaPythonFunction : MetaPythonObject, IPythonInvokable, IPythonOperable {
+
+    class MetaPythonFunction : MetaPythonObject, IPythonInvokable, IPythonOperable, IPythonConvertible {
         public MetaPythonFunction(Expression/*!*/ expression, BindingRestrictions/*!*/ restrictions, PythonFunction/*!*/ value)
             : base(expression, BindingRestrictions.Empty, value) {
             Assert.NotNull(value);
@@ -57,11 +57,19 @@ namespace IronPython.Runtime.Binding {
             return new FunctionBinderHelper(call, this, null, args).MakeMetaObject();
         }
 
-        public override DynamicMetaObject/*!*/ BindConvert(ConvertBinder/*!*/ conversion) {
-            if (conversion.Type.IsSubclassOf(typeof(Delegate))) {
-                return MakeDelegateTarget(conversion, conversion.Type, Restrict(typeof(PythonFunction)));
+        public override DynamicMetaObject BindConvert(ConvertBinder/*!*/ conversion) {
+            return ConvertWorker(conversion, conversion.Type, conversion.Explicit ? ConversionResultKind.ExplicitCast : ConversionResultKind.ImplicitCast);
+        }
+
+        public DynamicMetaObject BindConvert(PythonConversionBinder binder) {
+            return ConvertWorker(binder, binder.Type, binder.ResultKind);
+        }
+
+        public DynamicMetaObject ConvertWorker(DynamicMetaObjectBinder binder, Type type, ConversionResultKind kind) {
+            if (type.IsSubclassOf(typeof(Delegate))) {
+                return MakeDelegateTarget(binder, type, Restrict(typeof(PythonFunction)));
             }
-            return conversion.FallbackConvert(this);
+            return FallbackConvert(binder);
         }
 
         public override System.Collections.Generic.IEnumerable<string> GetDynamicMemberNames() {
@@ -154,7 +162,8 @@ namespace IronPython.Runtime.Binding {
                                 typeof(PythonOps).GetMethod(Signature.HasKeywordArgument() ? "BadKeywordArgumentError" : "FunctionBadArgumentError"),
                                 AstUtils.Convert(GetFunctionParam(), typeof(PythonFunction)),
                                 AstUtils.Constant(Signature.GetProvidedPositionalArgumentCount())
-                            )
+                            ),
+                            typeof(object)
                         ),
                         restrict
                     );
@@ -830,7 +839,8 @@ namespace IronPython.Runtime.Binding {
                         typeof(PythonOps).GetMethod("UnexpectedKeywordArgumentError"),
                         AstUtils.Convert(GetFunctionParam(), typeof(PythonFunction)),
                         AstUtils.Constant(name, typeof(string))
-                    )
+                    ),
+                    typeof(PythonOps)
                 );
             }            
 

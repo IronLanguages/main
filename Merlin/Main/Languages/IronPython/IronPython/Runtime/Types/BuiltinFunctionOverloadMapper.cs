@@ -139,10 +139,6 @@ namespace IronPython.Runtime.Types {
             return bf;
         }
 
-        internal virtual object GetKeywordArgumentOverload(Type[] key) {
-            return GetOverload(key, Function.Targets);
-        }
-
         public virtual string/*!*/ __repr__(CodeContext/*!*/ context) {
             PythonDictionary overloadList = new PythonDictionary();
 
@@ -163,10 +159,6 @@ namespace IronPython.Runtime.Types {
             get {
                 return ((ConstructorFunction)Function).ConstructorTargets;
             }
-        }
-
-        internal override object GetKeywordArgumentOverload(Type[] key) {
-            return base.GetOverload(key, Function.Targets);
         }
 
         protected override object GetTargetFunction(BuiltinFunction bf) {

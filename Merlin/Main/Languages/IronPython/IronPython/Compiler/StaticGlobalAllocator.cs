@@ -27,7 +27,8 @@ using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 
 using IronPython.Runtime;
-
+using IronPython.Runtime.Operations;
+    
 using MSAst = System.Linq.Expressions;
 
 namespace IronPython.Compiler.Ast {
@@ -54,11 +55,6 @@ namespace IronPython.Compiler.Ast {
 #if SILVERLIGHT
         private StrongBox<Type> _finalType = new StrongBox<Type>();        
 #endif
-
-        private static readonly Type[] _DelegateCtorSignature = new Type[] { typeof(object), typeof(IntPtr) };
-        private const MethodAttributes CtorAttributes = MethodAttributes.RTSpecialName | MethodAttributes.HideBySig | MethodAttributes.Public;
-        private const MethodImplAttributes ImplAttributes = MethodImplAttributes.Runtime | MethodImplAttributes.Managed;
-        private const MethodAttributes InvokeAttributes = MethodAttributes.Public | MethodAttributes.HideBySig | MethodAttributes.NewSlot | MethodAttributes.Virtual;
 
         public StaticGlobalAllocator(LanguageContext/*!*/ context, string name) {
             _typeGen = Snippets.Shared.DefineType(name, typeof(object), false, false);
@@ -163,15 +159,15 @@ namespace IronPython.Compiler.Ast {
                 }
 
                 types[types.Length - 1] = retType;
-                delegateType = GetFuncType(types) ?? MakeNewCustomDelegate(typeGen, types);
+                delegateType = GetFuncType(types) ?? PythonOps.MakeNewCustomDelegate(types);
             } else {
-                Type[] types = new Type[args.Length + 2];
+                Type[] types = new Type[args.Length + 1];
                 types[0] = typeof(CallSite);
 
                 for (int i = 0; i < args.Length; i++) {
                     types[i + 1] = args[i].Type;
                 }
-                delegateType = GetActionType(types) ?? MakeNewCustomDelegate(typeGen, ArrayUtils.Append(types, typeof(void)));
+                delegateType = GetActionType(types) ?? PythonOps.MakeNewCustomDelegate(ArrayUtils.Append(types, typeof(void)));
             }
             return delegateType;
         }
@@ -240,16 +236,6 @@ namespace IronPython.Compiler.Ast {
 
                 default: return null;
             }
-        }
-
-        private static Type/*!*/ MakeNewCustomDelegate(TypeGen/*!*/ typeGen, Type/*!*/[]/*!*/ types) {
-            Type returnType = types[types.Length - 1];
-            Type[] parameters = ArrayUtils.RemoveLast(types);
-
-            TypeBuilder builder = Snippets.Shared.DefineDelegateType("Delegate" + types.Length);
-            builder.DefineConstructor(CtorAttributes, CallingConventions.Standard, _DelegateCtorSignature).SetImplementationFlags(ImplAttributes);
-            builder.DefineMethod("Invoke", InvokeAttributes, returnType, parameters).SetImplementationFlags(ImplAttributes);
-            return builder.CreateType();
         }
 
         #endregion

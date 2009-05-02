@@ -1387,10 +1387,6 @@ namespace IronPython.Runtime.Types {
             return (op & PythonOperationKind.Reversed) != 0;
         }
 
-        internal static bool IsReverseOperator(string op) {
-            // TODO: Should determine reverse some other way or Python should be recognizing reverse PythonOperationKind some other way.
-            return op.StartsWith("Reverse");
-        }
         /// <summary>
         /// If an operator is a reverisble operator (e.g. addition) then we need to filter down to just the forward/reverse
         /// versions of the .NET method.  For example consider:

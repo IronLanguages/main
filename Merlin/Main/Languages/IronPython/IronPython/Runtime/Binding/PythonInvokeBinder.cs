@@ -22,7 +22,7 @@ using System.Runtime.CompilerServices;
 
 using Microsoft.Scripting;
 using Microsoft.Scripting.Actions;
-using Microsoft.Scripting.Actions.Calls;
+using Microsoft.Scripting.Generation;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 
@@ -103,7 +103,7 @@ namespace IronPython.Runtime.Binding {
                     return res.Target;
                 }
             }
-
+            PerfTrack.NoteEvent(PerfTrack.Categories.BindingSlow, "InvokeNoFast " + CompilerHelpers.GetType(args[1]));
             return base.BindDelegate(site, args);
         }
 
@@ -168,7 +168,7 @@ namespace IronPython.Runtime.Binding {
         /// <summary>
         /// Creates a nested dynamic site which uses the unpacked arguments.
         /// </summary>
-        protected DynamicMetaObject InvokeForeignObject(DynamicMetaObject target, DynamicMetaObject[] args) {
+        internal DynamicMetaObject InvokeForeignObject(DynamicMetaObject target, DynamicMetaObject[] args) {
             // need to unpack any dict / list arguments...
             CallInfo callInfo;
             List<Expression> metaArgs;

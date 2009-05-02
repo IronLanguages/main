@@ -62,7 +62,9 @@ namespace IronPython.Runtime.Operations {
         [return: MaybeNotImplemented]
         public object __ne__(object other) {
             object res = __eq__(other);
-            if (res != NotImplementedType.Value) return PythonOps.Not(res);
+            if (res != NotImplementedType.Value) {
+                return ScriptingRuntimeHelpers.BooleanToObject(PythonOps.Not(res));
+            }
 
             return res;
         }
@@ -438,7 +440,7 @@ namespace IronPython.Runtime.Operations {
             return ((Extensible<string>)o).Value;
         }
 
-        private static string AsString(object o) {
+        internal static string AsString(object o) {
             string res = o as string;
             if (res != null) {
                 return res;

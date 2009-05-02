@@ -1,8 +1,8 @@
-﻿<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion='3.5'>
+﻿<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="3.5">
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProductVersion>9.0.21022</ProductVersion>
+    <ProductVersion>9.0.30729</ProductVersion>
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>{155CE436-1669-4A48-8095-410F2430237F}</ProjectGuid>
     <OutputType>Library</OutputType>
@@ -52,10 +52,7 @@
     <NoStdLib>true</NoStdLib>
     <NoWarn>618</NoWarn>
     <SilverlightBuild>true</SilverlightBuild>
-    <TfsSilverlightPath>..\..\..\Utilities\Silverlight\x86ret\</TfsSilverlightPath>
-    <SilverlightInstallPath>C:\Program Files\Microsoft Silverlight\2.0.40115.0</SilverlightInstallPath>
-    <SilverlightSdkPath Condition="Exists('$(TfsSilverlightPath)')">$(TfsSilverlightPath)</SilverlightSdkPath>
-    <SilverlightSdkPath Condition="!Exists('$(TfsSilverlightPath)')">$(SilverlightInstallPath)</SilverlightSdkPath>
+    <SilverlightSdkPath>..\..\..\Utilities\Silverlight\x86ret\</SilverlightSdkPath>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)' == 'Silverlight Release' ">
     <OutputPath>..\..\..\Bin\Silverlight Release</OutputPath>
@@ -66,10 +63,7 @@
     <ErrorReport>prompt</ErrorReport>
     <NoWarn>618</NoWarn>
     <SilverlightBuild>true</SilverlightBuild>
-    <TfsSilverlightPath>..\..\..\Utilities\Silverlight\x86ret\</TfsSilverlightPath>
-    <SilverlightInstallPath>C:\Program Files\Microsoft Silverlight\2.0.40115.0</SilverlightInstallPath>
-    <SilverlightSdkPath Condition="Exists('$(TfsSilverlightPath)')">$(TfsSilverlightPath)</SilverlightSdkPath>
-    <SilverlightSdkPath Condition="!Exists('$(TfsSilverlightPath)')">$(SilverlightInstallPath)</SilverlightSdkPath>
+    <SilverlightSdkPath>..\..\..\Utilities\Silverlight\x86ret\</SilverlightSdkPath>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" Condition=" '$(SilverlightBuild)' != 'true' " />
@@ -97,6 +91,7 @@
     <Compile Include="binascii.cs" />
     <Compile Include="cmath.cs" />
     <Compile Include="codecs.cs" />
+    <Compile Include="ModuleOps.cs" />
     <Compile Include="_collections.cs" />
     <Compile Include="copy_reg.cs" />
     <Compile Include="cPickle.cs" />
@@ -120,6 +115,30 @@
     <Compile Include="sha256.cs" />
     <Compile Include="sha512.cs" />
     <Compile Include="socket.cs" />
+    <Compile Include="_ctypes\LocalOrArg.cs" />
+    <Compile Include="_ctypes\MarshalCleanup.cs" />
+    <Compile Include="_ctypes\MemoryHolder.cs" />
+    <Compile Include="_ctypes\NativeFunctions.cs" />
+    <Compile Include="_ctypes\SimpleTypeKind.cs" />
+    <Compile Include="_ctypes\_ctypes.cs" />
+    <Compile Include="_ctypes\Array.cs" />
+    <Compile Include="_ctypes\ArrayType.cs" />
+    <Compile Include="_ctypes\CData.cs" />
+    <Compile Include="_ctypes\CFuncPtr.cs" />
+    <Compile Include="_ctypes\CFuncPtrType.cs" />
+    <Compile Include="_ctypes\Extensions.cs" />
+    <Compile Include="_ctypes\Field.cs" />
+    <Compile Include="_ctypes\INativeType.cs" />
+    <Compile Include="_ctypes\NativeArgument.cs" />
+    <Compile Include="_ctypes\Pointer.cs" />
+    <Compile Include="_ctypes\PointerType.cs" />
+    <Compile Include="_ctypes\SimpleCData.cs" />
+    <Compile Include="_ctypes\SimpleType.cs" />
+    <Compile Include="_ctypes\StructType.cs" />
+    <Compile Include="_ctypes\Structure.cs" />
+    <Compile Include="_ctypes\Union.cs" />
+    <Compile Include="_ctypes\UnionType.cs" />
+    <Compile Include="_ctypes_test.cs" />
     <Compile Include="_heapq.cs" />
     <Compile Include="_struct.cs" />
     <Compile Include="thread.cs" />
@@ -141,6 +160,10 @@
     <ProjectReference Include="..\..\..\..\..\ndp\fx\src\Core\Microsoft\Scripting\Microsoft.Scripting.Core.csproj">
       <Project>{2AE75F5A-CD1F-4925-9647-AF4D1C282FB4}</Project>
       <Name>Microsoft.Scripting.Core</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\..\..\ndp\fx\src\Core\Microsoft\Scripting\Microsoft.Scripting.ExtensionAttribute.csproj">
+      <Project>{8B0F1074-750E-4D64-BF23-A1E0F54261E5}</Project>
+      <Name>Microsoft.Scripting.ExtensionAttribute</Name>
     </ProjectReference>
     <ProjectReference Include="..\..\..\Runtime\Microsoft.Scripting\Microsoft.Scripting.csproj">
       <Project>{EB66B766-6354-4208-A3D4-AACBDCB5C3B3}</Project>

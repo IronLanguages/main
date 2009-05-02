@@ -1,0 +1,14 @@
+--- !ruby/object:RI::MethodDescription 
+aliases: []
+
+block_params: 
+comment: 
+- !ruby/struct:SM::Flow::P 
+  body: Returns array of type libraries.
+full_name: WIN32OLE_TYPE::typelibs
+is_singleton: true
+name: typelibs
+params: |
+  WIN32OLE_TYPE.typelibs
+
+visibility: public

@@ -98,7 +98,7 @@ namespace IronPython.Compiler.Ast {
 
         internal override MSAst.Expression TransformDelete(AstGenerator ag) {
             return ag.Delete(
-                typeof(object),
+                typeof(void),
                 SymbolTable.IdToString(_name),
                 ag.Transform(_target)
             );

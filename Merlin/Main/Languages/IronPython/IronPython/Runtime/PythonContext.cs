@@ -40,7 +40,6 @@ using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
 
 using PyAst = IronPython.Compiler.Ast;
-using Tuple = Microsoft.Scripting.Tuple;
 
 namespace IronPython.Runtime {
     public delegate void CommandDispatcher(Delegate command);
@@ -90,10 +89,11 @@ namespace IronPython.Runtime {
 
         private CallSite<Func<CallSite, object, object, int>> _compareSite;
         private Dictionary<AttrKey, CallSite<Func<CallSite, object, object, object>>> _setAttrSites;
-        private Dictionary<AttrKey, CallSite<Func<CallSite, object, object>>> _deleteAttrSites;
+        private Dictionary<AttrKey, CallSite<Action<CallSite, object>>> _deleteAttrSites;
         private CallSite<Func<CallSite, CodeContext, object, string, PythonTuple, IAttributesCollection, object>> _metaClassSite;
         private CallSite<Func<CallSite, CodeContext, object, string, object>> _writeSite;
-        private CallSite<Func<CallSite, object, object, object>> _getIndexSite, _equalSite, _delIndexSite;
+        private CallSite<Func<CallSite, object, object, object>> _getIndexSite, _equalSite;
+        private CallSite<Action<CallSite, object, object>> _delIndexSite;
         private CallSite<Func<CallSite, CodeContext, object, IList<string>>> _memberNamesSite;
         private CallSite<Func<CallSite, object, IList<string>>> _getMemberNamesSite;
         private CallSite<Func<CallSite, CodeContext, object, object>> _finalizerSite;
@@ -150,26 +150,17 @@ namespace IronPython.Runtime {
             _builtinsDict = CreateBuiltinTable();
             _optimizedDelegates = new Dictionary<object, Delegate>();
 
-            DefaultContext.CreateContexts(manager, this);
-
-            _defaultContext = new CodeContext(new Scope(), this);
+            Scope defaultScope = new Scope();
+            _defaultContext = new CodeContext(defaultScope, this);
             PythonBinder binder = new PythonBinder(manager, this, _defaultContext);
             Binder = binder;
-            _defaultBinderState = new BinderState(binder, DefaultContext.CreateDefaultContext(this));
+            _defaultBinderState = new BinderState(binder, _defaultContext);
 
-            DefaultContext.CreateClsContexts(manager, this);
+            CodeContext defaultClsContext = DefaultContext.CreateDefaultCLSContext(this);
+            _defaultClsBinderState = new BinderState(binder, defaultClsContext);
 
-            _defaultClsBinderState = new BinderState(binder, DefaultContext.CreateDefaultCLSContext(this));
-
-            if (DefaultContext.Default.LanguageContext.Binder == null) {
-                // hack to fix the default language context binder, there's an order of 
-                // initialization issue w/ the binder & the default context.
-                ((PythonContext)DefaultContext.Default.LanguageContext).Binder = Binder;
-            }
-            if (DefaultContext.DefaultCLS.LanguageContext.Binder == null) {
-                // hack to fix the default language context binder, there's an order of 
-                // initialization issue w/ the binder & the default context.
-                ((PythonContext)DefaultContext.DefaultCLS.LanguageContext).Binder = Binder;
+            if (DefaultContext._default == null) {
+                DefaultContext.InitializeDefaults(_defaultContext, defaultClsContext);
             }
 
             InitializeBuiltins();
@@ -226,6 +217,9 @@ namespace IronPython.Runtime {
 
             _collateCulture = _ctypeCulture = _timeCulture = _monetaryCulture = _numericCulture = CultureInfo.InvariantCulture;
             _equalityComparer = new PythonEqualityComparer(this);
+
+            PythonModule module = EnsureModule(_defaultContext);
+            module.BinderState = _defaultBinderState;
         }
 
         public IEqualityComparer<object>/*!*/ EqualityComparer {
@@ -334,11 +328,11 @@ namespace IronPython.Runtime {
             ));
         }
 
-        public void EnsureModuleException(object key, PythonType baseType, IAttributesCollection dict, string name, string module) {
-            dict[SymbolTable.StringToId(name)] = GetOrCreateModuleState(
+        public PythonType EnsureModuleException(object key, PythonType baseType, IAttributesCollection dict, string name, string module) {
+            return (PythonType)(dict[SymbolTable.StringToId(name)] = GetOrCreateModuleState(
                 key,
                 () => PythonExceptions.CreateSubType(this, baseType, name, module, "")
-            );
+            ));
         }
 
         internal PythonOptions/*!*/ PythonOptions {
@@ -565,7 +559,7 @@ namespace IronPython.Runtime {
         internal bool ShouldInterpret(PythonCompilerOptions options, SourceUnit source) {
             // We have to turn off adaptive compilation in debug mode to
             // support mangaged debuggers. Also turn off in optimized mode.
-            bool adaptiveCompilation = _options.AdaptiveCompilation && !source.EmitDebugSymbols && !_options.Optimize;
+            bool adaptiveCompilation = _options.AdaptiveCompilation && !source.EmitDebugSymbols;
 
             return options.Interpreted || adaptiveCompilation;
         }
@@ -643,9 +637,9 @@ namespace IronPython.Runtime {
             return CompilePythonCode(null, sourceUnit, options, errorSink);
         }
 
-        protected override ScriptCode/*!*/ LoadCompiledCode(Delegate/*!*/ method, string path) {
+        protected override ScriptCode/*!*/ LoadCompiledCode(Delegate/*!*/ method, string path, string customData) {
             SourceUnit su = new SourceUnit(this, NullTextContentProvider.Null, path, SourceCodeKind.File);
-            return new OnDiskScriptCode((Func<Scope, LanguageContext, object>)method, su);
+            return new OnDiskScriptCode((Func<Scope, LanguageContext, object>)method, su, customData);
         }
 
         public override SourceCodeReader/*!*/ GetSourceReader(Stream/*!*/ stream, Encoding/*!*/ defaultEncoding) {
@@ -1197,8 +1191,6 @@ namespace IronPython.Runtime {
                 string str = pythonException as string;
                 if (str != null) {
                     result += str;
-                } else if (pythonException is StringException) {
-                    result += pythonException.ToString();
                 } else {
                     result += GetPythonExceptionClassName(pythonException);
 
@@ -1736,7 +1728,7 @@ namespace IronPython.Runtime {
         #region Object Operations
 
         public override ConvertBinder/*!*/ CreateConvertBinder(Type/*!*/ toType, bool explicitCast) {
-            return DefaultBinderState.Convert(toType, explicitCast ? ConversionResultKind.ExplicitCast : ConversionResultKind.ImplicitCast);
+            return DefaultBinderState.CompatConvert(toType, explicitCast);
         }
 
         public override DeleteMemberBinder/*!*/ CreateDeleteMemberBinder(string/*!*/ name, bool ignoreCase) {
@@ -1947,13 +1939,13 @@ namespace IronPython.Runtime {
             AttrKey key = new AttrKey(CompilerHelpers.GetType(o), name);
 
             if (_deleteAttrSites == null) {
-                Interlocked.CompareExchange(ref _deleteAttrSites, new Dictionary<AttrKey, CallSite<Func<CallSite, object, object>>>(), null);
+                Interlocked.CompareExchange(ref _deleteAttrSites, new Dictionary<AttrKey, CallSite<Action<CallSite, object>>>(), null);
             }
 
-            CallSite<Func<CallSite, object, object>> site;
+            CallSite<Action<CallSite, object>> site;
             lock (_deleteAttrSites) {
                 if (!_deleteAttrSites.TryGetValue(key, out site)) {
-                    _deleteAttrSites[key] = site = CallSite<Func<CallSite, object, object>>.Create(
+                    _deleteAttrSites[key] = site = CallSite<Action<CallSite, object>>.Create(
                         DefaultBinderState.DeleteMember(SymbolTable.IdToString(name))
                     );
                 }
@@ -2018,7 +2010,7 @@ namespace IronPython.Runtime {
             if (_delIndexSite == null) {
                 Interlocked.CompareExchange(
                     ref _delIndexSite,
-                    CallSite<Func<CallSite, object, object, object>>.Create(
+                    CallSite<Action<CallSite, object, object>>.Create(
                         _defaultBinderState.DeleteIndex(
                             1
                         )
@@ -2308,6 +2300,7 @@ namespace IronPython.Runtime {
             return site.Target(site, value);
         }
 
+
         /*
                 public static String ConvertToString(object value) { return _stringSite.Invoke(DefaultContext.Default, value); }
                 public static BigInteger ConvertToBigInteger(object value) { return _bigIntSite.Invoke(DefaultContext.Default, value); }
@@ -2322,7 +2315,7 @@ namespace IronPython.Runtime {
 
         private CallSite<Func<CallSite, object, object>> MakeImplicitConvertSite<T>() {
             return CallSite<Func<CallSite, object, object>>.Create(
-                DefaultBinderState.Convert(
+                DefaultBinderState.ConvertRetObject(
                     typeof(T),
                     ConversionResultKind.ImplicitCast
                 )
@@ -2765,11 +2758,7 @@ namespace IronPython.Runtime {
             private CallSite<Func<CallSite, object, object, int>> _site;
             public DefaultPythonComparer(PythonContext context) {
                 _site = CallSite<Func<CallSite, object, object, int>>.Create(
-                    Binders.BinaryOperationRetType(
-                        context.DefaultBinderState,
-                        PythonOperationKind.Compare,
-                        typeof(int)
-                    )
+                    context.DefaultBinderState.Operation(PythonOperationKind.Compare)
                 );
             }
 

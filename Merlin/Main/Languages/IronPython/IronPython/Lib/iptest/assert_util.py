@@ -103,8 +103,8 @@ else:
 
         math_testdir        = path_combine(external_dir, r'Math')
         parrot_testdir      = path_combine(external_dir, r'parrotbench')
-        lib_testdir         = path_combine(external_dir, r'25\Lib')
-        private_testdir     = path_combine(external_dir, r'25\Lib\test')
+        lib_testdir         = path_combine(external_dir, r'26\Lib')
+        private_testdir     = path_combine(external_dir, r'26\Lib\test')
 
         temporary_dir   = path_combine(get_temp_dir(), "IronPython")
         ensure_directory_present(temporary_dir)
@@ -113,7 +113,7 @@ else:
 
         if is_cli: 
             ipython_executable  = sys.executable
-            cpython_executable  = path_combine(external_dir, r'25\python.exe')
+            cpython_executable  = path_combine(external_dir, r'26\python.exe')
         else: 
             ipython_executable  = path_combine(sys.prefix, r'ipy.exe')
             cpython_executable  = sys.executable

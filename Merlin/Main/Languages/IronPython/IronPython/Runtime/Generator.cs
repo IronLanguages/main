@@ -25,16 +25,12 @@ using IronPython.Compiler;
 using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Operations;
 
-using Tuple = Microsoft.Scripting.Tuple;
-
 namespace IronPython.Runtime {
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1710:IdentifiersShouldHaveCorrectSuffix"), PythonType("generator")]
     public sealed class PythonGenerator : IEnumerator, IEnumerator<object>, IEnumerable, IEnumerable<object>, ICodeFormattable {
         private readonly PythonGeneratorNext/*!*/ _next;    // The delegate which contains the user code to perform the iteration.
         private readonly PythonFunction _function;          // the function which created the generator
-        private readonly Tuple _data;                       // the closure data we need to pass into each iteration
-        private int _index = GeneratorRewriter.NotStarted;  // the current index during the iteration
-        private object _current;                            // the last value extracted from the iteration
+        private readonly MutableTuple _data;                // the closure data we need to pass into each iteration.  Item000 is the index, Item001 is the current value
         private GeneratorFlags _flags;                      // Flags capturing various state for the generator
 
         /// <summary>
@@ -49,10 +45,11 @@ namespace IronPython.Runtime {
         /// </summary>
         private object _sendValue;
 
-        internal PythonGenerator(PythonFunction function, PythonGeneratorNext next, Tuple data) {
+        internal PythonGenerator(PythonFunction function, PythonGeneratorNext next, MutableTuple data) {
             _function = function;
             _next = next;
             _data = data;
+            State = GeneratorRewriter.NotStarted;
         }
 
         #region Python Public APIs
@@ -115,7 +112,7 @@ namespace IronPython.Runtime {
                 throw PythonOps.StopIteration();
             }
 
-            return _current;
+            return CurrentValue;
         }
 
         /// <summary>
@@ -128,7 +125,7 @@ namespace IronPython.Runtime {
             // CPython2.5's behavior is that Send(non-null) on unstaretd generator should:
             // - throw a TypeError exception
             // - not change generator state. So leave as unstarted, and allow future calls to succeed.
-            if (value != null && _index == GeneratorRewriter.NotStarted) {
+            if (value != null && State == GeneratorRewriter.NotStarted) {
                 throw PythonOps.TypeErrorForIllegalSend();
             }
 
@@ -195,6 +192,41 @@ namespace IronPython.Runtime {
         #endregion
 
         #region Internal implementation details
+
+        private int State {
+            get {
+                return GetDataTuple().Item000;
+            }
+            set {
+                GetDataTuple().Item000 = value;
+            }
+        }
+
+        private object CurrentValue {
+            get {
+                return GetDataTuple().Item001;
+            }
+            set {
+                GetDataTuple().Item001 = value;
+            }
+        }
+
+        private MutableTuple<int, object> GetDataTuple() {
+            MutableTuple<int, object> res = _data as MutableTuple<int, object>;
+            if (res == null) {
+                res = GetBigData(_data);
+            }
+            return res;
+        }
+
+        private static MutableTuple<int, object> GetBigData(MutableTuple data) {
+            MutableTuple<int, object> smallGen;
+            do {
+                data = (MutableTuple)data.GetValue(0);
+            } while ((smallGen = (data as MutableTuple<int, object>)) == null);
+
+            return smallGen;
+        }
 
         internal CodeContext Context {
             get {
@@ -274,7 +306,6 @@ namespace IronPython.Runtime {
             Exception save = SaveCurrentException();
 
             bool ret = false;
-            object next = OperationFailed.Value;
             try {
                 // This calls into the delegate that has the real body of the generator.
                 // The generator body here may:
@@ -284,8 +315,8 @@ namespace IronPython.Runtime {
                 //    catch this and terminate the loop without propogating the exception.
                 // 4. Exit via some other unhandled exception: This will close the generator, but the exception still propogates.
                 //    _next does not return, so ret is left assigned to false (closed), which we detect in the finally.
-                if (!(ret = GetNext(out next))) {
-                    next = OperationFailed.Value;
+                if (!(ret = GetNext())) {
+                    CurrentValue = OperationFailed.Value;
                 }
             } finally {
                 // A generator restores the sys.exc_info() status after each yield point.
@@ -299,8 +330,7 @@ namespace IronPython.Runtime {
                 }
             }
 
-            _current = next;
-            return next;
+            return CurrentValue;
         }
 
         private void RestoreCurrentException(Exception save) {
@@ -400,9 +430,9 @@ namespace IronPython.Runtime {
             }
         }
 
-        private bool GetNext(out object res) {
-            _next(ref _index, _data, out res);
-            return _index != GeneratorRewriter.Finished;
+        private bool GetNext() {
+            _next(_data);
+            return State != GeneratorRewriter.Finished;
         }
 
         internal bool CanSetSysExcInfo {
@@ -452,7 +482,7 @@ namespace IronPython.Runtime {
         #region IEnumerator Members
 
         object IEnumerator.Current {
-            get { return _current; }
+            get { return CurrentValue; }
         }
 
         void IEnumerator.Reset() {
@@ -464,7 +494,7 @@ namespace IronPython.Runtime {
         #region IEnumerator<object> Members
 
         object IEnumerator<object>.Current {
-            get { return _current; }
+            get { return CurrentValue; }
         }
 
         #endregion

@@ -11,50 +11,56 @@ require File.dirname(__FILE__) + '/../../spec_helper'
 #   #call             OK
 #   #[]               OK
 
+module ContinuationSpecs
+  def self.create_cc
+    Kernel.callcc { |cc| return cc }
+    :create_cc
+  end
+end
 
-describe "Creating a Continuation object" do
-  not_supported_on :jruby,:ir do
+not_supported_on :ironruby do
+  describe "Creating a Continuation object" do
     it "must be done through Kernel.callcc, no .new" do
       lambda { Continuation.new }.should raise_error(NoMethodError)
 
-      Kernel.callcc {|@cc|}
-      c = @cc
-      c.class.should == Continuation
+      cont = ContinuationSpecs.create_cc
+      cont.class.should == Continuation
     end
   end
 end
 
 
-describe "Executing a Continuation" do
-  not_supported_on :jruby,:ir do
+not_supported_on :ironruby do
+  describe "Executing a Continuation" do
     it "using #call transfers execution to right after the Kernel.callcc block" do
       array = [:reached, :not_reached]
 
-      Kernel.callcc {|@cc|}
-    
+      cont = ContinuationSpecs.create_cc
+
       unless array.first == :not_reached
         array.shift
-        @cc.call
+        cont.call
       end
 
       array.should == [:not_reached]
     end
 
     it "arguments given to #call (or nil) are returned by the Kernel.callcc block (as Array unless only one object)" do
-      Kernel.callcc {|cc| cc.call}.should == nil 
-      Kernel.callcc {|cc| cc.call 1}.should == 1 
-      Kernel.callcc {|cc| cc.call 1, 2, 3}.should == [1, 2, 3] 
+      Kernel.callcc {|cc| cc.call}.should == nil
+      Kernel.callcc {|cc| cc.call 1}.should == 1
+      Kernel.callcc {|cc| cc.call 1, 2, 3}.should == [1, 2, 3]
     end
 
     it "#[] is an alias for #call" do
       Kernel.callcc {|cc| cc.call}.should == Kernel.callcc {|cc| cc[]}
       Kernel.callcc {|cc| cc.call 1}.should == Kernel.callcc {|cc| cc[1]}
-      Kernel.callcc {|cc| cc.call 1, 2, 3}.should == Kernel.callcc {|cc| cc[1, 2, 3]} 
+      Kernel.callcc {|cc| cc.call 1, 2, 3}.should == Kernel.callcc {|cc| cc[1, 2, 3]}
     end
 
     it "closes over lexical environments" do
-      def f; a = 1; Kernel.callcc {|c| a = 2; c.call }; a; end
-      f().should == 2
+      o = Object.new
+      def o.f; a = 1; Kernel.callcc {|c| a = 2; c.call }; a; end
+      o.f().should == 2
     end
 
     it "escapes an inner ensure block" do

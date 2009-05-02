@@ -15,17 +15,23 @@
 
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.Dynamic;
 using System.Dynamic.Utils;
 using System.Linq.Expressions;
+using System.Threading;
 
 namespace System.Runtime.CompilerServices {
     /// <summary>
     /// Class responsible for runtime binding of the dynamic operations on the dynamic call site.
     /// </summary>
     public abstract class CallSiteBinder {
-
         private static readonly LabelTarget _updateLabel = Expression.Label("CallSiteBinder.UpdateLabel");
+
+        /// <summary>
+        /// The Level 2 cache - all rules produced for the same binder.
+        /// </summary>
+        internal Dictionary<Type, object> Cache;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="CallSiteBinder"/> class.
@@ -142,7 +148,6 @@ namespace System.Runtime.CompilerServices {
                 updLabel
             );
 #endif
-
             
             body.Add(updLabel);
             body.Add(
@@ -173,31 +178,10 @@ namespace System.Runtime.CompilerServices {
             );
         }
 
-
-        /// <summary>
-        /// The Level 2 cache - all rules produced for the same binder.
-        /// </summary>
-        internal Dictionary<Type, object> Cache;
-        
-        // keep alive primary binder.
-        private CallSiteBinder theBinder;
-
-
         internal RuleCache<T> GetRuleCache<T>() where T : class {
             // make sure we have cache.
             if (Cache == null) {
-                // to improve rule sharing try to get the primary binder and share with it.
-                theBinder = GetPrimaryBinderInstance();
-
-                // primary binder must have cache.
-                if (theBinder.Cache == null) {
-                    System.Threading.Interlocked.CompareExchange(
-                            ref theBinder.Cache,
-                            new Dictionary<Type, object>(),
-                            null);
-                }
-
-                Cache = theBinder.Cache;
+                Interlocked.CompareExchange(ref Cache, new Dictionary<Type, object>(), null);
             }
 
             object ruleCache;
@@ -209,18 +193,8 @@ namespace System.Runtime.CompilerServices {
             }
 
             RuleCache<T> result = ruleCache as RuleCache<T>;
-            System.Diagnostics.Debug.Assert(result != null);
-
+            Debug.Assert(result != null);
             return result;
-        }
-
-
-        /// <summary>
-        /// Trivial binder atomizer.
-        /// </summary>
-        private static WeakUniqueSet<CallSiteBinder> _binders = new WeakUniqueSet<CallSiteBinder>();
-        private CallSiteBinder GetPrimaryBinderInstance() {
-            return _binders.GetUniqueFor(this);
         }
     }
 }

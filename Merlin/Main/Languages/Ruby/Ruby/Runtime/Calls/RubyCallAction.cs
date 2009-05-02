@@ -43,7 +43,7 @@ namespace IronRuby.Runtime.Calls {
             get { return _methodName; }
         }
 
-        public override Type/*!*/ ResultType {
+        public override Type/*!*/ ReturnType {
             get { return typeof(object); }
         }
 

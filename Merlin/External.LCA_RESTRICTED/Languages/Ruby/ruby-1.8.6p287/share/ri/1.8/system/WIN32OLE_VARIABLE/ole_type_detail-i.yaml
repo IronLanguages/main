@@ -1,0 +1,16 @@
+--- !ruby/object:RI::MethodDescription 
+aliases: []
+
+block_params: 
+comment: 
+- !ruby/struct:SM::Flow::P 
+  body: Returns detail information of type. The information is array of type.
+- !ruby/struct:SM::Flow::VERB 
+  body: "   tobj = WIN32OLE_TYPE.new('DirectX 7 for Visual Basic Type Library', 'D3DCLIPSTATUS')\n   variable = tobj.variables.find {|variable| variable.name == 'lFlags'}\n   tdetail  = variable.ole_type_detail\n   p tdetail # =&gt; [&quot;USERDEFINED&quot;, &quot;CONST_D3DCLIPSTATUSFLAGS&quot;]\n"
+full_name: WIN32OLE_VARIABLE#ole_type_detail
+is_singleton: false
+name: ole_type_detail
+params: |
+  WIN32OLE_VARIABLE#ole_type_detail
+
+visibility: public

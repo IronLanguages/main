@@ -30,13 +30,16 @@ using Microsoft.Scripting;
 using IronRuby.Compiler;
 using IronRuby.Runtime.Calls;
 using System.Runtime.CompilerServices;
+using Microsoft.Scripting.Interpreter;
 
 namespace IronRuby.Runtime {
     /// <summary>
     /// Stores extra instance data associated with Ruby exceptions
     /// </summary>
     [Serializable]
-    public class RubyExceptionData {
+    public sealed class RubyExceptionData {
+        internal static readonly ThreadLocal<InterpretedFrame> CurrentInterpretedFrame = new ThreadLocal<InterpretedFrame>();
+        
         private static readonly object/*!*/ _DataKey = new object();
         internal const string TopLevelMethodName = "#";
 
@@ -66,35 +69,46 @@ namespace IronRuby.Runtime {
             _throwingThread = Thread.CurrentThread;
         }
 
-        private void CreateBacktrace(RubyContext/*!*/ context, StackTrace catchSiteTrace) {
-            int skipFrames = 0;
+        private RubyArray CreateBacktrace(RubyContext/*!*/ context, InterpretedFrame handlerFrame, StackTrace catchSiteTrace) {
+            Assert.NotNull(context);
+
             bool hasFileAccessPermissions = DetectFileAccessPermissions();
 
             var result = new RubyArray();
+            
             // Compiled trace: contains frames starting with the throw site up to the first filter/catch that the exception was caught by:
             StackTrace throwSiteTrace = DebugInfoAvailable ? new StackTrace(_exception, true) : new StackTrace(_exception);
-            AddBacktrace(result, throwSiteTrace.GetFrames(), hasFileAccessPermissions, skipFrames, context.Options.ExceptionDetail);
 
-            if (catchSiteTrace != null) {
-                // skip one frame - the catch-site frame is already included
-                AddBacktrace(result, catchSiteTrace.GetFrames(), hasFileAccessPermissions, 1, false);
-            }
-
-            _backtrace = result;
-            SetBacktraceForRaise(context, _backtrace);
-        }
-
-        internal void SetCompiledTrace(RubyContext/*!*/ context) {
-            if (_backtrace != null) {
-                return;
-            }
+            var interpretedFrame = handlerFrame ?? CurrentInterpretedFrame.Value;
+            AddBacktrace(result, throwSiteTrace.GetFrames(), ref interpretedFrame, handlerFrame, hasFileAccessPermissions, 0, context.Options.ExceptionDetail);
 
             // Compiled trace: contains frames above and including the first Ruby filter/catch site that the exception was caught by:
-            StackTrace catchSiteTrace = DebugInfoAvailable ? new StackTrace(true) : new StackTrace();
+            if (catchSiteTrace != null) {
+                // skip one frame - the catch-site frame is already included
+                AddBacktrace(result, catchSiteTrace.GetFrames(), ref interpretedFrame, handlerFrame, hasFileAccessPermissions,
+                    handlerFrame != null ? 0 : 1, false
+                );
+            }
 
-            CreateBacktrace(context, catchSiteTrace);
+            return result;            
         }
 
+        /// <summary>
+        /// Builds backtrace for the exception if it wasn't built yet. 
+        /// Captures a full stack trace starting with the current frame and combines it with the trace of the exception.
+        /// Called from compiled code.
+        /// </summary>
+        internal void CaptureExceptionTrace(RubyScope/*!*/ scope) {
+            if (_backtrace == null) {
+                // If we are in an interpreted method, the CurrentInterpretedFrame is the first Ruby frame that the exception passes thru.
+                // (if it was not the first one _backtrace would already been set
+                StackTrace catchSiteTrace = DebugInfoAvailable ? new StackTrace(true) : new StackTrace();
+                _backtrace = CreateBacktrace(scope.RubyContext, scope.InterpretedFrame, catchSiteTrace);
+                DynamicSetBacktrace(scope.RubyContext, _backtrace);
+            }
+        }
+
+        // OBSOLETE:
         internal void SetInterpretedTrace(InterpreterState/*!*/ state) {
             if (_backtrace != null) {
                 return;
@@ -102,14 +116,14 @@ namespace IronRuby.Runtime {
 
             // we need to copy the trace since the source locations in frames above catch site could be altered by further interpretation:
             _backtrace = AddBacktrace(new RubyArray(), state, 0);
-            SetBacktraceForRaise((RubyContext)state.ScriptCode.SourceUnit.LanguageContext, _backtrace);
+            DynamicSetBacktrace((RubyContext)state.ScriptCode.SourceUnit.LanguageContext, _backtrace);
         }
 
         /// <summary>
         /// This is called by the IronRuby runtime to set the backtrace for an exception that has being raised. 
         /// Note that the backtrace may be set directly by user code as well. However, that uses a different code path.
         /// </summary>
-        private void SetBacktraceForRaise(RubyContext/*!*/ context, RubyArray backtrace) {
+        private void DynamicSetBacktrace(RubyContext/*!*/ context, RubyArray backtrace) {
             if (_setBacktraceCallSite == null) {
                 Interlocked.CompareExchange(ref _setBacktraceCallSite, CallSite<Func<CallSite, RubyContext, Exception, RubyArray, object>>.
                     Create(RubyCallAction.MakeShared("set_backtrace", RubyCallSignature.WithImplicitSelf(1))), null);
@@ -117,18 +131,19 @@ namespace IronRuby.Runtime {
             _setBacktraceCallSite.Target(_setBacktraceCallSite, context, _exception, backtrace);
         }
 
-        internal static RubyArray/*!*/ CreateBacktrace(RubyContext/*!*/ context, IEnumerable<StackFrame>/*!*/ stackTrace, int skipFrames) {
-            return AddBacktrace(new RubyArray(), stackTrace, DetectFileAccessPermissions(), skipFrames, context.Options.ExceptionDetail);
-        }
-
         public static RubyArray/*!*/ CreateBacktrace(RubyContext/*!*/ context, int skipFrames) {
             if (context.RubyOptions.InterpretedMode) {
+                // OBSOLETE:
                 var currentFrame = InterpreterState.Current.Value;
                 Debug.Assert(currentFrame != null); 
                 return AddBacktrace(new RubyArray(), currentFrame, skipFrames);
             } else {
                 var trace = DebugInfoAvailable ? new StackTrace(true) : new StackTrace();
-                return AddBacktrace(new RubyArray(), trace.GetFrames(), DetectFileAccessPermissions(), skipFrames, context.Options.ExceptionDetail);
+                var interpretedFrame = CurrentInterpretedFrame.Value;
+                return AddBacktrace(
+                    new RubyArray(), trace.GetFrames(), ref interpretedFrame, null, DetectFileAccessPermissions(), 
+                    skipFrames, context.Options.ExceptionDetail
+                );
             }
         }
 
@@ -146,6 +161,7 @@ namespace IronRuby.Runtime {
 #endif
         }
 
+        // OBSOLETE:
         private static RubyArray/*!*/ AddBacktrace(RubyArray/*!*/ result, InterpreterState/*!*/ frame, int skipFrames) {
             do {
                 if (skipFrames == 0) {
@@ -173,19 +189,45 @@ namespace IronRuby.Runtime {
             return result;
         }
 
-        private static RubyArray/*!*/ AddBacktrace(RubyArray/*!*/ result, IEnumerable<StackFrame> stackTrace, bool hasFileAccessPermission, 
-            int skipFrames, bool exceptionDetail) {
+        private static RubyArray/*!*/ AddBacktrace(RubyArray/*!*/ result, IEnumerable<StackFrame> stackTrace,
+            ref InterpretedFrame interpretedFrame, InterpretedFrame handlerFrame,
+            bool hasFileAccessPermission, int skipFrames, bool exceptionDetail) {
 
             if (stackTrace != null) {
                 foreach (StackFrame frame in stackTrace) {
                     string methodName, file;
                     int line;
-                    if (TryGetStackFrameInfo(frame, hasFileAccessPermission, exceptionDetail, out methodName, out file, out line)) {
-                        if (skipFrames == 0) {
-                            result.Add(MutableString.Create(FormatFrame(file, line, methodName)));
-                        } else {
-                            skipFrames--;
+
+                    if (InterpretedFrame.IsInterpretedFrame(frame.GetMethod())) {
+                        // TODO: get language context, ask for method name?
+                        // TODO: the trace can get corrupted if Python frame are in the middle - we need to move frame tracing to the interpreter
+                        if (interpretedFrame == null) {
+                            continue;
                         }
+
+                        var debugInfo = interpretedFrame.GetDebugInfo(
+                            (interpretedFrame == handlerFrame) ? interpretedFrame.FaultingInstruction : interpretedFrame.InstructionIndex
+                        );
+
+                        if (debugInfo != null) {
+                            file = debugInfo.FileName;
+                            line = debugInfo.StartLine;
+                        } else {
+                            file = null;
+                            line = 0;
+                        }
+                        methodName = interpretedFrame.Lambda.Name;
+                        TryParseRubyMethodName(ref methodName, ref file, ref line);
+                        
+                        interpretedFrame = interpretedFrame.Parent;                        
+                    } else if (!TryGetStackFrameInfo(frame, hasFileAccessPermission, exceptionDetail, out methodName, out file, out line)) {
+                        continue;
+                    }
+
+                    if (skipFrames == 0) {
+                        result.Add(MutableString.Create(FormatFrame(file, line, methodName)));
+                    } else {
+                        skipFrames--;
                     }
                 }
             }
@@ -211,11 +253,6 @@ namespace IronRuby.Runtime {
             var sourceLine = line = frame.GetFileLineNumber();
 
             if (TryParseRubyMethodName(ref methodName, ref fileName, ref line)) {
-                // Ruby method:
-                if (methodName == TopLevelMethodName) {
-                    methodName = null;
-                }
-
                 if (sourceLine == 0) {
                     RubyMethodDebugInfo debugInfo;
                     if (RubyMethodDebugInfo.TryGet(method, out debugInfo)) {
@@ -286,6 +323,9 @@ namespace IronRuby.Runtime {
                 string[] parts = methodName.Split(';');
                 if (parts.Length > 4) {
                     methodName = parts[1];
+                    if (methodName == TopLevelMethodName) {
+                        methodName = null;
+                    }
                     if (fileName == null) {
                         fileName = parts[2];
                     }

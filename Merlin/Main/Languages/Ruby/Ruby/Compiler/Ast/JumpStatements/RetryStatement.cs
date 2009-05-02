@@ -34,15 +34,14 @@ namespace IronRuby.Compiler.Ast {
         internal static MSA.Expression/*!*/ TransformRetry(AstGenerator/*!*/ gen) {
             // eval:
             if (gen.CompilerOptions.IsEval) {
-                return Methods.EvalRetry.OpCall(gen.CurrentRfcVariable);
+                return Methods.EvalRetry.OpCall(gen.CurrentScopeVariable);
             }
 
             // rescue clause:
             if (gen.CurrentRescue != null) {
                 return Ast.Block(
                     Ast.Assign(gen.CurrentRescue.RetryingVariable, AstUtils.Constant(true)),
-                    Ast.Continue(gen.CurrentRescue.ContinueLabel),
-                    AstUtils.Empty()
+                    Ast.Goto(gen.CurrentRescue.RetryLabel, typeof(void))
                 );
             }
 
@@ -52,7 +51,7 @@ namespace IronRuby.Compiler.Ast {
             }
 
             // primary frame:
-            return gen.Return(Methods.MethodRetry.OpCall(gen.CurrentRfcVariable, gen.MakeMethodBlockParameterRead()));
+            return gen.Return(Methods.MethodRetry.OpCall(gen.CurrentScopeVariable, gen.MakeMethodBlockParameterRead()));
         }
     }
 }

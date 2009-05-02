@@ -646,7 +646,7 @@ namespace IronRuby.Runtime {
         }
 
         private static object EvaluateInModuleNoJumpCheck(RubyModule/*!*/ self, BlockParam/*!*/ block) {
-            block.ModuleDeclaration = self;
+            block.MethodLookupModule = self;
             return RubyOps.Yield1(self, self, block);
         }
 
@@ -657,7 +657,7 @@ namespace IronRuby.Runtime {
                 throw RubyExceptions.CreateTypeError("can't define singleton method for literals");
             }
 
-            block.ModuleDeclaration = block.RubyContext.CreateSingletonClass(self);
+            block.MethodLookupModule = block.RubyContext.CreateSingletonClass(self);
 
             // TODO: flows Public visibility in the block
             // Flow "Singleton" method attribute? If we change method attribute
@@ -849,6 +849,27 @@ namespace IronRuby.Runtime {
         }
 
 #endif
+
+        #endregion
+
+        #region Paths
+        public static MutableString CanonicalizePath(MutableString path) {
+            for (int i = 0; i < path.Length; i++) {
+                if (path.GetChar(i) == '\\')
+                    path.SetChar(i, '/');
+            }
+            return path;
+        }
+
+        public static String CanonicalizePath(string path) {
+            return path.Replace('\\', '/');
+        }
+
+        public static String CombinePaths(string basePath, string path) {
+            return (basePath.EndsWith("\\") || basePath.EndsWith("/") || basePath == string.Empty) ? 
+                basePath + path :
+                basePath + "/" + path;
+        }
 
         #endregion
     }

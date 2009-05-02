@@ -1,0 +1,17 @@
+--- !ruby/object:RI::MethodDescription 
+aliases: []
+
+block_params: 
+comment: 
+- !ruby/struct:SM::Flow::P 
+  body: Sets property of OLE object. When you want to set property with argument, you can use this method.
+- !ruby/struct:SM::Flow::VERB 
+  body: "   excel = WIN32OLE.new('Excel.Application')\n   excel['Visible'] = true\n   book = excel.workbooks.add\n   sheet = book.worksheets(1)\n   sheet.setproperty('Cells', 1, 2, 10) # =&gt; The B1 cell value is 10.\n"
+full_name: WIN32OLE#[]=
+is_singleton: false
+name: "[]="
+params: |
+  WIN32OLE['property']=val 
+  WIN32OLE.setproperty('property', [arg1, arg2,...] val)
+
+visibility: public

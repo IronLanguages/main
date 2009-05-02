@@ -522,14 +522,6 @@ namespace IronRuby.Builtins {
             return matcher.DoGlob();
         }
 
-        public static MutableString/*!*/ CanonicalizePath(MutableString/*!*/ path) {
-            for (int i = 0; i < path.Length; i++) {
-                if (path.GetChar(i) == '\\')
-                    path.SetChar(i, '/');
-            }
-            return path;
-        }
-
         public static IEnumerable<string>/*!*/ GlobResults(RubyContext/*!*/ context, string/*!*/ pattern, int flags) {
             if (pattern.Length == 0) {
                 yield break;

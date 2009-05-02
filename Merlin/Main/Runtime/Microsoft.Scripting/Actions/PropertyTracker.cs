@@ -18,6 +18,7 @@ using System.Linq.Expressions;
 using System.Reflection;
 using Microsoft.Scripting.Generation;
 using Microsoft.Scripting.Runtime;
+using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace Microsoft.Scripting.Actions {
 
@@ -69,7 +70,7 @@ namespace Microsoft.Scripting.Actions {
             }
 
             if (getter.IsPublic && getter.DeclaringType.IsPublic) {
-                return binder.MakeCallExpression(context, getter);
+                return AstUtils.Convert(binder.MakeCallExpression(context, getter), typeof(object));
             }
 
             // private binding is just a call to the getter method...
@@ -113,11 +114,11 @@ namespace Microsoft.Scripting.Actions {
             getter = CompilerHelpers.TryGetCallableMethod(getter);
 
             if (binder.PrivateBinding || CompilerHelpers.IsVisible(getter)) {
-                return binder.MakeCallExpression(context, getter, instance);
+                return AstUtils.Convert(binder.MakeCallExpression(context, getter, instance), typeof(object));
             }
 
             // private binding is just a call to the getter method...
-            return DefaultBinder.MakeError(((DefaultBinder)binder).MakeNonPublicMemberGetError(context, this, type, instance));
+            return DefaultBinder.MakeError(((DefaultBinder)binder).MakeNonPublicMemberGetError(context, this, type, instance), typeof(object));
         }
 
         public override ErrorInfo GetBoundError(ActionBinder binder, Expression instance) {

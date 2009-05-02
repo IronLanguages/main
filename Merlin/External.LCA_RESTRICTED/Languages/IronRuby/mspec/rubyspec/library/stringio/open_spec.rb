@@ -6,24 +6,24 @@ describe "StringIO.open when passed [Object, mode]" do
     io = StringIO.open(str = "example", "r")
     io.string.should equal(str)
   end
-  
+
   it "returns the blocks return value when yielding" do
     ret = StringIO.open("example", "r") { :test }
     ret.should equal(:test)
   end
-  
+
   it "yields self to the passed block" do
     io = nil
     StringIO.open("example", "r") { |strio| io = strio }
     io.should be_kind_of(StringIO)
   end
-  
+
   it "closes self after yielding" do
     io = nil
     StringIO.open("example", "r") { |strio| io = strio }
     io.closed?.should be_true
   end
-  
+
   it "even closes self when an exception is raised while yielding" do
     io = nil
     begin
@@ -82,7 +82,7 @@ describe "StringIO.open when passed [Object, mode]" do
     io = StringIO.open("example", "w+")
     io.closed_read?.should be_false
     io.closed_write?.should be_false
-    
+
     io = StringIO.open("example", "wb+")
     io.closed_read?.should be_false
     io.closed_write?.should be_false
@@ -98,12 +98,12 @@ describe "StringIO.open when passed [Object, mode]" do
     io = StringIO.open("example", "a+")
     io.closed_read?.should be_false
     io.closed_write?.should be_false
-    
+
     io = StringIO.open("example", "ab+")
     io.closed_read?.should be_false
     io.closed_write?.should be_false
   end
-  
+
   it "allows passing the mode as an Integer" do
     io = StringIO.open("example", IO::RDONLY)
     io.closed_read?.should be_false
@@ -134,35 +134,24 @@ describe "StringIO.open when passed [Object, mode]" do
     io.closed_write?.should be_false
   end
 
-  not_compliant_on :rubinius do
-    it "raises a TypeError when passed a frozen String in truncate mode as StringIO backend" do
-      lambda { StringIO.open("example".freeze, IO::TRUNC) }.should raise_error(TypeError)
-    end
+  it "raises a TypeError when passed a frozen String in truncate mode as StringIO backend" do
+    lambda { StringIO.open("example".freeze, IO::TRUNC) }.should raise_error(TypeError)
   end
-  
+
   it "tries to convert the passed mode to a String using #to_str" do
     obj = mock('to_str')
     obj.should_receive(:to_str).and_return("r")
     io = StringIO.open("example", obj)
-    
+
     io.closed_read?.should be_false
     io.closed_write?.should be_true
   end
 
-  it "checks whether the passed mode responds to #to_str" do
-    obj = mock('method_missing to_str')
-    obj.should_receive(:respond_to?).with(:to_str).any_number_of_times.and_return(true)
-    obj.should_receive(:method_missing).with(:to_str).and_return("r")
-    io = StringIO.open("example", obj)
-  end
-  
-  not_compliant_on :rubinius do
-    it "raises an Errno::EACCES error when passed a frozen string with a write-mode" do
-      (str = "example").freeze
-      lambda { io = StringIO.open(str, "r+") }.should raise_error(Errno::EACCES)
-      lambda { io = StringIO.open(str, "w") }.should raise_error(Errno::EACCES)
-      lambda { io = StringIO.open(str, "a") }.should raise_error(Errno::EACCES)
-    end
+  it "raises an Errno::EACCES error when passed a frozen string with a write-mode" do
+    (str = "example").freeze
+    lambda { io = StringIO.open(str, "r+") }.should raise_error(Errno::EACCES)
+    lambda { io = StringIO.open(str, "w") }.should raise_error(Errno::EACCES)
+    lambda { io = StringIO.open(str, "a") }.should raise_error(Errno::EACCES)
   end
 end
 
@@ -171,19 +160,19 @@ describe "StringIO.open when passed [Object]" do
     io = StringIO.open(str = "example")
     io.string.should equal(str)
   end
-  
+
   it "yields self to the passed block" do
     io = nil
     ret = StringIO.open("example") { |strio| io = strio }
     io.should equal(ret)
   end
-  
+
   it "sets the mode to read-write" do
     io = StringIO.open("example")
     io.closed_read?.should be_false
     io.closed_write?.should be_false
   end
-  
+
   it "tries to convert the passed Object to a String using #to_str" do
     obj = mock('to_str')
     obj.should_receive(:to_str).and_return("example")
@@ -191,21 +180,11 @@ describe "StringIO.open when passed [Object]" do
     io.string.should == "example"
   end
 
-  it "checks whether the passed argument responds to #to_str" do
-    obj = mock('method_missing to_str')
-    obj.should_receive(:respond_to?).with(:to_str).any_number_of_times.and_return(true)
-    obj.should_receive(:method_missing).with(:to_str).and_return("example")
-    io = StringIO.open(obj)
-    io.string.should == "example"
-  end
-  
-  not_compliant_on :rubinius do
-    it "automatically sets the mode to read-only when passed a frozen string" do
-      (str = "example").freeze
-      io = StringIO.open(str)
-      io.closed_read?.should be_false
-      io.closed_write?.should be_true
-    end
+  it "automatically sets the mode to read-only when passed a frozen string" do
+    (str = "example").freeze
+    io = StringIO.open(str)
+    io.closed_read?.should be_false
+    io.closed_write?.should be_true
   end
 end
 
@@ -215,7 +194,7 @@ describe "StringIO.open when passed no arguments" do
     ret = StringIO.open { |strio| io = strio }
     io.should equal(ret)
   end
-  
+
   it "sets the mode to read-write" do
     io = StringIO.open
     io.closed_read?.should be_false

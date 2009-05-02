@@ -36,6 +36,7 @@ using Microsoft.Scripting.Utils;
 using System.IO;
 using System.Runtime.InteropServices;
 using Microsoft.Scripting.Generation;
+using Microsoft.Scripting.Interpreter;
 
 namespace IronRuby.Runtime {
     public static partial class RubyOps {
@@ -49,11 +50,16 @@ namespace IronRuby.Runtime {
         #region Scopes
 
         [Emitted]
-        public static RubyScope/*!*/ InitializeScope(RubyScope/*!*/ scope, LocalsDictionary/*!*/ locals) {
+        public static void InitializeScope(RubyScope/*!*/ scope, LocalsDictionary/*!*/ locals, InterpretedFrame interpretedFrame) {
             if (scope.Frame == null) {
                 scope.Frame = locals;
             }
-            return scope;
+            scope.InterpretedFrame = interpretedFrame;
+        }
+
+        [Emitted]
+        public static void InitializeScopeNoLocals(RubyScope/*!*/ scope, InterpretedFrame interpretedFrame) {
+            scope.InterpretedFrame = interpretedFrame;
         }
 
         [Emitted]
@@ -86,25 +92,26 @@ namespace IronRuby.Runtime {
 
         [Emitted]
         public static RubyMethodScope/*!*/ CreateMethodScope(LocalsDictionary/*!*/ locals, RubyScope/*!*/ parent,
-            RubyMethodInfo/*!*/ methodDefinition, RuntimeFlowControl/*!*/ rfc, object selfObject, Proc blockParameter) {
+            RubyMethodInfo/*!*/ methodDefinition, RuntimeFlowControl/*!*/ rfc, object selfObject, Proc blockParameter,
+            InterpretedFrame interpretedFrame) {
 
             RubyMethodScope scope = new RubyMethodScope(parent, methodDefinition, blockParameter, rfc, selfObject);
             scope.SetDebugName("method " + methodDefinition.DefinitionName + ((blockParameter != null) ? "&" : null));
 
             scope.Frame = locals;
+            scope.InterpretedFrame = interpretedFrame;
             return scope;
         }
 
         [Emitted]
         public static RubyBlockScope/*!*/ CreateBlockScope(LocalsDictionary/*!*/ locals, RubyScope/*!*/ parent,
-            BlockParam/*!*/ blockParam, object selfObject) {
+            BlockParam/*!*/ blockParam, object selfObject, InterpretedFrame interpretedFrame) {
             Assert.NotNull(locals, parent, blockParam);
 
-            RubyBlockScope scope = new RubyBlockScope(parent, parent.RuntimeFlowControl, selfObject);
+            RubyBlockScope scope = new RubyBlockScope(parent, parent.RuntimeFlowControl, blockParam, selfObject);
             scope.MethodAttributes = RubyMethodAttributes.PublicInstance;
-            scope.BlockParameter = blockParam;
-
             scope.Frame = locals;
+            scope.InterpretedFrame = interpretedFrame;
             return scope;
         }
 
@@ -125,15 +132,15 @@ namespace IronRuby.Runtime {
 
         [Emitted]
         public static void TraceBlockCall(RubyBlockScope/*!*/ scope, BlockParam/*!*/ block, string fileName, int lineNumber) {
-            if (block.ModuleDeclaration != null && block.SuperMethodName != null) {
-                scope.RubyContext.ReportTraceEvent("call", scope, block.ModuleDeclaration, block.SuperMethodName, fileName, lineNumber);
+            if (block.IsMethod) {
+                scope.RubyContext.ReportTraceEvent("call", scope, block.MethodLookupModule, block.MethodName, fileName, lineNumber);
             }
         }
 
         [Emitted]
         public static void TraceBlockReturn(RubyBlockScope/*!*/ scope, BlockParam/*!*/ block, string fileName, int lineNumber) {
-            if (block.ModuleDeclaration != null && block.SuperMethodName != null) {
-                scope.RubyContext.ReportTraceEvent("return", scope, block.ModuleDeclaration, block.SuperMethodName, fileName, lineNumber);
+            if (block.IsMethod) {
+                scope.RubyContext.ReportTraceEvent("return", scope, block.MethodLookupModule, block.MethodName, fileName, lineNumber);
             }
         }
 
@@ -221,10 +228,10 @@ namespace IronRuby.Runtime {
             return result;
         }
 
-        [Emitted] 
         /// <summary>
         /// Used in a method call with a block to reset proc-kind when the call is retried
         /// </summary>
+        [Emitted]
         public static void InitializeBlock(Proc/*!*/ proc) {
             Assert.NotNull(proc);
             proc.Kind = ProcKind.Block;
@@ -525,7 +532,7 @@ namespace IronRuby.Runtime {
 
         [Emitted] // UndefineMethod:
         public static void UndefineMethod(RubyScope/*!*/ scope, string/*!*/ name) {
-            RubyModule owner = scope.GetInnerMostModule();
+            RubyModule owner = scope.GetInnerMostModuleForMethodLookup();
 
             if (!owner.ResolveMethod(name, RubyClass.IgnoreVisibility).Found) {
                 throw RubyExceptions.CreateUndefinedMethodError(owner, name);
@@ -551,7 +558,7 @@ namespace IronRuby.Runtime {
 
         [Emitted]
         public static RubyModule/*!*/ DefineNestedModule(RubyScope/*!*/ scope, string/*!*/ name) {
-            return RubyUtils.DefineModule(scope.GlobalScope, scope.GetInnerMostModule(), name);
+            return RubyUtils.DefineModule(scope.GlobalScope, scope.GetInnerMostModuleForConstantLookup(), name);
         }
 
         [Emitted]
@@ -579,7 +586,7 @@ namespace IronRuby.Runtime {
 
         [Emitted]
         public static RubyModule/*!*/ DefineNestedClass(RubyScope/*!*/ scope, string/*!*/ name, object superClassObject) {
-            return RubyUtils.DefineClass(scope.GlobalScope, scope.GetInnerMostModule(), name, superClassObject);
+            return RubyUtils.DefineClass(scope.GlobalScope, scope.GetInnerMostModuleForConstantLookup(), name, superClassObject);
         }
 
         [Emitted]
@@ -638,7 +645,7 @@ namespace IronRuby.Runtime {
 
         [Emitted] // ConstantVariable:
         public static object SetUnqualifiedConstant(object value, RubyScope/*!*/ scope, string/*!*/ name) {
-            RubyUtils.SetConstant(scope.GetInnerMostModule(), name, value);
+            RubyUtils.SetConstant(scope.GetInnerMostModuleForConstantLookup(), name, value);
             return value;
         }
 
@@ -1162,37 +1169,42 @@ namespace IronRuby.Runtime {
 
         #region Exceptions
 
-        [Emitted]
-        public static void CheckForAsyncRaiseViaThreadAbort(RubyScope scope, System.Threading.ThreadAbortException exception) {
-            Exception visibleException = RubyUtils.GetVisibleException(exception);
-            if (exception == visibleException || visibleException == null) {
-                return;
-            } else {
-                RubyOps.SetCurrentExceptionAndStackTrace(scope, exception);
-                // We are starting a new exception throw here (with the downside that we will lose the full stack trace)
-                RubyExceptionData.ActiveExceptionHandled(visibleException);
-
-                throw visibleException;
-            }
-        }
         //
         // NOTE:
         // Exception Ops go directly to the current exception object. MRI ignores potential aliases.
         //
-        
+
+        [Emitted]
+        public static bool FilterBlockException(RubyScope/*!*/ scope, Exception/*!*/ exception) {
+            RubyExceptionData.GetInstance(exception).CaptureExceptionTrace(scope);
+            return false;
+        }
+
+        [Emitted]
+        public static bool CanRescue(RubyScope/*!*/ scope, Exception/*!*/ exception) {
+            if (exception is StackUnwinder) {
+                return false;
+            }
+
+            LocalJumpError lje = exception as LocalJumpError;
+            if (lje != null && lje.SkipFrame == scope.RuntimeFlowControl) {
+                return false;
+            }
+
+            RubyExceptionData.GetInstance(exception).CaptureExceptionTrace(scope);
+            scope.RubyContext.CurrentException = exception;
+            return true;
+        }
+
+        [Emitted]
+        public static bool TraceTopLevelCodeFrame(RubyScope/*!*/ scope, Exception/*!*/ exception) {
+            RubyExceptionData.GetInstance(exception).CaptureExceptionTrace(scope);
+            return false;
+        }
+
         [Emitted] //Body, RescueClause:
         public static Exception GetCurrentException(RubyScope/*!*/ scope) {
             return scope.RubyContext.CurrentException;
-        }
-
-        internal static void SetCurrentExceptionAndStackTrace(RubyContext/*!*/ context, Exception/*!*/ exception) {
-            RubyExceptionData.GetInstance(exception).SetCompiledTrace(context);
-            context.CurrentException = exception;
-        }
-
-        [Emitted] //Body:
-        public static void SetCurrentExceptionAndStackTrace(RubyScope/*!*/ scope, Exception/*!*/ exception) {
-            SetCurrentExceptionAndStackTrace(scope.RubyContext, exception);
         }
 
         [Emitted] //Body:
@@ -1583,7 +1595,7 @@ namespace IronRuby.Runtime {
         [Emitted]
         public static object GetClassVariable(RubyScope/*!*/ scope, string/*!*/ name) {
             // owner is the first module in scope:
-            RubyModule owner = scope.GetInnerMostModule(true);
+            RubyModule owner = scope.GetInnerMostModuleForClassVariableLookup();
             return GetClassVariableInternal(owner, name);
         }
 
@@ -1606,7 +1618,7 @@ namespace IronRuby.Runtime {
         public static object TryGetClassVariable(RubyScope/*!*/ scope, string/*!*/ name) {
             object value;
             // owner is the first module in scope:
-            scope.GetInnerMostModule(true).TryResolveClassVariable(name, out value);
+            scope.GetInnerMostModuleForClassVariableLookup().TryResolveClassVariable(name, out value);
             return value;
         }
 
@@ -1619,7 +1631,7 @@ namespace IronRuby.Runtime {
         [Emitted]
         public static bool IsDefinedClassVariable(RubyScope/*!*/ scope, string/*!*/ name) {
             // owner is the first module in scope:
-            RubyModule owner = scope.GetInnerMostModule(true);
+            RubyModule owner = scope.GetInnerMostModuleForClassVariableLookup();
             object value;
             return owner.TryResolveClassVariable(name, out value) != null;
         }
@@ -1631,7 +1643,7 @@ namespace IronRuby.Runtime {
 
         [Emitted]
         public static object SetClassVariable(object value, RubyScope/*!*/ scope, string/*!*/ name) {
-            return SetClassVariableInternal(scope.GetInnerMostModule(true), name, value);
+            return SetClassVariableInternal(scope.GetInnerMostModuleForClassVariableLookup(), name, value);
         }
 
         private static object SetClassVariableInternal(RubyModule/*!*/ lexicalOwner, string/*!*/ name, object value) {

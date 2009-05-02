@@ -62,6 +62,8 @@ namespace IronPython.Runtime {
             }
         }
 
+        public const int dllhandle = 0;
+
         public static void excepthook(CodeContext/*!*/ context, object exctype, object value, object traceback) {
             PythonContext pc = PythonContext.GetContext(context);
 

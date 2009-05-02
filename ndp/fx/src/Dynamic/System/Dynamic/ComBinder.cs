@@ -65,6 +65,12 @@ namespace System.Dynamic {
 
                 var comGetMember = new ComGetMemberBinder(binder, delayInvocation);
                 result = instance.BindGetMember(comGetMember);
+                if (result.Expression.Type.IsValueType) {
+                    result = new DynamicMetaObject(
+                        Expression.Convert(result.Expression, typeof(object)),
+                        result.Restrictions
+                    );
+                }
                 return true;
             } else {
                 result = null;

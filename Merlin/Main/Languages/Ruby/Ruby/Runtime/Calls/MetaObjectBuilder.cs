@@ -89,7 +89,7 @@ namespace IronRuby.Runtime.Calls {
 #endif
 
         internal DynamicMetaObject/*!*/ CreateMetaObject(RubyMetaBinder/*!*/ action) {
-            return CreateMetaObject(action, action.ResultType);
+            return CreateMetaObject(action, action.ReturnType);
         }
 
         internal DynamicMetaObject/*!*/ CreateMetaObject(ConvertBinder/*!*/ action) {
@@ -122,7 +122,7 @@ namespace IronRuby.Runtime.Calls {
                     Console.WriteLine("Rule #{0}: {1}", Interlocked.Increment(ref _ruleCounter), action);
                     Console.ForegroundColor = ConsoleColor.DarkGray;
                     var d = (_restrictions != BindingRestrictions.Empty) ? Ast.IfThen(_restrictions.ToExpression(), expr) : expr;
-                    d.DumpExpression(null, Console.Out);
+                    d.DumpExpression(Console.Out);
                 } finally {
                     Console.ForegroundColor = oldColor;
                 }

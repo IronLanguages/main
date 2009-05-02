@@ -117,6 +117,12 @@ namespace IronPython.Runtime.Types {
 
         #region Public Python APIs
 
+        public string __doc__ {
+            get {
+                return DocBuilder.CreateAutoDoc(_tracker.Event);
+            }
+        }
+
         public EventInfo/*!*/ Info {
             [PythonHidden]
             get {

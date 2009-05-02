@@ -91,10 +91,6 @@ namespace IronPython.Runtime.Types {
             return new OldClass(name, bases, dict, String.Empty);
         }
 
-        internal OldClass(string name, PythonTuple bases, IAttributesCollection dict)
-            : this(name, bases, dict, "") {
-        }
-
         internal OldClass(string name, PythonTuple bases, IAttributesCollection dict, string instanceNames) {
             _bases = ValidateBases(bases);
 

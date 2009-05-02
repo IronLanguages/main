@@ -16,12 +16,13 @@
 using System;
 using System.Dynamic;
 using System.Linq.Expressions;
+using System.Runtime.CompilerServices;
 
 using Microsoft.Scripting.Runtime;
-using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 using IronPython.Runtime.Operations;
 
+using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace IronPython.Runtime.Binding {
     using Ast = System.Linq.Expressions.Expression;
@@ -50,6 +51,25 @@ namespace IronPython.Runtime.Binding {
             finalArgs[finalArgs.Length - 1] = value;
 
             return PythonProtocol.Index(this, PythonIndexType.SetItem, finalArgs);
+        }
+
+        public override T BindDelegate<T>(CallSite<T> site, object[] args) {
+            if (args[0] != null && args[0].GetType() == typeof(PythonDictionary)) {
+                if (typeof(T) == typeof(Func<CallSite, object, object, object, object>)) {
+                    return (T)(object)new Func<CallSite, object, object, object, object>(DictAssign);
+                }
+            }
+
+            return base.BindDelegate(site, args);
+        }
+        
+        private object DictAssign(CallSite site, object dict, object key, object value) {
+            if (dict != null && dict.GetType() == typeof(PythonDictionary)) {
+                ((PythonDictionary)dict)[key] = value;
+                return value;
+            }
+
+            return ((CallSite<Func<CallSite, object, object, object, object>>)site).Update(site, dict, key, value);
         }
 
         public override int GetHashCode() {

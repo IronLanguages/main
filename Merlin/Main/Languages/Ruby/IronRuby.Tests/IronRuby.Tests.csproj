@@ -66,6 +66,7 @@
     <Compile Include="Runtime\ConstantTests.cs" />
     <Compile Include="Runtime\DeclarationTests.cs" />
     <Compile Include="Runtime\DlrInteropTests.cs" />
+    <Compile Include="Runtime\InterpreterTests.cs" />
     <Compile Include="Runtime\MethodTests.cs" />
     <Compile Include="Runtime\MiscTests.cs" />
     <Compile Include="Runtime\ModuleTests.cs" />

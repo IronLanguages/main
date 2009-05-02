@@ -1,0 +1,16 @@
+--- !ruby/object:RI::MethodDescription 
+aliases: []
+
+block_params: 
+comment: 
+- !ruby/struct:SM::Flow::P 
+  body: Returns dispatch ID.
+- !ruby/struct:SM::Flow::VERB 
+  body: "   tobj = WIN32OLE_TYPE.new('Microsoft Excel 9.0 Object Library', 'Workbooks')\n   method = WIN32OLE_METHOD.new(tobj, 'Add')\n   puts method.dispid # =&gt; 181\n"
+full_name: WIN32OLE_METHOD#dispid
+is_singleton: false
+name: dispid
+params: |
+  WIN32OLE_METHOD#dispid
+
+visibility: public

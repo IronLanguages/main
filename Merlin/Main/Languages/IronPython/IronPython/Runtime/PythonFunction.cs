@@ -33,8 +33,6 @@ using IronPython.Runtime.Types;
 using SpecialNameAttribute = System.Runtime.CompilerServices.SpecialNameAttribute;
 using Ast = System.Linq.Expressions.Expression;
 
-using Tuple = Microsoft.Scripting.Tuple;
-
 namespace IronPython.Runtime {
 
     /// <summary>
@@ -46,7 +44,7 @@ namespace IronPython.Runtime {
         [PythonHidden]
         public Delegate Target;                // the target delegate to be invoked when called (should come from function code)
         [PythonHidden]
-        public readonly Tuple Closure;
+        public readonly MutableTuple Closure;
 
         private FunctionInfo _funcInfo;                 // function info - name, etc...
         private object[]/*!*/ _defaults;                // the default parameters of the method
@@ -72,7 +70,7 @@ namespace IronPython.Runtime {
             throw new NotImplementedException();
         }
 
-        internal PythonFunction(CodeContext/*!*/ context, Delegate target, FunctionInfo funcInfo, object modName, object[] defaults, Tuple closure) {
+        internal PythonFunction(CodeContext/*!*/ context, Delegate target, FunctionInfo funcInfo, object modName, object[] defaults, MutableTuple closure) {
             Assert.NotNull(context, funcInfo);
             Assert.NotNull(context.Scope);
 

@@ -233,7 +233,7 @@ namespace IronPython.Compiler.Ast {
         }
 
         private BitArray PeekLoop() {
-            return _loops != null ? _loops.Peek() : null;
+            return _loops != null && _loops.Count > 0 ? _loops.Peek() : null;
         }
 
         private void PopLoop() {

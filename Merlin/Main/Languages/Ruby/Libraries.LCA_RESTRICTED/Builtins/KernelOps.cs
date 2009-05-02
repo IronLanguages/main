@@ -165,7 +165,7 @@ namespace IronRuby.Builtins {
                 p.WaitForExit();
                 return p;
             } catch (Exception e) {
-                throw Errno.CreateENOENT(psi.FileName, e);
+                throw RubyErrno.CreateENOENT(psi.FileName, e);
             }
         }
 
@@ -177,7 +177,7 @@ namespace IronRuby.Builtins {
             try {
                 return Process.Start(psi);
             } catch (Exception e) {
-                throw Errno.CreateENOENT(psi.FileName, e);
+                throw RubyErrno.CreateENOENT(psi.FileName, e);
             }
         }
 
@@ -271,13 +271,13 @@ namespace IronRuby.Builtins {
         [RubyMethod("autoload", RubyMethodAttributes.PublicSingleton)]
         public static void SetAutoloadedConstant(RubyScope/*!*/ scope, object self,
             [DefaultProtocol, NotNull]string/*!*/ constantName, [DefaultProtocol, NotNull]MutableString/*!*/ path) {
-            ModuleOps.SetAutoloadedConstant(scope.GetInnerMostModule(), constantName, path);
+            ModuleOps.SetAutoloadedConstant(scope.GetInnerMostModuleForConstantLookup(), constantName, path);
         }
 
         [RubyMethod("autoload?", RubyMethodAttributes.PrivateInstance)]
         [RubyMethod("autoload?", RubyMethodAttributes.PublicSingleton)]
         public static MutableString GetAutoloadedConstantPath(RubyScope/*!*/ scope, object self, [DefaultProtocol, NotNull]string/*!*/ constantName) {
-            return ModuleOps.GetAutoloadedConstantPath(scope.GetInnerMostModule(), constantName);
+            return ModuleOps.GetAutoloadedConstantPath(scope.GetInnerMostModuleForConstantLookup(), constantName);
         }
 
         [RubyMethod("binding", RubyMethodAttributes.PrivateInstance)]
@@ -474,6 +474,14 @@ namespace IronRuby.Builtins {
             }
         }
 
+        private static void SetPermission(RubyContext/*!*/ context, string/*!*/ fileName, int/*!*/ permission) {
+            bool existingFile = context.DomainManager.Platform.FileExists(fileName);
+
+            if (!existingFile) {
+                RubyFileOps.Chmod(fileName, permission);
+            }
+        }
+
         [RubyMethod("open", RubyMethodAttributes.PrivateInstance)]
         [RubyMethod("open", RubyMethodAttributes.PublicSingleton)]
         public static RubyIO/*!*/ Open(
@@ -483,22 +491,14 @@ namespace IronRuby.Builtins {
             [DefaultProtocol, Optional]MutableString mode, 
             [DefaultProtocol, DefaultParameterValue(RubyFileOps.ReadWriteMode)]int permission) {
 
-            if (path.IsEmpty) {
-                throw new Errno.InvalidError();
-            }
-
             string fileName = path.ConvertToString();
             if (fileName.Length > 0 && fileName[0] == '|') {
                 throw new NotImplementedError();
             }
 
-            bool existingFile = RubyFileOps.FileExists(context, path.ConvertToString());
-
             RubyIO file = new RubyFile(context, fileName, (mode != null) ? mode.ToString() : "r");
 
-            if (!existingFile) {
-                RubyFileOps.Chmod(fileName, permission);
-            }
+            SetPermission(context, fileName, permission);
 
             return file;
         }
@@ -526,22 +526,15 @@ namespace IronRuby.Builtins {
             int mode,
             [DefaultProtocol, DefaultParameterValue(RubyFileOps.ReadWriteMode)]int permission) {
 
-            if (path.IsEmpty) {
-                throw new Errno.InvalidError();
-            }
-
             string fileName = path.ConvertToString();
             if (fileName.Length > 0 && fileName[0] == '|') {
                 throw new NotImplementedError();
             }
 
-            bool existingFile = RubyFileOps.FileExists(context, path.ConvertToString());
-
             RubyIO file = new RubyFile(context, fileName, (RubyFileMode)mode);
 
-            if (!existingFile) {
-                RubyFileOps.Chmod(fileName, permission);
-            }
+            SetPermission(context, fileName, permission);
+
             return file;
         }
 
