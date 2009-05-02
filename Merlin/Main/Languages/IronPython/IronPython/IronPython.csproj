@@ -365,7 +365,6 @@
     <Compile Include="Runtime\Interfaces.cs" />
     <Compile Include="Runtime\List.cs" />
     <Compile Include="Runtime\LiteralParser.cs" />
-    <Compile Include="Runtime\LocalScopeDictionaryStorage.cs" />
     <Compile Include="Runtime\ObjectAttributesAdapter.cs" />
     <Compile Include="Runtime\Operations\ArrayOps.cs" />
     <Compile Include="Runtime\Operations\BoolOps.cs" />

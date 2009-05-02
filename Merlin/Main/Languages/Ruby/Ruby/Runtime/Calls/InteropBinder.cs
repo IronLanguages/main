@@ -503,7 +503,7 @@ namespace IronRuby.Runtime.Calls {
                     return result;
                 }
 #endif
-                return CreateErrorMetaObject(target, DynamicMetaObject.EmptyMetaObjects, errorSuggestion);
+                return this.CreateErrorMetaObject(target, DynamicMetaObject.EmptyMetaObjects, errorSuggestion);
             }
 
             public override string/*!*/ ToString() {
@@ -517,9 +517,12 @@ namespace IronRuby.Runtime.Calls {
 
 
         // TODO: remove
-        internal static DynamicMetaObject/*!*/ CreateErrorMetaObject(DynamicMetaObject/*!*/ target, DynamicMetaObject/*!*/[]/*!*/ args, 
+        internal static DynamicMetaObject/*!*/ CreateErrorMetaObject(this DynamicMetaObjectBinder binder, DynamicMetaObject/*!*/ target, DynamicMetaObject/*!*/[]/*!*/ args, 
             DynamicMetaObject errorSuggestion) {
-            return errorSuggestion ?? DynamicMetaObject.CreateThrow(target, args, typeof(NotImplementedException), ArrayUtils.EmptyObjects);
+            return errorSuggestion ?? new DynamicMetaObject(
+                Expression.Throw(Expression.New(typeof(NotImplementedException)), binder.ReturnType),
+                target.Restrictions.Merge(BindingRestrictions.Combine(args))
+            );
         }
 
         // TODO: convert binder

@@ -22,10 +22,10 @@ using IronRuby.Runtime;
 namespace IronRuby.Compiler {
     internal enum TopScopeFactoryKind {
         /// <summary>
-        /// Simple scope without DLR Scope binding.
-        /// Used by Execute("code") w/o scope.
+        /// Simple scope with or without DLR Scope binding.
+        /// Used by Execute("code") and Execute("code", scope).
         /// </summary>
-        Default,
+        Hosted,
 
         /// <summary>
         /// Main script scope w/o DLR Scope binding.
@@ -33,12 +33,6 @@ namespace IronRuby.Compiler {
         /// Used by ExecuteProgram. 
         /// </summary>
         Main,
-
-        /// <summary>
-        /// Hosted scope, i.e. scope with DLR Scope binding.
-        /// Used by Execute("code", scope).
-        /// </summary>
-        GlobalScopeBound,
 
         /// <summary>
         /// Top scope is passed by parameter to the top-level lambda, it is not scope is created.
@@ -51,6 +45,11 @@ namespace IronRuby.Compiler {
         /// Used by module_eval("code")/instance_eval("code").
         /// </summary>
         Module,
+
+        /// <summary>
+        /// File executed via load(false) or require.
+        /// </summary>
+        File,
 
         /// <summary>
         /// File executed via load(true).

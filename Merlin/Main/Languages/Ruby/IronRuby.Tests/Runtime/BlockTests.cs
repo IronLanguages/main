@@ -140,12 +140,11 @@ false
         /// Return, yield and retry in a method.
         /// </summary>
         public void Scenario_RubyBlocks6() {
-            AssertOutput(delegate() {
-                CompilerTest(@"
+            TestOutputWithEval(@"
 def do_until(cond)
-  if cond then return end
-  yield
-  retry
+  if cond then #<return#> end
+  #<yield#>
+  #<retry#>
 end
 
 i = 0
@@ -153,14 +152,14 @@ do_until(i > 4) do
   puts i
   i = i + 1
 end
-");
-            }, @"
+", @"
 0
 1
 2
 3
 4
-");
+"
+            );
         }
 
         /// <summary>
@@ -256,14 +255,13 @@ i = 0
         /// Return with stack unwinding.
         /// </summary>
         public void Scenario_RubyBlocks11() {
-            AssertOutput(delegate() {
-                CompilerTest(@"
+            TestOutputWithEval(@"
 def foo
     puts 'begin'
     1.times {
         1.times {
             puts 'block'
-            return 'result'
+            #<return 'result'#>
         }
     }
     puts 'end'
@@ -272,8 +270,7 @@ ensure
 end
 
 puts foo
-");
-            }, @"
+",@"
 begin
 block
 ensure
@@ -340,8 +337,7 @@ foo {
         /// Retry for-loop: for-loop should behave like x.each { } method call with a block, that is x is reevaluted on retry.
         /// </summary>
         public void Scenario_RubyBlocks15() {
-            AssertOutput(delegate() {
-                CompilerTest(@"
+            TestOutput(@"
 def foo x
   puts ""foo(#{x})""
   x * ($i + 1)
@@ -357,8 +353,7 @@ for i in [foo(1), foo(2), foo(3)] do
     retry
   end  
 end
-");
-            }, @"
+", @"
 foo(1)
 foo(2)
 foo(3)
@@ -1242,5 +1237,354 @@ false
 false
 ");
         }
+
+        public void EvalBreak1() {
+            AssertOutput(() => CompilerTest(@"
+x = 10.times do
+  puts 'in 1st loop'
+  eval('break 1') 
+end
+p x 
+
+x = while true
+  puts 'in 2nd loop'   
+  eval('break 2')
+end
+p x
+
+x = Array.new(10) do
+  eval('break 3')
+end
+p x
+
+class C
+  define_method(:foo) do
+    eval('break 4')
+  end
+end
+p C.new.foo
+
+x = Kernel.module_eval do
+  eval('break 5')
+end
+p x
+
+p 10.times { break eval('while true do eval(""break 6""); end') }
+"), @"
+in 1st loop
+1
+in 2nd loop
+2
+3
+4
+5
+6
+");
+        }
+
+        public void EvalBreak2() {
+            AssertOutput(() => CompilerTest(@"
+def foo
+  eval('break')
+rescue 
+  p $!.class
+end
+
+foo
+
+class C
+  eval('break')
+rescue 
+  p $!.class
+end
+
+begin
+  eval('break')
+rescue 
+  p $!.class
+end
+"), @"
+LocalJumpError
+LocalJumpError
+LocalJumpError
+");
+        }
+
+        /// <summary>
+        /// Block needs to set InLoop and InRescue flags on RFC to "false".
+        /// </summary>
+        public void EvalRetry1() {
+            AssertOutput(() => CompilerTest(@"
+def foo &p
+  p[]
+end
+
+$x = 0
+
+begin
+  begin
+    puts 'in body'
+    raise
+  rescue
+    foo do
+      puts 'in block'
+      eval('retry') if ($x += 1) < 3    
+    end
+  end
+rescue 
+  p $!
+end
+"), @"
+in body
+in block
+#<LocalJumpError: retry from proc-closure>
+");
+        }
+
+        public void EvalRetry2() {
+            // retry in block:
+            AssertOutput(() => CompilerTest(@"
+$x = 0
+1.times do |i|
+  puts 'in block'
+  module M
+    eval('retry') if ($x += 1) < 2  
+  end  
+end
+"), @"
+in block
+in block
+");
+
+            // retry in rescue:
+            AssertOutput(() => CompilerTest(@"
+$x = 0
+1.times do
+  begin
+    raise
+  rescue 
+    puts 'in rescue'
+    module M
+      eval('retry') if ($x += 1) < 2
+    end
+  end
+end
+"), @"
+in rescue
+in rescue
+");
+            // TODO:
+            // retry in a define_method block:
+            AssertOutput(() => CompilerTest(@"
+$x = 0
+class C
+  define_method :foo do
+    puts 'define_method'
+    begin
+      eval('module M; retry; end') if ($x += 1) < 3 
+
+# TODO: should not catch here
+#   rescue
+#     p 'unreachable'
+    end
+  end
+end
+
+begin
+  C.new.foo
+rescue
+  p $!
+end"), @"
+define_method
+#<LocalJumpError: retry from proc-closure>
+");
+
+            // retry in a method taking a block:
+            AssertOutput(() => CompilerTest(@"
+$x = 0
+def foo *a
+  yield
+  eval('module M; retry; end') if ($x += 1) < 2 
+end
+
+foo(puts('in arg')) { puts 'in block' }
+"), @"
+in arg
+in block
+in arg
+in block
+");
+        }
+
+        public void EvalRedo1() {
+            // redo in loop:
+            AssertOutput(() => CompilerTest(@"
+$x = 0
+while (puts('in condition'); true)
+  puts 'in loop'
+  eval('module M; redo; end') if ($x += 1) < 2
+  break
+end
+"), @"
+in condition
+in loop
+in loop
+");
+
+            // redo in block:
+            AssertOutput(() => CompilerTest(@"
+$x = 0
+2.times do |i|
+  puts 'in block ' + i.to_s
+  eval('module M; redo; end') if ($x += 1) < 2
+end
+"), @"
+in block 0
+in block 0
+in block 1
+");
+
+            // redo in define_method block:
+            AssertOutput(() => CompilerTest(@"
+$x = 0
+class C
+  define_method :foo do
+    puts 'in block'
+    eval('module M; redo; end') if ($x += 1) < 2
+  end
+end
+C.new.foo
+"), @"
+in block
+in block
+");
+        }
+
+        public void EvalNext1() {
+            // next in loop:
+            AssertOutput(() => CompilerTest(@"
+$x = 0
+while (puts('in condition'); true)
+  puts 'in loop'
+  eval('module M; next; end') if ($x += 1) < 2
+  break
+end
+"), @"
+in condition
+in loop
+in condition
+in loop
+");
+
+            // next in block:
+            AssertOutput(() => CompilerTest(@"
+$x = 0
+2.times do |i|
+  puts 'in block ' + i.to_s
+  eval('module M; next; end') if ($x += 1) < 2
+end
+"), @"
+in block 0
+in block 1
+");
+
+            // next in define_method block:
+            AssertOutput(() => CompilerTest(@"
+$x = 0
+class C
+  define_method :foo do
+    puts 'in block'
+    eval('module M; next; end') if ($x += 1) < 2
+    puts 'unreachable'
+  end
+end
+C.new.foo
+"), @"
+in block
+");
+            // next returning a value:
+            AssertOutput(() => CompilerTest(@"
+class C
+  define_method :foo do
+    eval('next 123')
+  end
+end
+
+p C.new.foo
+"), @"
+123
+");
+        }
+
+        public void EvalReturn1() {
+            TestOutputWithEval(@"
+def y
+  yield
+end
+
+def foo
+  $b = Proc.new {  
+    eval('return 123')
+  }
+  goo
+end
+
+def goo
+  y(&$b)
+end
+
+p foo
+", @"
+123
+"
+            );
+        }
+
+        public void EvalReturn2() {
+            TestOutputWithEval(@"
+def foo
+  $p.call
+end
+
+def owner
+  $p = lambda do
+    #<return 123#>
+  end
+
+  p foo
+
+  puts 'owner.end'
+end
+
+owner
+", @"
+123
+owner.end
+"
+            );
+        }
+
+        public void EvalReturn3() {
+            TestOutputWithEval(@"
+def foo
+  $p.call
+rescue 
+  p $!
+end
+
+def owner
+  $p = Proc.new do
+    #<return 123#>
+  end
+end
+
+owner
+foo
+", @"
+#<LocalJumpError: unexpected return>
+"
+            );
+        }
     }
 }
+

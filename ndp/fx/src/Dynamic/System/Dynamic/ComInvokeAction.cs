@@ -38,7 +38,15 @@ namespace System.Dynamic {
         }
 
         public override DynamicMetaObject FallbackInvoke(DynamicMetaObject target, DynamicMetaObject[] args, DynamicMetaObject errorSuggestion) {
-            return errorSuggestion ?? DynamicMetaObject.CreateThrow(target, args, typeof(NotSupportedException), Strings.CannotCall);
+            return errorSuggestion ?? new DynamicMetaObject(
+                Expression.Throw(
+                    Expression.New(
+                        typeof(NotSupportedException).GetConstructor(new[] { typeof(string) }),
+                        Expression.Constant(Strings.CannotCall)
+                    )
+                ),
+                target.Restrictions.Merge(BindingRestrictions.Combine(args))
+            );
         }
     }
 

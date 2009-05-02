@@ -485,7 +485,7 @@ namespace IronRuby.Builtins {
         // implements Class#new
         public static object CreateAnonymousClass(RubyScope/*!*/ scope, BlockParam body, RubyClass/*!*/ self, [Optional]RubyClass superClass) {
             RubyContext context = scope.RubyContext;
-            RubyModule owner = scope.GetInnerMostModule();
+            RubyModule owner = scope.GetInnerMostModuleForConstantLookup();
             
             // MRI is inconsistent here, it triggers "inherited" event after the body of the method is evaluated.
             // In all other cases the order is event first, body next.

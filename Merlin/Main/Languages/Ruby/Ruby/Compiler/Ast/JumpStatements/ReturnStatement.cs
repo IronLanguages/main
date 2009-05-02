@@ -31,7 +31,7 @@ namespace IronRuby.Compiler.Ast {
 
             // eval:
             if (gen.CompilerOptions.IsEval) {
-                return gen.Return(Methods.EvalReturn.OpCall(gen.CurrentRfcVariable, AstFactory.Box(transformedReturnValue)));
+                return gen.Return(Methods.EvalReturn.OpCall(gen.CurrentScopeVariable, AstFactory.Box(transformedReturnValue)));
             }
 
             // block:

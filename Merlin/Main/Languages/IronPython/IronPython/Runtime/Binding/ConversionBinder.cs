@@ -95,7 +95,7 @@ namespace IronPython.Runtime.Binding {
             return res;
         }
 
-        public /*override*/ Type ReturnType {
+        public override Type ReturnType {
             get {
                 if (_retObject) {
                     return typeof(object);

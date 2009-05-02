@@ -68,6 +68,16 @@ namespace Microsoft.Scripting.Utils {
             return si.Value = updater(si.Value);
         }
 
+        /// <summary>
+        /// Replaces the current value with a new one and returns the old value.
+        /// </summary>
+        public T Update(T newValue) {
+            StorageInfo si = GetStorageInfo();
+            var oldValue = si.Value;
+            si.Value = newValue;
+            return oldValue;
+        }
+
         #endregion
 
         #region Storage implementation

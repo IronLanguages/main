@@ -69,9 +69,11 @@ py_add
             scope.SetVariable("x", 1);
             scope.SetVariable("y", 2);
 
-            // reads x, y from scope via method_missing;
-            // copies z, w main-singleton methods to the scope:
-            Engine.Execute("def self.z; x + y; end", scope);
+            // Reads x, y from scope via method_missing.
+            // The code is instance-eval'd as a proc against the scope so both instance and 
+            // singleton method definitions define a singleton method on main object.
+            // Method definition on main object bound to a scope copies the method to the scope.
+            Engine.Execute("def z; x + y; end", scope);
             Engine.Execute("def self.w(a); a + 1; end", scope);
 
             int z = scope.GetVariable<Func<int>>("z")();
@@ -83,11 +85,12 @@ py_add
 
         public void RubyHosting1B() {
             ScriptScope scope = Engine.Runtime.CreateScope();
-            scope.SetVariable("x", 1);
-            scope.SetVariable("y", 2);
+            scope.SetVariable("SomeValue", 1);
+            scope.SetVariable("other_value", 2);
 
+            // Method names are unmangled for scope lookups.
             // "tmp" is defined in the top-level binding, which is associated with the scope:
-            Engine.Execute("tmp = x + y", scope);
+            Engine.Execute("tmp = some_value + other_value", scope);
             
             // "tmp" symbol is extracted from scope's top-level binding and passed to the compiler as a compiler option
             // so that the parser treats it as a local variable.
@@ -99,7 +102,10 @@ py_add
             Engine.Execute("tmp2 = 10", scope);
 
             // result= is turned into a scope variable assignment in method_missing:
-            Engine.Execute("self.result = tmp + tmp2", scope);
+            Engine.Execute("self.result = tmp", scope);
+
+            // If "scope" variable is not defined on "self" and in the DLR scope we alias it for "self":
+            Engine.Execute("scope.result += tmp2", scope);
 
             int result = scope.GetVariable<int>("result");
             Assert(result == 13);
@@ -114,6 +120,7 @@ py_add
                 () => Engine.Execute("class << self; remove_method(:method_missing); end")
             );
             
+
             // Main singleton in a scope-bound code defines method_missing:
             Engine.Execute("class << self; remove_method(:method_missing); end", Engine.CreateScope());
 
@@ -122,6 +129,31 @@ py_add
             Assert(scope.ContainsVariable("tmp"));
             
             AssertExceptionThrown<MissingMethodException>(() => Engine.Execute("self.tmp = 1"));
+
+
+            // method_missing on top-level scope is defined dynamically, not at compile time:
+            var compiled = Engine.CreateScriptSourceFromString("some_variable").Compile();
+            scope = Engine.CreateScope();
+
+            scope.SetVariable("some_variable", 123);
+            Assert(compiled.Execute<int>(scope) == 123);
+            
+            AssertExceptionThrown<MissingMethodException>(() => compiled.Execute());
+
+            scope.SetVariable("some_variable", "foo");
+            Assert(compiled.Execute<string>(scope) == "foo");
+        }
+
+        public void RubyHosting1D() {
+            // When executed without a scope top-level methods are defined on Object (as in MRI):
+            Engine.Execute("def foo; 1; end");
+            Assert(Context.ObjectClass.GetMethod("foo") != null);
+
+            // When executed against a scope top-level methods are defined on main singleton and also stored in the scope:
+            var scope = Engine.CreateScope();
+            Engine.Execute("def bar; 1; end", scope);
+            Assert(Context.ObjectClass.GetMethod("bar") == null);
+            Assert(scope.GetVariable("bar") != null);
         }
 
         public void RubyHosting2() {

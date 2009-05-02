@@ -33,7 +33,7 @@ namespace IronRuby.Runtime.Calls {
     // 2) calls to_s
     // 3) default conversion if (2) returns a non-string
     public sealed class ConvertToSAction : RubyConversionAction, IExpressionSerializable {
-        public override Type/*!*/ ResultType {
+        public override Type/*!*/ ReturnType {
             get { return typeof(MutableString); }
         }
 

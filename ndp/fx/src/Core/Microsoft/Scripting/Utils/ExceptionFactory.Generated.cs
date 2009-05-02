@@ -1,4 +1,4 @@
-﻿/* ****************************************************************************
+/* ****************************************************************************
  *
  * Copyright (c) Microsoft Corporation. 
  *
@@ -452,10 +452,17 @@ namespace System.Linq.Expressions {
         }
 
         /// <summary>
-        /// A string like  "Cannot convert the result type '{0}' of the dynamic binding to the result type '{1}' expected by the call site."
+        /// A string like  "The result type '{0}' of the dynamic binding produced by binder '{1}' is not compatible with the result type '{2}' expected by the call site."
         /// </summary>
-        internal static string CannotConvertDynamicResult(object p0, object p1) {
-            return FormatString("Cannot convert the result type '{0}' of the dynamic binding to the result type '{1}' expected by the call site.", p0, p1);
+        internal static string DynamicResultNotAssignable(object p0, object p1, object p2) {
+            return FormatString("The result type '{0}' of the dynamic binding produced by binder '{1}' is not compatible with the result type '{2}' expected by the call site.", p0, p1, p2);
+        }
+
+        /// <summary>
+        /// A string like  "The result type '{0}' of the binder '{1}' is not compatible with the result type '{2}' expected by the call site."
+        /// </summary>
+        internal static string BinderNotCompatibleWithCallSite(object p0, object p1, object p2) {
+            return FormatString("The result type '{0}' of the binder '{1}' is not compatible with the result type '{2}' expected by the call site.", p0, p1, p2);
         }
 
         /// <summary>
@@ -1544,10 +1551,17 @@ namespace System.Linq.Expressions {
         }
 
         /// <summary>
-        /// InvalidCastException with message like "Cannot convert the result type '{0}' of the dynamic binding to the result type '{1}' expected by the call site."
+        /// InvalidCastException with message like "The result type '{0}' of the dynamic binding produced by binder '{1}' is not compatible with the result type '{2}' expected by the call site."
         /// </summary>
-        internal static Exception CannotConvertDynamicResult(object p0, object p1) {
-            return new InvalidCastException(Strings.CannotConvertDynamicResult(p0, p1));
+        internal static Exception DynamicResultNotAssignable(object p0, object p1, object p2) {
+            return new InvalidCastException(Strings.DynamicResultNotAssignable(p0, p1, p2));
+        }
+
+        /// <summary>
+        /// InvalidOperationException with message like "The result type '{0}' of the binder '{1}' is not compatible with the result type '{2}' expected by the call site."
+        /// </summary>
+        internal static Exception BinderNotCompatibleWithCallSite(object p0, object p1, object p2) {
+            return new InvalidOperationException(Strings.BinderNotCompatibleWithCallSite(p0, p1, p2));
         }
 
         /// <summary>

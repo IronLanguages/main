@@ -70,7 +70,7 @@ describe "Thread#raise on a running thread" do
   before :each do
     ScratchPad.clear
     @thr = ThreadSpecs.running_thread
-    Thread.pass while (@thr.alive? && @thr.status != "run")
+    Thread.pass while not @thr["ready_to_abort"]
   end
   
   after :each do

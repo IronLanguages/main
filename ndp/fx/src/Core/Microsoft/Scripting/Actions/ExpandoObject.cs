@@ -605,8 +605,10 @@ namespace System.Dynamic {
             // Notify property changed for all properties.
             var propertyChanged = _propertyChanged;
             if (propertyChanged != null) {
-                foreach (string key in data.Class.Keys) {
-                    propertyChanged(this, new PropertyChangedEventArgs(key));
+                for (int i = 0, n = data.Class.Keys.Length; i < n; i++) {
+                    if (data[i] != Uninitialized) {
+                        propertyChanged(this, new PropertyChangedEventArgs(data.Class.Keys[i]));
+                    }
                 }
             }
         }
@@ -699,7 +701,8 @@ namespace System.Dynamic {
                     Expression.Condition(
                         tryGetValue,
                         value,
-                        DynamicMetaObjectBinder.Convert(fallback.Expression, typeof(object))
+                        fallback.Expression,
+                        typeof(object)
                     )
                 );
 
@@ -747,17 +750,14 @@ namespace System.Dynamic {
                     klass,
                     originalClass,
                     new DynamicMetaObject(
-                        DynamicMetaObjectBinder.Convert(
-                            Expression.Call(
-                                typeof(RuntimeOps).GetMethod("ExpandoTrySetValue"),
-                                GetLimitedSelf(),
-                                Expression.Constant(klass, typeof(object)),
-                                Expression.Constant(index),
-                                Expression.Convert(value.Expression, typeof(object)),
-                                Expression.Constant(binder.Name),
-                                Expression.Constant(binder.IgnoreCase)
-                            ),
-                            typeof(object)
+                        Expression.Call(
+                            typeof(RuntimeOps).GetMethod("ExpandoTrySetValue"),
+                            GetLimitedSelf(),
+                            Expression.Constant(klass, typeof(object)),
+                            Expression.Constant(index),
+                            Expression.Convert(value.Expression, typeof(object)),
+                            Expression.Constant(binder.Name),
+                            Expression.Constant(binder.IgnoreCase)
                         ),
                         BindingRestrictions.Empty
                     )
@@ -780,11 +780,7 @@ namespace System.Dynamic {
                 DynamicMetaObject fallback = binder.FallbackDeleteMember(this);
 
                 DynamicMetaObject target = new DynamicMetaObject(
-                    Expression.Condition(
-                        Expression.Not(tryDelete),
-                        DynamicMetaObjectBinder.Convert(fallback.Expression, typeof(object)), //if fail to delete, fall back
-                        Expression.Convert(Expression.Constant(true), typeof(object))
-                    ),
+                    Expression.IfThen(Expression.Not(tryDelete), fallback.Expression),
                     fallback.Restrictions
                 );
 
@@ -829,18 +825,15 @@ namespace System.Dynamic {
                 }
 
                 return new DynamicMetaObject(
-                    DynamicMetaObjectBinder.Convert(
-                        Expression.Condition(
-                            Expression.Call(
-                                null,
-                                typeof(RuntimeOps).GetMethod("ExpandoCheckVersion"),
-                                GetLimitedSelf(),
-                                Expression.Constant(originalClass ?? klass, typeof(object))
-                            ),
-                            ifTestSucceeds,
-                            binder.GetUpdateExpression(ifTestSucceeds.Type)
+                    Expression.Condition(
+                        Expression.Call(
+                            null,
+                            typeof(RuntimeOps).GetMethod("ExpandoCheckVersion"),
+                            GetLimitedSelf(),
+                            Expression.Constant(originalClass ?? klass, typeof(object))
                         ),
-                        typeof(object)
+                        ifTestSucceeds,
+                        binder.GetUpdateExpression(ifTestSucceeds.Type)
                     ),
                     GetRestrictions().Merge(succeeds.Restrictions)
                 );
@@ -1049,8 +1042,9 @@ namespace System.Runtime.CompilerServices {
         /// Returns the index for the set member.
         /// </returns>
         [Obsolete("do not use this method", true), EditorBrowsable(EditorBrowsableState.Never)]
-        public static void ExpandoTrySetValue(ExpandoObject expando, object indexClass, int index, object value, string name, bool ignoreCase) {
+        public static object ExpandoTrySetValue(ExpandoObject expando, object indexClass, int index, object value, string name, bool ignoreCase) {
             expando.TrySetValue(indexClass, index, value, name, ignoreCase, false);
+            return value;
         }
 
         /// <summary>

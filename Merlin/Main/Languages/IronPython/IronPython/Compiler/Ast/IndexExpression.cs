@@ -113,7 +113,7 @@ namespace IronPython.Compiler.Ast {
             if (IsSlice) {
                 index = ag.DeleteSlice(typeof(object), GetActionArgumentsForGetOrDelete(ag));
             } else {
-                index = ag.DeleteIndex(typeof(object), GetActionArgumentsForGetOrDelete(ag));
+                index = ag.DeleteIndex(typeof(void), GetActionArgumentsForGetOrDelete(ag));
             }
 
             return ag.AddDebugInfoAndVoid(index, Span);

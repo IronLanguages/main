@@ -587,7 +587,7 @@ namespace IronPython.Compiler {
                     if (isTriple) {
                         _buffer.Back();
                         _buffer.MarkTokenEnd(false);
-                        ReportSyntaxError(new SourceSpan(_buffer.TokenEnd, _buffer.TokenEnd), Resources.EofInTripleQuotedString, ErrorCodes.SyntaxError);
+                        ReportSyntaxError(new SourceSpan(_buffer.TokenEnd, _buffer.TokenEnd), Resources.EofInTripleQuotedString, ErrorCodes.SyntaxError | ErrorCodes.IncompleteToken);
                     } else {
                         _buffer.MarkTokenEnd(multi_line);
                     }

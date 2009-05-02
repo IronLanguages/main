@@ -140,19 +140,6 @@ namespace Microsoft.Scripting.Runtime {
         }
 
         /// <summary>
-        /// Returns the list of Keys available to all languages in addition to those keys
-        /// which are only available to the provided LanguageContext.
-        /// 
-        /// Keys marked with the DontEnumerate flag will not be returned.
-        /// </summary>
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1721:PropertyNamesShouldNotMatchGetMethods")] // TODO: fix
-        public IEnumerable<SymbolId> GetKeys(LanguageContext context) {
-            foreach (SymbolId si in _dict.SymbolAttributes.Keys) {
-                yield return si;
-            }
-        }
-
-        /// <summary>
         /// Trys to lookup the provided name in the current scope.  Search includes
         /// names that are only visible to the provided LanguageContext.
         /// </summary>

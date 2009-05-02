@@ -327,7 +327,7 @@ namespace IronPython.Runtime.Binding {
         /// <summary>
         /// The result type of the operation.
         /// </summary>
-        public /*override*/ Type ReturnType {
+        public override Type ReturnType {
             get {
                 switch (Operation & (~PythonOperationKind.DisableCoerce)) {
                     case PythonOperationKind.Compare: return typeof(int);
@@ -335,6 +335,9 @@ namespace IronPython.Runtime.Binding {
                     case PythonOperationKind.IsCallable: return typeof(bool);
                     case PythonOperationKind.Hash: return typeof(int);
                     case PythonOperationKind.Contains: return typeof(bool);
+                    case PythonOperationKind.GetEnumeratorForIteration: return typeof(IEnumerator);
+                    case PythonOperationKind.CallSignatures: return typeof(IList<string>);
+                    case PythonOperationKind.Documentation: return typeof(string);
                 }
                 return typeof(object); 
             }

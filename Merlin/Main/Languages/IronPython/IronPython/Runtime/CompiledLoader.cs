@@ -19,6 +19,8 @@ using System.IO;
 
 using Microsoft.Scripting;
 using Microsoft.Scripting.Runtime;
+
+using IronPython.Compiler;
 using IronPython.Runtime.Operations;
 
 namespace IronPython.Runtime {
@@ -26,18 +28,32 @@ namespace IronPython.Runtime {
         private Dictionary<string, ScriptCode> _codes = new Dictionary<string, ScriptCode>();
 
         internal void AddScriptCode(ScriptCode code) {
-            string name = code.SourceUnit.Path;
-            name = name.Replace(Path.DirectorySeparatorChar, '.');
-            if (name.EndsWith("__init__.py")) {
-                name = name.Substring(0, name.Length - ".__init__.py".Length);
+            OnDiskScriptCode onDiskCode = code as OnDiskScriptCode;
+            if (onDiskCode != null) {
+                if (onDiskCode.ModuleName == "__main__") {
+                    _codes["__main__"] = code;
+                } else {
+                    string name = code.SourceUnit.Path;
+                    name = name.Replace(Path.DirectorySeparatorChar, '.');
+                    if (name.EndsWith("__init__.py")) {
+                        name = name.Substring(0, name.Length - ".__init__.py".Length);
+                    }
+                    _codes[name] = code;
+                }
             }
-            _codes[name] = code;
         }
 
         public ModuleLoader find_module(CodeContext/*!*/ context, string fullname, List path) {
             ScriptCode sc;
             if (_codes.TryGetValue(fullname, out sc)) {
-                return new ModuleLoader(sc);
+                int sep = fullname.LastIndexOf('.');
+                string name = fullname;
+                string parentName = null;
+                if (sep != -1) {
+                    parentName = fullname.Substring(0, sep);
+                    name = fullname.Substring(sep + 1);
+                }
+                return new ModuleLoader(sc, parentName, name);
             }
 
             return null;

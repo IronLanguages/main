@@ -113,8 +113,8 @@ namespace IronPython.Compiler {
 
         #region IInstructionProvider Members
 
-        public Instruction GetInstruction(LightCompiler compiler) {
-            return new PythonGlobalInstruction(_global);
+        public void AddInstructions(LightCompiler compiler) {
+            compiler.AddInstruction(new PythonGlobalInstruction(_global));
         }
 
         #endregion
@@ -127,7 +127,7 @@ namespace IronPython.Compiler {
         }
 
         public override int ProducedStack { get { return 1; } }
-        public override int Run(StackFrame frame) {
+        public override int Run(InterpretedFrame frame) {
             frame.Push(_global.CurrentValue);
             return +1;
         }
@@ -182,9 +182,9 @@ namespace IronPython.Compiler {
 
         #region IInstructionProvider Members
 
-        public Instruction GetInstruction(LightCompiler compiler) {
+        public void AddInstructions(LightCompiler compiler) {
             compiler.Compile(_value);
-            return new PythonSetGlobalInstruction(_global.Global);
+            compiler.AddInstruction(new PythonSetGlobalInstruction(_global.Global));
         }
 
         #endregion
@@ -198,7 +198,7 @@ namespace IronPython.Compiler {
 
         public override int ProducedStack { get { return 1; } }
         public override int ConsumedStack { get { return 1; } }
-        public override int Run(StackFrame frame) {
+        public override int Run(InterpretedFrame frame) {
             _global.CurrentValue = frame.Peek();
             return +1;
         }
@@ -270,9 +270,9 @@ namespace IronPython.Compiler {
 
         #region IInstructionProvider Members
 
-        Instruction IInstructionProvider.GetInstruction(LightCompiler compiler) {
+        void IInstructionProvider.AddInstructions(LightCompiler compiler) {
             compiler.Compile(_scope);
-            return new LookupGlobalInstruction(_name, _isLocal);
+            compiler.AddInstruction(new LookupGlobalInstruction(_name, _isLocal));
         }
 
         #endregion
@@ -287,7 +287,7 @@ namespace IronPython.Compiler {
         }
         public override int ConsumedStack { get { return 1; } }
         public override int ProducedStack { get { return 1; } }
-        public override int Run(StackFrame frame) {
+        public override int Run(InterpretedFrame frame) {
             if (_isLocal) {
                 frame.Push(PythonOps.GetLocal((Scope)frame.Pop(), _name));
             } else {

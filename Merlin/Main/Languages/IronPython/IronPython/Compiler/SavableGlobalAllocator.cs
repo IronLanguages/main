@@ -74,7 +74,9 @@ namespace IronPython.Compiler.Ast {
                 new MSAst.ParameterExpression[] { scope, language }
             );
 
-            return new SavableScriptCode(func, context.SourceUnit, GetNames());
+            PythonCompilerOptions pco = context.Options as PythonCompilerOptions;
+
+            return new SavableScriptCode(func, context.SourceUnit, GetNames(), pco.ModuleName);
         }
     }
 }
