@@ -13,7 +13,7 @@
 #
 # ****************************************************************************
 
-# Hacked up implementation of Method
+# Ruby implementation of Method#to_proc
 
 class Method
   def to_proc
