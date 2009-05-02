@@ -167,6 +167,11 @@ namespace IronRuby.Tests {
                 _isDebug = true;
             }
 
+            if (args.Contains("-D")) {
+                args.Remove("-D");
+                _isDebug = true;
+            }
+
             if (args.Contains("/save")) {
                 args.Remove("/save");
                 _saveToAssemblies = true;

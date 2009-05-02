@@ -580,8 +580,18 @@ namespace IronPython.Compiler {
                         complete = !isTriple;
                         break;
                     }
+                    _buffer.Back();
 
-                    _buffer.MarkTokenEnd(multi_line);
+                    // CPython reports the multi-line string error as if it is a single line
+                    // ending at the last char in the file.
+                    if (isTriple) {
+                        _buffer.Back();
+                        _buffer.MarkTokenEnd(false);
+                        ReportSyntaxError(new SourceSpan(_buffer.TokenEnd, _buffer.TokenEnd), Resources.EofInTripleQuotedString, ErrorCodes.SyntaxError | ErrorCodes.IncompleteToken);
+                    } else {
+                        _buffer.MarkTokenEnd(multi_line);
+                    }
+                    
                     UnexpectedEndOfString(isTriple, isTriple);
                     return new ErrorToken(Resources.EofInString);
 

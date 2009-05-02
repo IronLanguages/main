@@ -14,13 +14,24 @@
  * ***************************************************************************/
 
 using System;
-using Microsoft.Scripting.Actions;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq.Expressions;
+using System.Reflection;
+using System.Reflection.Emit;
+using System.Threading;
+using Microsoft.Contracts;
+using Microsoft.Scripting;
+using Microsoft.Scripting.Generation;
+using Microsoft.Scripting.Runtime;
+using Microsoft.Scripting.Utils;
+using System.Diagnostics;
 
-namespace Microsoft.Scripting.Runtime {
+namespace Microsoft.Scripting {
     /// <summary>
-    /// Old dynamic interop protocol. Will be removed soon.
+    /// Gets custom data to be serialized when saving script codes to disk.
     /// </summary>
-    public interface IOldDynamicObject {
-        bool GetRule(OldDynamicAction action, CodeContext context, object[] args, RuleBuilder rule);
+    public interface ICustomScriptCodeData {
+        string GetCustomScriptCodeData();
     }
 }

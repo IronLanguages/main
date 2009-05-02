@@ -18,7 +18,7 @@ using Microsoft.Scripting.Runtime;
 using IronPython.Runtime.Operations;    
 
 namespace IronPython.Runtime.Types {
-    sealed class PythonTypeUserDescriptorSlot : PythonTypeSlot {
+    sealed class PythonTypeUserDescriptorSlot : PythonTypeSlot, IValueSlot {
         private object _value;
 
         public PythonTypeUserDescriptorSlot(object value) {
@@ -47,11 +47,11 @@ namespace IronPython.Runtime.Types {
             object dummy;
             return PythonOps.TryGetBoundAttr(context, Value, Symbols.SetDescriptor, out dummy);
         }
+
         public object Value {
             get {
                 return _value;
             }
         }
-
     }
 }

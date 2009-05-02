@@ -149,7 +149,7 @@ namespace IronPython.Modules {
             return Check(value.Log());
         }
 
-        public static double log(IPythonObject value) {
+        public static double log(object value) {
             // CPython tries float first, then double, so we need
             // an explicit overload which properly matches the order here
             double val;
@@ -171,7 +171,7 @@ namespace IronPython.Modules {
             return Check(value.Log(newBase));
         }
 
-        public static double log(IPythonObject value, double newBase) {
+        public static double log(object value, double newBase) {
             // CPython tries float first, then double, so we need
             // an explicit overload which properly matches the order here
             double val;
@@ -193,7 +193,7 @@ namespace IronPython.Modules {
             return Check(value.Log10());
         }
 
-        public static double log10(IPythonObject value) {
+        public static double log10(object value) {
             // CPython tries float first, then double, so we need
             // an explicit overload which properly matches the order here
             double val;
@@ -212,7 +212,7 @@ namespace IronPython.Modules {
             return log(value + (BigInteger)1);
         }
 
-        public static double log1p(IPythonObject value) {
+        public static double log1p(object value) {
             // CPython tries float first, then double, so we need
             // an explicit overload which properly matches the order here
             double val;
@@ -247,7 +247,7 @@ namespace IronPython.Modules {
             }
         }
 
-        public static double asinh(IPythonObject value) {
+        public static double asinh(object value) {
             // CPython tries float first, then double, so we need
             // an explicit overload which properly matches the order here
             double val;
@@ -278,7 +278,7 @@ namespace IronPython.Modules {
             return Math.Log(c) + Math.Log(value / c + Math.Sqrt(value - (BigInteger)1));
         }
 
-        public static double acosh(IPythonObject value) {
+        public static double acosh(object value) {
             // CPython tries float first, then double, so we need
             // an explicit overload which properly matches the order here
             double val;
@@ -308,7 +308,7 @@ namespace IronPython.Modules {
             }
         }
 
-        public static double atanh(IPythonObject value) {
+        public static double atanh(object value) {
             // CPython tries float first, then double, so we need
             // an explicit overload which properly matches the order here
             double val;
@@ -371,7 +371,7 @@ namespace IronPython.Modules {
             return (int)val;
         }
 
-        public static object factorial(IPythonObject value) {
+        public static object factorial(object value) {
             // CPython tries float first, then double, so we need
             // an explicit overload which properly matches the order here
             double val;
@@ -398,7 +398,7 @@ namespace IronPython.Modules {
             return v0;
         }
 
-        public static BigInteger trunc(IPythonObject value) {
+        public static BigInteger trunc(object value) {
             // CPython tries float first, then double, so we need
             // an explicit overload which properly matches the order here
             double val;
@@ -417,7 +417,7 @@ namespace IronPython.Modules {
             return false;
         }
 
-        public static bool isinf(IPythonObject value) {
+        public static bool isinf(object value) {
             // CPython tries float first, then double, so we need
             // an explicit overload which properly matches the order here
             double val;
@@ -435,7 +435,7 @@ namespace IronPython.Modules {
             return false;
         }
 
-        public static bool isnan(IPythonObject value) {
+        public static bool isnan(object value) {
             // CPython tries float first, then double, so we need
             // an explicit overload which properly matches the order here
             double val;

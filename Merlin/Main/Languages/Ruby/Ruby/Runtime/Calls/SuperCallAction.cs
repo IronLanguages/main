@@ -57,7 +57,7 @@ namespace IronRuby.Runtime.Calls {
             get { return _signature; }
         }
 
-        public override Type/*!*/ ResultType {
+        public override Type/*!*/ ReturnType {
             get { return typeof(object); }
         }
 

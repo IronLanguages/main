@@ -52,10 +52,7 @@ namespace IronPython.Runtime.Types {
     /// it as a depth-first old-style MRO, otherwise compute a new-style mro for all the classes 
     /// and use that.
     /// </summary>
-    class Mro {
-        public Mro() {
-        }
-
+    static class Mro {
         public static List<PythonType> Calculate(PythonType startingType, IList<PythonType> bases) {
             return Calculate(startingType, new List<PythonType>(bases), false);
         }

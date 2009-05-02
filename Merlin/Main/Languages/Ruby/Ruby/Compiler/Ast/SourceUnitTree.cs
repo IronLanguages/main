@@ -71,11 +71,11 @@ namespace IronRuby.Compiler.Ast {
             ScopeBuilder scope = new ScopeBuilder();
 
             MSA.ParameterExpression[] parameters;
-            MSA.Expression selfVariable;
-            MSA.Expression rfcVariable;
-            MSA.Expression runtimeScopeVariable;
-            MSA.Expression blockParameter;
-            MSA.Expression currentMethodVariable;
+            MSA.ParameterExpression selfVariable;
+            MSA.ParameterExpression rfcVariable;
+            MSA.ParameterExpression runtimeScopeVariable;
+            MSA.ParameterExpression blockParameter;
+            MSA.ParameterExpression currentMethodVariable;
 
             if (gen.CompilerOptions.FactoryKind == TopScopeFactoryKind.None ||
                 gen.CompilerOptions.FactoryKind == TopScopeFactoryKind.Module) {
@@ -119,18 +119,18 @@ namespace IronRuby.Compiler.Ast {
 
             switch (gen.CompilerOptions.FactoryKind) {
                 case TopScopeFactoryKind.None:
-                    prologue = null;
+                    prologue = Methods.InitializeScopeNoLocals.OpCall(runtimeScopeVariable, EnterInterpretedFrameExpression.Instance);
                     break;
 
-                case TopScopeFactoryKind.Default:
-                case TopScopeFactoryKind.GlobalScopeBound:
+                case TopScopeFactoryKind.Hosted:
                 case TopScopeFactoryKind.Module:
+                case TopScopeFactoryKind.File:
                 case TopScopeFactoryKind.WrappedFile:
-                    prologue = Methods.InitializeScope.OpCall(runtimeScopeVariable, scope.VisibleVariables());
+                    prologue = Methods.InitializeScope.OpCall(runtimeScopeVariable, scope.VisibleVariables(), EnterInterpretedFrameExpression.Instance);
                     break;
 
                 case TopScopeFactoryKind.Main:
-                    prologue = Methods.InitializeScope.OpCall(runtimeScopeVariable, scope.VisibleVariables());
+                    prologue = Methods.InitializeScope.OpCall(runtimeScopeVariable, scope.VisibleVariables(), EnterInterpretedFrameExpression.Instance);
                     if (_dataOffset >= 0) {
                         prologue = Ast.Block(
                             prologue, 
@@ -162,6 +162,16 @@ namespace IronRuby.Compiler.Ast {
             } else {
                 body = gen.TransformStatements(prologue, _statements, ResultOperation.Return);
             }
+
+            // TODO:
+            var exceptionVariable = Ast.Parameter(typeof(Exception), "#exception");
+            body = AstUtils.Try(
+                body
+            ).Filter(exceptionVariable, Methods.TraceTopLevelCodeFrame.OpCall(runtimeScopeVariable, exceptionVariable),
+                Ast.Empty()
+            ).Finally(
+                LeaveInterpretedFrameExpression.Instance
+            );
 
             body = gen.AddReturnTarget(scope.CreateScope(body));
             gen.LeaveSourceUnit();

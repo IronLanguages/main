@@ -23,10 +23,6 @@ namespace IronPython.Runtime.Types {
         private MethodInfo _getter, _setter, _deleter;
         private Type _declaringType;
 
-        public ExtensionPropertyInfo(PythonType declaringType, MethodInfo mi)
-            : this(declaringType.UnderlyingSystemType, mi) {
-        }
-
         public ExtensionPropertyInfo(Type logicalDeclaringType, MethodInfo mi) {
             _declaringType = logicalDeclaringType;
 
@@ -84,11 +80,6 @@ namespace IronPython.Runtime.Types {
                 if (_getter != null) return _getter.Name.Substring(3);
                 return _setter.Name.Substring(3);
             }
-        }
-
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1011:ConsiderPassingBaseTypesAsParameters")]
-        public static string GetName(MethodInfo mi) {
-            return mi.Name.Substring(3);
         }
     }
 }

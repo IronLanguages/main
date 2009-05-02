@@ -126,13 +126,41 @@ namespace IronPython.Runtime.Binding {
 
         private DynamicMetaObject/*!*/ InvokeWorker(DynamicMetaObjectBinder/*!*/ action, Expression/*!*/ codeContext, DynamicMetaObject/*!*/[] args) {
             ValidationInfo typeTest = BindingHelpers.GetValidationInfo(this, Value.PythonType);
-
+            
             return BindingHelpers.AddDynamicTestAndDefer(
                 action,
-                PythonProtocol.Call(action, this, args) ?? BindingHelpers.InvokeFallback(action, codeContext, this, args),
+                PythonProtocol.Call(action, this, args) ?? InvokeFallback(action, codeContext, args),
                 args,
                 typeTest
             );
+        }
+
+        private DynamicMetaObject InvokeFallback(DynamicMetaObjectBinder action, Expression codeContext, DynamicMetaObject/*!*/[] args) {
+            InvokeBinder ib = action as InvokeBinder;
+            if (ib != null) {
+                if (_baseMetaObject != null) {
+                    return _baseMetaObject.BindInvoke(ib, args);
+                }
+
+                return ib.FallbackInvoke(this, args);
+            }
+
+            PythonInvokeBinder pib = action as PythonInvokeBinder;
+            if (pib != null) {
+                IPythonInvokable ipi = _baseMetaObject as IPythonInvokable;
+                if (ipi != null) {
+                    return ipi.Invoke(pib, codeContext, this, args);
+                }
+
+                if (_baseMetaObject != null) {
+                    return pib.InvokeForeignObject(this, args);
+                }
+
+                return pib.Fallback(codeContext, this, args);
+            }
+
+            // unreachable, we always have one of these binders
+            throw new InvalidOperationException();
         }
 
         #endregion

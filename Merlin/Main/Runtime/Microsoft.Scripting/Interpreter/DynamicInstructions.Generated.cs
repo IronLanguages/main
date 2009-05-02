@@ -73,7 +73,7 @@ namespace Microsoft.Scripting.Interpreter {
         }
         public override int ProducedStack { get { return 1; } }
         public override int ConsumedStack { get { return 0; } }
-        public override int Run(StackFrame frame) {
+        public override int Run(InterpretedFrame frame) {
             frame.Push(_site.Target(
                 _site));
             return +1;
@@ -92,7 +92,7 @@ namespace Microsoft.Scripting.Interpreter {
         }
         public override int ProducedStack { get { return 1; } }
         public override int ConsumedStack { get { return 1; } }
-        public override int Run(StackFrame frame) {
+        public override int Run(InterpretedFrame frame) {
             object arg0 = frame.Pop();
             frame.Push(_site.Target(
                 _site,
@@ -113,7 +113,7 @@ namespace Microsoft.Scripting.Interpreter {
         }
         public override int ProducedStack { get { return 1; } }
         public override int ConsumedStack { get { return 2; } }
-        public override int Run(StackFrame frame) {
+        public override int Run(InterpretedFrame frame) {
             object arg1 = frame.Pop();
             object arg0 = frame.Pop();
             frame.Push(_site.Target(
@@ -136,7 +136,7 @@ namespace Microsoft.Scripting.Interpreter {
         }
         public override int ProducedStack { get { return 1; } }
         public override int ConsumedStack { get { return 3; } }
-        public override int Run(StackFrame frame) {
+        public override int Run(InterpretedFrame frame) {
             object arg2 = frame.Pop();
             object arg1 = frame.Pop();
             object arg0 = frame.Pop();
@@ -161,7 +161,7 @@ namespace Microsoft.Scripting.Interpreter {
         }
         public override int ProducedStack { get { return 1; } }
         public override int ConsumedStack { get { return 4; } }
-        public override int Run(StackFrame frame) {
+        public override int Run(InterpretedFrame frame) {
             object arg3 = frame.Pop();
             object arg2 = frame.Pop();
             object arg1 = frame.Pop();
@@ -188,7 +188,7 @@ namespace Microsoft.Scripting.Interpreter {
         }
         public override int ProducedStack { get { return 1; } }
         public override int ConsumedStack { get { return 5; } }
-        public override int Run(StackFrame frame) {
+        public override int Run(InterpretedFrame frame) {
             object arg4 = frame.Pop();
             object arg3 = frame.Pop();
             object arg2 = frame.Pop();
@@ -217,7 +217,7 @@ namespace Microsoft.Scripting.Interpreter {
         }
         public override int ProducedStack { get { return 1; } }
         public override int ConsumedStack { get { return 6; } }
-        public override int Run(StackFrame frame) {
+        public override int Run(InterpretedFrame frame) {
             object arg5 = frame.Pop();
             object arg4 = frame.Pop();
             object arg3 = frame.Pop();
@@ -248,7 +248,7 @@ namespace Microsoft.Scripting.Interpreter {
         }
         public override int ProducedStack { get { return 1; } }
         public override int ConsumedStack { get { return 7; } }
-        public override int Run(StackFrame frame) {
+        public override int Run(InterpretedFrame frame) {
             object arg6 = frame.Pop();
             object arg5 = frame.Pop();
             object arg4 = frame.Pop();
@@ -281,7 +281,7 @@ namespace Microsoft.Scripting.Interpreter {
         }
         public override int ProducedStack { get { return 1; } }
         public override int ConsumedStack { get { return 8; } }
-        public override int Run(StackFrame frame) {
+        public override int Run(InterpretedFrame frame) {
             object arg7 = frame.Pop();
             object arg6 = frame.Pop();
             object arg5 = frame.Pop();
@@ -316,7 +316,7 @@ namespace Microsoft.Scripting.Interpreter {
         }
         public override int ProducedStack { get { return 1; } }
         public override int ConsumedStack { get { return 9; } }
-        public override int Run(StackFrame frame) {
+        public override int Run(InterpretedFrame frame) {
             object arg8 = frame.Pop();
             object arg7 = frame.Pop();
             object arg6 = frame.Pop();
@@ -353,7 +353,7 @@ namespace Microsoft.Scripting.Interpreter {
         }
         public override int ProducedStack { get { return 1; } }
         public override int ConsumedStack { get { return 10; } }
-        public override int Run(StackFrame frame) {
+        public override int Run(InterpretedFrame frame) {
             object arg9 = frame.Pop();
             object arg8 = frame.Pop();
             object arg7 = frame.Pop();
@@ -392,7 +392,7 @@ namespace Microsoft.Scripting.Interpreter {
         }
         public override int ProducedStack { get { return 1; } }
         public override int ConsumedStack { get { return 11; } }
-        public override int Run(StackFrame frame) {
+        public override int Run(InterpretedFrame frame) {
             object arg10 = frame.Pop();
             object arg9 = frame.Pop();
             object arg8 = frame.Pop();
@@ -433,7 +433,7 @@ namespace Microsoft.Scripting.Interpreter {
         }
         public override int ProducedStack { get { return 1; } }
         public override int ConsumedStack { get { return 12; } }
-        public override int Run(StackFrame frame) {
+        public override int Run(InterpretedFrame frame) {
             object arg11 = frame.Pop();
             object arg10 = frame.Pop();
             object arg9 = frame.Pop();
@@ -476,7 +476,7 @@ namespace Microsoft.Scripting.Interpreter {
         }
         public override int ProducedStack { get { return 1; } }
         public override int ConsumedStack { get { return 13; } }
-        public override int Run(StackFrame frame) {
+        public override int Run(InterpretedFrame frame) {
             object arg12 = frame.Pop();
             object arg11 = frame.Pop();
             object arg10 = frame.Pop();
@@ -521,7 +521,7 @@ namespace Microsoft.Scripting.Interpreter {
         }
         public override int ProducedStack { get { return 1; } }
         public override int ConsumedStack { get { return 14; } }
-        public override int Run(StackFrame frame) {
+        public override int Run(InterpretedFrame frame) {
             object arg13 = frame.Pop();
             object arg12 = frame.Pop();
             object arg11 = frame.Pop();
@@ -568,7 +568,7 @@ namespace Microsoft.Scripting.Interpreter {
         }
         public override int ProducedStack { get { return 1; } }
         public override int ConsumedStack { get { return 15; } }
-        public override int Run(StackFrame frame) {
+        public override int Run(InterpretedFrame frame) {
             object arg14 = frame.Pop();
             object arg13 = frame.Pop();
             object arg12 = frame.Pop();

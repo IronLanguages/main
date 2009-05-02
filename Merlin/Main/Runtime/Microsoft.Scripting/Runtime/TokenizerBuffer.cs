@@ -258,10 +258,6 @@ namespace Microsoft.Scripting.Runtime {
             _tokenEnd = System.Math.Min(_position, _end);
             int token_length = _tokenEnd - _start;
             
-            // no eolns in the token:
-            Debug.Assert(Array.IndexOf(_buffer, '\n', _start, token_length) == -1);
-            Debug.Assert(!_multiEolns || Array.IndexOf(_buffer, '\r', _start, token_length) == -1);
-            
             _tokenEndLocation = new SourceLocation(
                 _tokenStartLocation.Index + token_length,
                 _tokenStartLocation.Line,

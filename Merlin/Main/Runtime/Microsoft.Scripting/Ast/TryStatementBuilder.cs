@@ -41,8 +41,32 @@ namespace Microsoft.Scripting.Ast {
             return this;
         }
 
+        public TryStatementBuilder Catch(Type type, Expression expr0, Expression expr1) {
+            return Catch(type, Expression.Block(expr0, expr1));
+        }
+
+        public TryStatementBuilder Catch(Type type, Expression expr0, Expression expr1, Expression expr2) {
+            return Catch(type, Expression.Block(expr0, expr1, expr2));
+        }
+
+        public TryStatementBuilder Catch(Type type, Expression expr0, Expression expr1, Expression expr2, Expression expr3) {
+            return Catch(type, Expression.Block(expr0, expr1, expr2, expr3));
+        }
+
         public TryStatementBuilder Catch(Type type, params Expression[] body) {
-            return Catch(type, Utils.BlockVoid(body));
+            return Catch(type, Expression.Block(body));
+        }
+
+        public TryStatementBuilder Catch(ParameterExpression holder, Expression expr0, Expression expr1) {
+            return Catch(holder, Expression.Block(expr0, expr1));
+        }
+
+        public TryStatementBuilder Catch(ParameterExpression holder, Expression expr0, Expression expr1, Expression expr2) {
+            return Catch(holder, Expression.Block(expr0, expr1, expr2));
+        }
+
+        public TryStatementBuilder Catch(ParameterExpression holder, Expression expr0, Expression expr1, Expression expr2, Expression expr3) {
+            return Catch(holder, Expression.Block(expr0, expr1, expr2, expr3));
         }
 
         public TryStatementBuilder Catch(ParameterExpression holder, params Expression[] body) {
@@ -180,15 +204,73 @@ namespace Microsoft.Scripting.Ast {
         }
     }
 
-    public partial class Utils {
-        public static TryStatementBuilder Try(params Expression[] body) {
-            ContractUtils.RequiresNotNull(body, "body");
-            return new TryStatementBuilder(Utils.Block(body));
+#if TODO // better support for fault in interpreter
+    public class TryFaultExpression : Expression, IInstructionProvider {
+        private readonly Expression _body;
+        private readonly Expression _fault;
+
+        internal TryFaultExpression(Expression body, Expression fault) {
+            _body = body;
+            _fault = fault;
         }
 
+        protected override ExpressionType NodeTypeImpl() {
+            return ExpressionType.Extension;
+        }
+
+        protected override Type/*!*/ TypeImpl() {
+            return _body.Type;
+        }
+
+        public override bool CanReduce {
+            get {
+                return true;
+            }
+        }
+
+        public override Expression/*!*/ Reduce() {
+            return Expression.TryCatch(
+                _body,
+                Expression.Catch(typeof(Exception), Expression.Block(_fault, Expression.Rethrow(_body.Type)))
+            );
+        }
+
+        protected override Expression VisitChildren(Func<Expression, Expression> visitor) {
+            Expression body = visitor(_body);
+            Expression fault = visitor(_fault);
+            if (body != _body || fault != _fault) {
+                return new TryFaultExpression(body, fault);
+            }
+
+            return this;
+        }
+
+        public void AddInstructions(LightCompiler compiler) {
+            compiler.Compile(Expression.TryFault(_body, _fault));
+        }
+    }
+#endif
+
+    public partial class Utils {
         public static TryStatementBuilder Try(Expression body) {
             ContractUtils.RequiresNotNull(body, "body");
             return new TryStatementBuilder(body);
+        }
+
+        public static TryStatementBuilder Try(Expression expr0, Expression expr1) {
+            return new TryStatementBuilder(Expression.Block(expr0, expr1));
+        }
+
+        public static TryStatementBuilder Try(Expression expr0, Expression expr1, Expression expr2) {
+            return new TryStatementBuilder(Expression.Block(expr0, expr1, expr2));
+        }
+
+        public static TryStatementBuilder Try(Expression expr0, Expression expr1, Expression expr2, Expression expr3) {
+            return new TryStatementBuilder(Expression.Block(expr0, expr1, expr2, expr3));
+        }
+
+        public static TryStatementBuilder Try(params Expression[] body) {
+            return new TryStatementBuilder(Expression.Block(body));
         }
     }
 }

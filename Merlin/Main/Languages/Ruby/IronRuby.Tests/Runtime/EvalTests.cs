@@ -117,41 +117,6 @@ END
             }, "2");
         }
 
-        public void EvalReturn1() {
-            AssertOutput(delegate() {
-                CompilerTest(@"
-def y
-  yield
-end
-
-def foo
-  $b = Proc.new {  
-    eval('return 123')
-  }
-  goo
-end
-
-def goo
-  y(&$b)
-end
-
-p foo
-");
-            }, @"123");
-        }
-
-        public void EvalReturn2() {
-            AssertOutput(delegate() {
-                CompilerTest(@"
-def foo 
-  eval('return 123')
-end
-
-p foo
-");
-            }, @"123");
-        }
-
         public void LocalNames1() {
             AssertOutput(delegate() {
                 CompilerTest(@"
@@ -582,12 +547,5 @@ foo
 1
 1");
         }
-
-
-// TODO: RFC.InBlock is not set properly
-// 1.times { eval('break') }
-// Array.new(10) { eval('break 1') }
-// define_method(:foo) { eval('break 1') }
-// M.module_eval { eval('break 1') }
     }
 }

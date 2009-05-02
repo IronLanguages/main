@@ -48,6 +48,7 @@ namespace Microsoft.Scripting.Interpreter {
             }
             var frame = PrepareToRun();
             frame.Data[0] = arg0;
+            frame.BoxLocals();
             return (TRet)_interpreter.Run(frame);
         }
         internal void RunVoid1<T0>(T0 arg0) {
@@ -57,6 +58,7 @@ namespace Microsoft.Scripting.Interpreter {
             }
             var frame = PrepareToRun();
             frame.Data[0] = arg0;
+            frame.BoxLocals();
             _interpreter.Run(frame);
         }
         internal TRet Run2<T0,T1,TRet>(T0 arg0,T1 arg1) {
@@ -66,6 +68,7 @@ namespace Microsoft.Scripting.Interpreter {
             var frame = PrepareToRun();
             frame.Data[0] = arg0;
             frame.Data[1] = arg1;
+            frame.BoxLocals();
             return (TRet)_interpreter.Run(frame);
         }
         internal void RunVoid2<T0,T1>(T0 arg0,T1 arg1) {
@@ -76,6 +79,7 @@ namespace Microsoft.Scripting.Interpreter {
             var frame = PrepareToRun();
             frame.Data[0] = arg0;
             frame.Data[1] = arg1;
+            frame.BoxLocals();
             _interpreter.Run(frame);
         }
         internal TRet Run3<T0,T1,T2,TRet>(T0 arg0,T1 arg1,T2 arg2) {
@@ -86,6 +90,7 @@ namespace Microsoft.Scripting.Interpreter {
             frame.Data[0] = arg0;
             frame.Data[1] = arg1;
             frame.Data[2] = arg2;
+            frame.BoxLocals();
             return (TRet)_interpreter.Run(frame);
         }
         internal void RunVoid3<T0,T1,T2>(T0 arg0,T1 arg1,T2 arg2) {
@@ -97,6 +102,7 @@ namespace Microsoft.Scripting.Interpreter {
             frame.Data[0] = arg0;
             frame.Data[1] = arg1;
             frame.Data[2] = arg2;
+            frame.BoxLocals();
             _interpreter.Run(frame);
         }
         internal TRet Run4<T0,T1,T2,T3,TRet>(T0 arg0,T1 arg1,T2 arg2,T3 arg3) {
@@ -108,6 +114,7 @@ namespace Microsoft.Scripting.Interpreter {
             frame.Data[1] = arg1;
             frame.Data[2] = arg2;
             frame.Data[3] = arg3;
+            frame.BoxLocals();
             return (TRet)_interpreter.Run(frame);
         }
         internal void RunVoid4<T0,T1,T2,T3>(T0 arg0,T1 arg1,T2 arg2,T3 arg3) {
@@ -120,6 +127,7 @@ namespace Microsoft.Scripting.Interpreter {
             frame.Data[1] = arg1;
             frame.Data[2] = arg2;
             frame.Data[3] = arg3;
+            frame.BoxLocals();
             _interpreter.Run(frame);
         }
         internal TRet Run5<T0,T1,T2,T3,T4,TRet>(T0 arg0,T1 arg1,T2 arg2,T3 arg3,T4 arg4) {
@@ -132,6 +140,7 @@ namespace Microsoft.Scripting.Interpreter {
             frame.Data[2] = arg2;
             frame.Data[3] = arg3;
             frame.Data[4] = arg4;
+            frame.BoxLocals();
             return (TRet)_interpreter.Run(frame);
         }
         internal void RunVoid5<T0,T1,T2,T3,T4>(T0 arg0,T1 arg1,T2 arg2,T3 arg3,T4 arg4) {
@@ -145,6 +154,7 @@ namespace Microsoft.Scripting.Interpreter {
             frame.Data[2] = arg2;
             frame.Data[3] = arg3;
             frame.Data[4] = arg4;
+            frame.BoxLocals();
             _interpreter.Run(frame);
         }
         internal TRet Run6<T0,T1,T2,T3,T4,T5,TRet>(T0 arg0,T1 arg1,T2 arg2,T3 arg3,T4 arg4,T5 arg5) {
@@ -158,6 +168,7 @@ namespace Microsoft.Scripting.Interpreter {
             frame.Data[3] = arg3;
             frame.Data[4] = arg4;
             frame.Data[5] = arg5;
+            frame.BoxLocals();
             return (TRet)_interpreter.Run(frame);
         }
         internal void RunVoid6<T0,T1,T2,T3,T4,T5>(T0 arg0,T1 arg1,T2 arg2,T3 arg3,T4 arg4,T5 arg5) {
@@ -172,6 +183,7 @@ namespace Microsoft.Scripting.Interpreter {
             frame.Data[3] = arg3;
             frame.Data[4] = arg4;
             frame.Data[5] = arg5;
+            frame.BoxLocals();
             _interpreter.Run(frame);
         }
         internal TRet Run7<T0,T1,T2,T3,T4,T5,T6,TRet>(T0 arg0,T1 arg1,T2 arg2,T3 arg3,T4 arg4,T5 arg5,T6 arg6) {
@@ -186,6 +198,7 @@ namespace Microsoft.Scripting.Interpreter {
             frame.Data[4] = arg4;
             frame.Data[5] = arg5;
             frame.Data[6] = arg6;
+            frame.BoxLocals();
             return (TRet)_interpreter.Run(frame);
         }
         internal void RunVoid7<T0,T1,T2,T3,T4,T5,T6>(T0 arg0,T1 arg1,T2 arg2,T3 arg3,T4 arg4,T5 arg5,T6 arg6) {
@@ -201,6 +214,7 @@ namespace Microsoft.Scripting.Interpreter {
             frame.Data[4] = arg4;
             frame.Data[5] = arg5;
             frame.Data[6] = arg6;
+            frame.BoxLocals();
             _interpreter.Run(frame);
         }
         internal TRet Run8<T0,T1,T2,T3,T4,T5,T6,T7,TRet>(T0 arg0,T1 arg1,T2 arg2,T3 arg3,T4 arg4,T5 arg5,T6 arg6,T7 arg7) {
@@ -216,6 +230,7 @@ namespace Microsoft.Scripting.Interpreter {
             frame.Data[5] = arg5;
             frame.Data[6] = arg6;
             frame.Data[7] = arg7;
+            frame.BoxLocals();
             return (TRet)_interpreter.Run(frame);
         }
         internal void RunVoid8<T0,T1,T2,T3,T4,T5,T6,T7>(T0 arg0,T1 arg1,T2 arg2,T3 arg3,T4 arg4,T5 arg5,T6 arg6,T7 arg7) {
@@ -232,6 +247,7 @@ namespace Microsoft.Scripting.Interpreter {
             frame.Data[5] = arg5;
             frame.Data[6] = arg6;
             frame.Data[7] = arg7;
+            frame.BoxLocals();
             _interpreter.Run(frame);
         }
         internal TRet Run9<T0,T1,T2,T3,T4,T5,T6,T7,T8,TRet>(T0 arg0,T1 arg1,T2 arg2,T3 arg3,T4 arg4,T5 arg5,T6 arg6,T7 arg7,T8 arg8) {
@@ -248,6 +264,7 @@ namespace Microsoft.Scripting.Interpreter {
             frame.Data[6] = arg6;
             frame.Data[7] = arg7;
             frame.Data[8] = arg8;
+            frame.BoxLocals();
             return (TRet)_interpreter.Run(frame);
         }
         internal void RunVoid9<T0,T1,T2,T3,T4,T5,T6,T7,T8>(T0 arg0,T1 arg1,T2 arg2,T3 arg3,T4 arg4,T5 arg5,T6 arg6,T7 arg7,T8 arg8) {
@@ -265,6 +282,7 @@ namespace Microsoft.Scripting.Interpreter {
             frame.Data[6] = arg6;
             frame.Data[7] = arg7;
             frame.Data[8] = arg8;
+            frame.BoxLocals();
             _interpreter.Run(frame);
         }
         internal TRet Run10<T0,T1,T2,T3,T4,T5,T6,T7,T8,T9,TRet>(T0 arg0,T1 arg1,T2 arg2,T3 arg3,T4 arg4,T5 arg5,T6 arg6,T7 arg7,T8 arg8,T9 arg9) {
@@ -282,6 +300,7 @@ namespace Microsoft.Scripting.Interpreter {
             frame.Data[7] = arg7;
             frame.Data[8] = arg8;
             frame.Data[9] = arg9;
+            frame.BoxLocals();
             return (TRet)_interpreter.Run(frame);
         }
         internal void RunVoid10<T0,T1,T2,T3,T4,T5,T6,T7,T8,T9>(T0 arg0,T1 arg1,T2 arg2,T3 arg3,T4 arg4,T5 arg5,T6 arg6,T7 arg7,T8 arg8,T9 arg9) {
@@ -300,6 +319,7 @@ namespace Microsoft.Scripting.Interpreter {
             frame.Data[7] = arg7;
             frame.Data[8] = arg8;
             frame.Data[9] = arg9;
+            frame.BoxLocals();
             _interpreter.Run(frame);
         }
         internal TRet Run11<T0,T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,TRet>(T0 arg0,T1 arg1,T2 arg2,T3 arg3,T4 arg4,T5 arg5,T6 arg6,T7 arg7,T8 arg8,T9 arg9,T10 arg10) {
@@ -318,6 +338,7 @@ namespace Microsoft.Scripting.Interpreter {
             frame.Data[8] = arg8;
             frame.Data[9] = arg9;
             frame.Data[10] = arg10;
+            frame.BoxLocals();
             return (TRet)_interpreter.Run(frame);
         }
         internal void RunVoid11<T0,T1,T2,T3,T4,T5,T6,T7,T8,T9,T10>(T0 arg0,T1 arg1,T2 arg2,T3 arg3,T4 arg4,T5 arg5,T6 arg6,T7 arg7,T8 arg8,T9 arg9,T10 arg10) {
@@ -337,6 +358,7 @@ namespace Microsoft.Scripting.Interpreter {
             frame.Data[8] = arg8;
             frame.Data[9] = arg9;
             frame.Data[10] = arg10;
+            frame.BoxLocals();
             _interpreter.Run(frame);
         }
         internal TRet Run12<T0,T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,TRet>(T0 arg0,T1 arg1,T2 arg2,T3 arg3,T4 arg4,T5 arg5,T6 arg6,T7 arg7,T8 arg8,T9 arg9,T10 arg10,T11 arg11) {
@@ -356,6 +378,7 @@ namespace Microsoft.Scripting.Interpreter {
             frame.Data[9] = arg9;
             frame.Data[10] = arg10;
             frame.Data[11] = arg11;
+            frame.BoxLocals();
             return (TRet)_interpreter.Run(frame);
         }
         internal void RunVoid12<T0,T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11>(T0 arg0,T1 arg1,T2 arg2,T3 arg3,T4 arg4,T5 arg5,T6 arg6,T7 arg7,T8 arg8,T9 arg9,T10 arg10,T11 arg11) {
@@ -376,6 +399,7 @@ namespace Microsoft.Scripting.Interpreter {
             frame.Data[9] = arg9;
             frame.Data[10] = arg10;
             frame.Data[11] = arg11;
+            frame.BoxLocals();
             _interpreter.Run(frame);
         }
         internal TRet Run13<T0,T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,TRet>(T0 arg0,T1 arg1,T2 arg2,T3 arg3,T4 arg4,T5 arg5,T6 arg6,T7 arg7,T8 arg8,T9 arg9,T10 arg10,T11 arg11,T12 arg12) {
@@ -396,6 +420,7 @@ namespace Microsoft.Scripting.Interpreter {
             frame.Data[10] = arg10;
             frame.Data[11] = arg11;
             frame.Data[12] = arg12;
+            frame.BoxLocals();
             return (TRet)_interpreter.Run(frame);
         }
         internal void RunVoid13<T0,T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12>(T0 arg0,T1 arg1,T2 arg2,T3 arg3,T4 arg4,T5 arg5,T6 arg6,T7 arg7,T8 arg8,T9 arg9,T10 arg10,T11 arg11,T12 arg12) {
@@ -417,6 +442,7 @@ namespace Microsoft.Scripting.Interpreter {
             frame.Data[10] = arg10;
             frame.Data[11] = arg11;
             frame.Data[12] = arg12;
+            frame.BoxLocals();
             _interpreter.Run(frame);
         }
         internal TRet Run14<T0,T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,T13,TRet>(T0 arg0,T1 arg1,T2 arg2,T3 arg3,T4 arg4,T5 arg5,T6 arg6,T7 arg7,T8 arg8,T9 arg9,T10 arg10,T11 arg11,T12 arg12,T13 arg13) {
@@ -438,6 +464,7 @@ namespace Microsoft.Scripting.Interpreter {
             frame.Data[11] = arg11;
             frame.Data[12] = arg12;
             frame.Data[13] = arg13;
+            frame.BoxLocals();
             return (TRet)_interpreter.Run(frame);
         }
         internal void RunVoid14<T0,T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,T13>(T0 arg0,T1 arg1,T2 arg2,T3 arg3,T4 arg4,T5 arg5,T6 arg6,T7 arg7,T8 arg8,T9 arg9,T10 arg10,T11 arg11,T12 arg12,T13 arg13) {
@@ -460,6 +487,7 @@ namespace Microsoft.Scripting.Interpreter {
             frame.Data[11] = arg11;
             frame.Data[12] = arg12;
             frame.Data[13] = arg13;
+            frame.BoxLocals();
             _interpreter.Run(frame);
         }
         internal TRet Run15<T0,T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,T13,T14,TRet>(T0 arg0,T1 arg1,T2 arg2,T3 arg3,T4 arg4,T5 arg5,T6 arg6,T7 arg7,T8 arg8,T9 arg9,T10 arg10,T11 arg11,T12 arg12,T13 arg13,T14 arg14) {
@@ -482,6 +510,7 @@ namespace Microsoft.Scripting.Interpreter {
             frame.Data[12] = arg12;
             frame.Data[13] = arg13;
             frame.Data[14] = arg14;
+            frame.BoxLocals();
             return (TRet)_interpreter.Run(frame);
         }
         internal void RunVoid15<T0,T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,T13,T14>(T0 arg0,T1 arg1,T2 arg2,T3 arg3,T4 arg4,T5 arg5,T6 arg6,T7 arg7,T8 arg8,T9 arg9,T10 arg10,T11 arg11,T12 arg12,T13 arg13,T14 arg14) {
@@ -505,6 +534,7 @@ namespace Microsoft.Scripting.Interpreter {
             frame.Data[12] = arg12;
             frame.Data[13] = arg13;
             frame.Data[14] = arg14;
+            frame.BoxLocals();
             _interpreter.Run(frame);
         }
 

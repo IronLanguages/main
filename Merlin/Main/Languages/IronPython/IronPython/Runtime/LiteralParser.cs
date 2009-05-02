@@ -302,9 +302,7 @@ namespace IronPython.Runtime {
         }
 
         public static object ParseInteger(string text, int b) {
-            if (b == 0) {
-                b = DetectRadix(ref text);
-            }
+            Debug.Assert(b != 0);
             int iret;
             if (!ParseInt(text, b, out iret)) {
                 BigInteger ret = ParseBigInteger(text, b);
@@ -402,25 +400,8 @@ namespace IronPython.Runtime {
             }
         }
 
-        private static int DetectRadix(ref string s) {
-            if (s.StartsWith("0x") || s.StartsWith("0X")) {
-                s = s.Substring(2);
-                return 16;
-            } else if (s.startswith("0o") || s.startswith("0O")) {
-                s = s.Substring(2);
-                return 8;
-            } else if (s.startswith("0b") || s.startswith("0B")) {
-                s = s.Substring(2);
-                return 2;
-            } else if (s.StartsWith("0")) {
-                return 8;
-            } else {
-                return 10;
-            }
-        }
-
         public static BigInteger ParseBigInteger(string text, int b) {
-            if (b == 0) b = DetectRadix(ref text);
+            Debug.Assert(b != 0);
             BigInteger ret = BigInteger.Zero;
             BigInteger m = BigInteger.One;
 

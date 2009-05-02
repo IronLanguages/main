@@ -17,10 +17,10 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq.Expressions;
 using System.Dynamic;
-using AstUtils = Microsoft.Scripting.Ast.Utils;
+using System.Linq.Expressions;
 using Microsoft.Scripting.Runtime;
+using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace Microsoft.Scripting.ComInterop {
 
@@ -36,7 +36,7 @@ namespace Microsoft.Scripting.ComInterop {
             if (_desc.HasMember(binder.Name)) {
                 return new DynamicMetaObject(
                     // return (.bound $arg0).GetValue("<name>")
-                    AstUtils.Constant(((ComTypeEnumDesc)Value).GetValue(binder.Name)),
+                    AstUtils.Constant(((ComTypeEnumDesc)Value).GetValue(binder.Name), typeof(object)),
                     EnumRestrictions()
                 );
             }

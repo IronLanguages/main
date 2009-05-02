@@ -75,20 +75,24 @@ namespace Microsoft.Scripting.Runtime {
                 // appending to it.n2
                 _stackFrames = (List<DynamicStackFrame>)rethrow.Data[typeof(DynamicStackFrame)];
                 rethrow.Data.Remove(typeof(DynamicStackFrame));
-            } else {
-                // we don't have any dynamic stack trace data, capture the data we can
-                // from the raw exception object.
-                StackTrace st = new StackTrace(rethrow, true);
-
-                if (!TryGetAssociatedStackTraces(rethrow, out prev)) {
-                    prev = new List<StackTrace>();
-                    AssociateStackTraces(rethrow, prev);
-                }
-
-                prev.Add(st);
             }
+            // we don't have any dynamic stack trace data, capture the data we can
+            // from the raw exception object.
+            StackTrace st = new StackTrace(rethrow, true);
+
+            if (!TryGetAssociatedStackTraces(rethrow, out prev)) {
+                prev = new List<StackTrace>();
+                AssociateStackTraces(rethrow, prev);
+            }
+
+            prev.Add(st);
+            
 #endif
             return rethrow;
+        }
+
+        public static void ClearDynamicStackFrames(Exception e) {
+            e.Data.Remove(typeof(DynamicStackFrame));
         }
 
         private static void AssociateStackTraces(Exception e, List<StackTrace> traces) {

@@ -718,43 +718,6 @@ if sys.platform=="win32":
         class Boolean(int):
             pass
             
-#------------------------------------------------------------------------------
-def run_pkg_helper(filename, ns_name=None, exclude_list = []):
-    #CodePlex 17621 - don't want to run the test package twice
-    if ns_name!=None and ns_name!="__main__" and sys.platform=="win32":
-        return -1
-
-    from exceptions import SystemExit
-
-    #Determine the package structure
-    import nt
-    cwd = nt.getcwd()
-    
-    common_end = 0
-    for i in xrange(len(cwd)):
-        if cwd[i]!=filename[i]: break
-        common_end+=1
-    
-    common_end+=1
-    temp_package = filename[common_end:filename.rfind("\\")+1]
-    
-    temp_package.replace("\\", ".")
-    
-   
-    
-    #get the module names in the package
-    mod_names = [temp_package + x for x in get_mod_names(filename) if x not in exclude_list]
-    mod_names = [x.replace("\\", ".") for x in mod_names]
-    
-    for test_module in mod_names:
-        print "--------------------------------------------------------------------"
-        print "Importing", test_module, "..."
-        try:
-            __import__(test_module)
-        except SystemExit, e:
-            if e.code!=0: 
-                raise Exception("Importing '%s' caused an unexpected exit code: %s" % (test_module, str(e.code)))
-        print ""
 
 #------------------------------------------------------------------------------
 def run_com_test(name, file):

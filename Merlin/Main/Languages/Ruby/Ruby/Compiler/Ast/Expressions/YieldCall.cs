@@ -42,10 +42,10 @@ namespace IronRuby.Compiler.Ast {
 
             if (gen.CompilerOptions.IsEval) {
                 // eval:
-                postYield = Methods.EvalYield.OpCall(gen.CurrentRfcVariable, bfcVariable, resultVariable);
+                postYield = Methods.EvalYield.OpCall(gen.CurrentScopeVariable, bfcVariable, resultVariable);
             } else if (gen.CurrentBlock != null) {
                 // block:
-                postYield = Methods.BlockYield.OpCall(gen.CurrentRfcVariable, gen.CurrentBlock.BfcVariable, bfcVariable, resultVariable);
+                postYield = Methods.BlockYield.OpCall(gen.CurrentScopeVariable, gen.CurrentBlock.BfcVariable, bfcVariable, resultVariable);
             } else {
                 // method:
                 postYield = Methods.MethodYield.OpCall(gen.CurrentRfcVariable, bfcVariable, resultVariable);

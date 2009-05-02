@@ -1384,10 +1384,6 @@ namespace IronPython.Runtime.Types {
 
         private const MethodAttributes MethodAttributesToEraseInOveride = MethodAttributes.Abstract | MethodAttributes.ReservedMask;
 
-        private ILGen DefineMethodOverride(Type type, string name, out MethodInfo decl, out MethodBuilder impl) {
-            return DefineMethodOverride(MethodAttributes.PrivateScope, type, name, out decl, out impl);
-        }
-
         private ILGen DefineMethodOverride(MethodAttributes extra, Type type, string name, out MethodInfo decl, out MethodBuilder impl) {
             decl = type.GetMethod(name);
             return DefineMethodOverride(extra, decl, out impl);
@@ -1637,7 +1633,7 @@ namespace IronPython.Runtime.Types {
                     }
 
                     if (newProp.GetSetMethod(true) != null) {
-                        rg.AddGetter(newProp.GetSetMethod(true));
+                        rg.AddSetter(newProp.GetSetMethod(true));
                     }
                 }
             }

@@ -363,7 +363,7 @@ namespace IronPython.Runtime.Binding {
                     return;
                 }
 
-                PythonTypeUserDescriptorSlot slot = dts as PythonTypeUserDescriptorSlot;
+                IValueSlot slot = dts as IValueSlot;
                 if (slot != null && !(slot.Value is PythonTypeSlot)) {
                     PythonType slottype = DynamicHelpers.GetPythonType(slot.Value);
                     if (slottype.IsSystemType) {
@@ -867,7 +867,10 @@ namespace IronPython.Runtime.Binding {
                 lock (cachedSets) {
                     var kvp = new SetMemberKey(typeof(TValue), _binder.Name);
                     if (!cachedSets.TryGetValue(kvp, out dlg) || dlg._version != Instance.PythonType.Version) {
-                        dlg = cachedSets[kvp] = Bind(_binder.Name);
+                        dlg = Bind(_binder.Name);
+                        if (dlg != null) {
+                            cachedSets[kvp] = dlg;
+                        }
                     }
                 }
 

@@ -164,12 +164,12 @@ namespace Microsoft.Scripting.Utils {
 
         [Conditional("FALSE")]
         public static void Invariant(bool condition) {
-            // nop
+            Debug.Assert(condition);
         }
 
         [Conditional("FALSE")]
         public static void Invariant(bool condition, string message) {
-            // nop
+            Debug.Assert(condition, message);
         }
 
         [Conditional("FALSE")]

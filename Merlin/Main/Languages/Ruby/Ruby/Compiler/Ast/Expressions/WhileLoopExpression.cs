@@ -126,10 +126,10 @@ namespace IronRuby.Compiler.Ast {
             // wrap it to try finally that updates RFC state:
             if (!isInnerLoop) {
                 loop = AstUtils.Try(
-                    Ast.Assign(Ast.Field(gen.CurrentRfcVariable, RuntimeFlowControl.InLoopField), AstUtils.Constant(true)),
+                    Methods.EnterLoop.OpCall(gen.CurrentScopeVariable),
                     loop
                 ).Finally(
-                    Ast.Assign(Ast.Field(gen.CurrentRfcVariable, RuntimeFlowControl.InLoopField), AstUtils.Constant(false))
+                    Methods.LeaveLoop.OpCall(gen.CurrentScopeVariable)
                 );
             }
 

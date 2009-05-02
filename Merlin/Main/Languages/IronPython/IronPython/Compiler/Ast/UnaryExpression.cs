@@ -43,14 +43,25 @@ namespace IronPython.Compiler.Ast {
         }
 
         internal override MSAst.Expression Transform(AstGenerator ag, Type type) {
-            MSAst.Expression res = ag.Operation(
-                Op == PythonOperator.Not ? typeof(bool) : type,
-                PythonOperatorToOperatorString(_op),
-                ag.Transform(_expression)
-            );
+            MSAst.Expression res;
+            if (Op == PythonOperator.Not) {
+                Debug.Assert(type == typeof(object) || type == typeof(bool));
 
-            if (Op == PythonOperator.Not && type != typeof(bool)) {
-                res = BindingHelpers.AddPythonBoxing(res);
+                if (type == typeof(bool)) {
+                    res = ag.Operation(typeof(bool), PythonOperationKind.Not, ag.Transform(_expression));
+                } else {
+                    res = ag.Operation(typeof(object), PythonOperationKind.NotRetObject, ag.Transform(_expression));
+                }
+            } else {
+                res = ag.Operation(
+                    typeof(object),
+                    PythonOperatorToOperatorString(_op),
+                    ag.Transform(_expression)
+                );
+
+                if (type != typeof(object)) {
+                    res = ag.Convert(type, Microsoft.Scripting.Actions.ConversionResultKind.ExplicitCast, res);
+                }
             }
 
             return res;

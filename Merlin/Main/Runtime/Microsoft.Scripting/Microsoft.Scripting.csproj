@@ -2,7 +2,7 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProductVersion>9.0.30729</ProductVersion>
+    <ProductVersion>9.0.21022</ProductVersion>
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>{EB66B766-6354-4208-A3D4-AACBDCB5C3B3}</ProjectGuid>
     <OutputType>Library</OutputType>
@@ -187,7 +187,7 @@
     <Compile Include="Interpreter\Instruction.cs" />
     <Compile Include="Interpreter\LightCompiler.cs" />
     <Compile Include="Interpreter\RuntimeVariables.cs" />
-    <Compile Include="Interpreter\StackFrame.cs" />
+    <Compile Include="Interpreter\InterpretedFrame.cs" />
     <Compile Include="Interpreter\LastFaultingLineExpression.cs" />
     <Compile Include="Runtime\BindingRestrictionsHelpers.cs" />
     <Compile Include="Runtime\DynamicNull.cs" />
@@ -246,6 +246,7 @@
     <Compile Include="PerfTrack.cs" />
     <Compile Include="Runtime\CompilerContext.cs" />
     <Compile Include="Runtime\DynamicLanguageProviderAttribute.cs" />
+    <Compile Include="Runtime\ICustomScriptCodeData.cs" />
     <Compile Include="Runtime\IRestrictedMetaObject.cs" />
     <Compile Include="Runtime\LegacyScriptCode.cs" />
     <Compile Include="Runtime\MetaObjectExtensions.cs" />
@@ -393,8 +394,6 @@
     <Compile Include="Runtime\Extensible.cs" />
     <Compile Include="Runtime\ExtensionTypeAttribute.cs" />
     <Compile Include="Runtime\ExtraKeyEnumerator.cs" />
-    <Compile Include="Runtime\GlobalsDictionary.cs" />
-    <Compile Include="Runtime\IDynamicObject.cs" />
     <Compile Include="Runtime\IMembersList.cs" />
     <Compile Include="Runtime\ImplicitConversionMethodAttribute.cs" />
     <Compile Include="Runtime\LanguageContext.cs" />

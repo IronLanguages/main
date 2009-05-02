@@ -48,9 +48,9 @@ namespace IronRuby.Runtime {
         public static readonly string/*!*/ MriReleaseDate = "2008-05-28";
 
         // IronRuby:
-        public const string/*!*/ IronRubyVersionString = "0.3.0.0";
-        public static readonly Version IronRubyVersion = new Version(0, 3, 0, 0);
-        internal const string/*!*/ IronRubyDisplayName = "IronRuby 0.3";
+        public const string/*!*/ IronRubyVersionString = "0.4.0.0";
+        public static readonly Version IronRubyVersion = new Version(0, 4, 0, 0);
+        internal const string/*!*/ IronRubyDisplayName = "IronRuby";
         internal const string/*!*/ IronRubyNames = "IronRuby;Ruby;rb";
         internal const string/*!*/ IronRubyFileExtensions = ".rb";
 
@@ -1623,7 +1623,6 @@ namespace IronRuby.Runtime {
             }
         }
 
-
         #endregion
 
         #region Parsing, Compilation (thread-safe)
@@ -1715,13 +1714,13 @@ namespace IronRuby.Runtime {
 
         public override CompilerOptions/*!*/ GetCompilerOptions() {
             return new RubyCompilerOptions(_options) {
-                FactoryKind = TopScopeFactoryKind.Default,
+                FactoryKind = TopScopeFactoryKind.Hosted,
             };
         }
 
         public override CompilerOptions/*!*/ GetCompilerOptions(Scope/*!*/ scope) {
             var result = new RubyCompilerOptions(_options) {
-                FactoryKind = TopScopeFactoryKind.GlobalScopeBound
+                FactoryKind = TopScopeFactoryKind.Hosted
             };
 
             var rubyGlobalScope = (RubyGlobalScope)scope.GetExtension(ContextId);
@@ -1736,10 +1735,10 @@ namespace IronRuby.Runtime {
             return _runtimeErrorSink;
         }
 
-        protected override ScriptCode/*!*/ LoadCompiledCode(Delegate/*!*/ method, string path) {
+        protected override ScriptCode/*!*/ LoadCompiledCode(Delegate/*!*/ method, string path, string customData) {
             // TODO: we need to save the kind of the scope factory:
             SourceUnit su = new SourceUnit(this, NullTextContentProvider.Null, path, SourceCodeKind.File);
-            return new RubyScriptCode((Func<RubyScope, RuntimeFlowControl, object, object>)method, su, TopScopeFactoryKind.Default);
+            return new RubyScriptCode((Func<RubyScope, RuntimeFlowControl, object, object>)method, su, TopScopeFactoryKind.Hosted);
         }
 
         public void CheckConstantName(string name) {
@@ -1767,7 +1766,7 @@ namespace IronRuby.Runtime {
         /// <summary>
         /// Creates a scope extension for a DLR scope unless it already exists for the given scope.
         /// </summary>
-        internal RubyGlobalScope/*!*/ InitializeGlobalScope(Scope/*!*/ globalScope, bool createHosted) {
+        internal RubyGlobalScope/*!*/ InitializeGlobalScope(Scope/*!*/ globalScope, bool createHosted, bool bindGlobals) {
             Assert.NotNull(globalScope);
 
             // TODO: Scopes are not thread safe but should be!
@@ -1777,20 +1776,20 @@ namespace IronRuby.Runtime {
             }
 
             object mainObject = new Object();
-            RubyClass singletonClass = CreateMainSingleton(mainObject, null);
+            RubyClass mainSingleton = CreateMainSingleton(mainObject, null);
 
-            RubyGlobalScope result = new RubyGlobalScope(this, globalScope, mainObject, createHosted);
+            RubyGlobalScope result = new RubyGlobalScope(this, globalScope, mainSingleton, createHosted);
             globalScope.SetExtension(ContextId, result);
-            
-            if (createHosted) {
+
+            if (bindGlobals) {
                 // method_missing:
-                singletonClass.SetMethodNoEvent(this, Symbols.MethodMissing, 
+                mainSingleton.SetMethodNoEvent(this, Symbols.MethodMissing, 
                     new RubyLibraryMethodInfo(new Delegate[] {
                         new Func<RubyScope, BlockParam, object, SymbolId, object[], object>(RubyTopLevelScope.TopMethodMissing)
-                    }, RubyMemberFlags.Private, singletonClass)
+                    }, RubyMemberFlags.Private, mainSingleton)
                 );
-                
-                singletonClass.SetGlobalScope(result);
+
+                mainSingleton.SetGlobalScope(result);
             }
 
             return result;
@@ -1849,7 +1848,7 @@ namespace IronRuby.Runtime {
                         // from multiple blocks registered with Kernel#at_exit.
                         lastSystemExit = e;
                     } catch (Exception e) {
-                        RubyOps.SetCurrentExceptionAndStackTrace(this, e);
+			            CurrentException = e;
                         lastUncaughtException = e;
                     }
                 }
@@ -1984,7 +1983,6 @@ namespace IronRuby.Runtime {
             RubyExceptionData data = RubyExceptionData.GetInstance(exception);
             var message = RubyExceptionData.GetClrMessage(data.Message, exceptionClass.Name);
 
-            RubyExceptionData.GetInstance(exception).SetCompiledTrace(this);
             RubyArray backtrace = data.Backtrace;
 
             StringBuilder sb = new StringBuilder();

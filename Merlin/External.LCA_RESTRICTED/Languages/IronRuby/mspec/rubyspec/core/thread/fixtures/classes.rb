@@ -39,6 +39,7 @@ module ThreadSpecs
   def self.running_thread
     Thread.new do
       begin
+        Thread.current["ready_to_abort"] = true
         loop {}
         ScratchPad.record :woken
       rescue Object => e
