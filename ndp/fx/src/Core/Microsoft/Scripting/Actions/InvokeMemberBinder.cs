@@ -14,7 +14,6 @@
  * ***************************************************************************/
 
 using System.Dynamic.Utils;
-using Microsoft.Contracts;
 
 namespace System.Dynamic {
 
@@ -40,6 +39,13 @@ namespace System.Dynamic {
             _name = name;
             _ignoreCase = ignoreCase;
             _callInfo = callInfo;
+        }
+
+        /// <summary>
+        /// The result type of the operation.
+        /// </summary>
+        public override sealed Type ReturnType {
+            get { return typeof(object); }
         }
 
         /// <summary>
@@ -119,25 +125,5 @@ namespace System.Dynamic {
         /// request the binding of the invoke operation only.
         /// </remarks>
         public abstract DynamicMetaObject FallbackInvoke(DynamicMetaObject target, DynamicMetaObject[] args, DynamicMetaObject errorSuggestion);
-
-        /// <summary>
-        /// Determines whether the specified <see cref="Object" /> is equal to the current object.
-        /// </summary>
-        /// <param name="obj">The <see cref="Object" /> to compare with the current object.</param>
-        /// <returns>true if the specified System.Object is equal to the current object; otherwise false.</returns>
-        [Confined]
-        public override bool Equals(object obj) {
-            InvokeMemberBinder ca = obj as InvokeMemberBinder;
-            return ca != null && ca._name == _name && ca._ignoreCase == _ignoreCase && ca._callInfo.Equals(_callInfo);
-        }
-
-        /// <summary>
-        /// Returns the hash code for this instance.
-        /// </summary>
-        /// <returns>An <see cref="Int32" /> containing the hash code for this instance.</returns>
-        [Confined]
-        public override int GetHashCode() {
-            return InvokeMemberBinderHash ^ _name.GetHashCode() ^ (_ignoreCase ? 0x8000000 : 0) ^ _callInfo.GetHashCode();
-        }
     }
 }

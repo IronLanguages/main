@@ -55,6 +55,13 @@ namespace System.Dynamic {
         }
 
         /// <summary>
+        /// The result type of the operation.
+        /// </summary>
+        public override sealed Type ReturnType {
+            get { return typeof(void); }
+        }
+
+        /// <summary>
         /// Performs the binding of the dynamic delete member operation if the target dynamic object cannot bind.
         /// </summary>
         /// <param name="target">The target of the dynamic delete member operation.</param>
@@ -90,24 +97,6 @@ namespace System.Dynamic {
             get {
                 return true;
             }
-        }
-
-        /// <summary>
-        /// Returns the hash code for this instance.
-        /// </summary>
-        /// <returns>An <see cref="Int32" /> containing the hash code for this instance.</returns>
-        public override int GetHashCode() {
-            return DeleteMemberBinderHash ^ _name.GetHashCode() ^ (_ignoreCase ? 0x8000000 : 0); ;
-        }
-
-        /// <summary>
-        /// Determines whether the specified <see cref="Object" /> is equal to the current object.
-        /// </summary>
-        /// <param name="obj">The <see cref="Object" /> to compare with the current object.</param>
-        /// <returns>true if the specified object is equal to the current object; otherwise false.</returns>
-        public override bool Equals(object obj) {
-            DeleteMemberBinder dma = obj as DeleteMemberBinder;
-            return dma != null && dma._name == _name && dma._ignoreCase == _ignoreCase;
         }
     }
 }

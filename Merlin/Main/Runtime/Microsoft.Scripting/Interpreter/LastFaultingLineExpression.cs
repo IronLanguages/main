@@ -27,9 +27,6 @@ namespace Microsoft.Scripting.Interpreter {
     public class LastFaultingLineExpression : Expression {
         private readonly Expression _lineNumberExpression;
         
-        private static readonly MethodInfo _UpdateStackTrace = typeof(ExceptionHelpers).GetMethod("UpdateStackTrace");
-        private static readonly MethodInfo _GetCurrentMethod = typeof(MethodBase).GetMethod("GetCurrentMethod");
-
         public LastFaultingLineExpression(Expression lineNumberExpression) {
             _lineNumberExpression = lineNumberExpression;
         }
@@ -71,7 +68,7 @@ namespace Microsoft.Scripting.Interpreter {
             }
         }
 
-        public override int Run(StackFrame frame) {
+        public override int Run(InterpretedFrame frame) {
             DebugInfo info = DebugInfo.GetMatchingDebugInfo(_debugInfos, frame.FaultingInstruction);
             if (info != null && !info.IsClear) {
                 frame.Push(info.StartLine);

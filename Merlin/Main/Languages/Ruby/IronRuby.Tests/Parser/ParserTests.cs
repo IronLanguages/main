@@ -909,7 +909,7 @@ add 'foo', 'bar'
             const int Id = 0x12345678;
 
             var lambda = CallSiteTracer.Transform<Func<RubyScope, RuntimeFlowControl, object, object>>(ast, sourceUnit, options, Id);
-            var code = new RubyScriptCode(lambda, sourceUnit, TopScopeFactoryKind.Default);
+            var code = new RubyScriptCode(lambda, sourceUnit, TopScopeFactoryKind.Hosted);
 
             var locations = new List<int>();
             CallSiteTracer.Register((context, args, result, id, location) => {

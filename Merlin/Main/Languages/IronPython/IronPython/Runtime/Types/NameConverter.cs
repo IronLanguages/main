@@ -32,28 +32,7 @@ namespace IronPython.Runtime.Types {
 
             return GetNameFromMethod(dt, mi, NameType.Method, ref name);
         }
-
-        public static NameType TryGetName(PythonType dt, FieldInfo fi, out string name) {
-            NameType nt = NameType.PythonField;
-            name = fi.Name;
-
-            // hide MinValue & MaxValue on int, Empty on string, Epsilon, Min/Max, etc.. on double
-            if (fi.DeclaringType == typeof(string) ||
-                fi.DeclaringType == typeof(int) ||
-                fi.DeclaringType == typeof(double) ||
-                fi.IsDefined(typeof(PythonHiddenAttribute), false)) nt = NameType.Field;
-
-            string namePrefix = "";
-            if (fi.IsPrivate || (fi.IsAssembly && !fi.IsFamilyOrAssembly)) {
-               // mangle protectes to private
-                namePrefix = "_" + dt.Name + "__";
-                nt = NameType.Field;
-            }
-
-            name = namePrefix + name;
-            return nt;
-        }
-
+       
         public static NameType TryGetName(PythonType dt, EventInfo ei, MethodInfo eventMethod, out string name) {
             name = ei.Name;
             NameType res = dt.IsPythonType ? NameType.PythonEvent : NameType.Event;
@@ -70,36 +49,6 @@ namespace IronPython.Runtime.Types {
             name = pi.Name;
 
             return GetNameFromMethod(dt, prop, NameType.Property, ref name);
-        }
-
-        public static NameType TryGetName(PythonType dt, ExtensionPropertyInfo pi, MethodInfo prop, out string name) {
-            name = pi.Name;
-
-            return GetNameFromMethod(dt, prop, NameType.Property, ref name);
-        }
-
-        public static NameType TryGetName(Type t, out string name) {
-            name = GetTypeName(t);
-
-            string namePrefix = "";
-
-            if ((ReflectionUtils.IsNested(t) && !t.IsNestedPublic) || (t.IsNestedAssembly && !t.IsNestedFamORAssem)) {
-                if (!t.IsGenericParameter) {
-                    namePrefix = "_" + DynamicHelpers.GetPythonTypeFromType(t.DeclaringType).Name + "__";
-                }
-            }
-
-            NameType res = NameType.Type;
-            object[] attribute = t.GetCustomAttributes(typeof(PythonTypeAttribute), false);
-            if (attribute.Length > 0) {
-                PythonTypeAttribute attr = attribute[0] as PythonTypeAttribute;
-                if (attr.Name != null) {
-                    name = attr.Name;
-                }
-            }
-
-            name = namePrefix + name;
-            return res;
         }
 
         public static string GetTypeName(Type t) {

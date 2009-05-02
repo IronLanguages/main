@@ -120,7 +120,7 @@ namespace IronRuby.StandardLibrary.Digest {
             [RubyMethod("digest", RubyMethodAttributes.PublicSingleton)]
             public static MutableString Digest(
                 CallSiteStorage<Func<CallSite, RubyClass, object>>/*!*/ allocateStorage,
-                CallSiteStorage<Func<CallSite, object, MutableString, MutableString>>/*!*/ digestStorage,
+                CallSiteStorage<Func<CallSite, object, MutableString, object>>/*!*/ digestStorage,
                 RubyClass/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ str) {
 
                 // TODO: new?
@@ -129,7 +129,7 @@ namespace IronRuby.StandardLibrary.Digest {
 
                 // TODO: check obj
                 var site = digestStorage.GetCallSite("digest", 1);
-                return site.Target(site, obj, str);
+                return (MutableString)site.Target(site, obj, str);
             }
 
             [RubyMethod("digest", RubyMethodAttributes.PublicSingleton)]
@@ -138,11 +138,11 @@ namespace IronRuby.StandardLibrary.Digest {
             }
 
             [RubyMethod("hexdigest", RubyMethodAttributes.PublicSingleton)]
-            public static MutableString/*!*/ HexDigest(CallSiteStorage<Func<CallSite, object, MutableString, MutableString>>/*!*/ storage, 
+            public static MutableString/*!*/ HexDigest(CallSiteStorage<Func<CallSite, object, MutableString, object>>/*!*/ storage, 
                 RubyClass/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ str) {
 
                 var site = storage.GetCallSite("digest", 1);
-                MutableString result = site.Target(site, self, str);
+                MutableString result = (MutableString)site.Target(site, self, str);
                 // TODO: check result != null
                 return HexEncode(result);
             }

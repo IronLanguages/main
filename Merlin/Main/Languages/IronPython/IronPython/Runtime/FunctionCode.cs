@@ -206,10 +206,6 @@ namespace IronPython.Runtime {
             _lineNo = line;
         }
 
-        internal void SetFlags(FunctionAttributes flags) {
-            _flags = flags;
-        }
-
         internal object Call(Scope/*!*/ scope) {
             if (_code != null) {
                 return _code.Run(scope);

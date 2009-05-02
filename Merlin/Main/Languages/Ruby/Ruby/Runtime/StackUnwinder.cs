@@ -26,7 +26,6 @@ namespace IronRuby.Runtime {
         public readonly object ReturnValue;
 
         internal static FieldInfo ReturnValueField { get { return typeof(StackUnwinder).GetField("ReturnValue"); } }
-        //internal static MethodInfo GetMethodCallWithBlockResultMethod { get { return typeof(StackUnwinder).GetMethod("GetMethodCallWithBlockResult"); } }
 
         public StackUnwinder(object returnValue) {
             ReturnValue = returnValue;
@@ -63,6 +62,10 @@ namespace IronRuby.Runtime {
 
         internal RuntimeFlowControl TargetFrame { get { return _targetFrame; } }
         internal ProcKind SourceProcKind { get { return _sourceProcKind; } }
+
+        internal EvalUnwinder(BlockReturnReason reason, object returnValue) 
+            : this(reason, null, ProcKind.Block, returnValue) {
+        }
 
         internal EvalUnwinder(BlockReturnReason reason, RuntimeFlowControl targetFrame, ProcKind sourceProcKind, object returnValue)
             : base(returnValue) {

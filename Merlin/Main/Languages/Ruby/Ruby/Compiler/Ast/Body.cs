@@ -117,8 +117,7 @@ namespace IronRuby.Compiler.Ast {
                             Ast.NotEqual(oldExceptionVariable, AstUtils.Constant(null))
                         ),
                         Ast.Throw(oldExceptionVariable)
-                    ),
-                    AstUtils.Empty()
+                    )
                 );
             } else {
                 // rethrow:
@@ -143,40 +142,39 @@ namespace IronRuby.Compiler.Ast {
             // (the value of the last expression in the body cannot be the last executed expression statement => we can ignore it):
             transformedBody = gen.TransformStatements(_statements, (_elseStatements != null) ? ResultOperation.Ignore : resultOperation);
 
-            MSA.Expression setInRescueFlag = null, clearInRescueFlag = null;
-            var breakLabel = Ast.Label();
-            var continueLabel = Ast.Label();
+            MSA.Expression enterRescue = null, leaveRescue = null;
+            var retryLabel = Ast.Label("retry");
 
             // make rescue clause:
             MSA.Expression transformedRescue;
             if (_rescueClauses != null) {
                 // outer-most EH blocks sets and clears runtime flag RuntimeFlowControl.InTryRescue:
                 if (gen.CurrentRescue == null) {
-                    setInRescueFlag = Ast.Assign(Ast.Field(gen.CurrentRfcVariable, RuntimeFlowControl.InRescueField), AstUtils.Constant(true));
-                    clearInRescueFlag = Ast.Assign(Ast.Field(gen.CurrentRfcVariable, RuntimeFlowControl.InRescueField), AstUtils.Constant(false));
+                    enterRescue = Methods.EnterRescue.OpCall(gen.CurrentScopeVariable);
+                    leaveRescue = Methods.LeaveRescue.OpCall(gen.CurrentScopeVariable);
                 } else {
-                    setInRescueFlag = clearInRescueFlag = AstUtils.Empty();
+                    enterRescue = leaveRescue = AstUtils.Empty();
                 }
 
-                gen.EnterRescueClause(retryingVariable, breakLabel, continueLabel);
+                gen.EnterRescueClause(retryingVariable, retryLabel);
 
                 var handlers = new IfStatementTest[_rescueClauses.Count];
                 for (int i = 0; i < handlers.Length; i++) {
                     handlers[i] = _rescueClauses[i].Transform(gen, resultOperation);
                 }
 
-                transformedRescue = Ast.Block(
-                    setInRescueFlag,
+                transformedRescue =
                     AstUtils.Try(
+                        enterRescue,
                         AstUtils.If(handlers, Ast.Assign(exceptionRethrowVariable, AstUtils.Constant(true)))
                     ).Filter(evalUnwinder, Ast.Equal(Ast.Field(evalUnwinder, EvalUnwinder.ReasonField), AstUtils.Constant(BlockReturnReason.Retry)),
                         Ast.Block(
                             Ast.Assign(retryingVariable, AstUtils.Constant(true)),
-                            Ast.Continue(continueLabel),
+                            Ast.Continue(retryLabel),
                             AstUtils.Empty()
                         )
-                    )
-                );
+                    );
+                
 
                 gen.LeaveRescueClause();
 
@@ -188,48 +186,41 @@ namespace IronRuby.Compiler.Ast {
                 transformedElse = AstUtils.Unless(exceptionThrownVariable, transformedElse);
             }
 
-            var result = AstFactory.Infinite(breakLabel, continueLabel,
-                Ast.Assign(exceptionThrownVariable, AstUtils.Constant(false)),
-                Ast.Assign(exceptionRethrowVariable, AstUtils.Constant(false)),
-                Ast.Assign(retryingVariable, AstUtils.Constant(false)),
-
+            var result = Ast.Block(
+                Ast.Label(retryLabel),
                 AstUtils.Try(
+                    Ast.Assign(exceptionThrownVariable, AstUtils.Constant(false)),
+                    Ast.Assign(exceptionRethrowVariable, AstUtils.Constant(false)),
+                    Ast.Assign(retryingVariable, AstUtils.Constant(false)),
+
                     // save exception (old_$! is not used unless there is a rescue clause):
-                    Ast.Block(
-                        (_rescueClauses == null) ? (MSA.Expression)AstUtils.Empty() :
-                            Ast.Assign(oldExceptionVariable, Methods.GetCurrentException.OpCall(gen.CurrentScopeVariable)),
+                    (_rescueClauses == null) ? (MSA.Expression)AstUtils.Empty() :
+                        Ast.Assign(oldExceptionVariable, Methods.GetCurrentException.OpCall(gen.CurrentScopeVariable)),
 
-                        AstUtils.Try(
-                            Ast.Block(transformedBody, AstUtils.Empty())
-                        ).Filter(exceptionVariable, Methods.CanRescue.OpCall(gen.CurrentRfcVariable, exceptionVariable),
-                            Ast.Assign(exceptionThrownVariable, AstUtils.Constant(true)),
-                            Methods.SetCurrentExceptionAndStackTrace.OpCall(gen.CurrentScopeVariable, exceptionVariable),
-                            transformedRescue,
-                            AstUtils.Empty()
-                        ).FinallyIf((_rescueClauses != null), 
-                            // restore previous exception if the current one has been handled:
-                            AstUtils.Unless(exceptionRethrowVariable,
-                                Methods.SetCurrentException.OpCall(gen.CurrentScopeVariable, oldExceptionVariable)
-                            ),
-                            clearInRescueFlag
+                    AstUtils.Try(
+                        Ast.Block(transformedBody, AstUtils.Empty())
+                    ).Filter(exceptionVariable, Methods.CanRescue.OpCall(gen.CurrentScopeVariable, exceptionVariable),
+                        Ast.Assign(exceptionThrownVariable, AstUtils.Constant(true)),
+                        transformedRescue,
+                        AstUtils.Empty()
+                    ).FinallyIf((_rescueClauses != null), 
+                        // restore previous exception if the current one has been handled:
+                        AstUtils.Unless(exceptionRethrowVariable,
+                            Methods.SetCurrentException.OpCall(gen.CurrentScopeVariable, oldExceptionVariable)
                         ),
+                        leaveRescue
+                    ),
 
-                        // unless (exception_thrown) do <else-statements> end
-                        transformedElse,
-                        AstUtils.Empty()
-                    )
+                    // unless (exception_thrown) do <else-statements> end
+                    transformedElse,
+                    AstUtils.Empty()
                 ).FilterIf((_rescueClauses != null || _elseStatements != null),
-                    exceptionVariable, Methods.CanRescue.OpCall(gen.CurrentRfcVariable, exceptionVariable),
-                    Ast.Block(
-                        Methods.SetCurrentExceptionAndStackTrace.OpCall(gen.CurrentScopeVariable, exceptionVariable),
-                        Ast.Assign(exceptionRethrowVariable, AstUtils.Constant(true)),
-                        AstUtils.Empty()
-                    )
+                    exceptionVariable, Methods.CanRescue.OpCall(gen.CurrentScopeVariable, exceptionVariable),
+                    Ast.Assign(exceptionRethrowVariable, AstUtils.Constant(true)),
+                    AstUtils.Empty()
                 ).FinallyWithJumps(
                     AstUtils.Unless(retryingVariable, transformedEnsure)
-                ),
-
-                Ast.Break(breakLabel)
+                )
             );
 
             return result;

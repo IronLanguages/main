@@ -47,7 +47,7 @@ namespace IronRuby.Runtime.Calls {
             _resultType = resultType;
         }
 
-        public override Type/*!*/ ResultType {
+        public override Type/*!*/ ReturnType {
             get { return _resultType; }
         }
 

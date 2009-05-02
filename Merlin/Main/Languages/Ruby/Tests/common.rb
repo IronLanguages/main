@@ -139,7 +139,7 @@ module Test
         
         @@mode_mapping = {
             1 => "-D -X:Interpret",
-            2 => "-D",
+            2 => "",
             3 => "-D -X:SaveAssemblies",
         }
         

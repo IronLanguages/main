@@ -43,7 +43,7 @@ namespace Microsoft.Scripting.Actions {
     /// <summary>
     /// NamespaceTracker represent a CLS namespace.
     /// </summary>
-    public class NamespaceTracker : MemberTracker, IOldDynamicObject, IAttributesCollection, IMembersList {
+    public class NamespaceTracker : MemberTracker, IAttributesCollection, IMembersList {
         // _dict contains all the currently loaded entries. However, there may be pending types that have
         // not yet been loaded in _typeNames
         internal Dictionary<string, MemberTracker> _dict = new Dictionary<string, MemberTracker>();
@@ -539,43 +539,6 @@ namespace Microsoft.Scripting.Actions {
                 return normalizedTypeNames;
             }
         }
-
-        #region IOldDynamicObject Members
-
-        public bool GetRule(OldDynamicAction action, CodeContext context, object[] args, RuleBuilder rule) {
-            if (action.Kind == DynamicActionKind.GetMember) {
-                return MakeGetMemberRule((OldGetMemberAction)action, context, rule);                
-            }
-            return false;
-        }
-
-        private bool MakeGetMemberRule(OldGetMemberAction action, CodeContext context, RuleBuilder rule) {
-            object value;
-            if (TryGetValue(action.Name, out value)) {
-                Debug.Assert(value is MemberTracker);
-                MemberTracker memValue = (MemberTracker)value;
-
-                rule.MakeTest(typeof(NamespaceTracker));
-                rule.AddTest(
-                    Expression.Equal(
-                        Expression.Property(
-                            Expression.Convert(rule.Parameters[0], typeof(NamespaceTracker)),
-                            typeof(NamespaceTracker).GetProperty("Id")
-                        ),
-                        AstUtils.Constant(Id)
-                    )
-                );
-
-
-                Expression target = context.LanguageContext.Binder.ReturnMemberTracker(memValue.DeclaringType, memValue);
-
-                rule.Target = rule.MakeReturn(context.LanguageContext.Binder, target);
-                return true;
-            }
-            return false;
-        }
-
-        #endregion
 
         public int Id {
             get {

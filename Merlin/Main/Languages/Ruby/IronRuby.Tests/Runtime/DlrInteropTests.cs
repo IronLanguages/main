@@ -203,9 +203,6 @@ namespace IronRuby.Tests {
 
     class MyConvertBinder : ConvertBinder {
         private object _result;
-        public MyConvertBinder(Type type)
-            : this(type, "FallbackConvert") {
-        }
         public MyConvertBinder(Type type, object result)
             : base(type, true) {
             _result = result;
@@ -213,14 +210,14 @@ namespace IronRuby.Tests {
 
         public override DynamicMetaObject FallbackConvert(DynamicMetaObject target, DynamicMetaObject errorSuggestion) {
             return new DynamicMetaObject(
-                Expression.Constant(_result),
+                Expression.Constant(_result, ReturnType),
                 BindingRestrictionsHelpers.GetRuntimeTypeRestriction(target)
             );
 
         }
 
-        internal static object Invoke(object obj, Type targetType) {
-            var site = CallSite<Func<CallSite, object, object>>.Create(new MyConvertBinder(targetType));
+        internal static T Invoke<T>(object obj, T fallbackResult) {
+            var site = CallSite<Func<CallSite, object, T>>.Create(new MyConvertBinder(typeof(T), fallbackResult));
             return site.Target(site, obj);
         }
     }
@@ -689,9 +686,9 @@ end
 
         public void Dlr_Convertible() {
             object convertible = RubyInteropScope.GetVariable("convertible");
-            AreEqualBug(MyConvertBinder.Invoke(convertible, typeof(int)), 0, "FallbackConvert");
-            AreEqualBug(MyConvertBinder.Invoke(convertible, typeof(string)), "0", "FallbackConvert");
-            AreEqualBug(MyConvertBinder.Invoke(convertible, typeof(float)), 0.0, "FallbackConvert");
+            AreEqualBug(MyConvertBinder.Invoke<int>(convertible, -1234), 0, -1234);
+            AreEqualBug(MyConvertBinder.Invoke<string>(convertible, "FallbackConvert"), "0", "FallbackConvert");
+            AreEqualBug(MyConvertBinder.Invoke<float>(convertible, -1234.0f), 0.0, -1234.0f);
         }
 
         public void Dlr_Indexable() {
@@ -711,9 +708,9 @@ end
         }
         public void Dlr_Enumerable() {
             object ruby_enumerable = RubyInteropScope.GetVariable("ruby_enumerable");
-            IEnumerable e = MyConvertBinder.Invoke(ruby_enumerable, typeof(IEnumerable)) as IEnumerable;
-            AreEqual(e != null, true);
-            IEnumerable<object> e2 = MyConvertBinder.Invoke(ruby_enumerable, typeof(IEnumerable<object>)) as IEnumerable<object>;
+            IEnumerable e = MyConvertBinder.Invoke<IEnumerable>(ruby_enumerable, null);
+            AreEqualBug(e != null, true, false);
+            IEnumerable<object> e2 = MyConvertBinder.Invoke<IEnumerable<object>>(ruby_enumerable, null);
             AreEqualBug(e2 != null, true, false);
         }
 

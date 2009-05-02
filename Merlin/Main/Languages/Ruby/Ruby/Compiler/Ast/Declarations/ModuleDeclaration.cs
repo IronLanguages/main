@@ -73,14 +73,14 @@ namespace IronRuby.Compiler.Ast {
             ScopeBuilder outerLocals = gen.CurrentScope;
                 
             // definition needs to take place outside the defined lexical scope:
-            MSA.Expression definition = MakeDefinitionExpression(gen);
-            MSA.Expression selfVariable = outerLocals.DefineHiddenVariable("#module", typeof(RubyModule));
-            MSA.Expression rfcVariable = gen.CurrentRfcVariable;
-            MSA.Expression parentScope = gen.CurrentScopeVariable;
+            var definition = MakeDefinitionExpression(gen);
+            var selfVariable = outerLocals.DefineHiddenVariable("#module", typeof(RubyModule));
+            var rfcVariable = gen.CurrentRfcVariable;
+            var parentScope = gen.CurrentScopeVariable;
 
             // inner locals:
             ScopeBuilder scope = new ScopeBuilder();
-            MSA.Expression scopeVariable = scope.DefineHiddenVariable("#scope", typeof(RubyScope));
+            var scopeVariable = scope.DefineHiddenVariable("#scope", typeof(RubyScope));
             
             gen.EnterModuleDefinition(
                 scope,

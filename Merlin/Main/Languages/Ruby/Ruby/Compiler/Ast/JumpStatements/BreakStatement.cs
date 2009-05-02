@@ -32,7 +32,7 @@ namespace IronRuby.Compiler.Ast {
 
             // eval:
             if (gen.CompilerOptions.IsEval) {
-                return Methods.EvalBreak.OpCall(gen.CurrentRfcVariable, AstFactory.Box(transformedReturnValue));
+                return Methods.EvalBreak.OpCall(gen.CurrentScopeVariable, AstFactory.Box(transformedReturnValue));
             }
 
             // loop:

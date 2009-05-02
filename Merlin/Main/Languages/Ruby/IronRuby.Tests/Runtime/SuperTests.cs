@@ -15,9 +15,8 @@
 
 namespace IronRuby.Tests {
     public partial class Tests {
-        private void Super1_Test(bool eval) {
-            AssertOutput(delegate() {
-                CompilerTest(Eval(eval, @"
+        public void Super1() {
+            TestOutputWithEval(@"
 class C
   def foo a
     puts 'C.foo'
@@ -33,32 +32,15 @@ class D < C
 end
 
 D.new.foo
-"));
-            }, @"
+", @"
 D.foo
 C.foo
-arg");
-        }
-
-        public void Super1() {
-            Super1_Test(false);
-        }
-
-        public void SuperEval1() {
-            Super1_Test(true);
+arg"
+            );
         }
 
         public void SuperParameterless1() {
-            SuperParameterless1_Test(false);
-        }
-
-        public void SuperParameterlessEval1() {
-            SuperParameterless1_Test(true);
-        }
-
-        public void SuperParameterless1_Test(bool eval) {
-            AssertOutput(delegate() {
-                CompilerTest(Eval(eval, @"
+            TestOutputWithEval(@"
 class C
   def foo a
     puts 'C.foo'
@@ -69,29 +51,20 @@ end
 class D < C
   def foo a
     puts 'D.foo'
-    #<super#>
+    super            # TODO: test with eval
   end
 end
 
 D.new.foo 'arg'
-"));
-            }, @"
+",@"
 D.foo
 C.foo
-arg");
+arg"
+            );
         }
 
         public void SuperParameterless2() {
-            SuperParameterless2_Test(false);
-        }
-
-        public void SuperParameterlessEval2() {
-            SuperParameterless2_Test(true);
-        }
-
-        public void SuperParameterless2_Test(bool eval) {
-            AssertOutput(delegate() {
-                CompilerTest(Eval(eval, @"
+            TestOutputWithEval(@"
 class C
   def foo a
     puts 'C.foo'
@@ -103,18 +76,18 @@ end
 class D < C
   def foo a
     puts 'D.foo'
-    #<super#> { puts 'block' }
+    super { puts 'block' }   # TODO: test with eval
   end
 end
 
 D.new.foo 'arg'
-"));
-            }, @"
+", @"
 D.foo
 C.foo
 arg
 block
-");
+"
+            );
         }
 
         public void SuperParameterless3() {

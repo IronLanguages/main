@@ -836,6 +836,38 @@ namespace IronPython.Runtime {
             return false;
         }
 
+        /// <summary>
+        /// Converts a value to int ignoring floats
+        /// </summary>
+        public static int? ImplicitConvertToInt32(object o) {
+            if (o is int) {
+                return (int)o;
+            } else if (o is BigInteger) {
+                int res;
+                if (((BigInteger)o).AsInt32(out res)) {
+                    return res;
+                }
+            } else if (o is Extensible<int>) {
+                return Converter.ConvertToInt32(o);
+            } else if (o is Extensible<BigInteger>) {
+                int res;
+                if (Converter.TryConvertToInt32(o, out res)) {
+                    return res;
+                }
+            }
+
+            if (!(o is double) && !(o is float) && !(o is Extensible<double>)) {
+                object objres;
+                if (PythonTypeOps.TryInvokeUnaryOperator(DefaultContext.Default, o, Symbols.ConvertToInt, out objres)) {
+                    if (objres is int) {
+                        return (int)objres;
+                    }
+                }
+            }
+
+            return null;
+        }
+
         internal static bool IsNumeric(Type t) {
             if (t.IsEnum) return false;
 

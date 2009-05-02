@@ -271,13 +271,13 @@ namespace IronRuby.Builtins {
         [RubyMethod("autoload", RubyMethodAttributes.PublicSingleton)]
         public static void SetAutoloadedConstant(RubyScope/*!*/ scope, object self,
             [DefaultProtocol, NotNull]string/*!*/ constantName, [DefaultProtocol, NotNull]MutableString/*!*/ path) {
-            ModuleOps.SetAutoloadedConstant(scope.GetInnerMostModule(), constantName, path);
+            ModuleOps.SetAutoloadedConstant(scope.GetInnerMostModuleForConstantLookup(), constantName, path);
         }
 
         [RubyMethod("autoload?", RubyMethodAttributes.PrivateInstance)]
         [RubyMethod("autoload?", RubyMethodAttributes.PublicSingleton)]
         public static MutableString GetAutoloadedConstantPath(RubyScope/*!*/ scope, object self, [DefaultProtocol, NotNull]string/*!*/ constantName) {
-            return ModuleOps.GetAutoloadedConstantPath(scope.GetInnerMostModule(), constantName);
+            return ModuleOps.GetAutoloadedConstantPath(scope.GetInnerMostModuleForConstantLookup(), constantName);
         }
 
         [RubyMethod("binding", RubyMethodAttributes.PrivateInstance)]

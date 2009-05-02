@@ -21,16 +21,33 @@ using Microsoft.Scripting.Runtime;
 
 namespace IronPython.Runtime {
     public sealed class ModuleLoader {
-        private ScriptCode _sc;
+        private readonly ScriptCode _sc;
+        private readonly string _parentName, _name;
 
-        public ModuleLoader(ScriptCode sc) {
+
+        internal ModuleLoader(ScriptCode sc, string parentName, string name) {
             _sc = sc;
+            _parentName = parentName;
+            _name = name;
         }
 
         public Scope load_module(CodeContext/*!*/ context, string fullName) {
             PythonContext pc = PythonContext.GetContext(context);
 
-            return pc.CreateModule(_sc.SourceUnit.Path, _sc.CreateScope(), _sc, ModuleOptions.Initialize).Scope;
+            Scope res = pc.CreateModule(_sc.SourceUnit.Path, _sc.CreateScope(), _sc, ModuleOptions.Initialize).Scope;
+
+            if (_parentName != null) {
+                // if we are a module in a package update the parent package w/ our scope.
+                object parent;
+                if (pc.SystemStateModules.TryGetValue(_parentName, out parent)) {
+                    Scope s = parent as Scope;
+                    if (s != null) {
+                        s.SetName(SymbolTable.StringToId(_name), res);
+                    }
+                }
+            }
+
+            return res;
         }
     }
 
