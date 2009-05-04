@@ -22,7 +22,6 @@ using Microsoft.Scripting.Utils;
 using System.Security;
 using System.Security.Permissions;
 using IronRuby.Builtins;
-using Microsoft.Scripting.Interpretation;
 using System.Linq.Expressions;
 using System.Threading;
 using System.IO;
@@ -38,8 +37,8 @@ namespace IronRuby.Runtime {
     /// </summary>
     [Serializable]
     public sealed class RubyExceptionData {
-        internal static readonly ThreadLocal<InterpretedFrame> CurrentInterpretedFrame = new ThreadLocal<InterpretedFrame>();
-        
+        internal static readonly Microsoft.Scripting.Utils.ThreadLocal<InterpretedFrame> CurrentInterpretedFrame = new Microsoft.Scripting.Utils.ThreadLocal<InterpretedFrame>();
+
         private static readonly object/*!*/ _DataKey = new object();
         internal const string TopLevelMethodName = "#";
 
@@ -108,17 +107,6 @@ namespace IronRuby.Runtime {
             }
         }
 
-        // OBSOLETE:
-        internal void SetInterpretedTrace(InterpreterState/*!*/ state) {
-            if (_backtrace != null) {
-                return;
-            }
-
-            // we need to copy the trace since the source locations in frames above catch site could be altered by further interpretation:
-            _backtrace = AddBacktrace(new RubyArray(), state, 0);
-            DynamicSetBacktrace((RubyContext)state.ScriptCode.SourceUnit.LanguageContext, _backtrace);
-        }
-
         /// <summary>
         /// This is called by the IronRuby runtime to set the backtrace for an exception that has being raised. 
         /// Note that the backtrace may be set directly by user code as well. However, that uses a different code path.
@@ -132,19 +120,12 @@ namespace IronRuby.Runtime {
         }
 
         public static RubyArray/*!*/ CreateBacktrace(RubyContext/*!*/ context, int skipFrames) {
-            if (context.RubyOptions.InterpretedMode) {
-                // OBSOLETE:
-                var currentFrame = InterpreterState.Current.Value;
-                Debug.Assert(currentFrame != null); 
-                return AddBacktrace(new RubyArray(), currentFrame, skipFrames);
-            } else {
-                var trace = DebugInfoAvailable ? new StackTrace(true) : new StackTrace();
-                var interpretedFrame = CurrentInterpretedFrame.Value;
-                return AddBacktrace(
-                    new RubyArray(), trace.GetFrames(), ref interpretedFrame, null, DetectFileAccessPermissions(), 
-                    skipFrames, context.Options.ExceptionDetail
-                );
-            }
+            var trace = DebugInfoAvailable ? new StackTrace(true) : new StackTrace();
+            var interpretedFrame = CurrentInterpretedFrame.Value;
+            return AddBacktrace(
+                new RubyArray(), trace.GetFrames(), ref interpretedFrame, null, DetectFileAccessPermissions(), 
+                skipFrames, context.Options.ExceptionDetail
+            );
         }
 
         // TODO: partial trust
@@ -159,34 +140,6 @@ namespace IronRuby.Runtime {
                 return false;
             }
 #endif
-        }
-
-        // OBSOLETE:
-        private static RubyArray/*!*/ AddBacktrace(RubyArray/*!*/ result, InterpreterState/*!*/ frame, int skipFrames) {
-            do {
-                if (skipFrames == 0) {
-                    string methodName;
-
-                    // TODO: generalize for all languages
-                    if (frame.ScriptCode.SourceUnit.LanguageContext is RubyContext) {
-                        methodName = ParseRubyMethodName(frame.Lambda.Name);
-                    } else {
-                        methodName = frame.Lambda.Name;
-                    }
-
-                    result.Add(MutableString.Create(FormatFrame(
-                        frame.ScriptCode.SourceUnit.Path,
-                        frame.CurrentLocation.Line,
-                        methodName
-                    )));
-                } else {
-                    skipFrames--;
-                }
-
-                frame = frame.Caller;
-            } while (frame != null);
-
-            return result;
         }
 
         private static RubyArray/*!*/ AddBacktrace(RubyArray/*!*/ result, IEnumerable<StackFrame> stackTrace,

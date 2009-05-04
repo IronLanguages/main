@@ -633,7 +633,10 @@ namespace Microsoft.Scripting.Interpreter {
 
                     frame.SetStackDepth(finallyBlock.StackDepth);
                     frame.InstructionIndex = finallyBlock.Start;
-                    frame.Interpreter.RunFinallyOrFaultBlock(frame, finallyBlock.End);
+
+                    // If an exception is thrown and caught in finally the we go on.
+                    // If an exception is thrown but not handled within finally block it is propagated.
+                    frame.Interpreter.RunBlock(frame, finallyBlock.End);
                 }
                 frame.InstructionIndex = oldIndex;
             }
