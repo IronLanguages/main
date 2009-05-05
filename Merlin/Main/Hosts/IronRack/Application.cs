@@ -31,7 +31,12 @@ namespace IronRuby.Rack {
         }
 
         public RubyArray Call(IDictionary<object, object> env) {
-            return RubyEngine.ExecuteMethod<RubyArray>(_app, "call", new Hash(env));
+            var envHash = new Hash(RubyEngine.Context);
+            foreach (var pair in env) {
+                var value = pair.Value.GetType() == "".GetType() ? MutableString.Create((string)pair.Value) : pair.Value;
+                envHash[MutableString.Create((string)pair.Key)] = value;
+            }
+            return RubyEngine.ExecuteMethod<RubyArray>(_app, "call", envHash);
         }
 
         private void InitRack() {
@@ -47,7 +52,7 @@ namespace IronRuby.Rack {
             var fullPath = RubyEngine.FindFile("config.ru");
             if(fullPath != null) {
                 var content = File.ReadAllText(fullPath, Encoding.UTF8);
-                return RubyEngine.Execute("Rack::Builder.new { " + content + "}");
+                return RubyEngine.Execute("Rack::Builder.new { " + content + "}.to_app");
             }
             return null;
         }
