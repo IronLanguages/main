@@ -23,6 +23,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IronRuby.Rack.App", "IronRu
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IronRuby.Sinatra.App", "IronRuby.Sinatra.App\IronRuby.Sinatra.App.csproj", "{2DF0EBF4-787F-4657-BD17-11620B1384E7}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IronRuby.Rails.App", "IronRuby.Rails.App\IronRuby.Rails.App.csproj", "{F66FFF0C-F2FE-4E80-9563-225C58DB9DD3}"
+EndProject
 Global
 	GlobalSection(TeamFoundationVersionControl) = preSolution
 		SccNumberOfProjects = 9
@@ -171,6 +173,16 @@ Global
 		{2DF0EBF4-787F-4657-BD17-11620B1384E7}.Silverlight Debug|Any CPU.Build.0 = Debug|Any CPU
 		{2DF0EBF4-787F-4657-BD17-11620B1384E7}.Silverlight Release|Any CPU.ActiveCfg = Release|Any CPU
 		{2DF0EBF4-787F-4657-BD17-11620B1384E7}.Silverlight Release|Any CPU.Build.0 = Release|Any CPU
+		{F66FFF0C-F2FE-4E80-9563-225C58DB9DD3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F66FFF0C-F2FE-4E80-9563-225C58DB9DD3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F66FFF0C-F2FE-4E80-9563-225C58DB9DD3}.FxCop|Any CPU.ActiveCfg = Release|Any CPU
+		{F66FFF0C-F2FE-4E80-9563-225C58DB9DD3}.FxCop|Any CPU.Build.0 = Release|Any CPU
+		{F66FFF0C-F2FE-4E80-9563-225C58DB9DD3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F66FFF0C-F2FE-4E80-9563-225C58DB9DD3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F66FFF0C-F2FE-4E80-9563-225C58DB9DD3}.Silverlight Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F66FFF0C-F2FE-4E80-9563-225C58DB9DD3}.Silverlight Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F66FFF0C-F2FE-4E80-9563-225C58DB9DD3}.Silverlight Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F66FFF0C-F2FE-4E80-9563-225C58DB9DD3}.Silverlight Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

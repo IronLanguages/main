@@ -22,15 +22,12 @@ using IronRuby.Builtins;
 using IronRuby.Hosting;
 using Microsoft.Scripting.Hosting;
 using Microsoft.Scripting.Hosting.Shell;
-using System.Diagnostics;
 using IronRuby.Runtime;
 using System.Collections.Generic;
 
 namespace IronRuby.Rack {
 
     internal sealed class HttpHandler : IHttpHandler {
-
-        private readonly Stopwatch _watch = new Stopwatch();
 
         public bool IsReusable {
             get { return true; }
