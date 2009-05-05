@@ -20,10 +20,7 @@ namespace IronRuby.Rack {
             }
 
             // http or https
-            var splitUrl = request.RawUrl.Split(new string[] { "://" }, StringSplitOptions.None);
-            if (splitUrl.Length > 0) {
-                this.scheme = splitUrl[0];
-            }
+            this.scheme = request.Url.Scheme;
 
             // go through the headers of the request and move to a more tenable
             // storage location than NameValueCollection
