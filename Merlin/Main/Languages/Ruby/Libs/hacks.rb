@@ -13,6 +13,11 @@
 #
 # ****************************************************************************
 
+# In non-iirb sessions, TOPLEVEL_BINDING isn't defined
+unless defined?(TOPLEVEL_BINDING)
+  TOPLEVEL_BINDING = binding
+end
+
 # Ruby implementation of Method#to_proc
 
 class Method
