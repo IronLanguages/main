@@ -7,4 +7,4 @@ if defined MERLIN_ROOT (
   set IR_CMD="%MERLIN_ROOT%\bin\Release\ir.exe"
 )
 
-%IR_CMD% -X:Interpret -X:PerfStats "%~dpn0" %*
+%IR_CMD% "%~dpn0" %*

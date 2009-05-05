@@ -6,6 +6,8 @@
 # this file is here to facilitate running it.
 #
 
+$start_time = Time.now
+
 require 'rubygems'
 
 version = ">= 0"
@@ -17,3 +19,6 @@ end
 
 gem 'rails', version
 load 'rails'
+
+$end_time = Time.now
+puts "Elapsed: #{$end_time - $start_time}"
