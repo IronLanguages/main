@@ -25,7 +25,6 @@ namespace IronRuby.Rack {
             _appRoot = GetRoot(context);
             _rackVersion = GetRackVersion();
 
-
             InitRack();
             _app = Rackup();
         }
@@ -42,13 +41,19 @@ namespace IronRuby.Rack {
         private void InitRack() {
             // HACK Load gems from default MRI installation. This shouldn't be needed.
             Environment.SetEnvironmentVariable("GEM_PATH", @"C:\ruby\lib\ruby\gems\1.8");
-            
+
+            Utils.Log("=> Loading RubyGems");
             RubyEngine.Require("rubygems");
+
+            Utils.Log("=> Loading Rack " + _rackVersion);
             RubyEngine.Require("rack", _rackVersion);
+
+            Utils.Log("=> Application root: " + _appRoot);
             RubyEngine.AddLoadPath(_appRoot);
         }
 
         private object Rackup() {
+            Utils.Log("=> Loading Rack application");
             var fullPath = RubyEngine.FindFile("config.ru");
             if(fullPath != null) {
                 var content = File.ReadAllText(fullPath, Encoding.UTF8);

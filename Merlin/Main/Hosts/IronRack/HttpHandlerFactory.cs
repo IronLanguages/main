@@ -29,6 +29,7 @@ namespace IronRuby.Rack {
                     if (_Handler == null) {
 
                         Utils.InitializeLog();
+                        Utils.Log("");
                         Utils.Log("=> Booting IronRack");
 
                         Application app;
@@ -42,7 +43,7 @@ namespace IronRuby.Rack {
                             _Handler = new HttpHandler();
 
                             stopWatch.Stop();
-                            Utils.Log("Rack application loaded");
+                            Utils.Log("=> Rack application loaded (" + stopWatch.ElapsedMilliseconds + " ms)");
                         } catch (Exception e) {
                             Utils.ReportError(context, e);
 

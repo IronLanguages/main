@@ -5,9 +5,12 @@ using System.Text;
 using System.Web;
 using IronRuby.Builtins;
 using IronRuby.StandardLibrary.StringIO;
+using System.Diagnostics;
 
 namespace IronRuby.Rack.Handler {
     public class IIS {
+
+        private readonly Stopwatch _watch = new Stopwatch();
 
         public readonly Application App;
         
@@ -32,6 +35,10 @@ namespace IronRuby.Rack.Handler {
         }
 
         public void Handle(Request request, Response response) {
+            Utils.Log("");
+            Utils.Log("=== Request started at " + DateTime.Now.ToString());
+            _watch.Reset();
+            _watch.Start();
 
             var handle_scope = RubyEngine.Engine.CreateScope(); 
             handle_scope.SetVariable("__request", request);
@@ -278,6 +285,8 @@ namespace IronRuby.Rack.Handler {
 
             } finally {
                 RubyEngine.Execute("__body.close if __body.respond_to? :close", handle_scope);
+                _watch.Stop();
+                Utils.Log(">>> Request finished (" + _watch.ElapsedMilliseconds.ToString() + "ms)");
             }
         }
 
