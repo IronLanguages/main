@@ -435,7 +435,7 @@ namespace IronPython.Runtime.Types {
         public object __long__(CodeContext context) {
             object value;
 
-            if (PythonOps.TryGetBoundAttr(context, Symbols.ConvertToLong, out value)) {
+            if (PythonOps.TryGetBoundAttr(context, this, Symbols.ConvertToLong, out value)) {
                 return PythonOps.CallWithContext(context, value);
             }
 
