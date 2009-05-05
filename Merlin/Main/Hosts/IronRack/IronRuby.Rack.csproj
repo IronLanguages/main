@@ -63,7 +63,6 @@
     <Compile Include="Utils.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="repl.rb" />
     <Compile Include="Application.cs" />
     <Compile Include="Response.cs" />
     <None Include="test.rb" />
