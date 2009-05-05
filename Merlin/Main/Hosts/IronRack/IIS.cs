@@ -102,8 +102,8 @@ namespace IronRuby.Rack.Handler {
             //   SERVER_NAME and SERVER_PORT can never be empty strings, and so
             //   are always required.
             
-            env["SERVER_NAME"] = "";
-            env["SERVER_PORT"] = "";
+            env["SERVER_NAME"] = request.OrigionalRequest.Url.Host;
+            env["SERVER_PORT"] = request.OrigionalRequest.Url.Port;
             
             // HTTP_ Variables:	Variables corresponding to the client-supplied 
             //   HTTP request headers (i.e., variables whose names begin with 
