@@ -18,6 +18,14 @@ unless defined?(TOPLEVEL_BINDING)
   TOPLEVEL_BINDING = binding
 end
 
+# IronRuby bug: IO#read seems to chop off the first char
+
+class TCPSocket
+  def read size
+    recv size
+  end
+end
+
 # Ruby implementation of Method#to_proc
 
 class Method
