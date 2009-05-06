@@ -16,9 +16,11 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Dynamic;
+using System.IO;
 using System.Linq.Expressions;
 using System.Runtime.CompilerServices;
-using System.Dynamic;
+using System.Security;
 using System.Text;
 using System.Threading;
 
@@ -470,6 +472,51 @@ namespace IronPython.Runtime.Exceptions {
                 }
 
                 base.__init__(args);
+            }
+
+            private const int EACCES = 13;
+            private const int ENOENT = 2;
+
+            [PythonHidden]
+            protected internal override void InitializeFromClr(System.Exception/*!*/ exception) {
+                if (exception is FileNotFoundException ||
+                    exception is DirectoryNotFoundException ||
+                    exception is PathTooLongException 
+#if !SILVERLIGHT
+                    || exception is DriveNotFoundException
+#endif
+                    ) {
+                    __init__(ENOENT, exception.Message);
+                    return;                    
+                }
+
+                UnauthorizedAccessException noAccess = exception as UnauthorizedAccessException;
+                if (noAccess != null) {
+                    __init__(EACCES, exception.Message);
+                    return;
+                }
+
+                var ioExcep = exception as System.IO.IOException;
+                if (ioExcep != null) {
+                    try {
+                        uint hr = (uint)GetHRForException(exception);
+                        if ((hr & 0xffff0000U) == 0x80070000U) {
+                            // win32 error code, get the real error code...
+                            __init__(hr & 0xffff, exception.Message);
+                            return;
+                        }
+                    } catch (MethodAccessException) {
+                    } catch(SecurityException) {
+                        // not enough permissions to do this...
+                    }
+                }
+                
+                base.InitAndGetClrException(exception);
+            }
+
+            [MethodImpl(MethodImplOptions.NoInlining)] // don't inline so the link demand is always evaluated here.
+            private static int GetHRForException(System.Exception exception) {
+                return System.Runtime.InteropServices.Marshal.GetHRForException(exception);
             }
         }
 

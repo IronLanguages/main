@@ -14,6 +14,7 @@
  * ***************************************************************************/
 
 using System;
+using System.Collections.Generic;
 using System.Security.Cryptography;
 
 using Microsoft.Scripting.Runtime;
@@ -57,11 +58,19 @@ namespace IronPython.Modules {
             return new Sha512Object(data);
         }
 
+        public static Sha512Object sha512(Bytes data) {
+            return new Sha512Object(data);
+        }
+
         public static Sha512Object sha512() {
             return new Sha512Object();
         }
 
         public static Sha384Object sha384(object data) {
+            return new Sha384Object(data);
+        }
+
+        public static Sha384Object sha384(Bytes data) {
             return new Sha384Object(data);
         }
 
@@ -78,7 +87,7 @@ namespace IronPython.Modules {
                 update(initialData);
             }
 
-            private Sha384Object(byte[] initialBytes) {
+            internal Sha384Object(IList<byte> initialBytes) {
                 _bytes = new byte[0];
                 update(initialBytes);
             }
@@ -113,7 +122,7 @@ namespace IronPython.Modules {
                 update(initialData);
             }
 
-            private Sha512Object(byte[] initialBytes) {
+            internal Sha512Object(IList<byte> initialBytes) {
                 _bytes = new byte[0];
                 update(initialBytes);
             }

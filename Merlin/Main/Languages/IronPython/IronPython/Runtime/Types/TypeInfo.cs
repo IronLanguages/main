@@ -1481,6 +1481,10 @@ namespace IronPython.Runtime.Types {
         /// Filters out methods which are present on standard .NET types but shouldn't be there in Python
         /// </summary>
         internal static bool IncludeOperatorMethod(Type/*!*/ t, PythonOperationKind op) {
+            if (t == typeof(string) && op == PythonOperationKind.Compare) {
+                // string doesn't define __cmp__, just __lt__ and friends
+                return false;
+            }
             // numeric types in python don't define equality, just __cmp__
             if (t == typeof(bool) ||
                 (Converter.IsNumeric(t) && t != typeof(Complex64) && t != typeof(double) && t != typeof(float))) {

@@ -14,6 +14,7 @@
  * ***************************************************************************/
 
 using System;
+using System.Collections.Generic;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -63,6 +64,11 @@ namespace IronPython.Modules {
         }
 
         [Documentation("new([data]) -> object (object used to calculate hash)")]
+        public static sha @new(Bytes data) {
+            return new sha(data);
+        }
+
+        [Documentation("new([data]) -> object (object used to calculate hash)")]
         public static sha @new() {
             return new sha();
         }
@@ -85,7 +91,7 @@ namespace IronPython.Modules {
                 update(initialData);
             }
 
-            private sha(byte[] initialBytes) {
+            internal sha(IList<byte> initialBytes) {
                 _bytes = new byte[0];
                 update(initialBytes);
             }
@@ -95,10 +101,14 @@ namespace IronPython.Modules {
                 update(Converter.ConvertToString(newData).MakeByteArray());
             }
 
-            private void update(byte[] newBytes) {
-                byte[] updatedBytes = new byte[_bytes.Length + newBytes.Length];
+            public void update(Bytes newBytes) {
+                update((IList<byte>)newBytes);
+            }
+
+            private void update(IList<byte> newBytes) {
+                byte[] updatedBytes = new byte[_bytes.Length + newBytes.Count];
                 Array.Copy(_bytes, updatedBytes, _bytes.Length);
-                Array.Copy(newBytes, 0, updatedBytes, _bytes.Length, newBytes.Length);
+                newBytes.CopyTo(updatedBytes, _bytes.Length);
                 _bytes = updatedBytes;
                 _hash = GetHasher().ComputeHash(_bytes);
             }

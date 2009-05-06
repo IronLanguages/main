@@ -53,6 +53,11 @@ namespace IronPython.Modules {
         }
 
         [Documentation("new([data]) -> object (new md5 object)")]
+        public static md5 @new(Bytes data) {
+            return new md5(data);
+        }
+
+        [Documentation("new([data]) -> object (new md5 object)")]
         public static md5 @new() {
             return new md5();
         }
@@ -71,7 +76,7 @@ namespace IronPython.Modules {
                 update(initialData);
             }
 
-            private md5(byte[] initialBytes) {
+            internal md5(IList<byte> initialBytes) {
                 _bytes = new byte[0];
                 update(initialBytes);
             }
@@ -81,10 +86,15 @@ namespace IronPython.Modules {
                 update(Converter.ConvertToString(newData).MakeByteArray());
             }
 
-            private void update(byte[] newBytes) {
-                byte[] updatedBytes = new byte[_bytes.Length + newBytes.Length];
+            [Documentation("update(bytes) -> None (update digest with string data)")]
+            public void update(Bytes newData) {
+                update((IList<byte>)newData);
+            }
+
+            private void update(IList<byte> newBytes) {
+                byte[] updatedBytes = new byte[_bytes.Length + newBytes.Count];
                 Array.Copy(_bytes, updatedBytes, _bytes.Length);
-                Array.Copy(newBytes, 0, updatedBytes, _bytes.Length, newBytes.Length);
+                newBytes.CopyTo(updatedBytes, _bytes.Length);
                 _bytes = updatedBytes;
                 _hash = GetHasher().ComputeHash(_bytes);
             }

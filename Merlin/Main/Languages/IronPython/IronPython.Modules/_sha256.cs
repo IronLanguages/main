@@ -14,6 +14,7 @@
  * ***************************************************************************/
 
 using System;
+using System.Collections.Generic;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -48,6 +49,10 @@ namespace IronPython.Modules {
             return new Sha256Object(data);
         }
 
+        public static Sha256Object sha256(Bytes data) {
+            return new Sha256Object(data);
+        }
+
         public static Sha256Object sha256() {
             return new Sha256Object();
         }
@@ -73,7 +78,7 @@ namespace IronPython.Modules {
                 update(initialData);
             }
 
-            private Sha256Object(byte[] initialBytes) {
+            internal Sha256Object(IList<byte> initialBytes) {
                 _bytes = new byte[0];
                 update(initialBytes);
             }
@@ -115,10 +120,14 @@ namespace IronPython.Modules {
             }
         }
 
-        internal void update(byte[] newBytes) {
-            byte[] updatedBytes = new byte[_bytes.Length + newBytes.Length];
+        public void update(Bytes newBytes) {
+            update((IList<byte>)newBytes);
+        }
+
+        internal void update(IList<byte> newBytes) {
+            byte[] updatedBytes = new byte[_bytes.Length + newBytes.Count];
             Array.Copy(_bytes, updatedBytes, _bytes.Length);
-            Array.Copy(newBytes, 0, updatedBytes, _bytes.Length, newBytes.Length);
+            newBytes.CopyTo(updatedBytes, _bytes.Length);
             _bytes = updatedBytes;
             _hash = Hasher.ComputeHash(_bytes);
         }
@@ -127,7 +136,6 @@ namespace IronPython.Modules {
         public void update(object newData) {
             update(Converter.ConvertToString(newData).MakeByteArray());
         }
-
 
         [Documentation("digest() -> int (current digest value)")]
         public string digest() {
