@@ -14,6 +14,7 @@
  * ***************************************************************************/
 
 using System;
+using System.Collections;
 using System.Text;
 
 using Microsoft.Scripting.Runtime;
@@ -70,16 +71,6 @@ namespace IronPython.Modules {
                     int start, stop, step;
                     int size = ((ArrayType)NativeType).Length;
                     SimpleType elemType = ((ArrayType)NativeType).ElementType as SimpleType;
-                    if (elemType != null && (elemType._type == SimpleTypeKind.WChar || elemType._type == SimpleTypeKind.Char)) {
-                        // need to find the real length of the string                        
-                        int elmSize = ((INativeType)elemType).Size;
-                        for (int i = 0; i < ((ArrayType)NativeType).Length; i++) {
-                            if (elemType.ReadChar(_memHolder, checked(i * elmSize)) == 0) {
-                                size = i * elmSize;
-                                break;
-                            }
-                        }
-                    }
 
                     slice.indices(size, out start, out stop, out step);
                     if ((step > 0 && start >= stop) || (step < 0 && start <= stop)) {
@@ -96,9 +87,6 @@ namespace IronPython.Modules {
 
                         for (int i = 0, index = start; i < n; i++, index += step) {
                             char c = elemType.ReadChar(_memHolder, checked(index * elmSize));
-                            if (c == 0) {
-                                break;
-                            }
                             res.Append(c);
                         }
 
@@ -111,6 +99,26 @@ namespace IronPython.Modules {
                         }
 
                         return new List(ret);
+                    }
+                }
+                set {
+                    int start, stop, step;
+                    int size = ((ArrayType)NativeType).Length;
+                    SimpleType elemType = ((ArrayType)NativeType).ElementType as SimpleType;
+
+                    slice.indices(size, out start, out stop, out step);
+
+                    int n = (int)(step > 0 ? (0L + stop - start + step - 1) / step : (0L + stop - start + step + 1) / step);
+                    IEnumerator ie = PythonOps.GetEnumerator(value);
+                    for (int i = 0, index = start; i < n; i++, index += step) {
+                        if (!ie.MoveNext()) {
+                            throw PythonOps.ValueError("sequence not long enough");
+                        }
+                        this[index] = ie.Current;
+                    }
+
+                    if (ie.MoveNext()) {
+                        throw PythonOps.ValueError("not all values consumed while slicing");
                     }
                 }
             }

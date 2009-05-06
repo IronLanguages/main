@@ -2359,19 +2359,19 @@ namespace IronPython.Runtime {
         }
 
         internal bool GreaterThan(object self, object other) {
-            return Comparison(self, other, PythonOperationKind.GreaterThan, ref _greaterThanSite);
+            return Comparison(self, other, ExpressionType.GreaterThan, ref _greaterThanSite);
         }
 
         internal bool LessThan(object self, object other) {
-            return Comparison(self, other, PythonOperationKind.LessThan, ref _lessThanSite);
+            return Comparison(self, other, ExpressionType.LessThan, ref _lessThanSite);
         }
 
         internal bool GreaterThanOrEqual(object self, object other) {
-            return Comparison(self, other, PythonOperationKind.GreaterThanOrEqual, ref _greaterThanEqualSite);
+            return Comparison(self, other, ExpressionType.GreaterThanOrEqual, ref _greaterThanEqualSite);
         }
 
         internal bool LessThanOrEqual(object self, object other) {
-            return Comparison(self, other, PythonOperationKind.LessThanOrEqual, ref _lessThanEqualSite);
+            return Comparison(self, other, ExpressionType.LessThanOrEqual, ref _lessThanEqualSite);
         }
 
         internal bool Contains(object self, object other) {
@@ -2384,6 +2384,27 @@ namespace IronPython.Runtime {
 
         internal bool NotEqual(object self, object other) {
             return !Equal(self, other);
+        }
+
+        private bool Comparison(object self, object other, ExpressionType operation, ref CallSite<Func<CallSite, object, object, bool>> comparisonSite) {
+            if (comparisonSite == null) {
+                Interlocked.CompareExchange(
+                    ref comparisonSite,
+                    CreateComparisonSite(operation),
+                    null
+                );
+            }
+
+            return comparisonSite.Target(comparisonSite, self, other);
+        }
+
+        internal CallSite<Func<CallSite, object, object, bool>> CreateComparisonSite(ExpressionType op) {
+            return CallSite<Func<CallSite, object, object, bool>>.Create(
+                DefaultBinderState.BinaryOperationRetType(
+                    DefaultBinderState.BinaryOperation(op),
+                    DefaultBinderState.Convert(typeof(bool), ConversionResultKind.ExplicitCast)
+                )
+            );
         }
 
         private bool Comparison(object self, object other, PythonOperationKind operation, ref CallSite<Func<CallSite, object, object, bool>> comparisonSite) {
@@ -2400,9 +2421,9 @@ namespace IronPython.Runtime {
 
         internal CallSite<Func<CallSite, object, object, bool>> CreateComparisonSite(PythonOperationKind op) {
             return CallSite<Func<CallSite, object, object, bool>>.Create(
-                Binders.BinaryOperationRetBool(
-                    DefaultBinderState,
-                    op
+                DefaultBinderState.OperationRetType(
+                    DefaultBinderState.Operation(op),
+                    DefaultBinderState.Convert(typeof(bool), ConversionResultKind.ExplicitCast)
                 )
             );
         }
@@ -2789,11 +2810,7 @@ namespace IronPython.Runtime {
 
         private static CallSite<Func<CallSite, CodeContext, T, object, object, int>> MakeCompareSite<T>(PythonContext context) {
             return CallSite<Func<CallSite, CodeContext, T, object, object, int>>.Create(
-                Binders.InvokeAndConvert(
-                    context.DefaultBinderState,
-                    2,
-                    typeof(int)
-                )
+                context.DefaultBinderState.InvokeTwoConvertToInt
             );
         }
 
@@ -2890,13 +2907,7 @@ namespace IronPython.Runtime {
         }
 
         internal CallSite<Func<CallSite, object, object, bool>> MakeEqualSite() {
-            return CallSite<Func<CallSite, object, object, bool>>.Create(
-                Binders.BinaryOperationRetType(
-                    DefaultBinderState,
-                    PythonOperationKind.Equal,
-                    typeof(bool)
-                )
-            );
+            return CreateComparisonSite(ExpressionType.Equal);
         }
 
         internal CallSite<Func<CallSite, object, int>> GetHashSite(PythonType/*!*/ type) {

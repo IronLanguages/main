@@ -35,7 +35,6 @@ using AstUtils = Microsoft.Scripting.Ast.Utils;
 using System.Runtime.CompilerServices;
 
 namespace IronRuby.Builtins {
-
     public sealed partial class RubyClass : RubyModule, IDuplicable {
         /// <summary>
         /// Visibility context within which all methods are visible.
@@ -79,9 +78,8 @@ namespace IronRuby.Builtins {
 
         #region Mutable state guarded by ClassHierarchyLock
 
-        // TODO: internal setter
         [Emitted]
-        public StrongBox<int> Version;
+        public VersionHandle Version;
 
         private readonly WeakReference/*!*/ _weakSelf;
 
@@ -96,13 +94,67 @@ namespace IronRuby.Builtins {
 
         private CallSite<Func<CallSite, object, object>> _inspectSite;
         private CallSite<Func<CallSite, object, MutableString>> _stringConversionSite;
-
+        
         public CallSite<Func<CallSite, object, object>>/*!*/ InspectSite { 
             get { return RubyUtils.GetCallSite(ref _inspectSite, Context, "inspect", 0); } 
         }
-
+        
         public CallSite<Func<CallSite, object, MutableString>>/*!*/ StringConversionSite {
             get { return RubyUtils.GetCallSite(ref _stringConversionSite, ConvertToSAction.Make(Context)); } 
+        }
+
+        // RubyClass, RubyClass -> object
+        private CallSite<Func<CallSite, object, object, object>> _classInheritedCallbackSite;
+
+        internal void ClassInheritedEvent(RubyClass/*!*/ subClass) {
+            if (_classInheritedCallbackSite == null) {
+                Interlocked.CompareExchange(
+                    ref _classInheritedCallbackSite,
+                    CallSite<Func<CallSite, object, object, object>>.Create(RubyCallAction.Make(Context, Symbols.Inherited, RubyCallSignature.WithImplicitSelf(1)
+                    )),
+                    null
+                );
+            }
+
+            _classInheritedCallbackSite.Target(_classInheritedCallbackSite, this, subClass);
+        }
+
+        // object, SymbolId -> object
+        private CallSite<Func<CallSite, object, object, object>> _singletonMethodAddedCallbackSite;
+        private CallSite<Func<CallSite, object, object, object>> _singletonMethodRemovedCallbackSite;
+        private CallSite<Func<CallSite, object, object, object>> _singletonMethodUndefinedCallbackSite;
+
+        // Ruby 1.8: called after method is added, except for alias_method which calls it before
+        // Ruby 1.9: called before method is added
+        public override void MethodAdded(string/*!*/ name) {
+            Assert.NotNull(name);
+
+            // not called on singleton classes:
+            if (IsSingletonClass) {
+                Context.Send(ref _singletonMethodAddedCallbackSite, Symbols.SingletonMethodAdded, _singletonClassOf, name);
+            } else {
+                base.MethodAdded(name);
+            }
+        }
+
+        internal override void MethodRemoved(string/*!*/ name) {
+            Assert.NotNull(name);
+
+            if (IsSingletonClass) {
+                Context.Send(ref _singletonMethodRemovedCallbackSite, Symbols.SingletonMethodRemoved, _singletonClassOf, name);
+            } else {
+                base.MethodRemoved(name);
+            }
+        }
+
+        internal override void MethodUndefined(string/*!*/ name) {
+            Assert.NotNull(name);
+
+            if (IsSingletonClass) {
+                Context.Send(ref _singletonMethodUndefinedCallbackSite, Symbols.SingletonMethodUndefined, _singletonClassOf, name);
+            } else {
+                base.MethodUndefined(name);
+            }
         }
 
         #endregion
@@ -221,7 +273,8 @@ namespace IronRuby.Builtins {
             }
 
             _weakSelf = new WeakReference(this);
-            Version = new StrongBox<int>(Interlocked.Increment(ref _globalVersion));
+            Version = new VersionHandle(Interlocked.Increment(ref _globalVersion));
+            Version.SetName(name);
         }
 
         #region Versioning
@@ -572,7 +625,7 @@ namespace IronRuby.Builtins {
             }
 
 #if DEBUG
-            PerfTrack.NoteEvent(PerfTrack.Categories.Count, "CLR member lookup failure cache " + (result ? "hit" : "miss"));
+            PerfTrack.NoteEvent(PerfTrack.Categories.Count, "Ruby: CLR member lookup failure cache " + (result ? "hit" : "miss"));
 #endif
             return result;
         }

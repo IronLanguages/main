@@ -1,1 +1,3 @@
-fails:Thread#stop? reports aborting on a killed thread
+critical:Thread#stop? reports aborting on a killed thread
+thread:Thread#stop? describes a dying sleeping thread
+thread:Thread.stop causes the current thread to sleep indefinitely

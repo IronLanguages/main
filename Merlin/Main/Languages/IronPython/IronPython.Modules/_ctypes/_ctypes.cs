@@ -170,23 +170,33 @@ namespace IronPython.Modules {
         public static PythonType POINTER(CodeContext/*!*/ context, PythonType type) {
             PythonContext pc = PythonContext.GetContext(context);
             PythonDictionary dict = (PythonDictionary)pc.GetModuleState(_pointerTypeCacheKey);
-            object res;
-            if (!dict.TryGetValue(type, out res)) {
-                string name;
-                if (type == null) {
-                    name = "c_void_p";
-                } else {
-                    name = "LP_" + type.Name;
+            lock (dict) {
+                object res;
+                if (!dict.TryGetValue(type, out res)) {
+                    string name;
+                    if (type == null) {
+                        name = "c_void_p";
+                    } else {
+                        name = "LP_" + type.Name;
+                    }
+
+                    dict[type] = res = MakePointer(context, name, PythonOps.MakeDictFromItems(new object[] { type, "_type_" }));
                 }
 
-                dict[type] = res = new PointerType(context,
-                   name,
-                   PythonTuple.MakeTuple(_Pointer),
-                   PythonOps.MakeDictFromItems(new object[] { type, "_type_" })
-               );
+                return res as PythonType;
             }
+        }
 
-            return res as PythonType;
+        private static PointerType MakePointer(CodeContext context, string name, PythonDictionary dict) {
+            return new PointerType(context,
+               name,
+               PythonTuple.MakeTuple(_Pointer),
+               dict
+           );
+        }
+
+        public static PythonType POINTER(CodeContext/*!*/ context, [NotNull]string name) {
+            return MakePointer(context, name, new PythonDictionary());
         }
 
         /// <summary>

@@ -313,7 +313,7 @@ namespace IronRuby.Runtime {
             }
 
             globalScope.Context.CheckConstantName(name);
-            return owner.Context.ConstantMissing(owner, name);
+            return owner.ConstantMissing(name);
         }
 
         public static void SetConstant(RubyModule/*!*/ owner, string/*!*/ name, object value) {

@@ -52,6 +52,7 @@ namespace IronPython.Modules {
         public abstract class _Structure : CData {
             protected _Structure() {
                 ((StructType)NativeType).EnsureFinal();
+                _memHolder = new MemoryHolder(NativeType.Size);
             }
 
             public void __init__(params object[] args) {
@@ -60,7 +61,6 @@ namespace IronPython.Modules {
                 INativeType nativeType = NativeType;
                 StructType st = (StructType)nativeType;
 
-                _memHolder = new MemoryHolder(nativeType.Size);
                 st.SetValueInternal(_memHolder, 0, args);
             }
 
@@ -69,7 +69,6 @@ namespace IronPython.Modules {
 
                 INativeType nativeType = NativeType;
 
-                _memHolder = new MemoryHolder(nativeType.Size);
                 StructType st = (StructType)nativeType;
 
                 foreach (var x in kwargs.SymbolAttributes) {

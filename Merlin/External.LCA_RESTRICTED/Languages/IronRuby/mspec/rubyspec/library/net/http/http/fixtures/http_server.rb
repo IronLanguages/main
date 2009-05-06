@@ -51,7 +51,7 @@ module NetHTTPSpecs
   class << self
     def start_server
       server_config = {
-        :BindAddress => "0.0.0.0",
+        :BindAddress => "127.0.0.1",
         :Port => 3333,
         :Logger => WEBrick::Log.new(NullWriter.new),
         :AccessLog => [],

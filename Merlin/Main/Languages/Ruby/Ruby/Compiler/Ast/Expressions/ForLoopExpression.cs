@@ -57,7 +57,7 @@ namespace IronRuby.Compiler.Ast {
 
             MSA.Expression blockArgVariable = gen.CurrentScope.DefineHiddenVariable("#forloop-block", typeof(Proc));
 
-            MSA.Expression result = Ast.Dynamic(RubyCallAction.Make(gen.Context, "each", RubyCallSignature.WithScopeAndBlock(0)), typeof(object),
+            MSA.Expression result = CallBuilder.InvokeMethod(gen.Context, "each", RubyCallSignature.WithScopeAndBlock(0),
                 gen.CurrentScopeVariable,
                 _list.TransformRead(gen),
                 blockArgVariable

@@ -45,7 +45,8 @@ namespace IronPython.Modules {
         public abstract class _CFuncPtr : CData, IDynamicMetaObjectProvider {
             private readonly IntPtr _addr;
             private readonly Delegate _delegate;
-            private object _errcheck, _restype = _noResType, _argtypes;
+            private object _errcheck, _restype = _noResType;
+            private IList<object> _argtypes;
             private int _id;
             private static int _curId = 0;
             internal static object _noResType = new object();
@@ -133,28 +134,40 @@ namespace IronPython.Modules {
 
             #region Public APIs
 
-            public object errcheck {
-                get { return _errcheck; }
-                set { _errcheck = value; }
+            [SpecialName, PropertyMethod]
+            public object Geterrcheck() {
+                return _errcheck;
             }
 
-            public object restype {
-                get {
-                    if (_restype == _noResType) {
-                        return ((CFuncPtrType)NativeType)._restype;
-                    }
+            [SpecialName, PropertyMethod]
+            public void Seterrcheck(object value) {
+                _errcheck = value;
+            }
 
-                    return _restype;
+            [SpecialName, PropertyMethod]
+            public void Deleteerrcheck() {
+                _errcheck = null;
+                _id = Interlocked.Increment(ref _curId);
+            }
+
+            [PropertyMethod, SpecialName]
+            public object Getrestype() {
+                if (_restype == _noResType) {
+                    return ((CFuncPtrType)NativeType)._restype;
                 }
-                set {
-                    INativeType nt = value as INativeType;
-                    if (nt != null || value == null) {
-                        _restype = nt;
-                        _id = Interlocked.Increment(ref _curId);
-                    } else {
-                        // TODO: handle callables
-                        throw PythonOps.TypeError("restype must be a type, a callable, or None");
-                    }
+
+                return _restype;
+            }
+
+            [PropertyMethod, SpecialName]
+            public void Setrestype(object value) {
+                INativeType nt = value as INativeType;
+                if (nt != null || value == null) {
+                    _restype = nt;
+                    _id = Interlocked.Increment(ref _curId);
+                } else {
+                    // TODO: handle callables
+                    throw PythonOps.TypeError("restype must be a type, a callable, or None");
                 }
             }
 
@@ -165,9 +178,34 @@ namespace IronPython.Modules {
             }
 
             public object argtypes {
-                get { return _argtypes; }
+                get {
+                    if (_argtypes != null) {
+                        return _argtypes;
+                    }
+                    
+                    if (((CFuncPtrType)NativeType)._argtypes != null) {
+                        return PythonTuple.MakeTuple(((CFuncPtrType)NativeType)._argtypes);
+                    }
+
+                    return null;
+                }
                 set {
-                    _argtypes = value;
+                    if (value != null) {
+                        IList<object> argValues = value as IList<object>;
+                        if (argValues == null) {
+                            throw PythonOps.TypeErrorForTypeMismatch("sequence", value);
+                        }
+                        foreach (object o in argValues) {
+                            if (!(o is INativeType)) {
+                                if (!PythonOps.HasAttr(DefaultContext.Default, o, SymbolTable.StringToId("from_param"))) {
+                                    throw PythonOps.TypeErrorForTypeMismatch("ctype or object with from_param", o);
+                                }
+                            }
+                        }
+                        _argtypes = argValues;
+                    } else {
+                        _argtypes = null;
+                    }
                     _id = Interlocked.Increment(ref _curId);
                 }
             }
@@ -299,7 +337,7 @@ namespace IronPython.Modules {
                 }
 
                 private INativeType GetNativeReturnType() {
-                    return Value.restype as INativeType;
+                    return Value.Getrestype() as INativeType;
                 }
 
                 private ArgumentMarshaller/*!*/[]/*!*/ GetArgumentMarshallers(DynamicMetaObject/*!*/[]/*!*/ args) {
@@ -307,10 +345,10 @@ namespace IronPython.Modules {
                     ArgumentMarshaller[] res = new ArgumentMarshaller[args.Length];
                     for (int i = 0; i < args.Length; i++) {
                         DynamicMetaObject mo = args[i];
-                        INativeType argType = null;
-                        if (Value.argtypes != null) {
-                            argType = (INativeType)((IList<object>)Value.argtypes)[i];
-                        } else if (funcType._argtypes != null) {
+                        object argType = null;
+                        if (Value._argtypes != null && i < Value._argtypes.Count) {
+                            argType = Value._argtypes[i];
+                        } else if (funcType._argtypes != null && i < funcType._argtypes.Length) {
                             argType = funcType._argtypes[i];
                         }
 
@@ -319,9 +357,14 @@ namespace IronPython.Modules {
                     return res;
                 }
 
-                private ArgumentMarshaller/*!*/ GetMarshaller(Expression/*!*/ expr, object value, int index, INativeType nativeType) {
+                private ArgumentMarshaller/*!*/ GetMarshaller(Expression/*!*/ expr, object value, int index, object nativeType) {
                     if (nativeType != null) {
-                        return new CDataMarshaller(expr, CompilerHelpers.GetType(value), nativeType);
+                        INativeType nt = nativeType as INativeType;
+                        if (nt != null) {
+                            return new CDataMarshaller(expr, CompilerHelpers.GetType(value), nt);
+                        }
+
+                        return new FromParamMarshaller(expr);
                     }
 
                     CData data = value as CData;
@@ -444,7 +487,7 @@ namespace IronPython.Modules {
 
                 private static SignatureHelper GetCalliSignature(CallingConvention convention, ArgumentMarshaller/*!*/[] sig, Type calliRetType) {
                     SignatureHelper signature = SignatureHelper.GetMethodSigHelper(convention, calliRetType);
-
+                    
                     foreach (ArgumentMarshaller argMarshaller in sig) {
                         signature.AddArgument(argMarshaller.NativeType);
                     }
@@ -563,6 +606,20 @@ namespace IronPython.Modules {
                         }
 
                         return BindingRestrictions.GetTypeRestriction(ArgumentExpression, _type);
+                    }
+                }
+
+                class FromParamMarshaller : ArgumentMarshaller {
+                    public FromParamMarshaller(Expression/*!*/ container)
+                        : base(container) {
+                    }
+
+                    public override MarshalCleanup EmitCallStubArgument(ILGenerator generator, int argIndex, List<object> constantPool, int constantPoolArgument) {
+                        throw new NotImplementedException();
+                    }
+
+                    public override Type NativeType {
+                        get { throw new NotImplementedException(); }
                     }
                 }
 

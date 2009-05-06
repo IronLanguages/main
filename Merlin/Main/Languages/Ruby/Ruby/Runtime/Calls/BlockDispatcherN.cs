@@ -28,8 +28,8 @@ namespace IronRuby.Runtime.Calls {
         public override Delegate/*!*/ Method { get { return _block; } }
         public override int ParameterCount { get { return _parameterCount; } }
 
-        internal BlockDispatcherN(BlockCallTargetN/*!*/ block, int parameterCount, BlockSignatureAttributes attributes)
-            : base(attributes) {
+        internal BlockDispatcherN(BlockCallTargetN/*!*/ block, int parameterCount, BlockSignatureAttributes attributesAndArity)
+            : base(attributesAndArity) {
             Assert.NotNull(block);
             Debug.Assert(parameterCount > BlockDispatcher.MaxBlockArity);
             Debug.Assert(!HasUnsplatParameter);
