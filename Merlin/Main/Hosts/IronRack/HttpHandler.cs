@@ -24,10 +24,13 @@ using Microsoft.Scripting.Hosting;
 using Microsoft.Scripting.Hosting.Shell;
 using IronRuby.Runtime;
 using System.Collections.Generic;
+using System.Diagnostics;
 
 namespace IronRuby.Rack {
 
     internal sealed class HttpHandler : IHttpHandler {
+        
+        private readonly Stopwatch _watch = new Stopwatch();
 
         public bool IsReusable {
             get { return true; }
@@ -35,8 +38,16 @@ namespace IronRuby.Rack {
 
         public void ProcessRequest(HttpContext context) {
             lock (this) {
+                Utils.Log("");
+                Utils.Log("=== Request started at " + DateTime.Now.ToString());
+                _watch.Reset();
+                _watch.Start();
+                
                 Handler.IIS.Current.Handle(new Request(new HttpRequestWrapper(context.Request)),
                                            new Response(new HttpResponseWrapper(context.Response)));
+                
+                _watch.Stop();
+                Utils.Log(">>> Request finished (" + _watch.ElapsedMilliseconds.ToString() + "ms)");
             }
         }
     }

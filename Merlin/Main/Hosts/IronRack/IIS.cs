@@ -10,8 +10,6 @@ using System.Diagnostics;
 namespace IronRuby.Rack.Handler {
     public class IIS {
 
-        private readonly Stopwatch _watch = new Stopwatch();
-
         public readonly Application App;
         
         private static IIS _current;
@@ -35,11 +33,6 @@ namespace IronRuby.Rack.Handler {
         }
 
         public void Handle(Request request, Response response) {
-            Utils.Log("");
-            Utils.Log("=== Request started at " + DateTime.Now.ToString());
-            _watch.Reset();
-            _watch.Start();
-
             var handle_scope = RubyEngine.Engine.CreateScope(); 
             handle_scope.SetVariable("__request", request);
             handle_scope.SetVariable("__response", response);
@@ -208,13 +201,34 @@ namespace IronRuby.Rack.Handler {
             // environment, too. The keys must contain at least one dot, and 
             // should be prefixed uniquely. The prefix rack. is reserved for 
             // use with the Rack core distribution and other accepted 
-            // specifications and must not be used otherwise. The environment 
+            // specifications and must not be used otherwise. 
+            
+            // noop
+
+            // The environment 
             // must not contain the keys HTTP_CONTENT_TYPE or HTTP_CONTENT_LENGTH 
             // (use the versions without HTTP_). The CGI keys (named without a period)
             // must have String values.
 
             env.Remove("HTTP_CONTENT_LENGTH");
             env.Remove("HTTP_CONTENT_TYPE");
+
+            // Set other vars based on what WEBrick sets:
+
+            env["REMOTE_HOST"] = request.OrigionalRequest.Url.Host;
+            env["SERVER_PROTOCOL"] = request.OrigionalRequest.Params["SERVER_PROTOCOL"];
+            env["REQUEST_PATH"] = request.OrigionalRequest.Path;
+            env["SERVER_SOFTWARE"] = request.OrigionalRequest.Params["SERVER_SOFTWARE"];
+            env["REMOTE_ADDR"] = "127.0.0.1";
+            env["HTTP_VERSION"] = request.OrigionalRequest.Params["SERVER_PROTOCOL"];
+            env["REQUEST_URI"] = request.OrigionalRequest.Url.AbsoluteUri;
+            env["GATEWAY_INTERFACE"] = request.OrigionalRequest.Params["GATEWAY_INTERFACE"];
+
+            // CONTENT_TYPE shouldn't be empty (Sinatra freaks out over this)
+
+            if (((string)env["CONTENT_TYPE"]) == string.Empty) {
+                env.Remove("CONTENT_TYPE");
+            }
 
             // A Rack application is an Ruby object (not a class) that responds
             // to call. It takes exactly one argument, the environment and 
@@ -285,8 +299,6 @@ namespace IronRuby.Rack.Handler {
 
             } finally {
                 RubyEngine.Execute("__body.close if __body.respond_to? :close", handle_scope);
-                _watch.Stop();
-                Utils.Log(">>> Request finished (" + _watch.ElapsedMilliseconds.ToString() + "ms)");
             }
         }
 
