@@ -168,7 +168,7 @@ namespace IronRuby.Runtime {
         }
 
         [Emitted]
-        public static StrongBox<int>/*!*/ GetSelfClassVersionHandle(RubyScope/*!*/ scope) {
+        public static VersionHandle/*!*/ GetSelfClassVersionHandle(RubyScope/*!*/ scope) {
             return scope.SelfImmediateClass.Version;
         }
 
@@ -217,11 +217,11 @@ namespace IronRuby.Runtime {
 
         [Emitted]
         public static Proc/*!*/ DefineBlock(RubyScope/*!*/ scope, RuntimeFlowControl/*!*/ runtimeFlowControl, object self, Delegate/*!*/ clrMethod,
-            int parameterCount, BlockSignatureAttributes attributes) {
+            int parameterCount, BlockSignatureAttributes attributesAndArity) {
             Assert.NotNull(scope, clrMethod);
 
             // closes block over self and context
-            BlockDispatcher dispatcher = BlockDispatcher.Create(clrMethod, parameterCount, attributes);
+            BlockDispatcher dispatcher = BlockDispatcher.Create(clrMethod, parameterCount, attributesAndArity);
             Proc result = new Proc(ProcKind.Block, self, scope, dispatcher);
 
             result.Owner = runtimeFlowControl;
@@ -515,11 +515,11 @@ namespace IronRuby.Runtime {
 
         [Emitted]
         public static object MethodDefined(RubyMethodInfo/*!*/ method) {
-            method.Context.MethodAdded(method.DeclaringModule, method.DefinitionName);
+            method.DeclaringModule.MethodAdded(method.DefinitionName);
             
             if (method.IsModuleFunction) {
                 Debug.Assert(!method.DeclaringModule.IsClass);
-                method.Context.MethodAdded(method.DeclaringModule.SingletonClass, method.DefinitionName);
+                method.DeclaringModule.SingletonClass.MethodAdded(method.DefinitionName);
             }
 
             return null;

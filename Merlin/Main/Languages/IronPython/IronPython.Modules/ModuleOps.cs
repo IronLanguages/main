@@ -17,9 +17,12 @@ using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 
+using Microsoft.Scripting;
 using Microsoft.Scripting.Math;
+using Microsoft.Scripting.Runtime;
 
 using IronPython.Runtime;
+using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
 
@@ -74,6 +77,11 @@ namespace IronPython.Modules {
 
         public static CTypes.CData CheckSimpleCDataType(object o, object type) {
             CTypes.SimpleCData res = o as CTypes.SimpleCData;
+            object asParam;
+            if (res == null && PythonOps.TryGetBoundAttr(o, SymbolTable.StringToId("_as_parameter_"), out asParam)) {
+                res = asParam as CTypes.SimpleCData;
+            }
+
             if (res != null && res.NativeType != type) {
                 throw PythonOps.TypeErrorForTypeMismatch(((PythonType)type).Name, o);
             }
@@ -83,8 +91,13 @@ namespace IronPython.Modules {
 
         public static CTypes.CData/*!*/ CheckCDataType(object o, object type) {
             CTypes.CData res = o as CTypes.CData;
+            object asParam;
+            if (res == null && PythonOps.TryGetBoundAttr(o, SymbolTable.StringToId("_as_parameter_"), out asParam)) {
+                res = asParam as CTypes.CData;
+            }
+
             if (res == null || res.NativeType != type) {
-                throw PythonOps.TypeErrorForTypeMismatch(((PythonType)type).Name, o);
+                throw ArgumentError(type, ((PythonType)type).Name, o);
             }
 
             return res;
@@ -92,8 +105,13 @@ namespace IronPython.Modules {
 
         public static IntPtr/*!*/ GetFunctionPointerValue(object o, object type) {
             CTypes._CFuncPtr res = o as CTypes._CFuncPtr;
+            object asParam;
+            if (res == null && PythonOps.TryGetBoundAttr(o, SymbolTable.StringToId("_as_parameter_"), out asParam)) {
+                res = asParam as CTypes._CFuncPtr;
+            }
+            
             if (res == null || res.NativeType != type) {
-                throw PythonOps.TypeErrorForTypeMismatch(((PythonType)type).Name, o);
+                throw ArgumentError(type, ((PythonType)type).Name, o);
             }
 
             return res.addr;
@@ -101,11 +119,60 @@ namespace IronPython.Modules {
 
         public static CTypes.CData TryCheckCDataPointerType(object o, object type) {
             CTypes.CData res = o as CTypes.CData;
+            object asParam;
+            if (res == null && PythonOps.TryGetBoundAttr(o, SymbolTable.StringToId("_as_parameter_"), out asParam)) {
+                res = asParam as CTypes.CData;
+            }
             if (res != null && res.NativeType != ((CTypes.PointerType)type)._type) {
-                throw PythonOps.TypeErrorForTypeMismatch(((PythonType)((CTypes.PointerType)type)._type).Name, o);
+                if (!(res is CTypes.Pointer)) {
+                    throw ArgumentError(type, ((PythonType)((CTypes.PointerType)type)._type).Name, o);
+                }
+                return null;
             }
 
             return res;
+        }
+
+        public static CTypes._Array TryCheckCharArray(object o) {
+            CTypes._Array array = o as CTypes._Array;
+            if (array != null) {
+                CTypes.SimpleType elemType = ((CTypes.ArrayType)array.NativeType).ElementType as CTypes.SimpleType;
+                if (elemType != null && elemType._type == CTypes.SimpleTypeKind.Char) {
+                    return array;
+                }
+            }
+
+            return null;
+        }
+
+        public static CTypes._Array TryCheckWCharArray(object o) {
+            CTypes._Array array = o as CTypes._Array;
+            if (array != null) {
+                CTypes.SimpleType elemType = ((CTypes.ArrayType)array.NativeType).ElementType as CTypes.SimpleType;
+                if (elemType != null && elemType._type == CTypes.SimpleTypeKind.WChar) {
+                    return array;
+                }
+            }
+
+            return null;
+        }
+
+        public static object CreateSubclassInstance(object type, object instance) {
+            return PythonCalls.Call(type, instance);
+        }
+
+        public static void CallbackException(Exception e, CodeContext/*!*/ context) {
+            PythonContext pc = PythonContext.GetContext(context);
+            object stderr = pc.SystemStandardError;
+            PythonOps.PrintWithDest(context, stderr, pc.FormatException(e));
+        }
+
+        private static Exception ArgumentError(object type, string expected, object got) {
+            PythonContext pc = ((PythonType)type).Context;
+            return PythonExceptions.CreateThrowable(
+                (PythonType)pc.GetModuleState("ArgumentError"),
+                string.Format("expected {0}, got {1}", expected, DynamicHelpers.GetPythonType(got).Name)
+            );
         }
 
         public static CTypes.CData CheckNativeArgument(object o, object type) {
@@ -156,6 +223,11 @@ namespace IronPython.Modules {
                 return IntPtr.Zero;
             }
 
+            object asParam;
+            if (PythonOps.TryGetBoundAttr(value, SymbolTable.StringToId("_as_parameter_"), out asParam)) {
+                return GetWCharPointer(asParam);
+            }
+
             throw PythonOps.TypeErrorForTypeMismatch("wchar pointer", value);
         }
 
@@ -167,6 +239,11 @@ namespace IronPython.Modules {
 
             if (value == null) {
                 return IntPtr.Zero;
+            }
+
+            object asParam;
+            if (PythonOps.TryGetBoundAttr(value, SymbolTable.StringToId("_as_parameter_"), out asParam)) {
+                return GetCharPointer(asParam);
             }
 
             throw PythonOps.TypeErrorForTypeMismatch("char pointer", value);
@@ -187,6 +264,11 @@ namespace IronPython.Modules {
 
             if (value == null) {
                 return IntPtr.Zero;
+            }
+
+            object asParam;
+            if (PythonOps.TryGetBoundAttr(value, SymbolTable.StringToId("_as_parameter_"), out asParam)) {
+                return GetPointer(asParam);
             }
 
             throw PythonOps.TypeErrorForTypeMismatch("pointer", value);
@@ -210,6 +292,11 @@ namespace IronPython.Modules {
                 return bi.ToInt64();
             }
 
+            object asParam;
+            if (PythonOps.TryGetBoundAttr(value, SymbolTable.StringToId("_as_parameter_"), out asParam)) {
+                return GetSignedLongLong(asParam);
+            }
+
             throw PythonOps.TypeErrorForTypeMismatch("signed long long ", value);
         }
 
@@ -222,6 +309,11 @@ namespace IronPython.Modules {
             BigInteger bi = value as BigInteger;
             if (!Object.ReferenceEquals(bi, null)) {
                 return (long)bi.ToUInt64();
+            }
+
+            object asParam;
+            if (PythonOps.TryGetBoundAttr(value, SymbolTable.StringToId("_as_parameter_"), out asParam)) {
+                return GetUnsignedLongLong(asParam);
             }
 
             throw PythonOps.TypeErrorForTypeMismatch("unsigned long long", value);
@@ -238,6 +330,11 @@ namespace IronPython.Modules {
                 return (double)((BigInteger)value).ToFloat64();
             }
 
+            object asParam;
+            if (PythonOps.TryGetBoundAttr(value, SymbolTable.StringToId("_as_parameter_"), out asParam)) {
+                return GetDouble(asParam);
+            }
+
             return Converter.ConvertToDouble(value);
         }
 
@@ -252,8 +349,14 @@ namespace IronPython.Modules {
                 return (float)((BigInteger)value).ToFloat64();
             }
 
+            object asParam;
+            if (PythonOps.TryGetBoundAttr(value, SymbolTable.StringToId("_as_parameter_"), out asParam)) {
+                return GetSingle(asParam);
+            }
+
             return (float)Converter.ConvertToDouble(value);
         }
+
         public static long GetDoubleBits(object value) {
             if (value is double) {
                 return BitConverter.ToInt64(BitConverter.GetBytes((double)value), 0);
@@ -263,6 +366,11 @@ namespace IronPython.Modules {
                 return BitConverter.ToInt64(BitConverter.GetBytes((double)(int)value), 0);
             } else if (value is BigInteger) {
                 return BitConverter.ToInt64(BitConverter.GetBytes((double)((BigInteger)value).ToFloat64()), 0);
+            }
+
+            object asParam;
+            if (PythonOps.TryGetBoundAttr(value, SymbolTable.StringToId("_as_parameter_"), out asParam)) {
+                return GetDoubleBits(asParam);
             }
 
             return BitConverter.ToInt64(BitConverter.GetBytes(Converter.ConvertToDouble(value)), 0);
@@ -279,6 +387,11 @@ namespace IronPython.Modules {
                 return BitConverter.ToInt32(BitConverter.GetBytes((float)((BigInteger)value).ToFloat64()), 0);
             }
 
+            object asParam;
+            if (PythonOps.TryGetBoundAttr(value, SymbolTable.StringToId("_as_parameter_"), out asParam)) {
+                return GetSingleBits(asParam);
+            }
+
             return BitConverter.ToInt32(BitConverter.GetBytes((float)Converter.ConvertToDouble(value)), 0);
         }
 
@@ -290,6 +403,11 @@ namespace IronPython.Modules {
             int? res = Converter.ImplicitConvertToInt32(value);
             if (res != null) {
                 return res.Value;
+            }
+
+            object asParam;
+            if (PythonOps.TryGetBoundAttr(value, SymbolTable.StringToId("_as_parameter_"), out asParam)) {
+                return GetSignedLong(asParam);
             }
 
             throw PythonOps.TypeErrorForTypeMismatch("signed long", value);
@@ -308,6 +426,11 @@ namespace IronPython.Modules {
                 }
             }
 
+            object asParam;
+            if (PythonOps.TryGetBoundAttr(value, SymbolTable.StringToId("_as_parameter_"), out asParam)) {
+                return GetUnsignedLong(asParam);
+            }
+
             throw PythonOps.TypeErrorForTypeMismatch("unsigned long", value);
         }
 
@@ -315,6 +438,11 @@ namespace IronPython.Modules {
             int? res = Converter.ImplicitConvertToInt32(value);
             if (res != null && res.Value >= 0) {
                 return res.Value;
+            }
+
+            object asParam;
+            if (PythonOps.TryGetBoundAttr(value, SymbolTable.StringToId("_as_parameter_"), out asParam)) {
+                return GetUnsignedInt(asParam);
             }
 
             throw PythonOps.TypeErrorForTypeMismatch("unsigned int", value);
@@ -325,6 +453,11 @@ namespace IronPython.Modules {
             if (res != null) {
                 return res.Value;
             }
+            object asParam;
+            if (PythonOps.TryGetBoundAttr(value, SymbolTable.StringToId("_as_parameter_"), out asParam)) {
+                return GetSignedInt(asParam);
+            }
+
             throw PythonOps.TypeErrorForTypeMismatch("signed int", value);
         }
 
@@ -336,6 +469,11 @@ namespace IronPython.Modules {
                     return (short)(ushort)iVal;
                 }
             }
+            object asParam;
+            if (PythonOps.TryGetBoundAttr(value, SymbolTable.StringToId("_as_parameter_"), out asParam)) {
+                return GetUnsignedShort(asParam);
+            }
+
             throw PythonOps.TypeErrorForTypeMismatch("unsigned short", value);
         }
 
@@ -347,6 +485,11 @@ namespace IronPython.Modules {
                     return (short)iVal;
                 }
             }
+            object asParam;
+            if (PythonOps.TryGetBoundAttr(value, SymbolTable.StringToId("_as_parameter_"), out asParam)) {
+                return GetSignedShort(asParam);
+            }
+
             throw PythonOps.TypeErrorForTypeMismatch("signed short", value);
         }
 
@@ -354,6 +497,11 @@ namespace IronPython.Modules {
             int? res = Converter.ImplicitConvertToInt32(value);
             if (res != null) {
                 return (byte)res.Value;
+            }
+
+            object asParam;
+            if (PythonOps.TryGetBoundAttr(value, SymbolTable.StringToId("_as_parameter_"), out asParam)) {
+                return GetUnsignedByte(asParam);
             }
 
             throw PythonOps.TypeErrorForTypeMismatch("unsigned byte", value);
@@ -367,6 +515,11 @@ namespace IronPython.Modules {
                     return (byte)(sbyte)iVal;
                 }
             }
+            object asParam;
+            if (PythonOps.TryGetBoundAttr(value, SymbolTable.StringToId("_as_parameter_"), out asParam)) {
+                return GetSignedByte(asParam);
+            }
+
             throw PythonOps.TypeErrorForTypeMismatch("signed byte", value);
         }
 
@@ -374,6 +527,11 @@ namespace IronPython.Modules {
         public static byte GetBoolean(object value) {
             if (value is bool) {
                 return ((bool)value) ? (byte)1 : (byte)0;
+            }
+
+            object asParam;
+            if (PythonOps.TryGetBoundAttr(value, SymbolTable.StringToId("_as_parameter_"), out asParam)) {
+                return GetBoolean(asParam);
             }
 
             throw PythonOps.TypeErrorForTypeMismatch("bool", value);
@@ -385,6 +543,11 @@ namespace IronPython.Modules {
                 return (byte)strVal[0];
             }
 
+            object asParam;
+            if (PythonOps.TryGetBoundAttr(value, SymbolTable.StringToId("_as_parameter_"), out asParam)) {
+                return GetChar(asParam);
+            }
+
             throw PythonOps.TypeErrorForTypeMismatch("char", value);
         }
 
@@ -392,6 +555,11 @@ namespace IronPython.Modules {
             string strVal = value as string;
             if (strVal != null && strVal.Length == 1) {
                 return strVal[0];
+            }
+
+            object asParam;
+            if (PythonOps.TryGetBoundAttr(value, SymbolTable.StringToId("_as_parameter_"), out asParam)) {
+                return GetWChar(asParam);
             }
 
             throw PythonOps.TypeErrorForTypeMismatch("wchar", value);

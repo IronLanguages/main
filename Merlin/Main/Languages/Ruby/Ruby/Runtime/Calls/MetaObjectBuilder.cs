@@ -121,16 +121,26 @@ namespace IronRuby.Runtime.Calls {
                     Console.ForegroundColor = ConsoleColor.Cyan;
                     Console.WriteLine("Rule #{0}: {1}", Interlocked.Increment(ref _ruleCounter), action);
                     Console.ForegroundColor = ConsoleColor.DarkGray;
-                    var d = (_restrictions != BindingRestrictions.Empty) ? Ast.IfThen(_restrictions.ToExpression(), expr) : expr;
-                    d.DumpExpression(Console.Out);
+                    if (!_DumpingExpression) {
+                        var d = (_restrictions != BindingRestrictions.Empty) ? Ast.IfThen(_restrictions.ToExpression(), expr) : expr;
+                        _DumpingExpression = true;
+                        d.DumpExpression(Console.Out);
+                    }
                 } finally {
+                    _DumpingExpression = false;
                     Console.ForegroundColor = oldColor;
                 }
             }
 #endif
-
             return new DynamicMetaObject(expr, _restrictions);
         }
+
+#if DEBUG
+        // ExpressionWriter might call ToString on a live object that might dynamically invoke a method.
+        // We need to prevent recursion in such case.
+        [ThreadStatic]
+        internal static bool _DumpingExpression;
+#endif
 
         public ParameterExpression/*!*/ GetTemporary(Type/*!*/ type, string/*!*/ name) {
             return AddTemporary(Ast.Variable(type, name));
@@ -290,7 +300,6 @@ namespace IronRuby.Runtime.Calls {
                     )
                 );
 
-                // we need to check for a runtime (e.g. "foo" .NET string instance could be shared accross runtimes):
                 AddFullVersionTest(targetClass, metaContext);
                 return;
             }
@@ -309,8 +318,8 @@ namespace IronRuby.Runtime.Calls {
                                 Ast.Field(
                                     Ast.Call(Ast.Convert(targetParameter, type), classGetter), 
                                     Fields.RubyClass_Version
-                                ), 
-                                Fields.StrongBox_Of_Int_Value
+                                ),
+                                Fields.VersionHandle_Value
                             ),
                             AstUtils.Constant(targetClass.Version.Value)
                         )
@@ -345,7 +354,7 @@ namespace IronRuby.Runtime.Calls {
             cls.Context.RequiresClassHierarchyLock();
 
             // check for module version (do not burn a module reference to the rule):
-            AddCondition(Ast.Equal(Ast.Field(AstUtils.Constant(cls.Version), Fields.StrongBox_Of_Int_Value), AstUtils.Constant(cls.Version.Value)));
+            AddCondition(Ast.Equal(Ast.Field(AstUtils.Constant(cls.Version), Fields.VersionHandle_Value), AstUtils.Constant(cls.Version.Value)));
         }
 
         internal bool AddSplattedArgumentTest(object value, Expression/*!*/ expression, out int listLength, out ParameterExpression/*!*/ listVariable) {

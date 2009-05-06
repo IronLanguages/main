@@ -67,7 +67,7 @@ namespace IronRuby.Compiler.Ast {
                     return TransformConcatentation(gen, _parts, Methods.CreateSymbol);
 
                 case StringKind.Command:
-                    return Ast.Dynamic(RubyCallAction.Make(gen.Context, "`", new RubyCallSignature(1, RubyCallFlags.HasScope | RubyCallFlags.HasImplicitSelf)), typeof(object),
+                    return CallBuilder.InvokeMethod(gen.Context, "`", new RubyCallSignature(1, RubyCallFlags.HasScope | RubyCallFlags.HasImplicitSelf),
                         gen.CurrentScopeVariable,
                         gen.CurrentSelfVariable,
                         TransformConcatentation(gen, _parts, Methods.CreateMutableString)

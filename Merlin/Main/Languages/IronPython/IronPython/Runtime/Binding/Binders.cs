@@ -57,24 +57,6 @@ namespace IronPython.Runtime.Binding {
             );
         }
 
-        public static DynamicMetaObjectBinder/*!*/ BinaryOperationRetBool(BinderState/*!*/ state, PythonOperationKind operatorName) {
-            return BinaryOperationRetType(state, operatorName, typeof(bool));
-        }
-
-        public static DynamicMetaObjectBinder/*!*/ BinaryOperationRetType(BinderState/*!*/ state, PythonOperationKind operatorName, Type retType) {
-            return new ComboBinder(
-                new BinderMappingInfo(
-                    BinaryOperationBinder(state, operatorName),
-                    ParameterMappingInfo.Parameter(0),
-                    ParameterMappingInfo.Parameter(1)
-                ),
-                new BinderMappingInfo(
-                    state.Convert(retType, ConversionResultKind.ExplicitCast),
-                    ParameterMappingInfo.Action(0)
-                )
-            );
-        }
-
         public static DynamicMetaObjectBinder UnaryOperationBinder(BinderState state, PythonOperationKind operatorName) {
             ExpressionType? et = GetExpressionTypeFromUnaryOperator(operatorName);
             
@@ -143,27 +125,6 @@ namespace IronPython.Runtime.Binding {
                 case PythonOperationKind.NotEqual: return ExpressionType.NotEqual;
             }
             return null;
-        }
-
-        public static DynamicMetaObjectBinder/*!*/ InvokeAndConvert(BinderState/*!*/ state, int argCount, Type retType) {
-            // +2 for the target object and CodeContext which InvokeBinder recevies
-            ParameterMappingInfo[] args = new ParameterMappingInfo[argCount + 2];   
-            for (int i = 0; i < argCount + 2; i++) {
-                args[i] = ParameterMappingInfo.Parameter(i);
-            }
-
-            return new ComboBinder(
-                new BinderMappingInfo(
-                    state.Invoke(
-                        new CallSignature(argCount)
-                    ),
-                    args
-                ),
-                new BinderMappingInfo(
-                    state.Convert(retType, ConversionResultKind.ExplicitCast),
-                    ParameterMappingInfo.Action(0)
-                )
-            );
         }
 
         /// <summary>

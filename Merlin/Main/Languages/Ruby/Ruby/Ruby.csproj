@@ -169,9 +169,11 @@
     <Compile Include="Compiler\Parser\ParserStack.cs" />
     <Compile Include="Runtime\BinaryContentProvider.cs" />
     <Compile Include="Runtime\CallSiteStorages.cs" />
+    <Compile Include="Runtime\Calls\MethodDispatcher.Generated.cs" />
     <Compile Include="Runtime\Calls\CompositeConversionAction.cs" />
     <Compile Include="Runtime\Calls\ConvertToSAction.cs" />
     <Compile Include="Runtime\Calls\InteropBinder.cs" />
+    <Compile Include="Runtime\Calls\MethodDispatcher.cs" />
     <Compile Include="Runtime\Calls\MethodResolutionResult.cs" />
     <Compile Include="Runtime\Calls\RubyLibraryMethodInfo.cs" />
     <Compile Include="Runtime\Calls\RubyMetaBinder.cs" />
@@ -179,6 +181,7 @@
     <Compile Include="Runtime\Calls\RubyMetaObject.cs" />
     <Compile Include="Runtime\Calls\RubyMethodGroupBase.cs" />
     <Compile Include="Runtime\Calls\RubyOverloadResolver.cs" />
+    <Compile Include="Runtime\Calls\VersionHandle.cs" />
     <Compile Include="Runtime\CheckedMonitor.cs" />
     <Compile Include="Runtime\CustomTypeDescHelpers.cs" />
     <Compile Include="Compiler\Generation\OverriddenMembers.cs" />
@@ -363,6 +366,7 @@
     <Compile Include="Builtins\RubyModule.Subclass.cs" />
     <Compile Include="Runtime\IOWrapper.cs" />
     <None Include="Compiler\Parser\Parser.y" />
+    <None Include="Runtime\Calls\MethodDispatcher.Generator.rb" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" Condition=" $(SilverlightTreeBuild) != 'true' " />
   <Target Name="BeforeBuild">

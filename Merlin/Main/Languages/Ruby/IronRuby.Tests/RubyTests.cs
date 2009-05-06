@@ -228,6 +228,7 @@ namespace IronRuby.Tests {
                 RubyProcArgConversion4,
                 ProcNew1,
                 ProcNew2,
+                MethodToProc1,
                 DefineMethod1,
                 DefineMethod2,
                 

@@ -69,8 +69,8 @@ namespace IronPython.Runtime.Binding {
                 case PythonOperationKind.Compare:
                     if (CompilerHelpers.GetType(args[0]) == typeof(string) &&
                         CompilerHelpers.GetType(args[1]) == typeof(string)) {
-                        if (typeof(T) == typeof(Func<CallSite, object, object, object>)) {
-                            return (T)(object)new Func<CallSite, object, object, object>(CompareStrings);
+                        if (typeof(T) == typeof(Func<CallSite, object, object, int>)) {
+                            return (T)(object)new Func<CallSite, object, object, int>(CompareStrings);
                         }
                     }
                     break;
@@ -309,13 +309,13 @@ namespace IronPython.Runtime.Binding {
             return ((CallSite<Func<CallSite, object, int>>)site).Update(site, value);
         }
 
-        private object CompareStrings(CallSite site, object arg0, object arg1) {
+        private int CompareStrings(CallSite site, object arg0, object arg1) {
             if (arg0 != null && arg0.GetType() == typeof(string) &&
                 arg1 != null && arg1.GetType() == typeof(string)) {
-                return ScriptingRuntimeHelpers.Int32ToObject(StringOps.__cmp__((string)arg0, (string)arg1));
+                return StringOps.Compare((string)arg0, (string)arg1);
             }
 
-            return ((CallSite<Func<CallSite, object, object, object>>)site).Update(site, arg0, arg1);
+            return ((CallSite<Func<CallSite, object, object, int>>)site).Update(site, arg0, arg1);
         }
 
         public PythonOperationKind Operation {

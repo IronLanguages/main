@@ -53,6 +53,11 @@ namespace IronRuby.Runtime.Calls {
             return GetType().Name + (Context != null ? " @" + Context.RuntimeId.ToString() : null);
         }
 
+        public override T BindDelegate<T>(System.Runtime.CompilerServices.CallSite<T> site, object[] args) {
+            PerfTrack.NoteEvent(PerfTrack.Categories.Binding, "Ruby: " + GetType().Name + ": BindDelegate");
+            return base.BindDelegate<T>(site, args);
+        }
+
         public static RubyConversionAction TryGetDefaultConversionAction(RubyContext/*!*/ context, Type/*!*/ parameterType) {
             var factory = context.MetaBinderFactory;
 

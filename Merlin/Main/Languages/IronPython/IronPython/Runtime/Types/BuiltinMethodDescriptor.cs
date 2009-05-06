@@ -145,7 +145,8 @@ namespace IronPython.Runtime.Types {
             if (result != 0) {
                 return (result > 0) ? 1 : -1;
             }
-            return (int)StringOps.__cmp__(__name__, bmd.__name__);
+            
+            return StringOps.Compare(__name__, bmd.__name__);
         }
 
         #endregion

@@ -1065,6 +1065,44 @@ P
 ");
         }
 
+        public void MethodToProc1() {
+            AssertOutput(() => CompilerTest(@"
+class C
+  def foo a, b=2, *args
+    p self, a, b, args
+    123
+  end
+end
+
+class D < C
+end
+
+x = 'hello'
+q = C.new.method(:foo).to_proc
+p q[1]
+p q[] rescue p $!
+
+# to_proc captures the caller's binding:
+eval('puts x, self', q.binding)
+
+p D.new.instance_eval(&q)
+"), @"
+#<C:0x*>
+1
+2
+[]
+123
+#<ArgumentError: wrong number of arguments (0 for 1)>
+hello
+main
+#<C:0x*>
+#<D:0x*>
+2
+[]
+123
+", OutputFlags.Match);
+        }
+
         public void DefineMethod1() {
             AssertOutput(delegate() {
                 CompilerTest(@"

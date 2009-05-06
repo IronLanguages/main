@@ -508,6 +508,7 @@ namespace IronPython.Runtime {
         private static SymbolId _Update;
         private static SymbolId _ThisArgument;
         private static SymbolId _Index;
+        private static SymbolId _Truncate;
         private static SymbolId _AbsoluteImport;
         private static SymbolId _PrintFunction;
         private static SymbolId _UnicodeLiterals;
@@ -1237,6 +1238,13 @@ namespace IronPython.Runtime {
             get {
                 if (_Index == SymbolId.Empty) _Index = MakeSymbolId("__index__");
                 return _Index;
+            }
+        }
+        ///<summary>Symbol for '__trunc__'</summary> 
+        public static SymbolId Truncate {
+            get {
+                if (_Truncate == SymbolId.Empty) _Truncate = MakeSymbolId("__trunc__");
+                return _Truncate;
             }
         }
         ///<summary>Symbol for 'absolute_import'</summary> 

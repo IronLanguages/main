@@ -349,11 +349,11 @@ namespace IronPython.Modules {
             return contains(context, a, b);
         }
 
-        public static int countOf(object a, object b) {
+        public static int countOf(CodeContext/*!*/ context, object a, object b) {
             System.Collections.IEnumerator e = PythonOps.GetEnumerator(a);
             int count = 0;
             while (e.MoveNext()) {
-                if (PythonOps.Equals(e.Current, b)) {
+                if (PythonOps.EqualRetBool(context, e.Current, b)) {
                     count++;
                 }
             }
@@ -394,11 +394,11 @@ namespace IronPython.Modules {
             return PythonOps.GetIndex(context, a, MakeSlice(b, c));
         }
 
-        public static int indexOf(object a, object b) {
+        public static int indexOf(CodeContext/*!*/ context, object a, object b) {
             System.Collections.IEnumerator e = PythonOps.GetEnumerator(a);
             int index = 0;
             while (e.MoveNext()) {
-                if (PythonOps.Equals(e.Current, b)) {
+                if (PythonOps.EqualRetBool(context, e.Current, b)) {
                     return index;
                 }
                 index++;

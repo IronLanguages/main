@@ -277,11 +277,11 @@ namespace IronRuby.Builtins {
                 }
 
                 if (method.Visibility != instanceVisibility) {
-                    context.MethodAdded(module, methodName);
+                    module.MethodAdded(methodName);
                 }
 
                 if (isModuleFunction) {
-                    context.MethodAdded(module.SingletonClass, methodName);
+                    module.SingletonClass.MethodAdded(methodName);
                 }
             }
         }
@@ -327,7 +327,7 @@ namespace IronRuby.Builtins {
                 self.SetDefinedMethodNoEventNoLock(self.Context, methodName, info, visibility);
             }
 
-            self.Context.MethodAdded(self, methodName);
+            self.MethodAdded(methodName);
         }
 
         // thread-safe:
@@ -356,18 +356,18 @@ namespace IronRuby.Builtins {
 
         #region method_(added|removed|undefined)
 
-        [RubyMethod("method_added", RubyMethodAttributes.PrivateInstance)]
-        public static void MethodAdded(RubyModule/*!*/ self, object methodName) {
+        [RubyMethod("method_added", RubyMethodAttributes.PrivateInstance | RubyMethodAttributes.Empty)]
+        public static void MethodAdded(object/*!*/ self, object methodName) {
             // nop
         }
 
-        [RubyMethod("method_removed", RubyMethodAttributes.PrivateInstance)]
-        public static void MethodRemoved(RubyModule/*!*/ self, object methodName) {
+        [RubyMethod("method_removed", RubyMethodAttributes.PrivateInstance | RubyMethodAttributes.Empty)]
+        public static void MethodRemoved(object/*!*/ self, object methodName) {
             // nop
         }
 
-        [RubyMethod("method_undefined", RubyMethodAttributes.PrivateInstance)]
-        public static void MethodUndefined(RubyModule/*!*/ self, object methodName) {
+        [RubyMethod("method_undefined", RubyMethodAttributes.PrivateInstance | RubyMethodAttributes.Empty)]
+        public static void MethodUndefined(object/*!*/ self, object methodName) {
             // nop
         }
 
