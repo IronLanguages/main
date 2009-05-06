@@ -2,7 +2,7 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProductVersion>9.0.30729</ProductVersion>
+    <ProductVersion>9.0.21022</ProductVersion>
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>{7F6984B4-EE6D-4E6F-ABB1-E210D7DC4FDD}</ProjectGuid>
     <OutputType>Library</OutputType>
@@ -167,19 +167,6 @@
     <Compile Include="Compiler\Ast\Walkers\Walker.cs" />
     <Compile Include="Compiler\Errors.cs" />
     <Compile Include="Compiler\Parser\ParserStack.cs" />
-    <Compile Include="OldInterpreter\CommaAddress.cs" />
-    <Compile Include="OldInterpreter\ControlFlow.cs" />
-    <Compile Include="OldInterpreter\EvaluationAddress.cs" />
-    <Compile Include="OldInterpreter\InterpretedScriptCode.cs" />
-    <Compile Include="OldInterpreter\Interpreter.Block.cs" />
-    <Compile Include="OldInterpreter\Interpreter.Generated.cs" />
-    <Compile Include="OldInterpreter\Interpreter.MatchCaller.cs" />
-    <Compile Include="OldInterpreter\Interpreter.cs" />
-    <Compile Include="OldInterpreter\InterpreterHelpers.cs" />
-    <Compile Include="OldInterpreter\InterpreterState.cs" />
-    <Compile Include="OldInterpreter\InterpreterVariables.cs" />
-    <Compile Include="OldInterpreter\LambdaInvoker.cs" />
-    <Compile Include="OldInterpreter\VariableAddress.cs" />
     <Compile Include="Runtime\BinaryContentProvider.cs" />
     <Compile Include="Runtime\CallSiteStorages.cs" />
     <Compile Include="Runtime\Calls\CompositeConversionAction.cs" />

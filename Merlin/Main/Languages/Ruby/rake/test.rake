@@ -190,7 +190,7 @@ task :ruby do
 end
 
 task :ruby_imp do
-  $ruby_imp ||= %Q{#{path_to_ir} -T "-X:Interpret"}
+  $ruby_imp ||= %Q{#{path_to_ir}}
 end
 
 desc "Run PEVerify on the generated IL"

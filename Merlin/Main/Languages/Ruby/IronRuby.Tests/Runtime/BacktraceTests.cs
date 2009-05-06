@@ -19,7 +19,7 @@ using System;
 namespace IronRuby.Tests {
     public partial class Tests {
         private bool PreciseTraces {
-            get { return Runtime.Setup.DebugMode || _driver.Interpret; }
+            get { return Runtime.Setup.DebugMode /*|| _driver.Interpret*/; }
         }
 
         private bool PreciseSinglePassTraces {
