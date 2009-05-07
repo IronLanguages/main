@@ -1,1 +1,4 @@
 fails:Thread#kill can be rescued by outer rescue clause when inner ensure clause raises exception
+thread:Thread#kill killing dying sleeping thread wakes up thread
+thread:Thread#kill is deferred if ensure clause does Thread.stop
+thread:Thread#kill does not deadlock when called from within the thread while being joined from without

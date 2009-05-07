@@ -54,11 +54,29 @@ namespace IronPython.Modules {
                 : base(underlyingSystemType) {
             }
 
+            public object from_param([NotNull]CData obj) {
+                return new NativeArgument((CData)PythonCalls.Call(this, obj), "P");
+            }
+
             /// <summary>
             /// Converts an object into a function call parameter.
             /// </summary>
-            public object from_param(object obj) {
-                return null;
+            public object from_param(Pointer obj) {
+                if (obj == null) {
+                    return ScriptingRuntimeHelpers.Int32ToObject(0);
+                }
+
+                if (obj.NativeType != this) {
+                    throw PythonOps.TypeError("assign to pointer of type {0} from {1} is not valid", Name, ((PythonType)obj.NativeType).Name);
+                }
+
+                Pointer res = (Pointer)PythonCalls.Call(this);
+                res._memHolder.WriteIntPtr(0, obj._memHolder.ReadMemoryHolder(0));
+                return res;
+            }
+
+            public object from_param([NotNull]NativeArgument obj) {
+                return (CData)PythonCalls.Call(this, obj._obj);
             }
 
             /// <summary>
@@ -95,21 +113,30 @@ namespace IronPython.Modules {
             }
 
             object INativeType.GetValue(MemoryHolder owner, int offset, bool raw) {
+                if (!raw) {
+                    Pointer res = (Pointer)Call(Context.DefaultBinderState.Context);
+                    res._memHolder.WriteIntPtr(0, owner.ReadIntPtr(offset));
+                    return res;
+                }
                 return ToPython(owner.ReadIntPtr(offset));
             }
 
             void INativeType.SetValue(MemoryHolder address, int offset, object value) {
-                if (value is int) {
+                Pointer ptr;
+                _Array array;
+                if (value == null) {
+                    address.WriteIntPtr(offset, IntPtr.Zero);
+                }  else if (value is int) {
                     address.WriteIntPtr(offset, new IntPtr((int)value));
                 } else if (value is BigInteger) {
                     address.WriteIntPtr(offset, new IntPtr(((BigInteger)value).ToInt64()));
+                } else if ((ptr = value as Pointer) != null) {
+                    address.WriteIntPtr(offset, ptr._memHolder.ReadMemoryHolder(0));
+                } else if ((array = value as _Array) != null) {
+                    // TODO: Need to keep alive the array after this
+                    address.WriteIntPtr(offset, array._memHolder);
                 } else {
-                    Pointer ptr = value as Pointer;
-                    if (ptr != null) {
-                        address.WriteIntPtr(offset, ptr._memHolder.ReadMemoryHolder(0));
-                    } else {
-                        throw new NotImplementedException("pointer set value");
-                    }
+                    throw new NotImplementedException("pointer set value");
                 }
 
             }
@@ -124,10 +151,46 @@ namespace IronPython.Modules {
                 if (argumentType.IsValueType) {
                     method.Emit(OpCodes.Box, argumentType);
                 }
-                // native argument being pased (byref)
                 Label nextTry = method.DefineLabel();
                 Label done = method.DefineLabel();
                 constantPool.Add(this);
+
+                SimpleType st = _type as SimpleType;
+                MarshalCleanup res = null;
+                if (st != null && !argIndex.Type.IsValueType) {
+                    if (st._type == SimpleTypeKind.Char || st._type == SimpleTypeKind.WChar) {
+                            
+                        if (st._type == SimpleTypeKind.Char) {
+                            SimpleType.TryArrayToCharPtrConversion(method, argIndex, argumentType, done);
+                        } else {
+                            SimpleType.TryArrayToWCharPtrConversion(method, argIndex, argumentType, done);
+                        }
+
+                        Label notStr = method.DefineLabel();
+                        LocalOrArg str = argIndex;
+                        if (argumentType != typeof(string)) {
+                            LocalBuilder lb = method.DeclareLocal(typeof(string));
+                            method.Emit(OpCodes.Isinst, typeof(string));
+                            method.Emit(OpCodes.Brfalse, notStr);
+                            argIndex.Emit(method);
+                            method.Emit(OpCodes.Castclass, typeof(string));
+                            method.Emit(OpCodes.Stloc, lb);
+                            method.Emit(OpCodes.Ldloc, lb);
+                            str = new Local(lb);
+                        }
+
+                        if (st._type == SimpleTypeKind.Char) {
+                            res = SimpleType.MarshalCharPointer(method, str);
+                        } else {
+                            SimpleType.MarshalWCharPointer(method, str);
+                        }
+                        method.Emit(OpCodes.Br, done);
+                        method.MarkLabel(notStr);
+                        argIndex.Emit(method);
+                    }
+                }
+
+                // native argument being pased (byref)
                 method.Emit(OpCodes.Ldarg, constantPoolArgument);
                 method.Emit(OpCodes.Ldc_I4, constantPool.Count - 1);
                 method.Emit(OpCodes.Ldelem_Ref);
@@ -149,7 +212,9 @@ namespace IronPython.Modules {
                 method.Emit(OpCodes.Ldc_I4, constantPool.Count - 1);
                 method.Emit(OpCodes.Ldelem_Ref);
                 method.Emit(OpCodes.Call, typeof(ModuleOps).GetMethod("TryCheckCDataPointerType"));
-                method.Emit(OpCodes.Call, typeof(CData).GetMethod("get_UnsafeAddress"));
+                method.Emit(OpCodes.Dup);
+                method.Emit(OpCodes.Brfalse, nextTry);
+                method.Emit(OpCodes.Call, typeof(CData).GetMethod("get_UnsafeAddress"));                
                 method.Emit(OpCodes.Br, done);
 
                 // pointer object being passed
@@ -167,7 +232,7 @@ namespace IronPython.Modules {
                 method.Emit(OpCodes.Ldobj, typeof(IntPtr));
 
                 method.MarkLabel(done);
-                return null;
+                return res;
             }
 
             Type/*!*/ INativeType.GetPythonType() {

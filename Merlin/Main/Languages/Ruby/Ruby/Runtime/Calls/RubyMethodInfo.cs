@@ -88,7 +88,7 @@ namespace IronRuby.Runtime.Calls {
         }
 
         public override int GetArity() {
-            if (_optionalParamCount > 0) {
+            if (_hasUnsplatParameter || _optionalParamCount > 0) {
                 return -_mandatoryParamCount - 1;
             } else {
                 return _mandatoryParamCount;

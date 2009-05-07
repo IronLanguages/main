@@ -1285,19 +1285,10 @@ namespace IronPython.Runtime.Operations {
             return StringOps.GetEnumerable(s);
         }
 
-        public static int __cmp__(string self, string obj) {
+        internal static int Compare(string self, string obj) {
             int ret = string.CompareOrdinal(self, obj);
             return ret == 0 ? 0 : (ret < 0 ? -1 : +1);
         }
-
-        public static int __cmp__(string self, ExtensibleString obj) {
-            int ret = string.CompareOrdinal(self, obj.Value);
-            return ret == 0 ? 0 : (ret < 0 ? -1 : +1);
-        }
-
-        public static int __cmp__(string self, char obj) {
-            return (int)(self[0] - (char)obj);
-        }        
 
         public static object __getnewargs__(CodeContext/*!*/ context, string self) {
             if (!Object.ReferenceEquals(self, null)) {

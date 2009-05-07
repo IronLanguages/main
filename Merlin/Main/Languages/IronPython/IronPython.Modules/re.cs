@@ -41,6 +41,7 @@ namespace IronPython.Modules {
         [SpecialName]
         public static void PerformModuleReload(PythonContext/*!*/ context, IAttributesCollection/*!*/ dict) {
             context.EnsureModuleException("reerror", dict, "error", "re");
+            PythonCopyReg.GetDispatchTable(context.DefaultBinderState.Context)[DynamicHelpers.GetPythonTypeFromType(typeof(RE_Pattern))] = dict[SymbolTable.StringToId("_pickle")];
         }
         
         private static readonly Random r = new Random(DateTime.Now.Millisecond);
@@ -485,7 +486,6 @@ namespace IronPython.Modules {
                 }
             }
 
-
             #region IWeakReferenceable Members
 
             WeakRefTracker IWeakReferenceable.GetWeakRef() {
@@ -502,6 +502,15 @@ namespace IronPython.Modules {
             }
 
             #endregion
+        }
+
+        public static PythonTuple _pickle(CodeContext/*!*/ context, RE_Pattern pattern) {
+            object scope = Importer.ImportModule(context, new PythonDictionary(), "re", false, 0);
+            object compile;
+            if (scope is Scope && ((Scope)scope).TryGetName(SymbolTable.StringToId("compile"), out compile)) {
+                return PythonTuple.MakeTuple(compile, PythonTuple.MakeTuple(pattern.pattern, pattern.flags));
+            }
+            throw new InvalidOperationException("couldn't find compile method");
         }
 
         [PythonType]

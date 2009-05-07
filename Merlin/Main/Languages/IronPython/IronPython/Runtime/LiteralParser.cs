@@ -378,12 +378,18 @@ namespace IronPython.Runtime {
             if (b == 0) {
                 if (start < end && text[start] == '0') {
                     start++;
-                    // Hex or oct
-                    if (start < end && (text[start] == 'x' || text[start] == 'X')) {
-                        start++;
-                        b = 16;
-                    } else {
-                        b = 8;
+                    // Hex, oct, or bin
+                    b = 8;
+                    if (start < end) {
+                        if (text[start] == 'x' || text[start] == 'X') {
+                            start++;
+                            b = 16;
+                        } else if (text[start] == 'o' || text[start] == 'O') {
+                            start++;
+                        } else if (text[start] == 'b' || text[start] == 'B') {
+                            start++;
+                            b = 2;
+                        }
                     }
                 } else {
                     b = 10;
@@ -440,9 +446,15 @@ namespace IronPython.Runtime {
             ParseIntegerStart(text, ref b, ref start, end, ref sign);
 
             BigInteger ret = BigInteger.Zero;
+            int saveStart = start;
             for (; ; ) {
                 int digit;
-                if (start >= end) break;
+                if (start >= end) {
+                    if (start == saveStart) {
+                        throw new ArgumentException("Invalid integer literal");
+                    }
+                    break;
+                }
                 if (!HexValue(text[start], out digit)) break;
                 if (!(digit < b)) {
                     if (text[start] == 'l' || text[start] == 'L') {

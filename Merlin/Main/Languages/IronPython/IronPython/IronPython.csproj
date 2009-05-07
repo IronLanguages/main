@@ -189,8 +189,8 @@
     <Compile Include="Runtime\Binding\FastSetBase.cs" />
     <Compile Include="Runtime\Binding\IFastGettable.cs" />
     <Compile Include="Runtime\Binding\IFastInvokable.cs" />
-    <Compile Include="Runtime\Binding\OperationRetBoolBinder.cs" />
-    <Compile Include="Runtime\Binding\OperationRetBoolBinder.Generated.cs" />
+    <Compile Include="Runtime\Binding\BinaryRetTypeBinder.cs" />
+    <Compile Include="Runtime\Binding\BinaryRetTypeBinder.Generated.cs" />
     <Compile Include="Runtime\BuiltinsDictionaryStorage.cs" />
     <Compile Include="Runtime\CustomDictionaryStorage.cs" />
     <Compile Include="Runtime\GlobalDictionaryStorage.cs" />

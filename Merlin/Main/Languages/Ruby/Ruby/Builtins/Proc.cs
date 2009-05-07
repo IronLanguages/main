@@ -257,7 +257,6 @@ namespace IronRuby.Builtins {
 
         #region Block helper methods
 
-        // TODO: remove context, rename to CreateBlock
         public static Proc/*!*/ Create(RubyContext/*!*/ context, Func<BlockParam, object, object>/*!*/ clrMethod) {
             return Create(context, (BlockCallTarget1)BlockCallback1, clrMethod, 1);
         }

@@ -20,10 +20,13 @@ using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
-using IronPython.Runtime.Exceptions;
-using IronPython.Runtime.Operations;
+
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
+
+using IronPython.Runtime.Exceptions;
+using IronPython.Runtime.Operations;
+using IronPython.Runtime.Types;
 
 namespace IronPython.Runtime {
 
@@ -1435,12 +1438,56 @@ namespace IronPython.Runtime {
             }
         }
 
+        public void write([NotNull]PythonBuffer buf) {
+            PythonStreamWriter writer = GetWriter();
+            string str = buf._object as string;
+            IPythonArray pyArr;
+            Array arr;
+            if (str != null || buf._object is IList<byte>) {
+                write(buf.ToString());
+            } else if ((arr = buf._object as Array) != null) {
+                throw new NotImplementedException("writing buffer of .NET array to file");
+            } else if ((pyArr = buf._object as IPythonArray) != null) {
+                if (_fileMode != PythonFileMode.Binary) {
+                    throw PythonOps.TypeError("char buffer type not available");
+                }
+
+                write(pyArr.tostring());
+            } else {
+                Debug.Assert(false, "unsupported buffer object");
+            }
+        }
+
+        public void write([NotNull]object arr) {
+            IPythonArray array = arr as IPythonArray;
+            if (array == null) {
+                throw PythonOps.TypeError("file.write() argument must be string or read-only character buffer, not {0}", DynamicHelpers.GetPythonType(arr).Name);
+            } else if (_fileMode != PythonFileMode.Binary) {
+                throw PythonOps.TypeError("file.write() argument must be string or buffer, not {0}", DynamicHelpers.GetPythonType(arr).Name);
+            }
+
+            write(array.tostring());
+        }
+
         public void writelines(object o) {
             System.Collections.IEnumerator e = PythonOps.GetEnumerator(o);
             while (e.MoveNext()) {
                 string line = e.Current as string;
                 if (line == null) {
+                    PythonBuffer b = e.Current as PythonBuffer;
+                    if (b != null) {
+                        write(b);
+                        continue;
+                    }
+
+                    IPythonArray arr = e.Current as IPythonArray;
+                    if (arr != null) {
+                        write(arr);
+                        continue;
+                    }
+                    
                     throw PythonOps.TypeError("writelines() argument must be a sequence of strings");
+                    
                 }
                 write(line);
             }
