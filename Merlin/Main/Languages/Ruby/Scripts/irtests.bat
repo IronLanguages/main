@@ -2,7 +2,7 @@
 setlocal
 
 if "%1" == "-?" (
-    echo irtests.bat [-par] [-nocompile] [-all] [-?]
+    echo irtests.bat [-p] [-nocompile] [-?]
     exit /b 0
 )
 
@@ -87,16 +87,14 @@ if defined PARALLEL_IRTESTS (
 :==============================================================================
 : RubyGems
 
-if "%1" == "-all" (
-    if defined PARALLEL_IRTESTS (
-        start "RubyGems tests" cmd.exe /k %MERLIN_ROOT%\bin\Debug\ir.exe %MERLIN_ROOT%\Languages\Ruby\Scripts\RubyGemsTests.rb
-    ) else (
-        %MERLIN_ROOT%\bin\Debug\ir.exe %MERLIN_ROOT%\Languages\Ruby\Scripts\RubyGemsTests.rb 
-        if not %ERRORLEVEL%==0 (
-            set IRTESTS_ERRORS=%IRTESTS_ERRORS% RubyGems tests failed!!!
-            echo %IRTESTS_ERRORS%
-       )
-    )
+if defined PARALLEL_IRTESTS (
+    start "RubyGems tests" cmd.exe /k %MERLIN_ROOT%\bin\Debug\ir.exe %MERLIN_ROOT%\Languages\Ruby\Scripts\RubyGemsTests.rb
+) else (
+    %MERLIN_ROOT%\bin\Debug\ir.exe %MERLIN_ROOT%\Languages\Ruby\Scripts\RubyGemsTests.rb 
+    if not %ERRORLEVEL%==0 (
+        set IRTESTS_ERRORS=%IRTESTS_ERRORS% RubyGems tests failed!!!
+        echo %IRTESTS_ERRORS%
+   )
 )
 
 :==============================================================================
