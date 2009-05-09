@@ -1220,7 +1220,7 @@ namespace IronRuby.Builtins {
         [RubyMethod("kind_of?")]
         public static bool IsKindOf(object self, RubyModule/*!*/ other) {
             ContractUtils.RequiresNotNull(other, "other");
-            return other.Context.GetImmediateClassOf(self).HasAncestor(other);
+            return other.Context.IsKindOf(self, other);
         }
 
         // thread-safe:

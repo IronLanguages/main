@@ -143,19 +143,7 @@ namespace IronRuby.Runtime {
 
         private static string/*!*/ FormatMethodMissingMessage(RubyContext/*!*/ context, object self, string/*!*/ name, string/*!*/ message) {
             Assert.NotNull(name);
-            string strObject;
-
-            if (self == null) {
-                strObject = "nil:NilClass";
-            } else {
-                var site = context.StringConversionSite;
-                strObject = (site.Target(site, self) as MutableString ?? RubyUtils.ObjectToMutableString(context, self)).ConvertToString();
-
-                if (!strObject.StartsWith("#")) {
-                    strObject += ":" + context.GetClassName(self);
-                }
-            }
-
+            string strObject = context.InspectEnsuringClassName(self);
             return String.Format(message, name, strObject);
         }
 

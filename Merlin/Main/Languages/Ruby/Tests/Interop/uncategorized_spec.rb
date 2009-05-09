@@ -248,3 +248,28 @@ describe "Hashing" do
     Hasher.get_hash_code(o).should == 2
   end
 end
+
+describe "ObjectSpace.each_object" do
+  it "raises NotSupportedException for non-Class classes" do
+    lambda { ObjectSpace.each_object(String) {} }.should raise_error(RuntimeError)
+  end
+
+  it "works for Module" do
+    modules = []
+    ObjectSpace.each_object(Module) { |o| modules << o }
+    modules.size.should > 90
+    modules.each { |m| m.should be_kind_of(Module) }
+  end
+
+  it "works for Class" do
+    classes = []
+    ObjectSpace.each_object(Class) { |o| classes << o }
+    classes.size.should > 70
+    classes.each { |c| c.should be_kind_of(Class) }
+  end
+
+  it "works for singleton Class" do
+    klass = class << Class; self; end
+    ObjectSpace.each_object(klass) {}.should == 0
+  end
+end

@@ -33,23 +33,26 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("each_object", RubyMethodAttributes.PublicSingleton)]
         public static object EachObject(BlockParam block, RubyModule/*!*/ self, [NotNull]RubyClass/*!*/ theClass) {
-            Type classType = theClass.GetType();
-            bool isClass = (classType == typeof(RubyClass));
-            if (!isClass && classType != typeof(RubyModule)) {
-                throw new NotSupportedException("each_object only supported for objects of type Class or Module");
+            if (!theClass.HasAncestor(self.Context.ModuleClass)) {
+                throw new RuntimeError("each_object only supported for objects of type Class or Module");
             }
+
             if (block == null) {
                 throw RubyExceptions.NoBlockGiven();
             }
 
-            Dictionary<RubyModule, object> visited = new Dictionary<RubyModule, object>();
-            Stack<RubyModule> modules = new Stack<RubyModule>();
-            modules.Push(theClass.Context.ObjectClass);
-            while (modules.Count > 0) {
-                RubyModule next = modules.Pop();
-                RubyClass asClass = next as RubyClass;
+            int matches = 0;
+            List<RubyModule> visitedModules = new List<RubyModule>();
+            Stack<RubyModule> pendingModules = new Stack<RubyModule>();
+            pendingModules.Push(theClass.Context.ObjectClass);
 
-                if (!isClass || asClass != null) {
+            while (pendingModules.Count > 0) {
+                RubyModule next = pendingModules.Pop();
+                visitedModules.Add(next);
+
+                if (theClass.Context.IsKindOf(next, theClass)) {
+                    matches++;
+
                     object result;
                     if (block.Yield(next, out result)) {
                         return result;
@@ -59,15 +62,14 @@ namespace IronRuby.Builtins {
                 using (theClass.Context.ClassHierarchyLocker()) {
                     next.EnumerateConstants(delegate(RubyModule module, string name, object value) {
                         RubyModule constAsModule = value as RubyModule;
-                        if (constAsModule != null && !visited.ContainsKey(constAsModule)) {
-                            modules.Push(constAsModule);
-                            visited[module] = null;
+                        if (constAsModule != null && !visitedModules.Contains(constAsModule)) {
+                            pendingModules.Push(constAsModule);
                         }
                         return false;
                     });
                 }
             }
-            return visited.Count;
+            return matches;
         }
 
         [RubyMethod("garbage_collect", RubyMethodAttributes.PublicSingleton)]

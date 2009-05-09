@@ -263,7 +263,31 @@ namespace IronRuby.Builtins {
             return 1;
         }
 
-        //chown
+        [RubyMethod("chown")]
+        public static int ChangeOwner(RubyFile/*!*/ self, [DefaultProtocol]int owner, [DefaultProtocol]int group) {
+            return 0;
+        }
+
+        [RubyMethod("chown")]
+        public static int ChangeOwner(RubyContext/*!*/ context, RubyFile/*!*/ self, object owner, object group) {
+            if ((owner == null || owner is int) && (group == null || group is int)) {
+                return 0;
+            }
+            throw RubyExceptions.CreateUnexpectedTypeError(context, owner, "Fixnum");
+        }
+
+        [RubyMethod("chown", RubyMethodAttributes.PublicSingleton)]
+        public static int ChangeOwner(RubyClass/*!*/ self, [DefaultProtocol]int owner, [DefaultProtocol]int group, [DefaultProtocol, NotNull]MutableString/*!*/ path) {
+            return 0;
+        }
+
+        [RubyMethod("chown", RubyMethodAttributes.PublicSingleton)]
+        public static int ChangeOwner(RubyContext/*!*/ context, RubyClass/*!*/ self, object owner, object group, [DefaultProtocol, NotNull]MutableString/*!*/ path) {
+            if ((owner == null || owner is int) && (group == null || group is int)) {
+                return 0;
+            }
+            throw RubyExceptions.CreateUnexpectedTypeError(context, owner, "Fixnum");
+        }
 
         [RubyMethod("ctime", RubyMethodAttributes.PublicSingleton)]
         public static DateTime CreateTime(RubyClass/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ path) {

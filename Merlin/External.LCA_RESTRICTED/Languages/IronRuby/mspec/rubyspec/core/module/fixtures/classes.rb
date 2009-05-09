@@ -236,7 +236,7 @@ module ModuleSpecs
   Nesting[:first_level] = Module.nesting
 
   module InstanceMethMod
-    def bar(); :bar; end
+    def module_method(); :module_method; end
   end
 
   class InstanceMeth
@@ -245,6 +245,14 @@ module ModuleSpecs
   end
 
   class InstanceMethChild < InstanceMeth
+    def child_foo() :child_foo; end
+  end
+  
+  InstanceMethodSingleton = InstanceMethChild.new
+  
+  InstanceMethodSingletonClass = class << InstanceMethodSingleton
+    def singleton_method() :singleton_method; end
+	self
   end
 
   module ClassVars
