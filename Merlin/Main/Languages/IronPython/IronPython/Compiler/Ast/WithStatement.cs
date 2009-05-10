@@ -229,7 +229,7 @@ namespace IronPython.Compiler.Ast {
                         ag.AddDebugInfo(
                             Ast.Block(
                                 Ast.Dynamic(
-                                    ag.BinderState.Invoke(
+                                    ag.PyContext.Invoke(
                                         new CallSignature(3)        // signature doesn't include function
                                     ),
                                     typeof(object),

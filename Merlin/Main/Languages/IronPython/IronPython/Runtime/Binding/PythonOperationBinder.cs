@@ -33,11 +33,11 @@ namespace IronPython.Runtime.Binding {
     using Ast = System.Linq.Expressions.Expression;
 
     class PythonOperationBinder : DynamicMetaObjectBinder, IPythonSite, IExpressionSerializable {
-        private readonly BinderState/*!*/ _state;
+        private readonly PythonContext/*!*/ _context;
         private readonly PythonOperationKind _operation;
 
-        public PythonOperationBinder(BinderState/*!*/ state, PythonOperationKind/*!*/ operation) {
-            _state = state;
+        public PythonOperationBinder(PythonContext/*!*/ context, PythonOperationKind/*!*/ operation) {
+            _context = context;
             _operation = operation;
         }
 
@@ -345,7 +345,7 @@ namespace IronPython.Runtime.Binding {
 
 
         public override int GetHashCode() {
-            return base.GetHashCode() ^ _state.Binder.GetHashCode() ^ _operation.GetHashCode();
+            return base.GetHashCode() ^ _context.Binder.GetHashCode() ^ _operation.GetHashCode();
         }
 
         public override bool Equals(object obj) {
@@ -354,12 +354,12 @@ namespace IronPython.Runtime.Binding {
                 return false;
             }
 
-            return ob._state.Binder == _state.Binder && base.Equals(obj);
+            return ob._context.Binder == _context.Binder && base.Equals(obj);
         }
 
-        public BinderState/*!*/ Binder {
+        public PythonContext/*!*/ Context {
             get {
-                return _state;
+                return _context;
             }
         }
 

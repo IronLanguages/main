@@ -19,6 +19,6 @@ using System.Linq.Expressions;
 
 namespace IronPython.Runtime.Binding {
     interface IPythonGetable {
-        DynamicMetaObject/*!*/ GetMember(PythonGetMemberBinder/*!*/ member, Expression/*!*/ codeContext);
+        DynamicMetaObject/*!*/ GetMember(PythonGetMemberBinder/*!*/ member, DynamicMetaObject/*!*/ codeContext);
     }
 }

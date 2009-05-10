@@ -51,7 +51,7 @@ namespace IronPython.Runtime.Binding {
         #region MetaObject Overrides
 
         public override DynamicMetaObject/*!*/ BindInvokeMember(InvokeMemberBinder/*!*/ action, DynamicMetaObject/*!*/[]/*!*/ args) {
-            return new InvokeBinderHelper(this, action, args, BinderState.GetCodeContext(action)).Bind(BinderState.GetBinderState(action).Context, action.Name);
+            return new InvokeBinderHelper(this, action, args, PythonContext.GetCodeContextMO(action)).Bind(PythonContext.GetPythonContext(action).SharedContext, action.Name);
         }
 
         public override DynamicMetaObject BindConvert(ConvertBinder/*!*/ conversion) {
@@ -113,7 +113,7 @@ namespace IronPython.Runtime.Binding {
         }
 
         public override System.Collections.Generic.IEnumerable<string> GetDynamicMemberNames() {
-            foreach (object o in Value.PythonType.GetMemberNames(Value.PythonType.PythonContext.DefaultBinderState.Context, Value)) {
+            foreach (object o in Value.PythonType.GetMemberNames(Value.PythonType.PythonContext.SharedContext, Value)) {
                 if (o is string) {
                     yield return (string)o;
                 }
@@ -210,7 +210,7 @@ namespace IronPython.Runtime.Binding {
         private DynamicMetaObject/*!*/ MakeConvertRuleForCall(DynamicMetaObjectBinder/*!*/ convertToAction, Type toType, DynamicMetaObject/*!*/ self, SymbolId symbolId, string returner, Func<DynamicMetaObject> fallback, Func<Expression, Expression> resultConverter) {
             PythonType pt = ((IPythonObject)self.Value).PythonType;
             PythonTypeSlot pts;
-            CodeContext context = BinderState.GetBinderState(convertToAction).Context;
+            CodeContext context = PythonContext.GetPythonContext(convertToAction).SharedContext;
             ValidationInfo valInfo = BindingHelpers.GetValidationInfo(this, pt);
 
             if (pt.TryResolveSlot(context, symbolId, out pts) && !IsBuiltinConversion(context, pts, symbolId, pt)) {
@@ -220,9 +220,9 @@ namespace IronPython.Runtime.Binding {
                     Ast.Call(
                         PythonOps.GetConversionHelper(returner, GetResultKind(convertToAction)),
                         Ast.Dynamic(
-                            BinderState.GetBinderState(convertToAction).InvokeNone,
+                            PythonContext.GetPythonContext(convertToAction).InvokeNone,
                             typeof(object),
-                            BinderState.GetCodeContext(convertToAction),
+                            PythonContext.GetCodeContext(convertToAction),
                             tmp
                         )
                     )
@@ -244,7 +244,7 @@ namespace IronPython.Runtime.Binding {
                     new DynamicMetaObject(
                         Ast.Condition(
                             MakeTryGetTypeMember(
-                                BinderState.GetBinderState(convertToAction),
+                                PythonContext.GetPythonContext(convertToAction),
                                 pts,
                                 self.Expression,
                                 tmp
@@ -284,7 +284,7 @@ namespace IronPython.Runtime.Binding {
                         ),
                         Ast.Dynamic(
                             new PythonConversionBinder(
-                                BinderState.GetBinderState(convertToAction),
+                                PythonContext.GetPythonContext(convertToAction),
                                 toType,
                                 ConversionResultKind.ExplicitCast
                             ),
@@ -349,7 +349,7 @@ namespace IronPython.Runtime.Binding {
                     return DefaultBinder.GetTryConvertReturnValue(convertToAction.Type);
                 case ConversionResultKind.ExplicitCast:
                 case ConversionResultKind.ImplicitCast:
-                    DefaultBinder db = BinderState.GetBinderState(convertToAction).Binder;
+                    DefaultBinder db = PythonContext.GetPythonContext(convertToAction).Binder;
                     return DefaultBinder.MakeError(
                         db.MakeConversionError(
                             convertToAction.Type,
@@ -366,7 +366,7 @@ namespace IronPython.Runtime.Binding {
         /// Helper for falling back - if we have a base object fallback to it first (which can
         /// then fallback to the calling site), otherwise fallback to the calling site.
         /// </summary>
-        private DynamicMetaObject/*!*/ Fallback(DynamicMetaObjectBinder/*!*/ action, Expression codeContext) {
+        private DynamicMetaObject/*!*/ Fallback(DynamicMetaObjectBinder/*!*/ action, DynamicMetaObject codeContext) {
             if (_baseMetaObject != null) {
                 IPythonGetable ipyget = _baseMetaObject as IPythonGetable;
                 if (ipyget != null) {
@@ -382,7 +382,7 @@ namespace IronPython.Runtime.Binding {
                 }
 
                 return _baseMetaObject.BindGetMember(
-                    BinderState.GetBinderState(action).CompatGetMember(
+                    PythonContext.GetPythonContext(action).CompatGetMember(
                         GetGetMemberName(action)
                     )
                 );

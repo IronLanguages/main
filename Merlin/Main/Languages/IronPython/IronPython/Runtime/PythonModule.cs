@@ -44,7 +44,7 @@ namespace IronPython.Runtime {
         private PythonLanguageFeatures _features; 
         private bool _isPythonCreatedModule;
         private bool _showCls;
-        private BinderState _binderState;
+        private PythonContext _binderState;
 
         internal PythonModule(Scope scope)
             : base(scope) {
@@ -140,7 +140,7 @@ namespace IronPython.Runtime {
             }
         }
 
-        internal BinderState BinderState {
+        internal PythonContext PythonContext {
             get {
                 return _binderState;
             }

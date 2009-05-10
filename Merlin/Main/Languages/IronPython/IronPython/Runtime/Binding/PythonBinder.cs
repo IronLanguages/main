@@ -89,7 +89,7 @@ namespace IronPython.Runtime.Binding {
 
             return Binders.Convert(
                 context,
-                _context.DefaultBinderState,
+                _context,
                 visType,
                 visType == typeof(char) ? ConversionResultKind.ImplicitCast : kind,
                 expr
@@ -695,6 +695,7 @@ namespace IronPython.Runtime.Binding {
             res[typeof(char)] = new Type[] { typeof(CharOps) };
             res[typeof(decimal)] = new Type[] { typeof(DecimalOps) };
             res[typeof(float)] = new Type[] { typeof(SingleOps) };
+            res[typeof(ScriptScope)] = new Type[] { typeof(ScriptScopeOps) };   // ScriptScope extensions should go away but we still need a methods for dir() support.
 
             return res;
         }
@@ -726,10 +727,6 @@ namespace IronPython.Runtime.Binding {
             res[typeof(TypeGroup)] = new ExtensionTypeInfo(typeof(TypeGroupOps), "type-collision");
             res[typeof(TypeTracker)] = new ExtensionTypeInfo(typeof(TypeTrackerOps), "type-collision");
             res[typeof(Scope)] = new ExtensionTypeInfo(typeof(ScopeOps), "module");
-            res[typeof(ScriptScope)] = new ExtensionTypeInfo(typeof(ScriptScopeOps), "module");
-#if !SILVERLIGHT
-            res[Type.GetType("System.__ComObject")] = new ExtensionTypeInfo(typeof(ComOps), "__ComObject");
-#endif
 
             return res;
         }

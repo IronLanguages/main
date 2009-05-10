@@ -36,18 +36,18 @@ namespace IronPython.Runtime.Binding {
     /// their expanded form.
     /// </summary>
     class CompatibilityInvokeBinder : InvokeBinder, IPythonSite {
-        private readonly BinderState/*!*/ _state;
+        private readonly PythonContext/*!*/ _context;
 
-        public CompatibilityInvokeBinder(BinderState/*!*/ state, CallInfo /*!*/ callInfo)
+        public CompatibilityInvokeBinder(PythonContext/*!*/ context, CallInfo /*!*/ callInfo)
             : base(callInfo) {
-            _state = state;
+            _context = context;
         }
 
         public override DynamicMetaObject/*!*/ FallbackInvoke(DynamicMetaObject target, DynamicMetaObject/*!*/[]/*!*/ args, DynamicMetaObject errorSuggestion) {
             if (target.Value is IDynamicMetaObjectProvider) {
                 // try creating an instance...
                 return target.BindCreateInstance(
-                    _state.Create(this, CallInfo),
+                    _context.Create(this, CallInfo),
                     args
                 );
             }
@@ -64,12 +64,12 @@ namespace IronPython.Runtime.Binding {
         internal DynamicMetaObject/*!*/ InvokeFallback(DynamicMetaObject/*!*/ target, DynamicMetaObject/*!*/[]/*!*/ args, CallSignature sig) {
             return
                 PythonProtocol.Call(this, target, args) ??
-                Binder.Binder.Create(sig, target, args, AstUtils.Constant(_state.Context)) ??
-                Binder.Binder.Call(sig, new PythonOverloadResolverFactory(Binder.Binder, AstUtils.Constant(_state.Context)), target, args);
+                Context.Binder.Create(sig, target, args, AstUtils.Constant(_context.SharedContext)) ??
+                Context.Binder.Call(sig, new PythonOverloadResolverFactory(Context.Binder, AstUtils.Constant(_context.SharedContext)), target, args);
         }
 
         public override int GetHashCode() {
-            return base.GetHashCode() ^ _state.Binder.GetHashCode();
+            return base.GetHashCode() ^ _context.Binder.GetHashCode();
         }
 
         public override bool Equals(object obj) {
@@ -78,13 +78,13 @@ namespace IronPython.Runtime.Binding {
                 return false;
             }
 
-            return ob._state.Binder == _state.Binder && base.Equals(obj);
+            return ob._context.Binder == _context.Binder && base.Equals(obj);
         }
 
         #region IPythonSite Members
 
-        public BinderState/*!*/ Binder {
-            get { return _state; }
+        public PythonContext/*!*/ Context {
+            get { return _context; }
         }
 
         #endregion

@@ -1180,9 +1180,10 @@ namespace IronPython.Compiler {
             }
         }
 
-        internal static bool TryGetEncoding(Encoding defaultEncoding, string line, ref Encoding enc) {
+        internal static bool TryGetEncoding(Encoding defaultEncoding, string line, ref Encoding enc, out string encName) {
             // encoding is "# coding: <encoding name>
             // minimum length is 18
+            encName = null;
             if (line.Length < 10) return false;
             if (line[0] != '#') return false;
 
@@ -1211,7 +1212,7 @@ namespace IronPython.Compiler {
             }
 
             // get the encoding string name
-            string encName = line.Substring(encodingStart, encodingEnd - encodingStart);
+            encName = line.Substring(encodingStart, encodingEnd - encodingStart);
 
             // and we have the magic ending as well...
             if (StringOps.TryGetEncoding(encName, out enc)) {

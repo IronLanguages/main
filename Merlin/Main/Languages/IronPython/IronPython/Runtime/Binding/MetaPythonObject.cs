@@ -45,9 +45,9 @@ namespace IronPython.Runtime.Binding {
             return ((ConvertBinder)binder).FallbackConvert(this);
         }
 
-        internal static MethodCallExpression MakeTryGetTypeMember(BinderState/*!*/ binderState, PythonTypeSlot dts, Expression self, ParameterExpression tmp) {
+        internal static MethodCallExpression MakeTryGetTypeMember(PythonContext/*!*/ PythonContext, PythonTypeSlot dts, Expression self, ParameterExpression tmp) {
             return MakeTryGetTypeMember(
-                binderState,
+                PythonContext,
                 dts, 
                 tmp,
                 self,
@@ -60,10 +60,10 @@ namespace IronPython.Runtime.Binding {
             );
         }
 
-        internal static MethodCallExpression MakeTryGetTypeMember(BinderState/*!*/ binderState, PythonTypeSlot dts, ParameterExpression tmp, Expression instance, Expression pythonType) {
+        internal static MethodCallExpression MakeTryGetTypeMember(PythonContext/*!*/ PythonContext, PythonTypeSlot dts, ParameterExpression tmp, Expression instance, Expression pythonType) {
             return Ast.Call(
                 TypeInfo._PythonOps.SlotTryGetBoundValue,
-                AstUtils.Constant(binderState.Context),
+                AstUtils.Constant(PythonContext.SharedContext),
                 AstUtils.Convert(Utils.WeakConstant(dts), typeof(PythonTypeSlot)),
                 AstUtils.Convert(instance, typeof(object)),
                 AstUtils.Convert(
@@ -101,10 +101,10 @@ namespace IronPython.Runtime.Binding {
         protected DynamicMetaObject/*!*/ MakeDelegateTarget(DynamicMetaObjectBinder/*!*/ action, Type/*!*/ toType, DynamicMetaObject/*!*/ arg) {
             Debug.Assert(arg != null);
 
-            BinderState state = BinderState.GetBinderState(action);
+            PythonContext state = PythonContext.GetPythonContext(action);
             CodeContext context;
             if (state != null) {
-                context = state.Context;
+                context = state.SharedContext;
             } else {
                 context = DefaultContext.Default;
             }
@@ -123,7 +123,7 @@ namespace IronPython.Runtime.Binding {
             );
         }
 
-        protected static DynamicMetaObject GetMemberFallback(DynamicMetaObject self, DynamicMetaObjectBinder member, Expression codeContext) {
+        protected static DynamicMetaObject GetMemberFallback(DynamicMetaObject self, DynamicMetaObjectBinder member, DynamicMetaObject codeContext) {
             PythonGetMemberBinder gmb = member as PythonGetMemberBinder;
             if (gmb != null) {
                 return gmb.Fallback(self, codeContext);

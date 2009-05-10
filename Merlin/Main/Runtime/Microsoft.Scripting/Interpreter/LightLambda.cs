@@ -22,47 +22,17 @@ using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace Microsoft.Scripting.Interpreter {
     internal partial class LightLambda {
-        internal static StrongBox<object>[] EmptyClosure = new StrongBox<object>[0];
-
-        private readonly Interpreter _interpreter;
         private readonly StrongBox<object>[] _closure;
+        private readonly Interpreter _interpreter;
 
         // Adaptive compilation support
         private readonly LightDelegateCreator _delegateCreator;
         private Delegate _compiled;
 
-        internal LightLambda(Interpreter interpreter) {
-            this._interpreter = interpreter;
-            this._closure = EmptyClosure;
-        }
-
-        internal LightLambda(Interpreter interpreter, StrongBox<object>[] closure, LightDelegateCreator delegateCreator) {
-            this._interpreter = interpreter;
-            this._closure = closure;
-            this._delegateCreator = delegateCreator;
-        }
-
-        /// <summary>
-        /// Set by LightDelegateCreator once the delegate is compiled.
-        /// </summary>
-        internal Delegate Compiled {
-            get { return _compiled; }
-            set { _compiled = value; }
-        }
-
-        /// <summary>
-        /// Used by LightDelegateCreator to set the delegate.
-        /// </summary>
-        internal StrongBox<object>[] Closure {
-            get { return _closure; }
-        }
-
-        private InterpretedFrame PrepareToRun() {
-            if (_delegateCreator != null) {
-                _delegateCreator.UpdateExecutionCount();
-            }
-
-            return new InterpretedFrame(_interpreter, _closure);
+        internal LightLambda(LightDelegateCreator delegateCreator, StrongBox<object>[] closure) {
+            _delegateCreator = delegateCreator;
+            _closure = closure;
+            _interpreter = delegateCreator.Interpreter;
         }
 
         private static MethodInfo GetRunMethod(Type delegateType) {
@@ -130,14 +100,28 @@ namespace Microsoft.Scripting.Interpreter {
             return Delegate.CreateDelegate(delegateType, this, method);
         }
 
+        private bool TryGetCompiled() {
+            // Use the compiled delegate if available.
+            if (_delegateCreator.HasCompiled) {
+                _compiled = _delegateCreator.CreateCompiledDelegate(_closure);
+                return true;
+            }
+            _delegateCreator.UpdateExecutionCount();
+            return false;
+        }
+
+        private InterpretedFrame MakeFrame() {
+            return new InterpretedFrame(_interpreter, _closure);
+        }
+
         internal void RunVoidRef2<T0, T1>(ref T0 arg0, ref T1 arg1) {
-            if (_compiled != null) {
+            if (_compiled != null || TryGetCompiled()) {
                 ((ActionRef<T0, T1>)_compiled)(ref arg0, ref arg1);
                 return;
             }
 
-            var frame = PrepareToRun();
             // copy in and copy out for today...
+            var frame = MakeFrame();
             frame.Data[0] = arg0;
             frame.Data[1] = arg1;
             frame.BoxLocals();
@@ -148,11 +132,11 @@ namespace Microsoft.Scripting.Interpreter {
 
         
         public object Run(params object[] arguments) {
-            if (_compiled != null) {
+            if (_compiled != null || TryGetCompiled()) {
                 return _compiled.DynamicInvoke(arguments);
             }
 
-            var frame = PrepareToRun();
+            var frame = MakeFrame();
             for (int i = 0; i < arguments.Length; i++) {
                 frame.Data[i] = arguments[i];
             }

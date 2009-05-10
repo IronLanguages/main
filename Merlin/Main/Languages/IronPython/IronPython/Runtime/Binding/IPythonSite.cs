@@ -4,7 +4,10 @@ using System.Text;
 
 namespace IronPython.Runtime.Binding {
     interface IPythonSite {
-        BinderState/*!*/ Binder {
+        /// <summary>
+        /// Gets the PythonContext which the CallSiteBinder is associated with.
+        /// </summary>
+        PythonContext/*!*/ Context {
             get;
         }
     }

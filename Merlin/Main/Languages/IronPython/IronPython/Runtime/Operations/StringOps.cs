@@ -1697,6 +1697,7 @@ namespace IronPython.Runtime.Operations {
                             continue;
                         case "utf_16":
                             d["utf_16_le"] = d["utf_16le"] = new EncodingInfoWrapper(encs[i], new byte[0]);
+                            d["utf16"] = new EncodingInfoWrapper(encs[i], encs[i].GetEncoding().GetPreamble());
                             break;
                         case "unicodefffe": // big endian unicode                    
                             // strip off the pre-amble, CPython doesn't include it.
@@ -2252,7 +2253,7 @@ namespace IronPython.Runtime.Operations {
                 get { throw new NotImplementedException(); }
             }
         }
-        
+
         class BackslashEncoderReplaceFallback : EncoderFallback {
             class BackslashReplaceFallbackBuffer : EncoderFallbackBuffer {
                 private List<char> _buffer = new List<char>();

@@ -1,5 +1,9 @@
 # encoding: SJIS
 
+eval('# encoding: BINARY
+p __ENCODING__
+')
+
 puts "- e/d/i -"
 
 puts "\202\240".encoding rescue 0
@@ -47,18 +51,6 @@ end
 
 puts "- e/d/i -"
 
-begin
-  eval <<-'EOT'
-    s = "あ" 
-    t = "\u{03a3}"
-  EOT
-rescue Exception
-  p $!
-end
 
-begin
-  p s + t
-rescue Exception
-  p $!
-end
+
 

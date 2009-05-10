@@ -67,11 +67,6 @@ if sys.platform=="win32":
 #--GLOBALS
     
 windir = get_environ_variable("windir")
-if is_cli:    
-    preferComDispatch = True
-else:
-    preferComDispatch = False
-
 agentsvr_path = path_combine(windir, r"msagent\agentsvr.exe")
 scriptpw_path = path_combine(windir, r"system32\scriptpw.dll")
 
@@ -91,15 +86,14 @@ class KOld: pass
 NON_NUMBER_VALUES = [   object, 
                         KNew, KOld, 
                         Exception,
-                        #object(), KNew(), KOld(),  #Merlin 324223
+                        object(), KNew(), KOld(),
                         aFunc, str, eval, type,
                         [], [3.14], ["abc"],
                         (), (3,), (u"xyz",),
                         xrange(5), 
                         {}, {'a':1},
-                        #None,  #Merlin 323996
                         __builtins__,
-                     ] #+ STRING_VALUES #Merlin 324223
+                     ]
 
 FPN_VALUES = [   -1.23, -1.0, -0.123, -0.0, 0.123, 1.0, 1.23, 
                 0.0000001, 3.14159265, 1E10, 1.0E10 ]
@@ -107,9 +101,6 @@ UINT_VALUES = [ 0, 1, 2, 7, 10, 32]
 INT_VALUES = [ -x for x in UINT_VALUES ] + UINT_VALUES
 LONG_VALUES = [long(x) for x in INT_VALUES]
 COMPLEX_VALUES = [ 3j]
-MERLIN_324223_VALUES = STRING_VALUES + [ object(), KNew(), KOld()]
-MERLIN_323996_VALUES = [None]
-
 
 #--Subclasses of Python/.NET types
 class Py_Str(str): pass  
@@ -172,7 +163,7 @@ def overflow_num_helper(clr_type):
             clr_type.MaxValue + 1,
             ]   
     
-def typeErrorTrigger(in_type):
+def valueErrorTrigger(in_type):
     ret_val = {}
     
     ############################################################
@@ -181,11 +172,8 @@ def typeErrorTrigger(in_type):
                      
     ############################################################              
     ret_val["BYTE"] = shallow_copy(NON_NUMBER_VALUES)
-    
-    if not preferComDispatch:
-        ret_val["BYTE"] += MERLIN_324223_VALUES + MERLIN_323996_VALUES
-        ret_val["BYTE"] += COMPLEX_VALUES #Merlin 374285
-    
+    ret_val["BYTE"] += COMPLEX_VALUES
+      
     if sys.platform=="win32":
         ret_val["BYTE"] += FPN_VALUES  #Merlin 323751
         ret_val["BYTE"] = [x for x in ret_val["BYTE"] if type(x) not in [unicode, str]] #INCOMPAT BUG - should be ValueError
@@ -194,37 +182,24 @@ def typeErrorTrigger(in_type):
         
     ############################################################
     ret_val["BSTR"] = shallow_copy(NON_NUMBER_VALUES)
-    
-    if not preferComDispatch:
-        ret_val["BSTR"] += MERLIN_324223_VALUES
-        ret_val["BSTR"] += FPN_VALUES + UINT_VALUES + INT_VALUES #Merlin 324232
-        ret_val["BSTR"] += COMPLEX_VALUES #Merlin 374285
+    ret_val["BSTR"] += COMPLEX_VALUES
     
     if sys.platform=="win32":
         ret_val["BSTR"] = [] #INCOMPAT BUG
     
     #strip out string values
-    ret_val["BSTR"] = [x for x in ret_val["BSTR"] if type(x) is not str]
+    ret_val["BSTR"] = [x for x in ret_val["BSTR"] if type(x) is not str and type(x) is not KNew and type(x) is not KOld and type(x) is not object]
   
     ############################################################  
     ret_val["CHAR"] =  shallow_copy(NON_NUMBER_VALUES)
-    if not preferComDispatch:
-        ret_val["CHAR"] += MERLIN_324223_VALUES
-        ret_val["CHAR"] += COMPLEX_VALUES #Merlin 374285
-        ret_val["CHAR"] += MERLIN_323996_VALUES
-        ret_val["CHAR"] += STRING_VALUES #Merlin 324223
+    ret_val["CHAR"] += COMPLEX_VALUES
     if sys.platform=="win32":
         ret_val["CHAR"] += FPN_VALUES #Merlin 323751
     
     ############################################################
     ret_val["FLOAT"] = shallow_copy(NON_NUMBER_VALUES)
+    ret_val["FLOAT"] += COMPLEX_VALUES
     
-    if not preferComDispatch:
-        ret_val["FLOAT"] += STRING_VALUES #Merlin 324223
-        ret_val["FLOAT"] += MERLIN_324223_VALUES
-        ret_val["FLOAT"] += COMPLEX_VALUES #Merlin 374285
-        ret_val["FLOAT"] += MERLIN_323996_VALUES
-        
     if sys.platform=="win32":
             ret_val["FLOAT"] += UINT_VALUES + INT_VALUES #COMPAT BUG
     
@@ -233,13 +208,8 @@ def typeErrorTrigger(in_type):
     
     ############################################################            
     ret_val["USHORT"] =  shallow_copy(NON_NUMBER_VALUES)
+    ret_val["USHORT"] += COMPLEX_VALUES
     
-    if not preferComDispatch:
-        ret_val["USHORT"] += STRING_VALUES #Merlin 324223
-        ret_val["USHORT"] += MERLIN_324223_VALUES
-        ret_val["USHORT"] += COMPLEX_VALUES #Merlin 374285
-        ret_val["USHORT"] += MERLIN_323996_VALUES
-        
     if sys.platform=="win32":
             ret_val["USHORT"] += FPN_VALUES #Merlin 323751
     
@@ -251,13 +221,8 @@ def typeErrorTrigger(in_type):
     
     ############################################################  
     ret_val["SHORT"] =  shallow_copy(NON_NUMBER_VALUES)
-    
-    if not preferComDispatch:
-        ret_val["SHORT"] += STRING_VALUES #Merlin 324223
-        ret_val["SHORT"] += MERLIN_324223_VALUES
-        ret_val["SHORT"] += COMPLEX_VALUES #Merlin 374285
-        ret_val["SHORT"] += MERLIN_323996_VALUES
-        
+    ret_val["SHORT"] += COMPLEX_VALUES
+      
     if sys.platform=="win32":
             ret_val["SHORT"] += FPN_VALUES  #Merlin 323751
     
@@ -270,7 +235,54 @@ def typeErrorTrigger(in_type):
     ############################################################
     return ret_val[in_type]
     
+
+def typeErrorTrigger(in_type):
+    ret_val = {}
     
+    ############################################################
+    #Is there anything in Python not being able to evaluate to a bool?
+    ret_val["VARIANT_BOOL"] =  [ ]
+                     
+    ############################################################              
+    ret_val["BYTE"] = []
+    
+    ############################################################
+    ret_val["BSTR"] = []
+    #strip out string values
+    ret_val["BSTR"] = [x for x in ret_val["BSTR"] if type(x) is not str]
+  
+    ############################################################  
+    ret_val["CHAR"] =  []
+    
+    ############################################################
+    ret_val["FLOAT"] = []
+    
+    ############################################################
+    ret_val["DOUBLE"] = []
+    
+    ############################################################            
+    ret_val["USHORT"] =  []
+    
+    
+    ############################################################  
+    ret_val["ULONG"] = []
+    
+    ############################################################           
+    ret_val["ULONGLONG"] =  []
+    
+    ############################################################  
+    ret_val["SHORT"] =  []
+    
+    ############################################################  
+    ret_val["LONG"] =  []
+    
+    ############################################################             
+    ret_val["LONGLONG"] =  []
+    
+    ############################################################
+    return ret_val[in_type]
+    
+
 def overflowErrorTrigger(in_type):
     ret_val = {}
     
@@ -535,55 +547,30 @@ def IsWordInstalled():
 
 #------------------------------------------------------------------------------
 def CreateExcelApplication():
-    if preferComDispatch:
-        import clr
-        import System
-        typelib = clr.LoadTypeLibrary(System.Guid("00020813-0000-0000-C000-000000000046"))
-        return typelib.Excel.Application()
-    else:
-        #type = System.Type.GetTypeFromProgID("Excel.Application")
-        #return System.Activator.CreateInstance(type)
-        from Microsoft.Office.Interop import Excel
-        return Excel.ApplicationClass()
+    #TODO: why is there use of the GUID here?
+    #import clr
+    #typelib = clr.LoadTypeLibrary(System.Guid("00020813-0000-0000-C000-000000000046"))
+    #return typelib.Excel.Application()
+    import System
+    type = System.Type.GetTypeFromProgID("Excel.Application")
+    return System.Activator.CreateInstance(type)
 
 #------------------------------------------------------------------------------
-def CreateWordApplication():
-    if preferComDispatch:
-        import clr
-        import System
-        typelib = clr.LoadTypeLibrary(System.Guid("00020905-0000-0000-C000-000000000046"))
-        return typelib.Word.Application()
-    else:
-        #type = System.Type.GetTypeFromProgID("Word.Application")
-        #return System.Activator.CreateInstance(type)
-        from Microsoft.Office.Interop import Word
-        return Word.ApplicationClass()
+def CreateWordApplication():    
+    import System
+    #import clr
+    #typelib = clr.LoadTypeLibrary(System.Guid("00020905-0000-0000-C000-000000000046"))
+    #return typelib.Word.Application()
+    type = System.Type.GetTypeFromProgID("Word.Application")
+    return System.Activator.CreateInstance(type)
 
 #------------------------------------------------------------------------------
 def CreateAgentServer():
-    if preferComDispatch:
-        import clr
-        from System import Guid
-        typelib = clr.LoadTypeLibrary(Guid("A7B93C73-7B81-11D0-AC5F-00C04FD97575"))
-        return typelib.AgentServerObjects.AgentServer()
-    else:
-        if not file_exists(agentsvr_path):
-            from sys import exit
-            print "Cannot test AgentServerObjects.dll when it doesn't exist."
-            exit(0)
-        
-        if not file_exists_in_path("tlbimp.exe"):
-            from sys import exit
-            print "tlbimp.exe is not in the path!"
-            exit(1)
-        else:
-            import clr
-            run_tlbimp(agentsvr_path)
-            Assert(file_exists("AgentServerObjects.dll"))
-            clr.AddReference("AgentServerObjects.dll")
-            from AgentServerObjects import AgentServerClass
-            return AgentServerClass()
-
+    import clr
+    from System import Guid
+    typelib = clr.LoadTypeLibrary(Guid("A7B93C73-7B81-11D0-AC5F-00C04FD97575"))
+    return typelib.AgentServerObjects.AgentServer()
+    
 #------------------------------------------------------------------------------
 def CreateDlrComServer():
     com_type_name = "DlrComLibrary.DlrComServer"
@@ -666,19 +653,6 @@ def genPeverifyInteropAsm(file):
     finally:
         nt.chdir(cwd)   
         
-        
-#------------------------------------------------------------------------------
-class skip_comdispatch: 
-    def __init__(self, msg):
-        self.msg = msg
-        
-    def __call__(self, f):
-        if not preferComDispatch:
-            return f
-        else: 
-            from iptest.assert_util import _do_nothing
-            return _do_nothing('... Decorated with @skip_comdispatch(%s), Skipping %s ...' % (self.msg, f.func_name))
-
 #------------------------------------------------------------------------------
 #--Fake parts of System for compat tests
 if sys.platform=="win32":

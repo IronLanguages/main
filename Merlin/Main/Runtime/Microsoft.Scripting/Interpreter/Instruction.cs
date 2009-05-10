@@ -807,9 +807,14 @@ namespace Microsoft.Scripting.Interpreter {
         public override int ProducedStack { get { return 1; } }
 
         public override int Run(InterpretedFrame frame) {
-            StrongBox<object>[] closure = new StrongBox<object>[ConsumedStack];
-            for (int i = closure.Length - 1; i >= 0; i--) {
-                closure[i] = (StrongBox<object>)frame.Pop();
+            StrongBox<object>[] closure;
+            if (ConsumedStack > 0) {
+                closure = new StrongBox<object>[ConsumedStack];
+                for (int i = closure.Length - 1; i >= 0; i--) {
+                    closure[i] = (StrongBox<object>)frame.Pop();
+                }
+            } else {
+                closure = null;
             }
 
             Delegate d = _creator.CreateDelegate(closure);

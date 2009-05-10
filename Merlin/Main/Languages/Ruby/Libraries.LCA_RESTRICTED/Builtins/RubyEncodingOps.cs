@@ -26,6 +26,30 @@ using Microsoft.Scripting;
 namespace IronRuby.Builtins {
     [RubyClass("Encoding", Extends = typeof(RubyEncoding), Inherits = typeof(Object), Compatibility = RubyCompatibility.Ruby19, BuildConfig = "!SILVERLIGHT")]
     public static class RubyEncodingOps {
+        #region Exceptions
+
+        [RubyException("CompatibilityError", Extends = typeof(EncodingCompatibilityError), Inherits = typeof(EncodingError))]
+        public static class CompatibilityErrorOps {
+        }
+
+        // TODO:
+        // UndefinedConversionError
+        // InvalidByteSequenceError
+        // ConverterNotFoundError
+
+        #endregion
+
+        #region Constants
+
+        // TODO:
+        // Shift_JIS
+        // SHIFT_JIS
+        // US_ASCII
+        // UTF_8
+        // ...
+
+        #endregion
+
         #region Public Instance Methods
 
         [RubyMethod("_dump")]

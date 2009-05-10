@@ -112,7 +112,7 @@ namespace IronPython.Modules {
 
         #endregion
 
-        [PythonType]
+        [PythonType, PythonHidden]
         public class @lock {
             private AutoResetEvent blockEvent;
             private Thread curHolder;

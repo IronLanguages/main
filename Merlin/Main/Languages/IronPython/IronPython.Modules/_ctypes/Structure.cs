@@ -78,7 +78,7 @@ namespace IronPython.Modules {
 
             private void CheckAbstract() {
                 object abstractCls;
-                if (((PythonType)NativeType).TryGetBoundAttr(((PythonType)NativeType).Context.DefaultBinderState.Context,
+                if (((PythonType)NativeType).TryGetBoundAttr(((PythonType)NativeType).Context.SharedContext,
                     this,
                     SymbolTable.StringToId("_abstract_"),
                     out abstractCls)) {

@@ -206,7 +206,7 @@ namespace IronPython.Modules {
                 PythonContext pc = PythonContext.GetContext(context);
 
                 Type callDelegateSiteType = CompilerHelpers.MakeCallSiteDelegateType(callSiteType);
-                CallSite site = CallSite.Create(callDelegateSiteType, pc.DefaultBinderState.Invoke(new CallSignature(_argtypes.Length)));
+                CallSite site = CallSite.Create(callDelegateSiteType, pc.Invoke(new CallSignature(_argtypes.Length)));
 
                 List<object> constantPool = new List<object>();
                 constantPool.Add(null); // 1st item is the target object, will be put in later.
@@ -229,7 +229,7 @@ namespace IronPython.Modules {
 
                 // load code context
                 int contextIndex = constantPool.Count;
-                constantPool.Add(pc.DefaultBinderState.Context);                
+                constantPool.Add(pc.SharedContext);                
                 ilGen.Emit(OpCodes.Ldarg_0);
                 ilGen.Emit(OpCodes.Ldc_I4, contextIndex);
                 ilGen.Emit(OpCodes.Ldelem_Ref);
