@@ -15,9 +15,11 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq.Expressions;
 using System.Runtime.CompilerServices;
 using System.Threading;
+using Microsoft.Scripting.Generation;
 using Microsoft.Scripting.Utils;
 
 namespace Microsoft.Scripting.Interpreter {
@@ -32,15 +34,12 @@ namespace Microsoft.Scripting.Interpreter {
         private readonly IList<ParameterExpression> _closureVariables;
 
         // Adaptive compilation support:
-        private Func<StrongBox<object>[], Delegate> _compiled;
-        private bool _delegateTypesMatch;
+        private Type _compiledDelegateType;
+        private Delegate _compiled;
         private int _executionCount;
-        private int _startedCompile;
+        private readonly object _compileLock = new object();
 
-        // List of LightLambdas that need to be updated once we compile
-        private WeakCollection<LightLambda> _lightLambdas = new WeakCollection<LightLambda>();
-
-        private const int CompilationThreshold = 2;
+        private const int CompilationThreshold = 32;
 
         internal LightDelegateCreator(Interpreter interpreter, LambdaExpression lambda, IList<ParameterExpression> closureVariables) {
             _interpreter = interpreter;
@@ -52,49 +51,61 @@ namespace Microsoft.Scripting.Interpreter {
             get { return _closureVariables; }
         }
 
-        internal Func<StrongBox<object>[], Delegate> Compiled {
-            get { return _compiled; }
+        internal Interpreter Interpreter {
+            get { return _interpreter; }
+        }
+
+        private bool HasClosure {
+            get { return _closureVariables.Count > 0; }
+        }
+
+        internal bool HasCompiled {
+            get { return _compiled != null; }
+        }
+
+        internal Delegate CreateDelegate() {
+            return CreateDelegate(null);
         }
 
         internal Delegate CreateDelegate(StrongBox<object>[] closure) {
             if (_compiled != null) {
-                return CreateCompiledDelegate(closure);
-            }
-
-            // Otherwise, we'll create an interpreted LightLambda
-            var ret = new LightLambda(_interpreter, closure, this);
-            
-            lock (this) {
-                // If this field is now null, it means a compile happened
-                if (_lightLambdas != null) {
-                    _lightLambdas.Add(ret);
+                // If the delegate type we want is not a Func/Action, we can't
+                // use the compiled code directly. So instead just fall through
+                // and create an interpreted LightLambda, which will pick up
+                // the compiled delegate on its first run.
+                //
+                // Ideally, we would just rebind the compiled delegate using
+                // Delgate.CreateDelegate. Unfortunately, it doesn't work on
+                // dynamic methods.
+                if (_compiledDelegateType == _lambda.Type) {
+                    return CreateCompiledDelegate(closure);
                 }
             }
 
-            if (_lightLambdas == null) {
-                return CreateCompiledDelegate(closure);
+            if (_interpreter == null) {
+                // We can't interpret, so force a compile
+                Compile(null);
+                Delegate compiled = CreateCompiledDelegate(closure);
+                Debug.Assert(compiled.GetType() == _lambda.Type);
+                return compiled;
             }
 
-            return ret.MakeDelegate(_lambda.Type);
+            // Otherwise, we'll create an interpreted LightLambda
+            return new LightLambda(this, closure).MakeDelegate(_lambda.Type);
         }
 
-        private Delegate CreateCompiledDelegate(StrongBox<object>[] closure) {
-            // It's already compiled, and the types match, just use the
-            // delegate directly.
-            Delegate d = _compiled(closure);
+        /// <summary>
+        /// Used by LightLambda to get the compiled delegate.
+        /// </summary>
+        internal Delegate CreateCompiledDelegate(StrongBox<object>[] closure) {
+            Debug.Assert(HasClosure == (closure != null));
 
-            // The types might not match, if the delegate type we want is
-            // not a Func/Action. In that case, use LightLambda to create
-            // a new delegate of the right type. This is not the most
-            // efficient approach, but to do better we need the ability to
-            // compile into a DynamicMethod that we created.
-            if (d.GetType() != _lambda.Type) {
-                var ret = new LightLambda(_interpreter, closure, this);
-                ret.Compiled = d;
-                d = ret.MakeDelegate(_lambda.Type);
+            if (HasClosure) {
+                // We need to apply the closure to get the actual delegate.
+                var applyClosure = (Func<StrongBox<object>[], Delegate>)_compiled;
+                return applyClosure(closure);
             }
-
-            return d;
+            return _compiled;
         }
 
         /// <summary>
@@ -103,20 +114,54 @@ namespace Microsoft.Scripting.Interpreter {
         /// interpreting.
         /// </summary>
         internal void Compile(object state) {
-            _compiled = LightLambdaClosureVisitor.BindLambda(_lambda, _closureVariables, out _delegateTypesMatch);
-
-            // TODO: we can simplify this, and remove the weak references if we
-            // have LightLambda.Run get the compiled delegate when it runs.
-
-            // Get the list and replace it with null to free it.
-            WeakCollection<LightLambda> list = _lightLambdas;
-            lock (this) {
-                _lightLambdas = null;
+            if (_compiled != null) {
+                return;
             }
 
-            // Walk the list and set delegates for all of the lambdas
-            foreach (LightLambda light in list) {
-                light.Compiled = _compiled(light.Closure);
+            // Compilation is expensive, we only want to do it once.
+            lock (_compileLock) {
+                if (_compiled != null) {
+                    return;
+                }
+
+                // Interpreter needs a standard delegate type.
+                // So change the lambda's delegate type to Func<...> or
+                // Action<...> so it can be called from the LightLambda.Run
+                // methods.
+                LambdaExpression lambda = _lambda;
+                if (_interpreter != null) {
+                    _compiledDelegateType = GetFuncOrAction(lambda);
+                    lambda = Expression.Lambda(_compiledDelegateType, lambda.Body, lambda.Name, lambda.Parameters);
+                }
+
+                if (HasClosure) {
+                    _compiled = LightLambdaClosureVisitor.BindLambda(lambda, _closureVariables);
+                } else {
+                    _compiled = lambda.Compile();
+                }
+            }
+        }
+
+        private static Type GetFuncOrAction(LambdaExpression lambda) {
+            Type delegateType;
+            bool isVoid = lambda.ReturnType == typeof(void);
+
+            if (isVoid && lambda.Parameters.Count == 2 &&
+                lambda.Parameters[0].IsByRef && lambda.Parameters[1].IsByRef) {
+                return typeof(ActionRef<,>).MakeGenericType(lambda.Parameters.Map(p => p.Type));
+            } else {
+                Type[] types = lambda.Parameters.Map(p => p.IsByRef ? p.Type.MakeByRefType() : p.Type);
+                if (isVoid) {
+                    if (Expression.TryGetActionType(types, out delegateType)) {
+                        return delegateType;
+                    }
+                } else {
+                    types = types.AddLast(lambda.ReturnType);
+                    if (Expression.TryGetFuncType(types, out delegateType)) {
+                        return delegateType;
+                    }
+                }
+                return lambda.Type;
             }
         }
 
@@ -125,21 +170,21 @@ namespace Microsoft.Scripting.Interpreter {
         /// threshold is reached, it will start a background compilation.
         /// </summary>
         internal void UpdateExecutionCount() {
-            // Don't lock here because it's a frequently hit path.
+            Debug.Assert(_interpreter != null);
+
+            // Don't lock here, it's a frequently hit path.
             //
             // There could be multiple threads racing, but that is okay.
             // Two bad things can happen:
-            //   * We miss an increment because one thread sets the counter back
-            //   * We might enter the if branch more than once.
+            //   * We miss increments (one thread sets the counter back)
+            //   * We might enter the "if" branch more than once.
             //
             // The first is okay, it just means we take longer to compile.
-            // The second we explicitly guard against inside the if.
+            // The second we explicitly guard against inside of Compile().
             //
-            if (++_executionCount == CompilationThreshold) {
-                if (Interlocked.Exchange(ref _startedCompile, 1) == 0) {
-                    // Kick off the compile on another thread so this one can keep going
-                    ThreadPool.QueueUserWorkItem(Compile, null);
-                }
+            if (++_executionCount >= CompilationThreshold) {
+                // Kick off the compile on another thread so this one can keep going
+                ThreadPool.QueueUserWorkItem(Compile, null);
             }
         }
     }

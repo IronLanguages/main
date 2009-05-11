@@ -41,7 +41,7 @@ namespace IronPython.Runtime {
     public static partial class FutureBuiltins {
         [SpecialName]
         public static void PerformModuleReload(PythonContext context, IAttributesCollection dict) {
-            Scope scope = Importer.ImportModule(context.DefaultBinderState.Context, context.DefaultBinderState.Context.GlobalScope.Dict, "itertools", false, -1) as Scope;
+            Scope scope = Importer.ImportModule(context.SharedContext, context.SharedContext.GlobalScope.Dict, "itertools", false, -1) as Scope;
             if (scope != null) {
                 dict[SymbolTable.StringToId("map")] = scope.LookupName(context, SymbolTable.StringToId("imap"));
                 dict[SymbolTable.StringToId("filter")] = scope.LookupName(context, SymbolTable.StringToId("ifilter"));

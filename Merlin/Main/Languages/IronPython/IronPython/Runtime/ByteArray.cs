@@ -77,6 +77,10 @@ namespace IronPython.Runtime {
             }
         }
 
+        public void append(object item) {
+            append(Converter.ConvertToIndex(item));
+        }
+
         public void extend(IList<byte>/*!*/ seq) {
             using (new OrderedLocker(this, seq)) {
                 // use the original count for if we're extending this w/ this
@@ -85,12 +89,7 @@ namespace IronPython.Runtime {
         }
 
         public void extend(List/*!*/ seq) {
-            using (new OrderedLocker(this, seq)) {
-                // use the original count for if we're extending this w/ this
-                foreach (object o in seq) {
-                    _bytes.Add(ByteOps.GetByte(o));
-                }
-            }
+            extend(ByteOps.GetBytes(seq));
         }
 
         public void insert(int index, int value) {
@@ -104,6 +103,10 @@ namespace IronPython.Runtime {
 
                 _bytes.Insert(index, value.ToByteChecked());
             }
+        }
+
+        public void insert(int index, object value) {
+            insert(index, Converter.ConvertToIndex(value));
         }
 
         public int pop() {
@@ -462,6 +465,17 @@ namespace IronPython.Runtime {
         public ByteArray/*!*/ lstrip() {
             lock (this) {
                 List<byte> res = _bytes.LeftStrip();
+                if (res == null) {
+                    return CopyThis();
+                }
+
+                return new ByteArray(res);
+            }
+        }
+
+        public ByteArray/*!*/ lstrip([ProhibitGenericListConversion]IList<byte> bytes) {
+            lock (this) {
+                List<byte> res = _bytes.LeftStrip(bytes);
                 if (res == null) {
                     return CopyThis();
                 }
@@ -955,6 +969,26 @@ namespace IronPython.Runtime {
                 lock (this) {
                     _bytes[PythonOps.FixIndex(index, _bytes.Count)] = ByteOps.GetByteListOk(value);
                 }
+            }
+        }
+
+        public object this[BigInteger index] {
+            get {
+                int iVal;
+                if (index.AsInt32(out iVal)) {
+                    return this[iVal];
+                }
+
+                throw PythonOps.IndexError("cannot fit long in index");
+            }
+            set {
+                int iVal;
+                if (index.AsInt32(out iVal)) {
+                    this[iVal] = value;
+                    return;
+                }
+
+                throw PythonOps.IndexError("cannot fit long in index");
             }
         }
 

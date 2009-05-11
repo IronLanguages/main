@@ -58,21 +58,21 @@ namespace IronPython.Modules {
         public static object CreateNativeWrapper(PythonType type, object holder) {
             Debug.Assert(holder is MemoryHolder);
 
-            CTypes.CData data = (CTypes.CData)type.CreateInstance(type.Context.DefaultBinderState.Context);
+            CTypes.CData data = (CTypes.CData)type.CreateInstance(type.Context.SharedContext);
             data._memHolder = (MemoryHolder)holder;
             return data;
         }
 
         public static object CreateCData(IntPtr dataAddress, PythonType type) {
             CTypes.INativeType nativeType = (CTypes.INativeType)type;
-            CTypes.CData data = (CTypes.CData)type.CreateInstance(type.Context.DefaultBinderState.Context);
+            CTypes.CData data = (CTypes.CData)type.CreateInstance(type.Context.SharedContext);
             data._memHolder = new MemoryHolder(nativeType.Size);
             data._memHolder.CopyFrom(dataAddress, new IntPtr(nativeType.Size));
             return data;
         }
 
         public static object CreateCFunction(IntPtr address, PythonType type) {
-            return type.CreateInstance(type.Context.DefaultBinderState.Context, address);
+            return type.CreateInstance(type.Context.SharedContext, address);
         }
 
         public static CTypes.CData CheckSimpleCDataType(object o, object type) {

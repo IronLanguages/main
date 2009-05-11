@@ -61,6 +61,11 @@ namespace IronRuby.Builtins {
     // ---- ThreadError
     // ---- TypeError
     // ---- ZeroDivisionError
+    // ---- EncodingError (1.9)
+    // ------ Encoding::CompatibilityError (1.9)
+    // ------ Encoding::UndefinedConversionError (1.9)
+    // ------ Encoding::InvalidByteSequenceError (1.9)
+    // ------ Encoding::ConverterNotFoundError (1.9)
     // -- SystemExit
     [RubyException("Exception", Extends = typeof(Exception))]
     public static class ExceptionOps {

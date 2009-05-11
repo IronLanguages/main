@@ -760,7 +760,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
                 Interlocked.CompareExchange(
                     ref _hashSite,
                     CallSite<Func<CallSite, object, int>>.Create(
-                        Context.DefaultBinderState.Operation(
+                        Context.Operation(
                             PythonOperationKind.Hash
                         )
                     ),
@@ -2114,8 +2114,8 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
             // fast path.  Usually this is handled by a user defined type (UserTypeOps) IDynamicMetaObjectProvider
             // class.  But w/ _ctypes support we can have a built-in meta class which doesn't
             // get this treatment.
-            if (!IsSystemType && !TryGetCustomSetAttr(Context.DefaultBinderState.Context, out pts)) {
-                CodeContext context = BinderState.GetBinderState(binder).Context;
+            if (!IsSystemType && !TryGetCustomSetAttr(Context.SharedContext, out pts)) {
+                CodeContext context = PythonContext.GetPythonContext(binder).SharedContext;
                 string name = binder.Name;
                 
                 // optimized versions for possible literals that can show up in code.
@@ -2166,6 +2166,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
         }
 
         #endregion
+
     }
 
     enum OptimizedGetKind {

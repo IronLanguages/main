@@ -454,8 +454,15 @@ namespace System.Linq.Expressions {
         /// <summary>
         /// A string like  "The result type '{0}' of the dynamic binding produced by binder '{1}' is not compatible with the result type '{2}' expected by the call site."
         /// </summary>
-        internal static string DynamicResultNotAssignable(object p0, object p1, object p2) {
+        internal static string DynamicBinderResultNotAssignable(object p0, object p1, object p2) {
             return FormatString("The result type '{0}' of the dynamic binding produced by binder '{1}' is not compatible with the result type '{2}' expected by the call site.", p0, p1, p2);
+        }
+
+        /// <summary>
+        /// A string like  "The result type '{0}' of the dynamic binding produced by the object with type '{1}' for the binder '{2}' is not compatible with the result type '{3}' expected by the call site."
+        /// </summary>
+        internal static string DynamicObjectResultNotAssignable(object p0, object p1, object p2, object p3) {
+            return FormatString("The result type '{0}' of the dynamic binding produced by the object with type '{1}' for the binder '{2}' is not compatible with the result type '{3}' expected by the call site.", p0, p1, p2, p3);
         }
 
         /// <summary>
@@ -1553,8 +1560,15 @@ namespace System.Linq.Expressions {
         /// <summary>
         /// InvalidCastException with message like "The result type '{0}' of the dynamic binding produced by binder '{1}' is not compatible with the result type '{2}' expected by the call site."
         /// </summary>
-        internal static Exception DynamicResultNotAssignable(object p0, object p1, object p2) {
-            return new InvalidCastException(Strings.DynamicResultNotAssignable(p0, p1, p2));
+        internal static Exception DynamicBinderResultNotAssignable(object p0, object p1, object p2) {
+            return new InvalidCastException(Strings.DynamicBinderResultNotAssignable(p0, p1, p2));
+        }
+
+        /// <summary>
+        /// InvalidCastException with message like "The result type '{0}' of the dynamic binding produced by the object with type '{1}' for the binder '{2}' is not compatible with the result type '{3}' expected by the call site."
+        /// </summary>
+        internal static Exception DynamicObjectResultNotAssignable(object p0, object p1, object p2, object p3) {
+            return new InvalidCastException(Strings.DynamicObjectResultNotAssignable(p0, p1, p2, p3));
         }
 
         /// <summary>

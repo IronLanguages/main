@@ -75,6 +75,7 @@ namespace IronRuby.Tests {
                 Encoding1,
                 Encoding2,
                 Encoding3,
+                Encoding4,
                 Encoding_Host1,
                 Encoding_Host2,
 
@@ -88,6 +89,7 @@ namespace IronRuby.Tests {
                 Scenario_RubyMath1,
 
                 MutableString1,
+                File1,
                 StringsPlus,
                 Strings0,
                 Strings1,
@@ -565,7 +567,7 @@ namespace IronRuby.Tests {
                 Dlr_Comparable,
                 Dlr_RubyObjects,
                 Dlr_Methods,
-                Dlr_Languages
+                Dlr_Languages,
             };
         }
     }

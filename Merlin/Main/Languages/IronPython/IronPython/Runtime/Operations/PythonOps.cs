@@ -2914,13 +2914,13 @@ namespace IronPython.Runtime.Operations {
                 infos[count + i] = new Argument(keywords[i]);
             }
 
-            return DefaultContext.DefaultPythonContext.DefaultBinderState.Invoke(
+            return DefaultContext.DefaultPythonContext.Invoke(
                 new CallSignature(infos)
             );
         }
 
         public static DynamicMetaObjectBinder MakeSimpleCallAction(int count) {
-            return DefaultContext.DefaultPythonContext.DefaultBinderState.Invoke(
+            return DefaultContext.DefaultPythonContext.Invoke(
                 new CallSignature(CompilerHelpers.MakeRepeatedArray(Argument.Simple, count))
             );
         }
@@ -3159,14 +3159,9 @@ namespace IronPython.Runtime.Operations {
             l.AddNoLock(o);
         }
 
-        public static void ModuleStarted(CodeContext/*!*/ context, object binderState, PythonLanguageFeatures features) {
+        public static void ModuleStarted(CodeContext/*!*/ context, PythonLanguageFeatures features) {
             PythonModule scopeExtension = (PythonModule)context.LanguageContext.EnsureScopeExtension(context.Scope.ModuleScope);
             scopeExtension.LanguageFeatures |= features;
-
-            BinderState state = binderState as BinderState;
-            if (state != null) {
-                state.Context = context;
-            }
         }
 
         public static void Warn(CodeContext/*!*/ context, PythonType category, string message, params object[] args) {
@@ -3233,79 +3228,80 @@ namespace IronPython.Runtime.Operations {
             }
         }
 
-        public static object GetInitialBinderState(CodeContext/*!*/ context) {
-            return GetBinderState(context);
-        }
-
-        internal static BinderState GetBinderState(CodeContext/*!*/ context) {
-            PythonModule pm = PythonContext.GetContext(context).GetPythonModule(context.GlobalScope);
-
-            Debug.Assert(pm.BinderState != null);
-            return pm.BinderState;
-        }
-
         public static DynamicMetaObjectBinder MakeComboAction(CodeContext/*!*/ context, DynamicMetaObjectBinder opBinder, DynamicMetaObjectBinder convBinder) {
-            return GetBinderState(context).BinaryOperationRetType((PythonBinaryOperationBinder)opBinder, (PythonConversionBinder)convBinder);
+            return PythonContext.GetContext(context).BinaryOperationRetType((PythonBinaryOperationBinder)opBinder, (PythonConversionBinder)convBinder);
         }
 
         public static DynamicMetaObjectBinder MakeInvokeAction(CodeContext/*!*/ context, CallSignature signature) {
-            return GetBinderState(context).Invoke(signature);
+            return PythonContext.GetContext(context).Invoke(signature);
         }
 
         public static DynamicMetaObjectBinder MakeGetAction(CodeContext/*!*/ context, string name, bool isNoThrow) {
-            return GetBinderState(context).GetMember(name);
+            return PythonContext.GetContext(context).GetMember(name);
+        }
+
+        public static DynamicMetaObjectBinder MakeCompatGetAction(CodeContext/*!*/ context, string name) {
+            return PythonContext.GetContext(context).CompatGetMember(name);
+        }
+
+        public static DynamicMetaObjectBinder MakeCompatInvokeAction(CodeContext/*!*/ context, CallInfo callInfo) {
+            return PythonContext.GetContext(context).CompatInvoke(callInfo);
+        }
+
+        public static DynamicMetaObjectBinder MakeCompatConvertAction(CodeContext/*!*/ context, Type toType, bool isExplicit) {
+            return PythonContext.GetContext(context).CompatConvert(toType, isExplicit);
         }
 
         public static DynamicMetaObjectBinder MakeSetAction(CodeContext/*!*/ context, string name) {
-            return GetBinderState(context).SetMember(name);
+            return PythonContext.GetContext(context).SetMember(name);
         }
 
         public static DynamicMetaObjectBinder MakeDeleteAction(CodeContext/*!*/ context, string name) {
-            return GetBinderState(context).DeleteMember(name);
+            return PythonContext.GetContext(context).DeleteMember(name);
         }
 
         public static DynamicMetaObjectBinder MakeConversionAction(CodeContext/*!*/ context, Type type, ConversionResultKind kind) {
-            return GetBinderState(context).Convert(type, kind);
+            return PythonContext.GetContext(context).Convert(type, kind);
         }
 
         public static DynamicMetaObjectBinder MakeTryConversionAction(CodeContext/*!*/ context, Type type, ConversionResultKind kind) {
-            return GetBinderState(context).Convert(type, kind);
+            return PythonContext.GetContext(context).Convert(type, kind);
         }
 
         public static DynamicMetaObjectBinder MakeOperationAction(CodeContext/*!*/ context, int operationName) {
-            return GetBinderState(context).Operation((PythonOperationKind)operationName);
+            return PythonContext.GetContext(context).Operation((PythonOperationKind)operationName);
         }
 
         public static DynamicMetaObjectBinder MakeUnaryOperationAction(CodeContext/*!*/ context, ExpressionType expressionType) {
-            return GetBinderState(context).UnaryOperation(expressionType);
+            return PythonContext.GetContext(context).UnaryOperation(expressionType);
         }
 
         public static DynamicMetaObjectBinder MakeBinaryOperationAction(CodeContext/*!*/ context, ExpressionType expressionType) {
-            return GetBinderState(context).BinaryOperation(expressionType);
+            return PythonContext.GetContext(context).BinaryOperation(expressionType);
         }
 
         public static DynamicMetaObjectBinder MakeGetIndexAction(CodeContext/*!*/ context, int argCount) {
-            return GetBinderState(context).GetIndex(argCount);
+            return PythonContext.GetContext(context).GetIndex(argCount);
         }
 
         public static DynamicMetaObjectBinder MakeSetIndexAction(CodeContext/*!*/ context, int argCount) {
-            return GetBinderState(context).SetIndex(argCount);
+            return PythonContext.GetContext(context).SetIndex(argCount);
         }
 
         public static DynamicMetaObjectBinder MakeDeleteIndexAction(CodeContext/*!*/ context, int argCount) {
-            return GetBinderState(context).DeleteIndex(argCount);
+            return PythonContext.GetContext(context).DeleteIndex(argCount);
         }
 
         public static DynamicMetaObjectBinder MakeGetSliceBinder(CodeContext/*!*/ context) {
-            return GetBinderState(context).GetSlice;
+            return PythonContext.GetContext(context).GetSlice;
         }
 
         public static DynamicMetaObjectBinder MakeSetSliceBinder(CodeContext/*!*/ context) {
-            return GetBinderState(context).SetSlice;
+            return PythonContext.GetContext(context).SetSliceBinder;
         }
 
         public static DynamicMetaObjectBinder MakeDeleteSliceBinder(CodeContext/*!*/ context) {
-            return GetBinderState(context).DeleteSlice;
+            return PythonContext.GetContext(context).DeleteSlice;
         }
 
         /// <summary>
@@ -3388,7 +3384,7 @@ namespace IronPython.Runtime.Operations {
 #endif
 
         public static CodeContext GetPythonTypeContext(PythonType pt) {
-            return pt.PythonContext.DefaultBinderState.Context;
+            return pt.PythonContext.SharedContext;
         }
 
         public static Delegate GetDelegate(CodeContext context, object target, Type type) {
@@ -3754,6 +3750,23 @@ namespace IronPython.Runtime.Operations {
                 default:
                     return new SyntaxErrorException(message, sourceUnit, span, errorCode, Severity.FatalError);
             }
+        }
+
+        public static SyntaxErrorException BadSourceError(byte badByte, SourceSpan span, string path) {
+            SyntaxErrorException res = new SyntaxErrorException(
+                String.Format("Non-ASCII character '\\x{0:x}' in file x.py on line {1}, but no encoding declared; see http://www.python.org/peps/pep-0263.html for details",
+                    badByte,
+                    span.Start.Line
+                ),
+                path,
+                null,
+                null,
+                span,
+                ErrorCodes.SyntaxError,
+                Severity.FatalError
+            );
+            res.Data[PythonContext._syntaxErrorNoCaret] = ScriptingRuntimeHelpers.True;
+            return res;
         }
 
         public static Exception StopIteration() {

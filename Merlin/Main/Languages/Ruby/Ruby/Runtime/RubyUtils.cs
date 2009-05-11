@@ -546,16 +546,8 @@ namespace IronRuby.Runtime {
         }
 
         private static SourceUnit/*!*/ CreateRubySourceUnit(RubyContext/*!*/ context, MutableString/*!*/ code, string path) {
-            if (context.KCode != null) {
-                if (context.KCode.CodePage != code.Encoding.CodePage && code.Encoding != RubyEncoding.Binary) {
-                    // TODO: exception type?
-                    throw new InvalidOperationException(String.Format("KCODE value ({0}) is incompatible with the current source encoding ({1})", context.KCode, code.Encoding));
-                }
-
-                return context.CreateSourceUnit(new BinaryContentProvider(code.ToByteArray()), path, context.KCode.Encoding, SourceCodeKind.File);
-            } else {
-                return context.CreateSnippet(code.ConvertToString(), path, SourceCodeKind.File);
-            }
+            Encoding encoding = (context.KCode ?? code.Encoding).Encoding;
+            return context.CreateSourceUnit(new BinaryContentProvider(code.ToByteArray()), path, encoding, SourceCodeKind.File);
         }
 
         public static object Evaluate(MutableString/*!*/ code, RubyScope/*!*/ targetScope, object self, RubyModule module, MutableString file, int line) {

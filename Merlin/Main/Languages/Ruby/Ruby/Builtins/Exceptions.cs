@@ -137,6 +137,30 @@ namespace IronRuby.Builtins {
     }
 
     [Serializable]
+    public class EncodingError : SystemException {
+        public EncodingError() : this(null, null) { }
+        public EncodingError(string message) : this(message, null) { }
+        public EncodingError(string message, Exception inner) : base(message, inner) { }
+
+#if !SILVERLIGHT
+        protected EncodingError(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context)
+            : base(info, context) { }
+#endif
+    }
+
+    [Serializable]
+    public class EncodingCompatibilityError : EncodingError {
+        public EncodingCompatibilityError() : this(null, null) { }
+        public EncodingCompatibilityError(string message) : this(message, null) { }
+        public EncodingCompatibilityError(string message, Exception inner) : base(message, inner) { }
+
+#if !SILVERLIGHT
+        protected EncodingCompatibilityError(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context)
+            : base(info, context) { }
+#endif
+    }
+
+    [Serializable]
     public class SyntaxError : ScriptError {
         private readonly string _file;
         private readonly string _lineSourceCode;

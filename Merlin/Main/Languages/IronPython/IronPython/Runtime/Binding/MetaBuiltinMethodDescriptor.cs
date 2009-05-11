@@ -53,7 +53,7 @@ namespace IronPython.Runtime.Binding {
 
         public override DynamicMetaObject/*!*/ BindInvoke(InvokeBinder/*!*/ call, params DynamicMetaObject/*!*/[]/*!*/ args) {
             // TODO: Context should come from BuiltinFunction
-            return InvokeWorker(call, BinderState.GetCodeContext(call), args);
+            return InvokeWorker(call, PythonContext.GetCodeContext(call), args);
         }
 
         #endregion
@@ -87,7 +87,7 @@ namespace IronPython.Runtime.Binding {
                 selfRestrict,
                 (newArgs) => {
                     BindingTarget target;
-                    BinderState state = BinderState.GetBinderState(call);
+                    PythonContext state = PythonContext.GetPythonContext(call);
 
                     DynamicMetaObject res = state.Binder.CallMethod(
                         new PythonOverloadResolver(

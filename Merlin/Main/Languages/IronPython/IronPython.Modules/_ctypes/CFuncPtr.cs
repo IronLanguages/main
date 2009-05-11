@@ -254,7 +254,7 @@ namespace IronPython.Modules {
                 }
 
                 public override DynamicMetaObject BindInvoke(InvokeBinder binder, DynamicMetaObject[] args) {
-                    CodeContext context = BinderState.GetBinderState(binder).Context;
+                    CodeContext context = PythonContext.GetPythonContext(binder).SharedContext;
                     PythonContext ctx = PythonContext.GetContext(context);
 
                     ArgumentMarshaller[] signature = GetArgumentMarshallers(args);

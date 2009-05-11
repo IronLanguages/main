@@ -192,46 +192,62 @@ namespace Microsoft.Scripting.Interpreter {
         }
 #endif
 
-        private Instructions _instructions = new Instructions();
+        private readonly Instructions _instructions = new Instructions();
         private int _maxStackDepth = 0;
         private int _currentStackDepth = 0;
 
-        private List<ParameterExpression> _locals = new List<ParameterExpression>();
-        private List<bool> _localIsBoxed = new List<bool>();
-        private List<ParameterExpression> _closureVariables = new List<ParameterExpression>();
+        private readonly List<ParameterExpression> _locals = new List<ParameterExpression>();
+        private readonly List<bool> _localIsBoxed = new List<bool>();
+        private readonly List<ParameterExpression> _closureVariables = new List<ParameterExpression>();
 
-        private List<ExceptionHandler> _handlers = new List<ExceptionHandler>();
+        private readonly List<ExceptionHandler> _handlers = new List<ExceptionHandler>();
         
         // Goto instructions that need to be backpatched by the current try expression to handle jumps from it.
         // Each try expression with a finally clause sets this up and each goto instruction adds itself into the list if it is not null.
         private List<GotoInstruction> _currentTryFinallyGotoFixups;
-        
-        private List<DebugInfo> _debugInfos = new List<DebugInfo>();
-        private List<UpdateStackTraceInstruction> _stackTraceUpdates = new List<UpdateStackTraceInstruction>();
 
-        private Dictionary<LabelTarget, Label> _labels = new Dictionary<LabelTarget, Label>();
+        private readonly List<DebugInfo> _debugInfos = new List<DebugInfo>();
+        private readonly List<UpdateStackTraceInstruction> _stackTraceUpdates = new List<UpdateStackTraceInstruction>();
 
-        private Stack<ParameterExpression> _exceptionForRethrowStack = new Stack<ParameterExpression>();
-        
-        private LightCompiler _parent;
+        private readonly Dictionary<LabelTarget, Label> _labels = new Dictionary<LabelTarget, Label>();
+
+        private readonly Stack<ParameterExpression> _exceptionForRethrowStack = new Stack<ParameterExpression>();
+
+        // Used for visiting the reduced form of IInstructionProvider nodes, so
+        // we can properly close over variables that the adaptive compiler will
+        // need later.
+        private ParameterVisitor _paramVisitor;
+
+        // Set to true to force compiliation of this lambda.
+        // This disables the interpreter for this lambda. We still need to
+        // walk it, however, to resolve variables closed over from the parent
+        // lambdas (because they may be interpreted).
+        private bool _forceCompile;
+
+        private readonly LightCompiler _parent;
 
         internal LightCompiler() {}
 
-        private LightCompiler(LightCompiler parent) : this() {
+        private LightCompiler(LightCompiler parent) {
             this._parent = parent;
         }
 
-        internal Interpreter CompileTop(LambdaExpression node) {
+        internal LightDelegateCreator CompileTop(LambdaExpression node) {
             foreach (var p in node.Parameters) {
                 this.AddVariable(p);
             }
-            
-            this.Compile(node.Body);
+
+            Compile(node.Body);
             Debug.Assert(_currentStackDepth == (node.ReturnType != typeof(void) ? 1 : 0));
-            return this.MakeInterpreter(node);
+
+            return new LightDelegateCreator(MakeInterpreter(node), node, _closureVariables);
         }
 
         private Interpreter MakeInterpreter(LambdaExpression lambda) {
+            if (_forceCompile) {
+                return null;
+            }
+
             var handlers = _handlers.ToArray();
             var debugInfos = _debugInfos.ToArray();
             foreach (var stackTraceUpdate in _stackTraceUpdates) {
@@ -378,7 +394,9 @@ namespace Microsoft.Scripting.Interpreter {
             }
 
             if (!_closureVariables.Contains(expr)) {
-                Debug.Assert(_parent != null);
+                if (_parent == null) {
+                    throw new InvalidOperationException("unbound variable: " + expr);
+                }
 
                 _parent.EnsureAvailableForClosure(expr);
                 _closureVariables.Add(expr);
@@ -790,6 +808,22 @@ namespace Microsoft.Scripting.Interpreter {
         private void CompileLoopExpression(Expression expr) {
             var node = (LoopExpression)expr;
 
+            //
+            // We don't want to get stuck interpreting a tight loop. Until we
+            // can adaptively compile them, just compile the entire lambda.
+            //
+            // The old code for light-compiling the loop is left here for
+            // reference. It won't do anything because we'll abort and throw
+            // away the instruction stream.
+            //
+            // Finally, we could also detect any backwards branch as a loop.
+            // It's arguably more precise, but it would be bad for IronRuby or
+            // other languages that needs a way to get around this feature.
+            // As it is, you can open code using GotoExpression and still have
+            // the lambda be interpreted.
+            //
+            _forceCompile = true;
+
             var continueLabel = node.ContinueLabel == null ? 
                 MakeLabel() : ReferenceLabel(node.ContinueLabel);
 
@@ -1132,30 +1166,86 @@ namespace Microsoft.Scripting.Interpreter {
         class ParameterVisitor : ExpressionVisitor {
             private readonly LightCompiler _compiler;
 
+            /// <summary>
+            /// A stack of variables that are defined in nested scopes. We search
+            /// this first when resolving a variable in case a nested scope shadows
+            /// one of our variable instances.
+            /// </summary>
+            private readonly Stack<Set<ParameterExpression>> _shadowedVars = new Stack<Set<ParameterExpression>>();
+
             public ParameterVisitor(LightCompiler compiler) {
                 _compiler = compiler;
             }
 
+            protected override Expression VisitLambda<T>(Expression<T> node) {
+                _shadowedVars.Push(new Set<ParameterExpression>(node.Parameters));
+                try {
+                    Visit(node.Body);
+                    return node;
+                } finally {
+                    _shadowedVars.Pop();
+                }
+            }
+
+            protected override Expression VisitBlock(BlockExpression node) {
+                if (node.Variables.Count > 0) {
+                    _shadowedVars.Push(new Set<ParameterExpression>(node.Variables));
+                }
+                try {
+                    Visit(node.Expressions);
+                    return node;
+                } finally {
+                    if (node.Variables.Count > 0) {
+                        _shadowedVars.Pop();
+                    }
+                }
+           }
+
+            protected override CatchBlock VisitCatchBlock(CatchBlock node) {
+                if (node.Variable != null) {
+                    _shadowedVars.Push(new Set<ParameterExpression>(new[] { node.Variable }));
+                }
+                try {
+                    Visit(node.Filter);
+                    Visit(node.Body);
+                    return node;
+                } finally {
+                    if (node.Variable != null) {
+                        _shadowedVars.Pop();
+                    }
+                }
+            }
+
             protected override Expression VisitParameter(ParameterExpression node) {
+                // Skip variables that are shadowed by a nested scope/lambda
+                foreach (Set<ParameterExpression> hidden in _shadowedVars) {
+                    if (hidden.Contains(node)) {
+                        return node;
+                    }
+                }
+
+                // If we didn't find it, it must exist at a higher level scope
                 _compiler.GetVariable(node);
                 return node;
             }
 
-            protected override Expression VisitLambda<T>(Expression<T> node) {
-                return node;
-            }
         }
 
         private void CompileExtensionExpression(Expression expr) {
             var instructionProvider = expr as IInstructionProvider;
             if (instructionProvider != null) {
                 instructionProvider.AddInstructions(this);
-                
+
                 // we need to walk the reduced expression in case it has any closure 
                 // variables that we'd need to track when we actually turn around and 
                 // compile it
                 if (expr.CanReduce) {
-                    new ParameterVisitor(this).Visit(expr.Reduce());
+                    if (_paramVisitor == null) {
+                        // We create a lot of these if there are many reducible
+                        // nodes, so cache it.
+                        _paramVisitor = new ParameterVisitor(this);
+                    }
+                    _paramVisitor.Visit(expr.Reduce());
                 }
                 return;
             }
@@ -1216,13 +1306,12 @@ namespace Microsoft.Scripting.Interpreter {
 
         private void CompileLambdaExpression(Expression expr) {
             var node = (LambdaExpression)expr;
-            var compiler = new LightCompiler(this);
-            var interpreter = compiler.CompileTop(node);
+            var creator = new LightCompiler(this).CompileTop(node);
 
-            foreach (ParameterExpression variable in compiler._closureVariables) {
+            foreach (ParameterExpression variable in creator.ClosureVariables) {
                 AddInstruction(GetBoxedVariable(variable));
             }
-            AddInstruction(new CreateDelegateInstruction(new LightDelegateCreator(interpreter, node, compiler._closureVariables)));
+            AddInstruction(new CreateDelegateInstruction(creator));
         }
 
         private void CompileCoalesceBinaryExpression(Expression expr) {

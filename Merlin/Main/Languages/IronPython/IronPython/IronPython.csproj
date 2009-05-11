@@ -203,7 +203,6 @@
     <Compile Include="MaybeNotImplementedAttribute.cs" />
     <Compile Include="Runtime\BindingWarnings.cs" />
     <Compile Include="Runtime\Binding\Binders.cs" />
-    <Compile Include="Runtime\Binding\BinderState.cs" />
     <Compile Include="Runtime\Binding\CompatibilityInvokeBinder.cs" />
     <Compile Include="Runtime\Binding\CreateFallbackBinder.cs" />
     <Compile Include="Runtime\Binding\IPythonOperable.cs" />

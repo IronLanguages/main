@@ -420,7 +420,7 @@ namespace Microsoft.Scripting.Hosting {
             ContractUtils.RequiresNotNull(encoding, "encoding");
             ContractUtils.Requires(kind.IsValid(), "kind");
 
-            return CreateScriptSource(new LanguageBoundTextContentProvider(_language, content, encoding), path, kind);
+            return CreateScriptSource(new LanguageBoundTextContentProvider(_language, content, encoding, path), path, kind);
         }
 
         /// <summary>

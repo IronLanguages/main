@@ -27,11 +27,11 @@ namespace IronPython.Runtime.Binding {
     using Ast = System.Linq.Expressions.Expression;
 
     class PythonDeleteIndexBinder : DeleteIndexBinder, IPythonSite, IExpressionSerializable {
-        private readonly BinderState/*!*/ _state;
+        private readonly PythonContext/*!*/ _context;
 
-        public PythonDeleteIndexBinder(BinderState/*!*/ state, int argCount)
+        public PythonDeleteIndexBinder(PythonContext/*!*/ context, int argCount)
             : base(new CallInfo(argCount)) {
-            _state = state;
+            _context = context;
         }
 
         public override DynamicMetaObject FallbackDeleteIndex(DynamicMetaObject target, DynamicMetaObject[] indexes, DynamicMetaObject errorSuggestion) {
@@ -39,7 +39,7 @@ namespace IronPython.Runtime.Binding {
         }
 
         public override int GetHashCode() {
-            return base.GetHashCode() ^ _state.Binder.GetHashCode();
+            return base.GetHashCode() ^ _context.Binder.GetHashCode();
         }
 
         public override bool Equals(object obj) {
@@ -48,13 +48,13 @@ namespace IronPython.Runtime.Binding {
                 return false;
             }
 
-            return ob._state.Binder == _state.Binder && base.Equals(obj);
+            return ob._context.Binder == _context.Binder && base.Equals(obj);
         }
 
         #region IPythonSite Members
 
-        public BinderState/*!*/ Binder {
-            get { return _state; }
+        public PythonContext/*!*/ Context {
+            get { return _context; }
         }
 
         #endregion

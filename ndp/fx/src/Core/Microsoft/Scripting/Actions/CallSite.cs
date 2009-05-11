@@ -341,6 +341,7 @@ namespace System.Runtime.CompilerServices {
 
             var originalRule = Expression.Variable(typeof(T), "originalRule");
             vars.Add(originalRule);
+            body.Add(Expression.Assign(originalRule, Expression.Field(@this, "Target")));
 
             //TRet result;
             ParameterExpression result = null;
@@ -466,10 +467,7 @@ namespace System.Runtime.CompilerServices {
                                     ),
                                     Expression.Block(
                                         Expression.Assign(
-                                            Expression.Field(
-                                                @this,
-                                                "Target"
-                                            ),
+                                            Expression.Field(@this, "Target"),
                                             rule
                                         ),
                                         invokeRule,
@@ -608,14 +606,8 @@ namespace System.Runtime.CompilerServices {
             getRule = Expression.Assign(
                 rule,
                 Expression.Assign(
-                    Expression.Field(
-                        @this,
-                        "Target"
-                    ),
-                    Expression.Property(
-                        enumerator,
-                        "Current"
-                    )
+                    Expression.Field(@this, "Target"),
+                    Expression.Property(enumerator, "Current")
                 )
             );
 
@@ -677,18 +669,12 @@ namespace System.Runtime.CompilerServices {
             //}
 
             Expression setOldTarget = Expression.Assign(
-                Expression.Field(
-                    @this,
-                    "Target"
-                ),
+                Expression.Field(@this, "Target"),
                 originalRule
             );
 
             getRule = Expression.Assign(
-                Expression.Field(
-                    @this,
-                    "Target"
-                ),
+                Expression.Field(@this, "Target"),
                 Expression.Assign(
                     rule,
                     Expression.Call(

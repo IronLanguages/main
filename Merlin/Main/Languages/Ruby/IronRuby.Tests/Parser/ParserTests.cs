@@ -828,6 +828,14 @@ p __ENCODING__
         }
 
         [Options(Compatibility = RubyCompatibility.Ruby19)]
+        private void Encoding4() {
+            var enc = Engine.Execute<RubyEncoding>(@"eval('# encoding: SJIS
+__ENCODING__
+')");
+            Assert(enc == RubyEncoding.GetRubyEncoding("SJIS"));
+        }
+
+        [Options(Compatibility = RubyCompatibility.Ruby19)]
         private void Encoding_Host1() {
             Encoding_HostHelper(Encoding.UTF8, "\u0394", true);
             Encoding_HostHelper(Encoding.UTF32, "\u0394", false);

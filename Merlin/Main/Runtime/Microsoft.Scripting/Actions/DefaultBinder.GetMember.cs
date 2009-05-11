@@ -103,7 +103,7 @@ namespace Microsoft.Scripting.Actions {
         }
 
         private DynamicMetaObject MakeGetMemberTarget(GetMemberInfo getMemInfo, DynamicMetaObject target) {
-            Type type = target.GetLimitType().IsCOMObject ? target.Expression.Type : target.GetLimitType();
+            Type type = target.GetLimitType();
             BindingRestrictions restrictions = target.Restrictions;
             Expression self = target.Expression;
             target = target.Restrict(target.GetLimitType());

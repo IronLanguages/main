@@ -44,7 +44,7 @@ namespace IronPython.Modules {
                 get {
                     PythonType elementType = (PythonType)((PointerType)NativeType)._type;
 
-                    CData res = (CData)elementType.CreateInstance(elementType.Context.DefaultBinderState.Context);
+                    CData res = (CData)elementType.CreateInstance(elementType.Context.SharedContext);
                     res._memHolder = _memHolder.ReadMemoryHolder(0);
                     if(res._memHolder.UnsafeAddress == IntPtr.Zero) {
                         throw PythonOps.ValueError("NULL value access");

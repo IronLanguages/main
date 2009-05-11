@@ -44,8 +44,8 @@ namespace IronPython.Runtime.Binding {
 
         #region IPythonSite Members
 
-        public BinderState Binder {
-            get { return _fallback.Binder; }
+        public PythonContext Context {
+            get { return _fallback.Context; }
         }
 
         #endregion
