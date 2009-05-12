@@ -94,7 +94,7 @@
     </Reference>
     <ProjectReference Include="..\..\..\..\..\ndp\fx\src\Dynamic\System\Dynamic\Microsoft.Dynamic.csproj" Condition=" '$(SilverlightBuild)' != 'true' ">
       <Project>{D4AE44AD-07B9-41DC-BB3B-1FDCDE3C987D}</Project>
-      <Name>System.Dynamic</Name>
+      <Name>Microsoft.Dynamic</Name>
     </ProjectReference>
     <ProjectReference Include="..\..\..\..\..\ndp\fx\src\Core\Microsoft\Scripting\Microsoft.Scripting.Core.csproj">
       <Project>{2AE75F5A-CD1F-4925-9647-AF4D1C282FB4}</Project>
