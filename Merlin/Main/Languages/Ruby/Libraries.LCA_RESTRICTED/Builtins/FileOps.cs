@@ -410,7 +410,14 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("extname", RubyMethodAttributes.PublicSingleton)]
         public static MutableString/*!*/ GetExtension(RubyClass/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ path) {
-            return MutableString.Create(Path.GetExtension(path.ConvertToString())).TaintBy(path);
+            string pathStr = path.ConvertToString();
+            string extension = Path.GetExtension(pathStr);
+            string filename = Path.GetFileName(pathStr);
+            if (extension == filename) {
+                // File.extname(".foo") should be "", but Path.GetExtension(".foo") returns ".foo"
+                extension = String.Empty;
+            }
+            return MutableString.Create(extension).TaintBy(path);
         }
 
         [RubyMethod("file?", RubyMethodAttributes.PublicSingleton)]
@@ -458,7 +465,7 @@ namespace IronRuby.Builtins {
                 var list = part as IList;
                 if (list != null) {
                     if (list.Count == 0) {
-                        str = MutableString.Empty;
+                        str = MutableString.FrozenEmpty;
                     } else if (visitedLists != null && visitedLists.ContainsKey(list)) {
                         str = InfiniteRecursionMarker;
                     } else {

@@ -13,6 +13,8 @@ if "%1" == "-p" (
 
 set IRTESTS_ERRORS=Results:
 
+time /t > %TEMP%\irtests_start_time.log
+
 :==============================================================================
 : Builds
 
@@ -100,6 +102,10 @@ if defined PARALLEL_IRTESTS (
 :==============================================================================
 
 if "%IRTESTS_ERRORS%"=="Results:" (
+    echo Start and end times:
+    more %TEMP%\irtests_start_time.log
+    time /t
+    
     if defined PARALLEL_IRTESTS (
         echo All builds succeeded...
     ) else (

@@ -198,16 +198,6 @@ namespace IronRuby.Builtins {
             get { return _singletonClassOf; }
         }
 
-        public RubyClass NominalClass {
-            get {
-                if (_isSingletonClass) {
-                    return _superClass;
-                } else {
-                    return this;
-                }
-            }
-        }
-
         // A class defined in Ruby code (not libraries, CLR types)
         public bool IsRubyClass {
             get { return _isRubyClass; }

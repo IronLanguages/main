@@ -1125,7 +1125,7 @@ namespace IronRuby.Builtins {
         [RubyMethod("each_line")]
         public static object EachLine(BlockParam block, MutableString/*!*/ self, [DefaultProtocol]MutableString/*!*/ separator) {
             if (separator == null) {
-                separator = MutableString.Empty;
+                separator = MutableString.CreateEmpty();
             }
 
             uint version = self.Version;
@@ -2117,7 +2117,7 @@ namespace IronRuby.Builtins {
             [NotNull]RubyRegex/*!*/ regexp, [DefaultProtocol, Optional]int limit) {
             
             if (regexp.IsEmpty) {
-                return Split(stringCast, scope, self, MutableString.Empty, limit);
+                return Split(stringCast, scope, self, MutableString.FrozenEmpty, limit);
             }
 
             if (self.IsEmpty) {

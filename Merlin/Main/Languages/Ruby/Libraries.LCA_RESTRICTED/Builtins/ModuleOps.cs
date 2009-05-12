@@ -857,8 +857,9 @@ namespace IronRuby.Builtins {
 
             RubyModule constraint = self;
             if (self.IsSingletonClass && method.DeclaringModule != self) {
-                constraint = ((RubyClass)self).NominalClass;
+                constraint = ((RubyClass)self).SuperClass;
             }
+
             // unbound method binable to any class with "constraint" mixin:
             return new UnboundMethod(constraint, methodName, method);
         }

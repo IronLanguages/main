@@ -92,18 +92,17 @@ namespace IronRuby.Builtins {
             string/*!*/ classDisplayName) {
 
             MutableString result = MutableString.CreateMutable();
+
             result.Append("#<");
             result.Append(classDisplayName);
             result.Append(": ");
 
-            if (declaringModule.IsSingletonClass) {
-                result.Append(((RubyClass)declaringModule).SuperClass.GetName(context));
-            } else if (ReferenceEquals(targetModule, declaringModule)) {
-                result.Append(declaringModule.GetName(context));
+            if (ReferenceEquals(targetModule, declaringModule)) {
+                result.Append(declaringModule.GetDisplayName(context, true));
             } else {
-                result.Append(targetModule.GetName(context));
+                result.Append(targetModule.GetDisplayName(context, true));
                 result.Append('(');
-                result.Append(declaringModule.GetName(context));
+                result.Append(declaringModule.GetDisplayName(context, true));
                 result.Append(')');
             }
 

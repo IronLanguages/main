@@ -38,7 +38,7 @@ namespace IronRuby.StandardLibrary.StringScanner {
 
         public StringScanner(RubyClass/*!*/ rubyClass) 
             : base(rubyClass) {
-            _scanString = MutableString.Empty;
+            _scanString = MutableString.FrozenEmpty;
         }
 
 #if !SILVERLIGHT

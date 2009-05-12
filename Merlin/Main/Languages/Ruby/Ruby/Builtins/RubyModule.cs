@@ -1763,7 +1763,7 @@ namespace IronRuby.Builtins {
                 return result.Append('>', nestings);
             } else if (_name == null) {
                 if (showEmptyName) {
-                    return MutableString.Empty;
+                    return MutableString.FrozenEmpty;
                 } else {
                     MutableString result = MutableString.CreateMutable();
                     result.Append("#<");

@@ -249,6 +249,10 @@ describe "Hashing" do
   end
 end
 
+#------------------------------------------------------------------------------
+# These are Ruby tests, not CLR interop tests. They should be moved somewhere else
+#------------------------------------------------------------------------------
+
 describe "ObjectSpace.each_object" do
   it "raises NotSupportedException for non-Class classes" do
     lambda { ObjectSpace.each_object(String) {} }.should raise_error(RuntimeError)
@@ -269,7 +273,8 @@ describe "ObjectSpace.each_object" do
   end
 
   it "works for singleton Class" do
-    klass = class << Class; self; end
-    ObjectSpace.each_object(klass) {}.should == 0
+    moduleClass = class << Module; self; end
+    classClass = class << Class; self; end
+    ObjectSpace.each_object(moduleClass) {}.should >= 2
   end
 end

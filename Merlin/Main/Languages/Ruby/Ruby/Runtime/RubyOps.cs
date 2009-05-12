@@ -1382,7 +1382,7 @@ namespace IronRuby.Runtime {
         // Used for implicit conversions from System.Object to MutableString (to_s conversion like).
         [Emitted]
         public static MutableString/*!*/ ObjectToMutableString(object/*!*/ value) {
-            return (value != null) ? MutableString.Create(value.ToString(), RubyEncoding.UTF8) : MutableString.Empty;
+            return (value != null) ? MutableString.Create(value.ToString(), RubyEncoding.UTF8) : MutableString.FrozenEmpty;
         }
 
         [Emitted] // ProtocolConversionAction

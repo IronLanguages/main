@@ -252,9 +252,19 @@ module ModuleSpecs
   
   InstanceMethodSingletonClass = class << InstanceMethodSingleton
     def singleton_method() :singleton_method; end
-	self
+    self
   end
 
+  SingletonInstanceMeth = class << InstanceMeth
+    def singleton_class_method() :singleton_class_method end
+    self
+  end
+  
+  SingletonInstanceMethChild = class << InstanceMethChild
+    def singleton_subclass_method() :singleton_subclass_method end
+    self
+  end
+  
   module ClassVars
     class A
       @@a_cvar = :a_cvar
@@ -299,6 +309,17 @@ module ModuleSpecs
     def initialize
       @special = 10
     end
+    
+    def module_method() :module_method end
+  end
+  
+  SubModuleInstance = SubModule.new
+  
+  SubModuleSingleton = SubModule.new
+  
+  SubModuleSingletonClass = class << SubModuleSingleton
+    def module_singleton_method() :module_singleton_method end
+    self
   end
 
   module MA; end

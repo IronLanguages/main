@@ -42,7 +42,7 @@ namespace IronRuby.Builtins {
         }
 
         public MatchData() {
-            _originalString = MutableString.Empty;
+            _originalString = MutableString.FrozenEmpty;
             _match = Match.Empty;
         }
 

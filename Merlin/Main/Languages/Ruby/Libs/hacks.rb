@@ -13,14 +13,6 @@
 #
 # ****************************************************************************
 
-# Hacked up implementation of Method
-
-class Method
-  def to_proc
-    Proc.new { |*args| self.call(*args) }
-  end
-end
-
 # Subclass Tracking
 
 module SubclassTracking
