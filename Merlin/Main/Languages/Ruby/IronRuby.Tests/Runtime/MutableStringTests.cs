@@ -20,12 +20,14 @@ using System.Diagnostics;
 using System.Collections.Generic;
 using IronRuby.Runtime;
 using Microsoft.Scripting;
+using Microsoft.Scripting.Utils;
 
 namespace IronRuby.Tests {
     public partial class Tests {
         public void MutableString1() {
             Test_Factories();
             Test_GetHashCode();
+            Test_IsAscii();
             Test_Length();
             Test_Append_Byte();
             Test_Append_Char();
@@ -34,6 +36,7 @@ namespace IronRuby.Tests {
             Test_Remove_Byte();
             Test_Remove_Char();
             Test_SwitchRepr();
+            Test_Concatenate();
         }
 
         private MutableString/*!*/ MS(string/*!*/ data, RubyEncoding/*!*/ e) {
@@ -138,6 +141,19 @@ namespace IronRuby.Tests {
             a = MutableString.Create("α", RubyEncoding.KCodeUTF8);
             b = MutableString.Create("α", RubyEncoding.KCodeSJIS);
             Assert(a.GetHashCode() != b.GetHashCode());
+        }
+
+        private void Test_IsAscii() {
+            var a = MutableString.CreateBinary(new byte[] { 0x12, 0x34 }, RubyEncoding.Binary);
+            Assert(a.IsAscii());
+            a.Append(0x56);
+            Assert(a.IsAscii());
+            a.Append(0x80);
+            Assert(!a.IsAscii());
+            a.ConvertToString();
+            Assert(!a.IsAscii());
+            a.Remove(2);
+            Assert(a.IsAscii());
         }
 
         private void Test_Length() {
@@ -358,17 +374,46 @@ namespace IronRuby.Tests {
         private void Test_SwitchRepr() {
             // \u{12345} in UTF-8:
             var u12345 = new byte[] { 0xF0, 0x92, 0x8D, 0x85 };
+            var u215c = new byte[] { 0xE2, 0x85, 0x9C };
 
             var surrogate = MS(u12345, RubyEncoding.UTF8);
             surrogate.Append('x');
             Assert(surrogate.GetCharCount() == 3);
             Assert(surrogate.ToString() == Encoding.UTF8.GetString(u12345) + "x");
 
+            var result = MutableString.AppendUnicodeRepresentation(new StringBuilder(), Encoding.UTF8.GetString(u12345), false, true, -1, -1);
+            Assert(result.ToString() == "\\u{12345}");
+
+            result = MutableString.AppendUnicodeRepresentation(new StringBuilder(), Encoding.UTF8.GetString(u215c), false, true, -1, -1);
+            Assert(result.ToString() == "\\u{215c}");
+
             //var incompleteChar = MS(new byte[] { 0xF0, 0x92 }, RubyEncoding.UTF8);
             //AssertExceptionThrown<DecoderFallbackException>(() => incompleteChar.Append('x'));
 
             // TODO:
             // var e = RubyEncoding.GetRubyEncoding(new NonInvertibleEncoding());
+        }
+
+        private void Test_Concatenate() {
+            var bytes = new[] {
+                new byte[] { 0xe2, 0x85, 0x9c },
+                new byte[] { 0x82, 0xA0 },
+                new byte[] { 0xe2, 0x85, 0x9c },
+            };
+
+            var strs = new[] {
+                MutableString.CreateBinary(bytes[0], RubyEncoding.Binary).SwitchToString(),
+                MutableString.CreateBinary(bytes[1], RubyEncoding.KCodeSJIS).SwitchToString(),
+                MutableString.CreateBinary(bytes[2], RubyEncoding.KCodeUTF8).SwitchToString(),
+            };
+
+            for (int i = 0; i < bytes.Length; i++) {
+                for (int j = 0; j < bytes.Length; j++) {
+                    var s = MutableStringOps.Concatenate(strs[i], strs[j]);
+                    var b = s.ToByteArray();
+                    Assert(b.ValueCompareTo(b.Length, ArrayUtils.AppendRange(bytes[i], bytes[j])) == 0);
+                }
+            }
         }
     }
 }

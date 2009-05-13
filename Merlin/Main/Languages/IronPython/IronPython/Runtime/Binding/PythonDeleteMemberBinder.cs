@@ -28,16 +28,16 @@ namespace IronPython.Runtime.Binding {
     using Ast = System.Linq.Expressions.Expression;
 
     class PythonDeleteMemberBinder : DeleteMemberBinder, IPythonSite, IExpressionSerializable {
-        private readonly BinderState/*!*/ _state;
+        private readonly PythonContext/*!*/ _context;
 
-        public PythonDeleteMemberBinder(BinderState/*!*/ binder, string/*!*/ name)
+        public PythonDeleteMemberBinder(PythonContext/*!*/ context, string/*!*/ name)
             : base(name, false) {
-            _state = binder;
+            _context = context;
         }
 
-        public PythonDeleteMemberBinder(BinderState/*!*/ binder, string/*!*/ name, bool ignoreCase)
+        public PythonDeleteMemberBinder(PythonContext/*!*/ context, string/*!*/ name, bool ignoreCase)
             : base(name, ignoreCase) {
-            _state = binder;
+            _context = context;
         }
 
         public override DynamicMetaObject FallbackDeleteMember(DynamicMetaObject self, DynamicMetaObject errorSuggestion) {
@@ -45,17 +45,17 @@ namespace IronPython.Runtime.Binding {
                 return Defer(self);
             }
 
-            return Binder.Binder.DeleteMember(Name, self, AstUtils.Constant(Binder.Context));
+            return Context.Binder.DeleteMember(Name, self, AstUtils.Constant(Context.SharedContext));
         }
 
-        public BinderState/*!*/ Binder {
+        public PythonContext/*!*/ Context {
             get {
-                return _state;
+                return _context;
             }
         }
 
         public override int GetHashCode() {
-            return base.GetHashCode() ^ _state.Binder.GetHashCode();
+            return base.GetHashCode() ^ _context.Binder.GetHashCode();
         }
 
         public override bool Equals(object obj) {
@@ -64,7 +64,7 @@ namespace IronPython.Runtime.Binding {
                 return false;
             }
 
-            return ob._state.Binder == _state.Binder && base.Equals(obj);
+            return ob._context.Binder == _context.Binder && base.Equals(obj);
         }
 
         public override string ToString() {

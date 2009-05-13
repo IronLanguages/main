@@ -121,8 +121,10 @@ namespace IronPython.Modules {
                     address.WriteIntPtr(offset, new IntPtr((int)value));
                 } else if (value is BigInteger) {
                     address.WriteIntPtr(offset, new IntPtr(((BigInteger)value).ToInt64()));
+                } else if (value is _CFuncPtr) {
+                    address.WriteIntPtr(offset, ((_CFuncPtr)value).addr);
                 } else {
-                    throw new NotImplementedException("cfuncptr set value");
+                    throw PythonOps.TypeErrorForTypeMismatch("func pointer", value);
                 }
             }
 
@@ -204,11 +206,13 @@ namespace IronPython.Modules {
                 PythonContext pc = PythonContext.GetContext(context);
 
                 Type callDelegateSiteType = CompilerHelpers.MakeCallSiteDelegateType(callSiteType);
-                CallSite site = CallSite.Create(callDelegateSiteType, pc.DefaultBinderState.Invoke(new CallSignature(_argtypes.Length)));
+                CallSite site = CallSite.Create(callDelegateSiteType, pc.Invoke(new CallSignature(_argtypes.Length)));
 
                 List<object> constantPool = new List<object>();
                 constantPool.Add(null); // 1st item is the target object, will be put in later.
                 constantPool.Add(site);
+
+                ilGen.BeginExceptionBlock();
 
                 //CallSite<Func<CallSite, object, object>> mySite;
                 //mySite.Target(mySite, target, ...);
@@ -224,9 +228,10 @@ namespace IronPython.Modules {
                 ilGen.Emit(OpCodes.Ldloc, siteLocal);
 
                 // load code context
-                constantPool.Add(pc.DefaultBinderState.Context);
+                int contextIndex = constantPool.Count;
+                constantPool.Add(pc.SharedContext);                
                 ilGen.Emit(OpCodes.Ldarg_0);
-                ilGen.Emit(OpCodes.Ldc_I4, constantPool.Count - 1);
+                ilGen.Emit(OpCodes.Ldc_I4, contextIndex);
                 ilGen.Emit(OpCodes.Ldelem_Ref);
 
                 // load function target, in constant pool slot 0
@@ -241,14 +246,34 @@ namespace IronPython.Modules {
                 }
 
                 ilGen.Emit(OpCodes.Call, callDelegateSiteType.GetMethod("Invoke"));
-                LocalBuilder tmpRes = ilGen.DeclareLocal(typeof(object));
-                ilGen.Emit(OpCodes.Stloc, tmpRes);
 
+                LocalBuilder finalRes = null;
                 // emit forward marshaling for return value
                 if (_restype != null) {
+                    LocalBuilder tmpRes = ilGen.DeclareLocal(typeof(object));
+                    ilGen.Emit(OpCodes.Stloc, tmpRes);
+                    finalRes = ilGen.DeclareLocal(retType);
+
                     _restype.EmitMarshalling(ilGen, new Local(tmpRes), constantPool, 0);
+                    ilGen.Emit(OpCodes.Stloc, finalRes);
                 } else {
                     ilGen.Emit(OpCodes.Pop);
+                }
+
+                // } catch(Exception e) { 
+                // emit the cleanup code
+
+                ilGen.BeginCatchBlock(typeof(Exception));
+
+                ilGen.Emit(OpCodes.Ldarg_0);
+                ilGen.Emit(OpCodes.Ldc_I4, contextIndex);
+                ilGen.Emit(OpCodes.Ldelem_Ref);
+                ilGen.Emit(OpCodes.Call, typeof(ModuleOps).GetMethod("CallbackException"));
+
+                ilGen.EndExceptionBlock();
+
+                if (_restype != null) {
+                    ilGen.Emit(OpCodes.Ldloc, finalRes);
                 }
                 ilGen.Emit(OpCodes.Ret);
 

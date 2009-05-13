@@ -8,6 +8,10 @@ describe 'Zlib::GzipFile#orig_name' do
 	@gzip_writer = Zlib::GzipWriter.new @io
   end
 
+  before :all do
+    GC.disable
+  end
+
   it 'is nil by default' do
     @gzip_writer.orig_name.should be_nil
   end

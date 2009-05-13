@@ -17,14 +17,16 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+
+using Microsoft.Scripting;
+using Microsoft.Scripting.Math;
+using Microsoft.Scripting.Runtime;
+using Microsoft.Scripting.Utils;
+
 using IronPython.Compiler.Ast;
 using IronPython.Hosting;
 using IronPython.Runtime;
 using IronPython.Runtime.Types;
-using Microsoft.Scripting;
-using Microsoft.Scripting.Runtime;
-using Microsoft.Scripting.Utils;
-using Microsoft.Scripting.Math;
 
 namespace IronPython.Compiler {
 
@@ -58,6 +60,9 @@ namespace IronPython.Compiler {
         private SourceCodeReader _sourceReader;
         private int _errorCode;
 
+        private static readonly char[] newLineChar = new char[] { '\n' };
+        private static readonly char[] whiteSpace = { ' ', '\t' };
+      
         #region Construction
 
         private Parser(Tokenizer tokenizer, ErrorSink errorSink, ParserSink parserSink, PythonLanguageFeatures languageFeatures) {
@@ -116,263 +121,6 @@ namespace IronPython.Compiler {
 
         #endregion
 
-        public ErrorSink ErrorSink {
-            get {
-                return _errors;
-            }
-            set {
-                ContractUtils.RequiresNotNull(value, "value");
-                _errors = value;
-            }
-        }
-
-        public ParserSink ParserSink {
-            get {
-                return _sink;
-            }
-            set {
-                ContractUtils.RequiresNotNull(value, "value");
-                _sink = value;
-            }
-        }
-
-        public int ErrorCode {
-            get { return _errorCode; }
-        }
-
-        private bool AllowWithStatement {
-            get {
-                return Python26 ||
-                      (_languageFeatures & PythonLanguageFeatures.AllowWithStatement) == PythonLanguageFeatures.AllowWithStatement;
-            }
-        }
-
-        private bool TrueDivision {
-            get { return (_languageFeatures & PythonLanguageFeatures.TrueDivision) == PythonLanguageFeatures.TrueDivision; }
-        }
-
-        private bool AbsoluteImports {
-            get { return (_languageFeatures & PythonLanguageFeatures.AbsoluteImports) == PythonLanguageFeatures.AbsoluteImports; }
-        }
-
-        private bool Python26 {
-            get { return (_languageFeatures & PythonLanguageFeatures.Python26) == PythonLanguageFeatures.Python26; }
-        }
-
-        private bool PrintFunction {
-            get { return (_languageFeatures & PythonLanguageFeatures.PrintFunction) == PythonLanguageFeatures.PrintFunction; }
-        }
-
-        public void Reset(SourceUnit sourceUnit, PythonLanguageFeatures languageFeatures) {
-            ContractUtils.RequiresNotNull(sourceUnit, "sourceUnit");
-
-            _sourceUnit = sourceUnit;
-            _languageFeatures = languageFeatures;
-            _token = new TokenWithSpan();
-            _lookahead = new TokenWithSpan();
-            _fromFutureAllowed = true;
-            _functions = null;
-            _privatePrefix = null;
-
-            _parsingStarted = false;
-            _errorCode = 0;
-        }
-
-        public void Reset() {
-            Reset(_sourceUnit, _languageFeatures);
-        }
-
-        private void StartParsing() {
-            if (_parsingStarted)
-                throw new InvalidOperationException("Parsing already started. Use Restart to start again.");
-
-            _parsingStarted = true;
-
-            FetchLookahead();
-        }
-
-        private SourceLocation GetEnd() {
-            Debug.Assert(_token.Token != null, "No token fetched");
-            return _token.Span.End;
-        }
-
-        private SourceLocation GetStart() {
-            Debug.Assert(_token.Token != null, "No token fetched");
-            return _token.Span.Start;
-        }
-
-        private SourceSpan GetSpan() {
-            Debug.Assert(_token.Token != null, "No token fetched");
-            return _token.Span;
-        }
-
-        private Token NextToken() {
-            _token = _lookahead;
-            FetchLookahead();
-            return _token.Token;
-        }
-
-        private Token PeekToken() {
-            return _lookahead.Token;
-        }
-
-        private void FetchLookahead() {
-            _lookahead.Token = _tokenizer.GetNextToken();
-            _lookahead.Span = _tokenizer.TokenSpan;
-        }
-
-        private bool PeekToken(TokenKind kind) {
-            return PeekToken().Kind == kind;
-        }
-
-        private bool PeekToken(Token check) {
-            return PeekToken() == check;
-        }
-
-        private bool PeekName(SymbolId id) {
-            NameToken t = PeekToken() as NameToken;
-            if (t != null && t.Name == id)
-                return true;
-            return false;
-        }
-
-        private bool Eat(TokenKind kind) {
-            Token next = PeekToken();
-            if (next.Kind != kind) {
-                ReportSyntaxError(_lookahead);
-                return false;
-            } else {
-                NextToken();
-                return true;
-            }
-        }
-
-        private bool EatNoEof(TokenKind kind) {
-            Token next = PeekToken();
-            if (next.Kind != kind) {
-                ReportSyntaxError(_lookahead.Token, _lookahead.Span, ErrorCodes.SyntaxError, false);
-                return false;
-            }
-            NextToken();
-            return true;
-        }
-
-        private bool MaybeEat(TokenKind kind) {
-            if (PeekToken().Kind == kind) {
-                NextToken();
-                return true;
-            } else {
-                return false;
-            }
-        }
-
-        private bool MaybeEat(SymbolId id) {
-            if (PeekName(id)) {
-                NextToken();
-                return true;
-            } else {
-                return false;
-            }
-        }
-
-        private void SkipName(SymbolId id) {
-            Debug.Assert(PeekName(id));
-            NextToken();
-        }
-
-        #region Error Reporting
-
-        private void ReportSyntaxError(TokenWithSpan t) {
-            ReportSyntaxError(t, ErrorCodes.SyntaxError);
-        }
-
-        private void ReportSyntaxError(TokenWithSpan t, int errorCode) {
-            ReportSyntaxError(t.Token, t.Span, errorCode, true);
-        }
-
-        private void ReportSyntaxError(Token t, SourceSpan span, int errorCode, bool allowIncomplete) {
-            SourceLocation start = span.Start;
-            SourceLocation end = span.End;
-            if (t.Kind == TokenKind.NewLine || t.Kind == TokenKind.Dedent) {
-                if (_tokenizer.IsEndOfFile) {
-                    t = EatEndOfInput();
-                    end = _token.Span.End;
-                }
-            }
-
-            if (allowIncomplete && t.Kind == TokenKind.EndOfFile) {
-                errorCode |= ErrorCodes.IncompleteStatement;
-            }
-
-            string msg;
-            switch (errorCode) {
-                case ErrorCodes.IndentationError: msg = Resources.ExpectedIndentation; break;
-                default: msg = Resources.UnexpectedToken; break;
-            }
-
-            ReportSyntaxError(start, end, String.Format(System.Globalization.CultureInfo.InvariantCulture,
-                msg, t.Image), errorCode);
-        }
-
-        private void ReportSyntaxError(string message) {
-            ReportSyntaxError(_lookahead.Span.Start, _lookahead.Span.End, message);
-        }
-
-        internal void ReportSyntaxError(SourceLocation start, SourceLocation end, string message) {
-            ReportSyntaxError(start, end, message, ErrorCodes.SyntaxError);
-        }
-
-        internal void ReportSyntaxError(SourceLocation start, SourceLocation end, string message, int errorCode) {
-            // save the first one, the next error codes may be induced errors:
-            if (_errorCode == 0) {
-                _errorCode = errorCode;
-            }
-            _errors.Add(_sourceUnit, message, new SourceSpan(start, end), errorCode, Severity.FatalError);
-        }
-
-        #endregion
-
-        private static bool IsPrivateName(SymbolId name) {
-            string s = SymbolTable.IdToString(name);
-            return s.StartsWith("__") && !s.EndsWith("__");
-        }
-
-        private SymbolId FixName(SymbolId name) {
-            if (_privatePrefix != null && IsPrivateName(name)) {
-                name = SymbolTable.StringToId(string.Format("_{0}{1}", _privatePrefix, SymbolTable.IdToString(name)));
-            }
-
-            return name;
-        }
-
-        private SymbolId ReadNameMaybeNone() {
-            // peek for better error recovery
-            Token t = PeekToken();
-            if (t == Tokens.NoneToken) {
-                NextToken();
-                return Symbols.None;
-            }
-
-            NameToken n = t as NameToken;
-            if (n == null) {
-                ReportSyntaxError(_lookahead);
-                return SymbolId.Empty;
-            }
-
-            NextToken();
-            return FixName(n.Name);
-        }
-
-        private SymbolId ReadName() {
-            NameToken n = PeekToken() as NameToken;
-            if (n == null) {
-                ReportSyntaxError(_lookahead);
-                return SymbolId.Empty;
-            }
-            NextToken();
-            return FixName(n.Name);
-        }
-
         #region Public parser interface
 
         public PythonAst ParseFile(bool makeModule) {
@@ -383,103 +131,13 @@ namespace IronPython.Compiler {
         //eval_input: testlist Newline* ENDMARKER
         //file_input: (Newline | stmt)* ENDMARKER
         public PythonAst ParseFile(bool makeModule, bool returnValue) {
-            StartParsing();
-
-            List<Statement> l = new List<Statement>();
-
-            //
-            // A future statement must appear near the top of the module. 
-            // The only lines that can appear before a future statement are: 
-            // - the module docstring (if any), 
-            // - comments, 
-            // - blank lines, and 
-            // - other future statements. 
-            // 
-
-            while (MaybeEat(TokenKind.NewLine)) ;
-
-            if (PeekToken(TokenKind.Constant)) {
-                Statement s = ParseStmt();
-                l.Add(s);
-                _fromFutureAllowed = false;
-                ExpressionStatement es = s as ExpressionStatement;
-                if (es != null) {
-                    ConstantExpression ce = es.Expression as ConstantExpression;
-                    if (ce != null && ce.Value is string) {
-                        // doc string
-                        _fromFutureAllowed = true;
-                    }
-                }
+            try {
+                return ParseFileWorker(makeModule, returnValue);
+            } catch (BadSourceException bse) {
+                throw BadSourceError(bse);
             }
-
-            while (MaybeEat(TokenKind.NewLine)) ;
-
-            // from __future__
-            if (_fromFutureAllowed) {
-                while (PeekToken(Tokens.KeywordFromToken)) {
-                    Statement s = ParseStmt();
-                    l.Add(s);
-                    FromImportStatement fis = s as FromImportStatement;
-                    if (fis != null && !fis.IsFromFuture) {
-                        // end of from __future__
-                        break;
-                    }
-                }
-            }
-
-            // the end of from __future__ sequence
-            _fromFutureAllowed = false;
-
-            while (true) {
-                if (MaybeEat(TokenKind.EndOfFile)) break;
-                if (MaybeEat(TokenKind.NewLine)) continue;
-
-                Statement s = ParseStmt();
-                l.Add(s);
-            }
-
-            Statement[] stmts = l.ToArray();
-
-            if (returnValue && stmts.Length > 0) {
-                ExpressionStatement exprStmt = stmts[stmts.Length - 1] as ExpressionStatement;
-                if (exprStmt != null) {
-                    stmts[stmts.Length - 1] = new ReturnStatement(exprStmt.Expression);
-                }
-            }
-
-            SuiteStatement ret = new SuiteStatement(stmts);
-            ret.SetLoc(_sourceUnit.MakeLocation(SourceLocation.MinValue), GetEnd());
-            return new PythonAst(ret, makeModule, _languageFeatures, false);
         }
-
-        private static readonly char[] newLineChar = new char[] { '\n' };
-        private static readonly char[] whiteSpace = { ' ', '\t' };
-
-        // Given the interactive text input for a compound statement, calculate what the
-        // indentation level of the next line should be
-        public static int GetNextAutoIndentSize(string text, int autoIndentTabWidth) {
-            ContractUtils.RequiresNotNull(text, "text");
-
-            Debug.Assert(text[text.Length - 1] == '\n');
-            string[] lines = text.Split(newLineChar);
-            if (lines.Length <= 1) return 0;
-            string lastLine = lines[lines.Length - 2];
-
-            // Figure out the number of white-spaces at the start of the last line
-            int startingSpaces = 0;
-            while (startingSpaces < lastLine.Length && lastLine[startingSpaces] == ' ')
-                startingSpaces++;
-
-            // Assume the same indent as the previous line
-            int autoIndentSize = startingSpaces;
-            // Increase the indent if this looks like the start of a compounds statement.
-            // Ideally, we would ask the parser to tell us the exact indentation level
-            if (lastLine.TrimEnd(whiteSpace).EndsWith(":"))
-                autoIndentSize += autoIndentTabWidth;
-
-            return autoIndentSize;
-        }
-
+        
         //[stmt_list] Newline | compound_stmt Newline
         //stmt_list ::= simple_stmt (";" simple_stmt)* [";"]
         //compound_stmt: if_stmt | while_stmt | for_stmt | try_stmt | funcdef | classdef
@@ -532,89 +190,196 @@ namespace IronPython.Compiler {
             }
         }
 
-        private Statement InternalParseInteractiveInput(out bool parsingMultiLineCmpdStmt, out bool isEmptyStmt) {
-            Statement s;
-            isEmptyStmt = false;
-            parsingMultiLineCmpdStmt = false;
-
-            switch (PeekToken().Kind) {
-                case TokenKind.NewLine:
-                    EatOptionalNewlines();
-                    Eat(TokenKind.EndOfFile);
-                    if (_tokenizer.EndContinues) {
-                        parsingMultiLineCmpdStmt = true;
-                        _errorCode = ErrorCodes.IncompleteStatement;
-                    } else {
-                        isEmptyStmt = true;
-                    }
-                    return null;
-
-                case TokenKind.KeywordIf:
-                case TokenKind.KeywordWhile:
-                case TokenKind.KeywordFor:
-                case TokenKind.KeywordTry:
-                case TokenKind.At:
-                case TokenKind.KeywordDef:
-                case TokenKind.KeywordClass:
-                case TokenKind.KeywordWith:
-                    parsingMultiLineCmpdStmt = true;
-                    s = ParseStmt();
-                    EatEndOfInput();
-                    break;
-
-                default:
-                    //  parseSimpleStmt takes care of one or more simple_stmts and the Newline
-                    s = ParseSimpleStmt();
-                    EatOptionalNewlines();
-                    Eat(TokenKind.EndOfFile);
-                    break;
-            }
-            return s;
-        }
-
         public PythonAst ParseSingleStatement() {
-            StartParsing();
+            try {
+                StartParsing();
 
-            EatOptionalNewlines();
-            Statement statement = ParseStmt();
-            EatEndOfInput();
-            return new PythonAst(statement, false, _languageFeatures, true);
+                EatOptionalNewlines();
+                Statement statement = ParseStmt();
+                EatEndOfInput();
+                return new PythonAst(statement, false, _languageFeatures, true);
+            } catch (BadSourceException bse) {
+                throw BadSourceError(bse);
+            }
         }
 
         public PythonAst ParseTopExpression() {
-            // TODO: move from source unit  .TrimStart(' ', '\t')
-            ReturnStatement ret = new ReturnStatement(ParseTestListAsExpression());
-            ret.SetLoc(SourceSpan.None);
-            return new PythonAst(ret, false, _languageFeatures, false);
-        }
-
-        private Expression ParseTestListAsExpression() {
-            StartParsing();
-
-            Expression expression = ParseTestListAsExpr(false);
-            EatEndOfInput();
-            return expression;
-        }
-
-        private void EatOptionalNewlines() {
-            while (MaybeEat(TokenKind.NewLine)) ;
-        }
-
-        private Token EatEndOfInput() {
-            while (MaybeEat(TokenKind.NewLine) || MaybeEat(TokenKind.Dedent)) {
-                ;
+            try {
+                // TODO: move from source unit  .TrimStart(' ', '\t')
+                ReturnStatement ret = new ReturnStatement(ParseTestListAsExpression());
+                ret.SetLoc(SourceSpan.None);
+                return new PythonAst(ret, false, _languageFeatures, false);
+            } catch (BadSourceException bse) {
+                throw BadSourceError(bse);
             }
+        }
 
-            Token t = NextToken();
-            if (t.Kind != TokenKind.EndOfFile) {
-                ReportSyntaxError(_token);
+        /// <summary>
+        /// Given the interactive text input for a compound statement, calculate what the
+        /// indentation level of the next line should be
+        /// </summary>
+        public static int GetNextAutoIndentSize(string text, int autoIndentTabWidth) {
+            ContractUtils.RequiresNotNull(text, "text");
+
+            Debug.Assert(text[text.Length - 1] == '\n');
+            string[] lines = text.Split(newLineChar);
+            if (lines.Length <= 1) return 0;
+            string lastLine = lines[lines.Length - 2];
+
+            // Figure out the number of white-spaces at the start of the last line
+            int startingSpaces = 0;
+            while (startingSpaces < lastLine.Length && lastLine[startingSpaces] == ' ')
+                startingSpaces++;
+
+            // Assume the same indent as the previous line
+            int autoIndentSize = startingSpaces;
+            // Increase the indent if this looks like the start of a compounds statement.
+            // Ideally, we would ask the parser to tell us the exact indentation level
+            if (lastLine.TrimEnd(whiteSpace).EndsWith(":"))
+                autoIndentSize += autoIndentTabWidth;
+
+            return autoIndentSize;
+        }
+
+        public ErrorSink ErrorSink {
+            get {
+                return _errors;
             }
-            return t;
+            set {
+                ContractUtils.RequiresNotNull(value, "value");
+                _errors = value;
+            }
+        }
+
+        public ParserSink ParserSink {
+            get {
+                return _sink;
+            }
+            set {
+                ContractUtils.RequiresNotNull(value, "value");
+                _sink = value;
+            }
+        }
+
+        public int ErrorCode {
+            get { return _errorCode; }
+        }
+       
+        public void Reset(SourceUnit sourceUnit, PythonLanguageFeatures languageFeatures) {
+            ContractUtils.RequiresNotNull(sourceUnit, "sourceUnit");
+
+            _sourceUnit = sourceUnit;
+            _languageFeatures = languageFeatures;
+            _token = new TokenWithSpan();
+            _lookahead = new TokenWithSpan();
+            _fromFutureAllowed = true;
+            _functions = null;
+            _privatePrefix = null;
+
+            _parsingStarted = false;
+            _errorCode = 0;
+        }
+
+        public void Reset() {
+            Reset(_sourceUnit, _languageFeatures);
         }
 
         #endregion
 
+        #region Error Reporting
+
+        private void ReportSyntaxError(TokenWithSpan t) {
+            ReportSyntaxError(t, ErrorCodes.SyntaxError);
+        }
+
+        private void ReportSyntaxError(TokenWithSpan t, int errorCode) {
+            ReportSyntaxError(t.Token, t.Span, errorCode, true);
+        }
+
+        private void ReportSyntaxError(Token t, SourceSpan span, int errorCode, bool allowIncomplete) {
+            SourceLocation start = span.Start;
+            SourceLocation end = span.End;
+            if (t.Kind == TokenKind.NewLine || t.Kind == TokenKind.Dedent) {
+                if (_tokenizer.IsEndOfFile) {
+                    t = EatEndOfInput();
+                    end = _token.Span.End;
+                }
+            }
+
+            if (allowIncomplete && t.Kind == TokenKind.EndOfFile) {
+                errorCode |= ErrorCodes.IncompleteStatement;
+            }
+
+            string msg;
+            switch (errorCode) {
+                case ErrorCodes.IndentationError: msg = Resources.ExpectedIndentation; break;
+                default: msg = Resources.UnexpectedToken; break;
+            }
+
+            ReportSyntaxError(start, end, String.Format(System.Globalization.CultureInfo.InvariantCulture,
+                msg, t.Image), errorCode);
+        }
+
+        private void ReportSyntaxError(string message) {
+            ReportSyntaxError(_lookahead.Span.Start, _lookahead.Span.End, message);
+        }
+
+        internal void ReportSyntaxError(SourceLocation start, SourceLocation end, string message) {
+            ReportSyntaxError(start, end, message, ErrorCodes.SyntaxError);
+        }
+
+        internal void ReportSyntaxError(SourceLocation start, SourceLocation end, string message, int errorCode) {
+            // save the first one, the next error codes may be induced errors:
+            if (_errorCode == 0) {
+                _errorCode = errorCode;
+            }
+            _errors.Add(_sourceUnit, message, new SourceSpan(start, end), errorCode, Severity.FatalError);
+        }
+
+        #endregion        
+
         #region LL(1) Parsing
+
+        private static bool IsPrivateName(SymbolId name) {
+            string s = SymbolTable.IdToString(name);
+            return s.StartsWith("__") && !s.EndsWith("__");
+        }
+
+        private SymbolId FixName(SymbolId name) {
+            if (_privatePrefix != null && IsPrivateName(name)) {
+                name = SymbolTable.StringToId(string.Format("_{0}{1}", _privatePrefix, SymbolTable.IdToString(name)));
+            }
+
+            return name;
+        }
+
+        private SymbolId ReadNameMaybeNone() {
+            // peek for better error recovery
+            Token t = PeekToken();
+            if (t == Tokens.NoneToken) {
+                NextToken();
+                return Symbols.None;
+            }
+
+            NameToken n = t as NameToken;
+            if (n == null) {
+                ReportSyntaxError(_lookahead);
+                return SymbolId.Empty;
+            }
+
+            NextToken();
+            return FixName(n.Name);
+        }
+
+        private SymbolId ReadName() {
+            NameToken n = PeekToken() as NameToken;
+            if (n == null) {
+                ReportSyntaxError(_lookahead);
+                return SymbolId.Empty;
+            }
+            NextToken();
+            return FixName(n.Name);
+        }
 
         //stmt: simple_stmt | compound_stmt
         //compound_stmt: if_stmt | while_stmt | for_stmt | try_stmt | funcdef | classdef
@@ -2938,6 +2703,286 @@ namespace IronPython.Compiler {
 
         #endregion
 
+        #region Implementation Details
+
+        private PythonAst ParseFileWorker(bool makeModule, bool returnValue) {
+            StartParsing();
+
+            List<Statement> l = new List<Statement>();
+
+            //
+            // A future statement must appear near the top of the module. 
+            // The only lines that can appear before a future statement are: 
+            // - the module docstring (if any), 
+            // - comments, 
+            // - blank lines, and 
+            // - other future statements. 
+            // 
+
+            while (MaybeEat(TokenKind.NewLine)) ;
+
+            if (PeekToken(TokenKind.Constant)) {
+                Statement s = ParseStmt();
+                l.Add(s);
+                _fromFutureAllowed = false;
+                ExpressionStatement es = s as ExpressionStatement;
+                if (es != null) {
+                    ConstantExpression ce = es.Expression as ConstantExpression;
+                    if (ce != null && ce.Value is string) {
+                        // doc string
+                        _fromFutureAllowed = true;
+                    }
+                }
+            }
+
+            while (MaybeEat(TokenKind.NewLine)) ;
+
+            // from __future__
+            if (_fromFutureAllowed) {
+                while (PeekToken(Tokens.KeywordFromToken)) {
+                    Statement s = ParseStmt();
+                    l.Add(s);
+                    FromImportStatement fis = s as FromImportStatement;
+                    if (fis != null && !fis.IsFromFuture) {
+                        // end of from __future__
+                        break;
+                    }
+                }
+            }
+
+            // the end of from __future__ sequence
+            _fromFutureAllowed = false;
+
+            while (true) {
+                if (MaybeEat(TokenKind.EndOfFile)) break;
+                if (MaybeEat(TokenKind.NewLine)) continue;
+
+                Statement s = ParseStmt();
+                l.Add(s);
+            }
+
+            Statement[] stmts = l.ToArray();
+
+            if (returnValue && stmts.Length > 0) {
+                ExpressionStatement exprStmt = stmts[stmts.Length - 1] as ExpressionStatement;
+                if (exprStmt != null) {
+                    stmts[stmts.Length - 1] = new ReturnStatement(exprStmt.Expression);
+                }
+            }
+
+            SuiteStatement ret = new SuiteStatement(stmts);
+            ret.SetLoc(_sourceUnit.MakeLocation(SourceLocation.MinValue), GetEnd());
+            return new PythonAst(ret, makeModule, _languageFeatures, false);
+        }
+
+        private Statement InternalParseInteractiveInput(out bool parsingMultiLineCmpdStmt, out bool isEmptyStmt) {
+            try {
+                Statement s;
+                isEmptyStmt = false;
+                parsingMultiLineCmpdStmt = false;
+
+                switch (PeekToken().Kind) {
+                    case TokenKind.NewLine:
+                        EatOptionalNewlines();
+                        Eat(TokenKind.EndOfFile);
+                        if (_tokenizer.EndContinues) {
+                            parsingMultiLineCmpdStmt = true;
+                            _errorCode = ErrorCodes.IncompleteStatement;
+                        } else {
+                            isEmptyStmt = true;
+                        }
+                        return null;
+
+                    case TokenKind.KeywordIf:
+                    case TokenKind.KeywordWhile:
+                    case TokenKind.KeywordFor:
+                    case TokenKind.KeywordTry:
+                    case TokenKind.At:
+                    case TokenKind.KeywordDef:
+                    case TokenKind.KeywordClass:
+                    case TokenKind.KeywordWith:
+                        parsingMultiLineCmpdStmt = true;
+                        s = ParseStmt();
+                        EatEndOfInput();
+                        break;
+
+                    default:
+                        //  parseSimpleStmt takes care of one or more simple_stmts and the Newline
+                        s = ParseSimpleStmt();
+                        EatOptionalNewlines();
+                        Eat(TokenKind.EndOfFile);
+                        break;
+                }
+                return s;
+            } catch (BadSourceException bse) {
+                throw BadSourceError(bse);
+            }
+        }
+
+
+
+        private Expression ParseTestListAsExpression() {
+            StartParsing();
+
+            Expression expression = ParseTestListAsExpr(false);
+            EatEndOfInput();
+            return expression;
+        }
+
+        private void EatOptionalNewlines() {
+            while (MaybeEat(TokenKind.NewLine)) ;
+        }
+
+        private Token EatEndOfInput() {
+            while (MaybeEat(TokenKind.NewLine) || MaybeEat(TokenKind.Dedent)) {
+                ;
+            }
+
+            Token t = NextToken();
+            if (t.Kind != TokenKind.EndOfFile) {
+                ReportSyntaxError(_token);
+            }
+            return t;
+        }
+
+        private Exception/*!*/ BadSourceError(BadSourceException bse) {
+            StreamReader sr = _sourceReader.BaseReader as StreamReader;
+            if (sr != null && sr.BaseStream.CanSeek) {
+                return PythonContext.ReportEncodingError(sr.BaseStream, _sourceUnit.Path);
+
+            }
+            // BUG: We have some weird stream and we can't accurately track the 
+            // position where the exception came from.  There are too many levels
+            // of buffering below us to re-wind and calculate the actual line number, so
+            // we'll give the last line number the tokenizer was at.
+            return IronPython.Runtime.Operations.PythonOps.BadSourceError(
+                bse._badByte,
+                new SourceSpan(_tokenizer.CurrentPosition, _tokenizer.CurrentPosition),
+                _sourceUnit.Path
+            );
+        }
+
+        private bool AllowWithStatement {
+            get {
+                return Python26 ||
+                      (_languageFeatures & PythonLanguageFeatures.AllowWithStatement) == PythonLanguageFeatures.AllowWithStatement;
+            }
+        }
+
+        private bool TrueDivision {
+            get { return (_languageFeatures & PythonLanguageFeatures.TrueDivision) == PythonLanguageFeatures.TrueDivision; }
+        }
+
+        private bool AbsoluteImports {
+            get { return (_languageFeatures & PythonLanguageFeatures.AbsoluteImports) == PythonLanguageFeatures.AbsoluteImports; }
+        }
+
+        private bool Python26 {
+            get { return (_languageFeatures & PythonLanguageFeatures.Python26) == PythonLanguageFeatures.Python26; }
+        }
+
+        private bool PrintFunction {
+            get { return (_languageFeatures & PythonLanguageFeatures.PrintFunction) == PythonLanguageFeatures.PrintFunction; }
+        }
+
+        private void StartParsing() {
+            if (_parsingStarted)
+                throw new InvalidOperationException("Parsing already started. Use Restart to start again.");
+
+            _parsingStarted = true;
+
+            FetchLookahead();
+        }
+
+        private SourceLocation GetEnd() {
+            Debug.Assert(_token.Token != null, "No token fetched");
+            return _token.Span.End;
+        }
+
+        private SourceLocation GetStart() {
+            Debug.Assert(_token.Token != null, "No token fetched");
+            return _token.Span.Start;
+        }
+
+        private SourceSpan GetSpan() {
+            Debug.Assert(_token.Token != null, "No token fetched");
+            return _token.Span;
+        }
+
+        private Token NextToken() {
+            _token = _lookahead;
+            FetchLookahead();
+            return _token.Token;
+        }
+
+        private Token PeekToken() {
+            return _lookahead.Token;
+        }
+
+        private void FetchLookahead() {
+            _lookahead.Token = _tokenizer.GetNextToken();
+            _lookahead.Span = _tokenizer.TokenSpan;
+        }
+
+        private bool PeekToken(TokenKind kind) {
+            return PeekToken().Kind == kind;
+        }
+
+        private bool PeekToken(Token check) {
+            return PeekToken() == check;
+        }
+
+        private bool PeekName(SymbolId id) {
+            NameToken t = PeekToken() as NameToken;
+            if (t != null && t.Name == id)
+                return true;
+            return false;
+        }
+
+        private bool Eat(TokenKind kind) {
+            Token next = PeekToken();
+            if (next.Kind != kind) {
+                ReportSyntaxError(_lookahead);
+                return false;
+            } else {
+                NextToken();
+                return true;
+            }
+        }
+
+        private bool EatNoEof(TokenKind kind) {
+            Token next = PeekToken();
+            if (next.Kind != kind) {
+                ReportSyntaxError(_lookahead.Token, _lookahead.Span, ErrorCodes.SyntaxError, false);
+                return false;
+            }
+            NextToken();
+            return true;
+        }
+
+        private bool MaybeEat(TokenKind kind) {
+            if (PeekToken().Kind == kind) {
+                NextToken();
+                return true;
+            } else {
+                return false;
+            }
+        }
+
+        private bool MaybeEat(SymbolId id) {
+            if (PeekName(id)) {
+                NextToken();
+                return true;
+            } else {
+                return false;
+            }
+        }
+
+        private void SkipName(SymbolId id) {
+            Debug.Assert(PeekName(id));
+            NextToken();
+        }
+
         private class TokenizerErrorSink : ErrorSink {
             private readonly Parser _parser;
 
@@ -2953,5 +2998,7 @@ namespace IronPython.Compiler {
                 _parser.ErrorSink.Add(sourceUnit, message, span, errorCode, severity);
             }
         }
+
+        #endregion
     }
 }

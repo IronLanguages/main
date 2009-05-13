@@ -42,8 +42,12 @@ namespace IronRuby.Builtins {
         }
 
         public override string/*!*/ ToString() {
+#if DEBUG && !SILVERLIGHT && !SYSTEM_CORE
+            if (MetaObjectBuilder._DumpingExpression) {
+                return ToMutableString().ToString();
+            }
+#endif
             // Translate ToString to to_s conversion for .NET callers.
-            // 
             var site = _class.StringConversionSite;
             return site.Target(site, this).ToString();
         }
@@ -70,6 +74,12 @@ namespace IronRuby.Builtins {
         [Emitted]
         public RubyClass/*!*/ Class {
             get { return _class; }
+        }
+
+        public RubyClass/*!*/ ImmediateClass {
+            get {
+                return (_instanceData == null) ? _class : (_instanceData.ImmediateClass ?? _class);
+            }
         }
 
         public RubyInstanceData/*!*/ GetInstanceData() {

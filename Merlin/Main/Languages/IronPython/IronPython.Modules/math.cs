@@ -16,7 +16,9 @@
 using System;
 using System.Collections;
 
+using Microsoft.Scripting;
 using Microsoft.Scripting.Math;
+using Microsoft.Scripting.Runtime;
 
 using IronPython.Runtime;
 using IronPython.Runtime.Operations;
@@ -381,31 +383,13 @@ namespace IronPython.Modules {
                 return factorial(Converter.ConvertToBigInteger(value));
             }
         }
-        
-        public static object trunc(double v0) {
-            int val;
-            if (Converter.TryConvertToInt32(v0, out val)) {
-                return val;
-            }
-            return (BigInteger)v0;
-        }
 
-        public static int trunc(int v0) {
-            return v0;
-        }
-
-        public static BigInteger trunc(BigInteger v0) {
-            return v0;
-        }
-
-        public static BigInteger trunc(object value) {
-            // CPython tries float first, then double, so we need
-            // an explicit overload which properly matches the order here
-            double val;
-            if (Converter.TryConvertToDouble(value, out val)) {
-                return (BigInteger)val;
+        public static object trunc(CodeContext/*!*/ context, object value) {
+            object func;
+            if (PythonOps.TryGetBoundAttr(value, Symbols.Truncate, out func)) {
+                return PythonOps.CallWithContext(context, func);
             } else {
-                return Converter.ConvertToBigInteger(value);
+                throw PythonOps.AttributeError("__trunc__");
             }
         }
 

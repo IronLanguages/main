@@ -28,8 +28,8 @@ namespace IronRuby.Runtime.Calls {
         public override Delegate/*!*/ Method { get { return _block; } }
         public override int ParameterCount { get { return 0; } }
 
-        public BlockDispatcher0(BlockCallTarget0/*!*/ block, BlockSignatureAttributes attributes)
-            : base(attributes) {
+        public BlockDispatcher0(BlockCallTarget0/*!*/ block, BlockSignatureAttributes attributesAndArity)
+            : base(attributesAndArity) {
             Assert.NotNull(block);
             Debug.Assert(!HasUnsplatParameter);
 
@@ -115,8 +115,8 @@ namespace IronRuby.Runtime.Calls {
         public override Delegate/*!*/ Method { get { return _block; } }
         public override int ParameterCount { get { return 1; } }
 
-        public BlockDispatcher1(BlockCallTarget1/*!*/ block, BlockSignatureAttributes attributes)
-            : base(attributes) {
+        public BlockDispatcher1(BlockCallTarget1/*!*/ block, BlockSignatureAttributes attributesAndArity)
+            : base(attributesAndArity) {
             Assert.NotNull(block);
             Debug.Assert(!HasUnsplatParameter);
             _block = block;
@@ -289,8 +289,8 @@ namespace IronRuby.Runtime.Calls {
         public override Delegate/*!*/ Method { get { return _block; } }
         public override int ParameterCount { get { return 2; } }
 
-        public BlockDispatcher2(BlockCallTarget2/*!*/ block, BlockSignatureAttributes attributes)
-            : base(attributes) {
+        public BlockDispatcher2(BlockCallTarget2/*!*/ block, BlockSignatureAttributes attributesAndArity)
+            : base(attributesAndArity) {
             Assert.NotNull(block);
             Debug.Assert(!HasUnsplatParameter);
             _block = block;
@@ -398,8 +398,8 @@ namespace IronRuby.Runtime.Calls {
         public override Delegate/*!*/ Method { get { return _block; } }
         public override int ParameterCount { get { return 3; } }
 
-        public BlockDispatcher3(BlockCallTarget3/*!*/ block, BlockSignatureAttributes attributes)
-            : base(attributes) {
+        public BlockDispatcher3(BlockCallTarget3/*!*/ block, BlockSignatureAttributes attributesAndArity)
+            : base(attributesAndArity) {
             Assert.NotNull(block);
             Debug.Assert(!HasUnsplatParameter);
             _block = block;
@@ -517,8 +517,8 @@ namespace IronRuby.Runtime.Calls {
         public override Delegate/*!*/ Method { get { return _block; } }
         public override int ParameterCount { get { return 4; } }
 
-        public BlockDispatcher4(BlockCallTarget4/*!*/ block, BlockSignatureAttributes attributes)
-            : base(attributes) {
+        public BlockDispatcher4(BlockCallTarget4/*!*/ block, BlockSignatureAttributes attributesAndArity)
+            : base(attributesAndArity) {
             Assert.NotNull(block);
             Debug.Assert(!HasUnsplatParameter);
             _block = block;

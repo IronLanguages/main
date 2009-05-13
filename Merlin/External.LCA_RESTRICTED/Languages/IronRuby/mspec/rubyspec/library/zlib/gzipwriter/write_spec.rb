@@ -10,6 +10,10 @@ describe "GzipWriter#write" do
     @io = StringIO.new
   end
 
+  before :all do
+    GC.disable
+  end
+
   it "writes compressed data that can be uncompressed" do
     Zlib::GzipWriter.wrap @io do |gzio|
       gzio.write @data

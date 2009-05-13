@@ -26,10 +26,10 @@ namespace IronPython.Runtime.Binding {
     using Ast = System.Linq.Expressions.Expression;
 
     class PythonDeleteSliceBinder : DynamicMetaObjectBinder, IPythonSite, IExpressionSerializable {
-        private readonly BinderState/*!*/ _state;
+        private readonly PythonContext/*!*/ _context;
 
-        public PythonDeleteSliceBinder(BinderState/*!*/ state) {
-            _state = state;
+        public PythonDeleteSliceBinder(PythonContext/*!*/ context) {
+            _context = context;
         }
 
         public override DynamicMetaObject Bind(DynamicMetaObject target, DynamicMetaObject[] args) {
@@ -37,7 +37,7 @@ namespace IronPython.Runtime.Binding {
         }
 
         public override int GetHashCode() {
-            return base.GetHashCode() ^ _state.Binder.GetHashCode();
+            return base.GetHashCode() ^ _context.Binder.GetHashCode();
         }
 
         public override bool Equals(object obj) {
@@ -46,13 +46,13 @@ namespace IronPython.Runtime.Binding {
                 return false;
             }
 
-            return ob._state.Binder == _state.Binder && base.Equals(obj);
+            return ob._context.Binder == _context.Binder && base.Equals(obj);
         }
 
         #region IPythonSite Members
 
-        public BinderState/*!*/ Binder {
-            get { return _state; }
+        public PythonContext/*!*/ Context {
+            get { return _context; }
         }
 
         #endregion

@@ -35,23 +35,23 @@ using System.Diagnostics;
 namespace IronPython.Runtime.Binding {
 
     class PythonConversionBinder : DynamicMetaObjectBinder, IPythonSite, IExpressionSerializable {
-        private readonly BinderState/*!*/ _state;
+        private readonly PythonContext/*!*/ _context;
         private readonly ConversionResultKind/*!*/ _kind;
         private readonly Type _type;
         private readonly bool _retObject;
 
-        public PythonConversionBinder(BinderState/*!*/ state, Type/*!*/ type, ConversionResultKind resultKind) {
-            Assert.NotNull(state, type);
+        public PythonConversionBinder(PythonContext/*!*/ context, Type/*!*/ type, ConversionResultKind resultKind) {
+            Assert.NotNull(context, type);
 
-            _state = state;
+            _context = context;
             _kind = resultKind;
             _type = type;
         }
 
-        public PythonConversionBinder(BinderState/*!*/ state, Type/*!*/ type, ConversionResultKind resultKind, bool retObject) {
-            Assert.NotNull(state, type);
+        public PythonConversionBinder(PythonContext/*!*/ context, Type/*!*/ type, ConversionResultKind resultKind, bool retObject) {
+            Assert.NotNull(context, type);
 
-            _state = state;
+            _context = context;
             _kind = resultKind;
             _type = type;
             _retObject = retObject;
@@ -126,7 +126,7 @@ namespace IronPython.Runtime.Binding {
 
 #if !SILVERLIGHT
             DynamicMetaObject comConvert;
-            if (ComBinder.TryConvert(new CompatConversionBinder(_state, Type, _kind == ConversionResultKind.ExplicitCast || _kind == ConversionResultKind.ExplicitTry), self, out comConvert)) {
+            if (ComBinder.TryConvert(new CompatConversionBinder(_context, Type, _kind == ConversionResultKind.ExplicitCast || _kind == ConversionResultKind.ExplicitTry), self, out comConvert)) {
                 return comConvert;
             }
 #endif
@@ -199,7 +199,7 @@ namespace IronPython.Runtime.Binding {
                 );
             }
 
-            return res ?? EnsureReturnType(Binder.Binder.ConvertTo(Type, ResultKind, self));
+            return res ?? EnsureReturnType(Context.Binder.ConvertTo(Type, ResultKind, self));
         }
 
         private DynamicMetaObject EnsureReturnType(DynamicMetaObject dynamicMetaObject) {
@@ -369,13 +369,11 @@ namespace IronPython.Runtime.Binding {
         }
 
         internal static bool IsIndexless(DynamicMetaObject/*!*/ arg) {
-            return arg.GetLimitType() != typeof(OldInstance) &&
-                arg.GetLimitType() != typeof(BuiltinFunction) &&
-                arg.GetLimitType() != typeof(BuiltinMethodDescriptor);
+            return arg.GetLimitType() != typeof(OldInstance);
         }
 
         public override int GetHashCode() {
-            return base.GetHashCode() ^ _state.Binder.GetHashCode() ^ _kind.GetHashCode();
+            return base.GetHashCode() ^ _context.Binder.GetHashCode() ^ _kind.GetHashCode();
         }
 
         public override bool Equals(object obj) {
@@ -384,14 +382,14 @@ namespace IronPython.Runtime.Binding {
                 return false;
             }
 
-            return ob._state.Binder == _state.Binder && 
+            return ob._context.Binder == _context.Binder && 
                 _kind == ob._kind && base.Equals(obj) &&
                 _retObject == ob._retObject;
         }
 
-        public BinderState/*!*/ Binder {
+        public PythonContext/*!*/ Context {
             get {
-                return _state;
+                return _context;
             }
         }
 
@@ -590,9 +588,9 @@ namespace IronPython.Runtime.Binding {
     }
 
     class CompatConversionBinder : ConvertBinder {
-        private readonly BinderState _bs;
+        private readonly PythonContext _bs;
 
-        public CompatConversionBinder(BinderState/*!*/ bs, Type toType, bool isExplicit)
+        public CompatConversionBinder(PythonContext/*!*/ bs, Type toType, bool isExplicit)
             : base(toType, isExplicit) {
             _bs = bs;
         }

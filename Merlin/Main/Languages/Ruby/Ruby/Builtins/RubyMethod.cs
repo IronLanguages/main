@@ -13,7 +13,9 @@
  *
  * ***************************************************************************/
 
+using System;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using IronRuby.Runtime;
 using IronRuby.Runtime.Calls;
 using Microsoft.Scripting.Utils;
@@ -26,6 +28,7 @@ namespace IronRuby.Builtins {
         private readonly object _target;
         private readonly string/*!*/ _name;
         private readonly RubyMemberInfo/*!*/ _info;
+        private BlockDispatcherUnsplatN _procDispatcher;
 
         public object Target {
             get { return _target; }
@@ -50,6 +53,33 @@ namespace IronRuby.Builtins {
 
         public RubyClass/*!*/ GetTargetClass() {
             return _info.Context.GetClassOf(_target);
+        }
+
+        public Proc/*!*/ ToProc(RubyScope/*!*/ scope) {
+            ContractUtils.RequiresNotNull(scope, "scope");
+
+            if (_procDispatcher == null) {
+                var site = CallSite<Func<CallSite, object, object, object>>.Create(
+                    // TODO: use InvokeBinder
+                    RubyCallAction.Make(
+                        scope.RubyContext, "call",
+                        new RubyCallSignature(1, RubyCallFlags.HasImplicitSelf | RubyCallFlags.HasSplattedArgument)
+                    )
+                );
+
+                var block = new BlockCallTargetUnsplatN((_blockParam, _self, _args, unsplat) => {
+                    // block takes no parameters but unsplat => all actual arguments are added to unsplat:
+                    Debug.Assert(_args.Length == 0);
+
+                    return site.Target(site, this, unsplat);
+                });
+
+                _procDispatcher = new BlockDispatcherUnsplatN(block, 0, 
+                    BlockDispatcher.MakeAttributes(BlockSignatureAttributes.HasUnsplatParameter, _info.GetArity())
+                );
+            }
+
+            return new Proc(ProcKind.Block, scope.SelfObject, scope, _procDispatcher);
         }
 
         #region Dynamic Operations

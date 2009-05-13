@@ -189,8 +189,8 @@
     <Compile Include="Runtime\Binding\FastSetBase.cs" />
     <Compile Include="Runtime\Binding\IFastGettable.cs" />
     <Compile Include="Runtime\Binding\IFastInvokable.cs" />
-    <Compile Include="Runtime\Binding\OperationRetBoolBinder.cs" />
-    <Compile Include="Runtime\Binding\OperationRetBoolBinder.Generated.cs" />
+    <Compile Include="Runtime\Binding\BinaryRetTypeBinder.cs" />
+    <Compile Include="Runtime\Binding\BinaryRetTypeBinder.Generated.cs" />
     <Compile Include="Runtime\BuiltinsDictionaryStorage.cs" />
     <Compile Include="Runtime\CustomDictionaryStorage.cs" />
     <Compile Include="Runtime\GlobalDictionaryStorage.cs" />
@@ -203,7 +203,6 @@
     <Compile Include="MaybeNotImplementedAttribute.cs" />
     <Compile Include="Runtime\BindingWarnings.cs" />
     <Compile Include="Runtime\Binding\Binders.cs" />
-    <Compile Include="Runtime\Binding\BinderState.cs" />
     <Compile Include="Runtime\Binding\CompatibilityInvokeBinder.cs" />
     <Compile Include="Runtime\Binding\CreateFallbackBinder.cs" />
     <Compile Include="Runtime\Binding\IPythonOperable.cs" />

@@ -178,7 +178,9 @@ namespace IronPython.Runtime.Operations {
         }
 
         internal static int IndexOf(this IList<byte>/*!*/ self, IList<byte>/*!*/ ssub, int start, int length) {
-            if (ssub.Count == 0) {
+            if (ssub == null) {
+                throw PythonOps.TypeError("cannot do None in bytes or bytearray");
+            } else if (ssub.Count == 0) {
                 return 0;
             }
 
@@ -294,16 +296,18 @@ namespace IronPython.Runtime.Operations {
 
         internal static List<byte>/*!*/[]/*!*/ Split(this IList<byte>/*!*/ str, IList<byte>/*!*/ separators, int maxComponents, StringSplitOptions options) {
             ContractUtils.RequiresNotNull(str, "str");
-            if (separators == null) return SplitOnWhiteSpace(str, maxComponents, options);
-
             bool keep_empty = (options & StringSplitOptions.RemoveEmptyEntries) != StringSplitOptions.RemoveEmptyEntries;
+            
+            if (separators == null) {
+                Debug.Assert(!keep_empty);
+                return SplitOnWhiteSpace(str, maxComponents);
+            }
 
             List<List<byte>> result = new List<List<byte>>(maxComponents == Int32.MaxValue ? 1 : maxComponents + 1);
 
             int i = 0;
             int next;
             while (maxComponents > 1 && i < str.Count && (next = IndexOfAny(str, separators, i)) != -1) {
-
                 if (next > i || keep_empty) {
                     result.Add(Substring(str, i, next - i));
                     maxComponents--;
@@ -313,24 +317,29 @@ namespace IronPython.Runtime.Operations {
             }
 
             if (i < str.Count || keep_empty) {
+                /*while (i < str.Count) {
+                    if (!separators.Contains(str[i])) {
+                        break;
+                    }
+
+                    i++;
+                }*/
                 result.Add(Substring(str, i));
             }
 
             return result.ToArray();
         }
 
-        internal static List<byte>/*!*/[]/*!*/ SplitOnWhiteSpace(this IList<byte>/*!*/ str, int maxComponents, StringSplitOptions options) {
+        internal static List<byte>/*!*/[]/*!*/ SplitOnWhiteSpace(this IList<byte>/*!*/ str, int maxComponents) {
             ContractUtils.RequiresNotNull(str, "str");
-
-            bool keep_empty = (options & StringSplitOptions.RemoveEmptyEntries) != StringSplitOptions.RemoveEmptyEntries;
+            
 
             List<List<byte>> result = new List<List<byte>>(maxComponents == Int32.MaxValue ? 1 : maxComponents + 1);
 
             int i = 0;
             int next;
             while (maxComponents > 1 && i < str.Count && (next = IndexOfWhiteSpace(str, i)) != -1) {
-
-                if (next > i || keep_empty) {
+                if (next > i) {
                     result.Add(Substring(str, i, next - i));
                     maxComponents--;
                 }
@@ -338,8 +347,19 @@ namespace IronPython.Runtime.Operations {
                 i = next + 1;
             }
 
-            if (i < str.Count || keep_empty) {
-                result.Add(Substring(str, i));
+            if (i < str.Count) {
+                // check if we only have white space remaining
+                while (i < str.Count) {
+                    if (!str[i].IsWhiteSpace()) {
+                        break;
+                    }
+
+                    i++;
+                }
+
+                if (i < str.Count) {
+                    result.Add(Substring(str, i));
+                }
             }
 
             return result.ToArray();
@@ -769,6 +789,25 @@ namespace IronPython.Runtime.Operations {
             return res;
         }
 
+        internal static List<byte> LeftStrip(this IList<byte>/*!*/ bytes, IList<byte> chars) {
+            int i;
+            for (i = 0; i < bytes.Count; i++) {
+                if (!chars.Contains(bytes[i])) {
+                    break;
+                }
+            }
+
+            if (i == 0) {
+                return null;
+            }
+
+            List<byte> res = new List<byte>();
+            for (; i < bytes.Count; i++) {
+                res.Add(bytes[i]);
+            }
+            return res;
+        }
+        
         internal static List/*!*/ Split(this IList<byte>/*!*/ bytes, IList<byte> sep, int maxsplit, Func<List<byte>/*!*/, object>/*!*/ ctor) {
             Debug.Assert(ctor != null);
 

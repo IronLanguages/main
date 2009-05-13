@@ -138,7 +138,7 @@ module Test
         attr_reader :mode
         
         @@mode_mapping = {
-            1 => "-D -X:Interpret",
+            1 => "-D",
             2 => "",
             3 => "-D -X:SaveAssemblies",
         }

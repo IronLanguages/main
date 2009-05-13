@@ -736,7 +736,7 @@ namespace Microsoft.Scripting.Generation {
         /// <param name="lambda">The lambda to compile.</param>
         /// <returns>A delegate which can interpret the lambda.</returns>
         public static Delegate LightCompile(this LambdaExpression lambda) {
-            return new LightDelegateCreator(new LightCompiler().CompileTop(lambda), lambda, null).CreateDelegate(LightLambda.EmptyClosure);
+            return new LightCompiler().CompileTop(lambda).CreateDelegate();
         }
 
         /// <summary>

@@ -197,8 +197,8 @@ namespace IronPython.Modules {
                     case SimpleTypeKind.SignedLongLong: res = GetIntReturn(owner.ReadInt64(offset)); break;
                     case SimpleTypeKind.Object: res = GetObjectReturn(owner.ReadIntPtr(offset)); break;
                     case SimpleTypeKind.Pointer: res = ToPython(owner.ReadIntPtr(offset)); break;
-                    case SimpleTypeKind.CharPointer: res = owner.ReadAnsiString(offset); break;
-                    case SimpleTypeKind.WCharPointer: res = owner.ReadUnicodeString(offset); break;
+                    case SimpleTypeKind.CharPointer: res = owner.ReadMemoryHolder(offset).ReadAnsiString(0); break;
+                    case SimpleTypeKind.WCharPointer: res = owner.ReadMemoryHolder(offset).ReadUnicodeString(0); break;
                     default:
                         throw new InvalidOperationException();
                 }
@@ -351,48 +351,19 @@ namespace IronPython.Modules {
                         method.Emit(OpCodes.Call, typeof(CTypes).GetMethod("PyObj_ToPtr"));
                         break;
                     case SimpleTypeKind.CharPointer:
-                        Label isNull = method.DefineLabel();
                         Label done = method.DefineLabel();
-                        method.Emit(OpCodes.Brfalse, isNull);
-                        argIndex.Emit(method);
-                        if (argumentType.IsValueType) {
-                            method.Emit(OpCodes.Box, argumentType);
-                        }
-
-                        LocalBuilder lb = method.DeclareLocal(typeof(IntPtr));
-                        method.Emit(OpCodes.Call, typeof(ModuleOps).GetMethod("StringToHGlobalAnsi"));
-                        method.Emit(OpCodes.Stloc, lb);
-                        method.Emit(OpCodes.Ldloc, lb);
-                        method.Emit(OpCodes.Br, done);
-
-                        method.MarkLabel(isNull);
-                        method.Emit(OpCodes.Ldc_I4_0);
-                        method.Emit(OpCodes.Conv_I);
+                        TryArrayToCharPtrConversion(method, argIndex, argumentType, done);
+                        
+                        cleanup = MarshalCharPointer(method, argIndex);
 
                         method.MarkLabel(done);
-                        cleanup = new StringCleanup(lb);
                         break;
                     case SimpleTypeKind.WCharPointer:
-                        isNull = method.DefineLabel();
                         done = method.DefineLabel();
-                        method.Emit(OpCodes.Brfalse, isNull);
-                        argIndex.Emit(method);
-                        if (argumentType.IsValueType) {
-                            method.Emit(OpCodes.Box, argumentType);
-                        }
-
-                        lb = method.DeclareLocal(typeof(string), true);
-                        method.Emit(OpCodes.Stloc, lb);
-                        method.Emit(OpCodes.Ldloc, lb);
-                        method.Emit(OpCodes.Conv_I);
-                        method.Emit(OpCodes.Ldc_I4, RuntimeHelpers.OffsetToStringData);
-                        method.Emit(OpCodes.Add);
-                        method.Emit(OpCodes.Br, done);
-
-                        method.MarkLabel(isNull);
-                        method.Emit(OpCodes.Ldc_I4_0);
-                        method.Emit(OpCodes.Conv_I);
-
+                        TryArrayToWCharPtrConversion(method, argIndex, argumentType, done);
+                        
+                        MarshalWCharPointer(method, argIndex);
+                        
                         method.MarkLabel(done);
                         break;
                 }
@@ -401,7 +372,103 @@ namespace IronPython.Modules {
                 return cleanup;
             }
 
+            internal static void TryArrayToWCharPtrConversion(ILGenerator method, LocalOrArg argIndex, Type argumentType, Label done) {
+                Label nextTry = method.DefineLabel();
+                method.Emit(OpCodes.Call, typeof(ModuleOps).GetMethod("TryCheckWCharArray"));
+                method.Emit(OpCodes.Dup);
+                method.Emit(OpCodes.Brfalse, nextTry);
+                method.Emit(OpCodes.Call, typeof(CData).GetMethod("get_UnsafeAddress"));
+                method.Emit(OpCodes.Br, done);
+
+                method.MarkLabel(nextTry);
+                method.Emit(OpCodes.Pop);
+                argIndex.Emit(method);
+                if (argumentType.IsValueType) {
+                    method.Emit(OpCodes.Box, argumentType);
+                }
+            }
+
+            internal static void TryArrayToCharPtrConversion(ILGenerator method, LocalOrArg argIndex, Type argumentType, Label done) {
+                Label nextTry;
+                nextTry = method.DefineLabel();
+
+                method.Emit(OpCodes.Call, typeof(ModuleOps).GetMethod("TryCheckCharArray"));
+                method.Emit(OpCodes.Dup);
+                method.Emit(OpCodes.Brfalse, nextTry);
+                method.Emit(OpCodes.Call, typeof(CData).GetMethod("get_UnsafeAddress"));
+                method.Emit(OpCodes.Br, done);
+
+                method.MarkLabel(nextTry);
+                method.Emit(OpCodes.Pop);
+                argIndex.Emit(method);
+                if (argumentType.IsValueType) {
+                    method.Emit(OpCodes.Box, argumentType);
+                }
+            }
+
+            internal static void MarshalWCharPointer(ILGenerator method, LocalOrArg argIndex) {
+                Type argumentType = argIndex.Type;
+                Label isNull;
+                Label done;
+                LocalBuilder lb;
+                isNull = method.DefineLabel();
+                done = method.DefineLabel();
+                method.Emit(OpCodes.Brfalse, isNull);
+                argIndex.Emit(method);
+                if (argumentType.IsValueType) {
+                    method.Emit(OpCodes.Box, argumentType);
+                }
+
+                lb = method.DeclareLocal(typeof(string), true);
+                method.Emit(OpCodes.Stloc, lb);
+                method.Emit(OpCodes.Ldloc, lb);
+                method.Emit(OpCodes.Conv_I);
+                method.Emit(OpCodes.Ldc_I4, RuntimeHelpers.OffsetToStringData);
+                method.Emit(OpCodes.Add);
+                method.Emit(OpCodes.Br, done);
+
+                method.MarkLabel(isNull);
+                method.Emit(OpCodes.Ldc_I4_0);
+                method.Emit(OpCodes.Conv_I);
+
+                method.MarkLabel(done);
+            }
+
+            internal static MarshalCleanup MarshalCharPointer(ILGenerator method, LocalOrArg argIndex) {
+                Type argumentType = argIndex.Type;
+                Label isNull, done;
+                LocalBuilder lb;
+
+                isNull = method.DefineLabel();
+                done = method.DefineLabel();
+                method.Emit(OpCodes.Brfalse, isNull);
+                argIndex.Emit(method);
+                if (argumentType.IsValueType) {
+                    method.Emit(OpCodes.Box, argumentType);
+                }
+
+                lb = method.DeclareLocal(typeof(IntPtr));
+                method.Emit(OpCodes.Call, typeof(ModuleOps).GetMethod("StringToHGlobalAnsi"));
+                method.Emit(OpCodes.Stloc, lb);
+                method.Emit(OpCodes.Ldloc, lb);
+                method.Emit(OpCodes.Br, done);
+
+                method.MarkLabel(isNull);
+                method.Emit(OpCodes.Ldc_I4_0);
+                method.Emit(OpCodes.Conv_I);
+
+                method.MarkLabel(done);
+                return new StringCleanup(lb);
+            }
+
             Type/*!*/ INativeType.GetPythonType() {
+                if (IsSubClass) {
+                    return typeof(object);
+                }
+                return GetPythonTypeWorker();
+            }
+
+            private Type GetPythonTypeWorker() {
                 switch (_type) {
                     case SimpleTypeKind.Boolean:
                         return typeof(bool);
@@ -487,6 +554,23 @@ namespace IronPython.Modules {
                             EmtInt32ToObject(method, new Local(tmpLocal));
                         }
                         break;
+                }
+
+                if (IsSubClass) {
+                    LocalBuilder tmp = method.DeclareLocal(typeof(object));
+                    if (GetPythonTypeWorker().IsValueType) {
+                        method.Emit(OpCodes.Box, GetPythonTypeWorker());
+                    }
+                    method.Emit(OpCodes.Stloc, tmp);
+
+                    constantPool.Add(this);
+                    method.Emit(OpCodes.Ldarg, constantPoolArgument);
+                    method.Emit(OpCodes.Ldc_I4, constantPool.Count - 1);
+                    method.Emit(OpCodes.Ldelem_Ref);
+
+                    method.Emit(OpCodes.Ldloc, tmp);
+
+                    method.Emit(OpCodes.Call, typeof(ModuleOps).GetMethod("CreateSubclassInstance"));
                 }
             }
 

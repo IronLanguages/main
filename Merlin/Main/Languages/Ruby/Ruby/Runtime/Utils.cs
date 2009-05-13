@@ -106,6 +106,12 @@ namespace IronRuby.Runtime {
             }
         }
 
+        internal static void TrimExcess<T>(ref T[] data, int count) {
+            if ((long)count * 10 < (long)data.Length * 9) {
+                Array.Resize(ref data, count);
+            }
+        }
+
         internal static void ResizeForInsertion<T>(ref T[]/*!*/ array, int itemCount, int index, int count) {
             int minLength = itemCount + count;
             T[] a;

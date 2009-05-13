@@ -23,7 +23,6 @@ using System.Text;
 using System.Threading;
 using Microsoft.Scripting;
 using Microsoft.Scripting.Actions;
-using Microsoft.Scripting.Interpretation;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 using IronRuby.Builtins;
@@ -314,7 +313,7 @@ namespace IronRuby.Runtime {
             }
 
             globalScope.Context.CheckConstantName(name);
-            return owner.Context.ConstantMissing(owner, name);
+            return owner.ConstantMissing(name);
         }
 
         public static void SetConstant(RubyModule/*!*/ owner, string/*!*/ name, object value) {
@@ -547,16 +546,8 @@ namespace IronRuby.Runtime {
         }
 
         private static SourceUnit/*!*/ CreateRubySourceUnit(RubyContext/*!*/ context, MutableString/*!*/ code, string path) {
-            if (context.KCode != null) {
-                if (context.KCode.CodePage != code.Encoding.CodePage && code.Encoding != RubyEncoding.Binary) {
-                    // TODO: exception type?
-                    throw new InvalidOperationException(String.Format("KCODE value ({0}) is incompatible with the current source encoding ({1})", context.KCode, code.Encoding));
-                }
-
-                return context.CreateSourceUnit(new BinaryContentProvider(code.ToByteArray()), path, context.KCode.Encoding, SourceCodeKind.File);
-            } else {
-                return context.CreateSnippet(code.ConvertToString(), path, SourceCodeKind.File);
-            }
+            Encoding encoding = (context.KCode ?? code.Encoding).Encoding;
+            return context.CreateSourceUnit(new BinaryContentProvider(code.ToByteArray()), path, encoding, SourceCodeKind.File);
         }
 
         public static object Evaluate(MutableString/*!*/ code, RubyScope/*!*/ targetScope, object self, RubyModule module, MutableString file, int line) {
@@ -598,25 +589,14 @@ namespace IronRuby.Runtime {
                 targetScope = CreateModuleEvalScope(targetScope, self, module);
             }
 
-            if (context.RubyOptions.InterpretedMode) {
-                return Interpreter.TopLevelExecute(new RubyScriptCode.Evaled(lambda, source),
-                    targetScope,
-                    self,
-                    module,
-                    blockParameter,
-                    methodDefinition,
-                    targetScope.RuntimeFlowControl
-                );
-            } else {
-                return RubyScriptCode.CompileLambda(lambda, context.DomainManager.Configuration.DebugMode)(
-                    targetScope,
-                    self,
-                    module,
-                    blockParameter,
-                    methodDefinition,
-                    targetScope.RuntimeFlowControl
-                );
-            }
+            return RubyScriptCode.CompileLambda(lambda, context.DomainManager.Configuration.DebugMode)(
+                targetScope,
+                self,
+                module,
+                blockParameter,
+                methodDefinition,
+                targetScope.RuntimeFlowControl
+            );
         }
 
         private static RubyModuleScope/*!*/ CreateModuleEvalScope(RubyScope/*!*/ parent, object self, RubyModule module) {

@@ -991,6 +991,27 @@ al_getattributeinst = MyArrayList_getattribute()
             //AreEqual(4, scope1.GetVariable<int>("_"));
         }
 
+        public delegate int CP19724Delegate(double p1);
+        public void ScenarioCP19724()
+        {
+            ScriptScope scope1 = _env.CreateScope();
+            ScriptSource src = _pe.CreateScriptSourceFromString(@"
+class KNew(object):
+    def __call__(self, p1):
+        global X
+        X = 42
+        return 7
+
+k = KNew()", SourceCodeKind.Statements);
+            src.Execute(scope1);
+
+            CP19724Delegate tDelegate = scope1.GetVariable<CP19724Delegate>("k");
+            AreEqual(7, tDelegate(3.14));
+            AreEqual(42, scope1.GetVariable<int>("X"));
+        }
+
+
+
         public void ScenarioEvaluateInPublishedEngineModule() {
             PythonContext pc = DefaultContext.DefaultPythonContext;
 

@@ -31,7 +31,6 @@ using IronRuby.Runtime.Calls;
 using Microsoft.Scripting;
 using Microsoft.Scripting.Actions;
 using Microsoft.Scripting.Generation;
-using Microsoft.Scripting.Interpretation;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 
@@ -494,12 +493,6 @@ namespace IronRuby.Runtime {
 
             SetGlobalConstant("ARGV", _inputProvider.CommandLineArguments);
 
-            // File object
-            //_objectClass.SetConstant("DATA", null);
-
-            // Binding 
-            // TOPLEVEL_BINDING
-
             // Hash
             // SCRIPT_LINES__
         }
@@ -869,7 +862,7 @@ namespace IronRuby.Runtime {
                 owner.SetConstant(name, result);
             }
 
-            ClassInheritedEvent(superClass, result);
+            superClass.ClassInheritedEvent(result);
 
             return result;
         }
@@ -960,7 +953,7 @@ namespace IronRuby.Runtime {
                 result.IncludeLibraryModule(instanceTrait, classTrait, constantsInitializer, mixins);
                 return result;
             } else if (!builtin) {
-                ClassInheritedEvent(super, result);
+                super.ClassInheritedEvent(result);
             }
 
             return result;
@@ -1907,8 +1900,10 @@ namespace IronRuby.Runtime {
                 }
             }
 
+
             if (Options.PerfStats) {
-                Console.WriteLine(String.Format(@"
+                using (TextWriter output = File.CreateText("perfstats.log")) {
+                    output.WriteLine(String.Format(@"
   total:         {0}
   parse:         {1}
   ast transform: {2}
@@ -1916,47 +1911,48 @@ namespace IronRuby.Runtime {
   il:            {4} (TODO)
   binding:       {5} ({6} calls)
 ",
-                    _upTime.Elapsed,
-                    new TimeSpan(_ParseTimeTicks),
-                    new TimeSpan(_AstGenerationTimeTicks),
-                    new TimeSpan(Loader._ScriptCodeGenerationTimeTicks),
-                    new TimeSpan(), // TODO: new TimeSpan(Loader._ILGenerationTimeTicks),
+                        _upTime.Elapsed,
+                        new TimeSpan(_ParseTimeTicks),
+                        new TimeSpan(_AstGenerationTimeTicks),
+                        new TimeSpan(Loader._ScriptCodeGenerationTimeTicks),
+                        new TimeSpan(), // TODO: new TimeSpan(Loader._ILGenerationTimeTicks),
 #if MEASURE
                     new TimeSpan(MetaAction.BindingTimeTicks), 
                     MetaAction.BindCallCount
 #else
- "N/A", "N/A"
+     "N/A", "N/A"
 #endif
 ));
 
 #if MEASURE_BINDING
-                Console.WriteLine();
-                Console.WriteLine("---- MetaAction kinds ----");
-                Console.WriteLine();
+                    output.WriteLine();
+                    output.WriteLine("---- MetaAction kinds ----");
+                    output.WriteLine();
 
-                PerfTrack.DumpHistogram(MetaAction.HistogramOfKinds);
+                    PerfTrack.DumpHistogram(MetaAction.HistogramOfKinds, output);
 
-                Console.WriteLine();
+                    output.WriteLine();
 
-                Console.WriteLine();
-                Console.WriteLine("---- MetaAction instances ----");
-                Console.WriteLine();
+                    output.WriteLine();
+                    output.WriteLine("---- MetaAction instances ----");
+                    output.WriteLine();
 
-                PerfTrack.DumpHistogram(MetaAction.HistogramOfInstances);
+                    PerfTrack.DumpHistogram(MetaAction.HistogramOfInstances, output);
 
-                Console.WriteLine();
+                    output.WriteLine();
 #endif
 
 #if MEASURE_AST
-                Console.WriteLine();
-                Console.WriteLine("---- Ruby Parser generated Expression Trees ----");
-                Console.WriteLine();
-                
-                PerfTrack.DumpHistogram(_TransformationHistogram);
+                    output.WriteLine();
+                    output.WriteLine("---- Ruby Parser generated Expression Trees ----");
+                    output.WriteLine();
+                    
+                    PerfTrack.DumpHistogram(_TransformationHistogram, output);
 
-                Console.WriteLine();
+                    output.WriteLine();
 #endif
-                PerfTrack.DumpStats();
+                    PerfTrack.DumpStats(output);
+                }
             }
 #endif
             _loader.SaveCompiledCode();
@@ -2052,13 +2048,13 @@ namespace IronRuby.Runtime {
             return _loader.GetLoadPathStrings();
         }
 
-        public override SourceCodeReader/*!*/ GetSourceReader(Stream/*!*/ stream, Encoding/*!*/ defaultEncoding) {
+        public override SourceCodeReader/*!*/ GetSourceReader(Stream/*!*/ stream, Encoding/*!*/ defaultEncoding, string path) {
             ContractUtils.RequiresNotNull(stream, "stream");
             ContractUtils.RequiresNotNull(defaultEncoding, "defaultEncoding");
             ContractUtils.Requires(stream.CanRead && stream.CanSeek, "stream", "The stream must support seeking and reading");
 
 #if SILVERLIGHT
-            return base.GetSourceReader(stream, defaultEncoding);
+            return base.GetSourceReader(stream, defaultEncoding, path);
 #else
             return GetSourceReader(stream, defaultEncoding, _options.Compatibility);
         }
@@ -2188,23 +2184,15 @@ namespace IronRuby.Runtime {
 
         #region Ruby Events
 
-        private CallSite<Func<CallSite, RubyModule, SymbolId, object>> _constantMissingCallbackSite;
-        private CallSite<Func<CallSite, RubyModule, SymbolId, object>> _methodAddedCallbackSite;
-        private CallSite<Func<CallSite, RubyModule, SymbolId, object>> _methodRemovedCallbackSite;
-        private CallSite<Func<CallSite, RubyModule, SymbolId, object>> _methodUndefinedCallbackSite;
-        private CallSite<Func<CallSite, object, SymbolId, object>> _singletonMethodAddedCallbackSite;
-        private CallSite<Func<CallSite, object, SymbolId, object>> _singletonMethodRemovedCallbackSite;
-        private CallSite<Func<CallSite, object, SymbolId, object>> _singletonMethodUndefinedCallbackSite;
-        private CallSite<Func<CallSite, object, SymbolId, object>> _respondTo;
-        private CallSite<Func<CallSite, RubyClass, RubyClass, object>> _classInheritedCallbackSite;
-        
-        private object Send<TReceiver>(ref CallSite<Func<CallSite, TReceiver, SymbolId, object>> site, string/*!*/ eventName,
-            TReceiver target, string/*!*/ memberName) {
+        private CallSite<Func<CallSite, object, object, object>> _respondTo;
+
+        internal object Send(ref CallSite<Func<CallSite, object, object, object>> site, string/*!*/ eventName,
+            object target, string/*!*/ memberName) {
 
             if (site == null) {
                 Interlocked.CompareExchange(
                     ref site,
-                    CallSite<Func<CallSite, TReceiver, SymbolId, object>>.Create(RubyCallAction.Make(this, eventName, RubyCallSignature.WithImplicitSelf(1))),
+                    CallSite<Func<CallSite, object, object, object>>.Create(RubyCallAction.Make(this, eventName, RubyCallSignature.WithImplicitSelf(1))),
                     null
                 );
             }
@@ -2212,66 +2200,8 @@ namespace IronRuby.Runtime {
             return site.Target(site, target, SymbolTable.StringToId(memberName));
         }
 
-        private void ClassInheritedEvent(RubyClass/*!*/ superClass, RubyClass/*!*/ subClass) {
-            if (_classInheritedCallbackSite == null) {
-                Interlocked.CompareExchange(
-                    ref _classInheritedCallbackSite,
-                    CallSite<Func<CallSite, RubyClass, RubyClass, object>>.Create(RubyCallAction.Make(this, Symbols.Inherited, RubyCallSignature.WithImplicitSelf(1)
-                    )),
-                    null
-                );
-            }
-
-            _classInheritedCallbackSite.Target(_classInheritedCallbackSite, superClass, subClass);
-        }
-
-        internal object ConstantMissing(RubyModule/*!*/ module, string/*!*/ name) {
-            return Send(ref _constantMissingCallbackSite, "const_missing", module, name);
-        }
-
         public bool RespondTo(object target, string/*!*/ methodName) {
             return RubyOps.IsTrue(Send(ref _respondTo, "respond_to?", target, methodName));
-        }
-
-        // Ruby 1.8: called after method is added, except for alias_method which calls it before
-        // Ruby 1.9: called before method is added
-        public void MethodAdded(RubyModule/*!*/ module, string/*!*/ name) {
-            Assert.NotNull(module, name);
-
-            // not called on singleton classes:
-            if (!module.IsSingletonClass) {
-                Send(ref _methodAddedCallbackSite, Symbols.MethodAdded,
-                    module, name);
-            } else {
-                Send(ref _singletonMethodAddedCallbackSite, Symbols.SingletonMethodAdded,
-                    ((RubyClass)module).SingletonClassOf, name);
-            }
-        }
-
-        internal void MethodRemoved(RubyModule/*!*/ module, string/*!*/ name) {
-            Assert.NotNull(module, name);
-
-            // not called on singleton classes:
-            if (!module.IsSingletonClass) {
-                Send(ref _methodRemovedCallbackSite, Symbols.MethodRemoved,
-                    module, name);
-            } else {
-                Send(ref _singletonMethodRemovedCallbackSite, Symbols.SingletonMethodRemoved,
-                    ((RubyClass)module).SingletonClassOf, name);
-            }
-        }
-
-        internal void MethodUndefined(RubyModule/*!*/ module, string/*!*/ name) {
-            Assert.NotNull(module, name);
-
-            // not called on singleton classes:
-            if (!module.IsSingletonClass) {
-                Send(ref _methodUndefinedCallbackSite, Symbols.MethodUndefined,
-                    module, name);
-            } else {
-                Send(ref _singletonMethodUndefinedCallbackSite, Symbols.SingletonMethodUndefined,
-                    ((RubyClass)module).SingletonClassOf, name);
-            }
         }
 
         internal void ReportTraceEvent(string/*!*/ operation, RubyScope/*!*/ scope, RubyModule/*!*/ module, string/*!*/ name, string fileName, int lineNumber) {
@@ -2291,33 +2221,6 @@ namespace IronRuby.Runtime {
                 } finally {
                     _traceListenerSuspended = false;
                 }
-            }
-        }
-
-        #endregion
-
-        #region Interpretation
-
-
-        /// <summary>
-        /// Called by an interpreter when an exception is about to be thrown by an interpreted or
-        /// when a CLR method is called that threw an exception.
-        /// </summary>
-        /// <param name="state">
-        /// The current interpreted frame state. The frame is either throwing the exception or 
-        /// is the interpreted frame that is calling a CLR method that threw or propagated the exception. 
-        /// </param>
-        /// <param name="exception">The exception to be (re)thrown.</param>
-        /// <param name="isInterpretedThrow">Whether the exception is thrown by an interpreted code.</param>
-        /// <remarks>
-        /// The method can be called multiple times for a single exception if the interpreted code calls some CLR code that
-        /// calls an interpreted code that throws an exception. The method is called at each interpeted/non-interpreted frame boundary
-        /// and in the frame that raised the exception.
-        /// </remarks>
-        internal void InterpretExceptionThrow(InterpreterState state, Exception exception, bool isInterpretedThrow) {
-            Assert.NotNull(state, exception);
-            if (RubyExceptionData.TryGetInstance(exception) == null) {
-                RubyExceptionData.AssociateInstance(exception).SetInterpretedTrace(state);
             }
         }
 

@@ -242,7 +242,7 @@ namespace IronPython.Runtime.Binding {
             Debug.Assert(types.Length == 2);
             ArrayUtils.SwapLastTwo(types);
 
-            BinderState state = BinderState.GetBinderState(operation);
+            PythonContext state = PythonContext.GetPythonContext(operation);
             SlotOrFunction sf = SlotOrFunction.GetSlotOrFunction(state, Symbols.Contains, types);
 
             if (sf.Success) {
@@ -257,7 +257,7 @@ namespace IronPython.Runtime.Binding {
                     res = new DynamicMetaObject(
                         Ast.Call(
                             typeof(PythonOps).GetMethod("ContainsFromEnumerable"),
-                            AstUtils.Constant(state.Context),
+                            AstUtils.Constant(state.SharedContext),
                             Ast.Dynamic(
                                 state.Convert(
                                     typeof(IEnumerator),
@@ -370,7 +370,7 @@ namespace IronPython.Runtime.Binding {
         private static DynamicMetaObject/*!*/ MakeHashOperation(PythonOperationBinder/*!*/ operation, DynamicMetaObject/*!*/ self) {
             self = self.Restrict(self.GetLimitType());
 
-            BinderState state = BinderState.GetBinderState(operation);
+            PythonContext state = PythonContext.GetPythonContext(operation);
             SlotOrFunction func = SlotOrFunction.GetSlotOrFunction(state, Symbols.Hash, self);
             DynamicMetaObject res = func.Target;
 
@@ -433,7 +433,7 @@ namespace IronPython.Runtime.Binding {
             );
         }
 
-        private static DynamicExpression/*!*/ HashConvertToInt(BinderState/*!*/ state, Expression/*!*/ expression) {
+        private static DynamicExpression/*!*/ HashConvertToInt(PythonContext/*!*/ state, Expression/*!*/ expression) {
             return Ast.Dynamic(
                 state.Convert(
                     typeof(int),
@@ -447,7 +447,7 @@ namespace IronPython.Runtime.Binding {
         private static DynamicMetaObject MakeUnaryOperation(DynamicMetaObjectBinder binder, DynamicMetaObject self, SymbolId symbol) {
             self = self.Restrict(self.GetLimitType());
 
-            SlotOrFunction func = SlotOrFunction.GetSlotOrFunction(BinderState.GetBinderState(binder), symbol, self);
+            SlotOrFunction func = SlotOrFunction.GetSlotOrFunction(PythonContext.GetPythonContext(binder), symbol, self);
 
             if (!func.Success) {
                 // we get the error message w/ {0} so that PythonBinderHelper.TypeError formats it correctly
@@ -524,7 +524,7 @@ namespace IronPython.Runtime.Binding {
 
             ParameterExpression tmp = Ast.Parameter(typeof(IEnumerator), "enum");
             IPythonConvertible pyConv = self as IPythonConvertible;
-            PythonConversionBinder convBinder = new PythonConversionBinder(BinderState.GetBinderState(operation), typeof(IEnumerator), ConversionResultKind.ExplicitTry);
+            PythonConversionBinder convBinder = new PythonConversionBinder(PythonContext.GetPythonContext(operation), typeof(IEnumerator), ConversionResultKind.ExplicitTry);
 
             DynamicMetaObject res;
             if (pyConv != null) {
@@ -544,7 +544,7 @@ namespace IronPython.Runtime.Binding {
                         tmp,
                         Ast.Call(
                             typeof(PythonOps).GetMethod("ThrowTypeErrorForBadIteration"),
-                            BinderState.GetCodeContext(operation),
+                            PythonContext.GetCodeContext(operation),
                             self.Expression
                         )
                     )
@@ -556,8 +556,8 @@ namespace IronPython.Runtime.Binding {
         private static DynamicMetaObject/*!*/ MakeUnaryNotOperation(DynamicMetaObjectBinder/*!*/ operation, DynamicMetaObject/*!*/ self, Type/*!*/ retType) {
             self = self.Restrict(self.GetLimitType());
 
-            SlotOrFunction nonzero = SlotOrFunction.GetSlotOrFunction(BinderState.GetBinderState(operation), Symbols.NonZero, self);
-            SlotOrFunction length = SlotOrFunction.GetSlotOrFunction(BinderState.GetBinderState(operation), Symbols.Length, self);
+            SlotOrFunction nonzero = SlotOrFunction.GetSlotOrFunction(PythonContext.GetPythonContext(operation), Symbols.NonZero, self);
+            SlotOrFunction length = SlotOrFunction.GetSlotOrFunction(PythonContext.GetPythonContext(operation), Symbols.Length, self);
 
             Expression notExpr;
 
@@ -587,7 +587,7 @@ namespace IronPython.Runtime.Binding {
                         notExpr =
                             Ast.Equal(
                                 Ast.Dynamic(
-                                    BinderState.GetBinderState(operation).Operation(
+                                    PythonContext.GetPythonContext(operation).Operation(
                                         PythonOperationKind.Compare
                                     ),
                                     typeof(int),
@@ -618,16 +618,16 @@ namespace IronPython.Runtime.Binding {
         #region Reflective Operations
 
         private static DynamicMetaObject/*!*/ MakeDocumentationOperation(PythonOperationBinder/*!*/ operation, DynamicMetaObject/*!*/[]/*!*/ args) {
-            BinderState state = BinderState.GetBinderState(operation);
+            PythonContext state = PythonContext.GetPythonContext(operation);
 
             return new DynamicMetaObject(
                 Binders.Convert(
-                    BinderState.GetCodeContext(operation),
+                    PythonContext.GetCodeContext(operation),
                     state,
                     typeof(string),
                     ConversionResultKind.ExplicitCast,
                     Binders.Get(
-                        BinderState.GetCodeContext(operation),
+                        PythonContext.GetCodeContext(operation),
                         state,
                         typeof(object),
                         "__doc__",
@@ -645,11 +645,11 @@ namespace IronPython.Runtime.Binding {
                 self = args[1];
                 context = (CodeContext)args[0].Value;
             } else {
-                context = BinderState.GetBinderState(operation).Context;
+                context = PythonContext.GetPythonContext(operation).SharedContext;
             }
 
             if (typeof(IMembersList).IsAssignableFrom(self.GetLimitType())) {
-                return MakeIMembersListRule(BinderState.GetCodeContext(operation), self);
+                return MakeIMembersListRule(PythonContext.GetCodeContext(operation), self);
             }
 
             PythonType pt = DynamicHelpers.GetPythonType(self.Value);
@@ -741,10 +741,10 @@ namespace IronPython.Runtime.Binding {
                 );
             }
 
-            BinderState state = BinderState.GetBinderState(operation);
+            PythonContext state = PythonContext.GetPythonContext(operation);
             Expression isCallable = Ast.NotEqual(
                 Binders.TryGet(
-                    BinderState.GetCodeContext(operation),
+                    PythonContext.GetCodeContext(operation),
                     state,
                     typeof(object),
                     "__call__",
@@ -770,12 +770,12 @@ namespace IronPython.Runtime.Binding {
             SlotOrFunction rbinder;
             PythonTypeSlot fSlot;
             PythonTypeSlot rSlot;
-            GetOpreatorMethods(types, operation, BinderState.GetBinderState(binder), out fbinder, out rbinder, out fSlot, out rSlot);
+            GetOpreatorMethods(types, operation, PythonContext.GetPythonContext(binder), out fbinder, out rbinder, out fSlot, out rSlot);
 
             return MakeBinaryOperatorResult(types, binder, operation, fbinder, rbinder, fSlot, rSlot, errorSuggestion);
         }
 
-        private static void GetOpreatorMethods(DynamicMetaObject/*!*/[]/*!*/ types, PythonOperationKind oper, BinderState state, out SlotOrFunction fbinder, out SlotOrFunction rbinder, out PythonTypeSlot fSlot, out PythonTypeSlot rSlot) {
+        private static void GetOpreatorMethods(DynamicMetaObject/*!*/[]/*!*/ types, PythonOperationKind oper, PythonContext state, out SlotOrFunction fbinder, out SlotOrFunction rbinder, out PythonTypeSlot fSlot, out PythonTypeSlot rSlot) {
             oper = NormalizeOperator(oper);
             oper &= ~PythonOperationKind.InPlace;
 
@@ -823,7 +823,7 @@ namespace IronPython.Runtime.Binding {
 
             if (!SlotOrFunction.TryGetBinder(state, types, op, SymbolId.Empty, out fbinder, out fParent)) {
                 foreach (PythonType pt in MetaPythonObject.GetPythonType(types[0]).ResolutionOrder) {
-                    if (pt.TryLookupSlot(state.Context, op, out fSlot)) {
+                    if (pt.TryLookupSlot(state.SharedContext, op, out fSlot)) {
                         fParent = pt;
                         break;
                     }
@@ -832,7 +832,7 @@ namespace IronPython.Runtime.Binding {
 
             if (!SlotOrFunction.TryGetBinder(state, types, SymbolId.Empty, rop, out rbinder, out rParent)) {
                 foreach (PythonType pt in MetaPythonObject.GetPythonType(types[1]).ResolutionOrder) {
-                    if (pt.TryLookupSlot(state.Context, rop, out rSlot)) {
+                    if (pt.TryLookupSlot(state.SharedContext, rop, out rSlot)) {
                         rParent = pt;
                         break;
                     }
@@ -872,13 +872,13 @@ namespace IronPython.Runtime.Binding {
             Assert.NotNull(operation, fCand, rCand);
 
             SlotOrFunction fTarget, rTarget;
-            BinderState state = BinderState.GetBinderState(operation);
+            PythonContext state = PythonContext.GetPythonContext(operation);
 
             ConditionalBuilder bodyBuilder = new ConditionalBuilder(operation);
 
             if ((op & PythonOperationKind.InPlace) != 0) {
                 // in place operator, see if there's a specific method that handles it.
-                SlotOrFunction function = SlotOrFunction.GetSlotOrFunction(BinderState.GetBinderState(operation), Symbols.OperatorToSymbol(op), types);
+                SlotOrFunction function = SlotOrFunction.GetSlotOrFunction(PythonContext.GetPythonContext(operation), Symbols.OperatorToSymbol(op), types);
 
                 // we don't do a coerce for in place operators if the lhs implements __iop__
                 if (!MakeOneCompareGeneric(function, false, types, MakeCompareReturn, bodyBuilder, typeof(object))) {
@@ -902,16 +902,16 @@ namespace IronPython.Runtime.Binding {
                 DoCoerce(state, bodyBuilder, op, types, false);
             }
 
-            if (MakeOneTarget(BinderState.GetBinderState(operation), fTarget, fSlot, bodyBuilder, false, types)) {
+            if (MakeOneTarget(PythonContext.GetPythonContext(operation), fTarget, fSlot, bodyBuilder, false, types)) {
                 if (ShouldCoerce(state, op, types[1], types[0], false)) {
                     // need to try __coerce__ on the reverse first                    
                     DoCoerce(state, bodyBuilder, op, new DynamicMetaObject[] { types[1], types[0] }, true);
                 }
 
                 if (rSlot != null) {
-                    MakeSlotCall(BinderState.GetBinderState(operation), types, bodyBuilder, rSlot, true);
+                    MakeSlotCall(PythonContext.GetPythonContext(operation), types, bodyBuilder, rSlot, true);
                     bodyBuilder.FinishCondition(MakeBinaryThrow(operation, op, types).Expression, typeof(object));
-                } else if (MakeOneTarget(BinderState.GetBinderState(operation), rTarget, rSlot, bodyBuilder, false, types)) {
+                } else if (MakeOneTarget(PythonContext.GetPythonContext(operation), rTarget, rSlot, bodyBuilder, false, types)) {
                     // need to fallback to throwing or coercion
                     bodyBuilder.FinishCondition(MakeBinaryThrow(operation, op, types).Expression, typeof(object));
                 }
@@ -977,7 +977,7 @@ namespace IronPython.Runtime.Binding {
             }
         }
 
-        private static bool MakeOneTarget(BinderState/*!*/ state, SlotOrFunction/*!*/ target, PythonTypeSlot slotTarget, ConditionalBuilder/*!*/ bodyBuilder, bool reverse, DynamicMetaObject/*!*/[]/*!*/ types) {
+        private static bool MakeOneTarget(PythonContext/*!*/ state, SlotOrFunction/*!*/ target, PythonTypeSlot slotTarget, ConditionalBuilder/*!*/ bodyBuilder, bool reverse, DynamicMetaObject/*!*/[]/*!*/ types) {
             if (target == SlotOrFunction.Empty && slotTarget == null) return true;
 
             if (slotTarget != null) {
@@ -1007,7 +1007,7 @@ namespace IronPython.Runtime.Binding {
             }
         }
 
-        private static void MakeSlotCall(BinderState/*!*/ state, DynamicMetaObject/*!*/[]/*!*/ types, ConditionalBuilder/*!*/ bodyBuilder, PythonTypeSlot/*!*/ slotTarget, bool reverse) {
+        private static void MakeSlotCall(PythonContext/*!*/ state, DynamicMetaObject/*!*/[]/*!*/ types, ConditionalBuilder/*!*/ bodyBuilder, PythonTypeSlot/*!*/ slotTarget, bool reverse) {
             Debug.Assert(slotTarget != null);
 
             Expression self, other;
@@ -1022,7 +1022,7 @@ namespace IronPython.Runtime.Binding {
             MakeSlotCallWorker(state, slotTarget, self, bodyBuilder, other);
         }
 
-        private static void MakeSlotCallWorker(BinderState/*!*/ state, PythonTypeSlot/*!*/ slotTarget, Expression/*!*/ self, ConditionalBuilder/*!*/ bodyBuilder, params Expression/*!*/[]/*!*/ args) {
+        private static void MakeSlotCallWorker(PythonContext/*!*/ state, PythonTypeSlot/*!*/ slotTarget, Expression/*!*/ self, ConditionalBuilder/*!*/ bodyBuilder, params Expression/*!*/[]/*!*/ args) {
             // Generate:
             // 
             // SlotTryGetValue(context, slot, selfType, out callable) && (tmp=callable(args)) != NotImplemented) ?
@@ -1036,7 +1036,7 @@ namespace IronPython.Runtime.Binding {
                 Ast.AndAlso(
                     Ast.Call(
                         typeof(PythonOps).GetMethod("SlotTryGetValue"),
-                        AstUtils.Constant(state.Context),
+                        AstUtils.Constant(state.SharedContext),
                         AstUtils.Convert(Utils.WeakConstant(slotTarget), typeof(PythonTypeSlot)),
                         AstUtils.Convert(self, typeof(object)),
                         Ast.Call(
@@ -1053,7 +1053,7 @@ namespace IronPython.Runtime.Binding {
                                     new CallSignature(args.Length)
                                 ),
                                 typeof(object),
-                                ArrayUtils.Insert(AstUtils.Constant(state.Context), (Expression)callable, args)
+                                ArrayUtils.Insert(AstUtils.Constant(state.SharedContext), (Expression)callable, args)
                             )
                         ),
                         Ast.Property(null, typeof(PythonOps).GetProperty("NotImplemented"))
@@ -1065,7 +1065,7 @@ namespace IronPython.Runtime.Binding {
             bodyBuilder.AddVariable(tmp);
         }
 
-        private static void DoCoerce(BinderState/*!*/ state, ConditionalBuilder/*!*/ bodyBuilder, PythonOperationKind op, DynamicMetaObject/*!*/[]/*!*/ types, bool reverse) {
+        private static void DoCoerce(PythonContext/*!*/ state, ConditionalBuilder/*!*/ bodyBuilder, PythonOperationKind op, DynamicMetaObject/*!*/[]/*!*/ types, bool reverse) {
             DoCoerce(state, bodyBuilder, op, types, reverse, delegate(Expression e) {
                 return e;
             });
@@ -1074,7 +1074,7 @@ namespace IronPython.Runtime.Binding {
         /// <summary>
         /// calls __coerce__ for old-style classes and performs the operation if the coercion is successful.
         /// </summary>
-        private static void DoCoerce(BinderState/*!*/ state, ConditionalBuilder/*!*/ bodyBuilder, PythonOperationKind op, DynamicMetaObject/*!*/[]/*!*/ types, bool reverse, Func<Expression, Expression> returnTransform) {
+        private static void DoCoerce(PythonContext/*!*/ state, ConditionalBuilder/*!*/ bodyBuilder, PythonOperationKind op, DynamicMetaObject/*!*/[]/*!*/ types, bool reverse, Func<Expression, Expression> returnTransform) {
             ParameterExpression coerceResult = Ast.Variable(typeof(object), "coerceResult");
             ParameterExpression coerceTuple = Ast.Variable(typeof(PythonTuple), "coerceTuple");
 
@@ -1161,7 +1161,7 @@ namespace IronPython.Runtime.Binding {
 
             PythonOperationKind op = NormalizeOperator(opString);
 
-            BinderState state = BinderState.GetBinderState(operation);
+            PythonContext state = PythonContext.GetPythonContext(operation);
             Debug.Assert(types.Length == 2);
             DynamicMetaObject xType = types[0], yType = types[1];
             SymbolId opSym = Symbols.OperatorToSymbol(op);
@@ -1251,7 +1251,7 @@ namespace IronPython.Runtime.Binding {
             DynamicMetaObject[] rTypes = new DynamicMetaObject[] { types[1], types[0] };
             SlotOrFunction cfunc, rcfunc, eqfunc, reqfunc, ltfunc, gtfunc, rltfunc, rgtfunc;
 
-            BinderState state = BinderState.GetBinderState(operation);
+            PythonContext state = PythonContext.GetPythonContext(operation);
             cfunc = SlotOrFunction.GetSlotOrFunction(state, Symbols.Cmp, types);
             rcfunc = SlotOrFunction.GetSlotOrFunction(state, Symbols.Cmp, rTypes);
             eqfunc = SlotOrFunction.GetSlotOrFunction(state, Symbols.OperatorEquals, types);
@@ -1409,7 +1409,7 @@ namespace IronPython.Runtime.Binding {
         private static void MakeValueCheck(int val, Expression retValue, ConditionalBuilder/*!*/ bodyBuilder, Expression retCondition) {
             if (retValue.Type != typeof(bool)) {
                 retValue = Ast.Dynamic(
-                    BinderState.GetBinderState(bodyBuilder.Action).Convert(
+                    PythonContext.GetPythonContext(bodyBuilder.Action).Convert(
                         typeof(bool),
                         ConversionResultKind.ExplicitCast
                     ),
@@ -1453,7 +1453,7 @@ namespace IronPython.Runtime.Binding {
         private static Expression/*!*/ MakeFallbackCompare(DynamicMetaObjectBinder/*!*/ binder, PythonOperationKind op, DynamicMetaObject[] types) {
             return Ast.Call(
                 GetComparisonFallbackMethod(op),
-                BinderState.GetCodeContext(binder),
+                PythonContext.GetCodeContext(binder),
                 AstUtils.Convert(types[0].Expression, typeof(object)),
                 AstUtils.Convert(types[1].Expression, typeof(object))
             );
@@ -1506,7 +1506,7 @@ namespace IronPython.Runtime.Binding {
         private static DynamicMetaObject/*!*/ MakeIndexerOperation(DynamicMetaObjectBinder/*!*/ operation, PythonIndexType op, DynamicMetaObject/*!*/[]/*!*/ types) {
             SymbolId item, slice;
             DynamicMetaObject indexedType = types[0].Restrict(types[0].GetLimitType());
-            BinderState state = BinderState.GetBinderState(operation);
+            PythonContext state = PythonContext.GetPythonContext(operation);
             BuiltinFunction itemFunc = null;
             PythonTypeSlot itemSlot = null;
             bool callSlice = false;
@@ -1518,14 +1518,14 @@ namespace IronPython.Runtime.Binding {
                 // two slice indexes, all int arguments, need to call __*slice__ if it exists
                 callSlice = BindingHelpers.TryGetStaticFunction(state, slice, indexedType, out itemFunc);
                 if (itemFunc == null || !callSlice) {
-                    callSlice = MetaPythonObject.GetPythonType(indexedType).TryResolveSlot(state.Context, slice, out itemSlot);
+                    callSlice = MetaPythonObject.GetPythonType(indexedType).TryResolveSlot(state.SharedContext, slice, out itemSlot);
                 }
             }
 
             if (!callSlice) {
                 // 1 slice index (simple index) or multiple slice indexes or no __*slice__, call __*item__, 
                 if (!BindingHelpers.TryGetStaticFunction(state, item, indexedType, out itemFunc)) {
-                    MetaPythonObject.GetPythonType(indexedType).TryResolveSlot(state.Context, item, out itemSlot);
+                    MetaPythonObject.GetPythonType(indexedType).TryResolveSlot(state.SharedContext, item, out itemSlot);
                 }
             }
 
@@ -1586,7 +1586,7 @@ namespace IronPython.Runtime.Binding {
         /// <summary>
         /// Gets the arguments that need to be provided to __*item__ when we need to pass a slice object.
         /// </summary>
-        private static DynamicMetaObject/*!*/[]/*!*/ GetItemSliceArguments(BinderState state, PythonIndexType op, DynamicMetaObject/*!*/[]/*!*/ types) {
+        private static DynamicMetaObject/*!*/[]/*!*/ GetItemSliceArguments(PythonContext state, PythonIndexType op, DynamicMetaObject/*!*/[]/*!*/ types) {
             DynamicMetaObject[] args;
             if (op == PythonIndexType.SetSlice) {
                 args = new DynamicMetaObject[] { 
@@ -1611,10 +1611,10 @@ namespace IronPython.Runtime.Binding {
         /// The Callable objects get handed off to ItemBuilder's which then call them with the appropriate arguments.
         /// </summary>
         abstract class Callable {
-            private readonly BinderState/*!*/ _binder;
+            private readonly PythonContext/*!*/ _binder;
             private readonly PythonIndexType _op;
 
-            protected Callable(BinderState/*!*/ binder, PythonIndexType op) {
+            protected Callable(PythonContext/*!*/ binder, PythonIndexType op) {
                 Assert.NotNull(binder);
 
                 _binder = binder;
@@ -1625,7 +1625,7 @@ namespace IronPython.Runtime.Binding {
             /// Creates a new CallableObject.  If BuiltinFunction is available we'll create a BuiltinCallable otherwise
             /// we create a SlotCallable.
             /// </summary>
-            public static Callable MakeCallable(BinderState/*!*/ binder, PythonIndexType op, BuiltinFunction itemFunc, PythonTypeSlot itemSlot) {
+            public static Callable MakeCallable(PythonContext/*!*/ binder, PythonIndexType op, BuiltinFunction itemFunc, PythonTypeSlot itemSlot) {
                 if (itemFunc != null) {
                     // we'll call a builtin function to produce the rule
                     return new BuiltinCallable(binder, op, itemFunc);
@@ -1701,7 +1701,7 @@ namespace IronPython.Runtime.Binding {
                 get { return _binder.Binder; }
             }
 
-            protected BinderState BinderState {
+            protected PythonContext PythonContext {
                 get { return _binder; }
             }
 
@@ -1721,7 +1721,7 @@ namespace IronPython.Runtime.Binding {
         class BuiltinCallable : Callable {
             private readonly BuiltinFunction/*!*/ _bf;
 
-            public BuiltinCallable(BinderState/*!*/ binder, PythonIndexType op, BuiltinFunction/*!*/ func)
+            public BuiltinCallable(PythonContext/*!*/ binder, PythonIndexType op, BuiltinFunction/*!*/ func)
                 : base(binder, op) {
                 Assert.NotNull(func);
 
@@ -1748,7 +1748,7 @@ namespace IronPython.Runtime.Binding {
                     args[0],
                     ArrayUtils.RemoveFirst(args),
                     new CallSignature(args.Length - 1),
-                    AstUtils.Constant(BinderState.Context)
+                    AstUtils.Constant(PythonContext.SharedContext)
                 );
 
                 DynamicMetaObject res = Binder.CallMethod(
@@ -1771,7 +1771,7 @@ namespace IronPython.Runtime.Binding {
 
                     WarningInfo info;
                     if (BindingWarnings.ShouldWarn(Binder, target.Method, out info)) {
-                        res = info.AddWarning(Ast.Constant(BinderState.Context), res);
+                        res = info.AddWarning(Ast.Constant(PythonContext.SharedContext), res);
                     }
                 } else if (customFailure == null || (res = customFailure()) == null) {
                     res = DefaultBinder.MakeError(resolver.MakeInvalidParametersError(target), BindingRestrictions.Combine(ConvertArgs(args)), typeof(object));
@@ -1788,7 +1788,7 @@ namespace IronPython.Runtime.Binding {
         class SlotCallable : Callable {
             private PythonTypeSlot _slot;
 
-            public SlotCallable(BinderState/*!*/ binder, PythonIndexType op, PythonTypeSlot slot)
+            public SlotCallable(PythonContext/*!*/ binder, PythonIndexType op, PythonTypeSlot slot)
                 : base(binder, op) {
                 _slot = slot;
             }
@@ -1797,7 +1797,7 @@ namespace IronPython.Runtime.Binding {
                 ConditionalBuilder cb = new ConditionalBuilder();
                 _slot.MakeGetExpression(
                     Binder,
-                    AstUtils.Constant(BinderState.Context),
+                    AstUtils.Constant(PythonContext.SharedContext),
                     args[0].Expression,
                     Ast.Call(
                         typeof(DynamicHelpers).GetMethod("GetPythonType"),
@@ -1816,11 +1816,11 @@ namespace IronPython.Runtime.Binding {
                 }
 
                 Expression retVal = Ast.Dynamic(
-                    BinderState.Invoke(
+                    PythonContext.Invoke(
                         new CallSignature(exprArgs.Length)
                     ),
                     typeof(object),
-                    ArrayUtils.Insert(AstUtils.Constant(BinderState.Context), (Expression)callable, exprArgs)
+                    ArrayUtils.Insert(AstUtils.Constant(PythonContext.SharedContext), (Expression)callable, exprArgs)
                 );
 
                 if (IsSetter) {
@@ -1846,7 +1846,7 @@ namespace IronPython.Runtime.Binding {
                 _types = types;
             }
 
-            public abstract DynamicMetaObject/*!*/ MakeRule(BinderState/*!*/ binder, DynamicMetaObject/*!*/[]/*!*/ args);
+            public abstract DynamicMetaObject/*!*/ MakeRule(PythonContext/*!*/ binder, DynamicMetaObject/*!*/[]/*!*/ args);
 
             protected Callable/*!*/ Callable {
                 get { return _callable; }
@@ -1871,7 +1871,7 @@ namespace IronPython.Runtime.Binding {
                 : base(types, callable) {
             }
 
-            public override DynamicMetaObject/*!*/ MakeRule(BinderState/*!*/ binder, DynamicMetaObject/*!*/[]/*!*/ args) {
+            public override DynamicMetaObject/*!*/ MakeRule(PythonContext/*!*/ binder, DynamicMetaObject/*!*/[]/*!*/ args) {
                 // the semantics of simple slicing state that if the value
                 // is less than 0 then the length is added to it.  The default
                 // for unprovided parameters are 0 and maxint.  The callee
@@ -1923,9 +1923,9 @@ namespace IronPython.Runtime.Binding {
                                     Ast.Dynamic(
                                         binder.InvokeNone,
                                         typeof(object),
-                                        AstUtils.Constant(binder.Context),
+                                        AstUtils.Constant(binder.SharedContext),
                                         Binders.Get(
-                                            AstUtils.Constant(binder.Context),
+                                            AstUtils.Constant(binder.SharedContext),
                                             binder,
                                             typeof(object),
                                             "__index__",
@@ -2010,11 +2010,11 @@ namespace IronPython.Runtime.Binding {
                 : base(types, callable) {
             }
 
-            public override DynamicMetaObject/*!*/ MakeRule(BinderState/*!*/ binder, DynamicMetaObject/*!*/[]/*!*/ args) {
+            public override DynamicMetaObject/*!*/ MakeRule(PythonContext/*!*/ binder, DynamicMetaObject/*!*/[]/*!*/ args) {
                 DynamicMetaObject[] tupleArgs = Callable.GetTupleArguments(args);
                 return Callable.CompleteRuleTarget(tupleArgs, delegate() {
                     PythonTypeSlot indexSlot;
-                    if (args[1].GetLimitType() != typeof(Slice) && GetTypeAt(1).TryResolveSlot(binder.Context, Symbols.Index, out indexSlot)) {
+                    if (args[1].GetLimitType() != typeof(Slice) && GetTypeAt(1).TryResolveSlot(binder.SharedContext, Symbols.Index, out indexSlot)) {
                         args[1] = new DynamicMetaObject(
                             Ast.Dynamic(
                                 binder.Convert(
@@ -2025,9 +2025,9 @@ namespace IronPython.Runtime.Binding {
                                 Ast.Dynamic(
                                     binder.InvokeNone,
                                     typeof(object),
-                                    AstUtils.Constant(binder.Context),
+                                    AstUtils.Constant(binder.SharedContext),
                                     Binders.Get(
-                                        AstUtils.Constant(binder.Context),
+                                        AstUtils.Constant(binder.SharedContext),
                                         binder,
                                         typeof(object),
                                         "__index__",
@@ -2047,7 +2047,7 @@ namespace IronPython.Runtime.Binding {
 
         private static bool HasOnlyNumericTypes(DynamicMetaObjectBinder/*!*/ action, DynamicMetaObject/*!*/[]/*!*/ types, bool skipLast) {
             bool onlyNumeric = true;
-            BinderState state = BinderState.GetBinderState(action);
+            PythonContext state = PythonContext.GetPythonContext(action);
 
             for (int i = 1; i < (skipLast ? types.Length - 1 : types.Length); i++) {
                 DynamicMetaObject obj = types[i];
@@ -2059,7 +2059,7 @@ namespace IronPython.Runtime.Binding {
             return onlyNumeric;
         }
 
-        private static bool IsIndexType(BinderState/*!*/ state, DynamicMetaObject/*!*/ obj) {
+        private static bool IsIndexType(PythonContext/*!*/ state, DynamicMetaObject/*!*/ obj) {
             bool numeric = true;
             if (obj.GetLimitType() != typeof(MissingParameter) &&
                 !PythonOps.IsNumericType(obj.GetLimitType())) {
@@ -2067,7 +2067,7 @@ namespace IronPython.Runtime.Binding {
                 PythonType curType = MetaPythonObject.GetPythonType(obj);
                 PythonTypeSlot dummy;
 
-                if (!curType.TryResolveSlot(state.Context, Symbols.Index, out dummy)) {
+                if (!curType.TryResolveSlot(state.SharedContext, Symbols.Index, out dummy)) {
                     numeric = false;
                 }
             }
@@ -2107,7 +2107,7 @@ namespace IronPython.Runtime.Binding {
             throw new InvalidOperationException();
         }
 
-        private static DynamicMetaObject/*!*/ GetSetSlice(BinderState state, DynamicMetaObject/*!*/[]/*!*/ args) {
+        private static DynamicMetaObject/*!*/ GetSetSlice(PythonContext state, DynamicMetaObject/*!*/[]/*!*/ args) {
             DynamicMetaObject[] newArgs = (DynamicMetaObject[])args.Clone();
             for (int i = 1; i < newArgs.Length; i++) {
                 if (!IsIndexType(state, newArgs[i])) {
@@ -2126,7 +2126,7 @@ namespace IronPython.Runtime.Binding {
             );
         }
 
-        private static DynamicMetaObject/*!*/ GetGetOrDeleteSlice(BinderState state, DynamicMetaObject/*!*/[]/*!*/ args) {
+        private static DynamicMetaObject/*!*/ GetGetOrDeleteSlice(PythonContext state, DynamicMetaObject/*!*/[]/*!*/ args) {
             DynamicMetaObject[] newArgs = (DynamicMetaObject[])args.Clone();
             for (int i = 1; i < newArgs.Length; i++) {
                 if (!IsIndexType(state, newArgs[i])) {
@@ -2174,7 +2174,7 @@ namespace IronPython.Runtime.Binding {
         /// This matches the behavior of CPython.
         /// </summary>
         /// <returns></returns>
-        private static bool ShouldCoerce(BinderState/*!*/ state, PythonOperationKind operation, DynamicMetaObject/*!*/ x, DynamicMetaObject/*!*/ y, bool isCompare) {
+        private static bool ShouldCoerce(PythonContext/*!*/ state, PythonOperationKind operation, DynamicMetaObject/*!*/ x, DynamicMetaObject/*!*/ y, bool isCompare) {
             if ((operation & PythonOperationKind.DisableCoerce) != 0) {
                 return false;
             }
@@ -2193,7 +2193,7 @@ namespace IronPython.Runtime.Binding {
                     // only when comparing against built-in types which
                     // define __coerce__
                     PythonTypeSlot pts;
-                    if (xType.TryResolveSlot(state.Context, Symbols.Coerce, out pts)) {
+                    if (xType.TryResolveSlot(state.SharedContext, Symbols.Coerce, out pts)) {
                         // don't call __coerce__ if it's declared on the base type
                         BuiltinMethodDescriptor bmd = pts as BuiltinMethodDescriptor;
                         if (bmd == null) return true;

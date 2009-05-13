@@ -27,16 +27,18 @@ namespace Microsoft.Scripting.Runtime {
         private readonly LanguageContext _context;
         private readonly StreamContentProvider _streamProvider;
         private readonly Encoding _defaultEncoding;
+        private readonly string _path;
 
-        public LanguageBoundTextContentProvider(LanguageContext context, StreamContentProvider streamProvider, Encoding defaultEncoding) {
+        public LanguageBoundTextContentProvider(LanguageContext context, StreamContentProvider streamProvider, Encoding defaultEncoding, string path) {
             Assert.NotNull(context, streamProvider, defaultEncoding);
             _context = context;
             _streamProvider = streamProvider;
             _defaultEncoding = defaultEncoding;
+            _path = path;
         }
 
         public override SourceCodeReader GetReader() {
-            return _context.GetSourceReader(_streamProvider.GetStream(), _defaultEncoding);
+            return _context.GetSourceReader(_streamProvider.GetStream(), _defaultEncoding, _path);
         }
     }
 }

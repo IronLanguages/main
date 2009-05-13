@@ -33,17 +33,17 @@ using AstUtils = Microsoft.Scripting.Ast.Utils;
 namespace IronPython.Runtime.Binding {
 
     class PythonGetMemberBinder : DynamicMetaObjectBinder, IPythonSite, IExpressionSerializable {
-        private readonly BinderState/*!*/ _state;
+        private readonly PythonContext/*!*/ _context;
         private readonly GetMemberOptions _options;
         private readonly string _name;
 
-        public PythonGetMemberBinder(BinderState/*!*/ binder, string/*!*/ name) {
-            _state = binder;
+        public PythonGetMemberBinder(PythonContext/*!*/ context, string/*!*/ name) {
+            _context = context;
             _name = name;
         }
 
-        public PythonGetMemberBinder(BinderState/*!*/ binder, string/*!*/ name, bool isNoThrow)
-            : this(binder, name) {
+        public PythonGetMemberBinder(PythonContext/*!*/ context, string/*!*/ name, bool isNoThrow)
+            : this(context, name) {
             _options = isNoThrow ? GetMemberOptions.IsNoThrow : GetMemberOptions.None;
         }
 
@@ -66,10 +66,7 @@ namespace IronPython.Runtime.Binding {
 
             if (icc != null) {
                 // get the member using our interface which also supports CodeContext.
-                return icc.GetMember(
-                    this,
-                    cc.Expression
-                );
+                return icc.GetMember(this, cc);
             } else if (target.Value is IDynamicMetaObjectProvider && !(target is MetaPythonObject)) {
                 return GetForeignObject(target);
             }
@@ -78,7 +75,7 @@ namespace IronPython.Runtime.Binding {
                 return GetForeignObject(target);
             }
 #endif
-            return Fallback(target, cc.Expression);
+            return Fallback(target, cc);
         }
 
         public override T BindDelegate<T>(CallSite<T> site, object[] args) {
@@ -109,14 +106,33 @@ namespace IronPython.Runtime.Binding {
                 PerfTrack.NoteEvent(PerfTrack.Categories.BindingSlow, "IPythonObject Get");
             }
 
-            if (args[0] != null && args[0].GetType() == typeof(Scope)) {
-                if (!IsNoThrow) {
-                    return (T)(object)new Func<CallSite, object, CodeContext, object>(new ScopeDelegate(_name).Target);
+            if (args[0] != null) {
+                if (args[0].GetType() == typeof(Scope)) {
+                    if (!IsNoThrow) {
+                        return (T)(object)new Func<CallSite, object, CodeContext, object>(new ScopeDelegate(_name).Target);
+                    } else {
+                        return (T)(object)new Func<CallSite, object, CodeContext, object>(new ScopeDelegate(_name).NoThrowTarget);
+                    }
+                } else if (args[0].GetType() == typeof(NamespaceTracker)) {
+                    switch(Name) {
+                        case "__str__":
+                        case "__repr__":
+                            // need to return the built in method descriptor for these...
+                            break;
+                        case "__file__":
+                            return (T)(object)new Func<CallSite, object, CodeContext, object>(new NamespaceTrackerDelegate(_name).GetFile);
+                        case "__dict__":
+                            return (T)(object)new Func<CallSite, object, CodeContext, object>(new NamespaceTrackerDelegate(_name).GetDict);
+                        case "__name__":
+                            return (T)(object)new Func<CallSite, object, CodeContext, object>(new NamespaceTrackerDelegate(_name).GetName);
+                        default:
+                            return (T)(object)new Func<CallSite, object, CodeContext, object>(new NamespaceTrackerDelegate(_name).Target);
+                    }
+                    
                 }
-
             }
 
-            PerfTrack.NoteEvent(PerfTrack.Categories.BindingSlow, "GetNoFast " + CompilerHelpers.GetType(args[0]));
+            PerfTrack.NoteEvent(PerfTrack.Categories.BindingSlow, "GetNoFast " + IsNoThrow + " " + CompilerHelpers.GetType(args[0]));
             return base.BindDelegate<T>(site, args);
         }
 
@@ -135,6 +151,63 @@ namespace IronPython.Runtime.Binding {
                 return Update(site, self, context);
             }
 
+            public object NoThrowTarget(CallSite site, object self, CodeContext context) {
+                if (self != null && self.GetType() == typeof(Scope)) {
+                    return ScopeOps.GetAttributeNoThrow(context, (Scope)self, _name);
+                }
+
+                return Update(site, self, context);
+            }
+
+            public override bool IsValid(PythonType type) {
+                return true;
+            }
+        }
+
+        class NamespaceTrackerDelegate : FastGetBase {
+            private readonly SymbolId _name;
+
+            public NamespaceTrackerDelegate(string name) {
+                _name = SymbolTable.StringToId(name);
+            }
+
+            public object Target(CallSite site, object self, CodeContext context) {
+                if (self != null && self.GetType() == typeof(NamespaceTracker)) {
+                    object res = ReflectedPackageOps.GetCustomMember(context, (NamespaceTracker)self, _name);
+                    if (res != OperationFailed.Value) {
+                        return res;
+                    }
+
+                    throw PythonOps.AttributeErrorForMissingAttribute(self, _name);
+                }
+
+                return Update(site, self, context);
+            }
+
+            public object GetName(CallSite site, object self, CodeContext context) {
+                if (self != null && self.GetType() == typeof(NamespaceTracker)) {
+                    return ReflectedPackageOps.Get__name__(context, (NamespaceTracker)self);
+                }
+
+                return Update(site, self, context);
+            }
+
+            public object GetFile(CallSite site, object self, CodeContext context) {
+                if (self != null && self.GetType() == typeof(NamespaceTracker)) {
+                    return ReflectedPackageOps.Get__file__((NamespaceTracker)self);
+                }
+
+                return Update(site, self, context);
+            }
+
+            public object GetDict(CallSite site, object self, CodeContext context) {
+                if (self != null && self.GetType() == typeof(NamespaceTracker)) {
+                    return ReflectedPackageOps.Get__dict__(context, (NamespaceTracker)self);
+                }
+
+                return Update(site, self, context);
+            }
+
             public override bool IsValid(PythonType type) {
                 return true;
             }
@@ -147,7 +220,7 @@ namespace IronPython.Runtime.Binding {
         private DynamicMetaObject GetForeignObject(DynamicMetaObject self) {
             return new DynamicMetaObject(
                 Expression.Dynamic(
-                    _state.CompatGetMember(Name),
+                    _context.CompatGetMember(Name),
                     typeof(object),
                     self.Expression
                 ),
@@ -157,15 +230,17 @@ namespace IronPython.Runtime.Binding {
 
         #endregion
 
-        public DynamicMetaObject/*!*/ Fallback(DynamicMetaObject/*!*/ self, Expression/*!*/ codeContext) {
+        public DynamicMetaObject/*!*/ Fallback(DynamicMetaObject/*!*/ self, DynamicMetaObject/*!*/ codeContext) {
             // Python always provides an extra arg to GetMember to flow the context.
             return FallbackWorker(self, codeContext, Name, _options, this);
         }
 
-        internal static DynamicMetaObject FallbackWorker(DynamicMetaObject/*!*/ self, Expression/*!*/ codeContext, string name, GetMemberOptions options, DynamicMetaObjectBinder action) {
+        internal static DynamicMetaObject FallbackWorker(DynamicMetaObject/*!*/ self, DynamicMetaObject/*!*/ codeContext, string name, GetMemberOptions options, DynamicMetaObjectBinder action) {
             if (self.NeedsDeferral()) {
                 return action.Defer(self);
             }
+
+            PerfTrack.NoteEvent(PerfTrack.Categories.BindingTarget, "FallbackGet");
 
             bool isNoThrow = ((options & GetMemberOptions.IsNoThrow) != 0) ? true : false;
             Type limitType = self.GetLimitType() ;
@@ -178,10 +253,10 @@ namespace IronPython.Runtime.Binding {
                 // if the name is defined in the CLS context but not the normal context then
                 // we will hide it.                
                 if (argType.IsHiddenMember(name)) {
-                    DynamicMetaObject baseRes = BinderState.GetBinderState(action).Binder.GetMember(
+                    DynamicMetaObject baseRes = PythonContext.GetPythonContext(action).Binder.GetMember(
                         name,
                         self,
-                        codeContext,
+                        codeContext.Expression,
                         isNoThrow
                     );
                     Expression failure = GetFailureExpression(limitType, name, isNoThrow, action);
@@ -217,7 +292,7 @@ namespace IronPython.Runtime.Binding {
                 }
             }
 
-            var res = BinderState.GetBinderState(action).Binder.GetMember(name, self, codeContext, isNoThrow);
+            var res = PythonContext.GetPythonContext(action).Binder.GetMember(name, self, codeContext.Expression, isNoThrow);
 
             // Default binder can return something typed to boolean or int.
             // If that happens, we need to apply Python's boxing rules.
@@ -235,7 +310,7 @@ namespace IronPython.Runtime.Binding {
             return isNoThrow ?
                 Ast.Field(null, typeof(OperationFailed).GetField("Value")) :
                 DefaultBinder.MakeError(
-                    BinderState.GetBinderState(action).Binder.MakeMissingMemberError(
+                    PythonContext.GetPythonContext(action).Binder.MakeMissingMemberError(
                         limitType,
                         name
                     ), 
@@ -249,9 +324,9 @@ namespace IronPython.Runtime.Binding {
             }
         }
 
-        public BinderState/*!*/ Binder {
+        public PythonContext/*!*/ Context {
             get {
-                return _state;
+                return _context;
             }
         }
 
@@ -262,7 +337,7 @@ namespace IronPython.Runtime.Binding {
         }
 
         public override int GetHashCode() {
-            return _name.GetHashCode() ^ _state.Binder.GetHashCode() ^ ((int)_options);
+            return _name.GetHashCode() ^ _context.Binder.GetHashCode() ^ ((int)_options);
         }
 
         public override bool Equals(object obj) {
@@ -271,7 +346,7 @@ namespace IronPython.Runtime.Binding {
                 return false;
             }
 
-            return ob._state.Binder == _state.Binder &&
+            return ob._context.Binder == _context.Binder &&
                 ob._options == _options &&
                 ob._name == _name;
         }
@@ -295,14 +370,14 @@ namespace IronPython.Runtime.Binding {
     }
 
     class CompatibilityGetMember : GetMemberBinder, IPythonSite {
-        private readonly BinderState/*!*/ _state;
+        private readonly PythonContext/*!*/ _state;
 
-        public CompatibilityGetMember(BinderState/*!*/ binder, string/*!*/ name)
+        public CompatibilityGetMember(PythonContext/*!*/ binder, string/*!*/ name)
             : base(name, false) {
             _state = binder;
         }
 
-        public CompatibilityGetMember(BinderState/*!*/ binder, string/*!*/ name, bool ignoreCase)
+        public CompatibilityGetMember(PythonContext/*!*/ binder, string/*!*/ name, bool ignoreCase)
             : base(name, ignoreCase) {
             _state = binder;
         }
@@ -314,12 +389,12 @@ namespace IronPython.Runtime.Binding {
                 return com;
             }
 #endif
-            return PythonGetMemberBinder.FallbackWorker(self, BinderState.GetCodeContext(this), Name, GetMemberOptions.None, this);
+            return PythonGetMemberBinder.FallbackWorker(self, PythonContext.GetCodeContextMO(this), Name, GetMemberOptions.None, this);
         }
 
         #region IPythonSite Members
 
-        public BinderState Binder {
+        public PythonContext Context {
             get { return _state; }
         }
 

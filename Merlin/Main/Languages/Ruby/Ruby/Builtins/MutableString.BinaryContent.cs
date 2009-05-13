@@ -20,6 +20,7 @@ using System.Text;
 using IronRuby.Compiler;
 using IronRuby.Runtime;
 using System.Diagnostics;
+using System.IO;
 
 namespace IronRuby.Builtins {
     public partial class MutableString {
@@ -84,11 +85,11 @@ namespace IronRuby.Builtins {
                 return _data.GetValueHashCode(_count, out binarySum);
             }
 
-            public override int GetBinaryHashCode() {
-                return GetHashCode();
+            public override int GetBinaryHashCode(out int binarySum) {
+                return GetHashCode(out binarySum);
             }
 
-            public override int Length {
+            public override int Count {
                 get { return _count; }
             }
 
@@ -106,6 +107,21 @@ namespace IronRuby.Builtins {
 
             public override Content/*!*/ Clone() {
                 return new BinaryContent(ToByteArray(), _owner);
+            }
+
+            public override void TrimExcess() {
+                Utils.TrimExcess(ref _data, _count);
+            }
+
+            public override int GetCapacity() {
+                return _data.Length;
+            }
+
+            public override void SetCapacity(int capacity) {
+                if (capacity < _count) {
+                    throw new InvalidOperationException();
+                }
+                Array.Resize(ref _data, capacity);
             }
 
             #endregion
@@ -127,6 +143,18 @@ namespace IronRuby.Builtins {
 
             public override byte[]/*!*/ ToByteArray() {
                 return _data.GetSlice(0, _count);
+            }
+
+            internal override byte[]/*!*/ GetByteArray() {
+                return _data;
+            }
+
+            public override void SwitchToBinaryContent() {
+                // nop
+            }
+
+            public override void SwitchToStringContent() {
+                SwitchToChars();
             }
 
             public override GenericRegex/*!*/ ToRegularExpression(RubyRegexOptions options) {
@@ -231,82 +259,81 @@ namespace IronRuby.Builtins {
 
             #region Append
 
-            public override Content/*!*/ Append(char c, int repeatCount) {
-                return SwitchToChars(repeatCount).Append(c, repeatCount);
+            public override void Append(char c, int repeatCount) {
+                SwitchToChars(repeatCount).Append(c, repeatCount);
             }
 
-            public override Content/*!*/ Append(byte b, int repeatCount) {
+            public override void Append(byte b, int repeatCount) {
                 _count = Utils.Append(ref _data, _count, b, repeatCount);
-                return this;
             }
 
-            public override Content/*!*/ Append(string/*!*/ str, int start, int count) {
-                return SwitchToChars(count).Append(str, start, count);
+            public override void Append(string/*!*/ str, int start, int count) {
+                SwitchToChars(count).Append(str, start, count);
             }
 
-            public override Content/*!*/ Append(char[]/*!*/ chars, int start, int count) {
-                return SwitchToChars(count).Append(chars, start, count);
+            public override void Append(char[]/*!*/ chars, int start, int count) {
+                SwitchToChars(count).Append(chars, start, count);
             }
 
-            public override Content/*!*/ Append(byte[]/*!*/ bytes, int start, int count) {
+            public override void Append(byte[]/*!*/ bytes, int start, int count) {
                 _count = Utils.Append(ref _data, _count, bytes, start, count);
-                return this;
             }
 
-            public override Content/*!*/ AppendFormat(IFormatProvider provider, string/*!*/ format, object[]/*!*/ args) {
-                return SwitchToChars().AppendFormat(provider, format, args);
+            public override void Append(Stream/*!*/ stream, int count) {
+                Utils.Resize(ref _data, _count + count);
+                _count += stream.Read(_data, _count, count);
             }
 
-            public override Content/*!*/ AppendTo(Content/*!*/ str, int start, int count) {
-                return str.Append(_data, start, count);
+            public override void AppendFormat(IFormatProvider provider, string/*!*/ format, object[]/*!*/ args) {
+                SwitchToChars().AppendFormat(provider, format, args);
+            }
+
+            public override void AppendTo(Content/*!*/ str, int start, int count) {
+                str.Append(_data, start, count);
             }
 
             #endregion
 
             #region Insert
 
-            public override Content/*!*/ Insert(int index, char c) {
-                return SwitchToChars(1).Insert(index, c);
+            public override void Insert(int index, char c) {
+                SwitchToChars(1).Insert(index, c);
             }
 
-            public override Content/*!*/ Insert(int index, byte b) {
+            public override void Insert(int index, byte b) {
                 _count = Utils.InsertAt(ref _data, _count, index, b, 1);
-                return this;
             }
 
-            public override Content/*!*/ Insert(int index, string/*!*/ str, int start, int count) {
-                return SwitchToChars(count).Insert(index, str, start, count);
+            public override void Insert(int index, string/*!*/ str, int start, int count) {
+                SwitchToChars(count).Insert(index, str, start, count);
             }
 
-            public override Content/*!*/ Insert(int index, char[]/*!*/ chars, int start, int count) {
-                return SwitchToChars(count).Insert(index, chars, start, count);
+            public override void Insert(int index, char[]/*!*/ chars, int start, int count) {
+                SwitchToChars(count).Insert(index, chars, start, count);
             }
 
-            public override Content/*!*/ Insert(int index, byte[]/*!*/ bytes, int start, int count) {
+            public override void Insert(int index, byte[]/*!*/ bytes, int start, int count) {
                 _count = Utils.InsertAt(ref _data, _count, index, bytes, start, count);
-                return this;
             }
 
-            public override Content/*!*/ InsertTo(Content/*!*/ str, int index, int start, int count) {
-                return str.Insert(index, _data, start, count);
+            public override void InsertTo(Content/*!*/ str, int index, int start, int count) {
+                str.Insert(index, _data, start, count);
             }
 
-            public override Content/*!*/ SetItem(int index, byte b) {
+            public override void SetItem(int index, byte b) {
                 _data[index] = b;
-                return this;
             }
 
-            public override Content/*!*/ SetItem(int index, char c) {
-                return SwitchToChars().DataSetChar(index, c);
+            public override void SetItem(int index, char c) {
+                SwitchToChars().DataSetChar(index, c);
             }
 
             #endregion
 
             #region Remove
 
-            public override Content/*!*/ Remove(int start, int count) {
+            public override void Remove(int start, int count) {
                 _count = Utils.Remove(ref _data, _count, start, count);
-                return this;
             }
 
             #endregion

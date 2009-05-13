@@ -253,11 +253,18 @@ namespace IronPython.Runtime.Operations {
             TrackerTypes tt = GetMemberType(group);
             switch(tt) {
                 case TrackerTypes.Method:
+                    bool checkStatic = false;
                     List<MemberInfo> mems = new List<MemberInfo>();
                     foreach (MemberTracker mt in group) {
-                        mems.Add(((MethodTracker)mt).Method);
+                        MethodTracker metht = (MethodTracker)mt;
+                        mems.Add(metht.Method);
+                        checkStatic |= metht.IsStatic;
                     }
-                    return GetFinalSlotForFunction(GetBuiltinFunction(group[0].DeclaringType, group[0].Name, name, null, mems.ToArray()));
+
+                    Type declType = group[0].DeclaringType;
+                    MemberInfo[] memArray = mems.ToArray(); 
+                    FunctionType ft = GetMethodFunctionType(declType, memArray, checkStatic);
+                    return GetFinalSlotForFunction(GetBuiltinFunction(declType, group[0].Name, name, ft, memArray));
                 
                 case TrackerTypes.Field:
                     return GetReflectedField(((FieldTracker)group[0]).Field);
@@ -556,6 +563,10 @@ namespace IronPython.Runtime.Operations {
         }
 
         internal static FunctionType GetMethodFunctionType(Type/*!*/ type, MemberInfo/*!*/[]/*!*/ methods) {
+            return GetMethodFunctionType(type, methods, true);
+        }
+
+        internal static FunctionType GetMethodFunctionType(Type/*!*/ type, MemberInfo/*!*/[]/*!*/ methods, bool checkStatic) {
             FunctionType ft = FunctionType.None;
             foreach (MethodInfo mi in methods) {
                 if (mi.IsStatic && mi.IsSpecialName) {
@@ -571,7 +582,7 @@ namespace IronPython.Runtime.Operations {
                     }
                 }
 
-                if (IsStaticFunction(type, mi)) {
+                if (checkStatic && IsStaticFunction(type, mi)) {
                     ft |= FunctionType.Function;
                 } else {
                     ft |= FunctionType.Method;

@@ -18,6 +18,7 @@ using System.Collections.Generic;
 using System.Text;
 using Microsoft.Scripting.Utils;
 using IronRuby.Runtime;
+using System.IO;
 
 namespace IronRuby.Builtins {
     public partial class MutableString {
@@ -31,13 +32,23 @@ namespace IronRuby.Builtins {
                 _data = data;
             }
 
-            protected virtual BinaryContent/*!*/ SwitchToBinary() {
+            internal BinaryContent/*!*/ SwitchToBinary() {
                 var bytes = DataToBytes();
                 return WrapContent(bytes, bytes.Length);
             }
 
+            internal BinaryContent/*!*/ SwitchToBinary(int additionalCapacity) {
+                // TODO:
+                return SwitchToBinary();
+            }
+
             private CharArrayContent/*!*/ SwitchToMutable() {
                 return WrapContent(_data.ToCharArray(), _data.Length);
+            }
+
+            private CharArrayContent/*!*/ SwitchToMutable(int additionalCapacity) {
+                // TODO:
+                return SwitchToMutable();
             }
 
             protected byte[]/*!*/ DataToBytes() {
@@ -50,15 +61,15 @@ namespace IronRuby.Builtins {
                 return _data.GetValueHashCode(out binarySum);
             }
 
-            public override int GetBinaryHashCode() {
-                return IsBinaryEncoded ? GetHashCode() : SwitchToBinary().GetBinaryHashCode();
+            public override int GetBinaryHashCode(out int binarySum) {
+                return IsBinaryEncoded ? GetHashCode(out binarySum) : SwitchToBinary().GetBinaryHashCode(out binarySum);
             }
 
             public override bool IsBinary {
                 get { return false; }
             }
 
-            public override int Length {
+            public override int Count {
                 get { return _data.Length; }
             }
 
@@ -76,6 +87,21 @@ namespace IronRuby.Builtins {
 
             public override Content/*!*/ Clone() {
                 return new StringContent(_data, _owner);
+            }
+
+            public override void TrimExcess() {
+                // nop
+            }
+
+            public override int GetCapacity() {
+                return _data.Length;
+            }
+
+            public override void SetCapacity(int capacity) {
+                if (capacity < _data.Length) {
+                    throw new InvalidOperationException();
+                }
+                SwitchToMutable(capacity - _data.Length);
             }
 
             #endregion
@@ -98,6 +124,18 @@ namespace IronRuby.Builtins {
 
             public override byte[]/*!*/ ToByteArray() {
                 return DataToBytes();
+            }
+
+            internal override byte[]/*!*/ GetByteArray() {
+                return SwitchToBinary().GetByteArray();
+            }
+
+            public override void SwitchToBinaryContent() {
+                SwitchToBinary();
+            }
+
+            public override void SwitchToStringContent() {
+                // nop
             }
 
             public override GenericRegex/*!*/ ToRegularExpression(RubyRegexOptions options) {
@@ -202,76 +240,80 @@ namespace IronRuby.Builtins {
 
             #region Append
 
-            public override Content/*!*/ Append(char c, int repeatCount) {
-                return SwitchToMutable().Append(c, repeatCount);
+            public override void Append(char c, int repeatCount) {
+                SwitchToMutable(repeatCount).Append(c, repeatCount);
             }
 
-            public override Content/*!*/ Append(byte b, int repeatCount) {
-                return SwitchToBinary().Append(b, repeatCount);
+            public override void Append(byte b, int repeatCount) {
+                SwitchToBinary(repeatCount).Append(b, repeatCount);
             }
 
-            public override Content/*!*/ Append(string/*!*/ str, int start, int count) {
-                return SwitchToMutable().Append(str, start, count);
+            public override void Append(string/*!*/ str, int start, int count) {
+                SwitchToMutable(count).Append(str, start, count);
             }
 
-            public override Content/*!*/ Append(char[]/*!*/ chars, int start, int count) {
-                return SwitchToMutable().Append(chars, start, count);
+            public override void Append(char[]/*!*/ chars, int start, int count) {
+                SwitchToMutable(count).Append(chars, start, count);
             }
 
-            public override Content/*!*/ Append(byte[]/*!*/ bytes, int start, int count) {
-                return SwitchToBinary().Append(bytes, start, count);
+            public override void Append(byte[]/*!*/ bytes, int start, int count) {
+                SwitchToBinary(count).Append(bytes, start, count);
             }
 
-            public override Content/*!*/ AppendFormat(IFormatProvider provider, string/*!*/ format, object[]/*!*/ args) {
-                return SwitchToMutable().AppendFormat(provider, format, args);
+            public override void Append(Stream/*!*/ stream, int count) {
+                SwitchToBinary(count).Append(stream, count);
             }
 
-            public override Content/*!*/ AppendTo(Content/*!*/ str, int start, int count) {
-                return str.Append(_data, start, count);
+            public override void AppendFormat(IFormatProvider provider, string/*!*/ format, object[]/*!*/ args) {
+                SwitchToMutable().AppendFormat(provider, format, args);
+            }
+
+            public override void AppendTo(Content/*!*/ str, int start, int count) {
+                str.Append(_data, start, count);
             }
 
             #endregion
 
             #region Insert
 
-            public override Content/*!*/ Insert(int index, char c) {
-                return SwitchToMutable().Insert(index, c);
+            public override void Insert(int index, char c) {
+                SwitchToMutable().Insert(index, c);
             }
 
-            public override Content/*!*/ Insert(int index, byte b) {
-                return SwitchToBinary().Insert(index, b);
+            public override void Insert(int index, byte b) {
+                SwitchToBinary().Insert(index, b);
             }
 
-            public override Content/*!*/ Insert(int index, string/*!*/ str, int start, int count) {
-                return SwitchToMutable().Insert(index, str, start, count);
+            public override void Insert(int index, string/*!*/ str, int start, int count) {
+                SwitchToMutable().Insert(index, str, start, count);
             }
 
-            public override Content/*!*/ Insert(int index, char[]/*!*/ chars, int start, int count) {
-                return SwitchToMutable().Insert(index, chars, start, count);
+            public override void Insert(int index, char[]/*!*/ chars, int start, int count) {
+                SwitchToMutable().Insert(index, chars, start, count);
             }
 
-            public override Content/*!*/ Insert(int index, byte[]/*!*/ bytes, int start, int count) {
-                return SwitchToBinary().Insert(index, bytes, start, count);
+            public override void Insert(int index, byte[]/*!*/ bytes, int start, int count) {
+                SwitchToBinary().Insert(index, bytes, start, count);
             }
 
-            public override Content/*!*/ InsertTo(Content/*!*/ str, int index, int start, int count) {
-                return str.Insert(index, _data, start, count);
+            public override void InsertTo(Content/*!*/ str, int index, int start, int count) {
+                str.Insert(index, _data, start, count);
             }
 
-            public override Content/*!*/ SetItem(int index, byte b) {
-                return SwitchToBinary().SetItem(index, b);
+            public override void SetItem(int index, byte b) {
+                SwitchToBinary().SetItem(index, b);
             }
 
-            public override Content/*!*/ SetItem(int index, char c) {
-                return SwitchToMutable().DataSetChar(index, c);
+            public override void SetItem(int index, char c) {
+                SwitchToMutable().DataSetChar(index, c);
             }
 
             #endregion
 
             #region Remove
 
-            public override Content/*!*/ Remove(int start, int count) {
-                return SwitchToMutable().Remove(start, count);
+            public override void Remove(int start, int count) {
+                SwitchToMutable().Remove(start, count);
             }
 
             #endregion

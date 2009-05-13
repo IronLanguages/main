@@ -202,6 +202,10 @@ namespace IronRuby.Builtins {
     public static class ZeroDivisionErrorOps {
     }
 
+    [RubyException("EncodingError", Extends = typeof(EncodingError), Inherits = typeof(SystemException))]
+    public static class EncodingErrorOps {
+    }
+
     // special one:
     [RubyException("SystemCallError", Extends = typeof(ExternalException), Inherits = typeof(SystemException))]
     public static class SystemCallErrorOps {

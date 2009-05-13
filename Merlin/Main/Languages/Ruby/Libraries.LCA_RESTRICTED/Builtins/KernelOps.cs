@@ -51,17 +51,17 @@ namespace IronRuby.Builtins {
             return self;
         }
 
-        [RubyMethod("singleton_method_added", RubyMethodAttributes.PrivateInstance)]
+        [RubyMethod("singleton_method_added", RubyMethodAttributes.PrivateInstance | RubyMethodAttributes.Empty)]
         public static void MethodAdded(object self, object methodName) {
             // nop
         }
 
-        [RubyMethod("singleton_method_removed", RubyMethodAttributes.PrivateInstance)]
+        [RubyMethod("singleton_method_removed", RubyMethodAttributes.PrivateInstance | RubyMethodAttributes.Empty)]
         public static void MethodRemoved(object self, object methodName) {
             // nop
         }
 
-        [RubyMethod("singleton_method_undefined", RubyMethodAttributes.PrivateInstance)]
+        [RubyMethod("singleton_method_undefined", RubyMethodAttributes.PrivateInstance | RubyMethodAttributes.Empty)]
         public static void MethodUndefined(object self, object methodName) {
             // nop
         }

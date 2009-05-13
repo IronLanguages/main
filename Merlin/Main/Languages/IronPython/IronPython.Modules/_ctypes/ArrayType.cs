@@ -325,7 +325,7 @@ namespace IronPython.Modules {
                 }
 
                 if (!countDict.TryGetValue(count, out res)) {
-                    res = countDict[count] = new ArrayType(type.Context.DefaultBinderState.Context,
+                    res = countDict[count] = new ArrayType(type.Context.SharedContext,
                         type.Name + "_Array_" + count,
                         PythonTuple.MakeTuple(Array),
                         PythonOps.MakeDictFromItems(new object[] { type, "_type_", count, "_length_" })

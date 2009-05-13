@@ -505,7 +505,8 @@ namespace IronPython.Modules {
                     }
                     if (strarg.IndexOf(' ') != -1) {
                         sb.Append('"');
-                        sb.Append(strarg);
+                        // double quote any existing quotes
+                        sb.Append(strarg.Replace("\"", "\"\""));
                         sb.Append('"');
                     } else {
                         sb.Append(strarg);
