@@ -382,7 +382,7 @@
     <Compile Include="Runtime\Operations\PythonOps.cs" />
     <Compile Include="Runtime\Operations\PythonOps.Generated.cs" />
     <Compile Include="Runtime\Operations\PythonCalls.cs" />
-    <Compile Include="Runtime\Operations\ReflectedPackageOps.cs" />
+    <Compile Include="Runtime\Operations\NamespaceTrackerOps.cs" />
     <Compile Include="Runtime\Operations\StringOps.cs" />
     <Compile Include="Runtime\Operations\TypeTrackerOps.cs" />
     <Compile Include="Runtime\Operations\TypeGroupOps.cs" />

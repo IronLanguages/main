@@ -1304,6 +1304,11 @@ namespace IronRuby.Runtime {
         }
 
         [Emitted]
+        public static Exception/*!*/ MakeMissingDefaultConstructorError(RubyClass/*!*/ classObj, string/*!*/ initializerOwnerName) {
+            return RubyExceptions.CreateMissingDefaultConstructorError(classObj, initializerOwnerName);
+        }
+
+        [Emitted]
         public static Exception/*!*/ MakePrivateMethodCalledError(RubyContext/*!*/ context, object target, string/*!*/ methodName) {
             return RubyExceptions.CreatePrivateMethodCalled(context, target, methodName);
         }

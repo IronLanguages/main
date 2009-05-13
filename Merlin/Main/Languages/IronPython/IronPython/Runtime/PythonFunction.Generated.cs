@@ -194,6 +194,7 @@ namespace IronPython.Runtime {
             return !EnforceRecursion &&
                 args.Length >= (NormalArgumentCount - _defaults.Length) &&
                 args.Length <= NormalArgumentCount &&
+                Defaults.Length <= 13 &&
                 !binder.Signature.HasDictionaryArgument() &&
                 !binder.Signature.HasKeywordArgument() &&
                 !binder.Signature.HasListArgument() &&
