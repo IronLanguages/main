@@ -17,7 +17,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq.Expressions;
 using System.Runtime.CompilerServices;
-using Microsoft.Scripting.Generation;
 using Microsoft.Scripting.Utils;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 
@@ -66,41 +65,20 @@ namespace Microsoft.Scripting.Interpreter {
         /// </summary>
         /// <param name="lambda">The lambda to bind.</param>
         /// <param name="closureVars">The variables that are closed over from an outer scope.</param>
-        /// <param name="delegateTypeMatch">true if the delegate type is the same; false if it was changed to Func/Action.</param>
         /// <returns>A delegate that can be called to produce a delegate bound to the passed in closure array.</returns>
-        internal static Func<StrongBox<object>[], Delegate> BindLambda(LambdaExpression lambda, IList<ParameterExpression> closureVars, out bool delegateTypeMatch) {
+        internal static Func<StrongBox<object>[], Delegate> BindLambda(LambdaExpression lambda, IList<ParameterExpression> closureVars) {
+            // 1. Create rewriter
             var closure = Expression.Parameter(typeof(StrongBox<object>[]), "closure");
             var visitor = new LightLambdaClosureVisitor(closureVars, closure);
-            LambdaExpression rewritten = visitor.VisitTopLambda(lambda);
-            delegateTypeMatch = (rewritten.Type == lambda.Type);
 
-            // Create a higher-order function which fills in the parameters
-            var result = Expression.Lambda<Func<StrongBox<object>[], Delegate>>(rewritten, closure);
+            // 2. Visit the lambda
+            lambda = (LambdaExpression)visitor.Visit(lambda);
+
+            // 3. Create a higher-order function which fills in the parameters
+            var result = Expression.Lambda<Func<StrongBox<object>[], Delegate>>(lambda, closure);
+
+            // 4. Compile it
             return result.Compile();
-        }
-
-        private LambdaExpression VisitTopLambda(LambdaExpression lambda) {
-            // 1. Rewrite the the tree
-            lambda = (LambdaExpression)Visit(lambda);
-
-            // 2. Fix the lambda's delegate type: it must be Func<...> or
-            // Action<...> to be called from the generated Run methods.
-            Type delegateType = GetDelegateType(lambda);
-
-            // 4. Return the lambda with the handling and the (possibly new) delegate type
-            return Expression.Lambda(delegateType, lambda.Body, lambda.Name, lambda.Parameters);
-        }
-
-        private static Type GetDelegateType(LambdaExpression lambda) {
-            Type delegateType = lambda.Type;
-            if (lambda.ReturnType == typeof(void) && lambda.Parameters.Count == 2 &&
-                lambda.Parameters[0].IsByRef && lambda.Parameters[1].IsByRef) {
-                delegateType = typeof(ActionRef<,>).MakeGenericType(lambda.Parameters.Map(p => p.Type));
-            } else {
-                Type[] types = lambda.Parameters.Map(p => p.IsByRef ? p.Type.MakeByRefType() : p.Type);
-                delegateType = Expression.GetDelegateType(types.AddLast(lambda.ReturnType));
-            }
-            return delegateType;
         }
 
         #region closures

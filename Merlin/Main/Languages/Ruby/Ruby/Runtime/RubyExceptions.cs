@@ -158,5 +158,9 @@ namespace IronRuby.Runtime {
         public static Exception/*!*/ CreateProtectedMethodCalled(RubyContext/*!*/ context, object self, string/*!*/ name) {
             return new MissingMethodException(FormatMethodMissingMessage(context, self, name, "protected method `{0}' called for {1}"));
         }
+
+        public static Exception/*!*/ CreateEncodingCompatibilityError(RubyEncoding/*!*/ encoding1, RubyEncoding/*!*/ encoding2) {
+            return new EncodingCompatibilityError(String.Format("incompatible character encodings: {0} and {1}", encoding1.Name, encoding2.Name));
+        }
     }
 }

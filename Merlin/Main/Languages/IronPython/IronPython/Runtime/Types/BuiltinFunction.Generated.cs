@@ -127,7 +127,7 @@ namespace IronPython.Runtime.Types {
             return null;
         }
         
-        class OptimizingInfo {
+        internal class OptimizingInfo {
             public readonly OptimizingCallDelegate Caller;
             public readonly Type[] TypeTest;
             public readonly CallSignature Signature;
@@ -139,7 +139,7 @@ namespace IronPython.Runtime.Types {
             }
 
             public PythonInvokeBinder GetInvokeBinder(CodeContext context) {
-                return PythonContext.GetContext(context).DefaultBinderState.Invoke(Signature);
+                return PythonContext.GetContext(context).Invoke(Signature);
             }
 
             public Delegate GetOptimizedDelegate(CodeContext context) {

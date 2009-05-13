@@ -336,20 +336,17 @@ namespace IronRuby.Builtins {
             return formatter.Format().TaintBy(self);
         }
 
+        // encoding aware
         [RubyMethod("*")]
         public static MutableString/*!*/ Repeat(MutableString/*!*/ self, [DefaultProtocol]int times) {
             if (times < 0) {
                 throw RubyExceptions.CreateArgumentError("negative argument");
             }
 
-            MutableString result = self.CreateInstance().TaintBy(self);
-            for (int i = 0; i < times; i++) {
-                result.Append(self);
-            }
-
-            return result;
+            return self.CreateInstance().TaintBy(self).AppendMultiple(self, times);
         }
 
+        // encoding aware
         [RubyMethod("+")]
         public static MutableString/*!*/ Concatenate(MutableString/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ other) {
             // doesn't create a subclass:
@@ -360,6 +357,7 @@ namespace IronRuby.Builtins {
 
         #region <<, concat
 
+        // encoding aware
         [RubyMethod("<<")]
         [RubyMethod("concat")]
         public static MutableString/*!*/ Append(MutableString/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ other) {
@@ -1095,16 +1093,18 @@ namespace IronRuby.Builtins {
 
         #region each, each_byte, each_line
 
+        // encoding aware
         [RubyMethod("each_byte")]
         public static object EachByte(BlockParam block, MutableString/*!*/ self) {
-            if (block == null && self.Length > 0) {
+            if (block == null && !self.IsEmpty) {
                 throw RubyExceptions.NoBlockGiven();
             }
 
+            // MRI allows the string to be changed during iteration
             int i = 0;
-            while (i < self.Length) {
+            while (i < self.GetByteCount()) {
                 object result;
-                if (block.Yield((int)self.GetByte(i), out result)) {
+                if (block.Yield(ScriptingRuntimeHelpers.Int32ToObject((int)self.GetByte(i)), out result)) {
                     return result;
                 }
                 i++;
@@ -1123,15 +1123,11 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("each")]
         [RubyMethod("each_line")]
-        public static object EachLine(BlockParam block, MutableString/*!*/ self, [DefaultProtocol]MutableString/*!*/ separator) {
-            if (separator == null) {
-                separator = MutableString.CreateEmpty();
-            }
-
+        public static object EachLine(BlockParam block, MutableString/*!*/ self, [DefaultProtocol]MutableString separator) {
             uint version = self.Version;
 
             MutableString paragraphSeparator;
-            if (separator.IsEmpty) {
+            if (separator == null || separator.IsEmpty) {
                 separator = _DefaultLineSeparator;
                 paragraphSeparator = _DefaultDoubleLineSeparator;
             } else {

@@ -22,6 +22,7 @@ using System.Text;
 using IronRuby.Runtime;
 using Microsoft.Scripting.Runtime;
 using IronRuby.Compiler;
+using System.IO;
 
 namespace IronRuby.Builtins {
 
@@ -39,6 +40,7 @@ namespace IronRuby.Builtins {
         private RubyEncoding/*!*/ _encoding;
         
         // The lowest bit is tainted flag.
+        // The second lowest bit is "is-ascii" flag - valid iff _hashCode is valid.
         // The version is set to FrozenVersion when the string is frozen. FrozenVersion is the maximum version, so any update to the version 
         // triggers an OverflowException, which we convert to InvalidOperationException.
         private uint _versionAndFlags;
@@ -47,7 +49,8 @@ namespace IronRuby.Builtins {
         private int _hashCode = Utils.ReservedHashCode;
 
         private const uint IsTaintedFlag = 1;
-        private const int FlagCount = 1;
+        private const uint IsAsciiFlag = 2;
+        private const int FlagCount = 2;
         private const uint FlagsMask = (1U << FlagCount) - 1;
         private const uint VersionMask = ~FlagsMask;
         private const uint FrozenVersion = VersionMask;
@@ -160,7 +163,7 @@ namespace IronRuby.Builtins {
         }
 
         public static MutableString/*!*/ CreateBinary() {
-            return new MutableString(RubyEncoding.Binary);
+            return new MutableString(new byte[Utils.MinBufferSize], 0, RubyEncoding.Binary);
         }
 
         public static MutableString/*!*/ CreateBinary(int capacity) {
@@ -273,13 +276,95 @@ namespace IronRuby.Builtins {
             _hashCode = Utils.ReservedHashCode;
         }
 
-        public override int GetHashCode() {
-            if (_hashCode != Utils.ReservedHashCode) {
-                return _hashCode;
+        /// <summary>
+        /// Prepares the string for mutation that combines its content with content of another mutable string.
+        /// </summary>
+        private void Mutate(MutableString/*!*/ other) {
+            if (_encoding == other.Encoding) {
+                Mutate();
+                return;
             }
 
-            // 1.8 strings don't know encodings => if 2 strings are binary equivalent they have the same hash:
-            return _hashCode = (_encoding.IsKCoding) ? _content.GetBinaryHashCode() : _content.GetHashCode();
+            if (_encoding.IsKCoding || other.Encoding.IsKCoding) {
+                Mutate();
+
+                SwitchToBinary();
+                other.SwitchToBinary();
+
+                if (IsBinaryEncoded) {
+                    // binary + kcoding -> change encoding to the other:
+                    _encoding = other.Encoding;
+                } else if (!_encoding.IsKCoding || !other.IsBinaryEncoded && !other.Encoding.IsKCoding) {
+                    // kcoding + non-binary encoding and vice versa:
+                    throw RubyExceptions.CreateEncodingCompatibilityError(_encoding, other.Encoding);
+                }
+
+                return;
+            }
+
+            // MRI implicitly changes encoding of a string that contains ascii bytes/characters only.
+            if (other.IsAscii()) {
+                if (IsBinaryEncoded && IsAscii()) {
+                    Mutate();
+
+                    // we can safely change encoding since the string contains ascii bytes/characters only:
+                    _encoding = other.Encoding;
+                } else {
+                    Mutate();
+                }
+                return;
+            }
+
+            if (IsAscii()) {
+                Mutate();
+
+                // we can safely change encoding since the string contains ascii bytes/characters only:
+                _encoding = other.Encoding;
+                return;
+            }
+
+            throw RubyExceptions.CreateEncodingCompatibilityError(_encoding, other.Encoding);
+        }
+
+        public override int GetHashCode() {
+            if (_hashCode == Utils.ReservedHashCode) {
+                UpdateHashCode();
+            }
+
+            return _hashCode;
+        }
+
+        public bool IsAscii() {
+            if (_hashCode == Utils.ReservedHashCode) {
+                UpdateHashCode();
+            }
+
+            return (_versionAndFlags & IsAsciiFlag) != 0;
+        }
+
+        private void UpdateHashCode() {
+            int hash;
+            int binarySum;
+
+            if (_encoding.IsKCoding) {
+                // 1.8 strings don't know encodings => if 2 strings are binary equivalent they have the same hash:
+                hash = _content.GetBinaryHashCode(out binarySum);
+            } else {
+                hash = _content.GetHashCode(out binarySum);
+
+                // xor with the encoding if there are any non-ASCII characters in the string:
+                if (binarySum >= 0x0080) {
+                    hash ^= _encoding.GetHashCode();
+                }
+            }
+
+            if (binarySum >= 0x0080) {
+                _versionAndFlags &= ~IsAsciiFlag;
+            } else {
+                _versionAndFlags |= IsAsciiFlag;
+            }
+
+            _hashCode = hash;
         }
 
         public bool IsBinary {
@@ -407,6 +492,16 @@ namespace IronRuby.Builtins {
             return _content.ConvertToBytes();
         }
 
+        public MutableString/*!*/ SwitchToBinary() {
+            _content.SwitchToBinaryContent();
+            return this;
+        }
+
+        public MutableString/*!*/ SwitchToString() {
+            _content.SwitchToStringContent();
+            return this;
+        }
+
         // used by auto-conversions
         [Obsolete("Do not use in code")]
         public static implicit operator string(MutableString/*!*/ self) {
@@ -467,11 +562,11 @@ namespace IronRuby.Builtins {
         // TODO: replace by CharCount, ByteCount
         //[Obsolete("Use GetCharCount(), GetByteCount()")]
         public int Length {
-            get { return _content.Length; }
+            get { return _content.Count; }
         }
         
         public int GetLength() {
-            return _content.Length;
+            return _content.Count;
         }
 
         public int GetCharCount() {
@@ -480,6 +575,25 @@ namespace IronRuby.Builtins {
 
         public int GetByteCount() {
             return _content.GetByteCount();
+        }
+
+        public MutableString/*!*/ TrimExcess() {
+            _content.TrimExcess();
+            return this;
+        }
+
+        public int Capacity { 
+            get {
+                return _content.GetCapacity();
+            } set {
+                _content.SetCapacity(value);
+            }
+        }
+
+        public void EnsureCapacity(int minCapacity) {
+            if (_content.GetCapacity() < minCapacity) {
+                _content.SetCapacity(minCapacity);
+            }
         }
 
         #endregion
@@ -511,7 +625,7 @@ namespace IronRuby.Builtins {
 
         // returns -1 if the string is empty
         public int GetLastChar() {
-            return (_content.IsEmpty) ? -1 : _content.GetChar(_content.Length - 1); 
+            return (_content.IsEmpty) ? -1 : _content.GetChar(_content.GetCharCount() - 1); 
         }
 
         // returns -1 if the string is empty
@@ -523,7 +637,7 @@ namespace IronRuby.Builtins {
         /// Returns a new mutable string containing a substring of the current one.
         /// </summary>
         public MutableString/*!*/ GetSlice(int start) {
-            return GetSlice(start, _content.Length - start);
+            return GetSlice(start, _content.Count - start);
         }
 
         public MutableString/*!*/ GetSlice(int start, int count) {
@@ -624,7 +738,7 @@ namespace IronRuby.Builtins {
         }
 
         public int IndexOf(MutableString/*!*/ value, int start) {
-            return IndexOf(value, start, _content.Length - start);
+            return IndexOf(value, start, _content.Count - start);
         }
 
         public int IndexOf(MutableString/*!*/ value, int start, int count) {
@@ -699,7 +813,7 @@ namespace IronRuby.Builtins {
         }
 
         public int LastIndexOf(MutableString/*!*/ value) {
-            int length = _content.Length;
+            int length = _content.Count;
             return LastIndexOf(value, length - 1, length);
         }
 
@@ -784,20 +898,45 @@ namespace IronRuby.Builtins {
             return this;
         }
 
-        public MutableString/*!*/ Append(MutableString/*!*/ value) {
+        /// <summary>
+        /// Reads "count" bytes from "source" stream and appends them to this string.
+        /// </summary>
+        public MutableString/*!*/ Append(Stream/*!*/ stream, int count) {
+            ContractUtils.RequiresNotNull(stream, "stream");
+            ContractUtils.Requires(count >= 0, "count");
+
+            Mutate();
+            _content.Append(stream, count);
+            return this;
+        }
+
+        public MutableString/*!*/ Append(MutableString value) {
             if (value != null) {
-                Mutate();
-                value._content.AppendTo(_content, 0, value._content.Length);
+                Mutate(value);
+                value._content.AppendTo(_content, 0, value._content.Count);
             }
             return this;
         }
 
-        public MutableString/*!*/ Append(MutableString/*!*/ str, int start, int count) {
-            ContractUtils.RequiresNotNull(str, "str");
+        public MutableString/*!*/ Append(MutableString/*!*/ value, int start, int count) {
+            ContractUtils.RequiresNotNull(value, "value");
             //RequiresArrayRange(start, count);
 
-            Mutate();
-            str._content.AppendTo(_content, start, count);
+            Mutate(value);
+            value._content.AppendTo(_content, start, count);
+            return this;
+        }
+
+        public MutableString/*!*/ AppendMultiple(MutableString/*!*/ value, int repeatCount) {
+            ContractUtils.RequiresNotNull(value, "value");
+            Mutate(value);
+
+            // TODO: we can do better here (double the amount of copied bytes/chars in each iteration)
+            var other = value._content;
+            EnsureCapacity(other.Count * repeatCount);
+            while (repeatCount-- > 0) {
+                other.AppendTo(_content, 0, other.Count);
+            }
             return this;
         }
 
@@ -885,8 +1024,8 @@ namespace IronRuby.Builtins {
         public MutableString/*!*/ Insert(int index, MutableString value) {
             //RequiresArrayInsertIndex(index);
             if (value != null) {
-                Mutate();
-                value._content.InsertTo(_content, index, 0, value._content.Length);
+                Mutate(value);
+                value._content.InsertTo(_content, index, 0, value._content.Count);
             }
             return this;
         }
@@ -896,7 +1035,7 @@ namespace IronRuby.Builtins {
             ContractUtils.RequiresNotNull(value, "value");
             //value.RequiresArrayRange(start, count);
 
-            Mutate();
+            Mutate(value);
             value._content.InsertTo(_content, index, start, count);
             return this;
         }
@@ -910,7 +1049,7 @@ namespace IronRuby.Builtins {
 
             // TODO:
             if (IsBinary) {
-                int length = _content.Length;
+                int length = _content.Count;
                 for (int i = 0; i < length / 2; i++) {
                     byte a = GetByte(i);
                     byte b = GetByte(length - i - 1);
@@ -918,7 +1057,7 @@ namespace IronRuby.Builtins {
                     SetByte(length - i - 1, a);
                 }
             } else {
-                int length = _content.Length;
+                int length = _content.Count;
                 for (int i = 0; i < length / 2; i++) {
                     char a = GetChar(i);
                     char b = GetChar(length - i - 1);
@@ -938,8 +1077,15 @@ namespace IronRuby.Builtins {
             //RequiresArrayRange(start, count);
 
             // TODO:
-            Mutate();
+            Mutate(value);
             return Remove(start, count).Insert(start, value);
+        }
+
+        public MutableString/*!*/ Remove(int start) {
+            //RequiresArrayRange(start, count);
+            Mutate();
+            _content.Remove(start, _content.Count - start);
+            return this;
         }
 
         public MutableString/*!*/ Remove(int start, int count) {
@@ -960,7 +1106,6 @@ namespace IronRuby.Builtins {
             _content = _content.GetSlice(0, 0);
             return this;
         }
-
 
         #endregion
 
@@ -1122,7 +1267,7 @@ namespace IronRuby.Builtins {
             } else if (currentChar < 0x0080) {
                 AppendBinaryCharRepresentation(result, currentChar, nextChar, false, false, quote);
             } else if (forceEscapes) {
-                if (Char.IsSurrogatePair((char)currentChar, (char)nextChar)) {
+                if (nextChar != -1 && Char.IsSurrogatePair((char)currentChar, (char)nextChar)) {
                     currentChar = Tokenizer.ToCodePoint(currentChar, nextChar);
                     inc = 2;
                 }
@@ -1233,6 +1378,14 @@ namespace IronRuby.Builtins {
             } else {
                 return "String (binary)";
             }
+        }
+
+        #endregion
+
+        #region Internal Helpers
+
+        internal byte[]/*!*/ GetByteArray() {
+            return _content.GetByteArray();
         }
 
         #endregion

@@ -1,5 +1,7 @@
 # encoding: UTF-8
 
+p eval('__ENCODING__')
+
 # MRI 1.9 handles incomplete characters
 # Allows concating bytes to complete the incomplete chars.
 

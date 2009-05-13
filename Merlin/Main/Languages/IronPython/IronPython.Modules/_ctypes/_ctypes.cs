@@ -99,7 +99,7 @@ namespace IronPython.Modules {
                 CData cdata = objHandle.Target as CData;
                 PythonType pt = (PythonType)typeHandle.Target;
 
-                CData res = (CData)pt.CreateInstance(pt.Context.DefaultBinderState.Context);
+                CData res = (CData)pt.CreateInstance(pt.Context.SharedContext);
                 if (cdata != null) {
                     res._memHolder = new MemoryHolder(data, cdata._memHolder);
                 } else {
@@ -452,7 +452,7 @@ namespace IronPython.Modules {
         }
 
         /// <summary>
-        /// Shared helper between struct & union for getting field info and validating it.
+        /// Shared helper between struct and union for getting field info and validating it.
         /// </summary>
         private static void GetFieldInfo(INativeType type, object o, out string fieldName, out INativeType cdata, out int? bitCount) {
             PythonTuple pt = o as PythonTuple;

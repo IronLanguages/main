@@ -20,6 +20,7 @@ using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 using IronRuby.Runtime;
 using System.Text;
+using System.Diagnostics;
 
 namespace IronRuby.Builtins {
     public enum IOMode {
@@ -53,6 +54,9 @@ namespace IronRuby.Builtins {
         public const int SEEK_SET = 0;
         public const int SEEK_CUR = 1;
         public const int SEEK_END = 2;
+
+        private const byte CR = (byte)'\r';
+        private const byte LF = (byte)'\n';
 
         #region Construction
 
@@ -392,15 +396,15 @@ namespace IronRuby.Builtins {
                 int i = index;
                 while (i < count) {
                     int j = i;
-                    while (j < buffer.Length && buffer[j] != (byte)'\n') {
+                    while (j < buffer.Length && buffer[j] != LF) {
                         j++;
                     }
                     _stream.Write(buffer, i, j - i);
                     bytesWritten += j - i;
 
                     if (j < buffer.Length) {
-                        _stream.WriteByte((byte)'\r');
-                        _stream.WriteByte((byte)'\n');
+                        _stream.WriteByte(CR);
+                        _stream.WriteByte(LF);
                         bytesWritten += 2;
                     }
 
@@ -435,19 +439,90 @@ namespace IronRuby.Builtins {
             return _stream.ReadByte();
         }
 
-        public int ReadBytes(byte[] buffer, int offset, int count) {
+        public int ReadBytes(byte[]/*!*/ buffer, int offset, int count) {
             return _stream.Read(buffer, offset, count);
+        }
+
+        public int AppendBytes(MutableString/*!*/ buffer, int count) {
+            ContractUtils.RequiresNotNull(buffer, "buffer");
+            ContractUtils.Requires(count >= 0, "count");
+
+            if (count == 0) {
+                return 0;
+            }
+
+            buffer.SwitchToBinary();
+            int initialBufferSize = buffer.GetByteCount();
+            if (_preserveEndOfLines) {
+                AppendRawBytes(buffer, count);
+            } else {
+                // allocate 3 more bytes at the end for a backstop and possible LF:
+                buffer.EnsureCapacity(initialBufferSize + count + 3);
+                byte[] bytes = buffer.GetByteArray();
+
+                int done = initialBufferSize;
+                bool eof;
+                do {
+                    AppendRawBytes(buffer, count);
+                    int end = buffer.GetByteCount();
+                    int bytesRead = end - done;
+                    if (bytesRead == 0) {
+                        break;
+                    }
+                    eof = bytesRead < count;
+
+                    if (bytes[end - 1] == CR && PeekByte() == LF) {
+                        ReadByte();
+                        bytes[end++] = LF;
+                    }
+
+                    // insert backstop:
+                    bytes[end] = CR;
+                    bytes[end + 1] = LF;
+
+                    int last = IndexOfCrLf(bytes, done);
+                    count -= last - done;
+                    done = last;
+                    while (last < end) {
+                        int next = IndexOfCrLf(bytes, last + 2);
+                        int chunk = next - last - 1;
+                        Buffer.BlockCopy(bytes, last + 1, bytes, done, chunk);
+                        done += chunk;
+                        count -= chunk;
+                        last = next;
+                    }
+                    buffer.Remove(done);
+                } while (count > 0 && !eof);
+            }
+
+            return buffer.GetByteCount() - initialBufferSize;
+        }
+
+        private void AppendRawBytes(MutableString/*!*/ buffer, int count) {
+            Debug.Assert(count > 0);
+
+            if (_peekAhead != -1) {
+                buffer.Append((byte)_peekAhead);
+                _peekAhead = -1;
+                count--;
+            }
+            buffer.Append(_stream, count);
+        }
+
+        private static int IndexOfCrLf(byte[]/*!*/ array, int i) {
+            while (true) {
+                if (array[i++] == CR && array[i] == LF) {
+                    return i - 1;
+                }
+            }
         }
 
         public int ReadByteNormalizeEoln() {
             // TODO: encoding
-            if (IsEndOfStream()) {
-                return -1;
-            }
             int first = ReadByte();
             if (first == '\r' && !_preserveEndOfLines) {
                 int second = PeekByte();
-                if (second != -1 && second == '\n') {
+                if (second == '\n') {
                     return ReadByte();
                 }
             }

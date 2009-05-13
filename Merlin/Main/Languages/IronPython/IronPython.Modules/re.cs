@@ -41,7 +41,7 @@ namespace IronPython.Modules {
         [SpecialName]
         public static void PerformModuleReload(PythonContext/*!*/ context, IAttributesCollection/*!*/ dict) {
             context.EnsureModuleException("reerror", dict, "error", "re");
-            PythonCopyReg.GetDispatchTable(context.DefaultBinderState.Context)[DynamicHelpers.GetPythonTypeFromType(typeof(RE_Pattern))] = dict[SymbolTable.StringToId("_pickle")];
+            PythonCopyReg.GetDispatchTable(context.SharedContext)[DynamicHelpers.GetPythonTypeFromType(typeof(RE_Pattern))] = dict[SymbolTable.StringToId("_pickle")];
         }
         
         private static readonly Random r = new Random(DateTime.Now.Millisecond);

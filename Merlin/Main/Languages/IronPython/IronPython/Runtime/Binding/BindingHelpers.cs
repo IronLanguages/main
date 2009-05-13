@@ -41,14 +41,14 @@ namespace IronPython.Runtime.Binding {
         /// 
         /// Succeeds if the MetaObject is a BuiltinFunction or BuiltinMethodDescriptor.
         /// </summary>
-        internal static bool TryGetStaticFunction(BinderState/*!*/ state, SymbolId op, DynamicMetaObject/*!*/ mo, out BuiltinFunction function) {
+        internal static bool TryGetStaticFunction(PythonContext/*!*/ state, SymbolId op, DynamicMetaObject/*!*/ mo, out BuiltinFunction function) {
             PythonType type = MetaPythonObject.GetPythonType(mo);
             function = null;
             if (op != SymbolId.Empty) {
                 PythonTypeSlot xSlot;
                 object val;
-                if (type.TryResolveSlot(state.Context, op, out xSlot) &&
-                    xSlot.TryGetValue(state.Context, null, type, out val)) {
+                if (type.TryResolveSlot(state.SharedContext, op, out xSlot) &&
+                    xSlot.TryGetValue(state.SharedContext, null, type, out val)) {
                     function = TryConvertToBuiltinFunction(val);
                     if (function == null) return false;
                 }
@@ -65,13 +65,13 @@ namespace IronPython.Runtime.Binding {
             return false;
         }
 
-        internal static DynamicMetaObject/*!*/ FilterShowCls(Expression/*!*/ codeContext, DynamicMetaObjectBinder/*!*/ action, DynamicMetaObject/*!*/ res, Expression/*!*/ failure) {
+        internal static DynamicMetaObject/*!*/ FilterShowCls(DynamicMetaObject/*!*/ codeContext, DynamicMetaObjectBinder/*!*/ action, DynamicMetaObject/*!*/ res, Expression/*!*/ failure) {
             if (action is IPythonSite) {
                 return new DynamicMetaObject(
                     Ast.Condition(
                         Ast.Call(
                             typeof(PythonOps).GetMethod("IsClsVisible"),
-                            codeContext
+                            codeContext.Expression
                         ),
                         AstUtils.Convert(res.Expression, typeof(object)),
                         AstUtils.Convert(failure, typeof(object))
@@ -118,7 +118,7 @@ namespace IronPython.Runtime.Binding {
             return CallInfoToSignature(ca.CallInfo);
         }
 
-        public static Expression/*!*/ Invoke(Expression codeContext, BinderState/*!*/ binder, Type/*!*/ resultType, CallSignature signature, params Expression/*!*/[]/*!*/ args) {
+        public static Expression/*!*/ Invoke(Expression codeContext, PythonContext/*!*/ binder, Type/*!*/ resultType, CallSignature signature, params Expression/*!*/[]/*!*/ args) {
             return Ast.Dynamic(
                 binder.Invoke(
                     signature
@@ -143,8 +143,8 @@ namespace IronPython.Runtime.Binding {
                 action.FallbackInvoke(
                     new DynamicMetaObject(
                         Binders.Get(
-                            BinderState.GetCodeContext(action),
-                            BinderState.GetBinderState(action),
+                            PythonContext.GetCodeContext(action),
+                            PythonContext.GetPythonContext(action),
                             typeof(object),
                             action.Name,
                             target.Expression

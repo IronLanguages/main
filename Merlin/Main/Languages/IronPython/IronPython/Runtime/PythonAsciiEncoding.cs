@@ -15,7 +15,9 @@
 
 using System;
 using System.Collections.Generic;
+using System.Runtime.Serialization;
 using System.Text;
+
 using IronPython.Runtime.Operations;
 
 namespace IronPython.Runtime {
@@ -27,6 +29,7 @@ namespace IronPython.Runtime {
     [Serializable]
     sealed class PythonAsciiEncoding : Encoding {
         internal static readonly Encoding Instance = MakeNonThrowing();
+        internal static readonly Encoding SourceEncoding = MakeSourceEncoding();
 
         internal PythonAsciiEncoding()
             : base() {
@@ -38,6 +41,15 @@ namespace IronPython.Runtime {
 #if !SILVERLIGHT
             enc.DecoderFallback = new NonStrictDecoderFallback();
             enc.EncoderFallback = new NonStrictEncoderFallback();
+#endif
+            return enc;
+        }
+
+        private static Encoding MakeSourceEncoding() {
+            // we need to Clone the new instance here so that the base class marks us as non-readonly
+            Encoding enc = (Encoding)new PythonAsciiEncoding().Clone();
+#if !SILVERLIGHT
+            enc.DecoderFallback = new SourceNonStrictDecoderFallback();
 #endif
             return enc;
         }
@@ -99,7 +111,7 @@ namespace IronPython.Runtime {
 #if !SILVERLIGHT
                 if (b > 0x7f) {
                     DecoderFallbackBuffer dfb = DecoderFallback.CreateFallbackBuffer();
-                    if (dfb.Fallback(new byte[] { b }, index)) {
+                    if (dfb.Fallback(new[] { b }, 0)) {
                         outputChars += dfb.Remaining;
                     }
                 } else {
@@ -121,7 +133,7 @@ namespace IronPython.Runtime {
 #if !SILVERLIGHT
                 if (b > 0x7f) {
                     DecoderFallbackBuffer dfb = DecoderFallback.CreateFallbackBuffer();
-                    if (dfb.Fallback(new byte[] { b }, byteIndex)) {
+                    if (dfb.Fallback(new[] { b }, 0)) {
                         while (dfb.Remaining != 0) {
                             chars[charIndex++] = dfb.GetNextChar();
                             outputChars++;
@@ -247,5 +259,53 @@ namespace IronPython.Runtime {
             get { return _bytes.Count - _index; }
         }
     }
+    
+    class SourceNonStrictDecoderFallback : DecoderFallback {
+        public override DecoderFallbackBuffer CreateFallbackBuffer() {
+            return new SourceNonStrictDecoderFallbackBuffer();
+        }
+
+        public override int MaxCharCount {
+            get { return 1; }
+        }
+    }
+
+    // no ctors on DecoderFallbackBuffer in Silverlight
+    class SourceNonStrictDecoderFallbackBuffer : DecoderFallbackBuffer {
+        public override bool Fallback(byte[] bytesUnknown, int index) {
+            throw new BadSourceException(bytesUnknown[index]);
+        }
+
+        public override char GetNextChar() {
+            throw new NotImplementedException();
+        }
+
+        public override bool MovePrevious() {
+            throw new NotImplementedException();
+        }
+
+        public override int Remaining {
+            get { throw new NotImplementedException(); }
+        }
+    }
 #endif
+
+    internal class BadSourceException : Exception {
+        internal byte _badByte;
+        public BadSourceException(byte b) {
+            _badByte = b;
+        }
+
+        public BadSourceException() : base() { }
+        public BadSourceException(string msg)
+            : base(msg) {
+        }
+        public BadSourceException(string message, Exception innerException)
+            : base(message, innerException) {
+        }
+#if !SILVERLIGHT // SerializationInfo
+        private BadSourceException(SerializationInfo info, StreamingContext context) : base(info, context) { }
+#endif
+
+    }
 }

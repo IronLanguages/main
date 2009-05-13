@@ -25,6 +25,7 @@ using Microsoft.Scripting.Utils;
 using IronRuby.Builtins;
 using System.Text;
 using IronRuby.Runtime;
+using System.Security;
 
 namespace IronRuby.Hosting {
     public sealed class RubyOptionsParser : OptionsParser<ConsoleOptions> {
@@ -222,6 +223,17 @@ namespace IronRuby.Hosting {
             if (existingSearchPaths != null) {
                 _loadPaths.InsertRange(0, existingSearchPaths);
             }
+
+#if !SILVERLIGHT
+            try {
+                string rubylib = Environment.GetEnvironmentVariable("RUBYLIB");
+                if (rubylib != null) {
+                    _loadPaths.AddRange(rubylib.Split(Path.PathSeparator));
+                }
+            } catch (SecurityException) {
+                // nop
+            }
+#endif
 
             LanguageSetup.Options["SearchPaths"] = _loadPaths;
         }

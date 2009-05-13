@@ -138,7 +138,6 @@ namespace IronPython.Compiler.Ast {
                 Ast.Call(
                     AstGenerator.GetHelperMethod("ModuleStarted"),
                     ag.LocalContext,
-                    AstUtils.Constant(ag.BinderState, typeof(object)),
                     AstUtils.Constant(_languageFeatures)
                 ),
                 ag.UpdateLineNumber(0),

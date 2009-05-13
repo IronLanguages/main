@@ -76,6 +76,27 @@ namespace IronPython.Runtime.Types {
             return ObjectOps.__getattribute__(context, self, name);
         }
 
+        internal static object GetAttributeNoThrow(CodeContext/*!*/ context, Scope/*!*/ self, string name) {
+            switch (name) {
+                // never look in the dict for these...
+                case "__dict__": return Get__dict__(self);
+                case "__class__": return DynamicHelpers.GetPythonType(self);
+            }
+
+            SymbolId si = SymbolTable.StringToId(name);
+            object res;
+            if (self.TryGetName(si, out res)) {
+                return res;
+            }
+
+            // fall back to object to provide all of our other attributes (e.g. __setattr__, etc...)
+            try {
+                return ObjectOps.__getattribute__(context, self, name);
+            } catch (MissingMemberException) {
+                return OperationFailed.Value;
+            }
+        }
+
         public static void __setattr__(Scope/*!*/ self, string name, object value) {
             self.SetName(SymbolTable.StringToId(name), value);
         }

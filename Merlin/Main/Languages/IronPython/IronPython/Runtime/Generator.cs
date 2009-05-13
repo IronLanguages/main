@@ -173,6 +173,21 @@ namespace IronPython.Runtime {
             }
         }
 
+        public TraceBackFrame gi_frame {
+            get {
+                return new TraceBackFrame(_function.Context.GlobalScope, new PythonDictionary(), gi_code);
+            }
+        }
+
+        /// <summary>
+        /// Gets the name of the function that produced this generator object.
+        /// </summary>
+        public string __name__ {
+            get {
+                return _function.__name__;
+            }
+        }
+
         #endregion
 
         #region IEnumerable Members

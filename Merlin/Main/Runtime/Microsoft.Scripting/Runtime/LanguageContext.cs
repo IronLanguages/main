@@ -110,9 +110,10 @@ namespace Microsoft.Scripting.Runtime {
         /// </summary>
         /// <param name="stream">The stream open for reading. The stream must also allow seeking.</param>
         /// <param name="defaultEncoding">An encoding that should be used if the stream doesn't have Unicode or language specific preamble.</param>
+        /// <param name="path">the path of the source unit if available</param>
         /// <returns>The reader.</returns>
         /// <exception cref="IOException">An I/O error occurs.</exception>
-        public virtual SourceCodeReader GetSourceReader(Stream stream, Encoding defaultEncoding) {
+        public virtual SourceCodeReader GetSourceReader(Stream stream, Encoding defaultEncoding, string path) {
             ContractUtils.RequiresNotNull(stream, "stream");
             ContractUtils.RequiresNotNull(defaultEncoding, "defaultEncoding");
             ContractUtils.Requires(stream.CanRead && stream.CanSeek, "stream", "The stream must support reading and seeking");
@@ -318,7 +319,7 @@ namespace Microsoft.Scripting.Runtime {
             ContractUtils.RequiresNotNull(path, "path");
             ContractUtils.RequiresNotNull(encoding, "encoding");
 
-            TextContentProvider provider = new LanguageBoundTextContentProvider(this, new FileStreamContentProvider(DomainManager.Platform, path), encoding);
+            TextContentProvider provider = new LanguageBoundTextContentProvider(this, new FileStreamContentProvider(DomainManager.Platform, path), encoding, path);
             return CreateSourceUnit(provider, path, kind);
         }
 
@@ -337,7 +338,7 @@ namespace Microsoft.Scripting.Runtime {
             ContractUtils.Requires(kind.IsValid(), "kind");
             ContractUtils.Requires(CanCreateSourceCode);
 
-            return new SourceUnit(this, new LanguageBoundTextContentProvider(this, contentProvider, encoding), path, kind);
+            return new SourceUnit(this, new LanguageBoundTextContentProvider(this, contentProvider, encoding, path), path, kind);
         }
 
         public SourceUnit CreateSourceUnit(TextContentProvider contentProvider, string path, SourceCodeKind kind) {

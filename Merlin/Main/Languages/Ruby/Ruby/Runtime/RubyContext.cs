@@ -493,12 +493,6 @@ namespace IronRuby.Runtime {
 
             SetGlobalConstant("ARGV", _inputProvider.CommandLineArguments);
 
-            // File object
-            //_objectClass.SetConstant("DATA", null);
-
-            // Binding 
-            // TOPLEVEL_BINDING
-
             // Hash
             // SCRIPT_LINES__
         }
@@ -2071,13 +2065,13 @@ namespace IronRuby.Runtime {
             return _loader.GetLoadPathStrings();
         }
 
-        public override SourceCodeReader/*!*/ GetSourceReader(Stream/*!*/ stream, Encoding/*!*/ defaultEncoding) {
+        public override SourceCodeReader/*!*/ GetSourceReader(Stream/*!*/ stream, Encoding/*!*/ defaultEncoding, string path) {
             ContractUtils.RequiresNotNull(stream, "stream");
             ContractUtils.RequiresNotNull(defaultEncoding, "defaultEncoding");
             ContractUtils.Requires(stream.CanRead && stream.CanSeek, "stream", "The stream must support seeking and reading");
 
 #if SILVERLIGHT
-            return base.GetSourceReader(stream, defaultEncoding);
+            return base.GetSourceReader(stream, defaultEncoding, path);
 #else
             return GetSourceReader(stream, defaultEncoding, _options.Compatibility);
         }
