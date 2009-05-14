@@ -185,7 +185,8 @@ namespace IronRuby.Runtime {
         }
 
         public static Exception/*!*/ CreateEncodingCompatibilityError(RubyEncoding/*!*/ encoding1, RubyEncoding/*!*/ encoding2) {
-            return new EncodingCompatibilityError(String.Format("incompatible character encodings: {0} and {1}", encoding1.Name, encoding2.Name));
+            return new EncodingCompatibilityError(String.Format("incompatible character encodings: {0}{1} and {2}{3}",
+                encoding1.Name, encoding1.IsKCoding ? " (KCODE)" : null, encoding2.Name, encoding2.IsKCoding ? " (KCODE)" : null));
         }
     }
 }
