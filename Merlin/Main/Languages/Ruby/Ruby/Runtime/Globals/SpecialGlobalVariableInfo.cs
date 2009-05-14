@@ -18,6 +18,7 @@ using Microsoft.Scripting;
 using Microsoft.Scripting.Utils;
 using IronRuby.Builtins;
 using System.Text;
+using System.Diagnostics;
 
 namespace IronRuby.Runtime {
     internal sealed class SpecialGlobalVariableInfo : GlobalVariable {
@@ -117,7 +118,9 @@ namespace IronRuby.Runtime {
                 case GlobalVariableId.KCode:
 #if !SILVERLIGHT
                     if (context.RubyOptions.Compatibility == RubyCompatibility.Ruby18) {
-                        return MutableString.Create(KCoding.GetKCodeName(context.KCode));
+                        var kcode = KCoding.GetKCodeName(context.KCode);
+                        Utils.Log("KCODE set to " + kcode, "KCODE");
+                        return MutableString.Create(kcode);
                     }
 #endif
                     context.ReportWarning("variable $KCODE is no longer effective");
