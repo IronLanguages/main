@@ -50,19 +50,6 @@ namespace IronRuby.Rack {
             context.Response.Write("</html>\r\n");
         }
 
-        internal static Hash CreateEnv(HttpContext/*!*/ context) {
-            var result = new Hash((RubyContext)HostingHelpers.GetLanguageContext(RubyEngine.Engine));
-
-            var vars = context.Request.ServerVariables;
-
-            foreach (string name in vars.AllKeys) {
-                result.Add(MutableString.Create(name), MutableString.Create(String.Join(",", vars.GetValues(name))));
-            }
-
-            result[MutableString.Create("CONTENT_LENGTH")] = context.Request.ContentLength;
-            return result;
-        }
-
         internal static void InitializeLog() {
             var logPath = ConfigurationManager.AppSettings[LogOptionName];
             if (logPath != null) {

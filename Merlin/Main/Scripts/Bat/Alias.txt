@@ -11,7 +11,7 @@ mspc    =cd /d %MERLIN_ROOT%\..\External.LCA_RESTRICTED\Languages\IronRuby\mspec
 msl     =cd /d "%PROGRAM_FILES_32%\Microsoft Silverlight"
 ch      =cd /d "%MERLIN_ROOT%\Hosts\Silverlight\Chiron\"
 mss     =cd /d "%MERLIN_ROOT%\Hosts\Silverlight\"
-irk     =cd /d "%MERLIN_ROOT%\Hosts\IronRack\"
+irk     =cd /d "%MERLIN_ROOT%\Hosts\IronRuby.Rack\"
 
 ;==============================================================================
 ;= Build commands
