@@ -21,38 +21,9 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Ruby.Console", "..\..\Langu
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "IronRuby", "IronRuby", "{24B90A22-6901-4D11-AD40-6803AAB6163F}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IronRuby.Rack.Sample", "IronRuby.Rack.Sample\IronRuby.Rack.Sample.csproj", "{78345AFF-EDEB-4951-B5DC-4AD97FF0C649}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IronRuby.Rack.Example", "IronRuby.Rack.Example\IronRuby.Rack.Example.csproj", "{78345AFF-EDEB-4951-B5DC-4AD97FF0C649}"
 EndProject
 Global
-	GlobalSection(TeamFoundationVersionControl) = preSolution
-		SccNumberOfProjects = 9
-		SccEnterpriseProvider = {4CA58AB2-18FA-4F8D-95D4-32DDF27D184C}
-		SccTeamFoundationServer = http://tkbgitvstfat01:8080/
-		SccLocalPath0 = .
-		SccProjectUniqueName1 = ..\\..\\Languages\\Ruby\\Ruby\\Ruby.csproj
-		SccProjectName1 = ../../Languages/Ruby/Ruby
-		SccLocalPath1 = ..\\..\\Languages\\Ruby\\Ruby
-		SccProjectUniqueName2 = ..\\..\\Languages\\Ruby\\Libraries.LCA_RESTRICTED\\IronRuby.Libraries.csproj
-		SccProjectName2 = ../../Languages/Ruby/Libraries.LCA_RESTRICTED
-		SccLocalPath2 = ..\\..\\Languages\\Ruby\\Libraries.LCA_RESTRICTED
-		SccProjectUniqueName3 = ..\\..\\..\\External.LCA_RESTRICTED\\Languages\\IronRuby\\yaml\\IronRuby.Libraries.Yaml\\IronRuby.Libraries.Yaml.csproj
-		SccProjectName3 = ../../../../../../../Merlin_External/Languages/IronRuby/yaml/IronRuby.Libraries.Yaml
-		SccLocalPath3 = ..\\..\\..\\External.LCA_RESTRICTED\\Languages\\IronRuby\\yaml\\IronRuby.Libraries.Yaml
-		SccProjectUniqueName4 = ..\\..\\Runtime\\Microsoft.Scripting\\Microsoft.Scripting.csproj
-		SccProjectName4 = ../../Runtime/Microsoft.Scripting
-		SccLocalPath4 = ..\\..\\Runtime\\Microsoft.Scripting
-		SccProjectUniqueName5 = ..\\..\\..\\..\\ndp\\fx\\src\\Core\\Microsoft\\Scripting\\Microsoft.Scripting.Core.csproj
-		SccProjectName5 = ../../../../ndp/fx/src/Core/Microsoft/Scripting
-		SccLocalPath5 = ..\\..\\..\\..\\ndp\\fx\\src\\Core\\Microsoft\\Scripting
-		SccProjectUniqueName6 = IronRuby.Rails.csproj
-		SccLocalPath6 = .
-		SccProjectUniqueName7 = ..\\..\\..\\..\\ndp\\fx\\src\\Core\\Microsoft\\Scripting\\Microsoft.Scripting.ExtensionAttribute.csproj
-		SccProjectName7 = ../../../../ndp/fx/src/Core/Microsoft/Scripting
-		SccLocalPath7 = ..\\..\\..\\..\\ndp\\fx\\src\\Core\\Microsoft\\Scripting
-		SccProjectUniqueName8 = SampleApp\\Pictures.csproj
-		SccProjectName8 = SampleApp
-		SccLocalPath8 = SampleApp
-	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
 		FxCop|Any CPU = FxCop|Any CPU

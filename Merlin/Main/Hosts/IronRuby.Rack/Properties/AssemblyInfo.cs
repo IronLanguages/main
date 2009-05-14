@@ -20,7 +20,7 @@ using IronRuby.Hosting;
 using IronRuby.Runtime;
 using System.Security;
 
-[assembly: AssemblyTitle("IronRails")]
+[assembly: AssemblyTitle("IronRuby.Rack")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("Microsoft")]
