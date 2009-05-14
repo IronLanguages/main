@@ -6,9 +6,6 @@
 # this file is here to facilitate running it.
 #
 
-$start_time = Time.now
-puts "Perf: server starting #{$start_time}"
-
 require 'rubygems'
 
 version = ">= 0"
