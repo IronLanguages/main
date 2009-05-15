@@ -81,11 +81,7 @@ namespace IronRuby.Runtime.Calls {
             bool hasOptional = false;
             foreach (MethodBase method in MethodBases) {
                 int mandatory, optional;
-                bool acceptsBlock;
-                RubyOverloadResolver.GetParameterCount(method.GetParameters(), out mandatory, out optional, out acceptsBlock);
-                if (mandatory > 0) {
-                    mandatory--; // account for "self"
-                }
+                RubyOverloadResolver.GetParameterCount(method, method.GetParameters(), CallConvention, out mandatory, out optional);
                 if (mandatory < minParameters) {
                     minParameters = mandatory;
                 }
@@ -143,13 +139,10 @@ namespace IronRuby.Runtime.Calls {
             return Copy(boundMethods.ToArray());
         }
 
-        private static bool IsOverloadSignature(MethodBase/*!*/ method, Type/*!*/[]/*!*/ parameterTypes) {
+        private bool IsOverloadSignature(MethodBase/*!*/ method, Type/*!*/[]/*!*/ parameterTypes) {
             var infos = method.GetParameters();
-            int firstInfo = 0;
-            while (firstInfo < infos.Length && RubyOverloadResolver.IsHiddenParameter(infos[firstInfo])) {
-                firstInfo++;
-            }
-
+            int firstInfo = RubyOverloadResolver.GetHiddenParameterCount(method, infos, CallConvention);
+            
             if (infos.Length - firstInfo != parameterTypes.Length) {
                 return false;
             }

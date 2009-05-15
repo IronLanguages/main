@@ -376,8 +376,7 @@ namespace IronPython.Hosting {
             }
 
 
-            SourceUnit su = Language.CreateSnippet(s, "<stdin>", 
-                (s.Contains(Environment.NewLine))? SourceCodeKind.Statements : SourceCodeKind.InteractiveCode);
+            SourceUnit su = Language.CreateSnippet(s, "<stdin>", SourceCodeKind.InteractiveCode);
             PythonCompilerOptions pco = (PythonCompilerOptions)Language.GetCompilerOptions(Scope);
             pco.Module |= ModuleOptions.ExecOrEvalCode;
 

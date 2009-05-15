@@ -1689,7 +1689,7 @@ namespace IronPython.Runtime.Operations {
                 if (scope != null) {
                     context.Scope.SetName(fieldId, scope.Dict[fieldId]);
                 } else if (nt != null) {
-                    object value = ReflectedPackageOps.GetCustomMember(context, nt, name);
+                    object value = NamespaceTrackerOps.GetCustomMember(context, nt, name);
                     if (value != OperationFailed.Value) {
                         context.Scope.SetName(fieldId, value);
                     }
@@ -3166,16 +3166,7 @@ namespace IronPython.Runtime.Operations {
 
         public static void Warn(CodeContext/*!*/ context, PythonType category, string message, params object[] args) {
             PythonContext pc = PythonContext.GetContext(context);
-            object warnings = null, warn = null;
-
-            try {
-                if (!pc._importWarningThrows) {
-                    warnings = Importer.ImportModule(context, new PythonDictionary(), "warnings", false, -1);
-                }
-            } catch {
-                // don't repeatedly import after it fails
-                pc._importWarningThrows = true;
-            }
+            object warnings = pc.GetWarningsModule(), warn = null;
 
             if (warnings != null) {
                 warn = PythonOps.GetBoundAttr(context, warnings, SymbolTable.StringToId("warn"));

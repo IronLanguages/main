@@ -109,6 +109,7 @@ namespace IronPython.Modules {
             Scope res = PythonContext.GetContext(context).CreateModule().Scope;
             res.SetName(Symbols.Name, name);
             res.SetName(Symbols.Doc, null);
+            res.SetName(Symbols.Package, null);
             return res;
         }
 

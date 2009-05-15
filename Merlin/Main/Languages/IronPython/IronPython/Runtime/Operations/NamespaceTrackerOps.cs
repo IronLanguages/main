@@ -16,24 +16,30 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
-using IronPython.Runtime.Types;
+using System.Text;
+
 using Microsoft.Scripting;
 using Microsoft.Scripting.Actions;
 using Microsoft.Scripting.Runtime;
 
+using IronPython.Runtime.Types;
+
 namespace IronPython.Runtime.Operations {
-    public static class ReflectedPackageOps {
+    public static class NamespaceTrackerOps {
         [SpecialName, PropertyMethod]
         public static object Get__file__(NamespaceTracker self) {
             if (self.PackageAssemblies.Count == 1) {
                 return self.PackageAssemblies[0].FullName;
             }
 
-            List res = new List();
+            StringBuilder res = new StringBuilder();
             for (int i = 0; i < self.PackageAssemblies.Count; i++) {
-                res.append(self.PackageAssemblies[i].FullName);
+                if (i != 0) {
+                    res.Append(", ");
+                }
+                res.Append(self.PackageAssemblies[i].FullName);
             }
-            return res;                        
+            return res.ToString();
         }
 
         public static string __repr__(NamespaceTracker self) {

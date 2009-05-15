@@ -139,7 +139,7 @@ class formatter:
 
 # helper functions for sys.path
 _saved_syspath = []
-def perserve_syspath(): 
+def preserve_syspath(): 
     _saved_syspath[:] = list(set(sys.path))
     
 def restore_syspath():  

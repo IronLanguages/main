@@ -49,14 +49,8 @@ using System;
 // by using the '*' as shown below:
 
 #if !SILVERLIGHT
-[assembly: AssemblyFileVersion("2.0.0.00")]
-[assembly: AssemblyInformationalVersion("2.0")]
+[assembly: AssemblyFileVersion("2.6.0.00")]
+[assembly: AssemblyInformationalVersion("2.6")]
 #endif
 [assembly: SecurityTransparent]
 [assembly: CLSCompliant(false)]
-
-// hack in order to pass AssemblyInfoTask 
-// AssemblyVersion attribute has been decorated in AssemblyVersion.cs
-#if FALSE
-[assembly: AssemblyVersion("2.0.0.00")]
-#endif

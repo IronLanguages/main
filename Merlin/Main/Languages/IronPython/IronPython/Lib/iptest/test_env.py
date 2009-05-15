@@ -22,6 +22,7 @@ from iptest.util import get_env_var, get_temp_dir
 is_silverlight = sys.platform == 'silverlight'
 is_cli =         sys.platform == 'cli'
 is_ironpython =  is_silverlight or is_cli
+is_cpython    =  sys.platform == 'win32'
 
 if is_ironpython:
     #We'll use System, if available, to figure out more info on the test

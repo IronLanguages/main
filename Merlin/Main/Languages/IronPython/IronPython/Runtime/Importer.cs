@@ -118,7 +118,7 @@ namespace IronPython.Runtime {
                         return res;
                     }
                 } else if ((nt = from as NamespaceTracker) != null) {
-                    object res = ReflectedPackageOps.GetCustomMember(context, nt, name);
+                    object res = NamespaceTrackerOps.GetCustomMember(context, nt, name);
                     if (res != OperationFailed.Value) {
                         return res;
                     }
@@ -166,18 +166,44 @@ namespace IronPython.Runtime {
         /// </summary>        
         public static object ImportModule(CodeContext/*!*/ context, object globals, string/*!*/ modName, bool bottom, int level) {
             if (modName.IndexOf(Path.DirectorySeparatorChar) != -1) {
-                return null;
+                throw PythonOps.ImportError("Import by filename is not supported.", modName);
+            }
+
+            string package = null;
+            object attribute;
+            if (TryGetGlobalValue(globals, Symbols.Package, out attribute)) {
+                package = attribute as string;
+                if (package == null && attribute != null) {
+                    throw PythonOps.ValueError("__package__ set to non-string");
+                }
+            } else {
+                package = null;
+                if (level > 0) {
+                    // explicit relative import, calculate and store __package__
+                    object pathAttr, nameAttr;
+                    if (TryGetGlobalValue(globals, Symbols.Name, out nameAttr) && nameAttr is string) {
+                        if (TryGetGlobalValue(globals, Symbols.Path, out pathAttr)) {
+                            ((IAttributesCollection)globals)[Symbols.Package] = nameAttr;
+                        } else {
+                            ((IAttributesCollection)globals)[Symbols.Package] = ((string)nameAttr).rpartition(".")[0];
+                        }
+                    }
+                }
             }
 
             object newmod = null;
             string[] parts = modName.Split('.');
+            string finalName = null;
 
             if (level != 0) {
+                // try a relative import
+            
                 // if importing a.b.c, import "a" first and then import b.c from a
                 string name;    // name of the module we are to import in relation to the current module
-                List path;      // path to search
                 Scope parentScope;
-                if (TryGetNameAndPath(context, globals, parts[0], level, out name, out path, out parentScope)) {
+                List path;      // path to search
+                if (TryGetNameAndPath(context, globals, parts[0], level, package, out name, out path, out parentScope)) {
+                    finalName = name;
                     // import relative
                     if (!TryGetExistingOrMetaPathModule(context, name, path, out newmod)) {
                         newmod = ImportTopRelative(context, parts[0], name, path);
@@ -197,26 +223,51 @@ namespace IronPython.Runtime {
             }
             
             if (level <= 0) {
+                // try an absolute import
                 if (newmod == null) {
+                    object parentPkg;
+                    if (package != null && !PythonContext.GetContext(context).SystemStateModules.TryGetValue(package, out parentPkg)) {
+                        Scope warnScope = new Scope();
+                        warnScope.SetName(Symbols.File, package);
+                        warnScope.SetName(Symbols.Name, package);
+                        PythonOps.Warn(
+                            new CodeContext(warnScope, context.LanguageContext), 
+                            PythonExceptions.RuntimeWarning, 
+                            "Parent module '{0}' not found while handling absolute import", 
+                            package);
+                    }
+
                     newmod = ImportTopAbsolute(context, parts[0]);
-                    
+                    finalName = parts[0];
                     if (newmod == null) {
                         return null;
                     }
                 }
             }
             
-            // now import the b.c etc.
+            // now import the a.b.c etc.  a needs to be included here
+            // because the process of importing could have modified
+            // sys.modules.
             object next = newmod;
-            string curName = parts[0];
-            for (int i = 1; i < parts.Length; i++) {
-                curName = curName + "." + parts[i];
+            string curName = null;
+            for (int i = 0; i < parts.Length; i++) {
+                curName = i == 0 ? finalName : curName + "." + parts[i];
                 object tmpNext;
                 if (TryGetExistingModule(context, curName, out tmpNext)) {
                     next = tmpNext;
-                    continue;
+                    if (i == 0) {
+                        // need to update newmod if we pulled it out of sys.modules
+                        // just in case we're in bottom mode.
+                        newmod = next;
+                    }
+                } else if(i != 0) {
+                    // child module isn't loaded yet, import it.
+                    next = ImportModuleFrom(context, next, parts[i]);
+                } else {
+                    // top-level module doesn't exist in sys.modules, probably
+                    // came from some weird meta path hook.
+                    newmod = next;
                 }
-                next = ImportModuleFrom(context, next, parts[i]);
             }
 
             return bottom ? next : newmod;
@@ -246,8 +297,9 @@ namespace IronPython.Runtime {
         /// <param name="path">Path to use to search for "full"</param>
         /// <param name="level">the import level for relaive imports</param>
         /// <param name="parentScope">the parent scope</param>
+        /// <param name="package">the global __package__ value</param>
         /// <returns></returns>
-         private static bool TryGetNameAndPath(CodeContext/*!*/ context, object globals, string name, int level, out string full, out List path, out Scope parentScope) {
+         private static bool TryGetNameAndPath(CodeContext/*!*/ context, object globals, string name, int level, string package, out string full, out List path, out Scope parentScope) {
            Debug.Assert(level != 0);   // shouldn't be here for absolute imports
 
             // Unless we can find enough information to perform relative import,
@@ -259,6 +311,7 @@ namespace IronPython.Runtime {
             // We need to get __name__ to find the name of the imported module.
             // If absent, fall back to absolute import
             object attribute;
+
             if (!TryGetGlobalValue(globals, Symbols.Name, out attribute)) {
                 return false;
             }
@@ -268,10 +321,10 @@ namespace IronPython.Runtime {
             if (modName == null) {
                 return false;
             }
-
+           
             // If the module has __path__ (and __path__ is list), nested module is being imported
             // otherwise, importing sibling to the importing module
-            if (TryGetGlobalValue(globals, Symbols.Path, out attribute) && (path = attribute as List) != null) {
+            if (package == null && TryGetGlobalValue(globals, Symbols.Path, out attribute) && (path = attribute as List) != null) {
                 // found __path__, importing nested module. The actual name of the nested module
                 // is the name of the mod plus the name of the imported module
                 if (level == -1) {
@@ -284,26 +337,28 @@ namespace IronPython.Runtime {
                     // relative import of some ancestors child
                     full = (StringOps.rsplit(modName, ".", level - 1)[0] as string) + "." + name;
                 }
-                return true;                
+                return true;
             }
-
+             
             // importing sibling. The name of the imported module replaces
             // the last element in the importing module name
             string[] names = modName.Split('.');
             if (names.Length == 1) {
                 // name doesn't include dot, only absolute import possible
+                if (level > 0) {
+                    throw PythonOps.ValueError("Attempted relative import in non-package");
+                }
+
                 return false;
             }
 
-            StringBuilder parentName = new StringBuilder(names[0]);
-
-            if (level == -1) level = 1;
-            for (int i = 1; i < names.Length - level; i++) {
-                parentName.Append('.');
-                parentName.Append(names[i]);
+            string pn;
+            if (package == null) {
+                pn = GetParentPackageName(level, names);
+            } else {
+                // __package__ doesn't include module name, so level is - 1.
+                pn = GetParentPackageName(level - 1, package.Split('.'));
             }
-            
-            string pn = parentName.ToString();
 
             path = GetParentPathAndScope(context, pn, out parentScope);
             if (path != null) {
@@ -315,9 +370,23 @@ namespace IronPython.Runtime {
                 return true;
             }
 
+            if (level > 0) {
+                throw PythonOps.SystemError("Parent module '{0}' not loaded, cannot perform relative import", pn);
+            }
             // not enough information - absolute import
             return false;
         }
+
+         private static string GetParentPackageName(int level, string[] names) {
+             StringBuilder parentName = new StringBuilder(names[0]);
+
+             if (level < 0) level = 1;
+             for (int i = 1; i < names.Length - level; i++) {
+                 parentName.Append('.');
+                 parentName.Append(names[i]);
+             }
+             return parentName.ToString();
+         }
 
         private static bool TryGetGlobalValue(object globals, SymbolId symbol, out object attribute) {
             IAttributesCollection attrGlobals = globals as IAttributesCollection;
@@ -608,6 +677,9 @@ namespace IronPython.Runtime {
             }
 
             ret = MemberTrackerToPython(context, ret);
+            if (ret != null) {
+                PythonContext.GetContext(context).SystemStateModules[name] = ret;
+            }
             return ret;
         }
 
