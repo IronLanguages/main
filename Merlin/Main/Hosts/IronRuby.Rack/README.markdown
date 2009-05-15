@@ -2,7 +2,7 @@ ironruby-rack
 =============
 Run Rack-based web applications on IIS with IronRuby
 
-Overview: "Deploying on IIS":http://blog.jimmy.schementi.com/2009/05/ironruby-at-railsconf-2009.html#iis
+[Deploying on IIS](http://blog.jimmy.schementi.com/2009/05/ironruby-at-railsconf-2009.html#iis)
 
 Setup
 -----
