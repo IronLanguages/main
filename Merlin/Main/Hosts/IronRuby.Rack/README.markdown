@@ -40,13 +40,13 @@ Click "Debug" -> "Start without Debugging" to run the Rack Application, which wi
 
 How it works
 ------------
-Uses ASP.NET's HttpHandlers to:
-  - Registering IronRuby.Rack in the Rack-based application's Web.config
-  - Load a Rack-based application on startup (HttpHandlerFactory and Application constructor).
-    - Initializes Rack and runs the application's config.ru, which tells Rack what application (any Ruby object that responds to 'call')
-  - Intercept web requests (HttpHandler.ProcessRequest)
-    - Creates a Request and a Response, and passes it off to IIS.Handle which:
-      - Set up the environment according to the Rack specification
-      - Calls Application.Call with the prepared environment, which delegates to the Rack application's "call" method (registered in the config.ru file). All C# <-> Ruby interaction happens in the RubyEngine.
-      - Rack application does its thing (process Rails/Sinatra request, or deal with things itself) and returns a response according to the Rack specification.
-      - Takes the Rack response and pass the appropriate data to the IIS response (response body, status, headers)
+- Uses ASP.NET's HttpHandlers to
+   - Registering IronRuby.Rack in the Rack-based application's Web.config
+   - Load a Rack-based application on startup (HttpHandlerFactory and Application constructor).
+     - Initializes Rack and runs the application's config.ru, which tells Rack what application (any Ruby object that responds to 'call')
+   - Intercept web requests (HttpHandler.ProcessRequest)
+     - Creates a Request and a Response, and passes it off to IIS.Handle which:
+       - Set up the environment according to the Rack specification
+       - Calls Application.Call with the prepared environment, which delegates to the Rack application's "call" method (registered in the config.ru file). All C# <-> Ruby interaction happens in the RubyEngine.
+       - Rack application does its thing (process Rails/Sinatra request, or deal with things itself) and returns a response according to the Rack specification.
+       - Takes the Rack response and pass the appropriate data to the IIS response (response body, status, headers)
