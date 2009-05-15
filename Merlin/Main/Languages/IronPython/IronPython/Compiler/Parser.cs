@@ -775,10 +775,6 @@ namespace IronPython.Compiler {
             if (MaybeEat(TokenKind.Multiply)) {
                 names = FromImportStatement.Star;
                 asNames = null;
-
-                if (dname is RelativeModuleName) {
-                    ReportSyntaxError("'import *' not allowed with 'from .'");
-                }
             } else {
                 List<SymbolId> l = new List<SymbolId>();
                 List<SymbolId> las = new List<SymbolId>();

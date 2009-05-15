@@ -182,7 +182,7 @@ namespace Microsoft.Scripting.Actions {
             );
         }
 
-        protected TrackerTypes GetMemberType(MemberGroup members, out Expression error) {
+        public TrackerTypes GetMemberType(MemberGroup members, out Expression error) {
             error = null;
             TrackerTypes memberType = TrackerTypes.All;
             for (int i = 0; i < members.Count; i++) {
@@ -198,7 +198,7 @@ namespace Microsoft.Scripting.Actions {
             return memberType;
         }
 
-        internal MethodInfo GetMethod(Type type, string name) {
+        public MethodInfo GetMethod(Type type, string name) {
             // declaring type takes precedence
             MethodInfo mi = type.GetMethod(name);
             if (mi != null) {

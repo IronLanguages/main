@@ -104,6 +104,9 @@ namespace IronRuby.Runtime.Calls {
                 } else if (info.ParameterType == typeof(RubyContext)) {
                     mapping.AddBuilder(new RubyContextArgBuilder(info));
                     special[i++] = true;
+                } else if (method.IsConstructor && info.ParameterType == typeof(RubyClass)) {
+                    mapping.AddBuilder(new RubyClassCtorArgBuilder(info));
+                    special[i++] = true;
                 }
             }
 
@@ -148,34 +151,66 @@ namespace IronRuby.Runtime.Calls {
             return special;
         }
 
-        internal static void GetParameterCount(ParameterInfo/*!*/[]/*!*/ parameterInfos, out int mandatory, out int optional, out bool acceptsBlock) {
-            acceptsBlock = false;
+        internal static int GetHiddenParameterCount(MethodBase/*!*/ method, ParameterInfo/*!*/[]/*!*/ infos, SelfCallConvention callConvention) {
+            int i = 0;
+
+            if (callConvention == SelfCallConvention.SelfIsInstance) {
+                if (CompilerHelpers.IsStatic(method)) {
+                    Debug.Assert(RubyClass.IsOperator(method) || CompilerHelpers.IsExtension(method));
+                    i++;
+                }
+            }
+
+            while (i < infos.Length && infos[i].ParameterType.IsSubclassOf(typeof(RubyCallSiteStorage))) {
+                i++;
+            }
+
+            if (i < infos.Length) {
+                var info = infos[i];
+
+                if (info.ParameterType == typeof(RubyScope)) {
+                    i++;
+                } else if (info.ParameterType == typeof(RubyContext)) {
+                    i++;
+                } else if (method.IsConstructor && info.ParameterType == typeof(RubyClass)) {
+                    i++;
+                }
+            }
+
+            if (i < infos.Length && infos[i].ParameterType == typeof(BlockParam)) {
+                i++;
+            }
+
+            if (callConvention == SelfCallConvention.SelfIsParameter) {
+                Debug.Assert(i < infos.Length);
+                Debug.Assert(CompilerHelpers.IsStatic(method));
+                i++;
+            }
+
+            return i;
+        }
+
+        internal static void GetParameterCount(MethodBase/*!*/ method, ParameterInfo/*!*/[]/*!*/ parameterInfos, SelfCallConvention callConvention, 
+            out int mandatory, out int optional) {
+
             mandatory = 0;
             optional = 0;
-            foreach (ParameterInfo parameterInfo in parameterInfos) {
-                if (IsHiddenParameter(parameterInfo)) {
-                    continue;
-                } else if (parameterInfo.ParameterType == typeof(BlockParam)) {
-                    acceptsBlock = true;
-                } else if (CompilerHelpers.IsParamArray(parameterInfo)) {
+            for (int i = GetHiddenParameterCount(method, parameterInfos, callConvention); i < parameterInfos.Length; i++) {
+                var info = parameterInfos[i];
+
+                if (CompilerHelpers.IsParamArray(info)) {
                     // TODO: indicate splat args separately?
                     optional++;
-                } else if (CompilerHelpers.IsOutParameter(parameterInfo)) {
+                } else if (CompilerHelpers.IsOutParameter(info)) {
                     // Python allows passing of optional "clr.Reference" to capture out parameters
                     // Ruby should allow similar
                     optional++;
-                } else if (CompilerHelpers.IsMandatoryParameter(parameterInfo)) {
+                } else if (CompilerHelpers.IsMandatoryParameter(info)) {
                     mandatory++;
                 } else {
                     optional++;
                 }
             }
-        }
-
-        internal static bool IsHiddenParameter(ParameterInfo/*!*/ parameterInfo) {
-            return parameterInfo.ParameterType == typeof(RubyScope)
-                || parameterInfo.ParameterType == typeof(RubyContext)
-                || parameterInfo.ParameterType.IsSubclassOf(typeof(RubyCallSiteStorage));
         }
 
         #endregion
@@ -505,6 +540,24 @@ namespace IronRuby.Runtime.Calls {
 
             protected override Expression ToExpression(OverloadResolver/*!*/ resolver, IList<Expression>/*!*/ parameters, bool[]/*!*/ hasBeenUsed) {
                 return ((RubyOverloadResolver)resolver).ScopeExpression;
+            }
+        }
+
+        internal sealed class RubyClassCtorArgBuilder : ArgBuilder {
+            public RubyClassCtorArgBuilder(ParameterInfo/*!*/ info)
+                : base(info) {
+            }
+
+            public override int Priority {
+                get { return -1; }
+            }
+
+            public override int ConsumedArgumentCount {
+                get { return 0; }
+            }
+
+            protected override Expression ToExpression(OverloadResolver/*!*/ resolver, IList<Expression>/*!*/ parameters, bool[]/*!*/ hasBeenUsed) {
+                return ((RubyOverloadResolver)resolver)._args.TargetExpression;
             }
         }
 

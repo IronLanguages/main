@@ -834,7 +834,8 @@ namespace IronPython.Runtime.Exceptions {
         /// Creates a PythonType for a built-in module.  These types are mutable like
         /// normal user types.
         /// </summary>
-        internal static PythonType CreateSubType(PythonContext/*!*/ context, PythonType baseType, string name, string module, string documentation) {
+        [PythonHidden]
+        public static PythonType CreateSubType(PythonContext/*!*/ context, PythonType baseType, string name, string module, string documentation) {
             return new PythonType(null, baseType, name, module, documentation);            
         }
 

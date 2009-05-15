@@ -20,6 +20,7 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Threading;
 
 using Microsoft.Scripting;
 using Microsoft.Scripting.Actions;
@@ -1741,11 +1742,30 @@ namespace IronPython.Runtime {
             }
         }
 
+        [ThreadStatic]
+        private static List<Scope> _reloadStack; 
+
         public static object reload(CodeContext/*!*/ context, Scope/*!*/ scope) {
             if (scope == null) {
                 throw PythonOps.TypeError("unexpected type: NoneType");
             }
-            return Importer.ReloadModule(context, scope);
+
+            if (_reloadStack == null) {
+                Interlocked.CompareExchange(ref _reloadStack, new List<Scope>(), null);
+            }
+
+            // if a module attempts to reload it's self while already reloading it's 
+            // self we just return the original module.
+            if (_reloadStack.Contains(scope)) {
+                return scope;
+            }
+
+            _reloadStack.Add(scope);
+            try {
+                return Importer.ReloadModule(context, scope);
+            } finally {
+                _reloadStack.RemoveAt(_reloadStack.Count - 1);
+            }
         }
 
         public static object repr(CodeContext/*!*/ context, object o) {

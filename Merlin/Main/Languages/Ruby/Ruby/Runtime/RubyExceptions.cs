@@ -25,6 +25,7 @@ using System.Runtime.InteropServices;
 using System.Net.Sockets;
 using System.Runtime.CompilerServices;
 using IronRuby.Runtime.Calls;
+using System.Diagnostics;
 
 namespace IronRuby.Runtime {
     /// <summary>
@@ -62,6 +63,18 @@ namespace IronRuby.Runtime {
 
         public static Exception/*!*/ CreateAllocatorUndefinedError(RubyClass/*!*/ rubyClass) {
             return CreateTypeError(String.Format("allocator undefined for {0}", rubyClass.Name));
+        }
+
+        public static Exception/*!*/ CreateMissingDefaultConstructorError(RubyClass/*!*/ rubyClass, string/*!*/ initializerOwnerName) {
+            Debug.Assert(rubyClass.IsRubyClass);
+
+            Type baseType = rubyClass.GetUnderlyingSystemType().BaseType;
+            Debug.Assert(baseType != null);
+
+            return CreateTypeError(String.Format("can't allocate class `{1}' that derives from type `{0}' with no default constructor;" +
+                " define {1}#new singleton method instead of {2}#initialize",
+                rubyClass.Context.GetTypeName(baseType), rubyClass.Name, initializerOwnerName
+            ));
         }
 
         public static Exception/*!*/ CreateArgumentError(string/*!*/ message) {
