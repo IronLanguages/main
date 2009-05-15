@@ -1,18 +1,15 @@
 ironruby-rack
 =============
-
 Run Rack-based web applications on IIS with IronRuby
 
-Overview: 
-http://blog.jimmy.schementi.com/2009/05/ironruby-at-railsconf-2009.html#iis
+Overview: "Deploying on IIS":http://blog.jimmy.schementi.com/2009/05/ironruby-at-railsconf-2009.html#iis
 
 Setup
 -----
-0. Install Rack
-
+1. Install Rack
 > igem install rack
 
-1. Install IIS (this set of features might be overkill)
+2. Install IIS (this set of features might be overkill)
    - Control Panel -> Programs -> Turn Windows Features on or off
    - Internet Information Services
      - World Wide Web Services, enable:
@@ -28,13 +25,13 @@ Setup
        - IIS Management Script and Tools
        - IIS Management Service
 
-2. Give permissions to IIS
+3. Give permissions to IIS
    - IIS needs to have permission to open files in this project, as well
      as in the Ruby standard library. Grant IIS_IUSER permission to this 
      directory, as well as the Ruby standard library 
      (usually C:\ruby\lib\ruby)
 
-2. Open IronRack.sln in Visual Studio
+4. Open IronRack.sln in Visual Studio
    - Click "OK" to prompts about creating virtual directories, otherwise not
      all the project files will load.
    - Right-click on IronRuby.Rack.App and select "Set as StartUp Project".
@@ -51,21 +48,20 @@ will just navigate to http://localhost/IronRuby.Rack.Example
 
 How it works
 ------------
-Uses ASP.NET’s HttpHandlers to:
-  - Registering IronRuby.Rack in the Rack-based application’s Web.config
+Uses ASP.NET's HttpHandlers to:
+  - Registering IronRuby.Rack in the Rack-based application's Web.config
   - Load a Rack-based application on startup (HttpHandlerFactory and 
     Application constructor).
-    - Initializes Rack and runs the application’s config.ru, which tells Rack
+    - Initializes Rack and runs the application's config.ru, which tells Rack
       what application (any Ruby object that responds to 'call')
   - Intercept web requests (HttpHandler.ProcessRequest)
     - Creates a Request and a Response, and passes it off to IIS.Handle which:
       - Set up the environment according to the Rack specification
       - Calls Application.Call with the prepared environment, which delegates 
-        to the Rack application’s “call” method (registered in the config.ru 
+        to the Rack application's "call" method (registered in the config.ru 
         file). All C# <-> Ruby interaction happens in the RubyEngine.
       - Rack application does its thing (process Rails/Sinatra request, or 
         deal with things itself) and returns a response according to the 
         Rack specification.
       - Takes the Rack response and pass the appropriate data to the IIS
         response (response body, status, headers)
-
