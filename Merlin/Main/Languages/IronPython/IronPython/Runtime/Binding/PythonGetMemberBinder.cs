@@ -683,7 +683,7 @@ namespace IronPython.Runtime.Binding {
                 return com;
             }
 #endif
-            return PythonGetMemberBinder.FallbackWorker(self, PythonContext.GetCodeContextMO(this), Name, GetMemberOptions.None, this);
+            return PythonGetMemberBinder.FallbackWorker(self, PythonContext.GetCodeContextMOCls(this), Name, GetMemberOptions.None, this);
         }
 
         #region IPythonSite Members

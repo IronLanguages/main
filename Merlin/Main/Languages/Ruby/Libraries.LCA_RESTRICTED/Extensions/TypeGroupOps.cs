@@ -35,7 +35,7 @@ namespace IronRuby.Builtins {
             TypeTracker tracker = self.GetTypeForArity(typeArgs.Length);
 
             if (tracker == null) {
-                throw RubyExceptions.CreateArgumentError(String.Format("Invalid number of type arguments for `{0}'", self.NormalizedName));
+                throw RubyExceptions.CreateArgumentError(String.Format("Invalid number of type arguments for `{0}'", self.Name));
             }
 
             Type concreteType;
@@ -68,7 +68,27 @@ namespace IronRuby.Builtins {
         [RubyMethod("name")]
         [RubyMethod("to_s")]
         public static MutableString/*!*/ GetName(TypeGroup/*!*/ self) {
-            return MutableString.CreateMutable().Append("TypeGroup of ").Append(self.Name);
+            return MutableString.Create(self.Name);
+        }
+
+        [RubyMethod("inspect")]
+        public static MutableString/*!*/ Inspect(RubyContext/*!*/ context, TypeGroup/*!*/ self) {
+            var result = MutableString.CreateMutable();
+            result.Append("#<TypeGroup: ");
+
+            bool isFirst = true;
+            foreach (Type type in self.Types) {
+                if (!isFirst) {
+                    result.Append(", ");
+                } else {
+                    isFirst = false;
+                }
+
+                result.Append(context.GetTypeName(type, true));
+            }
+            result.Append(">");
+
+            return result;
         }
     }
 }

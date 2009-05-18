@@ -35,7 +35,7 @@ namespace IronPython.Compiler {
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", MessageId = "Tokenizer")]
     public sealed partial class Tokenizer : TokenizerService {
         private State _state;
-        private readonly bool _verbatim, _dontImplyDedent, _python26;
+        private readonly bool _verbatim, _dontImplyDedent;
         private bool _disableLineFeedLineSeparator;
         private SourceUnit _sourceUnit;
         private TokenizerBuffer _buffer;
@@ -52,7 +52,6 @@ namespace IronPython.Compiler {
             _verbatim = true;
             _state = new State(null);
             _dontImplyDedent = true;
-            _python26 = true;
         }
 
         public Tokenizer(ErrorSink errorSink) {
@@ -60,7 +59,6 @@ namespace IronPython.Compiler {
             _verbatim = false;
             _state = new State(null);
             _dontImplyDedent = true;
-            _python26 = true;
         }
 
         [Obsolete("Use the overload that takes a PythonCompilerOptions instead")]
@@ -76,7 +74,6 @@ namespace IronPython.Compiler {
             _verbatim = verbatim;
             _state = new State(null);
             _dontImplyDedent = dontImplyDedent;
-            _python26 = true;
         }
 
         public Tokenizer(ErrorSink errorSink, PythonCompilerOptions options) {
@@ -88,7 +85,6 @@ namespace IronPython.Compiler {
             _state = new State(null);
             _dontImplyDedent = options.DontImplyDedent;
             _printFunction = options.PrintFunction;
-            _python26 = options.Python26;
         }
 
         /// <summary>
@@ -396,11 +392,7 @@ namespace IronPython.Compiler {
                         return ReadNameOrRawString();
                     case 'b':
                     case 'B':
-                        if (_python26) {
-                            return ReadNameOrBytes();
-                        }
-
-                        goto default;
+                        return ReadNameOrBytes();
 
                     case '_':
                         return ReadName();
@@ -710,7 +702,7 @@ namespace IronPython.Compiler {
             if (start == '0') {
                 if (NextChar('x') || NextChar('X')) {
                     return ReadHexNumber();
-                } else if (_python26) {
+                } else {
                     if (NextChar('b') || NextChar('B')) {
                         return ReadBinaryNumber();
                     } else if (NextChar('o') || NextChar('O')) {

@@ -1,4 +1,4 @@
-ï»¿/* ****************************************************************************
+/* ****************************************************************************
  *
  * Copyright (c) Microsoft Corporation. 
  *
@@ -27,7 +27,7 @@ using System.Security;
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("Microsoft")]
 [assembly: AssemblyProduct("Microsoft.Scripting")]
-[assembly: AssemblyCopyright("ï¿½ Microsoft Corporation.  All rights reserved.")]
+[assembly: AssemblyCopyright("© Microsoft Corporation.  All rights reserved.")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
@@ -55,7 +55,7 @@ using System.Security;
 [assembly: System.Resources.NeutralResourcesLanguage("en-US")]
 
 #if !SILVERLIGHT
-[assembly: AssemblyVersion("0.9.5.1")]
+[assembly: AssemblyVersion("0.9.6.10")]
 [assembly: AssemblyFileVersion("1.0.0.00")]
 [assembly: AssemblyInformationalVersion("1.0")]
 [assembly: AllowPartiallyTrustedCallers]

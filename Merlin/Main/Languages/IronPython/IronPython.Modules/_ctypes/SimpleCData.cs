@@ -46,12 +46,18 @@ namespace IronPython.Modules {
             public void __init__(object value) {
                 _memHolder = new MemoryHolder(Size);
                 NativeType.SetValue(_memHolder, 0, value);
+                if (IsString) {
+                    _memHolder.AddObject("str", value);
+                }
             }
 
             // implemented as PropertyMethod's so taht we can have delete
             [PropertyMethod, SpecialName]
             public void Setvalue(object value) {
                 NativeType.SetValue(_memHolder, 0, value);
+                if (IsString) {
+                    _memHolder.AddObject("str", value);
+                }
             }
 
             [PropertyMethod, SpecialName]
@@ -62,6 +68,26 @@ namespace IronPython.Modules {
             [PropertyMethod, SpecialName]
             public void Deletevalue() {
                 throw PythonOps.TypeError("cannot delete value property from simple cdata");
+            }
+
+            public override object _objects {
+                get {
+                    if (IsString) {
+                        PythonDictionary objs = _memHolder.Objects;
+                        if (objs != null) {
+                            return objs["str"];
+                        }
+                    }
+
+                    return _memHolder.Objects;
+                }
+            }
+
+            private bool IsString {
+                get {
+                    return ((SimpleType)NativeType)._type == SimpleTypeKind.CharPointer ||
+                                            ((SimpleType)NativeType)._type == SimpleTypeKind.WCharPointer;
+                }
             }
 
             #region ICodeFormattable Members

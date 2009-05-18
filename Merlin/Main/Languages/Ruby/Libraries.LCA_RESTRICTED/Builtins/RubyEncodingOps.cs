@@ -28,9 +28,10 @@ namespace IronRuby.Builtins {
     public static class RubyEncodingOps {
         #region Exceptions
 
-        [RubyException("CompatibilityError", Extends = typeof(EncodingCompatibilityError), Inherits = typeof(EncodingError))]
-        public static class CompatibilityErrorOps {
-        }
+        // TODO: we need to fix class init generator
+        //[RubyException("CompatibilityError", Extends = typeof(EncodingCompatibilityError), Inherits = typeof(EncodingError))]
+        //public static class CompatibilityErrorOps {
+        //}
 
         // TODO:
         // UndefinedConversionError
@@ -64,7 +65,7 @@ namespace IronRuby.Builtins {
             // TODO: to_s overridden
             MutableString result = MutableString.CreateMutable();
             result.Append("#<");
-            result.Append(context.GetClassName(self));
+            result.Append(context.GetClassDisplayName(self));
             result.Append(':');
             result.Append(self.Name);
             result.Append(">");

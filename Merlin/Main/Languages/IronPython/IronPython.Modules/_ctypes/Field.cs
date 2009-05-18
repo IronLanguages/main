@@ -38,17 +38,20 @@ namespace IronPython.Modules {
         public sealed class Field : PythonTypeSlot, ICodeFormattable {
             private readonly INativeType _fieldType;
             private readonly int _offset, _index, _bits = -1, _bitsOffset;
+            private readonly string _fieldName;
 
-            internal Field(INativeType fieldType, int offset, int index) {
+            internal Field(string fieldName, INativeType fieldType, int offset, int index) {
                 _offset = offset;
                 _fieldType = fieldType;
                 _index = index;
+                _fieldName = fieldName;
             }
 
-            internal Field(INativeType fieldType, int offset, int index, int? bits, int? bitOffset) {
+            internal Field(string fieldName, INativeType fieldType, int offset, int index, int? bits, int? bitOffset) {
                 _offset = offset;
                 _fieldType = fieldType;
                 _index = index;
+                _fieldName = fieldName;
 
                 if (bits != null) {
                     _bits = bits.Value;
@@ -104,7 +107,10 @@ namespace IronPython.Modules {
 
             internal void SetValue(MemoryHolder address, int baseOffset, object value) {
                 if (_bits == -1) {
-                    _fieldType.SetValue(address, baseOffset + _offset, value);
+                    object keepAlive = _fieldType.SetValue(address, baseOffset + _offset, value);
+                    if (keepAlive != null) {
+                        address.AddObject(_index.ToString(), keepAlive);
+                    }
                 } else {
                     SetBitsValue(address, baseOffset, value);
                 }
@@ -131,6 +137,12 @@ namespace IronPython.Modules {
                     }
 
                     return _bits;
+                }
+            }
+
+            internal string FieldName {
+                get {
+                    return _fieldName;
                 }
             }
 

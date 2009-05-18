@@ -48,7 +48,7 @@ namespace IronRuby.Runtime.Calls {
         }
 
         public override string GetTypeName(Type t) {
-            return _context.GetTypeName(t);
+            return _context.GetTypeName(t, true);
         }
 
 

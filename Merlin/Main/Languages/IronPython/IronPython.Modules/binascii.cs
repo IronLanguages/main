@@ -218,7 +218,7 @@ namespace IronPython.Modules {
             return (remainder ^ 0xffffffff);
         }
 
-        public static object b2a_hex(string data) {
+        public static string b2a_hex(string data) {
             StringBuilder sb = new StringBuilder(data.Length * 2);
             for (int i = 0; i < data.Length; i++) {
                 sb.AppendFormat("{0:x2}", (int)data[i]);
@@ -226,8 +226,31 @@ namespace IronPython.Modules {
             return sb.ToString();
         }
 
-        public static object hexlify(string data) {
+        public static string hexlify(string data) {
             return b2a_hex(data);
+        }
+
+        public static Bytes hexlify(Bytes data) {
+            byte[] res = new byte[data.Count * 2];
+            for (int i = 0; i < data.Count; i++) {
+
+                res[i * 2] = ToHex(data._bytes[i] >> 4);
+                res[(i * 2) + 1] = ToHex(data._bytes[i] & 0x0F);
+            }
+
+            return Bytes.Make(res);
+        }
+
+        private static byte ToHex(int p) {
+            if (p >= 10) {
+                return (byte)('a' + p - 10);
+            }
+
+            return (byte)('0' + p);
+        }
+
+        public static string hexlify([NotNull]PythonBuffer data) {
+            return hexlify(data.ToString());
         }
 
         public static object a2b_hex(CodeContext/*!*/ context, string data) {

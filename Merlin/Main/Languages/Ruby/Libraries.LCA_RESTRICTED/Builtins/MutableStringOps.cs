@@ -395,7 +395,7 @@ namespace IronRuby.Builtins {
                 object result = Integer.TryUnaryMinus(site.Target(site, other, self));
                 if (result == null) {
                     throw RubyExceptions.CreateTypeError(String.Format("{0} can't be coerced into Fixnum",
-                        comparisonStorage.Context.GetClassName(result)));
+                        comparisonStorage.Context.GetClassDisplayName(result)));
                 }
 
                 return result;

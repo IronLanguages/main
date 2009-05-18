@@ -78,6 +78,9 @@ namespace IronPython.Runtime {
                     IPythonArray pa = (IPythonArray)o;
                     length = pa.__len__();
                 }
+            } else if (o is IPythonBufferable) {
+                length = ((IPythonBufferable)o).Size;
+                _object = o;
             } else {
                 return false;
             }
@@ -101,6 +104,8 @@ namespace IronPython.Runtime {
                 return PythonOps.MakeString((Bytes)res);
             } else if (res is ByteArray) {
                 return PythonOps.MakeString((ByteArray)res);
+            } else if (res is IPythonBufferable) {
+                return PythonOps.MakeString((IList<byte>)GetSelectedRange());
             }
 
             return res.ToString();
@@ -161,10 +166,17 @@ namespace IronPython.Runtime {
             if(arr != null) {
                 return arr.tostring();
             }
+
             ByteArray bytearr = _object as ByteArray;
             if (bytearr != null) {
                 return new Bytes((IList<byte>)bytearr[GetSlice()]);
             }
+
+            IPythonBufferable pyBuf = _object as IPythonBufferable;
+            if (pyBuf != null) {
+                return new Bytes(pyBuf.GetBytes(_offset, _size));
+            }
+
             return PythonOps.GetIndex(_context, _object, GetSlice());
         }
 
@@ -240,5 +252,17 @@ namespace IronPython.Runtime {
     /// </summary>
     internal interface IPythonArray : ISequence {
         string tostring();
+    }
+
+    internal interface IPythonBufferable {
+        IntPtr UnsafeAddress {
+            get;
+        }
+
+        int Size {
+            get;
+        }
+
+        byte[] GetBytes(int offset, int length);
     }
 }

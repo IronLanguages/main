@@ -338,7 +338,7 @@ namespace IronRuby.Builtins {
         private static RubyIO/*!*/ ToIo(RubyContext/*!*/ context, object obj) {
             RubyIO io = obj as RubyIO;
             if (io == null) {
-                throw RubyExceptions.CreateTypeConversionError(context.GetClassName(obj), "IO");
+                throw RubyExceptions.CreateTypeConversionError(context.GetClassDisplayName(obj), "IO");
             }
             return io;
         }

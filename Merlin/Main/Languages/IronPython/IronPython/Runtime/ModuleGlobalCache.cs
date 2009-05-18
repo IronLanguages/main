@@ -16,6 +16,7 @@
 using System.Diagnostics;
 using Microsoft.Scripting.Utils;
 using System.Linq.Expressions;
+using System;
 
 namespace Microsoft.Scripting.Runtime {
     /// <summary>
@@ -26,6 +27,7 @@ namespace Microsoft.Scripting.Runtime {
         private object _value;
 
         internal static readonly object NotCaching = new object();
+        internal static readonly ModuleGlobalCache NoCache = new ModuleGlobalCache(NotCaching);
 
         /// <summary>
         /// Creates a new ModuleGlobalCache with the specified value.
@@ -61,7 +63,7 @@ namespace Microsoft.Scripting.Runtime {
                 return _value;
             }
             set {
-                if (_value == NotCaching) throw Error.CannotChangeNonCachingValue();
+                if (_value == NotCaching) throw new ArgumentException("Cannot change non-caching value.");
                 _value = value;
             }
         }

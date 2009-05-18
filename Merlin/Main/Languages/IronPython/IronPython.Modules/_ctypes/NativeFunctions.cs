@@ -27,7 +27,9 @@ namespace IronPython.Modules {
         private static SetMemoryDelegate _setMem = MemSet;
         private static MoveMemoryDelegate _moveMem = MoveMemory;
 
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         private delegate IntPtr SetMemoryDelegate(IntPtr dest, byte value, IntPtr length);
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         private delegate IntPtr MoveMemoryDelegate(IntPtr dest, IntPtr src, IntPtr length);
 
         [DllImport("kernel32.dll")]

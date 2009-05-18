@@ -759,7 +759,7 @@ namespace IronPython.Runtime.Binding {
 
         public bool WarnOnPython3000 {
             get {
-                return _context.PythonOptions.WarnPy3k;
+                return _context.PythonOptions.WarnPython30;
             }
         }
 

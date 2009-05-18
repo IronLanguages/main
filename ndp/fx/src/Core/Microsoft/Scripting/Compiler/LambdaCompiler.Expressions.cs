@@ -369,7 +369,7 @@ namespace System.Linq.Expressions.Compiler {
 
         private void EmitCall(Type objectType, MethodInfo method) {
             if (method.CallingConvention == CallingConventions.VarArgs) {
-                throw Error.UnexpectedVarArgsCall(method.FormatSignature());
+                throw Error.UnexpectedVarArgsCall(method);
             }
 
             OpCode callOp = UseVirtual(method) ? OpCodes.Callvirt : OpCodes.Call;
