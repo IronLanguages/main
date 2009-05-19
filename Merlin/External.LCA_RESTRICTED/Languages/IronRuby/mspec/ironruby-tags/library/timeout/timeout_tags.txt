@@ -1,0 +1,2 @@
+fails:Timeout.timeout shouldn't wait too long
+fails:Timeout.timeout shouldn't return too quickly
