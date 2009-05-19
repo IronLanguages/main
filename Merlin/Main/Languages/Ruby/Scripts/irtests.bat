@@ -25,10 +25,10 @@ if "%1" == "-nocompile" (
     shift
     echo Skipping compile step...
 ) else (
-    msbuild.exe %MERLIN_ROOT%\Languages\Ruby\Ruby.sln /p:Configuration="Debug"
+    msbuild.exe /verbosity:minimal %MERLIN_ROOT%\Languages\Ruby\Ruby.sln /p:Configuration="Debug"
     if not %ERRORLEVEL%==0 exit /b 1
     REM IronPython needs to be in sync for the language interop tests
-    msbuild.exe %MERLIN_ROOT%\Languages\IronPython\IronPython.sln /p:Configuration="Debug"
+    msbuild.exe /verbosity:minimal %MERLIN_ROOT%\Languages\IronPython\IronPython.sln /p:Configuration="Debug"
     if not %ERRORLEVEL%==0 exit /b 1
 
     if exist %MERLIN_ROOT%\Scripts\Python\GenerateSystemCoreCsproj.py (
@@ -39,6 +39,8 @@ if "%1" == "-nocompile" (
         )
     )
 )
+
+time /t
 
 :==============================================================================
 : IronRuby tests
@@ -53,6 +55,8 @@ if defined PARALLEL_IRTESTS (
     )
 )
 
+time /t
+
 if defined PARALLEL_IRTESTS (
     start "Legacy Tests" %MERLIN_ROOT%\Languages\Ruby\Tests\run.bat
 ) else (
@@ -63,18 +67,26 @@ if defined PARALLEL_IRTESTS (
     )
 )
 
+time /t
+
 :==============================================================================
 : RubySpecs
 
+REM We use mspec-run instead of mspec so that we can specify "-G thread" to disable the volatile thread tests
+
+set MSPEC_RUN=%MERLIN_ROOT%\..\External.LCA_RESTRICTED\Languages\IronRuby\mspec\mspec\bin\mspec-run
+
 if defined PARALLEL_IRTESTS (
-    start "RubySpec A tests" mspec ci -fd -V :lang :core :cli :netinterop
+    start "RubySpec A tests" cmd.exe /k %MERLIN_ROOT%\bin\Debug\ir.exe %MSPEC_RUN% -G fails -G unstable -G thread -G critical -fd :lang :core :cli :netinterop
 ) else (
-    call mspec ci -fd :lang :core :cli :netinterop
+    %MERLIN_ROOT%\bin\Debug\ir.exe %MSPEC_RUN% -G fails -G unstable -G thread -G critical -fd :lang :core :cli :netinterop
     if not %ERRORLEVEL%==0 (
         set IRTESTS_ERRORS=%IRTESTS_ERRORS% RubySpec A tests failed!!! 
         echo %IRTESTS_ERRORS%
     )
 )
+
+time /t
 
 if defined PARALLEL_IRTESTS (
     start "RubySpec B tests" mspec ci -fd -V :lib
@@ -85,6 +97,8 @@ if defined PARALLEL_IRTESTS (
         echo %IRTESTS_ERRORS%
     )
 )
+
+time /t
 
 :==============================================================================
 : RubyGems
@@ -109,7 +123,8 @@ if "%IRTESTS_ERRORS%"=="Results:" (
     if defined PARALLEL_IRTESTS (
         echo All builds succeeded...
     ) else (
-        echo All tests passed...
+        REM The errorlevels do not get set correctly somehow. Hence the next line is commented out for now
+        REM echo All tests passed (...
     )
 ) else (
     echo ...

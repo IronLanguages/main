@@ -1,0 +1,36 @@
+= Description
+
+The application is an interactive tutorial, allowing users to use a REPL to
+follow along the teaching material
+
+= Topics covered
+
+- Creating WPF UI using XAML
+- Creating domain-specific-languages (DSLs) in Ruby
+- Using the Unit::Test testing framework
+
+= Running the app
+
+cd Samples\Tutorial
+ir.exe wpf_tutorial.rb
+
+= Running the tests
+
+cd Samples\Tutorial
+ir.exe test\test_console.rb
+
+= TODO
+
+* UI layout
+  * Detection of last task in chapter, last chapter in section, last section in tutorial, etc
+  * Buttons for "Next chapter" navigation
+
+* Multiple tutorial support
+  * UI to show all available tutorials
+  * Integration with RubyGems to download tutorial gems
+
+* Functionality
+  * Multi-step tasks with hinting for next step
+  * UI surface for WPF tutorials
+  * Silverlight
+  * Voting feedback
