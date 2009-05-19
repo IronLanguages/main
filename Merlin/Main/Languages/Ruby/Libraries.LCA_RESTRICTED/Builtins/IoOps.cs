@@ -585,12 +585,13 @@ namespace IronRuby.Builtins {
             [NotNull]params object[]/*!*/ args) {
             MutableString delimiter = writeStorage.Context.OutputSeparator;
             for (int i = 0; i < args.Length; i++) {
-                MutableString str = ToPrintedString(tosConversion, args[i]);
-                if (delimiter != null) {
-                    str.Append(delimiter);
-                }
+                MutableString str = ToPrintedString(tosConversion, args[i]);               
                 Print(writeStorage, self, str);
             }
+			if (delimiter != null)
+			{
+				Print(writeStorage, self, delimiter);
+			}
         }
 
         [RubyMethod("putc")]
