@@ -94,7 +94,9 @@ namespace IronRuby.Builtins {
 
         private CallSite<Func<CallSite, object, object>> _inspectSite;
         private CallSite<Func<CallSite, object, MutableString>> _stringConversionSite;
-        
+        private CallSite<Func<CallSite, object, object, object>> _eqlSite;
+        private CallSite<Func<CallSite, object, object>> _hashSite;
+
         public CallSite<Func<CallSite, object, object>>/*!*/ InspectSite { 
             get { return RubyUtils.GetCallSite(ref _inspectSite, Context, "inspect", 0); } 
         }
@@ -103,6 +105,15 @@ namespace IronRuby.Builtins {
             get { return RubyUtils.GetCallSite(ref _stringConversionSite, ConvertToSAction.Make(Context)); } 
         }
 
+        public CallSite<Func<CallSite, object, object, object>>/*!*/ EqlSite {
+            get { return RubyUtils.GetCallSite(ref _eqlSite, Context, "==", 1); }
+        }
+
+        public CallSite<Func<CallSite, object, object>>/*!*/ HashSite {
+            get { return RubyUtils.GetCallSite(ref _hashSite, Context, "hash", 0); }
+
+        }
+        
         // RubyClass, RubyClass -> object
         private CallSite<Func<CallSite, object, object, object>> _classInheritedCallbackSite;
 

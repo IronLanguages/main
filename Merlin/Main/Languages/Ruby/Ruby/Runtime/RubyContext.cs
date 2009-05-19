@@ -1031,6 +1031,10 @@ namespace IronRuby.Runtime {
             return GetClassOf(obj, data);
         }
 
+        public bool IsKindOf(object obj, RubyModule/*!*/ m) {
+            return GetImmediateClassOf(obj).HasAncestor(m);
+        }
+
         private RubyClass TryGetInstanceSingletonOf(object obj, out RubyInstanceData data) {
             //^ ensures return != null ==> return.IsSingletonClass
             Debug.Assert(!(obj is RubyModule));
@@ -1365,6 +1369,19 @@ namespace IronRuby.Runtime {
         }
 
         #endregion
+
+        internal string InspectEnsuringClassName(object self) {
+            if (self == null) {
+                return "nil:NilClass";
+            } else {
+                string strObject = Inspect(self).ConvertToString();
+                if (!strObject.StartsWith("#")) {
+                    strObject += ":" + GetClassName(self);
+                }
+                return strObject;
+            }
+        }
+
 
         #region Global Variables: General access (thread-safe)
 

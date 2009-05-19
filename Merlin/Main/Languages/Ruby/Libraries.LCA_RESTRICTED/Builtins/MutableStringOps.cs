@@ -404,6 +404,16 @@ namespace IronRuby.Builtins {
             return null;
         }
 
+        [RubyMethod("eql?")]
+        public static bool Eql(MutableString/*!*/ lhs, [NotNull]MutableString/*!*/ rhs) {
+            return lhs.Equals(rhs);
+        }
+
+        [RubyMethod("eql?")]
+        public static bool Eql(MutableString/*!*/ lhs, object rhs) {
+            return object.ReferenceEquals(lhs, rhs);
+        }
+
         [RubyMethod("==")]
         [RubyMethod("===")]
         public static bool StringEquals(MutableString/*!*/ lhs, [NotNull]MutableString/*!*/ rhs) {
@@ -2103,7 +2113,7 @@ namespace IronRuby.Builtins {
             [NotNull]RubyRegex/*!*/ regexp, [DefaultProtocol, Optional]int limit) {
             
             if (regexp.IsEmpty) {
-                return Split(stringCast, scope, self, MutableString.Empty, limit);
+                return Split(stringCast, scope, self, MutableString.FrozenEmpty, limit);
             }
 
             if (self.IsEmpty) {

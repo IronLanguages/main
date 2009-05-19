@@ -491,7 +491,7 @@ namespace IronRuby.Builtins {
         // thread-safe:
         [RubyMethod("===")]
         public static bool CaseEquals(RubyModule/*!*/ self, object other) {
-            return self.Context.GetImmediateClassOf(other).HasAncestor(self);
+            return self.Context.IsKindOf(other, self);
         }
 
         // thread-safe:
@@ -854,8 +854,13 @@ namespace IronRuby.Builtins {
                 throw RubyExceptions.CreateUndefinedMethodError(self, methodName);
             }
 
-            // unbound method binable to any class with "self" mixin:
-            return new UnboundMethod(self, methodName, method);
+            RubyModule constraint = self;
+            if (self.IsSingletonClass && method.DeclaringModule != self) {
+                constraint = ((RubyClass)self).SuperClass;
+            }
+
+            // unbound method binable to any class with "constraint" mixin:
+            return new UnboundMethod(constraint, methodName, method);
         }
 
         #endregion

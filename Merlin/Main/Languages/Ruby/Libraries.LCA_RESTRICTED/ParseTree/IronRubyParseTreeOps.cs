@@ -333,7 +333,7 @@ namespace IronRuby.StandardLibrary.ParseTree {
                     var str = MakeNode(kind, parts.Count);
 
                     if (parts.Count == 1) {
-                        str.Add(MutableString.Empty);
+                        str.Add(MutableString.FrozenEmpty);
                     }
 
                     for (int i = 0; i < parts.Count; i++) {

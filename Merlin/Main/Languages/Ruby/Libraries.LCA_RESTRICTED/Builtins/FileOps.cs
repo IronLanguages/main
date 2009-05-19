@@ -263,7 +263,31 @@ namespace IronRuby.Builtins {
             return 1;
         }
 
-        //chown
+        [RubyMethod("chown")]
+        public static int ChangeOwner(RubyFile/*!*/ self, [DefaultProtocol]int owner, [DefaultProtocol]int group) {
+            return 0;
+        }
+
+        [RubyMethod("chown")]
+        public static int ChangeOwner(RubyContext/*!*/ context, RubyFile/*!*/ self, object owner, object group) {
+            if ((owner == null || owner is int) && (group == null || group is int)) {
+                return 0;
+            }
+            throw RubyExceptions.CreateUnexpectedTypeError(context, owner, "Fixnum");
+        }
+
+        [RubyMethod("chown", RubyMethodAttributes.PublicSingleton)]
+        public static int ChangeOwner(RubyClass/*!*/ self, [DefaultProtocol]int owner, [DefaultProtocol]int group, [DefaultProtocol, NotNull]MutableString/*!*/ path) {
+            return 0;
+        }
+
+        [RubyMethod("chown", RubyMethodAttributes.PublicSingleton)]
+        public static int ChangeOwner(RubyContext/*!*/ context, RubyClass/*!*/ self, object owner, object group, [DefaultProtocol, NotNull]MutableString/*!*/ path) {
+            if ((owner == null || owner is int) && (group == null || group is int)) {
+                return 0;
+            }
+            throw RubyExceptions.CreateUnexpectedTypeError(context, owner, "Fixnum");
+        }
 
         [RubyMethod("ctime", RubyMethodAttributes.PublicSingleton)]
         public static DateTime CreateTime(RubyClass/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ path) {
@@ -386,7 +410,14 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("extname", RubyMethodAttributes.PublicSingleton)]
         public static MutableString/*!*/ GetExtension(RubyClass/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ path) {
-            return MutableString.Create(Path.GetExtension(path.ConvertToString())).TaintBy(path);
+            string pathStr = path.ConvertToString();
+            string extension = Path.GetExtension(pathStr);
+            string filename = Path.GetFileName(pathStr);
+            if (extension == filename) {
+                // File.extname(".foo") should be "", but Path.GetExtension(".foo") returns ".foo"
+                extension = String.Empty;
+            }
+            return MutableString.Create(extension).TaintBy(path);
         }
 
         [RubyMethod("file?", RubyMethodAttributes.PublicSingleton)]
@@ -434,7 +465,7 @@ namespace IronRuby.Builtins {
                 var list = part as IList;
                 if (list != null) {
                     if (list.Count == 0) {
-                        str = MutableString.Empty;
+                        str = MutableString.FrozenEmpty;
                     } else if (visitedLists != null && visitedLists.ContainsKey(list)) {
                         str = InfiniteRecursionMarker;
                     } else {

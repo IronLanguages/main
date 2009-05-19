@@ -55,7 +55,9 @@ namespace IronRuby.Builtins {
         private const uint VersionMask = ~FlagsMask;
         private const uint FrozenVersion = VersionMask;
 
-        public static readonly MutableString Empty = MutableString.Create(String.Empty).Freeze();
+        // The instance is frozen so that it can be shared, but it should not be used in places where
+        // it will be accessible from user code as the user code could try to mutate it.
+        public static readonly MutableString FrozenEmpty = CreateEmpty().Freeze();
 
         #region Constructors
 
@@ -215,6 +217,10 @@ namespace IronRuby.Builtins {
         /// </summary>
         public virtual MutableString/*!*/ CreateInstance() {
             return new MutableString(_encoding);
+        }
+
+        public static MutableString/*!*/ CreateEmpty() {
+            return MutableString.Create(String.Empty);
         }
 
         /// <summary>

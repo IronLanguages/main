@@ -996,7 +996,14 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("==")]
         [RubyMethod("eql?")]
+        public static bool ValueEquals(IRubyObject self, object other) {
+            return object.ReferenceEquals(self, other);
+        }
+
+        [RubyMethod("==")]
+        [RubyMethod("eql?")]
         public static bool ValueEquals(object self, object other) {
+            Debug.Assert(self == null || !(self is IRubyObject));
             return RubyUtils.ValueEquals(self, other);
         }
 
@@ -1013,7 +1020,13 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("hash")]
+        public static int Hash(IRubyObject self) {
+            return self == null ? RubyUtils.NilObjectId : RuntimeHelpers.GetHashCode(self);
+        }
+
+        [RubyMethod("hash")]
         public static int Hash(object self) {
+            Debug.Assert(self == null || !(self is IRubyObject));
             return RubyUtils.GetHashCode(self);
         }
 
@@ -1207,7 +1220,7 @@ namespace IronRuby.Builtins {
         [RubyMethod("kind_of?")]
         public static bool IsKindOf(object self, RubyModule/*!*/ other) {
             ContractUtils.RequiresNotNull(other, "other");
-            return other.Context.GetImmediateClassOf(self).HasAncestor(other);
+            return other.Context.IsKindOf(self, other);
         }
 
         // thread-safe:
