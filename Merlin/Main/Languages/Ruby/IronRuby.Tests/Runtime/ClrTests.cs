@@ -92,7 +92,7 @@ NoMethodError
             public int RwProperty { get { return 4; } set { } }
             public int WoProperty { set { } }
             
-            public int Method() { return 1; }
+            public int M() { return 1; }
             public static int StaticMethod() { return 2; }
         }
 
@@ -104,7 +104,7 @@ NoMethodError
                 CompilerTest(@"
 C = $obj.class
 
-puts $obj.method
+puts $obj.m
 puts C.static_method
 puts $cls.static_methods rescue puts $!.class
 
@@ -125,6 +125,21 @@ NoMethodError
 3
 NoMethodError
 4
+");
+        }
+
+        /// <summary>
+        /// Order of initialization of CLR methods.
+        /// </summary>
+        public void ClrMethods2() {
+            Context.ObjectClass.SetConstant("C", Context.GetClass(typeof(ClassWithMethods1)));
+            XTestOutput(@"
+class C
+  def m; 2; end     # replace CLR method with Ruby method before we use the CLR one
+  remove_method :m  # remove Ruby method
+  new.m rescue p $! # we shouldn't call the CLR method 
+end
+", @"
 ");
         }
 
@@ -355,15 +370,15 @@ Hidden: 1, 2
             public class Y : X { }
             
             public static void Load(RubyContext/*!*/ context) {
-                context.ObjectClass.SetConstant("A", context.GetClass(typeof(OverloadInheritance2.A)));
-                context.ObjectClass.SetConstant("B", context.GetClass(typeof(OverloadInheritance2.B)));
-                context.ObjectClass.SetConstant("C", context.GetClass(typeof(OverloadInheritance2.C)));
-                context.ObjectClass.SetConstant("D", context.GetClass(typeof(OverloadInheritance2.D)));
-                context.ObjectClass.SetConstant("E", context.GetClass(typeof(OverloadInheritance2.E)));
-                context.ObjectClass.SetConstant("F", context.GetClass(typeof(OverloadInheritance2.F)));
-                context.ObjectClass.SetConstant("G", context.GetClass(typeof(OverloadInheritance2.G)));
-                context.ObjectClass.SetConstant("X", context.GetClass(typeof(OverloadInheritance2.X)));
-                context.ObjectClass.SetConstant("Y", context.GetClass(typeof(OverloadInheritance2.Y)));
+                context.ObjectClass.SetConstant("A", context.GetClass(typeof(A)));
+                context.ObjectClass.SetConstant("B", context.GetClass(typeof(B)));
+                context.ObjectClass.SetConstant("C", context.GetClass(typeof(C)));
+                context.ObjectClass.SetConstant("D", context.GetClass(typeof(D)));
+                context.ObjectClass.SetConstant("E", context.GetClass(typeof(E)));
+                context.ObjectClass.SetConstant("F", context.GetClass(typeof(F)));
+                context.ObjectClass.SetConstant("G", context.GetClass(typeof(G)));
+                context.ObjectClass.SetConstant("X", context.GetClass(typeof(X)));
+                context.ObjectClass.SetConstant("Y", context.GetClass(typeof(Y)));
             }
         }
 
@@ -743,6 +758,63 @@ end
             );
         }
 
+        public static class OverloadSelection2 {
+            public class A {
+                public A() {
+                }
+
+                public A(int a) {
+                }
+
+                public A(RubyClass cls, double a) {
+                }
+
+                public static int Foo() { return 1; }
+                public static int Foo(RubyScope scope, BlockParam block, int a) { return 2; }
+            }
+
+            public class B : A {
+                public static int Foo(double a) { return 3; }
+                public static int Foo(RubyClass cls, string b) { return 4; }
+            }
+
+            public static void Load(RubyContext/*!*/ context) {
+                context.ObjectClass.SetConstant("A", context.GetClass(typeof(A)));
+                context.ObjectClass.SetConstant("B", context.GetClass(typeof(B)));
+            }
+        }
+
+        public void ClrOverloadSelection2() {
+            OverloadSelection2.Load(Context);
+
+            // TODO: constructor overload selection
+            // B.overloads(Fixnum).new(1) ???
+
+            // static methods:
+            TestOutput(@"
+m = B.method(:foo)
+puts m.overloads(Fixnum).clr_members.size          # RubyScope and BlockParam are hidden
+puts m.overloads(System::String) rescue p $!       # RubyClass is not hidden here
+", @"
+1
+#<ArgumentError: no overload of `foo' matches given parameter types>
+");
+
+            // library methods:
+            TestOutput(@"
+m = method(:print)
+puts m.arity
+puts m.overloads().arity
+puts m.overloads(Object).arity
+puts m.overloads(System::Array[Object]).arity
+", @"
+-1
+0
+1
+-1
+");
+        }
+
         public class ClassWithInterfaces1 : IEnumerable {
             public IEnumerator GetEnumerator() {
                 yield return 1;
@@ -804,7 +876,27 @@ puts $type.static_method rescue puts $!.class
 {1}
 2
 NoMethodError
-", type, RubyUtils.GetQualifiedName(typeof(ClassWithMethods1))), OutputFlags.Match);
+", type, RubyUtils.GetQualifiedName(typeof(ClassWithMethods1), true)), OutputFlags.Match);
+        }
+
+        public void ClrNamespaces1() {
+            TestOutput(@"
+puts defined? System::Collections
+
+module System
+  remove_const(:Collections)
+end
+
+puts defined? System::Collections
+
+class System::Collections
+  puts self
+end
+", @"
+constant
+nil
+System::Collections
+");
         }
         
         public void ClrGenerics1() {
@@ -819,11 +911,49 @@ p C[String].new.arity
 p C[Fixnum, Fixnum].new.arity
 ");
             }, @"
-TypeGroup of C
+#<TypeGroup: InteropTests::Generics1::C, InteropTests::Generics1::C[T], InteropTests::Generics1::C[T, S]>
 0
 1
 2
 ");
+        }
+
+        public class ClassWithNestedGenericTypes1 {
+            public class D {
+            }
+
+            public class C {
+                public int Id { get { return 0; } }
+            }
+
+            public class C<T> {
+                public int Id { get { return 1; } }
+            }
+        }
+
+        public class ClassWithNestedGenericTypes2 : ClassWithNestedGenericTypes1 {
+            public new class C<T> {
+                public int Id { get { return 2; } }
+            }
+
+            public class C<T, S> {
+                public int Id { get { return 3; } }
+            }
+        }
+
+        public void ClrGenerics2() {
+            Context.ObjectClass.SetConstant("C1", Context.GetClass(typeof(ClassWithNestedGenericTypes1)));
+            Context.ObjectClass.SetConstant("C2", Context.GetClass(typeof(ClassWithNestedGenericTypes2)));
+
+            AssertOutput(() => CompilerTest(@"
+p C1::D
+p C1::C
+p C2::C
+"), @"
+*::ClassWithNestedGenericTypes1::D
+#<TypeGroup: *::ClassWithNestedGenericTypes1::C, *::ClassWithNestedGenericTypes1::C[T]>
+#<TypeGroup: *::ClassWithNestedGenericTypes2::C[T], *::ClassWithNestedGenericTypes2::C[T, S]>
+", OutputFlags.Match);
         }
 
         /// <summary>
@@ -1143,50 +1273,159 @@ RM1CM2CP1CP2RP3
         }
 
         public class ClassWithNonEmptyConstructor {
-            public string P { get; set; }
+            public int P { get; set; }
+
             public ClassWithNonEmptyConstructor() {
             }
-            public ClassWithNonEmptyConstructor(string p) {
+
+            public ClassWithNonEmptyConstructor(BinaryOpStorage storage, RubyScope scope, RubyClass self, string p) {
+            }
+
+            public ClassWithNonEmptyConstructor(RubyContext context, int i) {
+                P = i;
+            }
+
+            public ClassWithNonEmptyConstructor(RubyContext context, RubyClass cls1, RubyClass cls2) {
+            }
+        }
+
+        public class ClassWithNonEmptyConstructor2 {
+            public int P { get; set; }
+
+            public ClassWithNonEmptyConstructor2() {
+                P = 0;
+            }
+
+            public ClassWithNonEmptyConstructor2(RubyClass cls) {
+                P = 1;
+            }
+
+            public ClassWithNonEmptyConstructor2(RubyContext context) {
+                P = 2;
+            }
+        }
+
+        public class ExceptionWithDefaultConstructor1 : Exception {
+            public ExceptionWithDefaultConstructor1() {
+            }
+        }
+
+        public class ExceptionWithStdConstructors1 : Exception {
+            public int P { get; set; }
+            public ExceptionWithStdConstructors1() {
+                P = 0;
+            }
+
+            public ExceptionWithStdConstructors1(string message) : base(message) {
+                P = 1;
+            }
+        }
+
+        public class ClassWithNoDefaultConstructor {
+            public string P { get; set; }
+
+            public ClassWithNoDefaultConstructor(string p) {
                 P = p;
             }
         }
 
-        private static bool IsAvailable(MethodBase method) {
+        private static bool IsCtorAvailable(RubyClass cls, params Type[] parameters) {
+            var method = cls.GetUnderlyingSystemType().GetConstructor(BindingFlags.Public | BindingFlags.Instance, null, parameters, null);
             return method != null && !method.IsPrivate && !method.IsFamilyAndAssembly;
         }
 
         public void ClrConstructor1() {
-            Context.ObjectClass.SetConstant("C", Context.GetClass(typeof(ClassWithNonEmptyConstructor)));
-            var cls = Engine.Execute(@"
-class D < C; end
-D.new
-D
-");
-            var rubyClass = (cls as RubyClass);
-            Debug.Assert(rubyClass != null);
+            Context.ObjectClass.SetConstant("C1", Context.GetClass(typeof(ClassWithNonEmptyConstructor)));
 
-            Type baseType = rubyClass.GetUnderlyingSystemType();
-            Assert(IsAvailable(baseType.GetConstructor(BindingFlags.Public | BindingFlags.Instance, null, new[] { typeof(RubyClass) }, null)));
-            Assert(IsAvailable(baseType.GetConstructor(BindingFlags.Public | BindingFlags.Instance, null, new[] { typeof(RubyClass), typeof(string) }, null)));
-#if !SILVERLIGHT
-            Assert(IsAvailable(baseType.GetConstructor(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance, null, new[] {
-                typeof(SerializationInfo), typeof(StreamingContext) }, null)));
-#endif
+            var cls1 = Engine.Execute<RubyClass>("class D1 < C1; self; end");
+            Assert(IsCtorAvailable(cls1, typeof(RubyClass)));
+            Assert(IsCtorAvailable(cls1, typeof(BinaryOpStorage), typeof(RubyScope), typeof(RubyClass), typeof(string)));
+            Assert(IsCtorAvailable(cls1, typeof(RubyClass), typeof(int)));
+            Assert(IsCtorAvailable(cls1, typeof(RubyClass), typeof(RubyClass), typeof(RubyClass)));
+
+            Context.ObjectClass.SetConstant("C2", Context.GetClass(typeof(ClassWithNonEmptyConstructor2)));
+            var cls2 = Engine.Execute<RubyClass>("class D2 < C2; self; end");
+            Assert(IsCtorAvailable(cls2, typeof(RubyClass)));
+            Assert(!IsCtorAvailable(cls2, typeof(RubyContext)));
+            Assert(!IsCtorAvailable(cls2));
+
+            Assert(Engine.Execute<int>("D2.new.p") == 1);
+
+            Context.ObjectClass.SetConstant("E1", Context.GetClass(typeof(ExceptionWithDefaultConstructor1)));
+            var ex1 = Engine.Execute<RubyClass>("class F1 < E1; self; end");
+            Assert(IsCtorAvailable(ex1, typeof(RubyClass)));
+
+            Context.ObjectClass.SetConstant("E2", Context.GetClass(typeof(ExceptionWithStdConstructors1)));
+            var ex2 = Engine.Execute<RubyClass>("class F2 < E2; self; end");
+            Assert(IsCtorAvailable(ex2, typeof(RubyClass)));
+            Assert(IsCtorAvailable(ex2, typeof(RubyClass), typeof(string)));
+
+            Assert(Engine.Execute<int>("F2.new.p") == 1);
         }
 
         public void ClrConstructor2() {
-            // TODO: Requires allocator support
-            Context.ObjectClass.SetConstant("C", Context.GetClass(typeof(ClassWithNonEmptyConstructor)));
+            Context.ObjectClass.SetConstant("DefaultAndParam", Context.GetClass(typeof(ClassWithNonEmptyConstructor)));
             AssertOutput(delegate() {
                 CompilerTest(@"
-class D < C; end
+class D < DefaultAndParam; end
 
-$d = D.new 'test'
-puts $d.p
+d = D.new 123
+puts d.p
 ");
             }, @"
-test
+123
 ");
+        }
+
+        public class ClassWithDefaultAndParamConstructor {
+            public string P { get; set; }
+
+            public ClassWithDefaultAndParamConstructor() {
+            }
+
+            public ClassWithDefaultAndParamConstructor(string p) {
+                P = p;
+            }
+        }
+
+        public void ClrConstructor3() {
+            Context.ObjectClass.SetConstant("DefaultAndParam", Context.GetClass(typeof(ClassWithDefaultAndParamConstructor)));
+            Context.ObjectClass.SetConstant("NoDefault", Context.GetClass(typeof(ClassWithNoDefaultConstructor)));
+            AssertOutput(delegate() {
+                CompilerTest(@"
+module I
+  def initialize(arg)
+    self.p = arg
+    puts 'init'
+  end
+end
+
+class D < DefaultAndParam
+  include I
+end
+
+class E < NoDefault
+  include I
+end
+
+class F < NoDefault
+  def self.new(*args)
+    puts 'ctor'
+    super args.join(' ')
+  end
+end
+
+puts D.new('test').p
+E.new('test').p rescue p $!
+puts F.new('hello', 'world').p
+");
+            }, @"
+init
+test
+#<TypeError: can't allocate class `E' that derives from type `*::ClassWithNoDefaultConstructor' with no default constructor; define E#new singleton method instead of I#initialize>
+ctor
+hello world
+", OutputFlags.Match);
         }
 
         /// <summary>

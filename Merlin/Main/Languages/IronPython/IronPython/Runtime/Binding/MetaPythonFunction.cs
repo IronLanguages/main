@@ -646,7 +646,7 @@ namespace IronPython.Runtime.Binding {
             /// </summary>
             private Expression/*!*/[]/*!*/ GetArgumentsForTargetType(Expression[] exprArgs) {
                 Type target = _func.Value.Target.GetType();
-                if (target == typeof(IronPython.Compiler.CallTargetN)) {
+                if (target == typeof(Func<PythonFunction, object[], object>)) {
                     exprArgs = new Expression[] {
                         AstUtils.NewArrayHelper(typeof(object), exprArgs) 
                     };

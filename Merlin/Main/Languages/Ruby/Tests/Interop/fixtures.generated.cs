@@ -656,3 +656,20 @@ public class EmptyTypeGroup { }
 
     public class TypeGroup1<T> {int m1() {return 1;}}
     public class TypeGroup1<T,V> {int m1() {return 1;}}
+#line 47 "./uncategorized_spec.rb"
+public static class EqualityChecker {
+      public static new bool Equals(object o1, object o2) { return o1.Equals(o2); }
+    }
+    
+    public class Equatable {
+      public override bool Equals(object other) { return (other is string) && ((string)other) == "ClrMarker"; }
+      public override int GetHashCode() { throw new NotImplementedException(); }
+    }
+#line 169 "./uncategorized_spec.rb"
+public static class Hasher {
+      public static int GetHashCode(object o) { return o.GetHashCode(); }
+    }
+    
+    public class Hashable {
+      public override int GetHashCode() { return 123; }
+    }

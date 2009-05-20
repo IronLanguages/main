@@ -157,5 +157,17 @@ namespace Microsoft.Scripting.Utils {
                 }
             }
         }
+
+        public static int FindIndex<T>(this IList<T> collection, Predicate<T> predicate) {
+            ContractUtils.RequiresNotNull(collection, "collection");
+            ContractUtils.RequiresNotNull(predicate, "predicate");
+
+            for (int i = 0; i < collection.Count; i++) {
+                if (predicate(collection[i])) {
+                    return i;
+                }
+            }
+            return -1;
+        }
     }
 }

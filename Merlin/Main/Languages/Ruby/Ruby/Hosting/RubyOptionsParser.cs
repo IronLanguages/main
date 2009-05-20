@@ -125,10 +125,6 @@ namespace IronRuby.Hosting {
                     CommonConsoleOptions.Command += PopNextArg();
                     break;
 
-                case "-I":
-                    _loadPaths.AddRange(PopNextArg().Split(Path.PathSeparator));
-                    break;
-
                 #endregion
 
 #if DEBUG && !SILVERLIGHT
@@ -189,6 +185,15 @@ namespace IronRuby.Hosting {
                     break;
 
                 default:
+                    if (arg.StartsWith("-I")) {
+                        if (arg == "-I") {
+                            _loadPaths.Add(PopNextArg());
+                        } else {
+                            _loadPaths.Add(arg.Substring(2));
+                        }
+                        break;
+                    }
+
 #if !SILVERLIGHT
                     if (arg.StartsWith("-K")) {
                         LanguageSetup.Options["KCode"] = optionName.Length >= 3 ? RubyEncoding.GetKCodingByNameInitial(optionName[2]) : null;

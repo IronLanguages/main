@@ -18,25 +18,21 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Dynamic;
+using System.IO;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
-using System.Text;
 using System.Threading;
 using IronRuby.Builtins;
 using IronRuby.Compiler;
 using IronRuby.Compiler.Generation;
 using IronRuby.Runtime.Calls;
 using Microsoft.Scripting;
-using Microsoft.Scripting.Actions;
+using Microsoft.Scripting.Interpreter;
 using Microsoft.Scripting.Math;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
-using System.IO;
-using System.Runtime.InteropServices;
-using Microsoft.Scripting.Generation;
-using Microsoft.Scripting.Interpreter;
 
 namespace IronRuby.Runtime {
     public static partial class RubyOps {
@@ -1304,6 +1300,11 @@ namespace IronRuby.Runtime {
         }
 
         [Emitted]
+        public static Exception/*!*/ MakeMissingDefaultConstructorError(RubyClass/*!*/ classObj, string/*!*/ initializerOwnerName) {
+            return RubyExceptions.CreateMissingDefaultConstructorError(classObj, initializerOwnerName);
+        }
+
+        [Emitted]
         public static Exception/*!*/ MakePrivateMethodCalledError(RubyContext/*!*/ context, object target, string/*!*/ methodName) {
             return RubyExceptions.CreatePrivateMethodCalled(context, target, methodName);
         }
@@ -1382,7 +1383,7 @@ namespace IronRuby.Runtime {
         // Used for implicit conversions from System.Object to MutableString (to_s conversion like).
         [Emitted]
         public static MutableString/*!*/ ObjectToMutableString(object/*!*/ value) {
-            return (value != null) ? MutableString.Create(value.ToString(), RubyEncoding.UTF8) : MutableString.Empty;
+            return (value != null) ? MutableString.Create(value.ToString(), RubyEncoding.UTF8) : MutableString.FrozenEmpty;
         }
 
         [Emitted] // ProtocolConversionAction

@@ -678,12 +678,10 @@ namespace System.Runtime.CompilerServices {
                 Expression.Assign(
                     rule,
                     Expression.Call(
-                        Expression.Property(
-                            @this,
-                            "Binder"
-                        ),
-                        "BindDelegate",
+                        typeof(CallSiteOps),
+                        "Bind",
                         typeArgs,
+                        Expression.Property(@this, "Binder"),
                         @this,
                         args
                     )

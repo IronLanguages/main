@@ -29,7 +29,7 @@ using IronPython.Runtime.Types;
 namespace IronPython.Runtime {
     [PythonType("bytes")]
     public class Bytes : IList<byte>, ICodeFormattable, IExpressionSerializable {
-        private byte[]/*!*/ _bytes;
+        internal byte[]/*!*/ _bytes;
         internal static Bytes/*!*/ Empty = new Bytes();
 
         public Bytes() {
@@ -56,6 +56,10 @@ namespace IronPython.Runtime {
             _bytes = StringOps.encode(context, unicode, encoding, "strict").MakeByteArray();
         }
         
+        internal static Bytes Make(byte[] bytes) {
+            return new Bytes(bytes);
+        }
+
         #region Public Python API surface
 
         public Bytes capitalize() {
@@ -696,9 +700,14 @@ namespace IronPython.Runtime {
             return x._bytes.Compare(y._bytes) <= 0;
         }
 
-        public int this[int index] {
+        public object this[CodeContext/*!*/ context, int index] {
             get {
-                return (int)_bytes[PythonOps.FixIndex(index, _bytes.Length)];
+                byte res = _bytes[PythonOps.FixIndex(index, _bytes.Length)];
+                if (PythonContext.GetContext(context).PythonOptions.Python30) {
+                    return (int)res;
+                }
+
+                return new Bytes(new byte[] { res });
             }
             [PythonHidden]
             set {

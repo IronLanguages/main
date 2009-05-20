@@ -350,8 +350,7 @@ namespace IronRuby.Runtime {
             BinaryOpStorage/*!*/ binaryOpStorage, string/*!*/ binaryOp,
             object self, object other, out object result) {
 
-            // doesn't call method_missing:
-            var coerce = coercionStorage.GetCallSite("coerce", new RubyCallSignature(1, RubyCallFlags.IsTryCall | RubyCallFlags.HasImplicitSelf));
+            var coerce = coercionStorage.GetCallSite("coerce", new RubyCallSignature(1, RubyCallFlags.HasImplicitSelf));
 
             IList coercedValues;
 

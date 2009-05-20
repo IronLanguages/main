@@ -723,7 +723,7 @@ namespace IronPython.Runtime.Binding {
             res[typeof(DynamicNull)] = new ExtensionTypeInfo(typeof(NoneTypeOps), "NoneType");
             res[typeof(BaseSymbolDictionary)] = new ExtensionTypeInfo(typeof(DictionaryOps), "dict");
             res[typeof(IAttributesCollection)] = new ExtensionTypeInfo(typeof(DictionaryOps), "dict");
-            res[typeof(NamespaceTracker)] = new ExtensionTypeInfo(typeof(ReflectedPackageOps), "namespace#");
+            res[typeof(NamespaceTracker)] = new ExtensionTypeInfo(typeof(NamespaceTrackerOps), "namespace#");
             res[typeof(TypeGroup)] = new ExtensionTypeInfo(typeof(TypeGroupOps), "type-collision");
             res[typeof(TypeTracker)] = new ExtensionTypeInfo(typeof(TypeTrackerOps), "type-collision");
             res[typeof(Scope)] = new ExtensionTypeInfo(typeof(ScopeOps), "module");
@@ -759,7 +759,7 @@ namespace IronPython.Runtime.Binding {
 
         public bool WarnOnPython3000 {
             get {
-                return _context.PythonOptions.WarnPy3k;
+                return _context.PythonOptions.WarnPython30;
             }
         }
 

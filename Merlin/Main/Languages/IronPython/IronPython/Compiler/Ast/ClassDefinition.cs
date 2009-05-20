@@ -160,6 +160,11 @@ namespace IronPython.Compiler.Ast {
                 );
             }
 
+            if (_body.CanThrow && ag.PyContext.PythonOptions.Frames) {
+                bodyStmt = FunctionDefinition.AddFrame(classGen.LocalContext, Ast.Constant(null, typeof(PythonFunction)), bodyStmt);
+                classGen.AddHiddenVariable(FunctionDefinition._functionStack);
+            }
+
             bodyStmt = classGen.WrapScopeStatements(
                 Ast.Block(
                     statements.Count == 0 ?

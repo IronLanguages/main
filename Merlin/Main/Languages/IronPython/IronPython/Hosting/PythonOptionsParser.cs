@@ -137,6 +137,12 @@ namespace IronPython.Hosting {
                     LanguageSetup.Options["Arguments"] = PopRemainingArgs();
                     break;
 
+                case "-X:Frames":
+                    LanguageSetup.Options["Frames"] = ScriptingRuntimeHelpers.True;
+                    break;
+                case "-X:FullFrames":
+                    LanguageSetup.Options["Frames"] = LanguageSetup.Options["FullFrames"] = ScriptingRuntimeHelpers.True;
+                    break;
                 case "-X:MaxRecursion":
                     int limit;
                     if (!StringUtils.TryParseInt32(PopNextArg(), out limit)) {
@@ -157,8 +163,8 @@ namespace IronPython.Hosting {
                 case "-X:MTA":
                     ConsoleOptions.IsMta = true;
                     break;
-                case "-X:Python25":
-                    LanguageSetup.Options["PythonVersion"] = new Version(2, 5);
+                case "-X:Python30":
+                    LanguageSetup.Options["PythonVersion"] = new Version(3, 0);
                     break;
 
                 case "-X:Debug":
@@ -221,10 +227,12 @@ namespace IronPython.Hosting {
                 { "-W arg",                 "Warning control (arg is action:message:category:module:lineno)" },
                 { "-3",                     "Warn about Python 3.x incompatibilities" },
 
+                { "-X:Frames",              "Enable basic sys._getframe support" },
+                { "-X:FullFrames",          "Enable sys._getframe with access to locals" },
                 { "-X:MaxRecursion",        "Set the maximum recursion level" },
                 { "-X:Debug",               "Enable application debugging (preferred over -D)" },
                 { "-X:MTA",                 "Run in multithreaded apartment" },
-                { "-X:Python25",            "Disable some Python 2.6 features" },
+                { "-X:Python30",            "Enable available Python 3.0 features" },
                 { "-X:EnableProfiler",      "Enables profiling support in the compiler" },
                 { "-X:LightweightScopes",   "Generate optimized scopes that can be garbage collected" },
             };

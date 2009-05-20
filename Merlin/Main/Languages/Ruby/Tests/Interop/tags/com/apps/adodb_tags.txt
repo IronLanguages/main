@@ -1,0 +1,1 @@
+fails:ADODB COM interop allows assignment and reading with name mangling

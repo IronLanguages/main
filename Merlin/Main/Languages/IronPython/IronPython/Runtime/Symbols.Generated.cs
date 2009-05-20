@@ -512,6 +512,7 @@ namespace IronPython.Runtime {
         private static SymbolId _AbsoluteImport;
         private static SymbolId _PrintFunction;
         private static SymbolId _UnicodeLiterals;
+        private static SymbolId _Package;
         ///<summary>Symbol for '__neg__'</summary> 
         public static SymbolId OperatorNegate {
             get {
@@ -1266,6 +1267,13 @@ namespace IronPython.Runtime {
             get {
                 if (_UnicodeLiterals == SymbolId.Empty) _UnicodeLiterals = MakeSymbolId("unicode_literals");
                 return _UnicodeLiterals;
+            }
+        }
+        ///<summary>Symbol for '__package__'</summary> 
+        public static SymbolId Package {
+            get {
+                if (_Package == SymbolId.Empty) _Package = MakeSymbolId("__package__");
+                return _Package;
             }
         }
 

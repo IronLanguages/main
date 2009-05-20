@@ -94,7 +94,9 @@ namespace IronRuby.Builtins {
 
         private CallSite<Func<CallSite, object, object>> _inspectSite;
         private CallSite<Func<CallSite, object, MutableString>> _stringConversionSite;
-        
+        private CallSite<Func<CallSite, object, object, object>> _eqlSite;
+        private CallSite<Func<CallSite, object, object>> _hashSite;
+
         public CallSite<Func<CallSite, object, object>>/*!*/ InspectSite { 
             get { return RubyUtils.GetCallSite(ref _inspectSite, Context, "inspect", 0); } 
         }
@@ -103,6 +105,15 @@ namespace IronRuby.Builtins {
             get { return RubyUtils.GetCallSite(ref _stringConversionSite, ConvertToSAction.Make(Context)); } 
         }
 
+        public CallSite<Func<CallSite, object, object, object>>/*!*/ EqlSite {
+            get { return RubyUtils.GetCallSite(ref _eqlSite, Context, "==", 1); }
+        }
+
+        public CallSite<Func<CallSite, object, object>>/*!*/ HashSite {
+            get { return RubyUtils.GetCallSite(ref _hashSite, Context, "hash", 0); }
+
+        }
+        
         // RubyClass, RubyClass -> object
         private CallSite<Func<CallSite, object, object, object>> _classInheritedCallbackSite;
 
@@ -423,7 +434,7 @@ namespace IronRuby.Builtins {
                 }
 
                 // Skips modules whose method tables are not initialized as well as CLR methods that are not yet loaded to method tables.
-                // We can do so because such methods were nto used in any cache.
+                // We can do so because such methods were not used in any cache.
                 //
                 // Skips super-forwarder since the forwarded super ancestor would be used in a site/group, not the forwarder itself.
                 // If the forwarded ancestor is overridden the forwarder will forward to the override.
@@ -814,7 +825,7 @@ namespace IronRuby.Builtins {
                     // Skip classes that have no tracker, e.g. Fixnum(tracker) <: Integer(null) <: Numeric(null) <: Object(tracker).
                     // Skip interfaces, their methods are not callable => do not include them into a method group.
                     // Skip all classes once hidden sentinel is encountered (no CLR overloads are visible since then).
-                    if (!skipHidden && module.Tracker != null && module.IsClass) {
+                    if (!skipHidden && module.TypeTracker != null && module.IsClass) {
                         ancestors.Add((RubyClass)module);
                     }
                 }
@@ -834,7 +845,7 @@ namespace IronRuby.Builtins {
 
             // populate classes in (type..Kernel] or (type..C) with method groups:
             for (int i = ancestors.Count - 1; i >= 0; i--) {
-                var declared = GetDeclaredClrMethods(ancestors[i].Tracker.Type, bindingFlags, clrName);
+                var declared = GetDeclaredClrMethods(ancestors[i].TypeTracker.Type, bindingFlags, clrName);
                 if (declared.Length != 0 && AddMethodsOverwriteExisting(ref allMethods, declared, null, specialNameOnly)) {
                     // There is no cached method that needs to be invalidated.
                     //
@@ -1005,7 +1016,9 @@ namespace IronRuby.Builtins {
             argsBuilder.AddCallArguments(metaBuilder, args);
 
             if (!metaBuilder.Error) {
-                BuildAllocatorCall(metaBuilder, args, () => AstUtils.Constant(Name));
+                if (!BuildAllocatorCall(metaBuilder, args, () => AstUtils.Constant(Name))) {
+                    metaBuilder.SetError(Methods.MakeAllocatorUndefinedError.OpCall(Ast.Convert(args.TargetExpression, typeof(RubyClass))));
+                }
             }
         }
         
@@ -1033,35 +1046,43 @@ namespace IronRuby.Builtins {
                 Debug.Assert(initializer != null);
             }
 
-            // Ruby libraries: should initialize fully via factories/constructors.
-            // C# "initialize" methods: ignored - we don't consider them initializers.
-            RubyMethodInfo overriddenInitializer = initializer as RubyMethodInfo;
+            bool hasRubyInitializer = initializer is RubyMethodInfo;
+            bool hasLibraryInitializer = !hasRubyInitializer && initializer.DeclaringModule != Context.ObjectClass;
 
-            // Initializer is overridden => initializer is invoked on an uninitialized instance.
-            // Is user class (defined in Ruby code) => construct it as if it had initializer that calls super immediately
-            // (we need to "inherit" factories/constructors from the base class (e.g. class S < String; self; end.new('foo')).
-            if (overriddenInitializer != null || (_isRubyClass && _structInfo == null)) {
-                BuildAllocatorCall(metaBuilder, args, () => AstUtils.Constant(Name));
-
-                if (!metaBuilder.Error) {
-                    if (overriddenInitializer != null || (_isRubyClass && initializer != null && !initializer.IsEmpty)) {
-                        BuildOverriddenInitializerCall(metaBuilder, args, initializer);
-                    }
+            if (hasRubyInitializer || hasLibraryInitializer && _isRubyClass) {
+                // allocate and initialize:
+                bool allocatorFound = BuildAllocatorCall(metaBuilder, args, () => AstUtils.Constant(Name));
+                if (metaBuilder.Error) {
+                    return;
                 }
-            } else if (typeof(Delegate).IsAssignableFrom(type)) {
-                BuildDelegateConstructorCall(metaBuilder, args, type);
+
+                if (!allocatorFound) {
+                    metaBuilder.SetError(Methods.MakeMissingDefaultConstructorError.OpCall(
+                        Ast.Convert(args.TargetExpression, typeof(RubyClass)),
+                        Ast.Constant(initializer.DeclaringModule.Name)
+                    ));
+                    return;
+                }
+
+                if (!initializer.IsEmpty) {
+                    BuildOverriddenInitializerCall(metaBuilder, args, initializer);
+                }
             } else {
+                // construct:
                 MethodBase[] constructionOverloads;
                 SelfCallConvention callConvention;
 
-                if (_structInfo != null) {
+                if (typeof(Delegate).IsAssignableFrom(type)) {
+                    BuildDelegateConstructorCall(metaBuilder, args, type);
+                    return;
+                } else if (type.IsArray && type.GetArrayRank() == 1) {
+                    constructionOverloads = ClrVectorFactories;
+                    callConvention = SelfCallConvention.SelfIsParameter;
+                } else if (_structInfo != null) {
                     constructionOverloads = new MethodBase[] { Methods.CreateStructInstance };
                     callConvention = SelfCallConvention.SelfIsParameter;
                 } else if (_factories.Length != 0) {
                     constructionOverloads = (MethodBase[])ReflectionUtils.GetMethodInfos(_factories);
-                    callConvention = SelfCallConvention.SelfIsParameter;
-                } else if (type.IsArray && type.GetArrayRank() == 1) {
-                    constructionOverloads = ClrVectorFactories;
                     callConvention = SelfCallConvention.SelfIsParameter;
                 } else {
                     // TODO: handle protected constructors
@@ -1118,46 +1139,41 @@ namespace IronRuby.Builtins {
             }
         }
 
-        public void BuildAllocatorCall(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args, Func<Expression>/*!*/ defaultExceptionMessage) {
+        public bool BuildAllocatorCall(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args, Func<Expression>/*!*/ defaultExceptionMessage) {
             Type type = GetUnderlyingSystemType();
 
             if (_structInfo != null) {
                 metaBuilder.Result = Methods.AllocateStructInstance.OpCall(AstUtils.Convert(args.TargetExpression, typeof(RubyClass)));
-                return;
-            }
-
-            if (type.IsSubclassOf(typeof(Delegate))) {
-                BuildDelegateConstructorCall(metaBuilder, args, type);
-                return;
+                return true;
             }
 
             ConstructorInfo ctor;
             if (IsException()) {
                 if ((ctor = type.GetConstructor(new[] { typeof(string) })) != null) {
                     metaBuilder.Result = Ast.New(ctor, defaultExceptionMessage());
-                    return;
+                    return true;
                 } else if ((ctor = type.GetConstructor(new[] { typeof(string), typeof(Exception) })) != null) {
                     metaBuilder.Result = Ast.New(ctor, defaultExceptionMessage(), AstUtils.Constant(null));
-                    return;
+                    return true;
                 }
             }
 
             if ((ctor = type.GetConstructor(new[] { typeof(RubyClass) })) != null) {
                 metaBuilder.Result = Ast.New(ctor, AstUtils.Convert(args.TargetExpression, typeof(RubyClass)));
-                return;
+                return true;
             }
 
             if ((ctor = type.GetConstructor(new[] { typeof(RubyContext) })) != null) {
                 metaBuilder.Result = Ast.New(ctor, AstUtils.Convert(args.MetaContext.Expression, typeof(RubyContext)));
-                return;
+                return true;
             }
 
             if ((ctor = type.GetConstructor(Type.EmptyTypes)) != null) {
                 metaBuilder.Result = Ast.New(ctor);
-                return;
+                return true;
             }
 
-            metaBuilder.SetError(Methods.MakeAllocatorUndefinedError.OpCall(Ast.Convert(args.TargetExpression, typeof(RubyClass))));
+            return false;
         }
 
         private void BuildDelegateConstructorCall(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args, Type/*!*/ type) {

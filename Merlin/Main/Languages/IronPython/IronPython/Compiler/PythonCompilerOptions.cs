@@ -40,10 +40,6 @@ namespace IronPython.Compiler {
         /// </summary>
         PrintFunction      = 0x008,
         /// <summary>
-        /// Enable access to features new in Python 2.6
-        /// </summary>
-        Python26           = 0x010,
-        /// <summary>
         /// Include comments in the parse tree
         /// </summary>
         Verbatim           = 0x020,
@@ -160,16 +156,6 @@ namespace IronPython.Compiler {
             set {
                 if (value) _languageFeatures |= PythonLanguageFeatures.PrintFunction;
                 else _languageFeatures &= ~PythonLanguageFeatures.PrintFunction;
-            }
-        }
-
-        public bool Python26 {
-            get {
-                return (_languageFeatures & PythonLanguageFeatures.Python26) != 0;
-            }
-            set {
-                if (value) _languageFeatures |= PythonLanguageFeatures.Python26;
-                else _languageFeatures &= ~PythonLanguageFeatures.Python26;
             }
         }
 

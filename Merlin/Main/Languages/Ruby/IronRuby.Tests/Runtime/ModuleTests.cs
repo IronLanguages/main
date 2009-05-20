@@ -13,6 +13,7 @@
  *
  * ***************************************************************************/
 
+using System.IO;
 namespace IronRuby.Tests {
     public partial class Tests {
         public void ClassDuplication1() {
@@ -233,6 +234,43 @@ Meta
 N
 Meta
 ");
+        }
+
+        /// <summary>
+        /// Autoload removes the constant from the declaring module before it loads the target file.
+        /// </summary>
+        public void Autoload1() {
+            if (_driver.PartialTrust) return;
+
+            string file = null;
+            try {
+                file = Driver.MakeTempFile(".rb", @"
+class D 
+  p defined? X
+  X = 123
+end
+");
+                Context.DefineGlobalVariable("file", file);
+    
+                TestOutput(@"
+class D
+  autoload(:X, $file)
+end
+
+class C < D
+  p X
+end
+
+", @"
+nil
+123
+");
+
+            } finally {
+                if (file != null) {
+                    File.Delete(file);
+                }
+            }
         }
 
     }

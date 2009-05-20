@@ -18,6 +18,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection.Emit;
+using System.Runtime.InteropServices;
 using System.Text;
 
 using Microsoft.Scripting;
@@ -105,13 +106,6 @@ namespace IronPython.Modules {
                 : base(underlyingSystemType) {
             }
 
-            /// <summary>
-            /// Converts an object into a function call parameter.
-            /// </summary>
-            public object from_param(object obj) {
-                return null;
-            }
-
             public _Array from_address(CodeContext/*!*/ context, int ptr) {
                 _Array res = (_Array)CreateInstance(context);
                 res.SetAddress(new IntPtr(ptr));
@@ -122,6 +116,44 @@ namespace IronPython.Modules {
                 _Array res = (_Array)CreateInstance(context);
                 res.SetAddress(new IntPtr(ptr.ToInt64()));
                 return res;
+            }
+
+            public _Array from_buffer(ArrayModule.PythonArray array, [DefaultParameterValue(0)]int offset) {
+                ValidateArraySizes(array, offset, ((INativeType)this).Size);
+
+                _Array res = (_Array)CreateInstance(Context.SharedContext);
+                IntPtr addr = array.GetArrayAddress();
+                res._memHolder = new MemoryHolder(addr.Add(offset), ((INativeType)this).Size);
+                res._memHolder.AddObject("ffffffff", array);
+                return res;
+            }
+
+            public _Array from_buffer_copy(ArrayModule.PythonArray array, [DefaultParameterValue(0)]int offset) {
+                ValidateArraySizes(array, offset, ((INativeType)this).Size);
+
+                _Array res = (_Array)CreateInstance(Context.SharedContext);
+                res._memHolder = new MemoryHolder(((INativeType)this).Size);
+                res._memHolder.CopyFrom(array.GetArrayAddress().Add(offset), new IntPtr(((INativeType)this).Size));
+                GC.KeepAlive(array);
+                return res;
+            }
+
+            public _Array from_buffer_copy(Bytes array, [DefaultParameterValue(0)]int offset) {
+                ValidateArraySizes(array, offset, ((INativeType)this).Size);
+
+                _Array res = (_Array)CreateInstance(Context.SharedContext);
+                res._memHolder = new MemoryHolder(((INativeType)this).Size);
+                for (int i = 0; i < ((INativeType)this).Size; i++) {
+                    res._memHolder.WriteByte(i, array._bytes[i]);
+                }
+                return res;
+            }
+
+            /// <summary>
+            /// Converts an object into a function call parameter.
+            /// </summary>
+            public object from_param(object obj) {
+                return null;
             }
 
             internal static PythonType MakeSystemType(Type underlyingSystemType) {
@@ -174,12 +206,9 @@ namespace IronPython.Modules {
                     return str;
                 }
 
-                object[] res = new object[_length];
-                for (int i = 0; i < res.Length; i++) {
-                    res[i] = _type.GetValue(owner, checked(offset + _type.Size * i), raw);
-                }
-
-                return List.FromArrayNoCopy(res);
+                _Array arr = (_Array)CreateInstance(Context.SharedContext);
+                arr._memHolder = new MemoryHolder(owner.UnsafeAddress.Add(offset), ((INativeType)this).Size);
+                return arr;
             }
 
             internal string GetRawValue(MemoryHolder owner, int offset) {
@@ -206,7 +235,7 @@ namespace IronPython.Modules {
                 }
             }
 
-            void INativeType.SetValue(MemoryHolder address, int offset, object value) {
+            object INativeType.SetValue(MemoryHolder address, int offset, object value) {
                 string str = value as string;
                 if (str != null) {
                     if (!IsStringType) {
@@ -217,7 +246,7 @@ namespace IronPython.Modules {
 
                     WriteString(address, offset, str);
 
-                    return;
+                    return null;
                 } else if (IsStringType) {
                     IList<object> objList = value as IList<object>;
                     if (objList != null) {
@@ -227,14 +256,13 @@ namespace IronPython.Modules {
                         }
 
                         WriteString(address, offset, res.ToString());
-                        return;
+                        return null;
                     }
 
                     throw PythonOps.TypeError("expected string or Unicode object, {0} found", DynamicHelpers.GetPythonType(value).Name);
                 }
 
                 object[] arrArgs = value as object[];
-
                 if (arrArgs == null) {
                     PythonTuple pt = value as PythonTuple;
                     if (pt != null) {
@@ -252,8 +280,16 @@ namespace IronPython.Modules {
                         _type.SetValue(address, checked(offset + i * _type.Size), arrArgs[i]);
                     }
                 } else {
+                    _Array arr = value as _Array;
+                    if (arr != null && arr.NativeType == this) {
+                        arr._memHolder.CopyTo(address, offset, ((INativeType)this).Size);
+                        return arr._memHolder.EnsureObjects();
+                    }
+
                     throw PythonOps.TypeError("unexpected {0} instance, got {1}", Name, DynamicHelpers.GetPythonType(value).Name);
                 }
+
+                return null;
             }
 
             private void WriteString(MemoryHolder address, int offset, string str) {
@@ -275,6 +311,18 @@ namespace IronPython.Modules {
 
             MarshalCleanup INativeType.EmitMarshalling(ILGenerator/*!*/ method, LocalOrArg argIndex, List<object>/*!*/ constantPool, int constantPoolArgument) {
                 Type argumentType = argIndex.Type;
+                Label done = method.DefineLabel();
+                if (!argumentType.IsValueType) {
+                    Label next = method.DefineLabel();
+                    argIndex.Emit(method);
+                    method.Emit(OpCodes.Ldnull);
+                    method.Emit(OpCodes.Bne_Un, next);
+                    method.Emit(OpCodes.Ldc_I4_0);
+                    method.Emit(OpCodes.Conv_I);
+                    method.Emit(OpCodes.Br, done);
+                    method.MarkLabel(next);                    
+                }
+
                 argIndex.Emit(method);
                 if (argumentType.IsValueType) {
                     method.Emit(OpCodes.Box, argumentType);
@@ -285,6 +333,8 @@ namespace IronPython.Modules {
                 method.Emit(OpCodes.Ldelem_Ref);
                 method.Emit(OpCodes.Call, typeof(ModuleOps).GetMethod("CheckCDataType"));
                 method.Emit(OpCodes.Call, typeof(CData).GetMethod("get_UnsafeAddress"));
+
+                method.MarkLabel(done);
                 return null;
             }
 

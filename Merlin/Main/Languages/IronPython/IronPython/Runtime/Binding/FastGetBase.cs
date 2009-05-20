@@ -29,9 +29,6 @@ namespace IronPython.Runtime.Binding {
         internal Func<CallSite, object, CodeContext, object> _func;
         internal int _hitCount;
 
-        public FastGetBase() {
-        }
-
         public abstract bool IsValid(PythonType type);
 
         internal virtual bool ShouldCache {

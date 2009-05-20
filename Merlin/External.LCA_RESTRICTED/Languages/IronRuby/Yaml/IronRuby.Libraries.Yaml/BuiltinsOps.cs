@@ -71,7 +71,7 @@ namespace IronRuby.StandardLibrary.Yaml {
     public static class YamlClassOps {
         [RubyMethod("to_yaml_node", RubyMethodAttributes.PrivateInstance)]
         public static Node ToYamlNode(RubyContext/*!*/ context, object self, RubyRepresenter rep) {
-            throw RubyExceptions.CreateTypeError("can't dump anonymous class " + context.GetClassName(self));
+            throw RubyExceptions.CreateTypeError("can't dump anonymous class " + context.GetClassDisplayName(self));
         }
     }
 

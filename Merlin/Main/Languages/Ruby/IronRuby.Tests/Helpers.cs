@@ -193,13 +193,13 @@ namespace IronRuby.Tests {
 
         [DebuggerHiddenAttribute]
         private void XAssertOutput(Action f, string expectedOutput) {
-            Console.WriteLine("Assertion check skipped.");
+            Driver.ColorWrite(ConsoleColor.Yellow, "Assertion check skipped.");
             // just run the code
             f();
         }
 
         private void XAssertOutput(Action f, string expectedOutput, OutputFlags flags) {
-            Console.WriteLine("Assertion check skipped.");
+            Driver.ColorWrite(ConsoleColor.Yellow, "Assertion check skipped.");
             // just run the code
             f();
         }

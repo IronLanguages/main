@@ -345,8 +345,11 @@ namespace IronRuby.Tests {
 
                 ClrFields1,
                 ClrTypes1,
+                ClrNamespaces1,
                 ClrGenerics1,
+                ClrGenerics2,
                 ClrMethods1,
+                ClrMethods2,
                 // TODO: protected ClrMethodsVisibility1,
                 ClrOverloadInheritance1,
                 ClrOverloadInheritance2,
@@ -357,6 +360,7 @@ namespace IronRuby.Tests {
                 ClrIndexers1,
                 ClrGenericMethods1,
                 ClrOverloadSelection1,
+                ClrOverloadSelection2,
                 ClrInterfaces1,
                 ClrRequireAssembly1,
                 ClrInclude1,
@@ -372,7 +376,8 @@ namespace IronRuby.Tests {
                 ClrEvents4,
                 ClrOverride1,
                 ClrConstructor1,
-                // TODO: ClrConstructor2,
+                ClrConstructor2,
+                ClrConstructor3,
                 ClrPrimitiveNumericTypes1,
                 ClrArrays1,
                 ClrChar1,
@@ -508,6 +513,7 @@ namespace IronRuby.Tests {
                 Structs1,
                 MetaModules1,
                 MetaModulesDuplication1,
+                Autoload1,
   
                 // eval, binding:
                 Eval1,

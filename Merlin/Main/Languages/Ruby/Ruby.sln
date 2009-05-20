@@ -132,9 +132,7 @@ Global
 		{D4AE44AD-07B9-41DC-BB3B-1FDCDE3C987D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D4AE44AD-07B9-41DC-BB3B-1FDCDE3C987D}.Release|Any CPU.Build.0 = Release|Any CPU
 		{D4AE44AD-07B9-41DC-BB3B-1FDCDE3C987D}.Silverlight Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{D4AE44AD-07B9-41DC-BB3B-1FDCDE3C987D}.Silverlight Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D4AE44AD-07B9-41DC-BB3B-1FDCDE3C987D}.Silverlight Release|Any CPU.ActiveCfg = Release|Any CPU
-		{D4AE44AD-07B9-41DC-BB3B-1FDCDE3C987D}.Silverlight Release|Any CPU.Build.0 = Release|Any CPU
 		{77323B06-15A2-4CF4-8A7A-86EAA2B66498}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{77323B06-15A2-4CF4-8A7A-86EAA2B66498}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{77323B06-15A2-4CF4-8A7A-86EAA2B66498}.FxCop|Any CPU.ActiveCfg = Release|Any CPU

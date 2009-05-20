@@ -35,18 +35,7 @@ namespace Microsoft.Scripting.Utils {
         [StateIndependent]
         public bool Equals(ValueArray<T> other) {
             if (other == null) return false;
-
-            if (other._array.Length != _array.Length) {
-                return false;
-            }
-
-            for (int i = 0; i < _array.Length; i++) {
-                if (!_array[i].Equals(other._array[i])) {
-                    return false;
-                }
-            }
-
-            return true;
+            return _array.ValueEquals(other._array);
         }
 
         #endregion

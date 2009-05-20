@@ -29,7 +29,7 @@ namespace IronRuby.Builtins {
     /// 
     /// Note that for classes that inherit from some other class, RubyTypeDispenser gets used
     /// </summary>
-    [DebuggerDisplay("{Inspect()}")]
+    [DebuggerDisplay("{Inspect().ConvertToString()}")]
     public partial class RubyObject : IRubyObject, IRubyObjectState, IDuplicable, ISerializable {
         internal const string ClassPropertyName = "Class";
 
@@ -50,6 +50,26 @@ namespace IronRuby.Builtins {
             // Translate ToString to to_s conversion for .NET callers.
             var site = _class.StringConversionSite;
             return site.Target(site, this).ToString();
+        }
+
+        public override bool Equals(object obj) {
+            if (object.ReferenceEquals(this, obj)) {
+                // Handle this directly here. Otherwise it can cause infinite recurion when running
+                // script code below as the DLR code needs to call Equals for templating of rules
+                return true;
+            }
+
+            var site = _class.EqlSite;
+            return Protocols.IsTrue(site.Target(site, this, obj));
+        }
+
+        public override int GetHashCode() {
+            var site = _class.HashSite;
+            object hash = site.Target(site, this);
+            if (!((hash is int)  || (hash is Microsoft.Scripting.Math.BigInteger))) {
+                throw RubyExceptions.CreateUnexpectedTypeError(_class.Context, "hash", "Integer");
+            }
+            return hash.GetHashCode();
         }
 
         public MutableString/*!*/ ToMutableString() {

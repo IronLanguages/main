@@ -147,5 +147,18 @@ namespace System.Runtime.CompilerServices {
                 yield return rule.Target;
             }
         }
+
+        /// <summary>
+        /// Updates the call site target with a new rule based on the arguments.
+        /// </summary>
+        /// <typeparam name="T">The type of the delegate of the <see cref="CallSite"/>.</typeparam>
+        /// <param name="binder">The call site binder.</param>
+        /// <param name="site">An instance of the dynamic call site.</param>
+        /// <param name="args">Arguments to the call site.</param>
+        /// <returns>The new call site target.</returns>
+        [Obsolete("do not use this method", true), EditorBrowsable(EditorBrowsableState.Never)]
+        public static T Bind<T>(CallSiteBinder binder, CallSite<T> site, object[] args) where T : class {
+            return binder.BindCore(site, args);
+        }
     }
 }
