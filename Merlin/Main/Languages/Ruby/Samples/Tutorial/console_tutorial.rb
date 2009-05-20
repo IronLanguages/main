@@ -16,9 +16,9 @@
 require "tutorial"
 require "stringio"
 
-class ConsoleApp
-	attr :tutorial
-	
+class ConsoleTutorial
+    attr :tutorial
+    
     def initialize(tutorial = nil, inp = $stdin, out = $stdout)
         @in = inp
         @out = out
@@ -93,5 +93,5 @@ class ConsoleApp
 end
 
 if $0 == __FILE__
-    ConsoleApp.new.run
+    ConsoleTutorial.new.run
 end

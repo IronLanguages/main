@@ -15,133 +15,14 @@
 
 require "tutorial"
 require "stringio"
-require 'rdoc/markup/simple_markup'
-require 'rdoc/markup/simple_markup/inline'
+require "wpf"
 
-# Reference the WPF assemblies
-require 'system.xml, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089' 
-require 'PresentationFramework, Version=3.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35'
-require 'PresentationCore, Version=3.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35'
-require 'windowsbase, Version=3.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35'
-
-class System::Windows::FrameworkElement
-    def method_missing name, *args
-        child = FindName(name.to_clr_string)
-        if child then return child end
-        super
-    end
-end
-
-class ToFlowDocument
-	include System::Windows
-	include System::Windows::Documents
-
-    @@bold_mask = SM::Attribute.bitmap_for :BOLD
-    @@italics_mask = SM::Attribute.bitmap_for :EM
-
-    def start_accepting
-      @flowDoc = FlowDocument.new
-      @attributes = []
-    end
+class WpfTutorial
     
-    def end_accepting
-      @flowDoc
-    end
-
-    def accept_paragraph(am, fragment)
-      paragraph = Paragraph.new
-      convert_flow(am.flow(fragment.txt), paragraph)
-      @flowDoc.blocks.add paragraph
-    end
-
-    def convert_flow(flow, paragraph)
-      flow.each do |item|
-        case item
-        when String
-          if @attributes.empty?
-            paragraph.inlines.add(Run.new(item))
-          else
-            @attributes << item
-          end
-        when SM::AttrChanger
-           on_mask = item.turn_on
-           if not on_mask.zero?
-             @attributes << on_mask
-           end
-
-           off_mask = item.turn_off
-           if not off_mask.zero?
-             raise NotImplementedError if @attributes.size != 2
-             raise NotImplementedError if @attributes[0] != off_mask
-             case @attributes[0]
-               when @@bold_mask
-                 paragraph.inlines.add(Bold.new(Run.new(@attributes[1])))
-                 @attributes.clear
-               when @@italics_mask
-                 paragraph.inlines.add(Italic.new(Run.new(@attributes[1])))
-                 @attributes.clear
-               else
-                 raise "unknown attribute"
-             end
-           end
-        when Special
-          raise "Unknown flow element: #{item.inspect}"
-          # convert_special(item)
-        else
-          raise "Unknown flow element: #{item.inspect}"
-        end
-      end
-      
-      raise "mismatch" if not @attributes.empty?
-    end
-
-    def accept_verbatim(am, fragment)
-      @flowDoc.blocks.add(Paragraph.new(Run.new("accept_verbatim")))
-    end
-
-    def accept_list_start(am, fragment)
-      @flowDoc.blocks.add(Paragraph.new(Run.new("accept_list_start")))
-    end
-
-    def accept_list_end(am, fragment)
-      @flowDoc.blocks.add(Paragraph.new(Run.new("accept_list_end")))
-    end
-
-    def accept_list_item(am, fragment)
-      @flowDoc.blocks.add(Paragraph.new(Run.new("accept_list_item")))
-    end
-
-    def accept_blank_line(am, fragment)
-      #@flowDoc.blocks.add(Paragraph.new(Run.new("accept_blank_line")))
-    end
-
-    def accept_heading(am, fragment)
-      @flowDoc.blocks.add(Paragraph.new(Run.new("accept_heading")))
-    end
-
-    def accept_rule(am, fragment)
-      @flowDoc.blocks.add(Paragraph.new(Run.new("accept_rule")))
-    end
+    include Wpf
     
-    def self.convert text
-		if text =~ /\A(\s+)/
-			text = "#{$1}dummy\n\n" + text # TODO - This is a workaround for http://ironruby.codeplex.com/WorkItem/View.aspx?WorkItemId=1301
-		end
-		markupParser = SM::SimpleMarkup.new
-		markupParser.convert(text, ToFlowDocument.new)
-    end
-end
-
-class WpfApp
-	include System::Windows
-	include System::Windows::Documents
-	include System::Windows::Controls
-	include System::Windows::Input
-	include System::Windows::Markup
-	include System::Windows::Media
-	
     @@xaml = <<EOF
-<Window x:Class="WpfApplication1.Window1"
+<Window x:Class="WpfTutoriallication1.Window1"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     Title="Window1" Height="829" Width="868.507" Loaded="Window_Loaded">
@@ -159,10 +40,10 @@ class WpfApp
 
                 <!-- Section TEMPLATE -->
                 <HierarchicalDataTemplate 
-						  x:Key="SectionTemplate"
-						  ItemsSource="{Binding Path=chapters}"
-						  ItemTemplate="{StaticResource ChapterTemplate}"
-						  >
+                          x:Key="SectionTemplate"
+                          ItemsSource="{Binding Path=chapters}"
+                          ItemTemplate="{StaticResource ChapterTemplate}"
+                          >
                     <TextBlock Text="{Binding Path=name}" />
                 </HierarchicalDataTemplate>
             </StackPanel.Resources>
@@ -180,8 +61,8 @@ class WpfApp
 
 EOF
 
-	# Remove items added by the VS Xaml designer that are not needed here
-    @@xaml = @@xaml.sub('x:Class="WpfApplication1.Window1"', '').sub('Loaded="Window_Loaded"', '').sub('<TreeView ', '<TreeView ItemTemplate="{StaticResource SectionTemplate}" ')
+    # Remove items added by the VS Xaml designer that are not needed here
+    @@xaml = @@xaml.sub('x:Class="WpfTutoriallication1.Window1"', '').sub('Loaded="Window_Loaded"', '').sub('<TreeView ', '<TreeView ItemTemplate="{StaticResource SectionTemplate}" ')
 
     def initialize tutorial = nil
         if tutorial
@@ -198,7 +79,7 @@ EOF
         @window = XamlReader.Load xmlReader
         
         @window.tutorial_name.Content = @tutorial.name
-        @window.exercise.document = ToFlowDocument.convert(@tutorial.introduction)
+        @window.exercise.document = FlowDocument.from_simple_markup(@tutorial.introduction)
         @window.chapters.ItemsSource = @tutorial.sections
         
         # Hook up events
@@ -209,15 +90,15 @@ EOF
 
     def select_next_task
         if @tasks.empty?
-			if @chapter.next_item
-				select_section_or_chapter @chapter.next_item
-			else
-				@window.exercise.document = ToFlowDocument.convert(@tutorial.summary)
-			end
+            if @chapter.next_item
+                select_section_or_chapter @chapter.next_item
+            else
+                @window.exercise.document = FlowDocument.from_simple_markup(@tutorial.summary)
+            end
         else
             @task = @tasks.shift
 
-            flowDoc = ToFlowDocument.convert(@task.description)
+            flowDoc = FlowDocument.from_simple_markup(@task.description)
             flowDoc.Blocks.Add(Paragraph.new(Run.new("Enter the following code:")))
             p = Paragraph.new(Run.new(@task.code))
             p.font_family = FontFamily.new("Courier New")
@@ -228,76 +109,76 @@ EOF
     end
     
     def self.select_item tree_view, item
-		return false unless tree_view and item
+        return false unless tree_view and item
 
-		childNode = tree_view.ItemContainerGenerator.ContainerFromItem item
-		if childNode
-			childNode.focus
-			childNode.IsSelected = true
-			# TODO - BringIntoView ?
-			return true
-		end
+        childNode = tree_view.ItemContainerGenerator.ContainerFromItem item
+        if childNode
+            childNode.focus
+            childNode.IsSelected = true
+            # TODO - BringIntoView ?
+            return true
+        end
 
-		if tree_view.Items.Count > 0
-			tree_view.Items.each { |childItem|
-				childControl = tree_view.ItemContainerGenerator.ContainerFromItem(childItem)
-				return false if not childControl
+        if tree_view.Items.Count > 0
+            tree_view.Items.each { |childItem|
+                childControl = tree_view.ItemContainerGenerator.ContainerFromItem(childItem)
+                return false if not childControl
 
-				# If tree node is not loaded, its sub-nodes will be nil. Force them to be loaded
-				old_is_expanded = childControl.is_expanded
-				childControl.is_expanded = true
-				childControl.update_layout
+                # If tree node is not loaded, its sub-nodes will be nil. Force them to be loaded
+                old_is_expanded = childControl.is_expanded
+                childControl.is_expanded = true
+                childControl.update_layout
 
-				if select_item(childControl, item)
-					return true
-				else
-					childControl.is_expanded = old_is_expanded
-				end
-			}
-		end
-		
-		false
+                if select_item(childControl, item)
+                    return true
+                else
+                    childControl.is_expanded = old_is_expanded
+                end
+            }
+        end
+        
+        false
     end
 
     def select_section_or_chapter item
         if not item then return end
-        WpfApp.select_item @window.chapters, item
+        WpfTutorial.select_item @window.chapters, item
         if item.kind_of? Tutorial::Chapter
-			select_chapter item
-		elsif item.kind_of? Tutorial::Section
-			select_section item
-		else
-			raise "Unknown selection type: #{item}"
-		end
-	end
-	
-	def enable_start_chapter_button
+            select_chapter item
+        elsif item.kind_of? Tutorial::Section
+            select_section item
+        else
+            raise "Unknown selection type: #{item}"
+        end
+    end
+    
+    def enable_start_chapter_button
         @window.start_chapter.visibility = Visibility.Visible
         @window.start_chapter.is_enabled = true
         # enable tab stop
-	end
-	
-	def disable_start_chapter_button
+    end
+    
+    def disable_start_chapter_button
         @window.start_chapter.visibility = Visibility.Hidden
         @window.start_chapter.is_enabled = false
         # disable tab stop
-	end
-	
-	def on_start_chapter
-		disable_start_chapter_button
-		select_next_task
-		@window.repl_input.focus
-	end
-	
-	def select_chapter chapter
+    end
+    
+    def on_start_chapter
+        disable_start_chapter_button
+        select_next_task
+        @window.repl_input.focus
+    end
+    
+    def select_chapter chapter
         @chapter = chapter
-		@window.exercise.document = ToFlowDocument.convert(@chapter.introduction)
+        @window.exercise.document = FlowDocument.from_simple_markup(@chapter.introduction)
         enable_start_chapter_button
         @tasks = @chapter.tasks.clone
     end
 
-	def select_section section
-		@window.exercise.document = ToFlowDocument.convert(section.introduction)
+    def select_section section
+        @window.exercise.document = FlowDocument.from_simple_markup(section.introduction)
     end
 
     def print_to_repl s, new_line = true
@@ -330,13 +211,56 @@ EOF
             end
         end
     end
+
+    def run explicit_shutdown = false
+        if Application.current
+            Application.current.main_window = @window
+            @window.visibility = Visibility.visible
+         else
+            app = Application.new
+            if explicit_shutdown
+                app.ShutdownMode = ShutdownMode.on_explicit_shutdown
+            end
+            app.run @window
+        end
+    end
     
-    def run
-        app = Application.new
-        app.run @window
+    def self.create_sta_thread &block
+        ts = System::Threading::ThreadStart.new &block
+
+        # Workaround for http://ironruby.codeplex.com/WorkItem/View.aspx?WorkItemId=1306
+        param_types = System::Array[System::Type].new(1) { |i| System::Threading::ThreadStart.to_clr_type }
+        ctor = System::Threading::Thread.to_clr_type.get_constructor param_types    
+        t = ctor.Invoke(System::Array[Object].new(1) { ts })
+
+        t.ApartmentState = System::Threading::ApartmentState.STA
+        t.start
+    end
+
+    def self.run_interactive
+        if Application.current
+            app_callback = System::Threading::ThreadStart.new { WpfTutorial.new.run(true) rescue puts $! }
+            Application.current.dispatcher.invoke(Threading::DispatcherPriority.Normal, app_callback)
+        else
+            warn "Setting explicit shutdown. Exit the process by calling 'unload'"
+            # Run the app on another thread so that the interactive REPL can stay on the main thread
+            create_sta_thread { WpfTutorial.new.run(true) rescue puts $! }
+        end
     end
 end
 
 if $0 == __FILE__
-    WpfApp.new.run
+    WpfTutorial.new.run
+elsif $0 == nil or $0 == "iirb"
+    def reload
+        load __FILE__
+    end
+
+    def unload
+        app_callback = System::Threading::ThreadStart.new { System::Windows::Application.current.shutdown }
+        System::Windows::Application.current.dispatcher.invoke(System::Windows::Threading::DispatcherPriority.Normal, app_callback)
+        exit
+    end
+
+    WpfTutorial.run_interactive
 end

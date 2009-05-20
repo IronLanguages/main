@@ -20,8 +20,8 @@ require "tutorial"
 tutorial("IronRuby tutorial") do
 
     introduction(%{heredoc:
-        IronRuby is the "CLI":http://www.ecma-international.org/publications/standards/Ecma-335.htm 
-        implementation of the "Ruby programming language":http://www.ruby-lang.org/. It's a dynamically 
+        IronRuby is the CLI[http://www.ecma-international.org/publications/standards/Ecma-335.htm]
+        implementation of the {Ruby programming language}[http://www.ruby-lang.org/]. It's a dynamically 
         typed language with support for many programming paradigms such as object-oriented programming, 
         and also allows you to seamlessly use CLI code. 
 
@@ -30,7 +30,7 @@ tutorial("IronRuby tutorial") do
         how to get started in more specialized areas such as interoperating with COM, and embedding 
         IronRuby.
         
-        You can find more resources about IronRuby at "http://ironruby.net":http://ironruby.net.
+        You can find more resources about IronRuby at http://ironruby.net.
         })
 
     section("Introduction") do
