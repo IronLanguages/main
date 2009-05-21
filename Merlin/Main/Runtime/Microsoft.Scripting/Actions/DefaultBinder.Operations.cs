@@ -214,7 +214,7 @@ namespace Microsoft.Scripting.Actions {
 
                     return new DynamicMetaObject(
                         call,
-                        BindingRestrictions.Combine(target.RestrictedArguments.Objects)
+                        target.RestrictedArguments.GetAllRestrictions()
                     );
                 }
             }
@@ -458,7 +458,7 @@ namespace Microsoft.Scripting.Actions {
                     if (oper == IndexType.Get) {
                         return new DynamicMetaObject(
                             target.MakeExpression(),
-                            restrictions.Merge(BindingRestrictions.Combine(target.RestrictedArguments.Objects))
+                            restrictions.Merge(target.RestrictedArguments.GetAllRestrictions())
                         );
                     } else {
                         return new DynamicMetaObject(
@@ -467,7 +467,7 @@ namespace Microsoft.Scripting.Actions {
                                 target.MakeExpression(),
                                 arg2
                             ),
-                            restrictions.Merge(BindingRestrictions.Combine(target.RestrictedArguments.Objects))
+                            restrictions.Merge(target.RestrictedArguments.GetAllRestrictions())
                         );
                     }
                 }
@@ -556,7 +556,7 @@ namespace Microsoft.Scripting.Actions {
             if (target.Success) {
                 return new DynamicMetaObject(
                     target.MakeExpression(),
-                    restrictions.Merge(BindingRestrictions.Combine(target.RestrictedArguments.Objects))
+                    restrictions.Merge(target.RestrictedArguments.GetAllRestrictions())
                 );
             }
 
@@ -569,7 +569,7 @@ namespace Microsoft.Scripting.Actions {
             if (target.Success) {
                 return new DynamicMetaObject(
                     Ast.Not(target.MakeExpression()),
-                    BindingRestrictions.Combine(target.RestrictedArguments.Objects)
+                    target.RestrictedArguments.GetAllRestrictions()
                 );
             }
 

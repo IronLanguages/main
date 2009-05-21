@@ -40,20 +40,21 @@ namespace Microsoft.Scripting.Actions.Calls {
             get { return 0; }
         }
 
-        internal protected override Expression ToExpression(OverloadResolver resolver, IList<Expression> parameters, bool[] hasBeenUsed) {
-            object val = ParameterInfo.DefaultValue;
-            if (val is Missing) {
-                val = CompilerHelpers.GetMissingValue(ParameterInfo.ParameterType);
+        internal protected override Expression ToExpression(OverloadResolver resolver, RestrictedArguments args, bool[] hasBeenUsed) {
+            object value = ParameterInfo.DefaultValue;
+            if (value is Missing) {
+                value = CompilerHelpers.GetMissingValue(ParameterInfo.ParameterType);
             }
 
             if (ParameterInfo.ParameterType.IsByRef) {
-                return AstUtils.Constant(val, ParameterInfo.ParameterType.GetElementType());
+                return AstUtils.Constant(value, ParameterInfo.ParameterType.GetElementType());
             }
 
-            return resolver.ConvertExpression(AstUtils.Constant(val), ParameterInfo, ParameterInfo.ParameterType);            
+            var metaValue = new DynamicMetaObject(AstUtils.Constant(value), BindingRestrictions.Empty, value);
+            return resolver.Convert(metaValue, CompilerHelpers.GetType(value), ParameterInfo, ParameterInfo.ParameterType);
         }
 
-        protected internal override Func<object[], object> ToDelegate(OverloadResolver resolver, IList<DynamicMetaObject> knownTypes, bool[] hasBeenUsed) {
+        protected internal override Func<object[], object> ToDelegate(OverloadResolver resolver, RestrictedArguments args, bool[] hasBeenUsed) {
             if (ParameterInfo.ParameterType.IsByRef) {
                 return null;
             } else if (ParameterInfo.DefaultValue is Missing && CompilerHelpers.GetMissingValue(ParameterInfo.ParameterType) is Missing) {
@@ -66,7 +67,7 @@ namespace Microsoft.Scripting.Actions.Calls {
                 val = CompilerHelpers.GetMissingValue(ParameterInfo.ParameterType);
             }
             Debug.Assert(val != Missing.Value);
-            return (args) => val;
+            return (_) => val;
         }
     }
 }

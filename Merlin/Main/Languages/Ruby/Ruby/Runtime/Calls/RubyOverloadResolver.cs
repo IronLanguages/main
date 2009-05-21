@@ -23,7 +23,6 @@ using System.Reflection;
 using System.Text;
 using IronRuby.Builtins;
 using IronRuby.Compiler;
-using Microsoft.Scripting.Actions;
 using Microsoft.Scripting.Actions.Calls;
 using Microsoft.Scripting.Generation;
 using Microsoft.Scripting.Runtime;
@@ -36,6 +35,19 @@ namespace IronRuby.Runtime.Calls {
         private readonly CallArguments/*!*/ _args;
         private readonly MetaObjectBuilder/*!*/ _metaBuilder;
         private readonly SelfCallConvention _callConvention;
+
+        //
+        // We want to perform Ruby protocol conversions when binding to CLR methods. 
+        // However, Ruby some libraries don't allow protocol conversions on their parameters. 
+        // Hence in libraries protocol conversions should only be performed when DefaultProtocol attribute is present.
+        // This flag is set if protocol conversions should be applied on all parameters regardless of DefaultProtocol attribute.
+        //
+        // Note that using DefaultProtocol explicitly is not the same as performing implicit protocol conversions. 
+        // A parameter marked with DP is treated as accepting any type of object for overload resolution purposes. 
+        // On the other hand, implicit protocol conversions are only applied on narrowing level 2. Hence the overload resolution
+        // uses the real parameter types in first 2 steps and only then falls back to dynamic conversions.
+        //
+        private readonly bool _implicitProtocolConversions;
 
         private int _firstRestrictedArg;
         private int _lastSplattedArg;
@@ -54,11 +66,13 @@ namespace IronRuby.Runtime.Calls {
             get { return _args.MetaContext.Expression; }
         }
 
-        public RubyOverloadResolver(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args, SelfCallConvention callConvention)
+        public RubyOverloadResolver(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args, SelfCallConvention callConvention,
+            bool implicitProtocolConversions)
             : base(args.RubyContext.Binder) {
             _args = args;
             _metaBuilder = metaBuilder;
             _callConvention = callConvention;
+            _implicitProtocolConversions = implicitProtocolConversions;
         }
 
         #region Step 1: Special Parameters
@@ -86,7 +100,7 @@ namespace IronRuby.Runtime.Calls {
                 } else {
                     // receiver maps to the instance (no parameter info represents it):
                     mapping.AddParameter(new ParameterWrapper(null, method.DeclaringType, null, true, false, false, true));
-                    mapping.AddInstanceBuilder(new SimpleArgBuilder(method.DeclaringType, mapping.ArgIndex, false, false));
+                    mapping.AddInstanceBuilder(new InstanceBuilder(mapping.ArgIndex));
                 }
             }
 
@@ -368,7 +382,7 @@ namespace IronRuby.Runtime.Calls {
 
         internal void AddArgumentRestrictions(MetaObjectBuilder/*!*/ metaBuilder, BindingTarget/*!*/ bindingTarget) {
             var args = GetActualArguments();
-            var restrictedArgs = bindingTarget.Success ? bindingTarget.RestrictedArguments.Objects : args.Arguments;
+            var restrictedArgs = bindingTarget.Success ? bindingTarget.RestrictedArguments.GetObjects() : args.Arguments;
 
             for (int i = _firstRestrictedArg; i < restrictedArgs.Count; i++) {
                 var arg = (bindingTarget.Success ? restrictedArgs[i] : restrictedArgs[i].Restrict(restrictedArgs[i].GetLimitType()));
@@ -394,8 +408,22 @@ namespace IronRuby.Runtime.Calls {
         public override bool CanConvertFrom(Type/*!*/ fromType, ParameterWrapper/*!*/ toParameter, NarrowingLevel level) {
             Type toType = toParameter.Type;
 
-            if (base.CanConvertFrom(fromType, toParameter, level)) {
+            if (toType == fromType) {
                 return true;
+            }
+
+            if (fromType == typeof(DynamicNull)) {
+                if (toParameter.ProhibitNull) {
+                    return false;
+                }
+
+                if (toType.IsGenericType && toType.GetGenericTypeDefinition() == typeof(Nullable<>)) {
+                    return true;
+                }
+
+                if (!toType.IsValueType) {
+                    return true;
+                }
             }
 
             // blocks:
@@ -414,6 +442,10 @@ namespace IronRuby.Runtime.Calls {
 
                 // any type is potentially convertible, except for nil if [NotNull] is used or the target type is a value type:
                 return fromType != typeof(DynamicNull) || !(toParameter.ProhibitNull || toType.IsValueType);
+            }
+
+            if (Converter.CanConvertFrom(fromType, toType, level, _implicitProtocolConversions)) {
+                return true;
             }
 
             return false;
@@ -454,8 +486,9 @@ namespace IronRuby.Runtime.Calls {
             return Candidate.Equivalent;
         }
 
-        public override Expression/*!*/ ConvertExpression(Expression/*!*/ expr, ParameterInfo info, Type/*!*/ toType) {
-            Type fromType = expr.Type;
+        public override Expression/*!*/ Convert(DynamicMetaObject/*!*/ metaObject, Type restrictedType, ParameterInfo info, Type/*!*/ toType) {
+            Expression expr = metaObject.Expression;
+            Type fromType = restrictedType ?? expr.Type;
 
             // block:
             if (fromType == typeof(MissingBlockParam)) {
@@ -471,14 +504,35 @@ namespace IronRuby.Runtime.Calls {
             if (info != null && info.IsDefined(typeof(DefaultProtocolAttribute), false)) {
                 var action = RubyConversionAction.TryGetDefaultConversionAction(Context, toType);
                 if (action != null) {
-                    // TODO: once we work with MetaObjects, we could inline these dynamic sites:
+                    // TODO: inline implicit conversions:
                     return Ast.Dynamic(action, toType, expr);
                 }
 
                 throw new InvalidOperationException(String.Format("No default protocol conversion for type {0}.", toType));
             }
 
-            return Binder.ConvertExpression(expr, toType, ConversionResultKind.ExplicitCast, null);
+            if (restrictedType != null) {
+                if (restrictedType == typeof(DynamicNull)) {
+                    if (!toType.IsValueType || toType.IsGenericType && toType.GetGenericTypeDefinition() == typeof(Nullable<>)) {
+                        return AstUtils.Constant(null, toType);
+                    } else if (toType == typeof(bool)) {
+                        return AstUtils.Constant(false);
+                    }
+                }
+
+                if (toType.IsAssignableFrom(restrictedType)) {
+                    // expr can be converted to restrictedType, which can be converted toType => we can convert expr to toType:
+                    return AstUtils.Convert(expr, CompilerHelpers.GetVisibleType(toType));
+                }
+
+                // if there is a simple conversion from restricted type, convert the expression to the restricted type and use that conversion:
+                Type visibleRestrictedType = CompilerHelpers.GetVisibleType(restrictedType);
+                if (Converter.CanConvertFrom(visibleRestrictedType, toType, NarrowingLevel.One, false)) {
+                    expr = AstUtils.Convert(expr, visibleRestrictedType);
+                }
+            }
+
+            return Converter.ConvertExpression(expr, toType, _args.RubyContext, _args.MetaContext.Expression, _implicitProtocolConversions);
         }
 
         protected override Expression/*!*/ GetSplattedExpression() {
@@ -502,7 +556,7 @@ namespace IronRuby.Runtime.Calls {
                 get { return 0; }
             }
 
-            protected override Expression ToExpression(OverloadResolver/*!*/ resolver, IList<Expression>/*!*/ parameters, bool[]/*!*/ hasBeenUsed) {
+            protected override Expression ToExpression(OverloadResolver/*!*/ resolver, RestrictedArguments/*!*/ args, bool[]/*!*/ hasBeenUsed) {
                 return ((RubyOverloadResolver)resolver).ContextExpression;
             }
         }
@@ -520,7 +574,7 @@ namespace IronRuby.Runtime.Calls {
                 get { return 0; }
             }
 
-            protected override Expression ToExpression(OverloadResolver/*!*/ resolver, IList<Expression>/*!*/ parameters, bool[]/*!*/ hasBeenUsed) {
+            protected override Expression ToExpression(OverloadResolver/*!*/ resolver, RestrictedArguments/*!*/ args, bool[]/*!*/ hasBeenUsed) {
                 return AstUtils.Constant(Activator.CreateInstance(ParameterInfo.ParameterType, ((RubyOverloadResolver)resolver).Context));
             }
         }
@@ -538,7 +592,7 @@ namespace IronRuby.Runtime.Calls {
                 get { return 0; }
             }
 
-            protected override Expression ToExpression(OverloadResolver/*!*/ resolver, IList<Expression>/*!*/ parameters, bool[]/*!*/ hasBeenUsed) {
+            protected override Expression ToExpression(OverloadResolver/*!*/ resolver, RestrictedArguments/*!*/ args, bool[]/*!*/ hasBeenUsed) {
                 return ((RubyOverloadResolver)resolver).ScopeExpression;
             }
         }
@@ -556,7 +610,7 @@ namespace IronRuby.Runtime.Calls {
                 get { return 0; }
             }
 
-            protected override Expression ToExpression(OverloadResolver/*!*/ resolver, IList<Expression>/*!*/ parameters, bool[]/*!*/ hasBeenUsed) {
+            protected override Expression ToExpression(OverloadResolver/*!*/ resolver, RestrictedArguments/*!*/ args, bool[]/*!*/ hasBeenUsed) {
                 return ((RubyOverloadResolver)resolver)._args.TargetExpression;
             }
         }
@@ -578,10 +632,9 @@ namespace IronRuby.Runtime.Calls {
                 return new MissingBlockArgBuilder(newIndex);
             }
 
-            protected override Expression ToExpression(OverloadResolver/*!*/ resolver, IList<Expression>/*!*/ parameters, bool[]/*!*/ hasBeenUsed) {
-                Debug.Assert(Index < parameters.Count);
+            protected override Expression ToExpression(OverloadResolver/*!*/ resolver, RestrictedArguments/*!*/ args, bool[]/*!*/ hasBeenUsed) {
+                Debug.Assert(Index < args.Length);
                 Debug.Assert(Index < hasBeenUsed.Length);
-                Debug.Assert(parameters[Index] != null);
                 hasBeenUsed[Index] = true;
                 return null;
             }
@@ -589,7 +642,7 @@ namespace IronRuby.Runtime.Calls {
 
         #endregion
 
-        #region Setp 5: Errors
+        #region Step 5: Errors
 
         public override Microsoft.Scripting.Actions.ErrorInfo MakeInvalidParametersError(BindingTarget target) {
             Expression exceptionValue;
@@ -612,16 +665,22 @@ namespace IronRuby.Runtime.Calls {
             StringBuilder sb = new StringBuilder(string.Format("Found multiple methods for '{0}': ", target.Name));
             string outerComma = "";
             foreach (MethodCandidate candidate in target.AmbiguousMatches) {
-                Type[] types = candidate.GetParameterTypes();
+                IList<ParameterWrapper> parameters = candidate.GetParameters();
+                
                 string innerComma = "";
 
                 sb.Append(outerComma);
                 sb.Append(target.Name);
                 sb.Append('(');
-                foreach (Type t in types) {
-                    sb.Append(innerComma);
-                    sb.Append(Binder.GetTypeName(t));
-                    innerComma = ", ";
+                foreach (var param in parameters) {
+                    if (!param.IsHidden) {
+                        sb.Append(innerComma);
+                        sb.Append(Binder.GetTypeName(param.Type));
+                        if (param.ProhibitNull) {
+                            sb.Append('!');
+                        }
+                        innerComma = ", ";
+                    }
                 }
 
                 sb.Append(')');
@@ -665,17 +724,16 @@ namespace IronRuby.Runtime.Calls {
                         foreach (ConversionResult cr in cf.ConversionResults) {
                             if (cr.Failed) {
                                 if (typeof(Proc).IsAssignableFrom(cr.To)) {
-                                    return Methods.CreateArgumentsErrorForProc.OpCall(AstUtils.Constant(Binder.GetTypeName(cr.From)));
+                                    return Methods.CreateArgumentsErrorForProc.OpCall(AstUtils.Constant(cr.GetArgumentTypeName(Binder)));
                                 }
 
                                 Debug.Assert(typeof(BlockParam).IsSealed);
                                 if (cr.To == typeof(BlockParam)) {
-                                    Debug.Assert(cr.From == typeof(MissingBlockParam));
                                     return Methods.CreateArgumentsErrorForMissingBlock.OpCall();
                                 }
 
                                 return Methods.CreateTypeConversionError.OpCall(
-                                        AstUtils.Constant(Binder.GetTypeName(cr.From)),
+                                        AstUtils.Constant(cr.GetArgumentTypeName(Binder)),
                                         AstUtils.Constant(Binder.GetTypeName(cr.To)));
                             }
                         }

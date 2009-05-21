@@ -21,6 +21,7 @@ using System.Dynamic;
 using Microsoft.Scripting.Utils;
 using Microsoft.Scripting.Actions;
 using Microsoft.Scripting.Runtime;
+using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace Microsoft.Scripting.Actions.Calls {
     public delegate object OptimizingCallDelegate(object[] args, out bool shouldOptimize);
@@ -38,7 +39,7 @@ namespace Microsoft.Scripting.Actions.Calls {
         private readonly BindingResult _result;                                           // the result of the binding
         private readonly string _name;                                                    // the name of the method being bound to
         private readonly MethodCandidate _candidate;                                      // the selected method if the binding was successful 
-        private readonly RestrictionInfo _restrictedArgs;                                 // the arguments after they've been restricted to their known types
+        private readonly RestrictedArguments _restrictedArgs;                                 // the arguments after they've been restricted to their known types
         private readonly NarrowingLevel _level;                                           // the NarrowingLevel at which the target succeeds on conversion
         private readonly CallFailure[] _callFailures;                                     // if failed on conversion the various conversion failures for all overloads
         private readonly MethodCandidate[] _ambiguousMatches;                             // list of methods which are ambiguous to bind to.
@@ -48,7 +49,7 @@ namespace Microsoft.Scripting.Actions.Calls {
         /// <summary>
         /// Creates a new BindingTarget when the method binding has succeeded.
         /// </summary>
-        internal BindingTarget(string name, int actualArgumentCount, MethodCandidate candidate, NarrowingLevel level, RestrictionInfo restrictedArgs) {
+        internal BindingTarget(string name, int actualArgumentCount, MethodCandidate candidate, NarrowingLevel level, RestrictedArguments restrictedArgs) {
             _name = name;
             _candidate = candidate;
             _restrictedArgs = restrictedArgs;
@@ -116,12 +117,7 @@ namespace Microsoft.Scripting.Actions.Calls {
                 throw new InvalidOperationException("An expression cannot be produced because the method binding was done with Expressions, not MetaObject's");
             }
 
-            Expression[] exprs = new Expression[_restrictedArgs.Objects.Length];
-            for (int i = 0; i < exprs.Length; i++) {
-                exprs[i] = _restrictedArgs.Objects[i].Expression;
-            }
-
-            return _candidate.MakeExpression(exprs);
+            return _candidate.MakeExpression(_restrictedArgs);
         }
 
         public OptimizingCallDelegate MakeDelegate() {
@@ -208,7 +204,7 @@ namespace Microsoft.Scripting.Actions.Calls {
         /// The members of the array correspond to each of the arguments.  All members of the array
         /// have a value.
         /// </summary>
-        public RestrictionInfo RestrictedArguments {
+        public RestrictedArguments RestrictedArguments {
             get {
                 return _restrictedArgs;
             }

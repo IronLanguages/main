@@ -25,6 +25,8 @@ using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 using System.Runtime.CompilerServices;
 using IronRuby.Runtime;
+using IronRuby.Runtime.Calls;
+using System.Linq.Expressions;
 
 namespace IronRuby.Compiler.Generation {
 
@@ -68,6 +70,20 @@ namespace IronRuby.Compiler.Generation {
         public const string BaseMethodPrefix = "#base#";
         public const string FieldGetterPrefix = "#field_get#", FieldSetterPrefix = "#field_set#";
 
+        private ILGen _cctor;
+        private readonly TypeBuilder _tb;
+        private readonly Type _baseType;
+        private int _site;
+        private readonly SpecialNames _specialNames;
+        private readonly List<Expression> _dynamicSiteFactories;
+
+        protected ClsTypeEmitter(TypeBuilder tb) {
+            _tb = tb;
+            _baseType = tb.BaseType;
+            _specialNames = new SpecialNames();
+            _dynamicSiteFactories = new List<Expression>();
+        }
+
         private static bool ShouldOverrideVirtual(MethodInfo/*!*/ mi) {
             return true;
         }
@@ -84,13 +100,12 @@ namespace IronRuby.Compiler.Generation {
         protected abstract MethodInfo NonInheritedValueHelper();
         protected abstract MethodInfo NonInheritedMethodHelper();
         protected abstract MethodInfo EventHelper();
-        protected abstract MethodInfo GetFastConvertMethod(Type toType);
-        protected abstract MethodInfo GetGenericConvertMethod(Type toType);
         protected abstract MethodInfo MissingInvokeMethodException();
         protected abstract MethodInfo ConvertToDelegate();
 
         protected abstract void EmitImplicitContext(ILGen il);
         protected abstract void EmitMakeCallAction(string name, int nargs, bool isList);
+        protected abstract FieldInfo GetConversionSite(Type toType);
         protected abstract void EmitClassObjectFromInstance(ILGen il);
         protected abstract void EmitPropertyGet(ILGen il, MethodInfo mi, string name, LocalBuilder callTarget);
         protected abstract void EmitPropertySet(ILGen il, MethodInfo mi, string name, LocalBuilder callTarget);
@@ -142,18 +157,6 @@ namespace IronRuby.Compiler.Generation {
             }
             il.Emit(OpCodes.Call, parentConstructor);
             il.Emit(OpCodes.Ret);
-        }
-
-        private ILGen _cctor;
-        private TypeBuilder _tb;
-        private Type _baseType;
-        private int _site;
-        private SpecialNames _specialNames;
-
-        protected ClsTypeEmitter(TypeBuilder tb) {
-            _tb = tb;
-            _baseType = tb.BaseType;
-            _specialNames = new SpecialNames();
         }
 
         protected ILGen GetCCtor() {
@@ -509,35 +512,42 @@ namespace IronRuby.Compiler.Generation {
             return impl;
         }
 
+        public FieldInfo AllocateDynamicSite(Type[] signature, Func<FieldInfo, Expression> factory) {
+            FieldInfo site = _tb.DefineField("site$" + _site++, CompilerHelpers.MakeCallSiteType(signature), FieldAttributes.Private | FieldAttributes.Static);
+            _dynamicSiteFactories.Add(factory(site));
+            return site;
+        }
+
         /// <summary>
         /// Emit code to convert object to a given type. This code is semantically equivalent
         /// to PythonBinder.EmitConvertFromObject, except this version accepts ILGen whereas
         /// PythonBinder accepts Compiler. The Binder will chagne soon and the two will merge.
         /// </summary>
         public void EmitConvertFromObject(ILGen il, Type toType) {
-            if (toType == typeof(object)) return;
-
-            MethodInfo fastConvertMethod = GetFastConvertMethod(toType);
-            if (fastConvertMethod != null) {
-                il.EmitCall(fastConvertMethod);
+            if (toType == typeof(object)) {
+                return;
             } else if (toType == typeof(void)) {
                 il.Emit(OpCodes.Pop);
-            } else if (typeof(Delegate).IsAssignableFrom(toType)) {
-                il.EmitType(toType);
-                il.EmitCall(ConvertToDelegate());
-                il.Emit(OpCodes.Castclass, toType);
-            } else {
-                Label end = il.DefineLabel();
-                il.Emit(OpCodes.Dup);
-                il.Emit(OpCodes.Isinst, toType);
-
-                il.Emit(OpCodes.Brtrue_S, end);
-                il.Emit(OpCodes.Ldtoken, toType);
-                il.EmitCall(GetGenericConvertMethod(toType));
-                il.MarkLabel(end);
-
-                il.Emit(OpCodes.Unbox_Any, toType); //??? this check may be redundant
+                return;
             }
+
+            var callTarget = il.DeclareLocal(typeof(object));
+            il.Emit(OpCodes.Stloc, callTarget);
+
+            var site = GetConversionSite(toType);
+
+            // Emit the site invoke
+            il.EmitFieldGet(site);
+            FieldInfo target = site.FieldType.GetField("Target");
+            il.EmitFieldGet(target);
+            il.EmitFieldGet(site);
+
+            // Emit the context
+            EmitContext(il, false);
+
+            il.Emit(OpCodes.Ldloc, callTarget);
+
+            il.EmitCall(target.FieldType, "Invoke");
         }
 
         private MethodBuilder CreateVTableSetterOverride(MethodInfo mi, string name) {
@@ -660,7 +670,23 @@ namespace IronRuby.Compiler.Generation {
         }
 
         public Type FinishType() {
+            if (_dynamicSiteFactories.Count > 0) {
+                GetCCtor();
+            }
+
             if (_cctor != null) {
+                if (_dynamicSiteFactories.Count > 0) { 
+                    MethodBuilder createSitesImpl = _tb.DefineMethod(
+                        "<create_dynamic_sites>", MethodAttributes.Private | MethodAttributes.Static, typeof(void), Type.EmptyTypes
+                    );
+
+                    _dynamicSiteFactories.Add(Expression.Empty());
+                    Expression.Lambda(Expression.Block(_dynamicSiteFactories)).CompileToMethod(createSitesImpl);
+                    _cctor.EmitCall(createSitesImpl);
+
+                    _dynamicSiteFactories.Clear();
+                }
+
                 _cctor.Emit(OpCodes.Ret);
             }
             Type result = _tb.CreateType();
@@ -747,8 +773,6 @@ namespace IronRuby.Compiler.Generation {
             cctor.EmitCall(siteType.GetMethod("Create"));
             cctor.EmitFieldSet(site);
 
-            List<ReturnFixer> fixers = new List<ReturnFixer>(0);
-
             //
             // Emit the site invoke
             //
@@ -762,6 +786,7 @@ namespace IronRuby.Compiler.Generation {
 
             il.Emit(OpCodes.Ldloc, callTarget);
 
+            List<ReturnFixer> fixers = new List<ReturnFixer>(0);
             for (int i = firstArg; i < args.Length; i++) {
                 ReturnFixer rf = ReturnFixer.EmitArgument(il, args[i], i + 1);
                 if (rf != null) {

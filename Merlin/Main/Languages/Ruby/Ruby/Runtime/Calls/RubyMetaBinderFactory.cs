@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using Microsoft.Scripting.Utils;
 using System.Threading;
+using System.Dynamic;
 
 namespace IronRuby.Runtime.Calls {
     internal sealed class RubyMetaBinderFactory {
@@ -33,13 +34,17 @@ namespace IronRuby.Runtime.Calls {
 
         // (CompositeConversion) => binder:
         private readonly Dictionary<CompositeConversion, CompositeConversionAction/*!*/>/*!*/ _compositeConversionActions;
-        
+
+        // (type) => binder:
+        private readonly Dictionary<Type, GenericConversionAction/*!*/>/*!*/ _genericConversionActions;
+
         internal RubyMetaBinderFactory(RubyContext context) {
             _context = context;
             _callActions = new Dictionary<Key<string, RubyCallSignature>, RubyCallAction>();
             _superCallActions = new Dictionary<Key<int, RubyCallSignature>, SuperCallAction>();
             _conversionActions = new Dictionary<Type, RubyConversionAction>();
             _compositeConversionActions = new Dictionary<CompositeConversion, CompositeConversionAction>();
+            _genericConversionActions = new Dictionary<Type, GenericConversionAction>();
         }
 
         public RubyCallAction/*!*/ Call(string/*!*/ methodName, RubyCallSignature signature) {
@@ -85,6 +90,16 @@ namespace IronRuby.Runtime.Calls {
                 CompositeConversionAction result;
                 if (!_compositeConversionActions.TryGetValue(key, out result)) {
                     _compositeConversionActions.Add(key, result = CompositeConversionAction.Make(_context, conversion));
+                }
+                return result;
+            }
+        }
+
+        public GenericConversionAction/*!*/ GenericConversionAction(Type/*!*/ type) {
+            lock (_conversionActions) {
+                GenericConversionAction result;
+                if (!_genericConversionActions.TryGetValue(type, out result)) {
+                    _genericConversionActions.Add(type, result = new GenericConversionAction(_context, type));
                 }
                 return result;
             }

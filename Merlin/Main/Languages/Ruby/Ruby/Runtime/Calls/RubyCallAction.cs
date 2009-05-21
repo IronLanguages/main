@@ -34,7 +34,7 @@ using Microsoft.Scripting;
 
 namespace IronRuby.Runtime.Calls {
 
-    public class RubyCallAction : RubyMetaBinder, IExpressionSerializable {
+    public class RubyCallAction : RubyMetaBinder {
         private readonly RubyCallSignature _signature;
         private readonly string/*!*/ _methodName;
 
@@ -86,17 +86,13 @@ namespace IronRuby.Runtime.Calls {
             return _methodName + _signature.ToString() + (Context != null ? " @" + Context.RuntimeId.ToString() : null);
         }
 
-        #region IExpressionSerializable Members
-
-        Expression/*!*/ IExpressionSerializable.CreateExpression() {
+        public override Expression/*!*/ CreateExpression() {
             return Expression.Call(
                 Methods.GetMethod(typeof(RubyCallAction), "MakeShared", typeof(string), typeof(RubyCallSignature)),
                 AstUtils.Constant(_methodName),
                 _signature.CreateExpression()
             );
         }
-
-        #endregion
 
         #region Precompiled Rules
 

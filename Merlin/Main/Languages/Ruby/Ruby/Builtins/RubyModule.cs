@@ -1452,7 +1452,7 @@ namespace IronRuby.Builtins {
 
             // Skip hidden CLR overloads.
             // Skip lookup on types that are not visible or interfaces.
-            if (!skipHidden && _typeTracker != null && _typeTracker.Type.IsVisible && !_typeTracker.Type.IsInterface) {
+            if (!skipHidden && _typeTracker != null && !_typeTracker.Type.IsInterface) {
                 if (TryGetClrMember(_typeTracker.Type, name, out method)) {
                     _methods.Add(name, method);
                     return true;

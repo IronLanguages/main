@@ -23,6 +23,7 @@ using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 using Ast = System.Linq.Expressions.Expression;
 using System.Diagnostics;
+using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace IronRuby.Runtime.Calls {
     public enum CompositeConversion {
@@ -32,7 +33,7 @@ namespace IronRuby.Runtime.Calls {
         ToAryToInt
     }
 
-    public sealed class CompositeConversionAction : RubyConversionAction, IExpressionSerializable {
+    public sealed class CompositeConversionAction : RubyConversionAction {
         private readonly CompositeConversion _conversion;
         private readonly ProtocolConversionAction[]/*!*/ _conversions;
         private readonly Type/*!*/ _resultType;
@@ -83,7 +84,7 @@ namespace IronRuby.Runtime.Calls {
             return Make(null, conversion);
         }
 
-        Expression/*!*/ IExpressionSerializable.CreateExpression() {
+        public override Expression/*!*/ CreateExpression() {
             return Methods.GetMethod(GetType(), "MakeShared").OpCall(Ast.Constant(_conversion));
         }
 

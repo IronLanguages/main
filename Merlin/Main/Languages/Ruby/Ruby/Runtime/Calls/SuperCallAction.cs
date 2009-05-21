@@ -29,7 +29,7 @@ using Ast = System.Linq.Expressions.Expression;
 
 namespace IronRuby.Runtime.Calls {
 
-    public sealed class SuperCallAction : RubyMetaBinder, IExpressionSerializable {
+    public sealed class SuperCallAction : RubyMetaBinder {
         private readonly RubyCallSignature _signature;
         private readonly int _lexicalScopeId;
 
@@ -119,12 +119,8 @@ namespace IronRuby.Runtime.Calls {
 
         #endregion
 
-        #region IExpressionSerializable Members
-
-        Expression/*!*/ IExpressionSerializable.CreateExpression() {
+        public override Expression/*!*/ CreateExpression() {
             return Methods.GetMethod(GetType(), "MakeShared").OpCall(_signature.CreateExpression(), AstUtils.Constant(_lexicalScopeId));
         }
-
-        #endregion
     }
 }

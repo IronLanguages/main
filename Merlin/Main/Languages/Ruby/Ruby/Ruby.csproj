@@ -169,6 +169,7 @@
     <Compile Include="Compiler\Parser\ParserStack.cs" />
     <Compile Include="Runtime\BinaryContentProvider.cs" />
     <Compile Include="Runtime\CallSiteStorages.cs" />
+    <Compile Include="Runtime\Calls\GenericConversionAction.cs" />
     <Compile Include="Runtime\Calls\MethodDispatcher.Generated.cs" />
     <Compile Include="Runtime\Calls\CompositeConversionAction.cs" />
     <Compile Include="Runtime\Calls\ConvertToSAction.cs" />
@@ -367,6 +368,7 @@
     <Compile Include="Runtime\IOWrapper.cs" />
     <None Include="Compiler\Parser\Parser.y" />
     <None Include="Runtime\Calls\MethodDispatcher.Generator.rb" />
+    <None Include="Runtime\Converter.Generator.rb" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" Condition=" $(SilverlightTreeBuild) != 'true' " />
   <Target Name="BeforeBuild">

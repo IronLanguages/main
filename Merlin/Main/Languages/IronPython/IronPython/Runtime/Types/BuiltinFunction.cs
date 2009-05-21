@@ -648,7 +648,7 @@ namespace IronPython.Runtime.Types {
             }
 
             // finally add the restrictions for the built-in function and return the result.
-            Type[] typeRestrictions = result.Target.RestrictedArguments.Types;
+            Type[] typeRestrictions = ArrayUtils.MakeArray(result.Target.RestrictedArguments.GetTypes());
             
             // The function can return something typed to boolean or int.
             // If that happens, we need to apply Python's boxing rules.

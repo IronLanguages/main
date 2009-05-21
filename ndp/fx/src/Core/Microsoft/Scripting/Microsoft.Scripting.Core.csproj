@@ -137,7 +137,6 @@
     <Compile Include="Ast\Expression.DebuggerProxy.cs" />
     <Compile Include="Ast\IArgumentProvider.cs" />
     <Compile Include="Ast\ListArgumentProvider.cs" />
-    <Compile Include="Compiler\ArgumentPrepender.cs" />
     <Compile Include="Actions\UnaryOperationBinder.cs" />
     <Compile Include="Ast\ExpressionStringBuilder.cs" />
     <Compile Include="Compiler\BoundConstants.cs" />

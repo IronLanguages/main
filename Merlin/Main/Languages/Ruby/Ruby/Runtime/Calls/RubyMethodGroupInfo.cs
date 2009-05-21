@@ -101,6 +101,10 @@ namespace IronRuby.Runtime.Calls {
             get { return _isStatic ? SelfCallConvention.NoSelf : SelfCallConvention.SelfIsInstance; }
         }
 
+        internal override bool ImplicitProtocolConversions {
+            get { return true; }
+        }
+
         internal RubyMethodGroupInfo[] OverloadOwners {
             get { return _overloadOwners; }
         }

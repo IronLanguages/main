@@ -21,6 +21,7 @@ using IronRuby.Builtins;
 using IronRuby.Runtime.Calls;
 using Microsoft.Scripting.Generation;
 using Microsoft.Scripting.Utils;
+using IronRuby.Runtime;
 
 namespace IronRuby.Tests {
 
@@ -151,6 +152,7 @@ p [has_value, value]
         }
 
         public void Scenario_RubyArgSplatting6() {
+
             var c = Context.GetClass(typeof(MethodsWithParamArrays));
             Context.SetGlobalConstant("C", new MethodsWithParamArrays());
 
@@ -254,7 +256,7 @@ end
 ");
             }, @"
 Z2 -> 10000
-#<TypeError: Cannot convert MutableString(zzz) to Int32>
+#<TypeError: can't convert String into Fixnum>
 Z1 -> 10000
 ");
 

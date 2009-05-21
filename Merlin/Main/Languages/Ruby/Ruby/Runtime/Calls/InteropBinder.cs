@@ -503,7 +503,14 @@ namespace IronRuby.Runtime.Calls {
                     return result;
                 }
 #endif
-                return this.CreateErrorMetaObject(target, DynamicMetaObject.EmptyMetaObjects, errorSuggestion);
+
+                // TODO:
+                return errorSuggestion ?? new DynamicMetaObject(
+                    Expression.Throw(Methods.MakeTypeConversionError.OpCall(
+                        AstUtils.Constant(_context), AstUtils.Convert(target.Expression, typeof(object)), Ast.Constant(ReturnType)
+                    ), ReturnType),
+                    target.Restrictions
+                );
             }
 
             public override string/*!*/ ToString() {

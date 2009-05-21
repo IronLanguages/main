@@ -58,12 +58,12 @@ namespace IronRuby.Runtime.Calls {
                 if (args.SimpleArgumentCount == 0 && args.Signature.HasRhsArgument) {
                     expr = Ast.Assign(
                         Ast.Field(instance, _fieldInfo),
-                        // TODO: remove
-                        args.RubyContext.Binder.ConvertExpression(
+                        Converter.ConvertExpression(
                             args.GetRhsArgumentExpression(), 
-                            _fieldInfo.FieldType, 
-                            ConversionResultKind.ExplicitCast, 
-                            null
+                            _fieldInfo.FieldType,
+                            args.RubyContext, 
+                            args.MetaContext.Expression,
+                            true
                         )
                     );
                 }

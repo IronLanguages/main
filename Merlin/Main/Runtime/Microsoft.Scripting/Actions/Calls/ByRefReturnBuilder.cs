@@ -13,6 +13,7 @@
  *
  * ***************************************************************************/
 
+using System.Dynamic;
 using System.Collections.Generic;
 using System.Linq.Expressions;
 using Microsoft.Scripting.Actions;
@@ -30,12 +31,12 @@ namespace Microsoft.Scripting.Actions.Calls {
             _returnArgs = returnArgs;
         }
 
-        internal override Expression ToExpression(OverloadResolver resolver, IList<ArgBuilder> args, IList<Expression> parameters, Expression ret) {
+        internal override Expression ToExpression(OverloadResolver resolver, IList<ArgBuilder> builders, RestrictedArguments args, Expression ret) {
             if (_returnArgs.Count == 1) {
                 if (_returnArgs[0] == -1) {
                     return ret;
                 }
-                return Ast.Block(ret, args[_returnArgs[0]].ToReturnExpression(resolver));
+                return Ast.Block(ret, builders[_returnArgs[0]].ToReturnExpression(resolver));
             }
 
             Expression[] retValues = new Expression[_returnArgs.Count];
@@ -46,7 +47,7 @@ namespace Microsoft.Scripting.Actions.Calls {
                     usesRet = true;
                     retValues[rIndex++] = ret;
                 } else {
-                    retValues[rIndex++] = args[index].ToReturnExpression(resolver);
+                    retValues[rIndex++] = builders[index].ToReturnExpression(resolver);
                 }
             }
 

@@ -81,7 +81,7 @@ namespace IronRuby.Tests {
                 RubyOverloadResolver parameterBinder;
                 var bindingTarget = RubyMethodGroupInfo.ResolveOverload(
                     metaBuilder, arguments[i], "times", GetStaticMethods(typeof(OverloadsWithBlock), "Times*"), SelfCallConvention.SelfIsParameter,
-                    out parameterBinder
+                    false, out parameterBinder
                 );
 
                 Assert(bindingTarget.Success);

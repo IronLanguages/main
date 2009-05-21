@@ -125,13 +125,7 @@ namespace IronRuby.Runtime {
         #region ConvertStringToFloat, ConvertToInteger, CastToInteger, CastToFixnum, CastToUInt32Unchecked, CastToUInt64Unchecked
 
         public static double ConvertStringToFloat(RubyContext/*!*/ context, MutableString/*!*/ value) {
-            double result;
-            bool complete;
-            if (Tokenizer.TryParseDouble(value.ConvertToString(), out result, out complete) && complete) {
-                return result;
-            }
-
-            throw RubyExceptions.InvalidValueForType(context, value, "Float");
+            return RubyOps.ConvertStringToFloat(context, value.ConvertToString());
         }
 
         public static IntegerValue ConvertToInteger(ConversionStorage<IntegerValue>/*!*/ integerConversion, object value) {

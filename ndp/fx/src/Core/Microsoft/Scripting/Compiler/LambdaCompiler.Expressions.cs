@@ -16,12 +16,10 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
-using System.Diagnostics.SymbolStore;
+using System.Dynamic.Utils;
 using System.Reflection;
 using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
-using System.Dynamic;
-using System.Dynamic.Utils;
 
 namespace System.Linq.Expressions.Compiler {
     partial class LambdaCompiler {
@@ -409,15 +407,27 @@ namespace System.Linq.Expressions.Compiler {
             return true;
         }
 
-
+        /// <summary>
+        /// Emits arguments to a call, and returns an array of writebacks that
+        /// should happen after the call.
+        /// </summary>
         private List<WriteBack> EmitArguments(MethodBase method, IArgumentProvider args) {
+            return EmitArguments(method, args, 0);
+        }
+
+        /// <summary>
+        /// Emits arguments to a call, and returns an array of writebacks that
+        /// should happen after the call. For emitting dynamic expressions, we
+        /// need to skip the first parameter of the method (the call site).
+        /// </summary>
+        private List<WriteBack> EmitArguments(MethodBase method, IArgumentProvider args, int skipParameters) {
             ParameterInfo[] pis = method.GetParametersCached();
-            Debug.Assert(args.ArgumentCount == pis.Length);
+            Debug.Assert(args.ArgumentCount + skipParameters == pis.Length);
 
             var writeBacks = new List<WriteBack>();
-            for (int i = 0, n = pis.Length; i < n; i++) {
+            for (int i = skipParameters, n = pis.Length; i < n; i++) {
                 ParameterInfo parameter = pis[i];
-                Expression argument = args.GetArgument(i);
+                Expression argument = args.GetArgument(i - skipParameters);
                 Type type = parameter.ParameterType;
 
                 if (type.IsByRef) {
@@ -455,10 +465,6 @@ namespace System.Linq.Expressions.Compiler {
                 return;
             }
 
-            if (!(_method is DynamicMethod)) {
-                throw Error.CannotCompileConstant(value);
-            }
-
             _boundConstants.EmitConstant(this, value, type);
         }
 
@@ -474,16 +480,24 @@ namespace System.Linq.Expressions.Compiler {
 
             var invoke = node.DelegateType.GetMethod("Invoke");
 
-            var siteVar = Expression.Variable(siteType, null);
-            _scope.AddLocal(this, siteVar);
-
             // site.Target.Invoke(site, args)
             EmitConstant(site, siteType);
-            _ilg.Emit(OpCodes.Dup);
-            _scope.EmitSet(siteVar);
-            _ilg.Emit(OpCodes.Ldfld, siteType.GetField("Target"));
 
-            List<WriteBack> wb = EmitArguments(invoke, new ArgumentPrepender(siteVar, node));
+            // Emit the temp as type CallSite so we get more reuse
+            _ilg.Emit(OpCodes.Dup);
+#if MICROSOFT_SCRIPTING_CORE
+            // For 3.5, emit the temp as CallSite<T> to work around a Jit32
+            // verifier issue (fixed in 3.5 sp1)
+            var siteTemp = GetLocal(siteType);
+#else
+            var siteTemp = GetLocal(typeof(CallSite));
+#endif
+            _ilg.Emit(OpCodes.Stloc, siteTemp);
+            _ilg.Emit(OpCodes.Ldfld, siteType.GetField("Target"));
+            _ilg.Emit(OpCodes.Ldloc, siteTemp);
+            FreeLocal(siteTemp);
+
+            List<WriteBack> wb = EmitArguments(invoke, node, 1);
             _ilg.Emit(OpCodes.Callvirt, invoke);
             EmitWriteBack(wb);
         }

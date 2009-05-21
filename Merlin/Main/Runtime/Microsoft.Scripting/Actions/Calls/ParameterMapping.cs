@@ -1,4 +1,19 @@
-﻿using System;
+﻿/* ****************************************************************************
+ *
+ * Copyright (c) Microsoft Corporation. 
+ *
+ * This source code is subject to terms and conditions of the Microsoft Public License. A 
+ * copy of the license can be found in the License.html file at the root of this distribution. If 
+ * you cannot locate the  Microsoft Public License, please send an email to 
+ * ironruby@microsoft.com. By using this source code in any fashion, you are agreeing to be bound 
+ * by the terms of the Microsoft Public License.
+ *
+ * You must not remove this notice, or any other, from this software.
+ *
+ *
+ * ***************************************************************************/
+
+using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Reflection;
@@ -22,7 +37,7 @@ namespace Microsoft.Scripting.Actions.Calls {
         private int _argIndex;
         
         private List<int> _returnArgs;
-        private ArgBuilder _instanceBuilder;
+        private InstanceBuilder _instanceBuilder;
         private ReturnBuilder _returnBuilder;
 
         private List<ArgBuilder> _defaultArguments;
@@ -56,7 +71,7 @@ namespace Microsoft.Scripting.Actions.Calls {
             BitArray specialParameters = _resolver.MapSpecialParameters(this);
 
             if (_instanceBuilder == null) {
-                _instanceBuilder = new NullArgBuilder();
+                _instanceBuilder = new InstanceBuilder(-1);
             }
 
             for (int infoIndex = 0; infoIndex < _parameterInfos.Length; infoIndex++) {
@@ -76,9 +91,9 @@ namespace Microsoft.Scripting.Actions.Calls {
             return specialParameters != null && infoIndex < specialParameters.Length && specialParameters[infoIndex];
         }
 
-        public void AddInstanceBuilder(ArgBuilder builder) {
+        public void AddInstanceBuilder(InstanceBuilder builder) {
             ContractUtils.Requires(_instanceBuilder == null);
-            ContractUtils.Requires(builder.ConsumedArgumentCount == 1);
+            ContractUtils.Requires(builder.HasValue);
             _instanceBuilder = builder;
             _argIndex += 1;
         }
