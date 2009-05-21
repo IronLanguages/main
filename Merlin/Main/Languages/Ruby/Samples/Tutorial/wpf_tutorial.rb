@@ -197,7 +197,7 @@ EOF
                 old_stdout, $stdout = $stdout, output
                 result = nil
                 result = eval(input.to_s, @bind) # TODO - to_s should not be needed here
-            rescue => e
+            rescue Exception => e
                 print_to_repl output.string if not output.string.empty?
                 print_to_repl e.to_s
             else
@@ -257,8 +257,7 @@ elsif $0 == nil or $0 == "iirb"
     end
 
     def unload
-        app_callback = System::Threading::ThreadStart.new { System::Windows::Application.current.shutdown }
-        System::Windows::Application.current.dispatcher.invoke(System::Windows::Threading::DispatcherPriority.Normal, app_callback)
+        System::Windows::Application.current.invoke { System::Windows::Application.current.shutdown }
         exit
     end
 

@@ -20,10 +20,19 @@ require 'PresentationCore, Version=3.0.0.0, Culture=neutral, PublicKeyToken=31bf
 require 'windowsbase, Version=3.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35'
 
 class System::Windows::FrameworkElement
+    # Monkey-patch FrameworkElement to allow window.child_name instead of window.FindName("child_name")
     def method_missing name, *args
         child = FindName(name.to_clr_string)
         if child then return child end
         super
+    end
+end
+
+class System::Windows::Threading::DispatcherObject
+    def invoke &block
+        require "system.core, Version=3.5.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"
+        dispatch_callback = System::Action[].new block
+        self.dispatcher.invoke(System::Windows::Threading::DispatcherPriority.Normal, dispatch_callback)
     end
 end
 
@@ -56,6 +65,8 @@ class System::Windows::Documents::FlowDocument
 end
 
 module Wpf
+    # Include all the WPF namespaces for easy access. A user can just do "include Wpf" in their
+    # class and get access to all the WPF types (without polluting the global namespace)
     include System::Windows
     include System::Windows::Documents
     include System::Windows::Controls
@@ -63,6 +74,8 @@ module Wpf
     include System::Windows::Markup
     include System::Windows::Media
 
+    # Utility class to convert from RDoc SimpleMarkup text to WPF FlowDocument.
+    # It implements the same interface as SM::ToHtml, etc.
     class ToFlowDocument
         include System::Windows
         include System::Windows::Documents
@@ -157,7 +170,6 @@ module Wpf
         end
         
         def convert_special(special, paragraph)
-            handled = false
             SM::Attribute.each_name_of(special.type) do |name|
                 method_name = "handle_special_#{name}"
                 if self.respond_to? method_name

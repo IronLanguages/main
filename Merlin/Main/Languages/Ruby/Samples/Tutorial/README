@@ -35,7 +35,7 @@ ir.exe test\test_console.rb
 = TODO
 
 * UI layout
-  * Buttons for "Next chapter" navigation
+  * Check mark next to completed chapters/sections
 
 * Multiple tutorial support
   * UI to show all available tutorials
@@ -46,3 +46,4 @@ ir.exe test\test_console.rb
   * UI surface for WPF tutorials
   * Silverlight
   * Voting feedback
+  * Ability to save as HTML

@@ -101,14 +101,17 @@ module Tutorial
     
     @@tutorials = {}
     
-    @@ironruby_tutorial_path = File.expand_path("Tutorials/ironruby_tutorial", File.dirname(__FILE__))
+    def self.tutorials
+        @@tutorials
+    end
+    
+    @@ironruby_tutorial_path = File.expand_path("Tutorials/ironruby_tutorial.rb", File.dirname(__FILE__))
     
     def self.get_tutorial path = @@ironruby_tutorial_path
-        if not @@tutorials.has_key? path		
+        path = File.expand_path path
+        if not @@tutorials.has_key? path
             require path
-            raise "path does not contains a tutorial definition" if not Thread.current[:tutorial]
-            @@tutorials[path] = Thread.current[:tutorial]
-            Thread.current[:tutorial] = nil
+            raise "path does not contains a tutorial definition" if not @@tutorials.has_key? path
         end
         
         return @@tutorials[path]
@@ -138,9 +141,14 @@ end
 
 class Object
     def tutorial name
-        Thread.current[:tutorial] = Tutorial::Tutorial.new name
+        t = Tutorial::Tutorial.new name
+        Thread.current[:tutorial] = t
         Thread.current[:prev_chapter] = nil
         yield
+        caller[0] =~ /\A(.*):[0-9]+/
+        tutorial_file = $1
+        Tutorial.tutorials[tutorial_file] = t
+        Thread.current[:tutorial] = nil
     end
 
     def introduction intro
