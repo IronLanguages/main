@@ -41,11 +41,11 @@ describe "Removing from .NET namespaces" do
     end
   end
 
-  it "is not allowed for classes" do
-    lambda { module NotEmptyNamespace
-      self.send(:remove_const, :Foo)
-    end }.should raise_error TypeError
-
+  it "is allowed for classes" do
+    module NotEmptyNamespace
+       remove_const :Foo
+    end
+    lambda { NotEmptyNamespace::Foo }.should raise_error(NameError)
   end
 
   it "is allowed for Ruby classes" do
@@ -60,7 +60,7 @@ describe "Removing from .NET namespaces" do
     lambda { NotEmptyNamespace::Test }.should raise_error NameError
   end
 
-  it "is allowed for ruby modules" do
+  it "is allowed for Ruby modules" do
     module NotEmptyNamespace
       module Bar
         def bar

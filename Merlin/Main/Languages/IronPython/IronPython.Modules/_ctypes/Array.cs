@@ -58,11 +58,15 @@ namespace IronPython.Modules {
                     index = PythonOps.FixIndex(index, ((ArrayType)NativeType).Length);
                     INativeType elementType = ElementType;
 
-                    elementType.SetValue(
+                    object keepAlive = elementType.SetValue(
                         _memHolder,
                         checked(index * elementType.Size),
                         value
                     );
+
+                    if (keepAlive != null) {
+                        _memHolder.AddObject(index.ToString(), keepAlive);
+                    }
                 }
             }
 

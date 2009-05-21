@@ -35,7 +35,7 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("to_clr_type")]
         public static Type ToClrType(RubyModule/*!*/ self) {
-            return self.Tracker != null ? self.Tracker.Type : null;
+            return self.TypeTracker != null ? self.TypeTracker.Type : null;
         }
 
         #endregion
@@ -79,11 +79,10 @@ namespace IronRuby.Builtins {
         [RubyMethod("remove_const", RubyMethodAttributes.PrivateInstance)]
         public static object RemoveConstant(RubyModule/*!*/ self, [DefaultProtocol, NotNull]string/*!*/ constantName) {
             object value;
-            if (!self.TryGetConstantNoAutoload(constantName, out value)) {
+            if (!self.TryRemoveConstant(constantName, out value)) {
                 self.Context.CheckConstantName(constantName);
                 throw RubyExceptions.CreateNameError(String.Format("constant {0}::{1} not defined", self.Name, constantName));
             }
-            self.RemoveConstant(constantName);
             return value;
         }
 
@@ -905,11 +904,11 @@ namespace IronRuby.Builtins {
         [RubyMethod("of")]
         [RubyMethod("[]")]
         public static RubyModule/*!*/ Of(RubyModule/*!*/ self, [NotNull]params object[]/*!*/ typeArgs) {
-            if (self.Tracker == null) {
-                throw new NotImplementedException("TODO");
+            if (self.TypeTracker == null) {
+                throw RubyExceptions.CreateArgumentError(String.Format("'{0}' is not a type", self.Name));
             }
 
-            Type type = self.Tracker.Type;
+            Type type = self.TypeTracker.Type;
             int provided = typeArgs.Length;
 
             if (provided == 1 && type == typeof(Array)) {

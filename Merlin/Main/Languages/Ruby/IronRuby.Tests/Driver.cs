@@ -26,6 +26,7 @@ using IronRuby.Runtime;
 using Microsoft.Scripting;
 using System.Diagnostics;
 using System.Reflection;
+using System.Text;
 
 namespace IronRuby.Tests {
     public class TestCase {
@@ -402,9 +403,9 @@ namespace IronRuby.Tests {
 
                     Console.Error.WriteLine();
                     if (_partialTrust) {
-                        WriteError("{0}) {1}", failedCases.Count, test);
+                        ColorWrite(ConsoleColor.Red, "{0}) {1}", failedCases.Count, test);
                     } else {
-                        WriteError("{0}) {1} {2} : {3}", failedCases.Count, test, frame.GetFileName(), frame.GetFileLineNumber());
+                        ColorWrite(ConsoleColor.Red, "{0}) {1} {2} : {3}", failedCases.Count, test, frame.GetFileName(), frame.GetFileLineNumber());
                     }
                     Console.Error.WriteLine(message);
                 }
@@ -416,16 +417,14 @@ namespace IronRuby.Tests {
                     Exception exception = _unexpectedExceptions[i].Item001;
 
                     Console.Error.WriteLine();
-                    WriteError("{0}) {1} (unexpected exception)", failedCases.Count, test);
+                    ColorWrite(ConsoleColor.Red, "{0}) {1} (unexpected exception)", failedCases.Count, test);
                     Console.Error.WriteLine(exception);
                     failedCases.Add(test);
                 }
             }
 
             if (failedCases.Count == 0) {
-                Console.ForegroundColor = ConsoleColor.Green;
-                Console.WriteLine("PASSED");
-                Console.ForegroundColor = ConsoleColor.Gray;
+                ColorWrite(ConsoleColor.Green, "PASSED");
             } else {
                 Console.WriteLine();
                 // TODO:
@@ -480,12 +479,12 @@ namespace IronRuby.Tests {
         }
 
         private void PrintTestCaseFailed() {
-            WriteError("\n> FAILED: {0}", _testRuntime.TestName);
+            ColorWrite(ConsoleColor.Red, "\n> FAILED: {0}", _testRuntime.TestName);
         }
 
-        private void WriteError(string/*!*/ str, params object[] args) {
+        internal static void ColorWrite(ConsoleColor color, string/*!*/ str, params object[] args) {
             var oldColor = Console.ForegroundColor;
-            Console.ForegroundColor = ConsoleColor.Red;
+            Console.ForegroundColor = color;
             Console.WriteLine(str, args);
             Console.ForegroundColor = oldColor;
         }
@@ -512,6 +511,27 @@ namespace IronRuby.Tests {
             string dir = Path.Combine(Path.GetTempPath(), _testRuntime.TestName);
             Directory.CreateDirectory(dir);
             return dir;
+        }
+
+        internal static string/*!*/ MakeTempFile(string/*!*/ suffix, string/*!*/ content) {
+            var dir = Path.GetTempPath();
+            int pid = Process.GetCurrentProcess().Id;
+
+            while (true) {
+                string path = Path.Combine(dir, "IR_" + pid + "_" + DateTime.Now.Ticks.ToString("X") + suffix);
+                if (!File.Exists(path)) {
+                    try {
+                        using (var file = File.Open(path, FileMode.CreateNew)) {
+                            var writer = new StreamWriter(file);
+                            writer.Write(content);
+                            writer.Close();
+                        }
+                        return path;
+                    } catch (IOException) {
+                        // nop
+                    }
+                }
+            }
         }
     }
 }

@@ -125,6 +125,9 @@ namespace IronPython.Runtime.Types {
 
         [SpecialName, PropertyMethod]
         public static IAttributesCollection/*!*/ Get__dict__(Scope/*!*/ scope) {
+            if (scope.Dict is PythonDictionary) {
+                return scope.Dict;
+            }
             return new PythonDictionary(new GlobalScopeDictionaryStorage(scope));
         }
 

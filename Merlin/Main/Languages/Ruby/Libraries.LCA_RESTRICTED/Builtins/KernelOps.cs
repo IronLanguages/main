@@ -1104,7 +1104,7 @@ namespace IronRuby.Builtins {
 
             object result;
             if (!RubyUtils.TryDuplicateObject(initializeCopyStorage, allocateStorage, self, isClone, out result)) {
-                throw RubyExceptions.CreateTypeError(String.Format("can't {0} {1}", isClone ? "clone" : "dup", context.GetClassName(self)));
+                throw RubyExceptions.CreateTypeError(String.Format("can't {0} {1}", isClone ? "clone" : "dup", context.GetClassDisplayName(self)));
             }
             return context.TaintObjectBy(result, self);
         }

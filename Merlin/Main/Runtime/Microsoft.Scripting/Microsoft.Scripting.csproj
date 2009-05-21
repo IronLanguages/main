@@ -399,8 +399,6 @@
     <Compile Include="Runtime\LanguageContext.cs" />
     <Compile Include="Runtime\ModuleChangeEventArgs.cs" />
     <Compile Include="Runtime\ModuleChangeEventType.cs" />
-    <Compile Include="Runtime\ModuleGlobalCache.cs" />
-    <Compile Include="Runtime\ModuleGlobalWrapper.cs" />
     <Compile Include="Runtime\NotNullAttribute.cs" />
     <Compile Include="Runtime\NullTextContentProvider.cs" />
     <Compile Include="Runtime\OperationFailed.cs" />

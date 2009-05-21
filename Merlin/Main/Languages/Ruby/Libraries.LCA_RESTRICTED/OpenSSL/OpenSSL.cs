@@ -20,6 +20,7 @@ using IronRuby.Runtime;
 using Microsoft.Scripting.Math;
 using Microsoft.Scripting.Runtime;
 using Crypto = System.Security.Cryptography;
+using System.Text;
 
 namespace IronRuby.StandardLibrary.OpenSsl {
 
@@ -109,10 +110,42 @@ namespace IronRuby.StandardLibrary.OpenSsl {
             public static MutableString/*!*/ Seed(RubyModule/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ seed) {
                 return seed;
             }
+
+            [RubyMethod("pseudo_bytes", RubyMethodAttributes.PublicSingleton)]
+            [RubyMethod("random_bytes", RubyMethodAttributes.PublicSingleton)]
+            public static MutableString/*!*/ RandomBytes(RubyModule/*!*/ self, [DefaultProtocol, NotNull]int/*!*/ length) {
+                if (length < 0) {
+                    throw RubyExceptions.CreateArgumentError("negative string size");
+                }
+
+                if (length == 0) {
+                    return MutableString.Create("");
+                }
+
+                var result = new StringBuilder(length);
+
+                byte[] data = new byte[length];
+                var generator = new Crypto.RNGCryptoServiceProvider();
+                generator.GetBytes(data);
+
+                for (int i = 0; i < length; i++) {
+                    result.Append(Convert.ToChar(data[i]));
+                }
+
+                return MutableString.Create(result.ToString());
+            }
+
+            // add(str, entropy) -> self
+            // load_random_file(filename) -> true
         }
 
         [RubyClass("BN")]
         public class BN {
+
+            // new => aBN
+            // new(bn) => aBN
+            // new(string) => aBN
+            // new(string, 0 | 2 | 10 | 16) => aBN
 
             [RubyMethod("rand", RubyMethodAttributes.PublicSingleton)]
             public static BigInteger/*!*/ Rand(RubyClass/*!*/ self, [DefaultProtocol]int bits, [DefaultProtocol, Optional]int someFlag, [Optional]bool otherFlag) { // TODO: figure out someFlag and otherFlag

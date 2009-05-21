@@ -602,7 +602,7 @@ namespace IronPython.Runtime.Operations {
             int diff;
 
             if (DynamicHelpers.GetPythonType(x) != DynamicHelpers.GetPythonType(y)) {
-                if (shouldWarn && PythonContext.GetContext(context).PythonOptions.WarnPy3k) {
+                if (shouldWarn && PythonContext.GetContext(context).PythonOptions.WarnPython30) {
                     PythonOps.Warn(context, PythonExceptions.DeprecationWarning, "comparing unequal types not supported in 3.x");
                 }
 
@@ -1987,6 +1987,7 @@ namespace IronPython.Runtime.Operations {
                 PythonFunction fx = new PythonFunction(context, null, new FunctionInfo(name, null, ArrayUtils.EmptyStrings, FunctionAttributes.None, 0, String.Empty, null, false), "", ArrayUtils.EmptyObjects, null);
 
                 TraceBackFrame tbf = new TraceBackFrame(
+                    context,
                     new PythonDictionary(new GlobalScopeDictionaryStorage(context.Scope)),
                     context.Scope.Dict,
                     fx.func_code);
@@ -3453,6 +3454,18 @@ namespace IronPython.Runtime.Operations {
             return value;
         }
 
+        /// <summary>
+        /// Returns an IntPtr in the proper way to CPython - an int or a Python long
+        /// </summary>
+        public static object/*!*/ ToPython(this IntPtr handle) {
+            long value = handle.ToInt64();
+            if (value >= Int32.MinValue && value <= Int32.MaxValue) {
+                return ScriptingRuntimeHelpers.Int32ToObject((int)value);
+            }
+
+            return (BigInteger)value;
+        }
+
         #region Global Access
 
         public static CodeContext/*!*/ CreateLocalContext(CodeContext/*!*/ outerContext, MutableTuple boxes, SymbolId[] args, bool isVisible) {
@@ -3938,5 +3951,29 @@ namespace IronPython.Runtime.Operations {
         }
 
         #endregion        
+
+        private static readonly Microsoft.Scripting.Utils.ThreadLocal<List<FunctionStack>> _funcStack = new Microsoft.Scripting.Utils.ThreadLocal<List<FunctionStack>>(true);
+        private static Func<List<FunctionStack>> Creator = () => new List<FunctionStack>();
+
+        public static List<FunctionStack> GetFunctionStack() {
+            return _funcStack.GetOrCreate(Creator);
+        }
+
+        public static List<FunctionStack> PushFrame(CodeContext context, PythonFunction function) {
+            List<FunctionStack> stack = GetFunctionStack();
+            stack.Add(new FunctionStack(context, function));
+            return stack;
+        }        
     }
+
+    public struct FunctionStack {
+        public readonly CodeContext Context;
+        public readonly PythonFunction Function;
+
+        public FunctionStack(CodeContext/*!*/ context, PythonFunction/*!*/ function) {
+            Context = context;
+            Function = function;
+        }
+    }
+
 }

@@ -92,7 +92,7 @@ NoMethodError
             public int RwProperty { get { return 4; } set { } }
             public int WoProperty { set { } }
             
-            public int Method() { return 1; }
+            public int M() { return 1; }
             public static int StaticMethod() { return 2; }
         }
 
@@ -104,7 +104,7 @@ NoMethodError
                 CompilerTest(@"
 C = $obj.class
 
-puts $obj.method
+puts $obj.m
 puts C.static_method
 puts $cls.static_methods rescue puts $!.class
 
@@ -125,6 +125,21 @@ NoMethodError
 3
 NoMethodError
 4
+");
+        }
+
+        /// <summary>
+        /// Order of initialization of CLR methods.
+        /// </summary>
+        public void ClrMethods2() {
+            Context.ObjectClass.SetConstant("C", Context.GetClass(typeof(ClassWithMethods1)));
+            XTestOutput(@"
+class C
+  def m; 2; end     # replace CLR method with Ruby method before we use the CLR one
+  remove_method :m  # remove Ruby method
+  new.m rescue p $! # we shouldn't call the CLR method 
+end
+", @"
 ");
         }
 
@@ -861,7 +876,27 @@ puts $type.static_method rescue puts $!.class
 {1}
 2
 NoMethodError
-", type, RubyUtils.GetQualifiedName(typeof(ClassWithMethods1))), OutputFlags.Match);
+", type, RubyUtils.GetQualifiedName(typeof(ClassWithMethods1), true)), OutputFlags.Match);
+        }
+
+        public void ClrNamespaces1() {
+            TestOutput(@"
+puts defined? System::Collections
+
+module System
+  remove_const(:Collections)
+end
+
+puts defined? System::Collections
+
+class System::Collections
+  puts self
+end
+", @"
+constant
+nil
+System::Collections
+");
         }
         
         public void ClrGenerics1() {
@@ -876,11 +911,49 @@ p C[String].new.arity
 p C[Fixnum, Fixnum].new.arity
 ");
             }, @"
-TypeGroup of C
+#<TypeGroup: InteropTests::Generics1::C, InteropTests::Generics1::C[T], InteropTests::Generics1::C[T, S]>
 0
 1
 2
 ");
+        }
+
+        public class ClassWithNestedGenericTypes1 {
+            public class D {
+            }
+
+            public class C {
+                public int Id { get { return 0; } }
+            }
+
+            public class C<T> {
+                public int Id { get { return 1; } }
+            }
+        }
+
+        public class ClassWithNestedGenericTypes2 : ClassWithNestedGenericTypes1 {
+            public new class C<T> {
+                public int Id { get { return 2; } }
+            }
+
+            public class C<T, S> {
+                public int Id { get { return 3; } }
+            }
+        }
+
+        public void ClrGenerics2() {
+            Context.ObjectClass.SetConstant("C1", Context.GetClass(typeof(ClassWithNestedGenericTypes1)));
+            Context.ObjectClass.SetConstant("C2", Context.GetClass(typeof(ClassWithNestedGenericTypes2)));
+
+            AssertOutput(() => CompilerTest(@"
+p C1::D
+p C1::C
+p C2::C
+"), @"
+*::ClassWithNestedGenericTypes1::D
+#<TypeGroup: *::ClassWithNestedGenericTypes1::C, *::ClassWithNestedGenericTypes1::C[T]>
+#<TypeGroup: *::ClassWithNestedGenericTypes2::C[T], *::ClassWithNestedGenericTypes2::C[T, S]>
+", OutputFlags.Match);
         }
 
         /// <summary>

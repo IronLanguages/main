@@ -18,6 +18,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection.Emit;
+using System.Runtime.InteropServices;
 
 using Microsoft.Scripting;
 using Microsoft.Scripting.Math;
@@ -86,19 +87,6 @@ namespace IronPython.Modules {
                 return MakeArrayType(type, count);
             }
 
-            /// <summary>
-            /// Converts an object into a function call parameter.
-            /// 
-            /// Structures just return themselves.
-            /// </summary>
-            public object from_param(object obj) {
-                if (!Builtin.isinstance(obj, this)) {
-                    throw PythonOps.TypeError("expected {0} instance got {1}", Name, PythonTypeOps.GetName(obj));
-                }
-
-                return obj;
-            }
-
             public _Structure from_address(CodeContext/*!*/ context, int address) {
                 return from_address(context, new IntPtr(address));
             }
@@ -111,6 +99,39 @@ namespace IronPython.Modules {
                 _Structure res = (_Structure)CreateInstance(context);
                 res.SetAddress(ptr);
                 return res;
+            }
+
+            public _Structure from_buffer(ArrayModule.PythonArray array, [DefaultParameterValue(0)]int offset) {
+                ValidateArraySizes(array, offset, ((INativeType)this).Size);
+
+                _Structure res = (_Structure)CreateInstance(Context.SharedContext);
+                IntPtr addr = array.GetArrayAddress();
+                res._memHolder = new MemoryHolder(addr.Add(offset), ((INativeType)this).Size);
+                res._memHolder.AddObject("ffffffff", array);
+                return res;
+            }
+
+            public _Structure from_buffer_copy(ArrayModule.PythonArray array, [DefaultParameterValue(0)]int offset) {
+                ValidateArraySizes(array, offset, ((INativeType)this).Size);
+
+                _Structure res = (_Structure)CreateInstance(Context.SharedContext);
+                res._memHolder = new MemoryHolder(((INativeType)this).Size);
+                res._memHolder.CopyFrom(array.GetArrayAddress().Add(offset), new IntPtr(((INativeType)this).Size));
+                GC.KeepAlive(array);
+                return res;
+            }
+
+            /// <summary>
+            /// Converts an object into a function call parameter.
+            /// 
+            /// Structures just return themselves.
+            /// </summary>
+            public object from_param(object obj) {
+                if (!Builtin.isinstance(obj, this)) {
+                    throw PythonOps.TypeError("expected {0} instance got {1}", Name, PythonTypeOps.GetName(obj));
+                }
+
+                return obj;
             }
 
             public object in_dll(object library, string name) {
@@ -155,9 +176,9 @@ namespace IronPython.Modules {
                 return res;
             }
 
-            void INativeType.SetValue(MemoryHolder/*!*/ address, int offset, object value) {
+            object INativeType.SetValue(MemoryHolder/*!*/ address, int offset, object value) {
                 try {
-                    SetValueInternal(address, offset, value);
+                    return SetValueInternal(address, offset, value);
                 } catch (ArgumentTypeException e) {
                     throw PythonOps.RuntimeError("({0}) <type 'exceptions.TypeError'>: {1}",
                         Name,
@@ -169,7 +190,7 @@ namespace IronPython.Modules {
                 }
             }
 
-            internal void SetValueInternal(MemoryHolder address, int offset, object value) {
+            internal object SetValueInternal(MemoryHolder address, int offset, object value) {
                 IList<object> init = value as IList<object>;
                 if (init != null) {
                     if (init.Count > _fields.Length) {
@@ -183,10 +204,12 @@ namespace IronPython.Modules {
                     CData data = value as CData;
                     if (data != null) {
                         data._memHolder.CopyTo(address, offset, data.Size);
+                        return data._memHolder.EnsureObjects();
                     } else {
                         throw new NotImplementedException("set value");
                     }
                 }
+                return null;
             }
 
             Type/*!*/ INativeType.GetNativeType() {
@@ -237,6 +260,8 @@ namespace IronPython.Modules {
                     INativeType lastType = null;
                     List<Field> allFields = GetBaseSizeAlignmentAndFields(out size, out alignment);
 
+                    IList<object> anonFields = GetAnonymousFields(this);
+
                     for (int fieldIndex = 0; fieldIndex < list.Count; fieldIndex++) {
                         object o = list[fieldIndex];
                         string fieldName;
@@ -245,12 +270,18 @@ namespace IronPython.Modules {
 
                         int prevSize = UpdateSizeAndAlignment(cdata, bitCount, lastType, ref size, ref alignment, ref curBitCount);
 
-                        Field newField = new Field(cdata, prevSize, allFields.Count, bitCount, curBitCount - bitCount);
+                        Field newField = new Field(fieldName, cdata, prevSize, allFields.Count, bitCount, curBitCount - bitCount);
                         allFields.Add(newField);
                         AddSlot(SymbolTable.StringToId(fieldName), newField);
 
+                        if (anonFields != null && anonFields.Contains(fieldName)) {
+                            AddAnonymousFields(this, allFields, cdata, newField);
+                        }
+
                         lastType = cdata;
                     }
+
+                    CheckAnonymousFields(allFields, anonFields);
 
                     if (bitCount != null) {
                         size += lastType.Size;
@@ -259,6 +290,59 @@ namespace IronPython.Modules {
                     _fields = allFields.ToArray();
                     _size = PythonStruct.Align(size, alignment);
                     _alignment = alignment;
+                }
+            }
+
+            internal static void CheckAnonymousFields(List<Field> allFields, IList<object> anonFields) {
+                if (anonFields != null) {
+                    foreach (string s in anonFields) {
+                        bool found = false;
+                        foreach (Field f in allFields) {
+                            if (f.FieldName == s) {
+                                found = true;
+                                break;
+                            }
+                        }
+
+                        if (!found) {
+                            throw PythonOps.AttributeError("anonymous field {0} is not defined in this structure", s);
+                        }
+                    }
+                }
+            }
+
+            internal static IList<object> GetAnonymousFields(PythonType type) {
+                object anonymous;
+                IList<object> anonFields = null;
+                if (type.TryGetBoundAttr(type.Context.SharedContext, type, SymbolTable.StringToId("_anonymous_"), out anonymous)) {
+                    anonFields = anonymous as IList<object>;
+                    if (anonFields == null) {
+                        throw PythonOps.TypeError("_anonymous_ must be a sequence");
+                    }
+                }
+                return anonFields;
+            }
+
+            internal static void AddAnonymousFields(PythonType type, List<Field> allFields, INativeType cdata, Field newField) {
+                Field[] childFields;
+                if (cdata is StructType) {
+                    childFields = ((StructType)cdata)._fields;
+                } else if (cdata is UnionType) {
+                    childFields = ((UnionType)cdata)._fields;
+                } else {
+                    throw PythonOps.TypeError("anonymous field must be struct or union");
+                }
+
+                foreach (Field existingField in childFields) {
+                    Field anonField = new Field(
+                        existingField.FieldName,
+                        existingField.NativeType,
+                        checked(existingField.offset + newField.offset),
+                        allFields.Count
+                    );
+
+                    type.AddSlot(SymbolTable.StringToId(existingField.FieldName), anonField);
+                    allFields.Add(anonField);
                 }
             }
 
@@ -328,7 +412,7 @@ namespace IronPython.Modules {
 
                 return prevSize;
             }
-
+            
             internal void EnsureFinal() {
                 if (_fields == null) {
                     SetFields(PythonTuple.EMPTY);

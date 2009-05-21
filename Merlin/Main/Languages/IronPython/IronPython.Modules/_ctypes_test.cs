@@ -18,7 +18,7 @@ using System;
 using IronPython.Runtime;
 
 #if !SILVERLIGHT
-//[assembly: PythonModule("_ctypes_test", typeof(IronPython.Modules.CTypesTest))]
+[assembly: PythonModule("_ctypes_test", typeof(IronPython.Modules.CTypesTest))]
 namespace IronPython.Modules {
     public static class CTypesTest {
         // TODO: This isn't right

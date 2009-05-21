@@ -38,6 +38,7 @@ namespace IronPython.Modules {
                 _object = value; // Keep alive the object, more to do here.
                 _memHolder = new MemoryHolder(IntPtr.Size);
                 _memHolder.WriteIntPtr(0, value._memHolder);
+                _memHolder.AddObject("1", value);
             }
 
             public object contents {
@@ -66,7 +67,10 @@ namespace IronPython.Modules {
                     MemoryHolder address = _memHolder.ReadMemoryHolder(0);
 
                     INativeType type = ((PointerType)NativeType)._type;
-                    type.SetValue(address, checked(type.Size * index), value);
+                    object keepAlive = type.SetValue(address, checked(type.Size * index), value);
+                    if (keepAlive != null) {
+                        _memHolder.AddObject(index.ToString(), keepAlive);
+                    }
                 }
             }
 
@@ -76,9 +80,17 @@ namespace IronPython.Modules {
 
             public object this[Slice index] {
                 get {
+                    if (index.stop == null) {
+                        throw PythonOps.ValueError("slice stop is required");
+                    }
+
                     int start = index.start != null ? (int)index.start : 0;
                     int stop = index.stop != null ? (int)index.stop : 0;
                     int step = index.step != null ? (int)index.step : 1;
+
+                    if (step < 0 && index.start == null) {
+                        throw PythonOps.ValueError("slice start is required for step < 0");
+                    }
 
                     if (start < 0) {
                         start = 0;
@@ -97,7 +109,8 @@ namespace IronPython.Modules {
                     if (elemType != null && (elemType._type == SimpleTypeKind.WChar || elemType._type == SimpleTypeKind.Char)) {
                         int elmSize = ((INativeType)elemType).Size;
                         StringBuilder res = new StringBuilder();
-                        for (int i = start; i < stop; i += step) {
+
+                        for (int i = start; stop > start ? i < stop : i > stop; i += step) {
                             res.Append(
                                 elemType.ReadChar(address, checked(i * elmSize))
                             );
@@ -105,8 +118,8 @@ namespace IronPython.Modules {
 
                         return res.ToString();
                     } else {
-                        List res = new List(stop - start);
-                        for (int i = start; i < stop; i+= step) {
+                        List res = new List((stop - start) / step);
+                        for (int i = start; stop > start ? i < stop : i > stop; i += step) {
                             res.AddNoLock(
                                 type.GetValue(address, checked(type.Size * i), false)
                             );

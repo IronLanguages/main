@@ -46,7 +46,7 @@ namespace IronRuby.Runtime {
         }
 
         public static Exception/*!*/ CreateUnexpectedTypeError(RubyContext/*!*/ context, object param, string/*!*/ type) {
-            return CreateTypeError(String.Format("wrong argument type {0} (expected {1})", context.GetClassName(param), type));
+            return CreateTypeError(String.Format("wrong argument type {0} (expected {1})", context.GetClassDisplayName(param), type));
         }
 
         public static Exception/*!*/ CannotConvertTypeToTargetType(RubyContext/*!*/ context, object param, string/*!*/ toType) {
@@ -73,7 +73,7 @@ namespace IronRuby.Runtime {
 
             return CreateTypeError(String.Format("can't allocate class `{1}' that derives from type `{0}' with no default constructor;" +
                 " define {1}#new singleton method instead of {2}#initialize",
-                rubyClass.Context.GetTypeName(baseType), rubyClass.Name, initializerOwnerName
+                rubyClass.Context.GetTypeName(baseType, true), rubyClass.Name, initializerOwnerName
             ));
         }
 
@@ -173,7 +173,8 @@ namespace IronRuby.Runtime {
         }
 
         public static Exception/*!*/ CreateEncodingCompatibilityError(RubyEncoding/*!*/ encoding1, RubyEncoding/*!*/ encoding2) {
-            return new EncodingCompatibilityError(String.Format("incompatible character encodings: {0} and {1}", encoding1.Name, encoding2.Name));
+            return new EncodingCompatibilityError(String.Format("incompatible character encodings: {0}{1} and {2}{3}",
+                encoding1.Name, encoding1.IsKCoding ? " (KCODE)" : null, encoding2.Name, encoding2.IsKCoding ? " (KCODE)" : null));
         }
     }
 }

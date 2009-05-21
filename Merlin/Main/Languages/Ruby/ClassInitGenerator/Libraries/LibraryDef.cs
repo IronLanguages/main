@@ -497,7 +497,7 @@ internal class LibraryDef {
     private void SetQualifiedName(ModuleDef/*!*/ def) {
         if (def.QualifiedName == null) {
             if (def.IsExtension) {
-                def.QualifiedName = RubyUtils.GetQualifiedName(def.Extends);
+                def.QualifiedName = RubyUtils.GetQualifiedName(def.Extends, false);
             } else if (def.DeclaringModule == null) {
                 def.QualifiedName = def.SimpleName;
             } else {

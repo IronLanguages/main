@@ -102,15 +102,6 @@ namespace IronPython.Modules {
                 return PythonType.SetPythonType(underlyingSystemType, new SimpleType(underlyingSystemType));
             }
 
-            /// <summary>
-            /// Converts an object into a function call parameter.
-            /// </summary>
-            public object from_param(object obj) {
-                // TODO: This isn't right as we have an obj associated w/ the argument, CPython doesn't.
-
-                return new NativeArgument((CData)PythonCalls.Call(this, obj), _charType.ToString());
-            }
-
             public SimpleCData from_address(CodeContext/*!*/ context, int address) {
                 return from_address(context, new IntPtr(address));
             }
@@ -123,6 +114,35 @@ namespace IronPython.Modules {
                 SimpleCData res = (SimpleCData)CreateInstance(context);
                 res.SetAddress(ptr);
                 return res;
+            }
+
+            public SimpleCData from_buffer(ArrayModule.PythonArray array, [DefaultParameterValue(0)]int offset) {
+                ValidateArraySizes(array, offset, ((INativeType)this).Size);
+
+                SimpleCData res = (SimpleCData)CreateInstance(Context.SharedContext);
+                IntPtr addr = array.GetArrayAddress();
+                res._memHolder = new MemoryHolder(addr.Add(offset), ((INativeType)this).Size);
+                res._memHolder.AddObject("ffffffff", array);
+                return res;
+            }
+
+            public SimpleCData from_buffer_copy(ArrayModule.PythonArray array, [DefaultParameterValue(0)]int offset) {
+                ValidateArraySizes(array, offset, ((INativeType)this).Size);
+
+                SimpleCData res = (SimpleCData)CreateInstance(Context.SharedContext);
+                res._memHolder = new MemoryHolder(((INativeType)this).Size);
+                res._memHolder.CopyFrom(array.GetArrayAddress().Add(offset), new IntPtr(((INativeType)this).Size));
+                GC.KeepAlive(array);
+                return res;
+            }
+
+            /// <summary>
+            /// Converts an object into a function call parameter.
+            /// </summary>
+            public object from_param(object obj) {
+                // TODO: This isn't right as we have an obj associated w/ the argument, CPython doesn't.
+
+                return new NativeArgument((CData)PythonCalls.Call(this, obj), _charType.ToString());
             }
 
             public SimpleCData in_dll(CodeContext/*!*/ context, object library, string name) {
@@ -196,7 +216,7 @@ namespace IronPython.Modules {
                     case SimpleTypeKind.UnsignedLongLong: res = GetIntReturn((ulong)owner.ReadInt64(offset)); break;
                     case SimpleTypeKind.SignedLongLong: res = GetIntReturn(owner.ReadInt64(offset)); break;
                     case SimpleTypeKind.Object: res = GetObjectReturn(owner.ReadIntPtr(offset)); break;
-                    case SimpleTypeKind.Pointer: res = ToPython(owner.ReadIntPtr(offset)); break;
+                    case SimpleTypeKind.Pointer: res = owner.ReadIntPtr(offset).ToPython(); break;
                     case SimpleTypeKind.CharPointer: res = owner.ReadMemoryHolder(offset).ReadAnsiString(0); break;
                     case SimpleTypeKind.WCharPointer: res = owner.ReadMemoryHolder(offset).ReadUnicodeString(0); break;
                     default:
@@ -222,36 +242,41 @@ namespace IronPython.Modules {
                 }
             }
 
-            void INativeType.SetValue(MemoryHolder/*!*/ owner, int offset, object value) {
+            object INativeType.SetValue(MemoryHolder/*!*/ owner, int offset, object value) {
                 SimpleCData data = value as SimpleCData;
                 if (data != null && data.NativeType == this) {
                     data._memHolder.CopyTo(owner, offset, ((INativeType)this).Size);
-                    return;
+                    return null;
                 }
 
                 switch (_type) {
-                    case SimpleTypeKind.Boolean: owner.WriteByte(offset, ModuleOps.GetBoolean(value)); break;
-                    case SimpleTypeKind.Char: owner.WriteByte(offset, ModuleOps.GetChar(value)); break;
-                    case SimpleTypeKind.SignedByte: owner.WriteByte(offset, ModuleOps.GetSignedByte(value)); break;
-                    case SimpleTypeKind.UnsignedByte: owner.WriteByte(offset, ModuleOps.GetUnsignedByte(value)); break;
-                    case SimpleTypeKind.WChar: owner.WriteInt16(offset, (short)ModuleOps.GetWChar(value)); break;
-                    case SimpleTypeKind.SignedShort: owner.WriteInt16(offset, ModuleOps.GetSignedShort(value)); break;
-                    case SimpleTypeKind.UnsignedShort: owner.WriteInt16(offset, ModuleOps.GetUnsignedShort(value)); break;
-                    case SimpleTypeKind.SignedInt: owner.WriteInt32(offset, ModuleOps.GetSignedInt(value)); break;
-                    case SimpleTypeKind.UnsignedInt: owner.WriteInt32(offset, ModuleOps.GetUnsignedInt(value)); break;
-                    case SimpleTypeKind.UnsignedLong: owner.WriteInt32(offset, ModuleOps.GetUnsignedLong(value)); break;
-                    case SimpleTypeKind.SignedLong: owner.WriteInt32(offset, ModuleOps.GetSignedLong(value)); break;
+                    case SimpleTypeKind.Boolean: owner.WriteByte(offset, ModuleOps.GetBoolean(value, this)); break;
+                    case SimpleTypeKind.Char: owner.WriteByte(offset, ModuleOps.GetChar(value, this)); break;
+                    case SimpleTypeKind.SignedByte: owner.WriteByte(offset, ModuleOps.GetSignedByte(value, this)); break;
+                    case SimpleTypeKind.UnsignedByte: owner.WriteByte(offset, ModuleOps.GetUnsignedByte(value, this)); break;
+                    case SimpleTypeKind.WChar: owner.WriteInt16(offset, (short)ModuleOps.GetWChar(value, this)); break;
+                    case SimpleTypeKind.SignedShort: owner.WriteInt16(offset, ModuleOps.GetSignedShort(value, this)); break;
+                    case SimpleTypeKind.UnsignedShort: owner.WriteInt16(offset, ModuleOps.GetUnsignedShort(value, this)); break;
+                    case SimpleTypeKind.SignedInt: owner.WriteInt32(offset, ModuleOps.GetSignedInt(value, this)); break;
+                    case SimpleTypeKind.UnsignedInt: owner.WriteInt32(offset, ModuleOps.GetUnsignedInt(value, this)); break;
+                    case SimpleTypeKind.UnsignedLong: owner.WriteInt32(offset, ModuleOps.GetUnsignedLong(value, this)); break;
+                    case SimpleTypeKind.SignedLong: owner.WriteInt32(offset, ModuleOps.GetSignedLong(value, this)); break;
                     case SimpleTypeKind.Single: owner.WriteInt32(offset, ModuleOps.GetSingleBits(value)); break;
                     case SimpleTypeKind.Double: owner.WriteInt64(offset, ModuleOps.GetDoubleBits(value)); break;
-                    case SimpleTypeKind.UnsignedLongLong: owner.WriteInt64(offset, ModuleOps.GetUnsignedLongLong(value)); break;
-                    case SimpleTypeKind.SignedLongLong: owner.WriteInt64(offset, ModuleOps.GetSignedLongLong(value)); break;
+                    case SimpleTypeKind.UnsignedLongLong: owner.WriteInt64(offset, ModuleOps.GetUnsignedLongLong(value, this)); break;
+                    case SimpleTypeKind.SignedLongLong: owner.WriteInt64(offset, ModuleOps.GetSignedLongLong(value, this)); break;
                     case SimpleTypeKind.Object: owner.WriteIntPtr(offset, ModuleOps.GetObject(value)); break;
                     case SimpleTypeKind.Pointer: owner.WriteIntPtr(offset, ModuleOps.GetPointer(value)); break;
-                    case SimpleTypeKind.CharPointer: owner.WriteIntPtr(offset, ModuleOps.GetCharPointer(value)); break;
-                    case SimpleTypeKind.WCharPointer: owner.WriteIntPtr(offset, ModuleOps.GetWCharPointer(value)); break;
+                    case SimpleTypeKind.CharPointer: 
+                        owner.WriteIntPtr(offset, ModuleOps.GetCharPointer(value));
+                        return value;
+                    case SimpleTypeKind.WCharPointer: 
+                        owner.WriteIntPtr(offset, ModuleOps.GetWCharPointer(value));
+                        return value;
                     default:
                         throw new InvalidOperationException();
                 }
+                return null;
             }
 
             Type/*!*/ INativeType.GetNativeType() {
@@ -300,7 +325,7 @@ namespace IronPython.Modules {
                 Label marshalled = method.DefineLabel();
                 Type argumentType = argIndex.Type;
 
-                if (!argumentType.IsValueType) {
+                if (!argumentType.IsValueType && _type != SimpleTypeKind.Object && _type != SimpleTypeKind.Pointer) {
                     // check if we have an explicit CData instance.  If we have a CData but it's the
                     // wrong type CheckSimpleCDataType will throw.
                     Label primitive = method.DefineLabel();
@@ -343,16 +368,55 @@ namespace IronPython.Modules {
                     case SimpleTypeKind.Double:
                     case SimpleTypeKind.UnsignedLongLong:
                     case SimpleTypeKind.SignedLongLong:
-                    case SimpleTypeKind.Pointer:
+                        constantPool.Add(this);
+                        method.Emit(OpCodes.Ldarg, constantPoolArgument);
+                        method.Emit(OpCodes.Ldc_I4, constantPool.Count - 1);
+                        method.Emit(OpCodes.Ldelem_Ref);
+
                         method.Emit(OpCodes.Call, typeof(ModuleOps).GetMethod("Get" + _type));
+                        break;
+                    case SimpleTypeKind.Pointer:
+                        Label done = method.DefineLabel();
+                        TryBytesConversion(method, done);
+
+                        
+                        Label isNull = method.DefineLabel(), nextTry = method.DefineLabel();
+                        argIndex.Emit(method);
+                        if (argumentType.IsValueType) {
+                            method.Emit(OpCodes.Box, argumentType);
+                        }
+
+                        method.Emit(OpCodes.Isinst, typeof(string));
+                        method.Emit(OpCodes.Dup);
+                        method.Emit(OpCodes.Brfalse, nextTry);
+
+                        LocalBuilder lb = method.DeclareLocal(typeof(string), true);
+                        method.Emit(OpCodes.Stloc, lb);
+                        method.Emit(OpCodes.Ldloc, lb);
+                        method.Emit(OpCodes.Conv_I);
+                        method.Emit(OpCodes.Ldc_I4, RuntimeHelpers.OffsetToStringData);
+                        method.Emit(OpCodes.Add);
+                        method.Emit(OpCodes.Br, done);
+
+                        method.MarkLabel(nextTry);
+                        method.Emit(OpCodes.Pop);
+
+                        argIndex.Emit(method);
+                        if (argumentType.IsValueType) {
+                            method.Emit(OpCodes.Box, argumentType);
+                        }
+
+                        method.Emit(OpCodes.Call, typeof(ModuleOps).GetMethod("GetPointer"));
+                        
+                        method.MarkLabel(done);
                         break;
                     case SimpleTypeKind.Object:
                         // TODO: Need cleanup here
                         method.Emit(OpCodes.Call, typeof(CTypes).GetMethod("PyObj_ToPtr"));
                         break;
                     case SimpleTypeKind.CharPointer:
-                        Label done = method.DefineLabel();
-                        TryArrayToCharPtrConversion(method, argIndex, argumentType, done);
+                        done = method.DefineLabel();
+                        TryToCharPtrConversion(method, argIndex, argumentType, done);
                         
                         cleanup = MarshalCharPointer(method, argIndex);
 
@@ -372,6 +436,22 @@ namespace IronPython.Modules {
                 return cleanup;
             }
 
+            private static void TryBytesConversion(ILGenerator method, Label done) {
+                Label nextTry = method.DefineLabel();
+                LocalBuilder lb = method.DeclareLocal(typeof(byte).MakeByRefType(), true);
+
+                method.Emit(OpCodes.Call, typeof(ModuleOps).GetMethod("TryCheckBytes"));
+                method.Emit(OpCodes.Dup);
+                method.Emit(OpCodes.Brfalse, nextTry);
+                method.Emit(OpCodes.Ldc_I4_0);
+                method.Emit(OpCodes.Ldelema, typeof(Byte));
+                method.Emit(OpCodes.Stloc, lb);
+                method.Emit(OpCodes.Ldloc, lb);
+                method.Emit(OpCodes.Br, done);
+                method.MarkLabel(nextTry);
+                method.Emit(OpCodes.Pop);
+            }
+
             internal static void TryArrayToWCharPtrConversion(ILGenerator method, LocalOrArg argIndex, Type argumentType, Label done) {
                 Label nextTry = method.DefineLabel();
                 method.Emit(OpCodes.Call, typeof(ModuleOps).GetMethod("TryCheckWCharArray"));
@@ -388,10 +468,11 @@ namespace IronPython.Modules {
                 }
             }
 
-            internal static void TryArrayToCharPtrConversion(ILGenerator method, LocalOrArg argIndex, Type argumentType, Label done) {
-                Label nextTry;
-                nextTry = method.DefineLabel();
+            internal static void TryToCharPtrConversion(ILGenerator method, LocalOrArg argIndex, Type argumentType, Label done) {
+                TryBytesConversion(method, done);
 
+                Label nextTry = method.DefineLabel();
+                argIndex.Emit(method);
                 method.Emit(OpCodes.Call, typeof(ModuleOps).GetMethod("TryCheckCharArray"));
                 method.Emit(OpCodes.Dup);
                 method.Emit(OpCodes.Brfalse, nextTry);
@@ -520,12 +601,13 @@ namespace IronPython.Modules {
                     case SimpleTypeKind.UnsignedLongLong:
                     case SimpleTypeKind.UnsignedInt:
                     case SimpleTypeKind.UnsignedLong:
-                        EmtInt32ToObject(method, value);
+                        EmitInt32ToObject(method, value);
                         break;
                     case SimpleTypeKind.SignedLongLong:
                         EmitInt64ToObject(method, value);
                         break;
                     case SimpleTypeKind.Object:
+                        method.Emit(OpCodes.Call, typeof(ModuleOps).GetMethod("IntPtrToObject"));
                         break;
                     case SimpleTypeKind.WCharPointer:
                         method.Emit(OpCodes.Call, typeof(Marshal).GetMethod("PtrToStringUni", new[] { typeof(IntPtr) }));
@@ -540,19 +622,43 @@ namespace IronPython.Modules {
                         method.Emit(OpCodes.Call, typeof(ModuleOps).GetMethod("WCharToString"));
                         break;
                     case SimpleTypeKind.Pointer:
+                        Label done, notNull;
+                        done = method.DefineLabel();
+                        notNull = method.DefineLabel();
+
                         if (IntPtr.Size == 4) {
                             LocalBuilder tmpLocal = method.DeclareLocal(typeof(uint));
                             method.Emit(OpCodes.Conv_U4);
                             method.Emit(OpCodes.Stloc, tmpLocal);
                             method.Emit(OpCodes.Ldloc, tmpLocal);
-                            EmtInt32ToObject(method, new Local(tmpLocal));
+
+                            method.Emit(OpCodes.Ldc_I4_0);
+                            method.Emit(OpCodes.Conv_U4);
+                            method.Emit(OpCodes.Bne_Un, notNull);
+                            method.Emit(OpCodes.Ldnull);
+                            method.Emit(OpCodes.Br, done);
+                            method.MarkLabel(notNull);
+
+                            method.Emit(OpCodes.Ldloc, tmpLocal);
+                            EmitInt32ToObject(method, new Local(tmpLocal));
                         } else {
                             LocalBuilder tmpLocal = method.DeclareLocal(typeof(long));
                             method.Emit(OpCodes.Conv_I8);
                             method.Emit(OpCodes.Stloc, tmpLocal);
                             method.Emit(OpCodes.Ldloc, tmpLocal);
-                            EmtInt32ToObject(method, new Local(tmpLocal));
+
+                            method.Emit(OpCodes.Ldc_I4_0);
+                            method.Emit(OpCodes.Conv_U8);
+                            method.Emit(OpCodes.Bne_Un, notNull);
+                            method.Emit(OpCodes.Ldnull);
+                            method.Emit(OpCodes.Br, done);
+                            method.MarkLabel(notNull);
+
+                            method.Emit(OpCodes.Ldloc, tmpLocal);
+                            EmitInt64ToObject(method, new Local(tmpLocal));
                         }
+
+                        method.MarkLabel(done);
                         break;
                 }
 
@@ -599,10 +705,11 @@ namespace IronPython.Modules {
                 method.MarkLabel(done);
             }
 
-            private static void EmtInt32ToObject(ILGenerator method, LocalOrArg value) {
+            private static void EmitInt32ToObject(ILGenerator method, LocalOrArg value) {
                 Label intVal, done;
                 intVal = method.DefineLabel();
                 done = method.DefineLabel();
+
                 method.Emit(OpCodes.Ldc_I4, Int32.MaxValue);
                 method.Emit(value.Type == typeof(uint) ? OpCodes.Conv_U4 : OpCodes.Conv_U8);
                 method.Emit(OpCodes.Ble, intVal);

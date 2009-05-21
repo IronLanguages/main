@@ -15,6 +15,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Threading;
 
 using IronPython.Runtime;
 using IronPython.Runtime.Types;
@@ -36,14 +37,15 @@ namespace IronPython.Modules {
         /// Base class for all ctypes interop types.
         /// </summary>
         [PythonType("_CData"), PythonHidden]
-        public abstract class CData {
+        public abstract class CData : IPythonBufferable {
             internal MemoryHolder _memHolder;
 
             // members: __setstate__,  __reduce__ _b_needsfree_ __ctypes_from_outparam__ __hash__ _objects _b_base_ __doc__
             protected CData() {
             }
 
-            internal int Size {
+            public int Size {
+                [PythonHidden]
                 get {
                     // TODO: What if a user directly subclasses CData?
                     return NativeType.Size;
@@ -58,21 +60,30 @@ namespace IronPython.Modules {
                 }
             }
 
+            byte[] IPythonBufferable.GetBytes(int offset, int length) {
+                int maxLen = checked(offset + length);
+                byte[] res = new byte[length];
+                for (int i = offset; i < maxLen; i++) {
+                    res[i - offset] = _memHolder.ReadByte(i);
+                }
+                return res;
+            }
+
             internal INativeType NativeType {
                 get {
                     return (INativeType)DynamicHelpers.GetPythonType(this);
                 }
             }
 
-            public object _objects {
+            public virtual object _objects {
                 get {
-                    return null;
+                    return _memHolder.Objects;
                 }
             }
 
             internal void SetAddress(IntPtr address) {
                 Debug.Assert(_memHolder == null);
-                _memHolder = new MemoryHolder(address);
+                _memHolder = new MemoryHolder(address, NativeType.Size);
             }
         }
     }
