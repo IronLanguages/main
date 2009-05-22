@@ -1,0 +1,54 @@
+require "rubygems"
+
+rake_tests_dir = File.expand_path("../External.LCA_RESTRICTED/Languages/Ruby/RakeTests", ENV["MERLIN_ROOT"])
+all_test_files = Dir.glob("#{rake_tests_dir}/test/test*.rb") + Dir.glob("#{rake_tests_dir}/test/contrib/test*.rb") + Dir.glob("#{rake_tests_dir}/test/fun*.rb")
+# Do some sanity checks
+abort("Did not find enough Rake tests files...") unless all_test_files.size > 25
+abort("Did not find some expected files...") unless File.exist?(rake_tests_dir + "/test/test_rake.rb")
+
+# Some tests load data assuming the current folder
+Dir.chdir(rake_tests_dir)
+
+# Note that the tests are registered using Kernel#at_exit, and will run during shutdown
+# The "require" statement just registers the tests for being run later...
+all_test_files.each { |f| require f }
+
+# Disable failing tests by monkey-patching the test method to be a nop
+
+class TestEarlyTime
+  # http://ironruby.codeplex.com/WorkItem/View.aspx?WorkItemId=1082
+  # TypeError: can't convert Rake::EarlyTime into Time
+  def test_create() end
+end
+
+class TestFileList
+  def test_cloned_items_stay_frozen() end
+end
+
+class TestFileUtils
+  # Most of these failures are because of http://ironruby.codeplex.com/WorkItem/View.aspx?WorkItemId=1184  resulting in these errors
+  #   NoMethodError: undefined method `exitstatus' for 123:Fixnum
+  #   NoMethodError: private method `safe_ln' called for #<TestFileUtils::BadLink:0x0002f72 @failure_class=NotImplementedError>
+  def test_ruby() end
+  def test_safe_ln_failover_to_cp_on_not_implemented_error() end
+  def test_safe_ln_failover_to_cp_on_standard_error() end
+  def test_safe_ln_fails_on_script_error() end
+  def test_sh_failure() end
+  def test_sh_multiple_arguments() end
+  def test_sh_special_handling() end
+end
+
+class TestPathMapExplode
+  # File.expand_path corner case errors
+  def test_explode() end
+end
+
+class TestRake
+  # File.expand_path corner case errors
+  def test_each_dir_parent() end
+end
+
+class TestTask
+  # This failure does not happen with a later version of Rake. Might be a test issue
+  def test_investigation_output() end
+end

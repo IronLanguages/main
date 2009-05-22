@@ -101,7 +101,7 @@ if defined PARALLEL_IRTESTS (
 time /t
 
 :==============================================================================
-: RubyGems
+: RubyGems, Rake
 
 if defined PARALLEL_IRTESTS (
     start "RubyGems tests" cmd.exe /k %MERLIN_ROOT%\bin\Debug\ir.exe %MERLIN_ROOT%\Languages\Ruby\Scripts\RubyGemsTests.rb
@@ -109,6 +109,16 @@ if defined PARALLEL_IRTESTS (
     %MERLIN_ROOT%\bin\Debug\ir.exe %MERLIN_ROOT%\Languages\Ruby\Scripts\RubyGemsTests.rb 
     if not %ERRORLEVEL%==0 (
         set IRTESTS_ERRORS=%IRTESTS_ERRORS% RubyGems tests failed!!!
+        echo %IRTESTS_ERRORS%
+   )
+)
+
+if defined PARALLEL_IRTESTS (
+    start "Rake tests" cmd.exe /k %MERLIN_ROOT%\bin\Debug\ir.exe %MERLIN_ROOT%\Languages\Ruby\Scripts\RakeTests.rb
+) else (
+    %MERLIN_ROOT%\bin\Debug\ir.exe %MERLIN_ROOT%\Languages\Ruby\Scripts\RakeTests.rb 
+    if not %ERRORLEVEL%==0 (
+        set IRTESTS_ERRORS=%IRTESTS_ERRORS% Rake tests failed!!!
         echo %IRTESTS_ERRORS%
    )
 )
