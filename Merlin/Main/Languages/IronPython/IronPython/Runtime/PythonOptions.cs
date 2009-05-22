@@ -50,7 +50,6 @@ namespace IronPython {
         private readonly bool _verbose;
         private readonly bool _frames, _fullFrames;
         private readonly Version _version;
-        private readonly bool _adaptiveCompilation;
         private bool _enableProfiler;
         private readonly bool _lightweightScopes;
 
@@ -192,14 +191,6 @@ namespace IronPython {
         }
 
         /// <summary>
-        /// Dynamically choose between interpreting, simple compilation and compilation
-        /// that takes advantage of runtime history.
-        /// </summary>
-        public bool AdaptiveCompilation {
-            get { return _adaptiveCompilation; }
-        }
-
-        /// <summary>
         /// Forces all code to be compiled in a mode in which the code can be reliably collected by the CLR.
         /// </summary>
         public bool LightweightScopes {
@@ -249,7 +240,6 @@ namespace IronPython {
             _division = GetOption(options, "DivisionOptions", PythonDivisionOptions.Old);
             _recursionLimit = GetOption(options, "RecursionLimit", Int32.MaxValue);
             _indentationInconsistencySeverity = GetOption(options, "IndentationInconsistencySeverity", Severity.Ignore);
-            _adaptiveCompilation = GetOption(options, "AdaptiveCompilation", true);
             _enableProfiler = GetOption(options, "EnableProfiler", false);
             _lightweightScopes = GetOption(options, "LightweightScopes", false);
             _fullFrames = GetOption(options, "FullFrames", false);

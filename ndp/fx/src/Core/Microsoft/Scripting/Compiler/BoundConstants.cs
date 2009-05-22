@@ -100,6 +100,10 @@ namespace System.Linq.Expressions.Compiler {
         internal void EmitConstant(LambdaCompiler lc, object value, Type type) {
             Debug.Assert(!ILGen.CanEmitConstant(value, type));
 
+            if (!lc.CanEmitBoundConstants) {
+                throw Error.CannotCompileConstant(value);
+            }
+
             LocalBuilder local;
             if (_cache.TryGetValue(new TypedConstant(value, type), out local)) {
                 lc.IL.Emit(OpCodes.Ldloc, local);
@@ -116,6 +120,10 @@ namespace System.Linq.Expressions.Compiler {
         internal void EmitCacheConstants(LambdaCompiler lc) {
             int count = 0;
             foreach (var reference in _references) {
+                if (!lc.CanEmitBoundConstants) {
+                    throw Error.CannotCompileConstant(reference.Value);
+                }
+
                 if (ShouldCache(reference.Value)) {
                     count++;
                 }
@@ -146,6 +154,8 @@ namespace System.Linq.Expressions.Compiler {
         }
 
         private static void EmitConstantsArray(LambdaCompiler lc) {
+            Debug.Assert(lc.CanEmitBoundConstants); // this should've been checked already
+
             lc.EmitClosureArgument();
             lc.IL.Emit(OpCodes.Ldfld, typeof(Closure).GetField("Constants"));
         }

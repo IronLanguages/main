@@ -14,29 +14,11 @@
  * ***************************************************************************/
 
 using System;
-using System.Collections;
-using System.Diagnostics;
-using System.Linq.Expressions;
-using System.Reflection;
-using System.Text;
 using System.Dynamic;
-using System.Collections.Generic;
-
-using Microsoft.Scripting;
+using System.Linq.Expressions;
 using Microsoft.Scripting.Actions;
 using Microsoft.Scripting.Actions.Calls;
-using Microsoft.Scripting.Generation;
-using Microsoft.Scripting.Math;
-using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
-
-using Ast = System.Linq.Expressions.Expression;
-using AstFactory = IronRuby.Compiler.Ast.AstFactory;
-using Actions = Microsoft.Scripting.Actions;
-using AstUtils = Microsoft.Scripting.Ast.Utils;
-using IronRuby.Compiler;
-using IronRuby.Builtins;
-using System.Runtime.CompilerServices;
 
 namespace IronRuby.Runtime.Calls {
     public sealed class RubyBinder : DefaultBinder {
@@ -47,165 +29,27 @@ namespace IronRuby.Runtime.Calls {
             _context = context;
         }
 
-        public override string GetTypeName(Type t) {
+        public override string GetTypeName(Type/*!*/ t) {
             return _context.GetTypeName(t, true);
         }
 
-
-
-#if TODO
-        protected override IList<Type>/*!*/ GetExtensionTypes(Type/*!*/ t) {
-            Type extentionType = _rubyContext.RubyContext.GetClass(t).ExtensionType;
-
-            if (extentionType != null) {
-                List<Type> result = new List<Type>();
-                result.Add(extentionType);
-                result.AddRange(base.GetExtensionTypes(t));
-                return result;
-            }
-
-            return base.GetExtensionTypes(t);
+        public override string GetObjectTypeName(object arg) {
+            return _context.GetClassDisplayName(arg);
         }
-#endif
 
         #region Conversions
 
-        public override object Convert(object obj, Type/*!*/ toType) {
-            Assert.NotNull(toType);
-            return Converter.Convert(obj, toType);
-        }
-
-        public override Expression ConvertExpression(Expression/*!*/ expr, Type/*!*/ toType, ConversionResultKind kind, Expression context) {
-            Type fromType = expr.Type;
-
-            if (toType == typeof(object)) {
-                if (fromType.IsValueType) {
-                    return Ast.Convert(expr, toType);
-                } else {
-                    return expr;
-                }
-            }
-
-            if (toType.IsAssignableFrom(fromType)) {
-                return expr;
-            }
-
-            // We used to have a special case for int -> double...
-            if (fromType != typeof(object) && fromType.IsValueType) {
-                expr = Ast.Convert(expr, typeof(object));
-            }
-
-            MethodInfo fastConvertMethod = GetFastConvertMethod(toType);
-            if (fastConvertMethod != null) {
-                return Ast.Call(fastConvertMethod, AstUtils.Convert(expr, typeof(object)));
-            }
-
-            if (typeof(Delegate).IsAssignableFrom(toType)) {
-                return Ast.Convert(
-                    Ast.Call(
-                        typeof(Converter).GetMethod("ConvertToDelegate"),
-                        AstUtils.Convert(expr, typeof(object)),
-                        AstUtils.Constant(toType)
-                    ),
-                    toType
-                );
-            }
-
-            Expression typeIs;
-            Type visType = CompilerHelpers.GetVisibleType(toType);
-            if (toType.IsVisible) {
-                typeIs = Ast.TypeIs(expr, toType);
-            } else {
-                typeIs = Ast.Call(
-                    AstUtils.Convert(AstUtils.Constant(toType), typeof(Type)),
-                    typeof(Type).GetMethod("IsInstanceOfType"),
-                    AstUtils.Convert(expr, typeof(object))
-                );
-            }
-
-            Expression convertExpr = null;
-            if (expr.Type == typeof(DynamicNull)) {
-                convertExpr = AstUtils.Default(visType);
-            } else {
-                convertExpr = Ast.Convert(expr, visType);
-            }
-
-            return Ast.Condition(
-                typeIs,
-                convertExpr,
-                Ast.Convert(
-                    Ast.Call(
-                        GetGenericConvertMethod(visType),
-                        AstUtils.Convert(expr, typeof(object)),
-                        AstUtils.Constant(visType.TypeHandle)
-                    ),
-                    visType
-                )
-            );
+        public override Expression ConvertExpression(Expression expr, Type toType, ConversionResultKind kind, Expression context) {
+            throw new InvalidOperationException("OBSOLETE");
         }
 
         public override bool CanConvertFrom(Type/*!*/ fromType, Type/*!*/ toType, bool toNotNullable, NarrowingLevel level) {
-            return Converter.CanConvertFrom(fromType, toType, level);
+            return Converter.CanConvertFrom(fromType, toType, level, true);
         }
 
         public override Candidate PreferConvert(Type t1, Type t2) {
             return Converter.PreferConvert(t1, t2);
-            //            return t1 == t2;
-        }
-
-
-
-        internal static MethodInfo/*!*/ GetGenericConvertMethod(Type/*!*/ toType) {
-            if (toType.IsValueType) {
-                if (toType.IsGenericType && toType.GetGenericTypeDefinition() == typeof(Nullable<>)) {
-                    return typeof(Converter).GetMethod("ConvertToNullableType");
-                } else {
-                    return typeof(Converter).GetMethod("ConvertToValueType");
-                }
-            } else {
-                return typeof(Converter).GetMethod("ConvertToReferenceType");
-            }
-        }
-
-        internal static MethodInfo GetFastConvertMethod(Type/*!*/ toType) {
-            if (toType == typeof(char)) {
-                return typeof(Converter).GetMethod("ConvertToChar");
-            } else if (toType == typeof(int)) {
-                return typeof(Converter).GetMethod("ConvertToInt32");
-            } else if (toType == typeof(string)) {
-                return typeof(Converter).GetMethod("ConvertToString");
-            } else if (toType == typeof(long)) {
-                return typeof(Converter).GetMethod("ConvertToInt64");
-            } else if (toType == typeof(double)) {
-                return typeof(Converter).GetMethod("ConvertToDouble");
-            } else if (toType == typeof(bool)) {
-                return typeof(Converter).GetMethod("ConvertToBoolean");
-            } else if (toType == typeof(BigInteger)) {
-                return typeof(Converter).GetMethod("ConvertToBigInteger");
-            } else if (toType == typeof(Complex64)) {
-                return typeof(Converter).GetMethod("ConvertToComplex64");
-            } else if (toType == typeof(IEnumerable)) {
-                return typeof(Converter).GetMethod("ConvertToIEnumerable");
-            } else if (toType == typeof(float)) {
-                return typeof(Converter).GetMethod("ConvertToSingle");
-            } else if (toType == typeof(byte)) {
-                return typeof(Converter).GetMethod("ConvertToByte");
-            } else if (toType == typeof(sbyte)) {
-                return typeof(Converter).GetMethod("ConvertToSByte");
-            } else if (toType == typeof(short)) {
-                return typeof(Converter).GetMethod("ConvertToInt16");
-            } else if (toType == typeof(uint)) {
-                return typeof(Converter).GetMethod("ConvertToUInt32");
-            } else if (toType == typeof(ulong)) {
-                return typeof(Converter).GetMethod("ConvertToUInt64");
-            } else if (toType == typeof(ushort)) {
-                return typeof(Converter).GetMethod("ConvertToUInt16");
-            } else if (toType == typeof(Type)) {
-                return typeof(Converter).GetMethod("ConvertToType");
-            } else {
-                return null;
-            }
-        }
+        }        
 
         #endregion
 
@@ -230,6 +74,5 @@ namespace IronRuby.Runtime.Calls {
         }
 
         #endregion
-        
     }
 }

@@ -156,11 +156,6 @@ x = 'RuntimeError'
         }
 
         public void Scenario_RubyExceptions7() {
-            // TODO: fix stack traces in interpreter
-            if (Engine.Setup.InterpretedMode) {
-                return;
-            }
-
             AssertOutput(delegate() {
                 CompilerTest(@"
 def foo

@@ -91,18 +91,17 @@ namespace Microsoft.Scripting.Actions.Calls {
             }
         }
 
-        internal protected override Expression ToExpression(OverloadResolver resolver, IList<Expression> parameters, bool[] hasBeenUsed) {
-            Debug.Assert(hasBeenUsed.Length == parameters.Count);
-            Debug.Assert(_index < parameters.Count);
-            Debug.Assert(parameters[_index] != null);
+        internal protected override Expression ToExpression(OverloadResolver resolver, RestrictedArguments args, bool[] hasBeenUsed) {
+            Debug.Assert(hasBeenUsed.Length == args.Length);
+            Debug.Assert(_index < args.Length);
             Debug.Assert(!hasBeenUsed[Index]);
             
             hasBeenUsed[_index] = true;
-            return resolver.ConvertExpression(parameters[_index], ParameterInfo, _parameterType);
+            return resolver.Convert(args.GetObject(_index), args.GetType(_index), ParameterInfo, _parameterType);
         }
 
-        protected internal override Func<object[], object> ToDelegate(OverloadResolver resolver, IList<DynamicMetaObject> knownTypes, bool[] hasBeenUsed) {
-            Func<object[], object> conv = resolver.ConvertObject(_index + 1, knownTypes[_index], ParameterInfo, _parameterType);
+        protected internal override Func<object[], object> ToDelegate(OverloadResolver resolver, RestrictedArguments args, bool[] hasBeenUsed) {
+            Func<object[], object> conv = resolver.GetConvertor(_index + 1, args.GetObject(_index), ParameterInfo, _parameterType);
             if (conv != null) {
                 return conv;
             }

@@ -162,6 +162,36 @@ can't convert E into Fixnum
 ");
         }
 
+        public void ConvertToFixnum1() {
+            AssertOutput(() => CompilerTest(@"
+class Float
+  def to_int
+    2
+  end
+end
+
+p Array.new(4.3004, 1)                     # implicit conversion, to_int not called 
+[][8e19] rescue p $!                       # overflow -> RangeError
+
+include System
+[Byte, SByte, Int16, UInt16, UInt32, Int64, UInt64, Single, Decimal].each_with_index do |n,i|
+  p Array.new(n.new(i), i)
+end
+"), @"
+[1, 1, 1, 1]
+#<RangeError: float * out of range of Fixnum>
+[]
+[1]
+[2, 2]
+[3, 3, 3]
+[4, 4, 4, 4]
+[5, 5, 5, 5, 5]
+[6, 6, 6, 6, 6, 6]
+[7, 7, 7, 7, 7, 7, 7]
+[8, 8, 8, 8, 8, 8, 8, 8]
+", OutputFlags.Match);
+        }
+
         /// <summary>
         /// Kernel#Array first tries to_ary and then to_a. We need to invalidate the cache when to_ary is added.
         /// </summary>

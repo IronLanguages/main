@@ -1671,7 +1671,7 @@ namespace IronRuby.Runtime {
 #if DEBUG
             if (RubyOptions.LoadFromDisk) {
                 string code;
-                Utils.Log(String.Format("{0} {1}", RubyOptions.InterpretedMode ? "interpreting" : "compiling", sourceUnit.Path ??
+                Utils.Log(String.Format("compiling {0}", sourceUnit.Path ??
                     ((code = sourceUnit.GetCode()).Length < 100 ? code : code.Substring(0, 100))
                     .Replace('\r', ' ').Replace('\n', ' ')
                 ), "COMPILER");

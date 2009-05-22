@@ -40,6 +40,10 @@ namespace IronRuby.Runtime.Calls {
             get { return true; }
         }
 
+        internal override bool IsDataMember {
+            get { return true; }
+        }
+
         public override MemberInfo/*!*/[]/*!*/ GetMembers() {
             return Utils.EmptyMemberInfos;
         }

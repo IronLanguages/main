@@ -116,16 +116,16 @@ namespace IronPython.Runtime.Binding {
             return CompilerHelpers.IsConstructor(method) && !method.DeclaringType.IsDefined(typeof(PythonTypeAttribute), true);
         }
 
-        public override Expression ConvertExpression(Expression expr, ParameterInfo info, Type toType) {
-            return Binder.ConvertExpression(expr, toType, ConversionResultKind.ExplicitCast, _context);
+        public override Expression Convert(DynamicMetaObject metaObject, Type restrictedType, ParameterInfo info, Type toType) {
+            return Binder.ConvertExpression(metaObject.Expression, toType, ConversionResultKind.ExplicitCast, _context);
         }
 
         public override Expression GetDynamicConversion(Expression value, Type type) {
             return Expression.Dynamic(OldConvertToAction.Make(Binder, type), type, _context, value);
         }
 
-        public override Func<object[], object> ConvertObject(int index, DynamicMetaObject knownType, ParameterInfo info, Type toType) {
-            return Binder.ConvertObject(index, knownType, toType, ConversionResultKind.ExplicitCast);
+        public override Func<object[], object> GetConvertor(int index, DynamicMetaObject metaObject, ParameterInfo info, Type toType) {
+            return Binder.ConvertObject(index, metaObject, toType, ConversionResultKind.ExplicitCast);
         }
     }
 }

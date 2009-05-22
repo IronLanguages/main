@@ -21,6 +21,8 @@ using System.Runtime.Serialization;
 using Microsoft.Scripting.Runtime;
 using IronRuby.Runtime;
 using IronRuby.Builtins;
+using Microsoft.Scripting.Math;
+using System.Runtime.InteropServices;
 
 namespace InteropTests.Generics1 {
     public class C {
@@ -823,6 +825,47 @@ puts m.overloads(System::Array[Object]).arity
             }
         }
 
+        public interface InterfaceFoo1 {
+            int Foo();
+        }
+
+        public interface InterfaceFoo2 {
+            int Foo();
+        }
+
+        public interface InterfaceBar1 {
+            int Bar();
+        }
+
+        public interface InterfaceBaz1 {
+            int Baz();
+        }
+
+        internal class InterfaceClassBase1 {
+            // inherited:
+            public IEnumerator GetEnumerator() {
+                yield return 1;
+                yield return 2;
+                yield return 3;
+            }
+        }
+
+        internal class InternalClass1 : InterfaceClassBase1, IEnumerable, IComparable, InterfaceBaz1, InterfaceFoo1, InterfaceFoo2, InterfaceBar1 {
+            // simple:
+            public int Baz() { return 123; }
+
+            // simple explicit:
+            int IComparable.CompareTo(object obj) { return 0; }
+
+            // explicit + implicit
+            public int Bar() { return 0;}
+            int InterfaceBar1.Bar() { return 0; }
+
+            // multiple explicit with the same signature 
+            int InterfaceFoo1.Foo() { return 1; }
+            int InterfaceFoo2.Foo() { return 2; }
+        }
+
         public class ClassWithInterfaces2 : ClassWithInterfaces1, IComparable {
             public int CompareTo(object obj) {
                 return 0;
@@ -847,6 +890,31 @@ puts($obj2 <=> 1)
 123
 123
 0
+");
+        }
+
+        /// <summary>
+        /// Calling (explicit) interface methods on internal classes.
+        /// A method that is accessible via any interface should be called. 
+        /// If there is more than one then regular overload resolution should kick in.
+        /// 
+        /// </summary>
+        public void ClrInterfaces2() {
+            Context.ObjectClass.SetConstant("Inst", new InternalClass1());
+            Context.ObjectClass.SetConstant("InterfaceFoo1", Context.GetModule(typeof(InterfaceFoo1)));
+            Context.ObjectClass.SetConstant("InterfaceFoo2", Context.GetModule(typeof(InterfaceFoo2)));
+            Context.ObjectClass.SetConstant("InterfaceBar1", Context.GetModule(typeof(InterfaceBar1)));
+
+            // TODO: explicit interface impl
+            TestOutput(@"
+p Inst.GetEnumerator().nil?
+#p Inst.CompareTo(nil)
+#p Inst.Bar                               
+#p Inst.as(InterfaceFoo1).Foo   # or Inst.interface_method(InterfaceFoo1, :Foo).call ?
+#p Inst.as(InterfaceFoo2).Foo
+#p Inst.as(InterfaceBar1).Bar
+", @"
+false
 ");
         }
 
@@ -1596,6 +1664,166 @@ p C.new.ceil                 # Numeric#ceil uses self with DefaultProtocol attri
 false
 false
 2
+");
+        }
+
+        public class Conversions1 {
+            public int F(int? a, int? b) {
+                return a ?? b ?? 3;
+            }
+
+            public object[] Numerics(byte a, sbyte b, short c, ushort d, int e, uint f, long g, ulong h, BigInteger i, Complex64 j, Convertible1 k) {
+                return new object[] { a, b, c, d, e, f, g, h, i, j, k };
+            }
+
+            public Delegate Delegate(Func<object, object> d) {
+                return d;
+            }
+
+            public int Foo(int a) {
+                return a + 1;
+            }
+
+            public int Double(double a) {
+                return (int)a;
+            }
+
+            public int FixnumDefaultProtocol([DefaultProtocol]int a) {
+                return a + 2;
+            }
+
+            public string Bool([Optional]bool a) {
+                return a ? "T" : "F";
+            }
+
+            public int ListOrString(IList a) {
+                return a.Count;
+            }
+
+            public int ListOrString([DefaultProtocol]MutableString str) {
+                return 0;
+            }
+
+            public int ListAndStrings(IList a, MutableString str1) {
+                return a.Count + str1.GetCharCount();
+            }
+        }
+
+        public class Convertible1 {
+            public object Value { get; set; }
+
+            public static implicit operator Convertible1(int value) {
+                return new Convertible1() { Value = value };
+            }
+
+            public static implicit operator int(Convertible1 value) {
+                return 11;
+            }
+
+            public static implicit operator double(Convertible1 value) {
+                return 16.0;
+            }
+
+            public static explicit operator string(Convertible1 value) {
+                return "foo";
+            }
+
+            public static explicit operator MutableString(Convertible1 value) {
+                return MutableString.CreateMutable("hello", RubyEncoding.UTF8);
+            }
+
+            public override string ToString() {
+                return "Convertible(" + Value + ")";
+            }
+        }
+
+        public void ClrConversions1() {
+            Context.SetGlobalConstant("Inst", new Conversions1());
+            Context.SetGlobalConstant("Conv", new Convertible1());
+
+            // Nullable<T>
+            TestOutput(@"
+[[1, 2], [nil, 2], [nil, nil]].each { |a,b| p Inst.f(a,b) }
+", @"
+1
+2
+3
+");
+            // Boolean
+            TestOutput(@"
+print Inst.Bool(), Inst.Bool(true), Inst.Bool(false), Inst.Bool(nil), Inst.Bool(0), Inst.Bool(Object.new), Inst.Bool(1.4)
+", @"
+FTFFTTT
+");
+
+            // Double
+            TestOutput(@"
+p Inst.Double(2.0), Inst.Double(4), Inst.Double(System::Byte.new(8)), Inst.Double(Conv), Inst.Double('28.4'), Inst.Double('29.5'.to_clr_string)
+", @"
+2
+4
+8
+16
+28
+29
+");
+            
+            // primitive numerics:
+            TestOutput(@"
+p Inst.numerics(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11)
+", @"
+1
+2
+3
+4
+5
+6
+7
+8
+9
+(10+0j)
+Convertible(11)
+");
+
+            // protocol conversions:
+            TestOutput(@"
+class C
+  def to_ary
+    [1,2,3,4,5]
+  end
+
+  def to_str
+    'xxx'
+  end
+end
+p Inst.ListOrString(C.new)
+p Inst.ListAndStrings(C.new, C.new)
+p Inst.FixnumDefaultProtocol(Conv)
+", @"
+0
+8
+13
+");
+            
+            // protocol conversions:
+            TestOutput(@"
+a = System::Collections::ArrayList.new
+p Inst.Foo(a) rescue p $!
+class System::Collections::ArrayList
+  def to_int
+    100
+  end
+end
+p Inst.Foo(a) rescue p $!
+", @"
+#<TypeError: can't convert System::Collections::ArrayList into Fixnum>
+101
+");
+            // meta-object conversions:
+            TestOutput(@"
+p Inst.delegate(Proc.new { |x| x + 1 }).invoke(123)
+", @"
+124
 ");
         }
     }

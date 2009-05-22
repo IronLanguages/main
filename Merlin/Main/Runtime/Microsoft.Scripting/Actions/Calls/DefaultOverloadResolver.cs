@@ -91,7 +91,7 @@ namespace Microsoft.Scripting.Actions {
             if (!CompilerHelpers.IsStatic(mapping.Method)) {
                 var type = mapping.Method.DeclaringType;
                 mapping.AddParameter(new ParameterWrapper(null, type, null, true, false, false, _callType == CallTypes.ImplicitInstance));
-                mapping.AddInstanceBuilder(new SimpleArgBuilder(type, mapping.ArgIndex, false, false));
+                mapping.AddInstanceBuilder(new InstanceBuilder(mapping.ArgIndex));
             }
 
             return null;

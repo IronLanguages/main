@@ -699,7 +699,7 @@ namespace IronRuby.Tests {
             t.Expect();
         }
 
-        private void Symbols1() {
+        public void Symbols1() {
             // TODO: we need AssertParser
             //AssertTokenizer t = AssertTokens();
 
@@ -708,7 +708,7 @@ namespace IronRuby.Tests {
             //t.Expect();
         }
 
-        private void KCode1() {
+        public void KCode1() {
             var sjisEncoding = RubyEncoding.KCodeSJIS;
 
             var sjisEngine = Ruby.CreateEngine((setup) => {

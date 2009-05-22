@@ -591,7 +591,7 @@ namespace IronPython.Runtime {
         internal bool ShouldInterpret(PythonCompilerOptions options, SourceUnit source) {
             // We have to turn off adaptive compilation in debug mode to
             // support mangaged debuggers. Also turn off in optimized mode.
-            bool adaptiveCompilation = _options.AdaptiveCompilation && !source.EmitDebugSymbols;
+            bool adaptiveCompilation = !_options.NoAdaptiveCompilation && !source.EmitDebugSymbols;
 
             return options.Interpreted || adaptiveCompilation;
         }

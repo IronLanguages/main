@@ -11,12 +11,8 @@ describe "Kernel#abort" do
     ruby_exe("abort('abort message')", :args => "2>&1").chomp.should == 'abort message'
   end
   
-  it "does not allow the message to be nil or String-like object" do
+  it "does not allow the message to be nil" do
     lambda { abort(nil) }.should raise_error(TypeError)
-    
-    m = mock('message')
-    m.should_not_receive(:to_str)
-    lambda { abort(m) }.should raise_error(TypeError)
   end
   
   it "sets the exit code to 1" do

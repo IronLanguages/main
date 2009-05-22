@@ -88,16 +88,8 @@ namespace IronRuby.Runtime.Calls {
         private static int _ruleCounter;
 #endif
 
-        internal DynamicMetaObject/*!*/ CreateMetaObject(RubyMetaBinder/*!*/ action) {
-            return CreateMetaObject(action, action.ReturnType);
-        }
-
-        internal DynamicMetaObject/*!*/ CreateMetaObject(ConvertBinder/*!*/ action) {
-            return CreateMetaObject(action, action.Type);
-        }
-
         internal DynamicMetaObject/*!*/ CreateMetaObject(DynamicMetaObjectBinder/*!*/ action) {
-            return CreateMetaObject(action, typeof(object));
+            return CreateMetaObject(action, action.ReturnType);
         }
 
         internal DynamicMetaObject/*!*/ CreateMetaObject(DynamicMetaObjectBinder/*!*/ action, Type/*!*/ returnType) {
