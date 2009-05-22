@@ -320,7 +320,6 @@ namespace IronRuby.Tests {
                 RubyHosting1D,
                 RubyHosting2,
                 RubyHosting3,
-                RubyHosting4,
                 CrossRuntime1,
                 CrossRuntime2,
 

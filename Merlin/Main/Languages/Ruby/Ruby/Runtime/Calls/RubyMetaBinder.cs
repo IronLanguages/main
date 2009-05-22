@@ -91,7 +91,7 @@ namespace IronRuby.Runtime.Calls {
                         metaBuilder.Result = Ast.Call(null, postConverter, AstUtils.Convert(metaBuilder.Result, paramType));
                         resultType = postConverter.ReturnType;
                     } else {
-                        resultType = ((IInteropBinder)interopBinder).ResultType;
+                        resultType = interopBinder.ReturnType;
                     }
 
                     return metaBuilder.CreateMetaObject(interopBinder, resultType);

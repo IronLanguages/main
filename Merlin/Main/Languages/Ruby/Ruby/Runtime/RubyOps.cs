@@ -1350,6 +1350,8 @@ namespace IronRuby.Runtime {
             return new Range(begin, end, true);
         }
 
+        #region Dynamic Operations
+
         // allocator for struct instances:
         [Emitted]
         public static RubyStruct/*!*/ AllocateStructInstance(RubyClass/*!*/ self) {
@@ -1369,7 +1371,19 @@ namespace IronRuby.Runtime {
             return new RubyObject.Meta(parameter, BindingRestrictions.Empty, obj);
         }
 
-        #region Dynamic Actions
+        [Emitted]
+        public static RubyMethod/*!*/ CreateBoundMember(object target, RubyMemberInfo/*!*/ info, string/*!*/ name) {
+            return new RubyMethod(target, info, name);
+        }
+
+        [Emitted]
+        public static RubyMethod/*!*/ CreateBoundMissingMember(object target, RubyMemberInfo/*!*/ info, string/*!*/ name) {
+            return new RubyMethod.Curried(target, info, name);
+        }
+        
+        #endregion
+
+        #region Conversions
 
         [Emitted] // ProtocolConversionAction
         public static Proc/*!*/ ToProcValidator(string/*!*/ className, object obj) {

@@ -68,7 +68,7 @@ namespace IronRuby.Runtime {
         private ScriptCodeFunc/*!*/ Target {
             get {
                 if (_target == null) {
-                    var compiledMethod = CompileLambda(_code, SourceUnit.LanguageContext.DomainManager.Configuration.DebugMode);
+                    var compiledMethod = CompileLambda(_code, SourceUnit.LanguageContext);
                     Interlocked.CompareExchange(ref _target, compiledMethod, null);
                 }
                 return _target;
@@ -113,7 +113,11 @@ namespace IronRuby.Runtime {
 
         private static bool _HasPdbPermissions = true;
 
-        internal static T/*!*/ CompileLambda<T>(Expression<T>/*!*/ lambda, bool debugMode) {
+        internal static T/*!*/ CompileLambda<T>(Expression<T>/*!*/ lambda, LanguageContext/*!*/ context) {
+            return CompileLambda(lambda, context.DomainManager.Configuration.DebugMode, context.Options.NoAdaptiveCompilation);
+        }
+
+        internal static T/*!*/ CompileLambda<T>(Expression<T>/*!*/ lambda, bool debugMode, bool noAdaptiveCompilation) {
             if (debugMode) {
 #if !SILVERLIGHT
                 // try to use PDBs and fallback to CustomGenerator if not allowed to:
@@ -127,6 +131,8 @@ namespace IronRuby.Runtime {
                 }
 #endif
                 return CompilerHelpers.CompileToMethod(lambda, new CustomGenerator(), false);
+            } else if (noAdaptiveCompilation) {
+                return lambda.Compile();
             } else {
                 return lambda.LightCompile();
             }

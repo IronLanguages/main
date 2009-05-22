@@ -91,7 +91,7 @@ namespace IronRuby.Runtime.Calls {
                     return;
                 }
             } else {
-                RubyCallAction.BindToMethodMissing(metaBuilder, args, ToS, methodMissing, RubyMethodVisibility.None, false, true);
+                RubyCallAction.BuildMethodMissingCall(metaBuilder, args, ToS, methodMissing, RubyMethodVisibility.None, false, true);
             }
 
             metaBuilder.Result = Methods.ToSDefaultConversion.OpCall(

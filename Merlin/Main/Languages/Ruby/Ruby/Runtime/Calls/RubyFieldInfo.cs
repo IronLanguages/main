@@ -41,6 +41,14 @@ namespace IronRuby.Runtime.Calls {
             return new RubyFieldInfo(_fieldInfo, flags, module, _isSetter);
         }
 
+        internal override bool IsRubyMember {
+            get { return false; }
+        }
+
+        internal override bool IsDataMember {
+            get { return true; }
+        }
+
         public override MemberInfo/*!*/[]/*!*/ GetMembers() {
             return new MemberInfo[] { _fieldInfo };
         }

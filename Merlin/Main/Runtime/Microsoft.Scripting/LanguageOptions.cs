@@ -28,7 +28,16 @@ namespace Microsoft.Scripting {
         private bool _showClrExceptions;
         private bool _interpretedMode;
         private readonly bool _perfStats;
+        private readonly bool _noAdaptiveCompilation;
         private readonly ReadOnlyCollection<string> _searchPaths;
+
+        /// <summary>
+        /// Dynamically choose between interpreting, simple compilation and compilation
+        /// that takes advantage of runtime history.
+        /// </summary>
+        public bool NoAdaptiveCompilation {
+            get { return _noAdaptiveCompilation; }
+        }
 
         // TODO: remove
         public bool InterpretedMode {
@@ -72,6 +81,7 @@ namespace Microsoft.Scripting {
             _exceptionDetail = GetOption(options, "ExceptionDetail", false);
             _showClrExceptions = GetOption(options, "ShowClrExceptions", false);
             _perfStats = GetOption(options, "PerfStats", false);
+            _noAdaptiveCompilation = GetOption(options, "NoAdaptiveCompilation", false);
             _searchPaths = GetSearchPathsOption(options) ?? new ReadOnlyCollection<string>(new[] { "." });
         }
 

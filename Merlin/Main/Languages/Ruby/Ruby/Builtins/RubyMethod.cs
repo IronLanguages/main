@@ -23,7 +23,6 @@ using Ast = System.Linq.Expressions.Expression;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace IronRuby.Builtins {
-    
     public partial class RubyMethod {
         private readonly object _target;
         private readonly string/*!*/ _name;
@@ -55,7 +54,7 @@ namespace IronRuby.Builtins {
             return _info.Context.GetClassOf(_target);
         }
 
-        public Proc/*!*/ ToProc(RubyScope/*!*/ scope) {
+        public virtual Proc/*!*/ ToProc(RubyScope/*!*/ scope) {
             ContractUtils.RequiresNotNull(scope, "scope");
 
             if (_procDispatcher == null) {
@@ -67,9 +66,9 @@ namespace IronRuby.Builtins {
                     )
                 );
 
-                var block = new BlockCallTargetUnsplatN((_blockParam, _self, _args, unsplat) => {
+                var block = new BlockCallTargetUnsplatN((blockParam, self, args, unsplat) => {
                     // block takes no parameters but unsplat => all actual arguments are added to unsplat:
-                    Debug.Assert(_args.Length == 0);
+                    Debug.Assert(args.Length == 0);
 
                     return site.Target(site, this, unsplat);
                 });
@@ -84,11 +83,10 @@ namespace IronRuby.Builtins {
 
         #region Dynamic Operations
 
-        internal void BuildInvoke(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args) {
+        internal virtual void BuildInvoke(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args) {
             Assert.NotNull(metaBuilder, args);
             Debug.Assert(args.Target == this);
 
-            // TODO: we could compare infos here:
             // first argument must be this method:
             metaBuilder.AddRestriction(Ast.Equal(args.TargetExpression, AstUtils.Constant(this)));
 
@@ -96,6 +94,29 @@ namespace IronRuby.Builtins {
             args.SetTarget(AstUtils.Constant(_target), _target);
 
             _info.BuildCall(metaBuilder, args, _name);
+        }
+
+        #endregion
+
+        #region Curried
+
+        // TODO: currently used only to curry a method name for method_missing, but could be easily extended to support general argument currying
+        public sealed class Curried : RubyMethod {
+            private readonly string/*!*/ _methodNameArg;
+
+            internal Curried(object target, RubyMemberInfo/*!*/ info, string/*!*/ methodNameArg)
+                : base(target, info, "method_missing") {
+                _methodNameArg = methodNameArg;
+            }
+
+            internal override void BuildInvoke(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args) {
+                args.InsertMethodName(_methodNameArg);
+                base.BuildInvoke(metaBuilder, args);
+            }
+
+            public override Proc/*!*/ ToProc(RubyScope/*!*/ scope) {
+                throw new NotSupportedException();
+            }
         }
 
         #endregion

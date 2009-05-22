@@ -111,7 +111,7 @@ namespace IronRuby.Runtime.Calls {
             if (method != null) {
                 method.BuildSuperCall(metaBuilder, args, currentMethodName, currentDeclaringModule);
             } else {
-                return RubyCallAction.BindToMethodMissing(metaBuilder, args, currentMethodName, methodMissing, RubyMethodVisibility.None, true, defaultFallback);
+                return RubyCallAction.BuildMethodMissingCall(metaBuilder, args, currentMethodName, methodMissing, RubyMethodVisibility.None, true, defaultFallback);
             }
 
             return true;

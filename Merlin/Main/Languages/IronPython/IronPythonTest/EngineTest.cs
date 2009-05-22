@@ -223,7 +223,7 @@ namespace IronPythonTest {
 
         private void TestEngine(ScriptEngine scriptEngine, Dictionary<string, object> options) {
             // basic smoke tests that the engine is alive and working
-            AreEqual((int)scriptEngine.Execute("42"), 42);
+            AreEqual((int)(object)scriptEngine.Execute("42"), 42);
 
             if(options != null) {
                 PythonOptions po = (PythonOptions)Microsoft.Scripting.Hosting.Providers.HostingHelpers.CallEngine<object, LanguageOptions>(
@@ -316,7 +316,7 @@ namespace IronPythonTest {
             // reset the same variable with integer
             scope.SetVariable(clspartName, 1);
             _pe.Execute("if 1 != clsPart: raise AssertionError('test failed')", scope);
-            AreEqual((int)scope.GetVariable(clspartName), 1);
+            AreEqual((int)(object)scope.GetVariable(clspartName), 1);
 
             ScriptSource su = _pe.CreateScriptSourceFromString("");
             AssertExceptionThrown<ArgumentNullException>(delegate() {
@@ -699,7 +699,7 @@ al_getattributeinst = MyArrayList_getattribute()
 
             // if it lives on a system type we should do a fallback invoke member
             var site = CallSite<Func<CallSite, object, object>>.Create(new MyInvokeMemberBinder("Count", new CallInfo(0)));
-            AreEqual(site.Target(site, scope.GetVariable("alinst")), "FallbackInvokeMember");
+            AreEqual(site.Target(site, (object)scope.GetVariable("alinst")), "FallbackInvokeMember");
 
             // invoke a function that's a member on an object
             foreach (object inst in allObjects) {
@@ -855,23 +855,23 @@ al_getattributeinst = MyArrayList_getattribute()
 
             // property
             site = CallSite<Func<CallSite, object, object>>.Create(new MyGetMemberBinder("AllowDrop"));
-            AreEqual(site.Target(site, scope.GetVariable("controlinst")), "FallbackGetMember");
+            AreEqual(site.Target(site, (object)scope.GetVariable("controlinst")), "FallbackGetMember");
 
             // method
             site = CallSite<Func<CallSite, object, object>>.Create(new MyGetMemberBinder("BringToFront"));
-            AreEqual(site.Target(site, scope.GetVariable("controlinst")), "FallbackGetMember");
+            AreEqual(site.Target(site, (object)scope.GetVariable("controlinst")), "FallbackGetMember");
 
             // protected method
             site = CallSite<Func<CallSite, object, object>>.Create(new MyGetMemberBinder("OnParentChanged"));
-            AreEqual(site.Target(site, scope.GetVariable("controlinst")), "FallbackGetMember");
+            AreEqual(site.Target(site, (object)scope.GetVariable("controlinst")), "FallbackGetMember");
 
             // event
             site = CallSite<Func<CallSite, object, object>>.Create(new MyGetMemberBinder("DoubleClick"));
-            AreEqual(site.Target(site, scope.GetVariable("controlinst")), "FallbackGetMember");
+            AreEqual(site.Target(site, (object)scope.GetVariable("controlinst")), "FallbackGetMember");
 
 
             site = CallSite<Func<CallSite, object, object>>.Create(new MyInvokeMemberBinder("something", new CallInfo(0)));
-            AreEqual(site.Target(site, scope.GetVariable("ns_getattrinst")), "FallbackInvokegetattrsomething");
+            AreEqual(site.Target(site, (object)scope.GetVariable("ns_getattrinst")), "FallbackInvokegetattrsomething");
 
             foreach (object inst in iterableObjects) {
                 // converting a type which implements __iter__
@@ -963,13 +963,13 @@ al_getattributeinst = MyArrayList_getattribute()
             scope3.SetVariable("x", 2);
 
             AreEqual(0, _pe.Execute<int>("x", scope1));
-            AreEqual(0, (int)scope1.GetVariable("x"));
+            AreEqual(0, (int)(object)scope1.GetVariable("x"));
 
             AreEqual(1, _pe.Execute<int>("x", scope2));
-            AreEqual(1, (int)scope2.GetVariable("x"));
+            AreEqual(1, (int)(object)scope2.GetVariable("x"));
 
             AreEqual(2, _pe.Execute<int>("x", scope3));
-            AreEqual(2, (int)scope3.GetVariable("x"));
+            AreEqual(2, (int)(object)scope3.GetVariable("x"));
         }
 
         public void ScenarioObjectOperations() {
@@ -1227,36 +1227,36 @@ b = Y()", SourceCodeKind.Statements).Execute(scope);
             ScriptScope scope = _env.CreateScope();
 
             AreEqual(10, _pe.CreateScriptSourceFromString("4+6").Execute<int>(scope));
-            AreEqual(null, _pe.CreateScriptSourceFromString("if True: pass").Execute(scope));
+            AreEqual(null, (object)_pe.CreateScriptSourceFromString("if True: pass").Execute(scope));
 
             AreEqual(10, _pe.CreateScriptSourceFromString("4+6", SourceCodeKind.AutoDetect).Execute<int>(scope));
-            AreEqual(null, _pe.CreateScriptSourceFromString("if True: pass", SourceCodeKind.AutoDetect).Execute(scope));
+            AreEqual(null, (object)_pe.CreateScriptSourceFromString("if True: pass", SourceCodeKind.AutoDetect).Execute(scope));
 
             AreEqual(10, _pe.CreateScriptSourceFromString("4+6", SourceCodeKind.Expression).Execute<int>(scope));
             AssertExceptionThrown<SyntaxErrorException>(() => _pe.CreateScriptSourceFromString("if True: pass", SourceCodeKind.Expression).Execute(scope));
             
-            AreEqual(null, _pe.CreateScriptSourceFromString("4+6", SourceCodeKind.File).Execute(scope));
-            AreEqual(null, _pe.CreateScriptSourceFromString("if True: pass", SourceCodeKind.File).Execute(scope));
+            AreEqual(null, (object)_pe.CreateScriptSourceFromString("4+6", SourceCodeKind.File).Execute(scope));
+            AreEqual(null, (object)_pe.CreateScriptSourceFromString("if True: pass", SourceCodeKind.File).Execute(scope));
 
-            AreEqual(null, _pe.CreateScriptSourceFromString("4+6", SourceCodeKind.SingleStatement).Execute(scope));
-            AreEqual(null, _pe.CreateScriptSourceFromString("if True: pass", SourceCodeKind.SingleStatement).Execute(scope));
+            AreEqual(null, (object)_pe.CreateScriptSourceFromString("4+6", SourceCodeKind.SingleStatement).Execute(scope));
+            AreEqual(null, (object)_pe.CreateScriptSourceFromString("if True: pass", SourceCodeKind.SingleStatement).Execute(scope));
 
-            AreEqual(null, _pe.CreateScriptSourceFromString("4+6", SourceCodeKind.Statements).Execute(scope));
-            AreEqual(null, _pe.CreateScriptSourceFromString("if True: pass", SourceCodeKind.Statements).Execute(scope));
+            AreEqual(null, (object)_pe.CreateScriptSourceFromString("4+6", SourceCodeKind.Statements).Execute(scope));
+            AreEqual(null, (object)_pe.CreateScriptSourceFromString("if True: pass", SourceCodeKind.Statements).Execute(scope));
 
-            AreEqual(10, (int)_pe.Execute("4+6", scope));
+            AreEqual(10, (int)(object)_pe.Execute("4+6", scope));
             AreEqual(10, _pe.Execute<int>("4+6", scope));
 
-            AreEqual("abab", (string)_pe.Execute("'ab' * 2", scope));
+            AreEqual("abab", (string)(object)_pe.Execute("'ab' * 2", scope));
             AreEqual("abab", _pe.Execute<string>("'ab' * 2", scope));
 
             ClsPart clsPart = new ClsPart();
             scope.SetVariable(clspartName, clsPart);
-            AreEqual(clsPart, _pe.Execute("clsPart", scope) as ClsPart);
+            AreEqual(clsPart, ((object)_pe.Execute("clsPart", scope)) as ClsPart);
             AreEqual(clsPart, _pe.Execute<ClsPart>("clsPart", scope));
 
             _pe.Execute("clsPart.Field = 100", scope);
-            AreEqual(100, (int)_pe.Execute("clsPart.Field", scope));
+            AreEqual(100, (int)(object)_pe.Execute("clsPart.Field", scope));
             AreEqual(100, _pe.Execute<int>("clsPart.Field", scope));
 
             // Ensure that we can get back a delegate to a Python method
@@ -1300,11 +1300,11 @@ ocinst = oc()
 
             ParameterExpression parameter = Expression.Parameter(typeof(object), "");
 
-            DynamicMetaObject nc = DynamicUtils.ObjectToMetaObject(scope.GetVariable("nc"), parameter);
-            DynamicMetaObject ncinst = DynamicUtils.ObjectToMetaObject(scope.GetVariable("ncinst"), parameter); ;
-            DynamicMetaObject f = DynamicUtils.ObjectToMetaObject(scope.GetVariable("f"), parameter); ;
-            DynamicMetaObject oc = DynamicUtils.ObjectToMetaObject(scope.GetVariable("oc"), parameter); ;
-            DynamicMetaObject ocinst = DynamicUtils.ObjectToMetaObject(scope.GetVariable("ocinst"), parameter); ;
+            DynamicMetaObject nc = DynamicUtils.ObjectToMetaObject((object)scope.GetVariable("nc"), parameter);
+            DynamicMetaObject ncinst = DynamicUtils.ObjectToMetaObject((object)scope.GetVariable("ncinst"), parameter); ;
+            DynamicMetaObject f = DynamicUtils.ObjectToMetaObject((object)scope.GetVariable("f"), parameter); ;
+            DynamicMetaObject oc = DynamicUtils.ObjectToMetaObject((object)scope.GetVariable("oc"), parameter); ;
+            DynamicMetaObject ocinst = DynamicUtils.ObjectToMetaObject((object)scope.GetVariable("ocinst"), parameter); ;
 
             List<string> ncnames = new List<string>(nc.GetDynamicMemberNames());
             List<string> ncinstnames = new List<string>(ncinst.GetDynamicMemberNames());
@@ -1443,8 +1443,8 @@ instOC = TestOC()
             AreEqual(-1, _pe.CreateScriptSourceFromString("M1()").Execute<int>(scope));
             AreEqual(+1, _pe.CreateScriptSourceFromString("M2()").Execute<int>(scope));
 
-            AreEqual(-1, (int)_pe.CreateScriptSourceFromString("M1()").Execute(scope));
-            AreEqual(+1, (int)_pe.CreateScriptSourceFromString("M2()").Execute(scope));
+            AreEqual(-1, (int)(object)_pe.CreateScriptSourceFromString("M1()").Execute(scope));
+            AreEqual(+1, (int)(object)_pe.CreateScriptSourceFromString("M2()").Execute(scope));
 
             _pe.CreateScriptSourceFromString("if M1() != -1: raise AssertionError('test failed')", SourceCodeKind.SingleStatement).Execute(scope);
             _pe.CreateScriptSourceFromString("if M2() != +1: raise AssertionError('test failed')", SourceCodeKind.SingleStatement).Execute(scope);
@@ -1454,8 +1454,8 @@ instOC = TestOC()
             AreEqual(-1, _pe.CreateScriptSourceFromString("c.M1()").Execute<int>(scope));
             AreEqual(+1, _pe.CreateScriptSourceFromString("c.M2()").Execute<int>(scope));
 
-            AreEqual(-1, (int)_pe.CreateScriptSourceFromString("c.M1()").Execute(scope));
-            AreEqual(+1, (int)_pe.CreateScriptSourceFromString("c.M2()").Execute(scope));
+            AreEqual(-1, (int)(object)_pe.CreateScriptSourceFromString("c.M1()").Execute(scope));
+            AreEqual(+1, (int)(object)_pe.CreateScriptSourceFromString("c.M2()").Execute(scope));
 
             _pe.CreateScriptSourceFromString("if c.M1() != -1: raise AssertionError('test failed')", SourceCodeKind.SingleStatement).Execute(scope);
             _pe.CreateScriptSourceFromString("if c.M2() != +1: raise AssertionError('test failed')", SourceCodeKind.SingleStatement).Execute(scope);
