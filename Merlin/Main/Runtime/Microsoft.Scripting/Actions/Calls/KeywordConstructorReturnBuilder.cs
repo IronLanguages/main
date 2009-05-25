@@ -15,6 +15,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Dynamic;
 using System.Linq.Expressions;
 using System.Reflection;
 using Microsoft.Scripting.Runtime;
@@ -43,7 +44,7 @@ namespace Microsoft.Scripting.Actions.Calls {
             _privateBinding = privateBinding;
         }
 
-        internal override Expression ToExpression(OverloadResolver resolver, IList<ArgBuilder> args, IList<Expression> parameters, Expression ret) {
+        internal override Expression ToExpression(OverloadResolver resolver, IList<ArgBuilder> builders, RestrictedArguments args, Expression ret) {
             List<Expression> sets = new List<Expression>();
 
             ParameterExpression tmp = resolver.GetTemporary(ret.Type, "val");
@@ -52,7 +53,7 @@ namespace Microsoft.Scripting.Actions.Calls {
             );
 
             for (int i = 0; i < _indexesUsed.Length; i++) {
-                Expression value = parameters[parameters.Count - _kwArgCount + _indexesUsed[i]];
+                Expression value = args.GetObject(args.Length - _kwArgCount + _indexesUsed[i]).Expression;
                 switch(_membersSet[i].MemberType) {
                     case MemberTypes.Field:
                         FieldInfo fi = (FieldInfo)_membersSet[i];
@@ -112,9 +113,10 @@ namespace Microsoft.Scripting.Actions.Calls {
                 sets.ToArray()
             );
 
-            return _builder.ToExpression(resolver, args, parameters, newCall);
+            return _builder.ToExpression(resolver, builders, args, newCall);
         }
 
+        // TODO: revisit
         private static Expression ConvertToHelper(OverloadResolver resolver, Expression value, Type type) {
             if (type == value.Type) {
                 return value;

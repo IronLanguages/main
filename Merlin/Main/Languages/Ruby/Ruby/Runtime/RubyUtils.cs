@@ -600,7 +600,7 @@ namespace IronRuby.Runtime {
                 targetScope = CreateModuleEvalScope(targetScope, self, module);
             }
 
-            return RubyScriptCode.CompileLambda(lambda, context.DomainManager.Configuration.DebugMode)(
+            return RubyScriptCode.CompileLambda(lambda, context)(
                 targetScope,
                 self,
                 module,

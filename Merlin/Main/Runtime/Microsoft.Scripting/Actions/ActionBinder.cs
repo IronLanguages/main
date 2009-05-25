@@ -101,6 +101,7 @@ namespace Microsoft.Scripting.Actions {
         /// </summary>
         public abstract Candidate PreferConvert(Type t1, Type t2);
 
+        // TODO: revisit
         /// <summary>
         /// Converts the provided expression to the given type.  The expression is safe to evaluate multiple times.
         /// </summary>
@@ -347,6 +348,10 @@ namespace Microsoft.Scripting.Actions {
 
         public virtual string GetTypeName(Type t) {
             return t.Name;
+        }
+
+        public virtual string GetObjectTypeName(object arg) {
+            return GetTypeName(CompilerHelpers.GetType(arg));
         }
 
         /// <summary>

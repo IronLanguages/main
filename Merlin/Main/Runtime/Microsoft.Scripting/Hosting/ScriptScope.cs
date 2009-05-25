@@ -25,6 +25,10 @@ using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 
+#if !SYSTEM_CORE
+using dynamic = System.Object;
+#endif
+
 namespace Microsoft.Scripting.Hosting {
     /// <summary>
     /// A ScriptScope is a unit of execution for code.  It consists of a global Scope which
@@ -78,7 +82,7 @@ namespace Microsoft.Scripting.Hosting {
         /// </summary>
         /// <exception cref="MissingMemberException">The specified name is not defined in the scope.</exception>
         /// <exception cref="ArgumentNullException"><paramref name="name"/> is a <c>null</c> reference.</exception>
-        public object GetVariable(string name) {
+        public dynamic GetVariable(string name) {
             return _scope.LookupName(_engine.LanguageContext, SymbolTable.StringToId(name));
         }
 
@@ -90,14 +94,14 @@ namespace Microsoft.Scripting.Hosting {
         /// <exception cref="MissingMemberException">The specified name is not defined in the scope.</exception>
         /// <exception cref="ArgumentNullException"><paramref name="name"/> is a <c>null</c> reference.</exception>
         public T GetVariable<T>(string name) {
-            return _engine.Operations.ConvertTo<T>(_engine.GetVariable(this, name));
+            return _engine.Operations.ConvertTo<T>((object)_engine.GetVariable(this, name));
         }
 
         /// <summary>
         /// Tries to get a value stored in the scope under the given name.
         /// </summary>
         /// <exception cref="ArgumentNullException"><paramref name="name"/> is a <c>null</c> reference.</exception>
-        public bool TryGetVariable(string name, out object value) {
+        public bool TryGetVariable(string name, out dynamic value) {
             return _scope.TryGetName(SymbolTable.StringToId(name), out value);
         }
 
@@ -132,7 +136,7 @@ namespace Microsoft.Scripting.Hosting {
         /// <exception cref="MissingMemberException">The specified name is not defined in the scope.</exception>
         /// <exception cref="ArgumentNullException"><paramref name="name"/> is a <c>null</c> reference.</exception>
         public ObjectHandle GetVariableHandle(string name) {
-            return new ObjectHandle(GetVariable(name));
+            return new ObjectHandle((object)GetVariable(name));
         }
 
         /// <summary>

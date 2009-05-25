@@ -57,11 +57,9 @@ namespace Microsoft.Scripting.Actions {
 
         /// <summary>
         /// Enables implicit Type to TypeTracker conversions accross dynamic languages.
-        /// 
-        /// TODO: Should be explicit, but that breaks a JS test
         /// </summary>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2225:OperatorOverloadsHaveNamedAlternates")]
-        public static implicit operator Type(TypeTracker tracker) {
+        public static explicit operator Type(TypeTracker tracker) {
             TypeGroup tg = tracker as TypeGroup;
             if (tg != null) {
                 Type res;

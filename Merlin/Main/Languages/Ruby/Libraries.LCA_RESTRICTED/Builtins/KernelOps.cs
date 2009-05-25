@@ -249,7 +249,7 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("abort", RubyMethodAttributes.PrivateInstance)]
         [RubyMethod("abort", RubyMethodAttributes.PublicSingleton)]
-        public static void Abort(BinaryOpStorage/*!*/ writeStorage, object/*!*/ self, [NotNull]MutableString/*!*/ message) {
+        public static void Abort(BinaryOpStorage/*!*/ writeStorage, object/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ message) {
             var site = writeStorage.GetCallSite("write", 1);
             site.Target(site, writeStorage.Context.StandardErrorOutput, message);
 
@@ -1292,9 +1292,9 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("respond_to?")]
         public static bool RespondTo(RubyContext/*!*/ context, object self, 
-            [DefaultProtocol, NotNull]string/*!*/ methodName, [DefaultParameterValue(null)]object includePrivate) {
+            [DefaultProtocol, NotNull]string/*!*/ methodName, [Optional]bool includePrivate) {
 
-            return context.ResolveMethod(self, methodName, Protocols.IsTrue(includePrivate)).Found;
+            return context.ResolveMethod(self, methodName, includePrivate).Found;
         }
 
         #region __send__, send

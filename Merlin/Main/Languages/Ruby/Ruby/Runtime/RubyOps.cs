@@ -35,6 +35,7 @@ using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 
 namespace IronRuby.Runtime {
+    [CLSCompliant(false)]
     public static partial class RubyOps {
 
         [Emitted]
@@ -1289,6 +1290,11 @@ namespace IronRuby.Runtime {
         }
 
         [Emitted]
+        public static Exception/*!*/ MakeTypeConversionError(RubyContext/*!*/ context, object value, Type/*!*/ type) {
+            return RubyExceptions.CreateTypeConversionError(context.GetClassDisplayName(value), context.GetTypeName(type, true));
+        }
+
+        [Emitted]
         public static Exception/*!*/ MakeAmbiguousMatchError(string/*!*/ message) {
             // TODO:
             return new AmbiguousMatchException(message);
@@ -1344,6 +1350,8 @@ namespace IronRuby.Runtime {
             return new Range(begin, end, true);
         }
 
+        #region Dynamic Operations
+
         // allocator for struct instances:
         [Emitted]
         public static RubyStruct/*!*/ AllocateStructInstance(RubyClass/*!*/ self) {
@@ -1363,7 +1371,19 @@ namespace IronRuby.Runtime {
             return new RubyObject.Meta(parameter, BindingRestrictions.Empty, obj);
         }
 
-        #region Dynamic Actions
+        [Emitted]
+        public static RubyMethod/*!*/ CreateBoundMember(object target, RubyMemberInfo/*!*/ info, string/*!*/ name) {
+            return new RubyMethod(target, info, name);
+        }
+
+        [Emitted]
+        public static RubyMethod/*!*/ CreateBoundMissingMember(object target, RubyMemberInfo/*!*/ info, string/*!*/ name) {
+            return new RubyMethod.Curried(target, info, name);
+        }
+        
+        #endregion
+
+        #region Conversions
 
         [Emitted] // ProtocolConversionAction
         public static Proc/*!*/ ToProcValidator(string/*!*/ className, object obj) {
@@ -1502,18 +1522,24 @@ namespace IronRuby.Runtime {
 
         [Emitted]
         public static double ConvertBignumToFloat(BigInteger/*!*/ value) {
-            return value.ToFloat64();
+            double result;
+            return value.TryToFloat64(out result) ? result : (value.IsNegative() ? Double.NegativeInfinity : Double.PositiveInfinity);
         }
 
         [Emitted]
-        public static double ConvertStringToFloat(MutableString/*!*/ value) {
+        public static double ConvertMutableStringToFloat(RubyContext/*!*/ context, MutableString/*!*/ value) {
+            return ConvertStringToFloat(context, value.ConvertToString());
+        }
+
+        [Emitted]
+        public static double ConvertStringToFloat(RubyContext/*!*/ context, string/*!*/ value) {
             double result;
             bool complete;
-            if (Tokenizer.TryParseDouble(value.ConvertToString(), out result, out complete) && complete) {
+            if (Tokenizer.TryParseDouble(value, out result, out complete) && complete) {
                 return result;
             }
 
-            throw RubyExceptions.CreateArgumentError("String#to_f should return Float");
+            throw RubyExceptions.InvalidValueForType(context, value, "Float");
         }
 
         [Emitted] // ProtocolConversionAction
@@ -1528,6 +1554,15 @@ namespace IronRuby.Runtime {
                 return fixnum;
             }
             throw RubyExceptions.CreateRangeError("bignum too big to convert into `long'");
+        }
+
+        [Emitted] // ConvertDoubleToFixnum
+        public static int ConvertDoubleToFixnum(double value) {
+            try {
+                return checked((int)value);
+            } catch (OverflowException) {
+                throw RubyExceptions.CreateRangeError(String.Format("float {0} out of range of Fixnum", value));
+            }
         }
 
         [Emitted] // ConvertToSAction
@@ -1725,25 +1760,6 @@ namespace IronRuby.Runtime {
         [Emitted]
         public static Delegate/*!*/ CreateDelegateFromMethod(Type/*!*/ type, RubyMethod/*!*/ method) {
             return method.Info.Context.GetDelegate(method, type);
-        }
-
-        #endregion
-
-        #region Numeric Operations
-
-        // TODO: generate for all numeric types
-
-        public static object NarrowInt64Byte(long value) {
-            return (value >= Byte.MinValue && value <= Byte.MaxValue) ? (object)(Byte)value : (object)value;
-        }
-
-        public static object NarrowInt32Byte(int value) {
-            return (value >= Byte.MinValue && value <= Byte.MaxValue) ? (object)(Byte)value : (object)value;
-        }
-
-        public static object NarrowInt64Int32(long value) {
-            // TODO: we can use Int64 as long as Int64 implements all BigInt methods
-            return (value >= Int32.MinValue && value <= Int32.MaxValue) ? (object)(Int32)value : (BigInteger)value;
         }
 
         #endregion

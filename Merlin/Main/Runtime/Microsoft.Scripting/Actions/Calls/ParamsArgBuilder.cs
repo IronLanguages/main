@@ -52,11 +52,11 @@ namespace Microsoft.Scripting.Actions.Calls {
             get { return 4; }
         }
 
-        internal protected override Expression ToExpression(OverloadResolver resolver, IList<Expression> parameters, bool[] hasBeenUsed) {
-            var args = resolver.GetActualArguments();
-            int splatIndex = args.SplatIndex;
-            int collapsedCount = args.CollapsedCount;
-            int firstSplatted = args.FirstSplattedArg;
+        internal protected override Expression ToExpression(OverloadResolver resolver, RestrictedArguments args, bool[] hasBeenUsed) {
+            var actualArgs = resolver.GetActualArguments();
+            int splatIndex = actualArgs.SplatIndex;
+            int collapsedCount = actualArgs.CollapsedCount;
+            int firstSplatted = actualArgs.FirstSplattedArg;
 
             var result = new Expression[2 + _expandedCount + (collapsedCount > 0 ? 2 : 0)];
             var arrayVariable = resolver.GetTemporary(_elementType.MakeArrayType(), "a");
@@ -81,8 +81,12 @@ namespace Microsoft.Scripting.Actions.Calls {
                         Ast.Assign(indexVariable, Ast.Add(indexVariable, AstUtils.Constant(1))),
                         Ast.Assign(
                             Ast.ArrayAccess(arrayVariable, Ast.Add(AstUtils.Constant(itemIndex), indexVariable)),
-                            resolver.ConvertExpression(
-                                resolver.GetSplattedItemExpression(Ast.Add(AstUtils.Constant(splatIndex - firstSplatted), indexVariable)), 
+                            resolver.Convert(
+                                new DynamicMetaObject(
+                                    resolver.GetSplattedItemExpression(Ast.Add(AstUtils.Constant(splatIndex - firstSplatted), indexVariable)), 
+                                    BindingRestrictions.Empty
+                                ),
+                                null,
                                 ParameterInfo, 
                                 _elementType
                             )
@@ -102,7 +106,7 @@ namespace Microsoft.Scripting.Actions.Calls {
 
                 result[e++] = Ast.Assign(
                     Ast.ArrayAccess(arrayVariable, AstUtils.Constant(itemIndex++)),
-                    resolver.ConvertExpression(parameters[i], ParameterInfo, _elementType)
+                    resolver.Convert(args.GetObject(i), args.GetType(i), ParameterInfo, _elementType)
                 );
 
                 i++;
@@ -114,7 +118,7 @@ namespace Microsoft.Scripting.Actions.Calls {
             return Ast.Block(result);
         }
 
-        protected internal override Func<object[], object> ToDelegate(OverloadResolver resolver, IList<DynamicMetaObject> knownTypes, bool[] hasBeenUsed) {
+        protected internal override Func<object[], object> ToDelegate(OverloadResolver resolver, RestrictedArguments args, bool[] hasBeenUsed) {
             if (resolver.GetActualArguments().CollapsedCount > 0) {
                 return null;
             }
@@ -123,7 +127,7 @@ namespace Microsoft.Scripting.Actions.Calls {
 
             for (int i = _start; i < _start + _expandedCount; i++) {
                 if (!hasBeenUsed[i]) {
-                    indexes.Add(resolver.ConvertObject(i + 1, knownTypes[i], ParameterInfo, _elementType));
+                    indexes.Add(resolver.GetConvertor(i + 1, args.GetObject(i), ParameterInfo, _elementType));
                     hasBeenUsed[i] = true;
                 }
             }

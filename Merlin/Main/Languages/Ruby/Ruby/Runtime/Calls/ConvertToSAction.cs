@@ -32,7 +32,7 @@ namespace IronRuby.Runtime.Calls {
     // 1) implicit conversion to MutableString
     // 2) calls to_s
     // 3) default conversion if (2) returns a non-string
-    public sealed class ConvertToSAction : RubyConversionAction, IExpressionSerializable {
+    public sealed class ConvertToSAction : RubyConversionAction {
         public override Type/*!*/ ReturnType {
             get { return typeof(MutableString); }
         }
@@ -46,7 +46,7 @@ namespace IronRuby.Runtime.Calls {
             return RubyMetaBinderFactory.Shared.Conversion<ConvertToSAction>();
         }
 
-        Expression/*!*/ IExpressionSerializable.CreateExpression() {
+        public override Expression/*!*/ CreateExpression() {
             return Methods.GetMethod(GetType(), "MakeShared").OpCall();
         }
 
@@ -65,11 +65,8 @@ namespace IronRuby.Runtime.Calls {
         internal static void BuildConversion(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args) {
             const string ToS = "to_s";
 
-            // no conversion for a subclass of string:
-            var stringTarget = args.Target as MutableString;
-            if (stringTarget != null) {
+            if (TryImplicitConversion(metaBuilder, args)) {
                 metaBuilder.AddTypeRestriction(args.Target.GetType(), args.TargetExpression);
-                metaBuilder.Result = AstUtils.Convert(args.TargetExpression, typeof(MutableString));
                 return;
             }
 
@@ -94,7 +91,7 @@ namespace IronRuby.Runtime.Calls {
                     return;
                 }
             } else {
-                RubyCallAction.BindToMethodMissing(metaBuilder, args, ToS, methodMissing, RubyMethodVisibility.None, false, true);
+                RubyCallAction.BuildMethodMissingCall(metaBuilder, args, ToS, methodMissing, RubyMethodVisibility.None, false, true);
             }
 
             metaBuilder.Result = Methods.ToSDefaultConversion.OpCall(
@@ -102,6 +99,16 @@ namespace IronRuby.Runtime.Calls {
                 AstFactory.Box(args.TargetExpression),
                 AstFactory.Box(metaBuilder.Result)
             );
+        }
+
+        private static bool TryImplicitConversion(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args) {
+            var stringTarget = args.Target as MutableString;
+            if (stringTarget != null) {
+                metaBuilder.Result = AstUtils.Convert(args.TargetExpression, typeof(MutableString));
+                return true;
+            }
+
+            return false;
         }
     }
 

@@ -23,6 +23,10 @@ using System.Text;
 using Microsoft.Scripting.Utils;
 using Microsoft.Scripting.Runtime;
 
+#if !SYSTEM_CORE
+using dynamic = System.Object;
+#endif
+
 namespace Microsoft.Scripting.Hosting {
     /// <summary>
     /// Hosting counterpart for <see cref="SourceUnit"/>.
@@ -123,7 +127,7 @@ namespace Microsoft.Scripting.Hosting {
         /// based may return null.
         /// </summary>
         /// <exception cref="SyntaxErrorException">Code cannot be compiled.</exception>
-        public object Execute(ScriptScope scope) {
+        public dynamic Execute(ScriptScope scope) {
             ContractUtils.RequiresNotNull(scope, "scope");
 
             return _unit.Execute(scope.Scope);
@@ -132,7 +136,7 @@ namespace Microsoft.Scripting.Hosting {
         /// <summary>
         /// Executes the source code. The execution is not bound to any particular scope.
         /// </summary>
-        public object Execute() {
+        public dynamic Execute() {
             // The host doesn't need the scope so do not create it here. 
             // The language can treat the code as not bound to a DLR scope and change global lookup semantics accordingly.
             return _unit.Execute();
@@ -143,7 +147,7 @@ namespace Microsoft.Scripting.Hosting {
         /// The conversion is language specific.
         /// </summary>
         public T Execute<T>(ScriptScope scope) {
-            return _engine.Operations.ConvertTo<T>(Execute(scope));
+            return _engine.Operations.ConvertTo<T>((object)Execute(scope));
         }
 
         /// <summary>
@@ -151,7 +155,7 @@ namespace Microsoft.Scripting.Hosting {
         /// The conversion is language specific.
         /// </summary>
         public T Execute<T>() {
-            return _engine.Operations.ConvertTo<T>(Execute());
+            return _engine.Operations.ConvertTo<T>((object)Execute());
         }
 
 #if !SILVERLIGHT
@@ -160,7 +164,7 @@ namespace Microsoft.Scripting.Hosting {
         /// Returns an ObjectHandle wrapping the resulting value of running the code.  
         /// </summary>
         public ObjectHandle ExecuteAndWrap(ScriptScope scope) {
-            return new ObjectHandle(Execute(scope));
+            return new ObjectHandle((object)Execute(scope));
         }
 
         /// <summary>
@@ -168,7 +172,7 @@ namespace Microsoft.Scripting.Hosting {
         /// Returns an ObjectHandle wrapping the resulting value of running the code.  
         /// </summary>
         public ObjectHandle ExecuteAndWrap() {
-            return new ObjectHandle(Execute());
+            return new ObjectHandle((object)Execute());
         }
 #endif
 

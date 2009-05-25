@@ -190,20 +190,6 @@ bar
             Assert(module is RubyModule && ((RubyModule)module).Name == "Fcntl");
         }
 
-        public void RubyHosting4() {
-            // TODO: LanguageSetup should have an indexer:
-            //var ruby = Ruby.CreateEngine((setup) => {
-            //    setup["InterpretedMode"] = true;
-            //    setup["SearchPaths"] = "blah";
-            //});
-
-            var ruby = Ruby.CreateEngine((setup) => {
-                setup.InterpretedMode = true;
-            });
-
-            Assert(ruby.Setup.InterpretedMode == true);
-        }
-
         public void Scenario_RubyEngine1() {
             ScriptScope scope = Runtime.CreateScope();
             object x = Engine.CreateScriptSourceFromString("1 + 1").Execute(scope);

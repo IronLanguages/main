@@ -122,7 +122,7 @@ namespace Microsoft.Scripting.Actions {
                     target.MakeExpression(),
                     restrictions.Merge(
                         MakeSplatTests(resolver.CallType, resolver.Signature, resolver.Arguments).
-                            Merge(BindingRestrictions.Combine(target.RestrictedArguments.Objects))
+                            Merge(target.RestrictedArguments.GetAllRestrictions())
                     )
                 );
             }

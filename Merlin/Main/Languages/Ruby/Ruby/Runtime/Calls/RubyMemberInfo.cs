@@ -60,7 +60,7 @@ namespace IronRuby.Runtime.Calls {
         public bool IsPublic {
             get { return (_flags & RubyMemberFlags.Public) != 0; }
         }
-        
+
         internal bool IsModuleFunction {
             get { return (_flags & RubyMemberFlags.ModuleFunction) != 0; }
         }
@@ -71,6 +71,22 @@ namespace IronRuby.Runtime.Calls {
 
         internal bool IsSuperForwarder {
             get { return (_flags & RubyMemberFlags.SuperForwarder) != 0; }
+        }
+
+        /// <summary>
+        /// True if the member is defined in Ruby or for undefined and hidden members.
+        /// False for members representing CLR members.
+        /// </summary>
+        internal virtual bool IsRubyMember {
+            get { return true; }
+        }
+
+        /// <summary>
+        /// True if the member behaves like a property/field: GetMember invokes the member.
+        /// Otherwise the member behaves like a method: GetMember returns the method.
+        /// </summary>
+        internal virtual bool IsDataMember {
+            get { return false; }
         }
 
         /// <summary>

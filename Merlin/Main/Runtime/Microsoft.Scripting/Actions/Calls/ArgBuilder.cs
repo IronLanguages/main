@@ -53,9 +53,9 @@ namespace Microsoft.Scripting.Actions.Calls {
         /// Provides the Expression which provides the value to be passed to the argument.
         /// If <c>null</c> is returned the argument is skipped (not passed to the callee).
         /// </summary>
-        internal protected abstract Expression ToExpression(OverloadResolver resolver, IList<Expression> parameters, bool[] hasBeenUsed);
+        internal protected abstract Expression ToExpression(OverloadResolver resolver, RestrictedArguments args, bool[] hasBeenUsed);
 
-        internal protected virtual Func<object[], object> ToDelegate(OverloadResolver resolver, IList<DynamicMetaObject> knownTypes, bool[] hasBeenUsed) {
+        internal protected virtual Func<object[], object> ToDelegate(OverloadResolver resolver, RestrictedArguments args, bool[] hasBeenUsed) {
             return null;
         }
 
@@ -85,7 +85,7 @@ namespace Microsoft.Scripting.Actions.Calls {
         /// Provides an Expression which will update the provided value after a call to the method.  May
         /// return null if no update is required.
         /// </summary>
-        internal virtual Expression UpdateFromReturn(OverloadResolver resolver, IList<Expression> parameters) {
+        internal virtual Expression UpdateFromReturn(OverloadResolver resolver, RestrictedArguments args) {
             return null;
         }
 

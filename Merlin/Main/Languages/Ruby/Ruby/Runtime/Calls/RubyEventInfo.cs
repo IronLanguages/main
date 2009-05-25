@@ -42,6 +42,14 @@ namespace IronRuby.Runtime.Calls {
             return new RubyEventInfo(_tracker, flags, module);
         }
 
+        internal override bool IsDataMember {
+            get { return true; }
+        }
+
+        internal override bool IsRubyMember {
+            get { return false; }
+        }
+
         public override MemberInfo/*!*/[]/*!*/ GetMembers() {
             return new MemberInfo[] { _tracker.Event };
         }

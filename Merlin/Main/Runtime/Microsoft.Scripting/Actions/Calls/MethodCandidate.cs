@@ -15,18 +15,14 @@
 
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Diagnostics;
-using System.Dynamic;
-using System.Text;
-using Microsoft.Contracts;
-using Microsoft.Scripting.Actions;
-using Microsoft.Scripting.Runtime;
-using Microsoft.Scripting.Generation;
-using System.Collections;
-using Microsoft.Scripting.Utils;
-using System.Runtime.CompilerServices;
-using System.Reflection;
 using System.Linq.Expressions;
+using System.Reflection;
+using Microsoft.Contracts;
+using Microsoft.Scripting.Generation;
+using Microsoft.Scripting.Runtime;
+using Microsoft.Scripting.Utils;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace Microsoft.Scripting.Actions.Calls {
@@ -50,11 +46,11 @@ namespace Microsoft.Scripting.Actions.Calls {
         private readonly int _paramsArrayIndex;
 
         private readonly IList<ArgBuilder> _argBuilders;
-        private readonly ArgBuilder _instanceBuilder;
+        private readonly InstanceBuilder _instanceBuilder;
         private readonly ReturnBuilder _returnBuilder;
 
         internal MethodCandidate(OverloadResolver resolver, MethodBase method, List<ParameterWrapper> parameters, ParameterWrapper paramsDict,
-            ReturnBuilder returnBuilder, ArgBuilder instanceBuilder, IList<ArgBuilder> argBuilders) {
+            ReturnBuilder returnBuilder, InstanceBuilder instanceBuilder, IList<ArgBuilder> argBuilders) {
 
             Assert.NotNull(resolver, method, instanceBuilder, returnBuilder);
             Assert.NotNullItems(parameters);
@@ -138,6 +134,10 @@ namespace Microsoft.Scripting.Actions.Calls {
                 }
             }
             return result;
+        }
+
+        public IList<ParameterWrapper> GetParameters() {
+            return new ReadOnlyCollection<ParameterWrapper>(_parameters);
         }
 
         /// <summary>
@@ -287,7 +287,7 @@ namespace Microsoft.Scripting.Actions.Calls {
 
         #region MakeDelegate
 
-        internal OptimizingCallDelegate MakeDelegate(RestrictionInfo restrictionInfo) {
+        internal OptimizingCallDelegate MakeDelegate(RestrictedArguments restrictedArgs) {
             MethodInfo mi = Method as MethodInfo;
             if (mi == null) {
                 return null;
@@ -305,16 +305,11 @@ namespace Microsoft.Scripting.Actions.Calls {
                 return null;
             }
 
-            // if we have a non-visible method see if we can find a better method which
-            // will call the same thing but is visible.  If this fails we still bind anyway - it's
-            // the callers responsibility to filter out non-visible methods.
-            mi = CompilerHelpers.TryGetCallableMethod(mi);
-
             Func<object[], object>[] builders = new Func<object[], object>[_argBuilders.Count];
-            bool[] hasBeenUsed = new bool[restrictionInfo.Objects.Length];
+            bool[] hasBeenUsed = new bool[restrictedArgs.Length];
 
             for (int i = 0; i < _argBuilders.Count; i++) {
-                var builder = _argBuilders[i].ToDelegate(_resolver, restrictionInfo.Objects, hasBeenUsed);
+                var builder = _argBuilders[i].ToDelegate(_resolver, restrictedArgs, hasBeenUsed);
                 if (builder == null) {
                     return null;
                 }
@@ -322,8 +317,9 @@ namespace Microsoft.Scripting.Actions.Calls {
                 builders[i] = builder;
             }
 
-            if (_instanceBuilder != null && !(_instanceBuilder is NullArgBuilder)) {
-                return new Caller(mi, builders, _instanceBuilder.ToDelegate(_resolver, restrictionInfo.Objects, hasBeenUsed)).CallWithInstance;
+            if (_instanceBuilder.HasValue) {
+                var instance = _instanceBuilder.ToDelegate(ref mi, _resolver, restrictedArgs, hasBeenUsed);
+                return new Caller(mi, builders, instance).CallWithInstance;
             } else {
                 return new Caller(mi, builders, null).Call;
             }
@@ -407,43 +403,37 @@ namespace Microsoft.Scripting.Actions.Calls {
 
         #region MakeExpression
 
-        internal Expression MakeExpression(IList<Expression> args) {
+        internal Expression MakeExpression(RestrictedArguments restrictedArgs) {
             bool[] usageMarkers;
             Expression[] spilledArgs;
-            Expression[] callArgs = GetArgumentExpressions(args, out usageMarkers, out spilledArgs);
+            Expression[] callArgs = GetArgumentExpressions(restrictedArgs, out usageMarkers, out spilledArgs);
 
-            MethodBase mb = Method;
-            MethodInfo mi = mb as MethodInfo;
-            Expression ret, call;
+            Expression call;
+            MethodInfo mi = Method as MethodInfo;
             if (mi != null) {
-                // if we have a non-visible method see if we can find a better method which
-                // will call the same thing but is visible.  If this fails we still bind anyway - it's
-                // the callers responsibility to filter out non-visible methods.
-                mb = CompilerHelpers.TryGetCallableMethod(mi);
-            }
+                Expression instance;
+                if (mi.IsStatic) {
+                    instance = null;
+                } else {
+                    Debug.Assert(mi != null);
+                    instance = _instanceBuilder.ToExpression(ref mi, _resolver, restrictedArgs, usageMarkers);
+                    Debug.Assert(instance != null, "Can't skip instance expression");
+                }
 
-            ConstructorInfo ci = mb as ConstructorInfo;
-            Debug.Assert(mi != null || ci != null);
-            if (CompilerHelpers.IsVisible(mb)) {
-                // public method
-                if (mi != null) {
-                    Expression instance = mi.IsStatic ? null : _instanceBuilder.ToExpression(_resolver, args, usageMarkers);
+                if (CompilerHelpers.IsVisible(mi)) {
                     call = AstUtils.SimpleCallHelper(instance, mi, callArgs);
                 } else {
-                    call = AstUtils.SimpleNewHelper(ci, callArgs);
-                }
-            } else {
-                // Private binding, invoke via reflection
-                if (mi != null) {
-                    Expression instance = mi.IsStatic ? AstUtils.Constant(null) : _instanceBuilder.ToExpression(_resolver, args, usageMarkers);
-                    Debug.Assert(instance != null, "Can't skip instance expression");
-
                     call = Ast.Call(
                         typeof(BinderOps).GetMethod("InvokeMethod"),
                         AstUtils.Constant(mi),
-                        AstUtils.Convert(instance, typeof(object)),
+                        instance != null ? AstUtils.Convert(instance, typeof(object)) : AstUtils.Constant(null),
                         AstUtils.NewArrayHelper(typeof(object), callArgs)
                     );
+                }
+            } else {
+                ConstructorInfo ci = (ConstructorInfo)Method;
+                if (CompilerHelpers.IsVisible(ci)) {
+                    call = AstUtils.SimpleNewHelper(ci, callArgs);
                 } else {
                     call = Ast.Call(
                         typeof(BinderOps).GetMethod("InvokeConstructor"),
@@ -457,11 +447,11 @@ namespace Microsoft.Scripting.Actions.Calls {
                 call = Expression.Block(spilledArgs.AddLast(call));
             }
 
-            ret = _returnBuilder.ToExpression(_resolver, _argBuilders, args, call);
+            Expression ret = _returnBuilder.ToExpression(_resolver, _argBuilders, restrictedArgs, call);
 
             List<Expression> updates = null;
             for (int i = 0; i < _argBuilders.Count; i++) {
-                Expression next = _argBuilders[i].UpdateFromReturn(_resolver, args);
+                Expression next = _argBuilders[i].UpdateFromReturn(_resolver, restrictedArgs);
                 if (next != null) {
                     if (updates == null) {
                         updates = new List<Expression>();
@@ -489,7 +479,7 @@ namespace Microsoft.Scripting.Actions.Calls {
             return ret;
         }
 
-        private Expression[] GetArgumentExpressions(IList<Expression> parameters, out bool[] usageMarkers, out Expression[] spilledArgs) {
+        private Expression[] GetArgumentExpressions(RestrictedArguments restrictedArgs, out bool[] usageMarkers, out Expression[] spilledArgs) {
             int minPriority = Int32.MaxValue;
             int maxPriority = Int32.MinValue;
             foreach (ArgBuilder ab in _argBuilders) {
@@ -499,11 +489,11 @@ namespace Microsoft.Scripting.Actions.Calls {
 
             var args = new Expression[_argBuilders.Count];
             Expression[] actualArgs = null;
-            usageMarkers = new bool[parameters.Count];
+            usageMarkers = new bool[restrictedArgs.Length];
             for (int priority = minPriority; priority <= maxPriority; priority++) {
                 for (int i = 0; i < _argBuilders.Count; i++) {
                     if (_argBuilders[i].Priority == priority) {
-                        args[i] = _argBuilders[i].ToExpression(_resolver, parameters, usageMarkers);
+                        args[i] = _argBuilders[i].ToExpression(_resolver, restrictedArgs, usageMarkers);
 
                         // see if this has a temp that needs to be passed as the actual argument
                         Expression byref = _argBuilders[i].ByRefArgument;

@@ -17,7 +17,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq.Expressions;
-using Microsoft.Scripting.Runtime;
 
 namespace Microsoft.Scripting.Actions.Calls {
 
@@ -34,7 +33,7 @@ namespace Microsoft.Scripting.Actions.Calls {
             this._returnType = returnType;
         }
 
-        internal virtual Expression ToExpression(OverloadResolver resolver, IList<ArgBuilder> args, IList<Expression> parameters, Expression ret) {
+        internal virtual Expression ToExpression(OverloadResolver resolver, IList<ArgBuilder> builders, RestrictedArguments args, Expression ret) {
             return ret;
         }
 
@@ -46,15 +45,6 @@ namespace Microsoft.Scripting.Actions.Calls {
             get {
                 return _returnType;
             }
-        }
-
-        protected static object ConvertToObject(object ret) {
-            if (ret is bool) {
-                return ScriptingRuntimeHelpers.BooleanToObject((bool)ret);
-            } else if (ret is int) {
-                return ScriptingRuntimeHelpers.Int32ToObject((int)ret);
-            }
-            return ret;
         }
     }
 }
