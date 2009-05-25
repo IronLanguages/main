@@ -17,6 +17,12 @@ require "tutorial"
 require "stringio"
 require 'wpf'
 
+begin
+  require 'c:/dev/repl'
+rescue LoadError
+  # get repl.rb: http://gist.github.com/116393
+end
+
 class System::Windows::Window
   def repl_input
     current_step.send "step_repl_input_#{_current_task}"
@@ -28,6 +34,10 @@ class System::Windows::Window
 
   def repl_history
     current_step.send "step_repl_history_#{_current_task}"
+  end
+
+  def reset_task
+    @current_task = nil
   end
 
   def incr_task
@@ -172,6 +182,7 @@ class WpfTutorial
       @window.current_step.visibility = Visibility.visible
       @window.repl_input.visibility = Visibility.visible
       @window.repl_input_arrow.visibility = Visibility.visible
+      @prev_newline = nil
 
       # TODO - Should use TextChanged here
       @window.repl_input.key_up.add method(:on_repl_input) 
@@ -257,6 +268,7 @@ class WpfTutorial
 
   def on_repl_input target, event_args
     if event_args.Key == Key.Enter
+      print_to_repl '' if @prev_newline
       @window.repl_history.visibility = Visibility.visible
       input = @window.repl_input.text
       print_to_repl ">>> " + input
@@ -273,7 +285,11 @@ class WpfTutorial
         print_to_repl e.to_s
       ensure
         $stdout = old_stdout
-        @window.repl_history.text = @window.repl_history.text.strip
+        if @window.repl_history.text.size > 1
+          # BUG: should be able to do str[-1] on a clrstring
+          @prev_newline = @window.repl_history.text.to_s[-1] == 10 # '\n'
+          @window.repl_history.text = @window.repl_history.text.to_s[0..-2].to_clr_string
+        end
       end
       if @task and @task.success?(Tutorial::InteractionResult.new(@bind, output.string, result, e))
         select_next_task
