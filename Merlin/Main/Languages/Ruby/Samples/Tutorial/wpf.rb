@@ -20,11 +20,9 @@ require 'PresentationCore, Version=3.0.0.0, Culture=neutral, PublicKeyToken=31bf
 require 'windowsbase, Version=3.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35'
 
 class System::Windows::FrameworkElement
-    def method_missing name, *args
-        child = FindName(name.to_clr_string)
-        if child then return child end
-        super
-    end
+  def method_missing name, *args
+    find_name(name.to_s.to_clr_string) || super
+  end
 end
 
 class System::Windows::Documents::FlowDocument
