@@ -26,16 +26,12 @@ class TestFileList
 end
 
 class TestFileUtils
-  # Most of these failures are because of http://ironruby.codeplex.com/WorkItem/View.aspx?WorkItemId=1184  resulting in these errors
-  #   NoMethodError: undefined method `exitstatus' for 123:Fixnum
+  # Most of these failures are because of http://ironruby.codeplex.com/WorkItem/View.aspx?WorkItemId=1184  resulting in this error:
   #   NoMethodError: private method `safe_ln' called for #<TestFileUtils::BadLink:0x0002f72 @failure_class=NotImplementedError>
   def test_ruby() end
   def test_safe_ln_failover_to_cp_on_not_implemented_error() end
   def test_safe_ln_failover_to_cp_on_standard_error() end
   def test_safe_ln_fails_on_script_error() end
-  def test_sh_failure() end
-  def test_sh_multiple_arguments() end
-  def test_sh_special_handling() end
 end
 
 class TestPathMapExplode
@@ -49,6 +45,7 @@ class TestRake
 end
 
 class TestTask
-  # This failure does not happen with a later version of Rake. Might be a test issue
+  # This failure does not happen with a later version (afer 0.8.4) of Rake tests with the same version (0.8.4) of the Rake gem.
+  # So it might be a test issue
   def test_investigation_output() end
 end

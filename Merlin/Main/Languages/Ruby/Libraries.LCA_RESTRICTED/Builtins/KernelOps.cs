@@ -209,7 +209,7 @@ namespace IronRuby.Builtins {
         [RubyMethod("exec", RubyMethodAttributes.PublicSingleton, BuildConfig = "!SILVERLIGHT")]
         public static void Execute(RubyContext/*!*/ context, object self, [DefaultProtocol, NotNull]MutableString/*!*/ command) {
             Process p = ExecuteCommandInShell(context, command);
-            context.ChildProcessExitStatus = p.ExitCode;
+            context.ChildProcessExitStatus = new RubyProcess.Status(p);
             Exit(self, p.ExitCode);
         }
 
@@ -218,7 +218,7 @@ namespace IronRuby.Builtins {
         public static void Execute(RubyContext/*!*/ context, object self, [DefaultProtocol, NotNull]MutableString/*!*/ command,
             [DefaultProtocol, NotNull, NotNullItems]params MutableString[]/*!*/ args) {
             Process p = ExecuteCommand(command, args);
-            context.ChildProcessExitStatus = p.ExitCode;
+            context.ChildProcessExitStatus = new RubyProcess.Status(p);
             Exit(self, p.ExitCode);
         }
 
@@ -226,7 +226,7 @@ namespace IronRuby.Builtins {
         [RubyMethod("system", RubyMethodAttributes.PublicSingleton, BuildConfig = "!SILVERLIGHT")]
         public static bool System(RubyContext/*!*/ context, object self, [DefaultProtocol, NotNull]MutableString/*!*/ command) {
             Process p = ExecuteCommandInShell(context, command);
-            context.ChildProcessExitStatus = p.ExitCode;
+            context.ChildProcessExitStatus = new RubyProcess.Status(p);
             return p.ExitCode == 0;
         }
 
@@ -235,7 +235,7 @@ namespace IronRuby.Builtins {
         public static bool System(RubyContext/*!*/ context, object self, [DefaultProtocol, NotNull]MutableString/*!*/ command,
             [DefaultProtocol, NotNull, NotNullItems]params MutableString/*!*/[]/*!*/ args) {
             Process p = ExecuteCommand(command, args);
-            context.ChildProcessExitStatus = p.ExitCode;
+            context.ChildProcessExitStatus = new RubyProcess.Status(p);
             return p.ExitCode == 0;
         }
 #endif
