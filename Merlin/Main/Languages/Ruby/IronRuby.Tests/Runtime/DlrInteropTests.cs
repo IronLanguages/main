@@ -244,6 +244,24 @@ namespace IronRuby.Tests {
         }
     }
 
+    class MyUnaryOperationBinder : UnaryOperationBinder {
+        public MyUnaryOperationBinder(ExpressionType operation)
+            : base(operation) {
+        }
+
+        public override DynamicMetaObject FallbackUnaryOperation(DynamicMetaObject target, DynamicMetaObject errorSuggestion) {
+            return new DynamicMetaObject(
+                Expression.Constant("FallbackInvoke"),
+                BindingRestrictionsHelpers.GetRuntimeTypeRestriction(target)
+            );
+        }
+
+        internal static object Invoke(ExpressionType operation, object obj) {
+            var site = CallSite<Func<CallSite, object, object>>.Create(new MyUnaryOperationBinder(operation));
+            return site.Target(site, obj);
+        }
+    }
+
     #endregion
 
     public partial class Tests {
@@ -251,7 +269,6 @@ namespace IronRuby.Tests {
         #region Ruby snippet
 
         const string RubySnippet = @"
-require 'mscorlib'
 ArrayList = System::Collections::ArrayList
 
 #------------------------------------------------------------------------------
@@ -320,7 +337,9 @@ class RubyArrayList < ArrayList
     def ruby_method
         'Hi from Ruby'.to_clr_string
     end
-    
+
+    attr_accessor :ruby_attribute
+
     # override a CLR virtual method
     def IndexOf obj
         123456789
@@ -353,10 +372,10 @@ class Miscellaneous
     
     #self.class_instance_method = static_method
     
-    attr :callable_called
-    def get_a_callable
-        @callable_called = false
-        System::Action[Object].new { @callable_called = true }
+    attr :ruby_callable_called
+    def get_a_ruby_callable
+        @ruby_callable_called = false
+        lambda { @ruby_callable_called = true }
     end
     
     def to_s
@@ -428,7 +447,15 @@ class Number
     
     def /(other)
         @val / other
-    end    
+    end
+
+    def -@
+        -@val
+    end  
+
+    def ~
+        ~@val
+    end  
 end
 
 self.number = Number.new(100)
@@ -562,10 +589,10 @@ class SanityTest
         # main.misc
         assert_equal Miscellaneous.static_method, 'static_method'.to_clr_string
         assert_error lambda { main.misc.static_method }, NoMethodError
-        c = main.misc.get_a_callable()
-        assert_equal main.misc.callable_called, false
+        c = main.misc.get_a_ruby_callable()
+        assert_equal main.misc.ruby_callable_called, false
         c.Invoke(nil)
-        assert_equal main.misc.callable_called, true
+        assert_equal main.misc.ruby_callable_called, true
         # assert_equal main.misc.ToString(), 'to_s' # Bug!!!!!!!!!!!!!!!!!
         
         # main.convertible
@@ -618,96 +645,114 @@ end
 ";
         #endregion
 
-        private ScriptScope _rubyInteropScope;
-        private ScriptScope RubyInteropScope {
-            get {
-                if (_rubyInteropScope == null) {
-                    _rubyInteropScope = Runtime.CreateScope();
-                    Engine.Execute(RubySnippet, _rubyInteropScope);
-                }
-                return _rubyInteropScope;
-            }
+        private ScriptScope CreateInteropScope() {
+            var scope = Runtime.CreateScope();
+            Engine.Execute(RubySnippet, scope);
+            return scope;
         }
 
         public void Dlr_ClrSubtype() {
-            object ruby_array_list = RubyInteropScope.GetVariable("ruby_array_list");
+            var scope = CreateInteropScope();
+            object ruby_array_list = scope.GetVariable("ruby_array_list");
 
             // CLR properties are accessible as methods
-            AreEqualBug(MyInvokeMemberBinder.Invoke(ruby_array_list, "Count"), "FallbackInvokeMember", 2);
-            // CLR properties are not accessible as members : should this be allowed?
-            AssertExceptionThrownBug<MissingMemberException>(delegate() { MyGetMemberBinder.Invoke(ruby_array_list, "Count"); }, 2);
+            AreEqual(MyInvokeMemberBinder.Invoke(ruby_array_list, "Count"), "FallbackInvokeMember");
+            // CLR properties are accessible as members
+            AreEqual(MyGetMemberBinder.Invoke(ruby_array_list, "Count"), "FallbackGetMember");
             // Overriden CLR member
-            AreEqualBug(MyInvokeMemberBinder.Invoke(ruby_array_list, "IndexOf", null), "FallbackInvokeMember", 123456789);
+            AreEqual(MyInvokeMemberBinder.Invoke(ruby_array_list, "IndexOf", null), 123456789);
             // CLR indexer
             AreEqual(MySetIndexBinder.Invoke(ruby_array_list, 10, 100), "FallbackSetIndex:10100");
             AreEqual(MyGetIndexBinder.Invoke(ruby_array_list, 10), "FallbackGetIndex:10");
 
             AreEqual(MyInvokeMemberBinder.Invoke(ruby_array_list, "ruby_method"), "Hi from Ruby");
-            // CLR properties accessed with Ruby-friendly name. This should not be allowed, right?
-            AssertExceptionThrownBug<MissingMemberException>(delegate() { MyInvokeMemberBinder.Invoke(ruby_array_list, "count"); }, 2);
-            // CLR methods accessed with Ruby-friendly name. This should not be allowed, right?
-            AssertExceptionThrownBug<MissingMemberException>(delegate() { MyInvokeMemberBinder.Invoke(ruby_array_list, "index_of", null); }, -1);
+            // CLR properties accessed with Ruby name. 
+            AreEqual(MyInvokeMemberBinder.Invoke(ruby_array_list, "count"), "FallbackInvokeMember");
+            // CLR methods accessed with Ruby name.
+            AreEqual(MyInvokeMemberBinder.Invoke(ruby_array_list, "index_of", null), "FallbackInvokeMember");
 
             AreEqual(MyInvokeMemberBinder.Invoke(ruby_array_list, "non_existent"), "FallbackInvokeMember");
             AreEqual(MySetMemberBinder.Invoke(ruby_array_list, "Count", 100000), "FallbackSetMember");
+
+            // Ruby attributes are invoked directly via SetMember/GetMember:
+            AreEqual(MySetMemberBinder.Invoke(ruby_array_list, "ruby_attribute", 123), 123);
+            AreEqual(MyGetMemberBinder.Invoke(ruby_array_list, "ruby_attribute"), 123);
         }
 
+        [Run]
         public void Dlr_MethodMissing() {
-            object dynamic_object = RubyInteropScope.GetVariable("dynamic_object");
+            var scope = CreateInteropScope();
+            object dynamic_object = scope.GetVariable("dynamic_object");
 
             AreEqual(MyInvokeMemberBinder.Invoke(dynamic_object, "non_existent_method"), "dynamic_non_existent_method");
 
-            AreEqualBug(MySetMemberBinder.Invoke(dynamic_object, "non_existent_member", 100), 100, "FallbackSetMember");
-            AreEqualBug(MyGetMemberBinder.Invoke(dynamic_object, "non_existent_member"), 100, "FallbackGetMember");
+            AreEqual(MySetMemberBinder.Invoke(dynamic_object, "non_existent_member", 100), 100);
 
-            AreEqualBug(MyGetIndexBinder.Invoke(dynamic_object, "non_existent_index"), "dynamic_element_non_existent_index", "FallbackGetIndex:non_existent_index");
-            AreEqual(MySetIndexBinder.Invoke(dynamic_object, "non_existent_index", 100), "FallbackSetIndex:non_existent_index100");
-            AreEqualBug(MyGetIndexBinder.Invoke(dynamic_object, "non_existent_index"), 100, "FallbackGetIndex:non_existent_index");
+            // Ruby doesn't have "mising_property" so we get a method, not the value:
+            AreEqual(MyInvokeBinder.Invoke(MyGetMemberBinder.Invoke(dynamic_object, "non_existent_member")), 100);
+
+            AreEqual(MyGetIndexBinder.Invoke(dynamic_object, "non_existent_index"), "dynamic_element_non_existent_index");
+            AreEqual(MySetIndexBinder.Invoke(dynamic_object, "non_existent_index", 100), 100);
+            AreEqual(MyGetIndexBinder.Invoke(dynamic_object, "non_existent_index"), 100);
 
             AreEqual(MyInvokeMemberBinder.Invoke(dynamic_object, "explicit_attribute"), "explicit_attribute");
         }
 
         public void Dlr_Miscellaneous() {
-            object misc_object = RubyInteropScope.GetVariable("misc");
+            var scope = CreateInteropScope();
+            object misc_object = scope.GetVariable("misc");
 
             object misc_class = MyInvokeMemberBinder.Invoke(misc_object, "class");
-            AreEqualBug<MissingMemberException>(delegate() { RubyInteropScope.GetVariable("Miscellaneous"); }, misc_class);
+            AreEqual(Engine.Runtime.Globals.GetVariable("Miscellaneous"), misc_class);
 
+            // singleton methods are only invokable on the class object, not the instance:
             AreEqual(MyInvokeMemberBinder.Invoke(misc_class, "static_method"), "static_method");
-            AssertExceptionThrownBug<MissingMethodException>(delegate() { MyInvokeMemberBinder.Invoke(misc_object, "static_method"); }, "static method");
+            AreEqual(MyInvokeMemberBinder.Invoke(misc_object, "static_method"), "FallbackInvokeMember");
 
-            object callable = MyInvokeMemberBinder.Invoke(misc_object, "get_a_callable");
-            AreEqual(MyInvokeMemberBinder.Invoke(misc_object, "callable_called"), false);
+            object callable = MyInvokeMemberBinder.Invoke(misc_object, "get_a_ruby_callable");
+            AreEqual(MyInvokeMemberBinder.Invoke(misc_object, "ruby_callable_called"), false);
             MyInvokeBinder.Invoke(callable);
-            AreEqualBug(MyInvokeMemberBinder.Invoke(misc_object, "callable_called"), true, false);
+            AreEqual(MyInvokeMemberBinder.Invoke(misc_object, "ruby_callable_called"), true);
 
-            AreEqualBug(MyInvokeMemberBinder.Invoke(misc_class, "ToString"), "to_s", "FallbackInvokeMember");
+            // "ToString" is not handled in any special way by Ruby binder.
+            // The call falls back to the caller's binder that should then call .NET ToString method.
+            // ToString is overridden by all Ruby objects to call to_s.
+            AreEqual(MyInvokeMemberBinder.Invoke(misc_class, "ToString"), "FallbackInvokeMember");
         }
 
+        // TODO: conversions
         public void Dlr_Convertible() {
-            object convertible = RubyInteropScope.GetVariable("convertible");
+            var scope = CreateInteropScope();
+            object convertible = scope.GetVariable("convertible");
             AreEqualBug(MyConvertBinder.Invoke<int>(convertible, -1234), 0, -1234);
             AreEqualBug(MyConvertBinder.Invoke<string>(convertible, "FallbackConvert"), "0", "FallbackConvert");
             AreEqualBug(MyConvertBinder.Invoke<float>(convertible, -1234.0f), 0.0, -1234.0f);
         }
 
         public void Dlr_Indexable() {
-            object indexable = RubyInteropScope.GetVariable("indexable");
-            AreEqualBug(MyGetIndexBinder.Invoke(indexable, 2), 2, "FallbackGetIndex:2");
-            AreEqualBug(MySetIndexBinder.Invoke(indexable, 10, 100), 100, "FallbackSetIndex:10100");
-            AreEqualBug(MyGetIndexBinder.Invoke(indexable, 10), 100, "FallbackGetIndex:10");
-            AreEqualBug(MyGetIndexBinder.Invoke(indexable, 9), null, "FallbackGetIndex:9");
+            var scope = CreateInteropScope();
+            object indexable = scope.GetVariable("indexable");
+            AreEqual(MyGetIndexBinder.Invoke(indexable, 2), 2);
+            AreEqual(MySetIndexBinder.Invoke(indexable, 10, 100), 100);
+            AreEqual(MyGetIndexBinder.Invoke(indexable, 10), 100);
+            AreEqual(MyGetIndexBinder.Invoke(indexable, 9), null);
         }
 
         public void Dlr_Number() {
-            object number = RubyInteropScope.GetVariable("number");
-            AreEqualBug(MyBinaryOperationBinder.Invoke(ExpressionType.Add, number, 1), 101, "FallbackInvoke:1");
-            AreEqualBug(MyBinaryOperationBinder.Invoke(ExpressionType.Subtract, number, 1), 99, "FallbackInvoke:1");
-            AreEqualBug(MyBinaryOperationBinder.Invoke(ExpressionType.Multiply, number, 2), 200, "FallbackInvoke:2");
-            AreEqualBug(MyBinaryOperationBinder.Invoke(ExpressionType.Divide, number, 2), 50, "FallbackInvoke:2");
+            var scope = CreateInteropScope();
+            object one_hundred = scope.GetVariable("number");
+            AreEqual(MyBinaryOperationBinder.Invoke(ExpressionType.Add, one_hundred, 1), 100 + 1);
+            AreEqual(MyBinaryOperationBinder.Invoke(ExpressionType.Subtract, one_hundred, 1), 100 - 1);
+            AreEqual(MyBinaryOperationBinder.Invoke(ExpressionType.Multiply, one_hundred, 2), 2 * 100);
+            AreEqual(MyBinaryOperationBinder.Invoke(ExpressionType.Divide, one_hundred, 2), 100/2);
+            AreEqual(MyUnaryOperationBinder.Invoke(ExpressionType.Negate, one_hundred), -100);
+            AreEqual(MyUnaryOperationBinder.Invoke(ExpressionType.OnesComplement, one_hundred), ~100);
         }
+
+        // TODO: conversion to IEnumerable
         public void Dlr_Enumerable() {
-            object ruby_enumerable = RubyInteropScope.GetVariable("ruby_enumerable");
+            var scope = CreateInteropScope();
+            object ruby_enumerable = scope.GetVariable("ruby_enumerable");
             IEnumerable e = MyConvertBinder.Invoke<IEnumerable>(ruby_enumerable, null);
             AreEqualBug(e != null, true, false);
             IEnumerable<object> e2 = MyConvertBinder.Invoke<IEnumerable<object>>(ruby_enumerable, null);
@@ -715,10 +760,11 @@ end
         }
 
         public void Dlr_Comparable() {
-            object ruby_comparable = RubyInteropScope.GetVariable("ruby_comparable");
-            AreEqualBug(MyBinaryOperationBinder.Invoke(ExpressionType.Equal, ruby_comparable, 100), true, "FallbackInvoke:100");
-            AreEqualBug(MyBinaryOperationBinder.Invoke(ExpressionType.GreaterThan, ruby_comparable, 100), false, "FallbackInvoke:100");
-            AreEqualBug(MyBinaryOperationBinder.Invoke(ExpressionType.LessThanOrEqual, ruby_comparable, 100), true, "FallbackInvoke:100");
+            var scope = CreateInteropScope();
+            object ruby_comparable = scope.GetVariable("ruby_comparable");
+            AreEqual(MyBinaryOperationBinder.Invoke(ExpressionType.Equal, ruby_comparable, 100), true);
+            AreEqual(MyBinaryOperationBinder.Invoke(ExpressionType.GreaterThan, ruby_comparable, 100), false);
+            AreEqual(MyBinaryOperationBinder.Invoke(ExpressionType.LessThanOrEqual, ruby_comparable, 100), true);
         }
 
         public void Dlr_RubyObjects() {

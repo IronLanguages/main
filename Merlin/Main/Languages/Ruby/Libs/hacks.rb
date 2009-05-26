@@ -26,14 +26,6 @@ class TCPSocket
   end
 end
 
-# Ruby implementation of Method#to_proc
-
-class Method
-  def to_proc
-    Proc.new { |*args| self.call(*args) }
-  end
-end
-
 # Subclass Tracking
 
 module SubclassTracking

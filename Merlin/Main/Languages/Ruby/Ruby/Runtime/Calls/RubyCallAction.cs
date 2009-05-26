@@ -34,7 +34,7 @@ using Microsoft.Scripting;
 
 namespace IronRuby.Runtime.Calls {
 
-    public class RubyCallAction : RubyMetaBinder, IExpressionSerializable {
+    public class RubyCallAction : RubyMetaBinder {
         private readonly RubyCallSignature _signature;
         private readonly string/*!*/ _methodName;
 
@@ -86,17 +86,13 @@ namespace IronRuby.Runtime.Calls {
             return _methodName + _signature.ToString() + (Context != null ? " @" + Context.RuntimeId.ToString() : null);
         }
 
-        #region IExpressionSerializable Members
-
-        Expression/*!*/ IExpressionSerializable.CreateExpression() {
+        public override Expression/*!*/ CreateExpression() {
             return Expression.Call(
                 Methods.GetMethod(typeof(RubyCallAction), "MakeShared", typeof(string), typeof(RubyCallSignature)),
                 AstUtils.Constant(_methodName),
                 _signature.CreateExpression()
             );
         }
-
-        #endregion
 
         #region Precompiled Rules
 
@@ -184,19 +180,53 @@ namespace IronRuby.Runtime.Calls {
         #endregion
 
         protected override bool Build(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args, bool defaultFallback) {
-            return BuildCall(metaBuilder, _methodName, args, defaultFallback);
+            return BuildCall(metaBuilder, _methodName, args, defaultFallback, true);
         }
 
         // Returns true if the call was bound (with success or failure), false if fallback should be performed.
-        internal static bool BuildCall(MetaObjectBuilder/*!*/ metaBuilder, string/*!*/ methodName, CallArguments/*!*/ args, bool defaultFallback) {
+        internal static bool BuildCall(MetaObjectBuilder/*!*/ metaBuilder, string/*!*/ methodName, CallArguments/*!*/ args, 
+            bool defaultFallback, bool callClrMethods) {
+
             RubyMemberInfo methodMissing;
             var method = Resolve(metaBuilder, methodName, args, out methodMissing);
 
             if (method.Found) {
+                if (!callClrMethods && !method.Info.IsRubyMember) {
+                    return false;
+                }
+
                 method.Info.BuildCall(metaBuilder, args, methodName);
                 return true;
             } else {
-                return BindToMethodMissing(metaBuilder, args, methodName, methodMissing, method.IncompatibleVisibility, false, defaultFallback);
+                return BuildMethodMissingCall(metaBuilder, args, methodName, methodMissing, method.IncompatibleVisibility, false, defaultFallback);
+            }
+        }
+
+        // Returns true if the call was bound (with success or failure), false if fallback should be performed.
+        internal static bool BuildAccess(MetaObjectBuilder/*!*/ metaBuilder, string/*!*/ methodName, CallArguments/*!*/ args, 
+            bool defaultFallback, bool callClrMethods) {
+
+            RubyMemberInfo methodMissing;
+            var method = Resolve(metaBuilder, methodName, args, out methodMissing);
+
+            if (method.Found) {
+                if (!callClrMethods && !method.Info.IsRubyMember) {
+                    return false;
+                }
+
+                if (method.Info.IsDataMember) {
+                    method.Info.BuildCall(metaBuilder, args, methodName);
+                } else {
+                    metaBuilder.Result = Methods.CreateBoundMember.OpCall(
+                        AstUtils.Convert(args.TargetExpression, typeof(object)),
+                        Ast.Constant(method.Info, typeof(RubyMemberInfo)),
+                        Ast.Constant(methodName)
+                    );
+                }
+                return true;
+            } else {
+                // Ruby doesn't have "attribute_missing" so we will always use method_missing and return a bound method object:
+                return BuildMethodMissingAccess(metaBuilder, args, methodName, methodMissing, method.IncompatibleVisibility, false, defaultFallback);
             }
         }
 
@@ -240,10 +270,40 @@ namespace IronRuby.Runtime.Calls {
             return method;
         }
 
-        internal static bool BindToMethodMissing(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args, string/*!*/ methodName,
+        internal static bool BuildMethodMissingCall(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args, string/*!*/ methodName,
             RubyMemberInfo methodMissing, RubyMethodVisibility incompatibleVisibility, bool isSuperCall, bool defaultFallback) {
-            // Assumption: args already contain method name.
-            
+
+            if (BindToMethodMissing(metaBuilder, args, methodName, methodMissing, incompatibleVisibility, isSuperCall) || defaultFallback) {
+                if (!metaBuilder.Error) {
+                    args.InsertMethodName(methodName);
+                    methodMissing.BuildCall(metaBuilder, args, methodName);
+                }
+                return true;
+            } else {
+                return false;
+            }
+        }
+
+        internal static bool BuildMethodMissingAccess(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args, string/*!*/ methodName,
+            RubyMemberInfo methodMissing, RubyMethodVisibility incompatibleVisibility, bool isSuperCall, bool defaultFallback) {
+
+            if (BindToMethodMissing(metaBuilder, args, methodName, methodMissing, incompatibleVisibility, isSuperCall) || defaultFallback) {
+                if (!metaBuilder.Error) {
+                    metaBuilder.Result = Methods.CreateBoundMissingMember.OpCall(
+                        AstUtils.Convert(args.TargetExpression, typeof(object)), 
+                        Ast.Constant(methodMissing, typeof(RubyMemberInfo)), 
+                        Ast.Constant(methodName)
+                    );
+                }
+                return true;
+            } else {
+                return false;
+            }
+        }
+
+        internal static bool BindToMethodMissing(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args, string/*!*/ methodName,
+            RubyMemberInfo methodMissing, RubyMethodVisibility incompatibleVisibility, bool isSuperCall) {
+
             // TODO: better check for builtin method
             if (methodMissing == null ||
                 methodMissing.DeclaringModule == methodMissing.Context.KernelModule && methodMissing is RubyLibraryMethodInfo) {
@@ -258,15 +318,9 @@ namespace IronRuby.Runtime.Calls {
                     metaBuilder.SetError(Methods.MakeProtectedMethodCalledError.OpCall(
                         AstUtils.Convert(args.MetaContext.Expression, typeof(RubyContext)), args.TargetExpression, AstUtils.Constant(methodName))
                     );
-                } else if (defaultFallback) {
-                    args.InsertMethodName(methodName);
-                    methodMissing.BuildCall(metaBuilder, args, methodName);
                 } else {
                     return false;
                 }
-            } else {
-                args.InsertMethodName(methodName);
-                methodMissing.BuildCall(metaBuilder, args, methodName);
             }
 
             return true;

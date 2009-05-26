@@ -24,6 +24,10 @@ using System.Threading;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 
+#if !SYSTEM_CORE
+using dynamic = System.Object;
+#endif
+
 namespace Microsoft.Scripting.Hosting {
 
     /// <summary>
@@ -105,7 +109,7 @@ namespace Microsoft.Scripting.Hosting {
         /// </summary>
         /// <exception cref="NotSupportedException">The engine doesn't support code execution.</exception>
         /// <exception cref="ArgumentNullException"><paramref name="expression"/> is a <c>null</c> reference.</exception>
-        public object Execute(string expression) {
+        public dynamic Execute(string expression) {
             // The host doesn't need the scope so do not create it here. 
             // The language can treat the code as not bound to a DLR scope and change global lookup semantics accordingly.
             return CreateScriptSourceFromString(expression).Execute(); 
@@ -117,7 +121,7 @@ namespace Microsoft.Scripting.Hosting {
         /// <exception cref="NotSupportedException">The engine doesn't support code execution.</exception>
         /// <exception cref="ArgumentNullException"><paramref name="expression"/> is a <c>null</c> reference.</exception>
         /// <exception cref="ArgumentNullException"><paramref name="scope"/> is a <c>null</c> reference.</exception>
-        public object Execute(string expression, ScriptScope scope) {
+        public dynamic Execute(string expression, ScriptScope scope) {
             return CreateScriptSourceFromString(expression).Execute(scope);
         }
 
@@ -127,7 +131,7 @@ namespace Microsoft.Scripting.Hosting {
         /// <exception cref="NotSupportedException">The engine doesn't support code execution.</exception>
         /// <exception cref="ArgumentNullException"><paramref name="expression"/> is a <c>null</c> reference.</exception>
         public T Execute<T>(string expression) {
-            return Operations.ConvertTo<T>(Execute(expression));
+            return Operations.ConvertTo<T>((object)Execute(expression));
         }
         
         /// <summary>
@@ -137,7 +141,7 @@ namespace Microsoft.Scripting.Hosting {
         /// <exception cref="ArgumentNullException"><paramref name="expression"/> is a <c>null</c> reference.</exception>
         /// <exception cref="ArgumentNullException"><paramref name="scope"/> is a <c>null</c> reference.</exception>
         public T Execute<T>(string expression, ScriptScope scope) {
-            return Operations.ConvertTo<T>(Execute(expression, scope));
+            return Operations.ConvertTo<T>((object)Execute(expression, scope));
         }
 
         /// <summary>
@@ -167,7 +171,7 @@ namespace Microsoft.Scripting.Hosting {
         /// Returns an ObjectHandle wrapping the resulting value of running the code.  
         /// </summary>
         public ObjectHandle ExecuteAndWrap(string expression, ScriptScope scope) {
-            return new ObjectHandle(Execute(expression, scope));
+            return new ObjectHandle((object)Execute(expression, scope));
         }
 
         /// <summary>
@@ -175,7 +179,7 @@ namespace Microsoft.Scripting.Hosting {
         /// Returns an ObjectHandle wrapping the resulting value of running the code.  
         /// </summary>
         public ObjectHandle ExecuteAndWrap(string expression) {
-            return new ObjectHandle(Execute(expression));
+            return new ObjectHandle((object)Execute(expression));
         }
 #endif
         
@@ -448,7 +452,7 @@ namespace Microsoft.Scripting.Hosting {
         /// 
         /// If there is a default engine, then the name lookup uses that language's semantics.
         /// </summary>
-        public object GetVariable(ScriptScope scope, string name) {
+        public dynamic GetVariable(ScriptScope scope, string name) {
             ContractUtils.RequiresNotNull(scope, "scope");
             ContractUtils.RequiresNotNull(name, "name");
 
@@ -522,7 +526,7 @@ namespace Microsoft.Scripting.Hosting {
             ContractUtils.RequiresNotNull(scope, "scope");
             ContractUtils.RequiresNotNull(name, "name");
 
-            return Operations.ConvertTo<T>(GetVariable(scope, name));
+            return Operations.ConvertTo<T>((object)GetVariable(scope, name));
         }
 
         /// <summary>
@@ -587,7 +591,7 @@ namespace Microsoft.Scripting.Hosting {
             ContractUtils.RequiresNotNull(scope, "scope");
             ContractUtils.RequiresNotNull(name, "name");
 
-            return new ObjectHandle(GetVariable(scope, name));
+            return new ObjectHandle((object)GetVariable(scope, name));
         }
 
         /// <summary>

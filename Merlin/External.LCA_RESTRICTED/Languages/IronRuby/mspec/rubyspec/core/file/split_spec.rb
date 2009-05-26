@@ -17,22 +17,39 @@ describe "File.split" do
 
   it "splits the given string into a directory and a file component and returns them in a two-element array. (edge cases)" do
     File.split("").should == [".", ""]
-    File.split("//foo////").should == ["/", "foo"]
   end
 
-  it "splits the given string into a directory and a file component and returns them in a two-element array. (windows)" do
-    compliant_on :ruby, :rubinius do
-      File.split(@path_windows_backward).should ==  [".", "C:\\foo\\bar\\baz.rb"]
+  platform_is_not :windows do
+    it "deals with multiple forward slashes" do
+      File.split("//foo////").should == ["/", "foo"]
+    end
+  end
+
+  platform_is :windows do
+    it "deals with multiple forward slashes" do
+      File.split("//foo////").should == ["//foo", "/"]
     end
 
-    # Actually, MRI on windows behaves like this too, and that seems
-    # to be most proper behavior:
-    compliant_on :jruby do
-      File.split(@path_windows_backward).should ==  ["C:\\foo\\bar", "baz.rb"]
+    not_compliant_on :rubinius do
+      it "splits the given string into a directory and a file component and returns them in a two-element array. (windows)" do
+        File.split(@path_windows_backward).should ==  ["C:\\foo\\bar", "baz.rb"]
+      end
     end
 
-    # Note: MRI on Cygwin exhibits third type of behavior,
-    # different from *both* variants above...
+    deviates_on :rubinius do
+      # Note: MRI on Cygwin exhibits third type of behavior,
+      # different from *both* variants above...
+      it "splits the given string into a directory and a file component and returns them in a two-element array. (windows)" do
+        File.split(@path_windows_backward).should ==  [".", "C:\\foo\\bar\\baz.rb"]
+      end
+    end
+
+    it "deals with Windows edge cases" do
+      File.split("c:foo").should == ["c:.", "foo"]
+      File.split("c:.").should == ["c:.", "."]
+      File.split("c:/foo").should == ["c:/", "foo"]
+      File.split("c:/.").should == ["c:/", "."]
+    end
   end
 
   it "splits the given string into a directory and a file component and returns them in a two-element array. (forward slash)" do

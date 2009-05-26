@@ -395,13 +395,23 @@ namespace IronRuby.Builtins {
                 object result = Integer.TryUnaryMinus(site.Target(site, other, self));
                 if (result == null) {
                     throw RubyExceptions.CreateTypeError(String.Format("{0} can't be coerced into Fixnum",
-                        comparisonStorage.Context.GetClassName(result)));
+                        comparisonStorage.Context.GetClassDisplayName(result)));
                 }
 
                 return result;
             }
 
             return null;
+        }
+
+        [RubyMethod("eql?")]
+        public static bool Eql(MutableString/*!*/ lhs, [NotNull]MutableString/*!*/ rhs) {
+            return lhs.Equals(rhs);
+        }
+
+        [RubyMethod("eql?")]
+        public static bool Eql(MutableString/*!*/ lhs, object rhs) {
+            return object.ReferenceEquals(lhs, rhs);
         }
 
         [RubyMethod("==")]
@@ -2103,7 +2113,7 @@ namespace IronRuby.Builtins {
             [NotNull]RubyRegex/*!*/ regexp, [DefaultProtocol, Optional]int limit) {
             
             if (regexp.IsEmpty) {
-                return Split(stringCast, scope, self, MutableString.Empty, limit);
+                return Split(stringCast, scope, self, MutableString.FrozenEmpty, limit);
             }
 
             if (self.IsEmpty) {

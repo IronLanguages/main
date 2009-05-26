@@ -493,7 +493,7 @@ namespace IronPython.Runtime.Types {
                 // Runs after StandardResolver so custom __eq__ methods can be added
                 // that support things like returning NotImplemented vs. IValueEquality
                 // which only supports true/false.  Runs before OperatorResolver so that
-                // IValueEquality takes precedence over Equals which can be provied for
+                // IValueEquality takes precedence over Equals which can be provided for
                 // nice .NET interop.
                 new OneOffResolver("__all__", AllResolver),
                 new OneOffResolver("__contains__", ContainsResolver),

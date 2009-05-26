@@ -17,9 +17,13 @@ using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.ConstrainedExecution;
 using System.Runtime.InteropServices;
+using System.Text;
+using System.Threading;
+
+using IronPython.Runtime;
 
 #if !SILVERLIGHT
-//[assembly: PythonModule("_ctypes", typeof(IronPython.Modules.CTypes))]
+
 namespace IronPython.Modules {
     /// <summary>
     /// A wrapper around allocated memory to ensure it gets released and isn't accessed
@@ -29,6 +33,8 @@ namespace IronPython.Modules {
         private readonly IntPtr _data;
         private readonly bool _ownsData;
         private readonly MemoryHolder _parent;
+        private readonly int _size;
+        private PythonDictionary _objects;
 
         /// <summary>
         /// Creates a new MemoryHolder and allocates a buffer of the specified size.
@@ -38,6 +44,7 @@ namespace IronPython.Modules {
             RuntimeHelpers.PrepareConstrainedRegions();
             try {
             } finally {
+                _size = size;
                 _data = NativeFunctions.Calloc(new IntPtr(size));
                 if (_data == IntPtr.Zero) {
                     GC.SuppressFinalize(this);
@@ -51,7 +58,7 @@ namespace IronPython.Modules {
         /// Creates a new MemoryHolder at the specified address which is not tracked
         /// by us and we will never free.
         /// </summary>
-        public MemoryHolder(IntPtr data) {
+        public MemoryHolder(IntPtr data, int size) {
             GC.SuppressFinalize(this);
             _data = data;
         }
@@ -60,10 +67,11 @@ namespace IronPython.Modules {
         /// Creates a new MemoryHolder at the specified address which will keep alive the 
         /// parent memory holder.
         /// </summary>
-        public MemoryHolder(IntPtr data, MemoryHolder parent) {
+        public MemoryHolder(IntPtr data, int size, MemoryHolder parent) {
             GC.SuppressFinalize(this);
             _data = data;
             _parent = parent;
+            _objects = parent._objects;
         }
 
         /// <summary>
@@ -74,6 +82,48 @@ namespace IronPython.Modules {
             get {
                 return _data;
             }
+        }
+
+        public int Size {
+            get {
+                return _size;
+            }
+        }
+
+        /// <summary>
+        /// Gets a list of objects which need to be kept alive for this MemoryHolder to be 
+        /// remain valid.
+        /// </summary>
+        public PythonDictionary Objects {
+            get {
+                return _objects;
+            }
+            set {
+                _objects = value;
+            }
+        }
+
+        internal PythonDictionary EnsureObjects() {
+            if (_objects == null) {
+                Interlocked.CompareExchange(ref _objects, new PythonDictionary(), null);
+            }
+
+            return _objects;
+        }
+
+        /// <summary>
+        /// Used to track the lifetime of objects when one memory region depends upon
+        /// another memory region.  For example if you have an array of objects that
+        /// each have an element which has it's own lifetime the array needs to keep
+        /// the individual elements alive.
+        /// 
+        /// The keys used here match CPython's keys as tested by CPython's test_ctypes. 
+        /// Typically they are a string which is the array index, "ffffffff" when
+        /// from_buffer is used, or when it's a simple type there's just a string
+        /// instead of the full dictionary - we store that under the key "str".
+        /// </summary>
+        internal void AddObject(object key, object value) {
+            EnsureObjects()[key] = value;
         }
 
         public byte ReadByte(int offset) {
@@ -108,7 +158,7 @@ namespace IronPython.Modules {
 
         public MemoryHolder ReadMemoryHolder(int offset) {
             IntPtr res = Marshal.ReadIntPtr(_data, offset);
-            return new MemoryHolder(res, this);
+            return new MemoryHolder(res, IntPtr.Size, this);
         }
 
         internal string ReadAnsiString(int offset) {
@@ -129,10 +179,33 @@ namespace IronPython.Modules {
 
         internal string ReadAnsiString(int offset, int length) {
             try {
-                return Marshal.PtrToStringAnsi(_data.Add(offset), length);
+                return ReadAnsiString(_data, offset, length);
             } finally {
                 GC.KeepAlive(this);
             }
+        }
+
+        internal static string ReadAnsiString(IntPtr addr, int offset, int length) {
+            // instead of Marshal.PtrToStringAnsi we do this because
+            // ptrToStringAnsi gives special treatment to values >= 128.
+            StringBuilder res = new StringBuilder();
+            if (checked(offset + length) < Int32.MaxValue) {
+                for (int i = 0; i < length; i++) {
+                    res.Append((char)Marshal.ReadByte(addr, offset + i));
+                }
+            }
+            return res.ToString();
+        }
+
+        internal static string ReadAnsiString(IntPtr addr, int offset) {
+            // instead of Marshal.PtrToStringAnsi we do this because
+            // ptrToStringAnsi gives special treatment to values >= 128.
+            StringBuilder res = new StringBuilder();
+            byte b;
+            while((b = Marshal.ReadByte(addr, offset++)) != 0) {
+                res.Append((char)b);
+            }
+            return res.ToString();
         }
 
         internal string ReadUnicodeString(int offset, int length) {
@@ -199,7 +272,7 @@ namespace IronPython.Modules {
 
         public MemoryHolder GetSubBlock(int offset) {
             // No GC.KeepAlive here because the new MemoryHolder holds onto the previous one.
-            return new MemoryHolder(_data.Add(offset), this);
+            return new MemoryHolder(_data.Add(offset), _size - offset, this);
         }
 
         /// <summary>

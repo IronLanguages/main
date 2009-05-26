@@ -33,7 +33,7 @@ using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
 
 #if !SILVERLIGHT
-//[assembly: PythonModule("_ctypes", typeof(IronPython.Modules.CTypes))]
+[assembly: PythonModule("_ctypes", typeof(IronPython.Modules.CTypes))]
 namespace IronPython.Modules {
     /// <summary>
     /// Provides support for interop with native code from Python code.
@@ -50,7 +50,9 @@ namespace IronPython.Modules {
 
         public const string __version__ = "1.1.0";
 
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         private delegate IntPtr CastDelegate(IntPtr data, IntPtr obj, IntPtr type);
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         private delegate IntPtr StringAtDelegate(IntPtr addr, int length);
 
         [SpecialName]
@@ -83,7 +85,7 @@ namespace IronPython.Modules {
         /// </summary>
         public static object _cast_addr {
             get {
-                return ToPython(Marshal.GetFunctionPointerForDelegate(_cast));
+                return Marshal.GetFunctionPointerForDelegate(_cast).ToPython();
             }
         }
 
@@ -98,13 +100,28 @@ namespace IronPython.Modules {
             try {
                 CData cdata = objHandle.Target as CData;
                 PythonType pt = (PythonType)typeHandle.Target;
-
+                
                 CData res = (CData)pt.CreateInstance(pt.Context.SharedContext);
-                if (cdata != null) {
-                    res._memHolder = new MemoryHolder(data, cdata._memHolder);
+                if (IsPointer(pt)) {
+                    res._memHolder = new MemoryHolder(IntPtr.Size);
+                    if (IsPointer(DynamicHelpers.GetPythonType(cdata))) {
+                        res._memHolder.WriteIntPtr(0, cdata._memHolder.ReadIntPtr(0));
+                    } else {
+                        res._memHolder.WriteIntPtr(0, data);
+                    }
+
+                    if (cdata != null) {
+                        res._memHolder.Objects = cdata._memHolder.Objects;
+                        res._memHolder.AddObject(IdDispenser.GetId(cdata), cdata);
+                    }
                 } else {
-                    res._memHolder = new MemoryHolder(data);
+                    if (cdata != null) {
+                        res._memHolder = new MemoryHolder(data, ((INativeType)pt).Size, cdata._memHolder);
+                    } else {
+                        res._memHolder = new MemoryHolder(data, ((INativeType)pt).Size);
+                    }
                 }
+
                 return GCHandle.ToIntPtr(GCHandle.Alloc(res));
             } finally {
                 typeHandle.Free();
@@ -112,27 +129,32 @@ namespace IronPython.Modules {
             }
         }
 
+        private static bool IsPointer(PythonType pt) {
+            SimpleType simpleType;
+            return pt is PointerType || ((simpleType = pt as SimpleType) != null && (simpleType._type == SimpleTypeKind.Pointer || simpleType._type == SimpleTypeKind.CharPointer || simpleType._type == SimpleTypeKind.WCharPointer));
+        }
+
         public static object _memmove_addr {
             get {
-                return ToPython(NativeFunctions.GetMemMoveAddress());
+                return NativeFunctions.GetMemMoveAddress().ToPython();
             }
         }
 
         public static object _memset_addr {
             get {
-                return ToPython(NativeFunctions.GetMemSetAddress());
+                return NativeFunctions.GetMemSetAddress().ToPython();
             }
         }
 
         public static object _string_at_addr {
             get {
-                return ToPython(Marshal.GetFunctionPointerForDelegate(_stringAt));
+                return Marshal.GetFunctionPointerForDelegate(_stringAt).ToPython();
             }
         }
 
         public static object _wstring_at_addr {
             get {
-                return ToPython(Marshal.GetFunctionPointerForDelegate(_wstringAt));
+                return Marshal.GetFunctionPointerForDelegate(_wstringAt).ToPython();
             }
         }
 
@@ -160,8 +182,13 @@ namespace IronPython.Modules {
             NativeFunctions.FreeLibrary(handle);
         }
 
-        public static object LoadLibrary(string library, int mode) {
-            return ToPython(NativeFunctions.LoadLibrary(library));
+        public static object LoadLibrary(string library, [DefaultParameterValue(0)]int mode) {
+            IntPtr res = NativeFunctions.LoadLibrary(library);
+            if (res == IntPtr.Zero) {
+                throw PythonOps.OSError("cannot load library {0}", library);
+            }
+
+            return res.ToPython();
         }
 
         /// <summary>
@@ -170,6 +197,7 @@ namespace IronPython.Modules {
         public static PythonType POINTER(CodeContext/*!*/ context, PythonType type) {
             PythonContext pc = PythonContext.GetContext(context);
             PythonDictionary dict = (PythonDictionary)pc.GetModuleState(_pointerTypeCacheKey);
+
             lock (dict) {
                 object res;
                 if (!dict.TryGetValue(type, out res)) {
@@ -196,7 +224,15 @@ namespace IronPython.Modules {
         }
 
         public static PythonType POINTER(CodeContext/*!*/ context, [NotNull]string name) {
-            return MakePointer(context, name, new PythonDictionary());
+            PythonType res = MakePointer(context, name, new PythonDictionary());
+            PythonContext pc = PythonContext.GetContext(context);
+            PythonDictionary dict = (PythonDictionary)pc.GetModuleState(_pointerTypeCacheKey);
+
+            lock (dict) {
+                dict[Builtin.id(res)] = res;
+            }
+
+            return res;
         }
 
         /// <summary>
@@ -263,7 +299,10 @@ namespace IronPython.Modules {
         public static void _buffer_info() {
         }
 
-        public static void _check_HRESULT() {
+        public static void _check_HRESULT(int hresult) {
+            if (hresult < 0) {
+                throw PythonOps.WindowsError("ctypes function returned failed HRESULT: {0}", PythonOps.Hex((BigInteger)(uint)hresult));
+            }
         }
 
         public static void _unpickle() {
@@ -276,7 +315,10 @@ namespace IronPython.Modules {
         /// stay alive if memory in the resulting address is to be used later.
         /// </summary>
         public static object addressof(CData data) {
-            return ToPython(data._memHolder.UnsafeAddress);
+            if (data is _CFuncPtr) {
+                return ((_CFuncPtr)data).addr.ToPython();
+            }
+            return data._memHolder.UnsafeAddress.ToPython();
         }
 
         /// <summary>
@@ -307,13 +349,54 @@ namespace IronPython.Modules {
             return new NativeArgument(instance, "P");
         }
 
-        public static void call_cdeclfunction() {
+        public static object call_cdeclfunction(CodeContext context, int address, PythonTuple args) {
+            return call_cdeclfunction(context, new IntPtr(address), args);
+        }
+
+        public static object call_cdeclfunction(CodeContext context, BigInteger address, PythonTuple args) {
+            return call_cdeclfunction(context, new IntPtr(address.ToInt64()), args);
+        }
+
+        public static object call_cdeclfunction(CodeContext context, IntPtr address, PythonTuple args) {
+            CFuncPtrType funcType = GetFunctionType(context, FUNCFLAG_CDECL);
+
+            _CFuncPtr func = (_CFuncPtr)funcType.CreateInstance(context, address);
+
+            return PythonOps.CallWithArgsTuple(func, new object[0], args);
         }
 
         public static void call_commethod() {
         }
 
-        public static void call_function() {
+        public static object call_function(CodeContext context, int address, PythonTuple args) {
+            return call_function(context, new IntPtr(address), args);
+        }
+
+        public static object call_function(CodeContext context, BigInteger address, PythonTuple args) {
+            return call_function(context, new IntPtr(address.ToInt64()), args);
+        }
+
+        public static object call_function(CodeContext context, IntPtr address, PythonTuple args) {
+            CFuncPtrType funcType = GetFunctionType(context, FUNCFLAG_STDCALL);
+            
+            _CFuncPtr func = (_CFuncPtr)funcType.CreateInstance(context, address);
+
+            return PythonOps.CallWithArgsTuple(func, new object[0], args);
+        }
+
+        private static CFuncPtrType GetFunctionType(CodeContext context, int flags) {
+            // Ideally we should cache these...
+            SimpleType resType = new SimpleType(
+                context,
+                "int",
+                PythonTuple.MakeTuple(DynamicHelpers.GetPythonTypeFromType(typeof(SimpleCData))), PythonOps.MakeHomogeneousDictFromItems(new object[] { "i", "_type_" }));
+
+            CFuncPtrType funcType = new CFuncPtrType(
+                context,
+                "func",
+                PythonTuple.MakeTuple(DynamicHelpers.GetPythonTypeFromType(typeof(_CFuncPtr))),
+                PythonOps.MakeHomogeneousDictFromItems(new object[] { FUNCFLAG_STDCALL, "_flags_", resType, "_restype_" }));
+            return funcType;
         }
 
         public static int get_errno() {
@@ -333,7 +416,14 @@ namespace IronPython.Modules {
             return (Pointer)ptrType.CreateInstance(context, data);
         }
 
-        public static void resize() {
+        public static void resize(CData obj, int newSize) {
+            if (newSize < obj.NativeType.Size) {
+                throw PythonOps.ValueError("minimum size is {0}", newSize);
+            }
+
+            MemoryHolder newMem = new MemoryHolder(newSize);
+            obj._memHolder.CopyTo(newMem, 0, Math.Min(obj._memHolder.Size, newSize));
+            obj._memHolder = newMem;
         }
 
         public static PythonTuple/*!*/ set_conversion_mode(CodeContext/*!*/ context, string encoding, string errors) {
@@ -363,6 +453,10 @@ namespace IronPython.Modules {
         }
 
         public static int @sizeof(object/*!*/ instance) {
+            CData cdata = instance as CData;
+            if (cdata != null && cdata._memHolder != null) {
+                return cdata._memHolder.Size;
+            }
             return @sizeof(DynamicHelpers.GetPythonType(instance));
         }
 
@@ -534,9 +628,9 @@ namespace IronPython.Modules {
         private static IntPtr StringAt(IntPtr src, int len) {
             string res;
             if (len == -1) {
-                res = Marshal.PtrToStringAnsi(src);
+                res = MemoryHolder.ReadAnsiString(src, 0);
             } else {
-                res = Marshal.PtrToStringAnsi(src, len);
+                res = MemoryHolder.ReadAnsiString(src, 0, len);
             }
 
             return GCHandle.ToIntPtr(GCHandle.Alloc(res));
@@ -568,16 +662,23 @@ namespace IronPython.Modules {
             return intPtrHandle;
         }
 
-        /// <summary>
-        /// Returns an IntPtr in the proper way to CPython - an int or a Python long
-        /// </summary>
-        private static object/*!*/ ToPython(IntPtr handle) {
-            long value = handle.ToInt64();
-            if (value >= Int32.MinValue && value <= Int32.MaxValue) {
-                return ScriptingRuntimeHelpers.Int32ToObject((int)value);
-            }
+        private static void ValidateArraySizes(ArrayModule.PythonArray array, int offset, int size) {
+            ValidateArraySizes(array.__len__() * array.itemsize, offset, size);
+        }
 
-            return (BigInteger)value;
+        private static void ValidateArraySizes(Bytes bytes, int offset, int size) {
+            ValidateArraySizes(bytes.Count, offset, size);
+        }
+
+        private static void ValidateArraySizes(int arraySize, int offset, int size) {
+            if (offset < 0) {
+                throw PythonOps.ValueError("offset cannot be negative");
+            } else if (arraySize < size + offset) {
+                throw PythonOps.ValueError("Buffer size too small ({0} instead of at least {1} bytes)",
+                    arraySize,
+                    size
+                );
+            }
         }
 
         // TODO: Move these to an Ops class
@@ -610,6 +711,11 @@ namespace IronPython.Modules {
         }
 
         public static void SetWCharArrayRaw(_Array arr, object value) {
+            PythonBuffer buf = value as PythonBuffer;
+            if (buf != null && buf._object is string) {
+                value = buf.ToString();
+            }
+
             arr.NativeType.SetValue(arr._memHolder, 0, value);
         }
 

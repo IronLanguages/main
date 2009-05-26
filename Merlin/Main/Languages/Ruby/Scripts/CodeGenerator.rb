@@ -78,6 +78,10 @@ class Generator
     
     @generated << t
   end
+  
+  def append_generated str
+    @generated << str.gsub!("\n", "\r\n")
+  end
 end
 
 #

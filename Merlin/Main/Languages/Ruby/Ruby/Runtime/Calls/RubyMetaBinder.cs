@@ -22,9 +22,11 @@ using Ast = System.Linq.Expressions.Expression;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 using System.Reflection;
 using Microsoft.Scripting;
+using Microsoft.Scripting.Runtime;
+using System.Linq.Expressions;
 
 namespace IronRuby.Runtime.Calls {
-    public abstract class RubyMetaBinder : DynamicMetaObjectBinder {
+    public abstract class RubyMetaBinder : DynamicMetaObjectBinder, IExpressionSerializable {
         /// <summary>
         /// Cross-runtime checks are emitted if the action is not bound to the context.
         /// </summary>
@@ -37,7 +39,7 @@ namespace IronRuby.Runtime.Calls {
         internal RubyContext Context { 
             get { return _context; }
             set {
-                Debug.Assert(_context == null && value != null);
+                Debug.Assert(_context == null);
                 _context = value; 
             }
         }
@@ -45,6 +47,7 @@ namespace IronRuby.Runtime.Calls {
         public abstract RubyCallSignature Signature { get; }
 
         protected abstract bool Build(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args, bool defaultFallback);
+        public abstract Expression CreateExpression();
 
         protected virtual DynamicMetaObjectBinder GetInteropBinder(RubyContext/*!*/ context, IList<DynamicMetaObject/*!*/>/*!*/ args, 
             out MethodInfo postProcessor) {
@@ -88,7 +91,7 @@ namespace IronRuby.Runtime.Calls {
                         metaBuilder.Result = Ast.Call(null, postConverter, AstUtils.Convert(metaBuilder.Result, paramType));
                         resultType = postConverter.ReturnType;
                     } else {
-                        resultType = ((IInteropBinder)interopBinder).ResultType;
+                        resultType = interopBinder.ReturnType;
                     }
 
                     return metaBuilder.CreateMetaObject(interopBinder, resultType);

@@ -217,7 +217,7 @@ namespace Microsoft.Scripting.Hosting.Shell {
                     break;
                 
                 case "-X:NoAdaptiveCompilation":
-                    LanguageSetup.Options["AdaptiveCompilation"] = false;
+                    LanguageSetup.Options["NoAdaptiveCompilation"] = true;
                     break;
 
                 case "-X:ExceptionDetail":

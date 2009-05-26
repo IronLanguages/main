@@ -117,11 +117,11 @@
     <Compile Include="Actions\Calls\ConversionResult.cs" />
     <Compile Include="Actions\Calls\DefaultArgBuilder.cs" />
     <Compile Include="Actions\Calls\DefaultOverloadResolver.cs" />
+    <Compile Include="Actions\Calls\InstanceBuilder.cs" />
     <Compile Include="Actions\Calls\KeywordArgBuilder.cs" />
     <Compile Include="Actions\Calls\KeywordConstructorReturnBuilder.cs" />
     <Compile Include="Actions\Calls\MethodCandidate.cs" />
     <Compile Include="Actions\Calls\NarrowingLevel.cs" />
-    <Compile Include="Actions\Calls\NullArgBuilder.cs" />
     <Compile Include="Actions\Calls\OutArgBuilder.cs" />
     <Compile Include="Actions\Calls\OverloadResolver.cs" />
     <Compile Include="Actions\Calls\OverloadResolverFactory.cs" />
@@ -130,7 +130,7 @@
     <Compile Include="Actions\Calls\ParamsArgBuilder.cs" />
     <Compile Include="Actions\Calls\ParamsDictArgBuilder.cs" />
     <Compile Include="Actions\Calls\ReferenceArgBuilder.cs" />
-    <Compile Include="Actions\Calls\RestrictionInfo.cs" />
+    <Compile Include="Actions\Calls\RestrictedArguments.cs" />
     <Compile Include="Actions\Calls\ReturnBuilder.cs" />
     <Compile Include="Actions\Calls\ReturnReferenceArgBuilder.cs" />
     <Compile Include="Actions\Calls\SimpleArgBuilder.cs" />
@@ -399,8 +399,6 @@
     <Compile Include="Runtime\LanguageContext.cs" />
     <Compile Include="Runtime\ModuleChangeEventArgs.cs" />
     <Compile Include="Runtime\ModuleChangeEventType.cs" />
-    <Compile Include="Runtime\ModuleGlobalCache.cs" />
-    <Compile Include="Runtime\ModuleGlobalWrapper.cs" />
     <Compile Include="Runtime\NotNullAttribute.cs" />
     <Compile Include="Runtime\NullTextContentProvider.cs" />
     <Compile Include="Runtime\OperationFailed.cs" />

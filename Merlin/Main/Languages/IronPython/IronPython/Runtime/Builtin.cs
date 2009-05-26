@@ -2059,7 +2059,7 @@ namespace IronPython.Runtime {
 
         [SpecialName]
         public static void PerformModuleReload(PythonContext context, IAttributesCollection dict) {
-            dict[SymbolTable.StringToId("__debug__")] = ScriptingRuntimeHelpers.BooleanToObject(context.DomainManager.Configuration.DebugMode);
+            dict[SymbolTable.StringToId("__debug__")] = ScriptingRuntimeHelpers.BooleanToObject(!context.PythonOptions.Optimize);
         }
     }
 }

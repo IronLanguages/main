@@ -21,6 +21,7 @@ using System.Text;
 using System.Threading;
 
 using Microsoft.Scripting;
+using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 
 using IronPython.Runtime;
@@ -51,6 +52,7 @@ namespace IronPython.Compiler.Ast {
         internal PythonVariable _nameVariable;          // the variable that refers to the global __name__
 
         private static MSAst.ParameterExpression _functionParam = Ast.Parameter(typeof(PythonFunction), "$function");
+        internal static MSAst.ParameterExpression _functionStack = Ast.Variable(typeof(List<FunctionStack>), "funcStack");
 
         public bool IsLambda {
             get {
@@ -279,8 +281,14 @@ namespace IronPython.Compiler.Ast {
                 name = SymbolTable.IdToString(_name);
             }
 
+            if (ag.PyContext.PythonOptions.FullFrames) {
+                // force a dictionary if we have enabled full frames for sys._getframe support
+                NeedsLocalsDictionary = true;
+            }
+
             // Create AST generator to generate the body with
             AstGenerator bodyGen = new AstGenerator(ag, name, IsGenerator, MakeProfilerName(name));
+
             FunctionAttributes flags = ComputeFlags(_parameters);
             bool needsWrapperMethod = flags != FunctionAttributes.None || _parameters.Length > PythonCallTargets.MaxArgs;
             
@@ -370,6 +378,11 @@ namespace IronPython.Compiler.Ast {
                 body = s;
             }
 
+            if (_body.CanThrow && ag.PyContext.PythonOptions.Frames) {
+                body = AddFrame(bodyGen.LocalContext, _functionParam, body);
+                bodyGen.AddHiddenVariable(_functionStack);
+            }
+
             body = bodyGen.AddProfiling(body);
             body = bodyGen.WrapScopeStatements(body);
             body = bodyGen.AddReturnTarget(body);
@@ -444,6 +457,37 @@ namespace IronPython.Compiler.Ast {
             ret = ag.AddDecorators(ret, _decorators);
 
             return ret;
+        }
+
+        /// <summary>
+        /// Creates a method frame for tracking purposes and enforces recursion
+        /// </summary>
+        internal static MSAst.Expression AddFrame(MSAst.Expression localContext, MSAst.Expression function, MSAst.Expression body) {
+            body = AstUtils.Try(
+                Ast.Assign(
+                    _functionStack,
+                    Ast.Call(
+                        typeof(PythonOps).GetMethod("PushFrame"),
+                        localContext,
+                        function
+                    )
+                ),
+                body
+            ).Finally(
+                Ast.Call(
+                    _functionStack,
+                    typeof(List<FunctionStack>).GetMethod("RemoveAt"),
+                    Ast.Add(
+                        Ast.Property(
+                            _functionStack,
+                            "Count"
+                        ),
+                        Ast.Constant(-1)
+                    )
+                )                
+            );
+
+            return body;
         }
 
         private SourceLocation GetExpressionEnd(MSAst.Expression expression) {

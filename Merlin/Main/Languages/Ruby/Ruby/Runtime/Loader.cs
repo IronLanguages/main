@@ -472,11 +472,11 @@ namespace IronRuby.Runtime {
 
                 AddCompiledFile(fullPath, compiledCode);
 
-                CompileAndRun(globalScope, compiledCode, _context.RubyOptions.InterpretedMode);
+                CompileAndRun(globalScope, compiledCode);
             }
         }
 
-        internal object CompileAndRun(Scope globalScope, ScriptCode/*!*/ code, bool tryEvaluate) {
+        internal object CompileAndRun(Scope globalScope, ScriptCode/*!*/ code) {
             return globalScope != null ? code.Run(globalScope) : code.Run();
         }
 

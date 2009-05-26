@@ -70,6 +70,10 @@ namespace IronRuby.Runtime.Calls {
             get { return SelfCallConvention.SelfIsParameter; }
         }
 
+        internal override bool ImplicitProtocolConversions {
+            get { return false; }
+        }
+
         internal protected override MethodBase/*!*/[]/*!*/ MethodBases {
             get {
                 Debug.Assert(base.MethodBases != null || _overloads != null);

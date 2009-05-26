@@ -63,7 +63,7 @@ namespace IronRuby.Builtins {
         /// <exception cref="InvalidOperationException">Assumption is object cannot be induced to Integer</exception>
         [RubyMethod("induced_from", RubyMethodAttributes.PublicSingleton)]
         public static int InducedFrom(RubyClass/*!*/ self, object obj) {
-            throw RubyExceptions.CreateTypeError(String.Format("failed to convert {0} into Integer", self.Context.GetClassName(obj)));
+            throw RubyExceptions.CreateTypeError(String.Format("failed to convert {0} into Integer", self.Context.GetClassDisplayName(obj)));
         }
 
         #endregion

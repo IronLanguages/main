@@ -229,8 +229,12 @@ namespace IronRuby.Runtime {
                     // Ruby library method:
                     // TODO: aliases
                     methodName = ((RubyMethodAttribute)attrs[0]).Name;
-                    fileName = null;
-                    line = 0;
+#if !DEBUG
+                    if (!exceptionDetail) {
+                        fileName = null;
+                        line = 0;
+                    }
+#endif                    
                     return true;
                 } else if (exceptionDetail || IsVisibleClrFrame(method)) {
                     // Visible CLR method:

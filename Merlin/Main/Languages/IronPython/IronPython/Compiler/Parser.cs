@@ -806,10 +806,10 @@ namespace IronPython.Compiler {
                         _languageFeatures |= PythonLanguageFeatures.AllowWithStatement;
                     } else if (name == Symbols.AbsoluteImport) {
                         _languageFeatures |= PythonLanguageFeatures.AbsoluteImports;
-                    } else if (name == Symbols.PrintFunction && Python26) {
+                    } else if (name == Symbols.PrintFunction) {
                         _languageFeatures |= PythonLanguageFeatures.PrintFunction;
                         _tokenizer.PrintFunction = true;
-                    } else if (name == Symbols.UnicodeLiterals && Python26) {
+                    } else if (name == Symbols.UnicodeLiterals) {
                         // nop for us, just ignore it...
                     } else if (name == Symbols.NestedScopes) {
                     } else if (name == Symbols.Generators) {
@@ -1051,25 +1051,19 @@ namespace IronPython.Compiler {
 
             Statement res;
 
-            if (Python26) {
-                if (PeekToken() == Tokens.KeywordDefToken) {
-                    FunctionDefinition fnc = ParseFuncDef();
-                    fnc.Decorators = decorators.ToArray();
-                    res = fnc;
-                } else if (PeekToken() == Tokens.KeywordClassToken) {
-                    ClassDefinition cls = ParseClassDef();
-                    cls.Decorators = decorators.ToArray();
-                    res = cls;
-                } else {
-                    res = new EmptyStatement();
-                    ReportSyntaxError(_lookahead);
-                }
-            } else {
+            if (PeekToken() == Tokens.KeywordDefToken) {
                 FunctionDefinition fnc = ParseFuncDef();
                 fnc.Decorators = decorators.ToArray();
                 res = fnc;
+            } else if (PeekToken() == Tokens.KeywordClassToken) {
+                ClassDefinition cls = ParseClassDef();
+                cls.Decorators = decorators.ToArray();
+                res = cls;
+            } else {
+                res = new EmptyStatement();
+                ReportSyntaxError(_lookahead);
             }
-
+            
             return res;
         }
 
@@ -2677,7 +2671,7 @@ namespace IronPython.Compiler {
                     }
                     hasKeywordDict = true; extraArgs++;
                 } else {
-                    if ((!Python26 && hasArgsTuple) || hasKeywordDict) {
+                    if (hasKeywordDict) {
                         ReportSyntaxError(IronPython.Resources.KeywordOutOfSequence);
                     }
                     keywordCount++;
@@ -2858,23 +2852,12 @@ namespace IronPython.Compiler {
             );
         }
 
-        private bool AllowWithStatement {
-            get {
-                return Python26 ||
-                      (_languageFeatures & PythonLanguageFeatures.AllowWithStatement) == PythonLanguageFeatures.AllowWithStatement;
-            }
-        }
-
         private bool TrueDivision {
             get { return (_languageFeatures & PythonLanguageFeatures.TrueDivision) == PythonLanguageFeatures.TrueDivision; }
         }
 
         private bool AbsoluteImports {
             get { return (_languageFeatures & PythonLanguageFeatures.AbsoluteImports) == PythonLanguageFeatures.AbsoluteImports; }
-        }
-
-        private bool Python26 {
-            get { return (_languageFeatures & PythonLanguageFeatures.Python26) == PythonLanguageFeatures.Python26; }
         }
 
         private bool PrintFunction {

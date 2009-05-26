@@ -104,7 +104,7 @@ namespace IronPython.Modules {
                 throw new NotImplementedException("union get value");
             }
 
-            void INativeType.SetValue(MemoryHolder address, int offset, object value) {
+            object INativeType.SetValue(MemoryHolder address, int offset, object value) {
                 throw new NotImplementedException("union set value");
             }
 
@@ -142,6 +142,7 @@ namespace IronPython.Modules {
             private void SetFields(object fields) {
                 lock (this) {
                     IList<object> list = GetFieldsList(fields);
+                    IList<object> anonFields = StructType.GetAnonymousFields(this);
 
                     int size = 0, alignment = 1;
                     List<Field> allFields = new List<Field>();//GetBaseSizeAlignmentAndFields(out size, out alignment);
@@ -154,11 +155,17 @@ namespace IronPython.Modules {
                         alignment = Math.Max(alignment, cdata.Alignment);
                         size = Math.Max(size, cdata.Size);
 
-                        Field newField = new Field(cdata, 0, allFields.Count);
+                        Field newField = new Field(fieldName, cdata, 0, allFields.Count);
                         allFields.Add(newField);
                         AddSlot(SymbolTable.StringToId(fieldName), newField);
+
+                        if (anonFields != null && anonFields.Contains(fieldName)) {
+                            StructType.AddAnonymousFields(this, allFields, cdata, newField);
+                        }
                     }
 
+                    StructType.CheckAnonymousFields(allFields, anonFields);
+                    
                     _fields = allFields.ToArray();
                     _size = PythonStruct.Align(size, alignment);
                     _alignment = alignment;

@@ -15,6 +15,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Dynamic;
 using System.Reflection;
 using System.Linq.Expressions;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
@@ -46,7 +47,7 @@ namespace Microsoft.Scripting.Actions.Calls {
             get { return 5; }
         }
 
-        internal protected override Expression ToExpression(OverloadResolver resolver, IList<Expression> parameters, bool[] hasBeenUsed) {
+        internal protected override Expression ToExpression(OverloadResolver resolver, RestrictedArguments args, bool[] hasBeenUsed) {
             if (_isRef) {
                 if (_tmp == null) {
                     _tmp = resolver.GetTemporary(_parameterType, "outParam");

@@ -67,16 +67,16 @@ namespace Microsoft.Scripting.Actions.Calls {
             return (((SimpleArgBuilder)builder).Index == 0);
         }
 
-        internal protected override Expression ToExpression(OverloadResolver resolver, IList<Expression> parameters, bool[] hasBeenUsed) {
+        internal protected override Expression ToExpression(OverloadResolver resolver, RestrictedArguments args, bool[] hasBeenUsed) {
             Debug.Assert(BuilderExpectsSingleParameter(_builder));
 
-            int index = GetKeywordIndex(parameters.Count);
+            int index = GetKeywordIndex(args.Length);
             Debug.Assert(!hasBeenUsed[index]);
             hasBeenUsed[index] = true;
-            return _builder.ToExpression(resolver, new Expression[] { parameters[index] }, new bool[1]);
+            return _builder.ToExpression(resolver, MakeRestrictedArg(args, index), new bool[1]);
         }
 
-        protected internal override Func<object[], object> ToDelegate(OverloadResolver resolver, IList<DynamicMetaObject> knownTypes, bool[] hasBeenUsed) {
+        protected internal override Func<object[], object> ToDelegate(OverloadResolver resolver, RestrictedArguments args, bool[] hasBeenUsed) {
             return null;
         }
 
@@ -90,8 +90,13 @@ namespace Microsoft.Scripting.Actions.Calls {
             return _builder.ToReturnExpression(resolver);
         }
 
-        internal override Expression UpdateFromReturn(OverloadResolver resolver, IList<Expression> parameters) {
-            return _builder.UpdateFromReturn(resolver, new Expression[] { parameters[GetKeywordIndex(parameters.Count)] });
+        internal override Expression UpdateFromReturn(OverloadResolver resolver, RestrictedArguments args) {
+            int index = GetKeywordIndex(args.Length);
+            return _builder.UpdateFromReturn(resolver, MakeRestrictedArg(args, index));
+        }
+
+        private static RestrictedArguments MakeRestrictedArg(RestrictedArguments args, int index) {
+            return new RestrictedArguments(new[] { args.GetObject(index) }, new[] { args.GetType(index) });
         }
 
         private int GetKeywordIndex(int paramCount) {

@@ -38,7 +38,7 @@ namespace IronPython.Modules {
         /// </summary>
         [PythonType, PythonHidden]
         public class PointerType : PythonType, INativeType {
-            internal readonly INativeType _type;
+            internal INativeType _type;
 
             public PointerType(CodeContext/*!*/ context, string name, PythonTuple bases, IAttributesCollection members)
                 : base(context, name, bases, members) {
@@ -86,6 +86,10 @@ namespace IronPython.Modules {
                 throw new NotImplementedException("pointer from address");
             }
 
+            public void set_type(PythonType type) {
+                _type = (INativeType)type;
+            }
+
             internal static PythonType MakeSystemType(Type underlyingSystemType) {
                 return PythonType.SetPythonType(underlyingSystemType, new PointerType(underlyingSystemType));
             }
@@ -118,10 +122,10 @@ namespace IronPython.Modules {
                     res._memHolder.WriteIntPtr(0, owner.ReadIntPtr(offset));
                     return res;
                 }
-                return ToPython(owner.ReadIntPtr(offset));
+                return owner.ReadIntPtr(offset).ToPython();
             }
 
-            void INativeType.SetValue(MemoryHolder address, int offset, object value) {
+            object INativeType.SetValue(MemoryHolder address, int offset, object value) {
                 Pointer ptr;
                 _Array array;
                 if (value == null) {
@@ -136,9 +140,10 @@ namespace IronPython.Modules {
                     // TODO: Need to keep alive the array after this
                     address.WriteIntPtr(offset, array._memHolder);
                 } else {
-                    throw new NotImplementedException("pointer set value");
+                    throw PythonOps.TypeErrorForTypeMismatch(Name, value);
                 }
 
+                return null;
             }
 
             Type INativeType.GetNativeType() {
@@ -147,12 +152,25 @@ namespace IronPython.Modules {
 
             MarshalCleanup INativeType.EmitMarshalling(ILGenerator/*!*/ method, LocalOrArg argIndex, List<object>/*!*/ constantPool, int constantPoolArgument) {
                 Type argumentType = argIndex.Type;
+                Label nextTry = method.DefineLabel();
+                Label done = method.DefineLabel();
+
+                if (!argumentType.IsValueType) {
+                    argIndex.Emit(method);
+                    method.Emit(OpCodes.Ldnull);
+                    method.Emit(OpCodes.Bne_Un, nextTry);
+                    method.Emit(OpCodes.Ldc_I4_0);
+                    method.Emit(OpCodes.Conv_I);
+                    method.Emit(OpCodes.Br, done);
+                }
+
+                method.MarkLabel(nextTry);
+                nextTry = method.DefineLabel();
+                
                 argIndex.Emit(method);
                 if (argumentType.IsValueType) {
                     method.Emit(OpCodes.Box, argumentType);
                 }
-                Label nextTry = method.DefineLabel();
-                Label done = method.DefineLabel();
                 constantPool.Add(this);
 
                 SimpleType st = _type as SimpleType;
@@ -161,7 +179,7 @@ namespace IronPython.Modules {
                     if (st._type == SimpleTypeKind.Char || st._type == SimpleTypeKind.WChar) {
                             
                         if (st._type == SimpleTypeKind.Char) {
-                            SimpleType.TryArrayToCharPtrConversion(method, argIndex, argumentType, done);
+                            SimpleType.TryToCharPtrConversion(method, argIndex, argumentType, done);
                         } else {
                             SimpleType.TryArrayToWCharPtrConversion(method, argIndex, argumentType, done);
                         }
@@ -229,7 +247,7 @@ namespace IronPython.Modules {
                 method.Emit(OpCodes.Ldelem_Ref);
                 method.Emit(OpCodes.Call, typeof(ModuleOps).GetMethod("CheckCDataType"));
                 method.Emit(OpCodes.Call, typeof(CData).GetMethod("get_UnsafeAddress"));
-                method.Emit(OpCodes.Ldobj, typeof(IntPtr));
+                method.Emit(OpCodes.Ldind_I);
 
                 method.MarkLabel(done);
                 return res;

@@ -73,6 +73,19 @@ namespace System.Runtime.CompilerServices {
         /// <param name="args">The arguments for the binder.</param>
         /// <returns>A new delegate which replaces the CallSite Target.</returns>
         public virtual T BindDelegate<T>(CallSite<T> site, object[] args) where T : class {
+            return null;
+        }
+
+        
+        internal T BindCore<T>(CallSite<T> site, object[] args) where T : class {
+            //
+            // Try to find a precompiled delegate, and return it if found.
+            //
+            T result = BindDelegate(site, args);
+            if (result != null) {
+                return result;
+            }
+
             //
             // Get the Expression for the binding
             //

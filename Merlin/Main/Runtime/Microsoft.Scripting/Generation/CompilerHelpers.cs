@@ -29,6 +29,7 @@ using System.Linq.Expressions.Compiler;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 using System.Collections;
 using System.Diagnostics;
+using System.ComponentModel;
 
 namespace Microsoft.Scripting.Generation {
     // TODO: keep this?
@@ -337,6 +338,10 @@ namespace Microsoft.Scripting.Generation {
             return true;
         }
 
+        public static MethodInfo TryGetCallableMethod(MethodInfo method) {
+            return TryGetCallableMethod(method.ReflectedType, method);
+        }
+
         /// <summary>
         /// Given a MethodInfo which may be declared on a non-public type this attempts to
         /// return a MethodInfo which will dispatch to the original MethodInfo but is declared
@@ -344,7 +349,7 @@ namespace Microsoft.Scripting.Generation {
         /// 
         /// Returns the original method if the method if a public version cannot be found.
         /// </summary>
-        public static MethodInfo TryGetCallableMethod(MethodInfo method) {
+        public static MethodInfo TryGetCallableMethod(Type targetType, MethodInfo method) {
             if (method.DeclaringType == null || method.DeclaringType.IsVisible) {
                 return method;
             }
@@ -357,11 +362,11 @@ namespace Microsoft.Scripting.Generation {
 
             // maybe we can get it from an interface on the type this
             // method came from...
-            Type[] interfaces = method.ReflectedType.GetInterfaces();
+            Type[] interfaces = targetType.GetInterfaces();
             foreach (Type iface in interfaces) {
-                InterfaceMapping mapping = method.ReflectedType.GetInterfaceMap(iface);
+                InterfaceMapping mapping = targetType.GetInterfaceMap(iface);
                 for (int i = 0; i < mapping.TargetMethods.Length; i++) {
-                    if (mapping.TargetMethods[i] == method) {
+                    if (mapping.TargetMethods[i].MethodHandle == method.MethodHandle) {
                         return mapping.InterfaceMethods[i];
                     }
                 }
@@ -564,20 +569,24 @@ namespace Microsoft.Scripting.Generation {
             return typeof(ScriptingRuntimeHelpers).GetMethod("CreateArray").MakeGenericMethod(t.GetElementType());
         }
 
-        public static bool HasImplicitConversion(Type fromType, Type toType) {
-            if (CompilerHelpers.HasImplicitConversion(fromType, toType, toType.GetMember("op_Implicit"))) {
-                return true;
-            }
+        #region Type Conversions
 
-            Type curType = fromType;
-            do {
-                if (CompilerHelpers.HasImplicitConversion(fromType, toType, curType.GetMember("op_Implicit"))) {
-                    return true;
+        public static MethodInfo GetImplicitConverter(Type fromType, Type toType) {
+            return GetConverter(fromType, fromType, toType, "op_Implicit") ?? GetConverter(toType, fromType, toType, "op_Implicit");
+        }
+
+        public static MethodInfo GetExplicitConverter(Type fromType, Type toType) {
+            return GetConverter(fromType, fromType, toType, "op_Explicit") ?? GetConverter(toType, fromType, toType, "op_Explicit");
+        }
+
+        private static MethodInfo GetConverter(Type type, Type fromType, Type toType, string opMethodName) {
+            foreach (MethodInfo mi in type.GetMember(opMethodName, BindingFlags.Public | BindingFlags.Static)) {
+                if ((mi.DeclaringType == null || mi.DeclaringType.IsVisible) && mi.IsPublic &&
+                    mi.ReturnType == toType && mi.GetParameters()[0].ParameterType.IsAssignableFrom(fromType)) {
+                    return mi;
                 }
-                curType = curType.BaseType;
-            } while (curType != null);
-
-            return false;
+            }
+            return null;
         }
 
         public static bool TryImplicitConversion(Object value, Type to, out object result) {
@@ -609,16 +618,6 @@ namespace Microsoft.Scripting.Generation {
             }
 
             result = null;
-            return false;
-        }
-
-        private static bool HasImplicitConversion(Type fromType, Type to, MemberInfo[] implicitConv) {
-            foreach (MethodInfo mi in implicitConv) {
-                if (mi.ReturnType == to && mi.GetParameters()[0].ParameterType.IsAssignableFrom(fromType)) {
-                    return true;
-                }
-            }
-
             return false;
         }
 
@@ -655,6 +654,56 @@ namespace Microsoft.Scripting.Generation {
             rule.IsError = true;
             return rule.MakeReturn(context.LanguageContext.Binder, GetTryConvertReturnValue(rule.ReturnType));
         }
+
+        public static bool HasTypeConverter(Type fromType, Type toType) {
+#if SILVERLIGHT
+            return false;
+#else
+            TypeConverter _;
+            return TryGetTypeConverter(fromType, toType, out _);
+#endif
+        }
+
+        public static bool TryApplyTypeConverter(object value, Type toType, out object result) {
+#if SILVERLIGHT
+            result = value;
+            return false;
+#else
+            TypeConverter converter;
+            if (value != null && CompilerHelpers.TryGetTypeConverter(value.GetType(), toType, out converter)) {
+                result = converter.ConvertFrom(value);
+                return true;
+            } else {
+                result = value;
+                return false;
+            }
+#endif
+        }
+
+#if !SILVERLIGHT
+        public static bool TryGetTypeConverter(Type fromType, Type toType, out TypeConverter converter) {
+            ContractUtils.RequiresNotNull(fromType, "fromType");
+            ContractUtils.RequiresNotNull(toType, "toType");
+
+            // try available type conversions...
+            foreach (TypeConverterAttribute tca in toType.GetCustomAttributes(typeof(TypeConverterAttribute), true)) {
+                try {
+                    converter = Activator.CreateInstance(Type.GetType(tca.ConverterTypeName)) as TypeConverter;
+                } catch (Exception) {
+                    converter = null;
+                }
+
+                if (converter != null && converter.CanConvertFrom(fromType)) {
+                    return true;
+                }
+            }
+
+            converter = null;
+            return false;
+        }
+#endif
+
+        #endregion
 
         public static MethodBase[] GetMethodTargets(object obj) {
             Type t = CompilerHelpers.GetType(obj);

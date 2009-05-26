@@ -31,7 +31,6 @@ namespace Microsoft.Scripting.Runtime {
     /// </summary>
     public abstract class LanguageContext {
         private readonly ScriptDomainManager _domainManager;
-        private static readonly ModuleGlobalCache _noCache = new ModuleGlobalCache(ModuleGlobalCache.NotCaching);
         private ActionBinder _binder;
         private readonly ContextId _id;
 
@@ -214,22 +213,6 @@ namespace Microsoft.Scripting.Runtime {
         /// </summary>
         protected internal virtual Exception MissingName(SymbolId name) {
             return Error.NameNotDefined(SymbolTable.IdToString(name));
-        }
-
-        /// <summary>
-        /// Returns a ModuleGlobalCache for the given name.  
-        /// 
-        /// This cache enables fast access to global values when a SymbolId is not defined after searching the Scope's.  Usually
-        /// a language implements lookup of the global value via TryLookupGlobal.  When GetModuleCache returns a ModuleGlobalCache
-        /// a cached value can be used instead of calling TryLookupGlobal avoiding a possibly more expensive lookup from the 
-        /// LanguageContext.  The ModuleGlobalCache can be held onto and have its value updated when the cache is invalidated.
-        /// 
-        /// By default this returns a cache which indicates no caching should occur and the LanguageContext will be 
-        /// consulted when a module value is not available. If a LanguageContext only caches some values it can return 
-        /// the value from the base method when the value should not be cached.
-        /// </summary>
-        protected internal virtual ModuleGlobalCache GetModuleCache(SymbolId name) {
-            return _noCache;
         }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Reliability", "CA2001:AvoidCallingProblematicMethods", MessageId = "System.Reflection.Assembly.LoadFile")]

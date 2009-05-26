@@ -1160,14 +1160,14 @@ namespace IronRuby.Builtins {
         [RubyMethod("join")]
         public static MutableString/*!*/ Join(ConversionStorage<MutableString>/*!*/ tosConversion, ConversionStorage<MutableString>/*!*/ tostrConversion, IList/*!*/ self, Object separator) {
             if (self.Count == 0) {
-                return MutableString.Empty;
+                return MutableString.CreateEmpty();
             }
-            return Join(tosConversion, self, separator != null ? Protocols.CastToString(tostrConversion, separator) : MutableString.Empty);
+            return Join(tosConversion, self, separator != null ? Protocols.CastToString(tostrConversion, separator) : MutableString.FrozenEmpty);
         }
 
         public static MutableString/*!*/ Join(ConversionStorage<MutableString>/*!*/ tosConversion, IList/*!*/ self, MutableString/*!*/ separator) {
             MutableString result = MutableString.CreateMutable();
-            RecursiveJoin(tosConversion, self, separator ?? MutableString.Empty, result,
+            RecursiveJoin(tosConversion, self, separator ?? MutableString.FrozenEmpty, result,
                 new Dictionary<object, bool>(ReferenceEqualityComparer<object>.Instance)
             );
             return result;

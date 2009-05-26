@@ -2,7 +2,7 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProductVersion>9.0.30729</ProductVersion>
+    <ProductVersion>9.0.21022</ProductVersion>
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>{2AE75F5A-CD1F-4925-9647-AF4D1C282FB4}</ProjectGuid>
     <OutputType>Library</OutputType>
@@ -137,7 +137,6 @@
     <Compile Include="Ast\Expression.DebuggerProxy.cs" />
     <Compile Include="Ast\IArgumentProvider.cs" />
     <Compile Include="Ast\ListArgumentProvider.cs" />
-    <Compile Include="Compiler\ArgumentPrepender.cs" />
     <Compile Include="Actions\UnaryOperationBinder.cs" />
     <Compile Include="Ast\ExpressionStringBuilder.cs" />
     <Compile Include="Compiler\BoundConstants.cs" />
@@ -193,7 +192,7 @@
     <Compile Include="Compiler\ConstantCheck.cs" />
     <Compile Include="Compiler\ExpressionQuoter.cs" />
     <Compile Include="Ast\ExpressionVisitor.cs" />
-    <Compile Include="Ast\ExpressionWriter.cs" />
+    <Compile Include="Ast\DebugViewWriter.cs" />
     <Compile Include="Compiler\HoistedLocals.cs" />
     <Compile Include="Compiler\KeyedQueue.cs" />
     <Compile Include="Compiler\LambdaCompiler.Address.cs" />

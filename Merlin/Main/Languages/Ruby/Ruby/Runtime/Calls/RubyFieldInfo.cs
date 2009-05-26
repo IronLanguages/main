@@ -41,6 +41,14 @@ namespace IronRuby.Runtime.Calls {
             return new RubyFieldInfo(_fieldInfo, flags, module, _isSetter);
         }
 
+        internal override bool IsRubyMember {
+            get { return false; }
+        }
+
+        internal override bool IsDataMember {
+            get { return true; }
+        }
+
         public override MemberInfo/*!*/[]/*!*/ GetMembers() {
             return new MemberInfo[] { _fieldInfo };
         }
@@ -58,12 +66,12 @@ namespace IronRuby.Runtime.Calls {
                 if (args.SimpleArgumentCount == 0 && args.Signature.HasRhsArgument) {
                     expr = Ast.Assign(
                         Ast.Field(instance, _fieldInfo),
-                        // TODO: remove
-                        args.RubyContext.Binder.ConvertExpression(
+                        Converter.ConvertExpression(
                             args.GetRhsArgumentExpression(), 
-                            _fieldInfo.FieldType, 
-                            ConversionResultKind.ExplicitCast, 
-                            null
+                            _fieldInfo.FieldType,
+                            args.RubyContext, 
+                            args.MetaContext.Expression,
+                            true
                         )
                     );
                 }
