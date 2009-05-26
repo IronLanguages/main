@@ -54,6 +54,10 @@ class System::Windows::Window
     send "step_#{_current_task}"
   end
 
+  def step_title
+    current_step.send "step_title_#{_current_task}"
+  end
+
   def step_description
     current_step.send "step_description_#{_current_task}"
   end
@@ -62,12 +66,12 @@ class System::Windows::Window
     name = "step_#{_current_task}"
     unless respond_to?(name)
       require 'erb'
-      vars = :step_id, :step_description_id, :step_repl_id, :step_repl_history_id, :step_repl_input_id, :step_repl_input_arrow_id
+      vars = :step_id, :step_title_id, :step_description_id, :step_wrapper_id, :step_repl_id, :step_repl_history_id, :step_repl_input_id, :step_repl_input_arrow_id
       Step = Struct.new *vars unless defined?(Step)
       cstep = Step.new *(vars.map{|v| "#{v.to_s.split("_id")[0]}_#{_current_task}"})
       step_xaml = ERB.new(WpfTutorial.__send__(:class_variable_get, :"@@step")).
                       result(cstep.instance_eval{binding})
-      
+
       step_obj = System::Windows::Markup::XamlReader.load(
         System::Xml::XmlReader.create(
           System::IO::StringReader.new(step_xaml)))
@@ -153,7 +157,12 @@ class WpfTutorial
     @window = XamlReader.load System::Xml::XmlReader.create(System::IO::StringReader.new(@@xaml))
 
     @window.tutorial_name.text = @tutorial.name
-    @window.exercise.document = FlowDocument.from_simple_markup(@tutorial.introduction)
+    if @tutorial.introduction
+      @window.exercise.document = FlowDocument.from_simple_markup(@tutorial.introduction)
+      @window.exercise.visibility = Visibility.visible
+    else
+      @window.exercise.visibility = Visibility.collapsed
+    end
     @window.chapters.ItemsSource = @tutorial.sections
     @window.complete.visibility = Visibility.collapsed
     @window.next_chapter.click do |target, event_args| 
@@ -169,8 +178,25 @@ class WpfTutorial
         @window.tutorial_scroll.scroll_to_bottom
         @window.repl_input.visibility = Visibility.collapsed if @window.respond_to?(:"step_#{@window._current_task}")
         @window.repl_input_arrow.visibility = Visibility.collapsed if @window.respond_to?(:"step_#{@window._current_task}")
+        if @chapter.summary && @chapter.summary.title
+          @window.complete_title.text = @chapter.summary.title
+          @window.complete_title.visibility = Visibility.visible
+        else
+          @window.complete_title.visibility = Visibility.collapsed
+        end
+        if @chapter.summary && @chapter.summary.body
+          @window.complete_body.document = FlowDocument.from_simple_markup(@chapter.summary.body)
+          @window.complete_body.visibility = Visibility.visible
+        else
+          @window.complete_body.visibility = Visibility.collapsed
+        end
       else
-        @window.exercise.document = FlowDocument.from_simple_markup(@tutorial.summary)
+        if @tutorial.summary && @tutorial.summary.body
+          @window.exercise.document = FlowDocument.from_simple_markup(@tutorial.summary.body)
+        else
+          @window.exercise.document = FlowDocument.from_simple_markup("Tutorial complete!")
+        end
+        @window.exercise.visibility = Visibility.visible
         @window.body.children.clear
         @window.tutorial_scroll.scroll_to_top
       end
@@ -188,13 +214,23 @@ class WpfTutorial
       @window.repl_input.key_up.add method(:on_repl_input) 
 
       @task = @tasks.shift
-
-      flowDoc = FlowDocument.from_simple_markup(@task.description)
-      flowDoc.Blocks.Add(Paragraph.new(Run.new("Enter the following code:")))
-      p = Paragraph.new(Run.new(@task.code))
-      p.font_family = FontFamily.new "Consolas"
-      p.font_weight = FontWeights.Bold
-      flowDoc.Blocks.Add(p)
+      
+      if @task.description 
+        flowDoc = FlowDocument.from_simple_markup(@task.description)
+        #flowDoc.Blocks.Add(Paragraph.new(Run.new("Enter the following code:")))
+        if @task.code
+          p = Paragraph.new(Run.new(@task.code))
+          p.font_family = FontFamily.new "Consolas"
+          p.font_weight = FontWeights.Bold
+          flowDoc.Blocks.Add(p)
+        end
+      end
+      if @window.step_title
+        @window.step_title.text = @task.title
+        @window.step_title.visibility = Visibility.visible
+      else
+        @window.step_title.visibility = Visibility.collapsed
+      end
       @window.step_description.document = flowDoc
       @window.repl_history.text = ""
       @window.repl_input.focus
@@ -248,7 +284,12 @@ class WpfTutorial
   def select_chapter chapter
     @window.start_loading
     @chapter = chapter
-    @window.exercise.document = FlowDocument.from_simple_markup(@chapter.introduction)
+    if @chapter.introduction
+      @window.exercise.document = FlowDocument.from_simple_markup(@chapter.introduction)
+      @window.exercise.visibility = Visibility.visible
+    else
+      @window.exercise.visibility = Visibility.collapsed
+    end
     @window.body.children.clear
     @tasks = @chapter.tasks.clone
     select_next_task
@@ -256,7 +297,12 @@ class WpfTutorial
   end
 
   def select_section section
-    @window.exercise.document = FlowDocument.from_simple_markup(section.introduction)
+    if section.introduction
+      @window.exercise.document = FlowDocument.from_simple_markup(section.introduction)
+      @window.exercise.visibility = Visibility.visible
+    else
+      @window.exercise.visibility = Visibility.collapsed
+    end
     @window.body.children.clear
   end
 

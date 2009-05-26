@@ -25,12 +25,32 @@ module Tutorial
         
         text
     end
-    
+   
+    class Summary
+      attr :title
+      attr :description
+
+      def initialize(title, desc)
+        @title = title
+        @description = desc
+      end
+
+      def body
+        @description
+      end
+
+      def to_s
+        @title
+      end
+    end
+
     class Task
         attr :description
         attr :code
+        attr :title
 
-        def initialize description, code, &success_evaluator	                
+        def initialize title, description, code, &success_evaluator	                
+            @title = title
             @description = ::Tutorial.check_pseudo_heredoc description
             @code = code
             @success_evaluator = success_evaluator
@@ -38,7 +58,11 @@ module Tutorial
 
         def success? interaction
             begin
-                return @success_evaluator.call(interaction)
+                if @success_evaluator
+                  return @success_evaluator.call(interaction)
+                else
+                  return eval(@code) == interaction.result
+                end
             rescue
                 false
             end
@@ -102,8 +126,9 @@ module Tutorial
     @@tutorials = {}
     
     @@ironruby_tutorial_path = File.expand_path("Tutorials/ironruby_tutorial", File.dirname(__FILE__))
-    
-    def self.get_tutorial path = @@ironruby_tutorial_path
+    @@tryruby_tutorial_path  = File.expand_path("Tutorials/tryruby_tutorial" , File.dirname(__FILE__))
+
+    def self.get_tutorial path = @@tryruby_tutorial_path
         if not @@tutorials.has_key? path		
             require path
             raise "path does not contains a tutorial definition" if not Thread.current[:tutorial]
@@ -157,10 +182,18 @@ class Object
     end
     
     def summary s
-        if Thread.current[:tutorial]
-            Thread.current[:tutorial].summary = Tutorial.check_pseudo_heredoc s
+        s = if s.kind_of?(String)
+              Tutorial::Summary.new nil, s 
+            else
+              opts = {:title => "Section complete!"}.merge(s)
+              Tutorial::Summary.new opts[:title], opts[:body]
+            end
+        if Thread.current[:chapter]
+            Thread.current[:chapter].summary = s
+        elsif Thread.current[:tutorial]
+            Thread.current[:tutorial].summary = s
         else
-            raise "summary should only be used within a tutorial definition"
+            raise "summary should only be used within a tutorial or chapter definition"
         end
     end
         
@@ -191,8 +224,10 @@ class Object
         Thread.current[:chapter] = nil
     end
 
-    def task(name, code, &success_evaluator)
-        Thread.current[:chapter].tasks << Tutorial::Task.new(name, code, &success_evaluator)
+    def task(options, &success_evaluator)
+        options = {}.merge(options)
+        Thread.current[:chapter].tasks << Tutorial::Task.new(
+          options[:title], options[:body], options[:code], &success_evaluator)
     end
 
     # This represents an operation that consists of several closely realated task. It is useful to have
