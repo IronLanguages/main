@@ -15,17 +15,6 @@
 
 module Tutorial
 
-    # If the first line contains "heredoc:", the first line is removed. This allows
-    # use of simple multi-line strings which are easier to use than heredoc strings. Heredoc strings
-    # cannot be used easily as arguments to functions if the arguments are written on separate lines.
-    def self.check_pseudo_heredoc text
-        if text =~ /\Aheredoc:\n(.*)/m
-            text = $1
-        end
-        
-        text
-    end
-   
     class Summary
       attr :title
       attr :description
@@ -51,7 +40,7 @@ module Tutorial
 
         def initialize title, description, code, &success_evaluator	                
             @title = title
-            @description = ::Tutorial.check_pseudo_heredoc description
+            @description = description
             @code = code
             @success_evaluator = success_evaluator
         end
@@ -107,12 +96,14 @@ module Tutorial
 
     class Tutorial
         attr :name
+        attr :file
         attr :introduction, true
         attr :summary, true
         attr :sections, true
 
-        def initialize name, introduction = nil, summary = nil, sections = []
+        def initialize name, file, introduction = nil, summary = nil, sections = []
             @name = name
+            @file = file
             @introduction = introduction
             @summary = summary
             @sections = sections
@@ -165,18 +156,19 @@ end
 
 class Object
     def tutorial name
-        t = Tutorial::Tutorial.new name
-        Thread.current[:tutorial] = t
-        Thread.current[:prev_chapter] = nil
-        yield
         caller[0] =~ /\A(.*):[0-9]+/
         tutorial_file = $1
+        t = Tutorial::Tutorial.new name, tutorial_file
+        Thread.current[:tutorial] = t
+        Thread.current[:prev_chapter] = nil
+
+        yield
+
         Tutorial.tutorials[tutorial_file] = t
         Thread.current[:tutorial] = nil
     end
 
     def introduction intro
-        intro = Tutorial.check_pseudo_heredoc intro
         if Thread.current[:chapter]
             Thread.current[:chapter].introduction = intro
         elsif Thread.current[:section]

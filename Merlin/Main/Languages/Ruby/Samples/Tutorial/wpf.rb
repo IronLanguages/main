@@ -77,10 +77,12 @@ module Wpf
     class ToFlowDocument
         include System::Windows
         include System::Windows::Documents
+        include System::Windows::Media
 
         def start_accepting
             @@bold_mask = SM::Attribute.bitmap_for :BOLD
             @@italics_mask = SM::Attribute.bitmap_for :EM
+            @@tt_mask = SM::Attribute.bitmap_for :TT
             @@hyperlink_mask = SM::Attribute.bitmap_for :HYPERLINK
             @@tidylink_mask = SM::Attribute.bitmap_for :TIDYLINK
 
@@ -110,10 +112,15 @@ module Wpf
                         @attributes.clear
                     when @@italics_mask
                         paragraph.inlines.add(Italic.new(Run.new(item)))
+                    when @@tt_mask
+                        run = Run.new(item)
+                        run.font_family = FontFamily.new "Consolas"
+                        run.font_weight = FontWeights.Bold
+                        paragraph.inlines.add(run)
                     when nil
                         paragraph.inlines.add(Run.new(item))
                     else
-                        raise "unexpected active_attribute: #{active_attribute}"
+                        raise "unexpected active_attribute: #{SM::Attribute.as_string(active_attribute)}"
                     end
                     
                 when SM::AttrChanger
@@ -141,7 +148,11 @@ module Wpf
         end
 
         def accept_verbatim(am, fragment)
-            raise NotImplementedError
+            paragraph = Paragraph.new
+            paragraph.font_family = FontFamily.new "Consolas"
+            paragraph.font_weight = FontWeights.Bold
+            paragraph.inlines.add(Run.new(fragment.txt))
+            @flowDoc.blocks.add paragraph
         end
 
         def accept_list_start(am, fragment)

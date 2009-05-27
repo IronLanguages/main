@@ -16,6 +16,7 @@
 require "test/unit"
 require "stringio"
 require "console_tutorial"
+require "html_tutorial"
 
 class ConsoleTutorialTest < Test::Unit::TestCase
     def setup
@@ -65,4 +66,12 @@ class TutorialTests < Test::Unit::TestCase
         @app.run
         assert_match /Chapter completed successfully!/, @out.string
     end    
+end
+
+class HtmlGeneratorTests < Test::Unit::TestCase
+  def test_sanity
+    html_tutorial = HtmlTutorial.new
+    html = html_tutorial.generate_html
+    assert_match %r{<h2>Table of Contents</h2>}, html
+  end
 end
