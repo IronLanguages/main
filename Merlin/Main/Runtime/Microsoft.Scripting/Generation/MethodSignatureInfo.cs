@@ -22,12 +22,18 @@ namespace Microsoft.Scripting.Generation {
     /// which returns members from all types in the hierarchy.
     /// </summary>
     public class MethodSignatureInfo {
-        private ParameterInfo[] _pis;
-        private bool _isStatic;
+        private readonly ParameterInfo[] _pis;
+        private readonly bool _isStatic;
+        private readonly int _genericArity;
 
-        public MethodSignatureInfo(bool isStatic, ParameterInfo[] pis) {
+        public MethodSignatureInfo(MethodInfo info) 
+            : this(info.IsStatic, info.GetParameters(), info.IsGenericMethodDefinition ? info.GetGenericArguments().Length : 0){
+        }
+
+        public MethodSignatureInfo(bool isStatic, ParameterInfo[] pis, int genericArity) {
             _isStatic = isStatic;
             _pis = pis;
+            _genericArity = genericArity;
         }
 
         [Confined]
@@ -35,7 +41,9 @@ namespace Microsoft.Scripting.Generation {
             MethodSignatureInfo args = obj as MethodSignatureInfo;
             if (args == null) return false;
 
-            if (args._isStatic != _isStatic || args._pis.Length != _pis.Length) return false;
+            if (args._isStatic != _isStatic || args._pis.Length != _pis.Length || args._genericArity != _genericArity) {
+                return false;
+            }
 
             for (int i = 0; i < _pis.Length; i++) {
                 ParameterInfo self = _pis[i];
@@ -50,7 +58,7 @@ namespace Microsoft.Scripting.Generation {
 
         [Confined]
         public override int GetHashCode() {
-            int hash = 6551;
+            int hash = 6551 ^ (_isStatic ? 79234 : 3123) ^ _genericArity;
             foreach (ParameterInfo pi in _pis) {
                 hash ^= pi.ParameterType.GetHashCode();
             }

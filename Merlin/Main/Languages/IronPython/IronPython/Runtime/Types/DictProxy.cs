@@ -74,7 +74,7 @@ namespace IronPython.Runtime.Types {
         public object values(CodeContext context) {
             List res = new List();
             foreach (KeyValuePair<object, object> kvp in _dt.GetMemberDictionary(context, false)) {
-                IValueSlot dts = kvp.Value as IValueSlot;
+                PythonTypeUserDescriptorSlot dts = kvp.Value as PythonTypeUserDescriptorSlot;
 
                 if (dts != null) {
                     res.AddNoLock(dts.Value);
@@ -89,7 +89,7 @@ namespace IronPython.Runtime.Types {
         public List items(CodeContext context) {
             List res = new List();
             foreach (KeyValuePair<object, object> kvp in _dt.GetMemberDictionary(context, false)) {
-                IValueSlot dts = kvp.Value as IValueSlot;
+                PythonTypeUserDescriptorSlot dts = kvp.Value as PythonTypeUserDescriptorSlot;
 
                 object val;
                 if (dts != null) {
@@ -309,7 +309,7 @@ namespace IronPython.Runtime.Types {
             if (strIndex != null) {
                 PythonTypeSlot dts;
                 if (_dt.TryLookupSlot(context, SymbolTable.StringToId(strIndex), out dts)) {
-                    IValueSlot uds = dts as IValueSlot;
+                    PythonTypeUserDescriptorSlot uds = dts as PythonTypeUserDescriptorSlot;
                     if (uds != null) {
                         return uds.Value;
                     }
@@ -326,7 +326,7 @@ namespace IronPython.Runtime.Types {
             if (strIndex != null) {
                 PythonTypeSlot dts;
                 if (_dt.TryLookupSlot(context, SymbolTable.StringToId(strIndex), out dts)) {
-                    IValueSlot uds = dts as IValueSlot;
+                    PythonTypeUserDescriptorSlot uds = dts as PythonTypeUserDescriptorSlot;
                     if (uds != null) {
                         value = uds.Value;
                         return true;

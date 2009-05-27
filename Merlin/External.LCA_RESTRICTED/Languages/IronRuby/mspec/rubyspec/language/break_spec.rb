@@ -93,6 +93,12 @@ describe "Executing break from within a block" do
     res.should == :return_value
 
   end
+
+  it "returns from eval'd code" do
+    lambda { BreakTest.meth_with_block { break } }.should_not raise_error LocalJumpError
+    lambda { eval "BreakTest.meth_with_block { break }" }.should_not raise_error LocalJumpError
+
+  end
 end
 
 describe "Breaking out of a loop with a value" do

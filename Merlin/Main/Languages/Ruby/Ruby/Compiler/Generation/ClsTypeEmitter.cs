@@ -264,7 +264,7 @@ namespace IronRuby.Compiler.Generation {
             MethodInfo[] methods = type.GetMethods(BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static | BindingFlags.FlattenHierarchy);
 
             foreach (MethodInfo mi in methods) {
-                var key = Key.Create(mi.Name, new MethodSignatureInfo(mi.IsStatic, mi.GetParameters()));
+                var key = Key.Create(mi.Name, new MethodSignatureInfo(mi));
 
                 if (!added.TryGetValue(key, out overridden)) {
                     added[key] = mi;
@@ -281,8 +281,6 @@ namespace IronRuby.Compiler.Generation {
                 if (!ShouldOverrideVirtual(mi) || !CanOverrideMethod(mi)) continue;
 
                 if (mi.IsPublic || mi.IsFamily || mi.IsFamilyOrAssembly) {
-                    if (mi.IsGenericMethodDefinition) continue;
-
                     if (mi.IsSpecialName) {
                         OverrideSpecialName(mi, overriddenProperties);
                     } else {
@@ -594,9 +592,12 @@ namespace IronRuby.Compiler.Generation {
                         (mi.Attributes | MethodAttributes.NewSlot) :
                         ((mi.Attributes & ~MethodAttributes.MemberAccessMask) | MethodAttributes.Public),
                     mi.ReturnType,
-                    ReflectionUtils.GetParameterTypes(parameters));
+                    ReflectionUtils.GetParameterTypes(parameters)
+                );
+                CopyGenericMethodAttributes(mi, impl);
                 il = CreateILGen(impl.GetILGenerator());
             }
+                
             //CompilerHelpers.GetArgumentNames(parameters));  TODO: Set names
 
             LocalBuilder callTarget = EmitNonInheritedMethodLookup(name, il);
@@ -660,6 +661,7 @@ namespace IronRuby.Compiler.Generation {
                 attrs,
                 mi.ReturnType, types
             );
+            CopyGenericMethodAttributes(mi, method);
 
             for (int i = 0; i < types.Length; i++) {
                 method.DefineParameter(i + 1, ParameterAttributes.None, parms[i].Name);
@@ -737,7 +739,37 @@ namespace IronRuby.Compiler.Generation {
             }
             Type[] signature = ReflectionUtils.GetParameterTypes(decl.GetParameters());
             impl = _tb.DefineMethod(decl.Name, finalAttrs, decl.ReturnType, signature);
+            CopyGenericMethodAttributes(decl, impl);
             return CreateILGen(impl.GetILGenerator());
+        }
+
+        private static void CopyGenericMethodAttributes(MethodInfo from, MethodBuilder to) {
+            if (from.IsGenericMethodDefinition) {
+                Type[] args = from.GetGenericArguments();
+                string[] names = new string[args.Length];
+                for (int i = 0; i < args.Length; i++) {
+                    names[i] = args[i].Name;
+                }
+                var builders = to.DefineGenericParameters(names);
+                for (int i = 0; i < args.Length; i++) {
+                    // Copy template parameter attributes
+                    builders[i].SetGenericParameterAttributes(args[i].GenericParameterAttributes);
+
+                    // Copy template parameter constraints
+                    Type[] constraints = args[i].GetGenericParameterConstraints();
+                    List<Type> interfaces = new List<Type>(constraints.Length);
+                    foreach (Type constraint in constraints) {
+                        if (constraint.IsInterface) {
+                            interfaces.Add(constraint);
+                        } else {
+                            builders[i].SetBaseTypeConstraint(constraint);
+                        }
+                    }
+                    if (interfaces.Count > 0) {
+                        builders[i].SetInterfaceConstraints(interfaces.ToArray());
+                    }
+                }
+            }
         }
 
         /// <summary>

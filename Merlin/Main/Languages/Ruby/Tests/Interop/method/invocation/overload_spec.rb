@@ -27,9 +27,11 @@ describe "Overload resolution" do
   it "correctly binds with methods of different visibility" do
     method = @klass.method(:public_protected_overload)
     @klass.public_protected_overload.should equal_clr_string("public overload")
-    @klass.public_protected_overload("abc").should equal_clr_string("protected overload")
+    
+    lambda { @klass.public_protected_overload("abc") }.should raise_error(ArgumentError, /1 for 0/)
+    
     method.call.should equal_clr_string("public overload")
-    method.call("abc").should equal_clr_string("protected overload")
+    lambda { method.call("abc").should equal_clr_string("protected overload") }.should raise_error(ArgumentError, /1 for 0/)
   end
 end
 

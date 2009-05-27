@@ -239,19 +239,13 @@ namespace IronRuby.Runtime.Calls {
             out RubyMemberInfo methodMissing) {
 
             MethodResolutionResult method;
-            RubyClass targetClass = args.RubyContext.GetImmediateClassOf(args.Target);
+            RubyClass targetClass = args.TargetClass;
             using (targetClass.Context.ClassHierarchyLocker()) {
                 metaBuilder.AddTargetTypeTest(args.Target, targetClass, args.TargetExpression, args.MetaContext);
 
                 method = targetClass.ResolveMethodForSiteNoLock(methodName, GetVisibilityContext(args.Signature, args.Scope));
                 if (!method.Found) {
-                    if (args.Signature.IsTryCall) {
-                        // TODO: this shouldn't throw. We need to fix caching of non-existing methods.
-                        throw new MissingMethodException();
-                        // metaBuilder.Result = AstUtils.Constant(Fields.RubyOps_MethodNotFound);
-                    } else {
-                        methodMissing = targetClass.ResolveMethodMissingForSite(methodName, method.IncompatibleVisibility);
-                    }
+                    methodMissing = targetClass.ResolveMethodMissingForSite(methodName, method.IncompatibleVisibility);
                 } else {
                     methodMissing = null;
                 }
@@ -260,7 +254,7 @@ namespace IronRuby.Runtime.Calls {
             // Whenever the current self's class changes we need to invalidate the rule, if a protected method is being called.
             if (method.Info != null && method.Info.IsProtected && !args.Signature.HasImplicitSelf) {
                 // We don't need to compare versions, just the class objects (super-class relationship cannot be changed).
-                // Since we don't want to hold on a class object (to make it collectible) we compare references to the version boxes.
+                // Since we don't want to hold on a class object (to make it collectible) we compare references to the version handlers.
                 metaBuilder.AddCondition(Ast.Equal(
                     Methods.GetSelfClassVersionHandle.OpCall(AstUtils.Convert(args.MetaScope.Expression, typeof(RubyScope))),
                     Ast.Constant(args.Scope.SelfImmediateClass.Version)

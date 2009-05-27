@@ -154,7 +154,7 @@ namespace IronRuby.Runtime {
             return FormatMethodMissingMessage(context, self, name, "undefined method `{0}' for {1}");
         }
 
-        private static string/*!*/ FormatMethodMissingMessage(RubyContext/*!*/ context, object self, string/*!*/ name, string/*!*/ message) {
+        internal static string/*!*/ FormatMethodMissingMessage(RubyContext/*!*/ context, object self, string/*!*/ name, string/*!*/ message) {
             Assert.NotNull(name);
             string strObject = context.InspectEnsuringClassName(self);
             return String.Format(message, name, strObject);

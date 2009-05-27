@@ -34,9 +34,6 @@ namespace IronRuby.Runtime.Calls {
 
         // Used for private visibility check. By default method call sites have explicit self, so private methods are not visible.
         HasImplicitSelf = 16,
-
-        // Tries to call the method, if not successful returns a RubyOps.MethodNotFound singleton.
-        IsTryCall = 32,
     }
         
     /// <summary>
@@ -54,7 +51,6 @@ namespace IronRuby.Runtime.Calls {
         public bool HasBlock { get { return ((RubyCallFlags)_countAndFlags & RubyCallFlags.HasBlock) != 0; } }
         public bool HasSplattedArgument { get { return ((RubyCallFlags)_countAndFlags & RubyCallFlags.HasSplattedArgument) != 0; } }
         public bool HasRhsArgument { get { return ((RubyCallFlags)_countAndFlags & RubyCallFlags.HasRhsArgument) != 0; } }
-        public bool IsTryCall { get { return ((RubyCallFlags)_countAndFlags & RubyCallFlags.IsTryCall) != 0; } }
 
         public int ArgumentCount { get { return (int)_countAndFlags >> FlagsCount; } }
         internal RubyCallFlags Flags { get { return (RubyCallFlags)_countAndFlags & FlagsMask; } }
@@ -77,11 +73,10 @@ namespace IronRuby.Runtime.Calls {
             _countAndFlags = ((uint)argumentCount << FlagsCount) | (uint)flags;
         }
 
-        public RubyCallSignature(bool isTryCall, bool hasScope, bool hasImplicitSelf, int argumentCount, bool hasSplattedArgument, bool hasBlock, bool hasRhsArgument) {
+        public RubyCallSignature(bool hasScope, bool hasImplicitSelf, int argumentCount, bool hasSplattedArgument, bool hasBlock, bool hasRhsArgument) {
             Debug.Assert(argumentCount >= 0 && argumentCount < MaxArgumentCount);
 
             var flags = RubyCallFlags.None;
-            if (isTryCall) flags |= RubyCallFlags.IsTryCall;
             if (hasImplicitSelf) flags |= RubyCallFlags.HasImplicitSelf;
             if (hasScope) flags |= RubyCallFlags.HasScope;
             if (hasSplattedArgument) flags |= RubyCallFlags.HasSplattedArgument;

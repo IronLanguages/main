@@ -526,10 +526,10 @@ namespace IronPython.Runtime.Binding {
 
         public DynamicMetaObject/*!*/ Fallback(DynamicMetaObject/*!*/ self, DynamicMetaObject/*!*/ codeContext) {
             // Python always provides an extra arg to GetMember to flow the context.
-            return FallbackWorker(self, codeContext, Name, _options, this);
+            return FallbackWorker(self, codeContext, Name, _options, this, null);
         }
 
-        internal static DynamicMetaObject FallbackWorker(DynamicMetaObject/*!*/ self, DynamicMetaObject/*!*/ codeContext, string name, GetMemberOptions options, DynamicMetaObjectBinder action) {
+        internal static DynamicMetaObject FallbackWorker(DynamicMetaObject/*!*/ self, DynamicMetaObject/*!*/ codeContext, string name, GetMemberOptions options, DynamicMetaObjectBinder action, DynamicMetaObject errorSuggestion) {
             if (self.NeedsDeferral()) {
                 return action.Defer(self);
             }
@@ -551,7 +551,8 @@ namespace IronPython.Runtime.Binding {
                         name,
                         self,
                         codeContext.Expression,
-                        isNoThrow
+                        isNoThrow,
+                        errorSuggestion
                     );
                     Expression failure = GetFailureExpression(limitType, name, isNoThrow, action);
 
@@ -586,7 +587,7 @@ namespace IronPython.Runtime.Binding {
                 }
             }
 
-            var res = PythonContext.GetPythonContext(action).Binder.GetMember(name, self, codeContext.Expression, isNoThrow);
+            var res = PythonContext.GetPythonContext(action).Binder.GetMember(name, self, codeContext.Expression, isNoThrow, errorSuggestion);
 
             // Default binder can return something typed to boolean or int.
             // If that happens, we need to apply Python's boxing rules.
@@ -683,7 +684,7 @@ namespace IronPython.Runtime.Binding {
                 return com;
             }
 #endif
-            return PythonGetMemberBinder.FallbackWorker(self, PythonContext.GetCodeContextMOCls(this), Name, GetMemberOptions.None, this);
+            return PythonGetMemberBinder.FallbackWorker(self, PythonContext.GetCodeContextMOCls(this), Name, GetMemberOptions.None, this, errorSuggestion);
         }
 
         #region IPythonSite Members

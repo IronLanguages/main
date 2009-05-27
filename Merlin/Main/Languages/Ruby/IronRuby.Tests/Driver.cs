@@ -31,7 +31,7 @@ using System.Text;
 namespace IronRuby.Tests {
     public class TestCase {
         public Action TestMethod { get; set; }
-        public RubyCompatibility Compatibility { get; set; }
+        public OptionsAttribute Options { get; set; }
         public string Name { get; set; }
     }
 
@@ -42,6 +42,7 @@ namespace IronRuby.Tests {
     [AttributeUsage(AttributeTargets.Method)]
     public sealed class OptionsAttribute : Attribute {
         public RubyCompatibility Compatibility { get; set; }
+        public bool PrivateBinding { get; set; }
     }
 
     public class TestRuntime {
@@ -74,9 +75,10 @@ namespace IronRuby.Tests {
             }
 
             runtimeSetup.DebugMode = _driver.IsDebug;
+            runtimeSetup.PrivateBinding = testCase.Options.PrivateBinding;
             languageSetup.Options["InterpretedMode"] = _driver.Interpret;
             languageSetup.Options["Verbosity"] = 2;
-            languageSetup.Options["Compatibility"] = testCase.Compatibility;
+            languageSetup.Options["Compatibility"] = testCase.Options.Compatibility;
 
             _env = Ruby.CreateRuntime(runtimeSetup);
             _engine = Ruby.GetEngine(_env);
@@ -448,13 +450,14 @@ namespace IronRuby.Tests {
                     cases.Add(new TestCase {
                         Name = testMethod.Method.Name,
                         TestMethod = testMethod,
-                        Compatibility = options.Compatibility,
+                        Options = options,
                     });
                 }
             } else {
                 cases.Add(new TestCase {
                     Name = testMethod.Method.Name,
                     TestMethod = testMethod,
+                    Options = new OptionsAttribute(),
                 });
             }
         }

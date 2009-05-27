@@ -14,13 +14,11 @@
  * ***************************************************************************/
 
 using System;
-using System.Text;
 using IronPython.Hosting;
 using IronPython.Runtime;
 using Microsoft.Scripting.Hosting;
+using Microsoft.Scripting.Hosting.Providers;
 using Microsoft.Scripting.Hosting.Shell;
-using System.Dynamic.Utils;
-using System.Diagnostics;
 using System.Reflection.Emit;
 
 internal sealed class PythonConsoleHost : ConsoleHost {
@@ -46,6 +44,12 @@ internal sealed class PythonConsoleHost : ConsoleHost {
         foreach (string s in args) {
             Options.IgnoredArgs.Add(s);
         }
+    }
+
+    protected override void ExecuteInternal() {
+        var pc = HostingHelpers.GetLanguageContext(Engine) as PythonContext;
+        pc.SetModuleState(typeof(ScriptEngine), Engine);
+        base.ExecuteInternal();
     }
 
     [STAThread]

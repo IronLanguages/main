@@ -1,11 +1,19 @@
-class MSpecScript
-    # The default implementation to run the specs.
-  # TODO: change this to rely on an environment variable
-  if ENV['ROWAN_BIN']
-    set :target, "#{ENV['MERLIN_ROOT']}\\Test\\Scripts\\ir.cmd"
-  else
-    set :target, "#{ENV['MERLIN_ROOT']}\\bin\\debug\\ir.exe"    
+#replace the Assert popup window with a message
+engine = RUBY_ENGINE rescue 'notironruby'
+if (ENV["THISISSNAP"] || ENV["SILENTASSERT"]) && engine == 'ironruby'
+  class MyTraceListener < System::Diagnostics::DefaultTraceListener
+    def fail(msg, detailMsg=nil)
+      puts "ASSERT FAILED: #{msg}"
+      puts "               #{detailMsg}" if detailMsg
+    end
   end
+  System::Diagnostics::Debug.Listeners.clear
+  System::Diagnostics::Debug.Listeners.add(MyTraceListener.new)
+end
+
+class MSpecScript
+  # The default implementation to run the specs.
+  set :target, "#{ENV['MERLIN_ROOT']}\\Test\\Scripts\\ir.cmd"
   # config[:prefix] must be set before filtered is used
   set :prefix, "#{ENV['MERLIN_ROOT']}\\..\\External.LCA_RESTRICTED\\Languages\\IronRuby\\mspec\\rubyspec"
   

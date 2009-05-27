@@ -126,14 +126,16 @@ EOL
 describe :generic_methods, :shared => true do
   it "are callable via call and [] when pubic or protected" do
     @klass.method(:public_1_generic_0_arg).of(Fixnum).call.should equal_clr_string("public generic no args")
-    (@public_method_list + @protected_method_list).each do |m|
-      generic_count, arity = m.match(/_(\d)_generic_(\d)_/)[1..2].map {|e| e.to_i}
-      generics = Array.new(generic_count, Fixnum)
-      args = Array.new(arity, 1)
-      args << args.pop.to_s.to_clr_string if arity > generic_count
+    [[@klass, @public_method_list], [@subklass, @protected_method_list]].each do |obj, ms| 
+      ms.each do |m|      
+        generic_count, arity = m.match(/_(\d)_generic_(\d)_/)[1..2].map {|e| e.to_i}
+        generics = Array.new(generic_count, Fixnum)
+        args = Array.new(arity, 1)
+        args << args.pop.to_s.to_clr_string if arity > generic_count
 
-      @klass.method(m).of(*generics).call(*args).should equal_clr_string(args.join(" "))
-      @klass.method(m).of(*generics)[*args].should equal_clr_string(args.join(" "))
+        obj.method(m).of(*generics).call(*args).should equal_clr_string(args.join(" "))
+        obj.method(m).of(*generics)[*args].should equal_clr_string(args.join(" "))
+      end
     end
   end
 
@@ -168,11 +170,13 @@ describe :generic_methods, :shared => true do
   end
 
   it "cannot be called directly" do
-    (@public_method_list + @protected_method_list).each do |m|
-      generic_count, arity = m.match(/_(\d)_generic_(\d)_/)[1..2].map {|e| e.to_i}
-      args = Array.new(arity, 1)
-      args << args.pop.to_s.to_clr_string if arity > generic_count
-      lambda {@klass.send(m, *args)}.should raise_error(ArgumentError)
+    [[@klass, @public_method_list], [@subklass, @protected_method_list]].each do |obj, ms|
+      ms.each do |m|
+        generic_count, arity = m.match(/_(\d)_generic_(\d)_/)[1..2].map {|e| e.to_i}
+        args = Array.new(arity, 1)
+        args << args.pop.to_s.to_clr_string if arity > generic_count
+        lambda {obj.send(m, *args)}.should raise_error(ArgumentError)
+      end
     end
   end
 
@@ -237,7 +241,9 @@ describe "Generic methods" do
     public partial class SubKlass : Klass {}
     EOL
     before :each do
-      @klass = ClassWithMethods.new
+      t = ClassWithMethods
+      @klass, @subklass = t.new, Class.new(t).new
+      
       @public_method_list = %w{public_1_generic_1_arg public_1_generic_2_arg
                         public_2_generic_2_arg public_2_generic_3_arg
                         public_3_generic_3_arg public_3_generic_3_arg}
@@ -262,7 +268,9 @@ describe "Generic methods" do
     #pragma warning restore 693
     EOL
     before :each do
-      @klass = GenericClassWithMethods.of(Fixnum).new
+      t = GenericClassWithMethods.of(Fixnum)
+      @klass, @subklass = t.new, Class.new(t).new
+      
       @public_method_list = %w{public_1_generic_1_arg public_1_generic_2_arg
                         public_2_generic_2_arg public_2_generic_3_arg
                         public_3_generic_3_arg public_3_generic_3_arg}
@@ -287,7 +295,9 @@ describe "Generic methods" do
     #pragma warning restore 693
     EOL
     before :each do
-      @klass = GenericClass2Params.of(Fixnum, String).new
+      t = GenericClass2Params.of(Fixnum, String)
+      @klass, @subklass = t.new, Class.new(t).new
+      
       @public_method_list = %w{public_1_generic_1_arg public_1_generic_2_arg
                         public_2_generic_2_arg public_2_generic_3_arg
                         public_3_generic_3_arg public_3_generic_3_arg}

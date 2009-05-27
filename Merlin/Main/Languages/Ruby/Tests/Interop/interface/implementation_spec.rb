@@ -70,5 +70,11 @@ describe "Implementing interfaces" do
     ConsumeIDoFoo.ConsumeFoo3(foo).should == 1
   end
   
-  
+  it "works with Hash (regression for CP#814)" do
+    class HashSubclass < Hash
+      include System::Collections::IDictionary
+    end
+
+    lambda { HashSubclass.new }.should_not raise_error(TypeError)
+  end
 end

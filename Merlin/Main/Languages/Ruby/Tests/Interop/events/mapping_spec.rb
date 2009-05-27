@@ -4,7 +4,8 @@ describe ".NET events" do
   before :all do
     Foo = IronRuby
     Object.send :remove_const, :IronRuby
-    require "IronRuby, Version=0.4.0.0, Culture=neutral, PublicKeyToken=null"
+    # This makes sure that the version stays correct
+    require System::Reflection::Assembly.get_assembly(Foo.to_clr_type).to_s
   end
 
   after :all do

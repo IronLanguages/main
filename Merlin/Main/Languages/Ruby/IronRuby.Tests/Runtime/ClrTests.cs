@@ -47,10 +47,6 @@ namespace IronRuby.Tests {
 
             public static int StaticField = 3;
             public const int ConstField = 4;
-
-            // TODO:
-            protected string ProtectedField;
-            private string PrivateField;
         }
 #pragma warning restore 169
 
@@ -145,97 +141,144 @@ end
 ");
         }
 
-        public class ClassWithMethods2 {
-            public string Data;
-            
-            protected string ProtectedMethod() { return "ProtectedMethod"; }
-            private string PrivateMethod() { return "PrivateMethod"; }
-
-            protected string ProtectedProperty { 
-                get { return "ProtectedProperty"; } 
-                set { Data = value; } 
-            }
-
-            private string PrivateProperty { get { return "PrivateProperty"; } set { Data = value; } }
-
-            public string ProtectedGetter { protected get { return "ProtectedGetter"; } set { Data = value; } }
-            public string PrivateGetter { private get { return "PrivateGetter"; } set { Data = value; } }
-            public string ProtectedSetter { get { return "ProtectedSetter"; } protected set { Data = value; } }
-            public string PrivateSetter { get { return "PrivateSetter"; } private set { Data = value; } }
-
-            protected string ProtectedWithPrivateGetter { private get { return "ProtectedWithPrivateGetter"; } set { Data = value; } }
-            protected string ProtectedWithPrivateSetter { get { return "ProtectedWithPrivateSetter"; } private set { Data = value; } }
+        public class ClassWithEquals1 {
+            // define overload of Equals so that we get a method group with mixed instance and static methods inherited from Object's method group
+            public static bool Equals(object o1, object o2, object o3) { return o1.Equals(o2); }
         }
 
-        public void ClrMethodsVisibility1() {
-            // TODO: 
-            if (_driver.PartialTrust) return;
+        /// <summary>
+        /// Mixing instance and static methods - instance Object::Equals(Object), static Object::Equals(Object, Object).
+        /// </summary>
+        public void ClrMethods3() {
+            Context.ObjectClass.SetConstant("C", Context.GetClass(typeof(ClassWithEquals1)));
+            TestOutput(@"
+puts 1.Equals(2)                # instance
+puts 1.Equals(2,3) rescue p $!  # static invoked with instance
 
-            Context.ObjectClass.SetConstant("C", Context.GetClass(typeof(ClassWithMethods2)));
+puts C.Equals(C)                # instance invoked on a class (statically)
+puts C.Equals(3,3)              # static
+puts C.Equals(3,3,4)            # overload
+", @"
+false
+#<ArgumentError: wrong number of arguments (2 for 1)>
+true
+true
+true
+");
+        }
+
+        public class ProtectedA {
+            protected string Foo(int a) { return "Foo(I): " + a; }
+            public string Bar(int a) { return "Bar(I): " + a; }
+        }
+
+        public class ProtectedB : ProtectedA {
+            public string Foo(object a) { return "Foo(O): " + a.ToString(); }
+            protected string Bar(object a) { return "Bar(O): " + a; }
+
+            protected int Prop1 { get; set; }
+            public int Prop2 { get; protected set; }
+
+            private string Baz(int a) { return "Baz(I): " + a; }
+            public string Baz(object a) { return "Baz(O): " + a; }
+
+            protected static string StaticM() { return "StaticM"; }
+            protected static string StaticGenericM<T>(T f) { return "StaticGenericM: " + f.ToString(); }
+
+            // TODO:
+            // protected int Fld;
+            // protected static int Fld;
+            // protected event System.Func<object> Evnt;
+        }
+
+        public void ClrVisibility1() {
+            Debug.Assert(!Engine.Runtime.Setup.PrivateBinding);
+            Context.ObjectClass.SetConstant("A", Context.GetClass(typeof(ProtectedA)));
+            Context.ObjectClass.SetConstant("B", Context.GetClass(typeof(ProtectedB)));
+
+            // methods:
             AssertOutput(delegate() {
                 CompilerTest(@"
-class D < C
-  def test name
-    self.data = 'none'
-    sname = name.to_s    
+class C < B; end
+a, b, c = A.new, B.new, C.new
 
-    begin
-      puts 'ok read: ' + send(sname) 
-    rescue 
-      puts 'error read: ' + sname 
-    end
+puts c.foo(1)
+puts b.foo(2)
+puts b.bar(22)
+a.foo(3) rescue p $!
 
-    begin
-      send(sname + '=', sname) 
-      print 'ok write: ' + sname + ' = '
-    rescue
-      puts 'error write: ' + sname
-    end
-
-    puts self.data
-  end
- 
-  def foo
-    puts protected_method
-    private_method rescue puts 'error call: private_method'
-
-    test :protected_property
-    test :private_property
-
-    test :protected_getter
-    test :protected_setter
-    test :private_getter
-    test :private_setter
-
-    test :protected_with_private_getter    
-    test :protected_with_private_setter
-  end
+class A
+  def foo; 4; end
+  def bar; 5; end
 end
+puts c.foo(6)
+b.bar(7) rescue p $!
 
-D.new.foo
+B.StaticM rescue p $!
+puts C.StaticM
+puts C.method(:StaticGenericM).of(Fixnum)[123]
 ");
             }, @"
-ProtectedMethod
-error call: private_method
-ok read: ProtectedProperty
-ok write: protected_property = protected_property
-error read: private_property
-error write: private_property
-none
-ok read: ProtectedGetter
-ok write: protected_getter = protected_getter
-ok read: ProtectedSetter
-ok write: protected_setter = protected_setter
-error read: private_getter
-ok write: private_getter = private_getter
-ok read: PrivateSetter
-error write: private_setter
-none
-error read: protected_with_private_getter
-ok write: protected_with_private_getter = protected_with_private_getter
-ok read: ProtectedWithPrivateSetter
-error write: protected_with_private_setter
-none
+Foo(I): 1
+Foo(O): 2
+Bar(I): 22
+#<NoMethodError: CLR protected method `foo' called for *ProtectedA*>
+Foo(O): 6
+#<NoMethodError: CLR protected method `bar' called for *ProtectedB*>
+#<NoMethodError: CLR protected method `StaticM' called for *ProtectedB*>
+StaticM
+StaticGenericM: 123
+", OutputFlags.Match);
+
+            // properties:
+            AssertOutput(delegate() {
+                CompilerTest(@"
+class C < B; end
+a, b, c = A.new, B.new, C.new
+
+c.prop1 = 1
+c.prop2 = 2
+puts c.prop1
+puts c.prop2
+(b.prop2 = 10) rescue p $!
+puts b.prop2
+");
+            }, @"
+1
+2
+#<NoMethodError: CLR protected method `prop2=' called for *ProtectedB*>
+0
+", OutputFlags.Match);
+        }
+
+        [Options(PrivateBinding = true)]
+        public void ClrVisibility2() {
+            Debug.Assert(Engine.Runtime.Setup.PrivateBinding);
+            if (_driver.PartialTrust) return;
+            Context.ObjectClass.SetConstant("A", Context.GetClass(typeof(ProtectedA)));
+            Context.ObjectClass.SetConstant("B", Context.GetClass(typeof(ProtectedB)));
+
+            // methods, properties:
+            TestOutput(@"
+class C < B; end
+a, b, c = A.new, B.new, C.new
+
+puts a.foo(3)
+
+class A
+  def bar; 5; end
+end
+puts b.bar(7)
+puts b.baz(1)
+
+b.prop2 = 10
+puts b.prop2
+",
+@"
+Foo(I): 3
+Bar(O): 7
+Baz(I): 1
+10
 ");
         }
 

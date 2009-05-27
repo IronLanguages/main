@@ -95,7 +95,7 @@ namespace Microsoft.Scripting.Actions.Calls {
             ContractUtils.Requires(_instanceBuilder == null);
             ContractUtils.Requires(builder.HasValue);
             _instanceBuilder = builder;
-            _argIndex += 1;
+            _argIndex += builder.ConsumedArgumentCount;
         }
 
         // TODO: We might want to add bitmap of all consumed arguments and allow to consume an arbitrary argument, not just the next one.

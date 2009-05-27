@@ -105,6 +105,10 @@ namespace IronRuby.Runtime.Calls {
             get { return false; }
         }
 
+        internal bool IsStatic {
+            get { return _isStatic; }
+        }
+
         internal override bool ImplicitProtocolConversions {
             get { return true; }
         }
@@ -219,6 +223,96 @@ namespace IronRuby.Runtime.Calls {
         }
 
         #endregion
+
+        internal override void BuildCallNoFlow(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args, string/*!*/ name) {
+            var visibleOverloads = GetVisibleOverloads(args, MethodBases);
+            if (visibleOverloads.Count == 0) {
+                metaBuilder.SetError(Methods.MakeClrProtectedMethodCalledError.OpCall(
+                    args.MetaContext.Expression, args.MetaTarget.Expression, Ast.Constant(name)
+                ));
+            } else {
+                BuildCallNoFlow(metaBuilder, args, name, visibleOverloads, CallConvention, ImplicitProtocolConversions);
+            }
+        }
+
+        private IList<MethodBase>/*!*/ GetVisibleOverloads(CallArguments/*!*/ args, IList<MethodBase>/*!*/ overloads) {
+            IList<MethodBase> newOverloads = null;
+            Debug.Assert(overloads.Count > 0);
+
+            // handle CLR-protected methods:
+
+            // TODO (opt):
+            // We might be able to cache the callable overloads in a MethodGroup. 
+            // However, the _overloadOwners of that group would need to point to the original overload owners, not the current class, in order
+            // to preserve semantics of overload deletion/redefinition (deletion of the protected overload would need to imply deletion
+            // of the correpsondig public overload in the cached MethodGroup).
+            if (!args.RubyContext.DomainManager.Configuration.PrivateBinding) {
+                Type underlyingType = null;
+                BindingFlags bindingFlags = 0;
+
+                for (int i = 0; i < overloads.Count; i++) {
+                    var overload = overloads[i];
+                    if (overload.IsFamily || overload.IsFamilyOrAssembly) {
+                        if (newOverloads == null) {
+                            newOverloads = CollectionUtils.GetRange(overloads, 0, i);
+
+                            RubyClass cls = args.Target as RubyClass;
+                            if (cls != null) {
+                                // target is a non-singleton class, look for the methods on its underlying type if it is Ruby class.
+                                bindingFlags = BindingFlags.Static;
+                            } else {
+                                // use the first non-singleton class:
+                                cls = args.TargetClass.GetNonSingletonClass();
+                                bindingFlags = BindingFlags.Instance;
+                            }
+
+                            if (cls.IsRubyClass && !cls.IsSingletonClass) {
+                                underlyingType = cls.GetUnderlyingSystemType();
+                            }
+                        }
+
+                        if (underlyingType != null) {
+                            // TODO (opt): we can define a method on the emitted type that does this more efficently:
+                            Type[] genericArguments = overload.IsGenericMethod ? overload.GetGenericArguments() : null;
+
+                            MethodInfo visibleMethod = GetMethodOverload(
+                                ReflectionUtils.GetParameterTypes(overload.GetParameters()), 
+                                genericArguments,
+                                underlyingType,
+                                ClsTypeEmitter.BaseMethodPrefix + overload.Name, 
+                                BindingFlags.Public | bindingFlags | BindingFlags.DeclaredOnly | BindingFlags.InvokeMethod
+                            );
+
+                            Debug.Assert(visibleMethod != null);
+
+                            if (overload.IsGenericMethod) {
+                                visibleMethod = visibleMethod.MakeGenericMethod(genericArguments);
+                            }
+
+                            newOverloads.Add(visibleMethod);
+                        }
+                    } else if (newOverloads != null) {
+                        newOverloads.Add(overload);
+                    }
+                }
+            }
+
+            return newOverloads ?? overloads;
+        }
+
+        private static MethodInfo/*!*/ GetMethodOverload(Type/*!*/[]/*!*/ parameterTypes, Type/*!*/[] genericParameterTypes, 
+            Type/*!*/ type, string/*!*/ name, BindingFlags bindingFlags) {
+
+            var overloads = type.GetMember(name, MemberTypes.Method, bindingFlags);
+            foreach (MethodInfo overload in overloads) {
+                if ((genericParameterTypes != null) == overload.IsGenericMethod &&
+                    ReflectionUtils.GetParameterTypes(overload.GetParameters()).ValueEquals(parameterTypes) &&
+                    !overload.IsGenericMethod || overload.GetGenericArguments().Length == genericParameterTypes.Length) {
+                    return overload;
+                }
+            }
+            return null;
+        }
     }
 }
 

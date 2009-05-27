@@ -60,4 +60,5 @@ class Object
     yield
   end
 end
+
 $: << (ENV["MERLIN_ROOT"] + "\\Bin\\Debug")

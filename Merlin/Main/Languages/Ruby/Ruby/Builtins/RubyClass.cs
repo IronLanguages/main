@@ -662,6 +662,11 @@ namespace IronRuby.Builtins {
             BindingFlags basicBindingFlags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly;
             BindingFlags bindingFlags = basicBindingFlags | ((_isSingletonClass) ? BindingFlags.Static : BindingFlags.Instance);
 
+            // instance methods on Object are also available in static context:
+            if (type == typeof(Object)) {
+                bindingFlags |= BindingFlags.Instance;
+            }
+
             string operatorName;
             if (!_isSingletonClass && (operatorName = MapOperator(name)) != null) {
                 // instance invocation of an operator:
@@ -867,6 +872,7 @@ namespace IronRuby.Builtins {
             if (inheritedRubyMember != null) {
                 // case [2.2.2]: add CLR methods from the Ruby member:
                 var inheritedGroup = inheritedRubyMember as RubyMethodGroupInfo;
+
                 if (inheritedGroup != null) {
                     AddMethodsOverwriteExisting(ref allMethods, inheritedGroup.MethodBases, inheritedGroup.OverloadOwners, specialNameOnly);
                 }
@@ -907,6 +913,7 @@ namespace IronRuby.Builtins {
             if (name.LastCharacter() == '*') {
                 name += "*";
             }
+
             return type.GetMember(name, MemberTypes.Method, bindingFlags | BindingFlags.InvokeMethod);
         }
 

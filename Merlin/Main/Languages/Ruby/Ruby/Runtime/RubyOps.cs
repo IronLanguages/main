@@ -1320,6 +1320,14 @@ namespace IronRuby.Runtime {
             return RubyExceptions.CreateProtectedMethodCalled(context, target, methodName);
         }
 
+        [Emitted]
+        public static Exception/*!*/ MakeClrProtectedMethodCalledError(RubyContext/*!*/ context, object target, string/*!*/ methodName) {
+            return new MissingMethodException(
+                RubyExceptions.FormatMethodMissingMessage(context, target, methodName, "CLR protected method `{0}' called for {1}; " +
+                "CLR protected methods can only be called with a receiver whose class is a subclass of the class declaring the method")
+            );
+        }
+
         #endregion
 
         [Emitted] //RubyBinder

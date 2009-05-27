@@ -34,8 +34,15 @@ namespace Microsoft.Scripting.Actions.Calls {
             _index = index;
         }
 
-        public bool HasValue {
+        public virtual bool HasValue {
             get { return _index != -1; }
+        }
+
+        /// <summary>
+        /// The number of actual arguments consumed by this builder.
+        /// </summary>
+        public virtual int ConsumedArgumentCount {
+            get { return 1; }
         }
 
         internal protected virtual Expression ToExpression(ref MethodInfo method, OverloadResolver resolver, RestrictedArguments args, bool[] hasBeenUsed) {

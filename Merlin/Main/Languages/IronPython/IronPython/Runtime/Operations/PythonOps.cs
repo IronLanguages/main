@@ -1070,13 +1070,16 @@ namespace IronPython.Runtime.Operations {
                     DynamicHelpers.GetPythonType(self),
                     name);
             }
-        }               
+        }
+
+        public static object GetUserSlotValue(CodeContext context, PythonTypeUserDescriptorSlot slot, object instance, PythonType type) {
+            return slot.GetValue(context, instance, type);
+        }
 
         /// <summary>
         /// Handles the descriptor protocol for user-defined objects that may implement __get__
         /// </summary>
         public static object GetUserDescriptor(object o, object instance, object context) {
-            if (o != null && o.GetType() == typeof(OldInstance)) return o;   // only new-style classes can have descriptors
             if (o is IPythonObject) {
                 // slow, but only encountred for user defined descriptors.
                 PerfTrack.NoteEvent(PerfTrack.Categories.DictInvoke, "__get__");

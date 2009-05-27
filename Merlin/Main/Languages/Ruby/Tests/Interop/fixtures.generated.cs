@@ -1,4 +1,5 @@
 using System;
+using System.Runtime.InteropServices;
 using Microsoft.Scripting.Hosting;
   using IronRuby.Runtime;
   using IronRuby.Builtins;
@@ -7,6 +8,23 @@ public partial class Klass {
       public T[] ArrayAcceptingMethod<T>(T[] arg0) {
         return arg0;
       }
+    }
+#line 37 "./bcl/equality/equality_spec.rb"
+public static class EqualityChecker {
+      public static new bool Equals(object o1, object o2) { return o1.Equals(o2); }
+    }
+    
+    public class Equatable {
+      public override bool Equals(object other) { return (other is string) && ((string)other) == "ClrMarker"; }
+      public override int GetHashCode() { throw new NotImplementedException(); }
+    }
+#line 38 "./bcl/equality/hashing_spec.rb"
+public static class Hasher {
+      public static int GetHashCode(object o) { return o.GetHashCode(); }
+    }
+    
+    public class Hashable {
+      public override int GetHashCode() { return 123; }
     }
 #line 10 "./bcl/icomparable/comparable_spec.rb"
 #line 13 "./bcl/icomparable/comparable_spec.rb"
@@ -23,6 +41,15 @@ public class IComparableConsumer {
 public partial class Klass {
     public decimal MyDecimal {get; set;}
   }
+#line 5 "./class/derivation/attribute_spec.rb"
+#line 9 "./class/derivation/attribute_spec.rb"
+public class ClassWithOptionalConstructor {
+      public int Arg {get; set;}
+      
+      public ClassWithOptionalConstructor([Optional]int arg) {
+        Arg = arg;
+      }
+    }
 #line 14 "./class/instantiation/abstract_spec.rb"
 public partial class DerivedFromAbstract : AbstractClass {
     public override int m() {return 1;}
@@ -656,20 +683,3 @@ public class EmptyTypeGroup { }
 
     public class TypeGroup1<T> {int m1() {return 1;}}
     public class TypeGroup1<T,V> {int m1() {return 1;}}
-#line 47 "./uncategorized_spec.rb"
-public static class EqualityChecker {
-      public static new bool Equals(object o1, object o2) { return o1.Equals(o2); }
-    }
-    
-    public class Equatable {
-      public override bool Equals(object other) { return (other is string) && ((string)other) == "ClrMarker"; }
-      public override int GetHashCode() { throw new NotImplementedException(); }
-    }
-#line 169 "./uncategorized_spec.rb"
-public static class Hasher {
-      public static int GetHashCode(object o) { return o.GetHashCode(); }
-    }
-    
-    public class Hashable {
-      public override int GetHashCode() { return 123; }
-    }

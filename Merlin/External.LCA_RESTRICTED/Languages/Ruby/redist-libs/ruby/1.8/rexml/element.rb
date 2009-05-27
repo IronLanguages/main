@@ -553,6 +553,7 @@ module REXML
     def attribute( name, namespace=nil )
       prefix = nil
       prefix = namespaces.index(namespace) if namespace
+      prefix = nil if prefix == 'xmlns'
       attributes.get_attribute( "#{prefix ? prefix + ':' : ''}#{name}" )
     end
 
@@ -661,7 +662,7 @@ module REXML
     #   pretty-printed in such a way that the added whitespace does not affect
     #   the parse tree of the document
     # ie_hack::
-    #   Internet Explorer is the worst piece of #### to have ever been
+    #   Internet Explorer is the worst piece of crap to have ever been
     #   written, with the possible exception of Windows itself.  Since IE is
     #   unable to parse proper XML, we have to provide a hack to generate XML
     #   that IE's limited abilities can handle.  This hack inserts a space 
@@ -854,15 +855,15 @@ module REXML
     #   Source (see Element.initialize).  If not supplied or nil, a
     #   new, default Element will be constructed
     # Returns:: the added Element
-    #  a = Element.new 'a'
-    #  a.elements.add Element.new 'b'  #-> <a><b/></a>
-    #  a.elements.add 'c'              #-> <a><b/><c/></a>
+    #  a = Element.new('a')
+    #  a.elements.add(Element.new('b'))  #-> <a><b/></a>
+    #  a.elements.add('c')               #-> <a><b/><c/></a>
     def add element=nil
       rv = nil
       if element.nil?
-        Element.new "", self, @element.context
+        Element.new("", self, @element.context)
       elsif not element.kind_of?(Element)
-        Element.new element, self, @element.context
+        Element.new(element, self, @element.context)
       else
         @element << element
         element.context = @element.context

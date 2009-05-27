@@ -43,6 +43,7 @@ namespace IronRuby.Runtime.Calls {
 
         // _args[0] might be target, if so _target is null:
         private DynamicMetaObject _target;
+        private RubyClass _targetClass;
 
         // Arguments must be readonly if _copyOnWrite is true. 
         private DynamicMetaObject[]/*!*/ _args;
@@ -110,6 +111,15 @@ namespace IronRuby.Runtime.Calls {
 
         public Expression/*!*/ TargetExpression {
             get { return MetaTarget.Expression; }
+        }
+
+        public RubyClass/*!*/ TargetClass {
+            get {
+                if (_targetClass == null) {
+                    _targetClass = RubyContext.GetImmediateClassOf(Target);
+                }
+                return _targetClass;
+            }
         }
 
         public object Target {
@@ -317,6 +327,8 @@ namespace IronRuby.Runtime.Calls {
             } else {
                 _target = metaTarget;
             }
+
+            _targetClass = null;
         }
     }
 }
