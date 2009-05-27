@@ -12,6 +12,7 @@ msl     =cd /d "%PROGRAM_FILES_32%\Microsoft Silverlight"
 ch      =cd /d "%MERLIN_ROOT%\Hosts\Silverlight\Chiron\"
 mss     =cd /d "%MERLIN_ROOT%\Hosts\Silverlight\"
 irk     =cd /d "%MERLIN_ROOT%\Hosts\IronRuby.Rack\"
+rbs     =cd /d "%MERLIN_ROOT%\Languages\Ruby\Samples\"
 
 ;==============================================================================
 ;= Build commands
