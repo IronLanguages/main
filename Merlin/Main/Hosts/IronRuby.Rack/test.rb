@@ -156,4 +156,3 @@ colsize = 79
 puts "="*colsize, "Body:", bbody
 puts "-"*colsize, "Headers:", headers.inspect
 puts "-"*colsize, "Status:", status.inspect, "="*colsize
-

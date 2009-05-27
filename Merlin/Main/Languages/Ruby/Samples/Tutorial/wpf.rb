@@ -20,12 +20,10 @@ require 'PresentationCore, Version=3.0.0.0, Culture=neutral, PublicKeyToken=31bf
 require 'windowsbase, Version=3.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35'
 
 class System::Windows::FrameworkElement
-    # Monkey-patch FrameworkElement to allow window.child_name instead of window.FindName("child_name")
-    def method_missing name, *args
-        child = FindName(name.to_clr_string)
-        if child then return child end
-        super
-    end
+  # Monkey-patch FrameworkElement to allow window.child_name instead of window.FindName("child_name")
+  def method_missing name, *args
+    find_name(name.to_s.to_clr_string) || super
+  end
 end
 
 class System::Windows::Threading::DispatcherObject

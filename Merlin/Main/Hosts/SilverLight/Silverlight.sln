@@ -15,17 +15,9 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Ruby", "..\..\Languages\Rub
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IronRuby.Libraries", "..\..\Languages\Ruby\Libraries.LCA_RESTRICTED\IronRuby.Libraries.csproj", "{77323B06-15A2-4CF4-8A7A-86EAA2B66498}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JSCompiler", "..\..\Languages\JS\JSCompiler\JSCompiler.csproj", "{357C287E-9839-41D6-B28C-203836500F2A}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JS.Runtime", "..\..\Languages\JS\JS.Runtime\JS.Runtime.csproj", "{588FD769-EEED-4CC1-AA39-2974051746AB}"
-EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Python", "Python", "{F26422BE-3900-428B-9C8A-7CDD72186EFB}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "JScript", "JScript", "{18EE4124-5E86-4DA6-A827-0A5BEFF7B943}"
-EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Ruby", "Ruby", "{954F903C-ABF7-400B-B23B-F7D461D23841}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TestConsoleHost", "TestConsoleHost\TestConsoleHost.csproj", "{3C0D0159-3295-4ED3-BC48-961AE99CE15E}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.Scripting", "..\..\Runtime\Microsoft.Scripting\Microsoft.Scripting.csproj", "{EB66B766-6354-4208-A3D4-AACBDCB5C3B3}"
 EndProject
@@ -54,18 +46,12 @@ Global
 		SccProjectTopLevelParentUniqueName5 = Silverlight.sln
 		SccProjectName5 = ../../Languages/Ruby/Libraries.LCA_RESTRICTED
 		SccLocalPath5 = ..\\..\\Languages\\Ruby\\Libraries.LCA_RESTRICTED
-		SccProjectUniqueName6 = ..\\..\\Languages\\JS\\JS.Runtime\\JS.Runtime.csproj
 		SccProjectTopLevelParentUniqueName6 = Silverlight.sln
-		SccProjectName6 = ../../Languages/JS/JS.Runtime
-		SccLocalPath6 = ..\\..\\Languages\\JS\\JS.Runtime
 		SccProjectUniqueName7 = ..\\..\\Languages\\IronPython\\IronPython\\IronPython.csproj
 		SccProjectTopLevelParentUniqueName7 = Silverlight.sln
 		SccProjectName7 = ../../Languages/IronPython/IronPython
 		SccLocalPath7 = ..\\..\\Languages\\IronPython\\IronPython
-		SccProjectUniqueName8 = ..\\..\\Languages\\JS\\JSCompiler\\JSCompiler.csproj
 		SccProjectTopLevelParentUniqueName8 = Silverlight.sln
-		SccProjectName8 = ../../Languages/JS/JSCompiler
-		SccLocalPath8 = ..\\..\\Languages\\JS\\JSCompiler
 		SccProjectUniqueName9 = ..\\..\\Languages\\Ruby\\Ruby\\Ruby.csproj
 		SccProjectTopLevelParentUniqueName9 = Silverlight.sln
 		SccProjectName9 = ../../Languages/Ruby/Ruby
