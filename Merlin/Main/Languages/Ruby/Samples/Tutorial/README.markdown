@@ -43,16 +43,3 @@ Running the tests
   cd Samples\Tutorial
   ir.exe test\test_console.rb
 
-TODO
-----
-
-- Start tutorial button
-- scratch REPL surface
-- Collapsable tutorial section/chapter navigation
-- UI to show all available tutorials
-- Ruby syntax colorization
-- Integration with RubyGems to download tutorial gems
-- Multi-step tasks with hinting for next step
-- UI surface for WPF tutorials
-- Silverlight support
-- Voting feedback

@@ -1,0 +1,11 @@
+show all available tutorials on start
+Start tutorial button
+active tutorial border color
+UI surface for WPF tutorials
+Silverlight support
+standalone REPL
+Collapsable tutorial section/chapter navigation
+Ruby syntax colorization
+Integration with RubyGems to download tutorial gems
+Multi-step tasks with hinting for next step
+Voting feedback

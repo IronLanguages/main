@@ -75,7 +75,7 @@ class System::Windows::Window
       step_obj = System::Windows::Markup::XamlReader.load(
         System::Xml::XmlReader.create(
           System::IO::StringReader.new(step_xaml)))
-      body.children.add step_obj
+      self.tutorial_body.children.add step_obj
 
       instance_variable_set(:"@#{name}", step_obj)
       self.class.instance_eval { attr_reader :"#{name}" }
@@ -197,7 +197,7 @@ class WpfTutorial
           @window.exercise.document = FlowDocument.from_simple_markup("Tutorial complete!")
         end
         @window.exercise.visibility = Visibility.visible
-        @window.body.children.clear
+        @window.tutorial_body.children.clear
         @window.tutorial_scroll.scroll_to_top
       end
     else
@@ -290,7 +290,7 @@ class WpfTutorial
     else
       @window.exercise.visibility = Visibility.collapsed
     end
-    @window.body.children.clear
+    @window.tutorial_body.children.clear
     @tasks = @chapter.tasks.clone
     select_next_task
     @window.stop_loading
@@ -303,7 +303,7 @@ class WpfTutorial
     else
       @window.exercise.visibility = Visibility.collapsed
     end
-    @window.body.children.clear
+    @window.tutorial_body.children.clear
   end
 
   def print_to_repl s, new_line = true

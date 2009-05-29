@@ -9,28 +9,76 @@
 	x:Name="Window"
 	Title="IronRuby Tutorial"
 	Width="640" Margin="0,0,0,12372" Height="510">
+	<Window.Resources>
+		<Storyboard x:Key="OnMouseEnter1">
+			<DoubleAnimationUsingKeyFrames BeginTime="00:00:00" Storyboard.TargetName="tutorial_nav" Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[3].(TranslateTransform.X)">
+				<SplineDoubleKeyFrame KeyTime="00:00:00.2000000" Value="0" KeySpline="0.5,0,0.5,1"/>
+			</DoubleAnimationUsingKeyFrames>
+		</Storyboard>
+		<Storyboard x:Key="OnMouseLeave1">
+			<DoubleAnimationUsingKeyFrames BeginTime="00:00:00" Storyboard.TargetName="tutorial_nav" Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[3].(TranslateTransform.X)">
+				<SplineDoubleKeyFrame KeyTime="00:00:00.2000000" Value="170" KeySpline="0.5,0,0.5,1"/>
+			</DoubleAnimationUsingKeyFrames>
+		</Storyboard>
+	</Window.Resources>
+	<Window.Triggers>
+		<EventTrigger RoutedEvent="Mouse.MouseEnter" SourceName="tutorial_nav">
+			<BeginStoryboard x:Name="OnMouseEnter1_BeginStoryboard" Storyboard="{StaticResource OnMouseEnter1}"/>
+			<StopStoryboard BeginStoryboardName="OnMouseLeave1_BeginStoryboard"/>
+		</EventTrigger>
+		<EventTrigger RoutedEvent="Mouse.MouseLeave" SourceName="tutorial_nav">
+			<BeginStoryboard x:Name="OnMouseLeave1_BeginStoryboard" Storyboard="{StaticResource OnMouseLeave1}"/>
+			<StopStoryboard BeginStoryboardName="OnMouseEnter1_BeginStoryboard"/>
+		</EventTrigger>
+	</Window.Triggers>
 
 	<Grid x:Name="LayoutRoot" Margin="0">
-		<ScrollViewer x:Name="tutorial_scroll" Margin="0,0,200,0">
-			<local:TutorialPage Margin="0"/>
-		</ScrollViewer>
-		<Border x:Name="tutorial_nav" HorizontalAlignment="Right" Margin="0" Width="200" Background="White" BorderBrush="#FF7B7B7B" BorderThickness="5,0,0,0" CornerRadius="10,0,0,10" Padding="2,2,0,2">
+		<Grid x:Name="loading" Background="#BF545454" Panel.ZIndex="10" Visibility="Collapsed">
+			<Border BorderBrush="#FF484848" BorderThickness="10" Margin="150" CornerRadius="10" Background="White">
+				<Border.Effect>
+					<DropShadowEffect BlurRadius="37" Direction="180"/>
+				</Border.Effect>
+				<TextBlock FontSize="48" Text="Loading ..." TextWrapping="Wrap" Margin="0" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+			</Border>
+		</Grid>
+		<Border x:Name="tutorial_nav" HorizontalAlignment="Right" Width="200" Background="White" BorderBrush="#FF7B7B7B" BorderThickness="5,2,0,2" CornerRadius="10,0,0,10" Padding="2,2,0,2" Margin="0,10" Panel.ZIndex="1" RenderTransformOrigin="0.5,0.5">
 			<Border.Resources>
 			    <!-- Chapter TEMPLATE -->
                 <DataTemplate x:Key="ChapterTemplate">
-                    <TextBlock Text="{Binding Path=name}" />
+                    <TextBlock Text="{Binding name}" />
                 </DataTemplate>
 
                 <!-- Section TEMPLATE -->
                 <HierarchicalDataTemplate 
                   x:Key="SectionTemplate"
-                  ItemsSource="{Binding Path=chapters}"
+                  ItemsSource="{Binding chapters}"
                   ItemTemplate="{StaticResource ChapterTemplate}"
                 >
-                    <TextBlock Text="{Binding Path=name}" />
+                    <TextBlock Text="{Binding name}" />
                 </HierarchicalDataTemplate>
 			</Border.Resources>
-			<TreeView Name="chapters" Margin="1,1,0,1" BorderBrush="{x:Null}" FontSize="16"/>
+			<Border.RenderTransform>
+				<TransformGroup>
+					<ScaleTransform/>
+					<SkewTransform/>
+					<RotateTransform/>
+					<TranslateTransform X="170"/>
+				</TransformGroup>
+			</Border.RenderTransform>
+			<Grid>
+				<TextBlock Margin="0" Width="130" Height="18" RenderTransformOrigin="0.5,0.5" Text="Jump to another section" HorizontalAlignment="Left" VerticalAlignment="Center" >
+					<TextBlock.RenderTransform>
+						<TransformGroup>
+							<ScaleTransform/>
+							<SkewTransform/>
+							<RotateTransform Angle="-90"/>
+							<TranslateTransform X="-55"/>
+						</TransformGroup>
+					</TextBlock.RenderTransform>
+				</TextBlock>
+				<TreeView x:Name="chapters" BorderBrush="{x:Null}" FontSize="16" HorizontalAlignment="Right" Margin="0,1" Height="444" RenderTransformOrigin="0.5,0.5" Width="170"/>
+
+			</Grid>
 
 			<!--<ListView Margin="0" Background="White" BorderBrush="White" BorderThickness="0" IsSynchronizedWithCurrentItem="True" FontSize="16">
 				<ListView.View>
@@ -42,25 +90,27 @@
 				<ListViewItem Margin="0" Content="Chapter 2"/>
 			</ListView>-->
 		</Border>
-		<ScrollViewer x:Name="main_scroll" Margin="0,25,0,0" Visibility="Hidden">
-			<StackPanel x:Name="main" HorizontalAlignment="Left" VerticalAlignment="Top" Width="626" Height="451" Background="White">
-				<Border x:Name="main_header" BorderBrush="Black" BorderThickness="0,0,0,1" Padding="8,8,8,34" Background="#FFEFEFEF" Margin="0">
-					<TextBlock HorizontalAlignment="Left" FontSize="32" Text="Pick a tutorial" TextWrapping="Wrap" Margin="0,0,0,-45"/>
-				</Border>
+		<Grid x:Name="Page">
+			<StackPanel x:Name="header_navigation" Height="25" Background="#FF424242" Orientation="Horizontal" Margin="0" VerticalAlignment="Top" Visibility="Collapsed">
+				<StackPanel HorizontalAlignment="Left" Margin="8,4" VerticalAlignment="Center">
+					<Button Content="&lt; back" HorizontalContentAlignment="Center" Padding="2,1" VerticalContentAlignment="Center" Visibility="Hidden"/>
+				</StackPanel>
 			</StackPanel>
-		</ScrollViewer>
-		<StackPanel x:Name="header_navigation" VerticalAlignment="Top" Height="25" Background="#FF424242" Orientation="Horizontal" Visibility="Collapsed">
-			<StackPanel HorizontalAlignment="Left" Margin="8,4" VerticalAlignment="Center">
-				<Button Content="&lt; back" HorizontalContentAlignment="Center" Padding="2,1" VerticalContentAlignment="Center" Visibility="Hidden"/>
-			</StackPanel>
-		</StackPanel>
-		<Grid x:Name="loading" Background="#BF545454" Visibility="Hidden">
-			<Border BorderBrush="#FF484848" BorderThickness="10" Margin="150" CornerRadius="10" Background="White">
-				<Border.Effect>
-					<DropShadowEffect BlurRadius="37" Direction="180"/>
-				</Border.Effect>
-				<TextBlock FontSize="48" Text="Loading ..." TextWrapping="Wrap" Margin="0" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+			<Border x:Name="header" BorderBrush="Black" BorderThickness="0,0,0,1" Padding="8,8,8,34" Background="#FFEFEFEF" Panel.ZIndex="1" Margin="0" VerticalAlignment="Top">
+				<TextBlock x:Name="tutorial_name" HorizontalAlignment="Left" FontSize="32" Text="IronRuby tutorial" TextWrapping="Wrap" Margin="0,0,0,-45"/>
 			</Border>
+			<Grid x:Name="body" Margin="0,43,0,0" d:LayoutOverrides="Height">
+				<ScrollViewer x:Name="tutorial_scroll" Margin="0,0,30,0" Padding="0,10,0,0">
+					<local:TutorialPage Margin="0"/>
+				</ScrollViewer>
+				<ScrollViewer x:Name="main_scroll" Margin="0,25,0,-2611" Visibility="Collapsed" HorizontalAlignment="Left" Width="100">
+					<StackPanel x:Name="main" HorizontalAlignment="Left" VerticalAlignment="Top" Width="626" Height="451" Background="White">
+						<Border x:Name="main_header" BorderBrush="Black" BorderThickness="0,0,0,1" Padding="8,8,8,34" Background="#FFEFEFEF" Margin="0">
+							<TextBlock HorizontalAlignment="Left" FontSize="32" Text="Pick a tutorial" TextWrapping="Wrap" Margin="0,0,0,-45"/>
+						</Border>
+					</StackPanel>
+				</ScrollViewer>
+			</Grid>
 		</Grid>
 	</Grid>
 	
