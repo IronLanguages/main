@@ -558,14 +558,10 @@ namespace IronRuby.Builtins {
                 throw RubyExceptions.NoBlockGiven();
             }
 
-            for (int originalSize = self.Count, i = originalSize - 1; i >= 0; i--) {
+            foreach (int index in IListOps.ReverseEnumerateIndexes(self)) {
                 object result;
-                if (block.Yield(self[i], out result)) {
+                if (block.Yield(self[index], out result)) {
                     return result;
-                }
-                if (self.Count < originalSize) {
-                    i = originalSize - i - 1 + self.Count;
-                    originalSize = self.Count;
                 }
             }
             return self;
