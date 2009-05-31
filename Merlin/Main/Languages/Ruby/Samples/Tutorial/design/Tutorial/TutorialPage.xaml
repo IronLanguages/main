@@ -9,7 +9,7 @@
 	x:Name="TutorialPageUserControl"
 	d:DesignWidth="624" d:DesignHeight="450" Background="White">
 
-	<StackPanel x:Name="tutorial_page" VerticalAlignment="Top">
+	<StackPanel x:Name="tutorial_page" VerticalAlignment="Top" Margin="0,8,0,0">
         <RichTextBox x:Name="exercise" Focusable="False" IsReadOnly="True" IsUndoEnabled="False" BorderThickness="0" HorizontalAlignment="Left" FontSize="13.333" Padding="4,8">
         	<FlowDocument>
         		<Paragraph><Run Text="This section blah blah blah ..."/></Paragraph>

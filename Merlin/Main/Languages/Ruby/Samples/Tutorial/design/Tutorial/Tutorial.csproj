@@ -68,6 +68,9 @@
     <Compile Include="StepControl.xaml.cs">
       <DependentUpon>StepControl.xaml</DependentUpon>
     </Compile>
+    <Compile Include="TutorialControl.xaml.cs">
+      <DependentUpon>TutorialControl.xaml</DependentUpon>
+    </Compile>
     <Compile Include="TutorialPage.xaml.cs">
       <DependentUpon>TutorialPage.xaml</DependentUpon>
     </Compile>
@@ -76,6 +79,10 @@
       <SubType>Designer</SubType>
     </Page>
     <Page Include="StepControl.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="TutorialControl.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>

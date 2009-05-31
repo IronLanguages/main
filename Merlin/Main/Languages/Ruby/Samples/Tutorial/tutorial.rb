@@ -124,12 +124,16 @@ module Tutorial
     end
     
     @@tutorials = {}
-    
-    @@ironruby_tutorial_path = File.expand_path("Tutorials/ironruby_tutorial", File.dirname(__FILE__))
-    @@tryruby_tutorial_path  = File.expand_path("Tutorials/tryruby_tutorial" , File.dirname(__FILE__))
 
-    def self.get_tutorial path = @@tryruby_tutorial_path
-        if not @@tutorials.has_key? path		
+    def self.all
+      Dir[File.expand_path("Tutorials", File.dirname(__FILE__)) + '/*'].each do |t|
+        self.get_tutorial t
+      end
+      @@tutorials
+    end
+
+    def self.get_tutorial path = @@tutorials.first
+        if not @@tutorials.has_key? path
             require path
             raise "path does not contains a tutorial definition" if not Thread.current[:tutorial]
             @@tutorials[path] = Thread.current[:tutorial]
@@ -164,6 +168,8 @@ end
 class Object
     def tutorial name
         Thread.current[:tutorial] = Tutorial::Tutorial.new name
+        Thread.current[:tutorials] ||= []
+        Thread.current[:tutorials] << Thread.current[:tutorial]
         Thread.current[:prev_chapter] = nil
         yield
     end
