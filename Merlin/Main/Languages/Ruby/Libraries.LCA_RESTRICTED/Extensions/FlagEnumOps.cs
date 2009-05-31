@@ -37,7 +37,7 @@ namespace IronRuby.Builtins {
                 return result;
             }
 
-            throw RubyExceptions.CreateUnexpectedTypeError(context, other, context.GetClassName(self));
+            throw RubyExceptions.CreateUnexpectedTypeError(context, other, context.GetClassDisplayName(self));
         }
 
         [RubyMethod("&")]
@@ -48,7 +48,7 @@ namespace IronRuby.Builtins {
             if (result != null) {
                 return result;
             }
-            throw RubyExceptions.CreateUnexpectedTypeError(context, other, context.GetClassName(self));
+            throw RubyExceptions.CreateUnexpectedTypeError(context, other, context.GetClassDisplayName(self));
         }
 
         [RubyMethod("^")]
@@ -59,7 +59,7 @@ namespace IronRuby.Builtins {
             if (result != null) {
                 return result;
             }
-            throw RubyExceptions.CreateUnexpectedTypeError(context, other, context.GetClassName(self));
+            throw RubyExceptions.CreateUnexpectedTypeError(context, other, context.GetClassDisplayName(self));
         }
 
         [RubyMethod("~")]

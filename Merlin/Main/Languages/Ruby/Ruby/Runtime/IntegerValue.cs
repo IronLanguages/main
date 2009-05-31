@@ -27,6 +27,30 @@ namespace IronRuby.Runtime {
         private int _fixnum;
         private BigInteger _bignum;
 
+        public override bool Equals(object obj) {
+            if (obj == null) {
+                return false;
+            }
+
+            if (obj is IntegerValue) {
+                return Equals((IntegerValue)obj);
+            } else if (obj is int) {
+                return Equals(new IntegerValue((int)obj));
+            } else if (obj is BigInteger) {
+                return Equals(new IntegerValue(obj as BigInteger));
+            }
+
+            return false;
+        }
+
+        public override int GetHashCode() {
+            if (IsFixnum) {
+                return _fixnum.GetHashCode();
+            } else {
+                return _bignum.GetHashCode();
+            }
+        }
+
         public int Fixnum { 
             get {
                 Debug.Assert(IsFixnum);

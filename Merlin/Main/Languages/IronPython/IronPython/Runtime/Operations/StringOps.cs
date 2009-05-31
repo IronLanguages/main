@@ -1285,19 +1285,10 @@ namespace IronPython.Runtime.Operations {
             return StringOps.GetEnumerable(s);
         }
 
-        public static int __cmp__(string self, string obj) {
+        internal static int Compare(string self, string obj) {
             int ret = string.CompareOrdinal(self, obj);
             return ret == 0 ? 0 : (ret < 0 ? -1 : +1);
         }
-
-        public static int __cmp__(string self, ExtensibleString obj) {
-            int ret = string.CompareOrdinal(self, obj.Value);
-            return ret == 0 ? 0 : (ret < 0 ? -1 : +1);
-        }
-
-        public static int __cmp__(string self, char obj) {
-            return (int)(self[0] - (char)obj);
-        }        
 
         public static object __getnewargs__(CodeContext/*!*/ context, string self) {
             if (!Object.ReferenceEquals(self, null)) {
@@ -1706,6 +1697,7 @@ namespace IronPython.Runtime.Operations {
                             continue;
                         case "utf_16":
                             d["utf_16_le"] = d["utf_16le"] = new EncodingInfoWrapper(encs[i], new byte[0]);
+                            d["utf16"] = new EncodingInfoWrapper(encs[i], encs[i].GetEncoding().GetPreamble());
                             break;
                         case "unicodefffe": // big endian unicode                    
                             // strip off the pre-amble, CPython doesn't include it.
@@ -2261,7 +2253,7 @@ namespace IronPython.Runtime.Operations {
                 get { throw new NotImplementedException(); }
             }
         }
-        
+
         class BackslashEncoderReplaceFallback : EncoderFallback {
             class BackslashReplaceFallbackBuffer : EncoderFallbackBuffer {
                 private List<char> _buffer = new List<char>();

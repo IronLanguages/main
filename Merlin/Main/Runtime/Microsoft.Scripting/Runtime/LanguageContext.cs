@@ -31,7 +31,6 @@ namespace Microsoft.Scripting.Runtime {
     /// </summary>
     public abstract class LanguageContext {
         private readonly ScriptDomainManager _domainManager;
-        private static readonly ModuleGlobalCache _noCache = new ModuleGlobalCache(ModuleGlobalCache.NotCaching);
         private ActionBinder _binder;
         private readonly ContextId _id;
 
@@ -110,9 +109,10 @@ namespace Microsoft.Scripting.Runtime {
         /// </summary>
         /// <param name="stream">The stream open for reading. The stream must also allow seeking.</param>
         /// <param name="defaultEncoding">An encoding that should be used if the stream doesn't have Unicode or language specific preamble.</param>
+        /// <param name="path">the path of the source unit if available</param>
         /// <returns>The reader.</returns>
         /// <exception cref="IOException">An I/O error occurs.</exception>
-        public virtual SourceCodeReader GetSourceReader(Stream stream, Encoding defaultEncoding) {
+        public virtual SourceCodeReader GetSourceReader(Stream stream, Encoding defaultEncoding, string path) {
             ContractUtils.RequiresNotNull(stream, "stream");
             ContractUtils.RequiresNotNull(defaultEncoding, "defaultEncoding");
             ContractUtils.Requires(stream.CanRead && stream.CanSeek, "stream", "The stream must support reading and seeking");
@@ -215,22 +215,6 @@ namespace Microsoft.Scripting.Runtime {
             return Error.NameNotDefined(SymbolTable.IdToString(name));
         }
 
-        /// <summary>
-        /// Returns a ModuleGlobalCache for the given name.  
-        /// 
-        /// This cache enables fast access to global values when a SymbolId is not defined after searching the Scope's.  Usually
-        /// a language implements lookup of the global value via TryLookupGlobal.  When GetModuleCache returns a ModuleGlobalCache
-        /// a cached value can be used instead of calling TryLookupGlobal avoiding a possibly more expensive lookup from the 
-        /// LanguageContext.  The ModuleGlobalCache can be held onto and have its value updated when the cache is invalidated.
-        /// 
-        /// By default this returns a cache which indicates no caching should occur and the LanguageContext will be 
-        /// consulted when a module value is not available. If a LanguageContext only caches some values it can return 
-        /// the value from the base method when the value should not be cached.
-        /// </summary>
-        protected internal virtual ModuleGlobalCache GetModuleCache(SymbolId name) {
-            return _noCache;
-        }
-
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Reliability", "CA2001:AvoidCallingProblematicMethods", MessageId = "System.Reflection.Assembly.LoadFile")]
         public virtual Assembly LoadAssemblyFromFile(string file) {
 #if SILVERLIGHT
@@ -318,7 +302,7 @@ namespace Microsoft.Scripting.Runtime {
             ContractUtils.RequiresNotNull(path, "path");
             ContractUtils.RequiresNotNull(encoding, "encoding");
 
-            TextContentProvider provider = new LanguageBoundTextContentProvider(this, new FileStreamContentProvider(DomainManager.Platform, path), encoding);
+            TextContentProvider provider = new LanguageBoundTextContentProvider(this, new FileStreamContentProvider(DomainManager.Platform, path), encoding, path);
             return CreateSourceUnit(provider, path, kind);
         }
 
@@ -337,7 +321,7 @@ namespace Microsoft.Scripting.Runtime {
             ContractUtils.Requires(kind.IsValid(), "kind");
             ContractUtils.Requires(CanCreateSourceCode);
 
-            return new SourceUnit(this, new LanguageBoundTextContentProvider(this, contentProvider, encoding), path, kind);
+            return new SourceUnit(this, new LanguageBoundTextContentProvider(this, contentProvider, encoding, path), path, kind);
         }
 
         public SourceUnit CreateSourceUnit(TextContentProvider contentProvider, string path, SourceCodeKind kind) {

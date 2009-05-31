@@ -58,7 +58,7 @@ namespace IronPython.Modules {
             /// Serializes the provided value into the specified address at the given
             /// offset.
             /// </summary>
-            void SetValue(MemoryHolder/*!*/ address, int offset, object value);
+            object SetValue(MemoryHolder/*!*/ address, int offset, object value);
 
             /// <summary>
             /// Gets the .NET type which is used when calling or returning the value

@@ -24,7 +24,7 @@ using Microsoft.Scripting.Runtime;
 
 namespace Microsoft.Scripting.Actions {
     /// <summary>
-    /// A TypeCollision is used when we have a collsion between
+    /// A TypeCollision is used when we have a collision between
     /// two types with the same name.  Currently this is only possible w/ generic
     /// methods that should logically have arity as a portion of their name. For eg:
     ///      System.EventHandler and System.EventHandler[T]
@@ -39,26 +39,36 @@ namespace Microsoft.Scripting.Actions {
     /// information to get the generic version.
     /// </summary>
     public sealed class TypeGroup : TypeTracker {
-        private Dictionary<int, Type> _typesByArity;
+        private readonly Dictionary<int, Type> _typesByArity;
+        private readonly string _name;
 
-        private TypeGroup(Type t1, Type t2) {
-            Debug.Assert(ReflectionUtils.GetNormalizedTypeName(t1) == ReflectionUtils.GetNormalizedTypeName(t2));
+        private TypeGroup(Type t1, int arity1, Type t2, int arity2) {
+            // TODO: types of different arities might be inherited, but we don't support that yet:
+            Debug.Assert(t1.DeclaringType == t2.DeclaringType);
+
+            Debug.Assert(arity1 != arity2);
             _typesByArity = new Dictionary<int, Type>();
+            _typesByArity[arity1] = t1;
+            _typesByArity[arity2] = t2;
 
-            Debug.Assert(GetGenericArity(t1) != GetGenericArity(t2));
-            _typesByArity[GetGenericArity(t1)] = t1;
-            _typesByArity[GetGenericArity(t2)] = t2;
+            _name = ReflectionUtils.GetNormalizedTypeName(t1);
+            Debug.Assert(_name == ReflectionUtils.GetNormalizedTypeName(t2));
         }
 
-        private TypeGroup(Type t1, Dictionary<int, Type> existingTypes) {
-            _typesByArity = existingTypes;
+        private TypeGroup(Type t1, TypeGroup existingTypes) {
+            // TODO: types of different arities might be inherited, but we don't support that yet:
+            Debug.Assert(t1.DeclaringType == existingTypes.DeclaringType);
+            Debug.Assert(ReflectionUtils.GetNormalizedTypeName(t1) == existingTypes.Name);
+            
+            _typesByArity = new Dictionary<int, Type>(existingTypes._typesByArity);
             _typesByArity[GetGenericArity(t1)] = t1;
+            _name = existingTypes.Name;
         }
 
         [Confined]
         public override string ToString() {
             StringBuilder repr = new StringBuilder(base.ToString());
-            repr.Append(":" + NormalizedName + "(");
+            repr.Append(":" + Name + "(");
 
             bool pastFirstType = false;
             foreach (Type type in Types) {
@@ -84,10 +94,7 @@ namespace Microsoft.Scripting.Actions {
         /// <param name="existingTypeEntity">The merged list so far. Could be null</param>
         /// <param name="newType">The new type(s) to add to the merged list</param>
         /// <returns>The merged list.  Could be a TypeTracker or TypeGroup</returns>
-        public static TypeTracker UpdateTypeEntity(
-            TypeTracker existingTypeEntity,
-            TypeTracker newType) {
-
+        public static TypeTracker UpdateTypeEntity(TypeTracker existingTypeEntity, TypeTracker newType) {
             Debug.Assert(newType != null);
             Debug.Assert(existingTypeEntity == null || (existingTypeEntity is NestedTypeTracker) || (existingTypeEntity is TypeGroup));
 
@@ -97,24 +104,19 @@ namespace Microsoft.Scripting.Actions {
 
             NestedTypeTracker existingType = existingTypeEntity as NestedTypeTracker;
             TypeGroup existingTypeCollision = existingTypeEntity as TypeGroup;
-#if DEBUG
-            string existingEntityNormalizedName = (existingType != null) ? ReflectionUtils.GetNormalizedTypeName(existingType.Type)
-                                                                         : existingTypeCollision.NormalizedName;
-            string newEntityNormalizedName = ReflectionUtils.GetNormalizedTypeName(newType.Type);
-            Debug.Assert(existingEntityNormalizedName == newEntityNormalizedName);
-#endif
 
             if (existingType != null) {
-                if (GetGenericArity(existingType.Type) == GetGenericArity(newType.Type)) {
+                int existingArity = GetGenericArity(existingType.Type);
+                int newArity = GetGenericArity(newType.Type);
+
+                if (existingArity == newArity) {
                     return newType;
                 }
 
-                return new TypeGroup(existingType.Type, newType.Type);
+                return new TypeGroup(existingType.Type, existingArity, newType.Type, newArity);
             }
 
-            // copy the dictionary and return a new collision
-            Dictionary<int, Type> copy = new Dictionary<int, Type>(existingTypeCollision._typesByArity);
-            return new TypeGroup(newType.Type, copy);
+            return new TypeGroup(newType.Type, existingTypeCollision);
         }
 
         /// <summary> Gets the arity of generic parameters</summary>
@@ -138,7 +140,7 @@ namespace Microsoft.Scripting.Actions {
                     return nonGenericType;
                 }
 
-                throw Error.NonGenericWithGenericGroup(NormalizedName);
+                throw Error.NonGenericWithGenericGroup(Name);
             }
         }
 
@@ -160,12 +162,6 @@ namespace Microsoft.Scripting.Actions {
             }
         }
 
-        public string NormalizedName {
-            get {
-                return ReflectionUtils.GetNormalizedTypeName(SampleType);
-            }
-        }
-
 
         #region MemberTracker overrides
 
@@ -180,7 +176,7 @@ namespace Microsoft.Scripting.Actions {
         /// </summary>
         public override Type DeclaringType {
             get {
-                return AnyType().DeclaringType;
+                return SampleType.DeclaringType;
             }
         }
 
@@ -189,12 +185,7 @@ namespace Microsoft.Scripting.Actions {
         /// </summary>
         public override string Name {
             get {
-                string name = AnyType().Name;
-
-                if (name.IndexOf(ReflectionUtils.GenericArityDelimiter) != -1) {
-                    return name.Substring(0, name.LastIndexOf(ReflectionUtils.GenericArityDelimiter));
-                }
-                return name;
+                return _name;
             }
         }
 
@@ -219,12 +210,5 @@ namespace Microsoft.Scripting.Actions {
         }
 
         #endregion
-
-        private Type AnyType() {
-            foreach (KeyValuePair<int, Type> kvp in _typesByArity) {
-                return kvp.Value;
-            }
-            throw new InvalidOperationException();
-        }
     }
 }

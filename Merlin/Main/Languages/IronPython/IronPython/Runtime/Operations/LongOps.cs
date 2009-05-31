@@ -31,8 +31,8 @@ namespace IronPython.Runtime.Operations {
     public static partial class BigIntegerOps {
         [StaticExtensionMethod]
         public static object __new__(CodeContext context, PythonType cls, string s, int radix) {
-            if (radix == 16) {
-                s = Int32Ops.TrimRadix(s);
+            if (radix == 16 || radix == 8 || radix == 2) {
+                s = Int32Ops.TrimRadix(s, radix);
             }
 
             if (cls == TypeCache.BigInteger) {
@@ -72,35 +72,66 @@ namespace IronPython.Runtime.Operations {
             Extensible<string> es;
 
             if (x is string) {
-                return ReturnBigInteger(context, cls, ParseBigIntegerSign((string)x, 10));
+                return ReturnObject(context, cls, ParseBigIntegerSign((string)x, 10));
             } else if ((es = x as Extensible<string>) != null) {
                 object value;
                 if (PythonTypeOps.TryInvokeUnaryOperator(context, x, Symbols.ConvertToLong, out value)) {
-                    return ReturnBigInteger(context, cls, (BigInteger)value);
+                    return ReturnObject(context, cls, (BigInteger)value);
                 }
 
-                return ReturnBigInteger(context, cls, ParseBigIntegerSign(es.Value, 10));
+                return ReturnObject(context, cls, ParseBigIntegerSign(es.Value, 10));
             }
-
-            BigInteger intVal;
-            if (Converter.TryConvertToBigInteger(x, out intVal)) {
-                if (Object.Equals(intVal, null)) throw PythonOps.TypeError("can't convert {0} to long", PythonTypeOps.GetName(x));
-
-                return ReturnBigInteger(context, cls, intVal);
-            }
-
-
+            if (x is double) return ReturnObject(context, cls, DoubleOps.__long__((double)x));
+            if (x is int) return ReturnObject(context, cls, (BigInteger)(int)x);
+            if (x is BigInteger) return ReturnObject(context, cls, x);
+            
             if (x is Complex64) throw PythonOps.TypeError("can't convert complex to long; use long(abs(z))");
 
-            throw PythonOps.ValueError("long argument must be convertible to long (string, number, or type that defines __long__, got {0})",
-                StringOps.Quote(PythonOps.GetPythonTypeName(x)));
+            if (x is decimal) {
+                return ReturnObject(context, cls, BigInteger.Create((decimal)x));
+            }
+
+            object result;
+            int intRes;
+            BigInteger bigintRes;
+            if (PythonTypeOps.TryInvokeUnaryOperator(context, x, Symbols.ConvertToLong, out result) &&
+                !Object.ReferenceEquals(result, NotImplementedType.Value) ||
+                x is OldInstance &&
+                PythonTypeOps.TryInvokeUnaryOperator(context, x, Symbols.ConvertToInt, out result) &&
+                !Object.ReferenceEquals(result, NotImplementedType.Value)) {
+                if (result is int || result is BigInteger ||
+                    result is Extensible<int> || result is Extensible<BigInteger>) {
+                    return ReturnObject(context, cls, result);
+                } else {
+                    throw PythonOps.TypeError("__long__ returned non-long (type {0})",
+                        result is OldInstance ? ((OldInstance)result)._class.__name__ : DynamicHelpers.GetPythonType(result).Name);
+                }
+            } else if (PythonOps.TryGetBoundAttr(context, x, Symbols.Truncate, out result)) {
+                result = PythonOps.CallWithContext(context, result);
+                if (Converter.TryConvertToInt32(result, out intRes)) {
+                    return ReturnObject(context, cls, (BigInteger)intRes);
+                } else if (Converter.TryConvertToBigInteger(result, out bigintRes)) {
+                    return ReturnObject(context, cls, bigintRes);
+                } else {
+                    throw PythonOps.TypeError("__trunc__ returned non-Integral (type {0})",
+                        result is OldInstance ? ((OldInstance)result)._class.__name__ : DynamicHelpers.GetPythonType(result).Name);
+                }
+            }
+
+            if (x is OldInstance) {
+                throw PythonOps.AttributeError("{0} instance has no attribute '__trunc__'",
+                    ((OldInstance)x)._class.__name__);
+            } else {
+                throw PythonOps.TypeError("long() argument must be a string or a number, not '{0}'",
+                    DynamicHelpers.GetPythonType(x).Name);
+            }
         }
 
-        private static object ReturnBigInteger(CodeContext context, PythonType cls, BigInteger intVal) {
+        private static object ReturnObject(CodeContext context, PythonType cls, object value) {
             if (cls == TypeCache.BigInteger) {
-                return intVal;
+                return value;
             } else {
-                return cls.CreateInstance(context, intVal);
+                return cls.CreateInstance(context, value);
             }
         }
 
@@ -450,6 +481,30 @@ namespace IronPython.Runtime.Operations {
             return x ^ y;
         }
 
+        [PropertyMethod, SpecialName]
+        public static BigInteger Getreal(BigInteger self) {
+            return self;
+        }
+        [PropertyMethod, SpecialName]
+        public static BigInteger Getimag(BigInteger self) {
+            return (BigInteger)0;
+        }
+        public static BigInteger conjugate(BigInteger self) {
+            return self;
+        }
+        [PropertyMethod, SpecialName]
+        public static BigInteger Getnumerator(BigInteger self) {
+            return self;
+        }
+        [PropertyMethod, SpecialName]
+        public static BigInteger Getdenominator(BigInteger self) {
+            return (BigInteger)1;
+        }
+
+        public static BigInteger __trunc__(BigInteger self) {
+            return self;
+        }
+
         [SpecialName, ExplicitConversionMethod]
         public static int ConvertToInt32(BigInteger self) {
             int res;
@@ -598,18 +653,16 @@ namespace IronPython.Runtime.Operations {
                     }
                     break;
                 case 'X':
-                    digits = ToDigits(val, 16, false);
-                    
-                    if (spec.IncludeType) {
-                        digits = "0X" + digits;
-                    }
+                    digits = ToHex(val, spec.IncludeType, false);
                     break;
                 case 'x':
-                    digits = ToHex(val, spec.IncludeType);
-
+                    digits = ToHex(val, spec.IncludeType, true);
                     break;
-                case 'b': // binary                    
-                    digits = ToBinary(val, spec.IncludeType);
+                case 'o': // octal
+                    digits = ToOctal(val, spec.IncludeType, true);
+                    break;
+                case 'b': // binary
+                    digits = ToBinary(val, spec.IncludeType, true);
                     break;
                 case 'c': // single char
                     int iVal;
@@ -623,13 +676,6 @@ namespace IronPython.Runtime.Operations {
 
                     digits = Builtin.chr(iVal);
                     break;
-                case 'o': // octal                    
-                    digits = ToDigits(val, 8, false);
-
-                    if (spec.IncludeType) {
-                        digits = "0o" + digits;
-                    }
-                    break;
                 default:
                     throw PythonOps.ValueError("Unknown conversion type {0}", spec.Type.ToString());
             }
@@ -640,21 +686,43 @@ namespace IronPython.Runtime.Operations {
         }
 
         internal static string ToHex(BigInteger val, bool includeType) {
+            return ToHex(val, includeType, true);
+        }
+
+        internal static string ToHex(BigInteger val, bool includeType, bool lowercase) {
             string digits;
-            digits = ToDigits(val, 16, true);
+            digits = ToDigits(val, 16, lowercase);
 
             if (includeType) {
-                digits = "0x" + digits;
+                digits = (lowercase ? "0x" : "0X") + digits;
+            }
+            return digits;
+        }
+
+        internal static string ToOctal(BigInteger val, bool includeType) {
+            return ToOctal(val, includeType, true);
+        }
+
+        internal static string ToOctal(BigInteger val, bool includeType, bool lowercase) {
+            string digits;
+            digits = ToDigits(val, 8, lowercase);
+
+            if (includeType) {
+                digits = (lowercase ? "0o" : "0O") + digits;
             }
             return digits;
         }
 
         internal static string ToBinary(BigInteger val, bool includeType) {
+            return ToBinary(val, includeType, true);
+        }
+
+        internal static string ToBinary(BigInteger val, bool includeType, bool lowercase) {
             string digits;
-            digits = ToDigits(val, 2, false);
+            digits = ToDigits(val, 2, lowercase);
 
             if (includeType) {
-                digits = "0b" + digits;
+                digits = (lowercase ? "0b" : "0B") + digits;
             }
             return digits;
         }

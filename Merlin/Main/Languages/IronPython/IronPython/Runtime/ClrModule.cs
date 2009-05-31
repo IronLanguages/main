@@ -53,7 +53,11 @@ namespace IronPython.Runtime {
 
         #region Public methods
 
-        // TODO: should be a property
+        /// <summary>
+        /// Gets the current ScriptDomainManager that IronPython is loaded into.  The
+        /// ScriptDomainManager can then be used to work with the language portion of the
+        /// DLR hosting APIs.
+        /// </summary>
         public static ScriptDomainManager/*!*/ GetCurrentRuntime(CodeContext/*!*/ context) {
             return context.LanguageContext.DomainManager;
         }
@@ -103,20 +107,46 @@ import Namespace.")]
 
 #if !SILVERLIGHT // files, paths
 
+        /// <summary>
+        /// LoadTypeLibrary(rcw) -> type lib desc
+        /// 
+        /// Gets an ITypeLib object from OLE Automation compatible RCW ,
+        /// reads definitions of CoClass'es and Enum's from this library
+        /// and creates an object that allows to instantiate coclasses
+        /// and get actual values for the enums.
+        /// </summary>
         public static ComTypeLibInfo LoadTypeLibrary(CodeContext/*!*/ context, object rcw) {
             return ComTypeLibDesc.CreateFromObject(rcw);
         }
 
+        /// <summary>
+        /// LoadTypeLibrary(guid) -> type lib desc
+        /// 
+        /// Reads the latest registered type library for the corresponding GUID,
+        /// reads definitions of CoClass'es and Enum's from this library
+        /// and creates a IDynamicMetaObjectProvider that allows to instantiate coclasses
+        /// and get actual values for the enums.
+        /// </summary>
         public static ComTypeLibInfo LoadTypeLibrary(CodeContext/*!*/ context, Guid typeLibGuid) {
             return ComTypeLibDesc.CreateFromGuid(typeLibGuid);
         }
 
+        /// <summary>
+        /// AddReferenceToTypeLibrary(rcw) -> None
+        /// 
+        /// Makes the type lib desc available for importing. See also LoadTypeLibrary.
+        /// </summary>
         public static void AddReferenceToTypeLibrary(CodeContext/*!*/ context, object rcw) {
             ComTypeLibInfo typeLibInfo;
             typeLibInfo = ComTypeLibDesc.CreateFromObject(rcw);
             PublishTypeLibDesc(context, typeLibInfo.TypeLibDesc);
         }
 
+        /// <summary>
+        /// AddReferenceToTypeLibrary(guid) -> None
+        /// 
+        /// Makes the type lib desc available for importing.  See also LoadTypeLibrary.
+        /// </summary>
         public static void AddReferenceToTypeLibrary(CodeContext/*!*/ context, Guid typeLibGuid) {
             ComTypeLibInfo typeLibInfo;
             typeLibInfo = ComTypeLibDesc.CreateFromGuid(typeLibGuid);
@@ -189,6 +219,11 @@ the assembly object.")]
             return PythonContext.GetContext(context).DomainManager.Platform.LoadAssembly(name);
         }
 
+        /// <summary>
+        /// Use(name) -> module
+        /// 
+        /// Attempts to load the specified module searching all languages in the loaded ScriptRuntime.
+        /// </summary>
         public static object Use(CodeContext/*!*/ context, string/*!*/ name) {
             ContractUtils.RequiresNotNull(context, "context");
 
@@ -203,6 +238,12 @@ the assembly object.")]
             return scope;
         }
 
+        /// <summary>
+        /// Use(path, language) -> module
+        /// 
+        /// Attempts to load the specified module belonging to a specific language loaded into the
+        /// current ScriptRuntime.
+        /// </summary>
         public static object/*!*/ Use(CodeContext/*!*/ context, string/*!*/ path, string/*!*/ language) {
             ContractUtils.RequiresNotNull(context, "context");
 
@@ -223,6 +264,17 @@ the assembly object.")]
             return Importer.ExecuteSourceUnit(sourceUnit);
         }
 
+        /// <summary>
+        /// SetCommandDispatcher(commandDispatcher)
+        /// 
+        /// Sets the current command dispatcher for the Python command line.  
+        /// 
+        /// The command dispatcher will be called with a delegate to be executed.  The command dispatcher
+        /// should invoke the target delegate in the desired context.
+        /// 
+        /// A common use for this is to enable running all REPL commands on the UI thread while the REPL
+        /// continues to run on a non-UI thread.
+        /// </summary>
         public static CommandDispatcher SetCommandDispatcher(CodeContext/*!*/ context, CommandDispatcher dispatcher) {
             ContractUtils.RequiresNotNull(context, "context");
 
@@ -399,12 +451,24 @@ import Namespace.")]
 
 #endif
 
+        /// <summary>
+        /// Gets the CLR Type object from a given Python type object.
+        /// </summary>
         public static Type GetClrType(Type type) {
             return type;
         }
 
         /// <summary>
-        /// TODO: Remove me before 3.0 ships (not necessary for backwards compatibility except for w/ alpha 2.0 builds)... 
+        /// Gets the Python type object from a given CLR Type object.
+        /// </summary>
+        public static PythonType GetPythonType(Type t) {
+            return DynamicHelpers.GetPythonTypeFromType(t);
+        }
+
+        /// <summary>
+        /// OBSOLETE: Gets the Python type object from a given CLR Type object.
+        /// 
+        /// Use clr.GetPythonType instead.
         /// </summary>
         [Obsolete("Call clr.GetPythonType instead")]
         public static PythonType GetDynamicType(Type t) {
@@ -427,10 +491,22 @@ import Namespace.")]
             }
         }
 
+        /// <summary>
+        /// accepts(*types) -> ArgChecker
+        /// 
+        /// Decorator that returns a new callable object which will validate the arguments are of the specified types.
+        /// </summary>
+        /// <param name="types"></param>
+        /// <returns></returns>
         public static object accepts(params object[] types) {
             return new ArgChecker(types);
         }
 
+        /// <summary>
+        /// returns(type) -> ReturnChecker
+        /// 
+        /// Returns a new callable object which will validate the return type is of the specified type.
+        /// </summary>
         public static object returns(object type) {
             return new ReturnChecker(type);
         }
@@ -441,6 +517,9 @@ import Namespace.")]
 
         #endregion
 
+        /// <summary>
+        /// Decorator for verifying the arguments to a function are of a specified type.
+        /// </summary>
         public class ArgChecker {
             private object[] expected;
 
@@ -460,6 +539,10 @@ import Namespace.")]
             #endregion
         }
 
+        /// <summary>
+        /// Returned value when using clr.accepts/ArgChecker.  Validates the argument types and
+        /// then calls the original function.
+        /// </summary>
         public class RuntimeArgChecker : PythonTypeSlot {
             private object[] _expected;
             private object _func;
@@ -535,6 +618,9 @@ import Namespace.")]
             #endregion
         }
 
+        /// <summary>
+        /// Decorator for verifying the return type of functions.
+        /// </summary>
         public class ReturnChecker {
             public object retType;
 
@@ -552,6 +638,10 @@ import Namespace.")]
             #endregion
         }
 
+        /// <summary>
+        /// Returned value when using clr.returns/ReturnChecker.  Calls the original function and
+        /// validates the return type is of a specified type.
+        /// </summary>
         public class RuntimeReturnChecker : PythonTypeSlot {
             private object _retType;
             private object _func;
@@ -630,10 +720,6 @@ import Namespace.")]
             }
 
             #endregion
-        }
-
-        public static PythonType GetPythonType(Type t) {
-            return DynamicHelpers.GetPythonTypeFromType(t);
         }
 
         /// <summary>

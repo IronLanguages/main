@@ -51,11 +51,11 @@ namespace Microsoft.Scripting.Actions.Calls {
             get { return 3; }
         }
 
-        internal protected override Expression ToExpression(OverloadResolver resolver, IList<Expression> parameters, bool[] hasBeenUsed) {
+        internal protected override Expression ToExpression(OverloadResolver resolver, RestrictedArguments args, bool[] hasBeenUsed) {
             Expression res = Ast.Call(
                 typeof(BinderOps).GetMethod("MakeSymbolDictionary"),
                 Ast.NewArrayInit(typeof(string), ConstantNames()),
-                AstUtils.NewArrayHelper(typeof(object), GetParameters(parameters, hasBeenUsed))
+                AstUtils.NewArrayHelper(typeof(object), GetParameters(args, hasBeenUsed))
             );
 
             return res;
@@ -67,12 +67,12 @@ namespace Microsoft.Scripting.Actions.Calls {
             }
         }
 
-        private List<Expression> GetParameters(IList<Expression> parameters, bool[] hasBeenUsed) {
+        private List<Expression> GetParameters(RestrictedArguments args, bool[] hasBeenUsed) {
             List<Expression> res = new List<Expression>(_nameIndexes.Length);
             for (int i = 0; i < _nameIndexes.Length; i++) {
                 int parameterIndex = _nameIndexes[i] + _argIndex;
                 if (!hasBeenUsed[parameterIndex]) {
-                    res.Add(parameters[parameterIndex]);
+                    res.Add(args.GetObject(parameterIndex).Expression);
                     hasBeenUsed[parameterIndex] = true;
                 }
             }
@@ -99,14 +99,14 @@ namespace Microsoft.Scripting.Actions.Calls {
             return res;
         }
 
-        protected internal override Func<object[], object> ToDelegate(OverloadResolver resolver, IList<DynamicMetaObject> knownTypes, bool[] hasBeenUsed) {
+        protected internal override Func<object[], object> ToDelegate(OverloadResolver resolver, RestrictedArguments args, bool[] hasBeenUsed) {
             string[] names = _names;
             int[] indexes = GetParameters(hasBeenUsed);
 
-            return (args) => {
+            return (actualArgs) => {
                 object[] values = new object[indexes.Length];
                 for (int i = 0; i < indexes.Length; i++) {
-                    values[i] = args[indexes[i] + 1];
+                    values[i] = actualArgs[indexes[i] + 1];
                 }
                 return BinderOps.MakeSymbolDictionary(names, values);
             };

@@ -37,15 +37,17 @@ namespace IronPython.Modules {
 
         [SpecialName]
         public static void PerformModuleReload(PythonContext/*!*/ context, IAttributesCollection/*!*/ dict) {
-            dict.Add(SymbolTable.StringToId(_keyDefaultAction), "default");
-            dict.Add(SymbolTable.StringToId(_keyOnceRegistry), new PythonDictionary());
-            dict.Add(SymbolTable.StringToId(_keyFilters), new List() {
-                // Default filters
-                PythonTuple.MakeTuple("ignore", null, PythonExceptions.PendingDeprecationWarning, null, 0),
-                PythonTuple.MakeTuple("ignore", null, PythonExceptions.ImportWarning, null, 0),
-                PythonTuple.MakeTuple("ignore", null, PythonExceptions.BytesWarning, null, 0)
+            context.GetOrCreateModuleState(_keyFields, () => {
+                dict.Add(SymbolTable.StringToId(_keyDefaultAction), "default");
+                dict.Add(SymbolTable.StringToId(_keyOnceRegistry), new PythonDictionary());
+                dict.Add(SymbolTable.StringToId(_keyFilters), new List() {
+                    // Default filters
+                    PythonTuple.MakeTuple("ignore", null, PythonExceptions.PendingDeprecationWarning, null, 0),
+                    PythonTuple.MakeTuple("ignore", null, PythonExceptions.ImportWarning, null, 0),
+                    PythonTuple.MakeTuple("ignore", null, PythonExceptions.BytesWarning, null, 0)
+                });
+                return dict;
             });
-            context.SetModuleState(_keyFields, dict);
         }
 
         #region Public API
@@ -185,10 +187,18 @@ namespace IronPython.Modules {
                     throw PythonOps.RuntimeError("Unrecognized action ({0}) in warnings.filters:\n {1}", action, last_filter);
             }
 
-            showwarning(context, msg, category, filename, lineno, null, null);
+            object warnings = pContext.GetWarningsModule();
+            if (warnings != null) {
+                PythonCalls.Call(
+                    context,
+                    PythonOps.GetBoundAttr(context, warnings, SymbolTable.StringToId("showwarning")),
+                    msg, category, filename, lineno, null, null);
+            } else {
+                showwarning(context, msg, category, filename, lineno, null, null);
+            }
         }
 
-        public static string formatwarning(object message, PythonType category, string filename, int lineno, [DefaultParameterValue(null)]string line) {
+        internal static string formatwarning(object message, PythonType category, string filename, int lineno, [DefaultParameterValue(null)]string line) {
             StringBuilder sb = new StringBuilder();
             sb.AppendFormat("{0}:{1}: {2}: {3}\n", filename, lineno, category.Name, message);
             if (line == null && lineno > 0 && File.Exists(filename)) {
@@ -204,7 +214,7 @@ namespace IronPython.Modules {
             return sb.ToString();
         }
 
-        public static void showwarning(CodeContext context, object message, PythonType category, string filename, int lineno, [DefaultParameterValue(null)]object file, [DefaultParameterValue(null)]string line) {
+        internal static void showwarning(CodeContext context, object message, PythonType category, string filename, int lineno, [DefaultParameterValue(null)]object file, [DefaultParameterValue(null)]string line) {
             string text = formatwarning(message, category, filename, lineno, line);
 
             try {
@@ -228,6 +238,7 @@ namespace IronPython.Modules {
                 // invalid file - warning is lost
             }
         }
+
 
         #endregion
     }

@@ -159,8 +159,15 @@ namespace IronPython.Modules {
                 _data.Append(iterable);
             }
 
-            public void buffer_info() {
-                throw PythonOps.NotImplementedError("buffer_info not implemented");
+            internal IntPtr GetArrayAddress() {
+                return _data.GetAddress();
+            }
+
+            public PythonTuple buffer_info() {
+                return PythonTuple.MakeTuple(
+                    _data.GetAddress().ToPython(),
+                    _data.Length
+                );
             }
 
             public void byteswap() {
@@ -580,6 +587,7 @@ namespace IronPython.Modules {
                 public abstract int Length { get; }
                 public abstract void Swap(int x, int y);
                 public abstract void Clear();
+                public abstract IntPtr GetAddress();
             }
 
             private MemoryStream ToStream() {
@@ -663,18 +671,26 @@ namespace IronPython.Modules {
             }
 
             private class ArrayData<T> : ArrayData {
-                List<T> data;
+                private T[] _data;
+                private int _count;
+                private GCHandle? _dataHandle;
 
                 public ArrayData() {
-                    data = new List<T>();
+                    _data = new T[8];
+                    GC.SuppressFinalize(this);
+                }
+
+                ~ArrayData() {
+                    Debug.Assert(_dataHandle.HasValue);
+                    _dataHandle.Value.Free();
                 }
 
                 public override object GetData(int index) {
-                    return data[index];
+                    return _data[index];
                 }
 
                 public override void SetData(int index, object value) {
-                    data[index] = GetValue(value);
+                    _data[index] = GetValue(value);
                 }
 
                 private static T GetValue(object value) {
@@ -695,28 +711,47 @@ namespace IronPython.Modules {
                 }
 
                 public override void Append(object value) {
-                    data.Add(GetValue(value));
+                    EnsureSize(_count + 1);
+                    _data[_count++] = GetValue(value);
+                }
+
+                private void EnsureSize(int size) {
+                    if (_data.Length < size) {
+                        Array.Resize(ref _data, _data.Length * 2);
+                        if (_dataHandle != null) {
+                            _dataHandle.Value.Free();
+                            _dataHandle = null;
+                            GC.SuppressFinalize(this);
+                        }
+                    }
                 }
 
                 public override int Count(object value) {
                     T other = GetValue(value);
 
                     int count = 0;
-                    foreach (T item in data) {
-                        if (item.Equals(other)) count++;
+                    for (int i = 0; i < _count; i++) {
+                        if (_data[i].Equals(other)) {
+                            count++;
+                        }
                     }
                     return count;
                 }
 
                 public override void Insert(int index, object value) {
-                    data.Insert(index, GetValue(value));
+                    EnsureSize(_count + 1);
+                    if (index < _count) {
+                        Array.Copy(_data, index, _data, index + 1, _count - index);
+                    }
+                    _data[index] = GetValue(value);
+                    _count++;
                 }
 
                 public override int Index(object value) {
                     T other = GetValue(value);
 
-                    for (int i = 0; i < data.Count; i++) {
-                        if (data[i].Equals(other)) return i;
+                    for (int i = 0; i < _count; i++) {
+                        if (_data[i].Equals(other)) return i;
                     }
                     return -1;
                 }
@@ -724,8 +759,8 @@ namespace IronPython.Modules {
                 public override void Remove(object value) {
                     T other = GetValue(value);
 
-                    for (int i = 0; i < data.Count; i++) {
-                        if (data[i].Equals(other)) {
+                    for (int i = 0; i < _count; i++) {
+                        if (_data[i].Equals(other)) {
                             RemoveAt(i);
                             return;
                         }
@@ -734,23 +769,26 @@ namespace IronPython.Modules {
                 }
 
                 public override void RemoveAt(int index) {
-                    data.RemoveAt(index);
+                    _count--;
+                    if (index < _count) {
+                        Array.Copy(_data, index + 1, _data, index, _count - index);
+                    }
                 }
 
                 public override void Swap(int x, int y) {
-                    T temp = data[x];
-                    data[x] = data[y];
-                    data[y] = temp;
+                    T temp = _data[x];
+                    _data[x] = _data[y];
+                    _data[y] = temp;
                 }
 
                 public override int Length {
                     get {
-                        return data.Count;
+                        return _count;
                     }
                 }
 
                 public override void Clear() {
-                    data.Clear();
+                    _count = 0;
                 }
 
                 public override bool CanStore(object value) {
@@ -763,6 +801,18 @@ namespace IronPython.Modules {
 
                 public override Type StorageType {
                     get { return typeof(T); }
+                }
+
+                public override IntPtr GetAddress() {
+                    // slightly evil to pin our data array but it's only used in rare
+                    // interop cases.  If this becomes a problem we can move the allocation
+                    // onto the unmanaged heap if we have full trust via a different subclass
+                    // of ArrayData.
+                    if (!_dataHandle.HasValue) {
+                        _dataHandle = GCHandle.Alloc(_data, GCHandleType.Pinned);
+                        GC.ReRegisterForFinalize(this);
+                    }
+                    return _dataHandle.Value.AddrOfPinnedObject();
                 }
             }
 

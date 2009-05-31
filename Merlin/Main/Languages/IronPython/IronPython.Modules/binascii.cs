@@ -28,29 +28,65 @@ using Microsoft.Scripting.Runtime;
 [assembly: PythonModule("binascii", typeof(IronPython.Modules.PythonBinaryAscii))]
 namespace IronPython.Modules {
     public static class PythonBinaryAscii {
+        private static readonly object _ErrorKey = new object();
+        private static readonly object _IncompleteKey = new object();
+
+        private static Exception Error(CodeContext/*!*/ context, params object[] args) {
+            return PythonExceptions.CreateThrowable((PythonType)PythonContext.GetContext(context).GetModuleState(_ErrorKey), args);
+        }
+        private static Exception Incomplete(CodeContext/*!*/ context, params object[] args) {
+            return PythonExceptions.CreateThrowable((PythonType)PythonContext.GetContext(context).GetModuleState(_IncompleteKey), args);
+        }
+
         [SpecialName]
         public static void PerformModuleReload(PythonContext/*!*/ context, IAttributesCollection/*!*/ dict) {
-            context.EnsureModuleException("binasciierror", dict, "Error", "binascii");
+            context.EnsureModuleException(_ErrorKey, dict, "Error", "binascii");
+            context.EnsureModuleException(_IncompleteKey, dict, "Incomplete", "binascii");
         }
 
-        public static string a2b_uu(string data) {
-            if (data == null) throw PythonOps.TypeError("expected string, got NoneType");
-            if (data.Length < 1) throw PythonOps.ValueError("data is too short");
-
-            StringBuilder res = DecodeWorker(data.Substring(1), Char.MinValue, delegate(char val) {
-                return val - 32;
-            });
-
-
-            return res.ToString(0, data[0] - 32);
+        private static int UuDecFunc(char val) {
+            if (val > 32 && val < 96) return val - 32;
+            switch (val) {
+                case '\n':
+                case '\r':
+                case (char)32:
+                case (char)96:
+                    return EmptyByte;
+                default:
+                    return InvalidByte;
+            }
         }
 
-        public static string b2a_uu(string data) {
+        public static string a2b_uu(CodeContext/*!*/ context, string data) {
             if (data == null) throw PythonOps.TypeError("expected string, got NoneType");
-            if (data.Length > 45) throw PythonOps.ValueError("at most 45 characters");
+            if (data.Length < 1) return new string(Char.MinValue, 32);
 
-            StringBuilder res = EncodeWorker(data, Int32.MaxValue, ' ', delegate(int val) {
-                return (char)(' ' + val);
+            int lenDec = (data[0] + 32) % 64; // decoded length in bytes
+            int lenEnc = (lenDec * 4 + 2) / 3; // encoded length in 6-bit chunks
+            string suffix = null;
+            if (data.Length - 1 > lenEnc) {
+                suffix = data.Substring(1 + lenEnc);
+                data = data.Substring(1, lenEnc);
+            } else {
+                data = data.Substring(1);
+            }
+
+            StringBuilder res = DecodeWorker(context, data, true, UuDecFunc);
+            if (suffix == null) {
+                res.Append((char)0, lenDec - res.Length);
+            } else {
+                ProcessSuffix(context, suffix, UuDecFunc);
+            }
+            
+            return res.ToString();
+        }
+
+        public static string b2a_uu(CodeContext/*!*/ context, string data) {
+            if (data == null) throw PythonOps.TypeError("expected string, got NoneType");
+            if (data.Length > 45) throw Error(context, "At most 45 bytes at once");
+
+            StringBuilder res = EncodeWorker(data, ' ', delegate(int val) {
+                return (char)(32 + (val % 64));
             });
 
             res.Insert(0, ((char)(32 + data.Length)).ToString());
@@ -59,23 +95,28 @@ namespace IronPython.Modules {
             return res.ToString();
         }
 
-        public static object a2b_base64(string data) {
+        private static int Base64DecFunc(char val) {
+            if (val >= 'A' && val <= 'Z') return val - 'A';
+            if (val >= 'a' && val <= 'z') return val - 'a' + 26;
+            if (val >= '0' && val <= '9') return val - '0' + 52;
+            switch (val) {
+                case '+':
+                    return 62;
+                case '/':
+                    return 63;
+                case '=':
+                    return PadByte;
+                default:
+                    return IgnoreByte;
+            }
+        }
+
+        public static object a2b_base64(CodeContext/*!*/ context, string data) {
             if (data == null) throw PythonOps.TypeError("expected string, got NoneType");
+            data = RemovePrefix(context, data, Base64DecFunc);
             if (data.Length == 0) return String.Empty;
 
-            // remove all newline and carriage feeds before processing...
-            data = RemoveWhiteSpace(data);
-
-            StringBuilder res = DecodeWorker(data, '=', delegate(char val) {
-                if (val >= 'A' && val <= 'Z') return val - 'A';
-                if (val >= 'a' && val <= 'z') return val - 'a' + 26;
-                if (val >= '0' && val <= '9') return val - '0' + 52;
-                if (val == '+') return 62;
-                if (val == '/') return 63; 
-
-                return -1;
-            });
-
+            StringBuilder res = DecodeWorker(context, data, false, Base64DecFunc);
             return res.ToString();
         }
 
@@ -83,16 +124,21 @@ namespace IronPython.Modules {
             if (data == null) throw PythonOps.TypeError("expected string, got NoneType");
             if (data.Length == 0) return String.Empty;
 
-            StringBuilder res = EncodeWorker(data, 76, '=', delegate(int val) {
+            StringBuilder res = EncodeWorker(data, '=', delegate(int val) {
                 if (val < 26) return (char)('A' + val);
                 if (val < 52) return (char)('a' + val - 26);
                 if (val < 62) return (char)('0' + val - 52);
-                if (val == 62) return '+';
-                if (val == 63) return '/';
-                throw new InvalidOperationException(String.Format("Bad int val: {0}", val));
+                switch (val) {
+                    case 62:
+                        return '+';
+                    case 63:
+                        return '/';
+                    default:
+                        throw new InvalidOperationException(String.Format("Bad int val: {0}", val));
+                }
             });
 
-            if (res[res.Length - 1] != '\n') res.Append('\n');
+            res.Append('\n');
             return res.ToString();
         }
 
@@ -172,7 +218,7 @@ namespace IronPython.Modules {
             return (remainder ^ 0xffffffff);
         }
 
-        public static object b2a_hex(string data) {
+        public static string b2a_hex(string data) {
             StringBuilder sb = new StringBuilder(data.Length * 2);
             for (int i = 0; i < data.Length; i++) {
                 sb.AppendFormat("{0:x2}", (int)data[i]);
@@ -180,12 +226,36 @@ namespace IronPython.Modules {
             return sb.ToString();
         }
 
-        public static object hexlify(string data) {
+        public static string hexlify(string data) {
             return b2a_hex(data);
         }
-        public static object a2b_hex(string data) {
+
+        public static Bytes hexlify(Bytes data) {
+            byte[] res = new byte[data.Count * 2];
+            for (int i = 0; i < data.Count; i++) {
+
+                res[i * 2] = ToHex(data._bytes[i] >> 4);
+                res[(i * 2) + 1] = ToHex(data._bytes[i] & 0x0F);
+            }
+
+            return Bytes.Make(res);
+        }
+
+        private static byte ToHex(int p) {
+            if (p >= 10) {
+                return (byte)('a' + p - 10);
+            }
+
+            return (byte)('0' + p);
+        }
+
+        public static string hexlify([NotNull]PythonBuffer data) {
+            return hexlify(data.ToString());
+        }
+
+        public static object a2b_hex(CodeContext/*!*/ context, string data) {
             if (data == null) throw PythonOps.TypeError("expected string, got NoneType");
-            if ((data.Length & 0x01) != 0) throw PythonOps.ValueError("string must be even lengthed");
+            if ((data.Length & 0x01) != 0) throw Error(context, "string must be even lengthed");
             StringBuilder res = new StringBuilder(data.Length / 2);
 
             for (int i = 0; i < data.Length; i += 2) {
@@ -201,8 +271,8 @@ namespace IronPython.Modules {
             return res.ToString();
         }
 
-        public static object unhexlify(string hexstr) {
-            return a2b_hex(hexstr);
+        public static object unhexlify(CodeContext/*!*/ context, string hexstr) {
+            return a2b_hex(context, hexstr);
         }
 
         #region Private implementation
@@ -210,11 +280,10 @@ namespace IronPython.Modules {
         private delegate char EncodeChar(int val);
         private delegate int DecodeByte(char val);
 
-        private static StringBuilder EncodeWorker(string data, int lineBreak, char empty, EncodeChar encFunc) {
+        private static StringBuilder EncodeWorker(string data, char empty, EncodeChar encFunc) {
             StringBuilder res = new StringBuilder();
 
             int bits;
-            int lineCount = 0;
             for (int i = 0; i < data.Length; i += 3) {
                 switch (data.Length - i) {
                     case 1:
@@ -246,57 +315,109 @@ namespace IronPython.Modules {
                         res.Append(encFunc(bits & 0x3f));
                         break;
                 }
-                if (((res.Length - (lineCount)) % lineBreak) == 0) {
-                    res.Append('\n');
-                    lineCount++;
-                }
             }
             return res;
         }
 
-        const int NoMoreData = -1;
-        const int EmptyChar = -2;
+        private const int IgnoreByte = -1; // skip this byte
+        private const int EmptyByte = -2; // byte evaluates to 0 and may appear off the end of the stream
+        private const int PadByte = -3; // pad bytes signal the end of the stream, unless there are too few to properly align
+        private const int InvalidByte = -4; // raise exception for illegal byte
+        private const int NoMoreBytes = -5; // signals end of stream
 
-        private static int GetVal(DecodeByte decFunc, char empty, string data, ref int index) {
-            int res = NoMoreData;
-            do {
-                if (index >= data.Length) break;
+        private static int NextVal(CodeContext/*!*/ context, string data, ref int index, DecodeByte decFunc) {
+            int res;
+            while (index < data.Length) {
+                res = decFunc(data[index++]);
+                switch (res) {
+                    case EmptyByte:
+                        return 0;
+                    case InvalidByte:
+                        throw Error(context, "Illegal char");
+                    case IgnoreByte:
+                        break;
+                    default:
+                        return res;
+                }
+            }
 
-                char curChar = data[index++];
-                if (curChar == empty) return EmptyChar;
-
-                res = decFunc(curChar);
-            } while (res == NoMoreData);
-            if (res < 0 && empty != Char.MinValue) throw PythonOps.TypeError("Incorrect padding");
-            return res;
+            return NoMoreBytes;
         }
 
-        private static StringBuilder DecodeWorker(string data, char empty, DecodeByte decFunc) {
+        private static int CountPadBytes(CodeContext/*!*/ context, string data, int bound, ref int index, DecodeByte decFunc) {
+            int res = PadByte;
+            int count = 0;
+            while ((bound < 0 || count < bound) &&
+                   (res = NextVal(context, data, ref index, decFunc)) == PadByte) {
+                count++;
+            }
+
+            // we only want NextVal() to eat PadBytes - not real data
+            if (res != PadByte && res != NoMoreBytes) index--;
+
+            return count;
+        }
+
+        private static int GetVal(CodeContext/*!*/ context, string data, int align, bool bounded, ref int index, DecodeByte decFunc) {
+            int res;
+            while (true) {
+                res = NextVal(context, data, ref index, decFunc);
+                switch (res) {
+                    case PadByte:
+                        switch (align) {
+                            case 0:
+                            case 1:
+                                CountPadBytes(context, data, -1, ref index, decFunc);
+                                continue;
+                            case 2:
+                                if (CountPadBytes(context, data, 1, ref index, decFunc) > 0) {
+                                    return NoMoreBytes;
+                                } else {
+                                    continue;
+                                }
+                            default:
+                                return NoMoreBytes;
+                        }
+                    case NoMoreBytes:
+                        if (bounded || align == 0) {
+                            return NoMoreBytes;
+                        } else {
+                            throw Error(context, "Incorrect padding");
+                        }
+                    case EmptyByte:
+                        return 0;
+                    default:
+                        return res;
+                }
+            }
+        }
+
+        private static StringBuilder DecodeWorker(CodeContext/*!*/ context, string data, bool bounded, DecodeByte decFunc) {
             StringBuilder res = new StringBuilder();
 
             int i = 0;
             while (i < data.Length) {
                 int intVal;
 
-                int val1 = GetVal(decFunc, empty, data, ref i);
-                if (val1 < 0) break;  // no more bytes...                
+                int val0 = GetVal(context, data, 0, bounded, ref i, decFunc);
+                if (val0 < 0) break;  // no more bytes...
 
-                int val2 = GetVal(decFunc, empty, data, ref i);
+                int val1 = GetVal(context, data, 1, bounded, ref i, decFunc);
                 if (val1 < 0) break;  // no more bytes...
 
-                int val3 = GetVal(decFunc, empty, data, ref i);
-                if (val3 < 0) {
+                int val2 = GetVal(context, data, 2, bounded, ref i, decFunc);
+                if (val2 < 0) {
                     // 2 byte partial
-                    intVal = (val1 << 18) | (val2 << 12);
+                    intVal = (val0 << 18) | (val1 << 12);
 
                     res.Append((char)((intVal >> 16) & 0xff));
                     break;
                 }
 
-                int val4 = GetVal(decFunc, empty, data, ref i);
-                if (val4 < 0) {
+                int val3 = GetVal(context, data, 3, bounded, ref i, decFunc);
+                if (val3 < 0) {
                     // 3 byte partial
-                    intVal = (val1 << 18) | (val2 << 12) | (val3 << 6);
+                    intVal = (val0 << 18) | (val1 << 12) | (val2 << 6);
 
                     res.Append((char)((intVal >> 16) & 0xff));
                     res.Append((char)((intVal >> 8) & 0xff));
@@ -304,7 +425,7 @@ namespace IronPython.Modules {
                 }
 
                 // full 4-bytes
-                intVal = (val1 << 18) | (val2 << 12) | (val3 << 6) | (val4);
+                intVal = (val0 << 18) | (val1 << 12) | (val2 << 6) | (val3);
                 res.Append((char)((intVal >> 16) & 0xff));
                 res.Append((char)((intVal >> 8) & 0xff));
                 res.Append((char)(intVal & 0xff));
@@ -313,19 +434,26 @@ namespace IronPython.Modules {
             return res;
         }
 
-        private static string RemoveWhiteSpace(string data) {
-            StringBuilder str = null;
+        private static string RemovePrefix(CodeContext/*!*/ context, string data, DecodeByte decFunc) {
+            int count = 0;
+            while (count < data.Length) {
+                int current = decFunc(data[count]);
+                if (current == InvalidByte) {
+                    throw Error(context, "Illegal char");
+                }
+                if (current >= 0) break;
+                count++;
+            }
+            return count == 0 ? data : data.Substring(count);
+        }
+
+        private static void ProcessSuffix(CodeContext/*!*/ context, string data, DecodeByte decFunc) {
             for (int i = 0; i < data.Length; i++) {
-                if (data[i] == '\r' || data[i] == '\n' || data[i] == ' ') {
-                    if (str == null) {
-                        str = new StringBuilder(data, 0, i, data.Length);
-                    }
-                } else if (str != null) {
-                    str.Append(data[i]);
+                int current = decFunc(data[i]);
+                if (current >= 0 || current == InvalidByte) {
+                    throw Error(context, "Trailing garbage");
                 }
             }
-            if (str != null) data = str.ToString();
-            return data;
         }
 
         #endregion

@@ -152,7 +152,7 @@ namespace IronRuby.Compiler.Ast {
 
                 var epilogue = Methods.PrintInteractiveResult.OpCall(runtimeScopeVariable,
                     Ast.Dynamic(ConvertToSAction.Make(gen.Context), typeof(MutableString),
-                        Ast.Dynamic(RubyCallAction.Make(gen.Context, "inspect", RubyCallSignature.WithScope(0)), typeof(object), 
+                        CallBuilder.InvokeMethod(gen.Context, "inspect", RubyCallSignature.WithScope(0),
                             gen.CurrentScopeVariable, resultVariable
                         )
                     )

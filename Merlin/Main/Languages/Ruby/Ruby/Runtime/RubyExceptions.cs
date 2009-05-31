@@ -25,6 +25,7 @@ using System.Runtime.InteropServices;
 using System.Net.Sockets;
 using System.Runtime.CompilerServices;
 using IronRuby.Runtime.Calls;
+using System.Diagnostics;
 
 namespace IronRuby.Runtime {
     /// <summary>
@@ -45,7 +46,7 @@ namespace IronRuby.Runtime {
         }
 
         public static Exception/*!*/ CreateUnexpectedTypeError(RubyContext/*!*/ context, object param, string/*!*/ type) {
-            return CreateTypeError(String.Format("wrong argument type {0} (expected {1})", context.GetClassName(param), type));
+            return CreateTypeError(String.Format("wrong argument type {0} (expected {1})", context.GetClassDisplayName(param), type));
         }
 
         public static Exception/*!*/ CannotConvertTypeToTargetType(RubyContext/*!*/ context, object param, string/*!*/ toType) {
@@ -62,6 +63,18 @@ namespace IronRuby.Runtime {
 
         public static Exception/*!*/ CreateAllocatorUndefinedError(RubyClass/*!*/ rubyClass) {
             return CreateTypeError(String.Format("allocator undefined for {0}", rubyClass.Name));
+        }
+
+        public static Exception/*!*/ CreateMissingDefaultConstructorError(RubyClass/*!*/ rubyClass, string/*!*/ initializerOwnerName) {
+            Debug.Assert(rubyClass.IsRubyClass);
+
+            Type baseType = rubyClass.GetUnderlyingSystemType().BaseType;
+            Debug.Assert(baseType != null);
+
+            return CreateTypeError(String.Format("can't allocate class `{1}' that derives from type `{0}' with no default constructor;" +
+                " define {1}#new singleton method instead of {2}#initialize",
+                rubyClass.Context.GetTypeName(baseType, true), rubyClass.Name, initializerOwnerName
+            ));
         }
 
         public static Exception/*!*/ CreateArgumentError(string/*!*/ message) {
@@ -143,19 +156,7 @@ namespace IronRuby.Runtime {
 
         private static string/*!*/ FormatMethodMissingMessage(RubyContext/*!*/ context, object self, string/*!*/ name, string/*!*/ message) {
             Assert.NotNull(name);
-            string strObject;
-
-            if (self == null) {
-                strObject = "nil:NilClass";
-            } else {
-                var site = context.StringConversionSite;
-                strObject = (site.Target(site, self) as MutableString ?? RubyUtils.ObjectToMutableString(context, self)).ConvertToString();
-
-                if (!strObject.StartsWith("#")) {
-                    strObject += ":" + context.GetClassName(self);
-                }
-            }
-
+            string strObject = context.InspectEnsuringClassName(self);
             return String.Format(message, name, strObject);
         }
 
@@ -169,6 +170,11 @@ namespace IronRuby.Runtime {
 
         public static Exception/*!*/ CreateProtectedMethodCalled(RubyContext/*!*/ context, object self, string/*!*/ name) {
             return new MissingMethodException(FormatMethodMissingMessage(context, self, name, "protected method `{0}' called for {1}"));
+        }
+
+        public static Exception/*!*/ CreateEncodingCompatibilityError(RubyEncoding/*!*/ encoding1, RubyEncoding/*!*/ encoding2) {
+            return new EncodingCompatibilityError(String.Format("incompatible character encodings: {0}{1} and {2}{3}",
+                encoding1.Name, encoding1.IsKCoding ? " (KCODE)" : null, encoding2.Name, encoding2.IsKCoding ? " (KCODE)" : null));
         }
     }
 }

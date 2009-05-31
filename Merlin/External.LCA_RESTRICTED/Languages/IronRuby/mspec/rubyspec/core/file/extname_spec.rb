@@ -11,7 +11,7 @@ describe "File.extname" do
     File.extname(".app.conf").should == ".conf"
   end
 
-  it "returns the extension (the portion of file name in path after the period).(edge cases)" do
+  it "returns the extension (edge cases)" do
     File.extname("").should ==  ""
     File.extname(".").should ==  ""
     File.extname("/").should ==  ""

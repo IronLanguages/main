@@ -97,14 +97,6 @@ namespace IronRuby.Builtins {
 
         #endregion
 
-        public override bool Equals(object obj) {
-            return Equals(this, obj);
-        }
-
-        public override int GetHashCode() {
-            return GetHashCode(this);
-        }
-
         [MultiRuntimeAware]
         private static RubyUtils.RecursionTracker _HashTracker = new RubyUtils.RecursionTracker();
 

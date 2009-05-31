@@ -28,10 +28,13 @@ using AstUtils = Microsoft.Scripting.Ast.Utils;
 using IronRuby.Compiler.Generation;
 using System.Collections.Generic;
 using System.Reflection;
+using System.Runtime.CompilerServices;
+using System.Diagnostics;
+using Microsoft.Scripting;
 
 namespace IronRuby.Runtime.Calls {
 
-    public class RubyCallAction : RubyMetaBinder, IExpressionSerializable {
+    public class RubyCallAction : RubyMetaBinder {
         private readonly RubyCallSignature _signature;
         private readonly string/*!*/ _methodName;
 
@@ -83,9 +86,7 @@ namespace IronRuby.Runtime.Calls {
             return _methodName + _signature.ToString() + (Context != null ? " @" + Context.RuntimeId.ToString() : null);
         }
 
-        #region IExpressionSerializable Members
-
-        Expression/*!*/ IExpressionSerializable.CreateExpression() {
+        public override Expression/*!*/ CreateExpression() {
             return Expression.Call(
                 Methods.GetMethod(typeof(RubyCallAction), "MakeShared", typeof(string), typeof(RubyCallSignature)),
                 AstUtils.Constant(_methodName),
@@ -93,23 +94,145 @@ namespace IronRuby.Runtime.Calls {
             );
         }
 
+        #region Precompiled Rules
+
+        public override T BindDelegate<T>(CallSite<T>/*!*/ site, object[]/*!*/ args) {
+            PerfTrack.NoteEvent(PerfTrack.Categories.Binding, "Ruby: RubyCallAction" + _signature.ToString() + ": BindDelegate");
+
+            if (Context == null || (Signature.Flags & ~(RubyCallFlags.HasImplicitSelf | RubyCallFlags.HasScope)) != 0) {
+                return base.BindDelegate<T>(site, args);
+            }
+
+            RubyScope scope;
+            object target;
+            if (Signature.HasScope) {
+                scope = (RubyScope)args[0];
+                target = args[1];
+            } else {
+                scope = Context.EmptyScope;
+                target = args[0];
+            }
+
+            RubyClass targetClass = Context.GetImmediateClassOf(target);
+            if (!targetClass.IsSingletonClass && !(target is RubyObject)) {
+                return base.BindDelegate<T>(site, args);
+            }
+
+            int version;
+            MethodResolutionResult method;
+            using (targetClass.Context.ClassHierarchyLocker()) {
+                version = targetClass.Version.Value;
+                method = targetClass.ResolveMethodForSiteNoLock(_methodName, GetVisibilityContext(Signature, scope));
+            }
+
+            int mandatoryParamCount;
+            Delegate d;
+            if (!method.Found || !TryGetDispatchableDelegate(method.Info, out d, out mandatoryParamCount)) {
+                return base.BindDelegate<T>(site, args);
+            }
+
+            MethodDispatcher dispatcher;
+            if (targetClass.IsSingletonClass) {
+                dispatcher = MethodDispatcher.CreateSingletonDispatcher(typeof(T), d, mandatoryParamCount, Signature.HasScope, 
+                    version, target, targetClass.Version);
+            } else {
+                dispatcher = MethodDispatcher.CreateRubyObjectDispatcher(typeof(T), d, mandatoryParamCount, Signature.HasScope, 
+                    version);
+            }
+
+            if (dispatcher != null) {
+                T result = (T)dispatcher.CreateDelegate();
+                CacheTarget(result);
+                return result;
+            }
+
+            return base.BindDelegate<T>(site, args);
+        }
+
+        private bool TryGetDispatchableDelegate(RubyMemberInfo/*!*/ memberInfo, out Delegate d, out int mandatoryParamCount) {
+            if (!memberInfo.IsProtected || Signature.HasImplicitSelf) {
+                RubyMethodInfo ruby;
+                RubyLibraryMethodInfo lib;
+                if ((ruby = memberInfo as RubyMethodInfo) != null) {
+                    if (!ruby.HasUnsplatParameter && ruby.OptionalParamCount == 0) {
+                        d = ruby.Method;
+                        mandatoryParamCount = ruby.MandatoryParamCount;
+                        return true;
+                    }
+                } else if ((lib = memberInfo as RubyLibraryMethodInfo) != null) {
+                    if (lib.IsEmpty && (mandatoryParamCount = lib.GetArity()) == 1) {
+                        d = new Func<object, Proc, object, object>(EmptyRubyMethodStub1);
+                        return true;
+                    }
+                }
+            }
+
+            d = null;
+            mandatoryParamCount = 0;
+            return false;            
+        }
+
+        public static object EmptyRubyMethodStub1(object self, Proc block, object arg0) {
+            // nop
+            return null;
+        }
+
         #endregion
 
         protected override bool Build(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args, bool defaultFallback) {
-            return BuildCall(metaBuilder, _methodName, args, defaultFallback);
+            return BuildCall(metaBuilder, _methodName, args, defaultFallback, true);
         }
 
         // Returns true if the call was bound (with success or failure), false if fallback should be performed.
-        internal static bool BuildCall(MetaObjectBuilder/*!*/ metaBuilder, string/*!*/ methodName, CallArguments/*!*/ args, bool defaultFallback) {
+        internal static bool BuildCall(MetaObjectBuilder/*!*/ metaBuilder, string/*!*/ methodName, CallArguments/*!*/ args, 
+            bool defaultFallback, bool callClrMethods) {
+
             RubyMemberInfo methodMissing;
             var method = Resolve(metaBuilder, methodName, args, out methodMissing);
 
             if (method.Found) {
+                if (!callClrMethods && !method.Info.IsRubyMember) {
+                    return false;
+                }
+
                 method.Info.BuildCall(metaBuilder, args, methodName);
                 return true;
             } else {
-                return BindToMethodMissing(metaBuilder, args, methodName, methodMissing, method.IncompatibleVisibility, false, defaultFallback);
+                return BuildMethodMissingCall(metaBuilder, args, methodName, methodMissing, method.IncompatibleVisibility, false, defaultFallback);
             }
+        }
+
+        // Returns true if the call was bound (with success or failure), false if fallback should be performed.
+        internal static bool BuildAccess(MetaObjectBuilder/*!*/ metaBuilder, string/*!*/ methodName, CallArguments/*!*/ args, 
+            bool defaultFallback, bool callClrMethods) {
+
+            RubyMemberInfo methodMissing;
+            var method = Resolve(metaBuilder, methodName, args, out methodMissing);
+
+            if (method.Found) {
+                if (!callClrMethods && !method.Info.IsRubyMember) {
+                    return false;
+                }
+
+                if (method.Info.IsDataMember) {
+                    method.Info.BuildCall(metaBuilder, args, methodName);
+                } else {
+                    metaBuilder.Result = Methods.CreateBoundMember.OpCall(
+                        AstUtils.Convert(args.TargetExpression, typeof(object)),
+                        Ast.Constant(method.Info, typeof(RubyMemberInfo)),
+                        Ast.Constant(methodName)
+                    );
+                }
+                return true;
+            } else {
+                // Ruby doesn't have "attribute_missing" so we will always use method_missing and return a bound method object:
+                return BuildMethodMissingAccess(metaBuilder, args, methodName, methodMissing, method.IncompatibleVisibility, false, defaultFallback);
+            }
+        }
+
+        private static RubyClass GetVisibilityContext(RubyCallSignature callSignature, RubyScope scope) {
+            // TODO: All sites should have either implicit-self or has-scope flag set?
+            return callSignature.HasImplicitSelf || !callSignature.HasScope ? RubyClass.IgnoreVisibility : scope.SelfImmediateClass;
         }
 
         internal static MethodResolutionResult Resolve(MetaObjectBuilder/*!*/ metaBuilder, string/*!*/ methodName, CallArguments/*!*/ args,
@@ -120,9 +243,7 @@ namespace IronRuby.Runtime.Calls {
             using (targetClass.Context.ClassHierarchyLocker()) {
                 metaBuilder.AddTargetTypeTest(args.Target, targetClass, args.TargetExpression, args.MetaContext);
 
-                // TODO: All sites should have either implicit-self or has-scope flag set?
-                var visibilityContext = args.Signature.HasImplicitSelf || !args.Signature.HasScope ? RubyClass.IgnoreVisibility : args.Scope.SelfImmediateClass;
-                method = targetClass.ResolveMethodForSiteNoLock(methodName, visibilityContext);
+                method = targetClass.ResolveMethodForSiteNoLock(methodName, GetVisibilityContext(args.Signature, args.Scope));
                 if (!method.Found) {
                     if (args.Signature.IsTryCall) {
                         // TODO: this shouldn't throw. We need to fix caching of non-existing methods.
@@ -149,10 +270,40 @@ namespace IronRuby.Runtime.Calls {
             return method;
         }
 
-        internal static bool BindToMethodMissing(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args, string/*!*/ methodName,
+        internal static bool BuildMethodMissingCall(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args, string/*!*/ methodName,
             RubyMemberInfo methodMissing, RubyMethodVisibility incompatibleVisibility, bool isSuperCall, bool defaultFallback) {
-            // Assumption: args already contain method name.
-            
+
+            if (BindToMethodMissing(metaBuilder, args, methodName, methodMissing, incompatibleVisibility, isSuperCall) || defaultFallback) {
+                if (!metaBuilder.Error) {
+                    args.InsertMethodName(methodName);
+                    methodMissing.BuildCall(metaBuilder, args, methodName);
+                }
+                return true;
+            } else {
+                return false;
+            }
+        }
+
+        internal static bool BuildMethodMissingAccess(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args, string/*!*/ methodName,
+            RubyMemberInfo methodMissing, RubyMethodVisibility incompatibleVisibility, bool isSuperCall, bool defaultFallback) {
+
+            if (BindToMethodMissing(metaBuilder, args, methodName, methodMissing, incompatibleVisibility, isSuperCall) || defaultFallback) {
+                if (!metaBuilder.Error) {
+                    metaBuilder.Result = Methods.CreateBoundMissingMember.OpCall(
+                        AstUtils.Convert(args.TargetExpression, typeof(object)), 
+                        Ast.Constant(methodMissing, typeof(RubyMemberInfo)), 
+                        Ast.Constant(methodName)
+                    );
+                }
+                return true;
+            } else {
+                return false;
+            }
+        }
+
+        internal static bool BindToMethodMissing(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args, string/*!*/ methodName,
+            RubyMemberInfo methodMissing, RubyMethodVisibility incompatibleVisibility, bool isSuperCall) {
+
             // TODO: better check for builtin method
             if (methodMissing == null ||
                 methodMissing.DeclaringModule == methodMissing.Context.KernelModule && methodMissing is RubyLibraryMethodInfo) {
@@ -167,15 +318,9 @@ namespace IronRuby.Runtime.Calls {
                     metaBuilder.SetError(Methods.MakeProtectedMethodCalledError.OpCall(
                         AstUtils.Convert(args.MetaContext.Expression, typeof(RubyContext)), args.TargetExpression, AstUtils.Constant(methodName))
                     );
-                } else if (defaultFallback) {
-                    args.InsertMethodName(methodName);
-                    methodMissing.BuildCall(metaBuilder, args, methodName);
                 } else {
                     return false;
                 }
-            } else {
-                args.InsertMethodName(methodName);
-                methodMissing.BuildCall(metaBuilder, args, methodName);
             }
 
             return true;

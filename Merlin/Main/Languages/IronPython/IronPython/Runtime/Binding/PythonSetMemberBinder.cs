@@ -29,16 +29,16 @@ namespace IronPython.Runtime.Binding {
     using System.Runtime.CompilerServices;
 
     class PythonSetMemberBinder : SetMemberBinder, IPythonSite, IExpressionSerializable {
-        private readonly BinderState/*!*/ _state;
+        private readonly PythonContext/*!*/ _context;
 
-        public PythonSetMemberBinder(BinderState/*!*/ binder, string/*!*/ name)
+        public PythonSetMemberBinder(PythonContext/*!*/ context, string/*!*/ name)
             : base(name, false) {
-            _state = binder;
+            _context = context;
         }
 
-        public PythonSetMemberBinder(BinderState/*!*/ binder, string/*!*/ name, bool ignoreCase)
+        public PythonSetMemberBinder(PythonContext/*!*/ context, string/*!*/ name, bool ignoreCase)
             : base(name, ignoreCase) {
-            _state = binder;
+            _context = context;
         }
 
         public override DynamicMetaObject FallbackSetMember(DynamicMetaObject self, DynamicMetaObject value, DynamicMetaObject errorSuggestion) {
@@ -51,7 +51,7 @@ namespace IronPython.Runtime.Binding {
                 return com;
             }
 #endif
-            return Binder.Binder.SetMember(Name, self, value, AstUtils.Constant(Binder.Context));
+            return Context.Binder.SetMember(Name, self, value, AstUtils.Constant(Context.SharedContext));
         }
 
         public override T BindDelegate<T>(CallSite<T> site, object[] args) {
@@ -65,7 +65,7 @@ namespace IronPython.Runtime.Binding {
 
             IPythonObject ipo = args[0] as IPythonObject;
             if (ipo != null && !(ipo is IProxyObject)) {
-                FastBindResult<T> res = UserTypeOps.MakeSetBinding<T>(Binder.Context, site, ipo, args[1], this);
+                FastBindResult<T> res = UserTypeOps.MakeSetBinding<T>(Context.SharedContext, site, ipo, args[1], this);
 
                 if (res.Target != null) {
                     PerfTrack.NoteEvent(PerfTrack.Categories.BindingFast, "IPythonObject");
@@ -86,14 +86,14 @@ namespace IronPython.Runtime.Binding {
             return base.BindDelegate<Func<CallSite, object, TValue, object>>(site, new object[] { self, value });
         }
 
-        public BinderState/*!*/ Binder {
+        public PythonContext/*!*/ Context {
             get {
-                return _state;
+                return _context;
             }
         }
 
         public override int GetHashCode() {
-            return base.GetHashCode() ^ _state.Binder.GetHashCode();
+            return base.GetHashCode() ^ _context.Binder.GetHashCode();
         }
 
         public override bool Equals(object obj) {
@@ -102,7 +102,7 @@ namespace IronPython.Runtime.Binding {
                 return false;
             }
 
-            return ob._state.Binder == _state.Binder && base.Equals(obj);
+            return ob._context.Binder == _context.Binder && base.Equals(obj);
         }
 
         public override string ToString() {

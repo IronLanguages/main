@@ -105,7 +105,16 @@ namespace System.Dynamic {
             // Ensure the result matches the expected result type.
             if (expectedResult != typeof(void) &&
                 !TypeUtils.AreReferenceAssignable(expectedResult, body.Type)) {
-                throw Error.DynamicResultNotAssignable(body.Type, this, expectedResult);
+
+                //
+                // Blame the last person that handled the result: assume it's
+                // the dynamic object (if any), otherwise blame the language.
+                //
+                if (target.Value is IDynamicMetaObjectProvider) {
+                    throw Error.DynamicObjectResultNotAssignable(body.Type, target.Value.GetType(), this, expectedResult);
+                } else {
+                    throw Error.DynamicBinderResultNotAssignable(body.Type, this, expectedResult);
+                }
             }
 
             // if the target is IDO, standard binders ask it to bind the rule so we may have a target-specific binding. 

@@ -138,7 +138,6 @@ namespace IronPython.Compiler.Ast {
                 Ast.Call(
                     AstGenerator.GetHelperMethod("ModuleStarted"),
                     ag.LocalContext,
-                    AstUtils.Constant(ag.BinderState, typeof(object)),
                     AstUtils.Constant(_languageFeatures)
                 ),
                 ag.UpdateLineNumber(0),
@@ -181,6 +180,17 @@ namespace IronPython.Compiler.Ast {
                         Ast.Rethrow(body.Type)
                     );
                 }
+            }
+
+            if (ag.PyContext.PythonOptions.Frames) {
+                body = Ast.Block(
+                    new[] { FunctionDefinition._functionStack },
+                    FunctionDefinition.AddFrame(
+                        ag.LocalContext, 
+                        Ast.Constant(null, typeof(PythonFunction)), 
+                        body
+                    )
+                );
             }
 
             body = ag.AddProfiling(body);

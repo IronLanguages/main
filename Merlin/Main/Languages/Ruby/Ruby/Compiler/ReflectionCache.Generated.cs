@@ -46,8 +46,12 @@ namespace IronRuby.Compiler {
         private static MethodInfo _ConvertBignumToFixnum;
         public static MethodInfo/*!*/ ConvertBignumToFloat { get { return _ConvertBignumToFloat ?? (_ConvertBignumToFloat = GetMethod(typeof(RubyOps), "ConvertBignumToFloat")); } }
         private static MethodInfo _ConvertBignumToFloat;
+        public static MethodInfo/*!*/ ConvertDoubleToFixnum { get { return _ConvertDoubleToFixnum ?? (_ConvertDoubleToFixnum = GetMethod(typeof(RubyOps), "ConvertDoubleToFixnum")); } }
+        private static MethodInfo _ConvertDoubleToFixnum;
         public static MethodInfo/*!*/ ConvertFixnumToSymbol { get { return _ConvertFixnumToSymbol ?? (_ConvertFixnumToSymbol = GetMethod(typeof(RubyOps), "ConvertFixnumToSymbol")); } }
         private static MethodInfo _ConvertFixnumToSymbol;
+        public static MethodInfo/*!*/ ConvertMutableStringToFloat { get { return _ConvertMutableStringToFloat ?? (_ConvertMutableStringToFloat = GetMethod(typeof(RubyOps), "ConvertMutableStringToFloat")); } }
+        private static MethodInfo _ConvertMutableStringToFloat;
         public static MethodInfo/*!*/ ConvertMutableStringToSymbol { get { return _ConvertMutableStringToSymbol ?? (_ConvertMutableStringToSymbol = GetMethod(typeof(RubyOps), "ConvertMutableStringToSymbol")); } }
         private static MethodInfo _ConvertMutableStringToSymbol;
         public static MethodInfo/*!*/ ConvertStringToFloat { get { return _ConvertStringToFloat ?? (_ConvertStringToFloat = GetMethod(typeof(RubyOps), "ConvertStringToFloat")); } }
@@ -70,6 +74,10 @@ namespace IronRuby.Compiler {
         private static MethodInfo _CreateBfcForYield;
         public static MethodInfo/*!*/ CreateBlockScope { get { return _CreateBlockScope ?? (_CreateBlockScope = GetMethod(typeof(RubyOps), "CreateBlockScope")); } }
         private static MethodInfo _CreateBlockScope;
+        public static MethodInfo/*!*/ CreateBoundMember { get { return _CreateBoundMember ?? (_CreateBoundMember = GetMethod(typeof(RubyOps), "CreateBoundMember")); } }
+        private static MethodInfo _CreateBoundMember;
+        public static MethodInfo/*!*/ CreateBoundMissingMember { get { return _CreateBoundMissingMember ?? (_CreateBoundMissingMember = GetMethod(typeof(RubyOps), "CreateBoundMissingMember")); } }
+        private static MethodInfo _CreateBoundMissingMember;
         public static MethodInfo/*!*/ CreateDelegateFromMethod { get { return _CreateDelegateFromMethod ?? (_CreateDelegateFromMethod = GetMethod(typeof(RubyOps), "CreateDelegateFromMethod")); } }
         private static MethodInfo _CreateDelegateFromMethod;
         public static MethodInfo/*!*/ CreateDelegateFromProc { get { return _CreateDelegateFromProc ?? (_CreateDelegateFromProc = GetMethod(typeof(RubyOps), "CreateDelegateFromProc")); } }
@@ -304,6 +312,8 @@ namespace IronRuby.Compiler {
         private static MethodInfo _MakeHash0;
         public static MethodInfo/*!*/ MakeInvalidArgumentTypesError { get { return _MakeInvalidArgumentTypesError ?? (_MakeInvalidArgumentTypesError = GetMethod(typeof(RubyOps), "MakeInvalidArgumentTypesError")); } }
         private static MethodInfo _MakeInvalidArgumentTypesError;
+        public static MethodInfo/*!*/ MakeMissingDefaultConstructorError { get { return _MakeMissingDefaultConstructorError ?? (_MakeMissingDefaultConstructorError = GetMethod(typeof(RubyOps), "MakeMissingDefaultConstructorError")); } }
+        private static MethodInfo _MakeMissingDefaultConstructorError;
         public static MethodInfo/*!*/ MakeMissingSuperException { get { return _MakeMissingSuperException ?? (_MakeMissingSuperException = GetMethod(typeof(RubyOps), "MakeMissingSuperException")); } }
         private static MethodInfo _MakeMissingSuperException;
         public static MethodInfo/*!*/ MakePrivateMethodCalledError { get { return _MakePrivateMethodCalledError ?? (_MakePrivateMethodCalledError = GetMethod(typeof(RubyOps), "MakePrivateMethodCalledError")); } }
@@ -312,6 +322,8 @@ namespace IronRuby.Compiler {
         private static MethodInfo _MakeProtectedMethodCalledError;
         public static MethodInfo/*!*/ MakeTopLevelSuperException { get { return _MakeTopLevelSuperException ?? (_MakeTopLevelSuperException = GetMethod(typeof(RubyOps), "MakeTopLevelSuperException")); } }
         private static MethodInfo _MakeTopLevelSuperException;
+        public static MethodInfo/*!*/ MakeTypeConversionError { get { return _MakeTypeConversionError ?? (_MakeTypeConversionError = GetMethod(typeof(RubyOps), "MakeTypeConversionError")); } }
+        private static MethodInfo _MakeTypeConversionError;
         public static MethodInfo/*!*/ MakeWrongNumberOfArgumentsError { get { return _MakeWrongNumberOfArgumentsError ?? (_MakeWrongNumberOfArgumentsError = GetMethod(typeof(RubyOps), "MakeWrongNumberOfArgumentsError")); } }
         private static MethodInfo _MakeWrongNumberOfArgumentsError;
         public static MethodInfo/*!*/ MatchLastInputLine { get { return _MatchLastInputLine ?? (_MatchLastInputLine = GetMethod(typeof(RubyOps), "MatchLastInputLine")); } }

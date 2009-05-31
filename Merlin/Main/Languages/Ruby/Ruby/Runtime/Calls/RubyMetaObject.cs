@@ -52,6 +52,26 @@ namespace IronRuby.Runtime.Calls {
         public override DynamicMetaObject/*!*/ BindGetMember(GetMemberBinder/*!*/ binder) {
             return InteropBinder.GetMember.Bind(CreateMetaContext(), binder, this, binder.FallbackGetMember);
         }
+
+        public override DynamicMetaObject/*!*/ BindSetMember(SetMemberBinder/*!*/ binder, DynamicMetaObject/*!*/ value) {
+            return InteropBinder.SetMember.Bind(CreateMetaContext(), binder, this, value, binder.FallbackSetMember);
+        }
+
+        public override DynamicMetaObject/*!*/ BindGetIndex(GetIndexBinder/*!*/ binder, DynamicMetaObject/*!*/[]/*!*/ indexes) {
+            return InteropBinder.GetIndex.Bind(CreateMetaContext(), binder, this, indexes, binder.FallbackGetIndex);
+        }
+
+        public override DynamicMetaObject/*!*/ BindSetIndex(SetIndexBinder/*!*/ binder, DynamicMetaObject/*!*/[]/*!*/ indexes, DynamicMetaObject value) {
+            return InteropBinder.SetIndex.Bind(CreateMetaContext(), binder, this, indexes, value, binder.FallbackSetIndex);
+        }
+
+        public override DynamicMetaObject/*!*/ BindUnaryOperation(UnaryOperationBinder/*!*/ binder) {
+            return InteropBinder.UnaryOperation.Bind(CreateMetaContext(), binder, this, binder.FallbackUnaryOperation);
+        }
+
+        public override DynamicMetaObject/*!*/ BindBinaryOperation(BinaryOperationBinder/*!*/ binder, DynamicMetaObject/*!*/ arg) {
+            return InteropBinder.BinaryOperation.Bind(CreateMetaContext(), binder, this, arg, binder.FallbackBinaryOperation);
+        }
     }
     
     public abstract class RubyMetaObject<T> : RubyMetaObject {

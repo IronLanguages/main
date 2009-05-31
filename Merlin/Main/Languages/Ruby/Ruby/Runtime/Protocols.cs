@@ -125,13 +125,7 @@ namespace IronRuby.Runtime {
         #region ConvertStringToFloat, ConvertToInteger, CastToInteger, CastToFixnum, CastToUInt32Unchecked, CastToUInt64Unchecked
 
         public static double ConvertStringToFloat(RubyContext/*!*/ context, MutableString/*!*/ value) {
-            double result;
-            bool complete;
-            if (Tokenizer.TryParseDouble(value.ConvertToString(), out result, out complete) && complete) {
-                return result;
-            }
-
-            throw RubyExceptions.InvalidValueForType(context, value, "Float");
+            return RubyOps.ConvertStringToFloat(context, value.ConvertToString());
         }
 
         public static IntegerValue ConvertToInteger(ConversionStorage<IntegerValue>/*!*/ integerConversion, object value) {
@@ -350,8 +344,7 @@ namespace IronRuby.Runtime {
             BinaryOpStorage/*!*/ binaryOpStorage, string/*!*/ binaryOp,
             object self, object other, out object result) {
 
-            // doesn't call method_missing:
-            var coerce = coercionStorage.GetCallSite("coerce", new RubyCallSignature(1, RubyCallFlags.IsTryCall | RubyCallFlags.HasImplicitSelf));
+            var coerce = coercionStorage.GetCallSite("coerce", new RubyCallSignature(1, RubyCallFlags.HasImplicitSelf));
 
             IList coercedValues;
 

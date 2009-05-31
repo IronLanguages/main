@@ -699,7 +699,7 @@ namespace IronRuby.Tests {
             t.Expect();
         }
 
-        private void Symbols1() {
+        public void Symbols1() {
             // TODO: we need AssertParser
             //AssertTokenizer t = AssertTokens();
 
@@ -708,7 +708,7 @@ namespace IronRuby.Tests {
             //t.Expect();
         }
 
-        private void KCode1() {
+        public void KCode1() {
             var sjisEncoding = RubyEncoding.KCodeSJIS;
 
             var sjisEngine = Ruby.CreateEngine((setup) => {
@@ -825,6 +825,14 @@ p __ENCODING__
 
             // ignores preamble:
             Context.CreateFileUnit("foo.rb", "# enCoding = UNDEFINED_ENCODING").Execute();
+        }
+
+        [Options(Compatibility = RubyCompatibility.Ruby19)]
+        private void Encoding4() {
+            var enc = Engine.Execute<RubyEncoding>(@"eval('# encoding: SJIS
+__ENCODING__
+')");
+            Assert(enc == RubyEncoding.GetRubyEncoding("SJIS"));
         }
 
         [Options(Compatibility = RubyCompatibility.Ruby19)]

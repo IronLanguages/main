@@ -44,30 +44,18 @@ namespace Microsoft.Scripting.Runtime {
             }
 
             if (type == self.Expression.Type) {
-                if (type.IsSealedOrValueType()) {
-                    return new DynamicMetaObject(
-                        self.Expression,
-                        self.Restrictions.Merge(BindingRestrictionsHelpers.GetRuntimeTypeRestriction(self.Expression, type)),
-                        self.Value
-                    );
-                }
-
-                if (self.Expression.NodeType == ExpressionType.New ||
+                if (type.IsSealedOrValueType() ||
+                    self.Expression.NodeType == ExpressionType.New ||
                     self.Expression.NodeType == ExpressionType.NewArrayBounds ||
                     self.Expression.NodeType == ExpressionType.NewArrayInit) {
-                    return new DynamicMetaObject(
-                        self.Expression,
-                        self.Restrictions.Merge(BindingRestrictionsHelpers.GetRuntimeTypeRestriction(self.Expression, type)),
-                        self.Value
-                    );
+                    return self.Clone(self.Restrictions.Merge(BindingRestrictionsHelpers.GetRuntimeTypeRestriction(self.Expression, type)));
                 }
             }
 
             if (type == typeof(DynamicNull)) {
-                return new DynamicMetaObject(
+                return self.Clone(
                     AstUtils.Constant(null),
-                    self.Restrictions.Merge(BindingRestrictions.GetInstanceRestriction(self.Expression, null)),
-                    self.Value
+                    self.Restrictions.Merge(BindingRestrictions.GetInstanceRestriction(self.Expression, null))
                 );
             }
 
@@ -87,18 +75,21 @@ namespace Microsoft.Scripting.Runtime {
                 );
             }
 
-            if (self.HasValue) {
-                return new DynamicMetaObject(
-                    converted,
-                    self.Restrictions.Merge(BindingRestrictionsHelpers.GetRuntimeTypeRestriction(self.Expression, type)),
-                    self.Value
-                );
-            }
+            return self.Clone(converted, self.Restrictions.Merge(BindingRestrictionsHelpers.GetRuntimeTypeRestriction(self.Expression, type)));
+        }
 
-            return new DynamicMetaObject(
-                converted,
-                self.Restrictions.Merge(BindingRestrictionsHelpers.GetRuntimeTypeRestriction(self.Expression, type))
-            );
+        public static DynamicMetaObject Clone(this DynamicMetaObject self, Expression newExpression) {
+            return self.Clone(newExpression, self.Restrictions);
+        }
+
+        public static DynamicMetaObject Clone(this DynamicMetaObject self, BindingRestrictions newRestrictions) {
+            return self.Clone(self.Expression, newRestrictions);
+        }
+
+        public static DynamicMetaObject Clone(this DynamicMetaObject self, Expression newExpression, BindingRestrictions newRestrictions) {
+            return (self.HasValue) ? 
+                new DynamicMetaObject(newExpression, newRestrictions, self.Value) :
+                new DynamicMetaObject(newExpression, newRestrictions);
         }
 
         /// <summary>

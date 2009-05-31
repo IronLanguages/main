@@ -226,7 +226,7 @@ namespace IronRuby.Compiler.Ast {
                 }
             }
 
-            return result | (BlockSignatureAttributes)(arity << 2);
+            return BlockDispatcher.MakeAttributes(result, arity);
         }
 
         public override string/*!*/ ToString() {

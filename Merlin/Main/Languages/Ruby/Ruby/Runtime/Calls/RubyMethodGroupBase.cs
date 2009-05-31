@@ -74,6 +74,7 @@ namespace IronRuby.Runtime.Calls {
         }
 
         internal abstract SelfCallConvention CallConvention { get; }
+        internal abstract bool ImplicitProtocolConversions { get; }
 
         public override int GetArity() {
             int minParameters = Int32.MaxValue;
@@ -81,11 +82,7 @@ namespace IronRuby.Runtime.Calls {
             bool hasOptional = false;
             foreach (MethodBase method in MethodBases) {
                 int mandatory, optional;
-                bool acceptsBlock;
-                RubyOverloadResolver.GetParameterCount(method.GetParameters(), out mandatory, out optional, out acceptsBlock);
-                if (mandatory > 0) {
-                    mandatory--; // account for "self"
-                }
+                RubyOverloadResolver.GetParameterCount(method, method.GetParameters(), CallConvention, out mandatory, out optional);
                 if (mandatory < minParameters) {
                     minParameters = mandatory;
                 }
@@ -143,13 +140,10 @@ namespace IronRuby.Runtime.Calls {
             return Copy(boundMethods.ToArray());
         }
 
-        private static bool IsOverloadSignature(MethodBase/*!*/ method, Type/*!*/[]/*!*/ parameterTypes) {
+        private bool IsOverloadSignature(MethodBase/*!*/ method, Type/*!*/[]/*!*/ parameterTypes) {
             var infos = method.GetParameters();
-            int firstInfo = 0;
-            while (firstInfo < infos.Length && RubyOverloadResolver.IsHiddenParameter(infos[firstInfo])) {
-                firstInfo++;
-            }
-
+            int firstInfo = RubyOverloadResolver.GetHiddenParameterCount(method, infos, CallConvention);
+            
             if (infos.Length - firstInfo != parameterTypes.Length) {
                 return false;
             }
@@ -193,13 +187,14 @@ namespace IronRuby.Runtime.Calls {
                 methods = MethodBases;
             }
 
-            BuildCallNoFlow(metaBuilder, args, name, methods, CallConvention);
+            BuildCallNoFlow(metaBuilder, args, name, methods, CallConvention, ImplicitProtocolConversions);
         }
 
         internal static BindingTarget/*!*/ ResolveOverload(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args, string/*!*/ name,
-            IList<MethodBase>/*!*/ overloads, SelfCallConvention callConvention, out RubyOverloadResolver/*!*/ resolver) {
+            IList<MethodBase>/*!*/ overloads, SelfCallConvention callConvention, bool implicitProtocolConversions, 
+            out RubyOverloadResolver/*!*/ resolver) {
 
-            resolver = new RubyOverloadResolver(metaBuilder, args, callConvention);
+            resolver = new RubyOverloadResolver(metaBuilder, args, callConvention, implicitProtocolConversions);
             var bindingTarget = resolver.ResolveOverload(name, overloads, NarrowingLevel.None, NarrowingLevel.All);
 
             bool calleeHasBlockParam = bindingTarget.Success && HasBlockParameter(bindingTarget.Method);
@@ -232,18 +227,18 @@ namespace IronRuby.Runtime.Calls {
         internal override void BuildCallNoFlow(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args, string/*!*/ name) {
             Assert.NotNull(name, metaBuilder, args);
 
-            BuildCallNoFlow(metaBuilder, args, name, MethodBases, CallConvention);
+            BuildCallNoFlow(metaBuilder, args, name, MethodBases, CallConvention, ImplicitProtocolConversions);
         }
 
         /// <summary>
         /// Resolves an library method overload and builds call expression.
         /// The resulting expression on meta-builder doesn't handle block control flow yet.
         /// </summary>
-        internal static void BuildCallNoFlow(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args, string/*!*/ name, 
-            IList<MethodBase>/*!*/ overloads, SelfCallConvention callConvention) {
+        internal static void BuildCallNoFlow(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args, string/*!*/ name,
+            IList<MethodBase>/*!*/ overloads, SelfCallConvention callConvention, bool implicitProtocolConversions) {
 
             RubyOverloadResolver resolver;
-            var bindingTarget = ResolveOverload(metaBuilder, args, name, overloads, callConvention, out resolver);
+            var bindingTarget = ResolveOverload(metaBuilder, args, name, overloads, callConvention, implicitProtocolConversions, out resolver);
             if (bindingTarget.Success) {
                 metaBuilder.Result = bindingTarget.MakeExpression();
             } else {

@@ -75,6 +75,7 @@ namespace IronRuby.Tests {
                 Encoding1,
                 Encoding2,
                 Encoding3,
+                Encoding4,
                 Encoding_Host1,
                 Encoding_Host2,
 
@@ -88,6 +89,7 @@ namespace IronRuby.Tests {
                 Scenario_RubyMath1,
 
                 MutableString1,
+                File1,
                 StringsPlus,
                 Strings0,
                 Strings1,
@@ -228,6 +230,7 @@ namespace IronRuby.Tests {
                 RubyProcArgConversion4,
                 ProcNew1,
                 ProcNew2,
+                MethodToProc1,
                 DefineMethod1,
                 DefineMethod2,
                 
@@ -317,7 +320,6 @@ namespace IronRuby.Tests {
                 RubyHosting1D,
                 RubyHosting2,
                 RubyHosting3,
-                RubyHosting4,
                 CrossRuntime1,
                 CrossRuntime2,
 
@@ -342,8 +344,11 @@ namespace IronRuby.Tests {
 
                 ClrFields1,
                 ClrTypes1,
+                ClrNamespaces1,
                 ClrGenerics1,
+                ClrGenerics2,
                 ClrMethods1,
+                ClrMethods2,
                 // TODO: protected ClrMethodsVisibility1,
                 ClrOverloadInheritance1,
                 ClrOverloadInheritance2,
@@ -354,7 +359,9 @@ namespace IronRuby.Tests {
                 ClrIndexers1,
                 ClrGenericMethods1,
                 ClrOverloadSelection1,
+                ClrOverloadSelection2,
                 ClrInterfaces1,
+                ClrInterfaces2,
                 ClrRequireAssembly1,
                 ClrInclude1,
                 ClrNew1,
@@ -369,12 +376,14 @@ namespace IronRuby.Tests {
                 ClrEvents4,
                 ClrOverride1,
                 ClrConstructor1,
-                // TODO: ClrConstructor2,
+                ClrConstructor2,
+                ClrConstructor3,
                 ClrPrimitiveNumericTypes1,
                 ClrArrays1,
                 ClrChar1,
                 ClrOperators1,
                 ClrOperators2,
+                ClrConversions1,
                 Scenario_RubyEngine1,
                 Scenario_RubyInteractive1,
                 Scenario_RubyInteractive2,
@@ -488,6 +497,7 @@ namespace IronRuby.Tests {
                 Methods1, 
                 ToIntegerConversion1,
                 ToIntToStrConversion1,
+                ConvertToFixnum1,
                 ProtocolCaching1,
                 ProtocolCaching2,
                 ProtocolCaching3,
@@ -505,6 +515,7 @@ namespace IronRuby.Tests {
                 Structs1,
                 MetaModules1,
                 MetaModulesDuplication1,
+                Autoload1,
   
                 // eval, binding:
                 Eval1,
@@ -564,7 +575,7 @@ namespace IronRuby.Tests {
                 Dlr_Comparable,
                 Dlr_RubyObjects,
                 Dlr_Methods,
-                Dlr_Languages
+                Dlr_Languages,
             };
         }
     }

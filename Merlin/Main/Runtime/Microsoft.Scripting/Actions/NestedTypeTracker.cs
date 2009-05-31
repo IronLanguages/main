@@ -18,7 +18,7 @@ using Microsoft.Contracts;
 
 namespace Microsoft.Scripting.Actions {
     public class NestedTypeTracker : TypeTracker {
-        private Type _type;
+        private readonly Type _type;
 
         public NestedTypeTracker(Type type) {
             _type = type;

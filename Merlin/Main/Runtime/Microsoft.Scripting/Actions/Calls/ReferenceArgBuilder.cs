@@ -14,7 +14,6 @@
  * ***************************************************************************/
 
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -46,7 +45,7 @@ namespace Microsoft.Scripting.Actions.Calls {
             get { return 5; }
         }
 
-        internal protected override Expression ToExpression(OverloadResolver resolver, IList<Expression> parameters, bool[] hasBeenUsed) {
+        internal protected override Expression ToExpression(OverloadResolver resolver, RestrictedArguments args, bool[] hasBeenUsed) {
             if (_tmp == null) {
                 _tmp = resolver.GetTemporary(_elementType, "outParam");
             }
@@ -54,30 +53,32 @@ namespace Microsoft.Scripting.Actions.Calls {
             Debug.Assert(!hasBeenUsed[Index]);
             hasBeenUsed[Index] = true;
             Type boxType = typeof(StrongBox<>).MakeGenericType(_elementType);
+            Expression arg = args.GetObject(Index).Expression;
+
             return Expression.Condition(
-                Expression.TypeIs(parameters[Index], Type),
+                Expression.TypeIs(arg, Type),
                 Expression.Assign(
                     _tmp,
                     Expression.Field(
-                        AstUtils.Convert(parameters[Index], boxType),
+                        AstUtils.Convert(arg, boxType),
                         boxType.GetField("Value")
                     )
                 ),
                 Expression.Call(
                     typeof(RuntimeHelpers).GetMethod("IncorrectBoxType").MakeGenericMethod(_elementType),
-                    AstUtils.Convert(parameters[Index], typeof(object))
+                    AstUtils.Convert(arg, typeof(object))
                 )
             );
         }
 
-        protected internal override Func<object[], object> ToDelegate(OverloadResolver resolver, IList<System.Dynamic.DynamicMetaObject> knownTypes, bool[] hasBeenUsed) {
+        protected internal override Func<object[], object> ToDelegate(OverloadResolver resolver, RestrictedArguments args, bool[] hasBeenUsed) {
             return null;
         }
 
-        internal override Expression UpdateFromReturn(OverloadResolver resolver, IList<Expression> parameters) {
+        internal override Expression UpdateFromReturn(OverloadResolver resolver, RestrictedArguments args) {
             return Expression.Assign(
                 Expression.Field(
-                    Expression.Convert(parameters[Index], Type),
+                    Expression.Convert(args.GetObject(Index).Expression, Type),
                     Type.GetField("Value")
                 ),
                 _tmp

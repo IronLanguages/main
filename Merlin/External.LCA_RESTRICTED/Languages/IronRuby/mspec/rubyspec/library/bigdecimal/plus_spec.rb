@@ -47,4 +47,15 @@ describe "BigDecimal#+" do
     (@infinity + @infinity_minus).nan?.should == true
   end
 
+  it "calls #coerce on the passed argument with self" do
+    (m = mock('10')).should_receive(:coerce).with(@eleven).and_return([@ten, @eleven])
+    (@eleven + m).should == @eleven + 10
+  end
+
+  it "calls #method_missing(:coerce) on the passed argument" do
+    m = mock('10')
+    m.should_not_receive(:respond_to?).with(:coerce)
+    m.should_receive(:method_missing).with(:coerce, @eleven).and_return([@ten, @eleven])
+    (@eleven + m).should == @eleven +  10
+  end
 end

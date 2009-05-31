@@ -55,7 +55,7 @@ using System.Security;
 [assembly: System.Resources.NeutralResourcesLanguage("en-US")]
 
 #if !SILVERLIGHT
-[assembly: AssemblyVersion("0.9.5.1")]
+[assembly: AssemblyVersion("2.0.0.0")]  // shouldn't change, this assembly is unchanged.  This is the version it originally shipped as.
 [assembly: AssemblyFileVersion("1.0.0.00")]
 [assembly: AssemblyInformationalVersion("1.0")]
 [assembly: AllowPartiallyTrustedCallers]

@@ -57,7 +57,7 @@ namespace IronRuby.Builtins {
 
         [RubyConstructor]
         public static RubyRegex/*!*/ Create(RubyClass/*!*/ self,
-            [DefaultProtocol, NotNull]MutableString/*!*/ pattern, [DefaultParameterValue(null)]object ignoreCase, [DefaultProtocol, Optional]MutableString encoding) {
+            [DefaultProtocol, NotNull]MutableString/*!*/ pattern, [Optional]bool ignoreCase, [DefaultProtocol, Optional]MutableString encoding) {
 
             return new RubyRegex(pattern, MakeOptions(ignoreCase, encoding));
         }
@@ -99,7 +99,7 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("initialize", RubyMethodAttributes.PrivateInstance)]
         public static RubyRegex/*!*/ Reinitialize(RubyRegex/*!*/ self,
-            [DefaultProtocol, NotNull]MutableString/*!*/ pattern, [DefaultParameterValue(null)]object ignoreCase, [DefaultProtocol, Optional]MutableString encoding) {
+            [DefaultProtocol, NotNull]MutableString/*!*/ pattern, [Optional]bool ignoreCase, [DefaultProtocol, Optional]MutableString encoding) {
 
             self.Set(pattern, MakeOptions(ignoreCase, encoding));
             return self;
@@ -109,16 +109,12 @@ namespace IronRuby.Builtins {
             context.ReportWarning((encoding != Missing.Value) ? "flags and encoding ignored" : "flags ignored");
         }
 
-        internal static RubyRegexOptions MakeOptions(object ignoreCase, MutableString encoding) {
-            return ObjectToIgnoreCaseOption(ignoreCase) | StringToRegexEncoding(encoding);
+        internal static RubyRegexOptions MakeOptions(bool ignoreCase, MutableString encoding) {
+            return (ignoreCase ? RubyRegexOptions.IgnoreCase : RubyRegexOptions.NONE) | StringToRegexEncoding(encoding);
         }
 
         internal static RubyRegexOptions MakeOptions(int options, MutableString encoding) {
             return (RubyRegexOptions)options | StringToRegexEncoding(encoding);
-        }
-
-        internal static RubyRegexOptions ObjectToIgnoreCaseOption(object obj) {
-            return Protocols.IsTrue(obj) ? RubyRegexOptions.IgnoreCase : RubyRegexOptions.NONE;
         }
 
         internal static RubyRegexOptions StringToRegexEncoding(MutableString encoding) {

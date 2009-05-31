@@ -35,7 +35,7 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("to_clr_type")]
         public static Type ToClrType(RubyModule/*!*/ self) {
-            return self.Tracker != null ? self.Tracker.Type : null;
+            return self.TypeTracker != null ? self.TypeTracker.Type : null;
         }
 
         #endregion
@@ -79,11 +79,10 @@ namespace IronRuby.Builtins {
         [RubyMethod("remove_const", RubyMethodAttributes.PrivateInstance)]
         public static object RemoveConstant(RubyModule/*!*/ self, [DefaultProtocol, NotNull]string/*!*/ constantName) {
             object value;
-            if (!self.TryGetConstantNoAutoload(constantName, out value)) {
+            if (!self.TryRemoveConstant(constantName, out value)) {
                 self.Context.CheckConstantName(constantName);
                 throw RubyExceptions.CreateNameError(String.Format("constant {0}::{1} not defined", self.Name, constantName));
             }
-            self.RemoveConstant(constantName);
             return value;
         }
 
@@ -277,11 +276,11 @@ namespace IronRuby.Builtins {
                 }
 
                 if (method.Visibility != instanceVisibility) {
-                    context.MethodAdded(module, methodName);
+                    module.MethodAdded(methodName);
                 }
 
                 if (isModuleFunction) {
-                    context.MethodAdded(module.SingletonClass, methodName);
+                    module.SingletonClass.MethodAdded(methodName);
                 }
             }
         }
@@ -327,7 +326,7 @@ namespace IronRuby.Builtins {
                 self.SetDefinedMethodNoEventNoLock(self.Context, methodName, info, visibility);
             }
 
-            self.Context.MethodAdded(self, methodName);
+            self.MethodAdded(methodName);
         }
 
         // thread-safe:
@@ -356,18 +355,18 @@ namespace IronRuby.Builtins {
 
         #region method_(added|removed|undefined)
 
-        [RubyMethod("method_added", RubyMethodAttributes.PrivateInstance)]
-        public static void MethodAdded(RubyModule/*!*/ self, object methodName) {
+        [RubyMethod("method_added", RubyMethodAttributes.PrivateInstance | RubyMethodAttributes.Empty)]
+        public static void MethodAdded(object/*!*/ self, object methodName) {
             // nop
         }
 
-        [RubyMethod("method_removed", RubyMethodAttributes.PrivateInstance)]
-        public static void MethodRemoved(RubyModule/*!*/ self, object methodName) {
+        [RubyMethod("method_removed", RubyMethodAttributes.PrivateInstance | RubyMethodAttributes.Empty)]
+        public static void MethodRemoved(object/*!*/ self, object methodName) {
             // nop
         }
 
-        [RubyMethod("method_undefined", RubyMethodAttributes.PrivateInstance)]
-        public static void MethodUndefined(RubyModule/*!*/ self, object methodName) {
+        [RubyMethod("method_undefined", RubyMethodAttributes.PrivateInstance | RubyMethodAttributes.Empty)]
+        public static void MethodUndefined(object/*!*/ self, object methodName) {
             // nop
         }
 
@@ -492,7 +491,7 @@ namespace IronRuby.Builtins {
         // thread-safe:
         [RubyMethod("===")]
         public static bool CaseEquals(RubyModule/*!*/ self, object other) {
-            return self.Context.GetImmediateClassOf(other).HasAncestor(self);
+            return self.Context.IsKindOf(other, self);
         }
 
         // thread-safe:
@@ -855,8 +854,13 @@ namespace IronRuby.Builtins {
                 throw RubyExceptions.CreateUndefinedMethodError(self, methodName);
             }
 
-            // unbound method binable to any class with "self" mixin:
-            return new UnboundMethod(self, methodName, method);
+            RubyModule constraint = self;
+            if (self.IsSingletonClass && method.DeclaringModule != self) {
+                constraint = ((RubyClass)self).SuperClass;
+            }
+
+            // unbound method binable to any class with "constraint" mixin:
+            return new UnboundMethod(constraint, methodName, method);
         }
 
         #endregion
@@ -900,11 +904,11 @@ namespace IronRuby.Builtins {
         [RubyMethod("of")]
         [RubyMethod("[]")]
         public static RubyModule/*!*/ Of(RubyModule/*!*/ self, [NotNull]params object[]/*!*/ typeArgs) {
-            if (self.Tracker == null) {
-                throw new NotImplementedException("TODO");
+            if (self.TypeTracker == null) {
+                throw RubyExceptions.CreateArgumentError(String.Format("'{0}' is not a type", self.Name));
             }
 
-            Type type = self.Tracker.Type;
+            Type type = self.TypeTracker.Type;
             int provided = typeArgs.Length;
 
             if (provided == 1 && type == typeof(Array)) {

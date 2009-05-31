@@ -21,9 +21,12 @@ using System.Collections.Generic;
 using Ast = System.Linq.Expressions.Expression;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 using System.Reflection;
+using Microsoft.Scripting;
+using Microsoft.Scripting.Runtime;
+using System.Linq.Expressions;
 
 namespace IronRuby.Runtime.Calls {
-    public abstract class RubyMetaBinder : DynamicMetaObjectBinder {
+    public abstract class RubyMetaBinder : DynamicMetaObjectBinder, IExpressionSerializable {
         /// <summary>
         /// Cross-runtime checks are emitted if the action is not bound to the context.
         /// </summary>
@@ -36,13 +39,15 @@ namespace IronRuby.Runtime.Calls {
         internal RubyContext Context { 
             get { return _context; }
             set {
-                Debug.Assert(_context == null && value != null);
+                Debug.Assert(_context == null);
                 _context = value; 
             }
         }
         
         public abstract RubyCallSignature Signature { get; }
+
         protected abstract bool Build(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args, bool defaultFallback);
+        public abstract Expression CreateExpression();
 
         protected virtual DynamicMetaObjectBinder GetInteropBinder(RubyContext/*!*/ context, IList<DynamicMetaObject/*!*/>/*!*/ args, 
             out MethodInfo postProcessor) {
@@ -52,6 +57,8 @@ namespace IronRuby.Runtime.Calls {
         }
 
         public override DynamicMetaObject/*!*/ Bind(DynamicMetaObject/*!*/ scopeOrContextOrTarget, DynamicMetaObject/*!*/[]/*!*/ args) {
+            PerfTrack.NoteEvent(PerfTrack.Categories.Binding, "Ruby: " + GetType().Name + Signature.ToString() + ": Bind");
+
             var callArgs = new CallArguments(_context, scopeOrContextOrTarget, args, Signature);
             var metaBuilder = new MetaObjectBuilder(this, args);
 
@@ -84,7 +91,7 @@ namespace IronRuby.Runtime.Calls {
                         metaBuilder.Result = Ast.Call(null, postConverter, AstUtils.Convert(metaBuilder.Result, paramType));
                         resultType = postConverter.ReturnType;
                     } else {
-                        resultType = ((IInteropBinder)interopBinder).ResultType;
+                        resultType = interopBinder.ReturnType;
                     }
 
                     return metaBuilder.CreateMetaObject(interopBinder, resultType);

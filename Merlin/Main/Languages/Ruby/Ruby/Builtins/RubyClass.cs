@@ -16,26 +16,24 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Dynamic;
 using System.Linq.Expressions;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Dynamic;
 using System.Threading;
-using Microsoft.Scripting;
-using Microsoft.Scripting.Actions;
-using Microsoft.Scripting.Runtime;
-using Microsoft.Scripting.Utils;
 using IronRuby.Compiler;
 using IronRuby.Compiler.Generation;
 using IronRuby.Runtime;
 using IronRuby.Runtime.Calls;
+using Microsoft.Scripting;
+using Microsoft.Scripting.Actions;
+using Microsoft.Scripting.Utils;
 using Ast = System.Linq.Expressions.Expression;
-using AstFactory = IronRuby.Compiler.Ast.AstFactory;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
-using System.Runtime.CompilerServices;
+using Microsoft.Scripting.Generation;
 
 namespace IronRuby.Builtins {
-
     public sealed partial class RubyClass : RubyModule, IDuplicable {
         /// <summary>
         /// Visibility context within which all methods are visible.
@@ -56,6 +54,7 @@ namespace IronRuby.Builtins {
         // is this class a singleton class?
         private readonly bool _isSingletonClass;
 
+        // true for classes that are defined in Ruby
         private readonly bool _isRubyClass;
         
         // an object that the class is a singleton of (reverse _singletonClass pointer):
@@ -79,9 +78,8 @@ namespace IronRuby.Builtins {
 
         #region Mutable state guarded by ClassHierarchyLock
 
-        // TODO: internal setter
         [Emitted]
-        public StrongBox<int> Version;
+        public VersionHandle Version;
 
         private readonly WeakReference/*!*/ _weakSelf;
 
@@ -96,13 +94,78 @@ namespace IronRuby.Builtins {
 
         private CallSite<Func<CallSite, object, object>> _inspectSite;
         private CallSite<Func<CallSite, object, MutableString>> _stringConversionSite;
+        private CallSite<Func<CallSite, object, object, object>> _eqlSite;
+        private CallSite<Func<CallSite, object, object>> _hashSite;
 
         public CallSite<Func<CallSite, object, object>>/*!*/ InspectSite { 
             get { return RubyUtils.GetCallSite(ref _inspectSite, Context, "inspect", 0); } 
         }
-
+        
         public CallSite<Func<CallSite, object, MutableString>>/*!*/ StringConversionSite {
             get { return RubyUtils.GetCallSite(ref _stringConversionSite, ConvertToSAction.Make(Context)); } 
+        }
+
+        public CallSite<Func<CallSite, object, object, object>>/*!*/ EqlSite {
+            get { return RubyUtils.GetCallSite(ref _eqlSite, Context, "==", 1); }
+        }
+
+        public CallSite<Func<CallSite, object, object>>/*!*/ HashSite {
+            get { return RubyUtils.GetCallSite(ref _hashSite, Context, "hash", 0); }
+
+        }
+        
+        // RubyClass, RubyClass -> object
+        private CallSite<Func<CallSite, object, object, object>> _classInheritedCallbackSite;
+
+        internal void ClassInheritedEvent(RubyClass/*!*/ subClass) {
+            if (_classInheritedCallbackSite == null) {
+                Interlocked.CompareExchange(
+                    ref _classInheritedCallbackSite,
+                    CallSite<Func<CallSite, object, object, object>>.Create(RubyCallAction.Make(Context, Symbols.Inherited, RubyCallSignature.WithImplicitSelf(1)
+                    )),
+                    null
+                );
+            }
+
+            _classInheritedCallbackSite.Target(_classInheritedCallbackSite, this, subClass);
+        }
+
+        // object, SymbolId -> object
+        private CallSite<Func<CallSite, object, object, object>> _singletonMethodAddedCallbackSite;
+        private CallSite<Func<CallSite, object, object, object>> _singletonMethodRemovedCallbackSite;
+        private CallSite<Func<CallSite, object, object, object>> _singletonMethodUndefinedCallbackSite;
+
+        // Ruby 1.8: called after method is added, except for alias_method which calls it before
+        // Ruby 1.9: called before method is added
+        public override void MethodAdded(string/*!*/ name) {
+            Assert.NotNull(name);
+
+            // not called on singleton classes:
+            if (IsSingletonClass) {
+                Context.Send(ref _singletonMethodAddedCallbackSite, Symbols.SingletonMethodAdded, _singletonClassOf, name);
+            } else {
+                base.MethodAdded(name);
+            }
+        }
+
+        internal override void MethodRemoved(string/*!*/ name) {
+            Assert.NotNull(name);
+
+            if (IsSingletonClass) {
+                Context.Send(ref _singletonMethodRemovedCallbackSite, Symbols.SingletonMethodRemoved, _singletonClassOf, name);
+            } else {
+                base.MethodRemoved(name);
+            }
+        }
+
+        internal override void MethodUndefined(string/*!*/ name) {
+            Assert.NotNull(name);
+
+            if (IsSingletonClass) {
+                Context.Send(ref _singletonMethodUndefinedCallbackSite, Symbols.SingletonMethodUndefined, _singletonClassOf, name);
+            } else {
+                base.MethodUndefined(name);
+            }
         }
 
         #endregion
@@ -221,7 +284,8 @@ namespace IronRuby.Builtins {
             }
 
             _weakSelf = new WeakReference(this);
-            Version = new StrongBox<int>(Interlocked.Increment(ref _globalVersion));
+            Version = new VersionHandle(Interlocked.Increment(ref _globalVersion));
+            Version.SetName(name);
         }
 
         #region Versioning
@@ -370,7 +434,7 @@ namespace IronRuby.Builtins {
                 }
 
                 // Skips modules whose method tables are not initialized as well as CLR methods that are not yet loaded to method tables.
-                // We can do so because such methods were nto used in any cache.
+                // We can do so because such methods were not used in any cache.
                 //
                 // Skips super-forwarder since the forwarded super ancestor would be used in a site/group, not the forwarder itself.
                 // If the forwarded ancestor is overridden the forwarder will forward to the override.
@@ -572,7 +636,7 @@ namespace IronRuby.Builtins {
             }
 
 #if DEBUG
-            PerfTrack.NoteEvent(PerfTrack.Categories.Count, "CLR member lookup failure cache " + (result ? "hit" : "miss"));
+            PerfTrack.NoteEvent(PerfTrack.Categories.Count, "Ruby: CLR member lookup failure cache " + (result ? "hit" : "miss"));
 #endif
             return result;
         }
@@ -680,6 +744,35 @@ namespace IronRuby.Builtins {
             }
         }
 
+        internal static string MapOperator(ExpressionType/*!*/ op) {
+            switch (op) {
+                case ExpressionType.Add: return "+";
+                case ExpressionType.Subtract: return "-";
+                case ExpressionType.Divide: return "/";
+                case ExpressionType.Multiply: return "*";
+                case ExpressionType.Modulo: return "%";
+                case ExpressionType.Equal: return "==";
+                case ExpressionType.NotEqual: return "!=";
+                case ExpressionType.GreaterThan: return ">";
+                case ExpressionType.GreaterThanOrEqual: return ">=";
+                case ExpressionType.LessThan: return "<";
+                case ExpressionType.LessThanOrEqual: return "<=";
+                case ExpressionType.Negate: return "-@";
+                case ExpressionType.UnaryPlus: return "+@";
+                
+                case ExpressionType.Power: return "**";
+                case ExpressionType.LeftShift: return "<<";
+                case ExpressionType.RightShift: return ">>";
+                case ExpressionType.And: return "&";
+                case ExpressionType.Or: return "|";
+                case ExpressionType.ExclusiveOr: return "^";
+                case ExpressionType.OnesComplement: return "~";
+
+                default:
+                    return null;
+            }
+        }
+
         internal static bool IsOperator(MethodBase/*!*/ method) {
             if (!method.IsStatic || !method.IsSpecialName) {
                 return false;
@@ -761,7 +854,7 @@ namespace IronRuby.Builtins {
                     // Skip classes that have no tracker, e.g. Fixnum(tracker) <: Integer(null) <: Numeric(null) <: Object(tracker).
                     // Skip interfaces, their methods are not callable => do not include them into a method group.
                     // Skip all classes once hidden sentinel is encountered (no CLR overloads are visible since then).
-                    if (!skipHidden && module.Tracker != null && module.IsClass) {
+                    if (!skipHidden && module.TypeTracker != null && module.IsClass) {
                         ancestors.Add((RubyClass)module);
                     }
                 }
@@ -781,7 +874,7 @@ namespace IronRuby.Builtins {
 
             // populate classes in (type..Kernel] or (type..C) with method groups:
             for (int i = ancestors.Count - 1; i >= 0; i--) {
-                var declared = GetDeclaredClrMethods(ancestors[i].Tracker.Type, bindingFlags, clrName);
+                var declared = GetDeclaredClrMethods(ancestors[i].TypeTracker.Type, bindingFlags, clrName);
                 if (declared.Length != 0 && AddMethodsOverwriteExisting(ref allMethods, declared, null, specialNameOnly)) {
                     // There is no cached method that needs to be invalidated.
                     //
@@ -818,7 +911,7 @@ namespace IronRuby.Builtins {
         }
 
         // Returns the number of methods newly added to the dictionary.
-        private static bool AddMethodsOverwriteExisting(ref Dictionary<ValueArray<Type>, ClrOverloadInfo> methods,
+        private bool AddMethodsOverwriteExisting(ref Dictionary<ValueArray<Type>, ClrOverloadInfo> methods,
             MemberInfo/*!*/[]/*!*/ newOverloads, RubyMethodGroupInfo/*!*/[] overloadOwners, bool specialNameOnly) {
 
             bool anyChange = false;
@@ -841,11 +934,37 @@ namespace IronRuby.Builtins {
             return anyChange;
         }
 
-        private static bool IsVisible(MethodBase/*!*/ method, bool specialNameOnly) {
-            return !method.IsPrivate && (method.IsSpecialName || !specialNameOnly);
+        //
+        // Filters out methods that are not visible regardless of what the caller is. 
+        //   - Private and internal methods are only visible when PrivateBinding is on.
+        // 
+        // If the method might be visible for some callers it is included into the method group and possibly ignored by overload resolver.
+        //   - Public methods on public types are always visible.
+        //   - Public methods on internal types are visible if they implement an interface method.
+        //   - Protected methods are visible if called from a subclass.
+        //   - Private methods are visible if they explicitly implement an interface method.
+        // 
+        private bool IsVisible(MethodBase/*!*/ method, bool specialNameOnly) {
+            if (specialNameOnly && !method.IsSpecialName) {
+                return false;
+            }
+            
+            if (Context.DomainManager.Configuration.PrivateBinding) {
+                return true;
+            }
+
+            if (method.IsPrivate || method.IsAssembly || method.IsFamilyAndAssembly) {
+                return false;
+            }
+
+            if (method.IsFamily || method.IsFamilyOrAssembly) {
+                return method.DeclaringType != null && method.DeclaringType.IsVisible && !method.DeclaringType.IsSealed;
+            }
+
+            return true;
         }
 
-        private static int GetVisibleMethodCount(MemberInfo[]/*!*/ members, bool specialNameOnly) {
+        private int GetVisibleMethodCount(MemberInfo[]/*!*/ members, bool specialNameOnly) {
             int count = 0;
             foreach (MethodBase method in members) {
                 if (IsVisible(method, specialNameOnly)) {
@@ -952,7 +1071,9 @@ namespace IronRuby.Builtins {
             argsBuilder.AddCallArguments(metaBuilder, args);
 
             if (!metaBuilder.Error) {
-                BuildAllocatorCall(metaBuilder, args, () => AstUtils.Constant(Name));
+                if (!BuildAllocatorCall(metaBuilder, args, () => AstUtils.Constant(Name))) {
+                    metaBuilder.SetError(Methods.MakeAllocatorUndefinedError.OpCall(Ast.Convert(args.TargetExpression, typeof(RubyClass))));
+                }
             }
         }
         
@@ -980,36 +1101,42 @@ namespace IronRuby.Builtins {
                 Debug.Assert(initializer != null);
             }
 
-            // Ruby libraries: should initialize fully via factories/constructors.
-            // C# "initialize" methods: ignored - we don't consider them initializers.
-            RubyMethodInfo overriddenInitializer = initializer as RubyMethodInfo;
+            bool hasRubyInitializer = initializer is RubyMethodInfo;
+            bool hasLibraryInitializer = !hasRubyInitializer && initializer.DeclaringModule != Context.ObjectClass;
 
-            // Initializer is overridden => initializer is invoked on an uninitialized instance.
-            // Is user class (defined in Ruby code) => construct it as if it had initializer that calls super immediately
-            // (we need to "inherit" factories/constructors from the base class (e.g. class S < String; self; end.new('foo')).
-            if (overriddenInitializer != null || (_isRubyClass && _structInfo == null)) {
-                BuildAllocatorCall(metaBuilder, args, () => AstUtils.Constant(Name));
-
-                if (!metaBuilder.Error) {
-                    if (overriddenInitializer != null || (_isRubyClass && initializer != null && !initializer.IsEmpty)) {
-                        BuildOverriddenInitializerCall(metaBuilder, args, initializer);
-                    }
+            if (hasRubyInitializer || hasLibraryInitializer && _isRubyClass) {
+                // allocate and initialize:
+                bool allocatorFound = BuildAllocatorCall(metaBuilder, args, () => AstUtils.Constant(Name));
+                if (metaBuilder.Error) {
+                    return;
                 }
-            } else if (typeof(Delegate).IsAssignableFrom(type)) {
-                BuildDelegateConstructorCall(metaBuilder, args, type);
-            } else {
-                MethodBase[] constructionOverloads;
-                SelfCallConvention callConvention;
 
-                if (_structInfo != null) {
-                    constructionOverloads = new MethodBase[] { Methods.CreateStructInstance };
-                    callConvention = SelfCallConvention.SelfIsParameter;
-                } else if (_factories.Length != 0) {
-                    constructionOverloads = (MethodBase[])ReflectionUtils.GetMethodInfos(_factories);
-                    callConvention = SelfCallConvention.SelfIsParameter;
+                if (!allocatorFound) {
+                    metaBuilder.SetError(Methods.MakeMissingDefaultConstructorError.OpCall(
+                        Ast.Convert(args.TargetExpression, typeof(RubyClass)),
+                        Ast.Constant(initializer.DeclaringModule.Name)
+                    ));
+                    return;
+                }
+
+                if (!initializer.IsEmpty) {
+                    BuildOverriddenInitializerCall(metaBuilder, args, initializer);
+                }
+            } else {
+                // construct:
+                MethodBase[] constructionOverloads;
+                SelfCallConvention callConvention = SelfCallConvention.SelfIsParameter;
+                bool implicitProtocolConversions = false;
+
+                if (typeof(Delegate).IsAssignableFrom(type)) {
+                    BuildDelegateConstructorCall(metaBuilder, args, type);
+                    return;
                 } else if (type.IsArray && type.GetArrayRank() == 1) {
                     constructionOverloads = ClrVectorFactories;
-                    callConvention = SelfCallConvention.SelfIsParameter;
+                } else if (_structInfo != null) {
+                    constructionOverloads = new MethodBase[] { Methods.CreateStructInstance };
+                } else if (_factories.Length != 0) {
+                    constructionOverloads = (MethodBase[])ReflectionUtils.GetMethodInfos(_factories);
                 } else {
                     // TODO: handle protected constructors
                     constructionOverloads = type.GetConstructors();
@@ -1018,9 +1145,10 @@ namespace IronRuby.Builtins {
                         return;
                     }
                     callConvention = SelfCallConvention.NoSelf;
+                    implicitProtocolConversions = true;
                 }
 
-                RubyMethodGroupInfo.BuildCallNoFlow(metaBuilder, args, methodName, constructionOverloads, callConvention);
+                RubyMethodGroupInfo.BuildCallNoFlow(metaBuilder, args, methodName, constructionOverloads, callConvention, implicitProtocolConversions);
 
                 // we need to handle break, which unwinds to a proc-converter that could be this method's frame:
                 if (!metaBuilder.Error) {
@@ -1065,46 +1193,41 @@ namespace IronRuby.Builtins {
             }
         }
 
-        public void BuildAllocatorCall(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args, Func<Expression>/*!*/ defaultExceptionMessage) {
+        public bool BuildAllocatorCall(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args, Func<Expression>/*!*/ defaultExceptionMessage) {
             Type type = GetUnderlyingSystemType();
 
             if (_structInfo != null) {
                 metaBuilder.Result = Methods.AllocateStructInstance.OpCall(AstUtils.Convert(args.TargetExpression, typeof(RubyClass)));
-                return;
-            }
-
-            if (type.IsSubclassOf(typeof(Delegate))) {
-                BuildDelegateConstructorCall(metaBuilder, args, type);
-                return;
+                return true;
             }
 
             ConstructorInfo ctor;
             if (IsException()) {
                 if ((ctor = type.GetConstructor(new[] { typeof(string) })) != null) {
                     metaBuilder.Result = Ast.New(ctor, defaultExceptionMessage());
-                    return;
+                    return true;
                 } else if ((ctor = type.GetConstructor(new[] { typeof(string), typeof(Exception) })) != null) {
                     metaBuilder.Result = Ast.New(ctor, defaultExceptionMessage(), AstUtils.Constant(null));
-                    return;
+                    return true;
                 }
             }
 
             if ((ctor = type.GetConstructor(new[] { typeof(RubyClass) })) != null) {
                 metaBuilder.Result = Ast.New(ctor, AstUtils.Convert(args.TargetExpression, typeof(RubyClass)));
-                return;
+                return true;
             }
 
             if ((ctor = type.GetConstructor(new[] { typeof(RubyContext) })) != null) {
                 metaBuilder.Result = Ast.New(ctor, AstUtils.Convert(args.MetaContext.Expression, typeof(RubyContext)));
-                return;
+                return true;
             }
 
             if ((ctor = type.GetConstructor(Type.EmptyTypes)) != null) {
                 metaBuilder.Result = Ast.New(ctor);
-                return;
+                return true;
             }
 
-            metaBuilder.SetError(Methods.MakeAllocatorUndefinedError.OpCall(Ast.Convert(args.TargetExpression, typeof(RubyClass))));
+            return false;
         }
 
         private void BuildDelegateConstructorCall(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args, Type/*!*/ type) {

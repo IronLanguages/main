@@ -365,7 +365,7 @@ namespace IronPython.Runtime {
                         formatSpec = ReplaceComputedFormats(formatSpec);
 
                         // append the string
-                        builder.Append(Builtin.format(_context.DefaultBinderState.Context, argValue, formatSpec));
+                        builder.Append(Builtin.format(_context.SharedContext, argValue, formatSpec));
                     }
                 }
 
@@ -416,10 +416,10 @@ namespace IronPython.Runtime {
             private object ApplyConversion(char? conversion, object argValue) {
                 switch (conversion) {
                     case 'r':
-                        argValue = PythonOps.Repr(_context.DefaultBinderState.Context, argValue);
+                        argValue = PythonOps.Repr(_context.SharedContext, argValue);
                         break;
                     case 's':
-                        argValue = PythonOps.ToString(_context.DefaultBinderState.Context, argValue);
+                        argValue = PythonOps.ToString(_context.SharedContext, argValue);
                         break;
                     case null:
                         // no conversion specified
@@ -458,19 +458,19 @@ namespace IronPython.Runtime {
                     int intVal;
                     if (accessor.IsField) {
                         argValue = PythonOps.GetBoundAttr(
-                            _context.DefaultBinderState.Context,
+                            _context.SharedContext,
                             argValue,
                             SymbolTable.StringToId(accessor.AttributeName)
                         );
                     } else if (Int32.TryParse(accessor.AttributeName, out intVal)) {
                         argValue = PythonOps.GetIndex(
-                            _context.DefaultBinderState.Context,
+                            _context.SharedContext,
                             argValue,
                             ScriptingRuntimeHelpers.Int32ToObject(intVal)
                         );
                     } else {
                         argValue = PythonOps.GetIndex(
-                            _context.DefaultBinderState.Context,
+                            _context.SharedContext,
                             argValue,
                             accessor.AttributeName
                         );

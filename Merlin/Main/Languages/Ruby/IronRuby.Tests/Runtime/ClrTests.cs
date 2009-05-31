@@ -21,6 +21,8 @@ using System.Runtime.Serialization;
 using Microsoft.Scripting.Runtime;
 using IronRuby.Runtime;
 using IronRuby.Builtins;
+using Microsoft.Scripting.Math;
+using System.Runtime.InteropServices;
 
 namespace InteropTests.Generics1 {
     public class C {
@@ -92,7 +94,7 @@ NoMethodError
             public int RwProperty { get { return 4; } set { } }
             public int WoProperty { set { } }
             
-            public int Method() { return 1; }
+            public int M() { return 1; }
             public static int StaticMethod() { return 2; }
         }
 
@@ -104,7 +106,7 @@ NoMethodError
                 CompilerTest(@"
 C = $obj.class
 
-puts $obj.method
+puts $obj.m
 puts C.static_method
 puts $cls.static_methods rescue puts $!.class
 
@@ -125,6 +127,21 @@ NoMethodError
 3
 NoMethodError
 4
+");
+        }
+
+        /// <summary>
+        /// Order of initialization of CLR methods.
+        /// </summary>
+        public void ClrMethods2() {
+            Context.ObjectClass.SetConstant("C", Context.GetClass(typeof(ClassWithMethods1)));
+            XTestOutput(@"
+class C
+  def m; 2; end     # replace CLR method with Ruby method before we use the CLR one
+  remove_method :m  # remove Ruby method
+  new.m rescue p $! # we shouldn't call the CLR method 
+end
+", @"
 ");
         }
 
@@ -355,15 +372,15 @@ Hidden: 1, 2
             public class Y : X { }
             
             public static void Load(RubyContext/*!*/ context) {
-                context.ObjectClass.SetConstant("A", context.GetClass(typeof(OverloadInheritance2.A)));
-                context.ObjectClass.SetConstant("B", context.GetClass(typeof(OverloadInheritance2.B)));
-                context.ObjectClass.SetConstant("C", context.GetClass(typeof(OverloadInheritance2.C)));
-                context.ObjectClass.SetConstant("D", context.GetClass(typeof(OverloadInheritance2.D)));
-                context.ObjectClass.SetConstant("E", context.GetClass(typeof(OverloadInheritance2.E)));
-                context.ObjectClass.SetConstant("F", context.GetClass(typeof(OverloadInheritance2.F)));
-                context.ObjectClass.SetConstant("G", context.GetClass(typeof(OverloadInheritance2.G)));
-                context.ObjectClass.SetConstant("X", context.GetClass(typeof(OverloadInheritance2.X)));
-                context.ObjectClass.SetConstant("Y", context.GetClass(typeof(OverloadInheritance2.Y)));
+                context.ObjectClass.SetConstant("A", context.GetClass(typeof(A)));
+                context.ObjectClass.SetConstant("B", context.GetClass(typeof(B)));
+                context.ObjectClass.SetConstant("C", context.GetClass(typeof(C)));
+                context.ObjectClass.SetConstant("D", context.GetClass(typeof(D)));
+                context.ObjectClass.SetConstant("E", context.GetClass(typeof(E)));
+                context.ObjectClass.SetConstant("F", context.GetClass(typeof(F)));
+                context.ObjectClass.SetConstant("G", context.GetClass(typeof(G)));
+                context.ObjectClass.SetConstant("X", context.GetClass(typeof(X)));
+                context.ObjectClass.SetConstant("Y", context.GetClass(typeof(Y)));
             }
         }
 
@@ -743,12 +760,110 @@ end
             );
         }
 
+        public static class OverloadSelection2 {
+            public class A {
+                public A() {
+                }
+
+                public A(int a) {
+                }
+
+                public A(RubyClass cls, double a) {
+                }
+
+                public static int Foo() { return 1; }
+                public static int Foo(RubyScope scope, BlockParam block, int a) { return 2; }
+            }
+
+            public class B : A {
+                public static int Foo(double a) { return 3; }
+                public static int Foo(RubyClass cls, string b) { return 4; }
+            }
+
+            public static void Load(RubyContext/*!*/ context) {
+                context.ObjectClass.SetConstant("A", context.GetClass(typeof(A)));
+                context.ObjectClass.SetConstant("B", context.GetClass(typeof(B)));
+            }
+        }
+
+        public void ClrOverloadSelection2() {
+            OverloadSelection2.Load(Context);
+
+            // TODO: constructor overload selection
+            // B.overloads(Fixnum).new(1) ???
+
+            // static methods:
+            TestOutput(@"
+m = B.method(:foo)
+puts m.overloads(Fixnum).clr_members.size          # RubyScope and BlockParam are hidden
+puts m.overloads(System::String) rescue p $!       # RubyClass is not hidden here
+", @"
+1
+#<ArgumentError: no overload of `foo' matches given parameter types>
+");
+
+            // library methods:
+            TestOutput(@"
+m = method(:print)
+puts m.arity
+puts m.overloads().arity
+puts m.overloads(Object).arity
+puts m.overloads(System::Array[Object]).arity
+", @"
+-1
+0
+1
+-1
+");
+        }
+
         public class ClassWithInterfaces1 : IEnumerable {
             public IEnumerator GetEnumerator() {
                 yield return 1;
                 yield return 2;
                 yield return 3;
             }
+        }
+
+        public interface InterfaceFoo1 {
+            int Foo();
+        }
+
+        public interface InterfaceFoo2 {
+            int Foo();
+        }
+
+        public interface InterfaceBar1 {
+            int Bar();
+        }
+
+        public interface InterfaceBaz1 {
+            int Baz();
+        }
+
+        internal class InterfaceClassBase1 {
+            // inherited:
+            public IEnumerator GetEnumerator() {
+                yield return 1;
+                yield return 2;
+                yield return 3;
+            }
+        }
+
+        internal class InternalClass1 : InterfaceClassBase1, IEnumerable, IComparable, InterfaceBaz1, InterfaceFoo1, InterfaceFoo2, InterfaceBar1 {
+            // simple:
+            public int Baz() { return 123; }
+
+            // simple explicit:
+            int IComparable.CompareTo(object obj) { return 0; }
+
+            // explicit + implicit
+            public int Bar() { return 0;}
+            int InterfaceBar1.Bar() { return 0; }
+
+            // multiple explicit with the same signature 
+            int InterfaceFoo1.Foo() { return 1; }
+            int InterfaceFoo2.Foo() { return 2; }
         }
 
         public class ClassWithInterfaces2 : ClassWithInterfaces1, IComparable {
@@ -779,6 +894,31 @@ puts($obj2 <=> 1)
         }
 
         /// <summary>
+        /// Calling (explicit) interface methods on internal classes.
+        /// A method that is accessible via any interface should be called. 
+        /// If there is more than one then regular overload resolution should kick in.
+        /// 
+        /// </summary>
+        public void ClrInterfaces2() {
+            Context.ObjectClass.SetConstant("Inst", new InternalClass1());
+            Context.ObjectClass.SetConstant("InterfaceFoo1", Context.GetModule(typeof(InterfaceFoo1)));
+            Context.ObjectClass.SetConstant("InterfaceFoo2", Context.GetModule(typeof(InterfaceFoo2)));
+            Context.ObjectClass.SetConstant("InterfaceBar1", Context.GetModule(typeof(InterfaceBar1)));
+
+            // TODO: explicit interface impl
+            TestOutput(@"
+p Inst.GetEnumerator().nil?
+#p Inst.CompareTo(nil)
+#p Inst.Bar                               
+#p Inst.as(InterfaceFoo1).Foo   # or Inst.interface_method(InterfaceFoo1, :Foo).call ?
+#p Inst.as(InterfaceFoo2).Foo
+#p Inst.as(InterfaceBar1).Bar
+", @"
+false
+");
+        }
+
+        /// <summary>
         /// Type represents a class object - it is equivalent to RubyClass.
         /// </summary>
         public void ClrTypes1() {
@@ -804,7 +944,27 @@ puts $type.static_method rescue puts $!.class
 {1}
 2
 NoMethodError
-", type, RubyUtils.GetQualifiedName(typeof(ClassWithMethods1))), OutputFlags.Match);
+", type, RubyUtils.GetQualifiedName(typeof(ClassWithMethods1), true)), OutputFlags.Match);
+        }
+
+        public void ClrNamespaces1() {
+            TestOutput(@"
+puts defined? System::Collections
+
+module System
+  remove_const(:Collections)
+end
+
+puts defined? System::Collections
+
+class System::Collections
+  puts self
+end
+", @"
+constant
+nil
+System::Collections
+");
         }
         
         public void ClrGenerics1() {
@@ -819,11 +979,49 @@ p C[String].new.arity
 p C[Fixnum, Fixnum].new.arity
 ");
             }, @"
-TypeGroup of C
+#<TypeGroup: InteropTests::Generics1::C, InteropTests::Generics1::C[T], InteropTests::Generics1::C[T, S]>
 0
 1
 2
 ");
+        }
+
+        public class ClassWithNestedGenericTypes1 {
+            public class D {
+            }
+
+            public class C {
+                public int Id { get { return 0; } }
+            }
+
+            public class C<T> {
+                public int Id { get { return 1; } }
+            }
+        }
+
+        public class ClassWithNestedGenericTypes2 : ClassWithNestedGenericTypes1 {
+            public new class C<T> {
+                public int Id { get { return 2; } }
+            }
+
+            public class C<T, S> {
+                public int Id { get { return 3; } }
+            }
+        }
+
+        public void ClrGenerics2() {
+            Context.ObjectClass.SetConstant("C1", Context.GetClass(typeof(ClassWithNestedGenericTypes1)));
+            Context.ObjectClass.SetConstant("C2", Context.GetClass(typeof(ClassWithNestedGenericTypes2)));
+
+            AssertOutput(() => CompilerTest(@"
+p C1::D
+p C1::C
+p C2::C
+"), @"
+*::ClassWithNestedGenericTypes1::D
+#<TypeGroup: *::ClassWithNestedGenericTypes1::C, *::ClassWithNestedGenericTypes1::C[T]>
+#<TypeGroup: *::ClassWithNestedGenericTypes2::C[T], *::ClassWithNestedGenericTypes2::C[T, S]>
+", OutputFlags.Match);
         }
 
         /// <summary>
@@ -1143,50 +1341,159 @@ RM1CM2CP1CP2RP3
         }
 
         public class ClassWithNonEmptyConstructor {
-            public string P { get; set; }
+            public int P { get; set; }
+
             public ClassWithNonEmptyConstructor() {
             }
-            public ClassWithNonEmptyConstructor(string p) {
+
+            public ClassWithNonEmptyConstructor(BinaryOpStorage storage, RubyScope scope, RubyClass self, string p) {
+            }
+
+            public ClassWithNonEmptyConstructor(RubyContext context, int i) {
+                P = i;
+            }
+
+            public ClassWithNonEmptyConstructor(RubyContext context, RubyClass cls1, RubyClass cls2) {
+            }
+        }
+
+        public class ClassWithNonEmptyConstructor2 {
+            public int P { get; set; }
+
+            public ClassWithNonEmptyConstructor2() {
+                P = 0;
+            }
+
+            public ClassWithNonEmptyConstructor2(RubyClass cls) {
+                P = 1;
+            }
+
+            public ClassWithNonEmptyConstructor2(RubyContext context) {
+                P = 2;
+            }
+        }
+
+        public class ExceptionWithDefaultConstructor1 : Exception {
+            public ExceptionWithDefaultConstructor1() {
+            }
+        }
+
+        public class ExceptionWithStdConstructors1 : Exception {
+            public int P { get; set; }
+            public ExceptionWithStdConstructors1() {
+                P = 0;
+            }
+
+            public ExceptionWithStdConstructors1(string message) : base(message) {
+                P = 1;
+            }
+        }
+
+        public class ClassWithNoDefaultConstructor {
+            public string P { get; set; }
+
+            public ClassWithNoDefaultConstructor(string p) {
                 P = p;
             }
         }
 
-        private static bool IsAvailable(MethodBase method) {
+        private static bool IsCtorAvailable(RubyClass cls, params Type[] parameters) {
+            var method = cls.GetUnderlyingSystemType().GetConstructor(BindingFlags.Public | BindingFlags.Instance, null, parameters, null);
             return method != null && !method.IsPrivate && !method.IsFamilyAndAssembly;
         }
 
         public void ClrConstructor1() {
-            Context.ObjectClass.SetConstant("C", Context.GetClass(typeof(ClassWithNonEmptyConstructor)));
-            var cls = Engine.Execute(@"
-class D < C; end
-D.new
-D
-");
-            var rubyClass = (cls as RubyClass);
-            Debug.Assert(rubyClass != null);
+            Context.ObjectClass.SetConstant("C1", Context.GetClass(typeof(ClassWithNonEmptyConstructor)));
 
-            Type baseType = rubyClass.GetUnderlyingSystemType();
-            Assert(IsAvailable(baseType.GetConstructor(BindingFlags.Public | BindingFlags.Instance, null, new[] { typeof(RubyClass) }, null)));
-            Assert(IsAvailable(baseType.GetConstructor(BindingFlags.Public | BindingFlags.Instance, null, new[] { typeof(RubyClass), typeof(string) }, null)));
-#if !SILVERLIGHT
-            Assert(IsAvailable(baseType.GetConstructor(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance, null, new[] {
-                typeof(SerializationInfo), typeof(StreamingContext) }, null)));
-#endif
+            var cls1 = Engine.Execute<RubyClass>("class D1 < C1; self; end");
+            Assert(IsCtorAvailable(cls1, typeof(RubyClass)));
+            Assert(IsCtorAvailable(cls1, typeof(BinaryOpStorage), typeof(RubyScope), typeof(RubyClass), typeof(string)));
+            Assert(IsCtorAvailable(cls1, typeof(RubyClass), typeof(int)));
+            Assert(IsCtorAvailable(cls1, typeof(RubyClass), typeof(RubyClass), typeof(RubyClass)));
+
+            Context.ObjectClass.SetConstant("C2", Context.GetClass(typeof(ClassWithNonEmptyConstructor2)));
+            var cls2 = Engine.Execute<RubyClass>("class D2 < C2; self; end");
+            Assert(IsCtorAvailable(cls2, typeof(RubyClass)));
+            Assert(!IsCtorAvailable(cls2, typeof(RubyContext)));
+            Assert(!IsCtorAvailable(cls2));
+
+            Assert(Engine.Execute<int>("D2.new.p") == 1);
+
+            Context.ObjectClass.SetConstant("E1", Context.GetClass(typeof(ExceptionWithDefaultConstructor1)));
+            var ex1 = Engine.Execute<RubyClass>("class F1 < E1; self; end");
+            Assert(IsCtorAvailable(ex1, typeof(RubyClass)));
+
+            Context.ObjectClass.SetConstant("E2", Context.GetClass(typeof(ExceptionWithStdConstructors1)));
+            var ex2 = Engine.Execute<RubyClass>("class F2 < E2; self; end");
+            Assert(IsCtorAvailable(ex2, typeof(RubyClass)));
+            Assert(IsCtorAvailable(ex2, typeof(RubyClass), typeof(string)));
+
+            Assert(Engine.Execute<int>("F2.new.p") == 1);
         }
 
         public void ClrConstructor2() {
-            // TODO: Requires allocator support
-            Context.ObjectClass.SetConstant("C", Context.GetClass(typeof(ClassWithNonEmptyConstructor)));
+            Context.ObjectClass.SetConstant("DefaultAndParam", Context.GetClass(typeof(ClassWithNonEmptyConstructor)));
             AssertOutput(delegate() {
                 CompilerTest(@"
-class D < C; end
+class D < DefaultAndParam; end
 
-$d = D.new 'test'
-puts $d.p
+d = D.new 123
+puts d.p
 ");
             }, @"
-test
+123
 ");
+        }
+
+        public class ClassWithDefaultAndParamConstructor {
+            public string P { get; set; }
+
+            public ClassWithDefaultAndParamConstructor() {
+            }
+
+            public ClassWithDefaultAndParamConstructor(string p) {
+                P = p;
+            }
+        }
+
+        public void ClrConstructor3() {
+            Context.ObjectClass.SetConstant("DefaultAndParam", Context.GetClass(typeof(ClassWithDefaultAndParamConstructor)));
+            Context.ObjectClass.SetConstant("NoDefault", Context.GetClass(typeof(ClassWithNoDefaultConstructor)));
+            AssertOutput(delegate() {
+                CompilerTest(@"
+module I
+  def initialize(arg)
+    self.p = arg
+    puts 'init'
+  end
+end
+
+class D < DefaultAndParam
+  include I
+end
+
+class E < NoDefault
+  include I
+end
+
+class F < NoDefault
+  def self.new(*args)
+    puts 'ctor'
+    super args.join(' ')
+  end
+end
+
+puts D.new('test').p
+E.new('test').p rescue p $!
+puts F.new('hello', 'world').p
+");
+            }, @"
+init
+test
+#<TypeError: can't allocate class `E' that derives from type `*::ClassWithNoDefaultConstructor' with no default constructor; define E#new singleton method instead of I#initialize>
+ctor
+hello world
+", OutputFlags.Match);
         }
 
         /// <summary>
@@ -1357,6 +1664,166 @@ p C.new.ceil                 # Numeric#ceil uses self with DefaultProtocol attri
 false
 false
 2
+");
+        }
+
+        public class Conversions1 {
+            public int F(int? a, int? b) {
+                return a ?? b ?? 3;
+            }
+
+            public object[] Numerics(byte a, sbyte b, short c, ushort d, int e, uint f, long g, ulong h, BigInteger i, Complex64 j, Convertible1 k) {
+                return new object[] { a, b, c, d, e, f, g, h, i, j, k };
+            }
+
+            public Delegate Delegate(Func<object, object> d) {
+                return d;
+            }
+
+            public int Foo(int a) {
+                return a + 1;
+            }
+
+            public int Double(double a) {
+                return (int)a;
+            }
+
+            public int FixnumDefaultProtocol([DefaultProtocol]int a) {
+                return a + 2;
+            }
+
+            public string Bool([Optional]bool a) {
+                return a ? "T" : "F";
+            }
+
+            public int ListOrString(IList a) {
+                return a.Count;
+            }
+
+            public int ListOrString([DefaultProtocol]MutableString str) {
+                return 0;
+            }
+
+            public int ListAndStrings(IList a, MutableString str1) {
+                return a.Count + str1.GetCharCount();
+            }
+        }
+
+        public class Convertible1 {
+            public object Value { get; set; }
+
+            public static implicit operator Convertible1(int value) {
+                return new Convertible1() { Value = value };
+            }
+
+            public static implicit operator int(Convertible1 value) {
+                return 11;
+            }
+
+            public static implicit operator double(Convertible1 value) {
+                return 16.0;
+            }
+
+            public static explicit operator string(Convertible1 value) {
+                return "foo";
+            }
+
+            public static explicit operator MutableString(Convertible1 value) {
+                return MutableString.CreateMutable("hello", RubyEncoding.UTF8);
+            }
+
+            public override string ToString() {
+                return "Convertible(" + Value + ")";
+            }
+        }
+
+        public void ClrConversions1() {
+            Context.SetGlobalConstant("Inst", new Conversions1());
+            Context.SetGlobalConstant("Conv", new Convertible1());
+
+            // Nullable<T>
+            TestOutput(@"
+[[1, 2], [nil, 2], [nil, nil]].each { |a,b| p Inst.f(a,b) }
+", @"
+1
+2
+3
+");
+            // Boolean
+            TestOutput(@"
+print Inst.Bool(), Inst.Bool(true), Inst.Bool(false), Inst.Bool(nil), Inst.Bool(0), Inst.Bool(Object.new), Inst.Bool(1.4)
+", @"
+FTFFTTT
+");
+
+            // Double
+            TestOutput(@"
+p Inst.Double(2.0), Inst.Double(4), Inst.Double(System::Byte.new(8)), Inst.Double(Conv), Inst.Double('28.4'), Inst.Double('29.5'.to_clr_string)
+", @"
+2
+4
+8
+16
+28
+29
+");
+            
+            // primitive numerics:
+            TestOutput(@"
+p Inst.numerics(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11)
+", @"
+1
+2
+3
+4
+5
+6
+7
+8
+9
+(10+0j)
+Convertible(11)
+");
+
+            // protocol conversions:
+            TestOutput(@"
+class C
+  def to_ary
+    [1,2,3,4,5]
+  end
+
+  def to_str
+    'xxx'
+  end
+end
+p Inst.ListOrString(C.new)
+p Inst.ListAndStrings(C.new, C.new)
+p Inst.FixnumDefaultProtocol(Conv)
+", @"
+0
+8
+13
+");
+            
+            // protocol conversions:
+            TestOutput(@"
+a = System::Collections::ArrayList.new
+p Inst.Foo(a) rescue p $!
+class System::Collections::ArrayList
+  def to_int
+    100
+  end
+end
+p Inst.Foo(a) rescue p $!
+", @"
+#<TypeError: can't convert System::Collections::ArrayList into Fixnum>
+101
+");
+            // meta-object conversions:
+            TestOutput(@"
+p Inst.delegate(Proc.new { |x| x + 1 }).invoke(123)
+", @"
+124
 ");
         }
     }

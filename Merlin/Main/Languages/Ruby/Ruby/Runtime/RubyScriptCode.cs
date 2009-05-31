@@ -34,10 +34,9 @@ using Microsoft.Scripting.Utils;
 using System.Runtime.CompilerServices;
 using System.Security;
 using IronRuby.Compiler;
-using Microsoft.Scripting.Interpretation;
 
 namespace IronRuby.Runtime {
-    internal class RubyScriptCode : ScriptCode, IInterpretedScriptCode {
+    internal class RubyScriptCode : ScriptCode {
         private sealed class CustomGenerator : DebugInfoGenerator {
             public override void MarkSequencePoint(LambdaExpression method, int ilOffset, DebugInfoExpression node) {
                 RubyMethodDebugInfo.GetOrCreate(method.Name).AddMapping(ilOffset, node.StartLine);
@@ -69,7 +68,7 @@ namespace IronRuby.Runtime {
         private ScriptCodeFunc/*!*/ Target {
             get {
                 if (_target == null) {
-                    var compiledMethod = CompileLambda(_code, SourceUnit.LanguageContext.DomainManager.Configuration.DebugMode);
+                    var compiledMethod = CompileLambda(_code, SourceUnit.LanguageContext);
                     Interlocked.CompareExchange(ref _target, compiledMethod, null);
                 }
                 return _target;
@@ -109,76 +108,16 @@ namespace IronRuby.Runtime {
                     throw Assert.Unreachable;                
             }
 
-            if (context.RubyOptions.InterpretedMode) {
-                return Interpreter.TopLevelExecute(this, localScope, localScope.RuntimeFlowControl, localScope.SelfObject);
-            } else {
-                return Target(localScope, localScope.RuntimeFlowControl, localScope.SelfObject);
-            }
+            return Target(localScope, localScope.RuntimeFlowControl, localScope.SelfObject);
         }
-
-        #region // TODO: remove (old interpreter)
-
-        internal class Evaled : IInterpretedScriptCode {
-            // call sites allocated for the tree:
-            private Dictionary<Expression, CallSiteInfo> _callSites;
-
-            SourceUnit IInterpretedScriptCode.SourceUnit {
-                get { return _source; }
-            }
-
-            LambdaExpression IInterpretedScriptCode.Code {
-                get { return _code; }
-            }
-
-            Dictionary<Expression, CallSiteInfo> IInterpretedScriptCode.CallSites {
-                get {
-                    if (_callSites == null) {
-                        Interlocked.CompareExchange(ref _callSites, new Dictionary<Expression, CallSiteInfo>(), null);
-                    }
-
-                    return _callSites;
-                }
-            }
-
-            private readonly LambdaExpression _code;
-            private readonly SourceUnit _source;
-
-            public Evaled(LambdaExpression code, SourceUnit source) {
-                _code = code;
-                _source = source;
-            }
-        }
-        
-        // call sites allocated for the tree:
-        private Dictionary<Expression, CallSiteInfo> _callSites;
-
-        SourceUnit IInterpretedScriptCode.SourceUnit {
-            get { return SourceUnit; }
-        }
-
-        LambdaExpression IInterpretedScriptCode.Code {
-            get { return _code; }
-        }
-
-        Dictionary<Expression, CallSiteInfo> IInterpretedScriptCode.CallSites {
-            get {
-                if (_callSites == null) {
-                    Interlocked.CompareExchange(ref _callSites, new Dictionary<Expression, CallSiteInfo>(), null);
-                }
-
-                return _callSites;
-            }
-        }
-
-        internal bool HasCallSites {
-            get { return _callSites != null; }
-        }
-
-        #endregion
 
         private static bool _HasPdbPermissions = true;
 
-        internal static T/*!*/ CompileLambda<T>(Expression<T>/*!*/ lambda, bool debugMode) {
+        internal static T/*!*/ CompileLambda<T>(Expression<T>/*!*/ lambda, LanguageContext/*!*/ context) {
+            return CompileLambda(lambda, context.DomainManager.Configuration.DebugMode, context.Options.NoAdaptiveCompilation);
+        }
+
+        internal static T/*!*/ CompileLambda<T>(Expression<T>/*!*/ lambda, bool debugMode, bool noAdaptiveCompilation) {
             if (debugMode) {
 #if !SILVERLIGHT
                 // try to use PDBs and fallback to CustomGenerator if not allowed to:
@@ -192,6 +131,8 @@ namespace IronRuby.Runtime {
                 }
 #endif
                 return CompilerHelpers.CompileToMethod(lambda, new CustomGenerator(), false);
+            } else if (noAdaptiveCompilation) {
+                return lambda.Compile();
             } else {
                 return lambda.LightCompile();
             }

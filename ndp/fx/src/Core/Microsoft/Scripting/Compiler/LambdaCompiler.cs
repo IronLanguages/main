@@ -167,6 +167,10 @@ namespace System.Linq.Expressions.Compiler {
             get { return _lambda.Parameters; }
         }
 
+        internal bool CanEmitBoundConstants {
+            get { return _method is DynamicMethod; }
+        }
+
         #region Compiler entry points
         
         /// <summary>

@@ -102,7 +102,40 @@ namespace IronPython.Runtime.Operations {
                 return __new__(null, es.Value, 10);
             }
 
-            return PythonContext.GetContext(context).ImplicitConvertTo<int>(o);
+            object result;
+            int intRes;
+            BigInteger bigintRes;
+            if (PythonTypeOps.TryInvokeUnaryOperator(context, o, Symbols.ConvertToInt, out result) &&
+                !Object.ReferenceEquals(result, NotImplementedType.Value)) {
+                if (result is int || result is BigInteger ||
+                    result is Extensible<int> || result is Extensible<BigInteger>) {
+                    return result;
+                } else {
+                    throw PythonOps.TypeError("__int__ returned non-Integral (type {0})",
+                        result is OldInstance ? ((OldInstance)result)._class.__name__ : DynamicHelpers.GetPythonType(result).Name);
+                }
+            } else if (PythonOps.TryGetBoundAttr(context, o, Symbols.Truncate, out result)) {
+                result = PythonOps.CallWithContext(context, result);
+                if (result is int || result is BigInteger ||
+                    result is Extensible<int> || result is Extensible<BigInteger>) {
+                    return result;
+                } else if (Converter.TryConvertToInt32(result, out intRes)) {
+                    return intRes;
+                } else if (Converter.TryConvertToBigInteger(result, out bigintRes)) {
+                    return bigintRes;
+                } else {
+                    throw PythonOps.TypeError("__trunc__ returned non-Integral (type {0})",
+                        result is OldInstance ? ((OldInstance)result)._class.__name__ : DynamicHelpers.GetPythonType(result).Name);
+                }
+            }
+
+            if (o is OldInstance) {
+                throw PythonOps.AttributeError("{0} instance has no attribute '__trunc__'",
+                    ((OldInstance)o)._class.__name__);
+            } else {
+                throw PythonOps.TypeError("int() argument must be a string or a number, not '{0}'",
+                    DynamicHelpers.GetPythonType(o).Name);
+            }
         }
 
         [StaticExtensionMethod]
@@ -131,10 +164,10 @@ namespace IronPython.Runtime.Operations {
         public static object __new__(PythonType cls, string s, int radix) {
             ValidateType(cls);
 
-            // radix 16 allows a 0x preceding it... We either need a whole new
+            // radix 16/8/2 allows a 0x/0o/0b preceding it... We either need a whole new
             // integer parser, or special case it here.
-            if (radix == 16) {
-                s = TrimRadix(s);
+            if (radix == 16 || radix == 8 || radix == 2) {
+                s = TrimRadix(s, radix);
             }
 
             return LiteralParser.ParseIntegerSign(s, radix);
@@ -159,12 +192,30 @@ namespace IronPython.Runtime.Operations {
             return cls.CreateInstance(context, FastNew(context, s.MakeString()));
         }
 
-        internal static string TrimRadix(string s) {
+        internal static string TrimRadix(string s, int radix) {
             for (int i = 0; i < s.Length; i++) {
                 if (Char.IsWhiteSpace(s[i])) continue;
 
-                if (s[i] == '0' && i < s.Length - 1 && (s[i + 1] == 'x' || s[i + 1] == 'X')) {
-                    s = s.Substring(i + 2);
+                if (s[i] == '0' && i < s.Length - 1) {
+                    switch(radix) {
+                        case 16:
+                            if (s[i + 1] == 'x' || s[i + 1] == 'X') {
+                                s = s.Substring(i + 2);
+                            }
+                            break;
+                        case 8:
+                            if (s[i + 1] == 'o' || s[i + 1] == 'O') {
+                                s = s.Substring(i + 2);
+                            }
+                            break;
+                        case 2:
+                            if (s[i + 1] == 'b' || s[i + 1] == 'B') {
+                                s = s.Substring(i + 2);
+                            }
+                            break;
+                        default:
+                            break;
+                    }
                 }
                 break;
             }
@@ -419,25 +470,16 @@ namespace IronPython.Runtime.Operations {
                     }
                     break;
                 case 'X':
-                    if (self != Int32.MinValue) {
-                        int val = self;
-                        if (self < 0) {
-                            val = -self;
-                        }
-                        digits = val.ToString("X", CultureInfo.InvariantCulture);
-                    } else {
-                        digits = "80000000";
-                    }
-
-                    if (spec.IncludeType) {
-                        digits = "0X" + digits;
-                    }
+                    digits = ToHex(self, spec.IncludeType, false);
                     break;
                 case 'x':
-                    digits = ToHex(self, spec.IncludeType);
+                    digits = ToHex(self, spec.IncludeType, true);
+                    break;
+                case 'o': // octal
+                    digits = ToOctal(self, spec.IncludeType, true);
                     break;
                 case 'b': // binary
-                    digits = ToBinary(self, spec.IncludeType);
+                    digits = ToBinary(self, spec.IncludeType, true);
                     break;
                 case 'c': // single char
                     if (spec.Sign != null) {
@@ -449,31 +491,6 @@ namespace IronPython.Runtime.Operations {
                     }
 
                     digits = Builtin.chr(self);
-                    break;
-                case 'o': // octal
-                    if (self == 0) {
-                        digits = "0";
-                    } else if (self != Int32.MinValue) {
-                        int val = self;
-                        if (self < 0) {
-                            val = -self;
-                        }
-
-                        StringBuilder sbo = new StringBuilder();
-                        for (int i = 30; i >= 0; i -= 3) {
-                            char value = (char)('0' + (val >> i & 0x07));
-                            if (value != '0' || sbo.Length > 0) {
-                                sbo.Append(value);
-                            }
-                        }
-                        digits = sbo.ToString();
-                    } else {
-                        digits = "20000000000";
-                    }
-                    
-                    if (spec.IncludeType) {
-                        digits = "0o" + digits;
-                    }
                     break;
                 default:
                     throw PythonOps.ValueError("Unknown conversion type {0}", spec.Type.ToString());
@@ -491,24 +508,64 @@ namespace IronPython.Runtime.Operations {
         }
 
         internal static string ToHex(int self, bool includeType) {
+            return ToHex(self, includeType, true);
+        }
+
+        internal static string ToHex(int self, bool includeType, bool lowercase) {
             string digits;
             if (self != Int32.MinValue) {
                 int val = self;
                 if (self < 0) {
                     val = -self;
                 }
-                digits = val.ToString("x", CultureInfo.InvariantCulture);
+                digits = val.ToString(lowercase ? "x" : "X", CultureInfo.InvariantCulture);
             } else {
                 digits = "80000000";
             }
 
             if (includeType) {
-                digits = "0x" + digits;
+                digits = (lowercase ? "0x" : "0X") + digits;
+            }
+            return digits;
+        }
+
+        internal static string ToOctal(int self, bool includeType) {
+            return ToOctal(self, includeType, true);
+        }
+
+        internal static string ToOctal(int self, bool includeType, bool lowercase) {
+            string digits;
+            if (self == 0) {
+                digits = "0";
+            } else if (self != Int32.MinValue) {
+                int val = self;
+                if (self < 0) {
+                    val = -self;
+                }
+
+                StringBuilder sbo = new StringBuilder();
+                for (int i = 30; i >= 0; i -= 3) {
+                    char value = (char)('0' + (val >> i & 0x07));
+                    if (value != '0' || sbo.Length > 0) {
+                        sbo.Append(value);
+                    }
+                }
+                digits = sbo.ToString();
+            } else {
+                digits = "20000000000";
+            }
+
+            if (includeType) {
+                digits = (lowercase ? "0o" : "0O") + digits;
             }
             return digits;
         }
 
         internal static string ToBinary(int self, bool includeType) {
+            return ToBinary(self, includeType, true);
+        }
+
+        internal static string ToBinary(int self, bool includeType, bool lowercase) {
             string digits;
             if (self == 0) {
                 digits = "0";
@@ -533,7 +590,7 @@ namespace IronPython.Runtime.Operations {
             }
 
             if (includeType) {
-                digits = "0b" + digits;
+                digits = (lowercase ? "0b" : "0B") + digits;
             }
             return digits;
         }

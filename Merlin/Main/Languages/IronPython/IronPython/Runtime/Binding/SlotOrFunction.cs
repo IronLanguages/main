@@ -147,14 +147,14 @@ namespace IronPython.Runtime.Binding {
             return true;
         }
 
-        public static SlotOrFunction/*!*/ GetSlotOrFunction(BinderState/*!*/ state, SymbolId op, params DynamicMetaObject[] types) {
+        public static SlotOrFunction/*!*/ GetSlotOrFunction(PythonContext/*!*/ state, SymbolId op, params DynamicMetaObject[] types) {
             PythonTypeSlot slot;
             SlotOrFunction res;
             if (TryGetBinder(state, types, op, SymbolId.Empty, out res)) {
                 if (res != SlotOrFunction.Empty) {
                     return res;
                 }
-            } else if (MetaUserObject.GetPythonType(types[0]).TryResolveSlot(state.Context, op, out slot)) {
+            } else if (MetaUserObject.GetPythonType(types[0]).TryResolveSlot(state.SharedContext, op, out slot)) {
                 ParameterExpression tmp = Ast.Variable(typeof(object), "slotVal");
 
                 Expression[] args = new Expression[types.Length - 1];
@@ -181,7 +181,7 @@ namespace IronPython.Runtime.Binding {
                                 ),
                                 typeof(object),
                                 ArrayUtils.Insert<Expression>(
-                                    AstUtils.Constant(state.Context),
+                                    AstUtils.Constant(state.SharedContext),
                                     tmp,
                                     args
                                 )
@@ -196,7 +196,7 @@ namespace IronPython.Runtime.Binding {
             return SlotOrFunction.Empty;
         }
 
-        internal static bool TryGetBinder(BinderState/*!*/ state, DynamicMetaObject/*!*/[]/*!*/ types, SymbolId op, SymbolId rop, out SlotOrFunction/*!*/ res) {
+        internal static bool TryGetBinder(PythonContext/*!*/ state, DynamicMetaObject/*!*/[]/*!*/ types, SymbolId op, SymbolId rop, out SlotOrFunction/*!*/ res) {
             PythonType declType;
             return TryGetBinder(state, types, op, rop, out res, out declType);
         }
@@ -210,7 +210,7 @@ namespace IronPython.Runtime.Binding {
         /// 
         /// TODO: Remove rop
         /// </summary>
-        internal static bool TryGetBinder(BinderState/*!*/ state, DynamicMetaObject/*!*/[]/*!*/ types, SymbolId op, SymbolId rop, out SlotOrFunction/*!*/ res, out PythonType declaringType) {
+        internal static bool TryGetBinder(PythonContext/*!*/ state, DynamicMetaObject/*!*/[]/*!*/ types, SymbolId op, SymbolId rop, out SlotOrFunction/*!*/ res, out PythonType declaringType) {
             declaringType = null;
 
             DynamicMetaObject xType = types[0];
@@ -247,7 +247,7 @@ namespace IronPython.Runtime.Binding {
                 state.Binder, 
                 types,
                 new CallSignature(types.Length),                
-                AstUtils.Constant(state.Context)
+                AstUtils.Constant(state.SharedContext)
             );
 
             if (xBf == null) {

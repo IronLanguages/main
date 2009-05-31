@@ -25,6 +25,7 @@ using Microsoft.Scripting.Utils;
 using IronRuby.Builtins;
 using System.Text;
 using IronRuby.Runtime;
+using System.Security;
 
 namespace IronRuby.Hosting {
     public sealed class RubyOptionsParser : OptionsParser<ConsoleOptions> {
@@ -124,10 +125,6 @@ namespace IronRuby.Hosting {
                     CommonConsoleOptions.Command += PopNextArg();
                     break;
 
-                case "-I":
-                    _loadPaths.AddRange(PopNextArg().Split(Path.PathSeparator));
-                    break;
-
                 #endregion
 
 #if DEBUG && !SILVERLIGHT
@@ -188,6 +185,15 @@ namespace IronRuby.Hosting {
                     break;
 
                 default:
+                    if (arg.StartsWith("-I")) {
+                        if (arg == "-I") {
+                            _loadPaths.Add(PopNextArg());
+                        } else {
+                            _loadPaths.Add(arg.Substring(2));
+                        }
+                        break;
+                    }
+
 #if !SILVERLIGHT
                     if (arg.StartsWith("-K")) {
                         LanguageSetup.Options["KCode"] = optionName.Length >= 3 ? RubyEncoding.GetKCodingByNameInitial(optionName[2]) : null;
@@ -217,6 +223,17 @@ namespace IronRuby.Hosting {
             if (existingSearchPaths != null) {
                 _loadPaths.InsertRange(0, existingSearchPaths);
             }
+
+#if !SILVERLIGHT
+            try {
+                string rubylib = Environment.GetEnvironmentVariable("RUBYLIB");
+                if (rubylib != null) {
+                    _loadPaths.AddRange(rubylib.Split(Path.PathSeparator));
+                }
+            } catch (SecurityException) {
+                // nop
+            }
+#endif
 
             LanguageSetup.Options["SearchPaths"] = _loadPaths;
         }

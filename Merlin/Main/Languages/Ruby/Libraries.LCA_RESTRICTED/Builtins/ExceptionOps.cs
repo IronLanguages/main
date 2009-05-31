@@ -61,6 +61,11 @@ namespace IronRuby.Builtins {
     // ---- ThreadError
     // ---- TypeError
     // ---- ZeroDivisionError
+    // ---- EncodingError (1.9)
+    // ------ Encoding::CompatibilityError (1.9)
+    // ------ Encoding::UndefinedConversionError (1.9)
+    // ------ Encoding::InvalidByteSequenceError (1.9)
+    // ------ Encoding::ConverterNotFoundError (1.9)
     // -- SystemExit
     [RubyException("Exception", Extends = typeof(Exception))]
     public static class ExceptionOps {
@@ -165,7 +170,7 @@ namespace IronRuby.Builtins {
         [RubyMethod("inspect", RubyMethodAttributes.PublicInstance)]
         public static MutableString/*!*/ Inspect(UnaryOpStorage/*!*/ inspectStorage, ConversionStorage<MutableString>/*!*/ tosConversion, Exception/*!*/ self) {
             object message = RubyExceptionData.GetInstance(self).Message;
-            string className = inspectStorage.Context.GetClassName(self);
+            string className = inspectStorage.Context.GetClassDisplayName(self);
 
             MutableString result = MutableString.CreateMutable();
             result.Append("#<");

@@ -69,7 +69,7 @@ namespace IronRuby.Builtins {
         public static RubyMethod/*!*/ Bind(UnboundMethod/*!*/ self, object target) {
             RubyContext context = self._targetConstraint.Context;
 
-            if (!context.GetClassOf(target).HasAncestor(self._targetConstraint)) {
+            if (!context.IsKindOf(target, self._targetConstraint)) {
                 throw RubyExceptions.CreateTypeError(
                     String.Format("bind argument must be an instance of {0}", self._targetConstraint.GetName(context))
                 );
@@ -92,16 +92,17 @@ namespace IronRuby.Builtins {
             string/*!*/ classDisplayName) {
 
             MutableString result = MutableString.CreateMutable();
+
             result.Append("#<");
             result.Append(classDisplayName);
             result.Append(": ");
 
             if (ReferenceEquals(targetModule, declaringModule)) {
-                result.Append(declaringModule.GetName(context));
+                result.Append(declaringModule.GetDisplayName(context, true));
             } else {
-                result.Append(targetModule.GetName(context));
+                result.Append(targetModule.GetDisplayName(context, true));
                 result.Append('(');
-                result.Append(declaringModule.GetName(context));
+                result.Append(declaringModule.GetDisplayName(context, true));
                 result.Append(')');
             }
 

@@ -40,7 +40,7 @@ namespace IronPython.Runtime.Binding {
         #region MetaObject Overrides
 
         public override DynamicMetaObject/*!*/ BindGetMember(GetMemberBinder/*!*/ member) {
-            return GetMemberWorker(member, BinderState.GetCodeContext(member));            
+            return GetMemberWorker(member, PythonContext.GetCodeContext(member));            
         }
 
         private ValidationInfo GetTypeTest() {
@@ -58,7 +58,7 @@ namespace IronPython.Runtime.Binding {
         public override DynamicMetaObject/*!*/ BindSetMember(SetMemberBinder/*!*/ member, DynamicMetaObject/*!*/ value) {
             PerfTrack.NoteEvent(PerfTrack.Categories.Binding, "Type SetMember " + Value.UnderlyingSystemType.FullName);
             PerfTrack.NoteEvent(PerfTrack.Categories.BindingTarget, "Type SetMember");
-            BinderState state = BinderState.GetBinderState(member);
+            PythonContext state = PythonContext.GetPythonContext(member);
 
             if (Value.IsSystemType) {
                 MemberTracker tt = MemberTracker.FromMemberInfo(Value.UnderlyingSystemType);
@@ -85,7 +85,7 @@ namespace IronPython.Runtime.Binding {
                             tt
                         ),
                         value,
-                        AstUtils.Constant(state.Context)
+                        AstUtils.Constant(state.SharedContext)
                     ).Expression,
                     Restrictions.Merge(value.Restrictions).Merge(BindingRestrictions.GetInstanceRestriction(Expression, Value))
                 );
@@ -98,7 +98,7 @@ namespace IronPython.Runtime.Binding {
             PerfTrack.NoteEvent(PerfTrack.Categories.Binding, "Type DeleteMember " + Value.UnderlyingSystemType.FullName);
             PerfTrack.NoteEvent(PerfTrack.Categories.BindingTarget, "Type DeleteMember");
             if (Value.IsSystemType) {
-                BinderState state = BinderState.GetBinderState(member);
+                PythonContext state = PythonContext.GetPythonContext(member);
 
                 MemberTracker tt = MemberTracker.FromMemberInfo(Value.UnderlyingSystemType);
 
@@ -124,8 +124,8 @@ namespace IronPython.Runtime.Binding {
 
         #region IPythonGetable Members
 
-        public DynamicMetaObject/*!*/ GetMember(PythonGetMemberBinder/*!*/ member, Expression/*!*/ codeContext) {
-            return GetMemberWorker(member, codeContext);
+        public DynamicMetaObject/*!*/ GetMember(PythonGetMemberBinder/*!*/ member, DynamicMetaObject/*!*/ codeContext) {
+            return GetMemberWorker(member, codeContext.Expression);
         }
 
         #endregion
@@ -197,7 +197,7 @@ namespace IronPython.Runtime.Binding {
                 PythonTypeSlot pts;
                 SymbolId name = SymbolTable.StringToId(_name);
                 bool isFinal = false, metaOnly = false;
-                CodeContext lookupContext = PythonContext.GetContext(_context).DefaultClsBinderState.Context;
+                CodeContext lookupContext = PythonContext.GetContext(_context).SharedClsContext;
 
                 // first look in the meta-class to see if we have a get/set descriptor
                 PythonType metaType = DynamicHelpers.GetPythonType(Value);
@@ -284,12 +284,12 @@ namespace IronPython.Runtime.Binding {
             private readonly DynamicMetaObject _restrictedSelf;
             private readonly ConditionalBuilder _cb;
             private readonly SymbolId _symName;
-            private readonly BinderState _state;
+            private readonly PythonContext _state;
             private readonly ValidationInfo _valInfo, _metaValInfo;
             private ParameterExpression _tmp;
 
             public MetaGetBinderHelper(MetaPythonType type, DynamicMetaObjectBinder member, Expression codeContext, ValidationInfo validationInfo, ValidationInfo metaValidation)
-                : base(type.Value, BinderState.GetBinderState(member).Context, GetGetMemberName(member)) {
+                : base(type.Value, PythonContext.GetPythonContext(member).SharedContext, GetGetMemberName(member)) {
                 _member = member;
                 _codeContext = codeContext;
                 _type = type;
@@ -300,7 +300,7 @@ namespace IronPython.Runtime.Binding {
                     Restrictions.Merge(BindingRestrictions.GetInstanceRestriction(Expression, Value)),
                     Value
                 );
-                _state = BinderState.GetBinderState(member);
+                _state = PythonContext.GetPythonContext(member);
                 _valInfo = validationInfo;
                 _metaValInfo = metaValidation;
             }
@@ -662,7 +662,7 @@ namespace IronPython.Runtime.Binding {
                         _weakMetaType = metaType.GetSharedWeakReference();
                         _weakSlot = new WeakReference(slot);
                     }
-                    _invokeSite = CallSite<Func<CallSite, CodeContext, object, string, object>>.Create(PythonContext.GetContext(context).DefaultBinderState.InvokeOne);
+                    _invokeSite = CallSite<Func<CallSite, CodeContext, object, string, object>>.Create(PythonContext.GetContext(context).InvokeOne);
                 }
 
                 public bool Target(CodeContext context, object self, out object result) {
@@ -743,14 +743,14 @@ namespace IronPython.Runtime.Binding {
         #region Sets
 
         private DynamicMetaObject/*!*/ MakeSetMember(SetMemberBinder/*!*/ member, DynamicMetaObject/*!*/ value) {
-            BinderState state = BinderState.GetBinderState(member);
+            PythonContext state = PythonContext.GetPythonContext(member);
             DynamicMetaObject self = Restrict(Value.GetType());
 
             if (Value.GetType() != typeof(PythonType) && DynamicHelpers.GetPythonType(Value).IsSystemType) {
                 // built-in subclass of .NET type.  Usually __setattr__ is handled by MetaUserObject
                 // but we can have a built-in subtype that's not a user type.
                 PythonTypeSlot pts;
-                if (Value.TryGetCustomSetAttr(state.Context, out pts)) {
+                if (Value.TryGetCustomSetAttr(state.SharedContext, out pts)) {
                     
                     Debug.Assert(pts.GetAlwaysSucceeds);
                     
@@ -764,11 +764,11 @@ namespace IronPython.Runtime.Binding {
                                 Ast.Dynamic(
                                     state.Invoke(new CallSignature(2)),
                                     typeof(object),
-                                    AstUtils.Constant(state.Context),
+                                    AstUtils.Constant(state.SharedContext),
                                     Ast.Block(
                                         Ast.Call(
                                             typeof(PythonOps).GetMethod("SlotTryGetValue"),
-                                            AstUtils.Constant(state.Context),
+                                            AstUtils.Constant(state.SharedContext),
                                             AstUtils.Convert(AstUtils.WeakConstant(pts), typeof(PythonTypeSlot)),
                                             AstUtils.Convert(Expression, typeof(object)),
                                             AstUtils.Convert(AstUtils.WeakConstant(DynamicHelpers.GetPythonType(Value)), typeof(PythonType)),
@@ -793,7 +793,7 @@ namespace IronPython.Runtime.Binding {
                 new DynamicMetaObject(
                     Ast.Call(
                         typeof(PythonOps).GetMethod("PythonTypeSetCustomMember"),
-                        AstUtils.Constant(BinderState.GetBinderState(member).Context),
+                        AstUtils.Constant(PythonContext.GetPythonContext(member).SharedContext),
                         self.Expression,
                         AstUtils.Constant(SymbolTable.StringToId(member.Name)),
                         AstUtils.Convert(
@@ -836,7 +836,7 @@ namespace IronPython.Runtime.Binding {
                 new DynamicMetaObject(
                     Ast.Call(
                         typeof(PythonOps).GetMethod("PythonTypeDeleteCustomMember"),
-                        AstUtils.Constant(BinderState.GetBinderState(member).Context),
+                        AstUtils.Constant(PythonContext.GetPythonContext(member).SharedContext),
                         self.Expression,
                         AstUtils.Constant(SymbolTable.StringToId(member.Name))
                     ),

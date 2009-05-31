@@ -124,7 +124,7 @@ namespace System.Dynamic {
 
             for (; ; ) {
                 @this.Target = originalRule;
-                rule = @this.Target = @this.Binder.BindDelegate(@this, args);
+                rule = @this.Target = @this.Binder.BindCore(@this, args);
 
                 //
                 // Execute the rule on the matchmaker site
@@ -249,7 +249,7 @@ namespace System.Dynamic {
 
             for (; ; ) {
                 @this.Target = originalRule;
-                rule = @this.Target = @this.Binder.BindDelegate(@this, args);
+                rule = @this.Target = @this.Binder.BindCore(@this, args);
 
                 //
                 // Execute the rule on the matchmaker site
@@ -374,7 +374,7 @@ namespace System.Dynamic {
 
             for (; ; ) {
                 @this.Target = originalRule;
-                rule = @this.Target = @this.Binder.BindDelegate(@this, args);
+                rule = @this.Target = @this.Binder.BindCore(@this, args);
 
                 //
                 // Execute the rule on the matchmaker site
@@ -499,7 +499,7 @@ namespace System.Dynamic {
 
             for (; ; ) {
                 @this.Target = originalRule;
-                rule = @this.Target = @this.Binder.BindDelegate(@this, args);
+                rule = @this.Target = @this.Binder.BindCore(@this, args);
 
                 //
                 // Execute the rule on the matchmaker site
@@ -624,7 +624,7 @@ namespace System.Dynamic {
 
             for (; ; ) {
                 @this.Target = originalRule;
-                rule = @this.Target = @this.Binder.BindDelegate(@this, args);
+                rule = @this.Target = @this.Binder.BindCore(@this, args);
 
                 //
                 // Execute the rule on the matchmaker site
@@ -749,7 +749,7 @@ namespace System.Dynamic {
 
             for (; ; ) {
                 @this.Target = originalRule;
-                rule = @this.Target = @this.Binder.BindDelegate(@this, args);
+                rule = @this.Target = @this.Binder.BindCore(@this, args);
 
                 //
                 // Execute the rule on the matchmaker site
@@ -874,7 +874,7 @@ namespace System.Dynamic {
 
             for (; ; ) {
                 @this.Target = originalRule;
-                rule = @this.Target = @this.Binder.BindDelegate(@this, args);
+                rule = @this.Target = @this.Binder.BindCore(@this, args);
 
                 //
                 // Execute the rule on the matchmaker site
@@ -999,7 +999,7 @@ namespace System.Dynamic {
 
             for (; ; ) {
                 @this.Target = originalRule;
-                rule = @this.Target = @this.Binder.BindDelegate(@this, args);
+                rule = @this.Target = @this.Binder.BindCore(@this, args);
 
                 //
                 // Execute the rule on the matchmaker site
@@ -1124,7 +1124,7 @@ namespace System.Dynamic {
 
             for (; ; ) {
                 @this.Target = originalRule;
-                rule = @this.Target = @this.Binder.BindDelegate(@this, args);
+                rule = @this.Target = @this.Binder.BindCore(@this, args);
 
                 //
                 // Execute the rule on the matchmaker site
@@ -1249,7 +1249,7 @@ namespace System.Dynamic {
 
             for (; ; ) {
                 @this.Target = originalRule;
-                rule = @this.Target = @this.Binder.BindDelegate(@this, args);
+                rule = @this.Target = @this.Binder.BindCore(@this, args);
 
                 //
                 // Execute the rule on the matchmaker site
@@ -1374,7 +1374,7 @@ namespace System.Dynamic {
 
             for (; ; ) {
                 @this.Target = originalRule;
-                rule = @this.Target = @this.Binder.BindDelegate(@this, args);
+                rule = @this.Target = @this.Binder.BindCore(@this, args);
 
                 //
                 // Execute the rule on the matchmaker site
@@ -1498,7 +1498,7 @@ namespace System.Dynamic {
 
             for (; ; ) {
                 @this.Target = originalRule;
-                rule = @this.Target = @this.Binder.BindDelegate(@this, args);
+                rule = @this.Target = @this.Binder.BindCore(@this, args);
 
                 //
                 // Execute the rule on the matchmaker site
@@ -1622,7 +1622,7 @@ namespace System.Dynamic {
 
             for (; ; ) {
                 @this.Target = originalRule;
-                rule = @this.Target = @this.Binder.BindDelegate(@this, args);
+                rule = @this.Target = @this.Binder.BindCore(@this, args);
 
                 //
                 // Execute the rule on the matchmaker site
@@ -1746,7 +1746,7 @@ namespace System.Dynamic {
 
             for (; ; ) {
                 @this.Target = originalRule;
-                rule = @this.Target = @this.Binder.BindDelegate(@this, args);
+                rule = @this.Target = @this.Binder.BindCore(@this, args);
 
                 //
                 // Execute the rule on the matchmaker site
@@ -1870,7 +1870,7 @@ namespace System.Dynamic {
 
             for (; ; ) {
                 @this.Target = originalRule;
-                rule = @this.Target = @this.Binder.BindDelegate(@this, args);
+                rule = @this.Target = @this.Binder.BindCore(@this, args);
 
                 //
                 // Execute the rule on the matchmaker site
@@ -1994,7 +1994,7 @@ namespace System.Dynamic {
 
             for (; ; ) {
                 @this.Target = originalRule;
-                rule = @this.Target = @this.Binder.BindDelegate(@this, args);
+                rule = @this.Target = @this.Binder.BindCore(@this, args);
 
                 //
                 // Execute the rule on the matchmaker site
@@ -2118,7 +2118,7 @@ namespace System.Dynamic {
 
             for (; ; ) {
                 @this.Target = originalRule;
-                rule = @this.Target = @this.Binder.BindDelegate(@this, args);
+                rule = @this.Target = @this.Binder.BindCore(@this, args);
 
                 //
                 // Execute the rule on the matchmaker site
@@ -2242,7 +2242,7 @@ namespace System.Dynamic {
 
             for (; ; ) {
                 @this.Target = originalRule;
-                rule = @this.Target = @this.Binder.BindDelegate(@this, args);
+                rule = @this.Target = @this.Binder.BindCore(@this, args);
 
                 //
                 // Execute the rule on the matchmaker site
@@ -2366,7 +2366,7 @@ namespace System.Dynamic {
 
             for (; ; ) {
                 @this.Target = originalRule;
-                rule = @this.Target = @this.Binder.BindDelegate(@this, args);
+                rule = @this.Target = @this.Binder.BindCore(@this, args);
 
                 //
                 // Execute the rule on the matchmaker site
@@ -2490,7 +2490,7 @@ namespace System.Dynamic {
 
             for (; ; ) {
                 @this.Target = originalRule;
-                rule = @this.Target = @this.Binder.BindDelegate(@this, args);
+                rule = @this.Target = @this.Binder.BindCore(@this, args);
 
                 //
                 // Execute the rule on the matchmaker site
@@ -2614,7 +2614,7 @@ namespace System.Dynamic {
 
             for (; ; ) {
                 @this.Target = originalRule;
-                rule = @this.Target = @this.Binder.BindDelegate(@this, args);
+                rule = @this.Target = @this.Binder.BindCore(@this, args);
 
                 //
                 // Execute the rule on the matchmaker site

@@ -2,7 +2,7 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProductVersion>9.0.30729</ProductVersion>
+    <ProductVersion>9.0.21022</ProductVersion>
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>{95289EA9-5778-489D-AB48-F81F2CE2DA32}</ProjectGuid>
     <OutputType>Library</OutputType>
@@ -116,6 +116,7 @@
     <Compile Include="Runtime\Exceptions\BufferException.Generated.cs" />
     <Compile Include="Runtime\FutureBuiltins.cs" />
     <Compile Include="Runtime\Binding\IPythonConvertible.cs" />
+    <Compile Include="Runtime\ModuleGlobalCache.cs" />
     <Compile Include="Runtime\Profiler.cs" />
     <Compile Include="Compiler\GlobalAllocator.cs" />
     <Compile Include="Compiler\Ast\AugmentedAssignStatement.cs" />
@@ -189,8 +190,8 @@
     <Compile Include="Runtime\Binding\FastSetBase.cs" />
     <Compile Include="Runtime\Binding\IFastGettable.cs" />
     <Compile Include="Runtime\Binding\IFastInvokable.cs" />
-    <Compile Include="Runtime\Binding\OperationRetBoolBinder.cs" />
-    <Compile Include="Runtime\Binding\OperationRetBoolBinder.Generated.cs" />
+    <Compile Include="Runtime\Binding\BinaryRetTypeBinder.cs" />
+    <Compile Include="Runtime\Binding\BinaryRetTypeBinder.Generated.cs" />
     <Compile Include="Runtime\BuiltinsDictionaryStorage.cs" />
     <Compile Include="Runtime\CustomDictionaryStorage.cs" />
     <Compile Include="Runtime\GlobalDictionaryStorage.cs" />
@@ -203,7 +204,6 @@
     <Compile Include="MaybeNotImplementedAttribute.cs" />
     <Compile Include="Runtime\BindingWarnings.cs" />
     <Compile Include="Runtime\Binding\Binders.cs" />
-    <Compile Include="Runtime\Binding\BinderState.cs" />
     <Compile Include="Runtime\Binding\CompatibilityInvokeBinder.cs" />
     <Compile Include="Runtime\Binding\CreateFallbackBinder.cs" />
     <Compile Include="Runtime\Binding\IPythonOperable.cs" />
@@ -383,7 +383,7 @@
     <Compile Include="Runtime\Operations\PythonOps.cs" />
     <Compile Include="Runtime\Operations\PythonOps.Generated.cs" />
     <Compile Include="Runtime\Operations\PythonCalls.cs" />
-    <Compile Include="Runtime\Operations\ReflectedPackageOps.cs" />
+    <Compile Include="Runtime\Operations\NamespaceTrackerOps.cs" />
     <Compile Include="Runtime\Operations\StringOps.cs" />
     <Compile Include="Runtime\Operations\TypeTrackerOps.cs" />
     <Compile Include="Runtime\Operations\TypeGroupOps.cs" />

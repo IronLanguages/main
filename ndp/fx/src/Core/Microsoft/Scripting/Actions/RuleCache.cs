@@ -42,14 +42,14 @@ namespace System.Dynamic {
         internal void MoveRule(T rule, int i) {
             // limit search to MaxSearch elements. 
             // Rule should not get too far unless it has been already moved up.
-            const int MaxSearch = 8;
-            int count = _rules.Length - i;
-            if (count > MaxSearch) {
-                count = MaxSearch;
-            }
-
             // need a lock to make sure we are moving the right rule and not loosing any.
             lock (cacheLock) {
+                const int MaxSearch = 8;
+                int count = _rules.Length - i;
+                if (count > MaxSearch) {
+                    count = MaxSearch;
+                }
+
                 int oldIndex = -1;
                 int max = Math.Min(_rules.Length, i + count);
                 for (int index = i; index < max; index++) {
@@ -68,18 +68,13 @@ namespace System.Dynamic {
             }
         }
 
-        private const int insPosition = MaxRules / 2;
         internal void AddRule(CallSiteRule<T> newRule) {
             // need a lock to make sure we are not loosing rules.
             lock (cacheLock) {
-                if (_rules.Length < insPosition) {
-                    _rules = _rules.AddLast(newRule);
-                } else {
-                    _rules = Insert(_rules, newRule);
-                }
+                _rules = AddOrInsert(_rules, newRule);
             }
         }
-        
+
         internal void ReplaceRule(CallSiteRule<T> oldRule, CallSiteRule<T> newRule) {
             // need a lock to make sure we are replacing the right rule
             lock (cacheLock) {
@@ -88,14 +83,21 @@ namespace System.Dynamic {
                     _rules[i] = newRule;
                     return; // DONE
                 }
+
+                // could not find it.
+                _rules = AddOrInsert(_rules, newRule);
             }
-            // could not find it.
-            AddRule(newRule);
         }
-               
-        
-        //inserts items at insPosition
-        private static CallSiteRule<T>[] Insert(CallSiteRule<T>[] rules, CallSiteRule<T> item) {
+
+
+        // Adds to end or or inserts items at InsertPosition
+        private const int InsertPosition = MaxRules / 2;
+
+        private static CallSiteRule<T>[] AddOrInsert(CallSiteRule<T>[] rules, CallSiteRule<T> item) {
+            if (rules.Length < InsertPosition) {
+                return rules.AddLast(item);
+            }
+
             CallSiteRule<T>[] newRules;
 
             int newLength = rules.Length + 1;
@@ -106,9 +108,9 @@ namespace System.Dynamic {
                 newRules = new CallSiteRule<T>[newLength];
             }
 
-            Array.Copy(rules, 0, newRules, 0, insPosition);
-            newRules[insPosition] = item;
-            Array.Copy(rules, insPosition, newRules, insPosition + 1, newLength - insPosition - 1);
+            Array.Copy(rules, 0, newRules, 0, InsertPosition);
+            newRules[InsertPosition] = item;
+            Array.Copy(rules, InsertPosition, newRules, InsertPosition + 1, newLength - InsertPosition - 1);
             return newRules;
         }
     }

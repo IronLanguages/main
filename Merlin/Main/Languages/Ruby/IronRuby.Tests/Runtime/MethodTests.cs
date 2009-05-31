@@ -861,5 +861,80 @@ puts A.send(:remove_method, :foo) rescue puts B.send(:remove_method, :foo)
         public void MethodDefinitionInModuleEval1B() {
             AssertOutput(() => CompilerTest(MethodDefinitionInModuleEvalCode), "B");
         }
+
+        public void Scenario_ModuleOps_Methods() {
+            AssertOutput(delegate() {
+                CompilerTest(@"
+class C
+  def ifoo
+    puts 'ifoo'
+  end
+end
+
+class << C
+  $C1 = self
+  
+  def foo
+    puts 'foo'
+  end
+end
+
+class C
+  alias_method(:bar,:foo) rescue puts 'Error 1'
+  instance_method(:foo) rescue puts 'Error 2'
+  puts method_defined?(:foo)
+  foo
+  
+  alias_method(:ibar,:ifoo)
+  instance_method(:ifoo)
+  puts method_defined?(:ifoo)
+  ifoo rescue puts 'Error 3'
+  
+  remove_method(:ifoo)
+end
+
+C.new.ifoo rescue puts 'Error 4'
+C.new.ibar
+");
+            }, @"
+Error 1
+Error 2
+false
+foo
+true
+Error 3
+Error 4
+ifoo
+");
+        }
+
+        public void Methods1() {
+            AssertOutput(delegate() {
+                CompilerTest(@"
+class C
+  def foo a,b
+    puts a + b
+  end
+end
+
+class D < C
+end
+
+c = C.new
+p m = c.method(:foo)
+p u = m.unbind
+p n = u.bind(D.new)
+
+m[1,2]
+n[1,2]
+");
+            }, @"
+#<Method: C#foo>
+#<UnboundMethod: C#foo>
+#<Method: D(C)#foo>
+3
+3
+");
+        }
     }
 }

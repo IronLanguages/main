@@ -384,11 +384,11 @@ namespace IronPython.Modules {
                 }
             }
 
-            public object __contains__(object o) {
+            public object __contains__(CodeContext/*!*/ context, object o) {
                 lock (_lockObj) {
                     object res = ScriptingRuntimeHelpers.False;
                     WalkDeque(delegate(int index) {
-                        if (PythonOps.Equals(_data[index], o)) {
+                        if (PythonOps.EqualRetBool(context, _data[index], o)) {
                             res = ScriptingRuntimeHelpers.True;
                             return false;
                         }
@@ -804,7 +804,7 @@ namespace IronPython.Modules {
             public defaultdict(CodeContext/*!*/ context) {
                 _missingSite = CallSite<Func<CallSite, CodeContext, object, object>>.Create(
                     new PythonInvokeBinder(
-                        PythonContext.GetContext(context).DefaultBinderState,
+                        PythonContext.GetContext(context),
                         new CallSignature(0)
                     )
                 );

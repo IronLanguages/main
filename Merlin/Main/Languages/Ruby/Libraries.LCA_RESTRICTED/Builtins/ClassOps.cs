@@ -48,8 +48,8 @@ namespace IronRuby.Builtins {
 
         #region Private Instance Methods
 
-        [RubyMethod("inherited", RubyMethodAttributes.PrivateInstance)]
-        public static void Inherited(RubyClass/*!*/ self, object subclass) {
+        [RubyMethod("inherited", RubyMethodAttributes.PrivateInstance | RubyMethodAttributes.Empty)]
+        public static void Inherited(object/*!*/ self, object subclass) {
             // nop
         }
 

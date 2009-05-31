@@ -23,6 +23,7 @@ using Microsoft.Scripting.Runtime;
 using IronRuby.Builtins;
 using IronRuby.Runtime;
 using IronRuby.Runtime.Calls;
+using System.Linq.Expressions;
 
 namespace IronRuby.Compiler.Generation {
     public class RubyTypeEmitter : ClsTypeEmitter {
@@ -68,14 +69,6 @@ namespace IronRuby.Compiler.Generation {
             return typeof(RubyTypeEmitter).GetMethod("AddRemoveEventHelper");
         }
 
-        protected override MethodInfo GetFastConvertMethod(Type toType) {
-            return RubyBinder.GetFastConvertMethod(toType);
-        }
-
-        protected override MethodInfo GetGenericConvertMethod(Type toType) {
-            return RubyBinder.GetGenericConvertMethod(toType);
-        }
-
         [Emitted]
         public static Exception InvokeMethodMissing(object o, string/*!*/ name) {
             return RubyExceptions.CreateMethodMissing(RubyContext._Default, o, name);
@@ -100,6 +93,20 @@ namespace IronRuby.Compiler.Generation {
             cctor.Emit(OpCodes.Ldstr, name);
             cctor.EmitInt(nargs);
             cctor.EmitCall(typeof(RubyTypeEmitter), "MakeRubyCallSite");
+        }
+
+        protected override FieldInfo GetConversionSite(Type toType) {
+            return AllocateDynamicSite(
+                new Type[] { typeof(CallSite), typeof(RubyContext), typeof(object), toType },
+                (site) => Expression.Assign(
+                    Expression.Field(null, site),
+                    Expression.Call(
+                        null,
+                        site.FieldType.GetMethod("Create"),
+                        ProtocolConversionAction.GetConversionAction(null, toType, true).CreateExpression()
+                    )
+                )
+            );
         }
 
         protected override void EmitPropertyGet(ILGen il, MethodInfo mi, string name, LocalBuilder callTarget) {

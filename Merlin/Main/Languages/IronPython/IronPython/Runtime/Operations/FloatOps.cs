@@ -94,10 +94,6 @@ namespace IronPython.Runtime.Operations {
             return PythonTuple.MakeTuple((BigInteger)self, dem);
         }
 
-        public static double conjugate(double self) {
-            return self;
-        }
-
         [ClassMethod, StaticExtensionMethod]
         public static object fromhex(CodeContext/*!*/ context, PythonType/*!*/ cls, string self) {
             if (String.IsNullOrEmpty(self)) {
@@ -322,16 +318,6 @@ namespace IronPython.Runtime.Operations {
             return PythonOps.ValueError("invalid hexadecimal floating-point string");
         }
 
-        [SpecialName, PropertyMethod]
-        public static double Getreal(double self) {
-            return self;
-        }
-
-        [SpecialName, PropertyMethod]
-        public static double Getimag(double self) {
-            return 0;
-        }
-
         public static string hex(double self) {
             if (Double.IsPositiveInfinity(self)) {
                 return "inf";
@@ -442,6 +428,10 @@ namespace IronPython.Runtime.Operations {
                 return (int)d;
             } else if (Int64.MinValue <= d && d <= Int64.MaxValue) {
                 return (long)d;
+            } else if (double.IsInfinity(d)) {
+                throw PythonOps.OverflowError("cannot convert float infinity to integer");
+            } else if (double.IsNaN(d)) {
+                throw PythonOps.ValueError("cannot convert float NaN to integer");
             } else {
                 return BigInteger.Create(d);
             }
@@ -479,6 +469,10 @@ namespace IronPython.Runtime.Operations {
                 // This double represents an integer number, so it must hash like an integer number.
                 if (Int32.MinValue <= d && d <= Int32.MaxValue) {
                     return ((int)d).GetHashCode();
+                }
+                // Special values
+                if (double.IsInfinity(d) || double.IsNaN(d)) {
+                    return d.GetHashCode();
                 }
                 // Big integer
                 BigInteger b = BigInteger.Create(d);
@@ -601,7 +595,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         internal static int Compare(BigInteger x, double y) {
-            if (y == Double.PositiveInfinity) {
+            if (double.IsNaN(y) || double.IsPositiveInfinity(y)) {
                 return -1;
             } else if (y == Double.NegativeInfinity) {
                 return 1;
@@ -686,7 +680,13 @@ namespace IronPython.Runtime.Operations {
         }
 
         public static BigInteger/*!*/ __long__(double self) {
-            return BigInteger.Create(self);
+            if (double.IsInfinity(self)) {
+                throw PythonOps.OverflowError("cannot convert float infinity to integer");
+            } else if (double.IsNaN(self)) {
+                throw PythonOps.ValueError("cannot convert float NaN to integer");
+            } else {
+                return BigInteger.Create(self);
+            }
         }
 
         public static double __float__(double self) {

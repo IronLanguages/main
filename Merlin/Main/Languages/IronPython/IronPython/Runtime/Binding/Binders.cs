@@ -27,7 +27,7 @@ namespace IronPython.Runtime.Binding {
         /// <summary>
         /// Backwards compatible Convert for the old sites that need to flow CodeContext
         /// </summary>
-        public static Expression/*!*/ Convert(Expression/*!*/ codeContext, BinderState/*!*/ binder, Type/*!*/ type, ConversionResultKind resultKind, Expression/*!*/ target) {
+        public static Expression/*!*/ Convert(Expression/*!*/ codeContext, PythonContext/*!*/ binder, Type/*!*/ type, ConversionResultKind resultKind, Expression/*!*/ target) {
             return Ast.Dynamic(
                 binder.Convert(type, resultKind),
                 type,
@@ -36,7 +36,7 @@ namespace IronPython.Runtime.Binding {
         }
 
 
-        public static Expression/*!*/ Get(Expression/*!*/ codeContext, BinderState/*!*/ binder, Type/*!*/ resultType, string/*!*/ name, Expression/*!*/ target) {
+        public static Expression/*!*/ Get(Expression/*!*/ codeContext, PythonContext/*!*/ binder, Type/*!*/ resultType, string/*!*/ name, Expression/*!*/ target) {
             return Ast.Dynamic(
                 binder.GetMember(name),
                 resultType,
@@ -45,7 +45,7 @@ namespace IronPython.Runtime.Binding {
             );
         }
 
-        public static Expression/*!*/ TryGet(Expression/*!*/ codeContext, BinderState/*!*/ binder, Type/*!*/ resultType, string/*!*/ name, Expression/*!*/ target) {
+        public static Expression/*!*/ TryGet(Expression/*!*/ codeContext, PythonContext/*!*/ binder, Type/*!*/ resultType, string/*!*/ name, Expression/*!*/ target) {
             return Ast.Dynamic(
                 binder.GetMember(
                     name,
@@ -57,25 +57,7 @@ namespace IronPython.Runtime.Binding {
             );
         }
 
-        public static DynamicMetaObjectBinder/*!*/ BinaryOperationRetBool(BinderState/*!*/ state, PythonOperationKind operatorName) {
-            return BinaryOperationRetType(state, operatorName, typeof(bool));
-        }
-
-        public static DynamicMetaObjectBinder/*!*/ BinaryOperationRetType(BinderState/*!*/ state, PythonOperationKind operatorName, Type retType) {
-            return new ComboBinder(
-                new BinderMappingInfo(
-                    BinaryOperationBinder(state, operatorName),
-                    ParameterMappingInfo.Parameter(0),
-                    ParameterMappingInfo.Parameter(1)
-                ),
-                new BinderMappingInfo(
-                    state.Convert(retType, ConversionResultKind.ExplicitCast),
-                    ParameterMappingInfo.Action(0)
-                )
-            );
-        }
-
-        public static DynamicMetaObjectBinder UnaryOperationBinder(BinderState state, PythonOperationKind operatorName) {
+        public static DynamicMetaObjectBinder UnaryOperationBinder(PythonContext state, PythonOperationKind operatorName) {
             ExpressionType? et = GetExpressionTypeFromUnaryOperator(operatorName);
             
             if (et == null) {
@@ -97,7 +79,7 @@ namespace IronPython.Runtime.Binding {
             return null;
         }
 
-        public static DynamicMetaObjectBinder BinaryOperationBinder(BinderState state, PythonOperationKind operatorName) {
+        public static DynamicMetaObjectBinder BinaryOperationBinder(PythonContext state, PythonOperationKind operatorName) {
             ExpressionType? et = GetExpressionTypeFromBinaryOperator(operatorName);
 
             if (et == null) {
@@ -145,27 +127,6 @@ namespace IronPython.Runtime.Binding {
             return null;
         }
 
-        public static DynamicMetaObjectBinder/*!*/ InvokeAndConvert(BinderState/*!*/ state, int argCount, Type retType) {
-            // +2 for the target object and CodeContext which InvokeBinder recevies
-            ParameterMappingInfo[] args = new ParameterMappingInfo[argCount + 2];   
-            for (int i = 0; i < argCount + 2; i++) {
-                args[i] = ParameterMappingInfo.Parameter(i);
-            }
-
-            return new ComboBinder(
-                new BinderMappingInfo(
-                    state.Invoke(
-                        new CallSignature(argCount)
-                    ),
-                    args
-                ),
-                new BinderMappingInfo(
-                    state.Convert(retType, ConversionResultKind.ExplicitCast),
-                    ParameterMappingInfo.Action(0)
-                )
-            );
-        }
-
         /// <summary>
         /// Creates a new InvokeBinder which will call with positional splatting.
         /// 
@@ -173,7 +134,7 @@ namespace IronPython.Runtime.Binding {
         /// </summary>
         /// <param name="state"></param>
         /// <returns></returns>
-        public static PythonInvokeBinder/*!*/ InvokeSplat(BinderState/*!*/ state) {
+        public static PythonInvokeBinder/*!*/ InvokeSplat(PythonContext/*!*/ state) {
             return state.Invoke(
                 new CallSignature(new Argument(ArgumentType.List))
             );
@@ -184,7 +145,7 @@ namespace IronPython.Runtime.Binding {
         /// 
         /// The signature of the target site should be object(function), object[], dictionary, retType
         /// </summary>
-        public static PythonInvokeBinder/*!*/ InvokeKeywords(BinderState/*!*/ state) {
+        public static PythonInvokeBinder/*!*/ InvokeKeywords(PythonContext/*!*/ state) {
             return state.Invoke(
                 new CallSignature(new Argument(ArgumentType.List), new Argument(ArgumentType.Dictionary))
             );

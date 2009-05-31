@@ -28,11 +28,13 @@ using Microsoft.Scripting.Ast;
 using Microsoft.Scripting.Generation;
 using Microsoft.Scripting.Math;
 using Microsoft.Scripting.Runtime;
+using Microsoft.Scripting.Utils;
 
 using IronPython.Runtime;
 using IronPython.Runtime.Binding;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
+using System.Diagnostics;
 
 #if !SILVERLIGHT
 namespace IronPython.Modules {
@@ -45,7 +47,8 @@ namespace IronPython.Modules {
         public abstract class _CFuncPtr : CData, IDynamicMetaObjectProvider {
             private readonly IntPtr _addr;
             private readonly Delegate _delegate;
-            private object _errcheck, _restype = _noResType, _argtypes;
+            private object _errcheck, _restype = _noResType;
+            private IList<object> _argtypes;
             private int _id;
             private static int _curId = 0;
             internal static object _noResType = new object();
@@ -101,6 +104,16 @@ namespace IronPython.Modules {
 
                     _delegate = ((CFuncPtrType)DynamicHelpers.GetPythonType(this)).MakeReverseDelegate(context, function);
                     _addr = Marshal.GetFunctionPointerForDelegate(_delegate);
+
+                    CFuncPtrType myType = (CFuncPtrType)NativeType;
+                    PythonType resType = myType._restype;
+                    if (resType != null) {
+                        if (!(resType is INativeType) || resType is PointerType) {
+                            throw PythonOps.TypeError("invalid result type {0} for callback function", ((PythonType)resType).Name);
+                        }
+
+                        
+                    }
                 }
                 _id = Interlocked.Increment(ref _curId);
             }
@@ -133,28 +146,39 @@ namespace IronPython.Modules {
 
             #region Public APIs
 
-            public object errcheck {
-                get { return _errcheck; }
-                set { _errcheck = value; }
+            [SpecialName, PropertyMethod]
+            public object Geterrcheck() {
+                return _errcheck;
             }
 
-            public object restype {
-                get {
-                    if (_restype == _noResType) {
-                        return ((CFuncPtrType)NativeType)._restype;
-                    }
+            [SpecialName, PropertyMethod]
+            public void Seterrcheck(object value) {
+                _errcheck = value;
+            }
 
-                    return _restype;
+            [SpecialName, PropertyMethod]
+            public void Deleteerrcheck() {
+                _errcheck = null;
+                _id = Interlocked.Increment(ref _curId);
+            }
+
+            [PropertyMethod, SpecialName]
+            public object Getrestype() {
+                if (_restype == _noResType) {
+                    return ((CFuncPtrType)NativeType)._restype;
                 }
-                set {
-                    INativeType nt = value as INativeType;
-                    if (nt != null || value == null) {
-                        _restype = nt;
-                        _id = Interlocked.Increment(ref _curId);
-                    } else {
-                        // TODO: handle callables
-                        throw PythonOps.TypeError("restype must be a type, a callable, or None");
-                    }
+
+                return _restype;
+            }
+
+            [PropertyMethod, SpecialName]
+            public void Setrestype(object value) {
+                INativeType nt = value as INativeType;
+                if (nt != null || value == null || PythonOps.IsCallable(((PythonType)NativeType).Context.SharedContext, value)) {
+                    _restype = value;
+                    _id = Interlocked.Increment(ref _curId);
+                } else {
+                    throw PythonOps.TypeError("restype must be a type, a callable, or None");
                 }
             }
 
@@ -165,9 +189,34 @@ namespace IronPython.Modules {
             }
 
             public object argtypes {
-                get { return _argtypes; }
+                get {
+                    if (_argtypes != null) {
+                        return _argtypes;
+                    }
+                    
+                    if (((CFuncPtrType)NativeType)._argtypes != null) {
+                        return PythonTuple.MakeTuple(((CFuncPtrType)NativeType)._argtypes);
+                    }
+
+                    return null;
+                }
                 set {
-                    _argtypes = value;
+                    if (value != null) {
+                        IList<object> argValues = value as IList<object>;
+                        if (argValues == null) {
+                            throw PythonOps.TypeErrorForTypeMismatch("sequence", value);
+                        }
+                        foreach (object o in argValues) {
+                            if (!(o is INativeType)) {
+                                if (!PythonOps.HasAttr(DefaultContext.Default, o, SymbolTable.StringToId("from_param"))) {
+                                    throw PythonOps.TypeErrorForTypeMismatch("ctype or object with from_param", o);
+                                }
+                            }
+                        }
+                        _argtypes = argValues;
+                    } else {
+                        _argtypes = null;
+                    }
                     _id = Interlocked.Increment(ref _curId);
                 }
             }
@@ -216,7 +265,7 @@ namespace IronPython.Modules {
                 }
 
                 public override DynamicMetaObject BindInvoke(InvokeBinder binder, DynamicMetaObject[] args) {
-                    CodeContext context = BinderState.GetBinderState(binder).Context;
+                    CodeContext context = PythonContext.GetPythonContext(binder).SharedContext;
                     PythonContext ctx = PythonContext.GetContext(context);
 
                     ArgumentMarshaller[] signature = GetArgumentMarshallers(args);
@@ -238,7 +287,20 @@ namespace IronPython.Modules {
                         restrictions = restrictions.Merge(arg.GetRestrictions());
                     }
 
-                    Expression call = MakeCall(signature, GetNativeReturnType());
+                    // need to verify we have the correct # of args
+                    if (Value._argtypes != null) {
+                        if (args.Length < Value._argtypes.Count || (Value.CallingConvention != CallingConvention.Cdecl && args.Length > Value._argtypes.Count)) {
+                            return IncorrectArgCount(restrictions, Value._argtypes.Count, args.Length);
+                        }
+                    } else {
+                        CFuncPtrType funcType = ((CFuncPtrType)Value.NativeType);
+                        if (funcType._argtypes != null &&
+                            (args.Length  < funcType._argtypes.Length || (Value.CallingConvention != CallingConvention.Cdecl && args.Length > funcType._argtypes.Length))) {
+                            return IncorrectArgCount(restrictions, funcType._argtypes.Length, args.Length);
+                        }
+                    }
+
+                    Expression call = MakeCall(signature, GetNativeReturnType(), Value.Getrestype() == null);
                     List<Expression> block = new List<Expression>();
                     Expression res;
 
@@ -254,7 +316,69 @@ namespace IronPython.Modules {
                         res = Expression.Block(block);
                     }
 
+                    res = AddReturnChecks(context, args, res);
+
                     return new DynamicMetaObject(Utils.Convert(res, typeof(object)), restrictions);
+                }
+
+                private Expression AddReturnChecks(CodeContext context, DynamicMetaObject[] args, Expression res) {
+                    PythonContext ctx = PythonContext.GetContext(context); 
+                    
+                    object resType = Value.Getrestype();
+                    if (resType != null) {
+                        // res type can be callable, a type with _check_retval_, or
+                        // it can be just be a type which doesn't require post-processing.
+                        INativeType nativeResType = resType as INativeType;
+                        object checkRetVal = null;
+                        if (nativeResType == null) {
+                            checkRetVal = resType;
+                        } else if (!PythonOps.TryGetBoundAttr(context, nativeResType, SymbolTable.StringToId("_check_retval_"), out checkRetVal)) {
+                            // we just wanted to try and get the value, don't need to do anything here.
+                            checkRetVal = null;
+                        }
+
+                        if (checkRetVal != null) {
+                            res = Expression.Dynamic(
+                                ctx.CompatInvoke(new CallInfo(1)),
+                                typeof(object),
+                                Expression.Constant(checkRetVal),
+                                res
+                            );
+                        }
+                    }
+
+                    object errCheck = Value.Geterrcheck();
+                    if (errCheck != null) {
+                        res = Expression.Dynamic(
+                            ctx.CompatInvoke(new CallInfo(3)),
+                            typeof(object),
+                            Expression.Constant(errCheck),
+                            res,
+                            Expression,
+                            Expression.Call(
+                                typeof(PythonOps).GetMethod("MakeTuple"),
+                                Expression.NewArrayInit(
+                                    typeof(object),
+                                    ArrayUtils.ConvertAll(args, x => Utils.Convert(x.Expression, typeof(object)))
+                                )
+                            )
+                        );
+                    }
+                    return res;
+                }
+
+                private static DynamicMetaObject IncorrectArgCount(BindingRestrictions restrictions, int expected, int got) {
+                    return new DynamicMetaObject(
+                        Expression.Throw(
+                            Expression.Call(
+                                typeof(PythonOps).GetMethod("TypeError"),
+                                Expression.Constant(String.Format("this function takes {0} arguments ({1} given)", expected, got)),
+                                Expression.NewArrayInit(typeof(object))                                    
+                            ),
+                            typeof(object)
+                        ),
+                        restrictions
+                    );
                 }
 
                 /// <summary>
@@ -270,12 +394,13 @@ namespace IronPython.Modules {
                     }
                 }
 
-                private Expression MakeCall(ArgumentMarshaller[] signature, INativeType nativeRetType) {
+                private Expression MakeCall(ArgumentMarshaller[] signature, INativeType nativeRetType, bool retVoid) {
                     List<object> constantPool = new List<object>();
                     MethodInfo interopInvoker = CreateInteropInvoker(
                         GetCallingConvention(),
                         signature,
                         nativeRetType,
+                        retVoid,
                         constantPool
                     );
 
@@ -299,7 +424,7 @@ namespace IronPython.Modules {
                 }
 
                 private INativeType GetNativeReturnType() {
-                    return Value.restype as INativeType;
+                    return Value.Getrestype() as INativeType;
                 }
 
                 private ArgumentMarshaller/*!*/[]/*!*/ GetArgumentMarshallers(DynamicMetaObject/*!*/[]/*!*/ args) {
@@ -307,10 +432,10 @@ namespace IronPython.Modules {
                     ArgumentMarshaller[] res = new ArgumentMarshaller[args.Length];
                     for (int i = 0; i < args.Length; i++) {
                         DynamicMetaObject mo = args[i];
-                        INativeType argType = null;
-                        if (Value.argtypes != null) {
-                            argType = (INativeType)((IList<object>)Value.argtypes)[i];
-                        } else if (funcType._argtypes != null) {
+                        object argType = null;
+                        if (Value._argtypes != null && i < Value._argtypes.Count) {
+                            argType = Value._argtypes[i];
+                        } else if (funcType._argtypes != null && i < funcType._argtypes.Length) {
                             argType = funcType._argtypes[i];
                         }
 
@@ -319,9 +444,14 @@ namespace IronPython.Modules {
                     return res;
                 }
 
-                private ArgumentMarshaller/*!*/ GetMarshaller(Expression/*!*/ expr, object value, int index, INativeType nativeType) {
+                private ArgumentMarshaller/*!*/ GetMarshaller(Expression/*!*/ expr, object value, int index, object nativeType) {
                     if (nativeType != null) {
-                        return new CDataMarshaller(expr, CompilerHelpers.GetType(value), nativeType);
+                        INativeType nt = nativeType as INativeType;
+                        if (nt != null) {
+                            return new CDataMarshaller(expr, CompilerHelpers.GetType(value), nt);
+                        }
+
+                        return new FromParamMarshaller(expr);
                     }
 
                     CData data = value as CData;
@@ -359,7 +489,7 @@ namespace IronPython.Modules {
                 /// where IntPtr is the address of the function to be called.  The arguments types are based upon
                 /// the types that the ArgumentMarshaller requires.
                 /// </summary>
-                private static MethodInfo/*!*/ CreateInteropInvoker(CallingConvention convention, ArgumentMarshaller/*!*/[]/*!*/ sig, INativeType nativeRetType, List<object> constantPool) {
+                private static MethodInfo/*!*/ CreateInteropInvoker(CallingConvention convention, ArgumentMarshaller/*!*/[]/*!*/ sig, INativeType nativeRetType, bool retVoid, List<object> constantPool) {
                     Type[] sigTypes = new Type[sig.Length + 2];
                     sigTypes[0] = typeof(IntPtr);
                     for (int i = 0; i < sig.Length; i++) {
@@ -367,10 +497,12 @@ namespace IronPython.Modules {
                     }
                     sigTypes[sigTypes.Length - 1] = typeof(object[]);
 
-                    Type retType = nativeRetType != null ? nativeRetType.GetPythonType() : typeof(void);
-                    Type calliRetType = nativeRetType != null ? nativeRetType.GetNativeType() : typeof(void);
+                    Type retType = retVoid ? typeof(void) :
+                        nativeRetType != null ? nativeRetType.GetPythonType() : typeof(int);
+                    Type calliRetType = retVoid ? typeof(void) :
+                                   nativeRetType != null ? nativeRetType.GetNativeType() : typeof(int);
 
-#if !CTYPES_USE_SNIPPETS
+#if CTYPES_USE_SNIPPETS
                     DynamicMethod dm = new DynamicMethod("InteropInvoker", retType, sigTypes, DynamicModule);
 #else
                     TypeGen tg = Snippets.Shared.DefineType("InteropInvoker", typeof(object), false, false);
@@ -391,6 +523,10 @@ namespace IronPython.Modules {
 
                     List<MarshalCleanup> cleanups = null;
                     for (int i = 0; i < sig.Length; i++) {
+#if DEBUG
+                        method.Emit(OpCodes.Ldstr, String.Format("Argument #{0}, Marshaller: {1}, Native Type: {2}", i, sig[i], sig[i].NativeType));
+                        method.Emit(OpCodes.Pop);
+#endif
                         MarshalCleanup cleanup = sig[i].EmitCallStubArgument(method, i + 1, constantPool, sigTypes.Length - 1);
                         if (cleanup != null) {
                             if (cleanups == null) {
@@ -402,16 +538,31 @@ namespace IronPython.Modules {
                     }
 
                     // emit the target function pointer and the calli
+#if DEBUG
+                    method.Emit(OpCodes.Ldstr, "!!! CALLI !!!");
+                    method.Emit(OpCodes.Pop);
+#endif
+
                     method.Emit(OpCodes.Ldarg_0);
                     method.Emit(OpCodes.Calli, GetCalliSignature(convention, sig, calliRetType));
 
                     // if we have a return value we need to store it and marshal to Python
                     // before we run any cleanup code.
                     if (retType != typeof(void)) {
-                        method.Emit(OpCodes.Stloc, calliRetTmp);
+#if DEBUG
+                        method.Emit(OpCodes.Ldstr, "!!! Return !!!");
+                        method.Emit(OpCodes.Pop);
+#endif
 
-                        nativeRetType.EmitReverseMarshalling(method, new Local(calliRetTmp), constantPool, sig.Length + 1);
-                        method.Emit(OpCodes.Stloc, finalRetValue);
+                        if (nativeRetType != null) {
+                            method.Emit(OpCodes.Stloc, calliRetTmp);
+                            nativeRetType.EmitReverseMarshalling(method, new Local(calliRetTmp), constantPool, sig.Length + 1);
+                            method.Emit(OpCodes.Stloc, finalRetValue);
+                        } else {
+                            Debug.Assert(retType == typeof(int));
+                            // no marshalling necessary
+                            method.Emit(OpCodes.Stloc, finalRetValue);
+                        }
                     }
 
                     // } finally { 
@@ -435,7 +586,7 @@ namespace IronPython.Modules {
 
                     method.Emit(OpCodes.Ret);
 
-#if CTYPES_USE_SNIPPETS
+#if !CTYPES_USE_SNIPPETS
                     return tg.TypeBuilder.CreateType().GetMethod("InteropInvoker");
 #else
                     return dm;
@@ -444,7 +595,7 @@ namespace IronPython.Modules {
 
                 private static SignatureHelper GetCalliSignature(CallingConvention convention, ArgumentMarshaller/*!*/[] sig, Type calliRetType) {
                     SignatureHelper signature = SignatureHelper.GetMethodSigHelper(convention, calliRetType);
-
+                    
                     foreach (ArgumentMarshaller argMarshaller in sig) {
                         signature.AddArgument(argMarshaller.NativeType);
                     }
@@ -536,6 +687,13 @@ namespace IronPython.Modules {
                             generator.Emit(OpCodes.Conv_I);
                             generator.Emit(OpCodes.Ldc_I4, RuntimeHelpers.OffsetToStringData);
                             generator.Emit(OpCodes.Add);
+                        } else if (_type == typeof(Bytes)) {
+                            LocalBuilder lb = generator.DeclareLocal(typeof(byte).MakeByRefType(), true);
+                            generator.Emit(OpCodes.Call, typeof(ModuleOps).GetMethod("GetBytes"));
+                            generator.Emit(OpCodes.Ldc_I4_0);
+                            generator.Emit(OpCodes.Ldelema, typeof(Byte));
+                            generator.Emit(OpCodes.Stloc, lb);
+                            generator.Emit(OpCodes.Ldloc, lb);
                         } else if (_type == typeof(BigInteger)) {
                             generator.Emit(OpCodes.Call, typeof(BigInteger).GetMethod("ToInt32", Type.EmptyTypes));
                         } else if (!_type.IsValueType) {
@@ -563,6 +721,20 @@ namespace IronPython.Modules {
                         }
 
                         return BindingRestrictions.GetTypeRestriction(ArgumentExpression, _type);
+                    }
+                }
+
+                class FromParamMarshaller : ArgumentMarshaller {
+                    public FromParamMarshaller(Expression/*!*/ container)
+                        : base(container) {
+                    }
+
+                    public override MarshalCleanup EmitCallStubArgument(ILGenerator generator, int argIndex, List<object> constantPool, int constantPoolArgument) {
+                        throw new NotImplementedException();
+                    }
+
+                    public override Type NativeType {
+                        get { throw new NotImplementedException(); }
                     }
                 }
 

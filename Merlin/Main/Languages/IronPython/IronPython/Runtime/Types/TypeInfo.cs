@@ -493,19 +493,24 @@ namespace IronPython.Runtime.Types {
                 // Runs after StandardResolver so custom __eq__ methods can be added
                 // that support things like returning NotImplemented vs. IValueEquality
                 // which only supports true/false.  Runs before OperatorResolver so that
-                // IValueEquality takes precedence over Equals which can be provied for
+                // IValueEquality takes precedence over Equals which can be provided for
                 // nice .NET interop.
-                new OneOffResolver("__all__", AllResolver),     
+                new OneOffResolver("__all__", AllResolver),
                 new OneOffResolver("__contains__", ContainsResolver),
                 new OneOffResolver("__dir__", DirResolver),
                 new OneOffResolver("__doc__", DocResolver),
-                new OneOffResolver("__enter__", EnterResolver),     
-                new OneOffResolver("__eq__", EqualityResolver),     
-                new OneOffResolver("__exit__", ExitResolver),  
-                new OneOffResolver("__len__", LengthResolver),        
+                new OneOffResolver("__enter__", EnterResolver),
+                new OneOffResolver("__eq__", EqualityResolver),
+                new OneOffResolver("__exit__", ExitResolver),
+                new OneOffResolver("__len__", LengthResolver),
                 new OneOffResolver("__ne__", InequalityResolver),
                 new OneOffResolver("__format__", FormatResolver),
                 new OneOffResolver("next", NextResolver),
+
+                new OneOffResolver("__complex__", ComplexResolver),
+                new OneOffResolver("__float__", FloatResolver),
+                new OneOffResolver("__int__", IntResolver),
+                new OneOffResolver("__long__", BigIntegerResolver),
 
                 // non standard PythonOperationKind which are Python specific
                 new OneOffResolver("__truediv__", new OneOffOperatorBinder("TrueDivide", "__truediv__", PythonOperationKind.TrueDivide).Resolver),
@@ -538,6 +543,69 @@ namespace IronPython.Runtime.Types {
         #endregion
 
         #region One-off resolvers
+
+        #region Resolving numerical conversions (__complex__, __float__, __int__, and __long__)
+
+        /// <summary>
+        /// Provides a resolution for __complex__
+        /// </summary>
+        private static Func<MemberBinder/*!*/, Type/*!*/, MemberGroup/*!*/>/*!*/ ComplexResolver {
+            get {
+                if (_ComplexResolver != null) return _ComplexResolver;
+                _ComplexResolver = MakeConversionResolver(new List<Type> {
+                    typeof(Complex64), typeof(ExtensibleComplex), typeof(Extensible<Complex64>),
+                    typeof(double), typeof(Extensible<double>)
+                });
+                return _ComplexResolver;
+            }
+        }
+        private static Func<MemberBinder/*!*/, Type/*!*/, MemberGroup/*!*/> _ComplexResolver;
+
+        /// <summary>
+        /// Provides a resolution for __float__
+        /// </summary>
+        private static Func<MemberBinder/*!*/, Type/*!*/, MemberGroup/*!*/>/*!*/ FloatResolver {
+            get {
+                if (_FloatResolver != null) return _FloatResolver;
+                _FloatResolver = MakeConversionResolver(new List<Type> {
+                    typeof(double), typeof(Extensible<double>)
+                });
+                return _FloatResolver;
+            }
+        }
+        private static Func<MemberBinder/*!*/, Type/*!*/, MemberGroup/*!*/> _FloatResolver;
+
+        /// <summary>
+        /// Provides a resolution for __int__
+        /// </summary>
+        private static Func<MemberBinder/*!*/, Type/*!*/, MemberGroup/*!*/>/*!*/ IntResolver {
+            get {
+                if (_IntResolver != null) return _IntResolver;
+                _IntResolver = MakeConversionResolver(new List<Type> {
+                    typeof(int), typeof(Extensible<int>),
+                    typeof(BigInteger), typeof(Extensible<BigInteger>)
+                });
+                return _IntResolver;
+            }
+        }
+        private static Func<MemberBinder/*!*/, Type/*!*/, MemberGroup/*!*/> _IntResolver;
+
+        /// <summary>
+        /// Provides a resolution for __long__
+        /// </summary>
+        private static Func<MemberBinder/*!*/, Type/*!*/, MemberGroup/*!*/>/*!*/ BigIntegerResolver {
+            get {
+                if (_BigIntegerResolver != null) return _BigIntegerResolver;
+                _BigIntegerResolver = MakeConversionResolver(new List<Type> {
+                    typeof(BigInteger), typeof(Extensible<BigInteger>),
+                    typeof(int), typeof(Extensible<int>)
+                });
+                return _BigIntegerResolver;
+            }
+        }
+        private static Func<MemberBinder/*!*/, Type/*!*/, MemberGroup/*!*/> _BigIntegerResolver;
+
+        #endregion
 
         /// <summary>
         /// Provides a resolution for __str__.
@@ -854,7 +922,7 @@ namespace IronPython.Runtime.Types {
         }
 
         private static MemberGroup/*!*/ EnterResolver(MemberBinder/*!*/ binder, Type/*!*/ type) {
-            if (typeof(IDisposable).IsAssignableFrom(type)) {
+            if (type != typeof(PythonGenerator) && typeof(IDisposable).IsAssignableFrom(type)) {
                 return GetInstanceOpsMethod(type, "EnterMethod");
             }
 
@@ -862,7 +930,7 @@ namespace IronPython.Runtime.Types {
         }
 
         private static MemberGroup/*!*/ ExitResolver(MemberBinder/*!*/ binder, Type/*!*/ type) {
-            if (typeof(IDisposable).IsAssignableFrom(type)) {
+            if (type != typeof(PythonGenerator) && typeof(IDisposable).IsAssignableFrom(type)) {
                 return GetInstanceOpsMethod(type, "ExitMethod");
             }
 
@@ -901,7 +969,7 @@ namespace IronPython.Runtime.Types {
             List<MemberTracker> containsMembers = null;
 
             IList<Type> intf = binder.GetInterfaces(type);
-            
+
             // if we get a __contains__ for something w/ a generic typed to object don't look for non-generic versions
             bool hasObjectContains = false;
 
@@ -935,7 +1003,7 @@ namespace IronPython.Runtime.Types {
                     }
                 }
             }
-            
+
             if (!hasObjectContains) {
                 // look for non-generic contains if we didn't already find an overload which takes
                 // object
@@ -1316,9 +1384,107 @@ namespace IronPython.Runtime.Types {
         }
 
         /// <summary>
+        /// Helper to get the proper typecasting method, according to the following precedence rules:
+        /// 
+        /// 1. Strongest (most specific) declaring type
+        /// 2. Strongest (most specific) parameter type
+        /// 3. Type of conversion
+        ///     i.  Implicit
+        ///     ii. Explicit
+        /// 4. Return type (order specified in toTypes)
+        /// </summary>
+        private static MethodInfo FindCastMethod(MemberBinder/*!*/ binder, Type/*!*/ fromType, List<Type>/*!*/ toTypes) {
+            MethodInfo cast = null;
+            ParameterInfo[] castParams = null;
+            foreach (Type t in binder.GetContributingTypes(fromType)) {
+                foreach (string castName in CastNames) {
+                    foreach (MemberInfo member in t.GetMember(castName)) {
+                        MethodInfo method;
+                        ParameterInfo[] methodParams;
+
+                        // Necessary conditions
+                        if (member.MemberType != MemberTypes.Method) {
+                            continue;
+                        }
+                        method = (MethodInfo)member;
+                        if (!toTypes.Contains(method.ReturnType) ||
+                            (methodParams = method.GetParameters()).Length != 1) {
+                            continue;
+                        }
+
+                        // Precedence rule 1
+                        if (cast == null || method.DeclaringType.IsSubclassOf(cast.DeclaringType)) {
+                            cast = method;
+                            castParams = methodParams;
+                            continue;
+                        } else if (method.DeclaringType != cast.DeclaringType) {
+                            continue;
+                        }
+
+                        // Precedence rule 2
+                        if (methodParams[0].ParameterType.IsSubclassOf(castParams[0].ParameterType)) {
+                            cast = method;
+                            castParams = methodParams;
+                            continue;
+                        } else if (castParams[0].ParameterType != methodParams[0].ParameterType) {
+                            continue;
+                        }
+
+                        // Precedence rule 3
+                        if (method.Name != cast.Name) {
+                            if (method.Name == "op_Implicit") {
+                                cast = method;
+                                castParams = methodParams;
+                            }
+                            continue;
+                        }
+
+                        // Precedence rule 4:
+                        foreach (Type toType in toTypes) {
+                            if (method.ReturnType == toType) {
+                                cast = method;
+                                castParams = methodParams;
+                            } else if (cast.ReturnType == toType) {
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+
+            return cast;
+        }
+        private static string[] _CastNames;
+        private static string[] CastNames {
+            get {
+                if (_CastNames != null) return _CastNames;
+                _CastNames = new string[] { "op_Implicit", "op_Explicit" };
+                return _CastNames;
+            }
+        }
+
+        /// <summary>
+        /// Helper for creating a typecast resolver
+        /// </summary>
+        private static Func<MemberBinder/*!*/, Type/*!*/, MemberGroup/*!*/>/*!*/ MakeConversionResolver(List<Type> castPrec) {
+            return delegate(MemberBinder/*!*/ binder, Type/*!*/ type) {
+                MethodInfo cast = FindCastMethod(binder, type, castPrec);
+                if (cast != null) {
+                    MethodTracker tracker = (MethodTracker)MemberTracker.FromMemberInfo(cast, type);
+                    return new MemberGroup(tracker);
+                }
+                return MemberGroup.EmptyGroup;
+            };
+        }
+
+        /// <summary>
         /// Filters out methods which are present on standard .NET types but shouldn't be there in Python
         /// </summary>
         internal static bool IncludeOperatorMethod(Type/*!*/ t, PythonOperationKind op) {
+            if (t == typeof(string) && op == PythonOperationKind.Compare) {
+                // string doesn't define __cmp__, just __lt__ and friends
+                return false;
+            }
             // numeric types in python don't define equality, just __cmp__
             if (t == typeof(bool) ||
                 (Converter.IsNumeric(t) && t != typeof(Complex64) && t != typeof(double) && t != typeof(float))) {

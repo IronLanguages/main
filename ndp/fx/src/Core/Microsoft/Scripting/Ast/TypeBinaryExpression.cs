@@ -84,7 +84,11 @@ namespace System.Linq.Expressions {
             // If the operand type is a sealed reference type or a nullable
             // type, it will match if value is not null
             if (cType.IsSealed && (cType == _typeOperand)) {
-                return Expression.NotEqual(Expression, Expression.Constant(null, Expression.Type));
+                if (cType.IsNullableType()) {
+                    return Expression.NotEqual(Expression, Expression.Constant(null, Expression.Type));
+                } else {
+                    return Expression.ReferenceNotEqual(Expression, Expression.Constant(null, Expression.Type));
+                }
             }
 
             // expression is a ByVal parameter. Can safely reevaluate.
@@ -94,7 +98,7 @@ namespace System.Linq.Expressions {
             }
 
             // Create a temp so we only evaluate the left side once
-            parameter = Parameter(typeof(object), null);
+            parameter = Expression.Parameter(typeof(object));
 
             // Convert to object if necessary
             var expression = Expression;
@@ -109,18 +113,27 @@ namespace System.Linq.Expressions {
             );
         }
 
-        // helper that is used when re-eval of LHS is safe.
+        // Helper that is used when re-eval of LHS is safe.
         private Expression ByValParameterTypeEqual(ParameterExpression value) {
-            //when comparing the value with null, we don't want to invoke the
-            //user overloaded operator if there is one. Instead, we want to do
-            //reference equality comparison by converting the value to System.Object.
+            Expression getType = Expression.Call(value, typeof(object).GetMethod("GetType"));
+            
+            // In remoting scenarios, obj.GetType() can return an interface.
+            // But there's a bug in the JIT32's optimized "obj.GetType() ==
+            // typeof(ISomething)" codegen, causing it to always return false.
+            // We workaround the bug by generating different, less optimal IL
+            // if TypeOperand is an interface.
+            if (_typeOperand.IsInterface) {
+                var temp = Expression.Parameter(typeof(Type));
+                getType = Expression.Block(new[] { temp }, Expression.Assign(temp, getType), temp);
+            }
+
+            // We use reference equality when comparing to null for correctness
+            // (don't invoke a user defined operator), and reference equality
+            // on types for performance (so the JIT can optimize the IL).
             return Expression.AndAlso(
                 Expression.ReferenceNotEqual(value, Expression.Constant(null)),
-                Expression.Equal(
-                    Expression.Call(
-                        value,
-                        typeof(object).GetMethod("GetType")
-                    ),
+                Expression.ReferenceEqual(
+                    getType, 
                     Expression.Constant(_typeOperand.GetNonNullableType(), typeof(Type))
                 )
             );

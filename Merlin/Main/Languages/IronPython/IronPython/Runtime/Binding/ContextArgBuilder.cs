@@ -40,11 +40,11 @@ namespace IronPython.Runtime.Binding {
             get { return 0; }
         }
 
-        protected override Expression ToExpression(OverloadResolver resolver, IList<Expression> parameters, bool[] hasBeenUsed) {
+        protected override Expression ToExpression(OverloadResolver resolver, RestrictedArguments args, bool[] hasBeenUsed) {
             return ((PythonOverloadResolver)resolver).ContextExpression;
         }
 
-        protected override Func<object[], object> ToDelegate(OverloadResolver resolver, IList<DynamicMetaObject> knownTypes, bool[] hasBeenUsed) {
+        protected override Func<object[], object> ToDelegate(OverloadResolver resolver, RestrictedArguments args, bool[] hasBeenUsed) {
             return _readFunc;
         }
     }

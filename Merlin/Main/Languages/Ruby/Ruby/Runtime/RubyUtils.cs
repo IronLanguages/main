@@ -23,7 +23,6 @@ using System.Text;
 using System.Threading;
 using Microsoft.Scripting;
 using Microsoft.Scripting.Actions;
-using Microsoft.Scripting.Interpretation;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 using IronRuby.Builtins;
@@ -86,7 +85,7 @@ namespace IronRuby.Runtime {
 
                 MutableString str = MutableString.CreateMutable();
                 str.Append("#<");
-                str.Append(context.GetClassName(obj));
+                str.Append(context.GetClassDisplayName(obj));
 
                 // Ruby prints 2*object_id for objects
                 str.Append(':');
@@ -138,7 +137,7 @@ namespace IronRuby.Runtime {
         }
 
         public static MutableString/*!*/ ObjectToMutableString(RubyContext/*!*/ context, object obj) {
-            return FormatObject(context.GetClassName(obj), GetObjectId(context, obj), context.IsObjectTainted(obj));
+            return FormatObject(context.GetClassDisplayName(obj), GetObjectId(context, obj), context.IsObjectTainted(obj));
         }
 
         public static MutableString/*!*/ AppendFormatHexObjectId(MutableString/*!*/ str, int objectId) {
@@ -257,33 +256,44 @@ namespace IronRuby.Runtime {
             return result.ToString();
         }
 
-        public static string/*!*/ GetQualifiedName(Type/*!*/ type) {
+        public static string/*!*/ GetQualifiedName(Type/*!*/ type, bool display) {
             ContractUtils.RequiresNotNull(type, "type");
+            return AppendQualifiedName(new StringBuilder(), type, display).ToString();
+        }
 
-            StringBuilder sb = new StringBuilder();
-
-            Type t = type;
-            do {
-                if (sb.Length > 0) {
-                    sb.Insert(0, "::");
-                }
-
-                int tick = t.Name.LastIndexOf('`');
-                if (tick != -1) {
-                    sb.Insert(0, t.Name.Substring(0, tick));
-                } else {
-                    sb.Insert(0, t.Name);
-                }
-
-                t = t.DeclaringType;
-            } while (t != null);
-
-            if (type.Namespace != null) {
-                sb.Insert(0, "::");
-                sb.Insert(0, type.Namespace.Replace(Type.Delimiter.ToString(), "::"));
+        private static StringBuilder/*!*/ AppendQualifiedName(StringBuilder/*!*/ result, Type/*!*/ type, bool display) {
+            if (type.IsGenericParameter) {
+                return result.Append(type.Name);
+            } 
+                
+            // qualifiers:
+            if (type.DeclaringType != null) {
+                AppendQualifiedName(result, type.DeclaringType, display);
+                result.Append("::");
+            } else if (type.Namespace != null) {
+                result.Append(type.Namespace.Replace(Type.Delimiter.ToString(), "::"));
+                result.Append("::");
             }
 
-            return sb.ToString();
+            // simple name:
+            result.Append(ReflectionUtils.GetNormalizedTypeName(type));
+
+            // generic args:
+            if (display && type.IsGenericType) {
+                result.Append("[");
+
+                var genericArgs = type.GetGenericArguments();
+                for (int i = 0; i < genericArgs.Length; i++) {
+                    if (i > 0) {
+                        result.Append(", ");
+                    }
+                    AppendQualifiedName(result, genericArgs[i], display);
+                }
+
+                result.Append("]");
+            }
+
+            return result;
         }
 
         public static string/*!*/ GetQualifiedName(NamespaceTracker/*!*/ namespaceTracker) {
@@ -314,7 +324,7 @@ namespace IronRuby.Runtime {
             }
 
             globalScope.Context.CheckConstantName(name);
-            return owner.Context.ConstantMissing(owner, name);
+            return owner.ConstantMissing(name);
         }
 
         public static void SetConstant(RubyModule/*!*/ owner, string/*!*/ name, object value) {
@@ -547,16 +557,8 @@ namespace IronRuby.Runtime {
         }
 
         private static SourceUnit/*!*/ CreateRubySourceUnit(RubyContext/*!*/ context, MutableString/*!*/ code, string path) {
-            if (context.KCode != null) {
-                if (context.KCode.CodePage != code.Encoding.CodePage && code.Encoding != RubyEncoding.Binary) {
-                    // TODO: exception type?
-                    throw new InvalidOperationException(String.Format("KCODE value ({0}) is incompatible with the current source encoding ({1})", context.KCode, code.Encoding));
-                }
-
-                return context.CreateSourceUnit(new BinaryContentProvider(code.ToByteArray()), path, context.KCode.Encoding, SourceCodeKind.File);
-            } else {
-                return context.CreateSnippet(code.ConvertToString(), path, SourceCodeKind.File);
-            }
+            Encoding encoding = (context.KCode ?? code.Encoding).Encoding;
+            return context.CreateSourceUnit(new BinaryContentProvider(code.ToByteArray()), path, encoding, SourceCodeKind.File);
         }
 
         public static object Evaluate(MutableString/*!*/ code, RubyScope/*!*/ targetScope, object self, RubyModule module, MutableString file, int line) {
@@ -598,25 +600,14 @@ namespace IronRuby.Runtime {
                 targetScope = CreateModuleEvalScope(targetScope, self, module);
             }
 
-            if (context.RubyOptions.InterpretedMode) {
-                return Interpreter.TopLevelExecute(new RubyScriptCode.Evaled(lambda, source),
-                    targetScope,
-                    self,
-                    module,
-                    blockParameter,
-                    methodDefinition,
-                    targetScope.RuntimeFlowControl
-                );
-            } else {
-                return RubyScriptCode.CompileLambda(lambda, context.DomainManager.Configuration.DebugMode)(
-                    targetScope,
-                    self,
-                    module,
-                    blockParameter,
-                    methodDefinition,
-                    targetScope.RuntimeFlowControl
-                );
-            }
+            return RubyScriptCode.CompileLambda(lambda, context)(
+                targetScope,
+                self,
+                module,
+                blockParameter,
+                methodDefinition,
+                targetScope.RuntimeFlowControl
+            );
         }
 
         private static RubyModuleScope/*!*/ CreateModuleEvalScope(RubyScope/*!*/ parent, object self, RubyModule module) {

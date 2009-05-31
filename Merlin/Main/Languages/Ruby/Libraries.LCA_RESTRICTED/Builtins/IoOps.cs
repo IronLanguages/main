@@ -338,7 +338,7 @@ namespace IronRuby.Builtins {
         private static RubyIO/*!*/ ToIo(RubyContext/*!*/ context, object obj) {
             RubyIO io = obj as RubyIO;
             if (io == null) {
-                throw RubyExceptions.CreateTypeConversionError(context.GetClassName(obj), "IO");
+                throw RubyExceptions.CreateTypeConversionError(context.GetClassDisplayName(obj), "IO");
             }
             return io;
         }
@@ -585,12 +585,13 @@ namespace IronRuby.Builtins {
             [NotNull]params object[]/*!*/ args) {
             MutableString delimiter = writeStorage.Context.OutputSeparator;
             for (int i = 0; i < args.Length; i++) {
-                MutableString str = ToPrintedString(tosConversion, args[i]);
-                if (delimiter != null) {
-                    str.Append(delimiter);
-                }
+                MutableString str = ToPrintedString(tosConversion, args[i]);               
                 Print(writeStorage, self, str);
             }
+			if (delimiter != null)
+			{
+				Print(writeStorage, self, delimiter);
+			}
         }
 
         [RubyMethod("putc")]
@@ -738,33 +739,20 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("read")]
-        public static MutableString/*!*/ Read(RubyIO/*!*/ self, [DefaultProtocol]int bytes, [DefaultProtocol, Optional]MutableString buffer) {
+        public static MutableString Read(RubyIO/*!*/ self, [DefaultProtocol]int bytes, [DefaultProtocol, Optional]MutableString buffer) {
             self.AssertOpenedForReading();
-            if (self.IsEndOfStream()) {
-                return null;
+            if (bytes < 0) {
+                throw RubyExceptions.CreateArgumentError("negative length -1 given");
             }
 
             if (buffer == null) {
                 buffer = MutableString.CreateBinary();
-            }
-
-            buffer.Clear();
-            if (!self.PreserveEndOfLines) {
-                for (int i = 0; i < bytes; ++i) {
-                    int c = self.ReadByteNormalizeEoln();
-                    if (c == -1) {
-                        return buffer;
-                    } else {
-                        buffer.Append((byte)c);
-                    }
-                }
             } else {
-                var fixedBuffer = new byte[bytes];
-                bytes = self.ReadBytes(fixedBuffer, 0, bytes);
-                buffer.Append(fixedBuffer, 0, bytes);
+                buffer.Clear();
             }
 
-            return buffer;
+            int bytesRead = self.AppendBytes(buffer, bytes);
+            return (bytesRead == 0 && bytes != 0) ? null : buffer;
         }
 
         [RubyMethod("read", RubyMethodAttributes.PublicSingleton)]
