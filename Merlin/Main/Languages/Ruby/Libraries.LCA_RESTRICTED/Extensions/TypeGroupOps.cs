@@ -21,7 +21,8 @@ using IronRuby.Runtime;
 using IronRuby.Runtime.Calls;
 
 namespace IronRuby.Builtins {
-    [RubyClass(Extends = typeof(TypeGroup)), Includes(typeof(Enumerable))]
+    [RubyClass(Extends = typeof(TypeGroup), Restrictions = ModuleRestrictions.None)]
+    [Includes(typeof(Enumerable))]
     public class TypeGroupOps {
         
         [RubyMethod("new")]

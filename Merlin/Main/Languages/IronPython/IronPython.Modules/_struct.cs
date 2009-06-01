@@ -167,7 +167,7 @@ namespace IronPython.Modules {
                             break;
                         case FormatType.UnsignedInt:
                             for (int j = 0; j < curFormat.Count; j++) {
-                                WriteUInt(res, _isLittleEndian, GetUIntValue(context, curObj++, values));
+                                WriteUInt(res, _isLittleEndian, GetUIntValue(context, _isStandardized, curObj++, values));
                             }
                             break;
                         case FormatType.UnsignedLong:
@@ -946,13 +946,19 @@ namespace IronPython.Modules {
             throw Error(context, "expected int value");
         }
 
-        internal static uint GetUIntValue(CodeContext/*!*/ context, int index, object[] args) {
+        internal static uint GetUIntValue(CodeContext/*!*/ context, bool isStandardized, int index, object[] args) {
             object val = GetValue(context, index, args);
             uint res;
             if (Converter.TryConvertToUInt32(val, out res)) {
                 return res;
             }
-            throw Error(context, "expected unsigned int value");
+
+            if (isStandardized) {
+                throw Error(context, "expected unsigned long value");
+            }
+
+            PythonOps.Warn(context, PythonExceptions.DeprecationWarning, "'I' format requires 0 <= number <= 4294967295");
+            return 0;
         }
 
         internal static uint GetULongValue(CodeContext/*!*/ context, bool isStandardized, int index, object[] args) {

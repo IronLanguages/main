@@ -25,7 +25,7 @@ namespace IronRuby.Builtins {
     // Represents any Ruby subclass of String. The actual class object is remembered.
     // We don't allow non-Ruby code to extend Ruby String.
     public partial class MutableString {
-        public sealed class Subclass : MutableString, IRubyObject {
+        public sealed partial class Subclass : MutableString, IRubyObject {
             private readonly RubyClass/*!*/ _class;
             private RubyInstanceData _instanceData;
 
@@ -55,23 +55,6 @@ namespace IronRuby.Builtins {
             public override MutableString/*!*/ Clone() {
                 return new Subclass(this);
             }
-
-            #region IRubyObject Members
-
-            [Emitted]
-            public RubyClass/*!*/ Class {
-                get { return _class; }
-            }
-
-            public RubyInstanceData/*!*/ GetInstanceData() {
-                return RubyOps.GetInstanceData(ref _instanceData);
-            }
-
-            public RubyInstanceData TryGetInstanceData() {
-                return _instanceData;
-            }
-
-            #endregion
         }
     }
 }

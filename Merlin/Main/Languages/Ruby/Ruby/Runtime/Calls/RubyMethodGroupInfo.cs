@@ -16,29 +16,17 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq.Expressions;
 using System.Reflection;
 using System.Reflection.Emit;
-using System.Dynamic;
-using Microsoft.Scripting;
-using Microsoft.Scripting.Actions;
-using Microsoft.Scripting.Actions.Calls;
-using Microsoft.Scripting.Generation;
-using Microsoft.Scripting.Runtime;
-using Microsoft.Scripting.Utils;
 using IronRuby.Builtins;
-using IronRuby.Compiler.Generation;
 using IronRuby.Compiler;
-
-using AstFactory = IronRuby.Compiler.Ast.AstFactory;
-using AstUtils = Microsoft.Scripting.Ast.Utils;
+using IronRuby.Compiler.Generation;
+using Microsoft.Scripting.Utils;
 using Ast = System.Linq.Expressions.Expression;
 
 namespace IronRuby.Runtime.Calls {
-    
     /// <summary>
-    /// Performs method binding for calling CLR methods.
-    /// Currently this is used for all builtin libary methods and interop calls to CLR methods
+    /// A group of CLR methods that are treated as a single Ruby method.
     /// </summary>
     public class RubyMethodGroupInfo : RubyMethodGroupBase {
         private MethodBase/*!*/[] _staticDispatchMethods;
@@ -48,27 +36,9 @@ namespace IronRuby.Runtime.Calls {
         // False: The group contain instance methods and/or extension methods, or operators.
         private readonly bool _isStatic;
 
-        // A method group that owns each overload or null if all overloads are owned by this group.
-        // A null member also marks an overload owned by this group.
-        private readonly RubyMethodGroupInfo[] _overloadOwners; // immutable
-
-        #region Mutable state guarded by ClassHierarchyLock
-
-        // Maximum over levels of all classes that are caching overloads from this group. -1 if there is no such class.
-        private int _maxCachedOverloadLevel = -1;
-
-        #endregion
-
-        /// <summary>
-        /// Creates a CLR method group.
-        /// </summary>
-        internal RubyMethodGroupInfo(MethodBase/*!*/[]/*!*/ methods, RubyModule/*!*/ declaringModule,
-            RubyMethodGroupInfo/*!*/[] overloadOwners, bool isStatic)
+        internal RubyMethodGroupInfo(MethodBase/*!*/[]/*!*/ methods, RubyModule/*!*/ declaringModule, bool isStatic)
             : base(methods, RubyMemberFlags.Public, declaringModule) {
-            Debug.Assert(overloadOwners == null || methods.Length == overloadOwners.Length);
-
             _isStatic = isStatic;
-            _overloadOwners = overloadOwners;
         }
 
         // copy ctor
@@ -77,8 +47,7 @@ namespace IronRuby.Runtime.Calls {
             _isStatic = info._isStatic;
             _hasVirtuals = info._hasVirtuals;
             _staticDispatchMethods = info._staticDispatchMethods;
-            // Note: overloadOwners and maxCachedOverloadLevel are cleared whenever the group is copied
-            // The resulting group captures an immutable set of underlying CLR members.
+            // Note: overloadOwners and maxCachedOverloadLevel are cleared whenever the group is copied.
         }
 
         // copy ctor
@@ -86,7 +55,6 @@ namespace IronRuby.Runtime.Calls {
             : base(methods, info.Flags, info.DeclaringModule) {
             _isStatic = info._isStatic;
             // Note: overloadOwners and maxCachedOverloadLevel are cleared whenever the group is copied.
-            // The resulting group captures an immutable set of underlying CLR members.
         }
 
         protected internal override RubyMemberInfo/*!*/ Copy(RubyMemberFlags flags, RubyModule/*!*/ module) {
@@ -113,54 +81,8 @@ namespace IronRuby.Runtime.Calls {
             get { return true; }
         }
 
-        internal RubyMethodGroupInfo[] OverloadOwners {
-            get { return _overloadOwners; }
-        }
-
         public override MemberInfo/*!*/[]/*!*/ GetMembers() {
             return ArrayUtils.MakeArray(MethodBases);
-        }
-
-        internal int MaxCachedOverloadLevel {
-            get { return _maxCachedOverloadLevel; }
-        }
-
-        // Called on this group whenever other group includes some overloads from this group.
-        // Updates maxCachedOverloadLevel - the max. class hierarchy level which caches an overload owned by this group.
-        internal void CachedInGroup(RubyMethodGroupInfo/*!*/ group) {
-            Context.RequiresClassHierarchyLock();
-
-            int groupLevel = ((RubyClass)group.DeclaringModule).Level;
-            if (_maxCachedOverloadLevel < groupLevel) {
-                _maxCachedOverloadLevel = groupLevel;
-            }
-        }
-
-        // Called whenever this group is used in a dynamic site. 
-        // We need to mark "invalidate sites on override" on all owners of the overloads stored in this group so that
-        // whenever any of them are overridden the sites are invalidated.
-        //
-        // A - MG{f(T1)}
-        // ^
-        // B                 2) def f
-        // ^ 
-        // C - MG{f(T1), f(T2)}
-        // ^
-        // D                 1) D.new.f()
-        //
-        internal override void SetInvalidateSitesOnOverride() {
-            Context.RequiresClassHierarchyLock();
-
-            SetInvalidateSitesOnOverride(this);
-
-            // Do not invalidate recursively. Only method groups that are listed needs invalidation. 
-            if (_overloadOwners != null) {
-                foreach (var overloadOwner in _overloadOwners) {
-                    if (overloadOwner != null) {
-                        SetInvalidateSitesOnOverride(overloadOwner);
-                    }
-                }
-            }
         }
         
         #region Static dispatch to virtual methods
@@ -223,6 +145,8 @@ namespace IronRuby.Runtime.Calls {
         }
 
         #endregion
+
+        #region Dynamic Call
 
         internal override void BuildCallNoFlow(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args, string/*!*/ name) {
             var visibleOverloads = GetVisibleOverloads(args, MethodBases);
@@ -313,6 +237,8 @@ namespace IronRuby.Runtime.Calls {
             }
             return null;
         }
+
+        #endregion
     }
 }
 

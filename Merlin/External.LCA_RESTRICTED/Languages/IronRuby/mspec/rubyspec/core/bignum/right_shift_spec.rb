@@ -8,6 +8,7 @@ describe "Bignum#>>" do
   it "returns self shifted the given amount of bits to the right" do
     (@bignum >> 1).should == 4611686018427433310
     (@bignum >> 3).should == 1152921504606858327
+    (-bignum_value >> 64) == -1
   end
 
   it "performs a left-shift if given a negative value" do

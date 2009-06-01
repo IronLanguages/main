@@ -144,9 +144,10 @@ namespace IronPython.Hosting {
                     LanguageSetup.Options["Frames"] = LanguageSetup.Options["FullFrames"] = ScriptingRuntimeHelpers.True;
                     break;
                 case "-X:MaxRecursion":
+                    // we need about 6 frames for starting up, so 10 is a nice round number.
                     int limit;
-                    if (!StringUtils.TryParseInt32(PopNextArg(), out limit)) {
-                        throw new InvalidOptionException(String.Format("The argument for the {0} option must be an integer.", arg));
+                    if (!StringUtils.TryParseInt32(PopNextArg(), out limit) || limit < 10) {
+                        throw new InvalidOptionException(String.Format("The argument for the {0} option must be an integer >= 10.", arg));
                     }
 
                     LanguageSetup.Options["RecursionLimit"] = limit;

@@ -167,6 +167,38 @@ true
 ");
         }
 
+        /// <summary>
+        /// Builtin types only expose CLR methods under unmangled names (mangling is no applied).
+        /// </summary>
+        public void ClrMethods4() {
+            TestOutput(@"
+a = Exception.new
+p a.method(:data) rescue p $!
+p a.method(:Data)
+", @"
+#<NameError: undefined method `data' for class `Exception'>
+#<Method: Exception#Data>
+");
+        }
+
+        public void ClrMembers1() {
+            TestOutput(@"
+a = [1,2,3]
+p m = a.clr_member(:count)
+p m[]
+
+p m = a.clr_member(:binary_search)
+p m.clr_members.size
+p m.overloads(Object).clr_members
+", @"
+#<Method: Array#count>
+3
+#<Method: Array#binary_search>
+3
+[Int32 BinarySearch(System.Object)]
+");
+        }
+
         public class ProtectedA {
             protected string Foo(int a) { return "Foo(I): " + a; }
             public string Bar(int a) { return "Bar(I): " + a; }
@@ -350,7 +382,7 @@ puts Obj.bar(1, 2)
 puts Obj.middle(1)
 puts Obj.skip
 puts Obj.skip(1)
-Obj.get_hash_code
+Obj.GetHashCode
 "), @"
 NewFoo: 1
 OverriddenFoo: 1, 2
@@ -532,6 +564,75 @@ f4
 f1
 f1
 ");
+        }
+
+        public class OverloadInheritance6 {
+            public class A {
+                public int foo(int a) { return 1; }
+                public int Foo(int a) { return 2; }
+            }
+
+            public class B : A {
+                public int Foo(short a) { return 3; }
+            }
+
+            public class C : B {
+                public int foo(bool a) { return 4; }
+            }
+
+            public class D : C {
+                public int Foo(double a) { return 5; }
+            }
+            
+            public static void Load(RubyContext/*!*/ context) {
+                context.ObjectClass.SetConstant("A", context.GetClass(typeof(A)));
+                context.ObjectClass.SetConstant("B", context.GetClass(typeof(B)));
+                context.ObjectClass.SetConstant("C", context.GetClass(typeof(C)));
+                context.ObjectClass.SetConstant("D", context.GetClass(typeof(D)));
+            }
+        }
+
+        /// <summary>
+        /// Method group should include methods of both casings.
+        /// It might depend on the order of method calls what overloads are available otherwise.
+        /// D.new.foo finds Foo and 
+        ///   - includes [foo(double), foo(int)] into the group if C.new.foo was invoked previously
+        ///   - includes [Foo(bool)] into the group otherwise.
+        /// </summary>
+        public void ClrOverloadInheritance6() {
+            OverloadInheritance6.Load(Context);
+            
+            TestOutput(@"
+p C.new.method(:foo).clr_members.size
+p D.new.method(:foo).clr_members.size
+p A.new.method(:foo).clr_members.size
+p B.new.method(:foo).clr_members.size
+", @"
+4
+5
+2
+3
+");
+
+            TestOutput(@"
+p C.new.method(:Foo).clr_members.size
+p D.new.method(:Foo).clr_members.size
+p A.new.method(:Foo).clr_members.size
+p B.new.method(:Foo).clr_members.size
+", @"
+2
+3
+1
+2
+");
+
+            // prefer overload whose name matches the call site exactly:
+            TestOutput(@"
+p A.new.foo(1)
+", @"
+1
+");
+
         }
 
         // TODO: CLR overloads
@@ -1114,6 +1215,18 @@ puts b.length
 ");
         }
 
+        public void ClrNew2() {
+            TestOutput(@"
+puts c = Thread.clr_ctor
+puts c.overloads(System::Threading::ThreadStart).call(lambda { puts 'hello' }).status
+puts Thread.clr_new(System::Threading::ThreadStart.new(lambda { puts 'hello' })).status
+", @"
+#<Method: Class(Thread)#.ctor>
+unstarted
+unstarted
+");
+        }
+
         /// <summary>
         /// Alias.
         /// </summary>
@@ -1333,22 +1446,28 @@ false
 
         public class ClassWithVirtuals {
             public virtual string M1() {
-                return "CM1";
+                return "CM1 ";
             }
+
             public virtual string M2() {
-                return "CM2";
+                return "CM2 ";
             }
+
             public virtual string P1 {
-                get { return "CP1"; }
+                get { return "CP1 "; }
             }
-            private string _p2 = "CP2";
+
+            private string _p2 = "CP2 ";
+
             public virtual string P2 {
                 get { return _p2; }
                 set { _p2 = value; }
             }
+
             public virtual string P3 {
-                get { return "CP3"; }
+                get { return "CP3 "; }
             }
+
             public string Summary {
                 get { return M1() + M2() + P1 + P2 + P3; }
             }
@@ -1356,31 +1475,52 @@ false
 
         public void ClrOverride1() {
             Context.ObjectClass.SetConstant("C", Context.GetClass(typeof(ClassWithVirtuals)));
-            AssertOutput(delegate() {
-                CompilerTest(@"
+            TestOutput(@"
 class D < C
-  def m1
-    'RM1'
+  def m1                  # mangled name works
+    'RM1 '
   end
+
   def p2= value
   end
-  def p3
-    'RP3'
+
+  def P3                  # unmangled name works as well
+    'RP3 '
   end
 end
 
-$c = C.new
-$c.p2 = 'RP2'
-puts $c.summary
+c = C.new
+c.p2 = 'RP2 '
+puts c.summary
 
-$d = D.new
-$d.p2 = 'RP2'
-puts $d.summary
+d = D.new
+d.p2 = 'RP2 '
+puts d.summary
+", @"
+CM1 CM2 CP1 RP2 CP3 
+RM1 CM2 CP1 CP2 RP3 
 ");
-            }, @"
-CM1CM2CP1RP2CP3
-RM1CM2CP1CP2RP3
+        }
+
+        /// <summary>
+        /// Virtual methods of built-in types cannot be overridden.
+        /// </summary>
+        public void ClrOverride2() {
+            var e = Engine.Execute<Exception>(@"
+class E < Exception
+  def data; 123; end
+  new
+end
 ");
+            Assert(e.Data is IDictionary);
+
+            var obj = Engine.Execute(@"
+class C < Object
+  def equals(other); raise; end
+  new
+end
+");
+            Assert(obj.Equals(obj));
         }
 
         public class ClassWithNonEmptyConstructor {

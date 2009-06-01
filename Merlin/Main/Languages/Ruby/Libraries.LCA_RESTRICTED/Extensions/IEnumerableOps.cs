@@ -22,7 +22,8 @@ namespace IronRuby.Builtins {
 
     // For every .NET type that implements IEnumerable, extend it to include the Ruby Enumerable
     // module, and inject an "each" method.
-    [RubyModule(Extends = typeof(IEnumerable)), Includes(typeof(Enumerable))]
+    [RubyModule(Extends = typeof(IEnumerable), Restrictions = ModuleRestrictions.None)]
+    [Includes(typeof(Enumerable))]
     public static class IEnumerableOps {
 
         [RubyMethod("each", RubyMethodAttributes.PublicInstance)]
@@ -34,6 +35,11 @@ namespace IronRuby.Builtins {
                 }
             }
             return self;
+        }
+
+        [RubyMethod("GetEnumerator")]
+        public static IEnumerator/*!*/ GetEnumerator(IEnumerable/*!*/ self) {
+            return self.GetEnumerator();
         }
     }
 }

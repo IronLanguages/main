@@ -507,10 +507,6 @@ namespace IronPython.Runtime.Binding {
             }
         }
 
-        public Func<CallSite, object, CodeContext, object> OptimizeDelegate(CallSite<Func<CallSite, object, CodeContext, object>> site, object self, CodeContext context) {
-            return base.BindDelegate<Func<CallSite, object, CodeContext, object>>(site, new object[] { self, context });
-        }
-
         private DynamicMetaObject GetForeignObject(DynamicMetaObject self) {
             return new DynamicMetaObject(
                 Expression.Dynamic(

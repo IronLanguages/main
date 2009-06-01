@@ -239,7 +239,7 @@
     <Compile Include="Runtime\NewStringFormatter.cs" />
     <Compile Include="Runtime\Operations\ByteOps.cs" />
     <Compile Include="Runtime\Operations\IListOfByteOps.cs" />
-    <Compile Include="Runtime\ProhibitGenericListConversion.cs" />
+    <Compile Include="Runtime\BytesConversionAttribute.cs" />
     <Compile Include="Runtime\Python3Warning.cs" />
     <Compile Include="Runtime\PythonFunction.Generated.cs" />
     <Compile Include="Runtime\PythonOptions.cs" />

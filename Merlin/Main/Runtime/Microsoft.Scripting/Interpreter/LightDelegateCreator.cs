@@ -63,6 +63,14 @@ namespace Microsoft.Scripting.Interpreter {
             get { return _compiled != null; }
         }
 
+        /// <summary>
+        /// true if the compiled delegate has the same type as the lambda;
+        /// false if the type was changed for interpretation.
+        /// </summary>
+        internal bool SameDelegateType {
+            get { return _compiledDelegateType == _lambda.Type; }
+        }
+
         internal Delegate CreateDelegate() {
             return CreateDelegate(null);
         }
@@ -77,7 +85,7 @@ namespace Microsoft.Scripting.Interpreter {
                 // Ideally, we would just rebind the compiled delegate using
                 // Delgate.CreateDelegate. Unfortunately, it doesn't work on
                 // dynamic methods.
-                if (_compiledDelegateType == _lambda.Type) {
+                if (SameDelegateType) {
                     return CreateCompiledDelegate(closure);
                 }
             }

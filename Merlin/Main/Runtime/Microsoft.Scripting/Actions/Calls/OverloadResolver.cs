@@ -595,7 +595,7 @@ namespace Microsoft.Scripting.Actions.Calls {
             return Candidate.Equivalent;
         }
 
-        internal static Candidate CompareEquivalentParameters(MethodCandidate one, MethodCandidate two) {
+        internal Candidate CompareEquivalentParameters(MethodCandidate one, MethodCandidate two) {
             // Prefer normal methods over explicit interface implementations
             if (two.Method.IsPrivate && !one.Method.IsPrivate) return Candidate.One;
             if (one.Method.IsPrivate && !two.Method.IsPrivate) return Candidate.Two;
@@ -612,13 +612,13 @@ namespace Microsoft.Scripting.Actions.Calls {
                 return Candidate.One;
             }
 
-            //prefer methods without out params over those with them
+            // prefer methods without out params over those with them
             switch (Compare(one.ReturnBuilder.CountOutParams, two.ReturnBuilder.CountOutParams)) {
                 case 1: return Candidate.Two;
                 case -1: return Candidate.One;
             }
 
-            //prefer methods using earlier conversions rules to later ones            
+            // prefer methods using earlier conversions rules to later ones            
             for (int i = Int32.MaxValue; i >= 0; ) {
                 int maxPriorityThis = FindMaxPriority(one.ArgBuilders, i);
                 int maxPriorityOther = FindMaxPriority(two.ArgBuilders, i);
@@ -627,6 +627,16 @@ namespace Microsoft.Scripting.Actions.Calls {
                 if (maxPriorityOther < maxPriorityThis) return Candidate.Two;
 
                 i = maxPriorityThis - 1;
+            }
+
+            // prefer methods whose name exactly matches the call site name:
+            if (one.Method.Name != two.Method.Name) {
+                if (one.Method.Name == _methodName) {
+                    return Candidate.One;
+                }
+                if (two.Method.Name == _methodName) {
+                    return Candidate.Two;
+                }
             }
 
             return Candidate.Equivalent;

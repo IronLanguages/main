@@ -20,7 +20,7 @@ using System.Reflection;
 using Microsoft.Scripting.Utils;
 
 namespace Microsoft.Scripting.Interpreter {
-    internal partial class LightLambda {
+    public partial class LightLambda {
         #region Generated LightLambda Run Methods
 
         // *** BEGIN GENERATED CODE ***

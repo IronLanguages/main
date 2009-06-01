@@ -63,10 +63,9 @@ module PowerShell
   def invoke_command(cmd_name, input = nil, *args)
     arg_hash, args = pop_arg_hash(args)
     cmd = Command.new(cmd_name)
-
     args.each {|arg| cmd.parameters.add(CommandParameter.new(nil, fix_arg(arg)))}
     arg_hash.each {|key, value| cmd.parameters.add(CommandParameter.new(key.to_s, fix_arg(value)))}
-
+    
     #Create a pipeline to run the command within and invoke
     #the command.
     pipeline = $runspace.create_pipeline
@@ -107,7 +106,7 @@ end
 =end
 class ShellCommand
   include PowerShell
-
+  attr_accessor :input
   def initialize(name, input=nil)
     @name = name
     @input = input
@@ -129,7 +128,12 @@ class ShellOutput
   end
   
   def self.[]=(name, value)
-    define_method(name) {|*args| value.call(*args)}
+    define_method(name) do |*args| 
+      input, value.input = value.input, self
+      result = value.call(*args)
+      value.input = input
+      result
+    end
   end
 
   def each
@@ -142,7 +146,7 @@ class ShellOutput
 
   def inspect
     return "" if @data.count.zero?
-    out_string(:InputObject => self, :Width => (System::Console.BufferWidth-1))[0].to_s.strip
+    out_string(:Width => (System::Console.BufferWidth-1))[0].to_s.strip
   end
   alias_method :to_s, :inspect
 

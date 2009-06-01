@@ -325,13 +325,11 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
             return false;
         }
 
-        [SpecialName]
-        public object Call(CodeContext context, params object[] args) {
+        public object __call__(CodeContext context, params object[] args) {
             return PythonTypeOps.CallParams(context, this, args);
         }
 
-        [SpecialName]
-        public object Call(CodeContext context, [ParamDictionary]IAttributesCollection kwArgs, params object[] args) {
+        public object __call__(CodeContext context, [ParamDictionary]IAttributesCollection kwArgs, params object[] args) {
             return PythonTypeOps.CallWorker(context, this, kwArgs, args);
         }
 
@@ -2408,12 +2406,12 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
         private object GetAttr(CodeContext context, object res) {
             if (_isNoThrow) {
                 try {
-                    return PythonOps.CallWithContext(context, res, SymbolTable.IdToString(_name));
+                    return PythonContext.GetContext(context).Call(context, res, SymbolTable.IdToString(_name));
                 } catch (MissingMemberException) {
                     return OperationFailed.Value;
                 }
             } else {
-                return PythonOps.CallWithContext(context, res, SymbolTable.IdToString(_name));
+                return PythonContext.GetContext(context).Call(context, res, SymbolTable.IdToString(_name));
             }
         }
 

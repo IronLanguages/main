@@ -61,6 +61,7 @@ namespace IronPython.Modules {
         public MemoryHolder(IntPtr data, int size) {
             GC.SuppressFinalize(this);
             _data = data;
+            _size = size;
         }
 
         /// <summary>
@@ -72,6 +73,7 @@ namespace IronPython.Modules {
             _data = data;
             _parent = parent;
             _objects = parent._objects;
+            _size = size;
         }
 
         /// <summary>

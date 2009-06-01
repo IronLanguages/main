@@ -1061,7 +1061,7 @@ namespace IronPython.Runtime.Operations {
         //translate on a unicode string differs from that on an ascii
         //for unicode, the table argument is actually a dictionary with
         //character ordinals as keys and the replacement strings as values
-        public static string translate(this string self, PythonDictionary table) {
+        public static string translate(this string self, [NotNull]PythonDictionary table) {
             if (table == null || self.Length == 0) {
                 return self;
             }
@@ -1082,9 +1082,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         public static string translate(this string self, string table, string deletechars) {
-            if (table == null) {
-                throw PythonOps.TypeError("expected string, got NoneType");
-            } else if (table.Length != 256) {
+            if (table != null && table.Length != 256) {
                 throw PythonOps.ValueError("translation table must be 256 characters long");
             } else if (self.Length == 0) {
                 return self;
@@ -1095,9 +1093,13 @@ namespace IronPython.Runtime.Operations {
             List<char> res = new List<char>();
             for (int i = 0; i < self.Length; i++) {
                 if (deletechars == null || !deletechars.Contains(Char.ToString(self[i]))) {
-                    int idx = (int)self[i];
-                    if (idx >= 0 && idx < 256) {
-                        res.Add(table[idx]);
+                    if (table != null) {
+                        int idx = (int)self[i];
+                        if (idx >= 0 && idx < 256) {
+                            res.Add(table[idx]);
+                        }
+                    } else {
+                        res.Add(self[i]);
                     }
                 }
             }
@@ -1154,17 +1156,17 @@ namespace IronPython.Runtime.Operations {
 
         #region operators
         [SpecialName]
-        public static string Add(string self, string other) {
+        public static string Add([NotNull]string self, [NotNull]string other) {
             return self + other;
         }
 
         [SpecialName]
-        public static string Add(string self, char other) {
+        public static string Add([NotNull]string self, char other) {
             return self + other;
         }
 
         [SpecialName]
-        public static string Add(char self, string other) {
+        public static string Add(char self, [NotNull]string other) {
             return self + other;
         }
 

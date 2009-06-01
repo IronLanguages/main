@@ -65,6 +65,10 @@ namespace IronRuby.Runtime {
             return CreateTypeError(String.Format("allocator undefined for {0}", rubyClass.Name));
         }
 
+        public static Exception/*!*/ CreateNotClrTypeError(RubyClass/*!*/ rubyClass) {
+            return CreateTypeError(String.Format("`{0}' doesn't represent a CLR type", rubyClass.Name));
+        }
+
         public static Exception/*!*/ CreateMissingDefaultConstructorError(RubyClass/*!*/ rubyClass, string/*!*/ initializerOwnerName) {
             Debug.Assert(rubyClass.IsRubyClass);
 

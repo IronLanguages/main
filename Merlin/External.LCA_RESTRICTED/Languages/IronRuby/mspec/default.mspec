@@ -23,7 +23,7 @@ class MSpecScript
     "core\\binding",
     "core\\builtin_constants"
   ]
-  set :core2, filtered("core", "[j-z]")
+  set :core2, filtered("core", "[j-z]").reject{|el| el =~ /^thread/}
   set :lang, [
     "language"
     ]
@@ -34,7 +34,11 @@ class MSpecScript
   set :lib2, filtered("library", "[p-z]")
   #.NET interop
   set :netinterop, [
-    "..\\..\\..\\..\\..\\Main\\Languages\\Ruby\\Tests\\Interop"
+    "..\\..\\..\\..\\..\\Main\\Languages\\Ruby\\Tests\\Interop\\net"
+    ]
+
+  set :cominterop, [
+    "..\\..\\..\\..\\..\\Main\\Languages\\Ruby\\Tests\\Interop\\com"
     ]
   
   set :thread, [
@@ -46,7 +50,8 @@ class MSpecScript
   set :core1, get(:core1sub1) + get(:core1sub2)
   set :core, get(:core1) + get(:core2)
   set :lib, get(:lib1) + get(:lib2)
-  set :ci_files, get(:core) + get(:lang) + get(:cli) + get(:lib) + get(:netinterop)
+  set :interop, get(:netinterop) + get(:cominterop)
+  set :ci_files, get(:core) + get(:lang) + get(:cli) + get(:lib) + get(:netinterop) + get(:cominterop)
 
 
   # The set of substitutions to transform a spec filename

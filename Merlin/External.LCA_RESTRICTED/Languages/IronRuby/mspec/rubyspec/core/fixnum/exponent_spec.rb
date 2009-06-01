@@ -8,6 +8,7 @@ describe "Fixnum#**" do
 
     (9 ** 0.5).to_s.should == '3.0'
     (5 ** -1).to_f.to_s.should == '0.2'
+    (1 ** -1).to_f.should == 1
 
     (2 ** 40).should == 1099511627776
   end

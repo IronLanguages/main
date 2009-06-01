@@ -5,6 +5,8 @@ describe "Fixnum#>>" do
     (7 >> 1).should == 3
     (4095 >> 3).should == 511
     (9245278 >> 1).should == 4622639
+    (1 >> 33).should == 0
+    ((-1) >> 33).should == -1
   end
 
   it "performs a left-shift if given a negative value" do

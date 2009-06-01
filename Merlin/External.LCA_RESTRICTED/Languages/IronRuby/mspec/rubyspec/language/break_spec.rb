@@ -99,6 +99,55 @@ describe "Executing break from within a block" do
     lambda { eval "BreakTest.meth_with_block { break }" }.should_not raise_error LocalJumpError
 
   end
+
+  it "returns from the original invoking method even in case of chained calls via eval" do
+    class BreakTest
+      # case #1: yield
+      def self.meth_with_yield(&b)
+        eval "yield", binding
+        fail("break returned from yield to wrong place")
+      end
+      def self.invoking_method(&b)
+        meth_with_yield(&b)
+        fail("break returned from 'meth_with_yield' method to wrong place")
+      end
+
+      # case #2: block.call
+      def self.meth_with_block_call(&b)
+        eval "b.call"
+        fail("break returned from b.call to wrong place")
+      end
+      def self.invoking_method2(&b)
+        meth_with_block_call(&b)
+        fail("break returned from 'meth_with_block_call' method to wrong place")
+      end
+    end
+
+    # this calls a method that calls another method that yields to the block
+    BreakTest.invoking_method do
+      break
+      fail("break didn't, well, break")
+    end
+
+    # this calls a method that calls another method that calls the block
+    BreakTest.invoking_method2 do
+      break
+      fail("break didn't, well, break")
+    end
+
+    res = BreakTest.invoking_method do
+      break :return_value
+      fail("break didn't, well, break")
+    end
+    res.should == :return_value
+
+    res = BreakTest.invoking_method2 do
+      break :return_value
+      fail("break didn't, well, break")
+    end
+    res.should == :return_value
+
+  end
 end
 
 describe "Breaking out of a loop with a value" do

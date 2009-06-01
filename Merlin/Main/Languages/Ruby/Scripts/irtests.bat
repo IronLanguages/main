@@ -67,9 +67,9 @@ if defined PARALLEL_IRTESTS (
 : RubySpecs
 
 if defined PARALLEL_IRTESTS (
-    start "RubySpec A tests" mspec ci -fd -V :lang :core :cli :netinterop
+    start "RubySpec A tests" mspec ci -fd -V :lang :cli :netinterop :cominterop :thread
 ) else (
-    call mspec ci -fd :lang :core :cli :netinterop
+    call mspec ci -fd :lang :cli :netinterop :cominterop :thread
     if not %ERRORLEVEL%==0 (
         set IRTESTS_ERRORS=%IRTESTS_ERRORS% RubySpec A tests failed!!! 
         echo %IRTESTS_ERRORS%
@@ -77,11 +77,21 @@ if defined PARALLEL_IRTESTS (
 )
 
 if defined PARALLEL_IRTESTS (
-    start "RubySpec B tests" mspec ci -fd -V :lib
+    start "RubySpec B tests" mspec ci -fd -V :core1 :lib1 
 ) else (
-    call mspec ci -fd :lib
+    call mspec ci -fd :core1 :lib1
     if not %ERRORLEVEL%==0 (
         set IRTESTS_ERRORS=%IRTESTS_ERRORS% RubySpec B tests failed!!! 
+        echo %IRTESTS_ERRORS%
+    )
+)
+
+if defined PARALLEL_IRTESTS (
+    start "RubySpec C tests" mspec ci -fd -V :core2 :lib2
+) else (
+    call mspec ci -fd :core2 :lib2
+    if not %ERRORLEVEL%==0 (
+        set IRTESTS_ERRORS=%IRTESTS_ERRORS% RubySpec C tests failed!!! 
         echo %IRTESTS_ERRORS%
     )
 )

@@ -20,7 +20,7 @@ using System.Collections.Generic;
 
 namespace IronRuby.Builtins {
     public partial class Hash {
-        public sealed class Subclass : Hash, IRubyObject {
+        public sealed partial class Subclass : Hash, IRubyObject {
             private readonly RubyClass/*!*/ _class;
             private RubyInstanceData _instanceData;
 
@@ -34,23 +34,6 @@ namespace IronRuby.Builtins {
             protected override Hash/*!*/ CreateInstance() {
                 return new Subclass(_class);
             }
-
-            #region IRubyObject Members
-
-            [Emitted]
-            public RubyClass/*!*/ Class {
-                get { return _class; }
-            }
-
-            public RubyInstanceData/*!*/ GetInstanceData() {
-                return RubyOps.GetInstanceData(ref _instanceData);
-            }
-
-            public RubyInstanceData TryGetInstanceData() {
-                return _instanceData;
-            }
-
-            #endregion
         }
     }
 }

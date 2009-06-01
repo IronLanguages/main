@@ -14,23 +14,19 @@
  * ***************************************************************************/
 
 using System;
-using System.Linq.Expressions;
-using System.Dynamic;
-
-using Microsoft.Scripting.Utils;
-using Microsoft.Scripting.Runtime;
-
-using IronRuby.Builtins;
-using IronRuby.Compiler;
-
-using Ast = System.Linq.Expressions.Expression;
-using AstUtils = Microsoft.Scripting.Ast.Utils;
-using IronRuby.Compiler.Generation;
 using System.Collections.Generic;
+using System.Dynamic;
+using System.Linq.Expressions;
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using System.Diagnostics;
+using IronRuby.Builtins;
+using IronRuby.Compiler;
+using IronRuby.Compiler.Generation;
 using Microsoft.Scripting;
+using Microsoft.Scripting.Utils;
+using Ast = System.Linq.Expressions.Expression;
+using AstUtils = Microsoft.Scripting.Ast.Utils;
+using System.Diagnostics;
 
 namespace IronRuby.Runtime.Calls {
 
@@ -195,6 +191,11 @@ namespace IronRuby.Runtime.Calls {
                     return false;
                 }
 
+                if (args.Signature.IsVirtualCall && !method.Info.IsRubyMember) {
+                    metaBuilder.Result = Ast.Field(null, Fields.RubyOps_ForwardToBase);
+                    return true;
+                }
+
                 method.Info.BuildCall(metaBuilder, args, methodName);
                 return true;
             } else {
@@ -243,7 +244,7 @@ namespace IronRuby.Runtime.Calls {
             using (targetClass.Context.ClassHierarchyLocker()) {
                 metaBuilder.AddTargetTypeTest(args.Target, targetClass, args.TargetExpression, args.MetaContext);
 
-                method = targetClass.ResolveMethodForSiteNoLock(methodName, GetVisibilityContext(args.Signature, args.Scope));
+                method = targetClass.ResolveMethodForSiteNoLock(methodName, GetVisibilityContext(args.Signature, args.Scope), args.Signature.IsVirtualCall);
                 if (!method.Found) {
                     methodMissing = targetClass.ResolveMethodMissingForSite(methodName, method.IncompatibleVisibility);
                 } else {

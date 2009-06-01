@@ -14,6 +14,12 @@ describe :env_each, :shared => true do
     end
   end
 
+  it "returns the value of break and stops execution of the loop if break is in the block" do
+    e = []
+    ENV.send(@method) {|k,v| break 1; e << [k,v]}.should == 1
+    e.empty?.should == true
+  end
+
   ruby_version_is "" ... "1.8.7" do
     it "raises LocalJumpError if no block given" do
       lambda { ENV.send(@method) }.should raise_error(LocalJumpError)

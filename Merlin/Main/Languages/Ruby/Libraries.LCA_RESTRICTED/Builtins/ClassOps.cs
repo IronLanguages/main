@@ -18,6 +18,7 @@ using System.Runtime.InteropServices;
 using Microsoft.Scripting.Runtime;
 using IronRuby.Runtime;
 using IronRuby.Runtime.Calls;
+using System.Reflection;
 
 namespace IronRuby.Builtins {
 
@@ -58,18 +59,39 @@ namespace IronRuby.Builtins {
         #region Public Instance Methods
 
         [RubyMethod("allocate")]
-        public static RuleGenerator/*!*/ GetInstanceAllocator() {
+        public static RuleGenerator/*!*/ Allocate() {
             return new RuleGenerator(RuleGenerators.InstanceAllocator);
         }
 
         [RubyMethod("new")]
-        public static RuleGenerator/*!*/ GetInstanceConstructor() {
+        public static RuleGenerator/*!*/ New() {
             return new RuleGenerator(RuleGenerators.InstanceConstructor);
         }
 
         [RubyMethod("superclass")]
         public static RubyClass GetSuperclass(RubyClass/*!*/ self) {
             return self.SuperClass;
+        }
+
+        [RubyMethod("clr_new")]
+        public static RuleGenerator/*!*/ ClrNew() {
+            return (metaBuilder, args, name) => ((RubyClass)args.Target).BuildClrObjectConstruction(metaBuilder, args, name);
+        }
+
+        [RubyMethod("clr_ctor")]
+        [RubyMethod("clr_constructor")]
+        public static RubyMethod/*!*/ GetClrConstructor(RubyClass/*!*/ self) {
+            RubyMemberInfo info;
+
+            if (self.TypeTracker == null) {
+                throw RubyExceptions.CreateNotClrTypeError(self);
+            }
+
+            if (!self.TryGetClrConstructor(out info)) {
+                throw RubyOps.MakeConstructorUndefinedError(self);
+            }
+
+            return new RubyMethod(self, info, ".ctor");
         }
 
         #endregion

@@ -21,7 +21,7 @@ using System.Diagnostics;
 using System;
 
 namespace IronRuby.Builtins {
-    [RubyModule("IronRuby", Extends = typeof(Ruby))]
+    [RubyModule("IronRuby", Extends = typeof(Ruby), Restrictions = ModuleRestrictions.None)]
     public static class IronRubyOps {
 
         [RubyMethod("dlr_config", RubyMethodAttributes.PublicSingleton)]
@@ -29,7 +29,7 @@ namespace IronRuby.Builtins {
             return context.DomainManager.Configuration;
         }
 
-        [RubyModule("Clr")]
+        [RubyModule("Clr", Restrictions = ModuleRestrictions.None)]
         public static class ClrOps {
             [RubyMethod("profile", RubyMethodAttributes.PublicSingleton)]
             public static Hash/*!*/ GetProfile(RubyContext/*!*/ context, object self) {

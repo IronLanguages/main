@@ -210,7 +210,7 @@ namespace IronPython.Runtime {
             }
         }
 
-        public ByteArray/*!*/ center(int width, [ProhibitGenericListConversion]IList<byte> fillchar) {
+        public ByteArray/*!*/ center(int width, [BytesConversion]IList<byte> fillchar) {
             lock (this) {
                 List<byte> res = _bytes.TryCenter(width, fillchar.ToByte("center", 2));
 
@@ -222,15 +222,15 @@ namespace IronPython.Runtime {
             }
         }
 
-        public int count([ProhibitGenericListConversion]IList<byte>/*!*/ sub) {
+        public int count([BytesConversion]IList<byte>/*!*/ sub) {
             return count(sub, 0, _bytes.Count);
         }
 
-        public int count([ProhibitGenericListConversion]IList<byte>/*!*/ sub, int start) {
+        public int count([BytesConversion]IList<byte>/*!*/ sub, int start) {
             return count(sub, start, _bytes.Count);
         }
 
-        public int count([ProhibitGenericListConversion]IList<byte>/*!*/ ssub, int start, int end) {
+        public int count([BytesConversion]IList<byte>/*!*/ ssub, int start, int end) {
             lock (this) {
                 IList<byte> bytes = _bytes;
 
@@ -242,19 +242,19 @@ namespace IronPython.Runtime {
             return StringOps.decode(context, _bytes.MakeString(), encoding, errors);
         }
 
-        public bool endswith([ProhibitGenericListConversion]IList<byte>/*!*/ suffix) {
+        public bool endswith([BytesConversion]IList<byte>/*!*/ suffix) {
             lock (this) {
                 return _bytes.EndsWith(suffix);
             }
         }
 
-        public bool endswith([ProhibitGenericListConversion]IList<byte>/*!*/ suffix, int start) {
+        public bool endswith([BytesConversion]IList<byte>/*!*/ suffix, int start) {
             lock (this) {
                 return _bytes.EndsWith(suffix, start);
             }
         }
 
-        public bool endswith([ProhibitGenericListConversion]IList<byte>/*!*/ suffix, int start, int end) {
+        public bool endswith([BytesConversion]IList<byte>/*!*/ suffix, int start, int end) {
             lock (this) {
                 return _bytes.EndsWith(suffix, start, end);
             }
@@ -288,19 +288,19 @@ namespace IronPython.Runtime {
             }
         }
 
-        public int find([ProhibitGenericListConversion]IList<byte>/*!*/ sub) {
+        public int find([BytesConversion]IList<byte>/*!*/ sub) {
             lock (this) {
                 return _bytes.Find(sub);
             }
         }
 
-        public int find([ProhibitGenericListConversion]IList<byte>/*!*/ sub, int start) {
+        public int find([BytesConversion]IList<byte>/*!*/ sub, int start) {
             lock (this) {
                 return _bytes.Find(sub, start);
             }
         }
 
-        public int find([ProhibitGenericListConversion]IList<byte>/*!*/ sub, int start, int end) {
+        public int find([BytesConversion]IList<byte>/*!*/ sub, int start, int end) {
             lock (this) {
                 return _bytes.Find(sub, start, end);
             }
@@ -310,15 +310,15 @@ namespace IronPython.Runtime {
             return new ByteArray(IListOfByteOps.FromHex(@string));
         }
 
-        public int index([ProhibitGenericListConversion]IList<byte>/*!*/ item) {
+        public int index([BytesConversion]IList<byte>/*!*/ item) {
             return index(item, 0, _bytes.Count);
         }
 
-        public int index([ProhibitGenericListConversion]IList<byte>/*!*/ item, int start) {
+        public int index([BytesConversion]IList<byte>/*!*/ item, int start) {
             return index(item, start, _bytes.Count);
         }
 
-        public int index([ProhibitGenericListConversion]IList<byte>/*!*/ item, int start, int stop) {
+        public int index([BytesConversion]IList<byte>/*!*/ item, int start, int stop) {
             lock (this) {
                 int res = find(item, start, stop);
                 if (res == -1) {
@@ -473,7 +473,7 @@ namespace IronPython.Runtime {
             }
         }
 
-        public ByteArray/*!*/ lstrip([ProhibitGenericListConversion]IList<byte> bytes) {
+        public ByteArray/*!*/ lstrip([BytesConversionNoString]IList<byte> bytes) {
             lock (this) {
                 List<byte> res = _bytes.LeftStrip(bytes);
                 if (res == null) {
@@ -511,7 +511,7 @@ namespace IronPython.Runtime {
             return partition(ByteOps.GetBytes(sep));
         }
 
-        public ByteArray/*!*/ replace([ProhibitGenericListConversion]IList<byte>/*!*/ old, [ProhibitGenericListConversion]IList<byte> new_) {
+        public ByteArray/*!*/ replace([BytesConversion]IList<byte>/*!*/ old, [BytesConversion]IList<byte> new_) {
             if (old == null) {
                 throw PythonOps.TypeError("expected bytes or bytearray, got NoneType");
             }
@@ -519,7 +519,7 @@ namespace IronPython.Runtime {
             return replace(old, new_, _bytes.Count);
         }
 
-        public ByteArray/*!*/ replace([ProhibitGenericListConversion]IList<byte>/*!*/ old, [ProhibitGenericListConversion]IList<byte>/*!*/ new_, int maxsplit) {
+        public ByteArray/*!*/ replace([BytesConversion]IList<byte>/*!*/ old, [BytesConversion]IList<byte>/*!*/ new_, int maxsplit) {
             if (old == null) {
                 throw PythonOps.TypeError("expected bytes or bytearray, got NoneType");
             } else if (maxsplit == 0) {
@@ -530,29 +530,29 @@ namespace IronPython.Runtime {
         }
 
 
-        public int rfind([ProhibitGenericListConversion]IList<byte>/*!*/ sub) {
+        public int rfind([BytesConversion]IList<byte>/*!*/ sub) {
             return rfind(sub, 0, _bytes.Count);
         }
 
-        public int rfind([ProhibitGenericListConversion]IList<byte>/*!*/ sub, int start) {
+        public int rfind([BytesConversion]IList<byte>/*!*/ sub, int start) {
             return rfind(sub, start, _bytes.Count);
         }
 
-        public int rfind([ProhibitGenericListConversion]IList<byte>/*!*/ sub, int start, int end) {
+        public int rfind([BytesConversion]IList<byte>/*!*/ sub, int start, int end) {
             lock (this) {
                 return _bytes.ReverseFind(sub, start, end);
             }
         }
 
-        public int rindex([ProhibitGenericListConversion]IList<byte>/*!*/ sub) {
+        public int rindex([BytesConversion]IList<byte>/*!*/ sub) {
             return rindex(sub, 0, _bytes.Count);
         }
 
-        public int rindex([ProhibitGenericListConversion]IList<byte>/*!*/ sub, int start) {
+        public int rindex([BytesConversion]IList<byte>/*!*/ sub, int start) {
             return rindex(sub, start, _bytes.Count);
         }
 
-        public int rindex([ProhibitGenericListConversion]IList<byte>/*!*/ sub, int start, int end) {
+        public int rindex([BytesConversion]IList<byte>/*!*/ sub, int start, int end) {
             int ret = rfind(sub, start, end);
             
             if (ret == -1) {
@@ -570,7 +570,7 @@ namespace IronPython.Runtime {
             return rjust(width, fillchar.ToByte("rjust", 2));
         }
 
-        public ByteArray/*!*/ rjust(int width, [ProhibitGenericListConversion]IList<byte>/*!*/ fillchar) {
+        public ByteArray/*!*/ rjust(int width, [BytesConversion]IList<byte>/*!*/ fillchar) {
             return rjust(width, fillchar.ToByte("rjust", 2));
         }
 
@@ -625,11 +625,11 @@ namespace IronPython.Runtime {
             }
         }
 
-        public List/*!*/ rsplit([ProhibitGenericListConversion]IList<byte>/*!*/ sep) {
+        public List/*!*/ rsplit([BytesConversionNoString]IList<byte>/*!*/ sep) {
             return rsplit(sep, -1);
         }
 
-        public List/*!*/ rsplit([ProhibitGenericListConversion]IList<byte>/*!*/ sep, int maxsplit) {
+        public List/*!*/ rsplit([BytesConversionNoString]IList<byte>/*!*/ sep, int maxsplit) {
             return _bytes.RightSplit(sep, maxsplit, x => new ByteArray(new List<byte>(x)));
         }
 
@@ -644,7 +644,7 @@ namespace IronPython.Runtime {
             }
         }
 
-        public ByteArray/*!*/  rstrip([ProhibitGenericListConversion]IList<byte> bytes) {
+        public ByteArray/*!*/  rstrip([BytesConversionNoString]IList<byte> bytes) {
             lock (this) {
                 List<byte> res = _bytes.RightStrip(bytes);
                 if (res == null) {
@@ -661,11 +661,11 @@ namespace IronPython.Runtime {
             }
         }
 
-        public List/*!*/ split([ProhibitGenericListConversion]IList<byte> sep) {
+        public List/*!*/ split([BytesConversionNoString]IList<byte> sep) {
             return split(sep, -1);
         }
 
-        public List/*!*/ split([ProhibitGenericListConversion]IList<byte> sep, int maxsplit) {
+        public List/*!*/ split([BytesConversionNoString]IList<byte> sep, int maxsplit) {
             lock (this) {
                 return _bytes.Split(sep, maxsplit, x => new ByteArray(x));
             }
@@ -681,13 +681,13 @@ namespace IronPython.Runtime {
             }
         }
 
-        public bool startswith([ProhibitGenericListConversion]IList<byte>/*!*/ prefix) {
+        public bool startswith([BytesConversion]IList<byte>/*!*/ prefix) {
             lock (this) {
                 return _bytes.StartsWith(prefix);
             }
         }
 
-        public bool startswith([ProhibitGenericListConversion]IList<byte>/*!*/ prefix, int start) {
+        public bool startswith([BytesConversion]IList<byte>/*!*/ prefix, int start) {
             lock (this) {
                 int len = Count;
                 if (start > len) {
@@ -700,7 +700,7 @@ namespace IronPython.Runtime {
             }
         }
 
-        public bool startswith([ProhibitGenericListConversion]IList<byte>/*!*/ prefix, int start, int end) {
+        public bool startswith([BytesConversion]IList<byte>/*!*/ prefix, int start, int end) {
             lock (this) {
                 return _bytes.StartsWith(prefix, start, end);
             }
@@ -735,7 +735,7 @@ namespace IronPython.Runtime {
             }
         }
 
-        public ByteArray/*!*/ strip(IList<byte> chars) {
+        public ByteArray/*!*/ strip([BytesConversionNoString]IList<byte> chars) {
             lock (this) {
                 List<byte> res = _bytes.Strip(chars);
                 if (res == null) {
@@ -764,7 +764,7 @@ namespace IronPython.Runtime {
             }
         }
 
-        public ByteArray/*!*/ translate([ProhibitGenericListConversion]IList<byte>/*!*/ table) {
+        public ByteArray/*!*/ translate([BytesConversion]IList<byte>/*!*/ table) {
             if (table == null) {
                 throw PythonOps.TypeError("expected bytearray or bytes, got NoneType");
             }
@@ -780,7 +780,7 @@ namespace IronPython.Runtime {
             }
         }
 
-        public ByteArray/*!*/ translate([ProhibitGenericListConversion]IList<byte>/*!*/ table, [ProhibitGenericListConversion]IList<byte>/*!*/ deletechars) {
+        public ByteArray/*!*/ translate([BytesConversion]IList<byte>/*!*/ table, [BytesConversion]IList<byte>/*!*/ deletechars) {
             if (table == null) {
                 throw PythonOps.TypeError("expected bytearray or bytes, got NoneType");
             } else if (deletechars == null) {
@@ -817,7 +817,7 @@ namespace IronPython.Runtime {
             return _bytes.Count + 1;
         }
 
-        public bool __contains__([ProhibitGenericListConversion]IList<byte> bytes) {
+        public bool __contains__([BytesConversionNoString]IList<byte> bytes) {
             return this.IndexOf(bytes, 0) != -1;
         }
 

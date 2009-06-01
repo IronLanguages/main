@@ -201,6 +201,7 @@ namespace IronPython.Runtime {
         }
 
         private static void DoSliceAssign(SliceAssign assign, int start, int stop, int step, object value) {
+            stop = step > 0 ? Math.Max(stop, start) : Math.Min(stop, start);
             int n = Math.Max(0, (step > 0 ? (stop - start + step - 1) : (stop - start + step + 1)) / step);
             // fast paths, if we know the size then we can
             // do this quickly.
