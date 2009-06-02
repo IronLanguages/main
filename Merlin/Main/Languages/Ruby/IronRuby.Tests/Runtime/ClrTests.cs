@@ -26,15 +26,23 @@ using System.Runtime.InteropServices;
 
 namespace InteropTests.Generics1 {
     public class C {
-        public int Arity { get { return 0; } }
+        public virtual int Arity { get { return 0; } }
     }
 
     public class C<T> {
-        public int Arity { get { return 1; } }
+        public virtual int Arity { get { return 1; } }
     }
 
     public class C<T,S> {
-        public int Arity { get { return 2; } }
+        public virtual int Arity { get { return 2; } }
+    }
+
+    public class D : C {
+        public override int Arity { get { return 10; } }
+    }
+
+    public class D<T> : C<T> {
+        public override int Arity { get { return 11; } }
     }
 }
 
@@ -196,6 +204,15 @@ p m.overloads(Object).clr_members
 #<Method: Array#binary_search>
 3
 [Int32 BinarySearch(System.Object)]
+");
+
+            TestOutput(@"
+class C < Array
+end
+
+p C.new.clr_member(:get_enumerator).call.move_next
+", @"
+false
 ");
         }
 
@@ -1088,7 +1105,7 @@ puts $type.static_method rescue puts $!.class
 {1}
 2
 NoMethodError
-", type, RubyUtils.GetQualifiedName(typeof(ClassWithMethods1), true)), OutputFlags.Match);
+", type, Context.GetTypeName(typeof(ClassWithMethods1), false)), OutputFlags.Match);
         }
 
         public void ClrNamespaces1() {
@@ -1114,19 +1131,42 @@ System::Collections
         public void ClrGenerics1() {
             Runtime.LoadAssembly(typeof(Tests).Assembly);
 
-            AssertOutput(delegate() {
-                CompilerTest(@"
+            TestOutput(@"
 include InteropTests::Generics1
 p C
+p D
+p C.new
+p D.new                               # test if we don't use cached dispatch to C.new again
+p C.clr_new
+p D.clr_new
+p C.superclass
+p D.superclass
+", @"
+#<TypeGroup: InteropTests::Generics1::C, InteropTests::Generics1::C[T], InteropTests::Generics1::C[T, S]>
+#<TypeGroup: InteropTests::Generics1::D, InteropTests::Generics1::D[T]>
+InteropTests.Generics1.C
+InteropTests.Generics1.D
+InteropTests.Generics1.C
+InteropTests.Generics1.D
+Object
+InteropTests::Generics1::C
+");
+
+            TestOutput(@"
+include InteropTests::Generics1
 p C.new.arity
 p C[String].new.arity
+p D[String].new.arity
 p C[Fixnum, Fixnum].new.arity
-");
-            }, @"
-#<TypeGroup: InteropTests::Generics1::C, InteropTests::Generics1::C[T], InteropTests::Generics1::C[T, S]>
+p D[String]
+p C[Fixnum, Fixnum]
+", @"
 0
 1
+11
 2
+InteropTests::Generics1::D[String]
+InteropTests::Generics1::C[Fixnum, Fixnum]
 ");
         }
 
@@ -1334,12 +1374,16 @@ $d = D.new { |foo, bar| $foo = foo; $bar = bar; 777 }
         
         public void ClrDelegates2() {
             Runtime.LoadAssembly(typeof(Func<>).Assembly);
+            Runtime.LoadAssembly(typeof(Action).Assembly);
 
-            var f = Engine.Execute<Func<int, int>>(@"
-System::Func.of(Fixnum, Fixnum).new { |a| a + 1 }
-");
-
+            var f = Engine.Execute<Func<int, int>>(@"System::Func.of(Fixnum, Fixnum).new { |a| a + 1 }");
             Assert(f(1) == 2);
+
+            Engine.Execute<Action>(@"System::Action.new { $x = 1 }")();
+            Assert((int)Context.GetGlobalVariable("x") == 1);
+
+            Engine.Execute<Action<int>>(@"System::Action[Fixnum].new { |x| $x = x + 1 }")(10);
+            Assert((int)Context.GetGlobalVariable("x") == 11);
         }
 
         public void ClrEvents1() {
@@ -1521,6 +1565,32 @@ class C < Object
 end
 ");
             Assert(obj.Equals(obj));
+        }
+
+        public class ClassCallingVirtualInCtor1 {
+            public ClassCallingVirtualInCtor1() {
+                VirtualMethod();
+            }
+
+            public virtual int VirtualMethod() {
+                return 1;
+            }
+        }
+
+        /// <summary>
+        /// We need to fully initialize the derived type before calling base ctor.
+        /// The ebase ctor can call virtual methods that require _class to be set.
+        /// </summary>
+        public void ClrOverride3() {
+            Context.ObjectClass.SetConstant("C", Context.GetClass(typeof(ClassCallingVirtualInCtor1)));
+            TestOutput(@"
+class D < C
+end
+
+p D.new.virtual_method
+", @"
+1
+");
         }
 
         public class ClassWithNonEmptyConstructor {

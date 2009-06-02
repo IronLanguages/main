@@ -667,7 +667,7 @@ namespace IronRuby.Runtime {
                 return result;
             }
 
-            result = CreateModule(RubyUtils.GetQualifiedName(tracker), null, null, null, null, tracker, null, ModuleRestrictions.None);
+            result = CreateModule(GetQualifiedName(tracker), null, null, null, null, tracker, null, ModuleRestrictions.None);
             _namespaceCache[tracker] = result;
             return result;
         }
@@ -681,7 +681,7 @@ namespace IronRuby.Runtime {
             }
 
             TypeTracker tracker = (TypeTracker)TypeTracker.FromMemberInfo(interfaceType);
-            result = CreateModule(RubyUtils.GetQualifiedName(interfaceType, false), null, null, null, null, null, tracker, ModuleRestrictions.None);
+            result = CreateModule(GetQualifiedNameNoLock(interfaceType), null, null, null, null, null, tracker, ModuleRestrictions.None);
             _moduleCache[interfaceType] = result;
             return result;
         }
@@ -708,7 +708,7 @@ namespace IronRuby.Runtime {
             }
 
             result = CreateClass(
-                RubyUtils.GetQualifiedName(type, false), type, null, null, null, null, null, 
+                GetQualifiedNameNoLock(type), type, null, null, null, null, null, 
                 baseClass, expandedMixins, tracker, null, false, false, ModuleRestrictions.None
             );
 
@@ -892,7 +892,7 @@ namespace IronRuby.Runtime {
             lock (ModuleCacheLock) {
                 if (!(exists = TryGetModuleNoLock(type, out result))) {
                     if (name == null) {
-                        name = RubyUtils.GetQualifiedName(type, false);
+                        name = GetQualifiedNameNoLock(type);
                     }
 
                     // Use empty constant initializer rather than null so that we don't try to initialize nested types.
@@ -930,7 +930,7 @@ namespace IronRuby.Runtime {
             lock (ModuleCacheLock) {
                 if (!(exists = TryGetClassNoLock(type, out result))) {
                     if (name == null) {
-                        name = RubyUtils.GetQualifiedName(type, false);
+                        name = GetQualifiedNameNoLock(type);
                     }
 
                     if (super == null) {
@@ -1094,18 +1094,9 @@ namespace IronRuby.Runtime {
             return false;
         }
 
-        public string/*!*/ GetTypeName(Type/*!*/ type, bool display) {
-            RubyModule module;
-            if (TryGetModule(type, out module)) {
-                if (display) {
-                    return module.GetDisplayName(this, false).ToString();
-                } else {
-                    return module.Name;
-                }
-            } else {
-                return RubyUtils.GetQualifiedName(type, display);
-            }
-        }
+        #endregion
+
+        #region Module Names
 
         /// <summary>
         /// Gets the Ruby name of the class of the given object.
@@ -1116,7 +1107,7 @@ namespace IronRuby.Runtime {
 
         /// <summary>
         /// Gets the display name of the class of the given object.
-        /// Might include characters that are not valid in a Ruby constant name.
+        /// Includes singleton names.
         /// </summary>
         public string/*!*/ GetClassDisplayName(object obj) {
             return GetClassName(obj, true);
@@ -1131,6 +1122,76 @@ namespace IronRuby.Runtime {
             }
 
             return GetTypeName(obj.GetType(), display);
+        }
+
+        public string/*!*/ GetTypeName(Type/*!*/ type, bool display) {
+            RubyModule module;
+            lock (ModuleCacheLock) {
+                if (TryGetModuleNoLock(type, out module)) {
+                    if (display) {
+                        return module.GetDisplayName(this, false).ToString();
+                    } else {
+                        return module.Name;
+                    }
+                } else {
+                    return GetQualifiedNameNoLock(type);
+                }
+            }
+        }
+
+        private string/*!*/ GetQualifiedNameNoLock(Type/*!*/ type) {
+            return GetQualifiedNameNoLock(type, this, false);
+        }
+
+        internal static string/*!*/ GetQualifiedNameNoLock(Type/*!*/ type, RubyContext context, bool noGenericArgs) {
+            return AppendQualifiedNameNoLock(new StringBuilder(), type, context, noGenericArgs).ToString();
+        }
+
+        private static StringBuilder/*!*/ AppendQualifiedNameNoLock(StringBuilder/*!*/ result, Type/*!*/ type, RubyContext context, bool noGenericArgs) {
+            if (type.IsGenericParameter) {
+                return result.Append(type.Name);
+            }
+
+            // qualifiers:
+            if (type.DeclaringType != null) {
+                AppendQualifiedNameNoLock(result, type.DeclaringType, context, noGenericArgs);
+                result.Append("::");
+            } else if (type.Namespace != null) {
+                result.Append(type.Namespace.Replace(Type.Delimiter.ToString(), "::"));
+                result.Append("::");
+            }
+
+            result.Append(ReflectionUtils.GetNormalizedTypeName(type));
+
+            // generic args:
+            if (!noGenericArgs && type.IsGenericType) {
+                result.Append("[");
+
+                var genericArgs = type.GetGenericArguments();
+                for (int i = 0; i < genericArgs.Length; i++) {
+                    if (i > 0) {
+                        result.Append(", ");
+                    }
+                    
+                    RubyModule module;
+                    if (context != null && context.TryGetModuleNoLock(genericArgs[i], out module)) {
+                        result.Append(module.Name);
+                    } else {
+                        AppendQualifiedNameNoLock(result, genericArgs[i], context, noGenericArgs);
+                    }
+                }
+
+                result.Append("]");
+            }
+
+            return result;
+        }
+
+        private static string/*!*/ GetQualifiedName(NamespaceTracker/*!*/ namespaceTracker) {
+            ContractUtils.RequiresNotNull(namespaceTracker, "namespaceTracker");
+            if (namespaceTracker.Name == null) return String.Empty;
+
+            return namespaceTracker.Name.Replace(Type.Delimiter.ToString(), "::");
         }
 
         #endregion

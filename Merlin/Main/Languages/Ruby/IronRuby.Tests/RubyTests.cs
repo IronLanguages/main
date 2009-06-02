@@ -384,6 +384,7 @@ namespace IronRuby.Tests {
                 ClrEvents4,
                 ClrOverride1,
                 ClrOverride2,
+                ClrOverride3,
                 ClrConstructor1,
                 ClrConstructor2,
                 ClrConstructor3,

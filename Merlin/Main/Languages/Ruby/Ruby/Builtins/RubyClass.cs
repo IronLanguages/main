@@ -624,11 +624,18 @@ namespace IronRuby.Builtins {
 
         // thread safe: doesn't need any lock since it only accesses immutable state
         public bool TryGetClrMember(string/*!*/ name, out RubyMemberInfo method) {
+            // Get the first class in hierarchy that represents CLR type - worse case we end up with Object.
+            // Ruby classes don't represent a CLR type and hence expose no CLR members.
+            RubyClass cls = this;
+            while (cls.TypeTracker == null) {
+                cls = cls.SuperClass;
+            }
+
+            Debug.Assert(!cls.TypeTracker.Type.IsInterface);
+
             // Note: We don't cache failures as this API is not used so frequently (e.g. for regular method dispatch) that we would need caching.
             method = null;
-            return TypeTracker != null
-                && !TypeTracker.Type.IsInterface
-                && TryGetClrMember(TypeTracker.Type, name, true, 0, out method);
+            return cls.TryGetClrMember(cls.TypeTracker.Type, name, true, 0, out method);
         }
 
         // thread safe: doesn't need any lock since it only accesses immutable state
@@ -1147,6 +1154,7 @@ namespace IronRuby.Builtins {
 
             RubyMemberInfo initializer;
             using (Context.ClassHierarchyLocker()) {
+                // check version of the class so that we invalidate the rule whenever the initializer changes:
                 metaBuilder.AddVersionTest(this);
 
                 initializer = ResolveMethodForSiteNoLock(Symbols.Initialize, IgnoreVisibility).Info;
@@ -1287,15 +1295,12 @@ namespace IronRuby.Builtins {
 
         private void BuildDelegateConstructorCall(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args, Type/*!*/ type) {
             if (args.Signature.HasBlock) {
-                if (args.ExplicitArgumentCount == 2) {
+                var actualArgs = RubyOverloadResolver.NormalizeArguments(metaBuilder, args, 0, 0);
+                if (!metaBuilder.Error) {
                     metaBuilder.Result = Methods.CreateDelegateFromProc.OpCall(
                         AstUtils.Constant(type),
                         AstUtils.Convert(args.GetBlockExpression(), typeof(Proc))
                     );
-                } else {
-                    metaBuilder.SetError(Methods.MakeWrongNumberOfArgumentsError.OpCall(
-                        AstUtils.Constant(args.ExplicitArgumentCount - 1), AstUtils.Constant(0)
-                    ));
                 }
             } else {
                 var actualArgs = RubyOverloadResolver.NormalizeArguments(metaBuilder, args, 1, 1);
