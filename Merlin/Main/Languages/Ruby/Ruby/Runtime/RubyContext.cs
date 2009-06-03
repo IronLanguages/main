@@ -1805,14 +1805,11 @@ namespace IronRuby.Runtime {
         internal Expression<T>/*!*/ TransformTree<T>(SourceUnitTree/*!*/ ast, SourceUnit/*!*/ sourceUnit, RubyCompilerOptions/*!*/ options) {
             return ast.Transform<T>(
                 new AstGenerator(
+                    this,
                     options,
-                    sourceUnit,
+                    sourceUnit.Document,
                     ast.Encoding,
-                    Snippets.Shared.SaveSnippets,
-                    DomainManager.Configuration.DebugMode,
-                    RubyOptions.EnableTracing,
-                    RubyOptions.Profile,
-                    RubyOptions.SavePath != null
+                    sourceUnit.Kind == SourceCodeKind.InteractiveCode
                 )
             );
         }

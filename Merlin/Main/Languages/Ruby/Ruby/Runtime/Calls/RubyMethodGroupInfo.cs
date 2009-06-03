@@ -23,6 +23,7 @@ using IronRuby.Compiler;
 using IronRuby.Compiler.Generation;
 using Microsoft.Scripting.Utils;
 using Ast = System.Linq.Expressions.Expression;
+using Microsoft.Scripting;
 
 namespace IronRuby.Runtime.Calls {
     /// <summary>
@@ -126,21 +127,38 @@ namespace IronRuby.Runtime.Calls {
             return _staticDispatchMethods;
         }
 
+#if DEBUG
+        internal const string SuperCallMethodWrapperNameSuffix = "$RubyMethodGroupInfo.SuperCallMethodWrapper";
+#else
+        internal const string SuperCallMethodWrapperNameSuffix = "";
+#endif
+
         public static DynamicMethod/*!*/ WrapMethod(MethodInfo/*!*/ info, Type/*!*/ associatedType) {
             var originalParams = info.GetParameters();
             var newParams = new Type[originalParams.Length + 1];
-            string name = "";
+            
             newParams[0] = info.DeclaringType;
             for (int i = 0; i < originalParams.Length; i++) {
                 newParams[i + 1] = originalParams[i].ParameterType;
             }
-            DynamicMethod result = new DynamicMethod(name, info.ReturnType, newParams, associatedType);
+
+            DynamicMethod result = new DynamicMethod(
+                RubyExceptionData.EncodeMethodName(null, info.Name, SourceSpan.None) + SuperCallMethodWrapperNameSuffix,
+                info.ReturnType, newParams, associatedType
+            );
+
             ILGenerator ilg = result.GetILGenerator();
-            for (int i = 0; i < newParams.Length; i++) {
-                ilg.Emit(OpCodes.Ldarg, i);
+            if (info.IsAbstract) {
+                ilg.Emit(OpCodes.Ldtoken, info);
+                ilg.EmitCall(OpCodes.Call, Methods.MakeAbstractMethodCalledError, null);
+                ilg.Emit(OpCodes.Throw);
+            } else {
+                for (int i = 0; i < newParams.Length; i++) {
+                    ilg.Emit(OpCodes.Ldarg, i);
+                }
+                ilg.EmitCall(OpCodes.Call, info, null);
+                ilg.Emit(OpCodes.Ret);
             }
-            ilg.EmitCall(OpCodes.Call, info, null);
-            ilg.Emit(OpCodes.Ret);
             return result;
         }
 

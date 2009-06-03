@@ -109,7 +109,9 @@ namespace IronRuby.Compiler.Ast {
             }
 
             var dynamicSite = callBuilder.MakeCallAction(methodName, hasImplicitSelf);
-            gen.TraceCallSite(node, dynamicSite);
+            if (gen.CallSiteCreated != null) {
+                gen.CallSiteCreated(node, dynamicSite);
+            }
 
             MSA.Expression result = gen.DebugMark(dynamicSite, methodName);
 

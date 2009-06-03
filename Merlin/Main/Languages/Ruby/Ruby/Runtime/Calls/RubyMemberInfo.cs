@@ -94,8 +94,8 @@ namespace IronRuby.Runtime.Calls {
             get { return (_flags & RubyMemberFlags.Empty) != 0; }
         }
 
-        internal bool IsSuperForwarder {
-            get { return (_flags & RubyMemberFlags.SuperForwarder) != 0; }
+        internal virtual bool IsSuperForwarder {
+            get { return false; }
         }
 
         /// <summary>

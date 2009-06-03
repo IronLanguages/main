@@ -184,6 +184,7 @@
     <Compile Include="Runtime\Calls\RubyMethodGroupBase.cs" />
     <Compile Include="Runtime\Calls\RubyOverloadGroupInfo.cs" />
     <Compile Include="Runtime\Calls\RubyOverloadResolver.cs" />
+    <Compile Include="Runtime\Calls\SuperForwarderInfo.cs" />
     <Compile Include="Runtime\Calls\VersionHandle.cs" />
     <Compile Include="Runtime\CheckedMonitor.cs" />
     <Compile Include="Runtime\CustomTypeDescHelpers.cs" />

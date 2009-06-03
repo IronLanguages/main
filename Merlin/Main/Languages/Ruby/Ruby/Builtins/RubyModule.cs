@@ -61,6 +61,14 @@ namespace IronRuby.Builtins {
         IsSelfContained = 0x100,
     }
 
+    [Flags]
+    public enum MethodLookup {
+        Default = 0,
+        Virtual = 1,
+        ReturnForwarder = 2,
+        FallbackToObject = 4,
+    }
+
     // TODO: freezing
 #if DEBUG
     [DebuggerDisplay("{DebugName}")]
@@ -1110,7 +1118,8 @@ namespace IronRuby.Builtins {
 
             RubyMemberInfo method;
             using (Context.ClassHierarchyLocker()) {
-                method = ResolveMethodFallbackToObjectNoLock(oldName, RubyClass.IgnoreVisibility).Info;
+                // MRI: aliases a super-forwarder not the real method.
+                method = ResolveMethodNoLock(oldName, RubyClass.IgnoreVisibility, MethodLookup.FallbackToObject | MethodLookup.ReturnForwarder).Info;
                 if (method == null) {
                     throw RubyExceptions.CreateUndefinedMethodError(this, oldName);
                 }
@@ -1138,7 +1147,7 @@ namespace IronRuby.Builtins {
             if (TryGetMethod(name, ref skipHidden, out existing)) {
                 SetMethodNoEventNoLock(callerContext, name, method.Copy((RubyMemberFlags)visibility, this));
             } else {
-                SetMethodNoEventNoLock(callerContext, name, new RubyMemberInfo((RubyMemberFlags)visibility | RubyMemberFlags.SuperForwarder, method.DeclaringModule));
+                SetMethodNoEventNoLock(callerContext, name, new SuperForwarderInfo((RubyMemberFlags)visibility, method.DeclaringModule, name));
             }
         }
 
@@ -1379,18 +1388,18 @@ namespace IronRuby.Builtins {
         }
 
         public MethodResolutionResult ResolveMethodForSiteNoLock(string/*!*/ name, RubyClass visibilityContext) {
-            return ResolveMethodForSiteNoLock(name, visibilityContext, false);
+            return ResolveMethodForSiteNoLock(name, visibilityContext, MethodLookup.Default);
         }
 
-        internal MethodResolutionResult ResolveMethodForSiteNoLock(string/*!*/ name, RubyClass visibilityContext, bool virtualLookup) {
-            return ResolveMethodNoLock(name, visibilityContext, virtualLookup).InvalidateSitesOnOverride();
+        internal MethodResolutionResult ResolveMethodForSiteNoLock(string/*!*/ name, RubyClass visibilityContext, MethodLookup options) {
+            return ResolveMethodNoLock(name, visibilityContext, options).InvalidateSitesOnOverride();
         }
 
         public MethodResolutionResult ResolveMethodNoLock(string/*!*/ name, RubyClass visibilityContext) {
-            return ResolveMethodNoLock(name, visibilityContext, false);
+            return ResolveMethodNoLock(name, visibilityContext, MethodLookup.Default);
         }
 
-        internal MethodResolutionResult ResolveMethodNoLock(string/*!*/ name, RubyClass visibilityContext, bool virtualLookup) {
+        public MethodResolutionResult ResolveMethodNoLock(string/*!*/ name, RubyClass visibilityContext, MethodLookup options) {
             Context.RequiresClassHierarchyLock();
             Assert.NotNull(name);
 
@@ -1399,25 +1408,37 @@ namespace IronRuby.Builtins {
             RubyModule owner = null;
             bool skipHidden = false;
             bool foundCallerSelf = false;
+            MethodResolutionResult result;
 
             if (ForEachAncestor((module) => {
                 owner = module;
                 foundCallerSelf |= module == visibilityContext;
-                return module.TryGetMethod(name, ref skipHidden, virtualLookup, out info);
+                return module.TryGetMethod(name, ref skipHidden, (options & MethodLookup.Virtual) != 0, out info);
             })) {
                 if (info == null || info.IsUndefined) {
-                    return MethodResolutionResult.NotFound;
+                    result = MethodResolutionResult.NotFound;
                 } else if (!IsMethodVisible(info, owner, visibilityContext, foundCallerSelf)) {
-                    return new MethodResolutionResult(info, owner, false);
+                    result = new MethodResolutionResult(info, owner, false);
                 } else if (info.IsSuperForwarder) {
-                    // start again with owner's super ancestor and ignore visibility:
-                    return owner.ResolveSuperMethodNoLock(name, owner);
+                    if ((options & MethodLookup.ReturnForwarder) != 0) {
+                        result = new MethodResolutionResult(info, owner, true);
+                    } else {
+                        // start again with owner's super ancestor and ignore visibility:
+                        result = owner.ResolveSuperMethodNoLock(((SuperForwarderInfo)info).SuperName, owner);
+                    }
                 } else {
-                    return new MethodResolutionResult(info, owner, true);
+                    result = new MethodResolutionResult(info, owner, true);
                 }
+            } else {
+                result = MethodResolutionResult.NotFound;
             }
 
-            return MethodResolutionResult.NotFound;
+            // Note: all classes include Object in ancestors, so we don't need to search it again:
+            if (!result.Found && (options & MethodLookup.FallbackToObject) != 0 && !IsClass) {
+                return _context.ObjectClass.ResolveMethodNoLock(name, visibilityContext, options & ~MethodLookup.FallbackToObject);
+            }
+
+            return result;
         }
 
         private bool IsMethodVisible(RubyMemberInfo/*!*/ method, RubyModule/*!*/ owner, RubyClass visibilityContext, bool foundCallerSelf) {
@@ -1437,15 +1458,6 @@ namespace IronRuby.Builtins {
             } 
 
             return method.Visibility == RubyMethodVisibility.Public;
-        }
-
-        /// <summary>
-        /// Resolve method and if it is not found in this module's ancestors, resolve in Object.
-        /// </summary>
-        public virtual MethodResolutionResult ResolveMethodFallbackToObjectNoLock(string/*!*/ name, RubyClass visibilityContext) {
-            Context.RequiresClassHierarchyLock();
-            var result = ResolveMethodNoLock(name, visibilityContext);
-            return result.Found ? result : _context.ObjectClass.ResolveMethodNoLock(name, visibilityContext);
         }
 
         // skip one method in the method resolution order (MRO)
@@ -1604,10 +1616,14 @@ namespace IronRuby.Builtins {
                         stop = !inherited;
                     }
 
-                } else if (member.IsUndefined) {
-                    visited.Add(name, true);
-                } else if (((RubyMethodAttributes)member.Visibility & attributes) != 0 && !visited.ContainsKey(name)) {
-                    action(name, member);
+                } else if (!visited.ContainsKey(name)) {
+                    // yield the member only if it has the right visibility:
+                    if (!member.IsUndefined && ((RubyMethodAttributes)member.Visibility & attributes) != 0) {
+                        action(name, member);
+                    }
+
+                    // visit the member even if it doesn't have the right visibility so that any overridden member with the right visibility
+                    // won't later be visited:
                     visited.Add(name, true);
                 }
 

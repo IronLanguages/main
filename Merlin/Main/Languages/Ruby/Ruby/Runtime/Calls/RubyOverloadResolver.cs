@@ -91,7 +91,9 @@ namespace IronRuby.Runtime.Calls {
 
             if (_callConvention == SelfCallConvention.SelfIsInstance) {
                 if (CompilerHelpers.IsStatic(method)) {
-                    Debug.Assert(RubyClass.IsOperator(method) || CompilerHelpers.IsExtension(method));
+                    Debug.Assert(RubyClass.IsOperator(method) || CompilerHelpers.IsExtension(method) || 
+                        method.Name.EndsWith(RubyMethodGroupInfo.SuperCallMethodWrapperNameSuffix)
+                    );
 
                     // receiver maps to the first parameter:
                     mapping.AddParameter(new ParameterWrapper(infos[i], infos[i].ParameterType, null, true, false, false, true));

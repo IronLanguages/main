@@ -566,8 +566,8 @@ end
         /// <summary>
         /// public/private/protected define a super-forwarder - a method that calls super.
         /// </summary>
-        public void Visibility2() {
-            AssertOutput(() => CompilerTest(@"
+        public void Visibility2A() {
+            TestOutput(@"
 class A
   private
   def foo
@@ -596,12 +596,85 @@ class B
 end
 
 C.new.foo
-"), @"
+", @"
 #<UnboundMethod: C(A)#foo>
 B::foo
 ");
         }
 
+        public void Visibility2B() {
+            TestOutput(@"
+module M 
+  def foo; puts 'ok'; end
+end
+
+class A
+  include M
+  private :foo
+end
+
+class B < A
+  include M
+  public :foo
+end
+
+B.new.foo
+", @"
+ok
+");
+
+            TestOutput(@"
+module N 
+  def foo; puts 'ok'; end
+end
+
+class D
+  include N
+  private :foo
+  public :foo
+end
+
+D.new.foo
+", @"
+ok
+");
+        }
+
+        public void Visibility2C() {
+            TestOutput(@"
+module M
+  private
+  def foo; puts 1; end
+end
+
+module N 
+  include M
+  public :foo               # defines a public super-forwarder that remembers to forward to 'foo'
+end
+
+module O
+  include N                         
+  alias bar foo             # stores N#foo public super-forwarder under name 'bar' to O's m-table
+  module_function :foo      # defines a module-function that is a copy of M#foo, not N#foo super-forwarder
+end
+
+module M
+  def foo; puts 2; end           
+end
+
+O.foo                       # this works, hence m-f foo is a copy of the real method
+
+class C 
+  include O
+end
+C.new.bar                   # invokes the new M#foo method - alias didn't make a copy of original M#foo and super-forwarder forwards to 'foo'
+", @"
+1
+2
+");
+
+        }
+        
         /// <summary>
         /// Protected visibility and singletons.
         /// </summary>
@@ -731,7 +804,7 @@ end
 
 class B < A
   private
-  define_method(:foo, instance_method(:foo))
+  define_method(:foo, instance_method(:foo)) 
 end
 
 B.new.foo rescue p $!
@@ -745,6 +818,47 @@ B.new.send :foo
 #<NoMethodError: private method `foo' called for #<B:*>>
 foo
 ", OutputFlags.Match);
+        }
+
+        [Options(Compatibility = RubyCompatibility.Ruby18)]
+        public void DefineMethodVisibility2A() {
+            Test_DefineMethodVisibility2();
+        }
+
+        [Options(Compatibility = RubyCompatibility.Ruby19)]
+        public void DefineMethodVisibility2B() {
+            Test_DefineMethodVisibility2();
+        }
+
+        public void Test_DefineMethodVisibility2() {
+            TestOutput(@"
+module M                                              # the inner module is the same module we call define_method on
+  1.times do  
+    module_function
+    M.send :define_method, :a, lambda { }              
+    private
+    M.send :define_method, :b, lambda { }              
+  end
+end
+
+module N                                               # the inner module different from the one we call define_method on
+  1.times do  
+    module_function
+    M.send :define_method, :c, lambda { }              
+    private
+    M.send :define_method, :d, lambda { }               
+  end
+end
+
+p M.public_instance_methods(false).collect { |m| m.to_s }.sort
+p M.private_instance_methods(false).collect { |m| m.to_s }.sort
+", Context.RubyOptions.Compatibility == RubyCompatibility.Ruby18 ? @"
+[""c"", ""d""]
+[""a"", ""b""]
+" : @"
+[""a"", ""b"", ""c"", ""d""]
+[]
+");
         }
 
         /// <summary>
@@ -786,6 +900,23 @@ end
 [""a_pri""]
 [""a_pub"", ""am_pub""]
 [""a_pri"", ""am_pri""]
+");
+        }
+
+        public void AttributeAccessorsVisibility1() {
+            TestOutput(@"
+class C
+  1.times {                                       # we need to use visibility flags of the module scope
+    private
+    attr_accessor :foo
+  }   
+ 
+  m = private_instance_methods(false)
+  p m.include?('foo'), m.include?('foo=')
+end
+", @"
+true
+true
 ");
         }
         

@@ -56,7 +56,11 @@ namespace IronRuby.Runtime.Calls {
 
             var context = (RubyContext)sourceUnit.LanguageContext;
             var siteNodes = new Dictionary<MSA.DynamicExpression, SourceSpan>();
-            var generator = new TraceAstGenerator(siteNodes, context, options, sourceUnit, ast.Encoding);
+
+            var generator = new AstGenerator(context, options, sourceUnit.Document, ast.Encoding, false) {
+                CallSiteCreated = (expression, callSite) => siteNodes.Add(callSite, expression.Location)
+            };
+
             var lambda = ast.Transform<T>(generator);
 
             return (MSA.Expression<T>)new CallSiteTraceInjector(siteNodes, sourceId).Visit(lambda);
@@ -98,20 +102,6 @@ namespace IronRuby.Runtime.Calls {
 
             MSA.Expression/*!*/ IExpressionSerializable.CreateExpression() {
                 throw new NotSupportedException();
-            }
-        }
-
-        private sealed class TraceAstGenerator : AstGenerator {
-            private readonly Dictionary<MSA.DynamicExpression, SourceSpan>/*!*/ _sites;
-
-            public TraceAstGenerator(Dictionary<MSA.DynamicExpression, SourceSpan>/*!*/ sites,
-                RubyContext/*!*/ context, RubyCompilerOptions/*!*/ options, SourceUnit/*!*/ sourceUnit, RubyEncoding/*!*/ encoding)
-                : base(options, sourceUnit, encoding, false, context.DomainManager.Configuration.DebugMode, false, false, false) {
-                _sites = sites;
-            }
-
-            internal override void TraceCallSite(Expression/*!*/ expression, MSA.DynamicExpression/*!*/ callSite) {
-                _sites.Add(callSite, expression.Location);
             }
         }
 

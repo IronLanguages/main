@@ -576,11 +576,6 @@ namespace IronRuby.Builtins {
             return result;
         }
 
-        public override MethodResolutionResult ResolveMethodFallbackToObjectNoLock(string/*!*/ name, RubyClass visibilityContext) {
-            // Note: all classes include Object in ancestors, so we don't need to search there.
-            return ResolveMethodNoLock(name, visibilityContext);
-        }
-
         internal RubyMemberInfo ResolveMethodMissingForSite(string/*!*/ name, RubyMethodVisibility incompatibleVisibility) {
             Context.RequiresClassHierarchyLock();
             var methodMissing = ResolveMethodForSiteNoLock(Symbols.MethodMissing, null);

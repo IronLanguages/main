@@ -17,52 +17,49 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
-using System.IO;
-using System.Dynamic;
-using System.Text;
 using System.Threading;
-using Microsoft.Scripting;
-using Microsoft.Scripting.Actions;
-using Microsoft.Scripting.Runtime;
-using Microsoft.Scripting.Utils;
 using IronRuby.Builtins;
-using IronRuby.Runtime;
-using IronRuby.Runtime.Calls;
 using IronRuby.Compiler.Generation;
+using IronRuby.Runtime;
+using Microsoft.Scripting;
+using Microsoft.Scripting.Generation;
+using Microsoft.Scripting.Utils;
+using AstUtils = Microsoft.Scripting.Ast.Utils;
+using MSA = System.Linq.Expressions;
 
 namespace IronRuby.Compiler.Ast {
     using Ast = System.Linq.Expressions.Expression;
-    using AstUtils = Microsoft.Scripting.Ast.Utils;
-    using MSA = System.Linq.Expressions;
-
-    internal class AstGenerator {
+    
+    internal sealed class AstGenerator {
         private static int _UniqueId;
 
         private readonly RubyContext/*!*/ _context;
         private readonly RubyCompilerOptions/*!*/ _compilerOptions;
-        private readonly SourceUnit/*!*/ _sourceUnit;
         private readonly MSA.SymbolDocumentInfo _document;
         private readonly RubyEncoding/*!*/ _encoding;
         private readonly Profiler _profiler;
+        private readonly bool _printInteractiveResult;
         private readonly bool _debugCompiler;
         private readonly bool _debugMode;
         private readonly bool _traceEnabled;
         private readonly bool _savingToDisk;
 
-        internal AstGenerator(RubyCompilerOptions/*!*/ options, SourceUnit/*!*/ sourceUnit, RubyEncoding/*!*/ encoding,
-            bool debugCompiler, bool debugMode, bool traceEnabled, bool profilerEnabled, bool savingToDisk) {
+        private MSA.Expression _sourcePathConstant; // lazy
 
-            Assert.NotNull(options, encoding, sourceUnit);
-            _context = (RubyContext)sourceUnit.LanguageContext;
+        internal AstGenerator(RubyContext/*!*/ context, RubyCompilerOptions/*!*/ options, MSA.SymbolDocumentInfo document, RubyEncoding/*!*/ encoding,
+            bool printInteractiveResult) {
+
+            Assert.NotNull(context, options, encoding);
+            _context = context;
             _compilerOptions = options;
-            _debugCompiler = debugCompiler;
-            _debugMode = debugMode;
-            _traceEnabled = traceEnabled;
-            _sourceUnit = sourceUnit;
-            _document = sourceUnit.Document;
+            _debugCompiler = Snippets.Shared.SaveSnippets;
+            _debugMode = context.DomainManager.Configuration.DebugMode;
+            _traceEnabled = context.RubyOptions.EnableTracing;
+            _document = document;
             _encoding = encoding;
-            _profiler = profilerEnabled ? Profiler.Instance : null;
-            _savingToDisk = savingToDisk;
+            _profiler = context.RubyOptions.Profile ? Profiler.Instance : null;
+            _savingToDisk = context.RubyOptions.SavePath != null;
+            _printInteractiveResult = printInteractiveResult;
         }
 
         public RubyCompilerOptions/*!*/ CompilerOptions { 
@@ -89,8 +86,25 @@ namespace IronRuby.Compiler.Ast {
             get { return _savingToDisk; }
         }
 
-        public SourceUnit/*!*/ SourceUnit {
-            get { return _sourceUnit; }
+        public string SourcePath {
+            get { return _document != null ? _document.FileName : null; }
+        }
+
+        public MSA.SymbolDocumentInfo Document {
+            get { return _document; }
+        }
+
+        public bool PrintInteractiveResult {
+            get { return _printInteractiveResult; }
+        }
+
+        public MSA.Expression/*!*/ SourcePathConstant {
+            get {
+                if (_sourcePathConstant == null) {
+                    _sourcePathConstant = Ast.Constant(SourcePath, typeof(string));
+                }
+                return _sourcePathConstant;
+            }
         }
 
         public RubyEncoding/*!*/ Encoding {
@@ -100,6 +114,8 @@ namespace IronRuby.Compiler.Ast {
         internal RubyContext/*!*/ Context {
             get { return _context; }
         }
+
+        internal Action<Expression, MSA.DynamicExpression> CallSiteCreated { get; set; }
 
         #region Lexical Scopes
 
@@ -287,24 +303,15 @@ namespace IronRuby.Compiler.Ast {
             }
 
             // TODO: super call
-            // non-null if !IsTopLevelCode
+            // null for top-level code
             public string MethodName {
                 get { return _methodName; }
             }
 
             // TODO: super call
-            // non-null if !IsTopLevelCode
+            // null for top-level code
             public Parameters Parameters {
                 get { return _parameters; }
-            }
-
-            // non-null if !IsTopLevelCode
-            public MSA.Expression CurrentMethodVariable {
-                get { return _currentMethodVariable; }
-            }
-
-            public bool IsTopLevelCode {
-                get { return _parentMethod == null; }
             }
 
             public MethodScope(
@@ -352,12 +359,9 @@ namespace IronRuby.Compiler.Ast {
         private LoopScope _currentLoop;
         private RescueScope _currentRescue;
         private VariableScope _currentVariableScope;
-        private ModuleScope _currentModule;
 
-        // inner-most module (not reset by method definition):
-        public ModuleScope CurrentModule {
-            get { return _currentModule; }
-        }
+        // inner-most module (available only if we enter a module declaration in the current AST, not available in eval'd code or in a method):
+        private ModuleScope _currentModule;
 
         // inner-most method frame:
         public MethodScope/*!*/ CurrentMethod {
@@ -405,14 +409,6 @@ namespace IronRuby.Compiler.Ast {
         // inner-most scope builder:
         public ScopeBuilder/*!*/ CurrentScope {
             get { return _currentVariableScope.Builder; }
-        }
-
-        public ModuleScope GetCurrentNonSingletonModule() {
-            ModuleScope scope = CurrentModule;
-            while (scope != null && scope.IsSingleton) {
-                scope = scope.ParentModule;
-            }
-            return scope;
         }
 
         #endregion
@@ -787,7 +783,11 @@ namespace IronRuby.Compiler.Ast {
         }
 
         internal MSA.Expression/*!*/ AddDebugInfo(MSA.Expression/*!*/ expression, SourceSpan location) {
-            return Microsoft.Scripting.Ast.Utils.AddDebugInfo(expression, _document, location.Start, location.End);
+            if (_document != null) {
+                return AstUtils.AddDebugInfo(expression, _document, location.Start, location.End);
+            } else {
+                return expression;
+            }
         }
 
         internal MSA.Expression/*!*/ DebugMarker(string/*!*/ marker) {
@@ -796,9 +796,6 @@ namespace IronRuby.Compiler.Ast {
 
         internal MSA.Expression/*!*/ DebugMark(MSA.Expression/*!*/ expression, string/*!*/ marker) {
             return _debugCompiler ? AstFactory.Block(Methods.X.OpCall(AstUtils.Constant(marker)), expression) : expression;
-        }
-
-        internal virtual void TraceCallSite(Expression/*!*/ expression, MSA.DynamicExpression/*!*/ callSite) {
         }
 
         internal MSA.Expression/*!*/ TryCatchAny(MSA.Expression/*!*/ tryBody, MSA.Expression/*!*/ catchBody) {
