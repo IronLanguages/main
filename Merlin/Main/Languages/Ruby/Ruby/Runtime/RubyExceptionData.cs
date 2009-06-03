@@ -14,23 +14,19 @@
  * ***************************************************************************/
 
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Reflection;
-using Microsoft.Scripting.Utils;
+using System.Runtime.CompilerServices;
 using System.Security;
 using System.Security.Permissions;
-using IronRuby.Builtins;
-using System.Linq.Expressions;
 using System.Threading;
-using System.IO;
-using Microsoft.Scripting;
-using IronRuby.Compiler;
+using IronRuby.Builtins;
 using IronRuby.Runtime.Calls;
-using System.Runtime.CompilerServices;
+using Microsoft.Scripting;
 using Microsoft.Scripting.Interpreter;
-using Microsoft.Scripting.Generation;
+using Microsoft.Scripting.Utils;
 
 namespace IronRuby.Runtime {
     /// <summary>
@@ -270,9 +266,9 @@ namespace IronRuby.Runtime {
         private const string RubyMethodPrefix = "\u2111\u211c;";
         private static int _Id = 0;
 
-        internal static string/*!*/ EncodeMethodName(SourceUnit/*!*/ sourceUnit, string/*!*/ methodName, SourceSpan location) {
+        internal static string/*!*/ EncodeMethodName(string/*!*/ methodName, string sourcePath, SourceSpan location) {
             // encodes line number, file name into the method name
-            string fileName = sourceUnit.HasPath ? Path.GetFileName(sourceUnit.Path) : String.Empty;
+            string fileName = sourcePath != null ? Path.GetFileName(sourcePath) : null;
             return String.Format(RubyMethodPrefix + "{0};{1};{2};{3}", methodName, fileName, location.IsValid ? location.Start.Line : 0,
                 Interlocked.Increment(ref _Id));
         }

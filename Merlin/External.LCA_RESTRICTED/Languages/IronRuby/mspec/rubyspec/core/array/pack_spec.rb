@@ -157,19 +157,6 @@ describe "Array#pack with ASCII-string format", :shared => true do
     ['abcde'].pack(format(0)).should == ''
   end
 
-  it "returns the whole argument string with star parameter" do
-    ['abcdef'].pack(format('*')).should == 'abcdef'
-  end
-
-  it "comsumres only one array item per a format" do
-    ["abc", "def"].pack(format('*')).should == "abc"
-    ["abc", "def"].pack(format('*')+format('*')).should == "abcdef"
-  end
-
-  it "handles nil" do
-    [nil].pack(format(0)).should == ""
-    [nil].pack(format('*')).should == ""
-  end
   
   it "tries to convert the pack argument to a String using #to_str" do
     obj = mock('to_str')
@@ -219,8 +206,32 @@ describe "Array#pack with ASCII-string format", :shared => true do
   end
 end
 
+describe "Array#pack with ASCII-string format, except Z", :shared => true do
+  before do
+    @format = @method
+    def self.format(count = nil)
+      "#{@format}#{count}"
+    end
+  end
+
+  it "returns the whole argument string with star parameter" do
+    ['abcdef'].pack(format('*')).should == 'abcdef'
+  end
+
+  it "comsumes only one array item per a format" do
+    ["abc", "def"].pack(format('*')).should == "abc"
+    ["abc", "def"].pack(format('*')+format('*')).should == "abcdef"
+  end
+
+  it "handles nil" do
+    [nil].pack(format(0)).should == ""
+    [nil].pack(format('*')).should == ""
+  end
+end
+
 describe "Array#pack with format 'A'" do
   it_behaves_like "Array#pack with ASCII-string format", 'A'
+  it_behaves_like "Array#pack with ASCII-string format, except Z", 'A'
 
   it "returns space padded string" do
     ['abcde'].pack('A7').should == 'abcde  '
@@ -229,10 +240,15 @@ describe "Array#pack with format 'A'" do
   it "handles nil" do
     [nil].pack(format('1')).should == " "
   end  
+
+  it "returns the whole argument string with star parameter" do
+    ['abcdef'].pack(format('*')).should == 'abcdef'
+  end
 end
 
 describe "Array#pack with format 'a'" do
   it_behaves_like "Array#pack with ASCII-string format", 'a'
+  it_behaves_like "Array#pack with ASCII-string format, except Z", 'a'
 
   it "returns null padded string with ('a<count>')" do
     ['abcdef'].pack('a7').should == "abcdef\x0"
@@ -244,15 +260,29 @@ describe "Array#pack with format 'a'" do
 end
 
 describe "Array#pack with format 'Z'" do
-  it_behaves_like "Array#pack with ASCII-string format", 'a'
+  it_behaves_like "Array#pack with ASCII-string format", 'Z'
 
   it "returns null padded string with ('a<count>')" do
-    ['abcdef'].pack('a7').should == "abcdef\x0"
+    ['abcdef'].pack(format('7')).should == "abcdef\x0"
+  end
+
+  it "returns a null character with 'Z'" do
+    [''].pack('Z').should == "\000"
+  end
+
+  it "returns the whole argument string with star parameter" do
+    ['abcdef'].pack(format('*')).should == "abcdef\000"
+  end
+
+  it "comsumes only one array item per a format" do
+    ["abc", "def"].pack(format('*')).should == "abc\000"
+    ["abc", "def"].pack(format('*')+format('*')).should == "abc\000def\000"
   end
 
   it "handles nil" do
-    [nil].pack(format('1')).should == "\000"
-  end  
+    [nil].pack(format(0)).should == ""
+    [nil].pack(format('*')).should == "\000"
+  end
 end
 
 describe "Array#pack with format 'B'" do

@@ -117,6 +117,7 @@ describe "Array#initialize with (size, object=nil)" do
   it "raises an ArgumentError if size is negative" do
     lambda { [].send(:initialize, -1, :a) }.should raise_error(ArgumentError)
     lambda { [].send(:initialize, -1) }.should raise_error(ArgumentError)
+    lambda { [].send(:initialize, -1) { raise }}.should raise_error(ArgumentError)
   end
 
   platform_is :wordsize => 32 do

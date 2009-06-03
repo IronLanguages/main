@@ -91,7 +91,9 @@ namespace IronRuby.Runtime.Calls {
 
             if (_callConvention == SelfCallConvention.SelfIsInstance) {
                 if (CompilerHelpers.IsStatic(method)) {
-                    Debug.Assert(RubyClass.IsOperator(method) || CompilerHelpers.IsExtension(method));
+                    Debug.Assert(RubyClass.IsOperator(method) || CompilerHelpers.IsExtension(method) || 
+                        method.Name.EndsWith(RubyMethodGroupInfo.SuperCallMethodWrapperNameSuffix)
+                    );
 
                     // receiver maps to the first parameter:
                     mapping.AddParameter(new ParameterWrapper(infos[i], infos[i].ParameterType, null, true, false, false, true));
@@ -101,6 +103,12 @@ namespace IronRuby.Runtime.Calls {
                     // receiver maps to the instance (no parameter info represents it):
                     mapping.AddParameter(new ParameterWrapper(null, method.DeclaringType, null, true, false, false, true));
                     mapping.AddInstanceBuilder(new InstanceBuilder(mapping.ArgIndex));
+                }
+            } else if (_callConvention == SelfCallConvention.NoSelf) {
+                // instance methods on Object can be called with arbitrary receiver object including classes (static call):
+                if (!method.IsStatic && method.DeclaringType == typeof(Object)) {
+                    // insert an InstanceBuilder that doesn't consume any arguments, only inserts the target expression as instance:
+                    mapping.AddInstanceBuilder(new ImplicitInstanceBuilder());
                 }
             }
 
@@ -273,7 +281,9 @@ namespace IronRuby.Runtime.Calls {
             // the next argument is the first one for which we use restrictions coming from overload resolution:
             _firstRestrictedArg = result.Count;
 
-            return CreateActualArguments(result, _metaBuilder, _args, preSplatLimit, postSplatLimit, out _lastSplattedArg, out _list, out _listVariable);
+            // hidden args: block, self
+            int hidden = _callConvention == SelfCallConvention.NoSelf ? 1 : 2;
+            return CreateActualArguments(result, _metaBuilder, _args, hidden, preSplatLimit, postSplatLimit, out _lastSplattedArg, out _list, out _listVariable);
         }
 
         public static IList<DynamicMetaObject/*!*/> NormalizeArguments(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args, int minCount, int maxCount) {
@@ -281,7 +291,8 @@ namespace IronRuby.Runtime.Calls {
             IList list;
             ParameterExpression listVariable;
 
-            var actualArgs = CreateActualArguments(new List<DynamicMetaObject>(), metaBuilder, args, maxCount, maxCount,
+            // 2 hidden arguments: block and self
+            var actualArgs = CreateActualArguments(new List<DynamicMetaObject>(), metaBuilder, args, 2, maxCount, maxCount,
                 out lastSplattedArg, out list, out listVariable);
 
             int actualCount = actualArgs.Count + actualArgs.CollapsedCount;
@@ -299,7 +310,7 @@ namespace IronRuby.Runtime.Calls {
         }
 
         private static ActualArguments/*!*/ CreateActualArguments(List<DynamicMetaObject>/*!*/ normalized, MetaObjectBuilder/*!*/ metaBuilder,
-            CallArguments/*!*/ args, int preSplatLimit, int postSplatLimit, out int lastSplattedArg, out IList list, out ParameterExpression listVariable) {
+            CallArguments/*!*/ args, int hidden, int preSplatLimit, int postSplatLimit, out int lastSplattedArg, out IList list, out ParameterExpression listVariable) {
 
             int firstSplattedArg, splatIndex, collapsedArgCount;
 
@@ -362,7 +373,7 @@ namespace IronRuby.Runtime.Calls {
                 normalized.ToArray(),
                 DynamicMetaObject.EmptyMetaObjects,
                 ArrayUtils.EmptyStrings,
-                1, // one hidden argument: block
+                hidden,
                 collapsedArgCount,
                 firstSplattedArg,
                 splatIndex
@@ -612,6 +623,28 @@ namespace IronRuby.Runtime.Calls {
 
             protected override Expression ToExpression(OverloadResolver/*!*/ resolver, RestrictedArguments/*!*/ args, bool[]/*!*/ hasBeenUsed) {
                 return ((RubyOverloadResolver)resolver)._args.TargetExpression;
+            }
+        }
+
+        internal sealed class ImplicitInstanceBuilder : InstanceBuilder {
+            public ImplicitInstanceBuilder()
+                : base(-1) {
+            }
+
+            public override bool HasValue {
+                get { return true; }
+            }
+
+            public override int ConsumedArgumentCount {
+                get { return 0; }
+            }
+
+            protected override Expression/*!*/ ToExpression(ref MethodInfo/*!*/ method, OverloadResolver/*!*/ resolver, RestrictedArguments/*!*/ args, bool[]/*!*/ hasBeenUsed) {
+                return ((RubyOverloadResolver)resolver)._args.TargetExpression;
+            }
+
+            protected override Func<object[], object> ToDelegate(ref MethodInfo/*!*/ method, OverloadResolver/*!*/ resolver, RestrictedArguments/*!*/ args, bool[]/*!*/ hasBeenUsed) {
+                return null;
             }
         }
 

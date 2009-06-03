@@ -1,0 +1,2 @@
+fails:System::Int16 can be induced from a Bignum
+fails:System::Int16 raises a RangeError if out of range for Bignum

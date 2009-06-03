@@ -65,6 +65,10 @@ namespace IronRuby.Runtime {
             return CreateTypeError(String.Format("allocator undefined for {0}", rubyClass.Name));
         }
 
+        public static Exception/*!*/ CreateNotClrTypeError(RubyClass/*!*/ rubyClass) {
+            return CreateTypeError(String.Format("`{0}' doesn't represent a CLR type", rubyClass.Name));
+        }
+
         public static Exception/*!*/ CreateMissingDefaultConstructorError(RubyClass/*!*/ rubyClass, string/*!*/ initializerOwnerName) {
             Debug.Assert(rubyClass.IsRubyClass);
 
@@ -154,7 +158,7 @@ namespace IronRuby.Runtime {
             return FormatMethodMissingMessage(context, self, name, "undefined method `{0}' for {1}");
         }
 
-        private static string/*!*/ FormatMethodMissingMessage(RubyContext/*!*/ context, object self, string/*!*/ name, string/*!*/ message) {
+        internal static string/*!*/ FormatMethodMissingMessage(RubyContext/*!*/ context, object self, string/*!*/ name, string/*!*/ message) {
             Assert.NotNull(name);
             string strObject = context.InspectEnsuringClassName(self);
             return String.Format(message, name, strObject);

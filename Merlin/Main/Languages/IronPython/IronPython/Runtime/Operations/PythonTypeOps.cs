@@ -282,10 +282,10 @@ namespace IronPython.Runtime.Operations {
                     }
                     
                     if (type is TypeGroup) {
-                        return new PythonTypeValueSlot(type);
+                        return new PythonTypeUserDescriptorSlot(type, true);
                     }
 
-                    return new PythonTypeValueSlot(DynamicHelpers.GetPythonTypeFromType(type.Type));
+                    return new PythonTypeUserDescriptorSlot(DynamicHelpers.GetPythonTypeFromType(type.Type), true);
                 
                 case TrackerTypes.Constructor:
                     return GetConstructor(group[0].DeclaringType, privateBinding);

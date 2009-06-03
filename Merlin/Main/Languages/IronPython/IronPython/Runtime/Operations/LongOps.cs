@@ -633,11 +633,29 @@ namespace IronPython.Runtime.Operations {
                 case 'd':
                     digits = val.ToString();
                     break;
-                case '%': digits = val.ToString() + "00.000000%"; break;
+                case '%':
+                    if (val == BigInteger.Zero) {
+                        digits = "0.000000%";
+                    } else {
+                        digits = val.ToString() + "00.000000%";
+                    }
+                    break;
                 case 'e': digits = ToExponent(val, true, 6, 7); break;
                 case 'E': digits = ToExponent(val, false, 6, 7); break;
-                case 'f': digits = val.ToString() + ".000000"; break;
-                case 'F': digits = val.ToString() + ".000000"; break;
+                case 'f':
+                    if (val != BigInteger.Zero) {
+                        digits = val.ToString() + ".000000";
+                    } else {
+                        digits = "0.000000";
+                    }
+                    break;
+                case 'F':
+                    if (val != BigInteger.Zero) {
+                        digits = val.ToString() + ".000000";
+                    } else {
+                        digits = "0.000000";
+                    }
+                    break;
                 case 'g':
                     if (val >= 1000000) {
                         digits = ToExponent(val, true, 0, 6);
@@ -653,16 +671,16 @@ namespace IronPython.Runtime.Operations {
                     }
                     break;
                 case 'X':
-                    digits = ToHex(val, spec.IncludeType, false);
+                    digits = ToHex(val, false);
                     break;
                 case 'x':
-                    digits = ToHex(val, spec.IncludeType, true);
+                    digits = ToHex(val, true);
                     break;
                 case 'o': // octal
-                    digits = ToOctal(val, spec.IncludeType, true);
+                    digits = ToOctal(val, true);
                     break;
                 case 'b': // binary
-                    digits = ToBinary(val, spec.IncludeType, true);
+                    digits = ToBinary(val, false, true);
                     break;
                 case 'c': // single char
                     int iVal;
@@ -685,32 +703,16 @@ namespace IronPython.Runtime.Operations {
             return spec.AlignNumericText(digits, self.IsZero(), self.IsPositive());
         }
 
-        internal static string ToHex(BigInteger val, bool includeType) {
-            return ToHex(val, includeType, true);
+        internal static string ToHex(BigInteger val) {
+            return ToHex(val, true);
         }
 
-        internal static string ToHex(BigInteger val, bool includeType, bool lowercase) {
-            string digits;
-            digits = ToDigits(val, 16, lowercase);
-
-            if (includeType) {
-                digits = (lowercase ? "0x" : "0X") + digits;
-            }
-            return digits;
+        internal static string ToHex(BigInteger val, bool lowercase) {
+            return ToDigits(val, 16, lowercase);
         }
 
-        internal static string ToOctal(BigInteger val, bool includeType) {
-            return ToOctal(val, includeType, true);
-        }
-
-        internal static string ToOctal(BigInteger val, bool includeType, bool lowercase) {
-            string digits;
-            digits = ToDigits(val, 8, lowercase);
-
-            if (includeType) {
-                digits = (lowercase ? "0o" : "0O") + digits;
-            }
-            return digits;
+        internal static string ToOctal(BigInteger val, bool lowercase) {
+            return ToDigits(val, 8, lowercase);
         }
 
         internal static string ToBinary(BigInteger val, bool includeType) {
@@ -720,7 +722,7 @@ namespace IronPython.Runtime.Operations {
         internal static string ToBinary(BigInteger val, bool includeType, bool lowercase) {
             string digits;
             digits = ToDigits(val, 2, lowercase);
-
+            
             if (includeType) {
                 digits = (lowercase ? "0b" : "0B") + digits;
             }
@@ -739,7 +741,12 @@ namespace IronPython.Runtime.Operations {
                 int curGroup = 0, curDigit = digits.Length - 1;
                 while (curDigit > 0) {
                     // insert the seperator
-                    curDigit -= separatorLocations[curGroup];
+                    int groupLen = separatorLocations[curGroup];
+                    if (groupLen == 0) {
+                        break;
+                    }
+                    curDigit -= groupLen;
+
                     if (curDigit >= 0) {
                         res.Insert(curDigit + 1, separator);
                     }

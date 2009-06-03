@@ -19,7 +19,7 @@ using IronRuby.Compiler.Generation;
 
 namespace IronRuby.Builtins {
     public partial class MatchData {
-        public sealed class Subclass : MatchData, IRubyObject {
+        public sealed partial class Subclass : MatchData, IRubyObject {
             private readonly RubyClass/*!*/ _class;
             private RubyInstanceData _instanceData;
 
@@ -32,23 +32,6 @@ namespace IronRuby.Builtins {
             protected override MatchData/*!*/ CreateInstance() {
                 return new Subclass(_class);
             }
-
-            #region IRubyObject Members
-
-            [Emitted]
-            public RubyClass/*!*/ Class {
-                get { return _class; }
-            }
-
-            public RubyInstanceData/*!*/ GetInstanceData() {
-                return RubyOps.GetInstanceData(ref _instanceData);
-            }
-
-            public RubyInstanceData TryGetInstanceData() {
-                return _instanceData;
-            }
-
-            #endregion
         }
     }
 }

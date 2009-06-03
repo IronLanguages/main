@@ -49,7 +49,7 @@ namespace IronRuby.Compiler.Ast {
         }
 
         private RubyCallSignature MakeCallSignature(bool hasImplicitSelf) {
-            return new RubyCallSignature(false, true, hasImplicitSelf, _args.Count, SplattedArgument != null, Block != null, RhsArgument != null);
+            return new RubyCallSignature(true, hasImplicitSelf, _args.Count, SplattedArgument != null, Block != null, RhsArgument != null);
         }
 
         public MSA.DynamicExpression/*!*/ MakeCallAction(string/*!*/ name, bool hasImplicitSelf) {

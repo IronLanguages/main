@@ -160,7 +160,7 @@ p [has_value, value]
             c.SetLibraryMethod("bar", new RubyMethodGroupInfo(new[] { 
                 CreateParamsArrayMethod("B0", new[] { typeof(int), typeof(int), typeof(int[]), typeof(bool) }, 2, 0),
                 CreateParamsArrayMethod("B1", new[] { typeof(int), typeof(int[]), typeof(int), typeof(int) }, 1, 1),
-            }, c, null, true), true);
+            }, c, true), true);
 
             AssertOutput(delegate() {
                 CompilerTest(@"
@@ -212,7 +212,7 @@ B1 -> 10000
                 CreateParamsArrayMethod("Z0", new[] { typeof(int), typeof(object[]) }, 1, 0),
                 CreateParamsArrayMethod("Z1", new[] { typeof(int), typeof(MutableString[]) }, 1, 1),
                 CreateParamsArrayMethod("Z2", new[] { typeof(int), typeof(int[]) }, 1, 2),
-            }, c, null, true), true);
+            }, c, true), true);
 
             AssertOutput(delegate() {
                 CompilerTest(@"
@@ -237,7 +237,7 @@ Z1 -> 10000
             c.SetLibraryMethod("error", new RubyMethodGroupInfo(new[] { 
                 CreateParamsArrayMethod("E1", new[] { typeof(int), typeof(MutableString[]) }, 1, 1),
                 CreateParamsArrayMethod("E2", new[] { typeof(int), typeof(int[]) }, 1, 2),
-            }, c, null, true), true);
+            }, c, true), true);
 
             AssertOutput(delegate() {
                 CompilerTest(@"

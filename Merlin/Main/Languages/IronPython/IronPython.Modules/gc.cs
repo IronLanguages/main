@@ -14,11 +14,15 @@
  * ***************************************************************************/
 
 using System;
-using IronPython.Runtime;
-using IronPython.Runtime.Operations;
-using IronPython.Runtime.Types;
+
 using Microsoft.Scripting;
 using Microsoft.Scripting.Runtime;
+
+using IronPython.Runtime;
+using IronPython.Runtime.Exceptions;
+using IronPython.Runtime.Operations;
+using IronPython.Runtime.Types;
+
 using SpecialName = System.Runtime.CompilerServices.SpecialNameAttribute;
 
 [assembly: PythonModule("gc", typeof(IronPython.Modules.PythonGC))]
@@ -43,8 +47,8 @@ namespace IronPython.Modules {
         public static void enable() {
         }
 
-        public static void disable() {
-            throw PythonOps.NotImplementedError("gc.disable isn't implemented");
+        public static void disable(CodeContext/*!*/ context) {
+            PythonOps.Warn(context, PythonExceptions.RuntimeWarning, "IronPython has no support for disabling the GC");
         }
 
         public static object isenabled() {

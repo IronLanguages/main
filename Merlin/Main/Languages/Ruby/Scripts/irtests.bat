@@ -77,9 +77,9 @@ REM We use mspec-run instead of mspec so that we can specify "-G thread" to disa
 set MSPEC_RUN=%MERLIN_ROOT%\..\External.LCA_RESTRICTED\Languages\IronRuby\mspec\mspec\bin\mspec-run
 
 if defined PARALLEL_IRTESTS (
-    start "RubySpec A tests" cmd.exe /k %MERLIN_ROOT%\bin\Debug\ir.exe %MSPEC_RUN% -G fails -G unstable -G thread -G critical -fd :lang :core :cli :netinterop
+    start "RubySpec A tests" cmd.exe /k %MERLIN_ROOT%\bin\Debug\ir.exe %MSPEC_RUN% -G fails -G unstable -G thread -G critical -fd :lang :cli :netinterop :cominterop :thread
 ) else (
-    %MERLIN_ROOT%\bin\Debug\ir.exe %MSPEC_RUN% -G fails -G unstable -G thread -G critical -fd :lang :core :cli :netinterop
+    %MERLIN_ROOT%\bin\Debug\ir.exe %MSPEC_RUN% -G fails -G unstable -G thread -G critical -fd :lang :cli :netinterop :cominterop :thread
     if not %ERRORLEVEL%==0 (
         set IRTESTS_ERRORS=%IRTESTS_ERRORS% RubySpec A tests failed!!! 
         echo %IRTESTS_ERRORS%
@@ -89,11 +89,23 @@ if defined PARALLEL_IRTESTS (
 time /t
 
 if defined PARALLEL_IRTESTS (
-    start "RubySpec B tests" mspec ci -fd -V :lib
+    start "RubySpec B tests" mspec ci -fd -V :core1 :lib1 
 ) else (
-    call mspec ci -fd :lib
+    call mspec ci -fd :core1 :lib1
     if not %ERRORLEVEL%==0 (
         set IRTESTS_ERRORS=%IRTESTS_ERRORS% RubySpec B tests failed!!! 
+        echo %IRTESTS_ERRORS%
+    )
+)
+
+time /t
+
+if defined PARALLEL_IRTESTS (
+    start "RubySpec C tests" mspec ci -fd -V :core2 :lib2
+) else (
+    call mspec ci -fd :core2 :lib2
+    if not %ERRORLEVEL%==0 (
+        set IRTESTS_ERRORS=%IRTESTS_ERRORS% RubySpec C tests failed!!! 
         echo %IRTESTS_ERRORS%
     )
 )

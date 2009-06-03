@@ -531,7 +531,11 @@ namespace Microsoft.Scripting.Generation {
                 ci = FilterConstructorsToPublicAndProtected(ci);
             }
 
-            if (t.IsValueType) {
+            if (t.IsValueType 
+#if !SILVERLIGHT
+                && t != typeof(ArgIterator)
+#endif
+            ) {
                 // structs don't define a parameterless ctor, add a generic method for that.
                 return ArrayUtils.Insert<MethodBase>(GetStructDefaultCtor(t), ci);
             }

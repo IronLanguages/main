@@ -82,10 +82,6 @@ namespace IronPython.Runtime.Binding {
             return base.BindDelegate(site, args);
         }
 
-        internal Func<CallSite, object, TValue, object> OptimizeDelegate<TValue>(CallSite<Func<CallSite, object, TValue, object>> site, object self, TValue value) {
-            return base.BindDelegate<Func<CallSite, object, TValue, object>>(site, new object[] { self, value });
-        }
-
         public PythonContext/*!*/ Context {
             get {
                 return _context;

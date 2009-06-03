@@ -105,7 +105,7 @@ namespace IronPython.Runtime.Binding {
 
         public bool IsNull {
             get {
-                if (_slot is PythonTypeValueSlot && ((PythonTypeValueSlot)_slot).Value == null) {
+                if (_slot is PythonTypeUserDescriptorSlot && ((PythonTypeUserDescriptorSlot)_slot).Value == null) {
                     return true;
                 }
 

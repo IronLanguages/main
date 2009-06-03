@@ -19,8 +19,8 @@ using System.Windows.Forms;
 using IronPython.Hosting;
 using IronPython.Runtime;
 using Microsoft.Scripting.Hosting;
+using Microsoft.Scripting.Hosting.Providers;
 using Microsoft.Scripting.Hosting.Shell;
-using System.Dynamic.Utils;
 
 internal sealed class PythonWindowsConsoleHost : ConsoleHost {
 
@@ -48,6 +48,12 @@ internal sealed class PythonWindowsConsoleHost : ConsoleHost {
         sb.AppendLine();
 
         return sb.ToString();
+    }
+
+    protected override void ExecuteInternal() {
+        var pc = HostingHelpers.GetLanguageContext(Engine) as PythonContext;
+        pc.SetModuleState(typeof(ScriptEngine), Engine);
+        base.ExecuteInternal();
     }
 
     [STAThread]

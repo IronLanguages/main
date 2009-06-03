@@ -128,6 +128,7 @@ namespace IronPython.Runtime {
         private CallSite<Func<CallSite, CodeContext, object, object, object, object>> _propSetSite;
         private CompiledLoader _compiledLoader;
         internal bool _importWarningThrows;
+        private bool _importedEncodings;
         private CommandDispatcher _commandDispatcher; // can be null
         private ClrModule.ReferencesList _referencesList;
         private FloatFormat _floatFormat, _doubleFormat;
@@ -138,7 +139,6 @@ namespace IronPython.Runtime {
         private Dictionary<Type, CallSite<Func<CallSite, object, object, bool>>> _equalSites;
 
         private Dictionary<Type, PythonSiteCache> _systemSiteCache;
-        private Dictionary<object, Delegate> _optimizedDelegates;
         internal static object _syntaxErrorNoCaret = new object();
 
         // atomized binders
@@ -167,6 +167,7 @@ namespace IronPython.Runtime {
         private PythonSetIndexBinder[] _setIndexBinders;
         private PythonDeleteIndexBinder[] _deleteIndexBinders;
         private DynamicMetaObjectBinder _invokeTwoConvertToInt;
+        private static CultureInfo _CCulture;
 
         /// <summary>
         /// Creates a new PythonContext not bound to Engine.
@@ -175,7 +176,6 @@ namespace IronPython.Runtime {
             : base(manager) {
             _options = new PythonOptions(options);
             _builtinsDict = CreateBuiltinTable();
-            _optimizedDelegates = new Dictionary<object, Delegate>();
 
             Scope defaultScope = new Scope();
             _defaultContext = new CodeContext(defaultScope, this);
@@ -248,7 +248,6 @@ namespace IronPython.Runtime {
             }
 #endif
 
-            _collateCulture = _ctypeCulture = _timeCulture = _monetaryCulture = _numericCulture = CultureInfo.InvariantCulture;
             _equalityComparer = new PythonEqualityComparer(this);
 
             EnsureModule(_defaultContext);
@@ -1026,6 +1025,16 @@ namespace IronPython.Runtime {
                 _importWarningThrows = true;
             }
             return warnings;
+        }
+
+        public void EnsureEncodings() {
+            if (!_importedEncodings) {
+                try {
+                    Importer.ImportModule(SharedContext, new PythonDictionary(), "encodings", false, -1);
+                } catch (ImportException) {
+                }
+                _importedEncodings = true;
+            }
         }
 
         /// <summary>
@@ -2307,20 +2316,6 @@ namespace IronPython.Runtime {
             }
         }
 
-        internal Delegate GetOptimizedDelegateForBuiltin(object info) {
-            Delegate result;
-            lock (_optimizedDelegates) {
-                _optimizedDelegates.TryGetValue(info, out result);
-                return result;
-            }
-        }
-
-        internal void SetOptimizedDelegateForBuiltin(object info, Delegate dlg) {
-            lock (_optimizedDelegates) {
-                _optimizedDelegates[info] = dlg;
-            }
-        }
-
         #endregion
 
         #region Conversions
@@ -2779,28 +2774,70 @@ namespace IronPython.Runtime {
             }
         }
 
+        internal static CultureInfo CCulture {
+            get {
+                if (_CCulture == null) {
+                    Interlocked.CompareExchange(ref _CCulture, MakeCCulture(), null);
+                }
+
+                return _CCulture;
+            }
+        }
+
+        private static CultureInfo MakeCCulture() {
+            CultureInfo res = (CultureInfo)CultureInfo.InvariantCulture.Clone();
+            res.NumberFormat.NumberGroupSizes = new int[] { 0 };
+            res.NumberFormat.CurrencyGroupSizes = new int[] { 0 };
+            return res;
+        }
+
         internal CultureInfo CollateCulture {
-            get { return _collateCulture; }
+            get {
+                if (_collateCulture == null) {
+                    _collateCulture = CCulture;
+                }
+                return _collateCulture; 
+            }
             set { _collateCulture = value; }
         }
 
         internal CultureInfo CTypeCulture {
-            get { return _ctypeCulture; }
+            get {
+                if (_ctypeCulture == null) {
+                    _ctypeCulture = CCulture;
+                }
+                return _ctypeCulture; 
+            }
             set { _ctypeCulture = value; }
         }
 
         internal CultureInfo TimeCulture {
-            get { return _timeCulture; }
+            get {
+                if (_timeCulture == null) {
+                    _timeCulture = CCulture;
+                }
+                return _timeCulture; 
+            }
             set { _timeCulture = value; }
         }
 
         internal CultureInfo MonetaryCulture {
-            get { return _monetaryCulture; }
+            get {
+                if (_monetaryCulture == null) {
+                    _monetaryCulture = CCulture;
+                }
+                return _monetaryCulture; 
+            }
             set { _monetaryCulture = value; }
         }
 
         internal CultureInfo NumericCulture {
-            get { return _numericCulture; }
+            get {
+                if (_numericCulture == null) {
+                    _numericCulture = CCulture;
+                }
+                return _numericCulture; 
+            }
             set { _numericCulture = value; }
         }
 

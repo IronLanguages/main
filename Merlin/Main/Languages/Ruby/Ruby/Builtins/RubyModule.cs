@@ -28,6 +28,46 @@ using Microsoft.Scripting.Actions;
 using Microsoft.Scripting.Utils;
 
 namespace IronRuby.Builtins {
+    [Flags]
+    public enum ModuleRestrictions {
+        None = 0,
+
+        /// <summary>
+        /// Module doesn't allow its methods to be overridden.
+        /// Used for built-ins, except for Object.
+        /// </summary>
+        NoOverrides = 1,
+
+        /// <summary>
+        /// Module doesn't allow its methods to be called by mangled names.
+        /// Used for built-ins.
+        /// </summary>
+        NoNameMangling = 2,
+
+        /// <summary>
+        /// Default restrictions for built-in modules.
+        /// </summary>
+        Builtin = NoOverrides | NoNameMangling,
+    }
+
+    [Flags]
+    public enum RubyModuleAttributes {
+        None = 0,
+
+        NoOverrides = ModuleRestrictions.NoOverrides,
+        NoNameMangling = ModuleRestrictions.NoNameMangling,
+        RestrictionsMask = NoOverrides | NoNameMangling,
+
+        IsSelfContained = 0x100,
+    }
+
+    [Flags]
+    public enum MethodLookup {
+        Default = 0,
+        Virtual = 1,
+        ReturnForwarder = 2,
+        FallbackToObject = 4,
+    }
 
     // TODO: freezing
 #if DEBUG
@@ -50,6 +90,8 @@ namespace IronRuby.Builtins {
 
         // the namespace this module represents or null:
         private readonly NamespaceTracker _namespaceTracker;
+
+        private readonly ModuleRestrictions _restrictions;
         
         // name of the module or null for anonymous modules:
         private string _name;
@@ -170,6 +212,10 @@ namespace IronRuby.Builtins {
             get { return false; }
         }
 
+        public ModuleRestrictions Restrictions {
+            get { return _restrictions; }
+        }
+
         internal RubyModule[]/*!*/ Mixins {
             get { return _mixins; }
         }
@@ -216,14 +262,14 @@ namespace IronRuby.Builtins {
 
         // creates an empty module:
         protected RubyModule(RubyClass/*!*/ rubyClass, string name)
-            : this(rubyClass.Context, name, null, null, null, null, null) {
+            : this(rubyClass.Context, name, null, null, null, null, null, ModuleRestrictions.None) {
 
             // all modules need a singleton (see RubyContext.CreateModule):
             InitializeDummySingletonClass(rubyClass, null);
         }
 
         internal RubyModule(RubyContext/*!*/ context, string name, Action<RubyModule> methodsInitializer, Action<RubyModule> constantsInitializer,
-            RubyModule/*!*/[] expandedMixins, NamespaceTracker namespaceTracker, TypeTracker typeTracker) {
+            RubyModule/*!*/[] expandedMixins, NamespaceTracker namespaceTracker, TypeTracker typeTracker, ModuleRestrictions restrictions) {
 
             Assert.NotNull(context);
             Debug.Assert(namespaceTracker == null || typeTracker == null);
@@ -238,6 +284,7 @@ namespace IronRuby.Builtins {
             _namespaceTracker = namespaceTracker;
             _typeTracker = typeTracker;
             _mixins = expandedMixins ?? EmptyArray;
+            _restrictions = restrictions;
         }
 
         #region Initialization (thread-safe)
@@ -468,7 +515,7 @@ namespace IronRuby.Builtins {
 
         // creates an empty Module or its subclass:
         protected virtual RubyModule/*!*/ CreateInstance(string name) {
-            return _context.CreateModule(name, null, null, null, null, null, null);
+            return _context.CreateModule(name, null, null, null, null, null, null, ModuleRestrictions.None);
         }
 
         public static RubyModule/*!*/ CreateInstance(RubyClass/*!*/ rubyClass, string name) {
@@ -618,7 +665,9 @@ namespace IronRuby.Builtins {
             // real class object and it's singleton share the tracker:
             TypeTracker tracker = (IsSingletonClass) ? null : _typeTracker;
 
-            RubyClass result = new RubyClass(Context, null, null, this, trait, null, null, superClass, null, tracker, null, false, true);
+            var result = new RubyClass(
+                Context, null, null, this, trait, null, null, superClass, null, tracker, null, false, true, ModuleRestrictions.None
+            );
 #if DEBUG
             result.DebugName = "S(" + DebugName + ")";
             result.Version.SetName(result.DebugName);
@@ -1069,7 +1118,8 @@ namespace IronRuby.Builtins {
 
             RubyMemberInfo method;
             using (Context.ClassHierarchyLocker()) {
-                method = ResolveMethodFallbackToObjectNoLock(oldName, RubyClass.IgnoreVisibility).Info;
+                // MRI: aliases a super-forwarder not the real method.
+                method = ResolveMethodNoLock(oldName, RubyClass.IgnoreVisibility, MethodLookup.FallbackToObject | MethodLookup.ReturnForwarder).Info;
                 if (method == null) {
                     throw RubyExceptions.CreateUndefinedMethodError(this, oldName);
                 }
@@ -1097,7 +1147,7 @@ namespace IronRuby.Builtins {
             if (TryGetMethod(name, ref skipHidden, out existing)) {
                 SetMethodNoEventNoLock(callerContext, name, method.Copy((RubyMemberFlags)visibility, this));
             } else {
-                SetMethodNoEventNoLock(callerContext, name, new RubyMemberInfo((RubyMemberFlags)visibility | RubyMemberFlags.SuperForwarder, method.DeclaringModule));
+                SetMethodNoEventNoLock(callerContext, name, new SuperForwarderInfo((RubyMemberFlags)visibility, method.DeclaringModule, name));
             }
         }
 
@@ -1338,10 +1388,18 @@ namespace IronRuby.Builtins {
         }
 
         public MethodResolutionResult ResolveMethodForSiteNoLock(string/*!*/ name, RubyClass visibilityContext) {
-            return ResolveMethodNoLock(name, visibilityContext).InvalidateSitesOnOverride();
+            return ResolveMethodForSiteNoLock(name, visibilityContext, MethodLookup.Default);
+        }
+
+        internal MethodResolutionResult ResolveMethodForSiteNoLock(string/*!*/ name, RubyClass visibilityContext, MethodLookup options) {
+            return ResolveMethodNoLock(name, visibilityContext, options).InvalidateSitesOnOverride();
         }
 
         public MethodResolutionResult ResolveMethodNoLock(string/*!*/ name, RubyClass visibilityContext) {
+            return ResolveMethodNoLock(name, visibilityContext, MethodLookup.Default);
+        }
+
+        public MethodResolutionResult ResolveMethodNoLock(string/*!*/ name, RubyClass visibilityContext, MethodLookup options) {
             Context.RequiresClassHierarchyLock();
             Assert.NotNull(name);
 
@@ -1350,25 +1408,37 @@ namespace IronRuby.Builtins {
             RubyModule owner = null;
             bool skipHidden = false;
             bool foundCallerSelf = false;
+            MethodResolutionResult result;
 
             if (ForEachAncestor((module) => {
                 owner = module;
                 foundCallerSelf |= module == visibilityContext;
-                return module.TryGetMethod(name, ref skipHidden, out info);
+                return module.TryGetMethod(name, ref skipHidden, (options & MethodLookup.Virtual) != 0, out info);
             })) {
                 if (info == null || info.IsUndefined) {
-                    return MethodResolutionResult.NotFound;
+                    result = MethodResolutionResult.NotFound;
                 } else if (!IsMethodVisible(info, owner, visibilityContext, foundCallerSelf)) {
-                    return new MethodResolutionResult(info, owner, false);
+                    result = new MethodResolutionResult(info, owner, false);
                 } else if (info.IsSuperForwarder) {
-                    // start again with owner's super ancestor and ignore visibility:
-                    return owner.ResolveSuperMethodNoLock(name, owner);
+                    if ((options & MethodLookup.ReturnForwarder) != 0) {
+                        result = new MethodResolutionResult(info, owner, true);
+                    } else {
+                        // start again with owner's super ancestor and ignore visibility:
+                        result = owner.ResolveSuperMethodNoLock(((SuperForwarderInfo)info).SuperName, owner);
+                    }
                 } else {
-                    return new MethodResolutionResult(info, owner, true);
+                    result = new MethodResolutionResult(info, owner, true);
                 }
+            } else {
+                result = MethodResolutionResult.NotFound;
             }
 
-            return MethodResolutionResult.NotFound;
+            // Note: all classes include Object in ancestors, so we don't need to search it again:
+            if (!result.Found && (options & MethodLookup.FallbackToObject) != 0 && !IsClass) {
+                return _context.ObjectClass.ResolveMethodNoLock(name, visibilityContext, options & ~MethodLookup.FallbackToObject);
+            }
+
+            return result;
         }
 
         private bool IsMethodVisible(RubyMemberInfo/*!*/ method, RubyModule/*!*/ owner, RubyClass visibilityContext, bool foundCallerSelf) {
@@ -1388,15 +1458,6 @@ namespace IronRuby.Builtins {
             } 
 
             return method.Visibility == RubyMethodVisibility.Public;
-        }
-
-        /// <summary>
-        /// Resolve method and if it is not found in this module's ancestors, resolve in Object.
-        /// </summary>
-        public virtual MethodResolutionResult ResolveMethodFallbackToObjectNoLock(string/*!*/ name, RubyClass visibilityContext) {
-            Context.RequiresClassHierarchyLock();
-            var result = ResolveMethodNoLock(name, visibilityContext);
-            return result.Found ? result : _context.ObjectClass.ResolveMethodNoLock(name, visibilityContext);
         }
 
         // skip one method in the method resolution order (MRO)
@@ -1441,6 +1502,10 @@ namespace IronRuby.Builtins {
         }
 
         internal bool TryGetMethod(string/*!*/ name, ref bool skipHidden, out RubyMemberInfo method) {
+            return TryGetMethod(name, ref skipHidden, false, out method);
+        }
+
+        internal bool TryGetMethod(string/*!*/ name, ref bool skipHidden, bool virtualLookup, out RubyMemberInfo method) {
             Context.RequiresClassHierarchyLock();
             Assert.NotNull(name);
             Debug.Assert(_methods != null);
@@ -1450,10 +1515,19 @@ namespace IronRuby.Builtins {
                 return true;
             }
 
+            string mangled;
+            if (virtualLookup && (mangled = RubyUtils.MangleName(name)) != name && TryGetDefinedMethod(mangled, ref skipHidden, out method)) {
+                return true;
+            }
+
             // Skip hidden CLR overloads.
             // Skip lookup on types that are not visible or interfaces.
             if (!skipHidden && _typeTracker != null && !_typeTracker.Type.IsInterface) {
-                if (TryGetClrMember(_typeTracker.Type, name, out method)) {
+                // Note: Do not allow mangling for CLR virtual lookups - we want to match the overridden name exactly as is, 
+                // so that it corresponds to the base method call the override stub performs.
+                bool tryUnmangle = !virtualLookup && (_restrictions & ModuleRestrictions.NoNameMangling) == 0;
+
+                if (TryGetClrMember(_typeTracker.Type, name, tryUnmangle, out method)) {
                     _methods.Add(name, method);
                     return true;
                 }
@@ -1462,7 +1536,7 @@ namespace IronRuby.Builtins {
             return false;
         }
 
-        protected virtual bool TryGetClrMember(Type/*!*/ type, string/*!*/ name, out RubyMemberInfo method) {
+        protected virtual bool TryGetClrMember(Type/*!*/ type, string/*!*/ name, bool tryUnmangle, out RubyMemberInfo method) {
             method = null;
             return false;
         }
@@ -1542,10 +1616,14 @@ namespace IronRuby.Builtins {
                         stop = !inherited;
                     }
 
-                } else if (member.IsUndefined) {
-                    visited.Add(name, true);
-                } else if (((RubyMethodAttributes)member.Visibility & attributes) != 0 && !visited.ContainsKey(name)) {
-                    action(name, member);
+                } else if (!visited.ContainsKey(name)) {
+                    // yield the member only if it has the right visibility:
+                    if (!member.IsUndefined && ((RubyMethodAttributes)member.Visibility & attributes) != 0) {
+                        action(name, member);
+                    }
+
+                    // visit the member even if it doesn't have the right visibility so that any overridden member with the right visibility
+                    // won't later be visited:
                     visited.Add(name, true);
                 }
 

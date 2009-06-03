@@ -41,8 +41,9 @@ namespace IronRuby.Runtime {
         [Emitted]
         public static readonly object/*!*/ DefaultArgument = new object();
         
+        // Returned by a virtual site if a base call should be performed.
         [Emitted]
-        public static readonly object/*!*/ MethodNotFound = new object();
+        public static readonly object/*!*/ ForwardToBase = new object();
 
         #region Scopes
 
@@ -88,11 +89,11 @@ namespace IronRuby.Runtime {
         }
 
         [Emitted]
-        public static RubyMethodScope/*!*/ CreateMethodScope(LocalsDictionary/*!*/ locals, RubyScope/*!*/ parent,
+        public static RubyMethodScope/*!*/ CreateMethodScope(LocalsDictionary/*!*/ locals, 
             RubyMethodInfo/*!*/ methodDefinition, RuntimeFlowControl/*!*/ rfc, object selfObject, Proc blockParameter,
             InterpretedFrame interpretedFrame) {
 
-            RubyMethodScope scope = new RubyMethodScope(parent, methodDefinition, blockParameter, rfc, selfObject);
+            RubyMethodScope scope = new RubyMethodScope(methodDefinition.DeclaringScope, methodDefinition, blockParameter, rfc, selfObject);
             scope.SetDebugName("method " + methodDefinition.DefinitionName + ((blockParameter != null) ? "&" : null));
 
             scope.Frame = locals;
@@ -480,13 +481,13 @@ namespace IronRuby.Runtime {
 
             if (instanceOwner != null) {
                 SetMethod(scope.RubyContext, instanceMethod = 
-                    new RubyMethodInfo(ast, clrMethod, instanceOwner, name, mandatory, optional, hasUnsplatParameter, instanceFlags)
+                    new RubyMethodInfo(ast, clrMethod, scope, instanceOwner, name, mandatory, optional, hasUnsplatParameter, instanceFlags)
                 );
             }
 
             if (singletonOwner != null) {
                 SetMethod(scope.RubyContext, singletonMethod =
-                    new RubyMethodInfo(ast, clrMethod, singletonOwner, name, mandatory, optional, hasUnsplatParameter, singletonFlags)
+                    new RubyMethodInfo(ast, clrMethod, scope, singletonOwner, name, mandatory, optional, hasUnsplatParameter, singletonFlags)
                 );
             }
 
@@ -1284,6 +1285,11 @@ namespace IronRuby.Runtime {
         }
 
         [Emitted]
+        public static Exception/*!*/ MakeAbstractMethodCalledError(RuntimeMethodHandle/*!*/ method) {
+            return new NotImplementedException(String.Format("Abstract method `{0}' not implemented", MethodInfo.GetMethodFromHandle(method)));
+        }
+
+        [Emitted]
         public static Exception/*!*/ MakeInvalidArgumentTypesError(string/*!*/ methodName) {
             // TODO:
             return new ArgumentException(String.Format("wrong number or type of arguments for `{0}'", methodName));
@@ -1306,6 +1312,18 @@ namespace IronRuby.Runtime {
         }
 
         [Emitted]
+        public static Exception/*!*/ MakeNotClrTypeError(RubyClass/*!*/ classObj) {
+            return RubyExceptions.CreateNotClrTypeError(classObj);
+        }
+
+        [Emitted]
+        public static Exception/*!*/ MakeConstructorUndefinedError(RubyClass/*!*/ classObj) {
+            return RubyExceptions.CreateTypeError(String.Format("`{0}' doesn't have a visible CLR constructor", 
+                classObj.Context.GetTypeName(classObj.TypeTracker.Type, true)
+            ));
+        }
+
+        [Emitted]
         public static Exception/*!*/ MakeMissingDefaultConstructorError(RubyClass/*!*/ classObj, string/*!*/ initializerOwnerName) {
             return RubyExceptions.CreateMissingDefaultConstructorError(classObj, initializerOwnerName);
         }
@@ -1318,6 +1336,14 @@ namespace IronRuby.Runtime {
         [Emitted]
         public static Exception/*!*/ MakeProtectedMethodCalledError(RubyContext/*!*/ context, object target, string/*!*/ methodName) {
             return RubyExceptions.CreateProtectedMethodCalled(context, target, methodName);
+        }
+
+        [Emitted]
+        public static Exception/*!*/ MakeClrProtectedMethodCalledError(RubyContext/*!*/ context, object target, string/*!*/ methodName) {
+            return new MissingMethodException(
+                RubyExceptions.FormatMethodMissingMessage(context, target, methodName, "CLR protected method `{0}' called for {1}; " +
+                "CLR protected methods can only be called with a receiver whose class is a subclass of the class declaring the method")
+            );
         }
 
         #endregion
@@ -1624,11 +1650,6 @@ namespace IronRuby.Runtime {
         #region Class Variables
 
         [Emitted]
-        public static object GetObjectClassVariable(RubyScope/*!*/ scope, string/*!*/ name) {
-            return GetClassVariableInternal(scope.RubyContext.ObjectClass, name);
-        }
-
-        [Emitted]
         public static object GetClassVariable(RubyScope/*!*/ scope, string/*!*/ name) {
             // owner is the first module in scope:
             RubyModule owner = scope.GetInnerMostModuleForClassVariableLookup();
@@ -1644,13 +1665,6 @@ namespace IronRuby.Runtime {
         }
 
         [Emitted]
-        public static object TryGetObjectClassVariable(RubyScope/*!*/ scope, string/*!*/ name) {
-            object value;
-            scope.RubyContext.ObjectClass.TryGetClassVariable(name, out value);
-            return value;
-        }
-
-        [Emitted]
         public static object TryGetClassVariable(RubyScope/*!*/ scope, string/*!*/ name) {
             object value;
             // owner is the first module in scope:
@@ -1659,22 +1673,11 @@ namespace IronRuby.Runtime {
         }
 
         [Emitted]
-        public static bool IsDefinedObjectClassVariable(RubyScope/*!*/ scope, string/*!*/ name) {
-            object value;
-            return scope.RubyContext.ObjectClass.TryResolveClassVariable(name, out value) != null;
-        }
-
-        [Emitted]
         public static bool IsDefinedClassVariable(RubyScope/*!*/ scope, string/*!*/ name) {
             // owner is the first module in scope:
             RubyModule owner = scope.GetInnerMostModuleForClassVariableLookup();
             object value;
             return owner.TryResolveClassVariable(name, out value) != null;
-        }
-
-        [Emitted]
-        public static object SetObjectClassVariable(object value, RubyScope/*!*/ scope, string/*!*/ name) {
-            return SetClassVariableInternal(scope.RubyContext.ObjectClass, name, value);
         }
 
         [Emitted]
@@ -1699,6 +1702,26 @@ namespace IronRuby.Runtime {
                 Interlocked.CompareExchange(ref instanceData, new RubyInstanceData(), null);
             }
             return instanceData;
+        }
+
+        [Emitted]
+        public static bool IsObjectFrozen(RubyInstanceData instanceData) {
+            return instanceData != null && instanceData.Frozen;
+        }
+
+        [Emitted]
+        public static bool IsObjectTainted(RubyInstanceData instanceData) {
+            return instanceData != null && instanceData.Tainted;
+        }
+
+        [Emitted]
+        public static void FreezeObject(ref RubyInstanceData instanceData) {
+            RubyOps.GetInstanceData(ref instanceData).Freeze();
+        }
+
+        [Emitted]
+        public static void SetObjectTaint(ref RubyInstanceData instanceData, bool value) {
+            RubyOps.GetInstanceData(ref instanceData).Tainted = value;
         }
 
 #if !SILVERLIGHT

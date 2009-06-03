@@ -1,0 +1,1 @@
+fails:Inheriting from classes with parameter attributes passes on optional constructors to subclasses

@@ -136,7 +136,7 @@ namespace IronRuby.Compiler.Ast {
                             prologue, 
                             Methods.SetDataConstant.OpCall(
                                 runtimeScopeVariable,
-                                AstUtils.Constant(gen.SourceUnit.Path, typeof(string)),
+                                gen.SourcePathConstant,
                                 AstUtils.Constant(_dataOffset)
                             )
                         );
@@ -147,7 +147,7 @@ namespace IronRuby.Compiler.Ast {
                     throw Assert.Unreachable;
             }
 
-            if (gen.SourceUnit.Kind == SourceCodeKind.InteractiveCode) {
+            if (gen.PrintInteractiveResult) {
                 var resultVariable = scope.DefineHiddenVariable("#result", typeof(object));
 
                 var epilogue = Methods.PrintInteractiveResult.OpCall(runtimeScopeVariable,
@@ -180,7 +180,7 @@ namespace IronRuby.Compiler.Ast {
         }
 
         private static string/*!*/ GetEncodedName(AstGenerator/*!*/ gen) {
-            return RubyExceptionData.EncodeMethodName(gen.SourceUnit, RubyExceptionData.TopLevelMethodName, SourceSpan.None);
+            return RubyExceptionData.EncodeMethodName(RubyExceptionData.TopLevelMethodName, gen.SourcePath, SourceSpan.None);
         }
     }
 }

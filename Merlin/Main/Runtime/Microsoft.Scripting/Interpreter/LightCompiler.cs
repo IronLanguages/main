@@ -916,7 +916,7 @@ namespace Microsoft.Scripting.Interpreter {
 
             if (node.Operand == null) {
                 AddInstruction(GetVariable(_exceptionForRethrowStack.Peek()));
-                AddInstruction(asVoid ? ThrowInstruction.VoidRethrow : ThrowInstruction.Rethrow);
+                AddInstruction(asVoid ? ThrowInstruction.VoidThrow : ThrowInstruction.Throw);
             } else {
                 this.Compile(node.Operand);
                 AddInstruction(asVoid ? ThrowInstruction.VoidThrow : ThrowInstruction.Throw);

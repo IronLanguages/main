@@ -268,6 +268,8 @@ namespace IronPython.Runtime {
                 throw PythonOps.TypeError("compile() expected string without null bytes");
             }
 
+            source = RemoveBom(source);
+
             bool inheritContext = GetCompilerInheritance(dont_inherit);
             CompileFlags cflags = GetCompilerFlags(flags);
             PythonCompilerOptions opts = GetRuntimeGeneratedCodeCompilerOptions(context, inheritContext, cflags);
@@ -292,6 +294,14 @@ namespace IronPython.Runtime {
             FunctionCode res = new FunctionCode(compiledCode, cflags);
             res.SetFilename(filename);
             return res;
+        }
+
+        private static string RemoveBom(string source) {
+            // skip BOM (TODO: this is ugly workaround that is in fact not strictly correct, we need binary strings to handle it correctly)
+            if (source.StartsWith("\u00ef\u00bb\u00bf")) {
+                source = source.Substring(3, source.Length - 3);
+            }
+            return source;
         }
 
         public static PythonType classmethod {
@@ -449,6 +459,7 @@ namespace IronPython.Runtime {
                 throw PythonOps.TypeError("locals must be mapping");
             }
 
+            expression = RemoveBom(expression);
             var scope = GetExecEvalScopeOptional(context, globals, locals, false);
             var pythonContext = PythonContext.GetContext(context);
 

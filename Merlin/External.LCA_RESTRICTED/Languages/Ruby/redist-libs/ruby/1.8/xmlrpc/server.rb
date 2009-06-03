@@ -639,11 +639,11 @@ class Server < WEBrickServlet
   
   def serve
     if RUBY_PLATFORM =~ /mingw|mswin32/
-      signal = 1
+      signals = [1]
     else
-      signal = "HUP"
+      signals = %w[INT TERM HUP]
     end
-    trap(signal) { @server.shutdown }
+    signals.each { |signal| trap(signal) { @server.shutdown } }
 
     @server.start
   end
@@ -775,6 +775,6 @@ end # module XMLRPC
 
 =begin
 = History
-    $Id: server.rb 11708 2007-02-12 23:01:19Z shyouhei $    
+    $Id: server.rb 16966 2008-06-07 19:56:11Z shyouhei $    
 =end
 

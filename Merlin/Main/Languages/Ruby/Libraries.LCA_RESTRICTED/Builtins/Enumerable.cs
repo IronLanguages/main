@@ -490,6 +490,5 @@ namespace IronRuby.Builtins {
         #region TODO: cycle, drop, drop_while, find_index, group_by, max_by, min_by, minmax, minmax_by, reduce, take_take_while (1.9)
 
         #endregion
-
     }
 }

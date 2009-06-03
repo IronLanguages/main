@@ -568,10 +568,10 @@ namespace IronRuby.Runtime {
 
             // locks to comply with lock requirements:
             using (ClassHierarchyLocker()) {
-                _kernelModule = new RubyModule(this, Symbols.Kernel, kernelInstanceTrait, kernelConstantsInitializer, null, null, null);
-                _objectClass = new RubyClass(this, Symbols.Object, objectTracker.Type, null, objectInstanceTrait, objectConstantsInitializer, null, null, new[] { _kernelModule }, objectTracker, null, false, false);
-                _moduleClass = new RubyClass(this, Symbols.Module, typeof(RubyModule), null, moduleInstanceTrait, moduleConstantsInitializer, moduleFactories, _objectClass, null, null, null, false, false);
-                _classClass = new RubyClass(this, Symbols.Class, typeof(RubyClass), null, classInstanceTrait, classConstantsInitializer, classFactories, _moduleClass, null, null, null, false, false);
+                _kernelModule = new RubyModule(this, Symbols.Kernel, kernelInstanceTrait, kernelConstantsInitializer, null, null, null, ModuleRestrictions.Builtin);
+                _objectClass = new RubyClass(this, Symbols.Object, objectTracker.Type, null, objectInstanceTrait, objectConstantsInitializer, null, null, new[] { _kernelModule }, objectTracker, null, false, false, ModuleRestrictions.Builtin & ~ModuleRestrictions.NoOverrides);
+                _moduleClass = new RubyClass(this, Symbols.Module, typeof(RubyModule), null, moduleInstanceTrait, moduleConstantsInitializer, moduleFactories, _objectClass, null, null, null, false, false, ModuleRestrictions.Builtin);
+                _classClass = new RubyClass(this, Symbols.Class, typeof(RubyClass), null, classInstanceTrait, classConstantsInitializer, classFactories, _moduleClass, null, null, null, false, false, ModuleRestrictions.Builtin);
 
                 _kernelModule.InitializeDummySingletonClass(_moduleClass, kernelClassTrait);
                 _objectClass.InitializeDummySingletonClass(_classClass, objectClassTrait);
@@ -667,7 +667,7 @@ namespace IronRuby.Runtime {
                 return result;
             }
 
-            result = CreateModule(RubyUtils.GetQualifiedName(tracker), null, null, null, null, tracker, null);
+            result = CreateModule(GetQualifiedName(tracker), null, null, null, null, tracker, null, ModuleRestrictions.None);
             _namespaceCache[tracker] = result;
             return result;
         }
@@ -681,7 +681,7 @@ namespace IronRuby.Runtime {
             }
 
             TypeTracker tracker = (TypeTracker)TypeTracker.FromMemberInfo(interfaceType);
-            result = CreateModule(RubyUtils.GetQualifiedName(interfaceType, false), null, null, null, null, null, tracker);
+            result = CreateModule(GetQualifiedNameNoLock(interfaceType), null, null, null, null, null, tracker, ModuleRestrictions.None);
             _moduleCache[interfaceType] = result;
             return result;
         }
@@ -707,7 +707,10 @@ namespace IronRuby.Runtime {
                 expandedMixins = RubyModule.EmptyArray;
             }
 
-            result = CreateClass(RubyUtils.GetQualifiedName(type, false), type, null, null, null, null, null, baseClass, expandedMixins, tracker, null, false, false);
+            result = CreateClass(
+                GetQualifiedNameNoLock(type), type, null, null, null, null, null, 
+                baseClass, expandedMixins, tracker, null, false, false, ModuleRestrictions.None
+            );
 
             if (Utils.IsComObjectType(type)) {
                 _comObjectClass = result;
@@ -755,12 +758,12 @@ namespace IronRuby.Runtime {
         internal RubyClass/*!*/ CreateClass(string name, Type type, object classSingletonOf,
             Action<RubyModule> instanceTrait, Action<RubyModule> classTrait, Action<RubyModule> constantsInitializer, Delegate/*!*/[] factories,
             RubyClass/*!*/ superClass, RubyModule/*!*/[] expandedMixins, TypeTracker tracker, RubyStruct.Info structInfo, 
-            bool isRubyClass, bool isSingletonClass) {
+            bool isRubyClass, bool isSingletonClass, ModuleRestrictions restrictions) {
             Assert.NotNull(superClass);
 
             RubyClass result = new RubyClass(this, name, type, classSingletonOf,
-                instanceTrait, constantsInitializer, factories, superClass, expandedMixins, tracker, structInfo, 
-                isRubyClass, isSingletonClass
+                instanceTrait, constantsInitializer, factories, superClass, expandedMixins, tracker, structInfo,
+                isRubyClass, isSingletonClass, restrictions
             );
 
             result.InitializeDummySingletonClass(superClass.SingletonClass, classTrait);
@@ -769,9 +772,11 @@ namespace IronRuby.Runtime {
 
         internal RubyModule/*!*/ CreateModule(string name,
             Action<RubyModule> instanceTrait, Action<RubyModule> classTrait, Action<RubyModule> constantsInitializer,
-            RubyModule/*!*/[] expandedMixins, NamespaceTracker namespaceTracker, TypeTracker typeTracker) {
+            RubyModule/*!*/[] expandedMixins, NamespaceTracker namespaceTracker, TypeTracker typeTracker, ModuleRestrictions restrictions) {
 
-            RubyModule result = new RubyModule(this, name, instanceTrait, constantsInitializer, expandedMixins, namespaceTracker, typeTracker);
+            RubyModule result = new RubyModule(
+                this, name, instanceTrait, constantsInitializer, expandedMixins, namespaceTracker, typeTracker, restrictions
+            );
             result.InitializeDummySingletonClass(_moduleClass, classTrait);
             return result;
         }
@@ -816,8 +821,9 @@ namespace IronRuby.Runtime {
 
             RubyClass c = GetClassOf(obj, data);
 
-            result = CreateClass(null, null, obj, instanceTrait, classTrait ?? _classSingletonTrait, constantsInitializer, null,
-                c, expandedMixins, null, null, true, true
+            result = CreateClass(
+                null, null, obj, instanceTrait, classTrait ?? _classSingletonTrait, constantsInitializer, null,
+                c, expandedMixins, null, null, true, true, ModuleRestrictions.None
             );
 
             using (ClassHierarchyLocker()) {
@@ -836,7 +842,7 @@ namespace IronRuby.Runtime {
         public RubyModule/*!*/ DefineModule(RubyModule/*!*/ owner, string name) {
             ContractUtils.RequiresNotNull(owner, "owner");
 
-            RubyModule result = CreateModule(owner.MakeNestedModuleName(name), null, null, null, null, null, null);
+            RubyModule result = CreateModule(owner.MakeNestedModuleName(name), null, null, null, null, null, null, ModuleRestrictions.None);
             if (name != null) {
                 owner.SetConstant(name, result);
             }
@@ -856,7 +862,9 @@ namespace IronRuby.Runtime {
             }
 
             string qualifiedName = owner.MakeNestedModuleName(name);
-            RubyClass result = CreateClass(qualifiedName, null, null, null, null, null, null, superClass, null, null, structInfo, true, false);
+            RubyClass result = CreateClass(
+                qualifiedName, null, null, null, null, null, null, superClass, null, null, structInfo, true, false, ModuleRestrictions.None
+            );
 
             if (name != null) {
                 owner.SetConstant(name, result);
@@ -872,8 +880,8 @@ namespace IronRuby.Runtime {
         #region Libraries (thread-safe)
 
         internal RubyModule/*!*/ DefineLibraryModule(string name, Type/*!*/ type,
-            Action<RubyModule> instanceTrait, Action<RubyModule> classTrait, Action<RubyModule> constantsInitializer, 
-            RubyModule/*!*/[]/*!*/ mixins, bool isSelfContained) {
+            Action<RubyModule> instanceTrait, Action<RubyModule> classTrait, Action<RubyModule> constantsInitializer,
+            RubyModule/*!*/[]/*!*/ mixins, RubyModuleAttributes attributes) {
             Assert.NotNull(type);
             Assert.NotNullItems(mixins);
 
@@ -884,16 +892,14 @@ namespace IronRuby.Runtime {
             lock (ModuleCacheLock) {
                 if (!(exists = TryGetModuleNoLock(type, out result))) {
                     if (name == null) {
-                        name = RubyUtils.GetQualifiedName(type, false);
+                        name = GetQualifiedNameNoLock(type);
                     }
-
-                    // Setting tracker on the module makes CLR methods visible.
-                    // Hide CLR methods if the type itself defines RubyMethods and is not an extension of another type.
-                    TypeTracker tracker = isSelfContained ? null : ReflectionCache.GetTypeTracker(type);
 
                     // Use empty constant initializer rather than null so that we don't try to initialize nested types.
                     result = CreateModule(
-                        name, instanceTrait, classTrait, constantsInitializer ?? RubyModule.EmptyInitializer, expandedMixins, null, tracker
+                        name, instanceTrait, classTrait, constantsInitializer ?? RubyModule.EmptyInitializer, expandedMixins, null,
+                        GetLibraryModuleTypeTracker(type, attributes),
+                        (ModuleRestrictions)(attributes & RubyModuleAttributes.RestrictionsMask)
                     );
 
                     AddModuleToCacheNoLock(type, result);
@@ -910,7 +916,7 @@ namespace IronRuby.Runtime {
         // isSelfContained: The traits are defined on type (public static methods marked by RubyMethod attribute).
         internal RubyClass/*!*/ DefineLibraryClass(string name, Type/*!*/ type,
             Action<RubyModule> instanceTrait, Action<RubyModule> classTrait, Action<RubyModule> constantsInitializer,
-            RubyClass super, RubyModule[]/*!*/ mixins, Delegate/*!*/[] factories, bool isSelfContained, bool builtin) {
+            RubyClass super, RubyModule[]/*!*/ mixins, Delegate/*!*/[] factories, RubyModuleAttributes attributes, bool builtin) {
             Assert.NotNull(type);
             Assert.NotNullItems(mixins);
 
@@ -924,21 +930,18 @@ namespace IronRuby.Runtime {
             lock (ModuleCacheLock) {
                 if (!(exists = TryGetClassNoLock(type, out result))) {
                     if (name == null) {
-                        name = RubyUtils.GetQualifiedName(type, false);
+                        name = GetQualifiedNameNoLock(type);
                     }
 
                     if (super == null) {
                         super = GetOrCreateClassNoLock(type.BaseType);
                     }
 
-                    // Setting tracker on the class makes CLR methods visible.
-                    // Hide CLR methods if the type itself defines RubyMethods and is not an extension of another type.
-                    TypeTracker tracker = isSelfContained ? null : ReflectionCache.GetTypeTracker(type);
-
                     // Use empty constant initializer rather than null so that we don't try to initialize nested types.
                     result = CreateClass(
-                        name, type, null, instanceTrait, classTrait, constantsInitializer ?? RubyModule.EmptyInitializer, factories, 
-                        super, expandedMixins, tracker, null, false, false
+                        name, type, null, instanceTrait, classTrait, constantsInitializer ?? RubyModule.EmptyInitializer, factories,
+                        super, expandedMixins, GetLibraryModuleTypeTracker(type, attributes), null, false, false,
+                        (ModuleRestrictions)(attributes & RubyModuleAttributes.RestrictionsMask) 
                     );
 
                     AddModuleToCacheNoLock(type, result);
@@ -962,6 +965,12 @@ namespace IronRuby.Runtime {
             }
 
             return result;
+        }
+
+        private static TypeTracker GetLibraryModuleTypeTracker(Type/*!*/ type, RubyModuleAttributes attributes) {
+            // Setting tracker on the class makes CLR methods visible.
+            // Hide CLR methods if the type itself defines RubyMethods and is not an extension of another type.
+            return (attributes & RubyModuleAttributes.IsSelfContained) != 0 ? null : ReflectionCache.GetTypeTracker(type);
         }
 
         #endregion
@@ -1085,18 +1094,9 @@ namespace IronRuby.Runtime {
             return false;
         }
 
-        public string/*!*/ GetTypeName(Type/*!*/ type, bool display) {
-            RubyModule module;
-            if (TryGetModule(type, out module)) {
-                if (display) {
-                    return module.GetDisplayName(this, false).ToString();
-                } else {
-                    return module.Name;
-                }
-            } else {
-                return RubyUtils.GetQualifiedName(type, display);
-            }
-        }
+        #endregion
+
+        #region Module Names
 
         /// <summary>
         /// Gets the Ruby name of the class of the given object.
@@ -1107,7 +1107,7 @@ namespace IronRuby.Runtime {
 
         /// <summary>
         /// Gets the display name of the class of the given object.
-        /// Might include characters that are not valid in a Ruby constant name.
+        /// Includes singleton names.
         /// </summary>
         public string/*!*/ GetClassDisplayName(object obj) {
             return GetClassName(obj, true);
@@ -1122,6 +1122,76 @@ namespace IronRuby.Runtime {
             }
 
             return GetTypeName(obj.GetType(), display);
+        }
+
+        public string/*!*/ GetTypeName(Type/*!*/ type, bool display) {
+            RubyModule module;
+            lock (ModuleCacheLock) {
+                if (TryGetModuleNoLock(type, out module)) {
+                    if (display) {
+                        return module.GetDisplayName(this, false).ToString();
+                    } else {
+                        return module.Name;
+                    }
+                } else {
+                    return GetQualifiedNameNoLock(type);
+                }
+            }
+        }
+
+        private string/*!*/ GetQualifiedNameNoLock(Type/*!*/ type) {
+            return GetQualifiedNameNoLock(type, this, false);
+        }
+
+        internal static string/*!*/ GetQualifiedNameNoLock(Type/*!*/ type, RubyContext context, bool noGenericArgs) {
+            return AppendQualifiedNameNoLock(new StringBuilder(), type, context, noGenericArgs).ToString();
+        }
+
+        private static StringBuilder/*!*/ AppendQualifiedNameNoLock(StringBuilder/*!*/ result, Type/*!*/ type, RubyContext context, bool noGenericArgs) {
+            if (type.IsGenericParameter) {
+                return result.Append(type.Name);
+            }
+
+            // qualifiers:
+            if (type.DeclaringType != null) {
+                AppendQualifiedNameNoLock(result, type.DeclaringType, context, noGenericArgs);
+                result.Append("::");
+            } else if (type.Namespace != null) {
+                result.Append(type.Namespace.Replace(Type.Delimiter.ToString(), "::"));
+                result.Append("::");
+            }
+
+            result.Append(ReflectionUtils.GetNormalizedTypeName(type));
+
+            // generic args:
+            if (!noGenericArgs && type.IsGenericType) {
+                result.Append("[");
+
+                var genericArgs = type.GetGenericArguments();
+                for (int i = 0; i < genericArgs.Length; i++) {
+                    if (i > 0) {
+                        result.Append(", ");
+                    }
+                    
+                    RubyModule module;
+                    if (context != null && context.TryGetModuleNoLock(genericArgs[i], out module)) {
+                        result.Append(module.Name);
+                    } else {
+                        AppendQualifiedNameNoLock(result, genericArgs[i], context, noGenericArgs);
+                    }
+                }
+
+                result.Append("]");
+            }
+
+            return result;
+        }
+
+        private static string/*!*/ GetQualifiedName(NamespaceTracker/*!*/ namespaceTracker) {
+            ContractUtils.RequiresNotNull(namespaceTracker, "namespaceTracker");
+            if (namespaceTracker.Name == null) return String.Empty;
+
+            return namespaceTracker.Name.Replace(Type.Delimiter.ToString(), "::");
         }
 
         #endregion
@@ -1735,14 +1805,11 @@ namespace IronRuby.Runtime {
         internal Expression<T>/*!*/ TransformTree<T>(SourceUnitTree/*!*/ ast, SourceUnit/*!*/ sourceUnit, RubyCompilerOptions/*!*/ options) {
             return ast.Transform<T>(
                 new AstGenerator(
+                    this,
                     options,
-                    sourceUnit,
+                    sourceUnit.Document,
                     ast.Encoding,
-                    Snippets.Shared.SaveSnippets,
-                    DomainManager.Configuration.DebugMode,
-                    RubyOptions.EnableTracing,
-                    RubyOptions.Profile,
-                    RubyOptions.SavePath != null
+                    sourceUnit.Kind == SourceCodeKind.InteractiveCode
                 )
             );
         }

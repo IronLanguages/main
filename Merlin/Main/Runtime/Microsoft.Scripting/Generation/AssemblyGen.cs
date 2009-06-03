@@ -172,10 +172,12 @@ namespace Microsoft.Scripting.Generation {
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
         internal static void PeVerifyAssemblyFile(string fileLocation) {
 #if !SILVERLIGHT
+            Debug.WriteLine("Verifying generated IL: " + fileLocation);
             string outDir = Path.GetDirectoryName(fileLocation);
             string outFileName = Path.GetFileName(fileLocation);
             string peverifyPath = FindPeverify();
             if (peverifyPath == null) {
+                Debug.WriteLine("PEVerify not available");
                 return;
             }
 

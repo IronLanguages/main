@@ -97,19 +97,14 @@ namespace IronRuby.Compiler.Generation {
 #endif
         }
 
-        protected abstract MethodInfo NonInheritedValueHelper();
-        protected abstract MethodInfo NonInheritedMethodHelper();
         protected abstract MethodInfo EventHelper();
         protected abstract MethodInfo MissingInvokeMethodException();
-        protected abstract MethodInfo ConvertToDelegate();
 
         protected abstract void EmitImplicitContext(ILGen il);
         protected abstract void EmitMakeCallAction(string name, int nargs, bool isList);
         protected abstract FieldInfo GetConversionSite(Type toType);
         protected abstract void EmitClassObjectFromInstance(ILGen il);
-        protected abstract void EmitPropertyGet(ILGen il, MethodInfo mi, string name, LocalBuilder callTarget);
-        protected abstract void EmitPropertySet(ILGen il, MethodInfo mi, string name, LocalBuilder callTarget);
-
+        
         protected abstract bool TryGetName(Type clrType, MethodInfo mi, out string name);
         protected abstract bool TryGetName(Type clrType, EventInfo ei, MethodInfo mi, out string name);
         protected abstract bool TryGetName(Type clrType, PropertyInfo pi, MethodInfo mi, out string name);
@@ -264,7 +259,7 @@ namespace IronRuby.Compiler.Generation {
             MethodInfo[] methods = type.GetMethods(BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static | BindingFlags.FlattenHierarchy);
 
             foreach (MethodInfo mi in methods) {
-                var key = Key.Create(mi.Name, new MethodSignatureInfo(mi.IsStatic, mi.GetParameters()));
+                var key = Key.Create(mi.Name, new MethodSignatureInfo(mi));
 
                 if (!added.TryGetValue(key, out overridden)) {
                     added[key] = mi;
@@ -281,8 +276,6 @@ namespace IronRuby.Compiler.Generation {
                 if (!ShouldOverrideVirtual(mi) || !CanOverrideMethod(mi)) continue;
 
                 if (mi.IsPublic || mi.IsFamily || mi.IsFamilyOrAssembly) {
-                    if (mi.IsGenericMethodDefinition) continue;
-
                     if (mi.IsSpecialName) {
                         OverrideSpecialName(mi, overriddenProperties);
                     } else {
@@ -332,17 +325,18 @@ namespace IronRuby.Compiler.Generation {
 
             _specialNames.SetSpecialName(mi.Name);
             MethodBuilder mb = null;
+            MethodInfo accessor;
             PropertyInfo foundProperty = null;
             foreach (PropertyInfo pi in pis) {
                 if (pi.GetIndexParameters().Length > 0) {
-                    if (mi == pi.GetGetMethod(true)) {
+                    if ((accessor = pi.GetGetMethod(true)) != null && mi.MethodHandle == accessor.MethodHandle) {
                         mb = CreateVTableMethodOverride(mi, "__getitem__");
                         if (!mi.IsAbstract) {
                             CreateSuperCallHelper(mi);
                         }
                         foundProperty = pi;
                         break;
-                    } else if (mi == pi.GetSetMethod(true)) {
+                    } else if ((accessor = pi.GetSetMethod(true)) != null && mi.MethodHandle == accessor.MethodHandle) {
                         mb = CreateVTableMethodOverride(mi, "__setitem__");
                         if (!mi.IsAbstract) {
                             CreateSuperCallHelper(mi);
@@ -350,7 +344,7 @@ namespace IronRuby.Compiler.Generation {
                         foundProperty = pi;
                         break;
                     }
-                } else if (mi == pi.GetGetMethod(true)) {
+                } else if ((accessor = pi.GetGetMethod(true)) != null && mi.MethodHandle == accessor.MethodHandle) {
                     if (mi.Name != "get_PythonType") {
                         if (!TryGetName(mi.DeclaringType, pi, mi, out name)) {
                             return true;
@@ -362,7 +356,7 @@ namespace IronRuby.Compiler.Generation {
                     }
                     foundProperty = pi;
                     break;
-                } else if (mi == pi.GetSetMethod(true)) {
+                } else if ((accessor = pi.GetSetMethod(true)) != null && mi.MethodHandle == accessor.MethodHandle) {
                     if (!TryGetName(mi.DeclaringType, pi, mi, out name)) {
                         return true;
                     }
@@ -466,48 +460,12 @@ namespace IronRuby.Compiler.Generation {
             }
         }
 
-        /// <summary>
-        /// Emits code to check if the class has overridden this specific
-        /// function.  For example:
-        /// 
-        /// MyDerivedType.SomeVirtualFunction = ...
-        ///     or
-        /// 
-        /// class MyDerivedType(MyBaseType):
-        ///     def SomeVirtualFunction(self, ...):
-        /// 
-        /// </summary>
-        internal LocalBuilder EmitBaseClassCallCheckForProperties(ILGen il, MethodInfo baseMethod, string name) {
-            Label instanceCall = il.DefineLabel();
-            LocalBuilder callTarget = il.DeclareLocal(typeof(object));
-
-            il.EmitLoadArg(0);
-            EmitClassObjectFromInstance(il);
-            il.EmitLoadArg(0);
-            il.Emit(OpCodes.Ldstr, name);
-            il.Emit(OpCodes.Ldloca, callTarget);
-            il.EmitCall(NonInheritedValueHelper());
-
-            il.Emit(OpCodes.Brtrue, instanceCall);
-
-            EmitBaseMethodDispatch(baseMethod, il);
-
-            il.MarkLabel(instanceCall);
-
-            return callTarget;
-        }
-
         private MethodBuilder CreateVTableGetterOverride(MethodInfo mi, string name) {
             MethodBuilder impl;
             ILGen il = DefineMethodOverride(MethodAttributes.Public, mi, out impl);
-            LocalBuilder callTarget = EmitBaseClassCallCheckForProperties(il, mi, name);
 
-            EmitPropertyGet(il, mi, name, callTarget);
+            EmitVirtualSiteCall(il, mi, name);
 
-            if (!il.TryEmitImplicitCast(typeof(object), mi.ReturnType)) {
-                EmitConvertFromObject(il, mi.ReturnType);
-            }
-            il.Emit(OpCodes.Ret);
             _tb.DefineMethodOverride(impl, mi);
             return impl;
         }
@@ -553,16 +511,15 @@ namespace IronRuby.Compiler.Generation {
         private MethodBuilder CreateVTableSetterOverride(MethodInfo mi, string name) {
             MethodBuilder impl;
             ILGen il = DefineMethodOverride(MethodAttributes.Public, mi, out impl);
-            LocalBuilder callTarget = EmitBaseClassCallCheckForProperties(il, mi, name);
 
-            EmitPropertySet(il, mi, name, callTarget);
+            EmitVirtualSiteCall(il, mi, name);
 
-            il.Emit(OpCodes.Ret);
             _tb.DefineMethodOverride(impl, mi);
             return impl;
         }
 
         private void CreateVTableEventOverride(MethodInfo mi, string name) {
+#if TODO
             // override the add/remove method  
             MethodBuilder impl;
             ILGen il = DefineMethodOverride(mi, out impl);
@@ -579,6 +536,7 @@ namespace IronRuby.Compiler.Generation {
             il.EmitCall(EventHelper());
             il.Emit(OpCodes.Ret);
             _tb.DefineMethodOverride(impl, mi);
+#endif
         }
 
         private MethodBuilder CreateVTableMethodOverride(MethodInfo mi, string name) {
@@ -594,23 +552,15 @@ namespace IronRuby.Compiler.Generation {
                         (mi.Attributes | MethodAttributes.NewSlot) :
                         ((mi.Attributes & ~MethodAttributes.MemberAccessMask) | MethodAttributes.Public),
                     mi.ReturnType,
-                    ReflectionUtils.GetParameterTypes(parameters));
+                    ReflectionUtils.GetParameterTypes(parameters)
+                );
+                CopyGenericMethodAttributes(mi, impl);
                 il = CreateILGen(impl.GetILGenerator());
             }
+
             //CompilerHelpers.GetArgumentNames(parameters));  TODO: Set names
 
-            LocalBuilder callTarget = EmitNonInheritedMethodLookup(name, il);
-            Label instanceCall = il.DefineLabel();
-            il.Emit(OpCodes.Brtrue, instanceCall);
-
-            // lookup failed, call the base class method (this returns or throws)
-            EmitBaseMethodDispatch(mi, il);
-
-            // lookup succeeded, call the user defined method & return
-            il.MarkLabel(instanceCall);
-            EmitClrCallStub(il, mi, callTarget, name);
-            EmitConvertFromObject(il, mi.ReturnType);
-            il.Emit(OpCodes.Ret);
+            EmitVirtualSiteCall(il, mi, name);
 
             if (mi.IsVirtual && !mi.IsFinal) {
                 _tb.DefineMethodOverride(impl, mi);
@@ -618,22 +568,26 @@ namespace IronRuby.Compiler.Generation {
             return impl;
         }
 
-        /// <summary>
-        /// Emits the call to lookup a member defined in the user's type.  Returns
-        /// the local which stores the resulting value and leaves a value on the
-        /// stack indicating the success of the lookup.
-        /// </summary>
-        private LocalBuilder EmitNonInheritedMethodLookup(string name, ILGen il) {
-            LocalBuilder callTarget = il.DeclareLocal(typeof(object));
+        public void EmitVirtualSiteCall(ILGen il, MethodInfo mi, string name) {
+            Label baseCallLabel = il.DefineLabel();
 
-            // emit call to helper to do lookup
-            il.EmitLoadArg(0);
-            EmitClassObjectFromInstance(il);
-            il.EmitLoadArg(0);
-            il.Emit(OpCodes.Ldstr, name);
-            il.Emit(OpCodes.Ldloca, callTarget);
-            il.EmitCall(NonInheritedMethodHelper());
-            return callTarget;
+            LocalBuilder resultVar = il.DeclareLocal(typeof(object));
+            EmitClrCallStub(il, mi, name);
+            il.Emit(OpCodes.Stloc, resultVar);
+
+            il.Emit(OpCodes.Ldloc, resultVar);
+            il.Emit(OpCodes.Ldsfld, Fields.RubyOps_ForwardToBase);
+            il.Emit(OpCodes.Ceq);
+            il.Emit(OpCodes.Brtrue, baseCallLabel);
+
+            if (mi.ReturnType != typeof(void)) {
+                il.Emit(OpCodes.Ldloc, resultVar);
+                EmitConvertFromObject(il, mi.ReturnType);
+            }
+            il.Emit(OpCodes.Ret);
+
+            il.MarkLabel(baseCallLabel);
+            EmitBaseMethodDispatch(mi, il);
         }
 
         /// <summary>
@@ -660,6 +614,7 @@ namespace IronRuby.Compiler.Generation {
                 attrs,
                 mi.ReturnType, types
             );
+            CopyGenericMethodAttributes(mi, method);
 
             for (int i = 0; i < types.Length; i++) {
                 method.DefineParameter(i + 1, ParameterAttributes.None, parms[i].Name);
@@ -730,6 +685,10 @@ namespace IronRuby.Compiler.Generation {
 
         protected ILGen DefineMethodOverride(MethodAttributes extra, MethodInfo decl, out MethodBuilder impl) {
             MethodAttributes finalAttrs = (decl.Attributes & ~MethodAttributesToEraseInOveride) | extra;
+            if (!decl.DeclaringType.IsInterface) {
+                finalAttrs &= ~MethodAttributes.NewSlot;
+            }
+
             if ((extra & MethodAttributes.MemberAccessMask) != 0) {
                 // remove existing member access, add new member access
                 finalAttrs &= ~MethodAttributes.MemberAccessMask;
@@ -737,14 +696,73 @@ namespace IronRuby.Compiler.Generation {
             }
             Type[] signature = ReflectionUtils.GetParameterTypes(decl.GetParameters());
             impl = _tb.DefineMethod(decl.Name, finalAttrs, decl.ReturnType, signature);
+            CopyGenericMethodAttributes(decl, impl);
             return CreateILGen(impl.GetILGenerator());
+        }
+
+        private static void CopyGenericMethodAttributes(MethodInfo from, MethodBuilder to) {
+            if (from.IsGenericMethodDefinition) {
+                Type[] args = from.GetGenericArguments();
+                string[] names = new string[args.Length];
+                for (int i = 0; i < args.Length; i++) {
+                    names[i] = args[i].Name;
+                }
+                var builders = to.DefineGenericParameters(names);
+                for (int i = 0; i < args.Length; i++) {
+                    // Copy template parameter attributes
+                    builders[i].SetGenericParameterAttributes(args[i].GenericParameterAttributes);
+
+                    // Copy template parameter constraints
+                    Type[] constraints = args[i].GetGenericParameterConstraints();
+                    List<Type> interfaces = new List<Type>(constraints.Length);
+                    foreach (Type constraint in constraints) {
+                        if (constraint.IsInterface) {
+                            interfaces.Add(constraint);
+                        } else {
+                            builders[i].SetBaseTypeConstraint(constraint);
+                        }
+                    }
+                    if (interfaces.Count > 0) {
+                        builders[i].SetInterfaceConstraints(interfaces.ToArray());
+                    }
+                }
+            }
+        }
+
+        // TODO: use in Python's OverrideConstructor:
+        public static ParameterBuilder DefineParameterCopy(ConstructorBuilder builder, int paramIndex, ParameterInfo info) {
+            var result = builder.DefineParameter(1 + paramIndex, info.Attributes, info.Name);
+            CopyParameterAttributes(info, result);
+            return result;
+        }
+
+        public static ParameterBuilder DefineParameterCopy(MethodBuilder builder, int paramIndex, ParameterInfo info) {
+            var result = builder.DefineParameter(1 + paramIndex, info.Attributes, info.Name);
+            CopyParameterAttributes(info, result);
+            return result;
+        }
+
+        public static void CopyParameterAttributes(ParameterInfo from, ParameterBuilder to) {
+            if (from.IsDefined(typeof(ParamArrayAttribute), false)) {
+                to.SetCustomAttribute(new CustomAttributeBuilder(
+                    typeof(ParamArrayAttribute).GetConstructor(Type.EmptyTypes), ArrayUtils.EmptyObjects)
+                );
+            } else if (from.IsDefined(typeof(ParamDictionaryAttribute), false)) {
+                to.SetCustomAttribute(new CustomAttributeBuilder(
+                    typeof(ParamDictionaryAttribute).GetConstructor(Type.EmptyTypes), ArrayUtils.EmptyObjects)
+                );
+            }
+
+            if ((from.Attributes & ParameterAttributes.HasDefault) != 0) {
+                to.SetConstant(from.DefaultValue);
+            }
         }
 
         /// <summary>
         /// Generates stub to receive the CLR call and then call the dynamic language code.
         /// This code is similar to that in DelegateSignatureInfo.cs in the Microsoft.Scripting.
         /// </summary>
-        internal void EmitClrCallStub(ILGen/*!*/ il, MethodInfo/*!*/ mi, LocalBuilder/*!*/ callTarget, string/*!*/ name) {
+        internal void EmitClrCallStub(ILGen/*!*/ il, MethodInfo/*!*/ mi, string/*!*/ name) {
             int firstArg = 0;
             bool list = false;              // The list calling convention
             bool context = false;           // Context is an argument
@@ -784,7 +802,7 @@ namespace IronRuby.Compiler.Generation {
             // Emit the code context
             EmitContext(il, context);
 
-            il.Emit(OpCodes.Ldloc, callTarget);
+            il.Emit(OpCodes.Ldarg_0);
 
             List<ReturnFixer> fixers = new List<ReturnFixer>(0);
             for (int i = firstArg; i < args.Length; i++) {

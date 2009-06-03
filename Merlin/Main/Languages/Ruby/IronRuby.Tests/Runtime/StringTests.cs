@@ -20,6 +20,7 @@ using System.Diagnostics;
 using System.Collections.Generic;
 using IronRuby.Runtime;
 using Microsoft.Scripting;
+using System.Runtime.CompilerServices;
 
 namespace IronRuby.Tests {
     public partial class Tests {
@@ -242,7 +243,23 @@ SUB
 ");
         }
 
-        public void ToSConversionClr() {
+        public class ClassWithToStringHashEquals1 {
+            public override string ToString() {
+                return "hello";
+            }
+
+            public override int GetHashCode() {
+                return 1234;
+            }
+
+            public override bool Equals(object obj) {
+                return true;
+            }
+        }
+
+        public void ToSConversionClr1() {
+            Engine.Runtime.Globals.SetVariable("B", Context.GetClass(typeof(ClassWithToStringHashEquals1)));
+
             var objs = Engine.Execute<RubyArray>(@"
 class C
   def to_s
@@ -253,19 +270,89 @@ end
 class D
 end
 
-[C.new, D.new]
+class E < B
+end
+
+class F < B
+  def to_s
+    'abc'
+  end
+end
+
+[C.new, D.new, E.new, E.new.to_s, F.new]
 ");
- 
+
             Assert(objs[0].ToString() == "123");
-            
+
             string s = objs[1].ToString();
             Assert(s.StartsWith("#<D:0x") && s.EndsWith(">"));
+
+            s = objs[2].ToString();
+            Assert(s == "hello");
+
+            s = objs[3].ToString();
+            Assert(s == "hello");
+
+            //TODO:
+            //s = objs[4].ToString();
+            //Assert(s == "abc");
 
             var range = new Range(1, 2, true);
             Assert(range.ToString() == "1...2");
 
             var regex = new RubyRegex("hello", RubyRegexOptions.IgnoreCase | RubyRegexOptions.Multiline);
             Assert(regex.ToString() == "(?mi-x:hello)");
+        }
+
+        public void HashClr1() {
+            // TODO: 
+            // Test_HashClr("get_hash_code");
+        }
+
+        public void HashClr2() {
+            // TODO:  
+            // Test_HashClr("hash");
+        }
+
+        private void Test_HashClr(string/*!*/ methodName) {
+            Engine.Runtime.Globals.SetVariable("B", Context.GetClass(typeof(ClassWithToStringHashEquals1)));
+
+            var objs = Engine.Execute<RubyArray>(String.Format(@"
+class C
+  def {0}
+    789
+  end
+end
+
+class D
+end
+
+class E < B
+end
+
+class F < B
+  def {0}
+    1000
+  end
+end
+
+[C.new, D.new, E.new, E.new.{0}, F.new]
+", methodName));
+
+            int h = objs[0].GetHashCode();
+            Assert(h == 789);
+
+            h = objs[1].GetHashCode();
+            Assert(h == RuntimeHelpers.GetHashCode(objs[1]));
+
+            h = objs[2].GetHashCode();
+            Assert(h == 1234);
+
+            h = (int)objs[3];
+            Assert(h == 1234);
+
+            h = objs[4].GetHashCode();
+            Assert(h == 1000);
         }
 
         [Options(Compatibility = RubyCompatibility.Ruby18)]

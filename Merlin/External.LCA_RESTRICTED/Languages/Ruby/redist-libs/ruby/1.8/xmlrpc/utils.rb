@@ -6,7 +6,7 @@
 # 
 # Copyright (C) 2001, 2002, 2003 by Michael Neumann (mneumann@ntecs.de)
 #
-# $Id: utils.rb 11708 2007-02-12 23:01:19Z shyouhei $ 
+# $Id: utils.rb 16907 2008-06-07 16:54:15Z shyouhei $ 
 #
 
 module XMLRPC
@@ -157,7 +157,7 @@ module XMLRPC
   module ParseContentType
     def parse_content_type(str)
       a, *b = str.split(";")
-      return a.strip, *b
+      return a.strip.downcase, *b
     end
   end
 

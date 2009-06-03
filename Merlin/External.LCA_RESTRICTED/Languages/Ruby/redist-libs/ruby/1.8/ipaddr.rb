@@ -6,7 +6,7 @@
 #
 # You can redistribute and/or modify it under the same terms as Ruby.
 #
-# $Id: ipaddr.rb 11708 2007-02-12 23:01:19Z shyouhei $
+# $Id: ipaddr.rb 18047 2008-07-12 15:07:29Z shyouhei $
 #
 # TODO:
 #   - scope_id support
@@ -438,7 +438,7 @@ class IPAddr
     if prefixlen
       mask!(prefixlen)
     else
-      @mask_addr = (family == Socket::AF_INET) ? IN4MASK : IN6MASK
+      @mask_addr = (@family == Socket::AF_INET) ? IN4MASK : IN6MASK
     end
   end
 

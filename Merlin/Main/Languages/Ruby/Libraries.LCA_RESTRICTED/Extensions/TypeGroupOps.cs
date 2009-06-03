@@ -19,15 +19,17 @@ using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Actions;
 using IronRuby.Runtime;
 using IronRuby.Runtime.Calls;
+using IronRuby.Compiler.Generation;
+using Ast = System.Linq.Expressions.Expression;
+using AstUtils = Microsoft.Scripting.Ast.Utils;
+using System.Runtime.CompilerServices;
+using System.Collections.Generic;
+using Microsoft.Scripting.Utils;
 
 namespace IronRuby.Builtins {
-    [RubyClass(Extends = typeof(TypeGroup)), Includes(typeof(Enumerable))]
+    [RubyClass(Extends = typeof(TypeGroup), Restrictions = ModuleRestrictions.None)]
+    [Includes(typeof(Enumerable))]
     public class TypeGroupOps {
-        
-        [RubyMethod("new")]
-        public static RuleGenerator/*!*/ GetInstanceConstructor() {
-            return new RuleGenerator(RuleGenerators.InstanceConstructorForGroup);
-        }
 
         [RubyMethod("of")]
         [RubyMethod("[]")]
@@ -77,7 +79,9 @@ namespace IronRuby.Builtins {
             result.Append("#<TypeGroup: ");
 
             bool isFirst = true;
-            foreach (Type type in self.Types) {
+            foreach (var entry in self.TypesByArity.Sort((x, y) => x.Key - y.Key)) {
+                Type type = entry.Value;
+
                 if (!isFirst) {
                     result.Append(", ");
                 } else {
@@ -89,6 +93,86 @@ namespace IronRuby.Builtins {
             result.Append(">");
 
             return result;
+        }
+
+        private static Type/*!*/ GetNonGenericType(TypeGroup/*!*/ self) {
+            TypeTracker type = self.GetTypeForArity(0);
+            if (type == null) {
+                throw RubyExceptions.CreateTypeError("type group doesn't include non-generic type");
+            }
+
+            return type.Type;
+        }
+
+        [Emitted]
+        public static RubyClass/*!*/ GetNonGenericClass(RubyContext/*!*/ context, TypeGroup/*!*/ typeGroup) {
+            Type type = GetNonGenericType(typeGroup);
+            if (type.IsInterface) {
+                throw RubyExceptions.CreateTypeError("cannot instantiate an interface");
+            }
+            return context.GetClass(type);
+        }
+
+        private static object/*!*/ New(string/*!*/ methodName, CallSiteStorage<Func<CallSite, object, object, object>>/*!*/ storage,
+            TypeGroup/*!*/ self,[NotNull]params object[] args) {
+
+            var cls = GetNonGenericClass(storage.Context, self);
+            var site = storage.GetCallSite(methodName,
+                new RubyCallSignature(1, RubyCallFlags.HasImplicitSelf | RubyCallFlags.HasSplattedArgument)
+            );
+
+            return site.Target(site, cls, RubyOps.MakeArrayN(args));
+        }
+
+        private static object/*!*/ New(string/*!*/ methodName, CallSiteStorage<Func<CallSite, object, object, object, object>>/*!*/ storage, BlockParam block, 
+            TypeGroup/*!*/ self, [NotNull]params object[] args) {
+
+            var cls = GetNonGenericClass(storage.Context, self);
+            var site = storage.GetCallSite(methodName,
+                new RubyCallSignature(1, RubyCallFlags.HasImplicitSelf | RubyCallFlags.HasSplattedArgument | RubyCallFlags.HasBlock)
+            );
+
+            return site.Target(site, cls, block != null ? block.Proc : null, RubyOps.MakeArrayN(args));
+        }
+
+        // ARGS: N
+        [RubyMethod("new")]
+        public static object/*!*/ New(CallSiteStorage<Func<CallSite, object, object, object>>/*!*/ storage, 
+            TypeGroup/*!*/ self, [NotNull]params object[] args) {
+            return New("new", storage, self, args);
+        }
+
+        // ARGS: N&
+        [RubyMethod("new")]
+        public static object/*!*/ New(CallSiteStorage<Func<CallSite, object, object, object, object>>/*!*/ storage, BlockParam block, 
+            TypeGroup/*!*/ self, [NotNull]params object[] args) {
+            return New("new", storage, block, self, args);
+        }
+
+        [RubyMethod("superclass")]
+        public static RubyClass GetSuperclass(RubyContext/*!*/ context, TypeGroup/*!*/ self) {
+            Type type = GetNonGenericType(self);
+            return type.IsInterface ? null : context.GetClass(type).SuperClass;
+        }
+
+        // ARGS: N
+        [RubyMethod("clr_new")]
+        public static object/*!*/ ClrNew(CallSiteStorage<Func<CallSite, object, object, object>>/*!*/ storage,
+            TypeGroup/*!*/ self, [NotNull]params object[] args) {
+            return New("clr_new", storage, self, args);
+        }
+
+        // ARGS: N&
+        [RubyMethod("clr_new")]
+        public static object/*!*/ ClrNew(CallSiteStorage<Func<CallSite, object, object, object, object>>/*!*/ storage, BlockParam block,
+            TypeGroup/*!*/ self, [NotNull]params object[] args) {
+            return New("clr_new", storage, block, self, args);
+        }
+
+        [RubyMethod("clr_ctor")]
+        [RubyMethod("clr_constructor")]
+        public static RubyMethod/*!*/ GetClrConstructor(RubyContext/*!*/ context, TypeGroup/*!*/ self) {
+            return ClassOps.GetClrConstructor(GetNonGenericClass(context, self));
         }
     }
 }
