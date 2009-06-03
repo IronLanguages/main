@@ -56,6 +56,7 @@ if defined PARALLEL_IRTESTS (
 )
 
 time /t
+echo Legacy Tests
 
 if defined PARALLEL_IRTESTS (
     start "Legacy Tests" %MERLIN_ROOT%\Languages\Ruby\Tests\run.bat
@@ -67,14 +68,15 @@ if defined PARALLEL_IRTESTS (
     )
 )
 
-time /t
-
 :==============================================================================
 : RubySpecs
 
 REM We use mspec-run instead of mspec so that we can specify "-G thread" to disable the volatile thread tests
 
 set MSPEC_RUN=%MERLIN_ROOT%\..\External.LCA_RESTRICTED\Languages\IronRuby\mspec\mspec\bin\mspec-run
+
+time /t
+echo RubySpec A tests
 
 if defined PARALLEL_IRTESTS (
     start "RubySpec A tests" cmd.exe /k %MERLIN_ROOT%\bin\Debug\ir.exe %MSPEC_RUN% -G fails -G unstable -G thread -G critical -fd :lang :cli :netinterop :cominterop :thread
@@ -87,6 +89,7 @@ if defined PARALLEL_IRTESTS (
 )
 
 time /t
+echo RubySpec B tests
 
 if defined PARALLEL_IRTESTS (
     start "RubySpec B tests" mspec ci -fd -V :core1 :lib1 
@@ -99,6 +102,7 @@ if defined PARALLEL_IRTESTS (
 )
 
 time /t
+echo RubySpec C tests
 
 if defined PARALLEL_IRTESTS (
     start "RubySpec C tests" mspec ci -fd -V :core2 :lib2

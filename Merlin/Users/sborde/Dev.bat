@@ -13,4 +13,9 @@ REM but mspec launches mspec-run as a separate process
 set RUBY_EXE=%MERLIN_ROOT%\bin\Debug\ir.exe
 set RUBY19_EXE=%MERLIN_TFS%\..\External.LCA_RESTRICTED\Languages\Ruby\ruby-1.9.1p0\bin\ruby.exe
 
+REM Set GEM_HOME so that "gem install" will install to a different location, and not in source tree
+REM Note that GEM_PATH points to the gems included in the source tree.
+set GEM_HOME=%TEMP%\gems
+set GEM_PATH=%GEM_PATH%;%GEM_HOME%
+
 set JAVA_HOME=C:\Progra~1\Java\jre6

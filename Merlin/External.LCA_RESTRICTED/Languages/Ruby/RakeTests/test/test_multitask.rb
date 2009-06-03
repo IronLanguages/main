@@ -2,10 +2,12 @@
 
 require 'test/unit'
 require 'rake'
+require 'thread'
 
 ######################################################################
 class TestMultiTask < Test::Unit::TestCase
   include Rake
+  @@semaphore = Mutex.new
 
   def setup
     Task.clear
@@ -13,8 +15,8 @@ class TestMultiTask < Test::Unit::TestCase
   end
 
   def test_running_multitasks
-    task :a do 3.times do |i| @runs << "A#{i}"; sleep 0.01; end end
-    task :b do 3.times do |i| @runs << "B#{i}"; sleep 0.01;  end end
+    task :a do 3.times do |i| @@semaphore.synchronize { @runs << "A#{i}" }; sleep 0.01; end end
+    task :b do 3.times do |i| @@semaphore.synchronize { @runs << "B#{i}" }; sleep 0.01; end end
     multitask :both => [:a, :b]
     Task[:both].invoke
     assert_equal 6, @runs.size

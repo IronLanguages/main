@@ -23,7 +23,7 @@ class MSpecScript
     "core\\binding",
     "core\\builtin_constants"
   ]
-  set :core2, filtered("core", "[j-z]").reject{|el| el =~ /^thread/}
+  set :core2, filtered("core", "[j-z]").reject{|el| el =~ /thread/i}
   set :lang, [
     "language"
     ]
