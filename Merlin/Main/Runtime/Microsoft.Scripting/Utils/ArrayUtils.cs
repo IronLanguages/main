@@ -323,5 +323,13 @@ namespace Microsoft.Scripting.Utils {
 
             return true;
         }
+
+        public static T[] Reverse<T>(this T[] array) {
+            T[] res = new T[array.Length];
+            for (int i = 0; i < array.Length; i++) {
+                res[array.Length - i - 1] = array[i];
+            }
+            return res;
+        }
     }
 }

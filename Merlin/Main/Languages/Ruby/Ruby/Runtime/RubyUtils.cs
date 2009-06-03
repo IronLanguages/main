@@ -862,6 +862,81 @@ namespace IronRuby.Runtime {
                 basePath + "/" + path;
         }
 
+        // Is path something like "/foo/bar" (or "c:/foo/bar" on Windows)
+        // We need this instead of Path.IsPathRooted since we need to be able to deal with Unix-style path names even on Windows
+        public static bool IsAbsolutePath(string path) {
+            if (IsAbsoluteDriveLetterPath(path)) {
+                return true;
+            }
+
+            if (String.IsNullOrEmpty(path)) {
+                return false;
+            }
+
+            return path[0] == '/';
+        }
+
+        // Is path something like "c:/foo/bar" (on Windows)
+        public static bool IsAbsoluteDriveLetterPath(string path) {
+            if (String.IsNullOrEmpty(path)) {
+                return false;
+            }
+
+            if (Environment.OSVersion.Platform == PlatformID.Unix) {
+                return false;
+            }
+
+            return (Char.IsLetter(path[0]) && path.Length >= 2 && path[1] == ':' && path[2] == '/');
+        }
+
+        // returns "/" or something like "c:/"
+        public static string GetPathRoot(RubyContext/*!*/ context, string path, out string pathAfterRoot) {
+            Debug.Assert(IsAbsolutePath(path));
+            if (IsAbsoluteDriveLetterPath(path)) {
+                pathAfterRoot = path.Substring(3);
+                return path.Substring(0, 3);
+            } else {
+                Debug.Assert(path[0] == '/');
+
+                // The root for "////foo" is "/////"
+                string withoutInitialSlashes = path.TrimStart('/');
+                int initialSlashesCount = path.Length - withoutInitialSlashes.Length;
+                string initialSlashes = path.Substring(0, initialSlashesCount);
+                pathAfterRoot = path.Substring(initialSlashesCount);
+                
+                if (Environment.OSVersion.Platform == PlatformID.Unix || initialSlashesCount > 1) {
+                    return initialSlashes;
+                } else {
+                    string currentDirectory = RubyUtils.CanonicalizePath(context.DomainManager.Platform.CurrentDirectory);
+                    Debug.Assert(IsAbsoluteDriveLetterPath(currentDirectory));
+                    string temp;
+                    return GetPathRoot(context, currentDirectory, out temp);
+                }
+            }
+        }
+
+        // Is path something like "c:foo" (note that this is not "c:/foo")
+        public static bool HasPartialDriveLetter(string path, out char partialDriveLetter, out string relativePath) {
+            partialDriveLetter = '\0';
+            relativePath = null;
+
+            if (String.IsNullOrEmpty(path)) {
+                return false;
+            }
+
+            if (Environment.OSVersion.Platform == PlatformID.Unix) {
+                return false;
+            }
+
+            if (Char.IsLetter(path[0]) && path.Length >= 2 && path[1] == ':' && (path.Length == 2 || path[2] != '/')) {
+                partialDriveLetter = path[0];
+                relativePath = path.Substring(2);
+                return true;
+            } else {
+                return false;
+            }
+        }
+
         #endregion
     }
 }

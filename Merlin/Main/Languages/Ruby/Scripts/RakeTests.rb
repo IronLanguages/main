@@ -35,12 +35,12 @@ class TestFileUtils
 end
 
 class TestPathMapExplode
-  # File.expand_path corner case errors
+  # File.split("c:a") should return ["c:.", "a"], not ["c:", "a"]
   def test_explode() end
 end
 
 class TestRake
-  # File.expand_path corner case errors
+  # File.dirname("c:a") should be "c:.", not "c:"
   def test_each_dir_parent() end
 end
 
