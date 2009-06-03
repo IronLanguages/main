@@ -236,7 +236,7 @@
 # Rails, the web application framework, uses ERB to create views.
 #
 class ERB
-  Revision = '$Date: 2007-02-13 08:01:19 +0900 (Tue, 13 Feb 2007) $' 	#'
+  Revision = '$Date: 2008-06-24 16:16:52 +0900 (Tue, 24 Jun 2008) $' 	#'
 
   # Returns revision information for the erb.rb module.
   def self.version
@@ -365,21 +365,22 @@ class ERB
 	end
       end
 
-      ExplicitTrimRegexp = /(^[ \t]*<%-)|(-%>\n?\z)|(<%-)|(-%>)|(<%%)|(%%>)|(<%=)|(<%#)|(<%)|(%>)|(\n)/
       def explicit_trim_line(line)
-	line.split(ExplicitTrimRegexp).each do |token|
-	  next if token.empty?
-	  if @stag.nil? && /[ \t]*<%-/ =~ token
-	    yield('<%')
-	  elsif @stag && /-%>\n/ =~ token
-	    yield('%>')
-	    yield(:cr)
-	  elsif @stag && token == '-%>'
-	    yield('%>')
-	  else
-	    yield(token)
-	  end
-	end
+        line.scan(/(.*?)(^[ \t]*<%\-|<%\-|<%%|%%>|<%=|<%#|<%|-%>\n|-%>|%>|\z)/m) do |tokens|
+          tokens.each do |token|
+            next if token.empty?
+            if @stag.nil? && /[ \t]*<%-/ =~ token
+              yield('<%')
+            elsif @stag && token == "-%>\n"
+              yield('%>')
+              yield(:cr)
+            elsif @stag && token == '-%>'
+              yield('%>')
+            else
+              yield(token)
+            end
+          end
+        end
       end
 
       ERB_STAG = %w(<%= <%# <%)

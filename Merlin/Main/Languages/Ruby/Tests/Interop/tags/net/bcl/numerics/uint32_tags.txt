@@ -1,0 +1,2 @@
+fails:System::UInt32 can be induced from a Bignum
+fails:System::UInt32 raises a RangeError if out of range for Bignum

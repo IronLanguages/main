@@ -185,6 +185,12 @@ namespace Microsoft.Scripting.Runtime {
         /// </summary>
         public static IEnumerable<DynamicStackFrame> GetStackFrames(Exception e, bool reverseOrder) {
             IList<StackTrace> traces = ExceptionHelpers.GetExceptionStackTraces(e);
+            if (traces == null) {
+                traces = new[] { GetStackTrace(e) };
+            } else {
+                traces.Add(GetStackTrace(e));
+            }
+
             List<DynamicStackFrame> dynamicFrames = new List<DynamicStackFrame>(ScriptingRuntimeHelpers.GetDynamicStackFrames(e));
             // dynamicFrames is stored in the opposite order that we are walking,
             // so we can always pop them from the back of the List<T>, which is O(1)
@@ -192,29 +198,24 @@ namespace Microsoft.Scripting.Runtime {
                 dynamicFrames.Reverse();
             }
 
-            if (traces != null) {
-                foreach (StackTrace trace in WalkList(traces, reverseOrder)) {
-                    foreach (DynamicStackFrame result in GetStackFrames(trace, dynamicFrames, reverseOrder)) {
-                        yield return result;
-                    }
+            foreach (StackTrace trace in WalkList(traces, reverseOrder)) {
+                foreach (DynamicStackFrame result in GetStackFrames(trace, dynamicFrames, reverseOrder)) {
+                    yield return result;
                 }
             }
-
-            // TODO: new StackTrace(...) is SecurityCritical in Silverlight
-#if SILVERLIGHT
-            foreach (DynamicStackFrame result in dynamicFrames) {
-                yield return result;
-            }
-#else
-            foreach (DynamicStackFrame result in GetStackFrames(new StackTrace(e, true), dynamicFrames, reverseOrder)) {
-                yield return result;
-            }
-#endif
 
             //TODO: we would like to be able to assert this;
             // right now, we cannot, because we are not using dynamic frames for non-interpreted dynamic methods.
             // (we create the frames, but we do not consume them in FormatStackTrace.)
             //Debug.Assert(dynamicFrames.Count == 0);
+        }
+
+        private static StackTrace GetStackTrace(Exception e) {
+#if SILVERLIGHT
+            return new StackTrace(e);
+#else
+            return new StackTrace(e, true);
+#endif
         }
 
         private static IEnumerable<T> WalkList<T>(IList<T> list, bool reverseOrder) {

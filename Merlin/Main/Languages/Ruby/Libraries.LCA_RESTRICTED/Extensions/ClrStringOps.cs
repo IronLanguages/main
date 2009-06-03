@@ -24,7 +24,7 @@ using Microsoft.Scripting;
 
 namespace IronRuby.Builtins {
 
-    [RubyClass(Extends = typeof(string))]
+    [RubyClass(Extends = typeof(string), Restrictions = ModuleRestrictions.None)]
     [Includes(typeof(ClrString), typeof(Enumerable), typeof(Comparable))]
     public static class ClrStringOps {
         [RubyConstructor]

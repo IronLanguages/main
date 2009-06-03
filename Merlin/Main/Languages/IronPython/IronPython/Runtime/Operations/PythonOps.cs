@@ -141,10 +141,16 @@ namespace IronPython.Runtime.Operations {
 #endif
         
         internal static PythonTuple LookupEncoding(CodeContext/*!*/ context, string encoding) {
+            PythonContext.GetContext(context).EnsureEncodings();
+
             List<object> searchFunctions = PythonContext.GetContext(context).SearchFunctions;
+            string normalized = encoding.ToLower().Replace(' ', '-');
+            if (normalized.IndexOf(Char.MinValue) != -1) {
+                throw PythonOps.TypeError("lookup string cannot contain null character");
+            }
             lock (searchFunctions) {
                 for (int i = 0; i < searchFunctions.Count; i++) {
-                    object res = PythonCalls.Call(context, searchFunctions[i], encoding);
+                    object res = PythonCalls.Call(context, searchFunctions[i], normalized);
                     if (res != null) return (PythonTuple)res;
                 }
             }
@@ -318,7 +324,9 @@ namespace IronPython.Runtime.Operations {
 
                     if (baseType == null) {
                         OldClass ocType = ie.Current as OldClass;
-                        if (ocType == null) throw PythonOps.TypeError("expected type, got {0}", DynamicHelpers.GetPythonType(ie.Current));
+                        if (ocType == null) {
+                            continue;
+                        }
 
                         baseType = ocType.TypeObject;
                     }
@@ -1070,13 +1078,16 @@ namespace IronPython.Runtime.Operations {
                     DynamicHelpers.GetPythonType(self),
                     name);
             }
-        }               
+        }
+
+        public static object GetUserSlotValue(CodeContext context, PythonTypeUserDescriptorSlot slot, object instance, PythonType type) {
+            return slot.GetValue(context, instance, type);
+        }
 
         /// <summary>
         /// Handles the descriptor protocol for user-defined objects that may implement __get__
         /// </summary>
         public static object GetUserDescriptor(object o, object instance, object context) {
-            if (o != null && o.GetType() == typeof(OldInstance)) return o;   // only new-style classes can have descriptors
             if (o is IPythonObject) {
                 // slow, but only encountred for user defined descriptors.
                 PerfTrack.NoteEvent(PerfTrack.Categories.DictInvoke, "__get__");
@@ -2045,6 +2056,10 @@ namespace IronPython.Runtime.Operations {
             PythonTuple t = GetExceptionInfo(context);
             
             Exception e = MakeExceptionWorker(context, t[0], t[1], t[2], true);
+            return MakeRethrowExceptionWorker(e);
+        }
+
+        public static Exception MakeRethrowExceptionWorker(Exception e) {
             e.Data.Remove(typeof(TraceBack));
             ExceptionHelpers.UpdateForRethrow(e);
             return e;
@@ -3519,13 +3534,17 @@ namespace IronPython.Runtime.Operations {
         }
 
         public static object GetGlobal(Scope scope, SymbolId name) {
-            return GetLocal(scope.ModuleScope, name);
+            return GetVariable(scope.ModuleScope, name, true);
         }
 
         public static object GetLocal(Scope scope, SymbolId name) {
+            return GetVariable(scope, name, false);
+        }
+
+        private static object GetVariable(Scope scope, SymbolId name, bool isGlobal) {
             object res;
             if (scope.TryLookupName(name, out res)) {
-                return res;            
+                return res;
             }
 
             object builtins;
@@ -3541,8 +3560,10 @@ namespace IronPython.Runtime.Operations {
                 }
             }
 
+            if (isGlobal) {
+                throw GlobalNameError(name);
+            }
             throw NameError(name);
-            
         }
 
         public static object RawGetGlobal(Scope scope, SymbolId name) {
@@ -3572,7 +3593,6 @@ namespace IronPython.Runtime.Operations {
             }
 
             throw NameError(name);
-
         }
 
         public static void DeleteLocal(Scope scope, SymbolId name) {
@@ -3799,6 +3819,9 @@ namespace IronPython.Runtime.Operations {
             return new UnboundNameException(string.Format("name '{0}' is not defined", SymbolTable.IdToString(name)));
         }
 
+        public static Exception GlobalNameError(SymbolId name) {
+            return new UnboundNameException(string.Format("global name '{0}' is not defined", SymbolTable.IdToString(name)));
+        }
 
         // If an unbound method is called without a "self" argument, or a "self" argument of a bad type
         public static Exception TypeErrorForUnboundMethodCall(string methodName, Type methodType, object instance) {

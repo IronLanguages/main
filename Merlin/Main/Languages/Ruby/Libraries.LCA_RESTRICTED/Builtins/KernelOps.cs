@@ -1427,7 +1427,37 @@ namespace IronRuby.Builtins {
 
         #endregion
 
-        #region method, methods, (private|protected|public|singleton)_methods (thread-safe)
+        #region clr_member, method, methods, (private|protected|public|singleton)_methods (thread-safe)
+
+        // thread-safe:
+        /// <summary>
+        /// Returns a RubyMethod instance that represents one or more CLR members of given name.
+        /// An exception is thrown if the class of self doesn't represent a CLR type or if the member is not found.
+        /// Name could be of Ruby form (foo_bar) or CLR form (FooBar). Operator names are translated 
+        /// (e.g. "+" to op_Addition, "[]"/"[]=" to a default index getter/setter).
+        /// The resulting RubyMethod might represent multiple CLR members (overloads).
+        /// Inherited members are included.
+        /// Includes all CLR members that match the name even if they are not callable from Ruby - 
+        /// they are hidden by a Ruby member or their declaring type is not included in the ancestors list of the class.
+        /// Includes members of any Ruby visibility.
+        /// Includes CLR protected members. 
+        /// Includes CLR private members if PrivateBinding is on.
+        /// </summary>
+        [RubyMethod("clr_member")]
+        public static RubyMethod/*!*/ GetClrMember(RubyContext/*!*/ context, object self, [DefaultProtocol, NotNull]string/*!*/ name) {
+            RubyMemberInfo info;
+            RubyClass cls = context.GetClassOf(self);
+
+            if (cls.TypeTracker == null) {
+                throw RubyExceptions.CreateNotClrTypeError(cls);
+            }
+
+            if (!cls.TryGetClrMember(name, out info)) {
+                throw RubyExceptions.CreateNameError(String.Format("undefined CLR method `{0}' for class `{1}'", name, cls.Name));
+            }
+
+            return new RubyMethod(self, info, name);
+        }
 
         // thread-safe:
         [RubyMethod("method")]

@@ -363,7 +363,7 @@ namespace IronPython.Compiler {
 
             NameToken n = t as NameToken;
             if (n == null) {
-                ReportSyntaxError(_lookahead);
+                ReportSyntaxError("syntax error");
                 return SymbolId.Empty;
             }
 
@@ -1208,13 +1208,19 @@ namespace IronPython.Compiler {
                     Expression ret = ParseSublist(names);
                     Eat(TokenKind.RightParenthesis);
                     TupleExpression tret = ret as TupleExpression;
+                    NameExpression nameRet;
 
                     if (tret != null) {
                         parameter = new SublistParameter(position, tret);
+                    } else if ((nameRet = ret as NameExpression) != null) {
+                        parameter = new Parameter(nameRet.Name);
                     } else {
-                        parameter = new Parameter(((NameExpression)ret).Name);
+                        ReportSyntaxError(_lookahead);
                     }
-                    parameter.SetLoc(ret.Span);
+
+                    if (parameter != null) {
+                        parameter.SetLoc(ret.Span);
+                    }
                     break;
 
                 case TokenKind.Name:  // identifier
@@ -1883,7 +1889,6 @@ namespace IronPython.Compiler {
             bool prevAllow = _allowIncomplete;
             try {
                 _allowIncomplete = true;
-
                 while (true) {
                     switch (PeekToken().Kind) {
                         case TokenKind.LeftParenthesis:

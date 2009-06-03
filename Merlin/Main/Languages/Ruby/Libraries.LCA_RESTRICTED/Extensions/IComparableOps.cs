@@ -17,7 +17,8 @@ using System;
 using IronRuby.Runtime;
 
 namespace IronRuby.Builtins {
-    [RubyModule(Extends = typeof(IComparable)), Includes(typeof(Comparable))]
+    [RubyModule(Extends = typeof(IComparable), Restrictions = ModuleRestrictions.None)]
+    [Includes(typeof(Comparable))]
     public static class IComparableOps {
         [RubyMethod("<=>", RubyMethodAttributes.PublicInstance)]
         public static int Compare(IComparable/*!*/ self, object other) {

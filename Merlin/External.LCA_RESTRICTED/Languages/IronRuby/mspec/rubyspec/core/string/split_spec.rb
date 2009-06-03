@@ -45,6 +45,10 @@ describe "String#split with String" do
     "  a  b  c\nd  ".split("  ", -1).should == ["", "a", "b", "c\nd", ""]
     ",".split(",", -1).should == ["", ""]
   end
+
+  it "supresses trailing fields for empty strings" do
+    "".split("", -1).should == []
+  end
   
   it "defaults to $; when string isn't given or nil" do
     begin

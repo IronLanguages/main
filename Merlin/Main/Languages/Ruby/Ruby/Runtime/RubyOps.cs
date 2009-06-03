@@ -41,8 +41,9 @@ namespace IronRuby.Runtime {
         [Emitted]
         public static readonly object/*!*/ DefaultArgument = new object();
         
+        // Returned by a virtual site if a base call should be performed.
         [Emitted]
-        public static readonly object/*!*/ MethodNotFound = new object();
+        public static readonly object/*!*/ ForwardToBase = new object();
 
         #region Scopes
 
@@ -1306,6 +1307,18 @@ namespace IronRuby.Runtime {
         }
 
         [Emitted]
+        public static Exception/*!*/ MakeNotClrTypeError(RubyClass/*!*/ classObj) {
+            return RubyExceptions.CreateNotClrTypeError(classObj);
+        }
+
+        [Emitted]
+        public static Exception/*!*/ MakeConstructorUndefinedError(RubyClass/*!*/ classObj) {
+            return RubyExceptions.CreateTypeError(String.Format("`{0}' doesn't have a visible CLR constructor", 
+                classObj.Context.GetTypeName(classObj.TypeTracker.Type, true)
+            ));
+        }
+
+        [Emitted]
         public static Exception/*!*/ MakeMissingDefaultConstructorError(RubyClass/*!*/ classObj, string/*!*/ initializerOwnerName) {
             return RubyExceptions.CreateMissingDefaultConstructorError(classObj, initializerOwnerName);
         }
@@ -1318,6 +1331,14 @@ namespace IronRuby.Runtime {
         [Emitted]
         public static Exception/*!*/ MakeProtectedMethodCalledError(RubyContext/*!*/ context, object target, string/*!*/ methodName) {
             return RubyExceptions.CreateProtectedMethodCalled(context, target, methodName);
+        }
+
+        [Emitted]
+        public static Exception/*!*/ MakeClrProtectedMethodCalledError(RubyContext/*!*/ context, object target, string/*!*/ methodName) {
+            return new MissingMethodException(
+                RubyExceptions.FormatMethodMissingMessage(context, target, methodName, "CLR protected method `{0}' called for {1}; " +
+                "CLR protected methods can only be called with a receiver whose class is a subclass of the class declaring the method")
+            );
         }
 
         #endregion
@@ -1699,6 +1720,26 @@ namespace IronRuby.Runtime {
                 Interlocked.CompareExchange(ref instanceData, new RubyInstanceData(), null);
             }
             return instanceData;
+        }
+
+        [Emitted]
+        public static bool IsObjectFrozen(RubyInstanceData instanceData) {
+            return instanceData != null && instanceData.Frozen;
+        }
+
+        [Emitted]
+        public static bool IsObjectTainted(RubyInstanceData instanceData) {
+            return instanceData != null && instanceData.Tainted;
+        }
+
+        [Emitted]
+        public static void FreezeObject(ref RubyInstanceData instanceData) {
+            RubyOps.GetInstanceData(ref instanceData).Freeze();
+        }
+
+        [Emitted]
+        public static void SetObjectTaint(ref RubyInstanceData instanceData, bool value) {
+            RubyOps.GetInstanceData(ref instanceData).Tainted = value;
         }
 
 #if !SILVERLIGHT

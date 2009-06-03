@@ -7,5 +7,6 @@ describe Object, "#bignum_value" do
   end
 
   it "returns the default value incremented by the argument" do
+    bignum_value(5).should == 0x8000_0000_0000_0005
   end
 end

@@ -16,12 +16,10 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using Microsoft.Scripting.Utils;
-using IronRuby.Runtime;
 using System.Diagnostics;
-using System.Text;
+using IronRuby.Runtime;
 using Microsoft.Scripting;
-using Microsoft.Scripting.Runtime;
+using Microsoft.Scripting.Utils;
 
 namespace IronRuby.Builtins {
 

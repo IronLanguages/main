@@ -14,15 +14,27 @@
  * ***************************************************************************/
 
 using System;
+using System.Diagnostics;
 using Microsoft.Scripting.Runtime;
-using IronPython.Runtime.Operations;    
+using IronPython.Runtime.Operations;
 
 namespace IronPython.Runtime.Types {
-    sealed class PythonTypeUserDescriptorSlot : PythonTypeSlot, IValueSlot {
+    public sealed class PythonTypeUserDescriptorSlot : PythonTypeSlot {
         private object _value;
+        private int _descVersion;
+        private PythonTypeSlot _desc;
 
-        public PythonTypeUserDescriptorSlot(object value) {
+        private const int UserDescriptorFalse = -1;
+
+        internal PythonTypeUserDescriptorSlot(object value) {
             _value = value;
+        }
+        
+        internal PythonTypeUserDescriptorSlot(object value, bool isntDescriptor) {
+            _value = value;
+            if (isntDescriptor) {
+                _descVersion = UserDescriptorFalse;
+            }
         }
 
         internal override bool TryGetValue(CodeContext context, object instance, PythonType owner, out object value) {
@@ -32,6 +44,34 @@ namespace IronPython.Runtime.Types {
             } catch (MissingMemberException) {
                 value = null;
                 return false;
+            }
+        }
+
+        internal object GetValue(CodeContext context, object instance, PythonType owner) {
+            if (_descVersion == UserDescriptorFalse) {
+                return _value;
+            } else if (_descVersion != DynamicHelpers.GetPythonType(_value).Version) {
+                CalculateDescriptorInfo();
+                if (_descVersion == UserDescriptorFalse) {
+                    return _value;
+                }
+            }
+
+            object res;
+            Debug.Assert(_desc.GetAlwaysSucceeds);
+            _desc.TryGetValue(context, _value, DynamicHelpers.GetPythonType(_value), out res);
+            return PythonContext.GetContext(context).Call(context, res, instance, owner);
+        }
+
+        private void CalculateDescriptorInfo() {
+            PythonType pt = DynamicHelpers.GetPythonType(_value);
+            if (!pt.IsSystemType) {
+                _descVersion = pt.Version;
+                if (!pt.TryResolveSlot(pt.Context.SharedClsContext, Symbols.GetDescriptor, out _desc)) {
+                    _descVersion = UserDescriptorFalse;
+                }
+            } else {
+                _descVersion = UserDescriptorFalse;
             }
         }
 
@@ -48,9 +88,12 @@ namespace IronPython.Runtime.Types {
             return PythonOps.TryGetBoundAttr(context, Value, Symbols.SetDescriptor, out dummy);
         }
 
-        public object Value {
+        internal object Value {
             get {
                 return _value;
+            }
+            set {
+                _value = value;
             }
         }
     }

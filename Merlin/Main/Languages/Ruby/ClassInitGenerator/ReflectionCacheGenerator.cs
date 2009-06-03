@@ -93,7 +93,7 @@ internal sealed class ReflectionCacheGenerator : Generator {
             _output.WriteLine("namespace {0} {{", MethodCacheType.Namespace);
             _output.Indent++;
 
-            _output.WriteLine("internal static partial class {0} {{", MethodCacheType.Name);
+            _output.WriteLine("public static partial class {0} {{", MethodCacheType.Name);
             _output.Indent++;
 
             GenerateOps(methods);

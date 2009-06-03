@@ -118,7 +118,7 @@ namespace IronPython.Modules {
 
             object INativeType.GetValue(MemoryHolder owner, int offset, bool raw) {
                 if (!raw) {
-                    Pointer res = (Pointer)Call(Context.SharedContext);
+                    Pointer res = (Pointer)PythonCalls.Call(Context.SharedContext, this);
                     res._memHolder.WriteIntPtr(0, owner.ReadIntPtr(offset));
                     return res;
                 }

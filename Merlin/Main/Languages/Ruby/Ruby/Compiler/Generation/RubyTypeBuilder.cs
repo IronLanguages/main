@@ -88,12 +88,6 @@ namespace IronRuby.Compiler.Generation {
             DefineCustomTypeDescriptor();
 #endif
 
-            // we need to get the right execution context
-#if OBSOLETE
-            // TODO: remove the need for these methods to be special cased
-            EmitOverrideEquals(typeGen);
-            EmitOverrideGetHashCode(typeGen);
-#endif
         }
 
 #if !SILVERLIGHT
@@ -116,6 +110,7 @@ namespace IronRuby.Compiler.Generation {
 
         private sealed class ConstructorBuilderInfo {
             public ConstructorInfo BaseCtor;
+            public ParameterInfo[] BaseParameters;
             public Type[] ParameterTypes;
             public int ContextArgIndex;
             public int ClassArgIndex;
@@ -204,6 +199,7 @@ namespace IronRuby.Compiler.Generation {
 
             return new ConstructorBuilderInfo() {
                 BaseCtor = baseCtor,
+                BaseParameters = baseParams,
                 ParameterTypes = paramTypes,
                 ContextArgIndex = contextArgIndex,
                 ClassArgIndex = classArgIndex,
@@ -244,6 +240,7 @@ namespace IronRuby.Compiler.Generation {
                             il.EmitLoadArg(1 + ctor.ClassParamIndex);
                             il.EmitCall(Methods.GetContextFromModule);
                         } else {
+                            ClsTypeEmitter.DefineParameterCopy(cb, paramIndex, ctor.BaseParameters[argIndex]);
                             il.EmitLoadArg(1 + paramIndex);
                         }
                         argIndex++;
@@ -289,13 +286,13 @@ namespace IronRuby.Compiler.Generation {
 
             ILGen il;
 
-            // RubyClass! IRubyObject.RubyClass { get { return this._class; } }
+            // RubyClass! IRubyObject.RubyClass { get { return _class; } }
             il = DefineMethodOverride(_tb, typeof(IRubyObject).GetProperty(RubyObject.ClassPropertyName).GetGetMethod());
             il.EmitLoadArg(0);
             il.EmitFieldGet(_classField);
             il.Emit(OpCodes.Ret);
 
-            // RubyInstanceData IRubyObject.TryGetInstanceData() { return this._instanceData; }
+            // RubyInstanceData IRubyObject.TryGetInstanceData() { return _instanceData; }
             il = DefineMethodOverride(_tb, typeof(IRubyObject).GetMethod("TryGetInstanceData"));
             il.EmitLoadArg(0);
             il.EmitFieldGet(_instanceDataField);
@@ -306,6 +303,38 @@ namespace IronRuby.Compiler.Generation {
             il.EmitLoadArg(0);
             il.EmitFieldAddress(_instanceDataField);
             il.EmitCall(typeof(RubyOps).GetMethod("GetInstanceData"));
+            il.Emit(OpCodes.Ret);
+
+            // bool IRubyObject.IsFrozen { get { return RubyOps.IsObjectFrozen(_instanceData); } }
+            il = DefineMethodOverride(_tb, typeof(IRubyObjectState).GetProperty("IsFrozen").GetGetMethod());
+            il.EmitLoadArg(0);
+            il.EmitFieldGet(_instanceDataField);
+            il.EmitCall(Methods.IsObjectFrozen);
+            il.Emit(OpCodes.Ret);
+
+            // void IRubyObject.Freeze { RubyOps.FreezeObject(ref _instanceData); }
+            il = DefineMethodOverride(_tb, typeof(IRubyObjectState).GetMethod("Freeze"));
+            il.EmitLoadArg(0);
+            il.EmitFieldAddress(_instanceDataField);
+            il.EmitCall(Methods.FreezeObject);
+            il.Emit(OpCodes.Ret);
+
+            // bool IRubyObject.IsTainted { 
+            //   get { return RubyOps.IsObjectTainted(_instanceData); }
+            //   set { return RubyOps.SetObjectTaint(ref _instanceData, value); }
+            // }
+            var p = typeof(IRubyObjectState).GetProperty("IsTainted");
+            il = DefineMethodOverride(_tb, p.GetGetMethod());
+            il.EmitLoadArg(0);
+            il.EmitFieldGet(_instanceDataField);
+            il.EmitCall(Methods.IsObjectTainted);
+            il.Emit(OpCodes.Ret);
+
+            il = DefineMethodOverride(_tb, p.GetSetMethod());
+            il.EmitLoadArg(0);
+            il.EmitFieldAddress(_instanceDataField);
+            il.EmitLoadArg(1);
+            il.EmitCall(Methods.SetObjectTaint);
             il.Emit(OpCodes.Ret);
         }
 

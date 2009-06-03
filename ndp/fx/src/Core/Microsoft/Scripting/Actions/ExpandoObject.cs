@@ -25,6 +25,7 @@ namespace System.Dynamic {
     /// <summary>
     /// Represents an object with members that can be dynamically added and removed at runtime.
     /// </summary>
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1710:IdentifiersShouldHaveCorrectSuffix")]
     public sealed class ExpandoObject : IDynamicMetaObjectProvider, IDictionary<string, object>, INotifyPropertyChanged {
         internal readonly object LockObject;                          // the readonly field is used for locking the Expando object
         private ExpandoData _data;                                    // the data currently being held by the Expando object

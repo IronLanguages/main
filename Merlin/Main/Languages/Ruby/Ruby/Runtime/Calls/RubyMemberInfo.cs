@@ -49,14 +49,39 @@ namespace IronRuby.Runtime.Calls {
             get { return (RubyMethodVisibility)(_flags & RubyMemberFlags.VisibilityMask); }
         }
 
+        //
+        // Notes on visibility
+        // 
+        // Ruby visibility is orthogonal to CLR visibility.
+        // Ruby visibility is mutable, CLR visibility is not.
+        // A method group can comprise of methods of various CLR visibility. Ruby visibility applies on the group as a whole.
+        //
+
+        /// <summary>
+        /// True if the member is Ruby-protected. 
+        /// </summary>
+        /// <remarks>
+        /// Ruby-protected members can only be called from a scope whose self immediate class is a descendant of the method owner.
+        /// CLR-protected members can only be called if the receiver is a descendant of the method owner. 
+        /// </remarks>
         public bool IsProtected {
             get { return (_flags & RubyMemberFlags.Protected) != 0; }
         }
 
+        /// <summary>
+        /// True if the member is Ruby-private. 
+        /// </summary>
+        /// <remarks>
+        /// Ruby-private members can only be called with an implicit receiver (self).
+        /// CLR-private members can only be called if in PrivateBinding mode, the receiver might be explicit or implicit.
+        /// </remarks>
         public bool IsPrivate {
             get { return (_flags & RubyMemberFlags.Private) != 0; }
         }
 
+        /// <summary>
+        /// True if the member is Ruby-public. 
+        /// </summary>
         public bool IsPublic {
             get { return (_flags & RubyMemberFlags.Public) != 0; }
         }

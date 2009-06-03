@@ -679,7 +679,6 @@ end
             AreEqual(MyGetMemberBinder.Invoke(ruby_array_list, "ruby_attribute"), 123);
         }
 
-        [Run]
         public void Dlr_MethodMissing() {
             var scope = CreateInteropScope();
             object dynamic_object = scope.GetVariable("dynamic_object");

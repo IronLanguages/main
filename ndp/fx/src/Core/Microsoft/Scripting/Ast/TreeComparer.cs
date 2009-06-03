@@ -290,7 +290,7 @@ namespace System.Linq.Expressions {
                     var dynLeft = (DynamicExpression)currentLeft;
                     var dynRight = (DynamicExpression)currentRight;
 
-                    if (!dynRight.Binder.Equals(dynLeft.Binder)) {
+                    if (dynRight.Binder != dynLeft.Binder) {
                         return false;
                     }
                     break;
@@ -304,40 +304,15 @@ namespace System.Linq.Expressions {
                     object leftValue = ceLeft.Value;
                     object rightValue = ceRight.Value;
 
-                    // See if they're both sites
-                    CallSite leftSite = leftValue as CallSite;
-                    CallSite rightSite = rightValue as CallSite;
-                    if (leftSite != null) {
-                        if (rightSite == null) {
-                            return false;
-                        }
-
-                        if (!leftSite.Binder.Equals(rightSite.Binder)) {
-                            return false;
-                        }
-
-                        return true;
-                    } else if (rightSite != null) {
-                        return false;
-                    }
-
                     if (IsTemplatedConstant(_curConstNum)) {
                         // always add already templated values
                         AddToReplacementList(ceLeft);
                     } else {
                         // different constants should become parameters in the template.
-                        if (leftValue == null) {
-                            if (rightValue != null) {
-                                //new templated const
-                                _tooSpecific = true;
-                                AddToReplacementList(ceLeft);
-                            }
-                        } else {
-                            if (!leftValue.Equals(rightValue)) {
-                                //new templated const
-                                _tooSpecific = true;
-                                AddToReplacementList(ceLeft);
-                            }
+                        if (!ConstantsEqual(leftValue, rightValue, ceLeft.Type)) {
+                            //new templated const
+                            _tooSpecific = true;
+                            AddToReplacementList(ceLeft);
                         }
                     }
 
@@ -490,6 +465,23 @@ namespace System.Linq.Expressions {
                     return false;
             }
             return true;
+        }
+
+        private static bool ConstantsEqual(object x, object y, Type nodeType) {
+            // Primitve types use object.Equals
+            //
+            // We use the ConstantExpression.Type rather than x.GetType()
+            // because primitives can be used in their boxed form via:
+            //      Expression.Constant(myBoxedInt32, typeof(object))
+            //
+            // and in that case, we want a reference equality comparison.
+            //
+            if (nodeType.IsPrimitive) {
+                return object.Equals(x, y);
+            }
+
+            // Anything else uses reference equality
+            return x == y;
         }
 
         private static bool CompareEquality(BinaryExpression left, BinaryExpression right) {

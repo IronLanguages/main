@@ -28,7 +28,7 @@ describe "Net::FTP#login" do
       if not passhost.index(".")
         passhost = Socket.gethostbyname(passhost)[0]
       end
-      pass = ENV["USER"] + "@" + passhost 
+      pass = username + "@" + passhost 
       @server.should_receive(:user).and_respond("331 User name okay, need password.")
       @ftp.login
       @ftp.last_response.should == "230 User logged in, proceed. (PASS #{pass})\n"

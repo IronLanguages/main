@@ -15,7 +15,7 @@
 # NOTE: You can find Japanese version of this document in
 # the doc/net directory of the standard ruby interpreter package.
 # 
-#   $Id: pop.rb 11708 2007-02-12 23:01:19Z shyouhei $
+#   $Id: pop.rb 17230 2008-06-15 12:27:56Z shyouhei $
 #
 # See Net::POP3 for documentation.
 #
@@ -190,7 +190,7 @@ module Net
   # 
   class POP3 < Protocol
 
-    Revision = %q$Revision: 11708 $.split[1]
+    Revision = %q$Revision: 17230 $.split[1]
 
     #
     # Class Parameters
@@ -462,6 +462,8 @@ module Net
 
     def do_finish
       @mails = nil
+      @n_mails = nil
+      @n_bytes = nil
       @command.quit if @command
     ensure
       @started = false

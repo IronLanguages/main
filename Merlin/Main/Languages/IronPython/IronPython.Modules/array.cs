@@ -454,10 +454,7 @@ namespace IronPython.Modules {
                 set {
                     if (index == null) throw PythonOps.TypeError("expected Slice, got None");
 
-                    PythonArray pa = value as PythonArray;
-                    if (pa != null && pa._typeCode != _typeCode) {
-                        throw PythonOps.TypeError("bad array type");
-                    }
+                    CheckSliceAssignType(value);
 
                     if (index.step != null) {
                         if (Object.ReferenceEquals(value, this)) value = this.tolist();
@@ -470,33 +467,49 @@ namespace IronPython.Modules {
                             stop = start;
                         }
 
-                        // replace between start & stop w/ values
-                        IEnumerator ie = PythonOps.GetEnumerator(value);
-
-                        ArrayData newData = CreateData(_typeCode);
-                        for (int i = 0; i < start; i++) {
-                            newData.Append(_data.GetData(i));
-                        }
-
-                        while (ie.MoveNext()) {
-                            newData.Append(ie.Current);
-                        }
-
-                        for (int i = stop; i < _data.Length; i++) {
-                            newData.Append(_data.GetData(i));
-                        }
-
-                        _data = newData;
+                        SliceNoStep(value, start, stop);
                     }
                 }
+            }
+
+            private void CheckSliceAssignType(object value) {
+                PythonArray pa = value as PythonArray;
+                if (pa != null && pa._typeCode != _typeCode) {
+                    throw PythonOps.TypeError("bad array type");
+                }
+            }
+
+            private void SliceNoStep(object value, int start, int stop) {
+                // replace between start & stop w/ values
+                IEnumerator ie = PythonOps.GetEnumerator(value);
+                int length = _data.Length;
+
+                ArrayData newData = CreateData(_typeCode);
+                for (int i = 0; i < start; i++) {
+                    newData.Append(_data.GetData(i));
+                }
+
+                while (ie.MoveNext()) {
+                    newData.Append(ie.Current);
+                }
+
+                for (int i = Math.Max(stop, start); i < _data.Length; i++) {
+                    newData.Append(_data.GetData(i));
+                }
+
+                _data = newData;
             }
 
             public object __getslice__(object start, object stop) {
                 return this[new Slice(start, stop)];
             }
 
-            public void __setslice__(object start, object stop, object value) {
-                this[new Slice(start, stop)] = value;
+            public void __setslice__(int start, int stop, object value) {
+                CheckSliceAssignType(value);
+
+                Slice.FixSliceArguments(_data.Length, ref start, ref stop);
+
+                SliceNoStep(value, start, stop);
             }
 
             public PythonTuple __reduce__() {

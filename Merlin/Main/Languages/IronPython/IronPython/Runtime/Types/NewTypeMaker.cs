@@ -860,7 +860,7 @@ namespace IronPython.Runtime.Types {
             MethodInfo[] methods = type.GetMethods(BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static | BindingFlags.FlattenHierarchy);
 
             foreach (MethodInfo mi in methods) {
-                KeyValuePair<string, MethodSignatureInfo> key = new KeyValuePair<string, MethodSignatureInfo>(mi.Name, new MethodSignatureInfo(mi.IsStatic, mi.GetParameters()));
+                KeyValuePair<string, MethodSignatureInfo> key = new KeyValuePair<string, MethodSignatureInfo>(mi.Name, new MethodSignatureInfo(mi));
 
                 if (!added.TryGetValue(key, out overridden)) {
                     added[key] = mi;
@@ -876,7 +876,7 @@ namespace IronPython.Runtime.Types {
             foreach (MethodInfo mi in added.Values) {
                 if (!CanOverrideMethod(mi)) continue;
 
-                if (mi.IsPublic || mi.IsFamily || mi.IsFamilyOrAssembly) {
+                if (mi.IsPublic || IsProtected(mi)) {
                     if (mi.IsSpecialName) {
                         OverrideSpecialName(mi, specialNames, overriddenProperties);
                     } else {
@@ -891,7 +891,7 @@ namespace IronPython.Runtime.Types {
                 // TODO: A better check here would be mi.IsFamily && mi.IsSpecialName.  But we need to also check
                 // the other property method (getter if we're a setter, setter if we're a getter) because if one is protected
                 // and the other isn't we need to still override both (so our newslot property is also both a getter and a setter).
-                if ((mi.IsFamily || mi.IsSpecialName) && (mi.Name.StartsWith("get_") || mi.Name.StartsWith("set_"))) {
+                if ((IsProtected(mi) || mi.IsSpecialName) && (mi.Name.StartsWith("get_") || mi.Name.StartsWith("set_"))) {
                     // need to be able to call into protected getter/setter methods from derived types,
                     // even if these methods aren't virtual and we are in partial trust.
                     specialNames[mi.Name] = new[] { mi.Name };
@@ -1036,7 +1036,7 @@ namespace IronPython.Runtime.Types {
         }
 
         private void OverrideBaseMethod(MethodInfo mi, Dictionary<string, string[]> specialNames) {
-            if ((!mi.IsVirtual || mi.IsFinal) && !mi.IsFamily) {
+            if ((!mi.IsVirtual || mi.IsFinal) && !IsProtected(mi)) {
                 return;
             }
 

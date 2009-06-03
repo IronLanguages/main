@@ -19,6 +19,7 @@ import sys
 import time
 
 from iptest.test_env import *
+from iptest import options, l
 
 if not is_silverlight:
     import nt
@@ -477,6 +478,10 @@ def print_failures(total, failures):
     print '%d total, %d passed, %d failed' % (total, total - failcount, failcount)
 		
 def run_test(mod_name, noOutputPlease=False):
+    if not options.RUN_TESTS:
+        l.debug("Will not invoke any test cases from '%s'." % mod_name)
+        return
+        
     import sys
     module = sys.modules[mod_name]
     stdout = sys.stdout

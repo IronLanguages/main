@@ -19,7 +19,7 @@ using IronRuby.Compiler.Generation;
 
 namespace IronRuby.Builtins {
     public partial class RubyModule {
-        public sealed class Subclass : RubyModule, IRubyObject {
+        public sealed partial class Subclass : RubyModule, IRubyObject {
             private readonly RubyClass/*!*/ _class;
             private RubyInstanceData _instanceData;
 
@@ -38,23 +38,6 @@ namespace IronRuby.Builtins {
             protected override RubyModule/*!*/ CreateInstance(string name) {
                 return new Subclass(_class, name);
             }
-
-            #region IRubyObject Members
-
-            [Emitted]
-            public RubyClass/*!*/ Class {
-                get { return _class; }
-            }
-
-            public RubyInstanceData/*!*/ GetInstanceData() {
-                return RubyOps.GetInstanceData(ref _instanceData);
-            }
-
-            public RubyInstanceData TryGetInstanceData() {
-                return _instanceData;
-            }
-
-            #endregion
         }
     }
 }

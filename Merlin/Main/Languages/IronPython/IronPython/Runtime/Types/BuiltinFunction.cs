@@ -1031,12 +1031,11 @@ namespace IronPython.Runtime.Types {
                 }
 
                 if (optInfo != null) {
-                    var optimizedDelegate = optInfo.GetOptimizedDelegate(state);
-                    if (optimizedDelegate != null) {
+                    if (optInfo.ShouldOptimize) {
                         // if we've already produced an optimal rule don't go and produce an
                         // unoptimal rule (which will not hit any targets anyway - it's hit count
                         // has been exceeded and now it always fails).
-                        return new FastBindResult<T>((T)(object)optimizedDelegate, true);
+                        return new FastBindResult<T>();
                     }
 
                     ParameterInfo[] prms = typeof(T).GetMethod("Invoke").GetParameters();

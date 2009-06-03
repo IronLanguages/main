@@ -28,8 +28,9 @@ using IronRuby.Runtime;
 using IronRuby.Runtime.Calls;
 
 namespace IronRuby.Builtins {
-   
-    [RubyModule(Extends = typeof(IList)), Includes(typeof(Enumerable))]
+
+    [RubyModule(Extends = typeof(IList), Restrictions = ModuleRestrictions.None)]
+    [Includes(typeof(Enumerable))]
     public static class IListOps {
         
         #region Helpers

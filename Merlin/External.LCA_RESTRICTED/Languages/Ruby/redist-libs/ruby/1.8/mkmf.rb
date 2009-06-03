@@ -438,7 +438,7 @@ def try_var(var, headers = nil, &b)
 #{headers}
 /*top*/
 int main() { return 0; }
-int t() { const volatile void *volatile p; p = (void *)&#{var}; return 0; }
+int t() { const volatile void *volatile p; p = &(&#{var})[0]; return 0; }
 SRC
 end
 
@@ -1086,6 +1086,7 @@ LIBRUBYARG_STATIC = #$LIBRUBYARG_STATIC
 RUBY_EXTCONF_H = #{$extconf_h}
 CFLAGS   = #{$static ? '' : CONFIG['CCDLFLAGS']} #$CFLAGS #$ARCH_FLAG
 INCFLAGS = -I. #$INCFLAGS
+DEFS     = #{CONFIG['DEFS']}
 CPPFLAGS = #{extconf_h}#{$CPPFLAGS}
 CXXFLAGS = $(CFLAGS) #{CONFIG['CXXFLAGS']}
 DLDFLAGS = #$LDFLAGS #$DLDFLAGS #$ARCH_FLAG

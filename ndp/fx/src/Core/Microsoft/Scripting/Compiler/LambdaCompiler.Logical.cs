@@ -99,6 +99,8 @@ namespace System.Linq.Expressions.Compiler {
 
 
         private void EmitNullableCoalesce(BinaryExpression b) {
+            Debug.Assert(b.Method == null);
+
             LocalBuilder loc = GetLocal(b.Left.Type);
             Label labIfNull = _ilg.DefineLabel();
             Label labEnd = _ilg.DefineLabel();
@@ -109,19 +111,7 @@ namespace System.Linq.Expressions.Compiler {
             _ilg.Emit(OpCodes.Brfalse, labIfNull);
 
             Type nnLeftType = TypeUtils.GetNonNullableType(b.Left.Type);
-            if (b.Method != null) {
-                ParameterInfo[] parameters = b.Method.GetParametersCached();
-                Debug.Assert(b.Method.IsStatic);
-                Debug.Assert(parameters.Length == 1);
-                Debug.Assert(parameters[0].ParameterType.IsAssignableFrom(b.Left.Type) ||
-                             parameters[0].ParameterType.IsAssignableFrom(nnLeftType));
-                if (!parameters[0].ParameterType.IsAssignableFrom(b.Left.Type)) {
-                    _ilg.Emit(OpCodes.Ldloca, loc);
-                    _ilg.EmitGetValueOrDefault(b.Left.Type);
-                } else
-                    _ilg.Emit(OpCodes.Ldloc, loc);
-                _ilg.Emit(OpCodes.Call, b.Method);
-            } else if (b.Conversion != null) {
+            if (b.Conversion != null) {
                 Debug.Assert(b.Conversion.Parameters.Count == 1);
                 ParameterExpression p = b.Conversion.Parameters[0];
                 Debug.Assert(p.Type.IsAssignableFrom(b.Left.Type) ||
@@ -140,7 +130,6 @@ namespace System.Linq.Expressions.Compiler {
 
                 // emit call to invoke
                 _ilg.Emit(OpCodes.Callvirt, b.Conversion.Type.GetMethod("Invoke"));
-
             } else if (!TypeUtils.AreEquivalent(b.Type, nnLeftType)) {
                 _ilg.Emit(OpCodes.Ldloca, loc);
                 _ilg.EmitGetValueOrDefault(b.Left.Type);

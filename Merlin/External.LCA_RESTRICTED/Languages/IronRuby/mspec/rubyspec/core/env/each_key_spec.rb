@@ -17,6 +17,12 @@ describe "ENV.each_key" do
     end
   end
 
+   it "returns the value of break and stops execution of the loop if break is in the block" do
+    e = []
+    ENV.each_key {|k| break 1; e << k}.should == 1
+    e.empty?.should == true
+  end
+
   ruby_version_is "" ... "1.8.7" do
     it "raises LocalJumpError if no block given" do
       lambda { ENV.each_key }.should raise_error(LocalJumpError)

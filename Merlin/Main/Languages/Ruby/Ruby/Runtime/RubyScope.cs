@@ -751,7 +751,7 @@ var closureScope = scope as RubyClosureScope;
         internal static RubyTopLevelScope/*!*/ CreateWrappedTopLevelScope(Scope/*!*/ globalScope, RubyContext/*!*/ context) {
             RubyGlobalScope rubyGlobalScope = context.InitializeGlobalScope(globalScope, false, false);
             
-            RubyModule module = context.CreateModule(null, null, null, null, null, null, null);
+            RubyModule module = context.CreateModule(null, null, null, null, null, null, null, ModuleRestrictions.None);
             object mainObject = new Object();
             context.CreateMainSingleton(mainObject, new[] { module });
 

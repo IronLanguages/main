@@ -416,21 +416,6 @@ namespace IronRuby.Builtins {
                 return stream.String;
             }
         }
-
-        private static void WriteUInt64(ConversionStorage<IntegerValue>/*!*/ integerConversion, 
-            BinaryWriter/*!*/ writer, RubyArray/*!*/ self, int i, int count, bool swap) {
-            for (int j = 0; j < count; j++) {
-                uint n = Protocols.CastToUInt32Unchecked(integerConversion, self[i + j]);
-                if (swap) {
-                    writer.Write((byte)(n >> 24));
-                    writer.Write((byte)((n >> 16) & 0xff));
-                    writer.Write((byte)((n >> 8) & 0xff));
-                    writer.Write((byte)(n & 0xff));
-                } else {
-                    writer.Write(n);
-                }
-            }
-        }
         
         private static void WriteUInt32(ConversionStorage<IntegerValue>/*!*/ integerConversion, 
             BinaryWriter/*!*/ writer, RubyArray/*!*/ self, int i, int count, bool swap) {

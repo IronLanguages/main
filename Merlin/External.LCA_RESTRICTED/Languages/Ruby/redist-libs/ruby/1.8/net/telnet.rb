@@ -164,7 +164,7 @@ module Net
     CR   = "\015"   
     LF   = "\012" 
     EOL  = CR + LF 
-    REVISION = '$Id: telnet.rb 11708 2007-02-12 23:01:19Z shyouhei $'
+    REVISION = '$Id: telnet.rb 17270 2008-06-15 13:34:40Z shyouhei $'
     # :startdoc:
 
     #
@@ -559,7 +559,8 @@ module Net
                Integer(c.rindex(/#{IAC}#{SB}/no))
               buf = preprocess(c[0 ... c.rindex(/#{IAC}#{SB}/no)])
               rest = c[c.rindex(/#{IAC}#{SB}/no) .. -1]
-            elsif pt = c.rindex(/#{IAC}[^#{IAC}#{AO}#{AYT}#{DM}#{IP}#{NOP}]?\z/no)
+            elsif pt = c.rindex(/#{IAC}[^#{IAC}#{AO}#{AYT}#{DM}#{IP}#{NOP}]?\z/no) ||
+                       c.rindex(/\r\z/no)
               buf = preprocess(c[0 ... pt])
               rest = c[pt .. -1]
             else
@@ -571,9 +572,15 @@ module Net
            #
            # We cannot use preprocess() on this data, because that
            # method makes some Telnetmode-specific assumptions.
-           buf = c
-           buf.gsub!(/#{EOL}/no, "\n") unless @options["Binmode"]
+           buf = rest + c
            rest = ''
+           unless @options["Binmode"]
+             if pt = buf.rindex(/\r\z/no)
+               buf = buf[0 ... pt]
+               rest = buf[pt .. -1]
+             end
+             buf.gsub!(/#{EOL}/no, "\n")
+           end
           end
           @log.print(buf) if @options.has_key?("Output_log")
           line += buf
@@ -705,7 +712,7 @@ module Net
     # data is also yielded to the block as it is received.
     def login(options, password = nil) # :yield: recvdata
       login_prompt = /[Ll]ogin[: ]*\z/n
-      password_prompt = /Password[: ]*\z/n
+      password_prompt = /[Pp]ass(?:word|phrase)[: ]*\z/n
       if options.kind_of?(Hash)
         username = options["Name"]
         password = options["Password"]

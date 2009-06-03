@@ -17,7 +17,7 @@ using IronRuby.Builtins;
 using IronRuby.Compiler.Generation;
 
 namespace IronRuby.Runtime {
-    public interface IRubyObject {
+    public interface IRubyObject : IRubyObjectState {
         // Gets the ruby class associated with this object
         [Emitted] // RubyTypeBuilder
         RubyClass/*!*/ Class { get; }

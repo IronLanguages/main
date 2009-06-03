@@ -1,7 +1,7 @@
 # = uri/common.rb
 #
 # Author:: Akira Yamada <akira@ruby-lang.org>
-# Revision:: $Id: common.rb 11747 2007-02-15 02:41:45Z knu $
+# Revision:: $Id: common.rb 16982 2008-06-07 20:11:00Z shyouhei $
 # License:: 
 #   You can redistribute it and/or modify it under the same term as Ruby.
 #
@@ -110,7 +110,7 @@ module URI
       SERVER = "(?:#{USERINFO}@)?#{HOSTPORT}"
       # reg_name      = 1*( unreserved | escaped | "$" | "," |
       #                     ";" | ":" | "@" | "&" | "=" | "+" )
-      REG_NAME = "(?:[#{UNRESERVED}$,;+@&=+]|#{ESCAPED})+"
+      REG_NAME = "(?:[#{UNRESERVED}$,;:@&=+]|#{ESCAPED})+"
       # authority     = server | reg_name
       AUTHORITY = "(?:#{SERVER}|#{REG_NAME})"
 

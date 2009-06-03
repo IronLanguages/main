@@ -47,7 +47,7 @@ unless MSpec::VERSION >= minimum_version
 end
 
 $VERBOSE = nil unless ENV['OUTPUT_WARNINGS']
-require File.dirname(__FILE__) + '/../helpers'
+require File.dirname(__FILE__) + '/../net/helpers'
 require File.dirname(__FILE__) + '/com_helper'
 
 class Object

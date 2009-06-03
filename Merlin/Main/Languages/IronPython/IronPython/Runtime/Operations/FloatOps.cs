@@ -346,7 +346,7 @@ namespace IronPython.Runtime.Operations {
             } else {
                 res.Append("0x1.");
             }
-            res.Append(StringFormatSpec.FromString("013").AlignNumericText(BigIntegerOps.ToHex(mantissa, false), mantissa == 0, true));
+            res.Append(StringFormatSpec.FromString("013").AlignNumericText(BigIntegerOps.ToHex(mantissa, true), mantissa == 0, true));
             res.Append("p");
             if (exponent >= 0) {
                 res.Append('+');
@@ -761,7 +761,7 @@ namespace IronPython.Runtime.Operations {
             switch (spec.Type) {
                 case '%': digits = self.ToString("0." + new string('0', precision) + "%", CultureInfo.InvariantCulture); break;
                 case 'f':
-                case 'F': digits = self.ToString("#." + new string('0', precision), CultureInfo.InvariantCulture); break;
+                case 'F': digits = self.ToString("0." + new string('0', precision), CultureInfo.InvariantCulture); break;
                 case 'e': digits = self.ToString("0." + new string('0', precision) + "e+00", CultureInfo.InvariantCulture); break;
                 case 'E': digits = self.ToString("0." + new string('0', precision) + "E+00", CultureInfo.InvariantCulture); break;
                 case '\0':
@@ -800,10 +800,10 @@ namespace IronPython.Runtime.Operations {
                         }
                     } else {
                         // just the default formatting
-                        if (self >= 1000000000000) {
+                        if (IncludeExponent(self)) {
                             digits = self.ToString("0.#e+00", CultureInfo.InvariantCulture);
                         } else {
-                            digits = self.ToString("0.0", CultureInfo.InvariantCulture);
+                            digits = self.ToString("0.0###", CultureInfo.InvariantCulture);
                         }
                     }
                     break;
@@ -827,15 +827,20 @@ namespace IronPython.Runtime.Operations {
 
                             // then remove any insignificant digits
                             double pow = Math.Pow(10, digitCnt - Math.Max(precision, 1));
-                            self = self - (self % pow);
+                            double rest = self / pow;
+                            self = self - self % pow;
+                            if ((rest % 1) >= .5) {
+                                // round up
+                                self += pow;
+                            }
 
                             string fmt;
-                            if (spec.Type == 'n' && PythonContext.GetContext(context).NumericCulture != CultureInfo.InvariantCulture) {
+                            if (spec.Type == 'n' && PythonContext.GetContext(context).NumericCulture != PythonContext.CCulture) {
                                 // we've already figured out, we don't have any digits for decimal points, so just format as a number + exponent
                                 fmt = "0";
-                            } else if (spec.Precision > 1) {
+                            } else if (spec.Precision > 1 || digitCnt > 6) {
                                 // include the requested percision to the right of the decimal
-                                fmt = "0.0" + new string('#', precision);
+                                fmt = "0.#" + new string('#', precision);
                             } else {
                                 // zero precision, no decimal
                                 fmt = "0";
@@ -845,11 +850,15 @@ namespace IronPython.Runtime.Operations {
                         } else {
                             // we're including all the numbers to the right of the decimal we can, we explicitly 
                             // round to match CPython's behavior
+                            if (self < 1) {
+                                // no implicit 0
+                                digitCnt--;
+                            }
                             int decimalPoints = Math.Max(precision - digitCnt, 0);
 
                             self = MathUtils.RoundAwayFromZero(self, decimalPoints);
 
-                            if (spec.Type == 'n' && PythonContext.GetContext(context).NumericCulture != CultureInfo.InvariantCulture) {
+                            if (spec.Type == 'n' && PythonContext.GetContext(context).NumericCulture != PythonContext.CCulture) {
                                 if (digitCnt != precision && (self % 1) != 0) {
                                     digits = self.ToString("#,0.0" + new string('#', decimalPoints));
                                 } else {
@@ -872,6 +881,10 @@ namespace IronPython.Runtime.Operations {
             }
 
             return digits;
+        }
+
+        private static bool IncludeExponent(double self) {
+            return self >= 1e12 || (self != 0 && self <= 0.00009);
         }
 
         private static string DefaultFloatFormat() {
