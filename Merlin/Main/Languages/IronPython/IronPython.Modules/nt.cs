@@ -193,7 +193,11 @@ namespace IronPython.Modules {
         }
 #endif
 
-        public static List listdir(CodeContext/*!*/ context, string path) {
+        public static List listdir(CodeContext/*!*/ context, [NotNull]string path) {
+            if (path == String.Empty) {
+                path = ".";
+            }
+
             List ret = PythonOps.MakeList();
             try {
                 string[] files = context.LanguageContext.DomainManager.Platform.GetFiles(path, "*");

@@ -10,4 +10,9 @@ describe "Bignum#to_f" do
   it "converts number close to Float::MAX without exceeding MAX or producing NaN" do
     (10**308).to_f.should == 10.0 ** 308
   end
+
+  it "converts a number over Float::MAX to Infinity" do
+    (Float::MAX.to_i ** 2).to_f.infinite?.should == 1
+    (-(Float::MAX.to_i ** 2)).to_f.infinite?.should == -1
+  end
 end

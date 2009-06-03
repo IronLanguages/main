@@ -62,7 +62,7 @@ namespace IronPython.Compiler {
             }
             set {
                 if (value == Uninitialized.Instance && _value == Uninitialized.Instance) {
-                    throw PythonOps.NameError(_name);
+                    throw PythonOps.GlobalNameError(_name);
 
                 }
                 _value = value;
@@ -88,7 +88,7 @@ namespace IronPython.Compiler {
                 }
             }
 
-            throw PythonOps.NameError(_name);
+            throw PythonOps.GlobalNameError(_name);
         }
 
         public object RawValue {

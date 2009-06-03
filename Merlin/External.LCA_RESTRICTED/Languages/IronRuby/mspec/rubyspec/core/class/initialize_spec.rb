@@ -35,4 +35,8 @@ describe "Class#new" do
 
     klass.should have_private_instance_method(:initialize)
   end
+
+  it "can't be called on Class" do
+    lambda { Class.send(:initialize) }.should raise_error(TypeError)
+  end
 end

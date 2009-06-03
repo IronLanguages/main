@@ -31,6 +31,7 @@ namespace IronRuby.Builtins {
     [HideMethod(">=")]
     [HideMethod("<")]
     [HideMethod("<=")]
+    [UndefineMethod("new", IsStatic = true)]
     public static partial class BignumOps {
         /// <summary>
         /// Returns the number of bytes in the machine representation of self. 

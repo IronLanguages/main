@@ -169,5 +169,15 @@ namespace Microsoft.Scripting.Utils {
             }
             return -1;
         }
+
+        public static IList<T> Sort<T>(this ICollection<T> collection, Comparison<T> comparison) {
+            ContractUtils.RequiresNotNull(collection, "collection");
+            ContractUtils.RequiresNotNull(comparison, "comparison");
+
+            var array = new T[collection.Count];
+            collection.CopyTo(array, 0);
+            Array.Sort(array, comparison);
+            return array;
+        }
     }
 }

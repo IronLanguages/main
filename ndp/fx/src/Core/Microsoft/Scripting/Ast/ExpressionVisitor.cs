@@ -474,6 +474,7 @@ namespace System.Linq.Expressions {
         /// <param name="node">The expression to visit.</param>
         /// <returns>The modified expression, if it or any subexpression was modified;
         /// otherwise, returns the original expression.</returns>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1711:IdentifiersShouldNotHaveIncorrectSuffix")]
         protected internal virtual Expression VisitNew(NewExpression node) {
             ReadOnlyCollection<Expression> a = Visit(node.Arguments);
             if (a == node.Arguments) {

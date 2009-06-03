@@ -4,10 +4,13 @@ describe "Fixnum#[]" do
   it "returns the nth bit in the binary representation of self" do
     2[3].should == 0
     15[1].should == 1
-
+    15[-1].should == 0
+    30[33].should == 0
+    (-30)[33].should ==1
     2[3].should == 0
     3[0xffffffff].should == 0
     3[-0xffffffff].should == 0
+    (-1)[bignum_value].should == 1
   end
   
   it "tries to convert the given argument to an Integer using #to_int" do

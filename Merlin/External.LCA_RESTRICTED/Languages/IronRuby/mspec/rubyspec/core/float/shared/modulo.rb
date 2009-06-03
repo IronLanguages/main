@@ -1,3 +1,5 @@
+require File.dirname(__FILE__) + '/../fixtures/common'
+
 describe :float_modulo, :shared => true do
   it "returns self modulo other" do
     6543.21.send(@method, 137).should be_close(104.21, TOLERANCE)
@@ -12,5 +14,9 @@ describe :float_modulo, :shared => true do
   it "does NOT raise ZeroDivisionError if other is zero" do
     1.0.send(@method, 0).to_s.should == 'NaN'
     1.0.send(@method, 0.0).to_s.should == 'NaN'
+  end
+
+  it "coerces values that aren't numeric" do
+    2.1.send(@method, FloatSpecs::CoerceToFloat.new).should be_close(0.1, TOLERANCE)
   end
 end

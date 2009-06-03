@@ -127,18 +127,11 @@ namespace System.Linq.Expressions.Compiler {
         private void EmitBinaryOperator(ExpressionType op, Type leftType, Type rightType, Type resultType, bool liftedToNull) {
             bool leftIsNullable = TypeUtils.IsNullableType(leftType);
             bool rightIsNullable = TypeUtils.IsNullableType(rightType);
+
             switch (op) {
                 case ExpressionType.ArrayIndex:
-                    if (rightIsNullable) {
-                        LocalBuilder loc = GetLocal(rightType);
-                        _ilg.Emit(OpCodes.Stloc, loc);
-                        _ilg.Emit(OpCodes.Ldloca, loc);
-                        FreeLocal(loc);
-                        _ilg.EmitGetValue(rightType);
-                    }
-                    Type indexType = TypeUtils.GetNonNullableType(rightType);
-                    if (indexType != typeof(int)) {
-                        _ilg.EmitConvertToType(indexType, typeof(int), true);
+                    if (rightType != typeof(int)) {
+                        throw ContractUtils.Unreachable;
                     }
                     _ilg.EmitLoadElement(leftType.GetElementType());
                     return;

@@ -20,7 +20,8 @@ using IronRuby.Runtime;
 using Microsoft.Scripting.Generation;
 
 namespace IronRuby.Builtins {
-    [RubyClass(Extends = typeof(float), Inherits = typeof(Numeric)), Includes(typeof(ClrFloat), Copy = true), Includes(typeof(Precision))]
+    [RubyClass(Extends = typeof(float), Inherits = typeof(Numeric), Restrictions = ModuleRestrictions.None)]
+    [Includes(typeof(ClrFloat), Copy = true), Includes(typeof(Precision))]
     public static class SingleOps {
         // TODO: add constants as defined in FloatOps
 

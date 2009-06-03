@@ -256,53 +256,6 @@ namespace IronRuby.Runtime {
             return result.ToString();
         }
 
-        public static string/*!*/ GetQualifiedName(Type/*!*/ type, bool display) {
-            ContractUtils.RequiresNotNull(type, "type");
-            return AppendQualifiedName(new StringBuilder(), type, display).ToString();
-        }
-
-        private static StringBuilder/*!*/ AppendQualifiedName(StringBuilder/*!*/ result, Type/*!*/ type, bool display) {
-            if (type.IsGenericParameter) {
-                return result.Append(type.Name);
-            } 
-                
-            // qualifiers:
-            if (type.DeclaringType != null) {
-                AppendQualifiedName(result, type.DeclaringType, display);
-                result.Append("::");
-            } else if (type.Namespace != null) {
-                result.Append(type.Namespace.Replace(Type.Delimiter.ToString(), "::"));
-                result.Append("::");
-            }
-
-            // simple name:
-            result.Append(ReflectionUtils.GetNormalizedTypeName(type));
-
-            // generic args:
-            if (display && type.IsGenericType) {
-                result.Append("[");
-
-                var genericArgs = type.GetGenericArguments();
-                for (int i = 0; i < genericArgs.Length; i++) {
-                    if (i > 0) {
-                        result.Append(", ");
-                    }
-                    AppendQualifiedName(result, genericArgs[i], display);
-                }
-
-                result.Append("]");
-            }
-
-            return result;
-        }
-
-        public static string/*!*/ GetQualifiedName(NamespaceTracker/*!*/ namespaceTracker) {
-            ContractUtils.RequiresNotNull(namespaceTracker, "namespaceTracker");
-            if (namespaceTracker.Name == null) return String.Empty;
-
-            return namespaceTracker.Name.Replace(Type.Delimiter.ToString(), "::");
-        }
-
         #endregion
 
         #region Constants, Methods
@@ -761,10 +714,6 @@ namespace IronRuby.Runtime {
                 Interlocked.CompareExchange(ref site, CallSite<Func<CallSite, object, TResult>>.Create(conversion), null);
             }
             return site;
-        }
-
-        public static bool MethodNotFound(object siteResult) {
-            return siteResult == RubyOps.MethodNotFound;
         }
 
         #endregion

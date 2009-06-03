@@ -19,7 +19,7 @@ using IronRuby.Compiler.Generation;
 
 namespace IronRuby.Builtins {
     public partial class RubyRegex {
-        public sealed class Subclass : RubyRegex, IRubyObject {
+        public sealed partial class Subclass : RubyRegex, IRubyObject {
             private readonly RubyClass/*!*/ _class;
             private RubyInstanceData _instanceData;
 
@@ -37,23 +37,6 @@ namespace IronRuby.Builtins {
             protected override RubyRegex/*!*/ Copy() {
                 return new Subclass(this);
             }
-
-            #region IRubyObject Members
-
-            [Emitted]
-            public RubyClass/*!*/ Class {
-                get { return _class; }
-            }
-
-            public RubyInstanceData/*!*/ GetInstanceData() {
-                return RubyOps.GetInstanceData(ref _instanceData);
-            }
-
-            public RubyInstanceData TryGetInstanceData() {
-                return _instanceData;
-            }
-
-            #endregion
         }
     }
 }

@@ -35,9 +35,9 @@ using System.Runtime.CompilerServices;
 
 namespace IronRuby.Compiler {
     internal static class Fields {
-        private static FieldInfo _RubyOps_DefaultArgumentField, _RubyOps_MethodNotFound, _VersionHandle_Value, _RubyClass_Version;
+        private static FieldInfo _RubyOps_DefaultArgumentField, _RubyOps_ForwardToBase, _VersionHandle_Value, _RubyClass_Version;
         public static FieldInfo RubyOps_DefaultArgumentField { get { return _RubyOps_DefaultArgumentField ?? (_RubyOps_DefaultArgumentField = GetField(typeof(RubyOps), "DefaultArgument")); } }
-        public static FieldInfo RubyOps_MethodNotFound { get { return _RubyOps_MethodNotFound ?? (_RubyOps_MethodNotFound = GetField(typeof(RubyOps), "MethodNotFound")); } }
+        public static FieldInfo RubyOps_ForwardToBase { get { return _RubyOps_ForwardToBase ?? (_RubyOps_ForwardToBase = GetField(typeof(RubyOps), "ForwardToBase")); } }
         public static FieldInfo VersionHandle_Value { get { return _VersionHandle_Value ?? (_VersionHandle_Value = GetField(typeof(VersionHandle), "Value")); } }
         public static FieldInfo RubyClass_Version { get { return _RubyClass_Version ?? (_RubyClass_Version = GetField(typeof(RubyClass), "Version")); } }
 
@@ -48,7 +48,7 @@ namespace IronRuby.Compiler {
         }
     }
     
-    internal static partial class Methods {
+    public static partial class Methods {
         private static ConstructorInfo _RubyCallSignatureCtor;
         private static MethodInfo _Stopwatch_GetTimestamp, _IEnumerable_Of_Object_GetEnumerator, _IEnumerator_MoveNext,
             _IEnumerator_get_Current, _RubyStruct_GetValue, _RubyStruct_SetValue;
@@ -117,7 +117,7 @@ namespace IronRuby.Compiler {
         }
     }
 
-    internal static class MethodInfoExtensions {
+    public static class MethodInfoExtensions {
         public static MSA.Expression/*!*/ OpCall(this MethodInfo/*!*/ method) {
             Assert.NotNull(method);
             return MSA.Expression.Call(null, method);

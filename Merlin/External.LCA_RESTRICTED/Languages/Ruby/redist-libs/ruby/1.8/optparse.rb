@@ -203,17 +203,9 @@
 #
 class OptionParser
   # :stopdoc:
-  RCSID = %w$Id: optparse.rb 11798 2007-02-20 06:53:16Z knu $[1..-1].each {|s| s.freeze}.freeze
-  #Version = (RCSID[1].split('.').collect {|s| s.to_i}.extend(Comparable).freeze if RCSID[1])
-  if (RCSID[1])
-    Version = RCSID[1].split('.').collect {|s| s.to_i}
-              class << Version             
-                include Comparable
-              end
-              Version.freeze
-  end
-  #LastModified = (Time.gm(*RCSID[2, 2].join('-').scan(/\d+/).collect {|s| s.to_i}) if RCSID[2])
-  LastModified = '123' if RCSID[2] #(Time.gm(*RCSID[2, 2].join('-').scan(/\d+/).collect {|s| s.to_i}) if RCSID[2])
+  RCSID = %w$Id: optparse.rb 18108 2008-07-17 12:30:12Z shyouhei $[1..-1].each {|s| s.freeze}.freeze
+  Version = (RCSID[1].split('.').collect {|s| s.to_i}.extend(Comparable).freeze if RCSID[1])
+  LastModified = (Time.gm(*RCSID[2, 2].join('-').scan(/\d+/).collect {|s| s.to_i}) if RCSID[2])
   Release = RCSID[2]
 
   NoArgument = [NO_ARGUMENT = :NONE, nil].freeze
@@ -318,9 +310,7 @@ class OptionParser
 
     def initialize(pattern = nil, conv = nil,
                    short = nil, long = nil, arg = nil,
-                   #desc = ([] if short or long), &b)
                    desc = ([] if short or long), block = Proc.new)
-      #block = b.nil? ? Proc.new { } : b
       raise if Array === pattern
       @pattern, @conv, @short, @long, @arg, @desc, @block =
         pattern, conv, short, long, arg, desc, block
@@ -389,7 +379,7 @@ class OptionParser
       while s = lopts.shift
         l = left[-1].length + s.length
         l += arg.length if left.size == 1 && arg
-        l < max or left << ''
+        l < max or sopts.empty? or left << ''
         left[-1] << if left[-1].empty? then ' ' * 4 else ', ' end << s
       end
 
@@ -1169,7 +1159,7 @@ class OptionParser
     default_pattern, conv = search(:atype, default_style.pattern) unless default_pattern
     if !(short.empty? and long.empty?)
       s = (style || default_style).new(pattern || default_pattern,
-                                       conv, sdesc, ldesc, arg, desc, &block)
+                                       conv, sdesc, ldesc, arg, desc, block)
     elsif !block
       raise ArgumentError, "no switch given" if style or pattern
       s = desc
@@ -1484,6 +1474,7 @@ class OptionParser
   #
   def environment(env = File.basename($0, '.*'))
     env = ENV[env] || ENV[env.upcase] or return
+    require 'shellwords'
     parse(*Shellwords.shellwords(env))
   end
 
@@ -1788,10 +1779,7 @@ class OptionParser
 end
 
 # ARGV is arguable by OptionParser
-#ARGV.extend(OptionParser::Arguable)
-class << ARGV
-  include OptionParser::Arguable
-end
+ARGV.extend(OptionParser::Arguable)
 
 if $0 == __FILE__
   Version = OptionParser::Version

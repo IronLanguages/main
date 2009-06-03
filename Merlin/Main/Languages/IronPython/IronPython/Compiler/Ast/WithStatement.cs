@@ -207,7 +207,12 @@ namespace IronPython.Compiler.Ast {
                                             AstGenerator.GetHelperMethod("SetDynamicStackFrames"),
                                             nestedFrames
                                         ),
-                                        Ast.Rethrow()
+                                        Ast.Throw(
+                                            Ast.Call(
+                                                AstGenerator.GetHelperMethod("MakeRethrowExceptionWorker"),
+                                                exception
+                                            )
+                                        )
                                     )
                                 ),
                                 _body.Span

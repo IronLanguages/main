@@ -40,10 +40,6 @@ namespace IronRuby.Compiler.Ast {
         }
 
         internal override MSA.Expression/*!*/ TransformRead(AstGenerator/*!*/ gen) {
-            if (gen.CurrentMethod.IsTopLevelCode && gen.CurrentBlock == null && !gen.CompilerOptions.IsEval) {
-                return Ast.Throw(Methods.MakeTopLevelSuperException.OpCall());
-            }
-
             // invoke super member action:
             CallBuilder callBuilder = new CallBuilder(gen);
 

@@ -19,7 +19,7 @@ using IronRuby.Compiler.Generation;
 
 namespace IronRuby.Builtins {
     public partial class Range {
-        public sealed class Subclass : Range, IRubyObject {
+        public sealed partial class Subclass : Range, IRubyObject {
             private readonly RubyClass/*!*/ _class;
             private RubyInstanceData _instanceData;
 
@@ -37,23 +37,6 @@ namespace IronRuby.Builtins {
             protected override Range/*!*/ Copy() {
                 return new Subclass(this);
             }
-
-            #region IRubyObject Members
-
-            [Emitted]
-            public RubyClass/*!*/ Class {
-                get { return _class; }
-            }
-
-            public RubyInstanceData/*!*/ GetInstanceData() {
-                return RubyOps.GetInstanceData(ref _instanceData);
-            }
-
-            public RubyInstanceData TryGetInstanceData() {
-                return _instanceData;
-            }
-
-            #endregion
         }
     }
 }

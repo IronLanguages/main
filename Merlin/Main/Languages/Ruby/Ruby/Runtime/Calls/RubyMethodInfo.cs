@@ -42,6 +42,7 @@ namespace IronRuby.Runtime.Calls {
 
         private readonly Delegate/*!*/ _method;
         private readonly string/*!*/ _definitionName;
+        private readonly RubyScope/*!*/ _declaringScope;
 
         private readonly int _mandatoryParamCount;
         private readonly int _optionalParamCount;  
@@ -52,9 +53,10 @@ namespace IronRuby.Runtime.Calls {
         public int MandatoryParamCount { get { return _mandatoryParamCount; } }
         public int OptionalParamCount { get { return _optionalParamCount; } }
         public bool HasUnsplatParameter { get { return _hasUnsplatParameter; } }
+        public RubyScope/*!*/ DeclaringScope { get { return _declaringScope; } }
 
         // method:
-        internal RubyMethodInfo(object/*!*/ ast, Delegate/*!*/ method, RubyModule/*!*/ declaringModule, 
+        internal RubyMethodInfo(object/*!*/ ast, Delegate/*!*/ method, RubyScope/*!*/ declaringScope, RubyModule/*!*/ declaringModule, 
             string/*!*/ definitionName, int mandatory, int optional, bool hasUnsplatParameter, RubyMemberFlags flags)
             : base(flags, declaringModule) {
             Assert.NotNull(ast, method, declaringModule, definitionName);
@@ -65,10 +67,11 @@ namespace IronRuby.Runtime.Calls {
             _optionalParamCount = optional;
             _hasUnsplatParameter = hasUnsplatParameter;
             _definitionName = definitionName;
+            _declaringScope = declaringScope;
         }
 
         protected internal override RubyMemberInfo/*!*/ Copy(RubyMemberFlags flags, RubyModule/*!*/ module) {
-            return new RubyMethodInfo(_ast, _method, module, _definitionName, _mandatoryParamCount, _optionalParamCount, 
+            return new RubyMethodInfo(_ast, _method, _declaringScope, module, _definitionName, _mandatoryParamCount, _optionalParamCount, 
                 _hasUnsplatParameter, flags
             );
         }

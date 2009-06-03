@@ -14,21 +14,19 @@
  * ***************************************************************************/
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Dynamic;
 using System.Linq.Expressions;
 using System.Reflection;
 using IronRuby.Builtins;
 using IronRuby.Compiler;
 using Microsoft.Scripting.Actions.Calls;
-using Microsoft.Scripting.Runtime;
+using Microsoft.Scripting.Generation;
 using Microsoft.Scripting.Utils;
-
 using Ast = System.Linq.Expressions.Expression;
 using AstFactory = IronRuby.Compiler.Ast.AstFactory;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
-using System.Collections;
 
 namespace IronRuby.Runtime.Calls {
 
@@ -60,10 +58,9 @@ namespace IronRuby.Runtime.Calls {
         }
 
         internal MethodBase/*!*/[]/*!*/ SetMethodBasesNoLock(MethodBase/*!*/[]/*!*/ methods) {
-            // either all methods in the group are static or instance, a mixture is not allowed:
             Debug.Assert(
-                CollectionUtils.TrueForAll(methods, (method) => method.IsStatic) ||
-                CollectionUtils.TrueForAll(methods, (method) => !method.IsStatic)
+                CollectionUtils.TrueForAll(methods, (method) => method.IsStatic || method.DeclaringType == typeof(Object)) ||
+                CollectionUtils.TrueForAll(methods, (method) => !method.IsStatic || CompilerHelpers.IsExtension(method) || RubyClass.IsOperator(method))
             );
 
             return _methodBases = methods;
@@ -163,8 +160,7 @@ namespace IronRuby.Runtime.Calls {
 
         private static Type/*!*/ GetAssociatedSystemType(RubyModule/*!*/ module) {
             if (module.IsClass) {
-                RubyClass cls = module as RubyClass;
-                Type type = cls.GetUnderlyingSystemType();
+                Type type = ((RubyClass)module).GetUnderlyingSystemType();
                 if (type != null) {
                     return type;
                 }
@@ -222,12 +218,6 @@ namespace IronRuby.Runtime.Calls {
             resolver.AddArgumentRestrictions(metaBuilder, bindingTarget);
             
             return bindingTarget;
-        }
-
-        internal override void BuildCallNoFlow(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args, string/*!*/ name) {
-            Assert.NotNull(name, metaBuilder, args);
-
-            BuildCallNoFlow(metaBuilder, args, name, MethodBases, CallConvention, ImplicitProtocolConversions);
         }
 
         /// <summary>

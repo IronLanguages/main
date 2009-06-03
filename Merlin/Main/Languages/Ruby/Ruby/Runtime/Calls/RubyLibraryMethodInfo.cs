@@ -94,6 +94,10 @@ namespace IronRuby.Runtime.Calls {
         protected override RubyMemberInfo/*!*/ Copy(MethodBase/*!*/[]/*!*/ methods) {
             return new RubyLibraryMethodInfo(this, methods);
         }
+
+        internal override void BuildCallNoFlow(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args, string/*!*/ name) {
+            BuildCallNoFlow(metaBuilder, args, name, MethodBases, CallConvention, ImplicitProtocolConversions);
+        }
     }
 }
 

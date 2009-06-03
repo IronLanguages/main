@@ -10,7 +10,6 @@ module YAML
     #
     class PrivateType
         def self.tag_subclasses?; false; end
-        attr_accessor :type_id, :value
         verbose, $VERBOSE = $VERBOSE, nil
         def initialize( type, val )
             @type_id = type; @value = val
@@ -28,7 +27,6 @@ module YAML
     #
     class DomainType
         def self.tag_subclasses?; false; end
-        attr_accessor :domain, :type_id, :value
         verbose, $VERBOSE = $VERBOSE, nil
         def initialize( domain, type, val )
             @domain = domain; @type_id = type; @value = val
@@ -47,7 +45,7 @@ module YAML
     class Object
         def self.tag_subclasses?; false; end
         def to_yaml( opts = {} )
-            YAML::quick_emit( object_id, opts ) do |out|
+            YAML::quick_emit( self, opts ) do |out|
                 out.map( "tag:ruby.yaml.org,2002:object:#{ @class }", to_yaml_style ) do |map|
                     @ivars.each do |k,v|
                         map.add( k, v )
@@ -125,7 +123,7 @@ module YAML
             true
         end
         def to_yaml( opts = {} )
-            YAML::quick_emit( self.object_id, opts ) do |out|
+            YAML::quick_emit( self, opts ) do |out|
                 out.seq( taguri, to_yaml_style ) do |seq|
                     self.each do |v|
                         seq.add( Hash[ *v ] )
@@ -175,7 +173,7 @@ module YAML
             true
         end
         def to_yaml( opts = {} )
-            YAML::quick_emit( self.object_id, opts ) do |out|
+            YAML::quick_emit( self, opts ) do |out|
                 out.seq( taguri, to_yaml_style ) do |seq|
                     self.each do |v|
                         seq.add( Hash[ *v ] )

@@ -38,17 +38,17 @@ namespace IronRuby.Compiler.Generation {
             _newTypes = new Publisher<TypeDescription, Type>();
             _typeFeatures = new Dictionary<Type, IList<ITypeFeature>>();
 
-            AddSystemType(typeof(object), typeof(RubyObject));
-            AddSystemType(typeof(RubyModule), typeof(RubyModule.Subclass));
-            AddSystemType(typeof(MutableString), typeof(MutableString.Subclass));
-            AddSystemType(typeof(Proc), typeof(Proc.Subclass));
-            AddSystemType(typeof(RubyRegex), typeof(RubyRegex.Subclass));
-            AddSystemType(typeof(Hash), typeof(Hash.Subclass));
-            AddSystemType(typeof(RubyArray), typeof(RubyArray.Subclass));
-            AddSystemType(typeof(MatchData), typeof(MatchData.Subclass));
+            AddBuiltinType(typeof(object), typeof(RubyObject), false);
+            AddBuiltinType(typeof(RubyModule), typeof(RubyModule.Subclass), true);
+            AddBuiltinType(typeof(MutableString), typeof(MutableString.Subclass), true);
+            AddBuiltinType(typeof(Proc), typeof(Proc.Subclass), true);
+            AddBuiltinType(typeof(RubyRegex), typeof(RubyRegex.Subclass), true);
+            AddBuiltinType(typeof(Hash), typeof(Hash.Subclass), true);
+            AddBuiltinType(typeof(RubyArray), typeof(RubyArray.Subclass), true);
+            AddBuiltinType(typeof(MatchData), typeof(MatchData.Subclass), true);
         }
 
-        internal static Type/*!*/ GetOrCreateType(Type/*!*/ baseType, IList<Type/*!*/>/*!*/ interfaces) {
+        internal static Type/*!*/ GetOrCreateType(Type/*!*/ baseType, IList<Type/*!*/>/*!*/ interfaces, bool noOverrides) {
             Assert.NotNull(baseType);
             Assert.NotNull(interfaces);
 
@@ -62,7 +62,7 @@ namespace IronRuby.Compiler.Generation {
                 };
             }
 
-            TypeDescription typeInfo = new TypeDescription(baseType, features);
+            TypeDescription typeInfo = new TypeDescription(baseType, features, noOverrides);
             Type type = _newTypes.GetOrCreateValue(typeInfo,
                 delegate() {
                     if (TypeImplementsFeatures(baseType, features)) {
@@ -114,7 +114,11 @@ namespace IronRuby.Compiler.Generation {
             foreach (IFeatureBuilder feature in _features) {
                 feature.Implement(emitter);
             }
-            emitter.OverrideMethods(baseType);
+
+            if (!typeInfo.NoOverrides) {
+                emitter.OverrideMethods(baseType);
+            }
+
             Type result = emitter.FinishType();
             lock (_typeFeatures) {
                 _typeFeatures.Add(result, typeInfo.Features);
@@ -130,11 +134,12 @@ namespace IronRuby.Compiler.Generation {
             return name.ToString();
         }
 
-        private static void AddSystemType(Type/*!*/ clsBaseType, Type/*!*/ rubyType) {
-            AddSystemType(clsBaseType, rubyType, _defaultFeatures);
+        private static void AddBuiltinType(Type/*!*/ clsBaseType, Type/*!*/ rubyType, bool noOverrides) {
+            AddBuiltinType(clsBaseType, rubyType, _defaultFeatures, noOverrides);
         }
-        private static void AddSystemType(Type/*!*/ clsBaseType, Type/*!*/ rubyType, ITypeFeature/*!*/[]/*!*/ features) {
-            _newTypes.GetOrCreateValue(new TypeDescription(clsBaseType, features), delegate() { return rubyType; });
+
+        private static void AddBuiltinType(Type/*!*/ clsBaseType, Type/*!*/ rubyType, ITypeFeature/*!*/[]/*!*/ features, bool noOverrides) {
+            _newTypes.GetOrCreateValue(new TypeDescription(clsBaseType, features, noOverrides), () => rubyType);
             _typeFeatures[rubyType] = features;
         }
     }

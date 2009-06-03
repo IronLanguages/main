@@ -396,7 +396,6 @@ namespace IronPython.Runtime {
 
         public virtual void __setslice__(int start, int stop, object value) {
             Slice.FixSliceArguments(_size, ref start, ref stop);
-            if (start > stop) return;
 
             if (value is List) {
                 SliceNoStep(start, stop, (List)value);
@@ -417,6 +416,8 @@ namespace IronPython.Runtime {
                 _size -= stop - start;
             }
         }
+
+        private static readonly object _boxedOne = ScriptingRuntimeHelpers.Int32ToObject(1);
 
         public virtual object this[Slice slice] {
             get {
@@ -448,7 +449,7 @@ namespace IronPython.Runtime {
             set {
                 if (slice == null) throw PythonOps.TypeError("list indices must be integer or slice, not None");
 
-                if (slice.step != null) {
+                if (slice.step != null && (!(slice.step is int) || !slice.step.Equals(_boxedOne))) {
                     // try to assign back to self: make a copy first
                     if (this == value) value = new List(value);
 
@@ -456,7 +457,6 @@ namespace IronPython.Runtime {
                 } else {
                     int start, stop, step;
                     slice.indices(_size, out start, out stop, out step);
-                    if (start > stop) return;
 
                     List lstVal = value as List;
                     if (lstVal != null) {
@@ -491,6 +491,7 @@ namespace IronPython.Runtime {
                 } else {
                     // we are resizing the array (either bigger or smaller), we 
                     // will copy the data array and replace it all at once.
+                    stop = Math.Max(stop, start);
                     int newSize = _size - (stop - start) + otherSize;
 
                     object[] newData = new object[GetNewSize(newSize)];
@@ -527,6 +528,7 @@ namespace IronPython.Runtime {
                 } else {
                     // we are resizing the array (either bigger or smaller), we 
                     // will copy the data array and replace it all at once.
+                    stop = Math.Max(stop, start);
                     int newSize = _size - (stop - start) + other.Count;
 
                     object[] newData = new object[GetNewSize(newSize)];

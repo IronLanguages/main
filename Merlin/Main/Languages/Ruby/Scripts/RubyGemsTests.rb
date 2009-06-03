@@ -1,4 +1,4 @@
-test_dir = File.expand_path("../External.LCA_RESTRICTED/Languages/Ruby/RubyGems-1_2_0-test", ENV["MERLIN_ROOT"])
+test_dir = File.expand_path("../External.LCA_RESTRICTED/Languages/IronRuby/RubyGems-1_3_1-test", ENV["MERLIN_ROOT"])
 $LOAD_PATH << test_dir
 
 # Note that the copy of minitest\unit.rb has a workaround at line 15 for http://redmine.ruby-lang.org/issues/show/1266
@@ -66,6 +66,7 @@ class TestGemRemoteFetcher
   def test_explicit_proxy() end
   def test_no_proxy() end
   def test_zip() end
+  def test_request_unmodifed() end
 end
 
 class TestGemValidator

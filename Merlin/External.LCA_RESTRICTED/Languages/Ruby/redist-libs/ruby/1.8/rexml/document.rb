@@ -66,6 +66,7 @@ module REXML
 		def add( child )
 			if child.kind_of? XMLDecl
 				@children.unshift child
+        child.parent = self
 			elsif child.kind_of? DocType
         # Find first Element or DocType node and insert the decl right 
         # before it.  If there is no such node, just insert the child at the
@@ -173,7 +174,7 @@ module REXML
     #   the absolute *value* of the document -- that is, it leaves the value
     #   and number of Text nodes in the document unchanged.
     # ie_hack::
-    #   Internet Explorer is the worst piece of #### to have ever been
+    #   Internet Explorer is the worst piece of crap to have ever been
     #   written, with the possible exception of Windows itself.  Since IE is
     #   unable to parse proper XML, we have to provide a hack to generate XML
     #   that IE's limited abilities can handle.  This hack inserts a space 
@@ -183,7 +184,7 @@ module REXML
         output = Output.new( output, xml_decl.encoding )
       end
       formatter = if indent > -1
-          if transitive
+          if trans
             REXML::Formatters::Transitive.new( indent, ie_hack )
           else
             REXML::Formatters::Pretty.new( indent, ie_hack )

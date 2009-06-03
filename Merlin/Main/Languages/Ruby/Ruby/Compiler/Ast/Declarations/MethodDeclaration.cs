@@ -84,11 +84,10 @@ namespace IronRuby.Compiler.Ast {
         }
 
         private MSA.Expression/*!*/ TransformBody(AstGenerator/*!*/ gen, MSA.Expression/*!*/ methodDefinitionVariable) {
-            string encodedName = RubyExceptionData.EncodeMethodName(gen.SourceUnit, _name, Location);
+            string encodedName = RubyExceptionData.EncodeMethodName(_name, gen.SourcePath, Location);
             
             ScopeBuilder scope = new ScopeBuilder();
-            MSA.Expression parentScope = gen.CurrentScopeVariable;
-
+            
             MSA.ParameterExpression[] parameters = DefineParameters(gen, scope);
             MSA.Expression currentMethodVariable = scope.DefineHiddenVariable("#method", typeof(RubyMethodInfo));
             MSA.Expression rfcVariable = scope.DefineHiddenVariable("#rfc", typeof(RuntimeFlowControl));
@@ -125,13 +124,13 @@ namespace IronRuby.Compiler.Ast {
             if (gen.TraceEnabled) {
                 traceCall = Methods.TraceMethodCall.OpCall(
                     scopeVariable, 
-                    Ast.Convert(AstUtils.Constant(gen.SourceUnit.Path), typeof(string)), 
+                    gen.SourcePathConstant, 
                     AstUtils.Constant(Location.Start.Line)
                 );
 
                 traceReturn = Methods.TraceMethodReturn.OpCall(
                     gen.CurrentScopeVariable,
-                    Ast.Convert(AstUtils.Constant(gen.SourceUnit.Path), typeof(string)),
+                    gen.SourcePathConstant,
                     AstUtils.Constant(Location.End.Line)
                 );
             } else {
@@ -147,7 +146,7 @@ namespace IronRuby.Compiler.Ast {
                 Ast.Assign(currentMethodVariable, methodDefinitionVariable),
                 Ast.Assign(rfcVariable, Methods.CreateRfcForMethod.OpCall(AstUtils.Convert(blockParameter, typeof(Proc)))),
                 Ast.Assign(scopeVariable, Methods.CreateMethodScope.OpCall(
-                    scope.VisibleVariables(), parentScope, currentMethodVariable, rfcVariable, selfParameter, blockParameter,
+                    scope.VisibleVariables(), currentMethodVariable, rfcVariable, selfParameter, blockParameter,
                     EnterInterpretedFrameExpression.Instance
                 )),
             

@@ -149,7 +149,20 @@ namespace IronPython.Runtime.Binding {
 
                         // Interface conversion helpers...
                         if (genTo == typeof(IList<>)) {
-                            res = TryToGenericInterfaceConversion(self, type, typeof(IList<object>), typeof(ListGenericWrapper<>));
+                            if (self.LimitType == typeof(string)) {
+                                res = new DynamicMetaObject(
+                                    Ast.Call(
+                                        typeof(PythonOps).GetMethod("MakeByteArray"),
+                                        AstUtils.Convert(self.Expression, typeof(string))
+                                    ),
+                                    BindingRestrictions.GetTypeRestriction(
+                                        self.Expression,
+                                        typeof(string)
+                                    )
+                                );
+                            } else {
+                                res = TryToGenericInterfaceConversion(self, type, typeof(IList<object>), typeof(ListGenericWrapper<>));
+                            }
                         } else if (genTo == typeof(IDictionary<,>)) {
                             res = TryToGenericInterfaceConversion(self, type, typeof(IDictionary<object, object>), typeof(DictionaryGenericWrapper<,>));
                         } else if (genTo == typeof(IEnumerable<>)) {
@@ -588,15 +601,15 @@ namespace IronPython.Runtime.Binding {
     }
 
     class CompatConversionBinder : ConvertBinder {
-        private readonly PythonContext _bs;
+        private readonly PythonContext _context;
 
-        public CompatConversionBinder(PythonContext/*!*/ bs, Type toType, bool isExplicit)
+        public CompatConversionBinder(PythonContext/*!*/ context, Type toType, bool isExplicit)
             : base(toType, isExplicit) {
-            _bs = bs;
+            _context = context;
         }
 
         public override DynamicMetaObject FallbackConvert(DynamicMetaObject target, DynamicMetaObject errorSuggestion) {
-            return new PythonConversionBinder(_bs, Type, Explicit ? ConversionResultKind.ExplicitCast : ConversionResultKind.ImplicitCast).FallbackConvert(target);
+            return new PythonConversionBinder(_context, Type, Explicit ? ConversionResultKind.ExplicitCast : ConversionResultKind.ImplicitCast).FallbackConvert(target);
         }
     }
 }

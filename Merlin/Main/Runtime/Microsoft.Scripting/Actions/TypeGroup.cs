@@ -83,6 +83,16 @@ namespace Microsoft.Scripting.Actions {
             return repr.ToString();
         }
 
+        public override IList<object> GetMemberNames(CodeContext context) {
+            Dictionary<string, string> members = new Dictionary<string, string>();
+            foreach (Type t in this.Types) {
+                CollectMembers(members, t);
+            }
+
+            return MembersToList(members);
+
+        }
+
         public TypeTracker GetTypeForArity(int arity) {
             Type typeWithMatchingArity;
             if (!_typesByArity.TryGetValue(arity, out typeWithMatchingArity)) {
@@ -159,6 +169,12 @@ namespace Microsoft.Scripting.Actions {
         public IEnumerable<Type> Types {
             get {
                 return _typesByArity.Values;
+            }
+        }
+
+        public IDictionary<int, Type> TypesByArity {
+            get {
+                return new ReadOnlyDictionary<int, Type>(_typesByArity);
             }
         }
 

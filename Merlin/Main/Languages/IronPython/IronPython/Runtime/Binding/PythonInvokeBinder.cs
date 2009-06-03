@@ -112,10 +112,6 @@ namespace IronPython.Runtime.Binding {
             return base.BindDelegate(site, args);
         }
 
-        public T Optimize<T>(CallSite<T> site, object[] args) where T : class {
-            return base.BindDelegate<T>(site, args);
-        }
-
         /// <summary>
         /// Fallback - performs the default binding operation if the object isn't recognized
         /// as being invokable.

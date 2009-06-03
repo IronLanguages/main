@@ -18,7 +18,7 @@ using Microsoft.Scripting.Runtime;
 using IronRuby.Runtime;
 
 namespace IronRuby.Builtins {
-    [RubyClass(Extends = typeof(TypeTracker))]
+    [RubyClass(Extends = typeof(TypeTracker), Restrictions = ModuleRestrictions.None)]
     public static class TypeTrackerOps {
         [RubyMethod("to_module")]
         public static RubyModule/*!*/ ToModule(RubyContext/*!*/ context, TypeTracker/*!*/ self) {

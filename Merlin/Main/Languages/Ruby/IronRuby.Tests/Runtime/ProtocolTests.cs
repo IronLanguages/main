@@ -23,7 +23,7 @@ namespace IronRuby.Tests {
 
     public class DefaultProtocolTester : LibraryInitializer {
         protected override void LoadModules() {
-            DefineGlobalModule("Tests", typeof(DefaultProtocolTester), true, null, (module) => {
+            DefineGlobalModule("Tests", typeof(DefaultProtocolTester), (int)RubyModuleAttributes.IsSelfContained, null, (module) => {
                     module.DefineLibraryMethod("to_int_to_str", (int)RubyMethodAttributes.PublicSingleton, new System.Delegate[] {
                         new Func<RubyModule, Union<int, MutableString>, RubyArray>(ToIntToStr),
                     });
