@@ -260,7 +260,7 @@ class CSProjCompiler
   def compile(name)
     banner name.to_s
     args = @targets[name.to_sym]
-    working_dir = File.expand_path(args[:dir])
+    working_dir = File.expand_path(args[:dir], File.dirname(__FILE__))
     build_dir = build_path
 
     Dir.chdir(working_dir) do |p|
