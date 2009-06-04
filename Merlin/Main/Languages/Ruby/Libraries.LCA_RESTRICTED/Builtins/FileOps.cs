@@ -564,7 +564,7 @@ namespace IronRuby.Builtins {
         }
 
         class PathExpander {
-            Stack<string> _pathComponents = new Stack<string>(); // does not include the root
+            List<string> _pathComponents = new List<string>(); // does not include the root
             string _root; // Typically "c:/" on Windows, and "/" on Unix
 
             internal PathExpander(RubyContext/*!*/ context, string absoluteBasePath) {
@@ -590,44 +590,39 @@ namespace IronRuby.Builtins {
                             // MRI allows more pops than the base path components
                             continue;
                         }
-                        _pathComponents.Pop();
+                        _pathComponents.RemoveAt(_pathComponents.Count - 1);
                     } else if (pathComponent == ".") {
                         continue;
                     } else {
-                        _pathComponents.Push(pathComponent);
+                        _pathComponents.Add(pathComponent);
                     }
                 }
             }
 
-            private string StringResult {
-                get {
-                    StringBuilder result = new StringBuilder(_root);
-                    string[] pathComponents = ArrayUtils.Reverse(_pathComponents.ToArray());
-                    
-                    if (pathComponents.Length > 1) {
-                        // Here we make this work:
-                        //   File.expand_path("c:/..a..") -> "c:/..a"
-                        string lastComponent = pathComponents[pathComponents.Length - 1];
-                        if (Environment.OSVersion.Platform != PlatformID.Unix && !String.IsNullOrEmpty(lastComponent.TrimEnd('.'))) {
-                            pathComponents[pathComponents.Length - 1] = lastComponent.TrimEnd('.');
-                        }
+            internal MutableString/*!*/ GetResult() {
+                StringBuilder result = new StringBuilder(_root);
+                
+                if (_pathComponents.Count > 1) {
+                    // Here we make this work:
+                    //   File.expand_path("c:/..a..") -> "c:/..a"
+                    string lastComponent = _pathComponents[_pathComponents.Count - 1];
+                    if (RubyUtils.FileSystemUsesDriveLetters && !String.IsNullOrEmpty(lastComponent.TrimEnd('.'))) {
+                        _pathComponents[_pathComponents.Count - 1] = lastComponent.TrimEnd('.');
                     }
+                }
 
-                    for(int i = 0; i < pathComponents.Length; i++) {
-                        result.Append(pathComponents[i]);
-                        if (i < (pathComponents.Length - 1)) {
-                            result.Append('/');
-                        }
+                for(int i = 0; i < _pathComponents.Count; i++) {
+                    result.Append(_pathComponents[i]);
+                    if (i < (_pathComponents.Count - 1)) {
+                        result.Append('/');
                     }
+                }
 #if DEBUG
-                    _pathComponents = null;
-                    _root = null;
+                _pathComponents = null;
+                _root = null;
 #endif
-                    return result.ToString();
-                }
+                return MutableString.CreateMutable(result.ToString());
             }
-
-            internal MutableString/*!*/ Result { get { return MutableString.CreateMutable(StringResult); } }
         }
 
         // Expand directory path - these cases exist:
@@ -691,7 +686,7 @@ namespace IronRuby.Builtins {
             if (RubyUtils.IsAbsolutePath(pathStr)) {
                 // "basePath" can be ignored is "path" is an absolute path
                 PathExpander pathExpander = new PathExpander(context, pathStr);
-                return pathExpander.Result;
+                return pathExpander.GetResult();
             } else if (RubyUtils.HasPartialDriveLetter(pathStr, out partialDriveLetter, out relativePath)) {
                 string currentDirectory = partialDriveLetter.ToString() + ":/";
                 if (DirectoryExists(context, currentDirectory)) {
@@ -707,7 +702,7 @@ namespace IronRuby.Builtins {
             } else if (RubyUtils.IsAbsolutePath(basePathStr)) {
                 PathExpander pathExpander = new PathExpander(context, basePathStr);
                 pathExpander.AddRelativePath(pathStr);
-                return pathExpander.Result;
+                return pathExpander.GetResult();
             } else if (RubyUtils.HasPartialDriveLetter(basePathStr, out partialDriveLetter, out relativePath)) {
                 // First expand basePath
                 MutableString expandedBasePath = ExpandPath(context, self, basePath);
