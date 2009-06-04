@@ -215,12 +215,12 @@ namespace IronRuby.Runtime {
 
         [Emitted]
         public static Proc/*!*/ DefineBlock(RubyScope/*!*/ scope, RuntimeFlowControl/*!*/ runtimeFlowControl, object self, Delegate/*!*/ clrMethod,
-            int parameterCount, BlockSignatureAttributes attributesAndArity) {
+            int parameterCount, BlockSignatureAttributes attributesAndArity, string sourcePath, int startLine) {
             Assert.NotNull(scope, clrMethod);
 
             // closes block over self and context
             BlockDispatcher dispatcher = BlockDispatcher.Create(clrMethod, parameterCount, attributesAndArity);
-            Proc result = new Proc(ProcKind.Block, self, scope, dispatcher);
+            Proc result = new Proc(ProcKind.Block, self, scope, sourcePath, startLine, dispatcher);
 
             result.Owner = runtimeFlowControl;
             return result;

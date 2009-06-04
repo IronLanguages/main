@@ -32,12 +32,12 @@ namespace Microsoft.Scripting.Ast {
         internal CodeContextExpression() {
         }
 
-        protected override System.Type TypeImpl() {
-            return typeof(CodeContext);
+        public sealed override Type Type {
+            get { return typeof(CodeContext); }
         }
 
-        protected override ExpressionType NodeTypeImpl() {
-            return ExpressionType.Extension;
+        public sealed override ExpressionType NodeType {
+            get { return ExpressionType.Extension; }
         }
 
         protected override Expression VisitChildren(Func<Expression, Expression> visitor) {
@@ -60,12 +60,12 @@ namespace Microsoft.Scripting.Ast {
             _newContext = newContext;
         }
 
-        protected override Type TypeImpl() {
-            return _body.Type;
+        public sealed override Type Type {
+            get { return _body.Type; }
         }
 
-        protected override ExpressionType NodeTypeImpl() {
-            return ExpressionType.Extension;
+        public sealed override ExpressionType NodeType {
+            get { return ExpressionType.Extension; }
         }
 
         /// <summary>

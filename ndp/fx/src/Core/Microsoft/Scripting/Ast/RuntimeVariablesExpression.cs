@@ -39,8 +39,8 @@ namespace System.Linq.Expressions {
         /// Gets the static type of the expression that this <see cref="Expression" /> represents.
         /// </summary>
         /// <returns>The <see cref="Type"/> that represents the static type of the expression.</returns>
-        protected override Type TypeImpl() {
-            return typeof(IRuntimeVariables);
+        public sealed override Type Type {
+            get { return typeof(IRuntimeVariables); }
         }
 
         /// <summary>
@@ -48,8 +48,8 @@ namespace System.Linq.Expressions {
         /// ExpressionType.Extension when overriding this method.
         /// </summary>
         /// <returns>The <see cref="ExpressionType"/> of the expression.</returns>
-        protected override ExpressionType NodeTypeImpl() {
-            return ExpressionType.RuntimeVariables;
+        public sealed override ExpressionType NodeType {
+            get { return ExpressionType.RuntimeVariables; }
         }
 
         /// <summary>

@@ -920,12 +920,12 @@ namespace IronPython.Compiler {
             return res;
         }
 
-        protected override ExpressionType NodeTypeImpl() {
-            return ExpressionType.Extension;
+        public sealed override ExpressionType NodeType {
+            get { return ExpressionType.Extension; }
         }
 
-        protected override Type/*!*/ TypeImpl() {
-            return _type;
+        public sealed override Type/*!*/ Type {
+            get { return _type; }
         }
 
         public override bool CanReduce {
@@ -951,12 +951,12 @@ namespace IronPython.Compiler {
             return Expression.Assign(_lhs.Reduce(), _rhs);
         }
 
-        protected override ExpressionType NodeTypeImpl() {
-            return ExpressionType.Extension;
+        public sealed override ExpressionType NodeType {
+            get { return ExpressionType.Extension; }
         }
 
-        protected override Type/*!*/ TypeImpl() {
-            return _lhs.Type;
+        public sealed override Type/*!*/ Type {
+            get { return _lhs.Type; }
         }
 
         public override bool CanReduce {
@@ -1001,12 +1001,12 @@ namespace IronPython.Compiler {
             return _reduced;
         }
 
-        protected override ExpressionType NodeTypeImpl() {
-            return ExpressionType.Extension;
+        public sealed override ExpressionType NodeType {
+            get { return ExpressionType.Extension; }
         }
 
-        protected override Type/*!*/ TypeImpl() {
-            return typeof(PythonGenerator);
+        public sealed override Type/*!*/ Type {
+            get { return typeof(PythonGenerator); }
         }
 
         public override bool CanReduce {

@@ -4051,6 +4051,10 @@ namespace IronRuby.Builtins {
                 new System.Func<IronRuby.Builtins.Proc, IronRuby.Builtins.Proc>(IronRuby.Builtins.ProcOps.ToProc)
             );
             
+            module.DefineLibraryMethod("to_s", 0x51, 
+                new System.Func<IronRuby.Builtins.Proc, IronRuby.Builtins.MutableString>(IronRuby.Builtins.ProcOps.ToS)
+            );
+            
         }
         
         private static void LoadProc_Class(IronRuby.Builtins.RubyModule/*!*/ module) {

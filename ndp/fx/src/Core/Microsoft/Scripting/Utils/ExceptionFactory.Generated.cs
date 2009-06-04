@@ -424,10 +424,10 @@ namespace System.Linq.Expressions {
         }
 
         /// <summary>
-        /// A string like  "Extension node must override method {0}."
+        /// A string like  "Extension node must override the property {0}."
         /// </summary>
-        internal static string ExtensionNodeMustOverrideMethod(object p0) {
-            return FormatString("Extension node must override method {0}.", p0);
+        internal static string ExtensionNodeMustOverrideProperty(object p0) {
+            return FormatString("Extension node must override the property {0}.", p0);
         }
 
         /// <summary>
@@ -1530,10 +1530,10 @@ namespace System.Linq.Expressions {
         }
 
         /// <summary>
-        /// InvalidOperationException with message like "Extension node must override method {0}."
+        /// InvalidOperationException with message like "Extension node must override the property {0}."
         /// </summary>
-        internal static Exception ExtensionNodeMustOverrideMethod(object p0) {
-            return new InvalidOperationException(Strings.ExtensionNodeMustOverrideMethod(p0));
+        internal static Exception ExtensionNodeMustOverrideProperty(object p0) {
+            return new InvalidOperationException(Strings.ExtensionNodeMustOverrideProperty(p0));
         }
 
         /// <summary>

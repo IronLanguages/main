@@ -28,13 +28,9 @@ namespace IronRuby.Compiler.Ast {
         public void AddInstructions(LightCompiler compiler) {
             compiler.AddInstruction(_Instruction.Instance);
         }
-
-        protected override MSA.ExpressionType NodeTypeImpl() {
-            return MSA.ExpressionType.Extension;
-        }
-
-        protected override Type/*!*/ TypeImpl() {
-            return typeof(InterpretedFrame);
+        
+        public sealed override Type/*!*/ Type {
+            get { return typeof(InterpretedFrame); }
         }
 
         public override bool CanReduce {

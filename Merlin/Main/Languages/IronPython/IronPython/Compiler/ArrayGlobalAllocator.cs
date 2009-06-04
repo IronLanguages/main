@@ -101,12 +101,12 @@ namespace IronPython.Compiler.Ast {
                 }
             }
 
-            protected override MSAst.ExpressionType NodeTypeImpl() {
-                return MSAst.ExpressionType.Extension;
+            public sealed override MSAst.ExpressionType NodeType {
+                get { return MSAst.ExpressionType.Extension; }
             }
 
-            protected override Type TypeImpl() {
-                return typeof(PythonGlobal[]);
+            public sealed override Type Type {
+                get { return typeof(PythonGlobal[]); }
             }
 
             public override System.Linq.Expressions.Expression Reduce() {

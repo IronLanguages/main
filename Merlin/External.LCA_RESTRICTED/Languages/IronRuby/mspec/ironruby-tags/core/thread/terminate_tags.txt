@@ -1,5 +1,4 @@
 fails:Thread#terminate can be rescued by outer rescue clause when inner ensure clause raises exception
-thread:Thread#terminate killing dying sleeping thread wakes up thread
-thread:Thread#terminate is deferred if ensure clause does Thread.stop
-thread:Thread#terminate does not deadlock when called from within the thread
-while being joined from without
+unstable:Thread#terminate killing dying sleeping thread wakes up thread
+unstable:Thread#terminate is deferred if ensure clause does Thread.stop
+unstable:Thread#terminate does not deadlock when called from within the thread while being joined from without
