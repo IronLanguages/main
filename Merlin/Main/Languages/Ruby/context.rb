@@ -375,7 +375,7 @@ class CSProjCompiler
   end
 
   def move_config
-    source = project_root + "Config\\Unsigned\\app.config"
+    source = project_root + "Config/Unsigned/app.config"
     config_file = build_path + "ir.exe.config"
     transform_config_file('Merlin', source, config_file)
   end
