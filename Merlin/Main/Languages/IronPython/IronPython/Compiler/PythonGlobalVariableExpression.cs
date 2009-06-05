@@ -61,12 +61,12 @@ namespace IronPython.Compiler {
             }
         }
 
-        protected override ExpressionType NodeTypeImpl() {
-            return ExpressionType.Extension;
+        public sealed override ExpressionType NodeType {
+            get { return ExpressionType.Extension; }
         }
 
-        protected override Type/*!*/ TypeImpl() {
-            return typeof(object);
+        public sealed override Type/*!*/ Type {
+            get { return typeof(object); }
         }
 
         public override bool CanReduce {
@@ -146,12 +146,12 @@ namespace IronPython.Compiler {
             _value = value;
         }
 
-        protected override ExpressionType NodeTypeImpl() {
-            return ExpressionType.Extension;
+        public sealed override ExpressionType NodeType {
+            get { return ExpressionType.Extension; }
         }
 
-        protected override Type/*!*/ TypeImpl() {
-            return typeof(object);
+        public sealed override Type/*!*/ Type {
+            get { return typeof(object); }
         }
 
         public override bool CanReduce {
@@ -221,12 +221,12 @@ namespace IronPython.Compiler {
             _scope = scopeExpr;
         }
 
-        protected override ExpressionType NodeTypeImpl() {
-            return ExpressionType.Extension;
+        public sealed override ExpressionType NodeType {
+            get { return ExpressionType.Extension; }
         }
 
-        protected override Type/*!*/ TypeImpl() {
-            return typeof(object);
+        public sealed override Type/*!*/ Type {
+            get { return typeof(object); }
         }
 
         public override bool CanReduce {

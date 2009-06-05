@@ -121,7 +121,7 @@ namespace IronRuby.Runtime {
             }
         }
 
-        internal static MutableString/*!*/ FormatObject(string/*!*/ className, int objectId, bool isTainted) {
+        public static MutableString/*!*/ FormatObjectPrefix(string/*!*/ className, int objectId, bool isTainted) {
             MutableString str = MutableString.CreateMutable();
             str.Append("#<");
             str.Append(className);
@@ -130,14 +130,20 @@ namespace IronRuby.Runtime {
             str.Append(':');
             AppendFormatHexObjectId(str, objectId);
 
-            str.Append(">");
-
             str.IsTainted |= isTainted;
             return str;
         }
 
+        public static MutableString/*!*/ FormatObject(string/*!*/ className, int objectId, bool isTainted) {
+            return FormatObjectPrefix(className, objectId, isTainted).Append(">");
+        }
+
         public static MutableString/*!*/ ObjectToMutableString(RubyContext/*!*/ context, object obj) {
             return FormatObject(context.GetClassDisplayName(obj), GetObjectId(context, obj), context.IsObjectTainted(obj));
+        }
+
+        public static MutableString/*!*/ ObjectToMutableStringPrefix(RubyContext/*!*/ context, object obj) {
+            return FormatObjectPrefix(context.GetClassDisplayName(obj), GetObjectId(context, obj), context.IsObjectTainted(obj));
         }
 
         public static MutableString/*!*/ AppendFormatHexObjectId(MutableString/*!*/ str, int objectId) {

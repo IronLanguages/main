@@ -33,9 +33,17 @@ namespace System.Linq.Expressions {
         private static readonly CacheDict<Type, MethodInfo> _LambdaDelegateCache = new CacheDict<Type, MethodInfo>(40);
         private static CacheDict<Type, LambdaFactory> _LambdaFactories;
 
-        // protected ctors are part of API surface area
+        // LINQ protected ctor from 3.5
 
-#if !MICROSOFT_SCRIPTING_CORE
+#if !MICROSOFT_SCRIPTING_CORE // needs ConditionWeakTable in 4.0
+
+        // For 4.0, many frequently used Expression nodes have had their memory
+        // footprint reduced by removing the Type and NodeType fields. This has
+        // large performance benefits to all users of Expression Trees.
+        //
+        // To support the 3.5 protected constructor, we store the fields that
+        // used to be here in a ConditionalWeakTable.
+
         private class ExtensionInfo {
             public ExtensionInfo(ExpressionType nodeType, Type type) {
                 NodeType = nodeType;
@@ -48,13 +56,12 @@ namespace System.Linq.Expressions {
 
         private static ConditionalWeakTable<Expression, ExtensionInfo> _legacyCtorSupportTable;
 
-        // LinqV1 ctor
         /// <summary>
         /// Constructs a new instance of <see cref="Expression"/>.
         /// </summary>
         /// <param name="nodeType">The <see ctype="ExpressionType"/> of the <see cref="Expression"/>.</param>
         /// <param name="type">The <see cref="Type"/> of the <see cref="Expression"/>.</param>
-        [Obsolete("use a different constructor that does not take ExpressionType.  Then override GetExpressionType and GetNodeKind to provide the values that would be specified to this constructor.")]
+        [Obsolete("use a different constructor that does not take ExpressionType. Then override NodeType and Type properties to provide the values that would be specified to this constructor.")]
         protected Expression(ExpressionType nodeType, Type type) {
             // Can't enforce anything that V1 didn't
             if (_legacyCtorSupportTable == null) {
@@ -68,6 +75,7 @@ namespace System.Linq.Expressions {
             _legacyCtorSupportTable.Add(this, new ExtensionInfo(nodeType, type));
         }
 #endif
+
         /// <summary>
         /// Constructs a new instance of <see cref="Expression"/>.
         /// </summary>
@@ -77,8 +85,17 @@ namespace System.Linq.Expressions {
         /// <summary>
         /// The <see cref="ExpressionType"/> of the <see cref="Expression"/>.
         /// </summary>
-        public ExpressionType NodeType {
-            get { return NodeTypeImpl(); }
+        public virtual ExpressionType NodeType {
+            get {
+#if !MICROSOFT_SCRIPTING_CORE
+                ExtensionInfo extInfo;
+                if (_legacyCtorSupportTable.TryGetValue(this, out extInfo)) {
+                    return extInfo.NodeType;
+                }
+#endif
+                // the extension expression failed to override NodeType
+                throw Error.ExtensionNodeMustOverrideProperty("Expression.NodeType");
+            }
         }
 
 
@@ -86,8 +103,17 @@ namespace System.Linq.Expressions {
         /// The <see cref="Type"/> of the value represented by this <see cref="Expression"/>.
         /// </summary>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1721:PropertyNamesShouldNotMatchGetMethods")]
-        public Type Type {
-            get { return TypeImpl(); }
+        public virtual Type Type {
+            get {
+#if !MICROSOFT_SCRIPTING_CORE
+                ExtensionInfo extInfo;
+                if (_legacyCtorSupportTable.TryGetValue(this, out extInfo)) {
+                    return extInfo.Type;
+                }
+#endif
+                // the extension expression failed to override Type
+                throw Error.ExtensionNodeMustOverrideProperty("Expression.Type");
+            }
         }
 
         /// <summary>
@@ -96,41 +122,6 @@ namespace System.Linq.Expressions {
         /// </summary>
         public virtual bool CanReduce {
             get { return false; }
-        }
-
-        /// <summary>
-        /// Returns the node type of this Expression. Extension nodes should return
-        /// ExpressionType.Extension when overriding this method.
-        /// </summary>
-        /// <returns>The <see cref="ExpressionType"/> of the expression.</returns>
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate")]
-        protected virtual ExpressionType NodeTypeImpl() {
-#if !MICROSOFT_SCRIPTING_CORE
-            ExtensionInfo extInfo;
-            if (_legacyCtorSupportTable.TryGetValue(this, out extInfo)) {
-                return extInfo.NodeType;
-            }
-#endif
-
-            // the extension expression failed to override NodeTypeImpl
-            throw Error.ExtensionNodeMustOverrideMethod("Expression.NodeTypeImpl()");
-        }
-
-        /// <summary>
-        /// Gets the static type of the expression that this <see cref="Expression" /> represents.
-        /// </summary>
-        /// <returns>The <see cref="Type"/> that represents the static type of the expression.</returns>
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate")]
-        protected virtual Type TypeImpl() {
-#if !MICROSOFT_SCRIPTING_CORE
-            ExtensionInfo extInfo;
-            if (_legacyCtorSupportTable.TryGetValue(this, out extInfo)) {
-                return extInfo.Type;
-            }
-#endif
-
-            // the extension expression failed to override TypeImpl
-            throw Error.ExtensionNodeMustOverrideMethod("Expression.TypeImpl()");
         }
 
         /// <summary>

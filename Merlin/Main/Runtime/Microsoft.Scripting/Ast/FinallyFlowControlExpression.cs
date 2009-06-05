@@ -43,12 +43,12 @@ namespace Microsoft.Scripting.Ast {
             get { return true; }
         }
 
-        protected override Type TypeImpl() {
-            return Body.Type;
+        public sealed override Type Type {
+            get { return Body.Type; }
         }
 
-        protected override ExpressionType NodeTypeImpl() {
-            return ExpressionType.Extension;
+        public sealed override ExpressionType NodeType {
+            get { return ExpressionType.Extension; }
         }
 
         public Expression Body {

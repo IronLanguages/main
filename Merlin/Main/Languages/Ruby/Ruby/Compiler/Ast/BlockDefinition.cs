@@ -184,7 +184,9 @@ namespace IronRuby.Compiler.Ast {
                     attributes
                 ),
                 AstUtils.Constant(parameterCount),
-                AstUtils.Constant(attributes)
+                AstUtils.Constant(attributes),
+                gen.SourcePathConstant,
+                AstUtils.Constant(Location.Start.Line)
             );
         }
 

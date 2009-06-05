@@ -1172,6 +1172,30 @@ p D.instance_methods(false).sort
 
         }
 
+        [Options(Compatibility = RubyCompatibility.Ruby19)]
+        public void ProcPosition1() {
+             AssertOutput(() => CompilerTest(@"
+def foo &q 
+  p q
+end
+
+class C < Proc
+end
+
+foo { }                         # line 9
+p lambda {}                     
+p Proc.new {}                   
+p method(:foo).to_proc          # TODO: source info not available
+p C.new {}                      
+"), @"
+#<Proc:0x*@*ProcPosition1.rb:9>
+#<Proc:0x*@*ProcPosition1.rb:10 (lambda)>
+#<Proc:0x*@*ProcPosition1.rb:11>
+#<Proc:0x*@(unknown):0>
+#<C:0x*@*ProcPosition1.rb:13>
+", OutputFlags.Match);
+        }
+
         public void BlockArity1() {
             AssertOutput(delegate() {
                 CompilerTest(@"

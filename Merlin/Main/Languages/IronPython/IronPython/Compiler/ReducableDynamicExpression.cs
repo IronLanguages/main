@@ -56,12 +56,12 @@ namespace IronPython.Compiler {
             }
         }
 
-        protected override ExpressionType NodeTypeImpl() {
-            return ExpressionType.Extension;
+        public sealed override ExpressionType NodeType {
+            get { return ExpressionType.Extension; }
         }
 
-        protected override Type TypeImpl() {
-            return _reduction.Type;
+        public sealed override Type/*!*/ Type {
+            get { return _reduction.Type; }
         }
 
         public override Expression Reduce() {

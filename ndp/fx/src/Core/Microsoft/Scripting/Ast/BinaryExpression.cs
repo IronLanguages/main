@@ -316,7 +316,7 @@ namespace System.Linq.Expressions {
                 Type left = _left.Type;
                 Type right = _right.Type;
                 MethodInfo method = GetMethod();
-                ExpressionType kind = NodeTypeImpl();
+                ExpressionType kind = NodeType;
 
                 return
                     (kind == ExpressionType.AndAlso || kind == ExpressionType.OrElse) &&
@@ -332,7 +332,7 @@ namespace System.Linq.Expressions {
                 Type left = _left.Type;
                 Type right = _right.Type;
                 MethodInfo method = GetMethod();
-                ExpressionType kind = NodeTypeImpl();
+                ExpressionType kind = NodeType;
 
                 return (kind == ExpressionType.Equal || kind == ExpressionType.NotEqual) &&
                     method == null && !left.IsValueType && !right.IsValueType;
@@ -418,12 +418,12 @@ namespace System.Linq.Expressions {
             _nodeType = nodeType;
         }
 
-        protected override Type TypeImpl() {
-            return typeof(bool);
+        public sealed override Type Type {
+            get { return typeof(bool); }
         }
 
-        protected override ExpressionType NodeTypeImpl() {
-            return _nodeType;
+        public sealed override ExpressionType NodeType {
+            get { return _nodeType; }
         }
     }
 
@@ -433,12 +433,12 @@ namespace System.Linq.Expressions {
             : base(left, right) {
         }
 
-        protected override Type TypeImpl() {
-            return Left.Type;
+        public sealed override Type Type {
+            get { return Left.Type; }
         }
 
-        protected override ExpressionType NodeTypeImpl() {
-            return ExpressionType.Assign;
+        public sealed override ExpressionType NodeType {
+            get { return ExpressionType.Assign; }
         }
     }
 
@@ -457,12 +457,12 @@ namespace System.Linq.Expressions {
             return _conversion;
         }
 
-        protected override ExpressionType NodeTypeImpl() {
-            return ExpressionType.Coalesce;
+        public sealed override ExpressionType NodeType {
+            get { return ExpressionType.Coalesce; }
         }
 
-        protected override Type TypeImpl() {
-            return Right.Type;
+        public sealed override Type Type {
+            get { return Right.Type; }
         }
     }
 
@@ -494,12 +494,12 @@ namespace System.Linq.Expressions {
             _type = type;
         }
 
-        protected override ExpressionType NodeTypeImpl() {
-            return _nodeType;
+        public sealed override ExpressionType NodeType {
+            get { return _nodeType; }
         }
 
-        protected override Type TypeImpl() {
-            return _type;
+        public sealed override Type Type {
+            get { return _type; }
         }
     }
 

@@ -34,38 +34,55 @@ namespace IronRuby.Builtins {
 
         #region Public Instance Methods
 
-        [RubyMethod("==", RubyMethodAttributes.PublicInstance)]
+        [RubyMethod("==")]
         public static bool Equal(Proc/*!*/ self, [NotNull]Proc/*!*/ other) {
             return self.Dispatcher == other.Dispatcher;
         }
 
-        [RubyMethod("==", RubyMethodAttributes.PublicInstance)]
+        [RubyMethod("==")]
         public static bool Equal(Proc/*!*/ self, object other) {
             return false;
         }
         
-        [RubyMethod("arity", RubyMethodAttributes.PublicInstance)]
+        [RubyMethod("arity")]
         public static int GetArity(Proc/*!*/ self) {
             return self.Dispatcher.Arity;
         }
 
-        [RubyMethod("binding", RubyMethodAttributes.PublicInstance)]
+        [RubyMethod("binding")]
         public static Binding/*!*/ GetLocalScope(Proc/*!*/ self) {
             return new Binding(self.LocalScope);
         }
 
-        [RubyMethod("dup", RubyMethodAttributes.PublicInstance)]
-        [RubyMethod("clone", RubyMethodAttributes.PublicInstance)]
+        [RubyMethod("dup")]
+        [RubyMethod("clone")]
         public static Proc/*!*/ Clone(Proc/*!*/ self) {
             return self.Copy();
         }
 
-        [RubyMethod("to_proc", RubyMethodAttributes.PublicInstance)]
+        [RubyMethod("to_proc")]
         public static Proc/*!*/ ToProc(Proc/*!*/ self) {
             return self;
         }
 
-        //    to_s
+        [RubyMethod("to_s")]
+        public static MutableString/*!*/ ToS(Proc/*!*/ self) {
+            var context = self.LocalScope.RubyContext;
+
+            var str = RubyUtils.ObjectToMutableStringPrefix(context, self);
+            str.Append('@');
+            str.Append(self.SourcePath ?? "(unknown)");
+            str.Append(':');
+            str.Append(self.SourceLine.ToString());
+
+            if (context.RubyOptions.Compatibility >= RubyCompatibility.Ruby19 && self.Kind == ProcKind.Lambda) {
+                str.Append(" (lambda)"); 
+            }
+
+            str.Append('>');
+
+            return str;
+        }
 
         #endregion
 
@@ -120,6 +137,10 @@ namespace IronRuby.Builtins {
                 }
             }
         }
+
+        #endregion
+
+        #region TODO: ===, eql?, hash, yield, curry, source_location, lambda? (1.9)
 
         #endregion
 

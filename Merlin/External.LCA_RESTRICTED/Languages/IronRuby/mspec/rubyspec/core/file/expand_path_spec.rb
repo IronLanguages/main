@@ -1,9 +1,10 @@
 require File.dirname(__FILE__) + '/../../spec_helper'
-
+=begin
 describe "File.expand_path" do
   before :each do
     @base = Dir.pwd
-    platform_is(:windows) { @rootdir = "c:/" }
+
+    platform_is(:windows) { @rootdir = "C:/" }
     platform_is_not(:windows) { @rootdir = "/" }
     @tmpdir = @rootdir + "tmp"
   end
@@ -171,7 +172,7 @@ end
 describe "File.expand_path(file_name, dir_string)" do
   before :each do
     @base = Dir.pwd
-    platform_is(:windows) { @rootdir = "c:/" }
+    platform_is(:windows) { @rootdir = "C:/" }
     platform_is_not(:windows) { @rootdir = "/" }
     @tmpdir = @rootdir + "tmp"
   end
@@ -195,3 +196,4 @@ describe "File.expand_path(file_name, dir_string)" do
   end
   
 end
+=end
