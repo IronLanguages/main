@@ -182,6 +182,7 @@
     <Compile Include="Runtime\Calls\RubyMetaBinderFactory.cs" />
     <Compile Include="Runtime\Calls\RubyMetaObject.cs" />
     <Compile Include="Runtime\Calls\RubyMethodGroupBase.cs" />
+    <Compile Include="Runtime\Calls\RubyMethodBody.cs" />
     <Compile Include="Runtime\Calls\RubyOverloadGroupInfo.cs" />
     <Compile Include="Runtime\Calls\RubyOverloadResolver.cs" />
     <Compile Include="Runtime\Calls\SuperForwarderInfo.cs" />

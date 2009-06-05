@@ -849,11 +849,15 @@ namespace Microsoft.Scripting.Generation {
         /// <returns>the compiled delegate</returns>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1011:ConsiderPassingBaseTypesAsParameters")]
         public static T CompileToMethod<T>(Expression<T> lambda, DebugInfoGenerator debugInfoGenerator, bool emitDebugSymbols) {
+            return (T)(object)CompileToMethod((LambdaExpression)lambda, debugInfoGenerator, emitDebugSymbols);
+        }
+
+        public static Delegate CompileToMethod(LambdaExpression lambda, DebugInfoGenerator debugInfoGenerator, bool emitDebugSymbols) {
             string methodName = String.IsNullOrEmpty(lambda.Name) ? GetUniqueMethodName() : lambda.Name;
 
             var type = Snippets.Shared.DefineType(methodName, typeof(object), false, emitDebugSymbols).TypeBuilder;
             var rewriter = new BoundConstantsRewriter(type);
-            lambda = (Expression<T>)rewriter.Visit(lambda);
+            lambda = (LambdaExpression)rewriter.Visit(lambda);
 
             //Create a unique method name when the lambda doesn't have a name or the name is empty.
             var method = type.DefineMethod(methodName, CompilerHelpers.PublicStatic);
@@ -863,7 +867,7 @@ namespace Microsoft.Scripting.Generation {
 
             rewriter.InitializeFields(finished);
 
-            return (T)(object)Delegate.CreateDelegate(lambda.Type, finished.GetMethod(method.Name));
+            return Delegate.CreateDelegate(lambda.Type, finished.GetMethod(method.Name));
         }
 
         public static string GetUniqueMethodName() {

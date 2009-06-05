@@ -78,9 +78,6 @@ namespace IronRuby.Runtime {
 
         // method is empty:
         Empty = RubyMethodAttributes.Empty,
-
-        // used internally in RubyOps.DefineMethod
-        ModuleFunction = 16,
     }
 
     public enum RubyMethodVisibility {

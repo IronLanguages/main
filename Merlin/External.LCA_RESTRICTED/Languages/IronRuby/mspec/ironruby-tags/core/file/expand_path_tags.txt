@@ -1,2 +1,1 @@
-fails:File.expand_path returns file system case only for the last component
-fails:File.expand_path returns file system case only for the last component of both arguments
+fails:File.expand_path returns file system case only for the last component of input(s)

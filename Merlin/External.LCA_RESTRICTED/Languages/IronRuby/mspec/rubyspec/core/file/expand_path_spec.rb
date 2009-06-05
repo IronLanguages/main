@@ -1,10 +1,10 @@
 require File.dirname(__FILE__) + '/../../spec_helper'
-=begin
+require File.dirname(__FILE__) + '/fixtures/classes'
+
 describe "File.expand_path" do
   before :each do
     @base = Dir.pwd
-
-    platform_is(:windows) { @rootdir = "C:/" }
+    platform_is(:windows) { @rootdir = @base[0..2] }
     platform_is_not(:windows) { @rootdir = "/" }
     @tmpdir = @rootdir + "tmp"
   end
@@ -99,33 +99,12 @@ describe "File.expand_path" do
   end
 
   platform_is :windows do
-    it "returns file system case only for the last component" do
-      File.expand_path("/wInDoWs").should == "c:/Windows"
-      File.expand_path("/nOn-ExIsTeNt").should == "c:/nOn-ExIsTeNt"
-      File.expand_path("/wInDoWs/nOtEpAd.exe").should == "c:/wInDoWs/notepad.exe"
-      File.expand_path("/wInDoWs/sYsTeM32").should == "c:/wInDoWs/System32"
-      File.expand_path("/wInDoWs/nOn-ExIsTeNt").should == "c:/wInDoWs/nOn-ExIsTeNt"
-
-      File.expand_path("/./wInDoWs").should == "c:/Windows"
-      File.expand_path("/./wInDoWs/nOtEpAd.exe").should == "c:/wInDoWs/notepad.exe"
-      File.expand_path("/./wInDoWs/sYsTeM32").should == "c:/wInDoWs/System32"
-      File.expand_path("/./wInDoWs/nOn-ExIsTeNt").should == "c:/wInDoWs/nOn-ExIsTeNt"
-
-      File.expand_path("/./wInDoWs/../WiNdOwS/nOtEpAd.exe").should == "c:/WiNdOwS/notepad.exe"
-    end
-    
-    it "returns file system case only for the last component of both arguments" do
-      File.expand_path("wInDoWs", "/").should == "c:/Windows"
-
-      File.expand_path("nOtEpAd.exe", "/wInDoWs").should == "c:/Windows/notepad.exe"
-      File.expand_path("sYsTeM32", "/wInDoWs").should == "c:/Windows/System32"
-      File.expand_path("nOn-ExIsTeNt", "/wInDoWs").should == "c:/Windows/nOn-ExIsTeNt"
-
-      File.expand_path("wInDoWs/nOtEpAd.exe", "/").should == "c:/wInDoWs/notepad.exe"
-      File.expand_path("wInDoWs/sYsTeM32", "/").should == "c:/wInDoWs/System32"
-      File.expand_path("wInDoWs/nOn-ExIsTeNt", "/").should == "c:/wInDoWs/nOn-ExIsTeNt"
-
-      File.expand_path("foo", "/NoN-eXiStEnT").should == "c:/NoN-eXiStEnT/foo"
+    it "returns file system case only for the last component of input(s)" do
+      FileSpecs.with_upper_case_folders do |t|
+        File.expand_path("#{t}/aaa/bbb").should == "#{t}/aaa/BBB"      
+        File.expand_path("#{t}/./aaa/../AaA/BBB").should == "#{t}/AaA/BBB"
+        File.expand_path("ccc/ddd", "#{t}/aaa/bbb").should == "#{t}/aaa/BBB/ccc/DDD"
+      end
     end
     
     it "allows back slashes" do
@@ -133,12 +112,12 @@ describe "File.expand_path" do
     end
     
     it "supports drive letter for relative path" do
-      File.expand_path("c:foo").should == File.expand_path("foo")
-      File.expand_path("x:foo").should == "x:/foo"
+      File.expand_path("#{Dir.pwd[0..1]}foo").should == File.expand_path("foo")
+      File.expand_path(FileSpecs.non_existent_drive + "foo").should == FileSpecs.non_existent_drive + "/foo"
     end
 
-    it "supports different drive letters" do
-      File.expand_path("x:/foo").should == "x:/foo"
+    it "supports non-existent drive letters" do
+      File.expand_path(FileSpecs.non_existent_drive + "/foo").should == FileSpecs.non_existent_drive + "/foo"
     end
   end
   
@@ -172,7 +151,7 @@ end
 describe "File.expand_path(file_name, dir_string)" do
   before :each do
     @base = Dir.pwd
-    platform_is(:windows) { @rootdir = "C:/" }
+    platform_is(:windows) { @rootdir = @base[0..2] }
     platform_is_not(:windows) { @rootdir = "/" }
     @tmpdir = @rootdir + "tmp"
   end
@@ -196,4 +175,3 @@ describe "File.expand_path(file_name, dir_string)" do
   end
   
 end
-=end

@@ -75,18 +75,16 @@ namespace IronRuby.Compiler.Ast {
             MSA.ParameterExpression rfcVariable;
             MSA.ParameterExpression runtimeScopeVariable;
             MSA.ParameterExpression blockParameter;
-            MSA.ParameterExpression currentMethodVariable;
 
             if (gen.CompilerOptions.FactoryKind == TopScopeFactoryKind.None ||
                 gen.CompilerOptions.FactoryKind == TopScopeFactoryKind.Module) {
-                parameters = new MSA.ParameterExpression[6];
+                parameters = new MSA.ParameterExpression[5];
 
                 runtimeScopeVariable = parameters[0] = Ast.Parameter(typeof(RubyScope), "#scope");
                 selfVariable = parameters[1] = Ast.Parameter(typeof(object), "#self");
                 parameters[2] = Ast.Parameter(typeof(RubyModule), "#module");
                 blockParameter = parameters[3] = Ast.Parameter(typeof(Proc), "#block");
-                currentMethodVariable = parameters[4] = Ast.Parameter(typeof(RubyMethodInfo), "#method");
-                rfcVariable = parameters[5] = Ast.Parameter(typeof(RuntimeFlowControl), "#rfc");
+                rfcVariable = parameters[4] = Ast.Parameter(typeof(RuntimeFlowControl), "#rfc");
             } else {
                 parameters = new MSA.ParameterExpression[3];
 
@@ -95,7 +93,6 @@ namespace IronRuby.Compiler.Ast {
                 selfVariable = parameters[2] = Ast.Parameter(typeof(object), "#self");
 
                 blockParameter = null;
-                currentMethodVariable = null;
             }
 
             if (_statements.Count == 0) {
@@ -108,7 +105,6 @@ namespace IronRuby.Compiler.Ast {
                 runtimeScopeVariable,
                 blockParameter,
                 rfcVariable,
-                currentMethodVariable,
                 gen.CompilerOptions.TopLevelMethodName, // method name
                 null                                    // parameters
             );

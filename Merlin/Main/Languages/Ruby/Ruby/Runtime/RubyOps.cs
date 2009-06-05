@@ -19,7 +19,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Dynamic;
 using System.IO;
-using System.Linq.Expressions;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
@@ -33,6 +32,8 @@ using Microsoft.Scripting.Interpreter;
 using Microsoft.Scripting.Math;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
+using IronRuby.Compiler.Ast;
+using MSA = System.Linq.Expressions;
 
 namespace IronRuby.Runtime {
     [CLSCompliant(false)]
@@ -89,12 +90,13 @@ namespace IronRuby.Runtime {
         }
 
         [Emitted]
-        public static RubyMethodScope/*!*/ CreateMethodScope(LocalsDictionary/*!*/ locals, 
-            RubyMethodInfo/*!*/ methodDefinition, RuntimeFlowControl/*!*/ rfc, object selfObject, Proc blockParameter,
+        public static RubyMethodScope/*!*/ CreateMethodScope(LocalsDictionary/*!*/ locals,
+            RubyScope/*!*/ parentScope, RubyModule/*!*/ declaringModule, string/*!*/ definitionName,
+            RuntimeFlowControl/*!*/ rfc, object selfObject, Proc blockParameter,
             InterpretedFrame interpretedFrame) {
 
-            RubyMethodScope scope = new RubyMethodScope(methodDefinition.DeclaringScope, methodDefinition, blockParameter, rfc, selfObject);
-            scope.SetDebugName("method " + methodDefinition.DefinitionName + ((blockParameter != null) ? "&" : null));
+            RubyMethodScope scope = new RubyMethodScope(parentScope, declaringModule, definitionName, blockParameter, rfc, selfObject);
+            scope.SetDebugName("method " + definitionName + ((blockParameter != null) ? "&" : null));
 
             scope.Frame = locals;
             scope.InterpretedFrame = interpretedFrame;
@@ -118,14 +120,14 @@ namespace IronRuby.Runtime {
             // MRI: 
             // Reports DeclaringModule even though an aliased method in a sub-module is called.
             // Also works for singleton module-function, which shares DeclaringModule with instance module-function.
-            RubyModule module = scope.Method.DeclaringModule;
-            scope.RubyContext.ReportTraceEvent("call", scope, module, scope.Method.DefinitionName, fileName, lineNumber);
+            RubyModule module = scope.DeclaringModule;
+            scope.RubyContext.ReportTraceEvent("call", scope, module, scope.DefinitionName, fileName, lineNumber);
         }
 
         [Emitted]
         public static void TraceMethodReturn(RubyMethodScope/*!*/ scope, string fileName, int lineNumber) {
-            RubyModule module = scope.Method.DeclaringModule;
-            scope.RubyContext.ReportTraceEvent("return", scope, module, scope.Method.DefinitionName, fileName, lineNumber);
+            RubyModule module = scope.DeclaringModule;
+            scope.RubyContext.ReportTraceEvent("return", scope, module, scope.DefinitionName, fileName, lineNumber);
         }
 
         [Emitted]
@@ -427,15 +429,14 @@ namespace IronRuby.Runtime {
         #region Methods
 
         [Emitted] // MethodDeclaration:
-        public static RubyMethodInfo/*!*/ DefineMethod(object targetOrSelf, object/*!*/ ast, RubyScope/*!*/ scope,
-            bool hasTarget, string/*!*/ name, Delegate/*!*/ clrMethod, int mandatory, int optional, bool hasUnsplatParameter) {
-
-            Assert.NotNull(ast, scope, clrMethod, name);
+        public static object DefineMethod(object targetOrSelf, RubyScope/*!*/ scope, RubyMethodBody/*!*/ body) {
+            Assert.NotNull(body, scope);
 
             RubyModule instanceOwner, singletonOwner;
             RubyMemberFlags instanceFlags, singletonFlags;
+            bool moduleFunction = false;
 
-            if (hasTarget) {
+            if (body.HasTarget) {
                 if (!RubyUtils.CanCreateSingleton(targetOrSelf)) {
                     throw RubyExceptions.CreateTypeError("can't define singleton method for literals");
                 }
@@ -445,9 +446,7 @@ namespace IronRuby.Runtime {
                 singletonOwner = scope.RubyContext.CreateSingletonClass(targetOrSelf);
                 singletonFlags = RubyMemberFlags.Public;
             } else {
-                // TODO: ???
                 var attributesScope = scope.GetMethodAttributesDefinitionScope();
-                //var attributesScope = scope;
                 if ((attributesScope.MethodAttributes & RubyMethodAttributes.ModuleFunction) == RubyMethodAttributes.ModuleFunction) {
                     // Singleton module-function's scope points to the instance method's RubyMemberInfo.
                     // This affects:
@@ -466,12 +465,13 @@ namespace IronRuby.Runtime {
                         throw RubyExceptions.CreateTypeError("A module function cannot be defined on a class.");
                     }
 
-                    instanceFlags = RubyMemberFlags.ModuleFunction | RubyMemberFlags.Private;
+                    instanceFlags = RubyMemberFlags.Private;
                     singletonOwner = instanceOwner.SingletonClass;
-                    singletonFlags = RubyMemberFlags.ModuleFunction | RubyMemberFlags.Public;
+                    singletonFlags = RubyMemberFlags.Public;
+                    moduleFunction = true;
                 } else {
                     instanceOwner = scope.GetMethodDefinitionOwner();
-                    instanceFlags = (RubyMemberFlags)RubyUtils.GetSpecialMethodVisibility(attributesScope.Visibility, name);
+                    instanceFlags = (RubyMemberFlags)RubyUtils.GetSpecialMethodVisibility(attributesScope.Visibility, body.Name);
                     singletonOwner = null;
                     singletonFlags = RubyMemberFlags.Invalid;
                 }
@@ -480,19 +480,28 @@ namespace IronRuby.Runtime {
             RubyMethodInfo instanceMethod = null, singletonMethod = null;
 
             if (instanceOwner != null) {
-                SetMethod(scope.RubyContext, instanceMethod = 
-                    new RubyMethodInfo(ast, clrMethod, scope, instanceOwner, name, mandatory, optional, hasUnsplatParameter, instanceFlags)
+                SetMethod(scope.RubyContext, instanceMethod =
+                    new RubyMethodInfo(body, scope, instanceOwner, instanceFlags)
                 );
             }
 
             if (singletonOwner != null) {
                 SetMethod(scope.RubyContext, singletonMethod =
-                    new RubyMethodInfo(ast, clrMethod, scope, singletonOwner, name, mandatory, optional, hasUnsplatParameter, singletonFlags)
+                    new RubyMethodInfo(body, scope, singletonOwner, singletonFlags)
                 );
             }
 
             // the method's scope saves the result => singleton module-function uses instance-method
-            return instanceMethod ?? singletonMethod;
+            var method = instanceMethod ?? singletonMethod;
+
+            method.DeclaringModule.MethodAdded(body.Name);
+
+            if (moduleFunction) {
+                Debug.Assert(!method.DeclaringModule.IsClass);
+                method.DeclaringModule.SingletonClass.MethodAdded(body.Name);
+            }
+
+            return null;
         }
 
         private static void SetMethod(RubyContext/*!*/ callerContext, RubyMethodInfo/*!*/ method) {
@@ -509,18 +518,6 @@ namespace IronRuby.Runtime {
                     new RubyMethod(owner.GlobalScope.MainObject, method, method.DefinitionName)
                 );
             }
-        }
-
-        [Emitted]
-        public static object MethodDefined(RubyMethodInfo/*!*/ method) {
-            method.DeclaringModule.MethodAdded(method.DefinitionName);
-            
-            if (method.IsModuleFunction) {
-                Debug.Assert(!method.DeclaringModule.IsClass);
-                method.DeclaringModule.SingletonClass.MethodAdded(method.DefinitionName);
-            }
-
-            return null;
         }
 
         [Emitted] // AliasStatement:
@@ -1393,7 +1390,7 @@ namespace IronRuby.Runtime {
         }
 
         [Emitted]
-        public static DynamicMetaObject/*!*/ GetMetaObject(IRubyObject/*!*/ obj, Expression/*!*/ parameter) {
+        public static DynamicMetaObject/*!*/ GetMetaObject(IRubyObject/*!*/ obj, MSA.Expression/*!*/ parameter) {
             return new RubyObject.Meta(parameter, BindingRestrictions.Empty, obj);
         }
 

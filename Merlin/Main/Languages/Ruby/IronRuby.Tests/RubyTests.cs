@@ -512,6 +512,7 @@ namespace IronRuby.Tests {
                 Scenario_RubyThreads1,
                 Scenario_YieldCodeGen,
                 Methods1, 
+                MethodDef1, 
                 ToIntegerConversion1,
                 ToIntToStrConversion1,
                 ConvertToFixnum1,

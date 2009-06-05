@@ -151,7 +151,7 @@ namespace IronRuby.Runtime.Calls {
                 RubyLibraryMethodInfo lib;
                 if ((ruby = memberInfo as RubyMethodInfo) != null) {
                     if (!ruby.HasUnsplatParameter && ruby.OptionalParamCount == 0) {
-                        d = ruby.Method;
+                        d = ruby.GetDelegate();
                         mandatoryParamCount = ruby.MandatoryParamCount;
                         return true;
                     }

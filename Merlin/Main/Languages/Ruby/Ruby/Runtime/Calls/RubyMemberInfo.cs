@@ -86,10 +86,6 @@ namespace IronRuby.Runtime.Calls {
             get { return (_flags & RubyMemberFlags.Public) != 0; }
         }
 
-        internal bool IsModuleFunction {
-            get { return (_flags & RubyMemberFlags.ModuleFunction) != 0; }
-        }
-
         internal bool IsEmpty {
             get { return (_flags & RubyMemberFlags.Empty) != 0; }
         }

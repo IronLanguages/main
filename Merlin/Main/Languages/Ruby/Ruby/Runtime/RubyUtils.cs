@@ -510,7 +510,7 @@ namespace IronRuby.Runtime {
                 IsEval = true,
                 FactoryKind = isModuleEval ? TopScopeFactoryKind.Module : TopScopeFactoryKind.None,
                 LocalNames = targetScope.GetVisibleLocalNames(),
-                TopLevelMethodName = (methodScope != null) ? methodScope.Method.DefinitionName : null,
+                TopLevelMethodName = (methodScope != null) ? methodScope.DefinitionName : null,
                 InitialLocation = new SourceLocation(0, line <= 0 ? 1 : line, 1),
             };
         }
@@ -544,27 +544,16 @@ namespace IronRuby.Runtime {
             }
             Debug.Assert(lambda != null);
 
-            Proc blockParameter;
-            RubyMethodInfo methodDefinition;
-            if (methodScope != null) {
-                blockParameter = methodScope.BlockParameter;
-                methodDefinition = methodScope.Method;
-            } else {
-                blockParameter = null;
-                methodDefinition = null;
-            }
-
             // module-eval:
             if (module != null) {
                 targetScope = CreateModuleEvalScope(targetScope, self, module);
             }
 
-            return RubyScriptCode.CompileLambda(lambda, context)(
+            return ((EvalEntryPointDelegate)RubyScriptCode.CompileLambda(lambda, context))(
                 targetScope,
                 self,
                 module,
-                blockParameter,
-                methodDefinition,
+                (methodScope != null) ? methodScope.BlockParameter : null,
                 targetScope.RuntimeFlowControl
             );
         }

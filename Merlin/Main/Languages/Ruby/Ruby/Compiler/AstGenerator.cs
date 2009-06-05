@@ -115,8 +115,6 @@ namespace IronRuby.Compiler.Ast {
             get { return _context; }
         }
 
-        internal Action<Expression, MSA.DynamicExpression> CallSiteCreated { get; set; }
-
         #region Lexical Scopes
 
         public abstract class LexicalScope {
@@ -284,7 +282,6 @@ namespace IronRuby.Compiler.Ast {
         public sealed class MethodScope : FrameScope {
             private readonly MSA.Expression _blockVariable;
             private readonly MSA.Expression/*!*/ _rfcVariable;
-            private readonly MSA.Expression _currentMethodVariable;
             private readonly string _methodName;
             private readonly Parameters _parameters;
             private MethodScope _parentMethod;
@@ -320,7 +317,6 @@ namespace IronRuby.Compiler.Ast {
                 MSA.ParameterExpression/*!*/ runtimeScopeVariable,
                 MSA.Expression blockVariable, 
                 MSA.Expression/*!*/ rfcVariable,
-                MSA.Expression currentMethodVariable, 
                 string methodName, 
                 Parameters parameters)
                 : base(builder, selfVariable, runtimeScopeVariable) {
@@ -330,7 +326,6 @@ namespace IronRuby.Compiler.Ast {
                 _rfcVariable = rfcVariable;
                 _methodName = methodName;
                 _parameters = parameters;
-                _currentMethodVariable = currentMethodVariable;
             }
         }
 
@@ -489,7 +484,6 @@ namespace IronRuby.Compiler.Ast {
             MSA.ParameterExpression/*!*/ runtimeScopeVariable,
             MSA.Expression blockParameter,
             MSA.Expression/*!*/ rfcVariable,
-            MSA.Expression currentMethodVariable,
             string/*!*/ methodName,
             Parameters parameters) {
             Assert.NotNull(locals, selfParameter, runtimeScopeVariable, rfcVariable);
@@ -500,7 +494,6 @@ namespace IronRuby.Compiler.Ast {
                 runtimeScopeVariable, 
                 blockParameter, 
                 rfcVariable,
-                currentMethodVariable, 
                 methodName, 
                 parameters
             );
@@ -565,7 +558,6 @@ namespace IronRuby.Compiler.Ast {
             MSA.ParameterExpression/*!*/ runtimeScopeVariable,
             MSA.Expression blockParameter,
             MSA.Expression/*!*/ rfcVariable,
-            MSA.Expression currentMethodVariable,
             string methodName,
             Parameters parameters) {
             Assert.NotNull(locals, selfParameter, runtimeScopeVariable, rfcVariable);
@@ -579,7 +571,6 @@ namespace IronRuby.Compiler.Ast {
                 runtimeScopeVariable,
                 blockParameter,
                 rfcVariable,
-                currentMethodVariable,
                 methodName,
                 parameters);
         }

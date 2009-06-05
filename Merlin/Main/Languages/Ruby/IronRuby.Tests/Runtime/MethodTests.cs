@@ -1067,5 +1067,20 @@ n[1,2]
 3
 ");
         }
+
+        public void MethodDef1() {
+            TestOutput(@"
+2.times do |i|
+  def foo a
+    puts a
+  end
+
+  foo i
+end
+", @"
+0
+1
+");
+        }
     }
 }

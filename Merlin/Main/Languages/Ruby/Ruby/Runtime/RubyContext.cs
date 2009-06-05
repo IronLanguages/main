@@ -17,7 +17,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Linq.Expressions;
 using System.Runtime.CompilerServices;
 using System.Dynamic;
 using System.Security;
@@ -25,7 +24,6 @@ using System.Text;
 using System.Threading;
 using IronRuby.Builtins;
 using IronRuby.Compiler;
-using IronRuby.Compiler.Ast;
 using IronRuby.Compiler.Generation;
 using IronRuby.Runtime.Calls;
 using Microsoft.Scripting;
@@ -33,6 +31,8 @@ using Microsoft.Scripting.Actions;
 using Microsoft.Scripting.Generation;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
+using IronRuby.Compiler.Ast;
+using MSA = System.Linq.Expressions;
 
 namespace IronRuby.Runtime {
     /// <summary>
@@ -123,6 +123,9 @@ namespace IronRuby.Runtime {
         private bool _traceListenerSuspended;
         
         private readonly Stopwatch _upTime;
+
+        // TODO: thread-safety
+        internal Action<Expression, MSA.DynamicExpression> CallSiteCreated { get; set; }
 
         #endregion
 
@@ -1765,7 +1768,7 @@ namespace IronRuby.Runtime {
         private static long _ParseTimeTicks;
         private static long _AstGenerationTimeTicks;
 
-        internal Expression<T> ParseSourceCode<T>(SourceUnit/*!*/ sourceUnit, RubyCompilerOptions/*!*/ options, ErrorSink/*!*/ errorSink) {
+        internal MSA.Expression<T> ParseSourceCode<T>(SourceUnit/*!*/ sourceUnit, RubyCompilerOptions/*!*/ options, ErrorSink/*!*/ errorSink) {
             Debug.Assert(sourceUnit.LanguageContext == this);
 
             long ts1, ts2;
@@ -1780,7 +1783,7 @@ namespace IronRuby.Runtime {
                 return null;
             }
 
-            Expression<T> lambda;
+            MSA.Expression<T> lambda;
 #if MEASURE_AST
             lock (_TransformationLock) {
                 var oldHistogram = System.Linq.Expressions.Expression.Histogram;
@@ -1802,7 +1805,7 @@ namespace IronRuby.Runtime {
             return lambda;
         }
 
-        internal Expression<T>/*!*/ TransformTree<T>(SourceUnitTree/*!*/ ast, SourceUnit/*!*/ sourceUnit, RubyCompilerOptions/*!*/ options) {
+        internal MSA.Expression<T>/*!*/ TransformTree<T>(SourceUnitTree/*!*/ ast, SourceUnit/*!*/ sourceUnit, RubyCompilerOptions/*!*/ options) {
             return ast.Transform<T>(
                 new AstGenerator(
                     this,
