@@ -84,10 +84,6 @@ namespace IronRuby.Runtime.Calls {
             set { _treatRestrictionsAsConditions = value; }
         }
 
-#if DEBUG && !SILVERLIGHT && !SYSTEM_CORE
-        private static int _ruleCounter;
-#endif
-
         internal DynamicMetaObject/*!*/ CreateMetaObject(DynamicMetaObjectBinder/*!*/ action) {
             return CreateMetaObject(action, action.ReturnType);
         }
@@ -106,33 +102,9 @@ namespace IronRuby.Runtime.Calls {
                 expr = Ast.Block(_temps, expr);
             }
 
-#if DEBUG && !SILVERLIGHT && !SYSTEM_CORE
-            if (RubyOptions.ShowRules) {
-                var oldColor = Console.ForegroundColor;
-                try {
-                    Console.ForegroundColor = ConsoleColor.Cyan;
-                    Console.WriteLine("Rule #{0}: {1}", Interlocked.Increment(ref _ruleCounter), action);
-                    Console.ForegroundColor = ConsoleColor.DarkGray;
-                    if (!_DumpingExpression) {
-                        var d = (_restrictions != BindingRestrictions.Empty) ? Ast.IfThen(_restrictions.ToExpression(), expr) : expr;
-                        _DumpingExpression = true;
-                        d.DumpExpression(Console.Out);
-                    }
-                } finally {
-                    _DumpingExpression = false;
-                    Console.ForegroundColor = oldColor;
-                }
-            }
-#endif
+            RubyBinder.DumpRule(action, _restrictions, expr);
             return new DynamicMetaObject(expr, _restrictions);
         }
-
-#if DEBUG
-        // ExpressionWriter might call ToString on a live object that might dynamically invoke a method.
-        // We need to prevent recursion in such case.
-        [ThreadStatic]
-        internal static bool _DumpingExpression;
-#endif
 
         public ParameterExpression/*!*/ GetTemporary(Type/*!*/ type, string/*!*/ name) {
             return AddTemporary(Ast.Variable(type, name));
@@ -260,6 +232,33 @@ namespace IronRuby.Runtime.Calls {
 
             var context = (RubyContext)metaContext.Value;
 
+            if (target is IRubyObject) {
+                Type type = target.GetType();
+                AddTypeRestriction(type, targetParameter);
+            
+                // Ruby objects (get the method directly to prevent interface dispatch):
+                MethodInfo classGetter = type.GetMethod(Methods.IRubyObject_get_ImmediateClass.Name, BindingFlags.Public | BindingFlags.Instance);
+                if (type.IsVisible && classGetter != null && classGetter.ReturnType == typeof(RubyClass)) {
+                    AddCondition(
+                        // (#{type})target.ImmediateClass.Version.Value == #{immediateClass.Version}
+                        Ast.Equal(
+                            Ast.Field(
+                                Ast.Field(
+                                    Ast.Call(Ast.Convert(targetParameter, type), classGetter), 
+                                    Fields.RubyClass_Version
+                                ),
+                                Fields.VersionHandle_Value
+                            ),
+                            AstUtils.Constant(targetClass.Version.Value)
+                        )
+                    );
+                    return;
+                }
+
+                // TODO: explicit iface-implementation
+                throw new NotSupportedException("Type implementing IRubyObject should be visible and have ImmediateClass getter");
+            }
+
             // singleton nil:
             if (target == null) {
                 AddRestriction(Ast.Equal(targetParameter, AstUtils.Constant(null)));
@@ -280,10 +279,9 @@ namespace IronRuby.Runtime.Calls {
                     AddFullVersionTest(context.FalseClass, metaContext);
                 }
                 return;
-
             }
 
-            // user defined instance singletons, modules, classes:
+            // other CLR type singletons:
             if (targetClass.IsSingletonClass) {
                 AddRestriction(
                     Ast.Equal(
@@ -296,35 +294,9 @@ namespace IronRuby.Runtime.Calls {
                 return;
             }
 
-            Type type = target.GetType();
-            AddTypeRestriction(type, targetParameter);
-            
-            if (typeof(IRubyObject).IsAssignableFrom(type)) {
-                // Ruby objects (get the method directly to prevent interface dispatch):
-                MethodInfo classGetter = type.GetMethod("get_" + RubyObject.ClassPropertyName, BindingFlags.Public | BindingFlags.Instance);
-                if (classGetter != null && classGetter.ReturnType == typeof(RubyClass)) {
-                    AddCondition(
-                        // (#{type})target.Class.Version.Value == #{immediateClass.Version}
-                        Ast.Equal(
-                            Ast.Field(
-                                Ast.Field(
-                                    Ast.Call(Ast.Convert(targetParameter, type), classGetter), 
-                                    Fields.RubyClass_Version
-                                ),
-                                Fields.VersionHandle_Value
-                            ),
-                            AstUtils.Constant(targetClass.Version.Value)
-                        )
-                    );
-                    return;
-                }
-
-                // TODO: explicit iface-implementation
-                throw new NotSupportedException("Type implementing IRubyObject should have RubyClass getter");
-            } else {
-                // CLR objects:
-                AddFullVersionTest(targetClass, metaContext);
-            }
+            // CLR objects:
+            AddTypeRestriction(target.GetType(), targetParameter);
+            AddFullVersionTest(targetClass, metaContext);
         }
 
         private void AddFullVersionTest(RubyClass/*!*/ cls, DynamicMetaObject/*!*/ metaContext) {

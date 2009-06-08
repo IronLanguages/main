@@ -31,7 +31,7 @@ namespace IronRuby.Builtins {
 
         internal class Meta : RubyMetaObject<IRubyObject> {
             public override RubyContext/*!*/ Context {
-                get { return Value.Class.Context; }
+                get { return Value.ImmediateClass.Context; }
             }
 
             protected override MethodInfo/*!*/ ContextConverter {
@@ -44,12 +44,11 @@ namespace IronRuby.Builtins {
 
             public override IEnumerable<string>/*!*/ GetDynamicMemberNames() {
                 var self = Value;
-                RubyInstanceData instanceData = self.GetInstanceData();
-                RubyModule theClass = (instanceData != null ? instanceData.ImmediateClass : null) ?? self.Class;
                 var names = new List<string>();
+                var cls = self.ImmediateClass;
 
-                using (theClass.Context.ClassHierarchyLocker()) {
-                    theClass.ForEachMember(true, RubyMethodAttributes.DefaultVisibility, (name, member) => names.Add(name));
+                using (cls.Context.ClassHierarchyLocker()) {
+                    cls.ForEachMember(true, RubyMethodAttributes.DefaultVisibility, (name, member) => names.Add(name));
                 }
 
                 return names;

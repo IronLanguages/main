@@ -294,39 +294,39 @@ namespace IronRuby.Builtins {
             new System.Func<IronRuby.Builtins.RubyClass, System.Object, System.Exception>(BuiltinsLibraryInitializer.ExceptionFactory__FloatDomainError));
             DefineGlobalClass("NoMethodError", typeof(System.MissingMethodException), 0x00000003, def45, LoadNoMethodError_Instance, null, null, IronRuby.Builtins.RubyModule.EmptyArray, 
             new System.Func<IronRuby.Builtins.RubyClass, System.Object, System.Exception>(BuiltinsLibraryInitializer.ExceptionFactory__NoMethodError));
-            def24.SetConstant("Constants", def25);
-            def22.SetConstant("Clr", def2);
-            def2.SetConstant("BigInteger", def3);
-            def2.SetConstant("FlagEnumeration", def20);
-            def2.SetConstant("Float", def4);
-            def2.SetConstant("Integer", def5);
-            def2.SetConstant("MultiDimensionalArray", def23);
-            def2.SetConstant("String", def6);
+            def24.SetBuiltinConstant("Constants", def25);
+            def22.SetBuiltinConstant("Clr", def2);
+            def2.SetBuiltinConstant("BigInteger", def3);
+            def2.SetBuiltinConstant("FlagEnumeration", def20);
+            def2.SetBuiltinConstant("Float", def4);
+            def2.SetBuiltinConstant("Integer", def5);
+            def2.SetBuiltinConstant("MultiDimensionalArray", def23);
+            def2.SetBuiltinConstant("String", def6);
             #if !SILVERLIGHT
-            Context.ObjectClass.SetConstant("ARGF", def1);
+            Context.ObjectClass.SetBuiltinConstant("ARGF", def1);
             #endif
-            Context.ObjectClass.SetConstant("ENV", def7);
+            Context.ObjectClass.SetBuiltinConstant("ENV", def7);
             #if !SILVERLIGHT
-            def24.SetConstant("Stat", def30);
+            def24.SetBuiltinConstant("Stat", def30);
             #endif
             #if !SILVERLIGHT && !SILVERLIGHT
-            def26.SetConstant("Status", def27);
+            def26.SetBuiltinConstant("Status", def27);
             #endif
-            def8.SetConstant("EACCES", def31);
-            def8.SetConstant("EADDRINUSE", def9);
-            def8.SetConstant("EBADF", def10);
-            def8.SetConstant("ECHILD", def11);
-            def8.SetConstant("ECONNABORTED", def12);
-            def8.SetConstant("ECONNREFUSED", def13);
-            def8.SetConstant("ECONNRESET", def14);
-            def8.SetConstant("EDOM", def15);
-            def8.SetConstant("EEXIST", def19);
-            def8.SetConstant("EINVAL", def21);
-            def8.SetConstant("ENOENT", def29);
-            def8.SetConstant("ENOTCONN", def17);
-            def8.SetConstant("ENOTDIR", def28);
-            def8.SetConstant("EPIPE", def18);
-            def8.SetConstant("EXDEV", def16);
+            def8.SetBuiltinConstant("EACCES", def31);
+            def8.SetBuiltinConstant("EADDRINUSE", def9);
+            def8.SetBuiltinConstant("EBADF", def10);
+            def8.SetBuiltinConstant("ECHILD", def11);
+            def8.SetBuiltinConstant("ECONNABORTED", def12);
+            def8.SetBuiltinConstant("ECONNREFUSED", def13);
+            def8.SetBuiltinConstant("ECONNRESET", def14);
+            def8.SetBuiltinConstant("EDOM", def15);
+            def8.SetBuiltinConstant("EEXIST", def19);
+            def8.SetBuiltinConstant("EINVAL", def21);
+            def8.SetBuiltinConstant("ENOENT", def29);
+            def8.SetBuiltinConstant("ENOTCONN", def17);
+            def8.SetBuiltinConstant("ENOTDIR", def28);
+            def8.SetBuiltinConstant("EPIPE", def18);
+            def8.SetBuiltinConstant("EXDEV", def16);
         }
         
         private static void Load__ClassSingleton_Instance(IronRuby.Builtins.RubyModule/*!*/ module) {
@@ -989,10 +989,10 @@ namespace IronRuby.Builtins {
         }
         
         private static void LoadFile_Constants(IronRuby.Builtins.RubyModule/*!*/ module) {
-            module.SetConstant("ALT_SEPARATOR", IronRuby.Builtins.RubyFileOps.ALT_SEPARATOR);
-            module.SetConstant("PATH_SEPARATOR", IronRuby.Builtins.RubyFileOps.PATH_SEPARATOR);
-            module.SetConstant("Separator", IronRuby.Builtins.RubyFileOps.Separator);
-            module.SetConstant("SEPARATOR", IronRuby.Builtins.RubyFileOps.SEPARATOR);
+            module.SetBuiltinConstant("ALT_SEPARATOR", IronRuby.Builtins.RubyFileOps.ALT_SEPARATOR);
+            module.SetBuiltinConstant("PATH_SEPARATOR", IronRuby.Builtins.RubyFileOps.PATH_SEPARATOR);
+            module.SetBuiltinConstant("Separator", IronRuby.Builtins.RubyFileOps.Separator);
+            module.SetBuiltinConstant("SEPARATOR", IronRuby.Builtins.RubyFileOps.SEPARATOR);
             
         }
         
@@ -1235,24 +1235,24 @@ namespace IronRuby.Builtins {
         }
         
         private static void LoadFile__Constants_Constants(IronRuby.Builtins.RubyModule/*!*/ module) {
-            module.SetConstant("APPEND", IronRuby.Builtins.RubyFileOps.Constants.APPEND);
-            module.SetConstant("BINARY", IronRuby.Builtins.RubyFileOps.Constants.BINARY);
-            module.SetConstant("CREAT", IronRuby.Builtins.RubyFileOps.Constants.CREAT);
-            module.SetConstant("EXCL", IronRuby.Builtins.RubyFileOps.Constants.EXCL);
-            module.SetConstant("FNM_CASEFOLD", IronRuby.Builtins.RubyFileOps.Constants.FNM_CASEFOLD);
-            module.SetConstant("FNM_DOTMATCH", IronRuby.Builtins.RubyFileOps.Constants.FNM_DOTMATCH);
-            module.SetConstant("FNM_NOESCAPE", IronRuby.Builtins.RubyFileOps.Constants.FNM_NOESCAPE);
-            module.SetConstant("FNM_PATHNAME", IronRuby.Builtins.RubyFileOps.Constants.FNM_PATHNAME);
-            module.SetConstant("FNM_SYSCASE", IronRuby.Builtins.RubyFileOps.Constants.FNM_SYSCASE);
-            module.SetConstant("LOCK_EX", IronRuby.Builtins.RubyFileOps.Constants.LOCK_EX);
-            module.SetConstant("LOCK_NB", IronRuby.Builtins.RubyFileOps.Constants.LOCK_NB);
-            module.SetConstant("LOCK_SH", IronRuby.Builtins.RubyFileOps.Constants.LOCK_SH);
-            module.SetConstant("LOCK_UN", IronRuby.Builtins.RubyFileOps.Constants.LOCK_UN);
-            module.SetConstant("NONBLOCK", IronRuby.Builtins.RubyFileOps.Constants.NONBLOCK);
-            module.SetConstant("RDONLY", IronRuby.Builtins.RubyFileOps.Constants.RDONLY);
-            module.SetConstant("RDWR", IronRuby.Builtins.RubyFileOps.Constants.RDWR);
-            module.SetConstant("TRUNC", IronRuby.Builtins.RubyFileOps.Constants.TRUNC);
-            module.SetConstant("WRONLY", IronRuby.Builtins.RubyFileOps.Constants.WRONLY);
+            module.SetBuiltinConstant("APPEND", IronRuby.Builtins.RubyFileOps.Constants.APPEND);
+            module.SetBuiltinConstant("BINARY", IronRuby.Builtins.RubyFileOps.Constants.BINARY);
+            module.SetBuiltinConstant("CREAT", IronRuby.Builtins.RubyFileOps.Constants.CREAT);
+            module.SetBuiltinConstant("EXCL", IronRuby.Builtins.RubyFileOps.Constants.EXCL);
+            module.SetBuiltinConstant("FNM_CASEFOLD", IronRuby.Builtins.RubyFileOps.Constants.FNM_CASEFOLD);
+            module.SetBuiltinConstant("FNM_DOTMATCH", IronRuby.Builtins.RubyFileOps.Constants.FNM_DOTMATCH);
+            module.SetBuiltinConstant("FNM_NOESCAPE", IronRuby.Builtins.RubyFileOps.Constants.FNM_NOESCAPE);
+            module.SetBuiltinConstant("FNM_PATHNAME", IronRuby.Builtins.RubyFileOps.Constants.FNM_PATHNAME);
+            module.SetBuiltinConstant("FNM_SYSCASE", IronRuby.Builtins.RubyFileOps.Constants.FNM_SYSCASE);
+            module.SetBuiltinConstant("LOCK_EX", IronRuby.Builtins.RubyFileOps.Constants.LOCK_EX);
+            module.SetBuiltinConstant("LOCK_NB", IronRuby.Builtins.RubyFileOps.Constants.LOCK_NB);
+            module.SetBuiltinConstant("LOCK_SH", IronRuby.Builtins.RubyFileOps.Constants.LOCK_SH);
+            module.SetBuiltinConstant("LOCK_UN", IronRuby.Builtins.RubyFileOps.Constants.LOCK_UN);
+            module.SetBuiltinConstant("NONBLOCK", IronRuby.Builtins.RubyFileOps.Constants.NONBLOCK);
+            module.SetBuiltinConstant("RDONLY", IronRuby.Builtins.RubyFileOps.Constants.RDONLY);
+            module.SetBuiltinConstant("RDWR", IronRuby.Builtins.RubyFileOps.Constants.RDWR);
+            module.SetBuiltinConstant("TRUNC", IronRuby.Builtins.RubyFileOps.Constants.TRUNC);
+            module.SetBuiltinConstant("WRONLY", IronRuby.Builtins.RubyFileOps.Constants.WRONLY);
             
         }
         
@@ -1458,17 +1458,17 @@ namespace IronRuby.Builtins {
         }
         
         private static void LoadFloat_Constants(IronRuby.Builtins.RubyModule/*!*/ module) {
-            module.SetConstant("DIG", IronRuby.Builtins.FloatOps.DIG);
-            module.SetConstant("EPSILON", IronRuby.Builtins.FloatOps.EPSILON);
-            module.SetConstant("MANT_DIG", IronRuby.Builtins.FloatOps.MANT_DIG);
-            module.SetConstant("MAX", IronRuby.Builtins.FloatOps.MAX);
-            module.SetConstant("MAX_10_EXP", IronRuby.Builtins.FloatOps.MAX_10_EXP);
-            module.SetConstant("MAX_EXP", IronRuby.Builtins.FloatOps.MAX_EXP);
-            module.SetConstant("MIN", IronRuby.Builtins.FloatOps.MIN);
-            module.SetConstant("MIN_10_EXP", IronRuby.Builtins.FloatOps.MIN_10_EXP);
-            module.SetConstant("MIN_EXP", IronRuby.Builtins.FloatOps.MIN_EXP);
-            module.SetConstant("RADIX", IronRuby.Builtins.FloatOps.RADIX);
-            module.SetConstant("ROUNDS", IronRuby.Builtins.FloatOps.ROUNDS);
+            module.SetBuiltinConstant("DIG", IronRuby.Builtins.FloatOps.DIG);
+            module.SetBuiltinConstant("EPSILON", IronRuby.Builtins.FloatOps.EPSILON);
+            module.SetBuiltinConstant("MANT_DIG", IronRuby.Builtins.FloatOps.MANT_DIG);
+            module.SetBuiltinConstant("MAX", IronRuby.Builtins.FloatOps.MAX);
+            module.SetBuiltinConstant("MAX_10_EXP", IronRuby.Builtins.FloatOps.MAX_10_EXP);
+            module.SetBuiltinConstant("MAX_EXP", IronRuby.Builtins.FloatOps.MAX_EXP);
+            module.SetBuiltinConstant("MIN", IronRuby.Builtins.FloatOps.MIN);
+            module.SetBuiltinConstant("MIN_10_EXP", IronRuby.Builtins.FloatOps.MIN_10_EXP);
+            module.SetBuiltinConstant("MIN_EXP", IronRuby.Builtins.FloatOps.MIN_EXP);
+            module.SetBuiltinConstant("RADIX", IronRuby.Builtins.FloatOps.RADIX);
+            module.SetBuiltinConstant("ROUNDS", IronRuby.Builtins.FloatOps.ROUNDS);
             
         }
         
@@ -1625,9 +1625,9 @@ namespace IronRuby.Builtins {
         }
         
         private static void LoadIO_Constants(IronRuby.Builtins.RubyModule/*!*/ module) {
-            module.SetConstant("SEEK_CUR", IronRuby.Builtins.RubyIOOps.SEEK_CUR);
-            module.SetConstant("SEEK_END", IronRuby.Builtins.RubyIOOps.SEEK_END);
-            module.SetConstant("SEEK_SET", IronRuby.Builtins.RubyIOOps.SEEK_SET);
+            module.SetBuiltinConstant("SEEK_CUR", IronRuby.Builtins.RubyIOOps.SEEK_CUR);
+            module.SetBuiltinConstant("SEEK_END", IronRuby.Builtins.RubyIOOps.SEEK_END);
+            module.SetBuiltinConstant("SEEK_SET", IronRuby.Builtins.RubyIOOps.SEEK_SET);
             
         }
         
@@ -3136,8 +3136,8 @@ namespace IronRuby.Builtins {
         }
         
         private static void LoadMarshal_Constants(IronRuby.Builtins.RubyModule/*!*/ module) {
-            module.SetConstant("MAJOR_VERSION", IronRuby.Builtins.RubyMarshal.MAJOR_VERSION);
-            module.SetConstant("MINOR_VERSION", IronRuby.Builtins.RubyMarshal.MINOR_VERSION);
+            module.SetBuiltinConstant("MAJOR_VERSION", IronRuby.Builtins.RubyMarshal.MAJOR_VERSION);
+            module.SetBuiltinConstant("MINOR_VERSION", IronRuby.Builtins.RubyMarshal.MINOR_VERSION);
             
         }
         
@@ -3237,8 +3237,8 @@ namespace IronRuby.Builtins {
         }
         
         private static void LoadMath_Constants(IronRuby.Builtins.RubyModule/*!*/ module) {
-            module.SetConstant("E", IronRuby.Builtins.RubyMath.E);
-            module.SetConstant("PI", IronRuby.Builtins.RubyMath.PI);
+            module.SetBuiltinConstant("E", IronRuby.Builtins.RubyMath.E);
+            module.SetBuiltinConstant("PI", IronRuby.Builtins.RubyMath.PI);
             
         }
         
@@ -3950,9 +3950,9 @@ namespace IronRuby.Builtins {
         }
         
         private static void LoadObject_Constants(IronRuby.Builtins.RubyModule/*!*/ module) {
-            module.SetConstant("FALSE", IronRuby.Builtins.ObjectOps.FALSE);
-            module.SetConstant("NIL", IronRuby.Builtins.ObjectOps.NIL);
-            module.SetConstant("TRUE", IronRuby.Builtins.ObjectOps.TRUE);
+            module.SetBuiltinConstant("FALSE", IronRuby.Builtins.ObjectOps.FALSE);
+            module.SetBuiltinConstant("NIL", IronRuby.Builtins.ObjectOps.NIL);
+            module.SetBuiltinConstant("TRUE", IronRuby.Builtins.ObjectOps.TRUE);
             
         }
         
@@ -4230,9 +4230,9 @@ namespace IronRuby.Builtins {
         }
         
         private static void LoadRegexp_Constants(IronRuby.Builtins.RubyModule/*!*/ module) {
-            module.SetConstant("EXTENDED", IronRuby.Builtins.RegexpOps.EXTENDED);
-            module.SetConstant("IGNORECASE", IronRuby.Builtins.RegexpOps.IGNORECASE);
-            module.SetConstant("MULTILINE", IronRuby.Builtins.RegexpOps.MULTILINE);
+            module.SetBuiltinConstant("EXTENDED", IronRuby.Builtins.RegexpOps.EXTENDED);
+            module.SetBuiltinConstant("IGNORECASE", IronRuby.Builtins.RegexpOps.IGNORECASE);
+            module.SetBuiltinConstant("MULTILINE", IronRuby.Builtins.RegexpOps.MULTILINE);
             
         }
         
@@ -4740,7 +4740,7 @@ namespace IronRuby.Builtins {
         
         private static void LoadStruct_Constants(IronRuby.Builtins.RubyModule/*!*/ module) {
             #if !SILVERLIGHT
-            module.SetConstant("Tms", IronRuby.Builtins.RubyStructOps.CreateTmsClass(module));
+            module.SetBuiltinConstant("Tms", IronRuby.Builtins.RubyStructOps.CreateTmsClass(module));
             #endif
             
         }
@@ -5638,7 +5638,7 @@ namespace IronRuby.Builtins {
         }
         
         private static void LoadThreadGroup_Constants(IronRuby.Builtins.RubyModule/*!*/ module) {
-            module.SetConstant("Default", IronRuby.Builtins.ThreadGroup.Default);
+            module.SetBuiltinConstant("Default", IronRuby.Builtins.ThreadGroup.Default);
             
         }
         

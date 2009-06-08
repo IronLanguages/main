@@ -752,7 +752,7 @@ namespace IronPython.Runtime.Operations {
                     return info;
                 }
 
-                if (info.IsFamily || info.IsFamilyOrAssembly) {
+                if (info.IsProtected()) {
                     return info;
                 }
             }

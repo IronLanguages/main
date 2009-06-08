@@ -908,7 +908,7 @@ internal class LibraryDef {
                     GenerateAliases(def, ModuleDef.ObjectClassRef);
                 } else if (def.DeclaringTypeRef != null) {
                     GenerateAliases(def, def.DeclaringTypeRef);
-                    _output.WriteLine("{0}.SetConstant(\"{1}\", {2});", def.DeclaringTypeRef, def.SimpleName, def.Reference);
+                    GenerateSetConstant(def.DeclaringTypeRef, def.SimpleName, def.Reference);
                 }
 
                 WriteRubyCompatibilityCheckEnd(def.Compatibility);
@@ -919,9 +919,13 @@ internal class LibraryDef {
         }
     }
 
+    private void GenerateSetConstant(string/*!*/ owner, string/*!*/ name, string/*!*/ expression) {
+        _output.WriteLine("{0}.Set{3}Constant(\"{1}\", {2});", owner, name, expression, Builtins ? "Builtin" : null);
+    }
+
     private void GenerateAliases(ModuleDef/*!*/ def, string/*!*/ ownerRef) {
         foreach (string alias in def.Aliases) {
-            _output.WriteLine("{0}.SetConstant(\"{1}\", {2});", ownerRef, alias, def.Reference);
+            GenerateSetConstant(ownerRef, alias, def.Reference);
         }
     }
 
@@ -1142,14 +1146,11 @@ internal class LibraryDef {
                 _output.WriteLine("#if " + constantDef.BuildConfig);
             }
 
-            _output.Write("module.SetConstant(\"{0}\", {1}.{2}", constantDef.Name,
-                TypeName(constantDef.Member.DeclaringType), constantDef.Member.Name);
-
-            if (constantDef.Member is MethodInfo) {
-                _output.Write("(module)");
-            }
-
-            _output.WriteLine(");");
+            GenerateSetConstant("module",  constantDef.Name, String.Format("{0}.{1}{2}",
+                TypeName(constantDef.Member.DeclaringType), 
+                constantDef.Member.Name,
+                constantDef.Member is MethodInfo ? "(module)" : null
+            ));
 
             if (constantDef.BuildConfig != null) {
                 _output.WriteLine("#endif");

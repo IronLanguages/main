@@ -109,8 +109,8 @@ namespace IronRuby.Runtime.Calls {
         }
 
         public object Invoke(CallSite/*!*/ callSite, object self /*$Parameters*/) {
-            RubyObject obj = self as RubyObject;
-            if (obj != null && obj.Class.Version.Value == Version) {
+            IRubyObject obj = self as IRubyObject;
+            if (obj != null && obj.ImmediateClass.Version.Value == Version) {
                 return Method(self, null /*$Arguments*/);
             } else {
                 return ((CallSite<Func<CallSite, object, /*$GenericParams*/ object>>)callSite).
@@ -125,8 +125,8 @@ namespace IronRuby.Runtime.Calls {
         }
 
         public object Invoke(CallSite/*!*/ callSite, RubyScope/*!*/ scope, object self /*$Parameters*/) {
-            RubyObject obj = self as RubyObject;
-            if (obj != null && obj.Class.Version.Value == Version) {
+            IRubyObject obj = self as IRubyObject;
+            if (obj != null && obj.ImmediateClass.Version.Value == Version) {
                 return Method(self, null /*$Arguments*/);
             } else {
                 return ((CallSite<Func<CallSite, RubyScope, object, /*$GenericParams*/ object>>)callSite).
@@ -172,8 +172,8 @@ namespace IronRuby.Runtime.Calls {
         }
 
         public object Invoke(CallSite/*!*/ callSite, object self ,T0 arg0) {
-            RubyObject obj = self as RubyObject;
-            if (obj != null && obj.Class.Version.Value == Version) {
+            IRubyObject obj = self as IRubyObject;
+            if (obj != null && obj.ImmediateClass.Version.Value == Version) {
                 return Method(self, null ,arg0);
             } else {
                 return ((CallSite<Func<CallSite, object, T0, object>>)callSite).
@@ -188,8 +188,8 @@ namespace IronRuby.Runtime.Calls {
         }
 
         public object Invoke(CallSite/*!*/ callSite, RubyScope/*!*/ scope, object self ,T0 arg0) {
-            RubyObject obj = self as RubyObject;
-            if (obj != null && obj.Class.Version.Value == Version) {
+            IRubyObject obj = self as IRubyObject;
+            if (obj != null && obj.ImmediateClass.Version.Value == Version) {
                 return Method(self, null ,arg0);
             } else {
                 return ((CallSite<Func<CallSite, RubyScope, object, T0, object>>)callSite).
@@ -233,8 +233,8 @@ namespace IronRuby.Runtime.Calls {
         }
 
         public object Invoke(CallSite/*!*/ callSite, object self ,T0 arg0, T1 arg1) {
-            RubyObject obj = self as RubyObject;
-            if (obj != null && obj.Class.Version.Value == Version) {
+            IRubyObject obj = self as IRubyObject;
+            if (obj != null && obj.ImmediateClass.Version.Value == Version) {
                 return Method(self, null ,arg0, arg1);
             } else {
                 return ((CallSite<Func<CallSite, object, T0, T1, object>>)callSite).
@@ -249,8 +249,8 @@ namespace IronRuby.Runtime.Calls {
         }
 
         public object Invoke(CallSite/*!*/ callSite, RubyScope/*!*/ scope, object self ,T0 arg0, T1 arg1) {
-            RubyObject obj = self as RubyObject;
-            if (obj != null && obj.Class.Version.Value == Version) {
+            IRubyObject obj = self as IRubyObject;
+            if (obj != null && obj.ImmediateClass.Version.Value == Version) {
                 return Method(self, null ,arg0, arg1);
             } else {
                 return ((CallSite<Func<CallSite, RubyScope, object, T0, T1, object>>)callSite).
@@ -294,8 +294,8 @@ namespace IronRuby.Runtime.Calls {
         }
 
         public object Invoke(CallSite/*!*/ callSite, object self ,T0 arg0, T1 arg1, T2 arg2) {
-            RubyObject obj = self as RubyObject;
-            if (obj != null && obj.Class.Version.Value == Version) {
+            IRubyObject obj = self as IRubyObject;
+            if (obj != null && obj.ImmediateClass.Version.Value == Version) {
                 return Method(self, null ,arg0, arg1, arg2);
             } else {
                 return ((CallSite<Func<CallSite, object, T0, T1, T2, object>>)callSite).
@@ -310,8 +310,8 @@ namespace IronRuby.Runtime.Calls {
         }
 
         public object Invoke(CallSite/*!*/ callSite, RubyScope/*!*/ scope, object self ,T0 arg0, T1 arg1, T2 arg2) {
-            RubyObject obj = self as RubyObject;
-            if (obj != null && obj.Class.Version.Value == Version) {
+            IRubyObject obj = self as IRubyObject;
+            if (obj != null && obj.ImmediateClass.Version.Value == Version) {
                 return Method(self, null ,arg0, arg1, arg2);
             } else {
                 return ((CallSite<Func<CallSite, RubyScope, object, T0, T1, T2, object>>)callSite).
@@ -355,8 +355,8 @@ namespace IronRuby.Runtime.Calls {
         }
 
         public object Invoke(CallSite/*!*/ callSite, object self ,T0 arg0, T1 arg1, T2 arg2, T3 arg3) {
-            RubyObject obj = self as RubyObject;
-            if (obj != null && obj.Class.Version.Value == Version) {
+            IRubyObject obj = self as IRubyObject;
+            if (obj != null && obj.ImmediateClass.Version.Value == Version) {
                 return Method(self, null ,arg0, arg1, arg2, arg3);
             } else {
                 return ((CallSite<Func<CallSite, object, T0, T1, T2, T3, object>>)callSite).
@@ -371,8 +371,8 @@ namespace IronRuby.Runtime.Calls {
         }
 
         public object Invoke(CallSite/*!*/ callSite, RubyScope/*!*/ scope, object self ,T0 arg0, T1 arg1, T2 arg2, T3 arg3) {
-            RubyObject obj = self as RubyObject;
-            if (obj != null && obj.Class.Version.Value == Version) {
+            IRubyObject obj = self as IRubyObject;
+            if (obj != null && obj.ImmediateClass.Version.Value == Version) {
                 return Method(self, null ,arg0, arg1, arg2, arg3);
             } else {
                 return ((CallSite<Func<CallSite, RubyScope, object, T0, T1, T2, T3, object>>)callSite).
@@ -416,8 +416,8 @@ namespace IronRuby.Runtime.Calls {
         }
 
         public object Invoke(CallSite/*!*/ callSite, object self ,T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4) {
-            RubyObject obj = self as RubyObject;
-            if (obj != null && obj.Class.Version.Value == Version) {
+            IRubyObject obj = self as IRubyObject;
+            if (obj != null && obj.ImmediateClass.Version.Value == Version) {
                 return Method(self, null ,arg0, arg1, arg2, arg3, arg4);
             } else {
                 return ((CallSite<Func<CallSite, object, T0, T1, T2, T3, T4, object>>)callSite).
@@ -432,8 +432,8 @@ namespace IronRuby.Runtime.Calls {
         }
 
         public object Invoke(CallSite/*!*/ callSite, RubyScope/*!*/ scope, object self ,T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4) {
-            RubyObject obj = self as RubyObject;
-            if (obj != null && obj.Class.Version.Value == Version) {
+            IRubyObject obj = self as IRubyObject;
+            if (obj != null && obj.ImmediateClass.Version.Value == Version) {
                 return Method(self, null ,arg0, arg1, arg2, arg3, arg4);
             } else {
                 return ((CallSite<Func<CallSite, RubyScope, object, T0, T1, T2, T3, T4, object>>)callSite).

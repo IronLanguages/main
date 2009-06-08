@@ -39,7 +39,6 @@ namespace IronRuby.Compiler.Generation {
             _typeFeatures = new Dictionary<Type, IList<ITypeFeature>>();
 
             AddBuiltinType(typeof(object), typeof(RubyObject), false);
-            AddBuiltinType(typeof(RubyModule), typeof(RubyModule.Subclass), true);
             AddBuiltinType(typeof(MutableString), typeof(MutableString.Subclass), true);
             AddBuiltinType(typeof(Proc), typeof(Proc.Subclass), true);
             AddBuiltinType(typeof(RubyRegex), typeof(RubyRegex.Subclass), true);

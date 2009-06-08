@@ -273,5 +273,58 @@ nil
             }
         }
 
+        /// <summary>
+        /// Freezing and module initializers.
+        /// </summary>
+        public void ModuleFreezing1() {
+            if (_driver.PartialTrust) return;
+
+            TestOutput(@"
+Float.freeze
+puts defined? Float::EPSILON         # this should work, Float is a builtin
+puts defined? 1.2.+
+
+Enumerable.freeze
+begin
+  require 'enumerator'               # monkey-patches Enumerable
+rescue Exception
+  p $!
+end
+", @"
+constant
+method
+#<TypeError: can't modify frozen module>
+");
+        }
+
+        /// <summary>
+        /// Tests recursive singleton freezing.
+        /// </summary>
+        public void ModuleFreezing2() {
+            TestOutput(@"
+[Module.new, Object.new].each do |obj|
+  obj.freeze
+  p obj.frozen?
+  class << obj
+    p frozen?
+    class << self
+      p frozen?
+      class << self
+        p frozen?
+      end
+    end
+  end
+end
+", @"
+true
+true
+true
+true
+true
+true
+true
+true
+");
+        }
     }
 }

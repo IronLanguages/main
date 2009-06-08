@@ -510,7 +510,7 @@ namespace IronRuby.Runtime {
                 IsEval = true,
                 FactoryKind = isModuleEval ? TopScopeFactoryKind.Module : TopScopeFactoryKind.None,
                 LocalNames = targetScope.GetVisibleLocalNames(),
-                TopLevelMethodName = (methodScope != null) ? methodScope.Method.DefinitionName : null,
+                TopLevelMethodName = (methodScope != null) ? methodScope.DefinitionName : null,
                 InitialLocation = new SourceLocation(0, line <= 0 ? 1 : line, 1),
             };
         }
@@ -544,27 +544,16 @@ namespace IronRuby.Runtime {
             }
             Debug.Assert(lambda != null);
 
-            Proc blockParameter;
-            RubyMethodInfo methodDefinition;
-            if (methodScope != null) {
-                blockParameter = methodScope.BlockParameter;
-                methodDefinition = methodScope.Method;
-            } else {
-                blockParameter = null;
-                methodDefinition = null;
-            }
-
             // module-eval:
             if (module != null) {
                 targetScope = CreateModuleEvalScope(targetScope, self, module);
             }
 
-            return RubyScriptCode.CompileLambda(lambda, context)(
+            return ((EvalEntryPointDelegate)RubyScriptCode.CompileLambda(lambda, context))(
                 targetScope,
                 self,
                 module,
-                blockParameter,
-                methodDefinition,
+                (methodScope != null) ? methodScope.BlockParameter : null,
                 targetScope.RuntimeFlowControl
             );
         }
@@ -626,6 +615,8 @@ namespace IronRuby.Runtime {
         private static readonly Type[] _serializableTypeSignature = new Type[] { typeof(SerializationInfo), typeof(StreamingContext) };
 #endif
 
+        public static readonly string SerializationInfoClassKey = "#immediateClass";
+
         public static object/*!*/ CreateObject(RubyClass/*!*/ theclass, Hash/*!*/ attributes, bool decorate) {
             Assert.NotNull(theclass, attributes);
 
@@ -642,7 +633,7 @@ namespace IronRuby.Runtime {
 #if !SILVERLIGHT
                 }
                 SerializationInfo info = new SerializationInfo(baseType, new FormatterConverter());
-                info.AddValue("#class", theclass);
+                info.AddValue(SerializationInfoClassKey, theclass);
                 foreach (KeyValuePair<object, object> pair in attributes) {
                     string key = pair.Key.ToString();
                     key = decorate ? "@" + key : key;
@@ -662,7 +653,7 @@ namespace IronRuby.Runtime {
         }
 
         private static bool IsAvailable(MethodBase method) {
-            return method != null && !method.IsPrivate && !method.IsFamilyAndAssembly;
+            return method != null && !method.IsPrivate && !method.IsAssembly && !method.IsFamilyAndAssembly;
         }
 
         public static object/*!*/ CreateObject(RubyClass/*!*/ theClass) {

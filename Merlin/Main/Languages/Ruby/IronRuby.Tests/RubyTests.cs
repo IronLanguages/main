@@ -469,12 +469,16 @@ namespace IronRuby.Tests {
                 MethodDefinitionInModuleEval1A,
                 MethodDefinitionInModuleEval1B,
 
-                Scenario_Singletons1,
-                Scenario_Singletons2,
-                Scenario_Singletons3,
-                Scenario_Singletons4,
-                Scenario_Singletons5,
+                MainSingleton1,
+                MainSingleton2,
+                Singletons1A,
+                Singletons1B,
+                Singletons1C,
+                Singletons1D,
+                Singletons2,
+                Singletons3,
                 SingletonCaching1,
+                SingletonCaching2,
                 Scenario_ClassVariables_Singletons,
                 AllowedSingletons1,
 
@@ -512,6 +516,7 @@ namespace IronRuby.Tests {
                 Scenario_RubyThreads1,
                 Scenario_YieldCodeGen,
                 Methods1, 
+                MethodDef1, 
                 ToIntegerConversion1,
                 ToIntToStrConversion1,
                 ConvertToFixnum1,
@@ -533,7 +538,9 @@ namespace IronRuby.Tests {
                 MetaModules1,
                 MetaModulesDuplication1,
                 Autoload1,
-  
+                ModuleFreezing1,
+                ModuleFreezing2,
+
                 // eval, binding:
                 Eval1,
                 Eval2,

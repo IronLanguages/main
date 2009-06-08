@@ -54,13 +54,11 @@ namespace IronRuby.Runtime.Calls {
         public static MSA.Expression<T>/*!*/ Transform<T>(SourceUnitTree/*!*/ ast, SourceUnit/*!*/ sourceUnit,
             RubyCompilerOptions/*!*/ options, int sourceId) {
 
-            var context = (RubyContext)sourceUnit.LanguageContext;
             var siteNodes = new Dictionary<MSA.DynamicExpression, SourceSpan>();
+            var context = (RubyContext)sourceUnit.LanguageContext;
+            context.CallSiteCreated = (expression, callSite) => siteNodes.Add(callSite, expression.Location);
 
-            var generator = new AstGenerator(context, options, sourceUnit.Document, ast.Encoding, false) {
-                CallSiteCreated = (expression, callSite) => siteNodes.Add(callSite, expression.Location)
-            };
-
+            var generator = new AstGenerator(context, options, sourceUnit.Document, ast.Encoding, false);
             var lambda = ast.Transform<T>(generator);
 
             return (MSA.Expression<T>)new CallSiteTraceInjector(siteNodes, sourceId).Visit(lambda);

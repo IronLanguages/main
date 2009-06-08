@@ -31,7 +31,6 @@ namespace IronRuby.Compiler.Ast {
     using Ast = System.Linq.Expressions.Expression;
     
     public partial class MethodDeclaration : DeclarationExpression {
-
         // self, block
         internal const int HiddenParameterCount = 2;
             
@@ -83,17 +82,17 @@ namespace IronRuby.Compiler.Ast {
             return parameters;
         }
 
-        private MSA.Expression/*!*/ TransformBody(AstGenerator/*!*/ gen, MSA.Expression/*!*/ methodDefinitionVariable) {
+        internal MSA.LambdaExpression/*!*/ TransformBody(AstGenerator/*!*/ gen, RubyScope/*!*/ declaringScope, RubyModule/*!*/ declaringModule) {
             string encodedName = RubyExceptionData.EncodeMethodName(_name, gen.SourcePath, Location);
             
             ScopeBuilder scope = new ScopeBuilder();
             
             MSA.ParameterExpression[] parameters = DefineParameters(gen, scope);
-            MSA.Expression currentMethodVariable = scope.DefineHiddenVariable("#method", typeof(RubyMethodInfo));
-            MSA.Expression rfcVariable = scope.DefineHiddenVariable("#rfc", typeof(RuntimeFlowControl));
-            MSA.ParameterExpression scopeVariable = scope.DefineHiddenVariable("#scope", typeof(RubyMethodScope));
-            MSA.Expression selfParameter = parameters[0];
-            MSA.Expression blockParameter = parameters[1];
+            var currentMethodVariable = scope.DefineHiddenVariable("#method", typeof(RubyMethodInfo));
+            var rfcVariable = scope.DefineHiddenVariable("#rfc", typeof(RuntimeFlowControl));
+            var scopeVariable = scope.DefineHiddenVariable("#scope", typeof(RubyMethodScope));
+            var selfParameter = parameters[0];
+            var blockParameter = parameters[1];
 
             gen.EnterMethodDefinition(
                 scope,
@@ -101,7 +100,6 @@ namespace IronRuby.Compiler.Ast {
                 scopeVariable,
                 blockParameter,
                 rfcVariable,
-                currentMethodVariable,
                 _name,
                 _parameters
             );
@@ -143,10 +141,13 @@ namespace IronRuby.Compiler.Ast {
                 profileStart,
 
                 // scope initialization:
-                Ast.Assign(currentMethodVariable, methodDefinitionVariable),
                 Ast.Assign(rfcVariable, Methods.CreateRfcForMethod.OpCall(AstUtils.Convert(blockParameter, typeof(Proc)))),
                 Ast.Assign(scopeVariable, Methods.CreateMethodScope.OpCall(
-                    scope.VisibleVariables(), currentMethodVariable, rfcVariable, selfParameter, blockParameter,
+                    scope.VisibleVariables(), 
+                    Ast.Constant(declaringScope, typeof(RubyScope)),
+                    Ast.Constant(declaringModule, typeof(RubyModule)), 
+                    Ast.Constant(_name),
+                    rfcVariable, selfParameter, blockParameter,
                     EnterInterpretedFrameExpression.Instance
                 )),
             
@@ -202,42 +203,11 @@ namespace IronRuby.Compiler.Ast {
         }
 
         internal override MSA.Expression/*!*/ TransformRead(AstGenerator/*!*/ gen) {
-            MSA.Expression methodDefinitionVariable = gen.CurrentScope.DefineHiddenVariable(
-                "#method_" + _name, typeof(RubyMethodInfo)
+            return Methods.DefineMethod.OpCall(
+                (_target != null) ? _target.TransformRead(gen) : gen.CurrentSelfVariable,  // target
+                gen.CurrentScopeVariable,
+                Ast.Constant(new RubyMethodBody(gen.Context, this, gen.Document, gen.Encoding))
             );
-
-            return Methods.MethodDefined.OpCall(
-                Ast.Assign(methodDefinitionVariable,
-                    Methods.DefineMethod.OpCall(
-                        (_target != null) ? _target.TransformRead(gen) : gen.CurrentSelfVariable,  // target
-                        AstUtils.Constant((gen.SavingToDisk) ? (object)new Serializable(this) : this), 
-                        gen.CurrentScopeVariable,
-                        AstUtils.Constant(_target != null),                                // isSingleton?
-                        AstUtils.Constant(_name),
-                        TransformBody(gen, methodDefinitionVariable),
-                        AstUtils.Constant(_parameters.MandatoryCount),
-                        AstUtils.Constant(_parameters.OptionalCount),
-                        AstUtils.Constant(_parameters.Array != null)                       // hasUnsplatParameter
-                    )
-                )
-            );
-        }
-
-        internal sealed class Serializable : IExpressionSerializable {
-            private readonly MethodDeclaration/*!*/ _method;
-
-            public MethodDeclaration/*!*/ Method {
-                get { return _method; }
-            }
-
-            public Serializable(MethodDeclaration/*!*/ method) {
-                _method = method;
-            }
-
-            public MSA.Expression/*!*/ CreateExpression() {
-                // TODO: serialize source code:
-                return AstUtils.Constant(null);       
-            }
         }
     }
 }
