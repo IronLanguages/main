@@ -519,8 +519,8 @@ namespace IronRuby.Builtins {
                 // singleton members are copied here, not in InitializeCopy:
                 result.SingletonClass.InitializeMembersFrom(SingletonClass);
 
-                // copy instance variables, and frozen, taint flags:
-                Context.CopyInstanceData(this, result, false, true, false);
+                // copy instance variables and taint flag:
+                Context.CopyInstanceData(this, result, true, false);
             }
             
             // members initialized in InitializeClassFrom (invoked by "initialize_copy")
@@ -568,12 +568,42 @@ namespace IronRuby.Builtins {
             return IsSubclassOf(Context.ExceptionClass);
         }
 
+        public RubyClass/*!*/ NominalClass {
+            get {
+                return IsSingletonClass ? SuperClass : this;
+            }
+        }
+
         public RubyClass/*!*/ GetNonSingletonClass() {
             RubyClass result = this;
             while (result != null && result.IsSingletonClass) {
                 result = result._superClass;
             }
             return result;
+        }
+        
+        // thread-safe
+        public override bool IsFrozen {
+            get {
+                // a class is frozen if it has been frozen itself or the root of the singleton hierarchy (module, class or object) has been frozen:
+                if (!_isSingletonClass) {
+                    return IsModuleFrozen;
+                }
+
+                RubyClass cls = this;
+                while (true) {
+                    RubyModule module = cls._singletonClassOf as RubyModule;
+                    if (module != null) {
+                        if (module.IsSingletonClass) {
+                            cls = (RubyClass)module;
+                        } else {
+                            return module.IsModuleFrozen;
+                        }
+                    } else {
+                        return Context.IsObjectFrozen(cls._singletonClassOf);
+                    }
+                }
+            }
         }
 
         internal RubyMemberInfo ResolveMethodMissingForSite(string/*!*/ name, RubyMethodVisibility incompatibleVisibility) {
@@ -986,7 +1016,7 @@ namespace IronRuby.Builtins {
                 return false;
             }
 
-            if (method.IsFamily || method.IsFamilyOrAssembly) {
+            if (method.IsProtected()) {
                 return method.DeclaringType != null && method.DeclaringType.IsVisible && !method.DeclaringType.IsSealed;
             }
 

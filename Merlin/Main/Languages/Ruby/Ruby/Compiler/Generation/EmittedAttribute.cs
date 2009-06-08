@@ -25,4 +25,12 @@ namespace IronRuby.Compiler.Generation {
     [AttributeUsage(AttributeTargets.Method | AttributeTargets.Property | AttributeTargets.Field | AttributeTargets.Constructor, AllowMultiple = false, Inherited = false)]
     public sealed class EmittedAttribute : Attribute {
     }
+
+    /// <summary>
+    /// Marks types whose [Emitted] members should be stored in Reflection Cache.
+    /// </summary>
+    [Conditional("DEBUG")]
+    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct | AttributeTargets.Interface, AllowMultiple = false, Inherited = false)]
+    public sealed class ReflectionCachedAttribute : Attribute {
+    }
 }

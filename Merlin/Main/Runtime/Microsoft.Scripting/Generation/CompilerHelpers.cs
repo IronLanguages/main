@@ -329,9 +329,8 @@ namespace Microsoft.Scripting.Generation {
 
         public static bool CanOptimizeMethod(MethodBase method) {
             if (method.ContainsGenericParameters ||
-                method.IsFamily ||
+                method.IsProtected() ||
                 method.IsPrivate ||
-                method.IsFamilyOrAssembly ||
                 !method.DeclaringType.IsVisible) {
                 return false;
             }
@@ -498,6 +497,18 @@ namespace Microsoft.Scripting.Generation {
             return info.IsPublic && (info.DeclaringType == null || info.DeclaringType.IsVisible);
         }
 
+        public static bool IsProtected(this MethodBase info) {
+            return info.IsFamily || info.IsFamilyOrAssembly;
+        }
+
+        public static bool IsProtected(this FieldInfo info) {
+            return info.IsFamily || info.IsFamilyOrAssembly;
+        }
+
+        public static bool IsProtected(this Type type) {
+            return type.IsNestedFamily || type.IsNestedFamORAssem;
+        }
+
         public static Type GetVisibleType(object value) {
             return GetVisibleType(GetType(value));
         }
@@ -547,7 +558,7 @@ namespace Microsoft.Scripting.Generation {
             List<ConstructorInfo> finalInfos = null;
             for (int i = 0; i < ci.Length; i++) {
                 ConstructorInfo info = ci[i];
-                if (!info.IsPublic && !info.IsFamily && !info.IsFamilyOrAssembly) {
+                if (!info.IsPublic && !info.IsProtected()) {
                     if (finalInfos == null) {
                         finalInfos = new List<ConstructorInfo>();
                         for (int j = 0; j < i; j++) {

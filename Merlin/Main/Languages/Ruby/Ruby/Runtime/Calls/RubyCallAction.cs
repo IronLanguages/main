@@ -27,6 +27,7 @@ using Microsoft.Scripting.Utils;
 using Ast = System.Linq.Expressions.Expression;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 using System.Diagnostics;
+using System.Threading;
 
 namespace IronRuby.Runtime.Calls {
 
@@ -109,8 +110,13 @@ namespace IronRuby.Runtime.Calls {
                 target = args[0];
             }
 
+            // TODO:
+            if (target == null || target is bool) {
+                return base.BindDelegate<T>(site, args);
+            }
+
             RubyClass targetClass = Context.GetImmediateClassOf(target);
-            if (!targetClass.IsSingletonClass && !(target is RubyObject)) {
+            if (!targetClass.IsSingletonClass && !(target is IRubyObject)) {
                 return base.BindDelegate<T>(site, args);
             }
 
@@ -128,17 +134,19 @@ namespace IronRuby.Runtime.Calls {
             }
 
             MethodDispatcher dispatcher;
-            if (targetClass.IsSingletonClass) {
-                dispatcher = MethodDispatcher.CreateSingletonDispatcher(typeof(T), d, mandatoryParamCount, Signature.HasScope, 
-                    version, target, targetClass.Version);
-            } else {
+            if (target is IRubyObject) {
                 dispatcher = MethodDispatcher.CreateRubyObjectDispatcher(typeof(T), d, mandatoryParamCount, Signature.HasScope, 
                     version);
+            } else {
+                Debug.Assert(targetClass.IsSingletonClass);
+                dispatcher = MethodDispatcher.CreateSingletonDispatcher(typeof(T), d, mandatoryParamCount, Signature.HasScope, 
+                    version, target, targetClass.Version);
             }
 
             if (dispatcher != null) {
                 T result = (T)dispatcher.CreateDelegate();
                 CacheTarget(result);
+                RubyBinder.DumpPrecompiledRule(this, dispatcher);
                 return result;
             }
 

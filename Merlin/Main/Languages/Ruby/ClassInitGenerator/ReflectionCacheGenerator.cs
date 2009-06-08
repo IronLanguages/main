@@ -68,11 +68,15 @@ internal sealed class ReflectionCacheGenerator : Generator {
     public void Generate() {
         _anyError = false;
 
-        var unsortedMethods = ReflectMethods(typeof(RubyOps)).Values;
-        List<MethodInfo> methods = new List<MethodInfo>();
-        methods.AddRange(unsortedMethods);
-        methods.Sort((m1, m2) => m1.Name.CompareTo(m2.Name));
+        var reflectedMethods = new Dictionary<string, MethodInfo>();
+        foreach (var type in typeof(RubyOps).Assembly.GetExportedTypes()) {
+            if (type.IsDefined(typeof(ReflectionCachedAttribute), false)) {
+                Console.WriteLine(type);
+                ReflectMethods(reflectedMethods, type);
+            }
+        }
 
+        var methods = reflectedMethods.Sort((m1, m2) => m1.Key.CompareTo(m2.Key));
         if (_anyError) {
             Environment.ExitCode = 1;
             return;
@@ -87,6 +91,7 @@ internal sealed class ReflectionCacheGenerator : Generator {
             _output.WriteLine("using System.Reflection;");
             _output.WriteLine("using System.Diagnostics;");
             _output.WriteLine("using IronRuby.Runtime;");
+            _output.WriteLine("using IronRuby.Builtins;");
             _output.WriteLine("using Microsoft.Scripting.Utils;");
 
             _output.WriteLine();
@@ -117,30 +122,46 @@ internal sealed class ReflectionCacheGenerator : Generator {
         }
     }
 
-    private Dictionary<string, MethodInfo>/*!*/ ReflectMethods(Type/*!*/ type) {
-        var result = new Dictionary<string, MethodInfo>();
-        var methods = type.GetMethods(BindingFlags.Public | BindingFlags.Static | BindingFlags.DeclaredOnly);
-        foreach (var method in methods) {
+    private void ReflectMethods(Dictionary<string, MethodInfo>/*!*/ methods, Type/*!*/ type) {
+        foreach (var method in type.GetMethods(BindingFlags.Public | BindingFlags.Static | BindingFlags.Instance | BindingFlags.DeclaredOnly)) {
             if (method.IsDefined(typeof(EmittedAttribute), false)) {
-                MethodInfo existingMethod;
-                if (result.TryGetValue(method.Name, out existingMethod)) {
-                    Console.WriteLine("ERROR: Emitted methods should not have overloads: \n\t{0}\n\t{1}",
-                        ReflectionUtils.FormatSignature(new StringBuilder(), existingMethod),
-                        ReflectionUtils.FormatSignature(new StringBuilder(), method));
-                    _anyError = true;
-                } else {
-                    result.Add(method.Name, method);
+                ReflectMethod(methods, method);
+            }
+        }
+
+        foreach (var property in type.GetProperties(BindingFlags.Public | BindingFlags.Static | BindingFlags.Instance | BindingFlags.DeclaredOnly)) {
+            if (property.IsDefined(typeof(EmittedAttribute), false)) {
+                foreach (var method in new[] { property.GetGetMethod(), property.GetSetMethod() }) {
+                    if (method != null && !method.IsDefined(typeof(EmittedAttribute), false)) {
+                        ReflectMethod(methods, method);
+                    }
                 }
             }
         }
-        return result;
     }
 
-    private void GenerateOps(ICollection<MethodInfo>/*!*/ methods) {
+    private void ReflectMethod(Dictionary<string, MethodInfo>/*!*/ methods, MethodInfo/*!*/ method) {
+        string name = method.Name;
+        if (method.DeclaringType != typeof(RubyOps)) {
+            name = method.DeclaringType.Name + "_" + name;
+        }
+
+        MethodInfo existingMethod;
+        if (methods.TryGetValue(name, out existingMethod)) {
+            Console.WriteLine("ERROR: Emitted methods should not have overloads: \n\t{0}\n\t{1}",
+                ReflectionUtils.FormatSignature(new StringBuilder(), existingMethod),
+                ReflectionUtils.FormatSignature(new StringBuilder(), method));
+            _anyError = true;
+        } else {
+            methods.Add(name, method);
+        }
+    }
+
+    private void GenerateOps(IList<KeyValuePair<string, MethodInfo>>/*!*/ methods) {
         foreach (var method in methods) {
-            _output.WriteLine("public static MethodInfo/*!*/ {0} {{ get {{ return _{0} ?? (_{0} = GetMethod(typeof(RubyOps), \"{0}\")); }} }}",
-                method.Name);
-            _output.WriteLine("private static MethodInfo _{0};", method.Name);
+            _output.WriteLine("public static MethodInfo/*!*/ {0} {{ get {{ return _{0} ?? (_{0} = GetMethod(typeof({1}), \"{2}\")); }} }}",
+                method.Key, method.Value.DeclaringType.Name, method.Value.Name);
+            _output.WriteLine("private static MethodInfo _{0};", method.Key);
         }
     }
 

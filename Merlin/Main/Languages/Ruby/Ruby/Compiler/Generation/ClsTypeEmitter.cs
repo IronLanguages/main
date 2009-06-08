@@ -173,7 +173,7 @@ namespace IronRuby.Compiler.Generation {
 
             FieldInfo[] fields = _baseType.GetFields(BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static | BindingFlags.FlattenHierarchy);
             foreach (FieldInfo fi in fields) {
-                if (!fi.IsFamily && !fi.IsFamilyOrAssembly) {
+                if (!CompilerHelpers.IsProtected(fi)) {
                     continue;
                 }
 
@@ -275,7 +275,7 @@ namespace IronRuby.Compiler.Generation {
             foreach (MethodInfo mi in added.Values) {
                 if (!ShouldOverrideVirtual(mi) || !CanOverrideMethod(mi)) continue;
 
-                if (mi.IsPublic || mi.IsFamily || mi.IsFamilyOrAssembly) {
+                if (mi.IsPublic || mi.IsProtected()) {
                     if (mi.IsSpecialName) {
                         OverrideSpecialName(mi, overriddenProperties);
                     } else {
@@ -287,7 +287,7 @@ namespace IronRuby.Compiler.Generation {
 
         private void OverrideSpecialName(MethodInfo mi, Dictionary<PropertyInfo, PropertyBuilder> overridden) {
             if (!mi.IsVirtual || mi.IsFinal) {
-                if ((mi.IsFamily || mi.IsSpecialName) && (mi.Name.StartsWith("get_") || mi.Name.StartsWith("set_"))) {
+                if ((mi.IsProtected() || mi.IsSpecialName) && (mi.Name.StartsWith("get_") || mi.Name.StartsWith("set_"))) {
                     // need to be able to call into protected getter/setter methods from derived types,
                     // even if these methods aren't virtual and we are in partial trust.
                     _specialNames.SetSpecialName(mi.Name);
@@ -379,7 +379,7 @@ namespace IronRuby.Compiler.Generation {
         private void AddPublicProperty(MethodInfo mi, Dictionary<PropertyInfo, PropertyBuilder> overridden, MethodBuilder mb, PropertyInfo foundProperty) {
             MethodInfo getter = foundProperty.GetGetMethod(true);
             MethodInfo setter = foundProperty.GetSetMethod(true);
-            if (IsProtected(getter) || IsProtected(setter)) {
+            if (getter != null && getter.IsProtected() || setter != null && setter.IsProtected()) {
                 PropertyBuilder builder;
                 if (!overridden.TryGetValue(foundProperty, out builder)) {
                     ParameterInfo[] indexArgs = foundProperty.GetIndexParameters();
@@ -397,13 +397,6 @@ namespace IronRuby.Compiler.Generation {
                     builder.SetSetMethod(mb);
                 }
             }
-        }
-
-        private static bool IsProtected(MethodInfo mi) {
-            if (mi != null) {
-                return mi.IsFamilyOrAssembly || mi.IsFamily;
-            }
-            return false;
         }
 
         /// <summary>
@@ -432,7 +425,7 @@ namespace IronRuby.Compiler.Generation {
         }
 
         private void OverrideBaseMethod(MethodInfo mi) {
-            if ((!mi.IsVirtual || mi.IsFinal) && !mi.IsFamily) {
+            if ((!mi.IsVirtual || mi.IsFinal) && !mi.IsProtected()) {
                 return;
             }
 

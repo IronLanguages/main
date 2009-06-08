@@ -36,7 +36,7 @@ using IronRuby.Compiler.Ast;
 using MSA = System.Linq.Expressions;
 
 namespace IronRuby.Runtime {
-    [CLSCompliant(false)]
+    [ReflectionCached, CLSCompliant(false)]
     public static partial class RubyOps {
 
         [Emitted]
@@ -183,7 +183,7 @@ namespace IronRuby.Runtime {
         
         [Emitted]
         public static RubyContext/*!*/ GetContextFromIRubyObject(IRubyObject/*!*/ obj) {
-            return obj.Class.Context;
+            return obj.ImmediateClass.Context;
         }
         
         [Emitted]
@@ -1723,8 +1723,8 @@ namespace IronRuby.Runtime {
 
 #if !SILVERLIGHT
         [Emitted] //RubyTypeBuilder
-        public static void DeserializeObject(out RubyInstanceData/*!*/ instanceData, out RubyClass/*!*/ rubyClass, SerializationInfo/*!*/ info) {
-            rubyClass = (RubyClass)info.GetValue("#class", typeof(RubyClass));
+        public static void DeserializeObject(out RubyInstanceData/*!*/ instanceData, out RubyClass/*!*/ immediateClass, SerializationInfo/*!*/ info) {
+            immediateClass = (RubyClass)info.GetValue(RubyUtils.SerializationInfoClassKey, typeof(RubyClass));
             RubyInstanceData newInstanceData = null;
             foreach (SerializationEntry entry in info) {
                 if (entry.Name.StartsWith("@")) {
@@ -1738,8 +1738,8 @@ namespace IronRuby.Runtime {
         }
 
         [Emitted] //RubyTypeBuilder
-        public static void SerializeObject(RubyInstanceData instanceData, RubyClass/*!*/ rubyClass, SerializationInfo/*!*/ info) {
-            info.AddValue("#class", rubyClass, typeof(RubyClass));
+        public static void SerializeObject(RubyInstanceData instanceData, RubyClass/*!*/ immediateClass, SerializationInfo/*!*/ info) {
+            info.AddValue(RubyUtils.SerializationInfoClassKey, immediateClass, typeof(RubyClass));
             if (instanceData != null) {
                 string[] instanceNames = instanceData.GetInstanceVariableNames();
                 foreach (string name in instanceNames) {

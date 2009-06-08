@@ -19,22 +19,21 @@ using Microsoft.Scripting.Utils;
 using IronRuby.Runtime.Calls;
 using IronRuby.Runtime;
 using IronRuby.Compiler.Generation;
+using System.Diagnostics;
 
 namespace IronRuby.Builtins {
     public partial class Proc {
         public sealed partial class Subclass : Proc, IRubyObject {
-            private readonly RubyClass/*!*/ _class;
-            private RubyInstanceData _instanceData;
-
             // called by Proc#new rule when creating a Ruby subclass of Proc:
             public Subclass(RubyClass/*!*/ rubyClass, Proc/*!*/ proc) 
                 : base(proc) {
                 Assert.NotNull(rubyClass);
-                _class = rubyClass;
+                Debug.Assert(!rubyClass.IsSingletonClass);
+                ImmediateClass = rubyClass;
             }
 
             public override Proc/*!*/ Copy() {
-                return new Subclass(_class, this);
+                return new Subclass(ImmediateClass.NominalClass, this);
             }
         }
     }

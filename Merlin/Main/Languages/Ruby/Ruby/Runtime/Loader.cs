@@ -771,11 +771,9 @@ namespace IronRuby.Runtime {
                 );
             }
 
-            try {
-                initializer.LoadModules(_context, builtin);
-            } catch (Exception e) {
-                throw new LoadError(e.Message, e);
-            }
+            // Propagate exceptions from initializers (do not wrap them to LoadError).
+            // E.g. TypeError (can't modify frozen module) can be thrown.
+            initializer.LoadModules(_context, builtin);
         }
 
         #endregion

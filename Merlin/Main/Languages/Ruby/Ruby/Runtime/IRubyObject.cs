@@ -17,17 +17,20 @@ using IronRuby.Builtins;
 using IronRuby.Compiler.Generation;
 
 namespace IronRuby.Runtime {
+    [ReflectionCached]
     public interface IRubyObject : IRubyObjectState {
-        // Gets the ruby class associated with this object
-        [Emitted] // RubyTypeBuilder
-        RubyClass/*!*/ Class { get; }
+        /// <summary>
+        /// Gets or sets the immediate class of this object.
+        /// </summary>
+        [Emitted]
+        RubyClass/*!*/ ImmediateClass { get; set; }
 
         // Returns the instance object data. May return null.
-        [Emitted] // RubyTypeBuilder
+        [Emitted]
         RubyInstanceData TryGetInstanceData();
 
         // Returns the instance object data.
-        [Emitted] // RubyTypeBuilder
+        [Emitted]
         RubyInstanceData/*!*/ GetInstanceData();
     }
 }

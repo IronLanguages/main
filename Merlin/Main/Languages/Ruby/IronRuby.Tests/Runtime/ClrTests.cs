@@ -219,20 +219,24 @@ false
         public class ProtectedA {
             protected string Foo(int a) { return "Foo(I): " + a; }
             public string Bar(int a) { return "Bar(I): " + a; }
+
+            protected string PG<T>(T a) { return "PG<T>(T)"; }
         }
 
         public class ProtectedB : ProtectedA {
             public string Foo(object a) { return "Foo(O): " + a.ToString(); }
-            protected string Bar(object a) { return "Bar(O): " + a; }
+            internal protected string Bar(object a) { return "Bar(O): " + a; }
 
             protected int Prop1 { get; set; }
-            public int Prop2 { get; protected set; }
+            public int Prop2 { get; internal protected set; }
 
             private string Baz(int a) { return "Baz(I): " + a; }
             public string Baz(object a) { return "Baz(O): " + a; }
 
             protected static string StaticM() { return "StaticM"; }
             protected static string StaticGenericM<T>(T f) { return "StaticGenericM: " + f.ToString(); }
+
+            internal protected string PG<T>(T a, int b) { return "PG<T>(T,int)"; }
 
             // TODO:
             // protected int Fld;
@@ -278,6 +282,18 @@ Foo(O): 6
 StaticM
 StaticGenericM: 123
 ", OutputFlags.Match);
+
+            // generic methods:
+            TestOutput(@"
+class C < B; end
+c = C.new
+
+puts c.method(:PG).of(Fixnum).call(1)
+puts c.method(:PG).of(Fixnum).call(1,2)
+", @"
+PG<T>(T)
+PG<T>(T,int)
+");
 
             // properties:
             AssertOutput(delegate() {

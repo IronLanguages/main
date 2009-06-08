@@ -35,10 +35,10 @@ namespace IronRuby.Runtime {
 
         #region ICustomTypeDescriptor helper functions
 
-        private static RubyClass/*!*/ GetClass(object self) {
+        private static RubyClass/*!*/ GetImmediateClass(object self) {
             IRubyObject rubyObj = self as IRubyObject;
             ContractUtils.RequiresNotNull(rubyObj, "self");
-            return rubyObj.Class;
+            return rubyObj.ImmediateClass;
         }
 
         [Emitted]
@@ -49,7 +49,7 @@ namespace IronRuby.Runtime {
 
         [Emitted]
         public static string GetClassName(object self) {
-            return GetClass(self).Name;
+            return GetImmediateClass(self).NominalClass.Name;
         }
 
         [Emitted]
@@ -120,8 +120,8 @@ namespace IronRuby.Runtime {
                 return new PropertyDescriptor[0];
             }
             
-            RubyContext context = GetClass(self).Context;
-            RubyClass immediateClass = context.GetImmediateClassOf(self);
+            RubyClass immediateClass = GetImmediateClass(self);
+            RubyContext context = immediateClass.Context;
 
             const int readable = 0x01;
             const int writable = 0x02;
