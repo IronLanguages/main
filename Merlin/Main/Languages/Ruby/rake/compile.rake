@@ -67,6 +67,13 @@ namespace :compile do
   task :yaml => [:libraries] do
     IronRubyCompiler.compile :yaml
   end
+
+  desc "compile IronPython"
+  task :ironpython => [:dlr] do
+    [:ironpython, :ipyw, :ipy, :ironpython_modules].each do |target|
+      IronRubyCompiler.compile target
+    end
+  end
 end
 desc "compile everything"
 task :compile => %w{happy clean_build compile:dlr compile:ruby compile:libraries compile:console compile:testhost compile:generator compile:yaml}
