@@ -18,55 +18,55 @@ desc "clean build directory"
 task :clean_build => [:happy] do
   IronRubyCompiler.clean
 end
+namespace :compile do
+  desc "compile extension attribute assembly" 
+  task :extension_attributes => [:clean_build] do
+    IronRubyCompiler.compile :dlr_extension
+  end
 
-desc "compile extension attribute assembly" 
-task :compile_extension_attributes => [:clean_build] do
-  IronRubyCompiler.compile :dlr_extension
+  desc "compile DLR (Microsoft.Scripting.dll and Microsoft.Scripting.Core.dll)"
+  task :dlr => [:extension_attributes] do
+    IronRubyCompiler.compile :dlr_core
+    IronRubyCompiler.compile :dlr_libs
+    IronRubyCompiler.compile :dlr_com
+  end
+
+  desc "compile ClassInitGenerator.exe"
+  task :generator => [:ruby]  do
+    IronRubyCompiler.compile :generator
+  end
+
+  desc "compile IronRuby.dll"
+  task :ruby => [:dlr] do
+    IronRubyCompiler.compile :ironruby
+  end
+
+  desc "compile IronRuby.Libraries.dll"
+  task :libraries => [:ruby] do
+    IronRubyCompiler.compile :libraries
+  end
+
+  desc "compile IronRuby console"
+  task :console => [:libraries] do
+    IronRubyCompiler.compile :console
+    IronRubyCompiler.move_config
+  end
+
+  desc "compile IronRuby.Tests"
+  task :testhost => [:libraries] do
+    IronRubyCompiler.compile :test_runner
+    IronRubyCompiler.move_config "IronRuby.Tests.exe.config"
+  end
+
+  desc "compile IronRuby.Libraries.Scanner"
+  task :scanner => [:libraries] do
+    IronRubyCompiler.compile :scanner
+  end
+
+  desc "compile Yaml"
+  task :yaml => [:libraries] do
+    IronRubyCompiler.compile :yaml
+  end
 end
-
-desc "compile DLR (Microsoft.Scripting.dll and Microsoft.Scripting.Core.dll)"
-task :compile_dlr => [:compile_extension_attributes] do
-  IronRubyCompiler.compile :dlr_core
-  IronRubyCompiler.compile :dlr_libs
-  IronRubyCompiler.compile :dlr_com
-end
-
-desc "compile ClassInitGenerator.exe"
-task :compile_generator => [:compile_ruby]  do
-  IronRubyCompiler.compile :generator
-end
-
-desc "compile IronRuby.dll"
-task :compile_ruby => [:compile_dlr] do
-  IronRubyCompiler.compile :ironruby
-end
-
-desc "compile IronRuby.Libraries.dll"
-task :compile_libraries => [:compile_ruby] do
-  IronRubyCompiler.compile :libraries
-end
-
-desc "compile IronRuby console"
-task :compile_console => [:compile_libraries] do
-  IronRubyCompiler.compile :console
-  IronRubyCompiler.move_config
-end
-
-desc "compile IronRuby.Tests"
-task :compile_testhost => [:compile_libraries] do
-  IronRubyCompiler.compile :test_runner
-end
-
-desc "compile IronRuby.Libraries.Scanner"
-task :compile_scanner => [:compile_libraries] do
-  IronRubyCompiler.compile :scanner
-end
-
-desc "compile Yaml"
-task :compile_yaml => [:compile_libraries] do
-  IronRubyCompiler.compile :yaml
-end
-
 desc "compile everything"
-task :compile => [:happy, :clean_build, :compile_dlr, :compile_ruby, :compile_libraries, :compile_console, :compile_testhost, :compile_generator, :compile_yaml] do
-end
+task :compile => %w{happy clean_build compile:dlr compile:ruby compile:libraries compile:console compile:testhost compile:generator compile:yaml}

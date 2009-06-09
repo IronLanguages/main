@@ -1,2 +1,2 @@
 @echo off
-@"ruby.exe" %~dp0n.rb -checkin %*
+@"ruby.exe" "%~dpn0.rb" -checkin %*

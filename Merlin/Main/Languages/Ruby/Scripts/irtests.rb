@@ -1,5 +1,6 @@
 require 'optparse'
 require 'singleton'
+
 class IRTest
   include Singleton
   attr_accessor :options  
@@ -59,17 +60,23 @@ class IRTest
   end
 
   def test_all
-    @suites.each do |title, test|
-      title = title.to_s.gsub("_", " ") << "Tests"
-      cmd = nil
-      if options[:parallel]
-        cmd = "start \"#{title}\" #{test}"
-      else
-        puts title
-        cmd = test
-      end
-      run_cmd(cmd) { @results << "#{title} failed!!!"}
+    @suites.each_key do |key|
+      test(key)
     end
+  end
+
+  def test(suite)
+    
+    title = suite.to_s.gsub("_", " ") << " Tests"
+    test = @suites[suite]
+    cmd = nil
+    if options[:parallel]
+      cmd = "start \"#{title}\" #{test}"
+    else
+      puts title
+      cmd = test
+    end
+    run_cmd(cmd) { @results << "#{title} failed!!!"}
   end
 
   def run_cmd(cmd, &blk)
@@ -87,23 +94,25 @@ class IRTest
   end
 end
 
-OptionParser.new do |opts|
-  opts.banner = "Usage: irtests.rb [options]"
+if $0 == __FILE__
+  OptionParser.new do |opts|
+    opts.banner = "Usage: irtests.rb [options]"
 
-  opts.separator ""
+    opts.separator ""
 
-  opts.on("-p", "--[no-]parallel", "Run in parallel") do |p|
-    IRTest.options[:parallel] = p
-  end
+    opts.on("-p", "--[no-]parallel", "Run in parallel") do |p|
+      IRTest.options[:parallel] = p
+    end
 
-  opts.on("-n", "--nocompile", "Don't compile before running") do |n|
-    IRTest.options[:nocompile] = n
-  end
-  
-  opts.on_tail("-h", "--help", "Show this message") do |n|
-    puts opts
-    exit
-  end
-end.parse!
+    opts.on("-n", "--nocompile", "Don't compile before running") do |n|
+      IRTest.options[:nocompile] = n
+    end
+    
+    opts.on_tail("-h", "--help", "Show this message") do |n|
+      puts opts
+      exit
+    end
+  end.parse!
 
-IRTest.run
+  IRTest.run
+end

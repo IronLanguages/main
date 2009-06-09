@@ -113,9 +113,3 @@ task :happy do
     abort
   end
 end
-
-task :default => [:happy] do
-  Rake.application.options.show_tasks = true
-  Rake.application.options.show_task_pattern = Regexp.new('.')
-  Rake.application.display_tasks_and_comments
-end
